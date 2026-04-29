@@ -1,1 +1,153 @@
-{"updated":"2026-04-29T05:00:00Z","countries":{"FR":[{"partner":"DE_LU · Germany","imports":450,"exports":3200,"net":-2750},{"partner":"BE · Belgium","imports":800,"exports":2100,"net":-1300},{"partner":"ES · Spain","imports":1200,"exports":300,"net":900},{"partner":"IT_NORD · Italy North","imports":200,"exports":1800,"net":-1600},{"partner":"CH · Switzerland","imports":600,"exports":2500,"net":-1900},{"partner":"GB · Great Britain","imports":900,"exports":400,"net":500}],"DE_LU":[{"partner":"FR · France","imports":3200,"exports":450,"net":2750},{"partner":"NL · Netherlands","imports":2100,"exports":1800,"net":300},{"partner":"BE · Belgium","imports":900,"exports":1200,"net":-300},{"partner":"AT · Austria","imports":600,"exports":2800,"net":-2200}]}}
+{
+  "updated": "2026-04-29T21:16:49.602469Z",
+  "countries": {
+    "FR": [
+      {
+        "partner": "DE_LU \u00b7 Germany",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "ES \u00b7 Spain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "IT_NORD \u00b7 Italy North",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "CH \u00b7 Switzerland",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "GB \u00b7 Great Britain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ],
+    "DE_LU": [
+      {
+        "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "NL \u00b7 Netherlands",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "AT \u00b7 Austria",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "CH \u00b7 Switzerland",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "CZ \u00b7 Czechia",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "PL \u00b7 Poland",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "DK_W \u00b7 Denmark West",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ],
+    "BE": [
+      {
+        "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "DE_LU \u00b7 Germany",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "NL \u00b7 Netherlands",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "GB \u00b7 Great Britain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ],
+    "ES": [
+      {
+        "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "PT \u00b7 Portugal",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ],
+    "GB": [
+      {
+        "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "NL \u00b7 Netherlands",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ]
+  }
+}
