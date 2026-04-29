@@ -1,1 +1,75 @@
-{"updated":"2026-04-29T05:00:00Z","countries":{"FR":{"nuclear":38000,"wind":5500,"solar":11100,"hydro":4800,"fossil":700,"biomass":900,"other":400,"total":61400},"DE_LU":{"nuclear":0,"wind":22000,"solar":18000,"hydro":2500,"fossil":12000,"biomass":4000,"other":500,"total":59000},"ES":{"nuclear":7000,"wind":15000,"solar":12000,"hydro":5000,"fossil":4000,"biomass":800,"other":200,"total":44000},"BE":{"nuclear":4500,"wind":1800,"solar":2500,"hydro":100,"fossil":2000,"biomass":600,"other":200,"total":11700},"NL":{"nuclear":500,"wind":5000,"solar":4000,"hydro":0,"fossil":8000,"biomass":500,"other":100,"total":18100},"GB":{"nuclear":5000,"wind":8000,"solar":3000,"hydro":1500,"fossil":6000,"biomass":1200,"other":400,"total":25100},"PT":{"nuclear":0,"wind":4000,"solar":3500,"hydro":2500,"fossil":1500,"biomass":400,"other":100,"total":12000}}}
+{
+  "updated": "2026-04-29T21:16:49.602469Z",
+  "countries": {
+    "FR": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "DE_LU": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "ES": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "BE": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "NL": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "GB": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    },
+    "PT": {
+      "nuclear": 0,
+      "solar": 0,
+      "wind": 0,
+      "hydro": 0,
+      "fossil": 0,
+      "biomass": 0,
+      "other": 0,
+      "total": 0
+    }
+  }
+}
