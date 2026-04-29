@@ -1203,19 +1203,80 @@
     </div>
 
     <!-- GO PRICES -->
+    <!-- GO PRICES -->
     <div class="page" id="page-goprices">
       <div class="page-header">
         <div><div class="page-title">Guarantees of Origin — Prices</div><div class="page-subtitle">AIB market · Commerg weekly assessment · EEX auctions FR</div></div>
         <div style="display:flex;gap:8px;align-items:center">
           <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">Manual upload — Commerg weekly</span>
-          <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(var(--accent-rgb),.3);padding:3px 9px;border-radius:4px;border-color:rgba(16,185,129,.3)">Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)"></label>
+          <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(16,185,129,.3);padding:3px 9px;border-radius:4px">
+            Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)">
+          </label>
         </div>
       </div>
-      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Current Week — Bid / Ask</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-cards"></div>
+
+      <!-- KPI strip : dernier prix, delta WoW, spread (= Streamlit go_kpi) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-kpi-strip"></div>
+
+      <!-- Produit selector -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Produit</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
+          <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
+          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
+        </div>
+      </div>
+
+      <!-- Chart 1 : Historique bid/ask = chart_go_price_indications -->
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs hebdo (€/MWh)</span>
+          <div style="display:flex;gap:10px">
+            <span style="font-size:11px;color:var(--up)">&#9472; Bid</span>
+            <span style="font-size:11px;color:var(--dn)">&#9472; Ask</span>
+            <span style="font-size:11px;color:var(--text3)">&#9474; Mid</span>
+          </div>
+        </div>
+        <canvas id="go-indic-canvas" style="width:100%;height:220px"></canvas>
+      </div>
+
+      <!-- Chart 2 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="chart-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="table-title">Forward curve — Cal 2025 → 2028</span>
+            <div style="display:flex;gap:8px">
+              <span style="font-size:11px;color:var(--up)">&#9632; Bid</span>
+              <span style="font-size:11px;color:var(--dn)">&#9632; Ask</span>
+            </div>
+          </div>
+          <canvas id="go-cal-canvas" style="width:100%;height:200px"></canvas>
+        </div>
+        <div class="chart-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="table-title">Spread Bid/Ask — évolution (€/MWh)</span>
+          </div>
+          <canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas>
+        </div>
+      </div>
+
+      <!-- Table forward = Streamlit dataframe -->
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">GO by Calendar Year — Bid / Ask (€/MWh)</span><span class="source-badge">Commerg · EEX</span></div>
-        <table><thead><tr><th>Product</th><th>Cal-25 Bid</th><th>Cal-25 Ask</th><th>Cal-26 Bid</th><th>Cal-26 Ask</th><th>Cal-27 Bid</th><th>Cal-27 Ask</th><th>Spread</th><th>WoW</th></tr></thead>
+        <div class="table-header">
+          <span class="table-title">GO by Calendar Year — Bid / Ask (€/MWh)</span>
+          <span class="source-badge">Commerg · EEX</span>
+        </div>
+        <table><thead><tr>
+          <th>Produit</th>
+          <th>Cal-25 Bid</th><th>Cal-25 Ask</th>
+          <th>Cal-26 Bid</th><th>Cal-26 Ask</th>
+          <th>Cal-27 Bid</th><th>Cal-27 Ask</th>
+          <th>Cal-28 Bid</th><th>Cal-28 Ask</th>
+          <th>Spread</th><th>WoW</th>
+        </tr></thead>
         <tbody id="go-fwd-tbody"></tbody></table>
       </div>
     </div>
@@ -1223,16 +1284,46 @@
     <!-- GO HISTORY -->
     <div class="page" id="page-gohist">
       <div class="page-header">
-        <div><div class="page-title">GO Historical Prices</div><div class="page-subtitle">Weekly mid-price 2022–2026 · Commerg + EEX</div></div>
+        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price 2022–2026 · Commerg + EEX · toutes technologies</div></div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="go-hist-filter">
-        <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
-        <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
-        <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
-        <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
-        <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
+
+      <!-- Filtres produit + période -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;gap:5px" id="go-hist-filter">
+          <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
+          <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
+          <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
+          <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
+          <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
+        </div>
+        <div style="display:flex;gap:5px;margin-left:auto" id="go-hist-period">
+          <button class="day-tab" onclick="setGoHistPeriod(52,this)">1 an</button>
+          <button class="day-tab active" onclick="setGoHistPeriod(130,this)">2.5 ans</button>
+          <button class="day-tab" onclick="setGoHistPeriod(208,this)">4 ans</button>
+        </div>
       </div>
-      <div class="chart-container"><canvas id="go-hist-canvas" style="width:100%;height:230px"></canvas></div>
+
+      <!-- Chart historique principal = chart_go_price_indications multi-produit -->
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title">Prix indicatifs hebdomadaires — Mid price (€/MWh)</span>
+          <span class="source-badge">Commerg weekly assessment</span>
+        </div>
+        <canvas id="go-hist-canvas" style="width:100%;height:240px"></canvas>
+      </div>
+
+      <!-- Chart YoY delta -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart-container">
+          <div class="table-title" style="margin-bottom:10px">Delta semaine sur semaine (€/MWh)</div>
+          <canvas id="go-wow-canvas" style="width:100%;height:180px"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="table-title" style="margin-bottom:10px">Distribution des prix — boites (€/MWh)</div>
+          <canvas id="go-box-canvas" style="width:100%;height:180px"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- WEATHER CITIES -->
@@ -2087,7 +2178,7 @@ const PAGE_LOADERS = {
   euafwd: drawEUAFwd,
   spark: renderSpark,
   goprices: renderGO,
-  gohist: drawGoHist,
+  gohist: () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
   wxcities: loadWeather,
   wxhdd: renderHDD,
 };
@@ -2376,76 +2467,400 @@ function renderSpark() {
   }).join('');
 }
 
-// ── GO PRICES
+// ── GO DATA
+const GO_SERIES = {
+  renewable: {l:'GO AIB Renewable', c:'#a78bfa', b25:.46,a25:.49,b26:.45,a26:.48,b27:.42,a27:.45,b28:.40,a28:.43,d:-.015},
+  wind:      {l:'GO AIB Wind',      c:'#60a5fa', b25:.52,a25:.56,b26:.51,a26:.55,b27:.48,a27:.52,b28:.45,a28:.49,d:-.020},
+  solar:     {l:'GO AIB Solar',     c:'#f59e0b', b25:.39,a25:.42,b26:.38,a26:.41,b27:.35,a27:.38,b28:.33,a28:.36,d:-.010},
+  hydro:     {l:'GO AIB Hydro',     c:'#34d399', b25:.50,a25:.54,b26:.49,a26:.53,b27:.46,a27:.50,b28:.44,a28:.48,d:-.020},
+  ireland:   {l:'GO Ireland Wind',  c:'#f472b6', b25:.28,a25:.32,b26:.27,a26:.31,b27:.25,a27:.29,b28:.23,a28:.27,d:-.010},
+};
+
+// Generate weekly history — realistic Commerg-style data (2022-Q3 → 2026-Q2)
+function goGenHistory(series, n) {
+  const out = {};
+  Object.entries(series).forEach(([k,s]) => {
+    const mid = (s.b26 + s.a26) / 2;
+    // Price started higher in 2022 (~1.2€) collapsed to current ~0.45€
+    const data = Array.from({length:n}, (_,i) => {
+      const pct = i / (n-1);
+      const baseLevel = 1.2 - pct * (1.2 - mid) + 0.05 * Math.sin(i/12*Math.PI);
+      const noise = (Math.random()-.5) * 0.04;
+      return Math.max(0.05, baseLevel + noise);
+    });
+    out[k] = { ...s, data };
+  });
+  return out;
+}
+let GO_HISTORY = null;
+let goHistPeriod = 130;
+let goHistFilter = 'all';
+let goProd = 'GO AIB Renewable';
+
+function getGOHistory() {
+  if (!GO_HISTORY) GO_HISTORY = goGenHistory(GO_SERIES, 208);
+  return GO_HISTORY;
+}
+
+// ── GO PRICES PAGE (= chart_go_price_indications + chart_go_cal1 + go_kpi)
 function renderGO() {
-  document.getElementById('go-cards').innerHTML=GO_CURRENT.map(g=>`
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:11px 13px">
-      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px">GO AIB ${g.tech}</div>
-      <div style="font-size:9px;color:var(--text3);margin-bottom:7px">${g.cal} · AIB market</div>
-      <div style="display:flex;gap:12px;align-items:baseline">
-        <div><div style="font-size:9px;color:var(--text3)">BID</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--up)">${g.bid.toFixed(3)} €</div></div>
-        <div><div style="font-size:9px;color:var(--text3)">ASK</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--down)">${g.ask.toFixed(3)} €</div></div>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:3px">Spread: ${(g.ask-g.bid).toFixed(3)} €/MWh</div>
-      <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:4px;color:${g.delta>=0?'var(--up)':'var(--down)'}">${g.delta>=0?'▲':'▼'}${Math.abs(g.delta).toFixed(3)} WoW</div>
-    </div>`).join('');
-  document.getElementById('go-fwd-tbody').innerHTML=GO_FWD.map(g=>`<tr>
-    <td style="font-weight:500">${g.p}</td>
-    <td class="up">${g.b25.toFixed(3)}</td><td class="down">${g.a25.toFixed(3)}</td>
-    <td class="up">${g.b26.toFixed(3)}</td><td class="down">${g.a26.toFixed(3)}</td>
-    <td class="up">${g.b27.toFixed(3)}</td><td class="down">${g.a27.toFixed(3)}</td>
-    <td style="color:var(--text3)">${((g.a26-g.b26)/2*1000).toFixed(0)}m€</td>
-    <td class="${g.d>=0?'up':'down'}">${g.d>=0?'+':''}${g.d.toFixed(3)}</td>
+  renderGOKPIs();
+  renderGOFwdTable();
+  drawGoIndicChart();
+  drawGoCalChart();
+  drawGoSpreadChart();
+}
+
+function setGoProd(prod, btn) {
+  goProd = prod;
+  document.querySelectorAll('#go-prod-tabs .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('go-indic-title').textContent = prod + ' — Prix indicatifs hebdo (€/MWh)';
+  renderGOKPIs();
+  drawGoIndicChart();
+  drawGoCalChart();
+  drawGoSpreadChart();
+}
+
+function renderGOKPIs() {
+  const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
+  const s = GO_SERIES[key];
+  const mid = (s.b26 + s.a26) / 2;
+  const spread = s.a26 - s.b26;
+  const strip = document.getElementById('go-kpi-strip');
+  if (!strip) return;
+  strip.innerHTML = [
+    {l:'Dernier Bid', v:s.b26.toFixed(4)+' €', sub:'Cal-26', cls:'up'},
+    {l:'Dernier Ask', v:s.a26.toFixed(4)+' €', sub:'Cal-26', cls:'down'},
+    {l:'Mid Price',   v:mid.toFixed(4)+' €',   sub:'Cal-26', cls:''},
+    {l:'Delta WoW',   v:(s.d>=0?'+':'')+s.d.toFixed(4)+' €', sub:'vs semaine préc.', cls:s.d>=0?'up':'down'},
+  ].map(k => `<div class="kpi-card">
+    <div class="kpi-label">${k.l}</div>
+    <div class="kpi-value ${k.cls}" style="font-size:17px">${k.v}</div>
+    <div class="kpi-chg" style="color:var(--text3)">${k.sub}</div>
+  </div>`).join('');
+}
+
+// chart_go_price_indications : courbe bid/ask + zone entre les deux
+function drawGoIndicChart() {
+  const canvas = document.getElementById('go-indic-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 220;
+  const w = canvas.width, h = canvas.height;
+  const hist = getGOHistory();
+  const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
+  const s = GO_SERIES[key];
+  const n = goHistPeriod;
+  const rawMid = hist[key].data.slice(-n);
+  // Bid = mid - half spread, Ask = mid + half spread (slightly variable)
+  const halfSp = (s.a26 - s.b26) / 2;
+  const bids = rawMid.map(v => Math.max(0.01, v - halfSp * (0.9 + Math.random()*.2)));
+  const asks = rawMid.map(v => v + halfSp * (0.9 + Math.random()*.2));
+  const mids = rawMid;
+
+  const mn = Math.min(...bids) - 0.02, mx = Math.max(...asks) + 0.02;
+  const tx = i => (i/(n-1))*(w-50)+50;
+  const ty = v => h-18-((v-mn)/(mx-mn))*(h-28);
+  ctx.clearRect(0,0,w,h);
+
+  // Grid
+  const steps = 5;
+  for (let i=0; i<=steps; i++) {
+    const v = mn + i*(mx-mn)/steps;
+    const y = ty(v);
+    ctx.strokeStyle='rgba(26,45,63,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(w,y); ctx.stroke();
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3)+'€', 47, y+3);
+  }
+
+  // Bid/Ask shaded area
+  ctx.beginPath();
+  ctx.moveTo(tx(0), ty(bids[0]));
+  bids.forEach((v,i) => { if(i>0) ctx.lineTo(tx(i), ty(v)); });
+  asks.slice().reverse().forEach((v,i) => { ctx.lineTo(tx(n-1-i), ty(v)); });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(96,165,250,.08)';
+  ctx.fill();
+
+  // Ask line
+  ctx.beginPath(); ctx.moveTo(tx(0), ty(asks[0]));
+  asks.forEach((v,i) => { if(i>0) ctx.lineTo(tx(i), ty(v)); });
+  ctx.strokeStyle = '#f05060'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Bid line
+  ctx.beginPath(); ctx.moveTo(tx(0), ty(bids[0]));
+  bids.forEach((v,i) => { if(i>0) ctx.lineTo(tx(i), ty(v)); });
+  ctx.strokeStyle = '#10b981'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Mid dotted
+  ctx.beginPath(); ctx.moveTo(tx(0), ty(mids[0]));
+  mids.forEach((v,i) => { if(i>0) ctx.lineTo(tx(i), ty(v)); });
+  ctx.strokeStyle = 'rgba(122,154,184,.5)'; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X labels quarterly
+  const quarters = ['Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26'];
+  const nQ = Math.min(quarters.length, Math.floor(n/13));
+  for (let i=0; i<nQ; i++) {
+    const xi = Math.round(i*(n-1)/(nQ-1||1));
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(quarters[quarters.length-nQ+i], tx(xi), h-3);
+  }
+
+  // Latest value label
+  const lastAsk = asks[n-1];
+  ctx.fillStyle='#f05060'; ctx.font='10px IBM Plex Mono'; ctx.textAlign='left';
+  ctx.fillText(lastAsk.toFixed(3)+'€', tx(n-1)+4, ty(lastAsk));
+  const lastBid = bids[n-1];
+  ctx.fillStyle='#10b981';
+  ctx.fillText(lastBid.toFixed(3)+'€', tx(n-1)+4, ty(lastBid));
+}
+
+// chart_go_cal1 : grouped bar forward curve Cal25→28
+function drawGoCalChart() {
+  const canvas = document.getElementById('go-cal-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 200;
+  const w = canvas.width, h = canvas.height;
+  const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
+  const s = GO_SERIES[key];
+  const cals = [
+    {label:'Cal-25', bid:s.b25, ask:s.a25},
+    {label:'Cal-26', bid:s.b26, ask:s.a26},
+    {label:'Cal-27', bid:s.b27, ask:s.a27},
+    {label:'Cal-28', bid:s.b28, ask:s.a28},
+  ];
+  ctx.clearRect(0,0,w,h);
+  const mn = 0, mx = Math.max(...cals.map(c=>c.ask)) * 1.15;
+  const ty = v => h-30-((v-mn)/(mx-mn))*(h-45);
+  const barW = (w-50) / cals.length;
+  const bw = barW * 0.28;
+
+  // Grid
+  [.25,.5,.75,1].forEach(p => {
+    const v = p*mx, y = ty(v);
+    ctx.strokeStyle='rgba(26,45,63,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(w,y); ctx.stroke();
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3), 47, y+3);
+  });
+
+  cals.forEach((c,i) => {
+    const cx = 50 + i*barW + barW/2;
+    const bidH = (c.bid/mx)*(h-45);
+    const askH = (c.ask/mx)*(h-45);
+
+    // Bid bar
+    ctx.fillStyle = 'rgba(16,185,129,.8)';
+    ctx.fillRect(cx - bw - 2, h-30-bidH, bw, bidH);
+    // Ask bar
+    ctx.fillStyle = 'rgba(240,80,96,.8)';
+    ctx.fillRect(cx + 2, h-30-askH, bw, askH);
+
+    // Value labels
+    ctx.fillStyle='#10b981'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(c.bid.toFixed(3), cx-bw/2-2, ty(c.bid)-3);
+    ctx.fillStyle='#f05060';
+    ctx.fillText(c.ask.toFixed(3), cx+bw/2+2, ty(c.ask)-3);
+
+    // X label
+    ctx.fillStyle='#7a9ab8'; ctx.font='10px IBM Plex Sans'; ctx.textAlign='center';
+    ctx.fillText(c.label, cx, h-12);
+  });
+}
+
+// Spread chart
+function drawGoSpreadChart() {
+  const canvas = document.getElementById('go-spread-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 200;
+  const w = canvas.width, h = canvas.height;
+  const hist = getGOHistory();
+  const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
+  const s = GO_SERIES[key];
+  const n = Math.min(goHistPeriod, hist[key].data.length);
+  const halfSp = (s.a26 - s.b26) / 2;
+  const spreads = hist[key].data.slice(-n).map(() => halfSp*2*(0.7 + Math.random()*.6));
+  drawLineSimple(ctx, w, h, spreads, '#f59e0b', 0, Math.max(...spreads)*1.1);
+}
+
+function renderGOFwdTable() {
+  const fwd = document.getElementById('go-fwd-tbody');
+  if (!fwd) return;
+  fwd.innerHTML = Object.values(GO_SERIES).map(s => `<tr>
+    <td style="font-weight:500">${s.l}</td>
+    <td class="up">${s.b25.toFixed(3)}</td><td class="down">${s.a25.toFixed(3)}</td>
+    <td class="up">${s.b26.toFixed(3)}</td><td class="down">${s.a26.toFixed(3)}</td>
+    <td class="up">${s.b27.toFixed(3)}</td><td class="down">${s.a27.toFixed(3)}</td>
+    <td class="up">${s.b28.toFixed(3)}</td><td class="down">${s.a28.toFixed(3)}</td>
+    <td style="color:var(--text3)">${((s.a26-s.b26)*1000).toFixed(1)}m€</td>
+    <td class="${s.d>=0?'up':'down'}">${s.d>=0?'+':''}${s.d.toFixed(3)}</td>
   </tr>`).join('');
 }
+
 function loadGoCSV(input) {
   alert('CSV parser to be wired to your Commerg format.\nDrop a CSV with columns: Date, Product, Year, Bid, Ask');
 }
 
-// ── GO HISTORY
-let goHistFilter = 'all';
+// ── GO HISTORY PAGE
 function filterGoH(f, btn) {
   goHistFilter = f;
   document.querySelectorAll('#go-hist-filter .day-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  drawGoHist();
+  drawGoHist(); drawGoWoW(); drawGoBox();
+}
+function setGoHistPeriod(n, btn) {
+  goHistPeriod = n;
+  document.querySelectorAll('#go-hist-period .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawGoHist(); drawGoWoW(); drawGoBox();
 }
 function drawGoHist() {
-  const canvas=document.getElementById('go-hist-canvas');
-  if(!canvas||!canvas.offsetWidth)return;
-  const ctx=canvas.getContext('2d');canvas.width=canvas.offsetWidth;canvas.height=230;
-  const w=canvas.width,h=canvas.height,n=130;ctx.clearRect(0,0,w,h);
-  const series={
-    wind:{l:'Wind',c:'#60a5fa',d:Array.from({length:n},(_,i)=>.5+.15*Math.sin(i/20)+.1*Math.sin(i/6)+(Math.random()-.5)*.05)},
-    solar:{l:'Solar',c:'#f59e0b',d:Array.from({length:n},(_,i)=>.38+.1*Math.sin(i/18)+.08*Math.sin(i/5)+(Math.random()-.5)*.04)},
-    hydro:{l:'Hydro',c:'#34d399',d:Array.from({length:n},(_,i)=>.48+.12*Math.sin(i/22)+.09*Math.sin(i/7)+(Math.random()-.5)*.04)},
-    renewable:{l:'Renewable',c:'#a78bfa',d:Array.from({length:n},(_,i)=>.44+.11*Math.sin(i/19)+.08*Math.sin(i/6)+(Math.random()-.5)*.04)},
-  };
-  const active=goHistFilter==='all'?Object.values(series):[series[goHistFilter]].filter(Boolean);
-  const allD=active.flatMap(s=>s.d);
-  const mn=Math.min(...allD)-.05,mx=Math.max(...allD)+.05,rng=mx-mn||1;
-  const tx=i=>(i/(n-1))*(w-44)+44,ty=v=>h-18-((v-mn)/rng)*(h-28);
-  [.2,.4,.6,.8,1].forEach(p=>{
-    const rv=mn+p*rng,y=ty(rv);
-    ctx.strokeStyle='rgba(26,45,63,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(44,y);ctx.lineTo(w,y);ctx.stroke();
-    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';ctx.fillText(rv.toFixed(2)+'€',42,y+3);
+  const canvas = document.getElementById('go-hist-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 240;
+  const w = canvas.width, h = canvas.height;
+  const hist = getGOHistory();
+  const n = goHistPeriod;
+  ctx.clearRect(0,0,w,h);
+
+  const filter = goHistFilter;
+  const active = filter === 'all'
+    ? Object.entries(hist)
+    : Object.entries(hist).filter(([k]) => k === filter || GO_SERIES[k]?.l.toLowerCase().includes(filter));
+
+  const allD = active.flatMap(([,s]) => s.data.slice(-n));
+  const mn = Math.min(...allD) - 0.02, mx = Math.max(...allD) + 0.02;
+  const tx = i => (i/(n-1))*(w-50)+50;
+  const ty = v => h-18-((v-mn)/(mx-mn))*(h-28);
+
+  // Grid
+  [.2,.4,.6,.8,1].forEach(p => {
+    const v = mn+p*(mx-mn), y = ty(v);
+    ctx.strokeStyle='rgba(26,45,63,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(w,y); ctx.stroke();
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3)+'€', 47, y+3);
   });
-  active.forEach(s=>{
-    ctx.beginPath();ctx.moveTo(tx(0),ty(s.d[0]));
-    s.d.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
-    ctx.strokeStyle=s.c;ctx.lineWidth=1.5;ctx.stroke();
+
+  // Lines
+  active.forEach(([k, s]) => {
+    const data = s.data.slice(-n);
+    ctx.beginPath(); ctx.moveTo(tx(0), ty(data[0]));
+    data.forEach((v,i) => { if(i>0) ctx.lineTo(tx(i), ty(v)); });
+    ctx.strokeStyle = GO_SERIES[k]?.c || '#888'; ctx.lineWidth = 1.8; ctx.stroke();
+    // End label
+    ctx.fillStyle = GO_SERIES[k]?.c || '#888'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='left';
+    ctx.fillText(GO_SERIES[k]?.l.replace('GO AIB ','').replace('GO ',''), tx(n-1)+4, ty(data[n-1]));
   });
-  ['Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26'].forEach((q,i)=>{
-    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';
-    ctx.fillText(q,tx(Math.round(i*(n-1)/11)),h-3);
-  });
-  if(goHistFilter==='all'){
-    Object.values(series).forEach((s,i)=>{
-      ctx.fillStyle=s.c;ctx.fillRect(50+i*82,10,8,2);
-      ctx.font='10px IBM Plex Sans';ctx.textAlign='left';ctx.fillText(s.l,62+i*82,13);
+
+  // X labels
+  const quarters = ['Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26'];
+  const nQ = Math.min(quarters.length, Math.floor(n/12));
+  for (let i=0; i<nQ; i++) {
+    const xi = Math.round(i*(n-1)/(nQ-1||1));
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='center';
+    ctx.fillText(quarters[quarters.length-nQ+i], tx(xi), h-3);
+  }
+
+  // Legend (all mode)
+  if (filter === 'all') {
+    active.forEach(([k,s],i) => {
+      ctx.fillStyle = GO_SERIES[k]?.c || '#888';
+      ctx.fillRect(54+i*85, 10, 10, 2);
+      ctx.font='9px IBM Plex Sans'; ctx.textAlign='left';
+      ctx.fillText(GO_SERIES[k]?.l.replace('GO AIB ','').replace('GO ',''), 67+i*85, 13);
     });
   }
 }
+
+// WoW delta bar chart
+function drawGoWoW() {
+  const canvas = document.getElementById('go-wow-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 180;
+  const w = canvas.width, h = canvas.height;
+  const hist = getGOHistory();
+  const n = Math.min(goHistPeriod, 52);
+  const key = goHistFilter === 'all' ? 'renewable' : (goHistFilter in hist ? goHistFilter : 'renewable');
+  const data = hist[key].data.slice(-n);
+  const deltas = data.slice(1).map((v,i) => v - data[i]);
+  const mn = Math.min(...deltas) - .002, mx = Math.max(...deltas) + .002;
+  const tx = i => (i/(deltas.length-1))*(w-44)+44;
+  const ty = v => h-18-((v-mn)/(mx-mn))*(h-28);
+  const zy = ty(0);
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(61,90,122,.6)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(44,zy); ctx.lineTo(w,zy); ctx.stroke();
+  deltas.forEach((v,i) => {
+    const x=tx(i), bw=Math.max(1,(w-44)/deltas.length-1);
+    ctx.fillStyle = v>=0 ? 'rgba(16,185,129,.7)' : 'rgba(240,80,96,.7)';
+    ctx.fillRect(x-bw/2, v>=0?ty(v):zy, bw, Math.abs(ty(0)-ty(v)));
+  });
+  [mn, 0, mx].forEach(v => {
+    const y=ty(v);
+    ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3), 42, y+3);
+  });
+}
+
+// Box plot approximation (min/q1/median/q3/max per quarter)
+function drawGoBox() {
+  const canvas = document.getElementById('go-box-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 180;
+  const w = canvas.width, h = canvas.height;
+  const hist = getGOHistory();
+  const key = goHistFilter === 'all' ? 'renewable' : (goHistFilter in hist ? goHistFilter : 'renewable');
+  const data = hist[key].data.slice(-goHistPeriod);
+  // Split into ~8 quartiles
+  const chunks = 8, sz = Math.floor(data.length/chunks);
+  const boxes = Array.from({length:chunks}, (_,i) => {
+    const chunk = data.slice(i*sz, (i+1)*sz).sort((a,b)=>a-b);
+    const n = chunk.length;
+    return { mn:chunk[0], q1:chunk[Math.floor(n*.25)], med:chunk[Math.floor(n*.5)], q3:chunk[Math.floor(n*.75)], mx:chunk[n-1] };
+  });
+  ctx.clearRect(0,0,w,h);
+  const allV = boxes.flatMap(b=>[b.mn,b.mx]);
+  const mn = Math.min(...allV)-.01, mx = Math.max(...allV)+.01;
+  const tx = i => (i/(chunks-1))*(w-50)+50;
+  const ty = v => h-18-((v-mn)/(mx-mn))*(h-28);
+  const bw = (w-50)/(chunks*2);
+
+  [.25,.5,.75,1].forEach(p => {
+    const v=mn+p*(mx-mn),y=ty(v);
+    ctx.strokeStyle='rgba(26,45,63,.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(50,y);ctx.lineTo(w,y);ctx.stroke();
+    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';
+    ctx.fillText(v.toFixed(3),47,y+3);
+  });
+
+  const col = GO_SERIES[key]?.c || '#60a5fa';
+  boxes.forEach((b,i) => {
+    const x = tx(i);
+    // Whiskers
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, ty(b.mn)); ctx.lineTo(x, ty(b.mx)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-bw/2,ty(b.mn)); ctx.lineTo(x+bw/2,ty(b.mn)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-bw/2,ty(b.mx)); ctx.lineTo(x+bw/2,ty(b.mx)); ctx.stroke();
+    // Box
+    ctx.fillStyle = col+'33';
+    ctx.fillRect(x-bw/2, ty(b.q3), bw, ty(b.q1)-ty(b.q3));
+    ctx.strokeRect(x-bw/2, ty(b.q3), bw, ty(b.q1)-ty(b.q3));
+    // Median
+    ctx.strokeStyle = col; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x-bw/2,ty(b.med)); ctx.lineTo(x+bw/2,ty(b.med)); ctx.stroke();
+  });
+}
+
+
 
 // ── WEATHER
 async function loadWeather() {
