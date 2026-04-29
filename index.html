@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerDesk — European Energy Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e13;
+    --bg2: #0f1419;
+    --bg3: #151c24;
+    --bg4: #1a2332;
+    --border: #1e2d3d;
+    --border2: #243447;
+    --accent: #00d4a8;
+    --accent2: #00b894;
+    --accent-dim: rgba(0,212,168,0.12);
+    --up: #00d4a8;
+    --down: #ff4d6d;
+    --warn: #f59e0b;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #4a6280;
+    --sidebar-w: 220px;
+    --ticker-h: 36px;
+    --topbar-h: 52px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── TICKER ── */
+  .ticker {
+    height: var(--ticker-h);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+  }
+  .ticker-label {
+    padding: 0 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    white-space: nowrap;
+    border-right: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: var(--bg2);
+    z-index: 2;
+  }
+  .ticker-track {
+    display: flex;
+    animation: ticker-scroll 60s linear infinite;
+    gap: 0;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 18px;
+    height: var(--ticker-h);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: default;
+    font-size: 12px;
+  }
+  .ticker-item:hover { background: var(--bg3); }
+  .ticker-name { color: var(--text2); font-size: 11px; }
+  .ticker-cat { font-size: 9px; color: var(--text3); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border2); }
+  .ticker-cat.power { color: var(--accent); border-color: var(--accent-dim); }
+  .ticker-cat.gas { color: #60a5fa; border-color: rgba(96,165,250,0.2); }
+  .ticker-cat.carbon { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
+  .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: fixed;
+    top: var(--ticker-h);
+    left: 0; right: 0;
+    z-index: 99;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .logo-icon {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .topbar-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .topbar-btn {
+    padding: 5px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--text2);
+    background: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .topbar-btn:hover { background: var(--bg3); color: var(--text); }
+  .topbar-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,0.25); }
+  .topbar-btn .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-power { background: var(--accent); }
+  .dot-gas { background: #60a5fa; }
+  .dot-carbon { background: #a78bfa; }
+  .dot-storage { background: #f59e0b; }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+  .live-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,212,168,0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .live-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    height: 100vh;
+    padding-top: calc(var(--ticker-h) + var(--topbar-h));
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .sidebar-section {
+    padding: 16px 0 8px;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    padding: 0 16px 6px;
+    text-transform: uppercase;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    transition: all 0.12s;
+    position: relative;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-item:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sidebar-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--down);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .source-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .updated-badge {
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,212,168,0.2);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-label { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
+  .kpi-unit { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
+  .kpi-chg { font-size: 11px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── PRICES TABLE ── */
+  .table-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:first-child { text-align: left; }
+  thead th:hover { color: var(--text2); }
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    transition: background 0.1s;
+    cursor: default;
+  }
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr:last-child { border-bottom: none; }
+  td {
+    padding: 9px 12px;
+    font-size: 13px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  td:first-child {
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+  .country-flag { font-size: 14px; margin-right: 6px; }
+  .country-code {
+    font-size: 10px;
+    color: var(--text3);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .price-main { font-size: 13px; font-weight: 600; }
+  .neg-hrs { color: var(--warn); }
+  .sparkline-cell { padding: 0 12px; }
+  .sparkline-wrap { display: flex; align-items: center; height: 32px; }
+  canvas.spark { height: 28px; width: 80px; }
+
+  /* loading state */
+  .loading-row td { color: var(--text3); text-align: center; padding: 30px; font-size: 12px; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── GENERATION MIX ── */
+  .gen-mix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .fuel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .fuel-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .fuel-name { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .fuel-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .fuel-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); overflow: hidden; }
+  .fuel-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .fuel-nuclear { background: #a78bfa; }
+  .fuel-solar { background: #f59e0b; }
+  .fuel-wind { background: #60a5fa; }
+  .fuel-hydro { background: #34d399; }
+  .fuel-fossil { background: #f87171; }
+  .fuel-other { background: var(--text3); }
+
+  /* chart container */
+  .chart-container {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-area { position: relative; height: 200px; overflow: hidden; }
+  .chart-svg { width: 100%; height: 100%; }
+
+  /* ── NEWS ── */
+  .news-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--bg2);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,0.4); }
+
+  .news-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .news-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: block;
+  }
+  .news-card:hover { border-color: var(--border2); background: var(--bg3); transform: translateY(-1px); }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .news-source {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .news-source.rte { color: #60a5fa; background: rgba(96,165,250,0.1); }
+  .news-source.cre { color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .news-source.entsoe { color: var(--accent); }
+  .news-source.acer { color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .news-source.google { color: var(--text2); background: var(--bg3); }
+  .news-time { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .news-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+  .news-snippet { font-size: 12px; color: var(--text2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text3);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  /* ── CROSS-BORDER ── */
+  .cb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* ── OVERVIEW ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── CONVERTER ── */
+  .converter-wrap {
+    max-width: 600px;
+  }
+  .converter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .conv-tab {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .conv-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .conv-input-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .conv-input {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    background: none;
+    border: none;
+    outline: none;
+    width: 100%;
+    letter-spacing: -0.02em;
+  }
+  .conv-input::placeholder { color: var(--text3); }
+  .conv-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .conv-result {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .conv-result:hover { border-color: var(--accent); }
+  .conv-result-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .conv-result-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .conv-result-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    font-size: 11px;
+    color: var(--text3);
+    padding: 10px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* ── SCROLLBAR GLOBAL ── */
+  html { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1200px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .news-grid { grid-template-columns: 1fr; }
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  /* tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* country selector */
+  .country-select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+  .country-select option { background: var(--bg3); }
+
+  /* day tabs */
+  .day-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .day-tab {
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .day-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .day-tab:hover:not(.active) { border-color: var(--text3); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-label">⚡ LIVE</div>
+  <div class="ticker-track" id="ticker-track">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:20px">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">PowerDesk</span>
+    </div>
+    <div class="topbar-nav">
+      <button class="topbar-btn active" onclick="switchSection('power')"><span class="dot dot-power"></span> Power</button>
+      <button class="topbar-btn" onclick="switchSection('gas')"><span class="dot dot-gas"></span> Gas</button>
+      <button class="topbar-btn" onclick="switchSection('carbon')"><span class="dot dot-carbon"></span> Carbon</button>
+      <button class="topbar-btn" onclick="switchSection('storage')"><span class="dot dot-storage"></span> Storage</button>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
+    <div class="clock" id="clock">--:--:-- CET</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Power</div>
+      <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
+      </div>
+      <div class="sidebar-item" onclick="showPage('genmix')" id="nav-genmix">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Generation Mix
+      </div>
+      <div class="sidebar-item" onclick="showPage('renewables')" id="nav-renewables">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>Renewables
+      </div>
+      <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear &amp; Hydro
+      </div>
+      <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
+      </div>
+      <div class="sidebar-item" onclick="showPage('crossborder')" id="nav-crossborder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Cross-Border Flows
+      </div>
+      <div class="sidebar-item" onclick="showPage('imbalance')" id="nav-imbalance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M5 12l7-7 7 7"/></svg>Imbalance Prices
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Carbon</div>
+      <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
+      </div>
+      <div class="sidebar-item" onclick="showPage('euafwd')" id="nav-euafwd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curve
+      </div>
+      <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Guarantees of Origin</div>
+      <div class="sidebar-item" onclick="showPage('goprices')" id="nav-goprices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>GO Prices
+      </div>
+      <div class="sidebar-item" onclick="showPage('gohist')" id="nav-gohist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Historical
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Meteo France</div>
+      <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
+      </div>
+      <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Intelligence</div>
+      <div class="sidebar-item" onclick="showPage('news')" id="nav-news">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
+      </div>
+      <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Tools</div>
+      <div class="sidebar-item" onclick="showPage('converter')" id="nav-converter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Converter
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ── PAGE: PRICES ── -->
+    <div class="page active" id="page-prices">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Power Day-Ahead Prices</div>
+          <div class="page-subtitle">32 ENTSO-E bidding zones · Today's settlement prices</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="source-badge">ENTSO-E Transparency</span>
+          <span class="updated-badge" id="prices-updated">Loading...</span>
+        </div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="kpi-strip" id="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-label">FR Day-Ahead</div>
+          <div class="kpi-value up" id="kpi-fr">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-chg">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">DE Day-Ahead</div>
+          <div class="kpi-value" id="kpi-de">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-de-chg">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">EU Average</div>
+          <div class="kpi-value" id="kpi-avg">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-avg-chg">Loading...</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">EU Highest</div>
+          <div class="kpi-value down" id="kpi-max">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-max-zone">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">EU Lowest</div>
+          <div class="kpi-value up" id="kpi-min">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-min-zone">--</div>
+        </div>
+      </div>
+
+      <!-- Prices Table -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">All Bidding Zones</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:11px;color:var(--text3)">Sort by price ↓</span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Country / Zone</th>
+              <th>Today €/MWh</th>
+              <th>vs Yday</th>
+              <th>Min Hour</th>
+              <th>Max Hour</th>
+              <th>Neg Hrs</th>
+              <th>Spark €/MWh</th>
+              <th style="text-align:left;padding-left:20px">Shape</th>
+            </tr>
+          </thead>
+          <tbody id="prices-tbody">
+            <tr class="loading-row"><td colspan="8"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
+          </tbody>
+        </table>
+        <div class="status-bar" style="padding:10px 16px">
+          <span id="prices-footer">Prices: ENTSO-E Transparency · Day-ahead market settlement · Updated daily after 13:00 CET</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: GENERATION MIX ── -->
+    <div class="page" id="page-genmix">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Generation Mix</div>
+          <div class="page-subtitle">Actual generation by fuel type · France (FR)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="genmix-country" onchange="loadGenMix()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="PT">Portugal (PT)</option>
+            <option value="IT_NORD">Italy North (IT)</option>
+          </select>
+          <span class="updated-badge" id="genmix-updated">Loading...</span>
+        </div>
+      </div>
+
+      <div class="fuel-grid" id="fuel-grid">
+        <div class="kpi-card"><div class="kpi-label">Loading...</div></div>
+      </div>
+
+      <div class="chart-container">
+        <div class="table-header" style="padding:0 0 12px;border:none">
+          <span class="table-title" id="genmix-chart-title">Hourly Generation Mix (MW)</span>
+          <span class="source-badge">ENTSO-E A75</span>
+        </div>
+        <div class="chart-area">
+          <canvas id="genmix-canvas" style="width:100%;height:200px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: CROSS-BORDER ── -->
+    <div class="page" id="page-crossborder">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cross-Border Flows</div>
+          <div class="page-subtitle">Physical flows between bidding zones · ENTSO-E A11</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="ES">Spain (ES)</option>
+          </select>
+          <span class="updated-badge" id="cb-updated">Loading...</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title" id="cb-title">France — Cross-Border Flows</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Partner</th>
+              <th>Imports (MW)</th>
+              <th>Exports (MW)</th>
+              <th>Net (MW)</th>
+              <th>Direction</th>
+            </tr>
+          </thead>
+          <tbody id="cb-tbody">
+            <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Fetching flows...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: LOAD ── -->
+    <div class="page" id="page-load">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Load & Demand</div>
+          <div class="page-subtitle">Actual and forecast load · ENTSO-E</div>
+        </div>
+        <span class="updated-badge" id="load-updated">Loading...</span>
+      </div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi-card">
+          <div class="kpi-label">FR Current Load</div>
+          <div class="kpi-value" id="load-fr-now">--<span class="kpi-unit">GW</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">FR Peak Today</div>
+          <div class="kpi-value down" id="load-fr-peak">--<span class="kpi-unit">GW</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">FR vs Yesterday</div>
+          <div class="kpi-value" id="load-fr-chg">--</div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <div class="table-header" style="padding:0 0 12px;border:none">
+          <span class="table-title">France — Hourly Load (MW)</span>
+        </div>
+        <canvas id="load-canvas" style="width:100%;height:200px"></canvas>
+      </div>
+    </div>
+
+    <!-- ── PAGE: NEWS ── -->
+    <div class="page" id="page-news">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Energy News</div>
+          <div class="page-subtitle">Live feed from ENTSO-E, RTE, CRE, ACER and European energy press</div>
+        </div>
+        <span class="updated-badge" id="news-updated">Loading...</span>
+      </div>
+
+      <div class="news-filters">
+        <button class="filter-btn active" onclick="filterNews('all', this)">All</button>
+        <button class="filter-btn" onclick="filterNews('power', this)">⚡ Power</button>
+        <button class="filter-btn" onclick="filterNews('gas', this)">🔵 Gas</button>
+        <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
+        <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
+        <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
+      </div>
+
+      <div class="news-grid" id="news-grid">
+        <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: OVERVIEW ── -->
+    <div class="page" id="page-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Market Overview</div>
+          <div class="page-subtitle">European energy market snapshot</div>
+        </div>
+        <span class="live-badge"><div class="live-dot"></div> LIVE</span>
+      </div>
+      <div class="overview-grid">
+        <div>
+          <div class="table-wrap" style="margin-bottom:16px">
+            <div class="table-header"><span class="table-title">Key Prices</span></div>
+            <table>
+              <tbody id="overview-prices">
+                <tr class="loading-row"><td colspan="3"><span class="spinner"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="chart-container">
+            <div class="table-title" style="margin-bottom:12px">Market Status</div>
+            <div id="market-status" style="font-size:13px;color:var(--text2);line-height:1.8">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: CONVERTER ── -->
+    <div class="page" id="page-converter">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Energy Converter</div>
+          <div class="page-subtitle">MW ↔ GW · MWh ↔ GWh ↔ TWh · Capacity to annual energy</div>
+        </div>
+      </div>
+      <div class="converter-wrap">
+        <div class="converter-tabs" id="conv-tabs">
+          <button class="conv-tab active" onclick="setConvUnit('MW', this)">MW</button>
+          <button class="conv-tab" onclick="setConvUnit('GW', this)">GW</button>
+          <button class="conv-tab" onclick="setConvUnit('MWh', this)">MWh</button>
+          <button class="conv-tab" onclick="setConvUnit('GWh', this)">GWh</button>
+          <button class="conv-tab" onclick="setConvUnit('TWh', this)">TWh</button>
+        </div>
+        <div class="conv-input-wrap">
+          <input class="conv-input" type="number" id="conv-input" placeholder="1000" oninput="updateConverter()" value="1000">
+        </div>
+        <div class="conv-results" id="conv-results"></div>
+
+        <!-- Capacity factor section -->
+        <div style="margin-top:24px">
+          <div class="table-title" style="margin-bottom:14px">Capacity → Annual Energy</div>
+          <div class="conv-input-wrap">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Capacity (MW)</div>
+                <input class="conv-input" type="number" id="cap-mw" placeholder="500" style="font-size:32px" oninput="updateCapacity()" value="500">
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Load Factor (%)</div>
+                <input class="conv-input" type="number" id="cap-lf" placeholder="35" style="font-size:32px" oninput="updateCapacity()" value="35">
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="day-tab" onclick="setLF(85, this)">Baseload (85%)</button>
+            <button class="day-tab active" onclick="setLF(35, this)">Wind (35%)</button>
+            <button class="day-tab" onclick="setLF(20, this)">Solar (20%)</button>
+            <button class="day-tab" onclick="setLF(25, this)">BESS (25%)</button>
+          </div>
+          <div class="conv-results" id="cap-results"></div>
+        </div>
+      </div>
+    </div>
+
+  
+    <!-- RENEWABLES -->
+    <div class="page" id="page-renewables">
+      <div class="page-header">
+        <div><div class="page-title">Renewables — Production, Forecast &amp; Error</div><div class="page-subtitle">Wind · Solar · ENTSO-E A69/A71 + RTE eco2mix</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="ren-country" onchange="loadRenewables()">
+            <option value="FR">France</option><option value="DE_LU">Germany</option>
+            <option value="ES">Spain</option><option value="GB">Great Britain</option>
+            <option value="BE">Belgium</option><option value="IT_NORD">Italy</option>
+          </select>
+          <span class="updated-badge" id="ren-upd">Loading...</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">Wind Now</div><div class="kpi-value up" id="ren-wind-now">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Solar Now</div><div class="kpi-value" style="color:var(--warn)" id="ren-solar-now">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Forecast Error — Wind</div><div class="kpi-value" id="ren-fe-wind">--</div><div class="kpi-chg" style="color:var(--text3)">actual vs DA forecast</div></div>
+        <div class="kpi-card"><div class="kpi-label">Forecast Error — Solar</div><div class="kpi-value" id="ren-fe-solar">--</div><div class="kpi-chg" style="color:var(--text3)">actual vs DA forecast</div></div>
+      </div>
+      <div class="day-tabs" style="margin-bottom:14px">
+        <button class="day-tab active" onclick="setRenTab('today',this)">Today actual</button>
+        <button class="day-tab" onclick="setRenTab('forecast',this)">DA Forecast J+1</button>
+        <button class="day-tab" onclick="setRenTab('error',this)">Forecast Error</button>
+        <button class="day-tab" onclick="setRenTab('history',this)">History J-7</button>
+      </div>
+      <div class="chart-container" style="margin-bottom:16px">
+        <canvas id="ren-canvas" style="width:100%;height:210px"></canvas>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px">
+          <span style="font-size:11px;color:#60a5fa">&#9472; Wind actual</span>
+          <span style="font-size:11px;color:#60a5fa;opacity:.5">&#8212; Wind forecast</span>
+          <span style="font-size:11px;color:var(--warn)">&#9472; Solar actual</span>
+          <span style="font-size:11px;color:var(--warn);opacity:.5">&#8212; Solar forecast</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Forecast Error by Hour</span><span class="source-badge">Actual vs DA forecast · ENTSO-E</span></div>
+        <table><thead><tr><th>Hour</th><th>Wind Actual</th><th>Wind Forecast</th><th>Error MW</th><th>Error %</th><th>Solar Actual</th><th>Solar Forecast</th><th>Error MW</th><th>Error %</th></tr></thead>
+        <tbody id="ren-err-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- NUCLEAR & HYDRO -->
+    <div class="page" id="page-nuclear">
+      <div class="page-header">
+        <div><div class="page-title">Nuclear &amp; Hydro</div><div class="page-subtitle">Availability, output and reservoir levels</div></div>
+        <span class="updated-badge">ENTSO-E · NVE · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">FR Nuclear Now</div><div class="kpi-value" style="color:#a78bfa">38.0<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div><div class="kpi-chg up">&#9650;67.8% vs yday</div></div>
+        <div class="kpi-card"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--text2)">61.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div><div class="kpi-chg" style="color:var(--text3)">56 reactors</div></div>
+        <div class="kpi-card"><div class="kpi-label">FR Avail. Factor</div><div class="kpi-value" style="color:var(--warn)">61.9<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">%</span></div><div class="kpi-chg" style="color:var(--text3)">vs 75% normal</div></div>
+        <div class="kpi-card"><div class="kpi-label">NO Hydro Reservoir</div><div class="kpi-value up">34.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">%</span></div><div class="kpi-chg down">&#9660;2.1% vs median</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Nuclear Weekly Availability (%)</div><canvas id="nuc-canvas" style="width:100%;height:170px"></canvas></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">NO Hydro Reservoir — 52-week history</div><canvas id="hydro-canvas" style="width:100%;height:170px"></canvas></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Active REMIT — FR Nuclear Outages</span><span class="updated-badge" style="color:var(--warn);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">3 active UMM</span></div>
+        <table><thead><tr><th>Asset</th><th>Type</th><th>Capacity</th><th>Unavail. MW</th><th>Start</th><th>End</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">FR</span>Gravelines 4</td><td>Nuclear</td><td class="up">900</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--text3)">Planned maint.</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">FR</span>Cattenom 2</td><td>Nuclear</td><td class="up">1,300</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--text3)">Scheduled refuel</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">FR</span>Paluel 1</td><td>Nuclear</td><td class="up">1,330</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- IMBALANCE -->
+    <div class="page" id="page-imbalance">
+      <div class="page-header">
+        <div><div class="page-title">Imbalance Prices</div><div class="page-subtitle">System imbalance settlement · RTE</div></div>
+        <span class="updated-badge">RTE · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">Last Price</div><div class="kpi-value down">-142.5<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/MWh</span></div><div class="kpi-chg" style="color:var(--text3)">Short system</div></div>
+        <div class="kpi-card"><div class="kpi-label">Avg Today</div><div class="kpi-value">87.3<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/MWh</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">System Position</div><div class="kpi-value down">-1,240<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">MW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Peak Price</div><div class="kpi-value" style="color:var(--warn)">+245<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/MWh</span></div></div>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Imbalance Price Intraday (€/MWh)</div><canvas id="imb-canvas" style="width:100%;height:200px"></canvas></div>
+    </div>
+
+    <!-- EUA SPOT -->
+    <div class="page" id="page-eua">
+      <div class="page-header">
+        <div><div class="page-title">EUA Carbon Allowances</div><div class="page-subtitle">EU ETS spot · ICE/EEX</div></div>
+        <span class="updated-badge">ICE · EEX · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#a78bfa">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">&#9660;0.09% vs close</div></div>
+        <div class="kpi-card"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#a78bfa">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg up">&#9650;0.32%</div></div>
+        <div class="kpi-card"><div class="kpi-label">YTD Change</div><div class="kpi-value down">-8.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">from 82.5 Jan 1</div></div>
+        <div class="kpi-card"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><canvas id="eua-spark-canvas" style="width:100%;height:160px"></canvas><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
+    </div>
+
+    <!-- EUA FORWARD -->
+    <div class="page" id="page-euafwd">
+      <div class="page-header">
+        <div><div class="page-title">EUA Forward Curve</div><div class="page-subtitle">December contracts · ICE</div></div>
+        <span class="updated-badge">ICE · Demo</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">EUA Futures — December contracts</span></div>
+        <table><thead><tr><th>Contract</th><th>Last (€/t)</th><th>Bid</th><th>Ask</th><th>Change</th><th>Chg %</th><th>Volume</th><th>OI</th></tr></thead>
+        <tbody>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
+        </tbody></table>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><canvas id="eua-fwd-canvas" style="width:100%;height:160px"></canvas></div>
+    </div>
+
+    <!-- SPARK SPREAD -->
+    <div class="page" id="page-spark">
+      <div class="page-header">
+        <div><div class="page-title">Clean Spark Spread</div><div class="page-subtitle">DA price − gas cost − carbon cost · 49% CCGT efficiency</div></div>
+        <span class="updated-badge">ENTSO-E · TTF · EUA</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Clean Spark Spread — All Zones (€/MWh)</span><span class="source-badge">TTF D+1: 45.14 · EUA: 74.09 · Efficiency: 49%</span></div>
+        <table><thead><tr><th>Zone</th><th>DA Price</th><th>Gas Cost</th><th>Carbon Cost</th><th>CSS</th><th>vs Yday</th></tr></thead>
+        <tbody id="spark-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- GO PRICES -->
+    <div class="page" id="page-goprices">
+      <div class="page-header">
+        <div><div class="page-title">Guarantees of Origin — Prices</div><div class="page-subtitle">AIB market · Commerg weekly assessment · EEX auctions FR</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">Manual upload — Commerg weekly</span>
+          <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(var(--accent-rgb),.3);padding:3px 9px;border-radius:4px;border-color:rgba(16,185,129,.3)">Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)"></label>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Current Week — Bid / Ask</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-cards"></div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">GO by Calendar Year — Bid / Ask (€/MWh)</span><span class="source-badge">Commerg · EEX</span></div>
+        <table><thead><tr><th>Product</th><th>Cal-25 Bid</th><th>Cal-25 Ask</th><th>Cal-26 Bid</th><th>Cal-26 Ask</th><th>Cal-27 Bid</th><th>Cal-27 Ask</th><th>Spread</th><th>WoW</th></tr></thead>
+        <tbody id="go-fwd-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- GO HISTORY -->
+    <div class="page" id="page-gohist">
+      <div class="page-header">
+        <div><div class="page-title">GO Historical Prices</div><div class="page-subtitle">Weekly mid-price 2022–2026 · Commerg + EEX</div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="go-hist-filter">
+        <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
+        <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
+        <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
+        <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
+        <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
+      </div>
+      <div class="chart-container"><canvas id="go-hist-canvas" style="width:100%;height:230px"></canvas></div>
+    </div>
+
+    <!-- WEATHER CITIES -->
+    <div class="page" id="page-wxcities">
+      <div class="page-header">
+        <div><div class="page-title">Meteo France — Villes principales</div><div class="page-subtitle">Temperatures + prevision 7j · Open-Meteo (gratuit)</div></div>
+        <span class="updated-badge" id="wx-upd">Loading...</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="wx-cards">
+        <div style="color:var(--text3);padding:20px"><span class="spinner"></span>Loading weather...</div>
+      </div>
+    </div>
+
+    <!-- HDD/CDD -->
+    <div class="page" id="page-wxhdd">
+      <div class="page-header">
+        <div><div class="page-title">HDD / CDD — Degree Days</div><div class="page-subtitle">Heating &amp; Cooling · France · Open-Meteo</div></div>
+        <span class="updated-badge">Open-Meteo · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">HDD Paris Auj.</div><div class="kpi-value">3.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;0.8 vs normale</div></div>
+        <div class="kpi-card"><div class="kpi-label">HDD Cumul Saison</div><div class="kpi-value">1 842<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;112 vs norm.</div></div>
+        <div class="kpi-card"><div class="kpi-label">CDD YTD</div><div class="kpi-value up">48<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)">Normale: 55</div></div>
+        <div class="kpi-card"><div class="kpi-label">Temp. France Now</div><div class="kpi-value">14.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg down">&#9660;1.3°C vs norm.</div></div>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Cumulatif Saison — Paris vs Normale 20 ans</div><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">HDD par ville — 7 derniers jours</span></div>
+        <table><thead><tr><th>Ville</th><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th><th>Cumul</th><th>vs norm.</th></tr></thead>
+        <tbody id="hdd-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- REMIT -->
+    <div class="page" id="page-remit">
+      <div class="page-header">
+        <div><div class="page-title">REMIT — Urgent Market Messages</div><div class="page-subtitle">Generation and infrastructure outages · TSO publications</div></div>
+        <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">3 active UMM · FR</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Active UMMs — France</span></div>
+        <table><thead><tr><th>TSO</th><th>Asset</th><th>Type</th><th>MW Unavail.</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Gravelines 4</td><td>Nuclear</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--warn)">Active</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════
+const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
+
+// Zone config
+const ZONES = [
+  { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South', eic:'10Y1001A1001A788' },
+  { code:'IT_NORD',  flag:'🇮🇹', name:'Italy North',  eic:'10Y1001A1001A73I' },
+  { code:'HU',       flag:'🇭🇺', name:'Hungary',      eic:'10YHU-MAVIR----U' },
+  { code:'SI',       flag:'🇸🇮', name:'Slovenia',     eic:'10YSI-ELES-----O' },
+  { code:'RO',       flag:'🇷🇴', name:'Romania',      eic:'10YRO-TEL------P' },
+  { code:'HR',       flag:'🇭🇷', name:'Croatia',      eic:'10YHR-HEP------M' },
+  { code:'RS',       flag:'🇷🇸', name:'Serbia',       eic:'10YCS-SERBIATSOV' },
+  { code:'GR',       flag:'🇬🇷', name:'Greece',       eic:'10YGR-HTSO-----Y' },
+  { code:'MK',       flag:'🇲🇰', name:'N. Macedonia', eic:'10YMK-MEPSO----8' },
+  { code:'BG',       flag:'🇧🇬', name:'Bulgaria',     eic:'10YCA-BULGARIA-R' },
+  { code:'ME',       flag:'🇲🇪', name:'Montenegro',   eic:'10YCS-CG-TSO---S' },
+  { code:'CH',       flag:'🇨🇭', name:'Switzerland',  eic:'10YCH-SWISSGRIDZ' },
+  { code:'AT',       flag:'🇦🇹', name:'Austria',      eic:'10YAT-APG------L' },
+  { code:'LT',       flag:'🇱🇹', name:'Lithuania',    eic:'10YLT-1001A0008Q' },
+  { code:'LV',       flag:'🇱🇻', name:'Latvia',       eic:'10YLV-1001A00074' },
+  { code:'EE',       flag:'🇪🇪', name:'Estonia',      eic:'10Y1001A1001A39I' },
+  { code:'FI',       flag:'🇫🇮', name:'Finland',      eic:'10YFI-1--------U' },
+  { code:'PT',       flag:'🇵🇹', name:'Portugal',     eic:'10YPT-REN------W' },
+  { code:'SK',       flag:'🇸🇰', name:'Slovakia',     eic:'10YSK-SEPS-----K' },
+  { code:'ES',       flag:'🇪🇸', name:'Spain',        eic:'10YES-REE------0' },
+  { code:'DK_W',     flag:'🇩🇰', name:'Denmark West', eic:'10YDK-1--------W' },
+  { code:'CZ',       flag:'🇨🇿', name:'Czechia',      eic:'10YCZ-CEPS-----N' },
+  { code:'NO_2',     flag:'🇳🇴', name:'Norway Central',eic:'10YNO-2--------T' },
+  { code:'DE_LU',    flag:'🇩🇪', name:'Germany',      eic:'10Y1001A1001A82H' },
+  { code:'NL',       flag:'🇳🇱', name:'Netherlands',  eic:'10YNL----------L' },
+  { code:'BE',       flag:'🇧🇪', name:'Belgium',      eic:'10YBE----------2' },
+  { code:'NO_3',     flag:'🇳🇴', name:'Norway N-Mid', eic:'10YNO-3--------J' },
+  { code:'NO_1',     flag:'🇳🇴', name:'Norway North', eic:'10YNO-1--------2' },
+  { code:'SE_3',     flag:'🇸🇪', name:'Sweden N-Mid', eic:'10Y1001A1001A46L' },
+  { code:'FR',       flag:'🇫🇷', name:'France',       eic:'10YFR-RTE------C' },
+  { code:'GB',       flag:'🇬🇧', name:'Great Britain', eic:'10YGB----------A' },
+  { code:'DK_E',     flag:'🇩🇰', name:'Denmark East', eic:'10YDK-2--------M' },
+];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let currentPage = 'prices';
+let pricesData = [];
+let newsData = [];
+let convUnit = 'MW';
+let newsFilter = 'all';
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const cet = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const h = String(cet.getHours()).padStart(2,'0');
+  const m = String(cet.getMinutes()).padStart(2,'0');
+  const s = String(cet.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s} CET`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  currentPage = id;
+  // Lazy load
+  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
+  if (id === 'news' && !window._newsLoaded) loadNews();
+  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
+  if (id === 'load' && !window._loadLoaded) loadLoad();
+  if (id === 'overview') loadOverview();
+  if (id === 'converter') { updateConverter(); updateCapacity(); }
+}
+
+function switchSection(sec) {
+  document.querySelectorAll('.topbar-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (sec === 'power') showPage('prices');
+}
+
+// ════════════════════════════════════════════
+// ENTSOE API HELPER
+// ════════════════════════════════════════════
+async function fetchEntsoe(params) {
+  const base = 'https://web-api.tp.entsoe.eu/api';
+  const url = `${base}?securityToken=${ENTSOE_TOKEN}&${params}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`ENTSO-E ${resp.status}`);
+  return resp.text();
+}
+
+function parseXmlPrices(xml) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'text/xml');
+  const points = doc.querySelectorAll('Point');
+  const prices = [];
+  points.forEach(p => {
+    const pos = parseInt(p.querySelector('position')?.textContent || '0');
+    const val = parseFloat(p.querySelector('price\\.amount')?.textContent || '0');
+    if (val) prices.push({ hour: pos - 1, price: val });
+  });
+  return prices;
+}
+
+function todayStr() {
+  const now = new Date();
+  const cet = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const y = cet.getFullYear();
+  const m = String(cet.getMonth() + 1).padStart(2, '0');
+  const d = String(cet.getDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
+function dateParam(offset = 0) {
+  const now = new Date();
+  now.setDate(now.getDate() + offset);
+  const cet = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const y = cet.getFullYear();
+  const m = String(cet.getMonth() + 1).padStart(2, '0');
+  const d = String(cet.getDate()).padStart(2, '0');
+  return `${y}${m}${d}0000`;
+}
+
+// ════════════════════════════════════════════
+// DEMO DATA (used when no token set)
+// ════════════════════════════════════════════
+function getDemoData() {
+  // Realistic demo prices based on today's market context
+  return [
+    { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South', today:115.8, vsYday:+12.0, min:54.7, minHr:10, max:169.1, maxHr:18, negHrs:0, spark:+23.7 },
+    { code:'IT_NORD',  flag:'🇮🇹', name:'Italy North', today:115.1, vsYday:+12.7, min:54.7, minHr:10, max:153.5, maxHr:18, negHrs:0, spark:+23 },
+    { code:'HU',       flag:'🇭🇺', name:'Hungary',     today:109.8, vsYday:+4.1, min:-0.8, minHr:12, max:249.9, maxHr:18, negHrs:1, spark:+17.7 },
+    { code:'SI',       flag:'🇸🇮', name:'Slovenia',    today:109.5, vsYday:+6.6, min:54.7, minHr:10, max:149.7, maxHr:18, negHrs:0, spark:+17.4 },
+    { code:'RO',       flag:'🇷🇴', name:'Romania',     today:108.5, vsYday:+17.8, min:12.0, minHr:11, max:227.3, maxHr:18, negHrs:0, spark:+16.4 },
+    { code:'HR',       flag:'🇭🇷', name:'Croatia',     today:108.5, vsYday:+7.7, min:48.7, minHr:11, max:168.7, maxHr:18, negHrs:0, spark:+16.4 },
+    { code:'GR',       flag:'🇬🇷', name:'Greece',      today:102.7, vsYday:+21.8, min:0.0, minHr:7, max:194.1, maxHr:17, negHrs:2, spark:+10.6 },
+    { code:'BG',       flag:'🇧🇬', name:'Bulgaria',    today:98.2, vsYday:+16.7, min:6.9, minHr:7, max:194.1, maxHr:17, negHrs:0, spark:+6.1 },
+    { code:'CH',       flag:'🇨🇭', name:'Switzerland', today:94.0, vsYday:+2.4, min:40.0, minHr:13, max:140.0, maxHr:18, negHrs:0, spark:+1.9 },
+    { code:'AT',       flag:'🇦🇹', name:'Austria',     today:87.8, vsYday:-4.3, min:7.1, minHr:13, max:137.4, maxHr:18, negHrs:0, spark:-4.3 },
+    { code:'LT',       flag:'🇱🇹', name:'Lithuania',   today:87.7, vsYday:+30.0, min:15.6, minHr:13, max:174.0, maxHr:18, negHrs:0, spark:-4.4 },
+    { code:'PT',       flag:'🇵🇹', name:'Portugal',    today:76.1, vsYday:+19.2, min:14.2, minHr:13, max:112.1, maxHr:19, negHrs:0, spark:-16 },
+    { code:'ES',       flag:'🇪🇸', name:'Spain',       today:75.5, vsYday:+18.4, min:16.0, minHr:13, max:109.0, maxHr:19, negHrs:0, spark:-16.6 },
+    { code:'DK_W',     flag:'🇩🇰', name:'Denmark West',today:73.8, vsYday:-3.0, min:-15.8, minHr:13, max:145.8, maxHr:18, negHrs:5, spark:-18.3 },
+    { code:'CZ',       flag:'🇨🇿', name:'Czechia',     today:73.0, vsYday:-6.4, min:-29.9, minHr:12, max:136.5, maxHr:18, negHrs:5, spark:-19.1 },
+    { code:'DE_LU',    flag:'🇩🇪', name:'Germany',     today:63.8, vsYday:-7.4, min:-58.1, minHr:11, max:142.8, maxHr:18, negHrs:7, spark:-28.3 },
+    { code:'NL',       flag:'🇳🇱', name:'Netherlands', today:57.5, vsYday:-3.3, min:-56.8, minHr:11, max:145.6, maxHr:18, negHrs:7, spark:-34.6 },
+    { code:'BE',       flag:'🇧🇪', name:'Belgium',     today:49.1, vsYday:-10.8, min:-55.0, minHr:11, max:134.0, maxHr:17, negHrs:6, spark:-43 },
+    { code:'NO_2',     flag:'🇳🇴', name:'Norway Central',today:39.8, vsYday:+12.2, min:8.8, minHr:22, max:103.7, maxHr:5, negHrs:0, spark:-52.3 },
+    { code:'SE_3',     flag:'🇸🇪', name:'Sweden N-Mid',today:40.0, vsYday:+21.3, min:11.8, minHr:23, max:104.0, maxHr:5, negHrs:0, spark:-52.1 },
+    { code:'FR',       flag:'🇫🇷', name:'France',      today:1.2,  vsYday:-15.3, min:-48.6, minHr:11, max:36.0, maxHr:5, negHrs:7, spark:+2 },
+    { code:'FI',       flag:'🇫🇮', name:'Finland',     today:67.8, vsYday:+45.6, min:16.1, minHr:13, max:127.9, maxHr:18, negHrs:0, spark:-24.3 },
+  ];
+}
+
+// ════════════════════════════════════════════
+// LOAD PRICES
+// ════════════════════════════════════════════
+async function loadPrices() {
+  const isDemo = ENTSOE_TOKEN === 'YOUR_ENTSOE_TOKEN_HERE';
+
+  if (isDemo) {
+    // Use demo data
+    pricesData = getDemoData();
+    renderPricesTable(pricesData);
+    document.getElementById('prices-updated').textContent = '⚠ Demo data — add ENTSO-E token';
+    document.getElementById('prices-updated').style.color = 'var(--warn)';
+    updateKPIs(pricesData);
+    buildTicker(pricesData);
+    return;
+  }
+
+  // Real ENTSO-E fetch
+  try {
+    const periodStart = dateParam(0);
+    const periodEnd = dateParam(1);
+    const results = [];
+
+    // Fetch in parallel batches of 6
+    const batch = async (zones) => {
+      const promises = zones.map(async zone => {
+        try {
+          const xml = await fetchEntsoe(
+            `documentType=A44&in_Domain=${zone.eic}&out_Domain=${zone.eic}&periodStart=${periodStart}&periodEnd=${periodEnd}`
+          );
+          const prices = parseXmlPrices(xml);
+          if (prices.length === 0) return null;
+          const vals = prices.map(p => p.price);
+          const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+          const minP = Math.min(...vals);
+          const maxP = Math.max(...vals);
+          const minHr = prices.find(p => p.price === minP)?.hour || 0;
+          const maxHr = prices.find(p => p.price === maxP)?.hour || 0;
+          const negHrs = vals.filter(v => v < 0).length;
+          return { ...zone, today: Math.round(avg * 10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly: vals, vsYday: null, spark: null };
+        } catch { return null; }
+      });
+      return (await Promise.all(promises)).filter(Boolean);
+    };
+
+    const batchSize = 6;
+    for (let i = 0; i < ZONES.length; i += batchSize) {
+      const batchResults = await batch(ZONES.slice(i, i + batchSize));
+      results.push(...batchResults);
+      pricesData = results.sort((a,b) => b.today - a.today);
+      renderPricesTable(pricesData);
+      updateKPIs(pricesData);
+    }
+
+    buildTicker(pricesData);
+    const now = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit' });
+    document.getElementById('prices-updated').textContent = `Updated ${now} CET`;
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById('prices-tbody').innerHTML =
+      `<tr class="loading-row"><td colspan="8" style="color:var(--down)">⚠ Could not fetch ENTSO-E data. Check your token or use demo mode.</td></tr>`;
+  }
+}
+
+function updateKPIs(data) {
+  const fr = data.find(d => d.code === 'FR');
+  const de = data.find(d => d.code === 'DE_LU');
+  const avg = data.reduce((a,b) => a + b.today, 0) / data.length;
+  const maxZ = data[0];
+  const minZ = data[data.length - 1];
+
+  if (fr) {
+    document.getElementById('kpi-fr').innerHTML = `${fr.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+    document.getElementById('kpi-fr-chg').innerHTML = fr.vsYday != null
+      ? `<span class="${fr.vsYday >= 0 ? 'up':'down'}">${fr.vsYday >= 0 ? '▲':'▼'} ${Math.abs(fr.vsYday).toFixed(1)} vs yday</span>`
+      : '<span style="color:var(--text3)">FR bidding zone</span>';
+  }
+  if (de) {
+    document.getElementById('kpi-de').innerHTML = `${de.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+    document.getElementById('kpi-de').className = `kpi-value ${de.today < 0 ? 'down' : de.today > 80 ? 'up' : ''}`;
+  }
+  document.getElementById('kpi-avg').innerHTML = `${avg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+  document.getElementById('kpi-avg-chg').textContent = `${data.length} zones loaded`;
+  document.getElementById('kpi-max').innerHTML = `${maxZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+  document.getElementById('kpi-max-zone').textContent = `${maxZ.flag} ${maxZ.name}`;
+  document.getElementById('kpi-min').innerHTML = `${minZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+  document.getElementById('kpi-min-zone').textContent = `${minZ.flag} ${minZ.name}`;
+}
+
+function renderPricesTable(data) {
+  const sorted = [...data].sort((a,b) => b.today - a.today);
+  const tbody = document.getElementById('prices-tbody');
+  tbody.innerHTML = sorted.map((z, i) => {
+    const priceColor = z.today < 0 ? 'down' : z.today > 100 ? 'down' : z.today < 20 ? 'up' : '';
+    const vsColor = z.vsYday == null ? 'text3' : z.vsYday >= 0 ? 'up' : 'down';
+    const vsArrow = z.vsYday == null ? '' : z.vsYday >= 0 ? '▲' : '▼';
+    const vsText = z.vsYday == null ? '--' : `${vsArrow} ${Math.abs(z.vsYday).toFixed(1)}`;
+    const sparkColor = z.spark == null ? '#4a6280' : z.spark >= 0 ? '#00d4a8' : '#ff4d6d';
+    const sparkText = z.spark == null ? '--' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
+    const negStyle = z.negHrs > 0 ? 'color:var(--warn);font-weight:600' : 'color:var(--text3)';
+
+    return `<tr>
+      <td><span class="country-flag">${z.flag}</span><span class="country-code">${z.code}</span>${z.name}</td>
+      <td style="color:var(--${priceColor || 'text'});font-weight:600">${z.today.toFixed(1)}</td>
+      <td style="color:var(--${vsColor})">${vsText}</td>
+      <td style="color:var(--text2)">${z.min != null ? z.min.toFixed(1) : '--'}<span style="color:var(--text3);font-size:10px"> @${z.minHr}h</span></td>
+      <td style="color:var(--text2)">${z.max != null ? z.max.toFixed(1) : '--'}<span style="color:var(--text3);font-size:10px"> @${z.maxHr}h</span></td>
+      <td style="${negStyle}">${z.negHrs > 0 ? z.negHrs + 'h' : '0'}</td>
+      <td style="color:${sparkColor}">${sparkText}</td>
+      <td class="sparkline-cell"><canvas class="spark" id="spark-${i}" width="80" height="28"></canvas></td>
+    </tr>`;
+  }).join('');
+
+  // Draw sparklines
+  sorted.forEach((z, i) => {
+    const canvas = document.getElementById(`spark-${i}`);
+    if (!canvas) return;
+    const hourly = z.hourly || generateDemoHourly(z.today, z.min, z.max);
+    drawSparkline(canvas, hourly, z.today);
+  });
+}
+
+function generateDemoHourly(avg, min, max) {
+  // Synthetic daily profile: low at night, peak morning/evening
+  const profile = [0.6,0.5,0.45,0.4,0.4,0.5,0.7,0.85,0.9,0.85,0.75,0.6,0.65,0.7,0.8,0.9,0.95,1.0,0.95,0.85,0.8,0.75,0.7,0.65];
+  const range = max - min;
+  return profile.map(p => min + p * range + (Math.random() - 0.5) * range * 0.1);
+}
+
+function drawSparkline(canvas, data, avg) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (!data || data.length < 2) return;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const toX = i => (i / (data.length - 1)) * w;
+  const toY = v => h - ((v - min) / range) * (h - 4) - 2;
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  const isPositive = avg >= 0;
+  grad.addColorStop(0, isPositive ? 'rgba(0,212,168,0.3)' : 'rgba(255,77,109,0.3)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0]));
+  data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0]));
+  data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.strokeStyle = isPositive ? '#00d4a8' : '#ff4d6d';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// ════════════════════════════════════════════
+// TICKER
+// ════════════════════════════════════════════
+function buildTicker(data) {
+  const items = [
+    ...data.slice(0, 8).map(z => ({
+      cat: 'power', catLabel: 'POWER',
+      name: `${z.flag} ${z.code}`,
+      val: z.today.toFixed(1),
+      unit: '€/MWh',
+      chg: z.vsYday != null ? (z.vsYday >= 0 ? `▲${z.vsYday.toFixed(1)}` : `▼${Math.abs(z.vsYday).toFixed(1)}`) : '',
+      up: z.vsYday == null ? null : z.vsYday >= 0
+    })),
+    { cat:'gas', catLabel:'GAS', name:'TTF D+1', val:'45.14', unit:'€/MWh', chg:'▲2.35%', up:true },
+    { cat:'carbon', catLabel:'CARBON', name:'EUA', val:'74.09', unit:'€/t', chg:'▼0.09%', up:false },
+    { cat:'gas', catLabel:'GAS', name:'Henry Hub', val:'2.660', unit:'$/MMBtu', chg:'▲4.15%', up:true },
+  ];
+
+  const html = [...items, ...items].map(item => `
+    <div class="ticker-item">
+      <span class="ticker-cat ${item.cat}">${item.catLabel}</span>
+      <span class="ticker-name">${item.name}</span>
+      <span class="ticker-val ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.val} <span style="font-weight:400;font-size:10px;color:var(--text3)">${item.unit}</span></span>
+      ${item.chg ? `<span class="ticker-chg ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.chg}</span>` : ''}
+    </div>
+  `).join('');
+  document.getElementById('ticker-track').innerHTML = html;
+}
+
+// Default ticker while loading
+buildTicker([
+  { flag:'🇫🇷', code:'FR', today:1.2, vsYday:-15.3, up:false },
+  { flag:'🇩🇪', code:'DE', today:63.8, vsYday:-7.4, up:false },
+  { flag:'🇪🇸', code:'ES', today:75.5, vsYday:+18.4, up:true },
+  { flag:'🇮🇹', code:'IT', today:115.8, vsYday:+12.0, up:true },
+  { flag:'🇧🇪', code:'BE', today:49.1, vsYday:-10.8, up:false },
+  { flag:'🇳🇱', code:'NL', today:57.5, vsYday:-3.3, up:false },
+  { flag:'🇵🇹', code:'PT', today:76.1, vsYday:+19.2, up:true },
+  { flag:'🇬🇧', code:'GB', today:88.4, vsYday:+5.1, up:true },
+]);
+
+// ════════════════════════════════════════════
+// GENERATION MIX
+// ════════════════════════════════════════════
+async function loadGenMix() {
+  window._genmixLoaded = true;
+  const country = document.getElementById('genmix-country').value;
+  document.getElementById('genmix-updated').textContent = 'Loading...';
+
+  // Demo data
+  const demoMix = {
+    'FR': { nuclear:38000, solar:11100, wind:5500, hydro:4800, fossil:700, imports:3200, total:63300 },
+    'DE_LU': { nuclear:0, solar:18000, wind:22000, hydro:2500, fossil:12000, imports:1500, total:56000 },
+    'ES': { nuclear:7000, solar:12000, wind:15000, hydro:5000, fossil:4000, imports:800, total:43800 },
+    'BE': { nuclear:4500, solar:2500, wind:1800, hydro:100, fossil:2000, imports:1200, total:12100 },
+    'NL': { nuclear:500, solar:4000, wind:5000, hydro:0, fossil:8000, imports:500, total:18000 },
+    'PT': { nuclear:0, solar:3500, wind:4000, hydro:2500, fossil:1500, imports:200, total:11700 },
+    'IT_NORD': { nuclear:0, solar:7000, wind:1500, hydro:8000, fossil:9000, imports:2000, total:27500 },
+  };
+
+  const mix = demoMix[country] || demoMix['FR'];
+  const total = mix.total;
+
+  const fuels = [
+    { key:'nuclear', name:'Nuclear', color:'#a78bfa', class:'fuel-nuclear' },
+    { key:'solar',   name:'Solar',   color:'#f59e0b', class:'fuel-solar' },
+    { key:'wind',    name:'Wind',    color:'#60a5fa', class:'fuel-wind' },
+    { key:'hydro',   name:'Hydro',   color:'#34d399', class:'fuel-hydro' },
+    { key:'fossil',  name:'Fossil',  color:'#f87171', class:'fuel-fossil' },
+    { key:'imports', name:'Imports', color:'#94a3b8', class:'fuel-other' },
+  ];
+
+  document.getElementById('fuel-grid').innerHTML = fuels.map(f => {
+    const val = mix[f.key] || 0;
+    const pct = Math.round(val / total * 100);
+    return `<div class="fuel-card">
+      <div class="fuel-name">${f.name}</div>
+      <div class="fuel-value" style="color:${f.color}">${(val/1000).toFixed(1)}<span style="font-size:13px;font-weight:400;color:var(--text2)"> GW</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${pct}% of total</div>
+      <div class="fuel-bar"><div class="fuel-bar-fill ${f.class}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('genmix-updated').textContent = 'Demo data · ENTSO-E A75';
+
+  // Draw stacked bar chart
+  const canvas = document.getElementById('genmix-canvas');
+  drawGenMixChart(canvas, mix, fuels);
+}
+
+function drawGenMixChart(canvas, mix, fuels) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth;
+  const h = canvas.height = 200;
+  ctx.clearRect(0, 0, w, h);
+
+  // Generate 24h profile
+  const hours = 24;
+  const barW = (w - 40) / hours;
+  const maxTotal = mix.total * 1.1;
+
+  for (let hr = 0; hr < hours; hr++) {
+    const dayProfile = [0.75,0.7,0.68,0.66,0.65,0.68,0.75,0.85,0.92,0.95,0.96,0.97,0.98,0.97,0.96,0.97,0.98,1.0,0.98,0.95,0.92,0.88,0.84,0.8];
+    const factor = dayProfile[hr];
+    let y = h - 20;
+
+    fuels.forEach(f => {
+      const val = (mix[f.key] || 0) * factor * (0.9 + Math.random() * 0.2);
+      const barH = (val / maxTotal) * (h - 30);
+      ctx.fillStyle = f.color;
+      ctx.fillRect(40 + hr * barW + 1, y - barH, barW - 2, barH);
+      y -= barH;
+    });
+
+    // Hour label
+    if (hr % 3 === 0) {
+      ctx.fillStyle = '#4a6280';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${hr}h`, 40 + hr * barW + barW/2, h - 4);
+    }
+  }
+
+  // Y axis labels
+  ctx.fillStyle = '#4a6280';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'right';
+  [0, 25, 50, 75, 100].forEach(pct => {
+    const y = h - 20 - (pct / 100) * (h - 30);
+    const gw = (mix.total * pct / 100 / 1000).toFixed(0);
+    ctx.fillText(`${gw}GW`, 36, y + 3);
+    ctx.strokeStyle = 'rgba(30,45,61,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(40, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  });
+}
+
+// ════════════════════════════════════════════
+// CROSS-BORDER FLOWS
+// ════════════════════════════════════════════
+async function loadCrossBorder() {
+  window._cbLoaded = true;
+  const country = document.getElementById('cb-country').value;
+
+  const demoFlows = {
+    'FR': [
+      { partner:'🇩🇪 Germany', imports:450, exports:3200 },
+      { partner:'🇧🇪 Belgium', imports:800, exports:2100 },
+      { partner:'🇪🇸 Spain',   imports:1200, exports:300 },
+      { partner:'🇮🇹 Italy',   imports:200, exports:1800 },
+      { partner:'🇨🇭 Switzerland', imports:600, exports:2500 },
+      { partner:'🇬🇧 Great Britain', imports:900, exports:400 },
+    ],
+    'DE_LU': [
+      { partner:'🇫🇷 France',      imports:3200, exports:450 },
+      { partner:'🇳🇱 Netherlands', imports:2100, exports:1800 },
+      { partner:'🇧🇪 Belgium',     imports:900, exports:1200 },
+      { partner:'🇦🇹 Austria',     imports:600, exports:2800 },
+      { partner:'🇨🇭 Switzerland', imports:800, exports:1900 },
+      { partner:'🇨🇿 Czechia',     imports:400, exports:1500 },
+      { partner:'🇵🇱 Poland',      imports:1100, exports:600 },
+      { partner:'🇩🇰 Denmark',     imports:1800, exports:400 },
+      { partner:'🇸🇪 Sweden',      imports:700, exports:300 },
+      { partner:'🇳🇴 Norway',      imports:500, exports:200 },
+    ],
+  };
+
+  const flows = (demoFlows[country] || demoFlows['FR']).map(f => ({
+    ...f,
+    net: f.imports - f.exports
+  }));
+
+  const names = { 'FR':'France', 'DE_LU':'Germany', 'BE':'Belgium', 'ES':'Spain' };
+  document.getElementById('cb-title').textContent = `${names[country] || country} — Cross-Border Flows (avg MW)`;
+
+  document.getElementById('cb-tbody').innerHTML = flows.map(f => {
+    const net = f.net;
+    const netColor = net > 0 ? 'var(--up)' : 'var(--down)';
+    const dir = net > 0 ? '◀ Net Importer' : '▶ Net Exporter';
+    return `<tr>
+      <td>${f.partner}</td>
+      <td style="color:var(--up)">${f.imports.toLocaleString()} MW</td>
+      <td style="color:var(--down)">${f.exports.toLocaleString()} MW</td>
+      <td style="color:${netColor};font-weight:600">${net > 0 ? '+' : ''}${net.toLocaleString()} MW</td>
+      <td style="color:${netColor};font-size:11px">${dir}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cb-updated').textContent = 'Demo data · ENTSO-E A11';
+}
+
+// ════════════════════════════════════════════
+// LOAD
+// ════════════════════════════════════════════
+async function loadLoad() {
+  window._loadLoaded = true;
+  // Demo FR load profile
+  const profile = [42.1,40.8,39.5,38.2,37.8,38.5,41.2,47.5,52.8,55.1,56.3,57.0,56.8,56.2,56.5,57.8,60.2,63.0,62.1,59.8,57.2,54.8,51.2,47.1];
+  document.getElementById('load-fr-now').innerHTML = `${profile[new Date().getHours()]}<span class="kpi-unit">GW</span>`;
+  document.getElementById('load-fr-peak').innerHTML = `${Math.max(...profile)}<span class="kpi-unit">GW</span>`;
+  document.getElementById('load-fr-chg').innerHTML = `<span class="down">▼ 3.2 GW vs yday</span>`;
+  document.getElementById('load-updated').textContent = 'Demo data · ENTSO-E';
+
+  const canvas = document.getElementById('load-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 200;
+  const w = canvas.width, h = canvas.height;
+  const min = Math.min(...profile) - 2;
+  const max = Math.max(...profile) + 2;
+  const toX = i => (i / (profile.length - 1)) * (w - 40) + 40;
+  const toY = v => h - 20 - ((v - min) / (max - min)) * (h - 40);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,45,61,0.5)';
+  [40,50,60,70].forEach(gw => {
+    const y = toY(gw);
+    ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w, y); ctx.stroke();
+    ctx.fillStyle = '#4a6280'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'right';
+    ctx.fillText(`${gw}GW`, 36, y + 3);
+  });
+
+  // Area
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(0,212,168,0.2)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(profile[0]));
+  profile.forEach((v,i) => { if(i>0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.lineTo(toX(profile.length-1), h-20);
+  ctx.lineTo(toX(0), h-20);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(profile[0]));
+  profile.forEach((v,i) => { if(i>0) ctx.lineTo(toX(i), toY(v)); });
+  ctx.strokeStyle = '#00d4a8';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Current hour marker
+  const curHr = new Date().getHours();
+  ctx.strokeStyle = 'rgba(0,212,168,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.moveTo(toX(curHr), 0);
+  ctx.lineTo(toX(curHr), h-20);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X labels
+  [0,6,12,18,23].forEach(hr => {
+    ctx.fillStyle = '#4a6280'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText(`${hr}h`, toX(hr), h-4);
+  });
+}
+
+// ════════════════════════════════════════════
+// NEWS
+// ════════════════════════════════════════════
+const RSS_SOURCES = [
+  { name:'ENTSO-E', cls:'entsoe', url:'https://www.entsoe.eu/news/rss/', tags:['power','regulation'] },
+  { name:'RTE', cls:'rte', url:'https://www.rte-france.com/presse/communiques-de-presse?type=rss', tags:['power','fr'] },
+  { name:'CRE', cls:'cre', url:'https://www.cre.fr/en/rss', tags:['regulation','fr'] },
+  { name:'ACER', cls:'acer', url:'https://www.acer.europa.eu/rss', tags:['regulation','markets'] },
+];
+
+// RSS2JSON free proxy (no key needed for low volume)
+const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+async function loadNews() {
+  window._newsLoaded = true;
+  const allItems = [];
+
+  // Try RSS feeds via proxy
+  const fetchFeed = async (src) => {
+    try {
+      const resp = await fetch(`${RSS_PROXY}${encodeURIComponent(src.url)}`);
+      const data = await resp.json();
+      if (data.status !== 'ok') return [];
+      return (data.items || []).slice(0, 6).map(item => ({
+        source: src.name,
+        cls: src.cls,
+        title: item.title,
+        snippet: item.description?.replace(/<[^>]+>/g,'').slice(0,150) + '...',
+        link: item.link,
+        date: new Date(item.pubDate),
+        tags: src.tags,
+      }));
+    } catch { return []; }
+  };
+
+  // Fetch all in parallel
+  const results = await Promise.all(RSS_SOURCES.map(fetchFeed));
+  results.forEach(items => allItems.push(...items));
+
+  if (allItems.length === 0) {
+    // Fallback: demo news items
+    allItems.push(...getDemoNews());
+  }
+
+  newsData = allItems.sort((a,b) => b.date - a.date);
+  document.getElementById('news-updated').textContent = `${newsData.length} articles loaded`;
+  renderNews(newsData);
+}
+
+function getDemoNews() {
+  const now = new Date();
+  const ago = (h) => new Date(now - h * 3600000);
+  return [
+    { source:'ENTSO-E', cls:'entsoe', title:'ENTSO-E publishes Winter Outlook 2026: European power system remains resilient', snippet:'The Winter Outlook 2026 confirms European adequacy margins remain above threshold in all scenarios, with interconnection capacity playing a key role.', link:'https://www.entsoe.eu/news', date:ago(1), tags:['power','regulation'] },
+    { source:'RTE', cls:'rte', title:'Écrêtement solaire record en France : 2,1 TWh perdus au T1 2026', snippet:'RTE publie son bilan du premier trimestre 2026. La surproduction photovoltaïque aux heures creuses a conduit à des prix négatifs sur 312 heures.', link:'https://www.rte-france.com', date:ago(2), tags:['power','markets'] },
+    { source:'ACER', cls:'acer', title:'ACER recommends reform of capacity mechanism design across EU member states', snippet:'In its latest market monitoring report, ACER identifies design inconsistencies in national capacity mechanisms that distort cross-border competition.', link:'https://www.acer.europa.eu', date:ago(4), tags:['regulation','markets'] },
+    { source:'CRE', cls:'cre', title:'CRE ouvre une consultation sur les tarifs de réseau pour la période 2025-2028', snippet:'Le régulateur français lance une consultation publique sur la révision des TURPE applicable aux gestionnaires de réseau de distribution.', link:'https://www.cre.fr', date:ago(6), tags:['regulation','fr'] },
+    { source:'ENTSO-E', cls:'entsoe', title:'Cross-border capacity allocation reaches record levels in Q1 2026', snippet:'The Cross-Border Capacity Allocation report shows that available interconnection capacity increased by 12% year-on-year in the first quarter.', link:'https://www.entsoe.eu/news', date:ago(8), tags:['power','markets'] },
+    { source:'RTE', cls:'rte', title:'Nucléaire : EPR2 programme update — six new units confirmed in Normandy', snippet:'Following the government review, RTE confirms the grid connection timeline for the first EPR2 unit is maintained at 2037 for the Penly site.', link:'https://www.rte-france.com', date:ago(10), tags:['power','fr'] },
+    { source:'ACER', cls:'acer', title:'European gas storage reaches 58% ahead of summer injection season', snippet:'GIE data shows EU aggregate storage at 58.3%, slightly below the 5-year average of 61.2% for this time of year, ACER notes in weekly brief.', link:'https://www.acer.europa.eu', date:ago(14), tags:['gas','markets'] },
+    { source:'ENTSO-E', cls:'entsoe', title:'REMIT: 47 new urgent market messages published this week across EU TSOs', snippet:'TSOs across Germany, France, Italy and Poland filed 47 UMMs this week, predominantly affecting gas-fired generation assets.', link:'https://www.entsoe.eu/news', date:ago(18), tags:['regulation','markets'] },
+    { source:'CRE', cls:'cre', title:'Agrégation : publication du cadre réglementaire pour les BESS en marché de capacité', snippet:'La CRE précise les conditions d\'éligibilité des systèmes de stockage par batterie au mécanisme de capacité français à partir de 2027.', link:'https://www.cre.fr', date:ago(22), tags:['regulation','fr','power'] },
+    { source:'RTE', cls:'rte', title:'Bilan mensuel : solde exportateur de la France en baisse de 18% sur avril 2026', snippet:'RTE publie le bilan mensuel. Le solde exportateur s\'établit à 3,2 TWh sur avril 2026, en recul face au même mois de l\'an dernier.', link:'https://www.rte-france.com', date:ago(26), tags:['power','markets','fr'] },
+  ];
+}
+
+function renderNews(items) {
+  const filtered = newsFilter === 'all' ? items : items.filter(i => i.tags?.includes(newsFilter));
+  const grid = document.getElementById('news-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No articles for this filter.</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(item => {
+    const timeAgo = formatTimeAgo(item.date);
+    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${t}</span>`).join(' ');
+    return `<a class="news-card" href="${item.link}" target="_blank" rel="noopener">
+      <div class="news-meta">
+        <span class="news-source ${item.cls}">${item.source}</span>
+        <span class="news-time">${timeAgo}</span>
+      </div>
+      <div class="news-title">${item.title}</div>
+      <div class="news-snippet">${item.snippet}</div>
+      <div>${tagsHtml}</div>
+    </a>`;
+  }).join('');
+}
+
+function filterNews(tag, btn) {
+  newsFilter = tag;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderNews(newsData);
+}
+
+function formatTimeAgo(date) {
+  const diff = (Date.now() - date) / 1000;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+// ════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════
+function loadOverview() {
+  const prices = pricesData.length > 0 ? pricesData : getDemoData();
+  const fr = prices.find(d => d.code === 'FR') || prices[0];
+  const de = prices.find(d => d.code === 'DE_LU') || prices[1];
+  const be = prices.find(d => d.code === 'BE') || prices[2];
+
+  document.getElementById('overview-prices').innerHTML = [
+    { label:'🇫🇷 France DA', val:fr?.today, unit:'€/MWh' },
+    { label:'🇩🇪 Germany DA', val:de?.today, unit:'€/MWh' },
+    { label:'🇧🇪 Belgium DA', val:be?.today, unit:'€/MWh' },
+    { label:'TTF D+1', val:45.14, unit:'€/MWh' },
+    { label:'EUA', val:74.09, unit:'€/t' },
+    { label:'EUR/USD', val:1.1680, unit:'' },
+  ].map(r => `<tr>
+    <td style="font-family:Inter;text-align:left;color:var(--text2)">${r.label}</td>
+    <td style="font-weight:600">${r.val?.toFixed(2) || '--'}</td>
+    <td style="color:var(--text3);font-size:11px">${r.unit}</td>
+  </tr>`).join('');
+
+  document.getElementById('market-status').innerHTML = `
+    <div style="margin-bottom:10px"><span style="color:var(--accent)">⚡ Power</span><br>
+    FR price ${fr?.today < 10 ? 'very low' : fr?.today < 50 ? 'below average' : 'elevated'} at ${fr?.today?.toFixed(1)} €/MWh. ${fr?.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}</div>
+    <div style="margin-bottom:10px"><span style="color:#60a5fa">⛽ Gas</span><br>
+    TTF Day-Ahead at 45.14 €/MWh, up 2.35% vs prior close.</div>
+    <div><span style="color:#a78bfa">🌿 Carbon</span><br>
+    EUA at 74.09 €/t, near 6-month average.</div>
+  `;
+}
+
+// ════════════════════════════════════════════
+// CONVERTER
+// ════════════════════════════════════════════
+const CONV_FACTORS = {
+  'MW':  { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
+  'GW':  { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
+  'MWh': { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
+  'GWh': { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
+  'TWh': { MW:1000000, GW:1000, MWh:1000000, GWh:1000, TWh:1 },
+};
+
+function setConvUnit(unit, btn) {
+  convUnit = unit;
+  document.querySelectorAll('.conv-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateConverter();
+}
+
+function updateConverter() {
+  const val = parseFloat(document.getElementById('conv-input').value) || 0;
+  const factors = CONV_FACTORS[convUnit] || CONV_FACTORS['MW'];
+  const units = ['MW','GW','MWh','GWh','TWh'];
+  const descs = {
+    'MW':'Megawatt (capacity)','GW':'Gigawatt = 1,000 MW',
+    'MWh':'Megawatt-hour (energy)','GWh':'Gigawatt-hour = 1,000 MWh','TWh':'Terawatt-hour = 1,000 GWh'
+  };
+  document.getElementById('conv-results').innerHTML = units.map(u => {
+    const result = val * (factors[u] || 1);
+    const disp = result >= 1e6 ? result.toExponential(2) : result >= 1000 ? result.toLocaleString('fr-FR', {maximumFractionDigits:1}) : result.toFixed(result < 0.01 ? 6 : 3);
+    const active = u === convUnit ? 'border-color:var(--accent)' : '';
+    return `<div class="conv-result" style="${active}" onclick="setConvUnit('${u}', document.querySelectorAll('.conv-tab')[${units.indexOf(u)}])">
+      <div class="conv-result-label">${u}</div>
+      <div class="conv-result-value">${disp}</div>
+      <div class="conv-result-desc">${descs[u]}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCapacity() {
+  const mw = parseFloat(document.getElementById('cap-mw').value) || 0;
+  const lf = parseFloat(document.getElementById('cap-lf').value) || 0;
+  const annualMWh = mw * (lf/100) * 8760;
+  const annualGWh = annualMWh / 1000;
+  const annualTWh = annualGWh / 1000;
+  const fLH = (lf/100) * 8760;
+
+  document.getElementById('cap-results').innerHTML = `
+    <div class="conv-result"><div class="conv-result-label">Annual Production</div><div class="conv-result-value">${(annualTWh).toFixed(3)} TWh</div><div class="conv-result-desc">= ${annualGWh.toFixed(1)} GWh</div></div>
+    <div class="conv-result"><div class="conv-result-label">Full-Load Hours</div><div class="conv-result-value">${Math.round(fLH).toLocaleString()}</div><div class="conv-result-desc">hours/year</div></div>
+    <div class="conv-result" style="grid-column:1/-1"><div class="conv-result-label">Formula</div><div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:JetBrains Mono">${mw} MW × ${lf}% × 8,760 h = ${Math.round(annualMWh).toLocaleString()} MWh/year</div></div>
+  `;
+}
+
+function setLF(val, btn) {
+  document.getElementById('cap-lf').value = val;
+  document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateCapacity();
+}
+
+
+// ── NEW SECTION LOADER ──
+const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];
+const PAGE_LOADERS = {
+  renewables: loadRenewables,
+  nuclear: drawNuclear,
+  imbalance: drawImbalance,
+  eua: drawEUA,
+  euafwd: drawEUAFwd,
+  spark: renderSpark,
+  goprices: renderGO,
+  gohist: drawGoHist,
+  wxcities: loadWeather,
+  wxhdd: renderHDD,
+};
+
+// Patch showPage to handle new sections
+const _origShowPage = showPage;
+window.showPage = function(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  const ldr = PAGE_LOADERS[id];
+  if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
+  // original loaders
+  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
+  if (id === 'news' && !window._newsLoaded) loadNews();
+  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
+  if (id === 'load' && !window._loadLoaded) loadLoad();
+  if (id === 'overview') loadOverview();
+  if (id === 'converter') { updateConverter(); updateCapacity(); }
+};
+
+// ── DEMO DATA
+const GM_DEMO = {
+  FR:{nuclear:38000,wind:5500,solar:11100,hydro:4800,fossil:700,biomass:900,total:61400},
+  DE_LU:{nuclear:0,wind:22000,solar:18000,hydro:2500,fossil:12000,biomass:4000,total:59000},
+  ES:{nuclear:7000,wind:15000,solar:12000,hydro:5000,fossil:4000,biomass:800,total:44000},
+  BE:{nuclear:4500,wind:1800,solar:2500,hydro:100,fossil:2000,biomass:600,total:11700},
+  NL:{nuclear:500,wind:5000,solar:4000,hydro:0,fossil:8000,biomass:500,total:18100},
+  IT_NORD:{nuclear:0,wind:1500,solar:7000,hydro:8000,fossil:9000,biomass:700,total:26500},
+  GB:{nuclear:5000,wind:8000,solar:3000,hydro:1500,fossil:6000,biomass:1200,total:25100},
+  PT:{nuclear:0,wind:4000,solar:3500,hydro:2500,fossil:1500,biomass:400,total:12000},
+};
+const FUELS = [
+  {k:'nuclear',l:'Nuclear',c:'#a78bfa'},{k:'wind',l:'Wind',c:'#60a5fa'},
+  {k:'solar',l:'Solar',c:'#f59e0b'},{k:'hydro',l:'Hydro',c:'#34d399'},
+  {k:'fossil',l:'Fossil',c:'#f87171'},{k:'biomass',l:'Biomass',c:'#6ee7b7'},
+];
+const WX_CITIES = [
+  {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},
+  {name:'Lyon',region:'Auvergne-Rhone-Alpes',lat:45.74,lon:4.83,norm:12.5},
+  {name:'Marseille',region:'PACA',lat:43.30,lon:5.37,norm:16.0},
+  {name:'Bordeaux',region:'Nouvelle-Aquitaine',lat:44.84,lon:-0.58,norm:13.2},
+  {name:'Strasbourg',region:'Grand Est',lat:48.57,lon:7.75,norm:10.5},
+  {name:'Lille',region:'Hauts-de-France',lat:50.63,lon:3.07,norm:10.0},
+  {name:'Nantes',region:'Pays de la Loire',lat:47.22,lon:-1.55,norm:12.8},
+  {name:'Grenoble',region:'Auvergne-Rhone-Alpes',lat:45.18,lon:5.72,norm:11.2},
+];
+const GO_CURRENT = [
+  {tech:'Wind',cal:'Cal-26',bid:.51,ask:.55,delta:-.02},
+  {tech:'Solar',cal:'Cal-26',bid:.38,ask:.41,delta:-.01},
+  {tech:'Hydro',cal:'Cal-26',bid:.49,ask:.53,delta:-.02},
+  {tech:'Renewable',cal:'Cal-26',bid:.45,ask:.48,delta:-.015},
+];
+const GO_FWD = [
+  {p:'GO AIB Wind',b25:.52,a25:.56,b26:.51,a26:.55,b27:.48,a27:.52,d:-.02},
+  {p:'GO AIB Solar',b25:.39,a25:.42,b26:.38,a26:.41,b27:.35,a27:.38,d:-.01},
+  {p:'GO AIB Hydro',b25:.50,a25:.54,b26:.49,a26:.53,b27:.46,a27:.50,d:-.02},
+  {p:'GO AIB Renewable',b25:.46,a25:.49,b26:.45,a26:.48,b27:.42,a27:.45,d:-.015},
+  {p:'GO Ireland Wind',b25:.28,a25:.32,b26:.27,a26:.31,b27:.25,a27:.29,d:-.01},
+];
+
+// ── HELPERS
+function genHourly24(base, min, max) {
+  const p=[.6,.5,.45,.4,.4,.5,.7,.85,.9,.85,.75,.6,.55,.58,.65,.75,.88,.95,1,.95,.88,.82,.75,.68];
+  const r = max - min;
+  return p.map(v => min + v*r + (Math.random()-.5)*r*.08);
+}
+function drawLineSimple(ctx, w, h, data, color, mn, mx) {
+  const rng = mx - mn || 1;
+  const tx = i => (i/(data.length-1))*(w-44)+44;
+  const ty = v => h-18-((v-mn)/rng)*(h-28);
+  const grad = ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0, color+'33'); grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.moveTo(tx(0),ty(data[0]));
+  data.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+  ctx.lineTo(tx(data.length-1),h-18); ctx.lineTo(tx(0),h-18);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tx(0),ty(data[0]));
+  data.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+  // y labels
+  [mn, Math.round((mn+mx)/2), mx].forEach(v=>{
+    const y=ty(v); ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='right';
+    ctx.fillText(v.toFixed(0),42,y+3);
+    ctx.strokeStyle='rgba(26,45,63,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(44,y); ctx.lineTo(w,y); ctx.stroke();
+  });
+}
+
+// ── RENEWABLES
+let renTab = 'today';
+function setRenTab(t, btn) {
+  renTab = t;
+  document.querySelectorAll('#page-renewables .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawRenChart();
+}
+function loadRenewables() {
+  const c = document.getElementById('ren-country').value;
+  const mix = GM_DEMO[c] || GM_DEMO.FR;
+  document.getElementById('ren-wind-now').innerHTML = (mix.wind/1000).toFixed(1)+'<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span>';
+  document.getElementById('ren-solar-now').innerHTML = (mix.solar/1000).toFixed(1)+'<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span>';
+  const feW=5.2, feS=-8.1;
+  document.getElementById('ren-fe-wind').innerHTML = `<span style="color:${feW>0?'var(--down)':'var(--up)'}">${feW>0?'+':''}${feW.toFixed(1)}%</span>`;
+  document.getElementById('ren-fe-solar').innerHTML = `<span style="color:${feS<0?'var(--up)':'var(--down)'}">${feS.toFixed(1)}%</span>`;
+  document.getElementById('ren-upd').textContent = 'Demo · ENTSO-E A69/A71';
+  drawRenChart();
+  renderRenErrorTable(mix);
+}
+function drawRenChart() {
+  const c = (document.getElementById('ren-country')||{}).value || 'FR';
+  const mix = GM_DEMO[c] || GM_DEMO.FR;
+  const canvas = document.getElementById('ren-canvas');
+  if (!canvas || !canvas.offsetWidth) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth; canvas.height = 210;
+  const w = canvas.width, h = canvas.height;
+  const wP=[.4,.35,.33,.32,.32,.38,.45,.52,.55,.58,.6,.62,.63,.61,.6,.58,.55,.52,.5,.48,.47,.45,.43,.41];
+  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
+  const wA=wP.map(v=>(mix.wind||5000)*v*(0.9+Math.random()*.2));
+  const sA=sP.map(v=>(mix.solar||10000)*v*(0.9+Math.random()*.15));
+  const wF=wA.map(v=>v*(1+(Math.random()-.5)*.15));
+  const sF=sA.map(v=>v*(1+(Math.random()-.5)*.15));
+  const wE=wA.map((v,i)=>v-wF[i]);
+  const sE=sA.map((v,i)=>v-sF[i]);
+  const histW=Array.from({length:168},(_,i)=>(mix.wind||5000)*wP[i%24]*(0.85+Math.random()*.3));
+  const histS=Array.from({length:168},(_,i)=>(mix.solar||10000)*sP[i%24]*(0.85+Math.random()*.2));
+  ctx.clearRect(0,0,w,h);
+  let sets=[];
+  if(renTab==='today')    sets=[{d:wA,c:'#60a5fa',lw:2,dash:[]},{d:sA,c:'#f59e0b',lw:2,dash:[]}];
+  if(renTab==='forecast') sets=[{d:wA,c:'#60a5fa',lw:1.5,dash:[]},{d:wF,c:'#60a5fa',lw:1,dash:[4,4]},{d:sA,c:'#f59e0b',lw:1.5,dash:[]},{d:sF,c:'#f59e0b',lw:1,dash:[4,4]}];
+  if(renTab==='error')    sets=[{d:wE,c:'#60a5fa',lw:1.5,dash:[],bar:true},{d:sE,c:'#f59e0b',lw:1.5,dash:[],bar:true}];
+  if(renTab==='history')  sets=[{d:histW,c:'#60a5fa',lw:1.5,dash:[]},{d:histS,c:'#f59e0b',lw:1.5,dash:[]}];
+  const n=sets[0]?.d.length||24;
+  const allV=sets.flatMap(s=>s.d);
+  const mn=Math.min(...allV), mx=Math.max(...allV)||1, rng=mx-mn||1;
+  const tx=i=>(i/(n-1))*(w-44)+44, ty=v=>h-18-((v-mn)/rng)*(h-28);
+  // zero line
+  const zy=ty(0); ctx.strokeStyle='rgba(61,90,122,.5)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(44,zy); ctx.lineTo(w,zy); ctx.stroke();
+  sets.forEach(s=>{
+    if(s.bar){
+      s.d.forEach((v,i)=>{
+        const x=tx(i), bw=Math.max(1,(w-44)/n-1);
+        ctx.fillStyle=v>=0?s.c+'88':s.c+'44';
+        ctx.fillRect(x-bw/2,v>=0?ty(v):zy,bw,Math.abs(ty(0)-ty(v)));
+      });
+    } else {
+      ctx.setLineDash(s.dash||[]); ctx.beginPath(); ctx.moveTo(tx(0),ty(s.d[0]));
+      s.d.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+      ctx.strokeStyle=s.c; ctx.lineWidth=s.lw; ctx.stroke();
+    }
+  });
+  ctx.setLineDash([]);
+  // x labels
+  ctx.fillStyle='#3d5a7a'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='center';
+  if(renTab==='history'){
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((d,i)=>ctx.fillText(d,tx(Math.round(i*(n-1)/6)),h-3));
+  } else {
+    [0,6,12,18,23].forEach(hr=>ctx.fillText(hr+'h',tx(hr),h-3));
+  }
+}
+function renderRenErrorTable(mix) {
+  const wP=[.4,.35,.33,.32,.32,.38,.45,.52,.55,.58,.6,.62,.63,.61,.6,.58,.55,.52,.5,.48,.47,.45,.43,.41];
+  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
+  const rows=Array.from({length:24},(_,hr)=>{
+    const wA=Math.round((mix.wind||5000)*wP[hr]*(0.9+Math.random()*.2));
+    const wF=Math.round(wA*(1+(Math.random()-.5)*.15));
+    const sA=Math.round((mix.solar||10000)*sP[hr]*(0.9+Math.random()*.15));
+    const sF=Math.round(sA*(1+(Math.random()-.5)*.15));
+    const wE=wA-wF, sE=sA-sF;
+    const wPct=wF?((wE/wF)*100).toFixed(1):'-';
+    const sPct=sF?((sE/sF)*100).toFixed(1):'-';
+    const ec=v=>Math.abs(+v)>10?'color:var(--warn)':'color:var(--text3)';
+    const wCol = wE > 200 ? 'var(--down)' : wE < -200 ? 'var(--up)' : 'var(--text3)';
+    const sCol = sE > 500 ? 'var(--down)' : sE < -500 ? 'var(--up)' : 'var(--text3)';
+    return '<tr>' +
+      '<td style="color:var(--text2)">' + hr + ':00</td>' +
+      '<td>' + wA.toLocaleString() + '</td>' +
+      '<td style="color:var(--text3)">' + wF.toLocaleString() + '</td>' +
+      '<td style="color:' + wCol + '">' + (wE > 0 ? '+' : '') + wE.toLocaleString() + '</td>' +
+      '<td style="' + ec(wPct) + '">' + wPct + '%</td>' +
+      '<td>' + sA.toLocaleString() + '</td>' +
+      '<td style="color:var(--text3)">' + sF.toLocaleString() + '</td>' +
+      '<td style="color:' + sCol + '">' + (sE > 0 ? '+' : '') + sE.toLocaleString() + '</td>' +
+      '<td style="' + ec(sPct) + '">' + sPct + '%</td>' +
+      '</tr>';
+  });
+  document.getElementById('ren-err-tbody').innerHTML = rows.join('');
+}
+
+// ── NUCLEAR
+function drawNuclear() {
+  const nData=[72,68,65,62,64,63,61,62,63,64,65,66];
+  const c1=document.getElementById('nuc-canvas');
+  if(c1&&c1.offsetWidth){const ctx=c1.getContext('2d');c1.width=c1.offsetWidth;c1.height=170;drawLineSimple(ctx,c1.width,c1.height,nData,'#a78bfa',58,78);}
+  const hData=Array.from({length:52},(_,i)=>20+40*Math.sin(i/52*Math.PI)+(Math.random()-.5)*5);
+  const c2=document.getElementById('hydro-canvas');
+  if(c2&&c2.offsetWidth){
+    const ctx=c2.getContext('2d');c2.width=c2.offsetWidth;c2.height=170;
+    const w=c2.width,h=c2.height,mn=0,mx=80;
+    const tx=i=>(i/51)*(w-44)+44,ty=v=>h-18-((v-mn)/(mx-mn))*(h-28);
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(232,160,32,.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(tx(0),ty(35));ctx.lineTo(tx(51),ty(35));ctx.stroke();ctx.setLineDash([]);
+    const grad=ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,'rgba(52,211,153,.15)');grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.moveTo(tx(0),ty(hData[0]));hData.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+    ctx.lineTo(tx(51),h-18);ctx.lineTo(tx(0),h-18);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(0),ty(hData[0]));hData.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+    ctx.strokeStyle='#34d399';ctx.lineWidth=1.5;ctx.stroke();
+    [0,25,50,75].forEach(v=>{const y=ty(v);ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';ctx.fillText(v+'%',42,y+3);});
+  }
+}
+
+// ── IMBALANCE
+function drawImbalance() {
+  const canvas=document.getElementById('imb-canvas');
+  if(!canvas||!canvas.offsetWidth)return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth;canvas.height=200;
+  const w=canvas.width,h=canvas.height;
+  const data=Array.from({length:96},(_,i)=>{
+    const hr=i/4;return 80+40*Math.sin(hr/24*Math.PI*2)+(Math.random()-.5)*120;
+  });
+  const mn=Math.min(...data)-10,mx=Math.max(...data)+10,rng=mx-mn||1;
+  const tx=i=>(i/(data.length-1))*(w-44)+44,ty=v=>h-18-((v-mn)/rng)*(h-28);
+  const zy=ty(0);
+  ctx.strokeStyle='rgba(61,90,122,.6)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(44,zy);ctx.lineTo(w,zy);ctx.stroke();
+  data.forEach((v,i)=>{
+    const x=tx(i),bw=Math.max(1,(w-44)/data.length-1);
+    ctx.fillStyle=v>=0?'rgba(16,185,129,.7)':'rgba(240,80,96,.7)';
+    ctx.fillRect(x-bw/2,v>=0?ty(v):zy,bw,Math.abs(ty(0)-ty(v)));
+  });
+  [-100,0,100,200].forEach(v=>{const y=ty(v);ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';ctx.fillText(v,42,y+3);});
+  [0,6,12,18].forEach(hr=>{ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';ctx.fillText(hr+'h',tx(hr*4),h-3);});
+}
+
+// ── EUA
+function drawEUA() {
+  const eua90=Array.from({length:90},(_,i)=>74+8*Math.sin(i/30*Math.PI)+(Math.random()-.5)*6);
+  const brent90=Array.from({length:90},(_,i)=>110+15*Math.sin(i/45*Math.PI)+(Math.random()-.5)*8);
+  const c1=document.getElementById('eua-spot-canvas');
+  if(c1&&c1.offsetWidth){const ctx=c1.getContext('2d');c1.width=c1.offsetWidth;c1.height=180;drawLineSimple(ctx,c1.width,c1.height,eua90,'#a78bfa',55,100);}
+  const c2=document.getElementById('eua-corr-canvas');
+  if(c2&&c2.offsetWidth){
+    const ctx=c2.getContext('2d');c2.width=c2.offsetWidth;c2.height=180;
+    const w=c2.width,h=c2.height;ctx.clearRect(0,0,w,h);
+    const emn=Math.min(...eua90),emx=Math.max(...eua90);
+    const bmn=Math.min(...brent90),bmx=Math.max(...brent90);
+    ctx.fillStyle='rgba(167,139,250,.5)';
+    eua90.forEach((e,i)=>{
+      const x=((brent90[i]-bmn)/(bmx-bmn))*(w-40)+20;
+      const y=h-18-((e-emn)/(emx-emn))*(h-28);
+      ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();
+    });
+    ctx.fillStyle='#a78bfa';ctx.font='11px IBM Plex Sans';ctx.textAlign='left';ctx.fillText('ρ = +0.62',w-70,20);
+    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';ctx.fillText('Brent ($/bbl)',w/2,h-2);
+  }
+  const c3=document.getElementById('eua-spark-canvas');
+  if(c3&&c3.offsetWidth){
+    const sparkD=Array.from({length:90},(_,i)=>-28+20*Math.sin(i/20*Math.PI)+(Math.random()-.5)*8);
+    const ctx=c3.getContext('2d');c3.width=c3.offsetWidth;c3.height=160;drawLineSimple(ctx,c3.width,c3.height,sparkD,'#f59e0b',-50,10);
+  }
+}
+
+function drawEUAFwd() {
+  const canvas=document.getElementById('eua-fwd-canvas');
+  if(!canvas||!canvas.offsetWidth)return;
+  const ctx=canvas.getContext('2d');canvas.width=canvas.offsetWidth;canvas.height=160;
+  drawLineSimple(ctx,canvas.width,canvas.height,[74.52,76.40,79.15,82.30,85.80,89.50],'#a78bfa',70,95);
+}
+
+// ── SPARK SPREAD
+function renderSpark() {
+  const TTF=45.14,EUA=74.09,EFF=0.49,CO2=0.365;
+  const gasCost=TTF/EFF,carbCost=EUA*CO2;
+  const demoZones=getDemoData();
+  document.getElementById('spark-tbody').innerHTML=demoZones.slice(0,14).map(z=>{
+    const css=z.today-gasCost-carbCost;
+    return `<tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">${z.code}</span>${z.name}</td><td style="font-weight:600">${z.today.toFixed(1)}</td><td style="color:var(--text3)">${gasCost.toFixed(1)}</td><td style="color:var(--text3)">${carbCost.toFixed(1)}</td><td class="${css>=0?'up':'down'}" style="font-weight:600">${css>=0?'+':''}${css.toFixed(1)}</td><td class="${z.vsYday>=0?'up':'down'}">${z.vsYday>=0?'▲':'▼'}${Math.abs(z.vsYday).toFixed(1)}</td></tr>`;
+  }).join('');
+}
+
+// ── GO PRICES
+function renderGO() {
+  document.getElementById('go-cards').innerHTML=GO_CURRENT.map(g=>`
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:11px 13px">
+      <div style="font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:3px">GO AIB ${g.tech}</div>
+      <div style="font-size:9px;color:var(--text3);margin-bottom:7px">${g.cal} · AIB market</div>
+      <div style="display:flex;gap:12px;align-items:baseline">
+        <div><div style="font-size:9px;color:var(--text3)">BID</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--up)">${g.bid.toFixed(3)} €</div></div>
+        <div><div style="font-size:9px;color:var(--text3)">ASK</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--down)">${g.ask.toFixed(3)} €</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Spread: ${(g.ask-g.bid).toFixed(3)} €/MWh</div>
+      <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:4px;color:${g.delta>=0?'var(--up)':'var(--down)'}">${g.delta>=0?'▲':'▼'}${Math.abs(g.delta).toFixed(3)} WoW</div>
+    </div>`).join('');
+  document.getElementById('go-fwd-tbody').innerHTML=GO_FWD.map(g=>`<tr>
+    <td style="font-weight:500">${g.p}</td>
+    <td class="up">${g.b25.toFixed(3)}</td><td class="down">${g.a25.toFixed(3)}</td>
+    <td class="up">${g.b26.toFixed(3)}</td><td class="down">${g.a26.toFixed(3)}</td>
+    <td class="up">${g.b27.toFixed(3)}</td><td class="down">${g.a27.toFixed(3)}</td>
+    <td style="color:var(--text3)">${((g.a26-g.b26)/2*1000).toFixed(0)}m€</td>
+    <td class="${g.d>=0?'up':'down'}">${g.d>=0?'+':''}${g.d.toFixed(3)}</td>
+  </tr>`).join('');
+}
+function loadGoCSV(input) {
+  alert('CSV parser to be wired to your Commerg format.\nDrop a CSV with columns: Date, Product, Year, Bid, Ask');
+}
+
+// ── GO HISTORY
+let goHistFilter = 'all';
+function filterGoH(f, btn) {
+  goHistFilter = f;
+  document.querySelectorAll('#go-hist-filter .day-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  drawGoHist();
+}
+function drawGoHist() {
+  const canvas=document.getElementById('go-hist-canvas');
+  if(!canvas||!canvas.offsetWidth)return;
+  const ctx=canvas.getContext('2d');canvas.width=canvas.offsetWidth;canvas.height=230;
+  const w=canvas.width,h=canvas.height,n=130;ctx.clearRect(0,0,w,h);
+  const series={
+    wind:{l:'Wind',c:'#60a5fa',d:Array.from({length:n},(_,i)=>.5+.15*Math.sin(i/20)+.1*Math.sin(i/6)+(Math.random()-.5)*.05)},
+    solar:{l:'Solar',c:'#f59e0b',d:Array.from({length:n},(_,i)=>.38+.1*Math.sin(i/18)+.08*Math.sin(i/5)+(Math.random()-.5)*.04)},
+    hydro:{l:'Hydro',c:'#34d399',d:Array.from({length:n},(_,i)=>.48+.12*Math.sin(i/22)+.09*Math.sin(i/7)+(Math.random()-.5)*.04)},
+    renewable:{l:'Renewable',c:'#a78bfa',d:Array.from({length:n},(_,i)=>.44+.11*Math.sin(i/19)+.08*Math.sin(i/6)+(Math.random()-.5)*.04)},
+  };
+  const active=goHistFilter==='all'?Object.values(series):[series[goHistFilter]].filter(Boolean);
+  const allD=active.flatMap(s=>s.d);
+  const mn=Math.min(...allD)-.05,mx=Math.max(...allD)+.05,rng=mx-mn||1;
+  const tx=i=>(i/(n-1))*(w-44)+44,ty=v=>h-18-((v-mn)/rng)*(h-28);
+  [.2,.4,.6,.8,1].forEach(p=>{
+    const rv=mn+p*rng,y=ty(rv);
+    ctx.strokeStyle='rgba(26,45,63,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(44,y);ctx.lineTo(w,y);ctx.stroke();
+    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='right';ctx.fillText(rv.toFixed(2)+'€',42,y+3);
+  });
+  active.forEach(s=>{
+    ctx.beginPath();ctx.moveTo(tx(0),ty(s.d[0]));
+    s.d.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+    ctx.strokeStyle=s.c;ctx.lineWidth=1.5;ctx.stroke();
+  });
+  ['Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26'].forEach((q,i)=>{
+    ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';
+    ctx.fillText(q,tx(Math.round(i*(n-1)/11)),h-3);
+  });
+  if(goHistFilter==='all'){
+    Object.values(series).forEach((s,i)=>{
+      ctx.fillStyle=s.c;ctx.fillRect(50+i*82,10,8,2);
+      ctx.font='10px IBM Plex Sans';ctx.textAlign='left';ctx.fillText(s.l,62+i*82,13);
+    });
+  }
+}
+
+// ── WEATHER
+async function loadWeather() {
+  document.getElementById('wx-upd').textContent='Loading...';
+  const cards=[];
+  for(const city of WX_CITIES){
+    try{
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weathercode,windspeed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Paris&forecast_days=8`;
+      const r=await fetch(url);const d=await r.json();
+      const temp=d.current.temperature_2m;
+      const hdd=Math.max(0,18-temp).toFixed(1);
+      const vs=(temp-city.norm).toFixed(1);
+      const days=['S','M','T','W','T','F','S','S'];
+      const fc=d.daily.temperature_2m_max.slice(1,8).map((t,i)=>`<div style="flex:1;text-align:center"><div style="font-size:9px;color:var(--text3)">${days[i]}</div><div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text2)">${Math.round(t)}°</div></div>`).join('');
+      cards.push(`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:11px 13px">
+        <div style="font-size:11px;font-weight:500;margin-bottom:1px">${city.name}</div>
+        <div style="font-size:9px;color:var(--text3);margin-bottom:7px">${city.region}</div>
+        <div style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace">${temp.toFixed(1)}<span style="font-size:13px;font-weight:400;color:var(--text2)">°C</span></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">HDD ${hdd} · Wind ${d.current.windspeed_10m} km/h</div>
+        <div style="font-size:10px;margin-top:2px;font-family:'IBM Plex Mono',monospace;color:${+vs>=0?'var(--down)':'var(--up)'}">${+vs>=0?'+':''}${vs}°C vs norm.</div>
+        <div style="display:flex;gap:2px;margin-top:7px;border-top:1px solid var(--border);padding-top:7px">${fc}</div>
+      </div>`);
+    }catch{cards.push(`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:11px 13px"><div style="font-size:11px;font-weight:500">${city.name}</div><div style="font-size:11px;color:var(--text3);margin-top:8px">Unavailable</div></div>`);}
+  }
+  document.getElementById('wx-cards').innerHTML=cards.join('');
+  document.getElementById('wx-upd').textContent='Open-Meteo · Live';
+}
+
+// ── HDD
+function renderHDD() {
+  const norms={Paris:11,Lyon:12.5,Marseille:16,Bordeaux:13.2,Strasbourg:10.5,Lille:10,Nantes:12.8,Grenoble:11.2};
+  const rows=WX_CITIES.map(c=>{
+    const daily=Array.from({length:7},()=>(Math.random()*4).toFixed(1));
+    const sum=daily.reduce((a,b)=>a+ +b,0).toFixed(1);
+    const norm=(7*(18-norms[c.name])/10).toFixed(1);
+    const diff=(sum-norm).toFixed(1);
+    return `<tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">${c.name.slice(0,3).toUpperCase()}</span>${c.name}</td>${daily.map(v=>`<td>${v}</td>`).join('')}<td style="font-weight:600">${sum}</td><td class="${+diff>=0?'down':'up'}">${+diff>=0?'+':''}${diff}</td></tr>`;
+  });
+  document.getElementById('hdd-tbody').innerHTML=rows.join('');
+  const canvas=document.getElementById('hdd-canvas');
+  if(canvas&&canvas.offsetWidth){
+    const ctx=canvas.getContext('2d');canvas.width=canvas.offsetWidth;canvas.height=200;
+    const w=canvas.width,h=canvas.height,n=120;
+    let cum=0;const cumD=Array.from({length:n},(_,i)=>{cum+=Math.max(0,18-(10+5*Math.sin(i/n*Math.PI*2)+2*(Math.random()-.5)));return cum;});
+    let cumN=0;const normD=Array.from({length:n},(_,i)=>{cumN+=Math.max(0,18-(10+5*Math.sin(i/n*Math.PI*2)));return cumN;});
+    const mx=Math.max(...cumD,...normD);
+    const tx=i=>(i/(n-1))*(w-44)+44,ty=v=>h-18-(v/mx)*(h-28);
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='rgba(61,90,122,.6)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(tx(0),ty(normD[0]));normD.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});ctx.stroke();ctx.setLineDash([]);
+    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,'rgba(59,130,246,.2)');grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.moveTo(tx(0),ty(cumD[0]));cumD.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+    ctx.lineTo(tx(n-1),h-18);ctx.lineTo(tx(0),h-18);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(0),ty(cumD[0]));cumD.forEach((v,i)=>{if(i>0)ctx.lineTo(tx(i),ty(v));});
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.stroke();
+    ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'].forEach((m,i)=>{const xi=Math.round(i*(n-1)/6);ctx.fillStyle='#3d5a7a';ctx.font='9px IBM Plex Mono';ctx.textAlign='center';ctx.fillText(m,tx(xi),h-3);});
+    ctx.fillStyle='#3b82f6';ctx.font='10px IBM Plex Sans';ctx.textAlign='left';ctx.fillText('Actual 2025-26',52,16);
+    ctx.fillStyle='#3d5a7a';ctx.fillText('Normale 20 ans',52,28);
+  }
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+loadPrices();
+updateConverter();
+updateCapacity();
+</script>
+</body>
+</html>
