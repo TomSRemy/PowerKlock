@@ -1,5 +1,5 @@
 {
-  "updated": "2026-04-30T08:28:00.817774Z",
+  "updated": "2026-04-30T09:36:51.474443Z",
   "countries": {
     "FR": {
       "windActual": [
@@ -158,8 +158,10 @@
         0,
         0
       ],
-      "windErrorPct": 0,
-      "solarErrorPct": 0
+      "windErrorPct": 0.0,
+      "solarErrorPct": 0.0,
+      "windNow": 0,
+      "solarNow": 0
     },
     "DE_LU": {
       "windActual": [
@@ -318,8 +320,10 @@
         0,
         0
       ],
-      "windErrorPct": 0,
-      "solarErrorPct": 0
+      "windErrorPct": 0.0,
+      "solarErrorPct": 0.0,
+      "windNow": 0,
+      "solarNow": 0
     },
     "ES": {
       "windActual": [
@@ -478,8 +482,10 @@
         0,
         0
       ],
-      "windErrorPct": 0,
-      "solarErrorPct": 0
+      "windErrorPct": 0.0,
+      "solarErrorPct": 0.0,
+      "windNow": 0,
+      "solarNow": 0
     },
     "GB": {
       "windActual": [
@@ -638,8 +644,10 @@
         0,
         0
       ],
-      "windErrorPct": 0,
-      "solarErrorPct": 0
+      "windErrorPct": 0.0,
+      "solarErrorPct": 0.0,
+      "windNow": 0,
+      "solarNow": 0
     },
     "BE": {
       "windActual": [
@@ -798,8 +806,10 @@
         0,
         0
       ],
-      "windErrorPct": 0,
-      "solarErrorPct": 0
+      "windErrorPct": 0.0,
+      "solarErrorPct": 0.0,
+      "windNow": 0,
+      "solarNow": 0
     }
   }
 }
