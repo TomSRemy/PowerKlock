@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PowerDesk — European Energy Intelligence</title>
+<title>PowerKlock — European Energy Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -688,7 +688,7 @@
   <div style="display:flex;align-items:center;gap:20px">
     <div class="logo">
       <div class="logo-icon">⚡</div>
-      <span class="logo-text">PowerDesk</span>
+      <span class="logo-text">PowerKlock</span>
     </div>
     <div class="topbar-nav">
       <button class="topbar-btn active" onclick="switchSection('power')"><span class="dot dot-power"></span> Power</button>
@@ -859,6 +859,17 @@
         </table>
         <div class="status-bar" style="padding:10px 16px">
           <span id="prices-footer">Prices: ENTSO-E Transparency · Day-ahead market settlement · Updated daily after 13:00 CET</span>
+        </div>
+      </div>
+
+      <!-- Multi-country comparison chart (always visible at bottom) -->
+      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:14px;margin-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)">Hourly DA Prices — Multi-country comparison</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="compare-country-pills"></div>
+        </div>
+        <div style="position:relative">
+          <canvas id="price-compare-canvas" style="width:100%;height:220px"></canvas>
         </div>
       </div>
     </div>
@@ -1125,8 +1136,9 @@
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-        <div class="kpi-card"><div class="kpi-label">Wind Now</div><div class="kpi-value up" id="ren-wind-now">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
-        <div class="kpi-card"><div class="kpi-label">Solar Now</div><div class="kpi-value" style="color:var(--warn)" id="ren-solar-now">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Wind Onshore</div><div class="kpi-value up" id="ren-wind-on">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Wind Offshore</div><div class="kpi-value up" id="ren-wind-off">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Solar</div><div class="kpi-value" style="color:var(--warn)" id="ren-solar-now">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Forecast Error — Wind</div><div class="kpi-value" id="ren-fe-wind">--</div><div class="kpi-chg" style="color:var(--text3)">actual vs DA forecast</div></div>
         <div class="kpi-card"><div class="kpi-label">Forecast Error — Solar</div><div class="kpi-value" id="ren-fe-solar">--</div><div class="kpi-chg" style="color:var(--text3)">actual vs DA forecast</div></div>
       </div>
@@ -17003,34 +17015,241 @@ function updateKPIs(data) {
 function renderPricesTable(data) {
   const sorted = [...data].sort((a,b) => b.today - a.today);
   const tbody = document.getElementById('prices-tbody');
+  window._pricesSorted = sorted;
+
+  // Zone colors for comparison chart
+  const ZONE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8'];
+  window._compareZones = window._compareZones || new Set(['FR']);
+
   tbody.innerHTML = sorted.map((z, i) => {
-    const priceColor = z.today < 0 ? 'down' : z.today > 100 ? 'down' : z.today < 20 ? 'up' : '';
-    const vsColor = z.vsYday == null ? 'text3' : z.vsYday >= 0 ? 'up' : 'down';
+    const priceColor = z.today < 0 ? 'dn' : z.today > 100 ? 'dn' : z.today < 20 ? 'up' : '';
+    const vsColor = z.vsYday == null ? 'tx3' : z.vsYday >= 0 ? 'dn' : 'up';
     const vsArrow = z.vsYday == null ? '' : z.vsYday >= 0 ? '▲' : '▼';
     const vsText = z.vsYday == null ? '--' : `${vsArrow} ${Math.abs(z.vsYday).toFixed(1)}`;
-    const sparkColor = z.spark == null ? '#4a6280' : z.spark >= 0 ? '#00d4a8' : '#ff4d6d';
+    const sparkColor = z.spark == null ? '#4a6280' : z.spark >= 0 ? '#10b981' : '#f05060';
     const sparkText = z.spark == null ? '--' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
-    const negStyle = z.negHrs > 0 ? 'color:var(--warn);font-weight:600' : 'color:var(--text3)';
+    const negStyle = z.negHrs > 0 ? 'color:var(--warn);font-weight:600' : 'color:var(--tx3)';
 
-    return `<tr>
-      <td><span class="country-flag">${z.flag}</span><span class="country-code">${z.code}</span>${z.name}</td>
-      <td style="color:var(--${priceColor || 'text'});font-weight:600">${z.today.toFixed(1)}</td>
+    return `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand hourly chart">
+      <td><span style="font-size:10px;color:var(--acc);font-weight:600;margin-right:4px">${z.code}</span>${z.name}</td>
+      <td style="color:var(--${priceColor || 'tx'});font-weight:600">${z.today.toFixed(1)}</td>
       <td style="color:var(--${vsColor})">${vsText}</td>
-      <td style="color:var(--text2)">${z.min != null ? z.min.toFixed(1) : '--'}<span style="color:var(--text3);font-size:10px"> @${z.minHr}h</span></td>
-      <td style="color:var(--text2)">${z.max != null ? z.max.toFixed(1) : '--'}<span style="color:var(--text3);font-size:10px"> @${z.maxHr}h</span></td>
+      <td style="color:var(--tx2)">${z.min != null ? z.min.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.minHr}h</span></td>
+      <td style="color:var(--tx2)">${z.max != null ? z.max.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.maxHr}h</span></td>
       <td style="${negStyle}">${z.negHrs > 0 ? z.negHrs + 'h' : '0'}</td>
       <td style="color:${sparkColor}">${sparkText}</td>
       <td class="sparkline-cell"><div id="spark-${i}" style="width:80px;height:28px"></div></td>
+    </tr>
+    <tr id="row-detail-${i}" style="display:none">
+      <td colspan="8" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
+        <div style="padding:12px 16px 16px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${i}"></div>
+          <div style="position:relative;height:160px">
+            <canvas id="row-chart-${i}" style="width:100%;height:160px"></canvas>
+          </div>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 
-  // Draw sparklines as inline SVG (no Chart.js -- cleaner in tables)
   sorted.forEach((z, i) => {
     const el = document.getElementById(`spark-${i}`);
     if (!el) return;
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
     el.innerHTML = makeSVGSparkline(hourly, z.today >= 0);
   });
+
+  // Render comparison chart
+  renderCompareChart();
+  renderComparePills();
+}
+
+// Toggle inline row detail
+let _openRow = null;
+function togglePriceRow(idx, e) {
+  const z = window._pricesSorted?.[idx];
+  if (!z) return;
+
+  // Close previously open row
+  if (_openRow !== null && _openRow !== idx) {
+    document.getElementById(`row-detail-${_openRow}`).style.display = 'none';
+  }
+
+  const detailRow = document.getElementById(`row-detail-${idx}`);
+  const isOpen = detailRow.style.display !== 'none';
+
+  if (isOpen) {
+    detailRow.style.display = 'none';
+    _openRow = null;
+    return;
+  }
+
+  detailRow.style.display = 'table-row';
+  _openRow = idx;
+  // Scroll so detail row is visible without overlap
+  setTimeout(() => {
+    detailRow.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 50);
+
+  // KPIs
+  document.getElementById(`row-kpis-${idx}`).innerHTML = [
+    {l:'Average', v:z.today.toFixed(2)+' €/MWh', c:''},
+    {l:'Peak', v:z.max.toFixed(2)+' €', sub:'@'+z.maxHr+'h', c:'dn'},
+    {l:'Min', v:z.min.toFixed(2)+' €', sub:'@'+z.minHr+'h', c:'up'},
+    {l:'Neg Hours', v:(z.negHrs||0)+'h', c:(z.negHrs||0)>0?'warn':'tx3'},
+  ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:9px 12px">
+    <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
+    <div style="font-size:16px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--${k.c||'tx'})">${k.v}</div>
+    ${k.sub?`<div style="font-size:9px;color:var(--tx3)">${k.sub}</div>`:''}
+  </div>`).join('');
+
+  // Hourly chart
+  const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+  const curHr = new Date().getHours();
+  const labels = Array.from({length:hourly.length},(_,i)=>i+'h');
+
+  mkChart(`row-chart-${idx}`, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:`${z.code} (€/MWh)`,
+        data:hourly,
+        borderColor:C_ACC,
+        borderWidth:2,
+        pointRadius:0,
+        pointHoverRadius:5,
+        pointHoverBackgroundColor:C_ACC,
+        pointHoverBorderColor:'#fff',
+        pointHoverBorderWidth:2,
+        fill:true,
+        backgroundColor:(ctx2)=>{
+          const g=ctx2.chart.ctx.createLinearGradient(0,0,0,160);
+          g.addColorStop(0,rgba(C_ACC,.2)); g.addColorStop(1,rgba(C_ACC,0)); return g;
+        },
+        tension:0.3,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:c=>'Hour '+c[0].label,
+            label:c=>c.raw.toFixed(2)+' €/MWh'
+          }
+        },
+        zoom:ZOOM_CFG,
+      },
+      scales:{
+        x:{grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12}},
+        y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+' €'}}
+      }
+    }
+  });
+}
+
+// ── MULTI-COUNTRY COMPARISON CHART
+const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#e879f9'];
+
+function renderComparePills() {
+  const data = window._pricesSorted || [];
+  const selected = window._compareZones || new Set(['FR']);
+  const el = document.getElementById('compare-country-pills');
+  if (!el) return;
+
+  // Assign stable color per zone code (not index in sorted array)
+  if (!window._zoneColorMap) {
+    window._zoneColorMap = {};
+    data.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+  }
+
+  el.innerHTML = data.map(z => {
+    const active = selected.has(z.code);
+    const col = window._zoneColorMap[z.code] || COMPARE_COLORS[0];
+    return `<button onclick="toggleCompareZone('${z.code}')" style="
+      padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;
+      font-family:'IBM Plex Mono',monospace;transition:all .15s;
+      background:${active?col+'33':'none'};
+      border:1px solid ${active?col:'rgba(61,90,122,.4)'};
+      color:${active?col:'var(--tx3)'}
+    ">${z.code}</button>`;
+  }).join('');
+}
+
+function toggleCompareZone(code) {
+  if (!window._compareZones) window._compareZones = new Set(['FR']);
+  if (window._compareZones.has(code)) {
+    if (window._compareZones.size > 1) window._compareZones.delete(code);
+  } else {
+    window._compareZones.add(code); // no limit
+  }
+  renderComparePills();
+  renderCompareChart();
+}
+
+function renderCompareChart() {
+  const data = window._pricesSorted;
+  if (!data || !data.length) return;
+  const selected = window._compareZones || new Set(['FR']);
+  const hours = Array.from({length:24},(_,i)=>i+'h');
+  const curHr = new Date().getHours();
+
+  const datasets = [];
+  let colorIdx = 0;
+  if (!window._zoneColorMap) {
+    window._zoneColorMap = {};
+    data.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+  }
+  data.forEach((z,i) => {
+    if (!selected.has(z.code)) return;
+    const col = window._zoneColorMap[z.code] || COMPARE_COLORS[i % COMPARE_COLORS.length];
+    const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+    datasets.push({
+      label:`${z.code} · ${z.name}`,
+      data:hourly.slice(0,24),
+      borderColor:col,
+      borderWidth:2,
+      pointRadius:0,
+      pointHoverRadius:5,
+      pointHoverBackgroundColor:col,
+      pointHoverBorderColor:'#fff',
+      pointHoverBorderWidth:2,
+      fill:false,
+      tension:0.3,
+    });
+  });
+
+  mkChart('price-compare-canvas', {
+    type:'line',
+    data:{ labels:hours, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10} },
+        tooltip:{
+          callbacks:{
+            title:c=>'Hour '+c[0].label,
+            label:c=>c.dataset.label+': '+c.raw.toFixed(2)+' €/MWh'
+          }
+        },
+        zoom:ZOOM_CFG,
+        annotation:{
+          annotations:{
+            nowline:{type:'line',xMin:curHr,xMax:curHr,borderColor:'rgba(255,255,255,.2)',borderWidth:1,borderDash:[3,3]}
+          }
+        }
+      },
+      scales:{
+        x:{grid:GRID, ticks:{color:C_TX3}},
+        y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+' €/MWh'}}
+      }
+    }
+  });
+  setTimeout(()=>{ addFullscreen('price-compare-canvas'); addDownload('price-compare-canvas','price-comparison'); },100);
 }
 
 function makeSVGSparkline(data, positive) {
@@ -17644,16 +17863,118 @@ function setRenTab(t, btn) {
   drawRenChart();
 }
 function loadRenewables() {
-  const c = document.getElementById('ren-country').value;
-  const mix = GM_DEMO[c] || GM_DEMO.FR;
-  document.getElementById('ren-wind-now').innerHTML = (mix.wind/1000).toFixed(1)+'<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span>';
-  document.getElementById('ren-solar-now').innerHTML = (mix.solar/1000).toFixed(1)+'<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span>';
-  const feW=5.2, feS=-8.1;
-  document.getElementById('ren-fe-wind').innerHTML = `<span style="color:${feW>0?'var(--down)':'var(--up)'}">${feW>0?'+':''}${feW.toFixed(1)}%</span>`;
+  const country = document.getElementById('ren-country').value;
+  const mix = (window._genmixData && window._genmixData[country]) || GM_DEMO[country] || GM_DEMO.FR;
+  const renData = window._renData && window._renData[country];
+  const curHr = new Date().getHours();
+
+  // KPIs -- use real data if available
+  const windOn  = renData?.windOnshoreNow  || renData?.windNow    || mix.wind * 0.7;
+  const windOff = renData?.windOffshoreNow || 0                   || mix.wind * 0.3;
+  const solar   = renData?.solarNow        || mix.solar;
+  const feW     = renData?.windErrorPct    || 5.2;
+  const feS     = renData?.solarErrorPct   || -8.1;
+
+  const kv = (v) => `${(v/1000).toFixed(1)}<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">GW</span>`;
+  document.getElementById('ren-wind-on').innerHTML  = kv(windOn);
+  document.getElementById('ren-wind-off').innerHTML = kv(windOff);
+  document.getElementById('ren-solar-now').innerHTML = kv(solar);
+  document.getElementById('ren-fe-wind').innerHTML  = `<span style="color:${feW>0?'var(--down)':'var(--up)'}">${feW>0?'+':''}${feW.toFixed(1)}%</span>`;
   document.getElementById('ren-fe-solar').innerHTML = `<span style="color:${feS<0?'var(--up)':'var(--down)'}">${feS.toFixed(1)}%</span>`;
-  document.getElementById('ren-upd').textContent = 'Demo · ENTSO-E A69/A71';
+  document.getElementById('ren-upd').textContent = renData ? 'ENTSO-E A69/A71 · JSON' : 'Demo · ENTSO-E A69/A71';
   drawRenChart();
-  renderRenErrorTable(mix);
+  renderRenErrorTable(mix, renData);
+}
+
+function drawRenChart() {
+  const countryEl = document.getElementById('ren-country');
+  const country = countryEl ? countryEl.value : 'FR';
+  const mix = (window._genmixData && window._genmixData[country]) || GM_DEMO[country] || GM_DEMO.FR;
+  const renData = window._renData && window._renData[country];
+
+  const wOnP=[.3,.26,.24,.22,.22,.28,.35,.40,.42,.44,.45,.46,.47,.45,.44,.42,.40,.38,.37,.36,.34,.32,.31,.30];
+  const wOffP=[.5,.45,.43,.42,.42,.46,.55,.62,.65,.68,.70,.72,.74,.71,.70,.68,.65,.62,.60,.58,.56,.54,.52,.51];
+  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
+  const hours = Array.from({length:24},(_,i)=>i+'h');
+
+  // Data sources -- JSON if available, demo otherwise
+  let wOnA, wOffA, sA, wOnF, wOffF, sF, wE, sE;
+
+  if (renData && renData.windActual && renData.windActual.some(v=>v>0)) {
+    wOnA  = renData.windOnshoreActual  || renData.windActual.map(v=>Math.round(v*0.7));
+    wOffA = renData.windOffshoreActual || renData.windActual.map(v=>Math.round(v*0.3));
+    sA    = renData.solarActual || sP.map(v=>Math.round((mix.solar||10000)*v));
+    wOnF  = renData.windOnshoreForecast  || wOnA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
+    wOffF = renData.windOffshoreForecast || wOffA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
+    sF    = renData.solarForecast || sA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
+    wE    = renData.windError || wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
+    sE    = renData.solarError || sA.map((v,i)=>v-sF[i]);
+  } else {
+    wOnA  = wOnP.map(v=>Math.round((mix.wind||5500)*0.7*v*(0.9+Math.random()*.2)));
+    wOffA = wOffP.map(v=>Math.round((mix.wind||5500)*0.3*v*(0.9+Math.random()*.15)));
+    sA    = sP.map(v=>Math.round((mix.solar||11000)*v*(0.9+Math.random()*.15)));
+    wOnF  = wOnA.map(v=>Math.round(v*(1+(Math.random()-.5)*.12)));
+    wOffF = wOffA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
+    sF    = sA.map(v=>Math.round(v*(1+(Math.random()-.5)*.12)));
+    wE    = wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
+    sE    = sA.map((v,i)=>v-sF[i]);
+  }
+
+  // History: 7 days
+  const histWOn  = Array.from({length:168},(_,i)=>Math.round(wOnA[i%24]*(0.85+Math.random()*.3)));
+  const histWOff = Array.from({length:168},(_,i)=>Math.round(wOffA[i%24]*(0.85+Math.random()*.25)));
+  const histS    = Array.from({length:168},(_,i)=>Math.round(sA[i%24]*(0.85+Math.random()*.2)));
+
+  let datasets = [], labels = hours, type = 'line';
+  const C_WIND_OFF = '#93c5fd'; // lighter blue for offshore
+
+  if (renTab === 'today') {
+    datasets = [
+      { label:'Wind Onshore', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND,.12), tension:0.3 },
+      { label:'Wind Offshore', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND_OFF,.1), tension:0.3 },
+      { label:'Solar', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_SOLAR,.1), tension:0.3 },
+    ];
+  } else if (renTab === 'forecast') {
+    datasets = [
+      { label:'Wind Onshore actual', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
+      { label:'Wind Onshore fc.', data:wOnF, borderColor:C_WIND, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
+      { label:'Wind Offshore actual', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
+      { label:'Wind Offshore fc.', data:wOffF, borderColor:C_WIND_OFF, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
+      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
+      { label:'Solar fc.', data:sF, borderColor:C_SOLAR, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
+    ];
+  } else if (renTab === 'error') {
+    type = 'bar';
+    const wE_total = wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
+    datasets = [
+      { label:'Wind error (MW)', data:wE_total, backgroundColor:wE_total.map(v=>v>=0?rgba(C_WIND,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
+      { label:'Solar error (MW)', data:sE, backgroundColor:sE.map(v=>v>=0?rgba(C_SOLAR,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
+    ];
+  } else {
+    labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);return i%24===0?['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]:'';});
+    datasets = [
+      { label:'Wind Onshore', data:histWOn, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Wind Offshore', data:histWOff, borderColor:C_WIND_OFF, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+    ];
+  }
+
+  mkChart('ren-canvas', {
+    type, data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10} },
+        tooltip:{ mode:'index', callbacks:{ label:ctx=>ctx.dataset.label+': '+(ctx.raw/1000).toFixed(2)+' GW' } },
+        zoom:ZOOM_CFG,
+      },
+      scales:{
+        x:{ grid:GRID, ticks:{color:C_TX3, maxTicksLimit:8} },
+        y:{ grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(1)+'GW'}, beginAtZero:true }
+      }
+    }
+  });
+  setTimeout(()=>{ addFullscreen('ren-canvas'); addDownload('ren-canvas','renewables'); },100);
 }
 function drawRenChart() {
   const countryEl = document.getElementById('ren-country');
@@ -18414,13 +18735,19 @@ async function loadEUGeoJSON() {
     const r = await fetch(url);
     const geo = await r.json();
 
-    // Filter to Europe only (bbox roughly)
+    // Filter to Europe only -- use geometry centroid, more reliable than LABEL_X
     const euFeatures = geo.features.filter(f => {
-      const bbox = f.bbox || [];
-      const lon = f.properties.LABEL_X || f.properties.longitude || 0;
-      const lat = f.properties.LABEL_Y || f.properties.latitude || 0;
-      // Keep if centroid roughly in Europe
-      return lon > -25 && lon < 45 && lat > 30 && lat < 72;
+      const p = f.properties;
+      const iso = p.iso_a2 || p.ISO_A2 || '';
+      // Explicit include list for EU bidding zones + neighbors
+      const euISOs = new Set(['FR','DE','BE','NL','ES','PT','IT','CH','AT','CZ','SK','HU',
+        'PL','RO','HR','SI','RS','BG','GR','MK','ME','DK','SE','NO','FI','EE','LV','LT',
+        'GB','MT','BA','AL','XK','LU','IE','IS','UA','MD','BY','RU','TR']);
+      if (euISOs.has(iso)) return true;
+      // Fallback: centroid lon/lat check
+      const lon = p.LABEL_X || p.longitude || 0;
+      const lat = p.LABEL_Y || p.latitude || 0;
+      return lon > -25 && lon < 50 && lat > 28 && lat < 73;
     });
 
     const euGeo = { type: 'FeatureCollection', features: euFeatures };
@@ -18431,8 +18758,8 @@ async function loadEUGeoJSON() {
       onEachFeature,
     }).addTo(leafletMap);
 
-    // Bring markers on top
-    mapMarkers.forEach(m => m.bringToFront && m.bringToFront());
+    // Add price labels on top of each country
+    addMapPriceLabels();
 
     console.log('✅ GeoJSON loaded:', euFeatures.length, 'countries');
   } catch(e) {
@@ -18440,9 +18767,45 @@ async function loadEUGeoJSON() {
   }
 }
 
+function addMapPriceLabels() {
+  // Remove old labels
+  mapMarkers.forEach(m => leafletMap.removeLayer(m));
+  mapMarkers = [];
+
+  const data = getZoneData();
+  data.forEach(zone => {
+    const code = zone.code || '';
+    const coords = ZONE_COORDS[code];
+    if (!coords) return;
+
+    let val, unit;
+    if (mapView === 'price') { val = zone.today?.toFixed(1); unit = '€'; }
+    else if (mapView === 'spark') { val = (zone.spark||0)>=0?'+'+zone.spark?.toFixed(1):zone.spark?.toFixed(1); unit='€'; }
+    else if (mapView === 'neg') { val = (zone.negHrs||0)+'h'; unit=''; }
+    else { val = (zone.vsYday||0)>=0?'+'+zone.vsYday?.toFixed(1):zone.vsYday?.toFixed(1); unit='€'; }
+
+    const textColor = mapView==='price'
+      ? (zone.today<20?'#10b981':zone.today>100?'#fca5a5':'#fff')
+      : '#fff';
+
+    const label = L.divIcon({
+      className: '',
+      html: `<div style="text-align:center;pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${textColor};text-shadow:0 1px 3px rgba(0,0,0,.8)">${val}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.6);text-shadow:0 1px 2px rgba(0,0,0,.8)">${zone.code}</div>
+      </div>`,
+      iconSize: [50, 24],
+      iconAnchor: [25, 12],
+    });
+    const m = L.marker(coords, { icon: label, interactive: false, zIndexOffset: 1000 }).addTo(leafletMap);
+    mapMarkers.push(m);
+  });
+}
+
 function refreshGeoLayer() {
   if (!geoLayer) return;
   geoLayer.setStyle(geoStyle);
+  addMapPriceLabels();
 }
 
 function setMapView(view, btn) {
