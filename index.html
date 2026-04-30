@@ -1759,7 +1759,7 @@ async function loadGenMix() {
   const country = document.getElementById('genmix-country').value;
   document.getElementById('genmix-updated').textContent = 'Loading...';
 
-  // Demo data
+  // Use JSON data if available, else demo
   const demoMix = {
     'FR': { nuclear:38000, solar:11100, wind:5500, hydro:4800, fossil:700, imports:3200, total:63300 },
     'DE_LU': { nuclear:0, solar:18000, wind:22000, hydro:2500, fossil:12000, imports:1500, total:56000 },
@@ -1770,7 +1770,9 @@ async function loadGenMix() {
     'IT_NORD': { nuclear:0, solar:7000, wind:1500, hydro:8000, fossil:9000, imports:2000, total:27500 },
   };
 
-  const mix = demoMix[country] || demoMix['FR'];
+  const jsonMix = window._genmixData?.[country];
+  const mix = jsonMix || demoMix[country] || demoMix['FR'];
+  if (!mix.total) mix.total = Object.values(mix).reduce((a,b)=>typeof b==='number'?a+b:a, 0);
   const total = mix.total;
 
   const fuels = [
@@ -1793,7 +1795,7 @@ async function loadGenMix() {
     </div>`;
   }).join('');
 
-  document.getElementById('genmix-updated').textContent = 'Demo data · ENTSO-E A75';
+  document.getElementById('genmix-updated').textContent = jsonMix ? 'ENTSO-E A75 · JSON' : 'Demo data · ENTSO-E A75';
 
   // Draw stacked bar chart
   const canvas = document.getElementById('genmix-canvas');
@@ -1879,10 +1881,10 @@ async function loadCrossBorder() {
     ],
   };
 
-  const flows = (demoFlows[country] || demoFlows['FR']).map(f => ({
-    ...f,
-    net: f.imports - f.exports
-  }));
+  // Use JSON data if available
+  const jsonFlows = window._cbData?.[country];
+  const rawFlows = jsonFlows || (demoFlows[country] || demoFlows['FR']);
+  const flows = rawFlows.map(f => ({ ...f, net: f.imports - f.exports }));
 
   const names = { 'FR':'France', 'DE_LU':'Germany', 'BE':'Belgium', 'ES':'Spain' };
   document.getElementById('cb-title').textContent = `${names[country] || country} — Cross-Border Flows (avg MW)`;
@@ -1900,7 +1902,7 @@ async function loadCrossBorder() {
     </tr>`;
   }).join('');
 
-  document.getElementById('cb-updated').textContent = 'Demo data · ENTSO-E A11';
+  document.getElementById('cb-updated').textContent = jsonFlows ? 'ENTSO-E A11 · JSON' : 'Demo data · ENTSO-E A11';
 }
 
 // ════════════════════════════════════════════
@@ -1908,12 +1910,15 @@ async function loadCrossBorder() {
 // ════════════════════════════════════════════
 async function loadLoad() {
   window._loadLoaded = true;
-  // Demo FR load profile
-  const profile = [42.1,40.8,39.5,38.2,37.8,38.5,41.2,47.5,52.8,55.1,56.3,57.0,56.8,56.2,56.5,57.8,60.2,63.0,62.1,59.8,57.2,54.8,51.2,47.1];
-  document.getElementById('load-fr-now').innerHTML = `${profile[new Date().getHours()]}<span class="kpi-unit">GW</span>`;
-  document.getElementById('load-fr-peak').innerHTML = `${Math.max(...profile)}<span class="kpi-unit">GW</span>`;
+  const country = (document.getElementById('load-country') || {}).value || 'FR';
+  const jsonLoad = window._loadData?.[country];
+  const profile = jsonLoad?.actual?.map(v => v/1000) ||
+    [42.1,40.8,39.5,38.2,37.8,38.5,41.2,47.5,52.8,55.1,56.3,57.0,56.8,56.2,56.5,57.8,60.2,63.0,62.1,59.8,57.2,54.8,51.2,47.1];
+  const curHr = new Date().getHours();
+  document.getElementById('load-fr-now').innerHTML = `${profile[curHr].toFixed(1)}<span class="kpi-unit">GW</span>`;
+  document.getElementById('load-fr-peak').innerHTML = `${Math.max(...profile).toFixed(1)}<span class="kpi-unit">GW</span>`;
   document.getElementById('load-fr-chg').innerHTML = `<span class="down">▼ 3.2 GW vs yday</span>`;
-  document.getElementById('load-updated').textContent = 'Demo data · ENTSO-E';
+  document.getElementById('load-updated').textContent = jsonLoad ? 'ENTSO-E A65 · JSON' : 'Demo data · ENTSO-E';
 
   const canvas = document.getElementById('load-canvas');
   const ctx = canvas.getContext('2d');
@@ -1956,13 +1961,13 @@ async function loadLoad() {
   ctx.stroke();
 
   // Current hour marker
-  const curHr = new Date().getHours();
+  const curHrMarker = new Date().getHours();
   ctx.strokeStyle = 'rgba(0,212,168,0.4)';
   ctx.lineWidth = 1;
   ctx.setLineDash([4,4]);
   ctx.beginPath();
-  ctx.moveTo(toX(curHr), 0);
-  ctx.lineTo(toX(curHr), h-20);
+  ctx.moveTo(toX(curHrMarker), 0);
+  ctx.lineTo(toX(curHrMarker), h-20);
   ctx.stroke();
   ctx.setLineDash([]);
 
@@ -2923,11 +2928,80 @@ function renderHDD() {
 }
 
 // ════════════════════════════════════════════
+// DATA LOADER — lit data/*.json si disponible
+// ════════════════════════════════════════════
+const DATA_BASE = (() => {
+  const loc = window.location.href.toLowerCase();
+  if (loc.includes('github.io') || loc.includes('localhost') || loc.includes('127.0.0.1')) {
+    return './data/';
+  }
+  return null;
+})();
+
+async function fetchJSON(file) {
+  if (!DATA_BASE) return null;
+  try {
+    const r = await fetch(DATA_BASE + file + '?t=' + Date.now());
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function loadFromJSON() {
+  // Prices
+  const prices = await fetchJSON('prices.json');
+  if (prices?.zones?.length) {
+    // Map JSON fields to dashboard format
+    pricesData = prices.zones.map(z => ({
+      code:    z.code,
+      name:    z.name,
+      flag:    z.code.slice(0,2),
+      today:   z.today,
+      vsYday:  z.vsYday,
+      min:     z.min,
+      minHr:   z.minHour || 0,
+      max:     z.max,
+      maxHr:   z.maxHour || 0,
+      negHrs:  z.negHours || 0,
+      spark:   z.spark,
+      hourly:  z.hourly || [],
+    }));
+    renderPricesTable(pricesData);
+    updateKPIs(pricesData);
+    buildTicker(pricesData);
+    const upd = prices.updated
+      ? new Date(prices.updated).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' UTC'
+      : 'JSON';
+    const badge = document.getElementById('prices-updated');
+    if (badge) { badge.textContent = 'ENTSO-E · ' + upd; badge.style.color = 'var(--accent)'; }
+    console.log('✅ Prices from JSON:', pricesData.length, 'zones');
+  }
+
+  // Genmix
+  const genmix = await fetchJSON('genmix.json');
+  if (genmix?.countries) { window._genmixData = genmix.countries; console.log('✅ Genmix from JSON'); }
+
+  // Renewables
+  const ren = await fetchJSON('renewables.json');
+  if (ren?.countries) { window._renData = ren.countries; console.log('✅ Renewables from JSON'); }
+
+  // Load
+  const load = await fetchJSON('load.json');
+  if (load?.countries) { window._loadData = load.countries; console.log('✅ Load from JSON'); }
+
+  // Cross-border
+  const cb = await fetchJSON('crossborder.json');
+  if (cb?.countries) { window._cbData = cb.countries; console.log('✅ Cross-border from JSON'); }
+}
+
+// ════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════
 loadPrices();
 updateConverter();
 updateCapacity();
+// Tente de charger les JSON (silencieux si non disponibles)
+loadFromJSON();
 </script>
 </body>
 </html>
