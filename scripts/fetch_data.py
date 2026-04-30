@@ -234,17 +234,30 @@ def fetch_renewables():
         if not eic:
             continue
         try:
-            # Actual generation (wind + solar) — A75 processType A16
+            # Actual generation — A75 processType A16
             xml_a = fetch({'documentType':'A75','processType':'A16',
                             'in_Domain':eic,'periodStart':today,'periodEnd':tomorrow})
             raw_a = parse_generation(xml_a)
 
+            def get_profile_psr(raw, psr_codes):
+                """Sum specific PSR types hour by hour."""
+                hourly = {}
+                for psr, vals in raw.items():
+                    if psr in psr_codes:
+                        for i, v in enumerate(vals[:24]):
+                            hourly[i] = hourly.get(i, 0) + v
+                if not hourly:
+                    return [0]*24
+                return [round(hourly.get(i, 0)) for i in range(24)]
+
             def get_profile(raw, key):
-                """Sum all matching PSR types hour by hour (not concatenate)."""
+                """Sum all matching PSR types hour by hour."""
                 hourly = {}
                 for psr, vals in raw.items():
                     name = PSR_MAP.get(psr,'')
                     match = (key=='wind' and 'Wind' in name) or \
+                            (key=='wind_onshore' and psr == 'B19') or \
+                            (key=='wind_offshore' and psr == 'B18') or \
                             (key=='solar' and 'Solar' in name) or \
                             (key=='hydro' and 'Hydro' in name)
                     if match:
@@ -254,29 +267,39 @@ def fetch_renewables():
                     return [0]*24
                 return [round(hourly.get(i, 0)) for i in range(24)]
 
-            wind_act  = get_profile(raw_a, 'wind')
-            solar_act = get_profile(raw_a, 'solar')
+            wind_onshore_act  = get_profile(raw_a, 'wind_onshore')
+            wind_offshore_act = get_profile(raw_a, 'wind_offshore')
+            wind_act          = [a+b for a,b in zip(wind_onshore_act, wind_offshore_act)]
+            solar_act         = get_profile(raw_a, 'solar')
 
-            # Forecast — try A69 (wind+solar forecast), fallback to A71
-            wind_fc, solar_fc = [0]*24, [0]*24
+            # Forecast — try A69 then A71
+            wind_onshore_fc, wind_offshore_fc, solar_fc = [0]*24, [0]*24, [0]*24
             for doc_type in ['A69', 'A71']:
                 try:
                     xml_f = fetch({'documentType': doc_type, 'processType':'A01',
                                     'in_Domain':eic,'periodStart':today,'periodEnd':tomorrow})
                     raw_f = parse_generation(xml_f)
-                    wf = get_profile(raw_f, 'wind')
+                    won_f = get_profile(raw_f, 'wind_onshore')
+                    woff_f = get_profile(raw_f, 'wind_offshore')
                     sf = get_profile(raw_f, 'solar')
-                    if sum(wf) > 0: wind_fc = wf
+                    wf_total = [a+b for a,b in zip(won_f, woff_f)]
+                    if sum(wf_total) > 0:
+                        wind_onshore_fc = won_f
+                        wind_offshore_fc = woff_f
                     if sum(sf) > 0: solar_fc = sf
-                    if sum(wf) > 0 or sum(sf) > 0:
+                    if sum(wf_total) > 0 or sum(sf) > 0:
                         break
                 except Exception as fe:
                     print(f"    {code} {doc_type}: {fe}")
                     continue
 
-            # If forecast unavailable, use actual as proxy (error = 0)
-            if sum(wind_fc) == 0: wind_fc = wind_act[:]
+            wind_fc = [a+b for a,b in zip(wind_onshore_fc, wind_offshore_fc)]
+
+            # Fallback if forecast unavailable
+            if sum(wind_onshore_fc) == 0: wind_onshore_fc = wind_onshore_act[:]
+            if sum(wind_offshore_fc) == 0: wind_offshore_fc = wind_offshore_act[:]
             if sum(solar_fc) == 0: solar_fc = solar_act[:]
+            if sum(wind_fc) == 0: wind_fc = wind_act[:]
 
             wind_err  = [round(a-f) for a,f in zip(wind_act, wind_fc)]
             solar_err = [round(a-f) for a,f in zip(solar_act, solar_fc)]
@@ -284,19 +307,28 @@ def fetch_renewables():
             avg_wf = max(1, sum(wind_fc)/24)
             avg_sf = max(1, sum(solar_fc)/24)
 
+            import datetime as dt
+            cur_hr = min(23, dt.datetime.utcnow().hour)
+
             result[code] = {
-                'windActual':    wind_act,
-                'solarActual':   solar_act,
-                'windForecast':  wind_fc,
-                'solarForecast': solar_fc,
-                'windError':     wind_err,
-                'solarError':    solar_err,
-                'windErrorPct':  round(sum(abs(e) for e in wind_err)/24/avg_wf*100, 1),
-                'solarErrorPct': round(sum(abs(e) for e in solar_err)/24/avg_sf*100, 1),
-                'windNow':       wind_act[min(len(wind_act)-1, __import__('datetime').datetime.utcnow().hour)],
-                'solarNow':      solar_act[min(len(solar_act)-1, __import__('datetime').datetime.utcnow().hour)],
+                'windActual':         wind_act,
+                'windOnshoreActual':  wind_onshore_act,
+                'windOffshoreActual': wind_offshore_act,
+                'solarActual':        solar_act,
+                'windForecast':       wind_fc,
+                'windOnshoreForecast':  wind_onshore_fc,
+                'windOffshoreForecast': wind_offshore_fc,
+                'solarForecast':      solar_fc,
+                'windError':          wind_err,
+                'solarError':         solar_err,
+                'windErrorPct':       round(sum(abs(e) for e in wind_err)/24/avg_wf*100, 1),
+                'solarErrorPct':      round(sum(abs(e) for e in solar_err)/24/avg_sf*100, 1),
+                'windNow':            wind_act[cur_hr],
+                'windOnshoreNow':     wind_onshore_act[cur_hr],
+                'windOffshoreNow':    wind_offshore_act[cur_hr],
+                'solarNow':           solar_act[cur_hr],
             }
-            print(f"  {code}: wind avg {round(sum(wind_act)/24)} MW · solar avg {round(sum(solar_act)/24)} MW")
+            print(f"  {code}: wind_on {round(sum(wind_onshore_act)/24)} MW · wind_off {round(sum(wind_offshore_act)/24)} MW · solar {round(sum(solar_act)/24)} MW")
         except Exception as e:
             print(f"  {code}: ERROR — {e}")
     return result
