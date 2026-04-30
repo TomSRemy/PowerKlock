@@ -90,15 +90,27 @@ def parse_generation(xml_text):
     result = {}
     for ts in root.findall('.//ns:TimeSeries', ns):
         psr_type = ts.findtext('.//ns:MktPSRType/ns:psrType', '', ns)
-        pts = []
+        if not psr_type:
+            continue
+        # Build position-indexed dict for this TimeSeries
+        ts_pts = {}
         for pt in ts.findall('.//ns:Point', ns):
+            pos = int(pt.findtext('ns:position', '0', ns))
             qty = pt.findtext('ns:quantity', None, ns)
             if qty:
-                pts.append(float(qty))
-        if psr_type and pts:
-            result[psr_type] = result.get(psr_type, [])
-            result[psr_type].extend(pts)
-    return result
+                ts_pts[pos - 1] = float(qty)  # 0-indexed hours
+        if ts_pts:
+            if psr_type not in result:
+                result[psr_type] = {}
+            # Sum across multiple TimeSeries for same PSR type
+            for pos, val in ts_pts.items():
+                result[psr_type][pos] = result[psr_type].get(pos, 0) + val
+    # Convert to sorted list of 24 values
+    final = {}
+    for psr, pos_dict in result.items():
+        n = max(pos_dict.keys()) + 1 if pos_dict else 24
+        final[psr] = [pos_dict.get(i, 0) for i in range(max(24, n))]
+    return final
 
 PSR_MAP = {
     'B01':'Biomass','B02':'Fossil Brown coal','B03':'Fossil Coal-derived gas',
@@ -112,6 +124,7 @@ PSR_MAP = {
 def categorize(psr_map):
     cats = {'nuclear':0,'solar':0,'wind':0,'hydro':0,'fossil':0,'biomass':0,'other':0}
     for psr, vals in psr_map.items():
+        # vals is now a list of hourly values
         avg = sum(vals)/len(vals) if vals else 0
         name = PSR_MAP.get(psr,'')
         if 'Nuclear' in name:           cats['nuclear'] += avg
@@ -221,51 +234,69 @@ def fetch_renewables():
         if not eic:
             continue
         try:
-            # Actual generation (wind + solar)
+            # Actual generation (wind + solar) — A75 processType A16
             xml_a = fetch({'documentType':'A75','processType':'A16',
                             'in_Domain':eic,'periodStart':today,'periodEnd':tomorrow})
             raw_a = parse_generation(xml_a)
 
-            # Forecast (wind + solar)
-            xml_f = fetch({'documentType':'A69','processType':'A01',
-                            'in_Domain':eic,'periodStart':today,'periodEnd':day_after})
-            raw_f = parse_generation(xml_f)
-
             def get_profile(raw, key):
-                pts = []
+                """Sum all matching PSR types hour by hour (not concatenate)."""
+                hourly = {}
                 for psr, vals in raw.items():
                     name = PSR_MAP.get(psr,'')
-                    if key=='wind' and 'Wind' in name:
-                        pts.extend(vals)
-                    elif key=='solar' and 'Solar' in name:
-                        pts.extend(vals)
-                return [round(v) for v in pts[:24]] if pts else [0]*24
+                    match = (key=='wind' and 'Wind' in name) or \
+                            (key=='solar' and 'Solar' in name) or \
+                            (key=='hydro' and 'Hydro' in name)
+                    if match:
+                        for i, v in enumerate(vals[:24]):
+                            hourly[i] = hourly.get(i, 0) + v
+                if not hourly:
+                    return [0]*24
+                return [round(hourly.get(i, 0)) for i in range(24)]
 
-            wind_act  = get_profile(raw_a,'wind')
-            solar_act = get_profile(raw_a,'solar')
-            wind_fc   = get_profile(raw_f,'wind')[:24]
-            solar_fc  = get_profile(raw_f,'solar')[:24]
+            wind_act  = get_profile(raw_a, 'wind')
+            solar_act = get_profile(raw_a, 'solar')
 
-            # Forecast error
-            wind_err  = [round(a-f) for a,f in zip(wind_act,wind_fc)]
-            solar_err = [round(a-f) for a,f in zip(solar_act,solar_fc)]
+            # Forecast — try A69 (wind+solar forecast), fallback to A71
+            wind_fc, solar_fc = [0]*24, [0]*24
+            for doc_type in ['A69', 'A71']:
+                try:
+                    xml_f = fetch({'documentType': doc_type, 'processType':'A01',
+                                    'in_Domain':eic,'periodStart':today,'periodEnd':tomorrow})
+                    raw_f = parse_generation(xml_f)
+                    wf = get_profile(raw_f, 'wind')
+                    sf = get_profile(raw_f, 'solar')
+                    if sum(wf) > 0: wind_fc = wf
+                    if sum(sf) > 0: solar_fc = sf
+                    if sum(wf) > 0 or sum(sf) > 0:
+                        break
+                except Exception as fe:
+                    print(f"    {code} {doc_type}: {fe}")
+                    continue
 
-            avg_we = sum(abs(e) for e in wind_err)/len(wind_err) if wind_err else 0
-            avg_se = sum(abs(e) for e in solar_err)/len(solar_err) if solar_err else 0
-            avg_wf = sum(wind_fc)/len(wind_fc) if wind_fc else 1
-            avg_sf = sum(solar_fc)/len(solar_fc) if solar_fc else 1
+            # If forecast unavailable, use actual as proxy (error = 0)
+            if sum(wind_fc) == 0: wind_fc = wind_act[:]
+            if sum(solar_fc) == 0: solar_fc = solar_act[:]
+
+            wind_err  = [round(a-f) for a,f in zip(wind_act, wind_fc)]
+            solar_err = [round(a-f) for a,f in zip(solar_act, solar_fc)]
+
+            avg_wf = max(1, sum(wind_fc)/24)
+            avg_sf = max(1, sum(solar_fc)/24)
 
             result[code] = {
-                'windActual':   wind_act,
-                'solarActual':  solar_act,
-                'windForecast': wind_fc,
-                'solarForecast':solar_fc,
-                'windError':    wind_err,
-                'solarError':   solar_err,
-                'windErrorPct': round(avg_we/avg_wf*100,1) if avg_wf else 0,
-                'solarErrorPct':round(avg_se/avg_sf*100,1) if avg_sf else 0,
+                'windActual':    wind_act,
+                'solarActual':   solar_act,
+                'windForecast':  wind_fc,
+                'solarForecast': solar_fc,
+                'windError':     wind_err,
+                'solarError':    solar_err,
+                'windErrorPct':  round(sum(abs(e) for e in wind_err)/24/avg_wf*100, 1),
+                'solarErrorPct': round(sum(abs(e) for e in solar_err)/24/avg_sf*100, 1),
+                'windNow':       wind_act[min(len(wind_act)-1, __import__('datetime').datetime.utcnow().hour)],
+                'solarNow':      solar_act[min(len(solar_act)-1, __import__('datetime').datetime.utcnow().hour)],
             }
-            print(f"  {code}: wind avg {round(sum(wind_act)/24)} MW")
+            print(f"  {code}: wind avg {round(sum(wind_act)/24)} MW · solar avg {round(sum(solar_act)/24)} MW")
         except Exception as e:
             print(f"  {code}: ERROR — {e}")
     return result
