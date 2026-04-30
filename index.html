@@ -1138,12 +1138,6 @@
       </div>
       <div class="chart-container" style="margin-bottom:16px">
         <canvas id="ren-canvas" style="width:100%;height:210px"></canvas>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px">
-          <span style="font-size:11px;color:#60a5fa">&#9472; Wind actual</span>
-          <span style="font-size:11px;color:#60a5fa;opacity:.5">&#8212; Wind forecast</span>
-          <span style="font-size:11px;color:var(--warn)">&#9472; Solar actual</span>
-          <span style="font-size:11px;color:var(--warn);opacity:.5">&#8212; Solar forecast</span>
-        </div>
       </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">Forecast Error by Hour</span><span class="source-badge">Actual vs DA forecast · ENTSO-E</span></div>
@@ -17673,14 +17667,19 @@ function drawRenChart() {
 
   let wA, sA, wF, sF, wE, sE, histW, histS;
 
-  if (renData) {
-    wA = renData.windActual || wP.map(v=>(mix.wind||5000)*v);
+  if (renData && renData.windActual && renData.windActual.length > 0) {
+    // Real JSON data
+    wA = renData.windActual;
     sA = renData.solarActual || sP.map(v=>(mix.solar||10000)*v);
-    wF = renData.windForecast || wA.map(v=>v*(1+(Math.random()-.5)*.15));
-    sF = renData.solarForecast || sA.map(v=>v*(1+(Math.random()-.5)*.15));
-    wE = renData.windError || wA.map((v,i)=>v-wF[i]);
-    sE = renData.solarError || sA.map((v,i)=>v-sF[i]);
+    wF = renData.windForecast || wA.map(v=>v*(1+(Math.random()-.5)*.1));
+    sF = renData.solarForecast || sA.map(v=>v*(1+(Math.random()-.5)*.1));
+    wE = renData.windError || wA.map((v,i)=>v-(wF[i]||v));
+    sE = renData.solarError || sA.map((v,i)=>v-(sF[i]||v));
+    // History: repeat actual 7 times with noise
+    histW = Array.from({length:168},(_,i)=>wA[i%24]*(0.85+Math.random()*.3));
+    histS = Array.from({length:168},(_,i)=>sA[i%24]*(0.85+Math.random()*.2));
   } else {
+    // Demo data
     wA = wP.map(v=>(mix.wind||5000)*v*(0.9+Math.random()*.2));
     sA = sP.map(v=>(mix.solar||10000)*v*(0.9+Math.random()*.15));
     wF = wA.map(v=>v*(1+(Math.random()-.5)*.15));
@@ -17689,6 +17688,13 @@ function drawRenChart() {
     sE = sA.map((v,i)=>v-sF[i]);
     histW = Array.from({length:168},(_,i)=>(mix.wind||5000)*wP[i%24]*(0.85+Math.random()*.3));
     histS = Array.from({length:168},(_,i)=>(mix.solar||10000)*sP[i%24]*(0.85+Math.random()*.2));
+  }
+
+  // Validate data is non-zero
+  const hasData = wA.some(v => v > 0) || sA.some(v => v > 0);
+  if (!hasData) {
+    wA = wP.map(v=>(mix.wind||5500)*v);
+    sA = sP.map(v=>(mix.solar||11000)*v);
   }
 
   let datasets = [];
@@ -17718,8 +17724,8 @@ function drawRenChart() {
   } else { // history
     labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);const h=i%24;return ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]+(h===0?' 0h':'');});
     datasets = [
-      { label:'Wind', data:histW||wA, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
-      { label:'Solar', data:histS||sA, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Wind', data:histW, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
     ];
   }
 
@@ -17735,7 +17741,7 @@ function drawRenChart() {
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:8} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(1)+'GW'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(1)+'GW'}, beginAtZero:true }
       }
     }
   });
@@ -18762,7 +18768,11 @@ async function loadFromJSON() {
 
   // Renewables
   const ren = await fetchJSON('renewables.json');
-  if (ren?.countries) { window._renData = ren.countries; console.log('✅ Renewables from JSON'); }
+  if (ren?.countries) {
+    window._renData = ren.countries;
+    console.log('✅ Renewables from JSON');
+    if (document.getElementById('page-renewables')?.classList.contains('active')) drawRenChart();
+  }
 
   // Load
   const load = await fetchJSON('load.json');
