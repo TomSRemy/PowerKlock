@@ -67,19 +67,52 @@ def fetch(params):
     return r.text
 
 def parse_prices(xml_text):
+    """
+    Parse DA prices. ENTSO-E may return multiple TimeSeries and/or 15-min resolution.
+    Strategy:
+      - Detect resolution from Period/resolution field (PT60M vs PT15M)
+      - If 15-min: group 4 slots → 1 hour (average)
+      - Aggregate across multiple TimeSeries by position (average if duplicates)
+      - Return exactly 24 hourly values
+    """
     ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return []
-    points = []
+
+    # pos_buckets: position (1-indexed, hourly) → list of prices to average
+    pos_buckets = {}
+
     for ts in root.findall('.//ns:TimeSeries', ns):
-        for pt in ts.findall('.//ns:Point', ns):
-            pos  = int(pt.findtext('ns:position', '0', ns))
+        period = ts.find('.//ns:Period', ns)
+        if period is None:
+            continue
+        res = period.findtext('ns:resolution', 'PT60M', ns)
+        is_15min = (res == 'PT15M')
+        slots_per_hour = 4 if is_15min else 1
+
+        for pt in period.findall('ns:Point', ns):
+            pos = int(pt.findtext('ns:position', '0', ns))
             price = pt.findtext('ns:price.amount', None, ns)
-            if price:
-                points.append({'hour': pos - 1, 'price': round(float(price), 2)})
-    return points
+            if price is None:
+                continue
+            # Convert slot position to 0-indexed hour
+            hour = (pos - 1) // slots_per_hour
+            if hour >= 24:
+                continue
+            pos_buckets.setdefault(hour, []).append(round(float(price), 2))
+
+    if not pos_buckets:
+        return []
+
+    # Build 24-point list, averaging duplicates
+    result = []
+    for h in range(24):
+        vals = pos_buckets.get(h)
+        if vals:
+            result.append({'hour': h, 'price': round(sum(vals) / len(vals), 2)})
+    return result
 
 def parse_generation(xml_text):
     ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
