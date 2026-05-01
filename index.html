@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PowerKlock — European Energy Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0e13;
@@ -31,7 +31,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text);
     overflow: hidden;
@@ -50,6 +50,46 @@
     top: 0; left: 0; right: 0;
     z-index: 100;
   }
+
+  /* ── TICKER DROPDOWN ── */
+  .ticker-scroll { flex:1; overflow:hidden; height:100%; position:relative; }
+  .ticker-track { display:flex; position:absolute; top:0; left:0; height:100%; align-items:center; animation:tickerScroll 32s linear infinite; }
+  .ticker-track:hover { animation-play-state:paused; }
+  @keyframes tickerScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .dd-wrap { position:relative; height:100%; flex-shrink:0; }
+  .dd-btn {
+    display:flex; align-items:center; gap:6px; height:100%; padding:0 14px;
+    border:none; border-right:1px solid var(--border2); background:none; cursor:pointer;
+    font-family:'Outfit','Inter',sans-serif; font-size:9px; font-weight:700;
+    letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); transition:background 0.15s;
+    white-space:nowrap;
+  }
+  .dd-btn:hover { background:var(--bg3); }
+  .dd-btn.open svg { transform:rotate(180deg); }
+  .dd-btn svg { transition:transform 0.2s; }
+  .dd-pulse { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:ddpulse 1.8s infinite; }
+  @keyframes ddpulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .dd-menu {
+    position:absolute; top:calc(100% + 6px); left:0;
+    background:var(--bg3); border:1px solid var(--border2); border-radius:9px;
+    padding:5px 0; min-width:160px; box-shadow:0 10px 32px rgba(0,0,0,0.6);
+    z-index:300; opacity:0; pointer-events:none; transform:translateY(-6px);
+    transition:opacity 0.15s, transform 0.15s;
+  }
+  .dd-menu.open { opacity:1; pointer-events:all; transform:translateY(0); }
+  .dd-row {
+    display:flex; align-items:center; gap:10px; padding:8px 14px; cursor:pointer;
+    font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text2); transition:background 0.1s; user-select:none;
+  }
+  .dd-row:hover { background:var(--bg4); }
+  .dd-check { width:14px; height:14px; border-radius:3px; border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:9px; font-weight:700; transition:all 0.12s; }
+  .dd-row.on .dd-check { background:var(--accent); border-color:var(--accent); color:#000; }
+  .dd-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dd-dot.power { background:var(--accent); }
+  .dd-dot.gas { background:#60a5fa; }
+  .dd-dot.carbon { background:#a78bfa; }
+  .dd-dot.go { background:#34d399; }
+
   .ticker-label {
     padding: 0 14px;
     font-size: 10px;
@@ -91,6 +131,13 @@
   .ticker-cat.power { color: var(--accent); border-color: var(--accent-dim); }
   .ticker-cat.gas { color: #60a5fa; border-color: rgba(96,165,250,0.2); }
   .ticker-cat.carbon { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
+  .ticker-cat.go { color: #34d399; border-color: rgba(52,211,153,0.2); }
+  /* News source badges */
+  .news-source.recharge { background: rgba(52,211,153,0.15); color: #34d399; }
+  .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .news-source.carbonpulse { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .news-source.gasnaturally { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
   .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
   .up { color: var(--up); }
@@ -103,13 +150,13 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 20px;
     position: fixed;
     top: var(--ticker-h);
     left: 0; right: 0;
     z-index: 99;
   }
+
   .logo {
     display: flex;
     align-items: center;
@@ -131,27 +178,51 @@
     color: var(--text);
     letter-spacing: -0.02em;
   }
-  .topbar-nav {
+  /* ── NAV TABS ── */
+  .topbar-tabs {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    height: var(--topbar-h);
     display: flex;
-    gap: 2px;
+    align-items: stretch;
   }
-  .topbar-btn {
-    padding: 5px 14px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    color: var(--text2);
-    background: none;
-    transition: all 0.15s;
+  .nav-tab {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 7px;
+    padding: 0 22px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--text3);
+    cursor: pointer;
+    border: none;
+    background: none;
+    position: relative;
+    transition: color 0.15s;
+    white-space: nowrap;
   }
-  .topbar-btn:hover { background: var(--bg3); color: var(--text); }
-  .topbar-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,0.25); }
-  .topbar-btn .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 22px; right: 22px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  .nav-tab.active { color: var(--text); }
+  .nav-tab.active::after { transform: scaleX(1); }
+  .nav-tab:hover:not(.active) { color: var(--text2); }
+  .nav-tab .tab-icon { font-size: 13px; opacity: 0.7; }
+  .nav-tab-sep { width: 1px; background: var(--border); margin: 16px 0; }
+  /* keep old nav hidden */
+  .topbar-nav { display: none; }
+  .topbar-btn { display: none; }
   .dot-power { background: var(--accent); }
   .dot-gas { background: #60a5fa; }
   .dot-carbon { background: #a78bfa; }
@@ -222,7 +293,26 @@
     color: var(--text3);
     padding: 0 16px 6px;
     text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 12px;
+    user-select: none;
   }
+  .sidebar-section-label:hover { color: var(--text2); }
+  .sidebar-chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .sidebar-section.collapsed .sidebar-chevron { transform: rotate(-90deg); }
+  .sidebar-section-items {
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .sidebar-section.collapsed .sidebar-section-items { max-height: 0 !important; }
   .sidebar-item {
     display: flex;
     align-items: center;
@@ -671,31 +761,97 @@
   }
   .day-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .day-tab:hover:not(.active) { border-color: var(--text3); color: var(--text); }
+
+  /* ── FRANCE & MY DASHBOARD ── */
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; }
+  .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+  .kpi-unit { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .kpi-delta { font-size: 11px; font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  .kpi-delta.up { color: var(--up); } .kpi-delta.down { color: var(--down); }
+  .btn-primary {
+    padding: 7px 16px; border-radius: 6px; border: none;
+    background: var(--accent); color: #000; font-weight: 600; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary {
+    padding: 7px 16px; border-radius: 6px;
+    border: 1px solid var(--border2); background: none;
+    color: var(--text2); font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary:hover { background: var(--bg3); }
+  .mydash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    min-height: 200px;
+  }
+  .mydash-empty {
+    grid-column: 1/-1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 300px; text-align: center;
+  }
+  .mydash-widget {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; position: relative;
+  }
+  .mydash-widget-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  .mdash-remove {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1;
+  }
+  .mdash-remove:hover { color: var(--down); }
+  .picker-item {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 12px; cursor: pointer; transition: border-color 0.15s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .picker-item:hover { border-color: var(--accent); }
+  .picker-item.added { border-color: var(--accent); background: var(--accent-dim); }
+  .picker-item-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .picker-item-desc { font-size: 11px; color: var(--text3); }
+
 </style>
 </head>
 <body>
 
 <!-- TICKER -->
 <div class="ticker">
-  <div class="ticker-label">⚡ LIVE</div>
-  <div class="ticker-track" id="ticker-track">
-    <!-- filled by JS -->
+  <div class="dd-wrap">
+    <button class="dd-btn" id="dd-btn" onclick="toggleTickerMenu()">
+      <span class="dd-pulse"></span>
+      <span class="dd-label" id="dd-label">ALL</span>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="dd-menu" id="dd-menu">
+      <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
+      <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
+      <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
+      <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
+    </div>
+  </div>
+  <div class="ticker-scroll">
+    <div class="ticker-track" id="ticker-track"></div>
   </div>
 </div>
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div style="display:flex;align-items:center;gap:20px">
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <span class="logo-text">PowerKlock</span>
-    </div>
-    <div class="topbar-nav">
-      <button class="topbar-btn active" onclick="switchSection('power')"><span class="dot dot-power"></span> Power</button>
-      <button class="topbar-btn" onclick="switchSection('gas')"><span class="dot dot-gas"></span> Gas</button>
-      <button class="topbar-btn" onclick="switchSection('carbon')"><span class="dot dot-carbon"></span> Carbon</button>
-      <button class="topbar-btn" onclick="switchSection('storage')"><span class="dot dot-storage"></span> Storage</button>
-    </div>
+  <div class="logo">
+    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="logo-text">PowerKlock</span>
+  </div>
+  <div class="topbar-tabs">
+    <button class="nav-tab active" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
@@ -708,8 +864,9 @@
 
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Power</div>
+    <div class="sidebar-section" id="sec-power">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-power')">Power <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-power-items">
       <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
       </div>
@@ -734,10 +891,12 @@
       <div class="sidebar-item" onclick="showPage('imbalance')" id="nav-imbalance">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M5 12l7-7 7 7"/></svg>Imbalance Prices
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Carbon</div>
+    <div class="sidebar-section" id="sec-carbon">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-carbon-items">
       <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
       </div>
@@ -747,42 +906,51 @@
       <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Guarantees of Origin</div>
+    <div class="sidebar-section collapsed" id="sec-go">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-go')">Guarantees of Origin <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-go-items">
       <div class="sidebar-item" onclick="showPage('goprices')" id="nav-goprices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>GO Prices
       </div>
       <div class="sidebar-item" onclick="showPage('gohist')" id="nav-gohist">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Historical
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Meteo France</div>
+    <div class="sidebar-section collapsed" id="sec-meteo">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Meteo France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-meteo-items">
       <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
       </div>
       <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Intelligence</div>
+    <div class="sidebar-section" id="sec-intel">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-intel')">Intelligence <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-intel-items">
       <div class="sidebar-item" onclick="showPage('news')" id="nav-news">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
       </div>
       <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Tools</div>
+    <div class="sidebar-section collapsed" id="sec-tools">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-tools')">Tools <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-tools-items">
       <div class="sidebar-item" onclick="showPage('converter')" id="nav-converter">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Converter
+      </div>
       </div>
     </div>
   </nav>
@@ -17164,7 +17332,7 @@ function togglePriceRow(idx, e) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PowerKlock — European Energy Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0a0e13;
@@ -17190,7 +17358,7 @@ function togglePriceRow(idx, e) {
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text);
     overflow: hidden;
@@ -17250,6 +17418,13 @@ function togglePriceRow(idx, e) {
   .ticker-cat.power { color: var(--accent); border-color: var(--accent-dim); }
   .ticker-cat.gas { color: #60a5fa; border-color: rgba(96,165,250,0.2); }
   .ticker-cat.carbon { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
+  .ticker-cat.go { color: #34d399; border-color: rgba(52,211,153,0.2); }
+  /* News source badges */
+  .news-source.recharge { background: rgba(52,211,153,0.15); color: #34d399; }
+  .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .news-source.carbonpulse { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .news-source.gasnaturally { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
   .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
   .up { color: var(--up); }
@@ -17262,7 +17437,6 @@ function togglePriceRow(idx, e) {
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 20px;
     position: fixed;
     top: var(--ticker-h);
@@ -17381,7 +17555,26 @@ function togglePriceRow(idx, e) {
     color: var(--text3);
     padding: 0 16px 6px;
     text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 12px;
+    user-select: none;
   }
+  .sidebar-section-label:hover { color: var(--text2); }
+  .sidebar-chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .sidebar-section.collapsed .sidebar-chevron { transform: rotate(-90deg); }
+  .sidebar-section-items {
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .sidebar-section.collapsed .sidebar-section-items { max-height: 0 !important; }
   .sidebar-item {
     display: flex;
     align-items: center;
@@ -17836,25 +18029,36 @@ function togglePriceRow(idx, e) {
 
 <!-- TICKER -->
 <div class="ticker">
-  <div class="ticker-label">⚡ LIVE</div>
-  <div class="ticker-track" id="ticker-track">
-    <!-- filled by JS -->
+  <div class="dd-wrap">
+    <button class="dd-btn" id="dd-btn" onclick="toggleTickerMenu()">
+      <span class="dd-pulse"></span>
+      <span class="dd-label" id="dd-label">ALL</span>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="dd-menu" id="dd-menu">
+      <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
+      <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
+      <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
+      <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
+    </div>
+  </div>
+  <div class="ticker-scroll">
+    <div class="ticker-track" id="ticker-track"></div>
   </div>
 </div>
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div style="display:flex;align-items:center;gap:20px">
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <span class="logo-text">PowerKlock</span>
-    </div>
-    <div class="topbar-nav">
-      <button class="topbar-btn active" onclick="switchSection('power')"><span class="dot dot-power"></span> Power</button>
-      <button class="topbar-btn" onclick="switchSection('gas')"><span class="dot dot-gas"></span> Gas</button>
-      <button class="topbar-btn" onclick="switchSection('carbon')"><span class="dot dot-carbon"></span> Carbon</button>
-      <button class="topbar-btn" onclick="switchSection('storage')"><span class="dot dot-storage"></span> Storage</button>
-    </div>
+  <div class="logo">
+    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="logo-text">PowerKlock</span>
+  </div>
+  <div class="topbar-tabs">
+    <button class="nav-tab active" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
@@ -17867,8 +18071,9 @@ function togglePriceRow(idx, e) {
 
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Power</div>
+    <div class="sidebar-section" id="sec-power">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-power')">Power <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-power-items">
       <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
       </div>
@@ -17893,10 +18098,12 @@ function togglePriceRow(idx, e) {
       <div class="sidebar-item" onclick="showPage('imbalance')" id="nav-imbalance">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M5 12l7-7 7 7"/></svg>Imbalance Prices
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Carbon</div>
+    <div class="sidebar-section" id="sec-carbon">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-carbon-items">
       <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
       </div>
@@ -17906,42 +18113,51 @@ function togglePriceRow(idx, e) {
       <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Guarantees of Origin</div>
+    <div class="sidebar-section collapsed" id="sec-go">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-go')">Guarantees of Origin <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-go-items">
       <div class="sidebar-item" onclick="showPage('goprices')" id="nav-goprices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>GO Prices
       </div>
       <div class="sidebar-item" onclick="showPage('gohist')" id="nav-gohist">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Historical
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Meteo France</div>
+    <div class="sidebar-section collapsed" id="sec-meteo">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Meteo France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-meteo-items">
       <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
       </div>
       <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Intelligence</div>
+    <div class="sidebar-section" id="sec-intel">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-intel')">Intelligence <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-intel-items">
       <div class="sidebar-item" onclick="showPage('news')" id="nav-news">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
       </div>
       <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
       </div>
+      </div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">Tools</div>
+    <div class="sidebar-section collapsed" id="sec-tools">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-tools')">Tools <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-tools-items">
       <div class="sidebar-item" onclick="showPage('converter')" id="nav-converter">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Converter
+      </div>
       </div>
     </div>
   </nav>
@@ -34007,6 +34223,256 @@ function switchSection(sec) {
   if (sec === 'power') showPage('prices');
 }
 
+// ── SIDEBAR COLLAPSIBLE ──
+function toggleSection(secId) {
+  const sec = document.getElementById(secId);
+  if (!sec) return;
+  const items = sec.querySelector('.sidebar-section-items');
+  if (sec.classList.contains('collapsed')) {
+    sec.classList.remove('collapsed');
+    items.style.maxHeight = items.scrollHeight + 'px';
+  } else {
+    items.style.maxHeight = items.scrollHeight + 'px';
+    requestAnimationFrame(() => { sec.classList.add('collapsed'); });
+  }
+}
+
+// Init max-heights on load
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.sidebar-section-items').forEach(el => {
+    const sec = el.closest('.sidebar-section');
+    if (sec && sec.classList.contains('collapsed')) {
+      el.style.maxHeight = '0px';
+    } else {
+      el.style.maxHeight = el.scrollHeight + 'px';
+    }
+  });
+});
+
+// ── DASHBOARD TABS ──
+const AVAILABLE_WIDGETS = [
+  { id:'fr-da',     name:'FR Prix DA',        desc:'Prix day-ahead France temps réel' },
+  { id:'de-da',     name:'DE Prix DA',         desc:'Prix day-ahead Allemagne' },
+  { id:'eua',       name:'EUA Spot',           desc:'Prix carbone EU ETS' },
+  { id:'ttf',       name:'TTF D+1',            desc:'Gaz naturel TTF Day-Ahead' },
+  { id:'go-renew',  name:'GO Renouvelables',   desc:'Garanties d'Origine Cal-26' },
+  { id:'fr-mix',    name:'Mix FR',             desc:'Mix de génération France' },
+  { id:'fr-nuclear',name:'Nucléaire FR',       desc:'Puissance nucléaire disponible' },
+  { id:'fr-export', name:'Solde Export FR',    desc:'Flux nets cross-border France' },
+  { id:'fr-load',   name:'Consommation FR',    desc:'Charge réseau France'},
+  { id:'hdd-paris', name:'HDD Paris',          desc:'Degrés-jours de chauffage Paris' },
+];
+
+let myDashWidgets = JSON.parse(localStorage.getItem('pk-mydash-widgets') || '[]');
+
+function switchDashboard(tab, btn) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  const sidebar = document.getElementById('sidebar');
+  const allPages = document.querySelectorAll('.page');
+  allPages.forEach(p => p.style.display = 'none');
+
+  if (tab === 'all') {
+    sidebar.style.display = '';
+    showPage('prices');
+    return;
+  }
+
+  if (tab === 'france') {
+    sidebar.style.display = 'none';
+    document.getElementById('page-france').style.display = '';
+    loadFranceDashboard();
+    return;
+  }
+
+  if (tab === 'mydash') {
+    sidebar.style.display = 'none';
+    document.getElementById('page-mydash').style.display = '';
+    renderMyDash();
+    return;
+  }
+}
+
+// ── FRANCE DASHBOARD ──
+function loadFranceDashboard() {
+  // KPIs - pull from pricesData if available
+  if (typeof pricesData !== 'undefined' && pricesData.length) {
+    const fr = pricesData.find(z => z.code === 'FR');
+    if (fr) {
+      document.getElementById('fr-da-price').textContent = fr.today != null ? fr.today.toFixed(1) : '--';
+      const delta = fr.vsYday;
+      const deltaEl = document.getElementById('fr-da-delta');
+      if (delta != null) {
+        deltaEl.textContent = (delta >= 0 ? '▲' : '▼') + Math.abs(delta).toFixed(1);
+        deltaEl.className = 'kpi-delta ' + (delta >= 0 ? 'up' : 'down');
+      }
+    }
+  }
+  // Static placeholders for nuclear/renew/export
+  document.getElementById('fr-nuclear').textContent = '42.3';
+  document.getElementById('fr-renew').textContent = '18.7';
+  document.getElementById('fr-export').textContent = '+8.4';
+
+  // FR price chart (7 days) - use dummy data if real not loaded
+  const ctx = document.getElementById('fr-price-chart');
+  if (ctx) {
+    const labels = ['J-6','J-5','J-4','J-3','J-2','J-1','Auj'];
+    const vals = [58.2, 61.4, 45.8, 32.1, 12.4, 5.2, 1.2];
+    if (window.Chart && !ctx._chart) {
+      ctx._chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: vals,
+            borderColor: '#00d4a8',
+            backgroundColor: 'rgba(0,212,168,0.08)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 3,
+            pointBackgroundColor: '#00d4a8'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a6280', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a6280', font: { size: 11 } }, title: { display: true, text: '€/MWh', color: '#4a6280', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+  }
+
+  // Mix chart
+  const mctx = document.getElementById('fr-mix-chart');
+  if (mctx && window.Chart && !mctx._chart) {
+    mctx._chart = new Chart(mctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Nucléaire', 'Eolien', 'Solaire', 'Hydro', 'Gaz', 'Autres'],
+        datasets: [{
+          data: [42.3, 9.2, 5.1, 8.8, 3.4, 2.2],
+          backgroundColor: ['#00d4a8','#60a5fa','#fbbf24','#34d399','#a78bfa','#4a6280'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10, boxWidth: 10 } }
+        }
+      }
+    });
+  }
+
+  // REMIT placeholder
+  document.getElementById('fr-remit-list').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
+        <div style="font-size:11px;font-weight:600;color:var(--text)">Paluel 2 — maintenance</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 350 MW indisponible · jusqu'au 12 mai</div>
+      </div>
+      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
+        <div style="font-size:11px;font-weight:600;color:var(--text)">Flamanville 1 — arrêt fortuit</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 330 MW indisponible · retour prévu 05 mai</div>
+      </div>
+      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid #4a6280">
+        <div style="font-size:11px;font-weight:600;color:var(--text)">Belleville 1 — programmé</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 310 MW · rechargement combustible</div>
+      </div>
+    </div>`;
+}
+
+// ── MY DASHBOARD ──
+function renderMyDash() {
+  const grid = document.getElementById('mydash-grid');
+  const empty = document.getElementById('mydash-empty');
+  if (!myDashWidgets.length) {
+    empty.style.display = 'flex';
+    grid.innerHTML = '';
+    grid.appendChild(empty);
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = myDashWidgets.map(id => {
+    const w = AVAILABLE_WIDGETS.find(x => x.id === id);
+    if (!w) return '';
+    const val = getWidgetValue(id);
+    return `<div class="mydash-widget">
+      <button class="mdash-remove" onclick="removeWidget('${id}')">×</button>
+      <div class="mydash-widget-title">${w.name}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--text)">${val.val}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">${val.unit}</div>
+      ${val.chg ? `<div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${val.up ? 'var(--up)' : 'var(--down)'};margin-top:4px">${val.chg}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function getWidgetValue(id) {
+  const map = {
+    'fr-da':     { val:'1.2',  unit:'€/MWh', chg:'▼15.3', up:false },
+    'de-da':     { val:'63.8', unit:'€/MWh', chg:'▼7.4',  up:false },
+    'eua':       { val:'74.09',unit:'€/t',   chg:'▼0.09%',up:false },
+    'ttf':       { val:'45.14',unit:'€/MWh', chg:'▲2.35%',up:true  },
+    'go-renew':  { val:'0.42', unit:'€/MWh', chg:'',       up:null  },
+    'fr-mix':    { val:'61%',  unit:'Nuc+ENR',chg:'',      up:null  },
+    'fr-nuclear':{ val:'42.3', unit:'GW',    chg:'',       up:null  },
+    'fr-export': { val:'+8.4', unit:'GW',    chg:'',       up:null  },
+    'fr-load':   { val:'52.8', unit:'GW',    chg:'▲1.2%',  up:true  },
+    'hdd-paris': { val:'4.2',  unit:'HDD',   chg:'',       up:null  },
+  };
+  return map[id] || { val:'--', unit:'', chg:'', up:null };
+}
+
+function removeWidget(id) {
+  myDashWidgets = myDashWidgets.filter(x => x !== id);
+  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
+  renderMyDash();
+}
+
+function openWidgetPicker() {
+  const list = document.getElementById('widget-picker-list');
+  list.innerHTML = AVAILABLE_WIDGETS.map(w => `
+    <div class="picker-item ${myDashWidgets.includes(w.id) ? 'added' : ''}" onclick="toggleWidget('${w.id}', this)">
+      <div class="picker-item-name">${myDashWidgets.includes(w.id) ? '✓ ' : ''}${w.name}</div>
+      <div class="picker-item-desc">${w.desc}</div>
+    </div>`).join('');
+  document.getElementById('widget-picker').style.display = 'flex';
+}
+
+function closeWidgetPicker() {
+  document.getElementById('widget-picker').style.display = 'none';
+  renderMyDash();
+}
+
+function toggleWidget(id, el) {
+  if (myDashWidgets.includes(id)) {
+    myDashWidgets = myDashWidgets.filter(x => x !== id);
+    el.classList.remove('added');
+    el.querySelector('.picker-item-name').textContent = AVAILABLE_WIDGETS.find(w=>w.id===id).name;
+  } else {
+    myDashWidgets.push(id);
+    el.classList.add('added');
+    el.querySelector('.picker-item-name').textContent = '✓ ' + AVAILABLE_WIDGETS.find(w=>w.id===id).name;
+  }
+  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
+}
+
+function exportDashConfig() {
+  const cfg = { widgets: myDashWidgets, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'powerklock-dashboard.json';
+  a.click();
+}
+
+
+
 // ════════════════════════════════════════════
 // ENTSOE API HELPER
 // ════════════════════════════════════════════
@@ -34502,8 +34968,56 @@ function drawSparkline(canvas, data, avg) {
 // ════════════════════════════════════════════
 // TICKER
 // ════════════════════════════════════════════
+// ── TICKER FILTER STATE ──
+const tickerFilters = { power: true, gas: true, carbon: true, go: true };
+let tickerAllItems = [];
+
+function toggleTickerMenu() {
+  document.getElementById('dd-btn').classList.toggle('open');
+  document.getElementById('dd-menu').classList.toggle('open');
+}
+
+function toggleTickerCat(row) {
+  const cat = row.dataset.cat;
+  tickerFilters[cat] = !tickerFilters[cat];
+  row.classList.toggle('on', tickerFilters[cat]);
+  row.querySelector('.dd-check').textContent = tickerFilters[cat] ? '✓' : '';
+  renderTicker();
+  updateTickerLabel();
+}
+
+function updateTickerLabel() {
+  const on = Object.entries(tickerFilters).filter(([,v])=>v).map(([k])=>k.toUpperCase());
+  const lbl = document.getElementById('dd-label');
+  if (lbl) lbl.textContent = on.length === 4 ? 'ALL' : on.join(' · ');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dd-wrap')) {
+    document.getElementById('dd-btn')?.classList.remove('open');
+    document.getElementById('dd-menu')?.classList.remove('open');
+  }
+});
+
+function renderTicker() {
+  const visible = tickerAllItems.filter(item => tickerFilters[item.cat] !== false);
+  if (visible.length === 0) {
+    document.getElementById('ticker-track').innerHTML = '';
+    return;
+  }
+  const html = [...visible, ...visible].map(item => `
+    <div class="ticker-item">
+      <span class="ticker-cat ${item.cat}">${item.catLabel}</span>
+      <span class="ticker-name">${item.name}</span>
+      <span class="ticker-val ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.val} <span style="font-weight:400;font-size:10px;color:var(--text3)">${item.unit}</span></span>
+      ${item.chg ? `<span class="ticker-chg ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.chg}</span>` : ''}
+    </div>
+  `).join('');
+  document.getElementById('ticker-track').innerHTML = html;
+}
+
 function buildTicker(data) {
-  const items = [
+  tickerAllItems = [
     ...data.slice(0, 8).map(z => ({
       cat: 'power', catLabel: 'POWER',
       name: `${z.flag} ${z.code}`,
@@ -34513,19 +35027,14 @@ function buildTicker(data) {
       up: z.vsYday == null ? null : z.vsYday >= 0
     })),
     { cat:'gas', catLabel:'GAS', name:'TTF D+1', val:'45.14', unit:'€/MWh', chg:'▲2.35%', up:true },
-    { cat:'carbon', catLabel:'CARBON', name:'EUA', val:'74.09', unit:'€/t', chg:'▼0.09%', up:false },
-    { cat:'gas', catLabel:'GAS', name:'Henry Hub', val:'2.660', unit:'$/MMBtu', chg:'▲4.15%', up:true },
+    { cat:'gas', catLabel:'GAS', name:'PEG D+1', val:'42.80', unit:'€/MWh', chg:'▲1.80%', up:true },
+    { cat:'gas', catLabel:'GAS', name:'NBP D+1', val:'43.50', unit:'p/th', chg:'▲1.20%', up:true },
+    { cat:'carbon', catLabel:'CARBON', name:'EUA Spot', val:'74.09', unit:'€/t', chg:'▼0.09%', up:false },
+    { cat:'carbon', catLabel:'CARBON', name:'EUA Dec-26', val:'76.40', unit:'€/t', chg:'▲0.32%', up:true },
+    { cat:'go', catLabel:'GO', name:'GO Renew Cal-26', val:'0.42', unit:'€/MWh', chg:'', up:null },
+    { cat:'go', catLabel:'GO', name:'GO Wind Cal-26', val:'0.55', unit:'€/MWh', chg:'', up:null },
   ];
-
-  const html = [...items, ...items].map(item => `
-    <div class="ticker-item">
-      <span class="ticker-cat ${item.cat}">${item.catLabel}</span>
-      <span class="ticker-name">${item.name}</span>
-      <span class="ticker-val ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.val} <span style="font-weight:400;font-size:10px;color:var(--text3)">${item.unit}</span></span>
-      ${item.chg ? `<span class="ticker-chg ${item.up === true ? 'up' : item.up === false ? 'down' : ''}">${item.chg}</span>` : ''}
-    </div>
-  `).join('');
-  document.getElementById('ticker-track').innerHTML = html;
+  renderTicker();
 }
 
 // Default ticker while loading
@@ -34752,6 +35261,11 @@ const RSS_SOURCES = [
   { name:'RTE', cls:'rte', url:'https://www.rte-france.com/presse/communiques-de-presse?type=rss', tags:['power','fr'] },
   { name:'CRE', cls:'cre', url:'https://www.cre.fr/en/rss', tags:['regulation','fr'] },
   { name:'ACER', cls:'acer', url:'https://www.acer.europa.eu/rss', tags:['regulation','markets'] },
+  { name:'Recharge', cls:'recharge', url:'https://www.rechargenews.com/rss', tags:['power','markets'] },
+  { name:'Energy Monitor', cls:'energymonitor', url:'https://energymonitor.ai/feed/', tags:['power','carbon','markets'] },
+  { name:'Carbon Pulse', cls:'carbonpulse', url:'https://carbon-pulse.com/feed/', tags:['carbon','regulation'] },
+  { name:'Gas Naturally', cls:'gasnaturally', url:'https://www.gasnaturally.eu/feed/', tags:['gas','regulation'] },
+  { name:'Montel', cls:'montel', url:'https://www.montelnews.com/rss', tags:['power','gas','markets'] },
 ];
 
 // RSS2JSON free proxy (no key needed for low volume)
@@ -36358,5 +36872,91 @@ updateCapacity();
 // Tente de charger les JSON (silencieux si non disponibles)
 loadFromJSON();
 </script>
+
+<!-- FRANCE DASHBOARD PAGE -->
+<div class="page" id="page-france" style="display:none">
+  <div class="page-header">
+    <div>
+      <div class="page-title">France Dashboard</div>
+      <div class="page-sub">Données temps réel — marché FR</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div class="kpi-card">
+      <div class="kpi-label">DA Prix FR</div>
+      <div class="kpi-value" id="fr-da-price">--</div>
+      <div class="kpi-unit">€/MWh</div>
+      <div class="kpi-delta" id="fr-da-delta"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Nucléaire</div>
+      <div class="kpi-value" id="fr-nuclear">--</div>
+      <div class="kpi-unit">GW</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Renouvelables</div>
+      <div class="kpi-value" id="fr-renew">--</div>
+      <div class="kpi-unit">GW</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Solde Export</div>
+      <div class="kpi-value" id="fr-export">--</div>
+      <div class="kpi-unit">GW</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">Prix DA France — 7 jours glissants</div>
+      <canvas id="fr-price-chart" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Mix de génération</div>
+      <canvas id="fr-mix-chart" height="220"></canvas>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-title">Température Paris (HDD/CDD)</div>
+      <canvas id="fr-temp-chart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">REMIT Outages actifs — FR</div>
+      <div id="fr-remit-list" style="font-size:12px;color:var(--text2);margin-top:8px">Chargement...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MY DASHBOARD PAGE -->
+<div class="page" id="page-mydash" style="display:none">
+  <div class="page-header" style="justify-content:space-between">
+    <div>
+      <div class="page-title">My Dashboard</div>
+      <div class="page-sub">Personnalisez votre espace — setup sauvegardé automatiquement</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-secondary" onclick="exportDashConfig()">Export JSON</button>
+      <button class="btn-primary" onclick="openWidgetPicker()">+ Add widget</button>
+    </div>
+  </div>
+  <div id="mydash-grid" class="mydash-grid">
+    <div class="mydash-empty" id="mydash-empty">
+      <div style="font-size:32px;margin-bottom:12px;opacity:0.3">◎</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:6px">Aucun widget configuré</div>
+      <div style="font-size:12px;color:var(--text3)">Cliquez sur "Add widget" pour commencer</div>
+    </div>
+  </div>
+</div>
+
+<!-- WIDGET PICKER MODAL -->
+<div id="widget-picker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;width:480px;max-width:90vw;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:600">Add widget</div>
+      <button onclick="closeWidgetPicker()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1">×</button>
+    </div>
+    <div id="widget-picker-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+  </div>
+</div>
+
 </body>
 </html>
