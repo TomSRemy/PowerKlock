@@ -97,21 +97,28 @@ def parse_prices(xml_text):
             price = pt.findtext('ns:price.amount', None, ns)
             if price is None:
                 continue
-            # Convert slot position to 0-indexed hour
-            hour = (pos - 1) // slots_per_hour
-            if hour >= 24:
+            # Keep native slot index (0-95 for 15min, 0-23 for hourly)
+            slot = pos - 1
+            n_slots = 96 if is_15min else 24
+            if slot >= n_slots:
                 continue
-            pos_buckets.setdefault(hour, []).append(round(float(price), 2))
+            pos_buckets.setdefault(slot, []).append(round(float(price), 2))
 
     if not pos_buckets:
         return []
 
-    # Build 24-point list, averaging duplicates
+    # Build full-length array with None for missing slots
+    # Deduplicate same-slot across multiple TimeSeries by averaging
+    if not pos_buckets:
+        return []
+    n_slots = 96 if any(k > 23 for k in pos_buckets) else 24
     result = []
-    for h in range(24):
-        vals = pos_buckets.get(h)
+    for slot in range(n_slots):
+        vals = pos_buckets.get(slot)
         if vals:
-            result.append({'hour': h, 'price': round(sum(vals) / len(vals), 2)})
+            result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
+        else:
+            result.append({'hour': slot, 'price': None})
     return result
 
 def parse_generation(xml_text):
@@ -187,12 +194,22 @@ def fetch_prices():
             pts  = parse_prices(xml)
             if not pts:
                 continue
-            prices = [p['price'] for p in pts]
+            prices = [p['price'] for p in pts if p['price'] is not None]
+            if not prices:
+                continue
             avg    = round(sum(prices)/len(prices), 2)
             mn, mx = min(prices), max(prices)
-            min_hr = next(p['hour'] for p in pts if p['price']==mn)
-            max_hr = next(p['hour'] for p in pts if p['price']==mx)
-            neg_hrs = sum(1 for p in prices if p < 0)
+            min_slot = next(p['hour'] for p in pts if p['price'] is not None and p['price']==mn)
+            max_slot = next(p['hour'] for p in pts if p['price'] is not None and p['price']==mx)
+            n_slots = len(pts)
+            mins_per_slot = round(24*60/n_slots) if n_slots > 0 else 60
+            def slot_to_hhmm(slot):
+                total_min = slot * mins_per_slot
+                h, m = divmod(total_min, 60)
+                return f"{h:02d}:{m:02d}"
+            min_hr = slot_to_hhmm(min_slot)
+            max_hr = slot_to_hhmm(max_slot)
+            neg_hrs = round(sum(1 for p in prices if p < 0) * (24*60/len(pts)) / 60, 1)
 
             # Yesterday for delta
             vs_yday = None
@@ -201,7 +218,8 @@ def fetch_prices():
                                 'periodStart':yesterday,'periodEnd':today})
                 pts_y = parse_prices(xml_y)
                 if pts_y:
-                    avg_y = sum(p['price'] for p in pts_y)/len(pts_y)
+                    valid_y = [p['price'] for p in pts_y if p['price'] is not None]
+                    avg_y = sum(valid_y)/len(valid_y) if valid_y else None
                     vs_yday = round(avg - avg_y, 2)
             except:
                 pass
