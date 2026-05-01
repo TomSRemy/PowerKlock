@@ -32016,7 +32016,7 @@ function renderPricesTable(data) {
     const el = document.getElementById(`spark-${i}`);
     if (!el) return;
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-    el.innerHTML = makeSVGSparkline(hourly, z.today >= 0);
+    el.innerHTML = makeSVGSparkline(hourly.filter(v => v !== null && v !== undefined), z.today >= 0);
   });
 
   // Render comparison chart
@@ -32054,12 +32054,17 @@ function togglePriceRow(idx, e) {
   // KPIs
   const hourlyData = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
   const realNegHrs = negHoursFromData(hourlyData);
-  const peakVal = Math.max(...hourlyData);
-  const minVal = Math.min(...hourlyData);
+  const validData = hourlyData.filter(v => v !== null && v !== undefined);
+  const peakVal = validData.length ? Math.max(...validData) : 0;
+  const minVal = validData.length ? Math.min(...validData) : 0;
   const peakIdx = hourlyData.indexOf(peakVal);
   const minIdx = hourlyData.indexOf(minVal);
   const resMin = getResolution(hourlyData);
-  const fmtHr = (i) => { const h=Math.floor(i*resMin/60),m=(i*resMin)%60; return h+'h'+(m?String(m).padStart(2,'0'):''); };
+  const fmtHr = (i) => {
+    const totalMin = i * resMin;
+    const h = Math.floor(totalMin/60), m = totalMin%60;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  };
 
   document.getElementById(`row-kpis-${idx}`).innerHTML = [
     {l:'Average', v:z.today.toFixed(2)+' €/MWh', c:''},
@@ -32075,7 +32080,7 @@ function togglePriceRow(idx, e) {
   // Hourly chart
   const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
   const curHr = new Date().getHours();
-  const labels = Array.from({length:hourly.length},(_,i)=>i+'h');
+  const labels = makeTimeLabels(hourly.length);
 
   mkChart(`row-chart-${idx}`, {
     type:'line',
@@ -32084,6 +32089,7 @@ function togglePriceRow(idx, e) {
       datasets:[{
         label:`${z.code} (€/MWh)`,
         data:hourly,
+        spanGaps:true,
         borderColor:C_ACC,
         borderWidth:2,
         pointRadius:0,
@@ -32163,7 +32169,10 @@ function renderCompareChart() {
   const data = window._pricesSorted;
   if (!data || !data.length) return;
   const selected = window._compareZones || new Set(['FR']);
-  const hours = Array.from({length:24},(_,i)=>i+'h');
+  // Use resolution of first selected zone's data
+  const firstZone = data.find(z => selected.has(z.code));
+  const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
+  const hours = makeTimeLabels(nPts);
   const curHr = new Date().getHours();
 
   const datasets = [];
@@ -32266,7 +32275,7 @@ function makeTimeLabels(n) {
 
 function negHoursFromData(data) {
   const mins = getResolution(data);
-  const negPoints = data.filter(v => v < 0).length;
+  const negPoints = data.filter(v => v !== null && v !== undefined && v < 0).length;
   return Math.round(negPoints * mins / 60 * 10) / 10; // in hours, 1dp
 }
 
@@ -34074,7 +34083,7 @@ function showMapDetail(zone) {
   // Hourly chart for selected zone
   const hourly = zone.hourly && zone.hourly.length ? zone.hourly
     : genHourly24(zone.today||50, zone.min||0, zone.max||100);
-  const labels = Array.from({length:hourly.length},(_,i)=>i+'h');
+  const labels = makeTimeLabels(hourly.length);
   const col = (zone.today||0) >= 0 ? C_UP : C_DN;
 
   mkChart('map-detail-chart', {
