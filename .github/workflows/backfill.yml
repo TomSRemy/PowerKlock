@@ -11,19 +11,23 @@ on:
         description: 'End date (YYYY-MM-DD) — leave blank for today'
         required: false
         default: ''
+      zones:
+        description: 'Zones (comma-separated) — recommended: FR,DE_LU,ES,BE,NL'
+        required: false
+        default: 'FR,DE_LU,ES,BE,NL'
       with_generation:
-        description: 'Include wind/solar generation (A75) — doubles runtime'
+        description: 'Include wind/solar generation (A75) — run prices first'
         type: boolean
         default: false
-      zones:
-        description: 'Zones to fetch (comma-separated, e.g. FR,DE_LU) — leave blank for all'
+      delay:
+        description: 'Delay between requests in seconds (0.4 recommended)'
         required: false
-        default: ''
+        default: '0.4'
 
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 350   # just under GitHub's 6h limit
+    timeout-minutes: 350
 
     steps:
       - name: Checkout repo
@@ -48,25 +52,18 @@ jobs:
             echo "end=${{ inputs.end_date }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run backfill — prices only
-        if: ${{ inputs.with_generation == false || inputs.with_generation == 'false' }}
+      - name: Run backfill
         run: |
-          ARGS="--start ${{ inputs.start_date }} --end ${{ steps.dates.outputs.end }} --delay 0.4"
+          ARGS="--start ${{ inputs.start_date }} --end ${{ steps.dates.outputs.end }}"
+          ARGS="$ARGS --delay ${{ inputs.delay }}"
           if [ -n "${{ inputs.zones }}" ]; then
             ARGS="$ARGS --zones ${{ inputs.zones }}"
           fi
-          python scripts/backfill.py $ARGS
-        env:
-          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-
-      - name: Run backfill — prices + generation
-        if: ${{ inputs.with_generation == true || inputs.with_generation == 'true' }}
-        run: |
-          ARGS="--start ${{ inputs.start_date }} --end ${{ steps.dates.outputs.end }} --delay 0.5 --with-generation"
-          if [ -n "${{ inputs.zones }}" ]; then
-            ARGS="$ARGS --zones ${{ inputs.zones }}"
+          if [ "${{ inputs.with_generation }}" = "true" ]; then
+            ARGS="$ARGS --with-generation"
           fi
-          python scripts/backfill.py $ARGS
+          echo "Running: python backfill.py $ARGS"
+          python backfill.py $ARGS
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
 
@@ -75,6 +72,13 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add data/history/
-          git diff --cached --quiet && echo "No changes to commit" || \
-            git commit -m "backfill: ${{ inputs.start_date }} → ${{ steps.dates.outputs.end }}$([ '${{ inputs.with_generation }}' = 'true' ] && echo ' (with generation)' || echo '')"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            MSG="backfill: ${{ inputs.start_date }} to ${{ steps.dates.outputs.end }} zones=${{ inputs.zones }}"
+            if [ "${{ inputs.with_generation }}" = "true" ]; then
+              MSG="$MSG +generation"
+            fi
+            git commit -m "$MSG"
+            git push
+          fi
