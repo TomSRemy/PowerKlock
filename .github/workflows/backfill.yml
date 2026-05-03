@@ -62,8 +62,8 @@ jobs:
           if [ "${{ inputs.with_generation }}" = "true" ]; then
             ARGS="$ARGS --with-generation"
           fi
-          echo "Running: python backfill.py $ARGS"
-          python backfill.py $ARGS
+          echo "Running: python scripts/backfill.py $ARGS"
+          python scripts/backfill.py $ARGS
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
 
