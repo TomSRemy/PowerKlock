@@ -588,4 +588,68 @@ if __name__ == '__main__':
     crossborder = fetch_crossborder()
     write_json('data/crossborder.json', {'updated': ts, 'countries': crossborder})
 
+    # ── Write daily history snapshot ──
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    daily_path = f'data/history/daily/{today_str}.json'
+    monthly_path = f'data/history/monthly/{today_str[:7]}.json'
+    summary_path = 'data/history/summary.json'
+
+    # Build daily snapshot (prices + generation if available)
+    daily_snap = {'date': today_str, 'zones': {}}
+    for z in prices:
+        zone_entry = {
+            'avg':    z['today'],
+            'min':    z['min'],
+            'max':    z['max'],
+            'negH':   z['negHours'],
+            'hourly': z['hourly'],
+        }
+        # Attach generation data if available in renewables
+        ren_code = z['code']
+        if renewables and ren_code in renewables:
+            r = renewables[ren_code]
+            zone_entry['windOnshore']  = r.get('windOnshoreActual',  [])
+            zone_entry['windOffshore'] = r.get('windOffshoreActual', [])
+            zone_entry['wind']         = r.get('windActual',         [])
+            zone_entry['solar']        = r.get('solarActual',        [])
+        daily_snap['zones'][z['code']] = zone_entry
+    write_json(daily_path, daily_snap)
+
+    # Update monthly summary (load existing if present, merge)
+    import os
+    if os.path.exists(monthly_path):
+        with open(monthly_path) as f:
+            monthly_data = json.load(f)
+    else:
+        monthly_data = {'month': today_str[:7], 'zones': {}}
+
+    for z in prices:
+        code = z['code']
+        entry = {'d': today_str, 'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours']}
+        if code not in monthly_data['zones']:
+            monthly_data['zones'][code] = []
+        # Replace or append today
+        monthly_data['zones'][code] = [
+            d for d in monthly_data['zones'][code] if d['d'] != today_str
+        ]
+        monthly_data['zones'][code].append(entry)
+    write_json(monthly_path, monthly_data)
+
+    # Update all-time summary
+    if os.path.exists(summary_path):
+        with open(summary_path) as f:
+            summary = json.load(f)
+    else:
+        summary = {'zones': {}}
+
+    for z in prices:
+        code = z['code']
+        entry = {'d': today_str, 'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours']}
+        if code not in summary['zones']:
+            summary['zones'][code] = []
+        summary['zones'][code] = [d for d in summary['zones'][code] if d['d'] != today_str]
+        summary['zones'][code].append(entry)
+        summary['zones'][code].sort(key=lambda x: x['d'])
+    write_json(summary_path, summary)
+
     print(f"\nDone. All data files written.")
