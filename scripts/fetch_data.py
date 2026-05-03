@@ -169,35 +169,82 @@ def parse_prices(xml_text):
             result.append({'hour': slot, 'price': None})
     return result
 
+def strip_ns(tag):
+    """Remove XML namespace from tag: {ns}localname → localname"""
+    return tag.split('}')[-1] if '}' in tag else tag
+
 def parse_generation(xml_text):
-    ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
+    """
+    Parse A75 generation data. Uses namespace-agnostic parsing
+    because A75 uses GL_MarketDocument namespace, not publicationdocument.
+    """
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return {}
+
     result = {}
-    for ts in root.findall('.//ns:TimeSeries', ns):
-        psr_type = ts.findtext('.//ns:MktPSRType/ns:psrType', '', ns)
+
+    def find_all(node, local_tag):
+        return [c for c in node.iter() if strip_ns(c.tag) == local_tag]
+
+    def find_text(node, local_tag, default=''):
+        for c in node.iter():
+            if strip_ns(c.tag) == local_tag:
+                return c.text or default
+        return default
+
+    for ts in find_all(root, 'TimeSeries'):
+        # Get PSR type
+        psr_type = ''
+        for c in ts.iter():
+            if strip_ns(c.tag) == 'psrType':
+                psr_type = c.text or ''
+                break
         if not psr_type:
             continue
-        # Build position-indexed dict for this TimeSeries
+
+        # Get resolution
+        res = 'PT60M'
+        for c in ts.iter():
+            if strip_ns(c.tag) == 'resolution':
+                res = c.text or 'PT60M'
+                break
+        res_minutes = 15 if res == 'PT15M' else 60
+        slots_per_hour = 60 // res_minutes
+
         ts_pts = {}
-        for pt in ts.findall('.//ns:Point', ns):
-            pos = int(pt.findtext('ns:position', '0', ns))
-            qty = pt.findtext('ns:quantity', None, ns)
-            if qty:
-                ts_pts[pos - 1] = float(qty)  # 0-indexed hours
+        for period in ts.iter():
+            if strip_ns(period.tag) != 'Period':
+                continue
+            for pt in period:
+                if strip_ns(pt.tag) != 'Point':
+                    continue
+                pos_el = qty_el = None
+                for child in pt:
+                    tag = strip_ns(child.tag)
+                    if tag == 'position': pos_el = child
+                    elif tag == 'quantity': qty_el = child
+                if pos_el is not None and qty_el is not None:
+                    pos = int(pos_el.text)
+                    qty = float(qty_el.text)
+                    # Aggregate 15min → hourly by position
+                    hour = (pos - 1) // slots_per_hour
+                    if hour not in ts_pts:
+                        ts_pts[hour] = []
+                    ts_pts[hour].append(qty)
+
         if ts_pts:
             if psr_type not in result:
                 result[psr_type] = {}
-            # Sum across multiple TimeSeries for same PSR type
-            for pos, val in ts_pts.items():
-                result[psr_type][pos] = result[psr_type].get(pos, 0) + val
+            for hour, vals in ts_pts.items():
+                avg = sum(vals) / len(vals)
+                result[psr_type][hour] = result[psr_type].get(hour, 0) + avg
+
     # Convert to sorted list of 24 values
     final = {}
     for psr, pos_dict in result.items():
-        n = max(pos_dict.keys()) + 1 if pos_dict else 24
-        final[psr] = [pos_dict.get(i, 0) for i in range(max(24, n))]
+        final[psr] = [round(pos_dict.get(i, 0)) for i in range(24)]
     return final
 
 PSR_MAP = {
