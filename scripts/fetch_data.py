@@ -68,54 +68,85 @@ def fetch(params):
 
 def parse_prices(xml_text):
     """
-    Parse DA prices. ENTSO-E may return multiple TimeSeries and/or 15-min resolution.
-    Strategy:
-      - Detect resolution from Period/resolution field (PT60M vs PT15M)
-      - If 15-min: group 4 slots → 1 hour (average)
-      - Aggregate across multiple TimeSeries by position (average if duplicates)
-      - Return exactly 24 hourly values
+    Parse DA prices. ENTSO-E may send multiple TimeSeries covering different
+    sub-intervals of the day (e.g. two 48-slot series for a 96-slot day).
+    
+    Strategy: use Period/timeInterval/start to compute ABSOLUTE slot index,
+    so positions from different TimeSeries don't collide.
     """
-    ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
+    ns  = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
+    ns2 = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3',
+           'es': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return []
 
-    # pos_buckets: position (1-indexed, hourly) → list of prices to average
+    # Get document-level date to compute midnight offset
+    doc_start_str = root.findtext(
+        './/ns:time_Period.timeInterval/ns:start', '', ns
+    ) or root.findtext('.//ns:timeInterval/ns:start', '', ns)
+
+    def parse_dt(s):
+        """Parse ISO datetime string → datetime (UTC)."""
+        from datetime import datetime, timezone
+        s = s.strip()
+        for fmt in ('%Y%m%d%H%M', '%Y-%m-%dT%H:%MZ', '%Y-%m-%dT%H:%M%z'):
+            try:
+                dt = datetime.strptime(s, fmt)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt
+            except ValueError:
+                continue
+        return None
+
+    doc_start = parse_dt(doc_start_str) if doc_start_str else None
+
+    # pos_buckets: absolute_slot → list of prices (for averaging true duplicates)
     pos_buckets = {}
+    is_15min_global = False
 
     for ts in root.findall('.//ns:TimeSeries', ns):
         period = ts.find('.//ns:Period', ns)
         if period is None:
             continue
+
         res = period.findtext('ns:resolution', 'PT60M', ns)
         is_15min = (res == 'PT15M')
-        slots_per_hour = 4 if is_15min else 1
+        if is_15min:
+            is_15min_global = True
+        res_minutes = 15 if is_15min else 60
+
+        # Get period start to compute offset from midnight
+        period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
+        period_start = parse_dt(period_start_str) if period_start_str else doc_start
+
+        # Offset in slots from midnight
+        slot_offset = 0
+        if period_start and doc_start:
+            diff_minutes = int((period_start - doc_start).total_seconds() / 60)
+            slot_offset = diff_minutes // res_minutes
 
         for pt in period.findall('ns:Point', ns):
-            pos = int(pt.findtext('ns:position', '0', ns))
+            pos   = int(pt.findtext('ns:position', '0', ns))
             price = pt.findtext('ns:price.amount', None, ns)
             if price is None:
                 continue
-            # Keep native slot index (0-95 for 15min, 0-23 for hourly)
-            slot = pos - 1
-            n_slots = 96 if is_15min else 24
-            if slot >= n_slots:
+            abs_slot = slot_offset + (pos - 1)
+            if abs_slot < 0 or abs_slot >= 96:
                 continue
-            pos_buckets.setdefault(slot, []).append(round(float(price), 2))
+            pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
 
     if not pos_buckets:
         return []
 
-    # Build full-length array with None for missing slots
-    # Deduplicate same-slot across multiple TimeSeries by averaging
-    if not pos_buckets:
-        return []
-    n_slots = 96 if any(k > 23 for k in pos_buckets) else 24
+    n_slots = 96 if is_15min_global else 24
     result = []
     for slot in range(n_slots):
         vals = pos_buckets.get(slot)
         if vals:
+            # Average only true duplicates (same absolute slot, multiple TS)
             result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
         else:
             result.append({'hour': slot, 'price': None})
