@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PowerKlock — European Energy Intelligence</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMGQ0YTgiLz48cGF0aCBkPSJNMTguNSA0TDggMThoOGwtMiAxMCAxNC0xNmgtOHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1129,17 +1130,9 @@
       </div>
 
 
-      <div class="hist-section" id="hs-prices-main" style="margin-top:0;border-radius:0;border-left:none;border-right:none;border-top:none">
-        <div class="hist-section-header open" onclick="toggleHistSection('prices-main')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-            Power Day-Ahead Prices
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-prices-main" style="padding:0">
-      <!-- KPI Strip -->
-      <div style="padding:14px 0 0">
+
+      <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
+        <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-label">FR Day-Ahead</div>
@@ -1197,18 +1190,21 @@
           <span id="prices-footer">Prices: ENTSO-E Transparency · Day-ahead market settlement · Updated daily after 13:00 CET</span>
         </div>
       </div>
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="compare-country-pills"></div>
+          <canvas id="price-compare-canvas" style="width:100%;height:220px"></canvas>
+        </div>
+      </div></div>
 
-
-      <!-- HIST: FR Day-Ahead Spot Price -->
-      <div class="hist-section" id="hs-spot-history">
-        <div class="hist-section-header" onclick="toggleHistSection('spot-history')">
+      <div class="hist-section" id="hs-hist-da">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-da')">
           <div class="hist-section-title">
-            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>FR Day-Ahead Spot Price
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Historical DA Prices
             <span class="hist-section-hint">Hourly or daily average · 7D rolling + 30D rolling</span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-spot-history">
+        <div class="hist-section-body" id="hs-body-hist-da">
           <div class="hist-controls"><select class="hist-zone-select" id="hz-spot" onchange="setHistZone('spot',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spot">
         <button class="hw-btn active" onclick="setHistWindow('spot','7D',this)">7D</button>
         <button class="hw-btn" onclick="setHistWindow('spot','1M',this)">1M</button>
@@ -1222,7 +1218,7 @@
       <div class="hist-stats-grid" id="hist-spot-stats"></div>
         </div>
       </div>
-      <!-- HIST: DA Daily Spread (Max−Min) -->
+
       <div class="hist-section" id="hs-spread-history">
         <div class="hist-section-header" onclick="toggleHistSection('spread-history')">
           <div class="hist-section-title">
@@ -1244,28 +1240,27 @@
       <div class="hist-stats-grid" id="hist-spread-stats"></div>
         </div>
       </div>
-      <!-- HIST: Negative DA Price Hours -->
-      <div class="hist-section" id="hs-neghours-history">
-        <div class="hist-section-header" onclick="toggleHistSection('neghours-history')">
+
+      <div class="hist-section" id="hs-hist-dist">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-dist')">
           <div class="hist-section-title">
-            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="rgba(239,68,68,0.2)" stroke="#ef4444"/></svg></span>Negative DA Price Hours
-            <span class="hist-section-hint">Daily bars + calendar heatmap · Red = high count</span>
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></span>DA Spot Price Distribution
+            <span class="hist-section-hint">Histogram of hourly prices · mean + median</span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-neghours-history">
-          <div class="hist-controls"><select class="hist-zone-select" id="hz-neg" onchange="setHistZone('neg',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-neg">
-        <button class="hw-btn active" onclick="setHistWindow('neg','1M',this)">1M</button>
-        <button class="hw-btn" onclick="setHistWindow('neg','3M',this)">3M</button>
-        <button class="hw-btn" onclick="setHistWindow('neg','1Y',this)">1Y</button>
-        <button class="hw-btn" onclick="setHistWindow('neg','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('neg','all',this)">All</button>
+        <div class="hist-section-body" id="hs-body-hist-dist">
+          <div class="hist-window-btns" id="hw-dist">
+        <button class="hw-btn active" onclick="setHistWindow('dist','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','5Y',this)">5Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','all',this)">All</button>
       </div>
-      <canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas>
-      <div class="hist-stats-grid" id="hist-neg-stats"></div>
+      <canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas>
+      <div class="hist-stats-grid" id="hist-dist-stats"></div>
         </div>
       </div>
-      <!-- HIST: FR vs Neighbours -->
+
       <div class="hist-section" id="hs-fr-neighbours">
         <div class="hist-section-header" onclick="toggleHistSection('fr-neighbours')">
           <div class="hist-section-title">
@@ -1286,40 +1281,28 @@
       <canvas id="hist-nbr-canvas" style="width:100%;height:220px"></canvas>
         </div>
       </div>
-      <!-- HIST: DA Spot Price Distribution -->
-      <div class="hist-section" id="hs-distribution">
-        <div class="hist-section-header" onclick="toggleHistSection('distribution')">
+
+      <div class="hist-section" id="hs-hist-neg">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-neg')">
           <div class="hist-section-title">
-            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></span>DA Spot Price Distribution
-            <span class="hist-section-hint">Histogram of hourly prices · mean + median</span>
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="rgba(239,68,68,0.2)" stroke="#ef4444"/></svg></span>Negative DA Price Hours
+            <span class="hist-section-hint">Daily bars + calendar heatmap · Red = high count</span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-distribution">
-          <div class="hist-window-btns" id="hw-dist">
-        <button class="hw-btn active" onclick="setHistWindow('dist','1Y',this)">1Y</button>
-        <button class="hw-btn" onclick="setHistWindow('dist','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('dist','5Y',this)">5Y</button>
-        <button class="hw-btn" onclick="setHistWindow('dist','all',this)">All</button>
+        <div class="hist-section-body" id="hs-body-hist-neg">
+          <div class="hist-controls"><select class="hist-zone-select" id="hz-neg" onchange="setHistZone('neg',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-neg">
+        <button class="hw-btn active" onclick="setHistWindow('neg','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','3M',this)">3M</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','all',this)">All</button>
       </div>
-      <canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas>
-      <div class="hist-stats-grid" id="hist-dist-stats"></div>
+      <canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas>
+      <div class="hist-stats-grid" id="hist-neg-stats"></div>
         </div>
       </div>
 
-      <!-- Multi-country comparison chart (always visible at bottom) -->
-      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:14px;margin-top:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <span style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)">Hourly DA Prices — Multi-country comparison</span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap" id="compare-country-pills"></div>
-        </div>
-        <div style="position:relative">
-          <canvas id="price-compare-canvas" style="width:100%;height:220px"></canvas>
-        </div>
-      </div>
-      </div>
-      </div>
-      </div>
     </div>
 
     <!-- ── PAGE: GENERATION MIX ── -->
