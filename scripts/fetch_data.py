@@ -107,7 +107,9 @@ def parse_prices(xml_text):
     pos_buckets = {}
     is_15min_global = False
 
-    for ts in root.findall('.//ns:TimeSeries', ns):
+    ts_list = root.findall('.//ns:TimeSeries', ns)
+    debug = os.environ.get('DEBUG_ZONE','')
+    for ts_idx, ts in enumerate(ts_list):
         period = ts.find('.//ns:Period', ns)
         if period is None:
             continue
@@ -128,25 +130,40 @@ def parse_prices(xml_text):
             diff_minutes = int((period_start - doc_start).total_seconds() / 60)
             slot_offset = diff_minutes // res_minutes
 
-        for pt in period.findall('ns:Point', ns):
+        pts_in_ts = period.findall('ns:Point', ns)
+        if debug:
+            print(f"  TS[{ts_idx}] res={res} start={period_start_str!r} offset={slot_offset} npts={len(pts_in_ts)}")
+
+        for pt in pts_in_ts:
             pos   = int(pt.findtext('ns:position', '0', ns))
             price = pt.findtext('ns:price.amount', None, ns)
             if price is None:
                 continue
             abs_slot = slot_offset + (pos - 1)
             if abs_slot < 0 or abs_slot >= 96:
+                if debug:
+                    print(f"    SKIP slot {abs_slot} (pos={pos} offset={slot_offset})")
                 continue
             pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
 
     if not pos_buckets:
         return []
 
-    n_slots = 96 if is_15min_global else 24
+    # Determine native resolution: if any slot > 23 exists, it's truly 15min data
+    max_slot = max(pos_buckets.keys()) if pos_buckets else 0
+    if max_slot > 23:
+        n_slots = 96
+    elif is_15min_global and max_slot <= 23:
+        # 15min flag but all slots fit in 24 → hourly data stored with PT15M resolution
+        # Keep as 24-slot (e.g. RS, MK send PT60M values labelled PT15M in some TS)
+        n_slots = 24
+    else:
+        n_slots = 24
+
     result = []
     for slot in range(n_slots):
         vals = pos_buckets.get(slot)
         if vals:
-            # Average only true duplicates (same absolute slot, multiple TS)
             result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
         else:
             result.append({'hour': slot, 'price': None})
