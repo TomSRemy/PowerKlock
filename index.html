@@ -1113,7 +1113,24 @@
 
 
 
-      <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
+      <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div>
+<div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
+  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(0,212,168,.1);color:var(--acc);white-space:nowrap">↺ Today</button>
+  <div class="date-picker-wrap" id="date-picker-wrap-hdr">
+    <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="date-picker-label">Today</span>
+      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="date-picker-popup" id="date-picker-popup">
+      <div class="dp-header"><button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button><span class="dp-month-label" id="dp-month-label"></span><button class="dp-nav" onclick="dpChangeMonth(1)">›</button></div>
+      <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="dp-grid" id="dp-grid"></div>
+      <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
+    </div>
+  </div>
+</div>
+<svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
         <div class="kpi-card">
@@ -1158,7 +1175,6 @@
         <div class="table-header" style="flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <span class="table-title">All Bidding Zones</span>
-            <span id="prices-date-label" class="table-title" style="font-family:'JetBrains Mono',monospace;letter-spacing:.02em">Day-Ahead prices · loading...</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <!-- Zone filter dropdown panel -->
@@ -1169,32 +1185,18 @@
                 <span id="zone-filter-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <div id="zone-filter-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:280px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div id="zone-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
                   <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
-                  <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0">All</button>
+                  <div style="display:flex;gap:6px">
+                    <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 8px;font-weight:600">Select all</button>
+                    <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 8px">Select none</button>
+                  </div>
                 </div>
-                <div id="zone-filter-chips" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                <div id="zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>
               </div>
             </div>
-            <!-- Date picker -->
-            <div class="date-picker-wrap" id="date-picker-wrap-table">
-              <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:11px;padding:4px 10px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span id="date-picker-label">Today</span>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div class="date-picker-popup" id="date-picker-popup">
-                <div class="dp-header">
-                  <button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button>
-                  <span class="dp-month-label" id="dp-month-label"></span>
-                  <button class="dp-nav" onclick="dpChangeMonth(1)">›</button>
-                </div>
-                <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
-                <div class="dp-grid" id="dp-grid"></div>
-                <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
-              </div>
-            </div>
+
           </div>
         </div>
         <table>
@@ -1216,6 +1218,11 @@
             </tr>
           </thead>
           <tbody id="prices-tbody">
+            <tr id="prices-date-row">
+              <td colspan="13" style="text-align:center;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--tx);letter-spacing:.03em;background:var(--bg3);border-bottom:1px solid var(--bd)">
+                <span id="prices-date-label">Day-Ahead prices · loading...</span>
+              </td>
+            </tr>
             <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
           </tbody>
         </table>
@@ -1234,12 +1241,15 @@
                 <span id="compare-filter-label">FR selected</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <div id="compare-filter-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:200;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:280px;max-height:320px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                  <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Select zones to compare</span>
-                  <button onclick="clearCompareZones()" style="font-size:10px;color:var(--acc);background:none;border:none;cursor:pointer;padding:0">Reset</button>
+              <div id="compare-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+                  <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Compare zones</span>
+                  <div style="display:flex;gap:6px">
+                    <button onclick="selectAllCompareZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 8px;font-weight:600">Select all</button>
+                    <button onclick="clearCompareZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 8px">Select none</button>
+                  </div>
                 </div>
-                <div id="compare-zone-chips" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                <div id="compare-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
               </div>
             </div>
           </div>
@@ -32786,6 +32796,9 @@ function renderPricesTable(data) {
   const dateStr = fmt(d);
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + dateStr + ' · ENTSO-E';
+  // Remove loading row if still there
+  const loadingRow = document.querySelector('#prices-tbody .loading-row');
+  if (loadingRow) loadingRow.remove();
 
   const sorted = [...data].sort((a,b) => b.today - a.today);
   window._pricesSorted = sorted;
@@ -32798,23 +32811,55 @@ function renderPricesTable(data) {
 }
 
 // ── Zone filter panel
+function positionPanel(panelId, btnId) {
+  const panel = document.getElementById(panelId);
+  const btn   = document.getElementById(btnId);
+  if (!panel || !btn) return;
+  const r = btn.getBoundingClientRect();
+  panel.style.top  = (r.bottom + 4) + 'px';
+  // Prefer left-aligned; if off-screen, right-align
+  const leftPos = r.left;
+  const panelW  = 300;
+  if (leftPos + panelW > window.innerWidth - 10) {
+    panel.style.left = 'auto';
+    panel.style.right = (window.innerWidth - r.right) + 'px';
+  } else {
+    panel.style.left  = leftPos + 'px';
+    panel.style.right = 'auto';
+  }
+}
+
 function toggleZoneFilterPanel() {
   const panel = document.getElementById('zone-filter-panel');
   if (!panel) return;
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) buildZoneFilterDropdown();
-  // Close compare panel if open
+  if (!isOpen) { positionPanel('zone-filter-panel','zone-filter-btn'); buildZoneFilterDropdown(); }
   const cp = document.getElementById('compare-filter-panel');
   if (cp) cp.style.display = 'none';
 }
 
+function selectAllZones() {
+  if (!window._pricesSorted) return;
+  window._pricesZoneFilter = null; // null = all
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
+}
+
+function selectAllCompareZones() {
+  if (!window._pricesSorted) return;
+  window._compareZones = new Set(window._pricesSorted.map(z=>z.code));
+  window._zoneColorMap = null;
+  buildCompareChips();
+  renderCompareChart();
+}
+
 document.addEventListener('click', e => {
-  if (!e.target.closest('#zone-filter-wrap')) {
+  if (!e.target.closest('#zone-filter-wrap') && !e.target.closest('#zone-filter-panel')) {
     const p = document.getElementById('zone-filter-panel');
     if (p) p.style.display = 'none';
   }
-  if (!e.target.closest('#compare-filter-wrap')) {
+  if (!e.target.closest('#compare-filter-wrap') && !e.target.closest('#compare-filter-panel')) {
     const p = document.getElementById('compare-filter-panel');
     if (p) p.style.display = 'none';
   }
@@ -32955,7 +33000,10 @@ function renderPricesTableBody() {
         return slice.length ? slice.reduce((a,b)=>a+b,0)/slice.length : null;
       }).filter(v=>v!=null);
     }
-    const sparkSvg = makeSVGSparklineSmooth(h24spark, z.today >= 0);
+    // Color: green if positive avg, red if mostly negative, orange if mixed
+    const negCount = h24spark.filter(v=>v<0).length;
+    const sparkPositive = negCount === 0 ? true : negCount >= h24spark.length * 0.5 ? false : 'mixed';
+    const sparkSvg = makeSVGSparklineSmooth(h24spark, sparkPositive);
 
     const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)">${z.flag||''} ${z.code}</td>
@@ -32988,7 +33036,7 @@ function makeSVGSparklineSmooth(data, positive) {
   if (!data || data.length < 2) return '';
   const w=80, h=28, pad=2;
   const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
-  const col = positive ? '#10b981' : '#f05060';
+  const col = positive === true ? '#10b981' : positive === 'mixed' ? '#f59e0b' : '#f05060';
   const pts = data.map((v,i) => ({
     x: pad + (i/(data.length-1))*(w-pad*2),
     y: h-pad-((v-mn)/rng)*(h-pad*2)
@@ -33231,7 +33279,9 @@ function buildHourlyDetail(idx, z) {
   // Use 96-pt data if available, fallback to h24
   const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
   const chartLabels = makeTimeLabels(chartData.length);
-  const col = zoneColor(z.code);
+  // Color: zone color if positive avg, red/orange if significant negative prices
+  const negFraction = chartData.filter(v=>v!=null&&v<0).length / chartData.filter(v=>v!=null).length;
+  const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : zoneColor(z.code);
   const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== new Date().toISOString().slice(0,10))
     ? -1 : new Date().getHours() * (chartData.length / 24);
 
@@ -33333,7 +33383,7 @@ function toggleCompareFilterPanel() {
   if (!panel) return;
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) buildCompareChips();
+  if (!isOpen) { positionPanel('compare-filter-panel','compare-filter-btn'); buildCompareChips(); }
   const zp = document.getElementById('zone-filter-panel');
   if (zp) zp.style.display = 'none';
 }
@@ -33442,8 +33492,10 @@ function renderCompareChart() {
   }
   data.forEach((z,i) => {
     if (!selected.has(z.code)) return;
-    const col = window._zoneColorMap[z.code] || COMPARE_COLORS[i % COMPARE_COLORS.length];
+    const baseCol = window._zoneColorMap[z.code] || COMPARE_COLORS[i % COMPARE_COLORS.length];
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+    const negFracCC = hourly.filter(v=>v!=null&&v<0).length / Math.max(1, hourly.filter(v=>v!=null).length);
+    const col = negFracCC >= 0.5 ? '#f05060' : negFracCC >= 0.2 ? '#f59e0b' : baseCol;
     // Today — solid with transparent fill
     datasets.push({
       label:`${z.code} · ${z.name}`,
@@ -36099,14 +36151,14 @@ function dpRender() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday = dateStr === todayStr;
-    const isSel = dateStr === selStr;
+    const isToday  = dateStr === todayStr;
+    const isSel    = dateStr === selStr;
     const isFuture = dateStr > todayStr;
-    const negH = DP.negDays[dateStr];
+    const negH     = DP.negDays[dateStr];
 
     let cls = 'dp-day';
     if (isToday) cls += ' dp-today';
-    if (isSel) cls += ' dp-selected';
+    if (isSel)   cls += ' dp-selected'; // today gets dp-selected when selectedDate is null
     if (isFuture) cls += ' dp-future';
 
     const dot = (negH > 0 && !isSel) ? '<div class="dp-neg-dot"></div>' : '';
@@ -36117,16 +36169,18 @@ function dpRender() {
 
 function dpSelect(dateStr) {
   const todayStr = new Date().toISOString().slice(0,10);
-  DP.selectedDate = dateStr === todayStr ? null : dateStr;
-  // Update label
+  const isToday  = dateStr === todayStr;
+  // SelectedDate=null means "today" for visual state only
+  DP.selectedDate = isToday ? null : dateStr;
+  // Update label in picker button
   const lbl = document.getElementById('date-picker-label');
-  lbl.textContent = DP.selectedDate ? DP.selectedDate.slice(5).replace('-','/') : 'Today';
+  if (lbl) lbl.textContent = isToday ? 'Today' : dateStr.slice(5).replace('-','/');
   dpRender();
-  // Reload prices for selected date
-  loadPricesForDate(DP.selectedDate);
+  // Always fetch by explicit date — today included (loads today's JSON if available)
+  loadPricesForDate(dateStr);
   // Close popup
-  document.getElementById('date-picker-btn').classList.remove('open');
-  document.getElementById('date-picker-popup').classList.remove('open');
+  document.getElementById('date-picker-btn')?.classList.remove('open');
+  document.getElementById('date-picker-popup')?.classList.remove('open');
 }
 
 function dpSelectToday() {
@@ -36143,6 +36197,7 @@ function dpChangeMonth(dir) {
 // ── Load prices for a specific date ──
 async function loadPricesForDate(dateStr) {
   if (!dateStr) { loadPrices(); return; }
+  const todayStr = new Date().toISOString().slice(0,10);
 
   const updEl = document.getElementById('prices-updated');
   if (updEl) updEl.textContent = 'Loading ' + dateStr + '...';
@@ -36225,6 +36280,9 @@ async function loadPricesForDate(dateStr) {
       }
     } catch(e) { console.warn('Historical fetch failed:', e); }
   }
+
+  // If today and no historical file yet → use live prices.json
+  if (dateStr === todayStr) { loadPrices(); return; }
 
   // ── 2. Real ENTSO-E token
   if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
