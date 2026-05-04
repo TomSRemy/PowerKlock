@@ -162,4 +162,3 @@ function setGenMixType(type, btn) {
   if (btn) btn.classList.add('active');
   loadGenMix();
 }
-

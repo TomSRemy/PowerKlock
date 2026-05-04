@@ -298,4 +298,3 @@ function drawGoBox() {
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);
 }
 
-

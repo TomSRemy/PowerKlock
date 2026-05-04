@@ -78,4 +78,3 @@ function renderSpark() {
     return `<tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">${z.code}</span>${z.name}</td><td style="font-weight:600">${z.today.toFixed(1)}</td><td style="color:var(--text3)">${gasCost.toFixed(1)}</td><td style="color:var(--text3)">${carbCost.toFixed(1)}</td><td class="${css>=0?'up':'down'}" style="font-weight:600">${css>=0?'+':''}${css.toFixed(1)}</td><td class="${z.vsYday>=0?'up':'down'}">${z.vsYday>=0?'▲':'▼'}${Math.abs(z.vsYday).toFixed(1)}</td></tr>`;
   }).join('');
 }
-

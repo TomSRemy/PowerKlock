@@ -218,4 +218,3 @@ const RSS_SOURCES = [
 
 // RSS2JSON free proxy (no key needed for low volume)
 const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
-

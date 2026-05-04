@@ -170,4 +170,3 @@ function renderGenMixBreakdown(mix, fuels, total, isLive) {
 }
 
 
-
