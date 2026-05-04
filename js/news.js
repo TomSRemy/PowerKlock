@@ -181,6 +181,8 @@ function setLF(val, btn) {
 
 
 // ── NEW SECTION LOADER ──
+// (constants moved to prices.js)
+
 // ── HELPERS
 function genHourly24(base, min, max) {
   const p=[.6,.5,.45,.4,.4,.5,.7,.85,.9,.85,.75,.6,.55,.58,.65,.75,.88,.95,1,.95,.88,.82,.75,.68];
@@ -210,4 +212,3 @@ function drawLineSimple(ctx, w, h, data, color, mn, mx) {
   });
   setTimeout(()=>{ addFullscreen(canvas.id); addDownload(canvas.id,canvas.id); },100);
 }
-

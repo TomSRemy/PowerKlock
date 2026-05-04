@@ -407,4 +407,3 @@ const HIST = {
   windows: {},         // current window per chart key
   charts: {},          // Chart.js instances
 };
-

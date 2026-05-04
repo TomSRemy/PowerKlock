@@ -178,4 +178,3 @@ let leafletMap = null;
 let mapMarkers = [];
 let mapView = 'price';
 let mapInitialized = false;
-

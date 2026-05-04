@@ -338,4 +338,3 @@ function renderRenErrorTable(mix) {
   });
   document.getElementById('ren-err-tbody').innerHTML = rows.join('');
 }
-

@@ -1,3 +1,84 @@
+const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];
+const PAGE_LOADERS = {
+  map: () => {
+    setTimeout(() => {
+      initLeafletMap();
+      renderMapKPIs();
+      document.getElementById('map-upd').textContent = pricesData?.length ? 'ENTSO-E · Live' : 'Demo data';
+    }, 100);
+  },
+  renewables: loadRenewables,
+  nuclear: drawNuclear,
+  imbalance: drawImbalance,
+  eua: drawEUA,
+  euafwd: drawEUAFwd,
+  spark: renderSpark,
+  goprices: renderGO,
+  gohist: () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
+  wxcities: loadWeather,
+  wxhdd: renderHDD,
+};
+
+// Patch showPage to handle new sections
+const _origShowPage = showPage;
+window.showPage = function(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  const ldr = PAGE_LOADERS[id];
+  if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
+  // original loaders
+  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
+  if (id === 'news' && !window._newsLoaded) loadNews();
+  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
+  if (id === 'load' && !window._loadLoaded) loadLoad();
+  if (id === 'overview') loadOverview();
+  if (id === 'converter') { updateConverter(); updateCapacity(); }
+};
+
+// ── DEMO DATA
+const GM_DEMO = {
+  FR:{nuclear:38000,wind:5500,solar:11100,hydro:4800,fossil:700,biomass:900,total:61400},
+  DE_LU:{nuclear:0,wind:22000,solar:18000,hydro:2500,fossil:12000,biomass:4000,total:59000},
+  ES:{nuclear:7000,wind:15000,solar:12000,hydro:5000,fossil:4000,biomass:800,total:44000},
+  BE:{nuclear:4500,wind:1800,solar:2500,hydro:100,fossil:2000,biomass:600,total:11700},
+  NL:{nuclear:500,wind:5000,solar:4000,hydro:0,fossil:8000,biomass:500,total:18100},
+  IT_NORD:{nuclear:0,wind:1500,solar:7000,hydro:8000,fossil:9000,biomass:700,total:26500},
+  GB:{nuclear:5000,wind:8000,solar:3000,hydro:1500,fossil:6000,biomass:1200,total:25100},
+  PT:{nuclear:0,wind:4000,solar:3500,hydro:2500,fossil:1500,biomass:400,total:12000},
+};
+const FUELS = [
+  {k:'nuclear',l:'Nuclear',c:'#a78bfa'},{k:'wind',l:'Wind',c:'#60a5fa'},
+  {k:'solar',l:'Solar',c:'#f59e0b'},{k:'hydro',l:'Hydro',c:'#34d399'},
+  {k:'fossil',l:'Fossil',c:'#f87171'},{k:'biomass',l:'Biomass',c:'#6ee7b7'},
+];
+const WX_CITIES = [
+  {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},
+  {name:'Lyon',region:'Auvergne-Rhone-Alpes',lat:45.74,lon:4.83,norm:12.5},
+  {name:'Marseille',region:'PACA',lat:43.30,lon:5.37,norm:16.0},
+  {name:'Bordeaux',region:'Nouvelle-Aquitaine',lat:44.84,lon:-0.58,norm:13.2},
+  {name:'Strasbourg',region:'Grand Est',lat:48.57,lon:7.75,norm:10.5},
+  {name:'Lille',region:'Hauts-de-France',lat:50.63,lon:3.07,norm:10.0},
+  {name:'Nantes',region:'Pays de la Loire',lat:47.22,lon:-1.55,norm:12.8},
+  {name:'Grenoble',region:'Auvergne-Rhone-Alpes',lat:45.18,lon:5.72,norm:11.2},
+];
+const GO_CURRENT = [
+  {tech:'Wind',cal:'Cal-26',bid:.51,ask:.55,delta:-.02},
+  {tech:'Solar',cal:'Cal-26',bid:.38,ask:.41,delta:-.01},
+  {tech:'Hydro',cal:'Cal-26',bid:.49,ask:.53,delta:-.02},
+  {tech:'Renewable',cal:'Cal-26',bid:.45,ask:.48,delta:-.015},
+];
+const GO_FWD = [
+  {p:'GO AIB Wind',b25:.52,a25:.56,b26:.51,a26:.55,b27:.48,a27:.52,d:-.02},
+  {p:'GO AIB Solar',b25:.39,a25:.42,b26:.38,a26:.41,b27:.35,a27:.38,d:-.01},
+  {p:'GO AIB Hydro',b25:.50,a25:.54,b26:.49,a26:.53,b27:.46,a27:.50,d:-.02},
+  {p:'GO AIB Renewable',b25:.46,a25:.49,b26:.45,a26:.48,b27:.42,a27:.45,d:-.015},
+  {p:'GO Ireland Wind',b25:.28,a25:.32,b26:.27,a26:.31,b27:.25,a27:.29,d:-.01},
+];
+
 // ════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════
