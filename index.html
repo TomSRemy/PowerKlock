@@ -794,14 +794,11 @@
   }
   .hist-section-header.open .hist-section-chevron { transform: rotate(180deg); }
   .hist-section-body {
-    padding: 0 16px;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease, padding 0.25s ease;
+    display: none;
+    padding: 16px;
   }
   .hist-section-body.open {
-    max-height: 2000px;
-    padding: 16px;
+    display: block;
   }
   .hist-zone-select {
     background: var(--bg3); border: 1px solid var(--border2);
@@ -1177,14 +1174,19 @@
         </div>
         <table>
           <thead>
+            <tr id="prices-date-row">
+              <th colspan="9" style="text-align:left;padding:6px 12px;font-size:10px;font-weight:400;color:var(--tx3);letter-spacing:.04em;background:var(--bg2);border-bottom:1px solid var(--bd)" id="prices-date-label">Day-Ahead prices · loading...</th>
+            </tr>
             <tr>
-              <th>Country / Zone</th>
-              <th>Today €/MWh</th>
-              <th>vs Yday</th>
-              <th>Min Hour</th>
-              <th>Max Hour</th>
-              <th>Neg Hrs</th>
-              <th>Spark €/MWh</th>
+              <th onclick="sortPricesTable('name')" style="cursor:pointer;user-select:none">Country <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Today €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none">vs Yday <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none">Min Hour <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none">Max Hour <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('negHrs')" style="cursor:pointer;user-select:none">Neg Hrs <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('renPct')" style="cursor:pointer;user-select:none">% Ren <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('domFuel')" style="cursor:pointer;user-select:none">Dom. Fuel <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('spark')" style="cursor:pointer;user-select:none">Spark <span style="opacity:.4">↕</span></th>
               <th style="text-align:left;padding-left:20px">Shape</th>
             </tr>
           </thead>
@@ -1212,14 +1214,15 @@
         </div>
         <div class="hist-section-body" id="hs-body-hist-da">
           <div class="hist-controls"><select class="hist-zone-select" id="hz-spot" onchange="setHistZone('spot',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spot">
-        <button class="hw-btn active" onclick="setHistWindow('spot','7D',this)">7D</button>
-        <button class="hw-btn" onclick="setHistWindow('spot','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','7D',this)">7D</button>
+        <button class="hw-btn active" onclick="setHistWindow('spot','1M',this)">1M</button>
         <button class="hw-btn" onclick="setHistWindow('spot','3M',this)">3M</button>
         <button class="hw-btn" onclick="setHistWindow('spot','1Y',this)">1Y</button>
         <button class="hw-btn" onclick="setHistWindow('spot','2Y',this)">2Y</button>
         <button class="hw-btn" onclick="setHistWindow('spot','5Y',this)">5Y</button>
         <button class="hw-btn" onclick="setHistWindow('spot','all',this)">All</button>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spot-period"></div>
       <canvas id="hist-spot-canvas" style="width:100%;height:220px"></canvas>
       <div class="hist-stats-grid" id="hist-spot-stats"></div>
         </div>
@@ -1235,13 +1238,14 @@
         </div>
         <div class="hist-section-body" id="hs-body-spread-history">
           <div class="hist-controls"><select class="hist-zone-select" id="hz-spread" onchange="setHistZone('spread',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spread">
-        <button class="hw-btn active" onclick="setHistWindow('spread','7D',this)">7D</button>
-        <button class="hw-btn" onclick="setHistWindow('spread','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('spread','7D',this)">7D</button>
+        <button class="hw-btn active" onclick="setHistWindow('spread','1M',this)">1M</button>
         <button class="hw-btn" onclick="setHistWindow('spread','3M',this)">3M</button>
         <button class="hw-btn" onclick="setHistWindow('spread','1Y',this)">1Y</button>
         <button class="hw-btn" onclick="setHistWindow('spread','2Y',this)">2Y</button>
         <button class="hw-btn" onclick="setHistWindow('spread','all',this)">All</button>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spread-period"></div>
       <canvas id="hist-spread-canvas" style="width:100%;height:200px"></canvas>
       <div class="hist-stats-grid" id="hist-spread-stats"></div>
         </div>
@@ -1262,6 +1266,7 @@
         <button class="hw-btn" onclick="setHistWindow('dist','5Y',this)">5Y</button>
         <button class="hw-btn" onclick="setHistWindow('dist','all',this)">All</button>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-dist-period"></div>
       <canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas>
       <div class="hist-stats-grid" id="hist-dist-stats"></div>
         </div>
@@ -1284,6 +1289,7 @@
         <button class="hw-btn" onclick="setHistWindow('nbr','5Y',this)">5Y</button>
         <button class="hw-btn" onclick="setHistWindow('nbr','all',this)">All</button>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-nbr-period"></div>
       <canvas id="hist-nbr-canvas" style="width:100%;height:220px"></canvas>
         </div>
       </div>
@@ -1304,6 +1310,7 @@
         <button class="hw-btn" onclick="setHistWindow('neg','2Y',this)">2Y</button>
         <button class="hw-btn" onclick="setHistWindow('neg','all',this)">All</button>
       </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-neg-period"></div>
       <canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas>
       <div class="hist-stats-grid" id="hist-neg-stats"></div>
         </div>
@@ -32291,22 +32298,45 @@ function updateKPIs(data) {
 }
 
 function renderPricesTable(data) {
+  // Update date label
+  const dateLabel = document.getElementById('prices-date-label');
+  if (dateLabel) {
+    const d = DP.selectedDate ? new Date(DP.selectedDate) : new Date();
+    const fmt = dt => dt.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+    dateLabel.textContent = 'Day-Ahead prices · ' + fmt(d) + ' · ENTSO-E Transparency';
+  }
+
   const sorted = [...data].sort((a,b) => b.today - a.today);
   const tbody = document.getElementById('prices-tbody');
   window._pricesSorted = sorted;
+  window._pricesSortDir = window._pricesSortDir || {};
 
-  // Zone colors for comparison chart
   const ZONE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8'];
   window._compareZones = window._compareZones || new Set(['FR']);
 
+  const negFmt = (h) => {
+    if (!h || h <= 0) return '<span style="color:var(--tx3)">0h 00min</span>';
+    const hours = Math.floor(h);
+    const mins  = Math.round((h - hours) * 60);
+    return `<span style="color:var(--warn);font-weight:600">${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}min</span>`;
+  };
+
   tbody.innerHTML = sorted.map((z, i) => {
-    const priceColor = z.today < 0 ? 'dn' : z.today > 100 ? 'dn' : z.today < 20 ? 'up' : '';
+    // Skip rows with no data for selected date
+    if (z.today == null || isNaN(z.today)) return '';
+
+    const priceColor = z.today < 0 ? 'dn' : z.today > 150 ? 'dn' : z.today < 20 ? 'up' : '';
     const vsColor = z.vsYday == null ? 'tx3' : z.vsYday >= 0 ? 'dn' : 'up';
     const vsArrow = z.vsYday == null ? '' : z.vsYday >= 0 ? '▲' : '▼';
-    const vsText = z.vsYday == null ? '--' : `${vsArrow} ${Math.abs(z.vsYday).toFixed(1)}`;
+    const vsText  = z.vsYday == null ? '--' : `${vsArrow} ${Math.abs(z.vsYday).toFixed(1)}`;
     const sparkColor = z.spark == null ? '#4a6280' : z.spark >= 0 ? '#10b981' : '#f05060';
-    const sparkText = z.spark == null ? '--' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
-    const negStyle = z.negHrs > 0 ? 'color:var(--warn);font-weight:600' : 'color:var(--tx3)';
+    const sparkText  = z.spark == null ? '--' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
+
+    // % renewables + dominant fuel (from genmix if available, else '--')
+    const renPct  = z.renPct  != null ? z.renPct.toFixed(0)  + '%' : '--';
+    const domFuel = z.domFuel || '--';
+    const domColor = domFuel === 'Nuclear' ? '#60a5fa' : domFuel === 'Wind' ? '#00d4a8' :
+                     domFuel === 'Solar' ? '#fbbf24' : domFuel === 'Gas' ? '#f87171' : 'var(--tx2)';
 
     return `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand hourly chart">
       <td><span style="font-size:10px;color:var(--acc);font-weight:600;margin-right:4px">${z.code}</span>${z.name}</td>
@@ -32314,43 +32344,72 @@ function renderPricesTable(data) {
       <td style="color:var(--${vsColor})">${vsText}</td>
       <td style="color:var(--tx2)">${z.min != null ? z.min.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.minHr}h</span></td>
       <td style="color:var(--tx2)">${z.max != null ? z.max.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.maxHr}h</span></td>
-      <td style="${negStyle}">${z.negHrs > 0 ? z.negHrs + 'h' : '0'}</td>
+      <td>${negFmt(z.negHrs)}</td>
+      <td style="color:var(--tx2)">${renPct}</td>
+      <td><span style="color:${domColor};font-size:11px">${domFuel}</span></td>
       <td style="color:${sparkColor}">${sparkText}</td>
       <td class="sparkline-cell"><div id="spark-${i}" style="width:80px;height:28px"></div></td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
-      <td colspan="8" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
-        <div style="padding:12px 16px 16px">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${i}"></div>
-          <div style="position:relative;height:160px">
-            <canvas id="row-chart-${i}" style="width:100%;height:160px"></canvas>
-          </div>
-        </div>
+      <td colspan="10" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
+        <div style="padding:12px 16px 16px" id="row-detail-inner-${i}"></div>
       </td>
     </tr>`;
   }).join('');
 
   sorted.forEach((z, i) => {
+    if (z.today == null || isNaN(z.today)) return;
     const el = document.getElementById(`spark-${i}`);
     if (!el) return;
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
     el.innerHTML = makeSVGSparkline(hourly.filter(v => v !== null && v !== undefined), z.today >= 0);
   });
 
-  // Render comparison chart
   renderCompareChart();
   renderComparePills();
 }
 
-// Toggle inline row detail
+// Sort prices table
+function sortPricesTable(key) {
+  const data = window._pricesSorted;
+  if (!data) return;
+  window._pricesSortDir = window._pricesSortDir || {};
+  const asc = window._pricesSortDir[key] !== 'asc';
+  window._pricesSortDir[key] = asc ? 'asc' : 'desc';
+  const val = z => {
+    if (key === 'name')    return z.name || '';
+    if (key === 'today')   return z.today ?? -Infinity;
+    if (key === 'vsYday')  return z.vsYday ?? -Infinity;
+    if (key === 'minVal')  return z.min ?? -Infinity;
+    if (key === 'maxVal')  return z.max ?? -Infinity;
+    if (key === 'negHrs')  return z.negHrs ?? 0;
+    if (key === 'renPct')  return z.renPct ?? -1;
+    if (key === 'domFuel') return z.domFuel || 'z';
+    if (key === 'spark')   return z.spark ?? -Infinity;
+    return 0;
+  };
+  window._pricesSorted = [...data].sort((a,b) => {
+    const va = val(a), vb = val(b);
+    return asc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+  // Re-render just tbody
+  const tmp = window._pricesSorted;
+  window._pricesSorted = tmp;
+  renderPricesTable(tmp);
+}
+
+
+// ── TOGGLE INLINE ROW DETAIL (Hourly DA Prices) ──
 let _openRow = null;
+let _rowCharts = {};
+
 function togglePriceRow(idx, e) {
   const z = window._pricesSorted?.[idx];
-  if (!z) return;
+  if (!z || z.today == null) return;
 
-  // Close previously open row
   if (_openRow !== null && _openRow !== idx) {
     document.getElementById(`row-detail-${_openRow}`).style.display = 'none';
+    if (_rowCharts[_openRow]) { _rowCharts[_openRow].destroy(); delete _rowCharts[_openRow]; }
   }
 
   const detailRow = document.getElementById(`row-detail-${idx}`);
@@ -32359,129 +32418,226 @@ function togglePriceRow(idx, e) {
   if (isOpen) {
     detailRow.style.display = 'none';
     _openRow = null;
+    if (_rowCharts[idx]) { _rowCharts[idx].destroy(); delete _rowCharts[idx]; }
     return;
   }
 
   detailRow.style.display = 'table-row';
   _openRow = idx;
-  // Scroll so detail row is visible without overlap
-  setTimeout(() => {
-    detailRow.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  }, 50);
+  setTimeout(() => detailRow.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
 
-  // KPIs
-  const hourlyData = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-  const realNegHrs = negHoursFromData(hourlyData);
-  const validData = hourlyData.filter(v => v !== null && v !== undefined);
-  const peakVal = validData.length ? Math.max(...validData) : 0;
-  const minVal = validData.length ? Math.min(...validData) : 0;
-  const peakIdx = hourlyData.indexOf(peakVal);
-  const minIdx = hourlyData.indexOf(minVal);
-  const resMin = getResolution(hourlyData);
-  const fmtHr = (i) => {
-    const totalMin = i * resMin;
-    const h = Math.floor(totalMin/60), m = totalMin%60;
-    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  buildHourlyDetail(idx, z);
+}
+
+function buildHourlyDetail(idx, z) {
+  const inner = document.getElementById(`row-detail-inner-${idx}`);
+  if (!inner) return;
+
+  const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+  const resMin = getResolution(hourly);
+  const slotsPerHour = 60 / resMin;
+
+  // Downsample to 24h if 15min
+  let h24 = hourly;
+  if (resMin === 15 && hourly.length === 96) {
+    h24 = Array.from({length:24}, (_,h) => {
+      const s = hourly.slice(h*4, h*4+4).filter(v=>v!=null);
+      return s.length ? s.reduce((a,b)=>a+b,0)/s.length : null;
+    });
+  }
+
+  const valid = h24.filter(v => v != null);
+  const avg   = valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : 0;
+  const minV  = valid.length ? Math.min(...valid) : 0;
+  const maxV  = valid.length ? Math.max(...valid) : 0;
+  const minIdx = h24.indexOf(minV);
+  const maxIdx = h24.indexOf(maxV);
+
+  // Peak (08-20) and Off-peak
+  const peakHours = h24.slice(8,20).filter(v=>v!=null);
+  const offPkHours = [...h24.slice(0,8), ...h24.slice(20)].filter(v=>v!=null);
+  const peakAvg   = peakHours.length ? peakHours.reduce((a,b)=>a+b,0)/peakHours.length : null;
+  const offPkAvg  = offPkHours.length ? offPkHours.reduce((a,b)=>a+b,0)/offPkHours.length : null;
+  const peakRatio = (peakAvg && offPkAvg && offPkAvg !== 0) ? peakAvg/offPkAvg : null;
+  const isFlatter = peakRatio !== null && peakRatio < 1.20;
+  const flatText  = peakRatio !== null
+    ? (isFlatter ? '● Flatter than normal' : '● Normal profile')
+    : '';
+  const flatColor = isFlatter ? '#00d4a8' : '#e8a020';
+
+  // Neg hours
+  const negSlots = h24.filter(v => v != null && v < 0);
+  const negH     = negSlots.length;
+  const negHours = Math.floor(negH);
+  const negMins  = Math.round((negH - negHours) * 60);
+  const negMin   = negSlots.length ? Math.min(...negSlots) : null;
+
+  // Labels
+  const labels = h24.map((_, i) => `${String(i).padStart(2,'0')}:00`);
+
+  // Zone colors per hour: off-peak(night), morning-peak, solar-trough, evening-peak
+  const bgColors = h24.map((v, i) => {
+    if (i >= 7 && i <= 9)   return 'rgba(232,160,32,0.08)';  // morning ramp
+    if (i >= 11 && i <= 14) return 'rgba(0,212,168,0.06)';   // solar trough
+    if (i >= 17 && i <= 21) return 'rgba(232,160,32,0.08)';  // evening peak
+    return 'transparent';
+  });
+
+  // Build inner HTML
+  inner.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+      ${[
+        {l:'Average',   v:avg.toFixed(2), u:'€/MWh', c:''},
+        {l:'Peak (08-20)', v:peakAvg!=null?peakAvg.toFixed(2):'--', u:'€', c:'dn'},
+        {l:'Off-Peak',  v:offPkAvg!=null?offPkAvg.toFixed(2):'--', u:'€', c:'up'},
+        {l:'Min',       v:minV.toFixed(2)+'€', sub:'@'+String(minIdx).padStart(2,'0')+'h', c:minV<0?'warn':'up'},
+        {l:'Max',       v:maxV.toFixed(2)+'€', sub:'@'+String(maxIdx).padStart(2,'0')+'h', c:'dn'},
+      ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:9px 12px">
+        <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
+        <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--${k.c||'tx'})">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
+        ${k.sub ? `<div style="font-size:10px;color:var(--tx3)">${k.sub}</div>` : ''}
+      </div>`).join('')}
+    </div>
+    <div style="font-size:11px;margin-bottom:8px">
+      <span style="color:${flatColor};font-weight:600">${flatText}</span>
+      ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
+    </div>
+    <div style="position:relative;height:180px;margin-bottom:4px">
+      <canvas id="row-chart-${idx}" style="width:100%;height:180px"></canvas>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:8px">
+      <span>— Today</span><span style="opacity:.5">- - - Yesterday</span>
+      <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
+    </div>
+    ${negH > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
+    <details style="margin-top:4px">
+      <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
+        Hourly Breakdown (${h24.length} hours)
+      </summary>
+      <div style="margin-top:8px;max-height:260px;overflow-y:auto">
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Hour</th>
+            <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Price €/MWh</th>
+            <th style="text-align:center;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Period</th>
+          </tr></thead>
+          <tbody>${h24.map((v,i) => {
+            const period = (i>=8&&i<20) ? '<span style="color:var(--dn);font-size:10px">PEAK</span>'
+                         : '<span style="color:var(--tx3);font-size:10px">OFF-PEAK</span>';
+            const priceColor = v==null ? 'var(--tx3)' : v<0 ? 'var(--warn)' : 'var(--tx)';
+            const isNow = (new Date().getHours() === i && (!DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10)));
+            return `<tr style="border-bottom:1px solid var(--bd);${isNow?'background:rgba(0,212,168,.06)':''}">
+              <td style="padding:4px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${String(i).padStart(2,'0')}:00</span></td>
+              <td style="padding:4px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
+              <td style="padding:4px 8px;text-align:center">${period}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </details>
+  `;
+
+  // Render chart
+  const canvas = document.getElementById(`row-chart-${idx}`);
+  if (!canvas) return;
+  if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
+
+  // Yesterday overlay (from localStorage if available)
+  const ydayKey = 'pk-yday-' + z.code;
+  const ydayData = (() => { try { return JSON.parse(localStorage.getItem(ydayKey)||'null'); } catch{return null;} })();
+
+  // Store today for tomorrow
+  try { localStorage.setItem(ydayKey, JSON.stringify(h24)); } catch{}
+
+  const datasets = [
+    {
+      label: 'Today',
+      data: h24,
+      borderColor: zoneColor(z.code),
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.3,
+      spanGaps: true,
+      fill: false,
+    }
+  ];
+  if (ydayData) {
+    datasets.push({
+      label: 'Yesterday',
+      data: ydayData,
+      borderColor: 'rgba(255,255,255,0.25)',
+      borderWidth: 1.5,
+      borderDash: [5,3],
+      pointRadius: 0,
+      tension: 0.3,
+      spanGaps: true,
+      fill: false,
+    });
+  }
+
+  // Annotations: Now, min, max
+  const nowH = new Date().getHours();
+  const isToday = !DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10);
+  const annotations = {};
+  if (isToday) {
+    annotations.nowLine = {
+      type:'line', scaleID:'x', value:nowH,
+      borderColor:'rgba(255,255,255,0.5)', borderWidth:1, borderDash:[4,3],
+      label:{enabled:true,content:'Now',position:'start',color:'#fff',font:{size:9},backgroundColor:'rgba(0,0,0,.5)',padding:3}
+    };
+  }
+  annotations.minPt = {
+    type:'point', xValue:minIdx, yValue:minV,
+    backgroundColor:'#ef4444', radius:4,
+    label:{enabled:true,content:minV.toFixed(0)+'€',color:'#fff',font:{size:9},backgroundColor:'#ef4444',position:'bottom',padding:2}
+  };
+  annotations.maxPt = {
+    type:'point', xValue:maxIdx, yValue:maxV,
+    backgroundColor:'#22c55e', radius:4,
+    label:{enabled:true,content:maxV.toFixed(0)+'€',color:'#fff',font:{size:9},backgroundColor:'#22c55e',position:'top',padding:2}
   };
 
-  document.getElementById(`row-kpis-${idx}`).innerHTML = [
-    {l:'Average', v:z.today.toFixed(2)+' €/MWh', c:''},
-    {l:'Peak', v:peakVal.toFixed(2)+' €', sub:'@'+fmtHr(peakIdx), c:'dn'},
-    {l:'Min', v:minVal.toFixed(2)+' €', sub:'@'+fmtHr(minIdx), c: minVal<0?'warn':'up'},
-    {l:'Neg Hours', v:realNegHrs+'h', c:realNegHrs>0?'warn':'tx3'},
-  ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:9px 12px">
-    <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
-    <div style="font-size:16px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--${k.c||'tx'})">${k.v}</div>
-    ${k.sub?`<div style="font-size:9px;color:var(--tx3)">${k.sub}</div>`:''}
-  </div>`).join('');
+  // Background shading plugin
+  const shadingPlugin = {
+    id:'rowShading',
+    beforeDraw(chart) {
+      const {ctx,chartArea:{left,right,top,bottom},scales:{x}}=chart;
+      if (!x || !chartArea) return;
+      const zones=[
+        {from:7,to:9,  color:'rgba(232,160,32,0.06)'},
+        {from:11,to:14,color:'rgba(0,212,168,0.05)'},
+        {from:17,to:21,color:'rgba(232,160,32,0.06)'},
+      ];
+      ctx.save();
+      zones.forEach(({from,to,color})=>{
+        const x0=x.getPixelForValue(from), x1=x.getPixelForValue(to);
+        ctx.fillStyle=color;
+        ctx.fillRect(x0,top,x1-x0,bottom-top);
+      });
+      ctx.restore();
+    }
+  };
 
-  // Hourly chart
-  const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-  const curHr = new Date().getHours();
-  const labels = makeTimeLabels(hourly.length);
-
-  mkChart(`row-chart-${idx}`, {
+  _rowCharts[idx] = new Chart(canvas, {
     type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:`${z.code} (€/MWh)`,
-        data:hourly,
-        spanGaps:true,
-        borderColor:C_ACC,
-        borderWidth:2,
-        pointRadius:0,
-        pointHoverRadius:5,
-        pointHoverBackgroundColor:C_ACC,
-        pointHoverBorderColor:'#fff',
-        pointHoverBorderWidth:2,
-        fill:true,
-        backgroundColor:(ctx2)=>{
-          const g=ctx2.chart.ctx.createLinearGradient(0,0,0,160);
-          g.addColorStop(0,rgba(C_ACC,.2)); g.addColorStop(1,rgba(C_ACC,0)); return g;
-        },
-        tension:0,
-      }]
-    },
+    data:{ labels, datasets },
+    plugins:[shadingPlugin],
     options:{
-      responsive:true, maintainAspectRatio:false,
-      interaction:{ mode:'index', intersect:false },
+      responsive:true, maintainAspectRatio:false, animation:{duration:150},
       plugins:{
-        legend:{display:false},
-        tooltip:{
-          callbacks:{
-            title:c=>'Hour '+c[0].label,
-            label:c=>c.raw.toFixed(2)+' €/MWh'
-          }
-        },
-        zoom:ZOOM_CFG,
+        legend:{display:ydayData?true:false, labels:{color:'#4a6280',font:{size:10},boxWidth:20,usePointStyle:true,pointStyle:'line'}},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(2)+' €/MWh':'n/a'}`}},
+        annotation:{annotations},
       },
       scales:{
-        x:{grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12}},
-        y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+' €'}}
-      }
-    }
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:10},callback:v=>v+'€'},
+           title:{display:true,text:'€/MWh',color:'#4a6280',font:{size:10}}},
+      },
+    },
   });
 }
 
-// ── MULTI-COUNTRY COMPARISON CHART
-const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#e879f9'];
-
-function renderComparePills() {
-  const data = window._pricesSorted || [];
-  const selected = window._compareZones || new Set(['FR']);
-  const el = document.getElementById('compare-country-pills');
-  if (!el) return;
-
-  // Assign stable color per zone code (not index in sorted array)
-  if (!window._zoneColorMap) {
-    window._zoneColorMap = {};
-    data.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
-  }
-
-  el.innerHTML = data.map(z => {
-    const active = selected.has(z.code);
-    const col = window._zoneColorMap[z.code] || COMPARE_COLORS[0];
-    return `<button onclick="toggleCompareZone('${z.code}')" style="
-      padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;
-      font-family:'IBM Plex Mono',monospace;transition:all .15s;
-      background:${active?col+'33':'none'};
-      border:1px solid ${active?col:'rgba(61,90,122,.4)'};
-      color:${active?col:'var(--tx3)'}
-    ">${z.code}</button>`;
-  }).join('');
-}
-
-function toggleCompareZone(code) {
-  if (!window._compareZones) window._compareZones = new Set(['FR']);
-  if (window._compareZones.has(code)) {
-    if (window._compareZones.size > 1) window._compareZones.delete(code);
-  } else {
-    window._compareZones.add(code); // no limit
-  }
-  renderComparePills();
-  renderCompareChart();
-}
 
 function renderCompareChart() {
   const data = window._pricesSorted;
@@ -34550,13 +34706,36 @@ const DP = {
 function dpRecordNegHours(zonesData) {
   const today = new Date();
   const key = today.toISOString().slice(0,10);
-  // Sum neg hours across all zones, keep max per day
   const maxNeg = Math.max(...zonesData.map(z => z.negHours || 0));
   if (maxNeg > 0) {
     DP.negDays[key] = maxNeg;
     localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
   }
 }
+
+// Load historical neg hours from summary.json for red dots
+async function dpLoadHistoryNegDays() {
+  try {
+    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
+    const r = await fetch(base + 'history/summary.json?t=' + Date.now());
+    if (!r.ok) return;
+    const s = await r.json();
+    const fr = s?.zones?.FR;
+    if (!fr) return;
+    let changed = false;
+    fr.forEach(d => {
+      if (d.negH > 0 && !DP.negDays[d.d]) {
+        DP.negDays[d.d] = d.negH;
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
+    }
+  } catch(e) {}
+}
+// Call on load
+dpLoadHistoryNegDays();
 
 function toggleDatePicker() {
   const btn = document.getElementById('date-picker-btn');
@@ -34679,6 +34858,64 @@ function showPricesUnavailable(dateStr) {
 
 // ══════════════════════════════════════════════════════════════
 // HISTORICAL CHARTS ENGINE
+// Colour tokens (var = window-scoped, accessible across script blocks)
+var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#4a6280';
+var _HIST_ACC  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00d4a8';
+var _HIST_WARN = '#e8a020';
+var _HIST_DN   = '#ef4444';
+var _HIST_UP   = '#22c55e';
+var _HIST_GRID = 'rgba(255,255,255,0.04)';
+
+// ── Fixed country colours ──
+var ZONE_COLORS = {
+  'FR':      '#00d4a8',
+  'DE_LU':   '#60a5fa',
+  'BE':      '#fbbf24',
+  'NL':      '#a78bfa',
+  'ES':      '#f87171',
+  'PT':      '#fb923c',
+  'IT_NORD': '#34d399',
+  'IT_SICI': '#6ee7b7',
+  'AT':      '#e879f9',
+  'CH':      '#94a3b8',
+  'CZ':      '#f472b6',
+  'SK':      '#38bdf8',
+  'HU':      '#facc15',
+  'RO':      '#4ade80',
+  'HR':      '#fb7185',
+  'SI':      '#c084fc',
+  'GR':      '#2dd4bf',
+  'BG':      '#e2e8f0',
+  'DK_W':    '#7dd3fc',
+  'DK_E':    '#93c5fd',
+  'SE':      '#86efac',
+  'NO_1':    '#6ee7b7',
+  'FI':      '#fda4af',
+  'LT':      '#fdba74',
+  'LV':      '#fcd34d',
+  'EE':      '#d9f99d',
+  'PL':      '#f9a8d4',
+  'RS':      '#c4b5fd',
+  'ME':      '#a5f3fc',
+  'MK':      '#bbf7d0',
+};
+
+function zoneColor(code) {
+  return ZONE_COLORS[code] || '#94a3b8';
+}
+
+// ── Period label ──
+function periodLabel(data) {
+  if (!data || !data.length) return '';
+  const first = data[0].d || data[0];
+  const last  = data[data.length-1].d || data[data.length-1];
+  const fmt = d => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  };
+  return fmt(first) + ' → ' + fmt(last);
+}
+
 // ══════════════════════════════════════════════════════════════
 
 // Cache for fetched summary data
@@ -34733,28 +34970,25 @@ function toggleHistSection(id) {
   body.classList.toggle('open', opening);
   if (opening) {
     const renders = {
-      'spot-history':     () => renderHistSpot(),
-      'hist-da':          () => renderHistSpot(),
-      'spread-history':   () => renderHistSpread(),
-      'hist-neg':         () => renderHistNeg(),
-      'neghours-history': () => renderHistNeg(),
-      'fr-neighbours':    () => renderHistNeighbours(),
-      'hist-dist':        () => renderHistDist(),
-      'distribution':     () => renderHistDist(),
-      'ren-trend':        () => renderHistRenTrend(),
-      'ren-stack':        () => renderHistRenStack(),
-      'imb-history':      () => renderHistImb(),
-      'fcr-history':      () => renderHistFCR(),
-      'eua-history':      () => renderHistEUA(),
+      'spot-history':     renderHistSpot,
+      'hist-da':          renderHistSpot,
+      'spread-history':   renderHistSpread,
+      'hist-neg':         renderHistNeg,
+      'neghours-history': renderHistNeg,
+      'fr-neighbours':    renderHistNeighbours,
+      'hist-dist':        renderHistDist,
+      'distribution':     renderHistDist,
+      'ren-trend':        renderHistRenTrend,
+      'ren-stack':        renderHistRenStack,
+      'imb-history':      renderHistImb,
+      'fcr-history':      renderHistFCR,
+      'eua-history':      renderHistEUA,
       'capture-solar':    () => renderHistCapture('solar'),
       'capture-wind':     () => renderHistCapture('wind'),
-      'multicc':          () => renderCompareChart(),
+      'multicc':          renderCompareChart,
       'prices-main':      () => {},
     };
-    // Wait for CSS transition to complete before rendering chart
-    setTimeout(() => {
-      if (renders[id]) renders[id]();
-    }, 50);
+    if (renders[id]) renders[id]();
   }
 }
 
@@ -34853,7 +35087,13 @@ function baseOptions(yLabel) {
   return {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 200 },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index', intersect: false,
+        callbacks: { label: ctx => ` ${ctx.dataset.label || ''}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) : 'n/a'}` }
+      }
+    },
     scales: {
       x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 10 } },
       y: {
@@ -34902,10 +35142,10 @@ function noDataMsg(canvasId, msg) {
 // ════════════════════════
 
 async function renderHistSpot() {
-  const w = HIST.windows['spot'] || '1Y';
+  const w    = HIST.windows['spot'] || '1M';
   const zone = getHistZone('spot');
-  const s = await fetchSummary();
-  if (!s || !s.zones || !s.zones[zone]) return noDataMsg('hist-spot-canvas');
+  const s    = await fetchSummary();
+  if (!s?.zones?.[zone]) return noDataMsg('hist-spot-canvas');
 
   const data = filterByWindow(s.zones[zone], w);
   if (!data.length) return noDataMsg('hist-spot-canvas');
@@ -34915,46 +35155,100 @@ async function renderHistSpot() {
   const roll7  = rolling(avgs, 7);
   const roll30 = rolling(avgs, 30);
 
+  // "Now" marker -- index of today
+  const today = new Date().toISOString().slice(0,10);
+  const nowIdx = labels.indexOf(today);
+
+  // Period label
+  const periodEl = document.getElementById('hist-spot-period');
+  if (periodEl) periodEl.textContent = periodLabel(data);
+
+  const color = zoneColor(zone);
+
+  const annotations = {};
+  if (nowIdx !== -1) {
+    annotations.nowLine = {
+      type: 'line', scaleID: 'x', value: nowIdx,
+      borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1, borderDash: [4,3],
+      label: { enabled: true, content: 'Now', position: 'start', color: '#fff',
+               font: { size: 9 }, backgroundColor: 'rgba(0,0,0,0.5)', padding: 3 }
+    };
+  }
+
+  // Min/max annotations
+  const validAvgs = avgs.filter(v => v != null);
+  if (validAvgs.length) {
+    const minVal = Math.min(...validAvgs);
+    const maxVal = Math.max(...validAvgs);
+    const minIdx = avgs.indexOf(minVal);
+    const maxIdx = avgs.indexOf(maxVal);
+    annotations.minPt = {
+      type: 'point', xValue: minIdx, yValue: minVal,
+      backgroundColor: _HIST_DN, radius: 4,
+      label: { enabled: true, content: minVal.toFixed(0)+'€', color: '#fff',
+               font: { size: 9 }, backgroundColor: _HIST_DN, position: 'bottom', padding: 2 }
+    };
+    annotations.maxPt = {
+      type: 'point', xValue: maxIdx, yValue: maxVal,
+      backgroundColor: _HIST_UP, radius: 4,
+      label: { enabled: true, content: maxVal.toFixed(0)+'€', color: '#fff',
+               font: { size: 9 }, backgroundColor: _HIST_UP, position: 'top', padding: 2 }
+    };
+  }
+
   mkHistChart('hist-spot-canvas', {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Daily avg', data: avgs, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true },
-        { label: '7D avg',    data: roll7,  borderColor: _HIST_ACC,  borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true },
-        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN, borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, borderDash: [4,3] },
+        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false },
+        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3] },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: {
+        legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 24, usePointStyle: true, pointStyle: 'line' } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            title: ctx => ctx[0]?.label || '',
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
+          },
+        },
+        annotation: { annotations },
+      },
     },
   });
 
   const valid = avgs.filter(v => v != null);
   setStats('hist-spot-stats', [
-    { l: 'Last value',    v: valid[valid.length-1]?.toFixed(1), u: '€/MWh' },
-    { l: 'Avg (window)',  v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },
-    { l: 'Avg 7D',        v: roll7[roll7.length-1]?.toFixed(1), u: '€/MWh' },
-    { l: 'Avg 30D',       v: roll30[roll30.length-1]?.toFixed(1), u: '€/MWh' },
-    { l: 'Min',           v: Math.min(...data.map(d=>d.min))?.toFixed(1), u: '€/MWh' },
-    { l: 'Max',           v: Math.max(...data.map(d=>d.max))?.toFixed(1), u: '€/MWh' },
-    { l: 'Neg hours',     v: data.reduce((a,d)=>a+(d.negH||0),0).toFixed(0), u: 'h' },
+    { l: 'Last',     v: valid.slice(-1)[0]?.toFixed(1), u: '€/MWh' },
+    { l: 'Avg',      v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },
+    { l: '7D avg',   v: roll7.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '€/MWh' },
+    { l: '30D avg',  v: roll30.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '€/MWh' },
+    { l: 'Min',      v: Math.min(...data.map(d=>d.min)).toFixed(1), u: '€/MWh' },
+    { l: 'Max',      v: Math.max(...data.map(d=>d.max)).toFixed(1), u: '€/MWh' },
+    { l: 'Neg h',    v: data.reduce((a,d)=>a+(d.negH||0),0).toFixed(0), u: 'h' },
   ]);
 }
 
+
 async function renderHistSpread() {
-  const w = HIST.windows['spread'] || '1Y';
+  const w    = HIST.windows['spread'] || '1M';
   const zone = getHistZone('spread');
-  const s = await fetchSummary();
+  const s    = await fetchSummary();
   if (!s?.zones?.[zone]) return noDataMsg('hist-spread-canvas');
   const data = filterByWindow(s.zones[zone], w);
   if (!data.length) return noDataMsg('hist-spread-canvas');
 
+  const periodEl = document.getElementById('hist-spread-period');
+  if (periodEl) periodEl.textContent = periodLabel(data);
+
   const labels  = data.map(d => d.d);
   const spreads = data.map(d => d.min != null && d.max != null ? round2(d.max - d.min) : null);
   const roll30  = rolling(spreads, 30);
-  const threshold = 100;
 
   mkHistChart('hist-spread-canvas', {
     type: 'bar',
@@ -34963,37 +35257,41 @@ async function renderHistSpread() {
       datasets: [
         {
           label: 'Daily spread', data: spreads,
-          backgroundColor: spreads.map(v => v != null && v > threshold ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
+          backgroundColor: spreads.map(v => v != null && v > 100 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
           borderWidth: 0,
         },
-        { label: '30D rolling avg', data: roll30, type: 'line', borderColor: '#000', borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true },
+        { label: '30D avg', data: roll30, type: 'line', borderColor: '#fff', borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3] },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: {
+        legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 24, usePointStyle: true, pointStyle: 'line' } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)} €/MWh` } },
+      },
     },
   });
 
   const valid = spreads.filter(v => v != null);
-  const above100 = valid.filter(v => v > 100).length;
-  const above200 = valid.filter(v => v > 200).length;
   setStats('hist-spread-stats', [
-    { l: 'Avg spread',   v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },
-    { l: 'Max spread',   v: Math.max(...valid)?.toFixed(1), u: '€/MWh' },
-    { l: 'Min spread',   v: Math.min(...valid)?.toFixed(1), u: '€/MWh' },
-    { l: 'Days > 100€',  v: above100 },
-    { l: 'Days > 200€',  v: above200 },
+    { l: 'Avg spread',  v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },
+    { l: 'Max spread',  v: Math.max(...valid)?.toFixed(1), u: '€/MWh' },
+    { l: 'Min spread',  v: Math.min(...valid)?.toFixed(1), u: '€/MWh' },
+    { l: 'Days > 100€', v: valid.filter(v=>v>100).length },
+    { l: 'Days > 200€', v: valid.filter(v=>v>200).length },
   ]);
 }
 
 async function renderHistNeg() {
-  const w = HIST.windows['neg'] || '1Y';
+  const w    = HIST.windows['neg'] || '1M';
   const zone = getHistZone('neg');
-  const s = await fetchSummary();
+  const s    = await fetchSummary();
   if (!s?.zones?.[zone]) return noDataMsg('hist-neg-canvas');
   const data = filterByWindow(s.zones[zone], w);
   if (!data.length) return noDataMsg('hist-neg-canvas');
+
+  const periodEl = document.getElementById('hist-neg-period');
+  if (periodEl) periodEl.textContent = periodLabel(data);
 
   const labels = data.map(d => d.d);
   const negH   = data.map(d => d.negH || 0);
@@ -35004,46 +35302,50 @@ async function renderHistNeg() {
       labels,
       datasets: [{
         label: 'Neg hours', data: negH,
-        backgroundColor: negH.map(v => v > 8 ? 'rgba(239,68,68,0.8)' : v > 4 ? 'rgba(249,115,22,0.7)' : v > 0 ? 'rgba(234,179,8,0.6)' : 'rgba(255,255,255,0.05)'),
+        backgroundColor: negH.map(v => v > 8 ? 'rgba(239,68,68,0.85)' : v > 4 ? 'rgba(249,115,22,0.75)' : v > 0 ? 'rgba(234,179,8,0.65)' : 'rgba(255,255,255,0.05)'),
         borderWidth: 0,
       }],
     },
-    options: baseOptions('Hours'),
+    options: {
+      ...baseOptions('Hours'),
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.parsed.y?.toFixed(1)} neg hours` } },
+      },
+    },
   });
 
   const totalNeg = negH.reduce((a,b)=>a+b,0);
-  const daysWithNeg = negH.filter(v=>v>0).length;
+  const daysNeg  = negH.filter(v=>v>0).length;
   setStats('hist-neg-stats', [
-    { l: 'Total neg hours', v: totalNeg.toFixed(0), u: 'h' },
-    { l: 'Days with neg',   v: daysWithNeg },
-    { l: 'Max neg hours',   v: Math.max(...negH).toFixed(1), u: 'h' },
-    { l: '% days with neg', v: (daysWithNeg/data.length*100).toFixed(0), u: '%' },
+    { l: 'Total neg h',    v: totalNeg.toFixed(0), u: 'h' },
+    { l: 'Days with neg',  v: daysNeg },
+    { l: 'Max neg hours',  v: Math.max(...negH).toFixed(1), u: 'h' },
+    { l: '% days with neg',v: data.length ? (daysNeg/data.length*100).toFixed(0) : '0', u: '%' },
   ]);
 }
 
 async function renderHistNeighbours() {
-  const w = HIST.windows['nbr'] || '1Y';
+  const w = HIST.windows['nbr'] || '1M';
   const s = await fetchSummary();
   if (!s?.zones) return noDataMsg('hist-nbr-canvas');
 
-  const zones  = { FR:'France', DE_LU:'Germany', BE:'Belgium', ES:'Spain', NL:'Netherlands' };
-  const colors = { FR:'#fff', DE_LU:'#60a5fa', BE:'#fbbf24', ES:'#f87171', NL:'#a78bfa' };
-  const widths = { FR:2, DE_LU:1, BE:1, ES:1, NL:1 };
+  const zones   = ['FR','DE_LU','BE','ES','NL'];
+  const frData  = filterByWindow(s.zones['FR'] || [], w);
+  if (!frData.length) return noDataMsg('hist-nbr-canvas');
 
-  const frData = filterByWindow(s.zones.FR || [], w);
+  const periodEl = document.getElementById('hist-nbr-period');
+  if (periodEl) periodEl.textContent = periodLabel(frData);
+
   const allDates = frData.map(d => d.d);
-
-  const datasets = Object.entries(zones).map(([code, name]) => {
-    const zoneData = s.zones[code] || [];
-    const byDate = Object.fromEntries(zoneData.map(d => [d.d, d.avg]));
+  const datasets = zones.map(code => {
+    const byDate = Object.fromEntries((s.zones[code] || []).map(d => [d.d, d.avg]));
     return {
-      label: name,
-      data: allDates.map(d => byDate[d] ?? null),
-      borderColor: colors[code],
-      borderWidth: widths[code],
-      pointRadius: 0,
-      tension: 0,
-      spanGaps: true,
+      label: code === 'DE_LU' ? 'DE' : code,
+      data:  allDates.map(d => byDate[d] ?? null),
+      borderColor: zoneColor(code),
+      borderWidth: code === 'FR' ? 2 : 1.2,
+      pointRadius: 0, tension: 0, spanGaps: true, fill: false,
     };
   });
 
@@ -35052,43 +35354,49 @@ async function renderHistNeighbours() {
     data: { labels: allDates, datasets },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: {
+        legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 24, usePointStyle: true, pointStyle: 'line' } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)} €/MWh` } },
+      },
     },
   });
 }
 
 async function renderHistDist() {
-  const w = HIST.windows['dist'] || '1Y';
-  const s = await fetchSummary();
-  if (!s?.zones?.FR) return noDataMsg('hist-dist-canvas');
-
-  // For distribution we need hourly data -- aggregate from daily files within window
-  // This is expensive; use avg values as proxy for distribution shape
-  const data = filterByWindow(s.zones.FR, w);
+  const w    = HIST.windows['dist'] || '1M';
+  const zone = getHistZone('dist');
+  const s    = await fetchSummary();
+  if (!s?.zones?.[zone]) return noDataMsg('hist-dist-canvas');
+  const data = filterByWindow(s.zones[zone], w);
   if (!data.length) return noDataMsg('hist-dist-canvas');
 
-  // Build histogram from daily avgs (proxy -- real histogram needs hourly)
-  const avgs = data.map(d => d.avg).filter(v => v != null);
-  const bins = [];
-  for (let b = -200; b <= 300; b += 20) bins.push(b);
-  const counts = new Array(bins.length).fill(0);
-  avgs.forEach(v => {
-    const idx = Math.floor((v - (-200)) / 20);
-    if (idx >= 0 && idx < counts.length) counts[idx]++;
-  });
-  const mean   = avgs.reduce((a,b)=>a+b,0)/avgs.length;
+  const periodEl = document.getElementById('hist-dist-period');
+  if (periodEl) periodEl.textContent = periodLabel(data);
+
+  const avgs   = data.map(d => d.avg).filter(v => v != null);
+  if (!avgs.length) return noDataMsg('hist-dist-canvas');
+
+  const BIN_SIZE = 10;
+  const binMin   = Math.floor(Math.min(...avgs) / BIN_SIZE) * BIN_SIZE;
+  const binMax   = Math.ceil(Math.max(...avgs) / BIN_SIZE) * BIN_SIZE;
+  const bins = [], counts = [];
+  for (let b = binMin; b <= binMax; b += BIN_SIZE) {
+    bins.push(b);
+    counts.push(avgs.filter(v => v >= b && v < b + BIN_SIZE).length);
+  }
+
+  const mean   = avgs.reduce((a,b)=>a+b,0) / avgs.length;
   const sorted = [...avgs].sort((a,b)=>a-b);
   const median = sorted[Math.floor(sorted.length/2)];
-  const variance = avgs.reduce((a,v)=>a+(v-mean)**2,0)/avgs.length;
-  const stddev = Math.sqrt(variance);
+  const stddev = Math.sqrt(avgs.reduce((a,v)=>a+(v-mean)**2,0)/avgs.length);
 
   mkHistChart('hist-dist-canvas', {
     type: 'bar',
     data: {
-      labels: bins.map(b => b + '€'),
+      labels: bins.map(b => b+'€'),
       datasets: [{
         label: 'Days', data: counts,
-        backgroundColor: bins.map(b => b < 0 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.5)'),
+        backgroundColor: bins.map(b => b < 0 ? 'rgba(239,68,68,0.65)' : 'rgba(0,212,168,0.5)'),
         borderWidth: 0,
       }],
     },
@@ -35096,88 +35404,24 @@ async function renderHistDist() {
       ...baseOptions('Days'),
       plugins: {
         legend: { display: false },
-        annotation: {
-          annotations: {
-            mean:   { type:'line', scaleID:'x', value: ((mean-(-200))/20).toFixed(0),   borderColor: _HIST_ACC,  borderWidth:1.5, label:{enabled:true, content:'Mean '   +mean.toFixed(1)+'€', position:'start'} },
-            median: { type:'line', scaleID:'x', value: ((median-(-200))/20).toFixed(0), borderColor: _HIST_WARN, borderWidth:1.5, borderDash:[4,3], label:{enabled:true, content:'Median '+median.toFixed(1)+'€', position:'end'} },
-          }
-        }
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} days` } },
       },
     },
   });
 
   setStats('hist-dist-stats', [
-    { l: 'Mean',    v: mean.toFixed(1),   u: '€/MWh' },
-    { l: 'Median',  v: median.toFixed(1), u: '€/MWh' },
-    { l: 'Std dev', v: stddev.toFixed(1), u: '€/MWh' },
-    { l: 'Min',     v: sorted[0].toFixed(1), u: '€/MWh' },
-    { l: 'Max',     v: sorted[sorted.length-1].toFixed(1), u: '€/MWh' },
-    { l: 'P5',      v: sorted[Math.floor(sorted.length*0.05)].toFixed(1), u: '€/MWh' },
-    { l: 'P95',     v: sorted[Math.floor(sorted.length*0.95)].toFixed(1), u: '€/MWh' },
+    { l: 'Mean',   v: mean.toFixed(1),   u: '€/MWh' },
+    { l: 'Median', v: median.toFixed(1), u: '€/MWh' },
+    { l: 'Std dev',v: stddev.toFixed(1), u: '€/MWh' },
+    { l: 'P5',     v: sorted[Math.floor(sorted.length*0.05)]?.toFixed(1), u: '€/MWh' },
+    { l: 'P95',    v: sorted[Math.floor(sorted.length*0.95)]?.toFixed(1), u: '€/MWh' },
+    { l: 'Min',    v: sorted[0]?.toFixed(1), u: '€/MWh' },
+    { l: 'Max',    v: sorted[sorted.length-1]?.toFixed(1), u: '€/MWh' },
   ]);
 }
 
-
-// ── Fetch daily files for a date range ──
-// For windows > 3M: use monthly aggregates (no hourly data but fast)
-// For windows <= 3M: fetch individual daily files in batches
-async function fetchDailyRange(startDate, endDate, needHourly=false) {
-  const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
-  const start = new Date(startDate), end = new Date(endDate);
-  const diffDays = (end - start) / 86400000;
-
-  // For long windows without hourly need, use summary (already cached)
-  if (!needHourly && diffDays > 90) {
-    const s = await fetchSummary();
-    if (!s?.zones) return [];
-    // Convert summary format to daily-like objects
-    const byDate = {};
-    Object.entries(s.zones).forEach(([zone, days]) => {
-      days.forEach(d => {
-        if (d.d < startDate || d.d > endDate) return;
-        if (!byDate[d.d]) byDate[d.d] = { date: d.d, zones: {} };
-        byDate[d.d].zones[zone] = { avg: d.avg, min: d.min, max: d.max, negH: d.negH };
-      });
-    });
-    return Object.values(byDate).sort((a,b) => a.date < b.date ? -1 : 1);
-  }
-
-  // For short windows or when hourly needed: fetch daily files in batches of 10
-  const dates = [];
-  const d = new Date(start);
-  while (d <= end) { dates.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
-
-  const BATCH = 10;
-  const results = [];
-  for (let i = 0; i < dates.length; i += BATCH) {
-    const batch = dates.slice(i, i + BATCH);
-    const batchResults = await Promise.all(
-      batch.map(ds =>
-        fetch(base + 'history/daily/' + ds + '.json')
-          .then(r => r.ok ? r.json() : null)
-          .catch(() => null)
-      )
-    );
-    results.push(...batchResults.filter(Boolean));
-    if (i + BATCH < dates.length) await new Promise(r => setTimeout(r, 50));
-  }
-  return results;
-}
-
-function windowToDates(w) {
-  const now = new Date();
-  const days = {'7D':7,'1M':30,'3M':91,'1Y':365,'2Y':730,'5Y':1826,'All':99999};
-  const n = days[w] || 365;
-  const start = new Date(now - n * 86400000);
-  return {
-    start: start.toISOString().slice(0,10),
-    end:   now.toISOString().slice(0,10),
-  };
-}
-
-// ── RENEWABLES TREND ──
 async function renderHistRenTrend() {
-  const w = HIST.windows['ren-trend'] || '1Y';
+  const w = HIST.windows['ren-trend'] || '1M';
   const s = await fetchSummary();
   if (!s?.zones?.FR) return noDataMsg('hist-ren-trend');
 
