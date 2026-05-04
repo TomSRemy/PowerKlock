@@ -1211,15 +1211,10 @@
         </div>
       </div>
         <div style="margin-top:14px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-            <span style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">Compare zones :</span>
-            <select id="compare-zone-select" multiple
-              style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-size:11px;min-width:180px;max-height:120px"
-              onchange="onCompareSelectChange(this)">
-            </select>
-            <span style="font-size:10px;color:var(--tx3)">Ctrl+click to select multiple</span>
-          </div>
-          <canvas id="price-compare-canvas" style="width:100%;height:280px"></canvas>
+          <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Compare zones — cliquer pour sélectionner</div>
+          <div id="compare-zone-chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+          <div id="compare-peak-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+          <div style="position:relative;height:300px;overflow:hidden"><canvas id="price-compare-canvas" style="width:100%;height:300px"></canvas></div>
         </div>
       </div></div>
 
@@ -1242,7 +1237,7 @@
         <button class="hw-btn" onclick="setHistWindow('spot','all',this)">All</button>
       </div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spot-period"></div>
-      <canvas id="hist-spot-canvas" style="width:100%;height:220px"></canvas>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-spot-canvas" style="width:100%;height:220px"></canvas></div>
       <div class="hist-stats-grid" id="hist-spot-stats"></div>
         </div>
       </div>
@@ -1265,7 +1260,7 @@
         <button class="hw-btn" onclick="setHistWindow('spread','all',this)">All</button>
       </div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spread-period"></div>
-      <canvas id="hist-spread-canvas" style="width:100%;height:200px"></canvas>
+      <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-spread-canvas" style="width:100%;height:200px"></canvas></div>
       <div class="hist-stats-grid" id="hist-spread-stats"></div>
         </div>
       </div>
@@ -1286,7 +1281,7 @@
         <button class="hw-btn" onclick="setHistWindow('dist','all',this)">All</button>
       </div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-dist-period"></div>
-      <canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas>
+      <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas></div>
       <div class="hist-stats-grid" id="hist-dist-stats"></div>
         </div>
       </div>
@@ -1309,7 +1304,7 @@
         <button class="hw-btn" onclick="setHistWindow('nbr','all',this)">All</button>
       </div>
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-nbr-period"></div>
-      <canvas id="hist-nbr-canvas" style="width:100%;height:220px"></canvas>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-nbr-canvas" style="width:100%;height:220px"></canvas></div>
         </div>
       </div>
 
@@ -1350,7 +1345,7 @@
       </div>
 
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-neg-period"></div>
-      <canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas>
+      <div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas></div>
 
       <!-- Calendar heatmap -->
       <div style="margin-top:16px">
@@ -1584,7 +1579,7 @@
           <span class="table-title" id="load-chart-title">France — Hourly Load (GW)</span>
           <span class="source-badge">ENTSO-E A65</span>
         </div>
-        <canvas id="load-canvas" style="width:100%;height:300px"></canvas>
+        <div style="position:relative;height:300px;overflow:hidden"><canvas id="load-canvas" style="width:100%;height:300px"></canvas></div>
       </div>
 
       <!-- Hourly Breakdown Table -->
@@ -1736,7 +1731,7 @@
         <button class="day-tab" onclick="setRenTab('history',this)">History J-7</button>
       </div>
       <div class="chart-container" style="margin-bottom:16px">
-        <canvas id="ren-canvas" style="width:100%;height:210px"></canvas>
+        <div style="position:relative;height:210px;overflow:hidden"><canvas id="ren-canvas" style="width:100%;height:210px"></canvas></div>
       </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">Forecast Error by Hour</span><span class="source-badge">Actual vs DA forecast · ENTSO-E</span></div>
@@ -1749,14 +1744,14 @@
           <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></span>Wind &amp; Solar — Daily Trend<span class="hist-section-hint">Daily avg + 7D rolling</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-ren-trend"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('ren-trend','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-trend','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-trend','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('ren-trend','1Y',this)">1Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','All',this)">All</button></div><canvas id="hist-ren-trend" style="width:100%;height:220px"></canvas></div>
+        <div class="hist-section-body" id="hs-body-ren-trend"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('ren-trend','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-trend','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-trend','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('ren-trend','1Y',this)">1Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','All',this)">All</button></div><div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-trend" style="width:100%;height:220px"></canvas></div></div>
       </div>
       <div class="hist-section" id="hs-ren-stack">
         <div class="hist-section-header" onclick="toggleHistSection('ren-stack')">
           <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Renewable Mix — Stacked Area<span class="hist-section-hint">Wind + Solar stacked</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-ren-stack"><div class="hist-window-btns"><button class="hw-btn active" onclick="setHistWindow('ren-stack','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-stack','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-stack','3M',this)">3M</button></div><canvas id="hist-ren-stack" style="width:100%;height:220px"></canvas></div>
+        <div class="hist-section-body" id="hs-body-ren-stack"><div class="hist-window-btns"><button class="hw-btn active" onclick="setHistWindow('ren-stack','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-stack','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-stack','3M',this)">3M</button></div><div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-stack" style="width:100%;height:220px"></canvas></div></div>
       </div>
     </div>
 
@@ -1773,8 +1768,8 @@
         <div class="kpi-card"><div class="kpi-label">NO Hydro Reservoir</div><div class="kpi-value up">34.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">%</span></div><div class="kpi-chg down">&#9660;2.1% vs median</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Nuclear Weekly Availability (%)</div><canvas id="nuc-canvas" style="width:100%;height:170px"></canvas></div>
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">NO Hydro Reservoir — 52-week history</div><canvas id="hydro-canvas" style="width:100%;height:170px"></canvas></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Nuclear Weekly Availability (%)</div><div style="position:relative;height:170px;overflow:hidden"><canvas id="nuc-canvas" style="width:100%;height:170px"></canvas></div></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">NO Hydro Reservoir — 52-week history</div><div style="position:relative;height:170px;overflow:hidden"><canvas id="hydro-canvas" style="width:100%;height:170px"></canvas></div></div>
       </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">Active REMIT — FR Nuclear Outages</span><span class="updated-badge" style="color:var(--warn);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">3 active UMM</span></div>
@@ -1799,20 +1794,20 @@
         <div class="kpi-card"><div class="kpi-label">System Position</div><div class="kpi-value down">-1,240<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">MW</span></div></div>
         <div class="kpi-card"><div class="kpi-label">Peak Price</div><div class="kpi-value" style="color:var(--warn)">+245<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/MWh</span></div></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Imbalance Price Intraday (€/MWh)</div><canvas id="imb-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">FR Imbalance Price Intraday (€/MWh)</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="imb-canvas" style="width:100%;height:200px"></canvas></div></div>
       <div class="hist-section" id="hs-imb-history">
         <div class="hist-section-header" onclick="toggleHistSection('imb-history')">
           <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg></span>Imbalance Prices — Historical<span class="hist-section-hint">Daily avg · pos vs neg</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-imb-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('imb-hist','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('imb-hist','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('imb-hist','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('imb-hist','1Y',this)">1Y</button></div><canvas id="hist-imb-canvas" style="width:100%;height:200px"></canvas><div class="hist-stats-grid" id="hist-imb-stats"></div></div>
+        <div class="hist-section-body" id="hs-body-imb-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('imb-hist','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('imb-hist','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('imb-hist','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('imb-hist','1Y',this)">1Y</button></div><div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-imb-canvas" style="width:100%;height:200px"></canvas></div><div class="hist-stats-grid" id="hist-imb-stats"></div></div>
       </div>
       <div class="hist-section" id="hs-fcr-history">
         <div class="hist-section-header" onclick="toggleHistSection('fcr-history')">
           <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="16" height="11" rx="2"/><path d="M22 11v3"/><path d="M7 11h5"/><path d="M9 9v5"/></svg></span>FCR — Frequency Containment Reserve<span class="hist-section-hint">Contracted capacity · €/MW/day</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-fcr-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('fcr-hist','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('fcr-hist','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('fcr-hist','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('fcr-hist','1Y',this)">1Y</button></div><canvas id="hist-fcr-canvas" style="width:100%;height:180px"></canvas></div>
+        <div class="hist-section-body" id="hs-body-fcr-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('fcr-hist','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('fcr-hist','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('fcr-hist','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('fcr-hist','1Y',this)">1Y</button></div><div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-fcr-canvas" style="width:100%;height:180px"></canvas></div></div>
       </div>
     </div>
 
@@ -1829,10 +1824,10 @@
         <div class="kpi-card"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div>
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><canvas id="eua-spark-canvas" style="width:100%;height:160px"></canvas><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:160px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:160px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
       <div class="hist-section" id="hs-eua-history">
         <div class="hist-section-header" onclick="toggleHistSection('eua-history')">
           <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.25 2.5-2.5 3.5-5 1-2.5 1.5-5.5 3.5-7.5 2-2 4.75-3 7.5-3 2 0 4 .5 5.5 2-1.5 1.5-3.5 2-5.5 2-1.5 0-3-.25-4.5-1-1 2-1.5 4-1.5 6 0 2.5.75 5 2 7"/><path d="M20 6c-2 2-3 4-3 6 0 1.5.25 3 1 4.5"/></svg></span>EUA — Long-term Historical<span class="hist-section-hint">Spot daily · clean spark spread</span></div>
@@ -1933,7 +1928,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <span class="table-title">Spread Bid/Ask — évolution (€/MWh)</span>
           </div>
-          <canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas>
+          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
       </div>
 
@@ -32321,32 +32316,101 @@ function dateParam(offset = 0) {
 // ════════════════════════════════════════════
 // DEMO DATA (used when no token set)
 // ════════════════════════════════════════════
+// Generate 96-point (15min) hourly profile for demo data
+function gen96(avg, min, max, negSlot) {
+  // Shape: low at night, solar dip midday (duck curve), evening peak
+  const shape96 = [];
+  for (let i = 0; i < 96; i++) {
+    const h = i / 4; // fractional hour
+    let v;
+    if (h < 6)       v = 0.30 + 0.10 * Math.sin(h / 6 * Math.PI);
+    else if (h < 10) v = 0.30 + 0.70 * ((h-6)/4);
+    else if (h < 14) v = 1.00 - 0.30 * Math.sin((h-10)/4 * Math.PI); // solar dip
+    else if (h < 19) v = 0.70 + 0.30 * ((h-14)/5);
+    else if (h < 21) v = 1.00;
+    else             v = 1.00 - 0.70 * ((h-21)/3);
+    shape96.push(v);
+  }
+  const range = max - min;
+  return shape96.map((p, i) => {
+    let val = min + p * range + (Math.random() - 0.5) * range * 0.06;
+    // Inject negative prices in negSlot hours (midday)
+    if (negSlot > 0 && i >= 40 && i < 40 + negSlot * 4) val = min * (0.5 + Math.random() * 0.5);
+    return Math.round(val * 10) / 10;
+  });
+}
+
 function getDemoData() {
-  // Realistic demo prices based on today's market context
   return [
-    { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South', today:115.8, vsYday:+12.0, min:54.7, minHr:10, max:169.1, maxHr:18, negHrs:0, spark:+23.7 },
-    { code:'IT_NORD',  flag:'🇮🇹', name:'Italy North', today:115.1, vsYday:+12.7, min:54.7, minHr:10, max:153.5, maxHr:18, negHrs:0, spark:+23 },
-    { code:'HU',       flag:'🇭🇺', name:'Hungary',     today:109.8, vsYday:+4.1, min:-0.8, minHr:12, max:249.9, maxHr:18, negHrs:1, spark:+17.7 },
-    { code:'SI',       flag:'🇸🇮', name:'Slovenia',    today:109.5, vsYday:+6.6, min:54.7, minHr:10, max:149.7, maxHr:18, negHrs:0, spark:+17.4 },
-    { code:'RO',       flag:'🇷🇴', name:'Romania',     today:108.5, vsYday:+17.8, min:12.0, minHr:11, max:227.3, maxHr:18, negHrs:0, spark:+16.4 },
-    { code:'HR',       flag:'🇭🇷', name:'Croatia',     today:108.5, vsYday:+7.7, min:48.7, minHr:11, max:168.7, maxHr:18, negHrs:0, spark:+16.4 },
-    { code:'GR',       flag:'🇬🇷', name:'Greece',      today:102.7, vsYday:+21.8, min:0.0, minHr:7, max:194.1, maxHr:17, negHrs:2, spark:+10.6 },
-    { code:'BG',       flag:'🇧🇬', name:'Bulgaria',    today:98.2, vsYday:+16.7, min:6.9, minHr:7, max:194.1, maxHr:17, negHrs:0, spark:+6.1 },
-    { code:'CH',       flag:'🇨🇭', name:'Switzerland', today:94.0, vsYday:+2.4, min:40.0, minHr:13, max:140.0, maxHr:18, negHrs:0, spark:+1.9 },
-    { code:'AT',       flag:'🇦🇹', name:'Austria',     today:87.8, vsYday:-4.3, min:7.1, minHr:13, max:137.4, maxHr:18, negHrs:0, spark:-4.3 },
-    { code:'LT',       flag:'🇱🇹', name:'Lithuania',   today:87.7, vsYday:+30.0, min:15.6, minHr:13, max:174.0, maxHr:18, negHrs:0, spark:-4.4 },
-    { code:'PT',       flag:'🇵🇹', name:'Portugal',    today:76.1, vsYday:+19.2, min:14.2, minHr:13, max:112.1, maxHr:19, negHrs:0, spark:-16 },
-    { code:'ES',       flag:'🇪🇸', name:'Spain',       today:75.5, vsYday:+18.4, min:16.0, minHr:13, max:109.0, maxHr:19, negHrs:0, spark:-16.6 },
-    { code:'DK_W',     flag:'🇩🇰', name:'Denmark West',today:73.8, vsYday:-3.0, min:-15.8, minHr:13, max:145.8, maxHr:18, negHrs:5, spark:-18.3 },
-    { code:'CZ',       flag:'🇨🇿', name:'Czechia',     today:73.0, vsYday:-6.4, min:-29.9, minHr:12, max:136.5, maxHr:18, negHrs:5, spark:-19.1 },
-    { code:'DE_LU',    flag:'🇩🇪', name:'Germany',     today:63.8, vsYday:-7.4, min:-58.1, minHr:11, max:142.8, maxHr:18, negHrs:7, spark:-28.3 },
-    { code:'NL',       flag:'🇳🇱', name:'Netherlands', today:57.5, vsYday:-3.3, min:-56.8, minHr:11, max:145.6, maxHr:18, negHrs:7, spark:-34.6 },
-    { code:'BE',       flag:'🇧🇪', name:'Belgium',     today:49.1, vsYday:-10.8, min:-55.0, minHr:11, max:134.0, maxHr:17, negHrs:6, spark:-43 },
-    { code:'NO_2',     flag:'🇳🇴', name:'Norway Central',today:39.8, vsYday:+12.2, min:8.8, minHr:22, max:103.7, maxHr:5, negHrs:0, spark:-52.3 },
-    { code:'SE_3',     flag:'🇸🇪', name:'Sweden N-Mid',today:40.0, vsYday:+21.3, min:11.8, minHr:23, max:104.0, maxHr:5, negHrs:0, spark:-52.1 },
-    { code:'FR',       flag:'🇫🇷', name:'France',      today:1.2,  vsYday:-15.3, min:-48.6, minHr:11, max:36.0, maxHr:5, negHrs:7, spark:+2 },
-    { code:'FI',       flag:'🇫🇮', name:'Finland',     today:67.8, vsYday:+45.6, min:16.1, minHr:13, max:127.9, maxHr:18, negHrs:0, spark:-24.3 },
+    { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South',    today:115.8, vsYday:+12.0, min:54.7,  minHr:10, max:169.1, maxHr:18, negHrs:0, spark:+23.7, hourly: gen96(115.8, 54.7, 169.1, 0) },
+    { code:'IT_NORD',  flag:'🇮🇹', name:'Italy North',    today:115.1, vsYday:+12.7, min:54.7,  minHr:10, max:153.5, maxHr:18, negHrs:0, spark:+23,   hourly: gen96(115.1, 54.7, 153.5, 0) },
+    { code:'HU',       flag:'🇭🇺', name:'Hungary',        today:109.8, vsYday:+4.1,  min:-0.8,  minHr:12, max:249.9, maxHr:18, negHrs:1, spark:+17.7, hourly: gen96(109.8, -0.8, 249.9, 1) },
+    { code:'SI',       flag:'🇸🇮', name:'Slovenia',       today:109.5, vsYday:+6.6,  min:54.7,  minHr:10, max:149.7, maxHr:18, negHrs:0, spark:+17.4, hourly: gen96(109.5, 54.7, 149.7, 0) },
+    { code:'RO',       flag:'🇷🇴', name:'Romania',        today:108.5, vsYday:+17.8, min:12.0,  minHr:11, max:227.3, maxHr:18, negHrs:0, spark:+16.4, hourly: gen96(108.5, 12.0, 227.3, 0) },
+    { code:'HR',       flag:'🇭🇷', name:'Croatia',        today:108.5, vsYday:+7.7,  min:48.7,  minHr:11, max:168.7, maxHr:18, negHrs:0, spark:+16.4, hourly: gen96(108.5, 48.7, 168.7, 0) },
+    { code:'GR',       flag:'🇬🇷', name:'Greece',         today:102.7, vsYday:+21.8, min:0.0,   minHr:7,  max:194.1, maxHr:17, negHrs:2, spark:+10.6, hourly: gen96(102.7, 0.0, 194.1, 2) },
+    { code:'BG',       flag:'🇧🇬', name:'Bulgaria',       today:98.2,  vsYday:+16.7, min:6.9,   minHr:7,  max:194.1, maxHr:17, negHrs:0, spark:+6.1,  hourly: gen96(98.2, 6.9, 194.1, 0) },
+    { code:'CH',       flag:'🇨🇭', name:'Switzerland',    today:94.0,  vsYday:+2.4,  min:40.0,  minHr:13, max:140.0, maxHr:18, negHrs:0, spark:+1.9,  hourly: gen96(94.0, 40.0, 140.0, 0) },
+    { code:'AT',       flag:'🇦🇹', name:'Austria',        today:87.8,  vsYday:-4.3,  min:7.1,   minHr:13, max:137.4, maxHr:18, negHrs:0, spark:-4.3,  hourly: gen96(87.8, 7.1, 137.4, 0) },
+    { code:'LT',       flag:'🇱🇹', name:'Lithuania',      today:87.7,  vsYday:+30.0, min:15.6,  minHr:13, max:174.0, maxHr:18, negHrs:0, spark:-4.4,  hourly: gen96(87.7, 15.6, 174.0, 0) },
+    { code:'PT',       flag:'🇵🇹', name:'Portugal',       today:76.1,  vsYday:+19.2, min:14.2,  minHr:13, max:112.1, maxHr:19, negHrs:0, spark:-16,   hourly: gen96(76.1, 14.2, 112.1, 0) },
+    { code:'ES',       flag:'🇪🇸', name:'Spain',          today:75.5,  vsYday:+18.4, min:16.0,  minHr:13, max:109.0, maxHr:19, negHrs:0, spark:-16.6, hourly: gen96(75.5, 16.0, 109.0, 0) },
+    { code:'DK_W',     flag:'🇩🇰', name:'Denmark West',   today:73.8,  vsYday:-3.0,  min:-15.8, minHr:13, max:145.8, maxHr:18, negHrs:5, spark:-18.3, hourly: gen96(73.8, -15.8, 145.8, 5) },
+    { code:'CZ',       flag:'🇨🇿', name:'Czechia',        today:73.0,  vsYday:-6.4,  min:-29.9, minHr:12, max:136.5, maxHr:18, negHrs:5, spark:-19.1, hourly: gen96(73.0, -29.9, 136.5, 5) },
+    { code:'FI',       flag:'🇫🇮', name:'Finland',        today:67.8,  vsYday:+45.6, min:16.1,  minHr:13, max:127.9, maxHr:18, negHrs:0, spark:-24.3, hourly: gen96(67.8, 16.1, 127.9, 0) },
+    { code:'DE_LU',    flag:'🇩🇪', name:'Germany',        today:63.8,  vsYday:-7.4,  min:-58.1, minHr:11, max:142.8, maxHr:18, negHrs:7, spark:-28.3, hourly: gen96(63.8, -58.1, 142.8, 7) },
+    { code:'NL',       flag:'🇳🇱', name:'Netherlands',    today:57.5,  vsYday:-3.3,  min:-56.8, minHr:11, max:145.6, maxHr:18, negHrs:7, spark:-34.6, hourly: gen96(57.5, -56.8, 145.6, 7) },
+    { code:'BE',       flag:'🇧🇪', name:'Belgium',        today:49.1,  vsYday:-10.8, min:-55.0, minHr:11, max:134.0, maxHr:17, negHrs:6, spark:-43,   hourly: gen96(49.1, -55.0, 134.0, 6) },
+    { code:'SE_3',     flag:'🇸🇪', name:'Sweden N-Mid',   today:40.0,  vsYday:+21.3, min:11.8,  minHr:23, max:104.0, maxHr:5,  negHrs:0, spark:-52.1, hourly: gen96(40.0, 11.8, 104.0, 0) },
+    { code:'NO_2',     flag:'🇳🇴', name:'Norway Central', today:39.8,  vsYday:+12.2, min:8.8,   minHr:22, max:103.7, maxHr:5,  negHrs:0, spark:-52.3, hourly: gen96(39.8, 8.8, 103.7, 0) },
+    { code:'FR',       flag:'🇫🇷', name:'France',         today:1.2,   vsYday:-15.3, min:-48.6, minHr:11, max:36.0,  maxHr:5,  negHrs:7, spark:+2,    hourly: gen96(1.2, -48.6, 36.0, 7),
+      hourlyYday: gen96(16.5, -12.0, 55.0, 3), hourlyJ2: gen96(28.0, -5.0, 70.0, 1) },
+    { code:'GB',       flag:'🇬🇧', name:'Great Britain',  today:88.4,  vsYday:+5.1,  min:42.0,  minHr:13, max:150.0, maxHr:18, negHrs:0, spark:+2,    hourly: gen96(88.4, 42.0, 150.0, 0) },
   ];
+}
+
+// Fix: define loadPricesWithDates as alias calling loadPrices with date overrides
+async function loadPricesWithDates(periodStart, periodEnd) {
+  // periodStart/periodEnd format: YYYYMMDD0000
+  if (!ENTSOE_TOKEN || ENTSOE_TOKEN === 'YOUR_ENTSOE_TOKEN_HERE') {
+    document.getElementById('prices-updated').textContent = 'Historical data unavailable in demo mode';
+    return;
+  }
+  try {
+    const results = [];
+    const batch = async (zones) => {
+      const promises = zones.map(async zone => {
+        try {
+          const xml = await fetchEntsoe(
+            `documentType=A44&in_Domain=${zone.eic}&out_Domain=${zone.eic}&periodStart=${periodStart}&periodEnd=${periodEnd}`
+          );
+          const prices = parseXmlPrices(xml);
+          if (prices.length === 0) return null;
+          const vals = prices.map(p => p.price);
+          const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+          const minP = Math.min(...vals), maxP = Math.max(...vals);
+          const minHr = prices.find(p => p.price===minP)?.hour || 0;
+          const maxHr = prices.find(p => p.price===maxP)?.hour || 0;
+          const negHrs = vals.filter(v => v < 0).length;
+          return { ...zone, today: Math.round(avg*10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly: vals, vsYday: null, spark: null };
+        } catch { return null; }
+      });
+      return (await Promise.all(promises)).filter(Boolean);
+    };
+    const batchSize = 6;
+    for (let i = 0; i < ZONES.length; i += batchSize) {
+      const batchRes = await batch(ZONES.slice(i, i+batchSize));
+      results.push(...batchRes);
+      pricesData = results.sort((a,b) => b.today - a.today);
+      renderPricesTable(pricesData);
+      updateKPIs(pricesData);
+    }
+    buildTicker(pricesData);
+    document.getElementById('prices-updated').textContent = `Historical · ${periodStart.slice(0,8)}`;
+  } catch(e) {
+    console.error(e);
+    document.getElementById('prices-updated').textContent = 'Error loading historical data';
+  }
 }
 
 // ════════════════════════════════════════════
@@ -32539,7 +32603,7 @@ function renderPricesTable(data) {
   });
 
   renderCompareChart();
-  buildCompareDropdown();
+  buildCompareChips();
 }
 
 // Sort prices table
@@ -32817,19 +32881,73 @@ function buildHourlyDetail(idx, z) {
 
 const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#818cf8'];
 
-function buildCompareDropdown() {
-  const sel = document.getElementById('compare-zone-select');
-  if (!sel || !window._pricesSorted) return;
+function buildCompareDropdown() { buildCompareChips(); } // alias kept for existing calls
+
+function buildCompareChips() {
+  const container = document.getElementById('compare-zone-chips');
+  if (!container || !window._pricesSorted) return;
   const selected = window._compareZones || new Set(['FR']);
-  sel.innerHTML = window._pricesSorted.map(z =>
-    `<option value="${z.code}" ${selected.has(z.code) ? 'selected' : ''}>${z.flag} ${z.code} · ${z.name}</option>`
-  ).join('');
+  if (!window._zoneColorMap) {
+    window._zoneColorMap = {};
+    window._pricesSorted.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+  }
+  container.innerHTML = window._pricesSorted.map(z => {
+    const isOn = selected.has(z.code);
+    const col = window._zoneColorMap[z.code] || '#4a6280';
+    return `<button onclick="toggleCompareChip('${z.code}')" style="
+      padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;
+      border:1.5px solid ${isOn ? col : 'var(--bd)'};
+      background:${isOn ? col+'22' : 'transparent'};
+      color:${isOn ? col : 'var(--tx3)'};
+    " id="chip-${z.code}">${z.flag} ${z.code}</button>`;
+  }).join('');
+  renderComparePeakStrip();
+}
+
+function toggleCompareChip(code) {
+  window._compareZones = window._compareZones || new Set(['FR']);
+  if (window._compareZones.has(code)) {
+    if (window._compareZones.size > 1) window._compareZones.delete(code);
+  } else {
+    window._compareZones.add(code);
+  }
+  buildCompareChips();
+  renderCompareChart();
+}
+
+function renderComparePeakStrip() {
+  const strip = document.getElementById('compare-peak-strip');
+  if (!strip || !window._pricesSorted || !window._compareZones) return;
+  const selected = window._compareZones;
+  const cards = [];
+  window._pricesSorted.forEach(z => {
+    if (!selected.has(z.code)) return;
+    const col = window._zoneColorMap?.[z.code] || '#4a6280';
+    if (!z.hourly || z.hourly.length < 24) return;
+    const h = z.hourly; const nph = Math.round(h.length/24);
+    const pkV=[], opV=[];
+    h.forEach((v,i) => { if(v==null)return; const hr=Math.floor(i/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
+    const pk = pkV.length ? (pkV.reduce((a,b)=>a+b,0)/pkV.length).toFixed(1) : '--';
+    const op = opV.length ? (opV.reduce((a,b)=>a+b,0)/opV.length).toFixed(1) : '--';
+    const spread = pkV.length && opV.length ? (pkV.reduce((a,b)=>a+b,0)/pkV.length - opV.reduce((a,b)=>a+b,0)/opV.length).toFixed(1) : '--';
+    cards.push(`<div style="background:var(--bg2);border:1px solid ${col}44;border-left:3px solid ${col};border-radius:6px;padding:6px 10px;min-width:110px">
+      <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:4px">${z.flag} ${z.code}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:10px;color:var(--tx2)">
+        <span style="color:var(--tx3)">Peak</span><span style="font-family:'JetBrains Mono',monospace">${pk}</span>
+        <span style="color:var(--tx3)">Off-pk</span><span style="font-family:'JetBrains Mono',monospace">${op}</span>
+        <span style="color:var(--tx3)">Spread</span><span style="font-family:'JetBrains Mono',monospace;color:${parseFloat(spread)>0?'var(--up)':'var(--tx3)'}">${spread !== '--' ? (parseFloat(spread)>0?'+':'')+spread : '--'}</span>
+      </div>
+    </div>`);
+  });
+  strip.innerHTML = cards.join('');
 }
 
 function onCompareSelectChange(sel) {
+  // Legacy shim - now handled by chips
   const vals = Array.from(sel.selectedOptions).map(o => o.value);
   window._compareZones = new Set(vals.length ? vals : ['FR']);
-  window._zoneColorMap = null; // reset color map
+  window._zoneColorMap = null;
+  buildCompareChips();
   renderCompareChart();
 }
 
@@ -32948,7 +33066,7 @@ function renderCompareChart() {
       }
     }
   });
-  setTimeout(()=>{ addFullscreen('price-compare-canvas'); addDownload('price-compare-canvas','price-comparison'); },100);
+  setTimeout(()=>{ addFullscreen('price-compare-canvas'); addDownload('price-compare-canvas','price-comparison'); renderComparePeakStrip(); },100);
 }
 
 function makeSVGSparkline(data, positive) {
