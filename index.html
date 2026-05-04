@@ -46,13 +46,11 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    overflow: hidden;
+    overflow: visible;
     position: fixed;
     top: 0; left: 0; right: 0;
     z-index: 100;
   }
-
-  /* ── TICKER DROPDOWN ── */
   .ticker-scroll { flex:1; overflow:hidden; height:100%; position:relative; }
   .ticker-track { display:flex; position:absolute; top:0; left:0; height:100%; align-items:center; animation:tickerScroll 32s linear infinite; }
   .ticker-track:hover { animation-play-state:paused; }
@@ -74,7 +72,7 @@
     position:absolute; top:calc(100% + 6px); left:0;
     background:var(--bg3); border:1px solid var(--border2); border-radius:9px;
     padding:5px 0; min-width:160px; box-shadow:0 10px 32px rgba(0,0,0,0.6);
-    z-index:300; opacity:0; pointer-events:none; transform:translateY(-6px);
+    z-index:500; opacity:0; pointer-events:none; transform:translateY(-6px);
     transition:opacity 0.15s, transform 0.15s;
   }
   .dd-menu.open { opacity:1; pointer-events:all; transform:translateY(0); }
@@ -967,11 +965,21 @@
       <span class="dd-label" id="dd-label">ALL</span>
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-    <div class="dd-menu" id="dd-menu">
+    <div class="dd-menu" id="dd-menu" style="min-width:200px;max-height:70vh;overflow-y:auto">
+      <div style="padding:4px 14px 2px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">Categories</div>
       <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
       <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
       <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
       <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
+      <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 14px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">Power zones</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="tickerSelectAllZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(0,212,168,.4);background:rgba(0,212,168,.1);color:#00d4a8;font-weight:600">All</button>
+          <button onclick="tickerSelectNoneZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--text3)">None</button>
+        </div>
+      </div>
+      <div id="ticker-zone-list"></div>
     </div>
   </div>
   <div class="ticker-scroll">
@@ -1174,7 +1182,7 @@
       <div class="table-wrap" id="prices-table-wrap">
         <div class="table-header" style="flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span class="table-title">All Bidding Zones</span>
+            <span id="prices-date-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Day-Ahead prices · loading...</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <!-- Zone filter dropdown panel -->
@@ -1218,11 +1226,6 @@
             </tr>
           </thead>
           <tbody id="prices-tbody">
-            <tr id="prices-date-row">
-              <td colspan="13" style="text-align:center;padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--tx);letter-spacing:.03em;background:var(--bg3);border-bottom:1px solid var(--bd)">
-                <span id="prices-date-label">Day-Ahead prices · loading...</span>
-              </td>
-            </tr>
             <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
           </tbody>
         </table>
@@ -32791,11 +32794,11 @@ function filterPricesTable(text) {
 }
 
 function renderPricesTable(data) {
-  const d = (window.DP && window.DP.selectedDate) ? new Date(window.DP.selectedDate) : new Date();
-  const fmt = dt => dt.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
-  const dateStr = fmt(d);
+  const sel = window.DP?.selectedDate;
+  const fmtLong = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
+  const todayISO = new Date().toISOString().slice(0,10);
   const dateLabel = document.getElementById('prices-date-label');
-  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + dateStr + ' · ENTSO-E';
+  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong(sel || todayISO) + ' · ENTSO-E';
   // Remove loading row if still there
   const loadingRow = document.querySelector('#prices-tbody .loading-row');
   if (loadingRow) loadingRow.remove();
@@ -32855,58 +32858,140 @@ function selectAllCompareZones() {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#zone-filter-wrap') && !e.target.closest('#zone-filter-panel')) {
-    const p = document.getElementById('zone-filter-panel');
-    if (p) p.style.display = 'none';
+  // Close zone filter panel if clicking outside both the button and the panel
+  const zBtn   = document.getElementById('zone-filter-btn');
+  const zPanel = document.getElementById('zone-filter-panel');
+  if (zPanel && zPanel.style.display !== 'none') {
+    if (!zBtn?.contains(e.target) && !zPanel.contains(e.target)) {
+      zPanel.style.display = 'none';
+    }
   }
-  if (!e.target.closest('#compare-filter-wrap') && !e.target.closest('#compare-filter-panel')) {
-    const p = document.getElementById('compare-filter-panel');
-    if (p) p.style.display = 'none';
+  // Close compare filter panel
+  const cBtn   = document.getElementById('compare-filter-btn');
+  const cPanel = document.getElementById('compare-filter-panel');
+  if (cPanel && cPanel.style.display !== 'none') {
+    if (!cBtn?.contains(e.target) && !cPanel.contains(e.target)) {
+      cPanel.style.display = 'none';
+    }
   }
 });
 
 function buildZoneFilterDropdown() {
   const container = document.getElementById('zone-filter-chips');
   if (!container || !window._pricesSorted) return;
-  const active = window._pricesZoneFilter;
-  const zones = window._pricesSorted.filter(z => z.today != null && !isNaN(z.today));
-  container.innerHTML = zones.map(z => {
-    const isOn = !active || active.has(z.code);
-    const meta = ZONE_META[z.code] || {country: z.name || z.code};
-    return `<button onclick="toggleZoneChip('${z.code}')" id="zchip-${z.code}" style="
-      display:flex;align-items:center;gap:5px;width:100%;padding:5px 8px;border-radius:5px;font-size:11px;cursor:pointer;
-      border:none;text-align:left;transition:background .1s;
-      background:${isOn ? 'rgba(0,212,168,.12)' : 'transparent'};
-      color:${isOn ? '#00d4a8' : 'rgba(255,255,255,.45)'};
+  const active = window._pricesZoneFilter; // null = all active
+  const zones  = window._pricesSorted.filter(z => z.today != null && !isNaN(z.today));
+
+  // Group by country (CC)
+  const byCC = {};
+  zones.forEach(z => {
+    const meta = ZONE_META[z.code] || {cc: z.code, country: z.name || z.code};
+    const cc = meta.cc || z.code;
+    if (!byCC[cc]) byCC[cc] = {cc, country: meta.country, zones: []};
+    byCC[cc].zones.push(z);
+  });
+
+  const checkSvg = (color) =>
+    `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  // Render: country header row + zone rows
+  let html = '';
+  Object.values(byCC).forEach(group => {
+    const allOn = group.zones.every(z => !active || active.has(z.code));
+    const someOn = group.zones.some(z => !active || active.has(z.code));
+
+    // Country header — click toggles all zones in country
+    html += `<button onclick="toggleCountryFilter('${group.cc}')" style="
+      display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;
+      border:none;text-align:left;margin-top:4px;
+      background:${allOn ? 'rgba(0,212,168,.08)' : 'transparent'};
+      color:${allOn ? '#00d4a8' : someOn ? '#f59e0b' : 'rgba(255,255,255,.35)'};
     ">
-      <span style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${isOn?'#00d4a8':'rgba(255,255,255,.2)'};background:${isOn?'rgba(0,212,168,.25)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        ${isOn?'<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#00d4a8" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      <span style="width:14px;height:14px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+        border:1.5px solid ${allOn?'#00d4a8':someOn?'#f59e0b':'rgba(255,255,255,.2)'};
+        background:${allOn?'rgba(0,212,168,.2)':someOn?'rgba(245,158,11,.15)':'transparent'}">
+        ${allOn ? checkSvg('#00d4a8') : someOn ? '<div style="width:6px;height:2px;background:#f59e0b;border-radius:1px"></div>' : ''}
       </span>
-      <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--acc);min-width:52px">${z.flag||''} ${z.code}</span>
-      <span style="font-size:11px">${meta.country}</span>
+      <span style="letter-spacing:.04em">${group.cc} — ${group.country}</span>
+      <span style="margin-left:auto;font-size:10px;font-weight:400;color:var(--tx3)">${group.zones.length} zone${group.zones.length>1?'s':''}</span>
     </button>`;
-  }).join('');
-  // Update label
+
+    // Zone rows (indented) — only show if country has >1 zone
+    if (group.zones.length > 1) {
+      group.zones.forEach(z => {
+        const isOn = !active || active.has(z.code);
+        html += `<button onclick="toggleZoneChip('${z.code}')" id="zchip-${z.code}" style="
+          display:flex;align-items:center;gap:5px;width:100%;padding:4px 8px 4px 26px;border-radius:5px;font-size:11px;cursor:pointer;
+          border:none;text-align:left;
+          background:${isOn ? 'rgba(0,212,168,.06)' : 'transparent'};
+          color:${isOn ? '#00d4a8' : 'rgba(255,255,255,.35)'};
+        ">
+          <span style="width:12px;height:12px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            border:1.5px solid ${isOn?'#00d4a8':'rgba(255,255,255,.15)'};
+            background:${isOn?'rgba(0,212,168,.2)':'transparent'}">
+            ${isOn ? checkSvg('#00d4a8') : ''}
+          </span>
+          <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${isOn?'var(--acc)':'rgba(255,255,255,.4)'};min-width:56px">${z.flag||''} ${z.code}</span>
+          <span>${(ZONE_META[z.code]||{}).country||z.name||z.code}</span>
+        </button>`;
+      });
+    }
+  });
+
+  container.innerHTML = html;
+
+  // Update button label
   const lbl = document.getElementById('zone-filter-label');
   if (lbl) {
-    const n = active ? active.size : zones.length;
-    lbl.textContent = active ? `${n} zone${n>1?'s':''} selected` : 'All zones';
+    const nOn = active ? active.size : zones.length;
+    lbl.textContent = active ? `${nOn} / ${zones.length} zones` : 'All zones';
   }
 }
 
+function toggleCountryFilter(cc) {
+  const zones = (window._pricesSorted || []).filter(z => {
+    const meta = ZONE_META[z.code] || {cc: z.code};
+    return (meta.cc || z.code) === cc && z.today != null;
+  });
+  if (!zones.length) return;
+
+  const allCodes = new Set((window._pricesSorted||[]).filter(z=>z.today!=null).map(z=>z.code));
+  // Init filter if null
+  if (!window._pricesZoneFilter) window._pricesZoneFilter = new Set(allCodes);
+
+  const ccCodes = zones.map(z=>z.code);
+  const allOn = ccCodes.every(c => window._pricesZoneFilter.has(c));
+
+  if (allOn) {
+    ccCodes.forEach(c => window._pricesZoneFilter.delete(c));
+    // Garder le Set même vide — ne pas reset à null
+  } else {
+    ccCodes.forEach(c => window._pricesZoneFilter.add(c));
+    if (window._pricesZoneFilter.size === allCodes.size) window._pricesZoneFilter = null;
+  }
+
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
+}
+
 function toggleZoneChip(code) {
-  if (!window._pricesZoneFilter) {
-    // Start filtering: all on except this one becomes: only this one
-    // Actually: first click → show only that zone
-    window._pricesZoneFilter = new Set([code]);
-  } else if (window._pricesZoneFilter.has(code) && window._pricesZoneFilter.size === 1) {
-    // Last one — reset to all
-    window._pricesZoneFilter = null;
-  } else if (window._pricesZoneFilter.has(code)) {
+  const zones = (window._pricesSorted || []).filter(z => z.today != null && !isNaN(z.today));
+  const allCodes = new Set(zones.map(z => z.code));
+
+  // null = tous actifs → initialiser avec tous
+  if (window._pricesZoneFilter === null) {
+    window._pricesZoneFilter = new Set(allCodes);
+  }
+
+  if (window._pricesZoneFilter.has(code)) {
     window._pricesZoneFilter.delete(code);
+    // Si tout décoché → garder le Set vide (ne pas reset à null)
   } else {
     window._pricesZoneFilter.add(code);
+    // Si tout coché → reset à null (= "All zones")
+    if (window._pricesZoneFilter.size === allCodes.size) window._pricesZoneFilter = null;
   }
+
   buildZoneFilterDropdown();
   renderPricesTableBody();
 }
@@ -32919,7 +33004,9 @@ function filterPricesZones(sel) {
 }
 
 function clearZoneFilter() {
-  window._pricesZoneFilter = null;
+  // Select none: Set vide (distinct de null qui = tout)
+  const zones = (window._pricesSorted||[]).filter(z=>z.today!=null && !isNaN(z.today));
+  window._pricesZoneFilter = new Set(); // Set vide = rien affiché
   buildZoneFilterDropdown();
   renderPricesTableBody();
 }
@@ -33427,12 +33514,20 @@ function buildCompareChips() {
 }
 
 function toggleCompareChip(code) {
-  window._compareZones = window._compareZones || new Set(['FR']);
+  const allCodes = new Set((window._pricesSorted || []).map(z => z.code));
+
+  // Si pas encore initialisé, partir de FR uniquement
+  if (!window._compareZones) window._compareZones = new Set(['FR']);
+
   if (window._compareZones.has(code)) {
-    if (window._compareZones.size > 1) window._compareZones.delete(code);
+    window._compareZones.delete(code);
+    // Garder au moins une zone
+    if (window._compareZones.size === 0) window._compareZones.add(code);
   } else {
     window._compareZones.add(code);
   }
+
+  window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
 }
@@ -33728,6 +33823,7 @@ function drawSparkline(canvas, data, avg) {
 // ════════════════════════════════════════════
 // ── TICKER FILTER STATE ──
 const tickerFilters = { power: true, gas: true, carbon: true, go: true };
+let tickerZoneFilter = null; // null = all zones; Set of codes = filtered
 let tickerAllItems = [];
 
 function toggleTickerMenu() {
@@ -33747,18 +33843,32 @@ function toggleTickerCat(row) {
 function updateTickerLabel() {
   const on = Object.entries(tickerFilters).filter(([,v])=>v).map(([k])=>k.toUpperCase());
   const lbl = document.getElementById('dd-label');
-  if (lbl) lbl.textContent = on.length === 4 ? 'ALL' : on.join(' · ');
+  if (!lbl) return;
+  let label = on.length === 4 ? 'ALL' : on.join(' · ');
+  if (tickerZoneFilter) {
+    label += ` · ${tickerZoneFilter.size}Z`;
+  }
+  lbl.textContent = label;
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.dd-wrap')) {
-    document.getElementById('dd-btn')?.classList.remove('open');
-    document.getElementById('dd-menu')?.classList.remove('open');
+  const btn   = document.getElementById('dd-btn');
+  const menu  = document.getElementById('dd-menu');
+  if (menu && menu.classList.contains('open')) {
+    if (!btn?.contains(e.target) && !menu.contains(e.target)) {
+      btn?.classList.remove('open');
+      menu.classList.remove('open');
+    }
   }
 });
 
 function renderTicker() {
-  const visible = tickerAllItems.filter(item => tickerFilters[item.cat] !== false);
+  const visible = tickerAllItems.filter(item => {
+    if (!tickerFilters[item.cat]) return false;
+    // Zone filter applies only to power items
+    if (item.cat === 'power' && tickerZoneFilter && !tickerZoneFilter.has(item.code)) return false;
+    return true;
+  });
   if (visible.length === 0) {
     document.getElementById('ticker-track').innerHTML = '';
     return;
@@ -33776,8 +33886,9 @@ function renderTicker() {
 
 function buildTicker(data) {
   tickerAllItems = [
-    ...data.slice(0, 8).map(z => ({
+    ...data.map(z => ({
       cat: 'power', catLabel: 'POWER',
+      code: z.code,
       name: `${z.flag} ${z.code}`,
       val: z.today.toFixed(1),
       unit: '€/MWh',
@@ -33793,6 +33904,63 @@ function buildTicker(data) {
     { cat:'go', catLabel:'GO', name:'GO Wind Cal-26', val:'0.55', unit:'€/MWh', chg:'', up:null },
   ];
   renderTicker();
+  buildTickerZoneList(data);
+}
+
+function buildTickerZoneList(data) {
+  const container = document.getElementById('ticker-zone-list');
+  if (!container) return;
+
+  // Only show zones that are actually in the ticker (have a power item)
+  const powerItems = tickerAllItems.filter(i => i.cat === 'power');
+  if (!powerItems.length) return;
+
+  container.innerHTML = powerItems.map(item => {
+    const code = item.code;
+    const isOn = !tickerZoneFilter || tickerZoneFilter.has(code);
+    return `<div class="dd-row${isOn?' on':''}" onclick="toggleTickerZone('${code}',this)" style="padding:5px 14px;font-size:10px">
+      <span class="dd-check">${isOn?'✓':''}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--accent);min-width:60px">${item.name}</span>
+      <span style="color:var(--text3)">${(ZONE_META[code]||{}).country||''}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleTickerZone(code, row) {
+  const powerCodes = tickerAllItems.filter(i=>i.cat==='power').map(i=>i.code);
+  const allCodes   = new Set(powerCodes);
+
+  if (!tickerZoneFilter) {
+    // Premier clic depuis "tout affiché" → sélectionner uniquement cette zone
+    tickerZoneFilter = new Set([code]);
+  } else if (tickerZoneFilter.has(code)) {
+    tickerZoneFilter.delete(code);
+    // Si plus rien → tout réafficher
+    if (tickerZoneFilter.size === 0) tickerZoneFilter = null;
+  } else {
+    tickerZoneFilter.add(code);
+    // Si toutes sélectionnées → reset à null (= toutes)
+    if (tickerZoneFilter.size >= allCodes.size) tickerZoneFilter = null;
+  }
+
+  buildTickerZoneList();
+  renderTicker();
+  updateTickerLabel();
+}
+
+function tickerSelectAllZones() {
+  tickerZoneFilter = null; // null = toutes actives
+  buildTickerZoneList();
+  renderTicker();
+  updateTickerLabel();
+}
+
+function tickerSelectNoneZones() {
+  const allCodes = tickerAllItems.filter(i=>i.cat==='power').map(i=>i.code);
+  tickerZoneFilter = new Set(); // Set vide = aucune
+  buildTickerZoneList();
+  renderTicker();
+  updateTickerLabel();
 }
 
 // Default ticker while loading
@@ -36170,19 +36338,29 @@ function dpRender() {
 function dpSelect(dateStr) {
   const todayStr = new Date().toISOString().slice(0,10);
   const isToday  = dateStr === todayStr;
-  // SelectedDate=null means "today" for visual state only
   DP.selectedDate = isToday ? null : dateStr;
-  // Update label in picker button
+
+  // Update picker button label — European format DD/MM/YY
   const lbl = document.getElementById('date-picker-label');
-  if (lbl) lbl.textContent = isToday ? 'Today' : dateStr.slice(5).replace('-','/');
+  if (lbl) {
+    if (isToday) {
+      lbl.textContent = 'Today';
+    } else {
+      const [y,m,d] = dateStr.split('-');
+      lbl.textContent = d + '/' + m + '/' + y.slice(2); // DD/MM/YY
+    }
+  }
+
+  // Update prices-date-label immediately
+  const fmtLong2 = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
+  const dateLabel = document.getElementById('prices-date-label');
+  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong2(dateStr) + ' · ENTSO-E';
+
   dpRender();
-  // Always fetch by explicit date — today included (loads today's JSON if available)
   loadPricesForDate(dateStr);
-  // Close popup
   document.getElementById('date-picker-btn')?.classList.remove('open');
   document.getElementById('date-picker-popup')?.classList.remove('open');
 }
-
 function dpSelectToday() {
   dpSelect(new Date().toISOString().slice(0,10));
 }
@@ -36202,7 +36380,7 @@ async function loadPricesForDate(dateStr) {
   const updEl = document.getElementById('prices-updated');
   if (updEl) updEl.textContent = 'Loading ' + dateStr + '...';
 
-  const fmtDate = s => new Date(s).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  const fmtDate = s => { const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y.slice(2); };
 
   // Flag lookup from ZONES array
   const flagOf = code => {
