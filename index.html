@@ -405,8 +405,8 @@
   /* ── KPI STRIP ── */
   .kpi-strip {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
     margin-bottom: 20px;
   }
   .kpi-card {
@@ -526,7 +526,7 @@
   .fuel-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
   .fuel-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); overflow: hidden; }
   .fuel-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
-  .fuel-nuclear { background: #a78bfa; }
+  .fuel-nuclear { background: #3b82f6; }
   .fuel-solar { background: #f59e0b; }
   .fuel-wind { background: #60a5fa; }
   .fuel-hydro { background: #34d399; }
@@ -1153,6 +1153,16 @@
           <div class="kpi-chg" id="kpi-avg-chg">Loading...</div>
         </div>
         <div class="kpi-card">
+          <div class="kpi-label">FR Peak (08-20h)</div>
+          <div class="kpi-value" id="kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-peak-chg">avg peak hours</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">FR Off-Peak</div>
+          <div class="kpi-value" id="kpi-fr-offpeak">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-offpeak-chg">avg off-peak hours</div>
+        </div>
+        <div class="kpi-card">
           <div class="kpi-label">EU Highest</div>
           <div class="kpi-value down" id="kpi-max">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-max-zone">--</div>
@@ -1179,7 +1189,9 @@
             </tr>
             <tr>
               <th onclick="sortPricesTable('name')" style="cursor:pointer;user-select:none">Country <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Today €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Avg €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none">Peak <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none">Off-Peak <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none">vs Yday <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none">Min Hour <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none">Max Hour <span style="opacity:.4">↕</span></th>
@@ -1199,8 +1211,15 @@
         </div>
       </div>
         <div style="margin-top:14px">
-          <div style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="compare-country-pills"></div>
-          <canvas id="price-compare-canvas" style="width:100%;height:220px"></canvas>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">Compare zones :</span>
+            <select id="compare-zone-select" multiple
+              style="background:var(--bg2);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:4px 8px;font-size:11px;min-width:180px;max-height:120px"
+              onchange="onCompareSelectChange(this)">
+            </select>
+            <span style="font-size:10px;color:var(--tx3)">Ctrl+click to select multiple</span>
+          </div>
+          <canvas id="price-compare-canvas" style="width:100%;height:280px"></canvas>
         </div>
       </div></div>
 
@@ -1310,8 +1329,41 @@
         <button class="hw-btn" onclick="setHistWindow('neg','2Y',this)">2Y</button>
         <button class="hw-btn" onclick="setHistWindow('neg','all',this)">All</button>
       </div>
+
+      <!-- Neg Hours KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0" id="neg-kpi-strip">
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">This Month</div>
+          <div class="kpi-value down" id="neg-kpi-month">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-month-sub">negative hours</div>
+        </div>
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">This Year (YTD)</div>
+          <div class="kpi-value down" id="neg-kpi-year">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-year-sub">negative hours YTD</div>
+        </div>
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">Worst Month</div>
+          <div class="kpi-value down" id="neg-kpi-worst">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-worst-sub">record month</div>
+        </div>
+      </div>
+
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-neg-period"></div>
       <canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas>
+
+      <!-- Calendar heatmap -->
+      <div style="margin-top:16px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">📅 Calendar Heatmap — Negative Hours per Day</div>
+        <div id="neg-calendar-heatmap" style="overflow-x:auto"></div>
+      </div>
+
+      <!-- Monthly summary -->
+      <div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">📊 Monthly Summary</div>
+        <div id="neg-monthly-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px"></div>
+      </div>
+
       <div class="hist-stats-grid" id="hist-neg-stats"></div>
         </div>
       </div>
@@ -1343,14 +1395,48 @@
         <div class="kpi-card"><div class="kpi-label">Loading...</div></div>
       </div>
 
+      <!-- Chart type toggle + DA Price overlay -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px" id="genmix-type-btns">
+          <button class="day-tab active" onclick="setGenMixType('bar',this)">Bars</button>
+          <button class="day-tab" onclick="setGenMixType('area',this)">Area</button>
+          <button class="day-tab" onclick="setGenMixType('donut',this)">Donut</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer">
+          <input type="checkbox" id="genmix-da-overlay" onchange="loadGenMix()" style="accent-color:var(--acc)">
+          Show DA Prices
+        </label>
+      </div>
+
       <div class="chart-container">
         <div class="table-header" style="padding:0 0 12px;border:none">
           <span class="table-title" id="genmix-chart-title">Hourly Generation Mix (MW)</span>
           <span class="source-badge">ENTSO-E A75</span>
         </div>
         <div class="chart-area">
-          <canvas id="genmix-canvas" style="width:100%;height:200px"></canvas>
+          <canvas id="genmix-canvas" style="width:100%;height:300px"></canvas>
         </div>
+      </div>
+
+      <!-- Generation Breakdown Table -->
+      <div class="table-wrap" style="margin-top:16px">
+        <div class="table-header">
+          <span class="table-title">Generation Breakdown</span>
+          <span class="source-badge" id="genmix-breakdown-updated">ENTSO-E A75</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>GW ↕</th>
+              <th style="min-width:100px">% Share</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="genmix-breakdown-tbody">
+            <tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1439,29 +1525,86 @@
       <div class="page-header">
         <div>
           <div class="page-title">Load & Demand</div>
-          <div class="page-subtitle">Actual and forecast load · ENTSO-E</div>
+          <div class="page-subtitle">Actual and forecast load · ENTSO-E A65</div>
         </div>
-        <span class="updated-badge" id="load-updated">Loading...</span>
-      </div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr)">
-        <div class="kpi-card">
-          <div class="kpi-label">FR Current Load</div>
-          <div class="kpi-value" id="load-fr-now">--<span class="kpi-unit">GW</span></div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">FR Peak Today</div>
-          <div class="kpi-value down" id="load-fr-peak">--<span class="kpi-unit">GW</span></div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">FR vs Yesterday</div>
-          <div class="kpi-value" id="load-fr-chg">--</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="load-country" onchange="loadLoad()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="GB">Great Britain (GB)</option>
+            <option value="IT_NORD">Italy North (IT)</option>
+          </select>
+          <span class="updated-badge" id="load-updated">Loading...</span>
         </div>
       </div>
+
+      <!-- KPI strip Rivex-style -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi-card">
+          <div class="kpi-label">Peak Actual</div>
+          <div class="kpi-value" id="load-kpi-peak-actual">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-peak-actual-sub">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Peak Forecast</div>
+          <div class="kpi-value" id="load-kpi-peak-fc">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-peak-fc-sub">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Actual</div>
+          <div class="kpi-value" id="load-kpi-avg">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-avg-sub">daily avg</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Forecast Deviation</div>
+          <div class="kpi-value" id="load-kpi-dev">--<span class="kpi-unit">%</span></div>
+          <div class="kpi-chg" id="load-kpi-dev-sub">fc vs actual</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">YoY Demand Change</div>
+          <div class="kpi-value" id="load-kpi-yoy">--<span class="kpi-unit">%</span></div>
+          <div class="kpi-chg" id="load-kpi-yoy-sub">vs same day LY</div>
+        </div>
+      </div>
+
+      <!-- Day selector buttons -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="load-day-btns">
+        <button class="day-tab active" onclick="setLoadDay(0,this)">Today</button>
+        <button class="day-tab" onclick="setLoadDay(-1,this)">Yesterday</button>
+        <button class="day-tab" onclick="setLoadDay(-2,this)">2 days ago</button>
+        <button class="day-tab" onclick="setLoadDay(-7,this)">-7 days</button>
+        <button class="day-tab" onclick="setLoadDay(-14,this)">-14 days</button>
+      </div>
+
       <div class="chart-container">
         <div class="table-header" style="padding:0 0 12px;border:none">
-          <span class="table-title">France — Hourly Load (MW)</span>
+          <span class="table-title" id="load-chart-title">France — Hourly Load (GW)</span>
+          <span class="source-badge">ENTSO-E A65</span>
         </div>
-        <canvas id="load-canvas" style="width:100%;height:200px"></canvas>
+        <canvas id="load-canvas" style="width:100%;height:300px"></canvas>
+      </div>
+
+      <!-- Hourly Breakdown Table -->
+      <div class="table-wrap" style="margin-top:16px">
+        <div class="table-header">
+          <span class="table-title">Hourly Breakdown</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Hour (UTC)</th>
+              <th>Actual MW ↕</th>
+              <th>Forecast MW ↕</th>
+              <th>Deviation ↕</th>
+            </tr>
+          </thead>
+          <tbody id="load-hourly-tbody">
+            <tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -17238,7 +17381,7 @@ const C_WARN = '#e8a020';
 const C_ACC  = '#10b981';
 const C_WIND = '#60a5fa';
 const C_SOLAR= '#f59e0b';
-const C_NUC  = '#a78bfa';
+const C_NUC  = '#3b82f6';
 const C_HYD  = '#34d399';
 const C_FOS  = '#f87171';
 const C_BIO  = '#6ee7b7';
@@ -32295,6 +32438,29 @@ function updateKPIs(data) {
   document.getElementById('kpi-max-zone').textContent = `${maxZ.flag} ${maxZ.name}`;
   document.getElementById('kpi-min').innerHTML = `${minZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
   document.getElementById('kpi-min-zone').textContent = `${minZ.flag} ${minZ.name}`;
+
+  // Peak / Off-Peak for FR
+  if (fr && fr.hourly && fr.hourly.length >= 24) {
+    const h = fr.hourly;
+    const nPerHour = Math.round(h.length / 24);
+    const peakVals    = [], offPeakVals = [];
+    h.forEach((v, i) => {
+      if (v == null) return;
+      const hr = Math.floor(i / nPerHour);
+      (hr >= 8 && hr < 20 ? peakVals : offPeakVals).push(v);
+    });
+    const peakAvg    = peakVals.length    ? peakVals.reduce((a,b)=>a+b,0)/peakVals.length       : fr.today;
+    const offPeakAvg = offPeakVals.length ? offPeakVals.reduce((a,b)=>a+b,0)/offPeakVals.length : fr.today;
+    const el_pk = document.getElementById('kpi-fr-peak');
+    const el_op = document.getElementById('kpi-fr-offpeak');
+    if (el_pk) el_pk.innerHTML = `${peakAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+    if (el_op) el_op.innerHTML = `${offPeakAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
+    const spread = peakAvg - offPeakAvg;
+    const el_pks = document.getElementById('kpi-fr-peak-chg');
+    const el_ops = document.getElementById('kpi-fr-offpeak-chg');
+    if (el_pks) el_pks.textContent = `spread ${spread >= 0 ? '+' : ''}${spread.toFixed(1)} €`;
+    if (el_ops) el_ops.textContent = `00h–08h / 20h–24h`;
+  }
 }
 
 function renderPricesTable(data) {
@@ -32322,25 +32488,32 @@ function renderPricesTable(data) {
   };
 
   tbody.innerHTML = sorted.map((z, i) => {
-    // Skip rows with no data for selected date
     if (z.today == null || isNaN(z.today)) return '';
-
     const priceColor = z.today < 0 ? 'dn' : z.today > 150 ? 'dn' : z.today < 20 ? 'up' : '';
     const vsColor = z.vsYday == null ? 'tx3' : z.vsYday >= 0 ? 'dn' : 'up';
     const vsArrow = z.vsYday == null ? '' : z.vsYday >= 0 ? '▲' : '▼';
     const vsText  = z.vsYday == null ? '--' : `${vsArrow} ${Math.abs(z.vsYday).toFixed(1)}`;
     const sparkColor = z.spark == null ? '#4a6280' : z.spark >= 0 ? '#10b981' : '#f05060';
     const sparkText  = z.spark == null ? '--' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
-
-    // % renewables + dominant fuel (from genmix if available, else '--')
     const renPct  = z.renPct  != null ? z.renPct.toFixed(0)  + '%' : '--';
     const domFuel = z.domFuel || '--';
-    const domColor = domFuel === 'Nuclear' ? '#60a5fa' : domFuel === 'Wind' ? '#00d4a8' :
+    const domColor = domFuel === 'Nuclear' ? '#3b82f6' : domFuel === 'Wind' ? '#00d4a8' :
                      domFuel === 'Solar' ? '#fbbf24' : domFuel === 'Gas' ? '#f87171' : 'var(--tx2)';
+    // Peak / Off-Peak per zone
+    let peakStr = '--', offPeakStr = '--';
+    if (z.hourly && z.hourly.length >= 24) {
+      const h = z.hourly; const nph = Math.round(h.length / 24);
+      const pkV = [], opV = [];
+      h.forEach((v, idx) => { if (v == null) return; const hr = Math.floor(idx/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
+      if (pkV.length) peakStr = (pkV.reduce((a,b)=>a+b,0)/pkV.length).toFixed(1);
+      if (opV.length) offPeakStr = (opV.reduce((a,b)=>a+b,0)/opV.length).toFixed(1);
+    }
 
     return `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand hourly chart">
-      <td><span style="font-size:10px;color:var(--acc);font-weight:600;margin-right:4px">${z.code}</span>${z.name}</td>
+      <td><span style="font-size:10px;color:var(--acc);font-weight:600;margin-right:4px">${z.code}</span>${z.flag ? z.flag+' ':''} ${z.name}</td>
       <td style="color:var(--${priceColor || 'tx'});font-weight:600">${z.today.toFixed(1)}</td>
+      <td style="color:var(--tx2);font-family:'JetBrains Mono',monospace">${peakStr}</td>
+      <td style="color:var(--tx3);font-family:'JetBrains Mono',monospace">${offPeakStr}</td>
       <td style="color:var(--${vsColor})">${vsText}</td>
       <td style="color:var(--tx2)">${z.min != null ? z.min.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.minHr}h</span></td>
       <td style="color:var(--tx2)">${z.max != null ? z.max.toFixed(1) : '--'}<span style="color:var(--tx3);font-size:10px"> @${z.maxHr}h</span></td>
@@ -32351,7 +32524,7 @@ function renderPricesTable(data) {
       <td class="sparkline-cell"><div id="spark-${i}" style="width:80px;height:28px"></div></td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
-      <td colspan="10" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
+      <td colspan="12" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
         <div style="padding:12px 16px 16px" id="row-detail-inner-${i}"></div>
       </td>
     </tr>`;
@@ -32366,7 +32539,7 @@ function renderPricesTable(data) {
   });
 
   renderCompareChart();
-  renderComparePills();
+  buildCompareDropdown();
 }
 
 // Sort prices table
@@ -32379,6 +32552,8 @@ function sortPricesTable(key) {
   const val = z => {
     if (key === 'name')    return z.name || '';
     if (key === 'today')   return z.today ?? -Infinity;
+    if (key === 'peak')    return z.peak ?? z.today ?? -Infinity;
+    if (key === 'offpeak') return z.offpeak ?? z.today ?? -Infinity;
     if (key === 'vsYday')  return z.vsYday ?? -Infinity;
     if (key === 'minVal')  return z.min ?? -Infinity;
     if (key === 'maxVal')  return z.max ?? -Infinity;
@@ -32642,6 +32817,22 @@ function buildHourlyDetail(idx, z) {
 
 const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#818cf8'];
 
+function buildCompareDropdown() {
+  const sel = document.getElementById('compare-zone-select');
+  if (!sel || !window._pricesSorted) return;
+  const selected = window._compareZones || new Set(['FR']);
+  sel.innerHTML = window._pricesSorted.map(z =>
+    `<option value="${z.code}" ${selected.has(z.code) ? 'selected' : ''}>${z.flag} ${z.code} · ${z.name}</option>`
+  ).join('');
+}
+
+function onCompareSelectChange(sel) {
+  const vals = Array.from(sel.selectedOptions).map(o => o.value);
+  window._compareZones = new Set(vals.length ? vals : ['FR']);
+  window._zoneColorMap = null; // reset color map
+  renderCompareChart();
+}
+
 function renderCompareChart() {
   const data = window._pricesSorted;
   if (!data || !data.length) return;
@@ -32651,6 +32842,7 @@ function renderCompareChart() {
   const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
   const hours = makeTimeLabels(nPts);
   const curHr = new Date().getHours();
+  const curIdx = Math.min(curHr, nPts - 1);
 
   const datasets = [];
   let colorIdx = 0;
@@ -32662,7 +32854,7 @@ function renderCompareChart() {
     if (!selected.has(z.code)) return;
     const col = window._zoneColorMap[z.code] || COMPARE_COLORS[i % COMPARE_COLORS.length];
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-    const res2 = getResolution(hourly);
+    // Today — solid
     datasets.push({
       label:`${z.code} · ${z.name}`,
       data:hourly,
@@ -32676,6 +32868,34 @@ function renderCompareChart() {
       fill:false,
       tension:0,
     });
+    // J-1 — dashed, same color, 50% opacity
+    if (z.hourlyYday && z.hourlyYday.length) {
+      datasets.push({
+        label:`${z.code} J-1`,
+        data: z.hourlyYday,
+        borderColor: col,
+        borderWidth: 1.2,
+        borderDash: [5,4],
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        opacity: 0.5,
+      });
+    }
+    // J-2 — dashed, more transparent
+    if (z.hourlyJ2 && z.hourlyJ2.length) {
+      datasets.push({
+        label:`${z.code} J-2`,
+        data: z.hourlyJ2,
+        borderColor: col,
+        borderWidth: 1,
+        borderDash: [2,4],
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        opacity: 0.3,
+      });
+    }
   });
 
   mkChart('price-compare-canvas', {
@@ -32685,17 +32905,40 @@ function renderCompareChart() {
       responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
       plugins:{
-        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10} },
+        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10,
+          filter: item => !item.text.includes('J-1') && !item.text.includes('J-2') || item.text.includes('·')
+        }},
         tooltip:{
+          mode:'index', intersect:false,
           callbacks:{
-            title:c=>'Hour '+c[0].label,
-            label:c=>c.dataset.label+': '+c.raw.toFixed(2)+' €/MWh'
+            title: c => 'Hour ' + c[0].label,
+            label: c => {
+              const v = c.raw;
+              if (v == null) return null;
+              return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`;
+            }
           }
         },
         zoom:ZOOM_CFG,
         annotation:{
           annotations:{
-            nowline:{type:'line',xMin:curHr,xMax:curHr,borderColor:'rgba(255,255,255,.2)',borderWidth:1,borderDash:[3,3]}
+            nowline:{
+              type:'line',
+              xMin: curIdx,
+              xMax: curIdx,
+              borderColor:'rgba(255,220,100,.7)',
+              borderWidth:1.5,
+              borderDash:[4,3],
+              label:{
+                display:true,
+                content:'NOW',
+                position:'start',
+                color:'rgba(255,220,100,.9)',
+                font:{size:9,weight:'600'},
+                backgroundColor:'transparent',
+                padding:2
+              }
+            }
           }
         }
       },
@@ -32873,97 +33116,185 @@ buildTicker([
 // ════════════════════════════════════════════
 // GENERATION MIX
 // ════════════════════════════════════════════
+window._genMixType = 'bar';
+function setGenMixType(type, btn) {
+  window._genMixType = type;
+  document.querySelectorAll('#genmix-type-btns .day-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  loadGenMix();
+}
+
 async function loadGenMix() {
   window._genmixLoaded = true;
   const country = document.getElementById('genmix-country').value;
   document.getElementById('genmix-updated').textContent = 'Loading...';
 
-  // Use JSON data if available, else demo
   const demoMix = {
-    'FR': { nuclear:38000, solar:11100, wind:5500, hydro:4800, fossil:700, imports:3200, total:63300 },
-    'DE_LU': { nuclear:0, solar:18000, wind:22000, hydro:2500, fossil:12000, imports:1500, total:56000 },
-    'ES': { nuclear:7000, solar:12000, wind:15000, hydro:5000, fossil:4000, imports:800, total:43800 },
-    'BE': { nuclear:4500, solar:2500, wind:1800, hydro:100, fossil:2000, imports:1200, total:12100 },
-    'NL': { nuclear:500, solar:4000, wind:5000, hydro:0, fossil:8000, imports:500, total:18000 },
-    'PT': { nuclear:0, solar:3500, wind:4000, hydro:2500, fossil:1500, imports:200, total:11700 },
-    'IT_NORD': { nuclear:0, solar:7000, wind:1500, hydro:8000, fossil:9000, imports:2000, total:27500 },
+    'FR':     { nuclear:38000, solar:11100, wind:5500, hydro:4800, fossil:700,  imports:3200, total:63300 },
+    'DE_LU':  { nuclear:0,     solar:18000, wind:22000,hydro:2500, fossil:12000,imports:1500, total:56000 },
+    'ES':     { nuclear:7000,  solar:12000, wind:15000,hydro:5000, fossil:4000, imports:800,  total:43800 },
+    'BE':     { nuclear:4500,  solar:2500,  wind:1800, hydro:100,  fossil:2000, imports:1200, total:12100 },
+    'NL':     { nuclear:500,   solar:4000,  wind:5000, hydro:0,    fossil:8000, imports:500,  total:18000 },
+    'PT':     { nuclear:0,     solar:3500,  wind:4000, hydro:2500, fossil:1500, imports:200,  total:11700 },
+    'IT_NORD':{ nuclear:0,     solar:7000,  wind:1500, hydro:8000, fossil:9000, imports:2000, total:27500 },
   };
 
   const jsonMix = window._genmixData?.[country];
   const mix = jsonMix || demoMix[country] || demoMix['FR'];
-  if (!mix.total) mix.total = Object.values(mix).reduce((a,b)=>typeof b==='number'?a+b:a, 0);
+  if (!mix.total) mix.total = Object.values(mix).reduce((a,b) => typeof b==='number' ? a+b : a, 0);
   const total = mix.total;
 
   const fuels = [
-    { key:'nuclear', name:'Nuclear', color:'#a78bfa', class:'fuel-nuclear' },
-    { key:'solar',   name:'Solar',   color:'#f59e0b', class:'fuel-solar' },
-    { key:'wind',    name:'Wind',    color:'#60a5fa', class:'fuel-wind' },
-    { key:'hydro',   name:'Hydro',   color:'#34d399', class:'fuel-hydro' },
-    { key:'fossil',  name:'Fossil',  color:'#f87171', class:'fuel-fossil' },
-    { key:'imports', name:'Imports', color:'#94a3b8', class:'fuel-other' },
+    { key:'nuclear', name:'Nuclear',  color:'#3b82f6', type:'NUCLEAR',   isRen:false },
+    { key:'wind',    name:'Wind',     color:'#00d4a8', type:'RENEWABLE',  isRen:true  },
+    { key:'solar',   name:'Solar',    color:'#fbbf24', type:'RENEWABLE',  isRen:true  },
+    { key:'hydro',   name:'Hydro',    color:'#34d399', type:'RENEWABLE',  isRen:true  },
+    { key:'fossil',  name:'Fossil',   color:'#f87171', type:'FOSSIL',     isRen:false },
+    { key:'imports', name:'Imports',  color:'#94a3b8', type:'OTHER',      isRen:false },
   ];
 
+  // KPI fuel cards
   document.getElementById('fuel-grid').innerHTML = fuels.map(f => {
     const val = mix[f.key] || 0;
     const pct = Math.round(val / total * 100);
+    const cls = `fuel-${f.key}`;
     return `<div class="fuel-card">
       <div class="fuel-name">${f.name}</div>
       <div class="fuel-value" style="color:${f.color}">${(val/1000).toFixed(1)}<span style="font-size:13px;font-weight:400;color:var(--text2)"> GW</span></div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">${pct}% of total</div>
-      <div class="fuel-bar"><div class="fuel-bar-fill ${f.class}" style="width:${pct}%"></div></div>
+      <div class="fuel-bar"><div class="fuel-bar-fill" style="width:${pct}%;background:${f.color}"></div></div>
     </div>`;
   }).join('');
 
   document.getElementById('genmix-updated').textContent = jsonMix ? 'ENTSO-E A75 · JSON' : 'Demo data · ENTSO-E A75';
 
-  // Draw stacked bar chart
+  // Draw chart based on selected type
+  const type = window._genMixType || 'bar';
+  const showDA = document.getElementById('genmix-da-overlay')?.checked;
   const canvas = document.getElementById('genmix-canvas');
-  drawGenMixChart(canvas, mix, fuels);
+  drawGenMixChart(canvas, mix, fuels, type, showDA);
+
+  // Breakdown table
+  renderGenMixBreakdown(mix, fuels, total, jsonMix);
 }
 
-function drawGenMixChart(canvas, mix, fuels) {
+function drawGenMixChart(canvas, mix, fuels, type, showDA) {
   if (!canvas) return;
   const id = canvas.id || 'genmix-canvas';
   const hours = 24;
   const dayProfile = [.75,.7,.68,.66,.65,.68,.75,.85,.92,.95,.96,.97,.98,.97,.96,.97,.98,1,.98,.95,.92,.88,.84,.8];
   const labels = Array.from({length:hours}, (_,i) => i+'h');
 
+  if (type === 'donut') {
+    // Snapshot donut
+    const vals  = fuels.map(f => mix[f.key] || 0);
+    const colors= fuels.map(f => f.color);
+    mkChart(id, {
+      type: 'doughnut',
+      data: { labels: fuels.map(f=>f.name), datasets: [{ data:vals, backgroundColor:colors, borderWidth:1, borderColor:'var(--bg1)' }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:{ display:true, position:'right', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:8} },
+          tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${(ctx.raw/1000).toFixed(1)} GW (${Math.round(ctx.raw/(mix.total||1)*100)}%)` } },
+        }
+      }
+    });
+    return;
+  }
+
   const datasets = fuels.map(f => ({
-    label: f.name || f.key,
-    data: dayProfile.map(p => Math.round((mix[f.key]||0) * p * (0.9+Math.random()*.2))),
-    backgroundColor: f.color,
-    borderWidth: 0,
-    borderRadius: 2,
+    label: f.name,
+    data: dayProfile.map(p => Math.round((mix[f.key]||0) * p * (0.88 + Math.random()*.24))),
+    backgroundColor: type === 'area' ? f.color + '99' : f.color,
+    borderColor: f.color,
+    borderWidth: type === 'area' ? 1 : 0,
+    fill: type === 'area' ? true : undefined,
+    borderRadius: type === 'bar' ? 1 : 0,
+    tension: type === 'area' ? 0.3 : 0,
+    pointRadius: 0,
   }));
 
+  // DA Price overlay
+  if (showDA && window._pricesSorted) {
+    const frData = window._pricesSorted.find(z => z.code === (document.getElementById('genmix-country')?.value || 'FR'));
+    if (frData?.hourly?.length) {
+      datasets.push({
+        label: 'DA Price (€/MWh)',
+        data: frData.hourly,
+        type: 'line',
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0.3,
+        yAxisID: 'yPrice',
+      });
+    }
+  }
+
+  const chartType = type === 'area' ? 'line' : 'bar';
   mkChart(id, {
-    type: 'bar',
+    type: chartType,
     data: { labels, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
       plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          labels: { color: C_TX2, font:{size:10}, boxWidth:10, padding:12 }
-        },
-        tooltip: {
-          mode: 'index',
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + (ctx.raw/1000).toFixed(1) + ' GW'
-          }
-        },
+        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10} },
+        tooltip:{ mode:'index', callbacks:{ label: ctx => ctx.yAxisID === 'yPrice' ? ` ${ctx.raw?.toFixed(1)} €/MWh` : ` ${ctx.dataset.label}: ${(ctx.raw/1000).toFixed(1)} GW` } },
         zoom: ZOOM_CFG,
+        annotation:{ annotations:{ nowline:{ type:'line', xMin:new Date().getHours(), xMax:new Date().getHours(), borderColor:'rgba(255,220,100,.6)', borderWidth:1.5, borderDash:[4,3] } } }
       },
       scales: {
-        x: { stacked:true, grid: GRID, ticks:{color:C_TX3} },
-        y: { stacked:true, grid: GRID, ticks:{color:C_TX3, callback: v => (v/1000).toFixed(0)+'GW'} }
+        x: { stacked: type!=='area', grid:GRID, ticks:{color:C_TX3} },
+        y: { stacked: type!=='area', grid:GRID, ticks:{color:C_TX3, callback: v=>(v/1000).toFixed(0)+'GW'}, title:{display:true,text:'GW',color:C_TX3,font:{size:10}} },
+        ...(showDA && window._pricesSorted ? { yPrice:{ position:'right', grid:{display:false}, ticks:{color:'#f59e0b',font:{size:9},callback:v=>v+'€'}, title:{display:true,text:'€/MWh',color:'#f59e0b',font:{size:9}} } } : {})
       }
     }
   });
   setTimeout(() => { addFullscreen(id); addDownload(id, 'generation-mix'); }, 100);
 }
+
+function renderGenMixBreakdown(mix, fuels, total, isLive) {
+  const tbody = document.getElementById('genmix-breakdown-tbody');
+  if (!tbody) return;
+  const renKeys = ['wind','solar','hydro'];
+  const rows = fuels.map(f => {
+    const val = mix[f.key] || 0;
+    const pct = total ? (val/total*100) : 0;
+    const barColor = f.color;
+    const typeLabel = f.type === 'NUCLEAR' ? `<span style="background:rgba(59,130,246,.15);color:#3b82f6;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">NUCLEAR</span>`
+      : f.type === 'RENEWABLE' ? `<span style="background:rgba(16,185,129,.15);color:#10b981;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">RENEWABLE</span>`
+      : f.type === 'FOSSIL' ? `<span style="background:rgba(248,113,113,.15);color:#f87171;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">FOSSIL</span>`
+      : `<span style="background:rgba(148,163,184,.1);color:#94a3b8;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">OTHER</span>`;
+    const bar = `<div style="display:flex;align-items:center;gap:6px">
+      <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(pct,100).toFixed(1)}%;background:${barColor};border-radius:3px"></div>
+      </div>
+      <span style="font-size:10px;color:var(--tx3);width:32px;text-align:right">${pct.toFixed(0)}%</span>
+    </div>`;
+    return `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${barColor};margin-right:7px"></span>${f.name}</td>
+      <td style="font-weight:600;font-family:'JetBrains Mono',monospace">${(val/1000).toFixed(2)}</td>
+      <td>${bar}</td>
+      <td>${typeLabel}</td>
+    </tr>`;
+  });
+  // Totals row
+  const renTotal = fuels.filter(f=>renKeys.includes(f.key)).reduce((a,f)=>a+(mix[f.key]||0),0);
+  const renPct = total ? (renTotal/total*100).toFixed(0) : '0';
+  rows.push(`<tr style="border-top:1px solid var(--bd2);font-weight:600">
+    <td colspan="1" style="color:var(--tx2)">Total</td>
+    <td style="font-family:'JetBrains Mono',monospace">${(total/1000).toFixed(2)}</td>
+    <td><span style="font-size:10px;color:#10b981">🌱 ${renPct}% renewable</span></td>
+    <td></td>
+  </tr>`);
+  tbody.innerHTML = rows.join('');
+  const upd = document.getElementById('genmix-breakdown-updated');
+  if (upd) upd.textContent = isLive ? 'ENTSO-E A75 · live' : 'Demo data';
+}
+
 
 
 async function loadCrossBorder() {
@@ -33020,57 +33351,113 @@ async function loadCrossBorder() {
 // ════════════════════════════════════════════
 // LOAD
 // ════════════════════════════════════════════
+window._loadDayOffset = 0;
+function setLoadDay(offset, btn) {
+  window._loadDayOffset = offset;
+  document.querySelectorAll('#load-day-btns .day-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  loadLoad();
+}
+
 async function loadLoad() {
   window._loadLoaded = true;
   const country = (document.getElementById('load-country') || {}).value || 'FR';
+  const offset  = window._loadDayOffset || 0;
   const jsonLoad = window._loadData?.[country];
-  const profile = jsonLoad?.actual?.map(v => v/1000) ||
-    [42.1,40.8,39.5,38.2,37.8,38.5,41.2,47.5,52.8,55.1,56.3,57.0,56.8,56.2,56.5,57.8,60.2,63.0,62.1,59.8,57.2,54.8,51.2,47.1];
-  const curHr = new Date().getHours();
-  document.getElementById('load-fr-now').innerHTML = `${profile[curHr].toFixed(1)}<span class="kpi-unit">GW</span>`;
-  document.getElementById('load-fr-peak').innerHTML = `${Math.max(...profile).toFixed(1)}<span class="kpi-unit">GW</span>`;
-  document.getElementById('load-fr-chg').innerHTML = `<span class="down">▼ 3.2 GW vs yday</span>`;
-  document.getElementById('load-updated').textContent = jsonLoad ? 'ENTSO-E A65 · JSON' : 'Demo data · ENTSO-E';
 
-  // Chart.js load chart
-  const loadCanvas = document.getElementById('load-canvas');
-  if (loadCanvas) {
-    const labels = Array.from({length:profile.length}, (_,i) => i+'h');
-    const fcProfile = profile.map(v => v * (1.01 + Math.random()*.02));
-    const curHr2 = new Date().getHours();
-    mkChart('load-canvas', {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label:'Actual (GW)', data:profile, borderColor:C_UP, borderWidth:2,
-            backgroundColor: (ctx2) => {
-              const g=ctx2.chart.ctx.createLinearGradient(0,0,0,200);
-              g.addColorStop(0,rgba(C_UP,.15)); g.addColorStop(1,rgba(C_UP,0)); return g;
-            }, fill:true, pointRadius:0, tension:0.3 },
-          { label:'Forecast (GW)', data:fcProfile, borderColor:C_WIND, borderWidth:1,
-            borderDash:[4,4], pointRadius:0, tension:0, fill:false },
-        ]
+  // Demo profiles (GW)
+  const demoActual   = [35.2,33.8,32.5,31.4,30.8,31.5,34.2,39.5,44.8,47.1,48.3,49.0,48.8,48.2,48.5,49.8,52.2,55.0,54.1,51.8,49.2,46.8,43.2,39.1];
+  const demoForecast = demoActual.map(v => v * (1.01 + (Math.random()-.5)*.04));
+  const demoLastYear = demoActual.map(v => v * (1 + (Math.random()-.5)*.08));
+
+  const actual   = jsonLoad?.actual?.map(v => v/1000)   || demoActual;
+  const forecast = jsonLoad?.forecast?.map(v => v/1000) || demoForecast;
+  const lastYear = jsonLoad?.lastYear?.map(v => v/1000) || demoLastYear;
+  const curHr    = offset === 0 ? new Date().getHours() : 24;
+
+  // KPIs
+  const peakActual  = Math.max(...actual.filter(v=>v!=null));
+  const peakFC      = Math.max(...forecast.filter(v=>v!=null));
+  const avgActual   = actual.filter(v=>v!=null).reduce((a,b)=>a+b,0) / actual.filter(v=>v!=null).length;
+  const actualSoFar = actual.slice(0, curHr).filter(v=>v!=null);
+  const fcSoFar     = forecast.slice(0, curHr).filter(v=>v!=null);
+  const dev = actualSoFar.length && fcSoFar.length
+    ? ((actualSoFar.reduce((a,b)=>a+b,0)/actualSoFar.length - fcSoFar.reduce((a,b)=>a+b,0)/fcSoFar.length) /
+       (fcSoFar.reduce((a,b)=>a+b,0)/fcSoFar.length) * 100) : 0;
+  const lyAvg = lastYear.filter(v=>v!=null).reduce((a,b)=>a+b,0)/lastYear.filter(v=>v!=null).length;
+  const yoy = lyAvg ? (avgActual - lyAvg) / lyAvg * 100 : 0;
+
+  const countryNames = { FR:'France', DE_LU:'Germany', BE:'Belgium', NL:'Netherlands', ES:'Spain', GB:'Great Britain', IT_NORD:'Italy North' };
+  const cname = countryNames[country] || country;
+
+  const setKPI = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
+  setKPI('load-kpi-peak-actual', `${peakActual.toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-peak-actual-sub', `<span style="color:var(--tx3)">at ${actual.indexOf(peakActual)}h</span>`);
+  setKPI('load-kpi-peak-fc', `${peakFC.toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-peak-fc-sub', `<span style="color:var(--tx3)">at ${forecast.indexOf(peakFC)}h</span>`);
+  setKPI('load-kpi-avg', `${avgActual.toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-dev', `<span class="${dev>=0?'up':'down'}">${dev>=0?'+':''}${dev.toFixed(1)}<span class="kpi-unit">%</span></span>`);
+  setKPI('load-kpi-dev-sub', dev>=0 ? 'over-forecast' : 'under-forecast');
+  setKPI('load-kpi-yoy', `<span class="${yoy>=0?'up':'down'}">${yoy>=0?'+':''}${yoy.toFixed(1)}<span class="kpi-unit">%</span></span>`);
+  setKPI('load-kpi-yoy-sub', `vs ${new Date().getFullYear()-1} same day`);
+
+  const el_title = document.getElementById('load-chart-title');
+  if (el_title) el_title.textContent = `${cname} — Hourly Load (GW)${offset!==0?' ('+offset+'d)':''}`;
+  document.getElementById('load-updated').textContent = jsonLoad ? `ENTSO-E A65 · ${cname}` : `Demo data · ${cname}`;
+
+  const labels = Array.from({length:24}, (_,i) => i+'h');
+  const curHr2 = offset === 0 ? new Date().getHours() : 24;
+
+  mkChart('load-canvas', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Actual (GW)', data:actual, borderColor:C_UP, borderWidth:2,
+          backgroundColor: (ctx2) => { const g=ctx2.chart.ctx.createLinearGradient(0,0,0,200); g.addColorStop(0,rgba(C_UP,.15)); g.addColorStop(1,rgba(C_UP,0)); return g; },
+          fill:true, pointRadius:0, tension:0.3 },
+        { label:'DA Forecast (GW)', data:forecast, borderColor:C_WIND, borderWidth:1.5,
+          borderDash:[5,4], pointRadius:0, tension:0, fill:false },
+        { label:'Last Year Actual', data:lastYear, borderColor:'rgba(255,255,255,.2)', borderWidth:1,
+          borderDash:[2,3], pointRadius:0, tension:0.3, fill:false },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(1)} GW` } },
+        zoom: ZOOM_CFG,
+        annotation: { annotations: { nowLine:{ type:'line', xMin:curHr2, xMax:curHr2, borderColor:'rgba(255,220,100,.6)', borderWidth:1.5, borderDash:[4,3],
+          label:{ display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9}, backgroundColor:'transparent' }
+        } } }
       },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins: {
-          legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-          tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+ctx.raw.toFixed(1)+' GW' } },
-          zoom: ZOOM_CFG,
-          annotation: {
-            annotations: {
-              nowLine: { type:'line', xMin:curHr2, xMax:curHr2, borderColor:rgba(C_UP,.4), borderWidth:1, borderDash:[3,3] }
-            }
-          }
-        },
-        scales: {
-          x: { grid:GRID, ticks:{color:C_TX3} },
-          y: { grid:GRID, ticks:{color:C_TX3, callback: v=>v.toFixed(0)+' GW'} }
-        }
+      scales: {
+        x: { grid:GRID, ticks:{color:C_TX3} },
+        y: { grid:GRID, ticks:{color:C_TX3, callback: v=>v.toFixed(0)+' GW'} }
       }
-    });
-    setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas','load-demand'); }, 100);
+    }
+  });
+  setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas','load-demand'); }, 100);
+
+  // Hourly table
+  const tbody = document.getElementById('load-hourly-tbody');
+  if (tbody) {
+    tbody.innerHTML = labels.map((h, i) => {
+      const act = actual[i];
+      const fc  = forecast[i];
+      const dev2 = (act != null && fc != null && fc !== 0) ? ((act - fc) / fc * 100) : null;
+      const isPast = i <= curHr2;
+      return `<tr style="opacity:${isPast||offset!==0?1:.45}">
+        <td style="font-family:'JetBrains Mono',monospace">${h}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${act != null ? (act*1000).toLocaleString() : '–'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)">${fc != null ? (fc*1000).toLocaleString() : '–'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:${dev2==null?'var(--tx3)':dev2>=0?'var(--up)':'var(--down)'}">
+          ${dev2 != null ? (dev2>=0?'+':'')+dev2.toFixed(1)+'%' : '–'}
+        </td>
+      </tr>`;
+    }).join('');
   }
 }
 
@@ -35263,7 +35650,7 @@ async function renderHistSpread() {
           backgroundColor: spreads.map(v => v != null && v > 100 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
           borderWidth: 0,
         },
-        { label: '30D avg', data: roll30, type: 'line', borderColor: '#fff', borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3] },
+        { label: '30D avg', data: roll30, type: 'line', borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order:0 },
       ],
     },
     options: {
@@ -35326,6 +35713,141 @@ async function renderHistNeg() {
     { l: 'Max neg hours',  v: Math.max(...negH).toFixed(1), u: 'h' },
     { l: '% days with neg',v: data.length ? (daysNeg/data.length*100).toFixed(0) : '0', u: '%' },
   ]);
+
+  // ── KPIs
+  const now = new Date();
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const curYear  = `${now.getFullYear()}`;
+  const allData  = s.zones[zone] || [];
+
+  const monthH = allData.filter(d => d.d && d.d.startsWith(curMonth)).reduce((a,d) => a + (d.negH||0), 0);
+  const yearH  = allData.filter(d => d.d && d.d.startsWith(curYear)).reduce((a,d) => a + (d.negH||0), 0);
+
+  // worst month: group by YYYY-MM
+  const byMonth = {};
+  allData.forEach(d => {
+    if (!d.d) return;
+    const m = d.d.slice(0,7);
+    byMonth[m] = (byMonth[m] || 0) + (d.negH || 0);
+  });
+  let worstM = '--', worstH = 0;
+  Object.entries(byMonth).forEach(([m, h]) => { if (h > worstH) { worstH = h; worstM = m; }});
+
+  const el_m = document.getElementById('neg-kpi-month');
+  const el_y = document.getElementById('neg-kpi-year');
+  const el_w = document.getElementById('neg-kpi-worst');
+  const el_ms = document.getElementById('neg-kpi-month-sub');
+  const el_ws = document.getElementById('neg-kpi-worst-sub');
+  if (el_m) el_m.innerHTML = `${monthH.toFixed(1)}<span class="kpi-unit">h</span>`;
+  if (el_y) el_y.innerHTML = `${yearH.toFixed(1)}<span class="kpi-unit">h</span>`;
+  if (el_w) el_w.innerHTML = `${worstH.toFixed(1)}<span class="kpi-unit">h</span>`;
+  if (el_ms) el_ms.textContent = curMonth;
+  if (el_ws) el_ws.textContent = worstM;
+
+  // ── Calendar heatmap
+  renderNegCalendar(allData, zone);
+
+  // ── Monthly summary
+  renderNegMonthlySummary(byMonth);
+}
+
+function renderNegCalendar(allData, zone) {
+  const container = document.getElementById('neg-calendar-heatmap');
+  if (!container) return;
+
+  // Build lookup
+  const byDay = {};
+  allData.forEach(d => { if (d.d) byDay[d.d] = d.negH || 0; });
+
+  // Show last 12 months
+  const today = new Date();
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - 11);
+  start.setDate(1);
+
+  const months = [];
+  let cur = new Date(start);
+  while (cur <= today) {
+    const m = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`;
+    if (!months.length || months[months.length-1].key !== m) {
+      months.push({ key: m, label: cur.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}), days: [] });
+    }
+    const dStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+    months[months.length-1].days.push({ d: dStr, h: byDay[dStr] || 0, dow: cur.getDay() });
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  const cellSize = 13, gap = 2;
+  const DAYS = ['M','T','W','T','F','S','S'];
+
+  let html = `<div style="display:flex;gap:6px;align-items:flex-start">`;
+  html += `<div style="display:flex;flex-direction:column;gap:${gap}px;margin-top:20px">`;
+  DAYS.forEach(d => { html += `<div style="width:${cellSize}px;height:${cellSize}px;font-size:9px;color:var(--tx3);line-height:${cellSize}px;text-align:center">${d}</div>`; });
+  html += `</div>`;
+
+  months.forEach(month => {
+    html += `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">`;
+    html += `<div style="font-size:9px;color:var(--tx3);margin-bottom:3px;white-space:nowrap">${month.label}</div>`;
+
+    // Grid: 7 rows (Mon–Sun), n columns
+    const firstDow = month.days[0].dow; // 0=Sun
+    const adjustedFirst = (firstDow === 0 ? 6 : firstDow - 1); // Mon=0
+    const grid = Array(7).fill(null).map(() => []);
+    const totalWeeks = Math.ceil((adjustedFirst + month.days.length) / 7);
+    month.days.forEach((day, i) => {
+      const pos = adjustedFirst + i;
+      const col = Math.floor(pos / 7);
+      const row = pos % 7;
+      if (!grid[row]) grid[row] = [];
+      grid[row][col] = day;
+    });
+
+    html += `<div style="display:grid;grid-template-columns:repeat(${totalWeeks},${cellSize}px);grid-template-rows:repeat(7,${cellSize}px);gap:${gap}px">`;
+    for (let row = 0; row < 7; row++) {
+      for (let col = 0; col < totalWeeks; col++) {
+        const day = grid[row] && grid[row][col];
+        if (!day) {
+          html += `<div style="width:${cellSize}px;height:${cellSize}px"></div>`;
+        } else {
+          const h = day.h;
+          const bg = h > 16 ? '#7f1d1d' : h > 12 ? '#b91c1c' : h > 8 ? '#ef4444' : h > 4 ? '#f97316' : h > 0 ? '#fbbf24' : h === 0 && day.d <= new Date().toISOString().slice(0,10) ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)';
+          html += `<div title="${day.d}: ${h.toFixed(1)}h neg" style="width:${cellSize}px;height:${cellSize}px;background:${bg};border-radius:2px;cursor:default"></div>`;
+        }
+      }
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  html += `<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--tx3)">
+    <span>0h</span>
+    <div style="width:12px;height:12px;background:rgba(16,185,129,0.2);border-radius:2px"></div>
+    <div style="width:12px;height:12px;background:#fbbf24;border-radius:2px"></div>
+    <span>1–4h</span>
+    <div style="width:12px;height:12px;background:#f97316;border-radius:2px"></div>
+    <span>4–8h</span>
+    <div style="width:12px;height:12px;background:#ef4444;border-radius:2px"></div>
+    <span>8–12h</span>
+    <div style="width:12px;height:12px;background:#b91c1c;border-radius:2px"></div>
+    <span>12–16h</span>
+    <div style="width:12px;height:12px;background:#7f1d1d;border-radius:2px"></div>
+    <span>>16h</span>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function renderNegMonthlySummary(byMonth) {
+  const container = document.getElementById('neg-monthly-summary');
+  if (!container) return;
+  const sorted = Object.entries(byMonth).sort(([a],[b]) => a.localeCompare(b)).slice(-24);
+  container.innerHTML = sorted.map(([m, h]) => {
+    const col = h > 40 ? '#ef4444' : h > 20 ? '#f97316' : h > 5 ? '#fbbf24' : 'rgba(16,185,129,0.7)';
+    return `<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;text-align:center">
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">${m}</div>
+      <div style="font-size:16px;font-weight:700;color:${col}">${h.toFixed(0)}<span style="font-size:10px;font-weight:400;color:var(--tx3)">h</span></div>
+    </div>`;
+  }).join('');
 }
 
 async function renderHistNeighbours() {
@@ -35654,7 +36176,7 @@ async function renderHistCapture(tech) {
     data: {
       labels,
       datasets: [
-        { label:'365d rolling', data: roll365, borderColor:'#000',    borderWidth:2.5, pointRadius:0, tension:0, spanGaps:true, order:1 },
+        { label:'365d rolling', data: roll365, borderColor:'#f59e0b', borderWidth:2.5, pointRadius:0, tension:0, spanGaps:true, order:1 },
         { label:'90d rolling',  data: roll90,  borderColor: color,    borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[6,3], order:2 },
         { label:'30d rolling',  data: roll30,  borderColor:'rgba(255,255,255,0.3)', borderWidth:1, pointRadius:0, tension:0, spanGaps:true, borderDash:[2,2], order:3 },
         {
