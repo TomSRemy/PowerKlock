@@ -1105,28 +1105,7 @@
           <div class="page-subtitle">32 ENTSO-E bidding zones · Today's settlement prices</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <!-- DATE PICKER -->
-          <div class="date-picker-wrap" id="date-picker-wrap">
-            <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span id="date-picker-label">Today</span>
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="date-picker-popup" id="date-picker-popup">
-              <div class="dp-header">
-                <button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button>
-                <span class="dp-month-label" id="dp-month-label"></span>
-                <button class="dp-nav" onclick="dpChangeMonth(1)">›</button>
-              </div>
-              <div class="dp-weekdays">
-                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
-              </div>
-              <div class="dp-grid" id="dp-grid"></div>
-              <div class="dp-footer">
-                <button class="dp-today-btn" onclick="dpSelectToday()">Today</button>
-              </div>
-            </div>
-          </div>
+          <!-- DATE PICKER — moved to table header -->
           <span class="source-badge">ENTSO-E Transparency</span>
           <span class="updated-badge" id="prices-updated">Loading...</span>
         </div>
@@ -1178,34 +1157,55 @@
 
       <!-- Prices Table -->
       <div class="table-wrap" id="prices-table-wrap">
-        <div class="table-header">
-          <span class="table-title">All Bidding Zones</span>
+        <div class="table-header" style="flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span class="table-title">All Bidding Zones</span>
+            <span id="prices-date-label" style="font-size:13px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Day-Ahead prices · loading...</span>
+          </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="text" id="prices-filter-input" placeholder="Filter zones…"
-              style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--tx);width:140px;outline:none"
-              oninput="filterPricesTable(this.value)">
-            <span id="prices-date-label" style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">Day-Ahead prices · loading...</span>
+            <!-- Zone filter chips -->
+            <div id="zone-filter-chips" style="display:flex;flex-wrap:wrap;gap:4px;max-width:420px"></div>
+            <button onclick="clearZoneFilter()" id="zone-filter-all" style="padding:3px 10px;border-radius:14px;font-size:10px;font-weight:600;cursor:pointer;border:1.5px solid var(--acc);background:rgba(0,212,168,.15);color:var(--acc)">All</button>
+            <!-- Date picker -->
+            <div class="date-picker-wrap" id="date-picker-wrap-table">
+              <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:11px;padding:4px 10px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span id="date-picker-label">Today</span>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="date-picker-popup" id="date-picker-popup">
+                <div class="dp-header">
+                  <button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button>
+                  <span class="dp-month-label" id="dp-month-label"></span>
+                  <button class="dp-nav" onclick="dpChangeMonth(1)">›</button>
+                </div>
+                <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+                <div class="dp-grid" id="dp-grid"></div>
+                <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
+              </div>
+            </div>
           </div>
         </div>
         <table>
           <thead>
             <tr>
               <th onclick="sortPricesTable('code')" style="cursor:pointer;user-select:none">Code <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('country')" style="cursor:pointer;user-select:none">CC <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('name')" style="cursor:pointer;user-select:none">Zone <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('country')" style="cursor:pointer;user-select:none">Zone <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Avg €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none" title="Average over peak hours 08h–20h">Peak avg <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none" title="Average over off-peak hours 00h–08h / 20h–24h">Off-peak avg <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none" title="Avg over 08h–20h">Peak avg <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none" title="Avg over 00h–08h / 20h–24h">Off-pk avg <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none">vs Yday <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none">Min <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none">Max <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('negHrs')" style="cursor:pointer;user-select:none">Neg Hrs <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('renPct')" style="cursor:pointer;user-select:none">% Ren <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('domFuel')" style="cursor:pointer;user-select:none">Dom. Fuel <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('spark')" style="cursor:pointer;user-select:none">Spark <span style="opacity:.4">↕</span></th>
               <th style="text-align:left;padding-left:16px">Shape</th>
             </tr>
           </thead>
           <tbody id="prices-tbody">
-            <tr class="loading-row"><td colspan="12"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
+            <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
           </tbody>
         </table>
         <div class="status-bar" style="padding:10px 16px">
@@ -32743,20 +32743,76 @@ function renderPricesTable(data) {
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + dateStr + ' · ENTSO-E';
   const sectionDate = document.getElementById('prices-section-date');
-  if (sectionDate) sectionDate.textContent = 'Power Day-Ahead prices · ' + dateStr + ' · ENTSO-E Transparency';
+  if (sectionDate) sectionDate.textContent = 'Day-Ahead prices · ' + dateStr + ' · ENTSO-E Transparency';
   const sorted = [...data].sort((a,b) => b.today - a.today);
   window._pricesSorted = sorted;
   window._pricesSortDir = window._pricesSortDir || {};
   window._compareZones = window._compareZones || new Set(['FR']);
   renderPricesTableBody();
+  buildZoneFilterDropdown();
   renderCompareChart();
   buildCompareChips();
+}
+
+function buildZoneFilterDropdown() {
+  const container = document.getElementById('zone-filter-chips');
+  if (!container || !window._pricesSorted) return;
+  const active = window._pricesZoneFilter;
+  container.innerHTML = window._pricesSorted
+    .filter(z => z.today != null && !isNaN(z.today))
+    .map(z => {
+      const isOn = !active || active.has(z.code);
+      return `<button onclick="toggleZoneChip('${z.code}')" id="zchip-${z.code}" style="
+        padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;transition:all .12s;white-space:nowrap;
+        border:1.5px solid ${isOn ? 'rgba(0,212,168,.5)' : 'rgba(255,255,255,.1)'};
+        background:${isOn ? 'rgba(0,212,168,.12)' : 'transparent'};
+        color:${isOn ? '#00d4a8' : 'rgba(255,255,255,.25)'};
+      ">${z.flag||''} ${z.code}</button>`;
+    }).join('');
+  // All button state
+  const allBtn = document.getElementById('zone-filter-all');
+  if (allBtn) {
+    const anyFiltered = active && active.size < window._pricesSorted.length;
+    allBtn.style.background = anyFiltered ? 'transparent' : 'rgba(0,212,168,.15)';
+    allBtn.style.color = anyFiltered ? 'rgba(255,255,255,.3)' : 'var(--acc)';
+    allBtn.style.borderColor = anyFiltered ? 'rgba(255,255,255,.1)' : 'var(--acc)';
+  }
+}
+
+function toggleZoneChip(code) {
+  if (!window._pricesZoneFilter) {
+    // Start filtering: all on except this one becomes: only this one
+    // Actually: first click → show only that zone
+    window._pricesZoneFilter = new Set([code]);
+  } else if (window._pricesZoneFilter.has(code) && window._pricesZoneFilter.size === 1) {
+    // Last one — reset to all
+    window._pricesZoneFilter = null;
+  } else if (window._pricesZoneFilter.has(code)) {
+    window._pricesZoneFilter.delete(code);
+  } else {
+    window._pricesZoneFilter.add(code);
+  }
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
+}
+
+function filterPricesZones(sel) {
+  // legacy shim
+  const vals = Array.from(sel.selectedOptions||[]).map(o=>o.value);
+  window._pricesZoneFilter = vals.length ? new Set(vals) : null;
+  renderPricesTableBody();
+}
+
+function clearZoneFilter() {
+  window._pricesZoneFilter = null;
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
 }
 
 function renderPricesTableBody() {
   const sorted = window._pricesSorted;
   if (!sorted) return;
-  const filterText = window._pricesFilterText || '';
+  const zoneFilter = window._pricesZoneFilter;
   const tbody = document.getElementById('prices-tbody');
   if (!tbody) return;
 
@@ -32767,49 +32823,87 @@ function renderPricesTableBody() {
     return `<span style="color:var(--warn);font-weight:600">${hours}h${String(mins).padStart(2,'0')}</span>`;
   };
 
+  // Fuel config for domFuel
+  const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
+  const fuelMeta = {
+    nuclear: {emoji:'⚛', label:'Nuclear',  color:'#3b82f6'},
+    wind:    {emoji:'🌬', label:'Wind',     color:'#00d4a8'},
+    solar:   {emoji:'☀', label:'Solar',    color:'#fbbf24'},
+    hydro:   {emoji:'💧', label:'Hydro',    color:'#34d399'},
+    biomass: {emoji:'🌿', label:'Biomass',  color:'#6ee7b7'},
+    fossil:  {emoji:'🔥', label:'Fossil',   color:'#f87171'},
+  };
+
   const rows = sorted.map((z, i) => {
     if (z.today == null || isNaN(z.today)) return {html:'', z, i};
-    // Filter
-    const meta = ZONE_META[z.code] || {cc:z.code, country:z.name||z.code};
-    const searchStr = [z.code, meta.cc, meta.country, z.name||''].join(' ').toLowerCase();
-    if (filterText && !searchStr.includes(filterText)) return {html:'', z, i};
+    if (zoneFilter && !zoneFilter.has(z.code)) return {html:'', z, i};
 
+    const meta = ZONE_META[z.code] || {cc:z.code, country:z.name||z.code};
     const priceColor = z.today < 0 ? '#f05060' : z.today > 150 ? '#f59e0b' : z.today < 20 ? '#10b981' : 'var(--tx)';
     const vsColor = z.vsYday == null ? 'var(--tx3)' : z.vsYday >= 0 ? 'var(--dn)' : 'var(--up)';
     const vsText  = z.vsYday == null ? '–' : `${z.vsYday >= 0 ? '▲' : '▼'} ${Math.abs(z.vsYday).toFixed(1)}`;
     const sparkColor = z.spark == null ? 'var(--tx3)' : z.spark >= 0 ? '#10b981' : '#f05060';
     const sparkText  = z.spark == null ? '–' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
 
-    // Peak / Off-Peak computed inline
+    // Peak / Off-Peak
     let peakStr = '–', offPeakStr = '–';
     if (z.hourly && z.hourly.length >= 24) {
-      const h = z.hourly; const nph = Math.round(h.length / 24);
-      const pkV = [], opV = [];
-      h.forEach((v, idx) => { if (v == null) return; const hr = Math.floor(idx/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
+      const h = z.hourly, nph = Math.round(h.length/24);
+      const pkV=[], opV=[];
+      h.forEach((v,idx)=>{ if(v==null)return; const hr=Math.floor(idx/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
       if (pkV.length) peakStr = (pkV.reduce((a,b)=>a+b,0)/pkV.length).toFixed(1);
       if (opV.length) offPeakStr = (opV.reduce((a,b)=>a+b,0)/opV.length).toFixed(1);
     }
 
-    // Smooth SVG sparkline (bezier, not polyline)
-    const sparkHourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min||0, z.max||z.today*1.5);
-    const sparkSvg = makeSVGSparklineSmooth(sparkHourly.filter(v=>v!=null), z.today >= 0);
+    // % Renewables + Dominant fuel from GM_DEMO
+    const cc = (ZONE_META[z.code]||{}).cc || z.code;
+    const gmKey = z.code in GM_DEMO ? z.code : (cc in GM_DEMO ? cc : null);
+    let renPctStr = '–', domFuelHtml = '–';
+    if (gmKey) {
+      const mix = GM_DEMO[gmKey];
+      const total = mix.total || 1;
+      const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
+      const renP  = Math.round(renMW/total*100);
+      const renColor = renP >= 60 ? '#10b981' : renP >= 40 ? '#f59e0b' : '#f87171';
+      renPctStr = `<span style="color:${renColor};font-weight:600">${renP}%</span>`;
+      // Dominant fuel
+      let domKey = fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
+      const fm = fuelMeta[domKey] || {emoji:'', label:domKey, color:'var(--tx2)'};
+      domFuelHtml = `<span style="color:${fm.color};font-size:11px">${fm.emoji} ${fm.label}</span>`;
+    }
 
-    const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" data-search="${searchStr}" title="Expand 15-min chart">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)">${z.code}</td>
-      <td style="font-size:11px;color:var(--tx2)">${z.flag || ''} ${meta.cc}</td>
-      <td style="font-size:11px;color:var(--tx)">${meta.country}</td>
+    // Smooth sparkline: downsample to 24pts first for clean shape
+    let rawHourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min||0, z.max||z.today*1.5);
+    rawHourly = rawHourly.filter(v=>v!=null);
+    // Downsample to 24 if 96pts
+    let h24spark = rawHourly;
+    if (rawHourly.length > 24) {
+      const step = rawHourly.length / 24;
+      h24spark = Array.from({length:24}, (_,i) => {
+        const start = Math.floor(i*step), end = Math.floor((i+1)*step);
+        const slice = rawHourly.slice(start, end).filter(v=>v!=null);
+        return slice.length ? slice.reduce((a,b)=>a+b,0)/slice.length : null;
+      }).filter(v=>v!=null);
+    }
+    const sparkSvg = makeSVGSparklineSmooth(h24spark, z.today >= 0);
+
+    const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)">${z.flag||''} ${z.code}</td>
+      <td style="font-size:11px;color:var(--tx2)">${meta.country}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${z.today.toFixed(1)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 08h–20h">${peakStr}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)" title="Avg over 00h–08h / 20h–24h">${offPeakStr}</td>
       <td style="color:${vsColor}">${vsText}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min != null ? z.min.toFixed(1) : '–'}<span style="color:var(--tx3);font-size:9px"> @${z.minHr??''}h</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max != null ? z.max.toFixed(1) : '–'}<span style="color:var(--tx3);font-size:9px"> @${z.maxHr??''}h</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?z.min.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${z.minHr??''}h</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?z.max.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${z.maxHr??''}h</span></td>
       <td>${negFmt(z.negHrs)}</td>
+      <td>${renPctStr}</td>
+      <td>${domFuelHtml}</td>
       <td style="color:${sparkColor};font-family:'JetBrains Mono',monospace">${sparkText}</td>
       <td class="sparkline-cell">${sparkSvg}</td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
-      <td colspan="12" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
+      <td colspan="13" style="padding:0;background:var(--bg3);border-bottom:2px solid var(--bd2)">
         <div style="padding:12px 16px 16px" id="row-detail-inner-${i}"></div>
       </td>
     </tr>`;
@@ -32819,7 +32913,7 @@ function renderPricesTableBody() {
   tbody.innerHTML = rows.map(r=>r.html).join('');
 }
 
-// Smooth bezier SVG sparkline
+// Smooth sparkline using Catmull-Rom → cubic Bezier conversion
 function makeSVGSparklineSmooth(data, positive) {
   if (!data || data.length < 2) return '';
   const w=80, h=28, pad=2;
@@ -32829,18 +32923,30 @@ function makeSVGSparklineSmooth(data, positive) {
     x: pad + (i/(data.length-1))*(w-pad*2),
     y: h-pad-((v-mn)/rng)*(h-pad*2)
   }));
-  // Build smooth path using bezier curves
-  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-  for (let i=1; i<pts.length; i++) {
-    const p0=pts[i-1], p1=pts[i];
-    const cpx=(p0.x+p1.x)/2;
-    d += ` C${cpx.toFixed(1)},${p0.y.toFixed(1)} ${cpx.toFixed(1)},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+  // Catmull-Rom to cubic Bezier (alpha=0.5, tension=0.5)
+  function crToBez(p0, p1, p2, p3) {
+    const t = 0.5;
+    const cp1x = p1.x + (p2.x - p0.x) * t / 2;
+    const cp1y = p1.y + (p2.y - p0.y) * t / 2;
+    const cp2x = p2.x - (p3.x - p1.x) * t / 2;
+    const cp2y = p2.y - (p3.y - p1.y) * t / 2;
+    return { cp1x, cp1y, cp2x, cp2y };
   }
-  // Area path
-  const areaD = d + ` L${pts[pts.length-1].x.toFixed(1)},${h-pad} L${pad},${h-pad} Z`;
-  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block">
-    <path d="${areaD}" fill="${col}" fill-opacity="0.12"/>
-    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i-1)];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[Math.min(pts.length-1, i+2)];
+    const {cp1x,cp1y,cp2x,cp2y} = crToBez(p0,p1,p2,p3);
+    d += ` C${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+  }
+  const last = pts[pts.length-1];
+  const areaD = d + ` L${last.x.toFixed(2)},${(h-pad).toFixed(2)} L${pad},${(h-pad).toFixed(2)} Z`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">
+    <defs><linearGradient id="sg${positive?'p':'n'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity="0.25"/><stop offset="100%" stop-color="${col}" stop-opacity="0.02"/></linearGradient></defs>
+    <path d="${areaD}" fill="url(#sg${positive?'p':'n'})" stroke="none"/>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
   </svg>`;
 }
 
@@ -32868,6 +32974,20 @@ function sortPricesTable(key) {
     h.forEach((v,i)=>{ if(v==null)return; const hr=Math.floor(i/nph); if(hr<8||hr>=20)opV.push(v); });
     return opV.length ? opV.reduce((a,b)=>a+b,0)/opV.length : z.today;
   };
+  const calcRenPct = z => {
+    const gmKey = z.code in GM_DEMO ? z.code : null;
+    if (!gmKey) return -1;
+    const mix = GM_DEMO[gmKey];
+    const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
+    return mix.total ? renMW/mix.total*100 : -1;
+  };
+  const calcDomFuel = z => {
+    const gmKey = z.code in GM_DEMO ? z.code : null;
+    if (!gmKey) return 'zz';
+    const mix = GM_DEMO[gmKey];
+    const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
+    return fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
+  };
 
   const val = z => {
     const meta = ZONE_META[z.code]||{cc:z.code,country:z.name||''};
@@ -32881,6 +33001,8 @@ function sortPricesTable(key) {
     if (key==='minVal')  return z.min ?? -Infinity;
     if (key==='maxVal')  return z.max ?? -Infinity;
     if (key==='negHrs')  return z.negHrs ?? 0;
+    if (key==='renPct')  return calcRenPct(z);
+    if (key==='domFuel') return calcDomFuel(z);
     if (key==='spark')   return z.spark ?? -Infinity;
     return 0;
   };
