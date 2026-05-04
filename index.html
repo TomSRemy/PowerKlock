@@ -794,9 +794,15 @@
   }
   .hist-section-header.open .hist-section-chevron { transform: rotate(180deg); }
   .hist-section-body {
-    padding: 16px; display: none;
+    padding: 0 16px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, padding 0.25s ease;
   }
-  .hist-section-body.open { display: block; }
+  .hist-section-body.open {
+    max-height: 2000px;
+    padding: 16px;
+  }
   .hist-zone-select {
     background: var(--bg3); border: 1px solid var(--border2);
     color: var(--text2); font-size: 11px; padding: 4px 8px;
@@ -34726,22 +34732,29 @@ function toggleHistSection(id) {
   header.classList.toggle('open', opening);
   body.classList.toggle('open', opening);
   if (opening) {
-    // Trigger chart load
     const renders = {
-      'spot-history':   () => renderHistSpot(),
-      'spread-history': () => renderHistSpread(),
+      'spot-history':     () => renderHistSpot(),
+      'hist-da':          () => renderHistSpot(),
+      'spread-history':   () => renderHistSpread(),
+      'hist-neg':         () => renderHistNeg(),
       'neghours-history': () => renderHistNeg(),
-      'fr-neighbours':  () => renderHistNeighbours(),
-      'distribution':   () => renderHistDist(),
-      'ren-trend':      () => renderHistRenTrend(),
-      'ren-stack':      () => renderHistRenStack(),
-      'imb-history':    () => renderHistImb(),
-      'fcr-history':    () => renderHistFCR(),
-      'eua-history':    () => renderHistEUA(),
-      'capture-solar':  () => renderHistCapture('solar'),
-      'capture-wind':   () => renderHistCapture('wind'),
+      'fr-neighbours':    () => renderHistNeighbours(),
+      'hist-dist':        () => renderHistDist(),
+      'distribution':     () => renderHistDist(),
+      'ren-trend':        () => renderHistRenTrend(),
+      'ren-stack':        () => renderHistRenStack(),
+      'imb-history':      () => renderHistImb(),
+      'fcr-history':      () => renderHistFCR(),
+      'eua-history':      () => renderHistEUA(),
+      'capture-solar':    () => renderHistCapture('solar'),
+      'capture-wind':     () => renderHistCapture('wind'),
+      'multicc':          () => renderCompareChart(),
+      'prices-main':      () => {},
     };
-    if (renders[id]) renders[id]();
+    // Wait for CSS transition to complete before rendering chart
+    setTimeout(() => {
+      if (renders[id]) renders[id]();
+    }, 50);
   }
 }
 
@@ -34814,6 +34827,17 @@ function mkHistChart(canvasId, config) {
   }
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
+  // Remove any "no data" message from previous attempt
+  const wrap = canvas.parentNode;
+  const old = wrap.querySelector('.no-data-msg');
+  if (old) old.remove();
+  canvas.style.display = '';
+  // Force responsive sizing
+  canvas.style.width = '100%';
+  if (!canvas.style.height) canvas.style.height = '220px';
+  config.options = config.options || {};
+  config.options.responsive = true;
+  config.options.maintainAspectRatio = false;
   HIST.charts[canvasId] = new Chart(canvas, config);
 }
 
