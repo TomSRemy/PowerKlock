@@ -34841,7 +34841,13 @@ function mkHistChart(canvasId, config) {
   HIST.charts[canvasId] = new Chart(canvas, config);
 }
 
-// (GRID, C_ACC, C_WARN, C_DN, C_UP, TX3 reuse globals from main app)
+// Colour aliases (redefined here since const doesn't cross script blocks)
+var _HIST_TX3  = '#4a6280';
+var _HIST_ACC  = '#00d4a8';
+var _HIST_WARN = '#e8a020';
+var _HIST_DN   = '#ef4444';
+var _HIST_UP   = '#22c55e';
+var _HIST_GRID = 'rgba(255,255,255,0.04)';
 
 function baseOptions(yLabel) {
   return {
@@ -34849,11 +34855,11 @@ function baseOptions(yLabel) {
     animation: { duration: 200 },
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { color: GRID.color }, ticks: { color: TX3, font: { size: 10 }, maxTicksLimit: 10 } },
+      x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 10 } },
       y: {
-        grid: { color: GRID.color },
-        ticks: { color: TX3, font: { size: 10 } },
-        title: yLabel ? { display: true, text: yLabel, color: TX3, font: { size: 10 } } : undefined,
+        grid: { color: _HIST_GRID },
+        ticks: { color: _HIST_TX3, font: { size: 10 } },
+        title: yLabel ? { display: true, text: yLabel, color: _HIST_TX3, font: { size: 10 } } : undefined,
       },
     },
   };
@@ -34915,13 +34921,13 @@ async function renderHistSpot() {
       labels,
       datasets: [
         { label: 'Daily avg', data: avgs, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true },
-        { label: '7D avg',    data: roll7,  borderColor: C_ACC,  borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true },
-        { label: '30D avg',   data: roll30, borderColor: C_WARN, borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, borderDash: [4,3] },
+        { label: '7D avg',    data: roll7,  borderColor: _HIST_ACC,  borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN, borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, borderDash: [4,3] },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
     },
   });
 
@@ -34965,7 +34971,7 @@ async function renderHistSpread() {
     },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
     },
   });
 
@@ -35046,7 +35052,7 @@ async function renderHistNeighbours() {
     data: { labels: allDates, datasets },
     options: {
       ...baseOptions('€/MWh'),
-      plugins: { legend: { display: true, labels: { color: TX3, font: { size: 10 }, boxWidth: 12 } } },
+      plugins: { legend: { display: true, labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12 } } },
     },
   });
 }
@@ -35092,8 +35098,8 @@ async function renderHistDist() {
         legend: { display: false },
         annotation: {
           annotations: {
-            mean:   { type:'line', scaleID:'x', value: ((mean-(-200))/20).toFixed(0),   borderColor: C_ACC,  borderWidth:1.5, label:{enabled:true, content:'Mean '   +mean.toFixed(1)+'€', position:'start'} },
-            median: { type:'line', scaleID:'x', value: ((median-(-200))/20).toFixed(0), borderColor: C_WARN, borderWidth:1.5, borderDash:[4,3], label:{enabled:true, content:'Median '+median.toFixed(1)+'€', position:'end'} },
+            mean:   { type:'line', scaleID:'x', value: ((mean-(-200))/20).toFixed(0),   borderColor: _HIST_ACC,  borderWidth:1.5, label:{enabled:true, content:'Mean '   +mean.toFixed(1)+'€', position:'start'} },
+            median: { type:'line', scaleID:'x', value: ((median-(-200))/20).toFixed(0), borderColor: _HIST_WARN, borderWidth:1.5, borderDash:[4,3], label:{enabled:true, content:'Median '+median.toFixed(1)+'€', position:'end'} },
           }
         }
       },
@@ -35209,12 +35215,12 @@ async function renderHistRenTrend() {
         { label:'Solar',       data: solar, borderColor:'rgba(251,191,36,0.4)',  borderWidth:1, pointRadius:0, tension:0, spanGaps:true },
         { label:'Solar 7D',    data: sr7,   borderColor:'#fbbf24', borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[4,3] },
         { label:'Wind',        data: wind,  borderColor:'rgba(0,212,168,0.4)',   borderWidth:1, pointRadius:0, tension:0, spanGaps:true },
-        { label:'Wind 7D',     data: wr7,   borderColor: C_ACC,  borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[4,3] },
+        { label:'Wind 7D',     data: wr7,   borderColor: _HIST_ACC,  borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[4,3] },
       ],
     },
     options: {
       ...baseOptions('MW'),
-      plugins: { legend: { display:true, labels:{ color:TX3, font:{size:10}, boxWidth:12 } } },
+      plugins: { legend: { display:true, labels:{ color:_HIST_TX3, font:{size:10}, boxWidth:12 } } },
     },
   });
 }
@@ -35243,16 +35249,16 @@ async function renderHistRenStack() {
     data: {
       labels,
       datasets: [
-        { label:'Wind',  data: windData,  borderColor: C_ACC,   backgroundColor:'rgba(0,212,168,0.3)',  borderWidth:1.5, pointRadius:0, tension:0, fill:true  },
+        { label:'Wind',  data: windData,  borderColor: _HIST_ACC,   backgroundColor:'rgba(0,212,168,0.3)',  borderWidth:1.5, pointRadius:0, tension:0, fill:true  },
         { label:'Solar', data: solarData, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.4)', borderWidth:1.5, pointRadius:0, tension:0, fill:true  },
       ],
     },
     options: {
       ...baseOptions('MW'),
-      plugins: { legend: { display:true, labels:{ color:TX3, font:{size:10}, boxWidth:12 } } },
+      plugins: { legend: { display:true, labels:{ color:_HIST_TX3, font:{size:10}, boxWidth:12 } } },
       scales: {
-        x: { grid:{color:GRID.color}, ticks:{ color:TX3, font:{size:9}, maxTicksLimit:12 } },
-        y: { grid:{color:GRID.color}, ticks:{ color:TX3, font:{size:10} }, stacked: false },
+        x: { grid:{color:_HIST_GRID}, ticks:{ color:_HIST_TX3, font:{size:9}, maxTicksLimit:12 } },
+        y: { grid:{color:_HIST_GRID}, ticks:{ color:_HIST_TX3, font:{size:10} }, stacked: false },
       },
     },
   });
@@ -35264,7 +35270,7 @@ async function renderHistImb() {
   if (!c) return;
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.fillStyle = TX3;
+  ctx.fillStyle = _HIST_TX3;
   ctx.font = '11px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('Imbalance historical data requires RTE eCO2mix API integration.', c.width/2, c.height/2 - 10);
@@ -35277,7 +35283,7 @@ async function renderHistFCR() {
   if (!c) return;
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);
-  ctx.fillStyle = TX3;
+  ctx.fillStyle = _HIST_TX3;
   ctx.font = '11px Inter';
   ctx.textAlign = 'center';
   ctx.fillText('FCR historical requires ENTSO-E A96 (Contracted Reserves) data.', c.width/2, c.height/2 - 10);
@@ -35291,7 +35297,7 @@ async function renderHistEUA() {
     if (!c) return;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = TX3;
+    ctx.fillStyle = _HIST_TX3;
     ctx.font = '11px Inter';
     ctx.textAlign = 'center';
     ctx.fillText('EUA historical data source: ICE/EEX.', c.width/2, c.height/2 - 10);
@@ -35320,7 +35326,7 @@ async function renderHistCapture(tech) {
     if (!c) return;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = TX3;
+    ctx.fillStyle = _HIST_TX3;
     ctx.font = '11px Inter';
     ctx.textAlign = 'center';
     ctx.fillText('No generation data yet.', c.width/2, c.height/2 - 12);
@@ -35394,7 +35400,7 @@ async function renderHistCapture(tech) {
   const ytdVals = captureRaw.filter((_, i) => labels[i].startsWith(currentYear) && captureRaw[i] != null);
   const ytd = ytdVals.length ? round2(ytdVals.reduce((a,b)=>a+b,0)/ytdVals.length) : null;
 
-  const color = tech === 'solar' ? '#fbbf24' : C_ACC;
+  const color = tech === 'solar' ? '#fbbf24' : _HIST_ACC;
 
   mkHistChart(canvasId, {
     type: 'line',
@@ -35420,7 +35426,7 @@ async function renderHistCapture(tech) {
     options: {
       ...baseOptions('WAP / Baseload (%)'),
       plugins: {
-        legend: { display:true, labels:{ color:TX3, font:{size:10}, boxWidth:12 } },
+        legend: { display:true, labels:{ color:_HIST_TX3, font:{size:10}, boxWidth:12 } },
         tooltip: {
           callbacks: {
             label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : 'n/a'),
@@ -35428,11 +35434,11 @@ async function renderHistCapture(tech) {
         },
       },
       scales: {
-        x: { grid:{color:GRID.color}, ticks:{color:TX3, font:{size:10}, maxTicksLimit:10} },
+        x: { grid:{color:_HIST_GRID}, ticks:{color:_HIST_TX3, font:{size:10}, maxTicksLimit:10} },
         y: {
-          grid: { color: GRID.color },
-          ticks: { color:TX3, font:{size:10}, callback: v => v + '%' },
-          title: { display:true, text:'Capture Rate (%)', color:TX3, font:{size:10} },
+          grid: { color: _HIST_GRID },
+          ticks: { color:_HIST_TX3, font:{size:10}, callback: v => v + '%' },
+          title: { display:true, text:'Capture Rate (%)', color:_HIST_TX3, font:{size:10} },
         },
       },
     },
