@@ -32301,7 +32301,7 @@ function renderPricesTable(data) {
   // Update date label
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) {
-    const d = DP.selectedDate ? new Date(DP.selectedDate) : new Date();
+    const d = (window.DP && window.DP.selectedDate) ? new Date(window.DP.selectedDate) : new Date();
     const fmt = dt => dt.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
     dateLabel.textContent = 'Day-Ahead prices · ' + fmt(d) + ' · ENTSO-E Transparency';
   }
@@ -32601,8 +32601,9 @@ function buildHourlyDetail(idx, z) {
   const shadingPlugin = {
     id:'rowShading',
     beforeDraw(chart) {
-      const {ctx,chartArea:{left,right,top,bottom},scales:{x}}=chart;
+      const {ctx,chartArea,scales:{x}}=chart;
       if (!x || !chartArea) return;
+      const {left,right,top,bottom} = chartArea;
       const zones=[
         {from:7,to:9,  color:'rgba(232,160,32,0.06)'},
         {from:11,to:14,color:'rgba(0,212,168,0.05)'},
@@ -32638,6 +32639,8 @@ function buildHourlyDetail(idx, z) {
   });
 }
 
+
+const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#818cf8'];
 
 function renderCompareChart() {
   const data = window._pricesSorted;
