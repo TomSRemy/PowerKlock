@@ -1,4 +1,4 @@
-<script>/*! Hammer.JS - v2.0.7 - 2016-04-22
+/*! Hammer.JS - v2.0.7 - 2016-04-22
  * http://hammerjs.github.io/
  *
  * Copyright (c) 2016 Jorik Tangelder;
@@ -29198,4 +29198,3 @@ function rgba(hex, a) {
 
 }));
 //# sourceMappingURL=leaflet-src.js.map
-</script>
