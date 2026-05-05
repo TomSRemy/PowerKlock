@@ -1,517 +1,2991 @@
-// ─────────────────────────────────────────────────────────────
-// Yesterday data — cache + fetch + KPI computation
-// Used by updateKPIs to compute vs-J-1 direction across all KPIs
-// ─────────────────────────────────────────────────────────────
-window._yesterdayCache = window._yesterdayCache || {};
-
-// Returns the ISO date string for J-1 given an ISO date string
-function _prevDateISO(dateISO) {
-  const [y, m, d] = dateISO.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() - 1);
-  return dt.toISOString().slice(0, 10);
-}
-
-// Fetch the historical daily JSON for J-1 of the given ISO date
-// Returns { zones: {code: {avg, hourly, ...}} } or null on failure
-async function fetchYesterdayDaily(currentDateISO) {
-  if (!DATA_BASE || !currentDateISO) return null;
-  const yKey = _prevDateISO(currentDateISO);
-  if (window._yesterdayCache[yKey] !== undefined) {
-    return window._yesterdayCache[yKey];
-  }
-  try {
-    const r = await fetch(DATA_BASE + 'history/daily/' + yKey + '.json?t=' + Date.now());
-    if (!r.ok) { window._yesterdayCache[yKey] = null; return null; }
-    const data = await r.json();
-    // Normalise into { zones: {code: {...}} } regardless of array/dict source
-    const norm = { zones: {} };
-    if (Array.isArray(data.zones)) {
-      data.zones.forEach(z => {
-        norm.zones[z.code] = {
-          avg:    z.today ?? z.avg ?? null,
-          hourly: z.hourly || [],
-          min:    z.min ?? null,
-          max:    z.max ?? null,
-        };
-      });
-    } else if (data.zones && typeof data.zones === 'object') {
-      Object.entries(data.zones).forEach(([code, z]) => {
-        norm.zones[code] = {
-          avg:    z.avg ?? z.today ?? null,
-          hourly: z.hourly || [],
-          min:    z.min ?? null,
-          max:    z.max ?? null,
-        };
-      });
-    }
-    window._yesterdayCache[yKey] = norm;
-    return norm;
-  } catch (e) {
-    window._yesterdayCache[yKey] = null;
-    return null;
-  }
-}
-
-// Compute summary KPIs (avg, peak, off-peak, max, min) from a {zones} dict
-// Used to derive J-1 reference values matching today's metric computations
-function computeKPIs(zonesDict) {
-  if (!zonesDict) return null;
-  const codes = Object.keys(zonesDict);
-  if (codes.length === 0) return null;
-  const avgs = codes.map(c => zonesDict[c].avg).filter(v => v != null);
-  if (avgs.length === 0) return null;
-  const out = {
-    avg:    avgs.reduce((a,b) => a+b, 0) / avgs.length,
-    maxLvl: Math.max(...avgs),
-    minLvl: Math.min(...avgs),
-    frPeak: null,
-    frOffPeak: null,
-  };
-  const fr = zonesDict.FR;
-  if (fr && fr.hourly && fr.hourly.length >= 24) {
-    const h = fr.hourly;
-    const nph = Math.round(h.length / 24);
-    const peak = [], off = [];
-    h.forEach((v, i) => {
-      if (v == null) return;
-      const hr = Math.floor(i / nph);
-      (hr >= 8 && hr < 20 ? peak : off).push(v);
-    });
-    out.frPeak    = peak.length ? peak.reduce((a,b)=>a+b,0)/peak.length : null;
-    out.frOffPeak = off.length  ? off.reduce((a,b)=>a+b,0)/off.length   : null;
-  }
-  return out;
-}
-
-async function loadLastAvailable() {
-  if (!DATA_BASE) return;
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0,10);
-    try {
-      const r = await fetch(DATA_BASE + 'history/daily/' + dateStr + '.json?t=' + Date.now());
-      if (r.ok) {
-        const data = await r.json();
-        const hasData = Array.isArray(data.zones) ? data.zones.length > 0
-          : (data.zones && Object.keys(data.zones).length > 0);
-        if (hasData) {
-          console.log('Last available:', dateStr);
-          if (typeof dpSelect === 'function') dpSelect(dateStr);
-          else loadPricesForDate(dateStr);
-          return;
-        }
-      }
-    } catch(e) {}
-  }
-}
-
-async function loadFromJSON() {
-  // Prices
-  const prices = await fetchJSON('prices.json');
-  if (prices?.zones?.length) {
-    // Map JSON fields to dashboard format
-    pricesData = prices.zones.map(z => ({
-      code:    z.code,
-      name:    z.name,
-      flag:    z.code.slice(0,2),
-      today:   z.today,
-      vsYday:  z.vsYday,
-      min:     z.min,
-      minHr:   z.minHour || 0,
-      max:     z.max,
-      maxHr:   z.maxHour || 0,
-      negHrs:  z.negHours || 0,
-      spark:   z.spark,
-      hourly:  z.hourly || [],
-    }));
-    // Extract date from JSON updated field
-    const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
-    renderPricesTable(pricesData, jsonDate);
-    updateKPIs(pricesData, jsonDate);
-    buildTicker(pricesData);
-    const upd = prices.updated
-      ? new Date(prices.updated).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' UTC'
-      : 'JSON';
-    const badge = document.getElementById('prices-updated');
-    if (badge) { badge.textContent = 'ENTSO-E · ' + upd; badge.style.color = 'var(--accent)'; }
-    // Recompute negHours from actual hourly data (handles 15min resolution)
-    pricesData.forEach(z => {
-      if (z.hourly && z.hourly.length > 0) {
-        z.negHrs = negHoursFromData(z.hourly);
-      }
-    });
-    console.log('✅ Prices from JSON:', pricesData.length, 'zones');
-    // Refresh map if visible
-    if (leafletMap && document.getElementById('page-map')?.classList.contains('active')) {
-      updateMapMarkers(); renderMapKPIs(); refreshGeoLayer();
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PowerKlock — European Energy Intelligence</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMGQ0YTgiLz48cGF0aCBkPSJNMTguNSA0TDggMThoOGwtMiAxMCAxNC0xNmgtOHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e13;
+    --bg2: #0f1419;
+    --bg3: #151c24;
+    --bg4: #1a2332;
+    --border: #1e2d3d;
+    --border2: #243447;
+    --accent: #00d4a8;
+    --accent2: #00b894;
+    --accent-dim: rgba(0,212,168,0.12);
+    --up: #00d4a8;
+    --down: #ff4d6d;
+    --warn: #f59e0b;
+    /* KPI accent — flat / no-data (up & down reuse --up / --down) */
+    --kpi-flat: #4a6280;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #4a6280;
+    --sidebar-w: 220px;
+    --ticker-h: 36px;
+    --topbar-h: 52px;
   }
 
-  // Genmix
-  const genmix = await fetchJSON('genmix.json');
-  if (genmix?.countries) { window._genmixData = genmix.countries; console.log('✅ Genmix from JSON'); }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  // Renewables
-  const ren = await fetchJSON('renewables.json');
-  if (ren?.countries) {
-    window._renData = ren.countries;
-    console.log('✅ Renewables from JSON');
-    if (document.getElementById('page-renewables')?.classList.contains('active')) drawRenChart();
+  body {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
   }
 
-  // Load
-  const load = await fetchJSON('load.json');
-  if (load?.countries) { window._loadData = load.countries; console.log('✅ Load from JSON'); }
-
-  // Cross-border
-  const cb = await fetchJSON('crossborder.json');
-  if (cb?.countries) { window._cbData = cb.countries; console.log('✅ Cross-border from JSON'); }
-}
-
-// ════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════
-updateConverter();
-updateCapacity();
-// Load data: try JSON first, then last available
-(async () => {
-  await loadFromJSON();
-  if (!pricesData || pricesData.length === 0) {
-    await loadLastAvailable();
+  /* ── TICKER ── */
+    .ticker {
+    height: var(--ticker-h);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    overflow: visible;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
   }
-})();
-
-
-// ══════════════════════════════════════════════════════
-// DATE PICKER
-// ══════════════════════════════════════════════════════
-const DP = {
-  selectedDate: null,   // null = today
-  viewYear: new Date().getFullYear(),
-  viewMonth: new Date().getMonth(),
-  // negDays: map of 'YYYY-MM-DD' → negHours (populated from prices history)
-  negDays: JSON.parse(localStorage.getItem('pk-neg-days') || '{}'),
-};
-
-// Record today's neg hours when prices load
-function dpRecordNegHours(zonesData) {
-  const today = new Date();
-  const key = today.toISOString().slice(0,10);
-  const maxNeg = Math.max(...zonesData.map(z => z.negHours || 0));
-  if (maxNeg > 0) {
-    DP.negDays[key] = maxNeg;
-    localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
+  .ticker-scroll { flex:1; overflow:hidden; height:100%; position:relative; }
+  .ticker-track { display:flex; position:absolute; top:0; left:0; height:100%; align-items:center; animation:tickerScroll 32s linear infinite; }
+  .ticker-track:hover { animation-play-state:paused; }
+  @keyframes tickerScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  .dd-wrap { position:relative; height:100%; flex-shrink:0; }
+  .dd-btn {
+    display:flex; align-items:center; gap:6px; height:100%; padding:0 14px;
+    border:none; border-right:1px solid var(--border2); background:none; cursor:pointer;
+    font-family:'Outfit','Inter',sans-serif; font-size:9px; font-weight:700;
+    letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); transition:background 0.15s;
+    white-space:nowrap;
   }
-}
-
-// Load historical neg hours from summary.json for red dots
-async function dpLoadHistoryNegDays() {
-  try {
-    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
-    const r = await fetch(base + 'history/summary.json?t=' + Date.now());
-    if (!r.ok) return;
-    const s = await r.json();
-    const fr = s?.zones?.FR;
-    if (!fr) return;
-    let changed = false;
-    fr.forEach(d => {
-      if (d.negH > 0 && !DP.negDays[d.d]) {
-        DP.negDays[d.d] = d.negH;
-        changed = true;
-      }
-    });
-    if (changed) {
-      localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
-    }
-  } catch(e) {}
-}
-// Call on load
-dpLoadHistoryNegDays();
-
-function toggleDatePicker() {
-  const btn = document.getElementById('date-picker-btn');
-  const popup = document.getElementById('date-picker-popup');
-  btn.classList.toggle('open');
-  popup.classList.toggle('open');
-  if (popup.classList.contains('open')) dpRender();
-}
-
-document.addEventListener('click', e => {
-  if (!e.target.closest('.date-picker-wrap')) {
-    document.getElementById('date-picker-btn')?.classList.remove('open');
-    document.getElementById('date-picker-popup')?.classList.remove('open');
+  .dd-btn:hover { background:var(--bg3); }
+  .dd-btn.open svg { transform:rotate(180deg); }
+  .dd-btn svg { transition:transform 0.2s; }
+  .dd-pulse { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:ddpulse 1.8s infinite; }
+  @keyframes ddpulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .dd-menu {
+    position:absolute; top:calc(100% + 6px); left:0;
+    background:var(--bg3); border:1px solid var(--border2); border-radius:9px;
+    padding:5px 0; min-width:160px; box-shadow:0 10px 32px rgba(0,0,0,0.6);
+    z-index:500; opacity:0; pointer-events:none; transform:translateY(-6px);
+    transition:opacity 0.15s, transform 0.15s;
   }
-});
-
-function dpRender() {
-  const today = new Date();
-  const y = DP.viewYear, m = DP.viewMonth;
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('dp-month-label').textContent = months[m] + ' ' + y;
-
-  const firstDay = new Date(y, m, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(y, m+1, 0).getDate();
-  // Convert to Mon-first: 0=Mon ... 6=Sun
-  const offset = (firstDay + 6) % 7;
-
-  const todayStr = today.toISOString().slice(0,10);
-  const selStr = DP.selectedDate || todayStr;
-
-  let html = '';
-  // Empty cells
-  for (let i = 0; i < offset; i++) html += '<div class="dp-day dp-empty"></div>';
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday  = dateStr === todayStr;
-    const isSel    = dateStr === selStr;
-    const isFuture = dateStr > todayStr;
-    const negH     = DP.negDays[dateStr];
-
-    let cls = 'dp-day';
-    if (isToday) cls += ' dp-today';
-    if (isSel)   cls += ' dp-selected'; // today gets dp-selected when selectedDate is null
-    if (isFuture) cls += ' dp-future';
-
-    const dot = (negH > 0 && !isSel) ? '<div class="dp-neg-dot"></div>' : '';
-    html += `<div class="${cls}" ${isFuture ? '' : `onclick="dpSelect('${dateStr}')"`}>${d}${dot}</div>`;
+  .dd-menu.open { opacity:1; pointer-events:all; transform:translateY(0); }
+  .dd-row {
+    display:flex; align-items:center; gap:10px; padding:8px 14px; cursor:pointer;
+    font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text2); transition:background 0.1s; user-select:none;
   }
-  document.getElementById('dp-grid').innerHTML = html;
-}
+  .dd-row:hover { background:var(--bg4); }
+  .dd-check { width:14px; height:14px; border-radius:3px; border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:9px; font-weight:700; transition:all 0.12s; }
+  .dd-row.on .dd-check { background:var(--accent); border-color:var(--accent); color:#000; }
+  .dd-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dd-dot.power { background:var(--accent); }
+  .dd-dot.gas { background:#60a5fa; }
+  .dd-dot.carbon { background:#a78bfa; }
+  .dd-dot.go { background:#34d399; }
 
-function dpSelect(dateStr) {
-  const todayStr = new Date().toISOString().slice(0,10);
-  const isToday  = dateStr === todayStr;
-  DP.selectedDate = isToday ? null : dateStr;
+  .ticker-label {
+    padding: 0 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    white-space: nowrap;
+    border-right: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: var(--bg2);
+    z-index: 2;
+  }
+  .ticker-track {
+    display: flex;
+    animation: ticker-scroll 60s linear infinite;
+    gap: 0;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 18px;
+    height: var(--ticker-h);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: default;
+    font-size: 12px;
+  }
+  .ticker-item:hover { background: var(--bg3); }
+  .ticker-name { color: var(--text2); font-size: 11px; }
+  .ticker-cat { font-size: 9px; color: var(--text3); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border2); }
+  .ticker-cat.power { color: var(--accent); border-color: var(--accent-dim); }
+  .ticker-cat.gas { color: #60a5fa; border-color: rgba(96,165,250,0.2); }
+  .ticker-cat.carbon { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
+  .ticker-cat.go { color: #34d399; border-color: rgba(52,211,153,0.2); }
+  /* News source badges */
+  .news-source.recharge { background: rgba(52,211,153,0.15); color: #34d399; }
+  .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .news-source.carbonpulse { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .news-source.gasnaturally { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
+  .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
 
-  // Update picker button label — European format DD/MM/YY
-  const lbl = document.getElementById('date-picker-label');
-  if (lbl) {
-    if (isToday) {
-      lbl.textContent = 'Today';
-    } else {
-      const [y,m,d] = dateStr.split('-');
-      lbl.textContent = d + '/' + m + '/' + y.slice(2); // DD/MM/YY
-    }
+  /* ── TOPBAR ── */
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    position: fixed;
+    top: var(--ticker-h);
+    left: 0; right: 0;
+    z-index: 99;
   }
 
-  // Update prices-date-label immediately
-  const fmtLong2 = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
-  const dateLabel = document.getElementById('prices-date-label');
-  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong2(dateStr) + ' · ENTSO-E';
-
-  dpRender();
-  loadPricesForDate(dateStr);
-  document.getElementById('date-picker-btn')?.classList.remove('open');
-  document.getElementById('date-picker-popup')?.classList.remove('open');
-}
-function dpSelectToday() {
-  dpSelect(new Date().toISOString().slice(0,10));
-}
-
-function dpChangeMonth(dir) {
-  DP.viewMonth += dir;
-  if (DP.viewMonth > 11) { DP.viewMonth = 0; DP.viewYear++; }
-  if (DP.viewMonth < 0)  { DP.viewMonth = 11; DP.viewYear--; }
-  dpRender();
-}
-
-// ── Load prices for a specific date ──
-async function loadPricesForDate(dateStr) {
-  if (!dateStr) { loadPrices(); return; }
-  const todayStr = new Date().toISOString().slice(0,10);
-
-  const updEl = document.getElementById('prices-updated');
-  if (updEl) updEl.textContent = 'Loading ' + dateStr + '...';
-
-  const fmtDate = s => { const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y.slice(2); };
-
-  // Flag lookup from ZONES array
-  const flagOf = code => {
-    const z = ZONES.find(z => z.code === code);
-    if (z) return z.flag || '';
-    const flagMap = {FR:'🇫🇷',DE_LU:'🇩🇪',BE:'🇧🇪',NL:'🇳🇱',ES:'🇪🇸',PT:'🇵🇹',IT_NORD:'🇮🇹',IT_SICI:'🇮🇹',
-      AT:'🇦🇹',CH:'🇨🇭',CZ:'🇨🇿',SK:'🇸🇰',HU:'🇭🇺',PL:'🇵🇱',RO:'🇷🇴',HR:'🇭🇷',SI:'🇸🇮',RS:'🇷🇸',
-      BG:'🇧🇬',GR:'🇬🇷',MK:'🇲🇰',ME:'🇲🇪',DK_W:'🇩🇰',DK_E:'🇩🇰',SE:'🇸🇪',SE_3:'🇸🇪',
-      NO_1:'🇳🇴',NO_2:'🇳🇴',FI:'🇫🇮',EE:'🇪🇪',LV:'🇱🇻',LT:'🇱🇹',GB:'🇬🇧',MT:'🇲🇹'};
-    return flagMap[code] || '';
-  };
-
-  // ── 1. Try historical JSON file (GitHub Pages / localhost)
-  if (DATA_BASE) {
-    try {
-      const url = DATA_BASE + 'history/daily/' + dateStr + '.json?t=' + Date.now();
-      const r = await fetch(url);
-      if (r.ok) {
-        const d = await r.json();
-        let mapped = [];
-
-        if (Array.isArray(d.zones)) {
-          // prices.json list format
-          mapped = d.zones.map(z => ({
-            code:   z.code,
-            name:   z.name || (ZONE_META[z.code]||{}).country || z.code,
-            flag:   flagOf(z.code),
-            today:  z.today ?? z.avg ?? 0,
-            vsYday: z.vsYday ?? null,
-            min:    z.min ?? 0,
-            minHr:  z.minHour ?? z.minHr ?? 0,
-            max:    z.max ?? 0,
-            maxHr:  z.maxHour ?? z.maxHr ?? 0,
-            negHrs: z.negHours ?? z.negH ?? 0,
-            spark:  z.spark ?? null,
-            hourly: z.hourly || [],
-          }));
-        } else if (d.zones && typeof d.zones === 'object') {
-          // dict format: { FR: { avg, min, max, negH, hourly }, ... }
-          mapped = Object.entries(d.zones).map(([code, z]) => {
-            const meta   = ZONE_META[code] || {};
-            const hourly = z.hourly || [];
-            const valid  = hourly.filter(v => v != null);
-            const avg    = z.avg ?? (valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : 0);
-            const mn     = z.min ?? (valid.length ? Math.min(...valid) : 0);
-            const mx     = z.max ?? (valid.length ? Math.max(...valid) : 0);
-            const nph    = hourly.length > 24 ? Math.round(hourly.length/24) : 1;
-            const minIdx = valid.length ? hourly.indexOf(mn) : 0;
-            const maxIdx = valid.length ? hourly.indexOf(mx) : 0;
-            return {
-              code,
-              name:   meta.country || code,
-              flag:   flagOf(code),
-              today:  Math.round(avg * 10) / 10,
-              vsYday: null,
-              min:    Math.round(mn * 10) / 10,
-              minHr:  minIdx >= 0 ? Math.floor(minIdx/nph) : 0,
-              max:    Math.round(mx * 10) / 10,
-              maxHr:  maxIdx >= 0 ? Math.floor(maxIdx/nph) : 0,
-              negHrs: z.negH ?? z.negHours ?? 0,
-              spark:  null,
-              hourly,
-            };
-          });
-        }
-
-        if (mapped.length) {
-          pricesData = mapped.sort((a,b) => b.today - a.today);
-          renderPricesTable(pricesData, dateStr);
-          updateKPIs(pricesData, dateStr);
-          buildTicker(pricesData);
-          if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';
-          return;
-        }
-      }
-    } catch(e) { console.warn('Historical fetch failed:', e); }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .logo-icon {
+    width: 30px; height: 30px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .logo-text {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  /* ── NAV TABS ── */
+  .topbar-tabs {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    height: var(--topbar-h);
+    display: flex;
+    align-items: stretch;
+  }
+  .nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 22px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--text3);
+    cursor: pointer;
+    border: none;
+    background: none;
+    position: relative;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+  .nav-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 22px; right: 22px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  .nav-tab.active { color: var(--text); }
+  .nav-tab.active::after { transform: scaleX(1); }
+  .nav-tab:hover:not(.active) { color: var(--text2); }
+  .nav-tab .tab-icon { font-size: 13px; opacity: 0.7; }
+  .nav-tab-sep { width: 1px; background: var(--border); margin: 16px 0; }
+  /* keep old nav hidden */
+  .topbar-nav { display: none; }
+  .topbar-btn { display: none; }
+  .dot-power { background: var(--accent); }
+  .dot-gas { background: #60a5fa; }
+  .dot-carbon { background: #a78bfa; }
+  .dot-storage { background: #f59e0b; }
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+  .live-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,212,168,0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .live-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
 
-  // If today and no historical file yet:
-  // - with token: try live ENTSO-E fetch
-  // - without token: load last available
-  if (dateStr === todayStr) {
-    if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-      loadPrices();
-    } else {
-      loadLastAvailable();
-    }
-    return;
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    height: 100vh;
+    padding-top: calc(var(--ticker-h) + var(--topbar-h));
   }
 
-  // ── 2. Real ENTSO-E token
-  if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-    const d  = dateStr.replace(/-/g,'');
-    const d2 = (() => { const n=new Date(dateStr); n.setDate(n.getDate()+1); return n.toISOString().slice(0,10).replace(/-/g,''); })();
-    loadPricesWithDates(d+'0000', d2+'0000');
-    return;
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .sidebar-section {
+    padding: 16px 0 8px;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    padding: 0 16px 6px;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 12px;
+    user-select: none;
+  }
+  .sidebar-section-label:hover { color: var(--text2); }
+  .sidebar-chevron {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .sidebar-section.collapsed .sidebar-chevron { transform: rotate(-90deg); }
+  .sidebar-section-items {
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+  .sidebar-section.collapsed .sidebar-section-items { max-height: 0 !important; }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text2);
+    transition: all 0.12s;
+    position: relative;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-item:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-item.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+  .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .sidebar-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--down);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
   }
 
-  // No data available — load last available date instead
-  showNoDataMessage(dateStr);
-  loadLastAvailable();
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .page { display: none; padding: 20px; }
+  .page.active { display: block; }
+  .page.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .source-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .updated-badge {
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(0,212,168,0.2);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--kpi-flat);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    transition: border-color 0.15s, border-left-color 0.2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  /* KPI direction accents — vs J-1 (price up = red, price down = green) */
+  .kpi-card.kpi-up   { border-left-color: var(--up); }
+  .kpi-card.kpi-down { border-left-color: var(--down); }
+  .kpi-card.kpi-flat { border-left-color: var(--kpi-flat); }
+  .kpi-label { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
+  .kpi-unit { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
+  .kpi-chg { font-size: 11px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── PRICES TABLE ── */
+  .table-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:first-child { text-align: left; }
+  thead th:hover { color: var(--text2); }
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    transition: background 0.1s;
+    cursor: default;
+  }
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr:last-child { border-bottom: none; }
+  td {
+    padding: 9px 12px;
+    font-size: 13px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  td:first-child {
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+  .country-flag { font-size: 14px; margin-right: 6px; }
+  .country-code {
+    font-size: 10px;
+    color: var(--text3);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .price-main { font-size: 13px; font-weight: 600; }
+  .neg-hrs { color: var(--warn); }
+  .sparkline-cell { padding: 0 12px; }
+  .sparkline-wrap { display: flex; align-items: center; height: 32px; }
+  canvas.spark { height: 28px; width: 80px; }
+
+  /* loading state */
+  .loading-row td { color: var(--text3); text-align: center; padding: 30px; font-size: 12px; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── GENERATION MIX ── */
+  .gen-mix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .fuel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .fuel-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .fuel-name { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .fuel-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .fuel-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); overflow: hidden; }
+  .fuel-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .fuel-nuclear { background: #3b82f6; }
+  .fuel-solar { background: #f59e0b; }
+  .fuel-wind { background: #60a5fa; }
+  .fuel-hydro { background: #34d399; }
+  .fuel-fossil { background: #f87171; }
+  .fuel-other { background: var(--text3); }
+
+  /* chart container */
+  .chart-container {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-area { position: relative; height: 200px; overflow: hidden; }
+  .chart-svg { width: 100%; height: 100%; }
+
+  /* ── NEWS ── */
+  .news-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--bg2);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,0.4); }
+
+  .news-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .news-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: block;
+  }
+  .news-card:hover { border-color: var(--border2); background: var(--bg3); transform: translateY(-1px); }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .news-source {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .news-source.rte { color: #60a5fa; background: rgba(96,165,250,0.1); }
+  .news-source.cre { color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .news-source.entsoe { color: var(--accent); }
+  .news-source.acer { color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .news-source.google { color: var(--text2); background: var(--bg3); }
+  .news-time { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .news-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+  .news-snippet { font-size: 12px; color: var(--text2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--text3);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  /* ── CROSS-BORDER ── */
+  .cb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  /* ── OVERVIEW ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── CONVERTER ── */
+  .converter-wrap {
+    max-width: 600px;
+  }
+  .converter-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .conv-tab {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .conv-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .conv-input-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .conv-input {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    background: none;
+    border: none;
+    outline: none;
+    width: 100%;
+    letter-spacing: -0.02em;
+  }
+  .conv-input::placeholder { color: var(--text3); }
+  .conv-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .conv-result {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .conv-result:hover { border-color: var(--accent); }
+  .conv-result-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .conv-result-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .conv-result-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    font-size: 11px;
+    color: var(--text3);
+    padding: 10px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  /* ── SCROLLBAR GLOBAL ── */
+  html { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1200px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .news-grid { grid-template-columns: 1fr; }
+  }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  /* tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* country selector */
+  .country-select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+  .country-select option { background: var(--bg3); }
+
+  /* day tabs */
+  .day-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .day-tab {
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.15s;
+  }
+  .day-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .day-tab:hover:not(.active) { border-color: var(--text3); color: var(--text); }
+
+  /* ── HISTORICAL SECTIONS ── */
+  .hist-section {
+    background: var(--bg2); border: 1px solid var(--bd);
+    border-radius: 8px; margin-top: 14px; overflow: hidden;
+  }
+  .hist-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; cursor: pointer; user-select: none;
+    border-bottom: 1px solid transparent; transition: background 0.15s;
+  }
+  .hist-section-header:hover { background: var(--bg3); }
+  .hist-section-header.open { border-bottom-color: var(--bd); }
+  .hist-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--tx2);
+  }
+  .hist-section-title .icon { display:flex; align-items:center; flex-shrink:0; opacity:0.7; }
+  .hist-section-hint {
+    font-size: 10px; color: var(--tx3); font-weight: 400;
+    text-transform: none; letter-spacing: 0;
+    background: rgba(232,160,32,.1); border: 1px solid rgba(232,160,32,.25);
+    padding: 2px 8px; border-radius: 3px; color: #c49a2a;
+  }
+  .hist-section-chevron {
+    width: 12px; height: 12px; color: var(--tx3); transition: transform 0.2s;
+  }
+  .hist-section-header.open .hist-section-chevron { transform: rotate(180deg); }
+  .hist-section-body {
+    display: none;
+    padding: 16px;
+  }
+  .hist-section-body.open {
+    display: block;
+  }
+  .hist-zone-select {
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--text2); font-size: 11px; padding: 4px 8px;
+    border-radius: 5px; cursor: pointer; font-family: 'Outfit','Inter',sans-serif;
+    margin-bottom: 10px;
+  }
+  .hist-zone-select:focus { outline: none; border-color: var(--accent); }
+  .hist-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .hist-window-btns {
+    display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .hw-btn {
+    padding: 4px 11px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--bd); color: var(--tx3);
+    background: none; font-family: 'Outfit','Inter',sans-serif; transition: all 0.12s;
+  }
+  .hw-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,.3); }
+  .hw-btn:hover:not(.active) { color: var(--tx2); border-color: var(--tx3); }
+  .hist-stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px; margin-top: 12px;
+  }
+  .hist-stat {
+    background: var(--bg3); border-radius: 6px; padding: 8px 10px;
+  }
+  .hist-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tx3); margin-bottom: 3px; }
+  .hist-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--tx); }
+  .hist-stat-unit { font-size: 10px; color: var(--tx3); margin-left: 2px; }
+  .hist-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .hist-two-col { grid-template-columns: 1fr; } }
+
+  /* ── DATE PICKER ── */
+  .date-picker-wrap { position: relative; }
+  .date-picker-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 6px;
+    border: 1px solid var(--border2); background: var(--bg3);
+    color: var(--text2); font-family: 'Outfit','Inter',sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .date-picker-btn:hover { background: var(--bg4); color: var(--text); }
+  .date-picker-btn svg { flex-shrink: 0; }
+  #date-picker-chevron { transition: transform 0.2s; }
+  .date-picker-btn.open #date-picker-chevron { transform: rotate(180deg); }
+  .date-picker-popup {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px;
+    width: 260px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 400; display: none;
+  }
+  .date-picker-popup.open { display: block; }
+  .dp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .dp-month-label { font-size: 13px; font-weight: 600; color: var(--text); font-family: 'Outfit','Inter',sans-serif; }
+  .dp-nav {
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+    transition: all 0.12s;
+  }
+  .dp-nav:hover { background: var(--bg4); color: var(--text); }
+  .dp-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+  }
+  .dp-weekdays span {
+    text-align: center; font-size: 10px; font-weight: 600;
+    color: var(--text3); letter-spacing: 0.05em; padding: 2px 0;
+  }
+  .dp-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  }
+  .dp-day {
+    position: relative; aspect-ratio: 1; display: flex; align-items: center;
+    justify-content: center; border-radius: 5px; font-size: 11px;
+    font-weight: 500; cursor: pointer; color: var(--text2);
+    transition: all 0.1s; font-family: 'JetBrains Mono', monospace;
+  }
+  .dp-day:hover:not(.dp-empty):not(.dp-future) { background: var(--bg4); color: var(--text); }
+  .dp-day.dp-today { color: var(--accent); font-weight: 700; }
+  .dp-day.dp-today::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:3px; height:3px; border-radius:50%; background:var(--accent); }
+  .dp-day.dp-selected { background: var(--accent); color: #000; font-weight: 700; }
+  .dp-day.dp-selected::after { display: none; }
+  .dp-day.dp-empty { cursor: default; }
+  .dp-day.dp-future { opacity: 0.25; cursor: not-allowed; }
+  .dp-neg-dot {
+    position: absolute; top: 2px; right: 2px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--down);
+  }
+  .dp-footer { margin-top: 10px; text-align: center; }
+  .dp-today-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 5px;
+    color: var(--text3); font-size: 11px; padding: 4px 14px; cursor: pointer;
+    font-family: 'Outfit','Inter',sans-serif; transition: all 0.12s;
+  }
+  .dp-today-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── FRANCE & MY DASHBOARD ── */
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; }
+  .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+  .kpi-unit { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .kpi-delta { font-size: 11px; font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  .kpi-delta.up { color: var(--up); } .kpi-delta.down { color: var(--down); }
+  .btn-primary {
+    padding: 7px 16px; border-radius: 6px; border: none;
+    background: var(--accent); color: #000; font-weight: 600; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary {
+    padding: 7px 16px; border-radius: 6px;
+    border: 1px solid var(--border2); background: none;
+    color: var(--text2); font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .btn-secondary:hover { background: var(--bg3); }
+  .mydash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    min-height: 200px;
+  }
+  .mydash-empty {
+    grid-column: 1/-1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 300px; text-align: center;
+  }
+  .mydash-widget {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; position: relative;
+  }
+  .mydash-widget-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  .mdash-remove {
+    position: absolute; top: 10px; right: 10px;
+    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1;
+  }
+  .mdash-remove:hover { color: var(--down); }
+  .picker-item {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 12px; cursor: pointer; transition: border-color 0.15s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .picker-item:hover { border-color: var(--accent); }
+  .picker-item.added { border-color: var(--accent); background: var(--accent-dim); }
+  .picker-item-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .picker-item-desc { font-size: 11px; color: var(--text3); }
+
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="dd-wrap">
+    <button class="dd-btn" id="dd-btn" onclick="toggleTickerMenu()">
+      <span class="dd-pulse"></span>
+      <span class="dd-label" id="dd-label">ALL</span>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="dd-menu" id="dd-menu" style="min-width:200px;max-height:70vh;overflow-y:auto">
+      <div style="padding:4px 14px 2px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">Categories</div>
+      <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
+      <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
+      <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
+      <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
+      <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 14px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">Power zones</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="tickerSelectAllZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(0,212,168,.4);background:rgba(0,212,168,.1);color:#00d4a8;font-weight:600">All</button>
+          <button onclick="tickerSelectNoneZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--text3)">None</button>
+        </div>
+      </div>
+      <div id="ticker-zone-list"></div>
+    </div>
+  </div>
+  <div class="ticker-scroll">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span class="logo-text">PowerKlock</span>
+  </div>
+  <div class="topbar-tabs">
+    <button class="nav-tab active" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
+    <div class="nav-tab-sep"></div>
+    <button class="nav-tab" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
+    <div class="clock" id="clock">--:--:-- CET</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section" id="sec-power">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-power')">Power <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-power-items">
+      <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
+      </div>
+      <div class="sidebar-item" onclick="showPage('genmix')" id="nav-genmix">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Generation Mix
+      </div>
+      <div class="sidebar-item" onclick="showPage('renewables')" id="nav-renewables">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>Renewables
+      </div>
+      <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear &amp; Hydro
+      </div>
+      <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
+      </div>
+      <div class="sidebar-item" onclick="showPage('map')" id="nav-map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Price Map
+      </div>
+      <div class="sidebar-item" onclick="showPage('crossborder')" id="nav-crossborder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Cross-Border Flows
+      </div>
+      <div class="sidebar-item" onclick="showPage('imbalance')" id="nav-imbalance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M5 12l7-7 7 7"/></svg>Imbalance Prices
+      </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section" id="sec-carbon">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-carbon-items">
+      <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
+      </div>
+      <div class="sidebar-item" onclick="showPage('euafwd')" id="nav-euafwd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curve
+      </div>
+      <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
+      </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section collapsed" id="sec-go">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-go')">Guarantees of Origin <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-go-items">
+      <div class="sidebar-item" onclick="showPage('goprices')" id="nav-goprices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>GO Prices
+      </div>
+      <div class="sidebar-item" onclick="showPage('gohist')" id="nav-gohist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Historical
+      </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section collapsed" id="sec-meteo">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Meteo France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-meteo-items">
+      <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
+      </div>
+      <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
+      </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section" id="sec-intel">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-intel')">Intelligence <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-intel-items">
+      <div class="sidebar-item" onclick="showPage('news')" id="nav-news">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
+      </div>
+      <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
+      </div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section collapsed" id="sec-tools">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-tools')">Tools <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-tools-items">
+      <div class="sidebar-item" onclick="showPage('converter')" id="nav-converter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Converter
+      </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ── PAGE: PRICES ── -->
+    <div class="page active" id="page-prices">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Power Day-Ahead Prices</div>
+          <div class="page-subtitle">32 ENTSO-E bidding zones · Latest available settlement prices</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <!-- DATE PICKER — moved to table header -->
+          <span class="source-badge">ENTSO-E Transparency</span>
+          <span class="updated-badge" id="prices-updated">Loading...</span>
+        </div>
+      </div>
+
+      <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div>
+<div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
+  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(0,212,168,.1);color:var(--acc);white-space:nowrap">↺ Latest data</button>
+  <div class="date-picker-wrap" id="date-picker-wrap-hdr">
+    <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="date-picker-label">Latest data</span>
+      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="date-picker-popup" id="date-picker-popup">
+      <div class="dp-header"><button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button><span class="dp-month-label" id="dp-month-label"></span><button class="dp-nav" onclick="dpChangeMonth(1)">›</button></div>
+      <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+      <div class="dp-grid" id="dp-grid"></div>
+      <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
+    </div>
+  </div>
+</div>
+<svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
+        <!-- KPI Strip -->
+      <div class="kpi-strip" id="kpi-strip">
+        <div class="kpi-card kpi-flat" id="kpicard-fr">
+          <div class="kpi-label">FR Day-Ahead avg</div>
+          <div class="kpi-value" id="kpi-fr">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-chg">--</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-de">
+          <div class="kpi-label">DE Day-Ahead avg</div>
+          <div class="kpi-value" id="kpi-de">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-de-chg">--</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-avg">
+          <div class="kpi-label">EU avg</div>
+          <div class="kpi-value" id="kpi-avg">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-avg-chg">Loading...</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-peak">
+          <div class="kpi-label">FR peak avg (08–20h)</div>
+          <div class="kpi-value" id="kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-peak-chg">--</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-offpeak">
+          <div class="kpi-label">FR off-peak avg (00–08 / 20–24h)</div>
+          <div class="kpi-value" id="kpi-fr-offpeak">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-fr-offpeak-chg">--</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-max">
+          <div class="kpi-label" id="kpi-max-label">Max today</div>
+          <div class="kpi-value" id="kpi-max">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-max-zone">--</div>
+        </div>
+        <div class="kpi-card kpi-flat" id="kpicard-min">
+          <div class="kpi-label" id="kpi-min-label">Min today</div>
+          <div class="kpi-value" id="kpi-min">--<span class="kpi-unit">€/MWh</span></div>
+          <div class="kpi-chg" id="kpi-min-zone">--</div>
+        </div>
+      </div>
+
+      <!-- Prices Table -->
+      <div class="table-wrap" id="prices-table-wrap">
+        <div class="table-header" style="flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span id="prices-date-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Day-Ahead prices · loading...</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <!-- Zone filter dropdown panel -->
+            <div style="position:relative" id="zone-filter-wrap">
+              <button onclick="toggleZoneFilterPanel()" id="zone-filter-btn"
+                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                <span id="zone-filter-label">All zones</span>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="zone-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
+                    <div style="display:flex;gap:4px">
+                      <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button onclick="selectNeighbours()" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+                    <button onclick="selectWithGenMix()" style="font-size:10px;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
+                  </div>
+                </div>
+                <div id="zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortPricesTable('code')" style="cursor:pointer;user-select:none">Code <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('country')" style="cursor:pointer;user-select:none">Zone <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Avg €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none" title="Avg over 08h–20h">Peak avg €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none" title="Avg over 00h–08h / 20h–24h">Off-pk avg €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none" title="Daily avg today minus yesterday">vs J-1 €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none" title="Min slot price (15-min if available)">Min slot €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none" title="Max slot price (15-min if available)">Max slot €/MWh <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('negHrs')" style="cursor:pointer;user-select:none" title="Hours with price below zero">Neg hrs <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('renPct')" style="cursor:pointer;user-select:none" title="Renewable share of generation mix">% Ren <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('domFuel')" style="cursor:pointer;user-select:none" title="Dominant fuel in generation mix">Dom. fuel <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('spark')" style="cursor:pointer;user-select:none" title="Spark spread = avg − TTF/eff − EUA × CO₂">Spark €/MWh <span style="opacity:.4">↕</span></th>
+              <th style="text-align:left;padding-left:16px">Shape</th>
+            </tr>
+          </thead>
+          <tbody id="prices-tbody">
+            <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Fetching ENTSO-E data...</td></tr>
+          </tbody>
+        </table>
+        <div class="status-bar" style="padding:10px 16px">
+          <span id="prices-footer">ENTSO-E Transparency · Day-ahead market · Updated daily after 13:00 CET</span>
+        </div>
+      </div>
+        <div style="margin-top:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Compare zones</span>
+            <!-- Compare zone dropdown -->
+            <div style="position:relative" id="compare-filter-wrap">
+              <button onclick="toggleCompareFilterPanel()" id="compare-filter-btn"
+                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+                <span id="compare-filter-label">FR selected</span>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="compare-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Compare zones</span>
+                    <div style="display:flex;gap:4px">
+                      <button onclick="selectAllCompareZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="clearCompareZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button onclick="compareNeighbours()" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+                    <button onclick="compareWithGenMix()" style="font-size:10px;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
+                  </div>
+                </div>
+                <div id="compare-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;height:340px;overflow:hidden;margin-bottom:0"><canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas></div>
+          <!-- Compare zones data table (replaces KPI cards) -->
+          <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px">
+            <table id="compare-data-table" style="font-size:11px">
+              <thead>
+                <tr>
+                  <th>Zone</th>
+                  <th>Avg €/MWh</th>
+                  <th>Min</th>
+                  <th>Max</th>
+                  <th>Peak avg</th>
+                  <th>Off-peak avg</th>
+                  <th>Spread P/OP</th>
+                </tr>
+              </thead>
+              <tbody id="compare-data-tbody">
+              </tbody>
+            </table>
+          </div>
+          <div id="compare-peak-strip" style="display:none"></div>
+          <div id="compare-kpi-strip" style="display:none"></div>
+        </div>
+      </div></div>
+
+      <div class="hist-section" id="hs-hist-da">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-da')">
+          <div class="hist-section-title">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Historical DA Prices
+            <span class="hist-section-hint">Hourly or daily average · 7D rolling + 30D rolling</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-hist-da">
+          <div class="hist-controls"><select class="hist-zone-select" id="hz-spot" onchange="setHistZone('spot',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spot">
+        <button class="hw-btn" onclick="setHistWindow('spot','7D',this)">7D</button>
+        <button class="hw-btn active" onclick="setHistWindow('spot','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','3M',this)">3M</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','5Y',this)">5Y</button>
+        <button class="hw-btn" onclick="setHistWindow('spot','all',this)">All</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spot-period"></div>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-spot-canvas" style="width:100%;height:220px"></canvas></div>
+      <div class="hist-stats-grid" id="hist-spot-stats"></div>
+        </div>
+      </div>
+
+      <div class="hist-section" id="hs-spread-history">
+        <div class="hist-section-header" onclick="toggleHistSection('spread-history')">
+          <div class="hist-section-title">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg></span>DA Daily Spread (Max−Min)
+            <span class="hist-section-hint">Intraday arbitrage potential · 30D rolling avg</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-spread-history">
+          <div class="hist-controls"><select class="hist-zone-select" id="hz-spread" onchange="setHistZone('spread',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spread">
+        <button class="hw-btn" onclick="setHistWindow('spread','7D',this)">7D</button>
+        <button class="hw-btn active" onclick="setHistWindow('spread','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('spread','3M',this)">3M</button>
+        <button class="hw-btn" onclick="setHistWindow('spread','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('spread','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('spread','all',this)">All</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spread-period"></div>
+      <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-spread-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="hist-stats-grid" id="hist-spread-stats"></div>
+        </div>
+      </div>
+
+      <div class="hist-section" id="hs-hist-dist">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-dist')">
+          <div class="hist-section-title">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg></span>DA Spot Price Distribution
+            <span class="hist-section-hint">Histogram of hourly prices · mean + median</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-hist-dist">
+          <div class="hist-window-btns" id="hw-dist">
+        <button class="hw-btn active" onclick="setHistWindow('dist','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','5Y',this)">5Y</button>
+        <button class="hw-btn" onclick="setHistWindow('dist','all',this)">All</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-dist-period"></div>
+      <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-dist-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="hist-stats-grid" id="hist-dist-stats"></div>
+        </div>
+      </div>
+
+      <div class="hist-section" id="hs-fr-neighbours">
+        <div class="hist-section-header" onclick="toggleHistSection('fr-neighbours')">
+          <div class="hist-section-title">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></span>FR vs Neighbours
+            <span class="hist-section-hint">Daily average · FR/DE/BE/ES/NL</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-fr-neighbours">
+          <div class="hist-window-btns" id="hw-nbr">
+        <button class="hw-btn active" onclick="setHistWindow('nbr','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('nbr','3M',this)">3M</button>
+        <button class="hw-btn" onclick="setHistWindow('nbr','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('nbr','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('nbr','5Y',this)">5Y</button>
+        <button class="hw-btn" onclick="setHistWindow('nbr','all',this)">All</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-nbr-period"></div>
+      <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-nbr-canvas" style="width:100%;height:220px"></canvas></div>
+        </div>
+      </div>
+
+      <div class="hist-section" id="hs-hist-neg">
+        <div class="hist-section-header" onclick="toggleHistSection('hist-neg')">
+          <div class="hist-section-title">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="rgba(239,68,68,0.2)" stroke="#ef4444"/></svg></span>Negative DA Price Hours
+            <span class="hist-section-hint">Daily bars + calendar heatmap · Red = high count</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-hist-neg">
+          <div class="hist-controls"><select class="hist-zone-select" id="hz-neg" onchange="setHistZone('neg',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-neg">
+        <button class="hw-btn active" onclick="setHistWindow('neg','1M',this)">1M</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','3M',this)">3M</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','1Y',this)">1Y</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','2Y',this)">2Y</button>
+        <button class="hw-btn" onclick="setHistWindow('neg','all',this)">All</button>
+      </div>
+
+      <!-- Neg Hours KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0" id="neg-kpi-strip">
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">This Month</div>
+          <div class="kpi-value down" id="neg-kpi-month">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-month-sub">negative hours</div>
+        </div>
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">This Year (YTD)</div>
+          <div class="kpi-value down" id="neg-kpi-year">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-year-sub">negative hours YTD</div>
+        </div>
+        <div class="kpi-card" style="padding:10px 14px">
+          <div class="kpi-label">Worst Month</div>
+          <div class="kpi-value down" id="neg-kpi-worst">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-chg" id="neg-kpi-worst-sub">record month</div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-neg-period"></div>
+      <div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas></div>
+
+      <!-- Calendar heatmap -->
+      <div style="margin-top:16px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">📅 Calendar Heatmap — Negative Hours per Day</div>
+        <div id="neg-calendar-heatmap" style="overflow-x:auto"></div>
+      </div>
+
+      <!-- Monthly summary -->
+      <div style="margin-top:14px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">📊 Monthly Summary</div>
+        <div id="neg-monthly-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px"></div>
+      </div>
+
+      <div class="hist-stats-grid" id="hist-neg-stats"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── PAGE: GENERATION MIX ── -->
+    <div class="page" id="page-genmix">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Generation Mix</div>
+          <div class="page-subtitle">Actual generation by fuel type · France (FR)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="genmix-country" onchange="loadGenMix()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="PT">Portugal (PT)</option>
+            <option value="IT_NORD">Italy North (IT)</option>
+          </select>
+          <span class="updated-badge" id="genmix-updated">Loading...</span>
+        </div>
+      </div>
+
+      <div class="fuel-grid" id="fuel-grid">
+        <div class="kpi-card"><div class="kpi-label">Loading...</div></div>
+      </div>
+
+      <!-- Chart type toggle + DA Price overlay -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px" id="genmix-type-btns">
+          <button class="day-tab active" onclick="setGenMixType('bar',this)">Bars</button>
+          <button class="day-tab" onclick="setGenMixType('area',this)">Area</button>
+          <button class="day-tab" onclick="setGenMixType('donut',this)">Donut</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer">
+          <input type="checkbox" id="genmix-da-overlay" onchange="loadGenMix()" style="accent-color:var(--acc)">
+          Show DA Prices
+        </label>
+      </div>
+
+      <div class="chart-container">
+        <div class="table-header" style="padding:0 0 12px;border:none">
+          <span class="table-title" id="genmix-chart-title">Hourly Generation Mix (MW)</span>
+          <span class="source-badge">ENTSO-E A75</span>
+        </div>
+        <div class="chart-area">
+          <canvas id="genmix-canvas" style="width:100%;height:300px"></canvas>
+        </div>
+      </div>
+
+      <!-- Generation Breakdown Table -->
+      <div class="table-wrap" style="margin-top:16px">
+        <div class="table-header">
+          <span class="table-title">Generation Breakdown</span>
+          <span class="source-badge" id="genmix-breakdown-updated">ENTSO-E A75</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>GW ↕</th>
+              <th style="min-width:100px">% Share</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="genmix-breakdown-tbody">
+            <tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: PRICE MAP ── -->
+    <div class="page" id="page-map">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Power Price Map</div>
+          <div class="page-subtitle">Day-ahead prices by bidding zone · ENTSO-E · Click a country for details</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:5px" id="map-view-tabs">
+            <button class="day-tab active" onclick="setMapView('price',this)">DA Price</button>
+            <button class="day-tab" onclick="setMapView('spark',this)">Spark Spread</button>
+            <button class="day-tab" onclick="setMapView('neg',this)">Neg. Hours</button>
+            <button class="day-tab" onclick="setMapView('delta',this)">vs Yday</button>
+          </div>
+          <span class="updated-badge" id="map-upd">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Legend + KPIs -->
+      <div style="display:grid;grid-template-columns:1fr auto;gap:14px;margin-bottom:14px;align-items:start">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="map-kpis"></div>
+        <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:10px 14px;min-width:160px">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Scale (€/MWh)</div>
+          <div id="map-legend" style="display:flex;flex-direction:column;gap:3px"></div>
+        </div>
+      </div>
+
+      <!-- Map container -->
+      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:7px;overflow:hidden;margin-bottom:14px">
+        <div id="leaflet-map" style="height:480px;width:100%;background:#0a0f14"></div>
+      </div>
+
+      <!-- Selected country detail -->
+      <div id="map-detail" style="display:none;background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="map-detail-title">--</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px" id="map-detail-kpis"></div>
+        <div style="margin-top:14px">
+          <canvas id="map-detail-chart" style="width:100%;height:160px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: CROSS-BORDER ── -->
+    <div class="page" id="page-crossborder">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cross-Border Flows</div>
+          <div class="page-subtitle">Physical flows between bidding zones · ENTSO-E A11</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="GB">Great Britain (GB)</option>
+          </select>
+          <span class="updated-badge" id="cb-updated">Loading...</span>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="cb-kpi-strip">
+        <div class="kpi-card"><div class="kpi-label">Total Exports</div><div class="kpi-value up" id="cb-kpi-exp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-exp-chg">--</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Imports</div><div class="kpi-value down" id="cb-kpi-imp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-imp-chg">--</div></div>
+        <div class="kpi-card"><div class="kpi-label">Net Position</div><div class="kpi-value" id="cb-kpi-net">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-net-chg">--</div></div>
+        <div class="kpi-card"><div class="kpi-label">Border Pairs</div><div class="kpi-value" id="cb-kpi-pairs">--</div><div class="kpi-chg" style="color:var(--tx3)">interconnections</div></div>
+      </div>
+
+      <!-- Stacked bar chart: exports vs imports -->
+      <div class="chart-container" style="margin-bottom:16px">
+        <div class="table-header" style="padding:0 0 10px;border:none">
+          <span class="table-title" id="cb-title">France — Cross-Border Flows (avg MW)</span>
+          <span class="source-badge">ENTSO-E A11</span>
+        </div>
+        <div style="position:relative;height:240px;overflow:hidden"><canvas id="cb-chart-canvas" style="width:100%;height:240px"></canvas></div>
+      </div>
+
+      <!-- Partner breakdown table -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Partner Breakdown</span>
+          <span class="source-badge">Physical NTC · avg MW</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Partner</th>
+              <th>Imports MW ↕</th>
+              <th>Exports MW ↕</th>
+              <th>Net MW ↕</th>
+              <th style="min-width:120px">Flow balance</th>
+              <th>Direction</th>
+            </tr>
+          </thead>
+          <tbody id="cb-tbody">
+            <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Fetching flows...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: LOAD ── -->
+    <div class="page" id="page-load">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Load & Demand</div>
+          <div class="page-subtitle">Actual and forecast load · ENTSO-E A65</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="load-country" onchange="loadLoad()">
+            <option value="FR">France (FR)</option>
+            <option value="DE_LU">Germany (DE)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="GB">Great Britain (GB)</option>
+            <option value="IT_NORD">Italy North (IT)</option>
+          </select>
+          <span class="updated-badge" id="load-updated">Loading...</span>
+        </div>
+      </div>
+
+      <!-- KPI strip Rivex-style -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi-card">
+          <div class="kpi-label">Peak Actual</div>
+          <div class="kpi-value" id="load-kpi-peak-actual">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-peak-actual-sub">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Peak Forecast</div>
+          <div class="kpi-value" id="load-kpi-peak-fc">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-peak-fc-sub">--</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Actual</div>
+          <div class="kpi-value" id="load-kpi-avg">--<span class="kpi-unit">GW</span></div>
+          <div class="kpi-chg" id="load-kpi-avg-sub">daily avg</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Forecast Deviation</div>
+          <div class="kpi-value" id="load-kpi-dev">--<span class="kpi-unit">%</span></div>
+          <div class="kpi-chg" id="load-kpi-dev-sub">fc vs actual</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">YoY Demand Change</div>
+          <div class="kpi-value" id="load-kpi-yoy">--<span class="kpi-unit">%</span></div>
+          <div class="kpi-chg" id="load-kpi-yoy-sub">vs same day LY</div>
+        </div>
+      </div>
+
+      <!-- Day selector buttons -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="load-day-btns">
+        <button class="day-tab active" onclick="setLoadDay(0,this)">Today</button>
+        <button class="day-tab" onclick="setLoadDay(-1,this)">Yesterday</button>
+        <button class="day-tab" onclick="setLoadDay(-2,this)">2 days ago</button>
+        <button class="day-tab" onclick="setLoadDay(-7,this)">-7 days</button>
+        <button class="day-tab" onclick="setLoadDay(-14,this)">-14 days</button>
+      </div>
+
+      <div class="chart-container">
+        <div class="table-header" style="padding:0 0 12px;border:none">
+          <span class="table-title" id="load-chart-title">France — Hourly Load (GW)</span>
+          <span class="source-badge">ENTSO-E A65</span>
+        </div>
+        <div style="position:relative;height:300px;overflow:hidden"><canvas id="load-canvas" style="width:100%;height:300px"></canvas></div>
+      </div>
+
+      <!-- Hourly Breakdown Table -->
+      <div class="table-wrap" style="margin-top:16px">
+        <div class="table-header">
+          <span class="table-title">Hourly Breakdown</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Hour (UTC)</th>
+              <th>Actual MW ↕</th>
+              <th>Forecast MW ↕</th>
+              <th>Deviation ↕</th>
+            </tr>
+          </thead>
+          <tbody id="load-hourly-tbody">
+            <tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: NEWS ── -->
+    <div class="page" id="page-news">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Energy News</div>
+          <div class="page-subtitle">Live feed from ENTSO-E, RTE, CRE, ACER and European energy press</div>
+        </div>
+        <span class="updated-badge" id="news-updated">Loading...</span>
+      </div>
+
+      <div class="news-filters">
+        <button class="filter-btn active" onclick="filterNews('all', this)">All</button>
+        <button class="filter-btn" onclick="filterNews('power', this)">⚡ Power</button>
+        <button class="filter-btn" onclick="filterNews('gas', this)">🔵 Gas</button>
+        <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
+        <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
+        <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
+      </div>
+
+      <div class="news-grid" id="news-grid">
+        <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: OVERVIEW ── -->
+    <div class="page" id="page-overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Market Overview</div>
+          <div class="page-subtitle">European energy market snapshot</div>
+        </div>
+        <span class="live-badge"><div class="live-dot"></div> LIVE</span>
+      </div>
+      <div class="overview-grid">
+        <div>
+          <div class="table-wrap" style="margin-bottom:16px">
+            <div class="table-header"><span class="table-title">Key Prices</span></div>
+            <table>
+              <tbody id="overview-prices">
+                <tr class="loading-row"><td colspan="3"><span class="spinner"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="chart-container">
+            <div class="table-title" style="margin-bottom:12px">Market Status</div>
+            <div id="market-status" style="font-size:13px;color:var(--text2);line-height:1.8">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: CONVERTER ── -->
+    <div class="page" id="page-converter">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Energy Converter</div>
+          <div class="page-subtitle">MW ↔ GW · MWh ↔ GWh ↔ TWh · Capacity to annual energy</div>
+        </div>
+      </div>
+      <div class="converter-wrap">
+        <div class="converter-tabs" id="conv-tabs">
+          <button class="conv-tab active" onclick="setConvUnit('MW', this)">MW</button>
+          <button class="conv-tab" onclick="setConvUnit('GW', this)">GW</button>
+          <button class="conv-tab" onclick="setConvUnit('MWh', this)">MWh</button>
+          <button class="conv-tab" onclick="setConvUnit('GWh', this)">GWh</button>
+          <button class="conv-tab" onclick="setConvUnit('TWh', this)">TWh</button>
+        </div>
+        <div class="conv-input-wrap">
+          <input class="conv-input" type="number" id="conv-input" placeholder="1000" oninput="updateConverter()" value="1000">
+        </div>
+        <div class="conv-results" id="conv-results"></div>
+
+        <!-- Capacity factor section -->
+        <div style="margin-top:24px">
+          <div class="table-title" style="margin-bottom:14px">Capacity → Annual Energy</div>
+          <div class="conv-input-wrap">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Capacity (MW)</div>
+                <input class="conv-input" type="number" id="cap-mw" placeholder="500" style="font-size:32px" oninput="updateCapacity()" value="500">
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Load Factor (%)</div>
+                <input class="conv-input" type="number" id="cap-lf" placeholder="35" style="font-size:32px" oninput="updateCapacity()" value="35">
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="day-tab" onclick="setLF(85, this)">Baseload (85%)</button>
+            <button class="day-tab active" onclick="setLF(35, this)">Wind (35%)</button>
+            <button class="day-tab" onclick="setLF(20, this)">Solar (20%)</button>
+            <button class="day-tab" onclick="setLF(25, this)">BESS (25%)</button>
+          </div>
+          <div class="conv-results" id="cap-results"></div>
+        </div>
+      </div>
+    </div>
+
+  
+    <!-- RENEWABLES -->
+    <div class="page" id="page-renewables">
+      <div class="page-header">
+        <div><div class="page-title">Renewables — Production, Forecast &amp; Capture Rate</div><div class="page-subtitle">Wind · Solar · M0 capture rate · ENTSO-E A69/A71</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:4px">
+            <button class="day-tab active" id="ren-tech-wind" onclick="setRenTech('wind',this)">🌬 Wind</button>
+            <button class="day-tab" id="ren-tech-solar" onclick="setRenTech('solar',this)">☀ Solar</button>
+            <button class="day-tab" id="ren-tech-both" onclick="setRenTech('both',this)">Both</button>
+          </div>
+          <select class="country-select" id="ren-country" onchange="loadRenewables()">
+            <option value="FR">France</option><option value="DE_LU">Germany</option>
+            <option value="ES">Spain</option><option value="GB">Great Britain</option>
+            <option value="BE">Belgium</option><option value="IT_NORD">Italy</option>
+          </select>
+          <span class="updated-badge" id="ren-upd">Loading...</span>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">Wind Now</div><div class="kpi-value up" id="ren-wind-on">--<span class="kpi-unit">GW</span></div><div class="kpi-chg" id="ren-wind-on-sub">onshore</div></div>
+        <div class="kpi-card"><div class="kpi-label">Solar Now</div><div class="kpi-value" style="color:#fbbf24" id="ren-solar-now">--<span class="kpi-unit">GW</span></div><div class="kpi-chg" id="ren-solar-sub">--</div></div>
+        <div class="kpi-card"><div class="kpi-label">Wind M0 Capture</div><div class="kpi-value" id="ren-m0-wind">--<span class="kpi-unit">%</span></div><div class="kpi-chg" id="ren-m0-wind-sub">vs baseload</div></div>
+        <div class="kpi-card"><div class="kpi-label">Solar M0 Capture</div><div class="kpi-value" id="ren-m0-solar">--<span class="kpi-unit">%</span></div><div class="kpi-chg" id="ren-m0-solar-sub">vs baseload</div></div>
+        <div class="kpi-card"><div class="kpi-label">Wind FC Error</div><div class="kpi-value" id="ren-fe-wind">--</div><div class="kpi-chg" style="color:var(--tx3)">actual vs DA fc</div></div>
+        <div class="kpi-card"><div class="kpi-label">Solar FC Error</div><div class="kpi-value" id="ren-fe-solar">--</div><div class="kpi-chg" style="color:var(--tx3)">actual vs DA fc</div></div>
+      </div>
+
+      <!-- Today chart -->
+      <div class="day-tabs" style="margin-bottom:10px">
+        <button class="day-tab active" onclick="setRenTab('today',this)">Today</button>
+        <button class="day-tab" onclick="setRenTab('forecast',this)">DA Forecast</button>
+        <button class="day-tab" onclick="setRenTab('error',this)">Forecast Error</button>
+        <button class="day-tab" onclick="setRenTab('history',this)">J-7</button>
+      </div>
+      <div class="chart-container" style="margin-bottom:16px">
+        <div style="position:relative;height:240px;overflow:hidden"><canvas id="ren-canvas" style="width:100%;height:240px"></canvas></div>
+      </div>
+
+      <!-- Recent Period Summary -->
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-header">
+          <span class="table-title">Recent Period Summary — Capture Rate M0</span>
+          <span class="source-badge">M0 = Σ(MW×Spot) / Σ(MW) rolling</span>
+        </div>
+        <table>
+          <thead><tr><th>Period</th><th>Wind Avg GW</th><th>Wind M0</th><th>Wind M0/BL</th><th>Solar Avg GW</th><th>Solar M0</th><th>Solar M0/BL</th></tr></thead>
+          <tbody id="ren-summary-tbody">
+            <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Capture rate historical chart -->
+      <div class="hist-section" id="hs-ren-capture">
+        <div class="hist-section-header" onclick="toggleHistSection('ren-capture')">
+          <div class="hist-section-title"><span class="icon">📈</span>Capture Rate M0 — Historical<span class="hist-section-hint">Rolling WAP vs baseload</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-ren-capture">
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <div class="hist-window-btns">
+              <button class="hw-btn" onclick="setHistWindow('ren-cap','30D',this)">30D</button>
+              <button class="hw-btn" onclick="setHistWindow('ren-cap','90D',this)">90D</button>
+              <button class="hw-btn active" onclick="setHistWindow('ren-cap','365D',this)">365D</button>
+              <button class="hw-btn" onclick="setHistWindow('ren-cap','YTD',this)">YTD</button>
+              <button class="hw-btn" onclick="setHistWindow('ren-cap','all',this)">All</button>
+            </div>
+          </div>
+          <div style="position:relative;height:220px;overflow:hidden"><canvas id="ren-cap-canvas" style="width:100%;height:220px"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Trend + Stack -->
+      <div class="hist-section" id="hs-ren-trend">
+        <div class="hist-section-header" onclick="toggleHistSection('ren-trend')">
+          <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></span>Wind &amp; Solar — Daily Trend<span class="hist-section-hint">Daily avg + 7D rolling</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-ren-trend"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('ren-trend','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-trend','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-trend','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('ren-trend','1Y',this)">1Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','All',this)">All</button></div><div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-trend" style="width:100%;height:220px"></canvas></div></div>
+      </div>
+      <div class="hist-section" id="hs-ren-stack">
+        <div class="hist-section-header" onclick="toggleHistSection('ren-stack')">
+          <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>Renewable Mix — Stacked Area<span class="hist-section-hint">Wind + Solar stacked</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-ren-stack"><div class="hist-window-btns"><button class="hw-btn active" onclick="setHistWindow('ren-stack','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-stack','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-stack','3M',this)">3M</button></div><div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-stack" style="width:100%;height:220px"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- NUCLEAR & HYDRO -->
+    <div class="page" id="page-nuclear">
+      <div class="page-header">
+        <div><div class="page-title">Nuclear &amp; Hydro</div><div class="page-subtitle">Availability · Output · Reservoir levels · ENTSO-E A73/NVE</div></div>
+        <span class="updated-badge" id="nuc-upd">ENTSO-E · Demo</span>
+      </div>
+
+      <!-- Nuclear KPIs -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">⚛ Nuclear</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#3b82f6" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg up" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
+        <div class="kpi-card"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
+        <div class="kpi-card"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg down" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
+        <div class="kpi-card"><div class="kpi-label">Active Outages</div><div class="kpi-value down" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
+        <div class="kpi-card"><div class="kpi-label">MW Unavailable</div><div class="kpi-value down" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
+      </div>
+      <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:190px"></canvas></div>
+
+      <!-- Hydro KPIs -->
+      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:16px 0 8px">💧 Hydro</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+        <div class="kpi-card"><div class="kpi-label">NO Reservoir Fill</div><div class="kpi-value up" id="hydro-kpi-fill">34.2<span class="kpi-unit">%</span></div><div class="kpi-chg down" id="hydro-kpi-fill-chg">↓ 2.1% vs 20yr median</div></div>
+        <div class="kpi-card"><div class="kpi-label">FR Hydro Output</div><div class="kpi-value up">4.8<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">run-of-river + storage</div></div>
+        <div class="kpi-card"><div class="kpi-label">Inflow vs Normal</div><div class="kpi-value down">-14<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--tx3)">weekly inflow index</div></div>
+        <div class="kpi-card"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
+      </div>
+      <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:190px"></canvas></div>
+
+      <!-- REMIT table -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Active REMIT — FR Nuclear Outages</span>
+          <span class="updated-badge" style="color:var(--warn);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">3 active UMM</span>
+        </div>
+        <table>
+          <thead><tr><th>Asset</th><th>Capacity MW</th><th>Unavail. MW</th><th>Start</th><th>End</th><th>Type</th><th>Reason</th></tr></thead>
+          <tbody id="nuc-remit-tbody">
+            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Gravelines 4</td><td>900</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td>Nuclear</td><td style="color:var(--tx3)">Planned maint.</td></tr>
+            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Cattenom 2</td><td>1 300</td><td class="down">1 300</td><td>2026-04-22</td><td>2026-05-30</td><td>Nuclear</td><td style="color:var(--tx3)">Scheduled refuel</td></tr>
+            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Paluel 1</td><td>1 330</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td>Nuclear</td><td style="color:var(--down)">Unplanned</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- IMBALANCE -->
+    <div class="page" id="page-imbalance">
+      <div class="page-header">
+        <div><div class="page-title">Imbalance Prices</div><div class="page-subtitle">Settlement prices · System position · FR/DE/BE · RTE</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="imb-country" onchange="drawImbalance()">
+            <option value="FR">France (RTE)</option>
+            <option value="DE_LU">Germany (50HzT)</option>
+            <option value="BE">Belgium (Elia)</option>
+          </select>
+          <span class="updated-badge" id="imb-upd">Demo data</span>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">Last Imb. Price</div><div class="kpi-value down" id="imb-kpi-last">-142.5<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg down" id="imb-kpi-last-chg">Short system</div></div>
+        <div class="kpi-card"><div class="kpi-label">Long Price (avg)</div><div class="kpi-value up" id="imb-kpi-long">+198.4<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)" id="imb-kpi-long-chg">system long periods</div></div>
+        <div class="kpi-card"><div class="kpi-label">Short Price (avg)</div><div class="kpi-value down" id="imb-kpi-short">-88.2<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)" id="imb-kpi-short-chg">system short periods</div></div>
+        <div class="kpi-card"><div class="kpi-label">System Position</div><div class="kpi-value down" id="imb-kpi-pos">-1 240<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">last quarter-hour</div></div>
+        <div class="kpi-card"><div class="kpi-label">Spread L/S</div><div class="kpi-value" id="imb-kpi-spread">+286.6<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)">long price − short price</div></div>
+      </div>
+
+      <!-- Day selector -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="day-tab active" onclick="setImbDay(0,this)">Today</button>
+        <button class="day-tab" onclick="setImbDay(-1,this)">Yesterday</button>
+        <button class="day-tab" onclick="setImbDay(-2,this)">J-2</button>
+      </div>
+
+      <div class="chart-container" style="margin-bottom:16px">
+        <div class="table-title" style="margin-bottom:10px">Imbalance Price Intraday — 15min (€/MWh)</div>
+        <div style="position:relative;height:240px;overflow:hidden"><canvas id="imb-canvas" style="width:100%;height:240px"></canvas></div>
+      </div>
+
+      <!-- Long / Short periods table -->
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-header">
+          <span class="table-title">Long / Short Periods Today</span>
+          <span class="source-badge">15-min settlement</span>
+        </div>
+        <table>
+          <thead><tr><th>Quarter-hour</th><th>Position</th><th>Imb. Price €/MWh</th><th>vs DA Price</th><th>Direction</th></tr></thead>
+          <tbody id="imb-periods-tbody">
+            <tr class="loading-row"><td colspan="5"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Historical -->
+      <div class="hist-section" id="hs-imb-history">
+        <div class="hist-section-header" onclick="toggleHistSection('imb-history')">
+          <div class="hist-section-title"><span class="icon">📊</span>Imbalance Prices — Historical<span class="hist-section-hint">Daily avg · pos vs neg</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-imb-history">
+          <div class="hist-window-btns">
+            <button class="hw-btn" onclick="setHistWindow('imb-hist','7D',this)">7D</button>
+            <button class="hw-btn" onclick="setHistWindow('imb-hist','1M',this)">1M</button>
+            <button class="hw-btn" onclick="setHistWindow('imb-hist','3M',this)">3M</button>
+            <button class="hw-btn active" onclick="setHistWindow('imb-hist','1Y',this)">1Y</button>
+          </div>
+          <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-imb-canvas" style="width:100%;height:200px"></canvas></div>
+          <div class="hist-stats-grid" id="hist-imb-stats"></div>
+        </div>
+      </div>
+      <div class="hist-section" id="hs-fcr-history">
+        <div class="hist-section-header" onclick="toggleHistSection('fcr-history')">
+          <div class="hist-section-title"><span class="icon">⚡</span>FCR — Frequency Containment Reserve<span class="hist-section-hint">Contracted capacity · €/MW/day</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-fcr-history">
+          <div class="hist-window-btns">
+            <button class="hw-btn" onclick="setHistWindow('fcr-hist','7D',this)">7D</button>
+            <button class="hw-btn" onclick="setHistWindow('fcr-hist','1M',this)">1M</button>
+            <button class="hw-btn" onclick="setHistWindow('fcr-hist','3M',this)">3M</button>
+            <button class="hw-btn active" onclick="setHistWindow('fcr-hist','1Y',this)">1Y</button>
+          </div>
+          <div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-fcr-canvas" style="width:100%;height:180px"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EUA SPOT -->
+    <div class="page" id="page-eua">
+      <div class="page-header">
+        <div><div class="page-title">EUA Carbon Allowances</div><div class="page-subtitle">EU ETS spot · ICE/EEX</div></div>
+        <span class="updated-badge">ICE · EEX · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#a78bfa">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">&#9660;0.09% vs close</div></div>
+        <div class="kpi-card"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#a78bfa">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg up">&#9650;0.32%</div></div>
+        <div class="kpi-card"><div class="kpi-label">YTD Change</div><div class="kpi-value down">-8.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">from 82.5 Jan 1</div></div>
+        <div class="kpi-card"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div></div>
+        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div></div>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:160px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:160px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
+      <div class="hist-section" id="hs-eua-history">
+        <div class="hist-section-header" onclick="toggleHistSection('eua-history')">
+          <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.25 2.5-2.5 3.5-5 1-2.5 1.5-5.5 3.5-7.5 2-2 4.75-3 7.5-3 2 0 4 .5 5.5 2-1.5 1.5-3.5 2-5.5 2-1.5 0-3-.25-4.5-1-1 2-1.5 4-1.5 6 0 2.5.75 5 2 7"/><path d="M20 6c-2 2-3 4-3 6 0 1.5.25 3 1 4.5"/></svg></span>EUA — Long-term Historical<span class="hist-section-hint">Spot daily · clean spark spread</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-eua-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('eua-hist','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('eua-hist','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('eua-hist','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','All',this)">All</button></div><div class="hist-two-col"><div><canvas id="hist-eua-canvas" style="width:100%;height:200px"></canvas></div><div><canvas id="hist-spark-canvas" style="width:100%;height:200px"></canvas></div></div><div class="hist-stats-grid" id="hist-eua-stats"></div></div>
+      </div>
+    </div>
+
+    <!-- EUA FORWARD -->
+    <div class="page" id="page-euafwd">
+      <div class="page-header">
+        <div><div class="page-title">EUA Forward Curve</div><div class="page-subtitle">December contracts · ICE</div></div>
+        <span class="updated-badge">ICE · Demo</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">EUA Futures — December contracts</span></div>
+        <table><thead><tr><th>Contract</th><th>Last (€/t)</th><th>Bid</th><th>Ask</th><th>Change</th><th>Chg %</th><th>Volume</th><th>OI</th></tr></thead>
+        <tbody>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
+          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
+        </tbody></table>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><canvas id="eua-fwd-canvas" style="width:100%;height:160px"></canvas></div>
+    </div>
+
+    <!-- SPARK SPREAD -->
+    <div class="page" id="page-spark">
+      <div class="page-header">
+        <div><div class="page-title">Clean Spark Spread</div><div class="page-subtitle">DA price − gas cost − carbon cost · 49% CCGT efficiency</div></div>
+        <span class="updated-badge">ENTSO-E · TTF · EUA</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Clean Spark Spread — All Zones (€/MWh)</span><span class="source-badge">TTF D+1: 45.14 · EUA: 74.09 · Efficiency: 49%</span></div>
+        <table><thead><tr><th>Zone</th><th>DA Price</th><th>Gas Cost</th><th>Carbon Cost</th><th>CSS</th><th>vs Yday</th></tr></thead>
+        <tbody id="spark-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- GO PRICES -->
+    <!-- GO PRICES -->
+    <div class="page" id="page-goprices">
+      <div class="page-header">
+        <div><div class="page-title">Guarantees of Origin — Prices</div><div class="page-subtitle">AIB market · Commerg weekly assessment · EEX auctions FR</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">Manual upload — Commerg weekly</span>
+          <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(16,185,129,.3);padding:3px 9px;border-radius:4px">
+            Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)">
+          </label>
+        </div>
+      </div>
+
+      <!-- KPI strip : dernier prix, delta WoW, spread (= Streamlit go_kpi) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-kpi-strip"></div>
+
+      <!-- Produit selector -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Produit</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
+          <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
+          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
+        </div>
+      </div>
+
+      <!-- Chart 1 : Historique bid/ask = chart_go_price_indications -->
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs hebdo (€/MWh)</span>
+          <div style="display:flex;gap:10px">
+            <span style="font-size:11px;color:var(--up)">&#9472; Bid</span>
+            <span style="font-size:11px;color:var(--dn)">&#9472; Ask</span>
+            <span style="font-size:11px;color:var(--text3)">&#9474; Mid</span>
+          </div>
+        </div>
+        <canvas id="go-indic-canvas" style="width:100%;height:220px"></canvas>
+      </div>
+
+      <!-- Chart 2 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="chart-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="table-title">Forward curve — Cal 2025 → 2028</span>
+            <div style="display:flex;gap:8px">
+              <span style="font-size:11px;color:var(--up)">&#9632; Bid</span>
+              <span style="font-size:11px;color:var(--dn)">&#9632; Ask</span>
+            </div>
+          </div>
+          <canvas id="go-cal-canvas" style="width:100%;height:200px"></canvas>
+        </div>
+        <div class="chart-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="table-title">Spread Bid/Ask — évolution (€/MWh)</span>
+          </div>
+          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Table forward = Streamlit dataframe -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">GO by Calendar Year — Bid / Ask (€/MWh)</span>
+          <span class="source-badge">Commerg · EEX</span>
+        </div>
+        <table><thead><tr>
+          <th>Produit</th>
+          <th>Cal-25 Bid</th><th>Cal-25 Ask</th>
+          <th>Cal-26 Bid</th><th>Cal-26 Ask</th>
+          <th>Cal-27 Bid</th><th>Cal-27 Ask</th>
+          <th>Cal-28 Bid</th><th>Cal-28 Ask</th>
+          <th>Spread</th><th>WoW</th>
+        </tr></thead>
+        <tbody id="go-fwd-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- GO HISTORY -->
+    <div class="page" id="page-gohist">
+      <div class="page-header">
+        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price 2022–2026 · Commerg + EEX · toutes technologies</div></div>
+      </div>
+
+      <!-- Filtres produit + période -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;gap:5px" id="go-hist-filter">
+          <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
+          <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
+          <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
+          <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
+          <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
+        </div>
+        <div style="display:flex;gap:5px;margin-left:auto" id="go-hist-period">
+          <button class="day-tab" onclick="setGoHistPeriod(52,this)">1 an</button>
+          <button class="day-tab active" onclick="setGoHistPeriod(130,this)">2.5 ans</button>
+          <button class="day-tab" onclick="setGoHistPeriod(208,this)">4 ans</button>
+        </div>
+      </div>
+
+      <!-- Chart historique principal = chart_go_price_indications multi-produit -->
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title">Prix indicatifs hebdomadaires — Mid price (€/MWh)</span>
+          <span class="source-badge">Commerg weekly assessment</span>
+        </div>
+        <canvas id="go-hist-canvas" style="width:100%;height:240px"></canvas>
+      </div>
+
+      <!-- Chart YoY delta -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart-container">
+          <div class="table-title" style="margin-bottom:10px">Delta semaine sur semaine (€/MWh)</div>
+          <canvas id="go-wow-canvas" style="width:100%;height:180px"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="table-title" style="margin-bottom:10px">Distribution des prix — boites (€/MWh)</div>
+          <canvas id="go-box-canvas" style="width:100%;height:180px"></canvas>
+        </div>
+      </div>
+      <div class="hist-section" id="hs-capture-solar">
+        <div class="hist-section-header" onclick="toggleHistSection('capture-solar')">
+          <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span>Rolling Capture Rate — Solar<span class="hist-section-hint">WAP / Baseload (%) · 30D/90D/365D</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-capture-solar"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('cap-solar','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('cap-solar','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('cap-solar','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('cap-solar','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('cap-solar','All',this)">All</button></div><canvas id="hist-cap-solar" style="width:100%;height:220px"></canvas></div>
+      </div>
+      <div class="hist-section" id="hs-capture-wind">
+        <div class="hist-section-header" onclick="toggleHistSection('capture-wind')">
+          <div class="hist-section-title"><span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></span>Rolling Capture Rate — Wind<span class="hist-section-hint">WAP / Baseload (%) · 30D/90D/365D</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-capture-wind"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('cap-wind','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('cap-wind','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('cap-wind','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('cap-wind','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('cap-wind','All',this)">All</button></div><canvas id="hist-cap-wind" style="width:100%;height:220px"></canvas></div>
+      </div>
+    </div>
+
+    <!-- WEATHER CITIES -->
+    <div class="page" id="page-wxcities">
+      <div class="page-header">
+        <div><div class="page-title">Météo Énergie</div><div class="page-subtitle">Température · Vent · Précip · Rayonnement · Open-Meteo API</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="wx-country" onchange="loadWeather()">
+            <option value="FR">France</option>
+            <option value="DE">Germany</option>
+            <option value="ES">Spain</option>
+            <option value="GB">Great Britain</option>
+            <option value="BE">Belgium</option>
+            <option value="NL">Netherlands</option>
+          </select>
+          <span class="updated-badge" id="wx-upd">Loading...</span>
+        </div>
+      </div>
+
+      <!-- City cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px" id="wx-cards">
+        <div style="color:var(--text3);padding:20px"><span class="spinner"></span>Loading...</div>
+      </div>
+
+      <!-- Variable selector -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="wx-var-btns">
+        <button class="day-tab active" onclick="setWxVar('temp',this)">🌡 Temperature</button>
+        <button class="day-tab" onclick="setWxVar('wind',this)">💨 Wind</button>
+        <button class="day-tab" onclick="setWxVar('precip',this)">🌧 Precipitation</button>
+        <button class="day-tab" onclick="setWxVar('radiation',this)">☀ Solar Radiation</button>
+      </div>
+
+      <!-- 14-day forecast chart -->
+      <div class="chart-container" style="margin-bottom:16px">
+        <div class="table-header" style="padding:0 0 10px;border:none">
+          <span class="table-title" id="wx-chart-title">Temperature — 14-day Forecast</span>
+          <span class="source-badge">Open-Meteo</span>
+        </div>
+        <div style="position:relative;height:240px;overflow:hidden"><canvas id="wx-forecast-canvas" style="width:100%;height:240px"></canvas></div>
+      </div>
+
+      <!-- City detail table -->
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Cities — Today Summary</span></div>
+        <table>
+          <thead><tr><th>City</th><th>Now °C</th><th>Min/Max</th><th>Wind km/h</th><th>Precip mm</th><th>Radiation W/m²</th><th>HDD</th></tr></thead>
+          <tbody id="wx-city-tbody">
+            <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HDD/CDD -->
+    <div class="page" id="page-wxhdd">
+      <div class="page-header">
+        <div><div class="page-title">HDD / CDD — Degree Days</div><div class="page-subtitle">Heating &amp; Cooling · France · Open-Meteo</div></div>
+        <span class="updated-badge">Open-Meteo · Demo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">HDD Paris Auj.</div><div class="kpi-value">3.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;0.8 vs normale</div></div>
+        <div class="kpi-card"><div class="kpi-label">HDD Cumul Saison</div><div class="kpi-value">1 842<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;112 vs norm.</div></div>
+        <div class="kpi-card"><div class="kpi-label">CDD YTD</div><div class="kpi-value up">48<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)">Normale: 55</div></div>
+        <div class="kpi-card"><div class="kpi-label">Temp. France Now</div><div class="kpi-value">14.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg down">&#9660;1.3°C vs norm.</div></div>
+      </div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Cumulatif Saison — Paris vs Normale 20 ans</div><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">HDD par ville — 7 derniers jours</span></div>
+        <table><thead><tr><th>Ville</th><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th><th>Cumul</th><th>vs norm.</th></tr></thead>
+        <tbody id="hdd-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- REMIT -->
+    <div class="page" id="page-remit">
+      <div class="page-header">
+        <div><div class="page-title">REMIT — Urgent Market Messages</div><div class="page-subtitle">Generation and infrastructure outages · TSO publications</div></div>
+        <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">3 active UMM · FR</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Active UMMs — France</span></div>
+        <table><thead><tr><th>TSO</th><th>Asset</th><th>Type</th><th>MW Unavail.</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Gravelines 4</td><td>Nuclear</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--warn)">Active</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
+          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+  </main>
+  <!-- Zone filter overlay -->
+  <div id="zone-filter-overlay" onclick="toggleZoneFilterPanel()" style="display:none;position:fixed;inset:0;z-index:9998;background:transparent"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Libs bundled inline — no external CDN needed -->
+<style>/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
 }
 
-function showNoDataMessage(dateStr) {
-  const tbody = document.getElementById('prices-tbody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--tx3)">
-    <div style="font-size:14px;margin-bottom:8px">No data yet for ${dateStr}</div>
-    <div style="font-size:11px">ENTSO-E publishes Day-Ahead prices after 13:00 CET.<br>Loading last available date…</div>
-  </td></tr>`;
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
 }
-function showPricesUnavailable(dateStr) {
-  const tbody = document.getElementById('prices-tbody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3);font-size:13px">
-    Historical data for ${dateStr} requires direct ENTSO-E API access.<br>
-    <span style="font-size:11px;margin-top:4px;display:block">Data is available on GitHub Pages after daily fetch.</span>
-  </td></tr>`;
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
 }
 
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
 
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
 
-// ══════════════════════════════════════════════════════════════
-// HISTORICAL CHARTS ENGINE
-// Colour tokens (var = window-scoped, accessible across script blocks)
-var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#4a6280';
-var _HIST_ACC  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00d4a8';
-var _HIST_WARN = '#e8a020';
-var _HIST_DN   = '#ef4444';
-var _HIST_UP   = '#22c55e';
-var _HIST_GRID = 'rgba(255,255,255,0.04)';
+/* cursors */
 
-// ── Fixed country colours ──
-var ZONE_COLORS = {
-  'FR':      '#00d4a8',
-  'DE_LU':   '#60a5fa',
-  'BE':      '#fbbf24',
-  'NL':      '#a78bfa',
-  'ES':      '#f87171',
-  'PT':      '#fb923c',
-  'IT_NORD': '#34d399',
-  'IT_SICI': '#6ee7b7',
-  'AT':      '#e879f9',
-  'CH':      '#94a3b8',
-  'CZ':      '#f472b6',
-  'SK':      '#38bdf8',
-  'HU':      '#facc15',
-  'RO':      '#4ade80',
-  'HR':      '#fb7185',
-  'SI':      '#c084fc',
-  'GR':      '#2dd4bf',
-  'BG':      '#e2e8f0',
-  'DK_W':    '#7dd3fc',
-  'DK_E':    '#93c5fd',
-  'SE':      '#86efac',
-  'NO_1':    '#6ee7b7',
-  'FI':      '#fda4af',
-  'LT':      '#fdba74',
-  'LV':      '#fcd34d',
-  'EE':      '#d9f99d',
-  'PL':      '#f9a8d4',
-  'RS':      '#c4b5fd',
-  'ME':      '#a5f3fc',
-  'MK':      '#bbf7d0',
-};
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
 
-function zoneColor(code) {
-  return ZONE_COLORS[code] || '#94a3b8';
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
 }
-
-// ── Period label ──
-function periodLabel(data) {
-  if (!data || !data.length) return '';
-  const first = data[0].d || data[0];
-  const last  = data[data.length-1].d || data[data.length-1];
-  const fmt = d => {
-    const dt = new Date(d);
-    return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-  };
-  return fmt(first) + ' → ' + fmt(last);
+.leaflet-tooltip-top {
+	margin-top: -6px;
 }
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
 
-// ══════════════════════════════════════════════════════════════
+/* Printing */
 
-// Cache for fetched summary data
-const HIST = {
-  summary: null,       // all-time daily summary
-  monthly: {},         // 'YYYY-MM' → monthly data
-  windows: {},         // current window per chart key
-  charts: {},          // Chart.js instances
-};
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+</style>
+
+<script src="js/libs.js"></script>
+<script src="js/prices.js"></script>
+<script src="js/ticker.js"></script>
+<script src="js/genmix.js"></script>
+<script src="js/market.js"></script>
+<script src="js/news.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/eua.js"></script>
+<script src="js/go.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/map.js"></script>
+<script src="js/data.js"></script>
+<script src="js/hist.js"></script>
+<script src="js/esheep.js"></script>
+</body>
+</html>
