@@ -631,14 +631,14 @@ function updateKPIs(data, dataDateStr) {
   applyVsYesterdayColours(displayDate, today, { fr, de, maxZ, minZ, dataDateStr: displayDate, zoneCount: data.length });
 }
 
-// Apply vs-J-1 colour on every KPI card (border-left + sub-text tint).
-// Sub-text content is preserved (zone / spread / etc.); only its colour is tinted.
+// Apply vs-J-1 colour on every KPI card.
+// Line 3 (kpi-chg) = delta vs J-1 only, coloured to match border.
+// Line 4 (kpi-meta) = static context (zones count for AVG, country for MAX/MIN, hours for peak/off-peak).
 async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (typeof fetchYesterdayDaily !== 'function') return;
   const yData = await fetchYesterdayDaily(displayDate);
   const yKpi  = yData ? computeKPIs(yData.zones) : null;
 
-  // Compute the delta and pick the colour class
   const directionFromDelta = (delta) => {
     if (delta == null || isNaN(delta) || Math.abs(delta) < 1) return { cls:'kpi-flat', txtColor:'var(--text3)' };
     return delta > 0
@@ -658,71 +658,61 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
     return { delta, ...dir };
   };
 
-  // Helper: render sub-text with the J-1 delta + preserved info, tinted to match border
-  const renderSub = (subId, dir, mainContent, fallbackContent) => {
-    const sub = document.getElementById(subId);
-    if (!sub) return;
-    sub.style.color = dir.txtColor;
+  // Line 3: delta vs J-1 only (no extra info), tinted to match border colour
+  const renderChg = (chgId, dir) => {
+    const el = document.getElementById(chgId);
+    if (!el) return;
+    el.style.color = dir.txtColor;
     if (dir.delta != null && !isNaN(dir.delta)) {
       const arrow = dir.delta > 0 ? '▲' : dir.delta < 0 ? '▼' : '·';
       const sign  = dir.delta > 0 ? '+' : '';
-      sub.innerHTML = `<span style="color:${dir.txtColor}">${arrow} ${sign}${dir.delta.toFixed(1)} vs J-1</span>` +
-                      (mainContent ? ` <span style="color:var(--text3)">· ${mainContent}</span>` : '');
+      el.textContent = `${arrow} ${sign}${dir.delta.toFixed(1)} vs J-1`;
     } else {
-      sub.innerHTML = `<span style="color:var(--text3)">${fallbackContent || mainContent || '--'}</span>`;
+      el.textContent = '--';
     }
   };
 
   // FR
   const frDir = setCard('kpicard-fr', today.fr,
     yData ? (yData.zones.FR?.avg ?? null) : null, ctx.fr?.vsYday);
-  if (frDir) renderSub('kpi-fr-chg', frDir, 'FR bidding zone', 'FR bidding zone');
+  if (frDir) renderChg('kpi-fr-chg', frDir);
 
   // DE
   const deDir = setCard('kpicard-de', today.de,
     yData ? (yData.zones.DE_LU?.avg ?? null) : null, ctx.de?.vsYday);
-  if (deDir) renderSub('kpi-de-chg', deDir, 'DE/LU bidding zone', 'DE/LU bidding zone');
+  if (deDir) renderChg('kpi-de-chg', deDir);
 
   // EU avg
   const avgDir = setCard('kpicard-avg', today.avg, yKpi ? yKpi.avg : null);
   if (avgDir) {
-    const sub = document.getElementById('kpi-avg-chg');
-    if (sub) {
-      sub.style.color = avgDir.txtColor;
-      const zonesTxt = ctx.zoneCount != null ? `${ctx.zoneCount} zones` : '';
-      if (avgDir.delta != null) {
-        const arrow = avgDir.delta > 0 ? '▲' : avgDir.delta < 0 ? '▼' : '·';
-        const sign  = avgDir.delta > 0 ? '+' : '';
-        sub.innerHTML = `<span style="color:${avgDir.txtColor}">${arrow} ${sign}${avgDir.delta.toFixed(1)} vs J-1</span>` +
-                        (zonesTxt ? ` <span style="color:var(--text3)">· ${zonesTxt}</span>` : '');
-      } else {
-        sub.innerHTML = `<span style="color:var(--text3)">${zonesTxt || '--'}</span>`;
-      }
-    }
+    renderChg('kpi-avg-chg', avgDir);
+    const meta = document.getElementById('kpi-avg-meta');
+    if (meta) meta.textContent = `${ctx.zoneCount ?? '--'} zones`;
   }
 
   // Peak
   const pkDir = setCard('kpicard-peak', today.frPeak, yKpi ? yKpi.frPeak : null);
-  if (pkDir) {
-    const spread = (today.frPeak != null && today.frOffPeak != null)
-      ? `spread ${(today.frPeak - today.frOffPeak >= 0 ? '+' : '')}${(today.frPeak - today.frOffPeak).toFixed(1)} €`
-      : 'avg over peak hours';
-    renderSub('kpi-fr-peak-chg', pkDir, spread, 'avg over peak hours');
-  }
+  if (pkDir) renderChg('kpi-fr-peak-chg', pkDir);
 
-  // Off-Peak
+  // Off-peak
   const opDir = setCard('kpicard-offpeak', today.frOffPeak, yKpi ? yKpi.frOffPeak : null);
-  if (opDir) renderSub('kpi-fr-offpeak-chg', opDir, '00–08h / 20–24h', '00–08h / 20–24h');
+  if (opDir) renderChg('kpi-fr-offpeak-chg', opDir);
 
   // Max
   const maxDir = setCard('kpicard-max', today.maxLvl, yKpi ? yKpi.maxLvl : null);
-  const maxZoneTxt = ctx.maxZ ? `${ctx.maxZ.flag} ${ctx.maxZ.name}` : '--';
-  if (maxDir) renderSub('kpi-max-zone', maxDir, maxZoneTxt, maxZoneTxt);
+  if (maxDir) {
+    renderChg('kpi-max-chg', maxDir);
+    const zone = document.getElementById('kpi-max-zone');
+    if (zone) zone.textContent = ctx.maxZ ? `${ctx.maxZ.flag} ${ctx.maxZ.name}` : '--';
+  }
 
   // Min
   const minDir = setCard('kpicard-min', today.minLvl, yKpi ? yKpi.minLvl : null);
-  const minZoneTxt = ctx.minZ ? `${ctx.minZ.flag} ${ctx.minZ.name}` : '--';
-  if (minDir) renderSub('kpi-min-zone', minDir, minZoneTxt, minZoneTxt);
+  if (minDir) {
+    renderChg('kpi-min-chg', minDir);
+    const zone = document.getElementById('kpi-min-zone');
+    if (zone) zone.textContent = ctx.minZ ? `${ctx.minZ.flag} ${ctx.minZ.name}` : '--';
+  }
 }
 
 // Country code → ISO2 + display name mapping
