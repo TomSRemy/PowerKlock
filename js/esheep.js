@@ -28,7 +28,7 @@
   const Z_FX    = 9994;     // lightning, wind streaks
   const Z_DOTS  = 9996;     // control dots
   const Z_FLOAT = 9997;     // floating texts
-  const Z_HOT   = 10000;    // hidden hotspot (always reachable)
+  const Z_HOT   = 2147483647; // hotspot — max int, always on top
 
   // PowerKlock has a fixed ticker (top, ~28px) + topbar (~50px). We avoid them.
   function topMargin() {
@@ -52,12 +52,15 @@
 .es-sflash{position:fixed;inset:0;z-index:${Z_FX};pointer-events:none;background:rgba(255,255,120,.22);animation:esSfOut .4s ease forwards}
 .es-wstreak{position:fixed;height:2px;pointer-events:none;z-index:${Z_FX};border-radius:1px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.7),transparent);animation:esWL linear forwards}
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
-.es-hotspot{position:fixed;left:calc(var(--sidebar-w, 220px) + 8px);bottom:8px;width:14px;height:14px;z-index:${Z_HOT};cursor:pointer;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);transition:background .25s ease,border-color .25s ease,transform .25s ease}
-.es-hotspot:hover{background:rgba(160,200,255,.4);border-color:rgba(160,200,255,.7);transform:scale(1.2)}
+.es-hotspot{position:fixed!important;left:calc(var(--sidebar-w, 220px) + 8px)!important;bottom:8px!important;width:18px!important;height:18px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(0,212,168,.18)!important;border:1.5px solid rgba(0,212,168,.55)!important;box-shadow:0 0 8px rgba(0,212,168,.35),inset 0 0 4px rgba(0,212,168,.25)!important;transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot:hover{background:rgba(0,212,168,.45)!important;border-color:rgba(0,212,168,.9)!important;box-shadow:0 0 14px rgba(0,212,168,.7),inset 0 0 6px rgba(0,212,168,.4)!important;transform:scale(1.25)!important}
+.es-hotspot::after{content:'';position:absolute;inset:5px;border-radius:50%;background:rgba(0,212,168,.7);animation:esHotPulse 2.4s ease-in-out infinite}
+@keyframes esHotPulse{0%,100%{opacity:.5;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
 .es-dotsbar{position:fixed;right:14px;bottom:14px;display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
 .es-dot.wind:hover{background:#fb923c}
+.es-dot.tornado:hover{background:#94a3b8}
 .es-dot.close:hover{background:#ef4444}
 .es-dotsbar-label{font-size:9px;color:#2a3f54;letter-spacing:.1em;margin-right:2px}
 .es-p-in{animation:esPIn .35s ease forwards}.es-p-out{animation:esPOut .35s ease forwards}
@@ -95,6 +98,13 @@
 @keyframes esZzUp{0%{transform:translateY(0) scale(1);opacity:.9}100%{transform:translateY(-28px) scale(.5);opacity:0}}
 @keyframes esPipeFall{0%{transform:translateY(-120px);opacity:0}8%{opacity:1}100%{transform:translateY(0);opacity:1}}
 @keyframes esPipeHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes esTornadoSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes esTornadoDrop{0%{transform:translateY(-200vh) scale(.3);opacity:0}15%{opacity:.4}30%{transform:translateY(0) scale(1);opacity:.85}80%{transform:translateY(0) scale(1);opacity:.85}100%{transform:translateY(0) scale(1.4);opacity:0}}
+@keyframes esTornadoWobble{0%,100%{transform:translateX(0)}25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
+@keyframes esSheepSpin{0%{transform:rotate(0deg) translateY(0)}100%{transform:rotate(720deg) translateY(-30px)}}
+.es-tornado{position:fixed;z-index:${Z_FX};pointer-events:none;width:140px;height:280px}
+.es-tornado-inner{width:100%;height:100%;animation:esTornadoSpin .35s linear infinite,esTornadoWobble 1.2s ease-in-out infinite}
+.es-tornado-warning{position:fixed;font-size:20px;font-weight:900;color:#fbbf24;z-index:${Z_FLOAT};pointer-events:none;text-shadow:0 0 18px #fbbf24,0 1px 4px rgba(0,0,0,.95);font-family:monospace;animation:esFtUp 1.6s ease forwards}
 .W-walk{animation:esWWalk .5s ease-in-out infinite}.W-run{animation:esWRun .22s ease-in-out infinite}
 .W-fall{animation:esWFall .38s ease-in-out infinite}.W-sleep{animation:esWSleep 2.6s ease-in-out infinite}
 .W-yawn{animation:esWYawn 2s ease-in-out infinite}.W-nod{animation:esWNod .55s ease-in-out infinite}
@@ -188,13 +198,14 @@
     const A = H - top - 30; // available height between topbar and ground
 
     // Platforms — 6 random, scaled to viewport
+    // Top platforms are narrower to let sheep fall through to ground or lower platforms
     const layout = [
-      { xR: .06, yR: .50, wR: .20 },
-      { xR: .26, yR: .33, wR: .24 },
-      { xR: .50, yR: .46, wR: .19 },
-      { xR: .64, yR: .22, wR: .22 },
-      { xR: .16, yR: .68, wR: .18 },
-      { xR: .40, yR: .58, wR: .17 }
+      { xR: .06, yR: .50, wR: .14 },  // mid-left, smaller
+      { xR: .28, yR: .33, wR: .12 },  // upper-mid, much smaller
+      { xR: .54, yR: .46, wR: .14 },  // mid, smaller
+      { xR: .68, yR: .22, wR: .11 },  // upper-right, much smaller
+      { xR: .14, yR: .68, wR: .20 },  // lower-left, wider (bottom is OK)
+      { xR: .42, yR: .58, wR: .16 }   // mid-low, normal
     ];
     layout.forEach(d => {
       const x = d.xR * W, y = top + d.yR * A, w = d.wR * W;
@@ -362,10 +373,27 @@
     el.style.cssText = `width:${SZ*2}px;height:${SZ*2}px;z-index:${Z_SHEEP + Math.floor(Math.random()*30)};opacity:0`;
     document.body.appendChild(el);
     const W = viewW();
-    const sx = SZ * 2 + Math.random() * (W - SZ * 4);
+    // Anti-cluster: try 6 candidate x positions, pick the one farthest from existing sheep
+    const margin = SZ * 2;
+    const range = W - SZ * 4;
+    let bestX = margin + Math.random() * range, bestDist = -1;
+    for (let i = 0; i < 6; i++) {
+      const cx = margin + Math.random() * range;
+      let minDist = Infinity;
+      allSheep.forEach(o => {
+        if (!o.alive) return;
+        const d = Math.abs(o.x - cx);
+        if (d < minDist) minDist = d;
+      });
+      if (minDist === Infinity) { bestX = cx; break; }
+      if (minDist > bestDist) { bestDist = minDist; bestX = cx; }
+    }
+    const sx = bestX;
     const sy = topMargin() + 5;
+    // Strong horizontal velocity to push them sideways while falling
+    const vx0 = (Math.random() - .5) * 6;
     const s = {
-      el, black, x: sx, y: sy, vx: (Math.random() - .5) * 3, vy: 0,
+      el, black, x: sx, y: sy, vx: vx0, vy: 0,
       dir: Math.random() < .5 ? 1 : -1,
       state: ST.FALL, tick: 0, timer: 0, alive: true, grabbed: false,
       gox: 0, goy: 0, surf: null, zzEl: null, windOut: false
@@ -621,6 +649,141 @@
     lightTimer = setTimeout(() => { lightning(); schedLight(); }, delay);
   }
 
+  // ── TORNADO (anti-clustering) ──
+  // Detects most populated platform/area, lands a tornado there, scatters sheep in all directions
+  let tornadoTimer = null, tornadoActive = false;
+
+  function findCrowdedSpot() {
+    // Score each platform by # sheep on/near it; ground gets evaluated as 8 zones
+    let best = null, bestCount = 0;
+    PLATS.forEach(p => {
+      const cnt = allSheep.filter(s => s.alive && !s.windOut &&
+        s.x + SZ > p.x - 30 && s.x + SZ < p.x + p.w + 30 &&
+        Math.abs((s.y + SZ * 2) - p.y) < 60).length;
+      if (cnt > bestCount) { bestCount = cnt; best = { x: p.x + p.w / 2, y: p.y, kind: 'platform' }; }
+    });
+    // Check ground zones too
+    const W = viewW(), GND = gnd(), zones = 6;
+    for (let i = 0; i < zones; i++) {
+      const zx = (i + .5) * W / zones;
+      const cnt = allSheep.filter(s => s.alive && !s.windOut &&
+        Math.abs(s.x + SZ - zx) < W / zones / 2 &&
+        s.y + SZ * 2 > GND - 20).length;
+      if (cnt > bestCount) { bestCount = cnt; best = { x: zx, y: GND, kind: 'ground' }; }
+    }
+    return best && bestCount >= 2 ? best : null;
+  }
+
+  function tornado() {
+    if (tornadoActive) return;
+    const spot = findCrowdedSpot();
+    if (!spot) return;
+    tornadoActive = true;
+    const top = topMargin();
+
+    // Warning text first
+    const warn = document.createElement('div');
+    warn.className = 'es-tornado-warning';
+    warn.textContent = '🌪 TORNADO !';
+    warn.style.left = (spot.x - 60) + 'px';
+    warn.style.top = (top + 20) + 'px';
+    document.body.appendChild(warn);
+    setTimeout(() => warn.remove(), 1600);
+
+    // Tornado SVG: layered rotating ellipses forming a vortex shape
+    const tornadoEl = document.createElement('div');
+    tornadoEl.className = 'es-tornado';
+    tornadoEl.style.left = (spot.x - 70) + 'px';
+    tornadoEl.style.top = (spot.y - 280) + 'px';
+    tornadoEl.style.animation = 'esTornadoDrop 2.8s ease-out forwards';
+    tornadoEl.innerHTML = `
+      <div class="es-tornado-inner">
+        <svg viewBox="0 0 140 280" width="140" height="280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="es-torG1" cx="50%" cy="50%">
+              <stop offset="0%" stop-color="#cbd5e1" stop-opacity=".9"/>
+              <stop offset="60%" stop-color="#64748b" stop-opacity=".7"/>
+              <stop offset="100%" stop-color="#334155" stop-opacity=".4"/>
+            </radialGradient>
+          </defs>
+          <!-- vortex layers, narrower at bottom -->
+          <ellipse cx="70" cy="260" rx="14" ry="10" fill="url(#es-torG1)"/>
+          <ellipse cx="70" cy="230" rx="22" ry="14" fill="url(#es-torG1)" opacity=".85"/>
+          <ellipse cx="70" cy="195" rx="32" ry="18" fill="url(#es-torG1)" opacity=".8"/>
+          <ellipse cx="70" cy="155" rx="42" ry="22" fill="url(#es-torG1)" opacity=".75"/>
+          <ellipse cx="70" cy="110" rx="54" ry="26" fill="url(#es-torG1)" opacity=".7"/>
+          <ellipse cx="70" cy="60" rx="64" ry="30" fill="url(#es-torG1)" opacity=".65"/>
+          <ellipse cx="70" cy="20" rx="68" ry="22" fill="url(#es-torG1)" opacity=".5"/>
+          <!-- Debris particles -->
+          <circle cx="40" cy="90" r="3" fill="#94a3b8" opacity=".8"/>
+          <circle cx="100" cy="140" r="2" fill="#cbd5e1" opacity=".9"/>
+          <circle cx="55" cy="180" r="2.5" fill="#94a3b8" opacity=".7"/>
+          <circle cx="90" cy="210" r="2" fill="#e2e8f0" opacity=".8"/>
+          <circle cx="65" cy="50" r="2" fill="#cbd5e1" opacity=".6"/>
+        </svg>
+      </div>
+    `;
+    document.body.appendChild(tornadoEl);
+
+    // Phase 1: tornado landing — pull sheep slightly toward center
+    const landDelay = 850;
+    setTimeout(() => {
+      const radius = 280;
+      allSheep.forEach(s => {
+        if (!s.alive || s.grabbed || s.state === ST.PIPE || s.windOut) return;
+        const dx = s.x + SZ - spot.x;
+        const dy = s.y + SZ - spot.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > radius) return;
+        // Pull inward briefly
+        s.surf = null;
+        s.vx = -dx / 30;
+        s.vy = -Math.abs(dy) / 40 - 2;
+        s.state = ST.FALL;
+      });
+    }, landDelay);
+
+    // Phase 2: explosion — scatter sheep radially with strong velocities
+    const explodeDelay = 1800;
+    setTimeout(() => {
+      const radius = 340;
+      allSheep.forEach(s => {
+        if (!s.alive || s.grabbed || s.state === ST.PIPE || s.windOut) return;
+        const dx = s.x + SZ - spot.x;
+        const dy = s.y + SZ - spot.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > radius) return;
+        clearZzz(s);
+        s.surf = null;
+        // Radial direction (or random if at center)
+        const ang = dist < 5 ? Math.random() * Math.PI * 2 : Math.atan2(dy, dx);
+        const force = 14 + Math.random() * 6;
+        s.vx = Math.cos(ang) * force;
+        s.vy = Math.sin(ang) * force - 8; // upward bias
+        s.dir = s.vx >= 0 ? 1 : -1;
+        s.state = ST.FALL;
+        ft(s, ['BÊÊÊ !', 'AAAH !', 'NOOOON !', '🌪'][Math.floor(Math.random() * 4)], '#fbbf24');
+      });
+    }, explodeDelay);
+
+    // Cleanup
+    setTimeout(() => {
+      tornadoEl.remove();
+      tornadoActive = false;
+    }, 2800);
+  }
+
+  function schedTornado() {
+    // Triggers when there are enough sheep to cluster (3+)
+    const alive = allSheep.filter(s => s.alive).length;
+    // Faster if more sheep, but never below 12s
+    const delay = Math.max(12000, 35000 - alive * 1500) + Math.random() * 8000;
+    tornadoTimer = setTimeout(() => {
+      if (alive >= 3) tornado();
+      schedTornado();
+    }, delay);
+  }
+
   // ── LOOP ──
   function loop() { allSheep.forEach(s => { if (!s.alive) return; tick(s); }); rafId = requestAnimationFrame(loop); }
 
@@ -632,14 +795,17 @@
       <span class="es-dotsbar-label">eSheep</span>
       <div class="es-dot spawn" title="Spawn sheep"></div>
       <div class="es-dot wind" title="Wind"></div>
+      <div class="es-dot tornado" title="Tornado"></div>
       <div class="es-dot close" title="Close"></div>
     `;
     document.body.appendChild(dotsBar);
     btnSpawn = dotsBar.querySelector('.spawn');
     btnWind = dotsBar.querySelector('.wind');
+    const btnTornado = dotsBar.querySelector('.tornado');
     const btnClose = dotsBar.querySelector('.close');
     btnSpawn.addEventListener('click', e => { e.stopPropagation(); spawn(); });
     btnWind.addEventListener('click', e => { e.stopPropagation(); triggerWind(); });
+    btnTornado.addEventListener('click', e => { e.stopPropagation(); tornado(); });
     btnClose.addEventListener('click', e => { e.stopPropagation(); deactivate(); });
   }
 
@@ -654,6 +820,7 @@
     // Spawn 3 sheep to kick things off
     for (let i = 0; i < 3; i++) setTimeout(() => spawn(), i * 250);
     schedLight();
+    schedTornado();
     autoWindTimer = setTimeout(schedAutoWind, 5 * 60 * 1000);
     if (!rafId) loop();
   }
@@ -664,6 +831,8 @@
     if (lightTimer) { clearTimeout(lightTimer); lightTimer = null; }
     if (windTimer) { clearTimeout(windTimer); windTimer = null; }
     if (autoWindTimer) { clearTimeout(autoWindTimer); autoWindTimer = null; }
+    if (tornadoTimer) { clearTimeout(tornadoTimer); tornadoTimer = null; }
+    tornadoActive = false;
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
@@ -678,13 +847,39 @@
 
   function toggle() { if (active) deactivate(); else activate(); }
 
-  // ── HOTSPOT (invisible trigger, bottom-left) ──
+  // ── HOTSPOT (visible trigger, bottom-left of main area) ──
   function buildHotspot() {
+    // Ensure hotspot styles are loaded even when overlay is inactive
+    injectHotspotStyles();
     hotspot = document.createElement('div');
     hotspot.className = 'es-hotspot';
-    hotspot.title = ''; // no tooltip — keep it secret
+    hotspot.title = 'eSheep';
+    hotspot.setAttribute('aria-label', 'eSheep toggle');
     hotspot.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     document.body.appendChild(hotspot);
+    // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
+    keepOnTopInterval = setInterval(() => {
+      if (hotspot && hotspot.parentNode === document.body && document.body.lastElementChild !== hotspot) {
+        document.body.appendChild(hotspot);
+      }
+    }, 2000);
+  }
+
+  let keepOnTopInterval = null;
+
+  // Lightweight standalone CSS for the hotspot only (loaded permanently, not stripped on deactivate)
+  const HOTSPOT_STYLE_ID = 'esheep-hotspot-styles';
+  function injectHotspotStyles() {
+    if (document.getElementById(HOTSPOT_STYLE_ID)) return;
+    const s = document.createElement('style');
+    s.id = HOTSPOT_STYLE_ID;
+    s.textContent = `
+.es-hotspot{position:fixed!important;left:calc(var(--sidebar-w, 220px) + 8px)!important;bottom:8px!important;width:18px!important;height:18px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(0,212,168,.18)!important;border:1.5px solid rgba(0,212,168,.55)!important;box-shadow:0 0 8px rgba(0,212,168,.35),inset 0 0 4px rgba(0,212,168,.25)!important;transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot:hover{background:rgba(0,212,168,.45)!important;border-color:rgba(0,212,168,.9)!important;box-shadow:0 0 14px rgba(0,212,168,.7),inset 0 0 6px rgba(0,212,168,.4)!important;transform:scale(1.25)!important}
+.es-hotspot::after{content:'';position:absolute;inset:5px;border-radius:50%;background:rgba(0,212,168,.7);animation:esHotPulse 2.4s ease-in-out infinite;pointer-events:none}
+@keyframes esHotPulse{0%,100%{opacity:.5;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+`;
+    document.head.appendChild(s);
   }
 
   // Install on DOM ready
