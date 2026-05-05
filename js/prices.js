@@ -1424,13 +1424,16 @@ function buildHourlyDetail(idx, z) {
       label:{display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9,weight:'600'}, backgroundColor:'transparent', padding:2}
     };
   }
-  // Min/Max points on the h24 scale (approximate idx for 96pt)
-  const scale = chartData.length / 24;
-  annotations.minPt = { type:'point', xValue:Math.round(minIdx*scale), yValue:minV,
+  // Min/Max points — chartData uses raw 96pt (15-min) when available, else 24h
+  // minRawIdx/maxRawIdx are already indexes into the raw `hourly` array, which
+  // matches chartData when length === 96. When chartData is downsampled (24h),
+  // we map the raw index back via division by slots-per-hour.
+  const idxScale = (chartData.length === hourly.length) ? 1 : (chartData.length / hourly.length);
+  annotations.minPt = { type:'point', xValue:Math.round(minRawIdx*idxScale), yValue:minV,
     backgroundColor:'#ef4444', radius:5,
     label:{display:true,content:minV.toFixed(0)+'€/MWh',color:'#fff',font:{size:9},backgroundColor:'#ef4444',position:'bottom',padding:2}
   };
-  annotations.maxPt = { type:'point', xValue:Math.round(maxIdx*scale), yValue:maxV,
+  annotations.maxPt = { type:'point', xValue:Math.round(maxRawIdx*idxScale), yValue:maxV,
     backgroundColor:'#22c55e', radius:5,
     label:{display:true,content:maxV.toFixed(0)+'€/MWh',color:'#fff',font:{size:9},backgroundColor:'#22c55e',position:'top',padding:2}
   };
