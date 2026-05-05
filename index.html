@@ -21,6 +21,8 @@
     --up: #00d4a8;
     --down: #ff4d6d;
     --warn: #f59e0b;
+    /* KPI accent — flat / no-data (up & down reuse --up / --down) */
+    --kpi-flat: #4a6280;
     --text: #e2e8f0;
     --text2: #94a3b8;
     --text3: #4a6280;
@@ -410,11 +412,16 @@
   .kpi-card {
     background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-left: 3px solid var(--kpi-flat);
+    border-radius: 0 8px 8px 0;
     padding: 14px 16px;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, border-left-color 0.2s;
   }
   .kpi-card:hover { border-color: var(--border2); }
+  /* KPI direction accents — vs J-1 (price up = red, price down = green) */
+  .kpi-card.kpi-up   { border-left-color: var(--up); }
+  .kpi-card.kpi-down { border-left-color: var(--down); }
+  .kpi-card.kpi-flat { border-left-color: var(--kpi-flat); }
   .kpi-label { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
   .kpi-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
   .kpi-unit { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
@@ -1139,38 +1146,38 @@
 <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat" id="kpicard-fr">
           <div class="kpi-label">FR Day-Ahead</div>
           <div class="kpi-value up" id="kpi-fr">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-fr-chg">--</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat" id="kpicard-de">
           <div class="kpi-label">DE Day-Ahead</div>
           <div class="kpi-value" id="kpi-de">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-de-chg">--</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat" id="kpicard-avg">
           <div class="kpi-label">EU Average</div>
           <div class="kpi-value" id="kpi-avg">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-avg-chg">Loading...</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat" id="kpicard-peak">
           <div class="kpi-label">FR Peak avg (08–20h)</div>
           <div class="kpi-value" id="kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-fr-peak-chg" style="color:var(--tx3)">average price over peak hours</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat" id="kpicard-offpeak">
           <div class="kpi-label">FR Off-Peak avg (00–08 / 20–24h)</div>
           <div class="kpi-value" id="kpi-fr-offpeak">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-fr-offpeak-chg" style="color:var(--tx3)">average price over off-peak hours</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">EU Highest</div>
+        <div class="kpi-card kpi-flat" id="kpicard-max">
+          <div class="kpi-label" id="kpi-max-label">Max today</div>
           <div class="kpi-value down" id="kpi-max">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-max-zone">--</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">EU Lowest</div>
+        <div class="kpi-card kpi-flat" id="kpicard-min">
+          <div class="kpi-label" id="kpi-min-label">Min today</div>
           <div class="kpi-value up" id="kpi-min">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-min-zone">--</div>
         </div>
