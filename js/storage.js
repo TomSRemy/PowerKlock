@@ -62,17 +62,54 @@ function setImbDay(offset, btn) {
   drawImbalance();
 }
 
-function drawImbalance() {
-  const n = 96; // 15-min slots
-  const daPrice = 45; // demo DA ref
+async function drawImbalance() {
+  const country = document.getElementById('imb-country')?.value || 'FR';
+  const offset  = window._imbDay || 0;
+  const updEl   = document.getElementById('imb-upd');
 
-  // Synthetic: imbalance spikes during wind ramp events
-  const data = Array.from({length:n}, (_,i) => {
-    const hr = i/4;
-    const base = daPrice * (0.8 + 0.4*Math.sin(hr/24*Math.PI*2));
-    const spike = (i>28&&i<36)||(i>52&&i<60) ? (Math.random()<.5?1:-1)*150*Math.random() : 0;
-    return +(base + spike + (Math.random()-.5)*30).toFixed(1);
-  });
+  // ENTSO-E A85 = Imbalance prices, A86 = Imbalance volumes
+  // EIC areas: FR=10YFR-RTE------C, DE=10Y1001A1001A83F, BE=10YBE----------2
+  const EIC = { FR:'10YFR-RTE------C', DE_LU:'10Y1001A1001A83F', BE:'10YBE----------2' };
+  const eic = EIC[country] || EIC.FR;
+
+  let data = null;
+
+  // Try ENTSO-E if token available
+  if (DATA_BASE && ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
+    try {
+      const d  = new Date(); d.setDate(d.getDate() + offset);
+      const d2 = new Date(d); d2.setDate(d2.getDate() + 1);
+      const fmt = dt => dt.toISOString().slice(0,10).replace(/-/g,'');
+      const xml = await fetchEntsoe(
+        `documentType=A85&controlArea_Domain=${eic}&periodStart=${fmt(d)}0000&periodEnd=${fmt(d2)}0000`
+      );
+      // Parse A85 XML — points are 15-min imbalance prices
+      const points = [...xml.matchAll(/<Point>[\s\S]*?<position>(\d+)<\/position>[\s\S]*?<imbalance_Price\.amount>([\d.+-]+)<\/imbalance_Price\.amount>[\s\S]*?<\/Point>/g)];
+      if (points.length > 0) {
+        const arr = new Array(96).fill(null);
+        points.forEach(m => { const pos = parseInt(m[1])-1; if(pos<96) arr[pos] = parseFloat(m[2]); });
+        data = arr;
+        if (updEl) updEl.textContent = `ENTSO-E A85 · ${country}`;
+      }
+    } catch(e) { console.warn('Imbalance ENTSO-E fetch failed:', e); }
+  }
+
+  // Fallback: derive from DA prices with realistic imbalance spread
+  if (!data) {
+    const daRef = pricesData?.find(z=>z.code===country)?.today || 
+                  (pricesData?.length ? pricesData[0].today : 45);
+    const hourly = pricesData?.find(z=>z.code===country)?.hourly || [];
+    const n = 96;
+    data = Array.from({length:n}, (_,i) => {
+      const hr = i/4;
+      // Imbalance deviates from DA by ±20-150€ with spikes at ramp hours
+      const daBase = hourly.length >= 96 ? hourly[i] : (hourly[Math.floor(i/4)] || daRef);
+      const rampSpike = (hr>=6&&hr<=9)||(hr>=17&&hr<=21);
+      const spread = rampSpike ? (Math.random()-.4)*200 : (Math.random()-.5)*60;
+      return +(daBase + spread).toFixed(1);
+    });
+    if (updEl) updEl.textContent = 'Demo · ENTSO-E A85';
+  }
   const longData  = data.map(v => v > 0 ? v : null);
   const shortData = data.map(v => v < 0 ? v : null);
   const labels = Array.from({length:n}, (_,i) => i%4===0 ? Math.floor(i/4)+'h' : '');

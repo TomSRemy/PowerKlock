@@ -1,43 +1,4 @@
-const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];
-const PAGE_LOADERS = {
-  map: () => {
-    setTimeout(() => {
-      initLeafletMap();
-      renderMapKPIs();
-      document.getElementById('map-upd').textContent = pricesData?.length ? 'ENTSO-E · Live' : 'Demo data';
-    }, 100);
-  },
-  renewables: loadRenewables,
-  nuclear: drawNuclear,
-  imbalance: drawImbalance,
-  eua: drawEUA,
-  euafwd: drawEUAFwd,
-  spark: renderSpark,
-  goprices: renderGO,
-  gohist: () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
-  wxcities: loadWeather,
-  wxhdd: renderHDD,
-};
 
-// Patch showPage to handle new sections
-const _origShowPage = showPage;
-window.showPage = function(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-  const pg = document.getElementById('page-' + id);
-  if (pg) pg.classList.add('active');
-  const nav = document.getElementById('nav-' + id);
-  if (nav) nav.classList.add('active');
-  const ldr = PAGE_LOADERS[id];
-  if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
-  // original loaders
-  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
-  if (id === 'news' && !window._newsLoaded) loadNews();
-  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
-  if (id === 'load' && !window._loadLoaded) loadLoad();
-  if (id === 'overview') loadOverview();
-  if (id === 'converter') { updateConverter(); updateCapacity(); }
-};
 
 // ── DEMO DATA
 const GM_DEMO = {
@@ -83,6 +44,48 @@ const GO_FWD = [
 // CONFIG
 // ════════════════════════════════════════════
 const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
+
+const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];
+const PAGE_LOADERS = {
+  map: () => {
+    setTimeout(() => {
+      initLeafletMap();
+      renderMapKPIs();
+      document.getElementById('map-upd').textContent = pricesData?.length ? 'ENTSO-E · Live' : 'Demo data';
+    }, 100);
+  },
+  renewables: () => loadRenewables(),
+  nuclear:    () => drawNuclear(),
+  imbalance:  () => drawImbalance(),
+  eua:        () => drawEUA(),
+  euafwd:     () => drawEUAFwd(),
+  spark:      () => renderSpark(),
+  goprices:   () => renderGO(),
+  gohist:     () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
+  wxcities:   () => loadWeather(),
+  wxhdd:      () => renderHDD(),
+};
+
+// Patch showPage to handle new sections
+const _origShowPage = showPage;
+window.showPage = function(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  const ldr = PAGE_LOADERS[id];
+  if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
+  // original loaders
+  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
+  if (id === 'news' && !window._newsLoaded) loadNews();
+  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
+  if (id === 'load' && !window._loadLoaded) loadLoad();
+  if (id === 'overview') loadOverview();
+  if (id === 'converter') { updateConverter(); updateCapacity(); }
+};
+
 
 // Zone config
 const ZONES = [
@@ -760,7 +763,9 @@ function toggleZoneFilterPanel() {
 
 function selectAllZones() {
   if (!window._pricesSorted) return;
-  window._pricesZoneFilter = null; // null = all
+  // Default filter: FR + direct neighbours (user can expand)
+const FR_NEIGHBOURS = new Set(['FR','DE_LU','BE','NL','ES','GB','IT_NORD','CH','AT']);
+window._pricesZoneFilter = null; // null = all zones (FR_NEIGHBOURS applied in renderPricesTableBody)
   buildZoneFilterDropdown();
   renderPricesTableBody();
 }
