@@ -1333,7 +1333,7 @@ function buildHourlyDetail(idx, z) {
         {k:'offpeak', l:'Off-peak avg',       v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   sub:'00-08 / 20-24',         u:'€/MWh'},
         {k:'min',     l:'Min slot',           v:minV.toFixed(2),                           sub:'@'+minSlotLabel,        u:'€/MWh'},
         {k:'max',     l:'Max slot',           v:maxV.toFixed(2),                           sub:'@'+maxSlotLabel,        u:'€/MWh'},
-      ].map(k=>`<div class="kpi-flat" id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:4px solid var(--kpi-flat);border-radius:0 6px 6px 0;padding:9px 12px;transition:border-left-color 0.2s">
+      ].map(k=>`<div id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${col};border-radius:6px;padding:9px 12px;transition:border-left-color 0.2s">
         <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
         <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--tx)">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
         <div class="row-kpi-sub" data-kpi="${k.k}" style="font-size:10px;color:var(--tx3)">${k.sub}</div>
@@ -1502,15 +1502,14 @@ async function applyExpandKPIColours(idx, z, today) {
   const yz = yData.zones[z.code];
   if (!yz) return;
 
-  // Compute J-1 reference values for this zone
+  // Compute J-1 reference values for this zone on raw slots
   const yHourly = yz.hourly || [];
   const yValid  = yHourly.filter(v => v != null);
   if (yValid.length === 0) return;
-  const yAvg = yz.avg ?? (yValid.reduce((a,b)=>a+b,0) / yValid.length);
-  const yMin = yz.min ?? Math.min(...yValid);
-  const yMax = yz.max ?? Math.max(...yValid);
+  const yAvg = yValid.reduce((a,b)=>a+b,0) / yValid.length;
+  const yMin = Math.min(...yValid);
+  const yMax = Math.max(...yValid);
 
-  // Yesterday peak / off-peak from raw hourly
   const yNph = yHourly.length > 24 ? Math.round(yHourly.length / 24) : 1;
   const yPeak = [], yOff = [];
   yHourly.forEach((v, i) => {
@@ -1524,20 +1523,17 @@ async function applyExpandKPIColours(idx, z, today) {
   const apply = (kpiKey, todayVal, yVal) => {
     const card = document.getElementById(`row-kpi-${idx}-${kpiKey}`);
     if (!card) return;
-    let cls = 'kpi-flat', subColor = 'var(--tx3)', subTxt = null;
-    if (todayVal != null && yVal != null) {
-      const delta = todayVal - yVal;
-      if (Math.abs(delta) >= 1) {
-        if (delta > 0) { cls = 'kpi-down'; subColor = 'var(--down)'; }
-        else           { cls = 'kpi-up';   subColor = 'var(--up)'; }
-      }
-      const sign = delta >= 0 ? '+' : '';
-      subTxt = `${sign}${delta.toFixed(1)} vs J-1`;
+    if (todayVal == null || yVal == null) return;
+    const delta = todayVal - yVal;
+    let borderColor = null, subColor = 'var(--tx3)', subTxt = null;
+    if (Math.abs(delta) >= 1) {
+      if (delta > 0) { borderColor = 'var(--down)'; subColor = 'var(--down)'; }
+      else           { borderColor = 'var(--up)';   subColor = 'var(--up)'; }
     }
-    card.classList.remove('kpi-up','kpi-down','kpi-flat');
-    card.classList.add(cls);
-    card.style.borderLeftColor = `var(--${cls === 'kpi-up' ? 'up' : cls === 'kpi-down' ? 'down' : 'kpi-flat'})`;
-    // Update sub-text colour and content (preserve original sub if no delta)
+    if (borderColor) card.style.borderLeftColor = borderColor;
+    const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
+    const sign  = delta > 0 ? '+' : '';
+    subTxt = `${arrow} ${sign}${delta.toFixed(1)} vs J-1`;
     const sub = card.querySelector('.row-kpi-sub');
     if (sub && subTxt) {
       sub.style.color = subColor;
