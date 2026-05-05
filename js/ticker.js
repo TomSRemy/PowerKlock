@@ -141,16 +141,8 @@ function tickerSelectNoneZones() {
 }
 
 // Default ticker while loading
-buildTicker([
-  { flag:'🇫🇷', code:'FR', today:1.2, vsYday:-15.3, up:false },
-  { flag:'🇩🇪', code:'DE', today:63.8, vsYday:-7.4, up:false },
-  { flag:'🇪🇸', code:'ES', today:75.5, vsYday:+18.4, up:true },
-  { flag:'🇮🇹', code:'IT', today:115.8, vsYday:+12.0, up:true },
-  { flag:'🇧🇪', code:'BE', today:49.1, vsYday:-10.8, up:false },
-  { flag:'🇳🇱', code:'NL', today:57.5, vsYday:-3.3, up:false },
-  { flag:'🇵🇹', code:'PT', today:76.1, vsYday:+19.2, up:true },
-  { flag:'🇬🇧', code:'GB', today:88.4, vsYday:+5.1, up:true },
-]);
+// Ticker populated by data.js after JSON/API load
+// buildTicker() called from data.js once pricesData is ready
 
 // ════════════════════════════════════════════
 // GENERATION MIX
