@@ -52,8 +52,8 @@
 .es-sflash{position:fixed;inset:0;z-index:${Z_FX};pointer-events:none;background:rgba(255,255,120,.22);animation:esSfOut .4s ease forwards}
 .es-wstreak{position:fixed;height:2px;pointer-events:none;z-index:${Z_FX};border-radius:1px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.7),transparent);animation:esWL linear forwards}
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
-.es-hotspot{position:fixed;left:6px;bottom:6px;width:14px;height:14px;z-index:${Z_HOT};cursor:pointer;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);transition:background .25s ease,border-color .25s ease,transform .25s ease}
-.es-hotspot:hover{background:rgba(160,200,255,.35);border-color:rgba(160,200,255,.6);transform:scale(1.15)}
+.es-hotspot{position:fixed;left:calc(var(--sidebar-w, 220px) + 8px);bottom:8px;width:14px;height:14px;z-index:${Z_HOT};cursor:pointer;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);transition:background .25s ease,border-color .25s ease,transform .25s ease}
+.es-hotspot:hover{background:rgba(160,200,255,.4);border-color:rgba(160,200,255,.7);transform:scale(1.2)}
 .es-dotsbar{position:fixed;right:14px;bottom:14px;display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
