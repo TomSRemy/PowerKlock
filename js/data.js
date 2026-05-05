@@ -40,7 +40,9 @@ async function loadFromJSON() {
       spark:   z.spark,
       hourly:  z.hourly || [],
     }));
-    renderPricesTable(pricesData);
+    // Extract date from JSON updated field
+    const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
+    renderPricesTable(pricesData, jsonDate);
     updateKPIs(pricesData);
     buildTicker(pricesData);
     const upd = prices.updated
@@ -307,7 +309,7 @@ async function loadPricesForDate(dateStr) {
 
         if (mapped.length) {
           pricesData = mapped.sort((a,b) => b.today - a.today);
-          renderPricesTable(pricesData);
+          renderPricesTable(pricesData, dateStr);
           updateKPIs(pricesData);
           buildTicker(pricesData);
           if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';

@@ -640,12 +640,13 @@ function filterPricesTable(text) {
   renderPricesTableBody();
 }
 
-function renderPricesTable(data) {
-  const sel = window.DP?.selectedDate;
+function renderPricesTable(data, dataDateStr) {
+  // dataDateStr: the date the data actually comes from (may differ from DP.selectedDate)
   const fmtLong = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
   const todayISO = new Date().toISOString().slice(0,10);
+  const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
   const dateLabel = document.getElementById('prices-date-label');
-  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong(sel || todayISO) + ' · ENTSO-E';
+  if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong(displayDate) + ' · ENTSO-E';
   // Remove loading row if still there
   const loadingRow = document.querySelector('#prices-tbody .loading-row');
   if (loadingRow) loadingRow.remove();
@@ -1180,12 +1181,12 @@ function buildHourlyDetail(idx, z) {
   inner.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
       ${[
-        {l:'Average',   v:avg.toFixed(2), u:'€/MWh', c:''},
-        {l:'Peak (08-20)', v:peakAvg!=null?peakAvg.toFixed(2):'--', u:'€', c:'dn'},
-        {l:'Off-Peak',  v:offPkAvg!=null?offPkAvg.toFixed(2):'--', u:'€', c:'up'},
-        {l:'Min',       v:minV.toFixed(2)+'€', sub:'@'+String(minIdx).padStart(2,'0')+'h', c:minV<0?'warn':'up'},
-        {l:'Max',       v:maxV.toFixed(2)+'€', sub:'@'+String(maxIdx).padStart(2,'0')+'h', c:'dn'},
-      ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:9px 12px">
+        {l:'Average',      v:avg.toFixed(2),                              u:'€/MWh', c:''},
+        {l:'Peak (08-20)', v:peakAvg!=null?peakAvg.toFixed(2):'--',       u:'€/MWh', c:'dn'},
+        {l:'Off-Peak',     v:offPkAvg!=null?offPkAvg.toFixed(2):'--',     u:'€/MWh', c:'up'},
+        {l:'Min',          v:minV.toFixed(2), sub:'@'+String(minIdx).padStart(2,'0')+'h', u:'€/MWh', c:minV<0?'warn':'up'},
+        {l:'Max',          v:maxV.toFixed(2), sub:'@'+String(maxIdx).padStart(2,'0')+'h', u:'€/MWh', c:'dn'},
+      ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${col};border-radius:6px;padding:9px 12px">
         <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
         <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--${k.c||'tx'})">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
         ${k.sub ? `<div style="font-size:10px;color:var(--tx3)">${k.sub}</div>` : ''}
@@ -1205,26 +1206,37 @@ function buildHourlyDetail(idx, z) {
     ${negH > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
     <details style="margin-top:4px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
-        Hourly Breakdown (${h24.length} hours)
+        Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
       </summary>
       <div style="margin-top:8px;max-height:260px;overflow-y:auto">
         <table style="width:100%;font-size:11px;border-collapse:collapse">
           <thead><tr>
-            <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Hour</th>
+            <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Slot</th>
             <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Price €/MWh</th>
             <th style="text-align:center;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Period</th>
           </tr></thead>
-          <tbody>${h24.map((v,i) => {
-            const period = (i>=8&&i<20) ? '<span style="color:var(--dn);font-size:10px">PEAK</span>'
-                         : '<span style="color:var(--tx3);font-size:10px">OFF-PEAK</span>';
-            const priceColor = v==null ? 'var(--tx3)' : v<0 ? 'var(--warn)' : 'var(--tx)';
-            const isNow = (new Date().getHours() === i && (!DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10)));
-            return `<tr style="border-bottom:1px solid var(--bd);${isNow?'background:rgba(0,212,168,.06)':''}">
-              <td style="padding:4px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${String(i).padStart(2,'0')}:00</span></td>
-              <td style="padding:4px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
-              <td style="padding:4px 8px;text-align:center">${period}</td>
-            </tr>`;
-          }).join('')}</tbody>
+          <tbody>${(() => {
+            // Use 96-pt (15min) if available, else 24h
+            const tblData = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
+            const nph = tblData.length > 24 ? Math.round(tblData.length/24) : 1; // pts per hour
+            const nowSlot = new Date().getHours() * nph + Math.floor(new Date().getMinutes()/(60/nph));
+            const isToday = !DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10);
+            return tblData.map((v,i) => {
+              const hr  = Math.floor(i / nph);
+              const min = (i % nph) * (60 / nph);
+              const timeLabel = String(hr).padStart(2,'0') + ':' + String(min).padStart(2,'0');
+              const period = (hr>=8&&hr<20)
+                ? '<span style="color:var(--dn);font-size:10px">PEAK</span>'
+                : '<span style="color:var(--tx3);font-size:10px">OFF-PEAK</span>';
+              const priceColor = v==null ? 'var(--tx3)' : v<0 ? 'var(--warn)' : 'var(--tx)';
+              const isNow = isToday && i === nowSlot;
+              return `<tr style="border-bottom:1px solid rgba(255,255,255,.03);${isNow?'background:rgba(0,212,168,.06)':''}">
+                <td style="padding:3px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${timeLabel}</span></td>
+                <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
+                <td style="padding:3px 8px;text-align:center">${period}</td>
+              </tr>`;
+            }).join('');
+          })()}</tbody>
         </table>
       </div>
     </details>
@@ -1283,11 +1295,11 @@ function buildHourlyDetail(idx, z) {
   const scale = chartData.length / 24;
   annotations.minPt = { type:'point', xValue:Math.round(minIdx*scale), yValue:minV,
     backgroundColor:'#ef4444', radius:5,
-    label:{display:true,content:minV.toFixed(0)+'€',color:'#fff',font:{size:9},backgroundColor:'#ef4444',position:'bottom',padding:2}
+    label:{display:true,content:minV.toFixed(0)+'€/MWh',color:'#fff',font:{size:9},backgroundColor:'#ef4444',position:'bottom',padding:2}
   };
   annotations.maxPt = { type:'point', xValue:Math.round(maxIdx*scale), yValue:maxV,
     backgroundColor:'#22c55e', radius:5,
-    label:{display:true,content:maxV.toFixed(0)+'€',color:'#fff',font:{size:9},backgroundColor:'#22c55e',position:'top',padding:2}
+    label:{display:true,content:maxV.toFixed(0)+'€/MWh',color:'#fff',font:{size:9},backgroundColor:'#22c55e',position:'top',padding:2}
   };
 
   // Shading plugin — peak / off-peak / solar trough
@@ -1325,7 +1337,7 @@ function buildHourlyDetail(idx, z) {
       },
       scales:{
         x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:9},maxTicksLimit:12}},
-        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:10},callback:v=>v+'€'},
+        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:10},callback:v=>v+'€/MWh'},
            title:{display:true,text:'€/MWh',color:'#4a6280',font:{size:10}}},
       },
     },
@@ -1348,7 +1360,22 @@ function toggleCompareFilterPanel() {
 }
 
 function clearCompareZones() {
-  window._compareZones = new Set(['FR']);
+  window._compareZones = new Set();
+  window._zoneColorMap = null;
+  buildCompareChips();
+  renderCompareChart();
+}
+
+function compareNeighbours() {
+  window._compareZones = new Set(['FR','DE_LU','BE','NL','ES','IT_NORD','CH','AT','PT']);
+  window._zoneColorMap = null;
+  buildCompareChips();
+  renderCompareChart();
+}
+
+function compareWithGenMix() {
+  const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+  window._compareZones = new Set(gmKeys);
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
