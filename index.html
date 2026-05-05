@@ -1110,7 +1110,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Power Day-Ahead Prices</div>
-          <div class="page-subtitle">32 ENTSO-E bidding zones · Today's settlement prices</div>
+          <div class="page-subtitle">32 ENTSO-E bidding zones · Latest available settlement prices</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <!-- DATE PICKER — moved to table header -->
@@ -1121,11 +1121,11 @@
 
       <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div>
 <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
-  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(0,212,168,.1);color:var(--acc);white-space:nowrap">↺ Today</button>
+  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(0,212,168,.1);color:var(--acc);white-space:nowrap">↺ Latest data</button>
   <div class="date-picker-wrap" id="date-picker-wrap-hdr">
     <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="date-picker-label">Today</span>
+      <span id="date-picker-label">Latest data</span>
       <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
     <div class="date-picker-popup" id="date-picker-popup">
