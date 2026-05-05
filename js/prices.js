@@ -1177,7 +1177,9 @@ function buildHourlyDetail(idx, z) {
     return 'transparent';
   });
 
-  // Build inner HTML
+  // Color — defined before inner.innerHTML so KPI cards can use it
+  const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
+  const negFraction = chartData.filter(v=>v!=null&&v<0).length / Math.max(1, chartData.filter(v=>v!=null).length);
   const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
@@ -1245,10 +1247,7 @@ function buildHourlyDetail(idx, z) {
   `;
 
   // Color — defined early so it can be used in KPI cards AND chart
-  const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
-  const negFraction = chartData.filter(v=>v!=null&&v<0).length / Math.max(1, chartData.filter(v=>v!=null).length);
-
-  // Render chart — use full 15-min data
+  // Render chart — use full 15-min data (chartData, negFraction, col defined above)
   const canvas = document.getElementById(`row-chart-${idx}`);
   if (!canvas) return;
   if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
