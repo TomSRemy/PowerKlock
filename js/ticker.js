@@ -141,7 +141,7 @@ function tickerSelectNoneZones() {
 }
 
 // Default ticker while loading
-// Ticker populated by data.js once pricesData is loaded
+// Ticker populated from pricesData after JSON load
 
 // ════════════════════════════════════════════
 // GENERATION MIX
