@@ -22,6 +22,7 @@
   const LIFE = 3 * 60 * 1000;
   const G = 1.1;
   const SZ = 40;
+  const FOOT_OFFSET = 10; // pixels: distance from sprite bottom-edge up to actual feet
   const WO = '#e8e4d4', DK = '#4a4540', WH = '#fff', HF = '#3a3230';
   const Z_DECOR = 9990;     // platforms, pipes
   const Z_SHEEP = 9991;     // sheep sprites
@@ -52,10 +53,8 @@
 .es-sflash{position:fixed;inset:0;z-index:${Z_FX};pointer-events:none;background:rgba(255,255,120,.22);animation:esSfOut .4s ease forwards}
 .es-wstreak{position:fixed;height:2px;pointer-events:none;z-index:${Z_FX};border-radius:1px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.7),transparent);animation:esWL linear forwards}
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
-.es-hotspot{position:fixed!important;left:calc(var(--sidebar-w, 220px) + 8px)!important;bottom:8px!important;width:18px!important;height:18px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(0,212,168,.18)!important;border:1.5px solid rgba(0,212,168,.55)!important;box-shadow:0 0 8px rgba(0,212,168,.35),inset 0 0 4px rgba(0,212,168,.25)!important;transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-hotspot:hover{background:rgba(0,212,168,.45)!important;border-color:rgba(0,212,168,.9)!important;box-shadow:0 0 14px rgba(0,212,168,.7),inset 0 0 6px rgba(0,212,168,.4)!important;transform:scale(1.25)!important}
-.es-hotspot::after{content:'';position:absolute;inset:5px;border-radius:50%;background:rgba(0,212,168,.7);animation:esHotPulse 2.4s ease-in-out infinite}
-@keyframes esHotPulse{0%,100%{opacity:.5;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+.es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
 .es-dotsbar{position:fixed;right:14px;bottom:14px;display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
@@ -98,12 +97,25 @@
 @keyframes esZzUp{0%{transform:translateY(0) scale(1);opacity:.9}100%{transform:translateY(-28px) scale(.5);opacity:0}}
 @keyframes esPipeFall{0%{transform:translateY(-120px);opacity:0}8%{opacity:1}100%{transform:translateY(0);opacity:1}}
 @keyframes esPipeHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes esTornadoSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-@keyframes esTornadoDrop{0%{transform:translateY(-200vh) scale(.3);opacity:0}15%{opacity:.4}30%{transform:translateY(0) scale(1);opacity:.85}80%{transform:translateY(0) scale(1);opacity:.85}100%{transform:translateY(0) scale(1.4);opacity:0}}
-@keyframes esTornadoWobble{0%,100%{transform:translateX(0)}25%{transform:translateX(-12px)}75%{transform:translateX(12px)}}
-@keyframes esSheepSpin{0%{transform:rotate(0deg) translateY(0)}100%{transform:rotate(720deg) translateY(-30px)}}
-.es-tornado{position:fixed;z-index:${Z_FX};pointer-events:none;width:140px;height:280px}
-.es-tornado-inner{width:100%;height:100%;animation:esTornadoSpin .35s linear infinite,esTornadoWobble 1.2s ease-in-out infinite}
+@keyframes esCloudFloat{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+@keyframes esTornFullCycle{
+  0%{opacity:0;filter:blur(8px) brightness(.5)}
+  20%{opacity:.9;filter:blur(2px) brightness(.85)}
+  30%{opacity:1;filter:blur(0) brightness(1)}
+  70%{opacity:1;filter:blur(0) brightness(1)}
+  100%{opacity:0;filter:blur(14px) brightness(1.5)}
+}
+@keyframes esTornBandSway{
+  0%,100%{transform:translateX(calc(-50% - 18px))}
+  50%{transform:translateX(calc(-50% + 18px))}
+}
+@keyframes esTornDebrisOrb{
+  0%{transform:translateX(var(--rx)) scale(1);opacity:1}
+  25%{transform:translateX(0) scale(.35);opacity:.25}
+  50%{transform:translateX(calc(-1 * var(--rx))) scale(1);opacity:1}
+  75%{transform:translateX(0) scale(.35);opacity:.25}
+  100%{transform:translateX(var(--rx)) scale(1);opacity:1}
+}
 .es-tornado-warning{position:fixed;font-size:20px;font-weight:900;color:#fbbf24;z-index:${Z_FLOAT};pointer-events:none;text-shadow:0 0 18px #fbbf24,0 1px 4px rgba(0,0,0,.95);font-family:monospace;animation:esFtUp 1.6s ease forwards}
 .W-walk{animation:esWWalk .5s ease-in-out infinite}.W-run{animation:esWRun .22s ease-in-out infinite}
 .W-fall{animation:esWFall .38s ease-in-out infinite}.W-sleep{animation:esWSleep 2.6s ease-in-out infinite}
@@ -163,8 +175,9 @@
     else ey = `<circle cx="${cx-15}" cy="${cy+6}" r="14" fill="${w}"/><circle cx="${cx+15}" cy="${cy+6}" r="14" fill="${w}"/><circle cx="${cx-14}" cy="${cy+8}" r="8" fill="${d}"/><circle cx="${cx+16}" cy="${cy+8}" r="8" fill="${d}"/><circle cx="${cx-17}" cy="${cy+3}" r="3.5" fill="${w}"/><circle cx="${cx+13}" cy="${cy+3}" r="3.5" fill="${w}"/><g class="l-l" style="transform-origin:${cx-15}px ${cy-8}px;transform:scaleY(0)"><rect x="${cx-29}" y="${cy-8}" width="28" height="15" rx="4" fill="${d}"/></g><g class="l-r" style="transform-origin:${cx+15}px ${cy-8}px;transform:scaleY(0)"><rect x="${cx+1}" y="${cy-8}" width="28" height="15" rx="4" fill="${d}"/></g>`;
     return `<path d="M${cx} ${cy-36} C${cx+28} ${cy-36} ${cx+44} ${cy-16} ${cx+44} ${cy+10} C${cx+44} ${cy+38} ${cx+26} ${cy+54} ${cx} ${cy+56} C${cx-26} ${cy+54} ${cx-44} ${cy+38} ${cx-44} ${cy+10} C${cx-44} ${cy-16} ${cx-28} ${cy-36} ${cx} ${cy-36}Z" fill="${c}"/>${ey}<ellipse cx="${cx}" cy="${cy+38}" rx="10" ry="6" fill="${HF}" opacity=".55"/>`;
   }
-  function T_(cx, cy) {
-    return `<g class="t-wag" style="transform-origin:${cx}px ${cy}px"><circle cx="${cx}" cy="${cy}" r="11" fill="${WO}"/><circle cx="${cx-3}" cy="${cy-3}" r="7" fill="${WO}"/></g>`;
+  function T_(cx, cy, black = false) {
+    const col = black ? '#1c1c1c' : WO;
+    return `<g class="t-wag" style="transform-origin:${cx}px ${cy}px"><circle cx="${cx}" cy="${cy}" r="11" fill="${col}"/><circle cx="${cx-3}" cy="${cy-3}" r="7" fill="${col}"/></g>`;
   }
   function L_(x, y, cls, h = 50) {
     return `<g class="${cls}" style="transform-origin:${x+7}px ${y}px"><rect x="${x}" y="${y}" width="14" height="${h}" rx="5" fill="${DK}"/><rect x="${x-3}" y="${y+h-12}" width="20" height="12" rx="4" fill="${HF}"/></g>`;
@@ -176,36 +189,58 @@
 
   // ── POSES ──
   function pStand(la = 'la', lb = 'lb', eye = 'open', black = false) {
-    if (eye === 'open' || eye === 'dead') return `${L_(45,138,lb)}${L_(95,138,lb)}${T_(18,115)}${W_(80,105,58,black)}${L_(36,134,la)}${L_(86,134,la)}${E_(80,50)}${H_(80,50,eye)}`;
-    return `${L_(45,138,'ls')}${L_(95,138,'ls')}${T_(18,115)}${W_(80,105,58,black)}${L_(36,134,'ls')}${L_(86,134,'ls')}${E_(80,50)}${H_(80,50,'sleep')}`;
+    if (eye === 'open' || eye === 'dead') return `${L_(45,138,lb)}${L_(95,138,lb)}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,la)}${L_(86,134,la)}${E_(80,50)}${H_(80,50,eye)}`;
+    return `${L_(45,138,'ls')}${L_(95,138,'ls')}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,'ls')}${L_(86,134,'ls')}${E_(80,50)}${H_(80,50,'sleep')}`;
   }
-  function pRun() {
-    return `<g transform="translate(-8,0)">${L_(24,136,'lrb')}${L_(56,140,'lrb')}<ellipse cx="88" cy="100" rx="68" ry="50" fill="${WO}"/><circle cx="34" cy="88" r="36" fill="${WO}"/><circle cx="52" cy="62" r="36" fill="${WO}"/><circle cx="82" cy="54" r="34" fill="${WO}"/><circle cx="112" cy="62" r="34" fill="${WO}"/><circle cx="130" cy="84" r="32" fill="${WO}"/><circle cx="126" cy="108" r="28" fill="${WO}"/>${T_(10,102)}<circle cx="36" cy="108" r="28" fill="${WO}"/><circle cx="14" cy="94" r="20" fill="${WO}"/>${L_(88,136,'lra')}${L_(116,132,'lra')}<g class="e-run" style="transform-origin:148px 58px"><path d="M148 58 C154 56 192 64 196 72 C188 82 154 76 146 68Z" fill="${DK}"/></g><path d="M152 30 C174 30 188 48 188 68 C188 90 174 106 152 108 C130 106 116 90 116 68 C116 48 130 30 152 30Z" fill="${DK}"/><circle cx="162" cy="64" r="12" fill="${WH}"/><circle cx="163" cy="66" r="7" fill="${DK}"/><circle cx="160" cy="61" r="3" fill="${WH}"/><ellipse cx="178" cy="82" rx="8" ry="5" fill="${HF}" opacity=".6"/></g>`;
+  function pRun(black = false) {
+    const wc = black ? '#1c1c1c' : WO;
+    return `<g transform="translate(-8,0)">${L_(24,136,'lrb')}${L_(56,140,'lrb')}<ellipse cx="88" cy="100" rx="68" ry="50" fill="${wc}"/><circle cx="34" cy="88" r="36" fill="${wc}"/><circle cx="52" cy="62" r="36" fill="${wc}"/><circle cx="82" cy="54" r="34" fill="${wc}"/><circle cx="112" cy="62" r="34" fill="${wc}"/><circle cx="130" cy="84" r="32" fill="${wc}"/><circle cx="126" cy="108" r="28" fill="${wc}"/>${T_(10,102,black)}<circle cx="36" cy="108" r="28" fill="${wc}"/><circle cx="14" cy="94" r="20" fill="${wc}"/>${L_(88,136,'lra')}${L_(116,132,'lra')}<g class="e-run" style="transform-origin:148px 58px"><path d="M148 58 C154 56 192 64 196 72 C188 82 154 76 146 68Z" fill="${DK}"/></g><path d="M152 30 C174 30 188 48 188 68 C188 90 174 106 152 108 C130 106 116 90 116 68 C116 48 130 30 152 30Z" fill="${DK}"/><circle cx="162" cy="64" r="12" fill="${WH}"/><circle cx="163" cy="66" r="7" fill="${DK}"/><circle cx="160" cy="61" r="3" fill="${WH}"/><ellipse cx="178" cy="82" rx="8" ry="5" fill="${HF}" opacity=".6"/></g>`;
   }
-  function pDance() {
-    return `${T_(18,115)}${W_(80,108,58)}${LB_(52,126,-50,42,'dla')}${LB_(108,126,-130,42,'dlb')}${E_(80,54)}${H_(80,54)}${L_(46,136,'dl')}${L_(88,136,'dr')}`;
+  function pDance(black = false) {
+    return `${T_(18,115,black)}${W_(80,108,58,black)}${LB_(52,126,-50,42,'dla')}${LB_(108,126,-130,42,'dlb')}${E_(80,54)}${H_(80,54)}${L_(46,136,'dl')}${L_(88,136,'dr')}`;
   }
-  function pWindFly() {
-    return `${T_(18,115)}${W_(80,108,58)}${E_(80,54)}${H_(80,54)}${LB_(36,90,-120,38,'jla')}${LB_(60,85,-80,38,'jlb')}${LB_(98,85,-60,38,'jla')}${LB_(118,88,-40,38,'jlb')}`;
+  function pWindFly(black = false) {
+    return `${T_(18,115,black)}${W_(80,108,58,black)}${E_(80,54)}${H_(80,54)}${LB_(36,90,-120,38,'jla')}${LB_(60,85,-80,38,'jlb')}${LB_(98,85,-60,38,'jla')}${LB_(118,88,-40,38,'jlb')}`;
   }
-  function pHang() {
-    return `<g transform="translate(0,10) rotate(180 80 90)">${L_(45,136,'hla')}${L_(95,136,'hla')}${T_(18,115)}${W_(80,105,58)}${L_(36,134,'hlb')}${L_(86,134,'hlb')}${E_(80,42)}${H_(80,50)}</g>`;
+  function pHang(black = false) {
+    return `<g transform="translate(0,10) rotate(180 80 90)">${L_(45,136,'hla')}${L_(95,136,'hla')}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,'hlb')}${L_(86,134,'hlb')}${E_(80,42)}${H_(80,50)}</g>`;
   }
 
-  // ── DECOR (platforms + pipes) ──
+  // List of all pipes — each pipe is bidirectional (entry AND exit)
+  // Each entry: {el, x, w, mouthY, midX, mouthDir: 'up'|'down', anchor: {kind, ref}}
+  let ALL_PIPES = [];
+  let groundEl = null, cloudsEls = [];
+
+  // ── DECOR (platforms + pipes + ground + clouds) ──
   function buildDecor() {
     const W = viewW(), H = window.innerHeight, top = topMargin();
     const A = H - top - 30; // available height between topbar and ground
+    const GND = gnd();
 
-    // Platforms — 6 random, scaled to viewport
-    // Top platforms are narrower to let sheep fall through to ground or lower platforms
+    // ── GROUND LINE ──
+    groundEl = document.createElement('div');
+    groundEl.className = 'es-ground';
+    groundEl.style.cssText = `position:fixed;left:0;right:0;top:${GND}px;height:6px;z-index:${Z_DECOR};pointer-events:none;background:linear-gradient(180deg,#5a3612 0%,#7c4f1e 30%,#5a3612 100%);border-top:2px solid #a0632a;opacity:0;transition:opacity .8s ease`;
+    // Add some grass tufts
+    const tufts = document.createDocumentFragment();
+    for (let i = 0; i < Math.floor(W / 60); i++) {
+      const t = document.createElement('div');
+      const tx = Math.random() * W;
+      t.style.cssText = `position:absolute;left:${tx}px;top:-5px;width:6px;height:7px;background:#4a7c1e;clip-path:polygon(0 100%,30% 0,50% 60%,70% 0,100% 100%);opacity:.7`;
+      tufts.appendChild(t);
+    }
+    groundEl.appendChild(tufts);
+    document.body.appendChild(groundEl);
+    DECOR.push(groundEl);
+
+    // ── PLATFORMS ──
     const layout = [
-      { xR: .06, yR: .50, wR: .14 },  // mid-left, smaller
-      { xR: .28, yR: .33, wR: .12 },  // upper-mid, much smaller
-      { xR: .54, yR: .46, wR: .14 },  // mid, smaller
-      { xR: .68, yR: .22, wR: .11 },  // upper-right, much smaller
-      { xR: .14, yR: .68, wR: .20 },  // lower-left, wider (bottom is OK)
-      { xR: .42, yR: .58, wR: .16 }   // mid-low, normal
+      { xR: .06, yR: .50, wR: .14 },
+      { xR: .28, yR: .33, wR: .12 },
+      { xR: .54, yR: .46, wR: .14 },
+      { xR: .68, yR: .22, wR: .11 },
+      { xR: .14, yR: .68, wR: .20 },
+      { xR: .42, yR: .58, wR: .16 }
     ];
     layout.forEach(d => {
       const x = d.xR * W, y = top + d.yR * A, w = d.wR * W;
@@ -217,9 +252,9 @@
       DECOR.push(el);
     });
 
-    // Pipes
-    const GND = gnd();
-    function mkPipe(x, anchorY, bodyH = 55) {
+    // ── PIPES ──
+    // mkPipe: creates a pipe element. mouthDir = 'up' (sheep enter from top) or 'down' (mouth at bottom — hangs)
+    function mkPipe(x, anchorY, bodyH, mouthDir) {
       const capH = 16, total = capH + bodyH;
       const el = document.createElement('div');
       el.className = 'es-pipe';
@@ -227,37 +262,84 @@
       const cap = document.createElement('div'); cap.className = 'es-pipe-cap';
       const body = document.createElement('div'); body.className = 'es-pipe-body';
       body.style.height = bodyH + 'px';
-      el.appendChild(cap); el.appendChild(body);
+      if (mouthDir === 'up') {
+        // Standing pipe: cap on top, body below
+        el.appendChild(cap); el.appendChild(body);
+        // mouthY = top of cap (where sheep enter/exit)
+        var mouthY = anchorY;
+      } else {
+        // Hanging pipe: body on top, cap at bottom (mouth faces down)
+        el.appendChild(body); el.appendChild(cap);
+        var mouthY = anchorY + total; // bottom of cap
+      }
       document.body.appendChild(el);
       DECOR.push(el);
-      return { el, x, w: 54, capH, bodyH, total, mouthY: anchorY, midX: x + 27 };
+      return { el, x, w: 54, capH, bodyH, total, mouthY, midX: x + 27, mouthDir };
     }
-    const bodyGnd = 65;
-    const p0in = mkPipe(30, GND - (16 + bodyGnd), bodyGnd);
-    const p0out = mkPipe(PLATS[2].x + PLATS[2].w / 2 - 27, PLATS[2].y - (16 + 40), 40);
-    PIPES.push({ in: p0in, out: p0out });
-    const p1in = mkPipe(W - 30 - 54, GND - (16 + bodyGnd), bodyGnd);
-    const p1out = mkPipe(PLATS[3].x + PLATS[3].w / 2 - 27, PLATS[3].y - (16 + 40), 40);
-    PIPES.push({ in: p1in, out: p1out });
 
-    // Sky pipes (hanging from top)
+    // Ground pipes (mouth up)
+    const bodyGnd = 65;
+    const p0 = mkPipe(30, GND - (16 + bodyGnd), bodyGnd, 'up');
+    ALL_PIPES.push(p0);
+    const p1 = mkPipe(W - 30 - 54, GND - (16 + bodyGnd), bodyGnd, 'up');
+    ALL_PIPES.push(p1);
+
+    // Plateforme-top pipes (mouth up, sitting on a platform)
+    const p2plat = PLATS[2];
+    const p2 = mkPipe(p2plat.x + p2plat.w / 2 - 27, p2plat.y - (16 + 40), 40, 'up');
+    ALL_PIPES.push(p2);
+    const p3plat = PLATS[3];
+    const p3 = mkPipe(p3plat.x + p3plat.w / 2 - 27, p3plat.y - (16 + 40), 40, 'up');
+    ALL_PIPES.push(p3);
+
+    // Pipes UNDER certain platforms (mouth down)
+    // PLATS[1] (upper-mid) and PLATS[5] (mid-low)
+    const underPlatforms = [PLATS[1], PLATS[5]];
+    underPlatforms.forEach(p => {
+      // pipe hangs from underside of platform, body 35px tall
+      const pipe = mkPipe(p.x + p.w / 2 - 27, p.y + 14, 35, 'down');
+      ALL_PIPES.push(pipe);
+    });
+
+    // Sky pipe (hanging from top of viewport, attached to a cloud)
     if (PLATS.length >= 5) {
-      const targets = [PLATS[4]];
-      const xs = [W * 0.5];
-      targets.forEach((tgt, i) => {
-        const el = document.createElement('div');
-        el.className = 'es-pipe';
-        const capH = 16, bodyH = 50, total = capH + bodyH;
-        el.style.cssText = `left:${xs[i]-27}px;top:${top + 8}px;height:${total}px;width:54px;animation:esPipeFall .8s ease-out forwards, esPipeHover 2.4s ease-in-out infinite ${i*.8}s`;
-        const body = document.createElement('div'); body.className = 'es-pipe-body'; body.style.height = bodyH + 'px';
-        const cap = document.createElement('div'); cap.className = 'es-pipe-cap';
-        el.appendChild(body); el.appendChild(cap);
-        document.body.appendChild(el);
-        DECOR.push(el);
-        const mouthY = top + 8 + total;
-        SKY_PIPES.push({ el, x: xs[i] - 27, w: 54, midX: xs[i], mouthY, tgt });
-      });
+      const cloudCx = W * 0.5;
+      const cloudCy = top + 30;
+      // Build cloud
+      const cloud = document.createElement('div');
+      cloud.className = 'es-cloud';
+      cloud.style.cssText = `position:fixed;left:${cloudCx - 75}px;top:${cloudCy - 22}px;width:150px;height:50px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudFloat 6s ease-in-out infinite`;
+      cloud.innerHTML = `
+        <svg viewBox="0 0 150 50" width="150" height="50" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="40" cy="32" rx="28" ry="14" fill="#cbd5e1" opacity=".88"/>
+          <ellipse cx="70" cy="22" rx="32" ry="18" fill="#e2e8f0" opacity=".92"/>
+          <ellipse cx="100" cy="28" rx="30" ry="16" fill="#cbd5e1" opacity=".9"/>
+          <ellipse cx="120" cy="34" rx="22" ry="12" fill="#94a3b8" opacity=".85"/>
+          <ellipse cx="55" cy="38" rx="24" ry="10" fill="#94a3b8" opacity=".75"/>
+        </svg>
+      `;
+      document.body.appendChild(cloud);
+      DECOR.push(cloud);
+      cloudsEls.push(cloud);
+
+      // Sky pipe: mouth down, body hidden inside cloud
+      const skyPipeBodyH = 40;
+      const skyPipeCapH = 16;
+      const skyPipeTotal = skyPipeBodyH + skyPipeCapH;
+      const skyPipe = mkPipe(cloudCx - 27, cloudCy + 5, skyPipeBodyH, 'down');
+      // Override animation to make it float with cloud
+      skyPipe.el.style.animation = 'esCloudFloat 6s ease-in-out infinite';
+      ALL_PIPES.push(skyPipe);
     }
+
+    // Assign IDs to all pipes for routing
+    ALL_PIPES.forEach((p, i) => { p.id = i; });
+
+    // Keep PIPES array for backward compat (entries are pipes that mouth-up on ground/platform)
+    PIPES.length = 0;
+    ALL_PIPES.forEach(p => {
+      if (p.mouthDir === 'up') PIPES.push({ in: p, out: p });
+    });
   }
 
   function showDecor() {
@@ -284,9 +366,9 @@
 
   function mkSVG(s, state) {
     let inner;
-    if (state === ST.RUN) inner = pRun();
-    else if (state === ST.DANCE) inner = pDance();
-    else if (state === ST.HANG) inner = pHang();
+    if (state === ST.RUN) inner = pRun(s.black);
+    else if (state === ST.DANCE) inner = pDance(s.black);
+    else if (state === ST.HANG) inner = pHang(s.black);
     else if (state === ST.SLEEP) inner = pStand('ls', 'ls', 'sleep', s.black);
     else inner = pStand('la', 'lb', 'open', s.black);
     const cls = POSE_MAP[state] || '';
@@ -350,9 +432,16 @@
   function tryJump(s) {
     const reach = PLATS.filter(p => { const dx = Math.abs((p.x + p.w / 2) - (s.x + SZ)); const dy = s.y - p.y; return dx < 360 && dy > -60 && dy < 320; });
     if (!reach.length) return false;
+    const top = topMargin();
+    const H = window.innerHeight;
+    const A = H - top - 30;
     const scored = reach.map(p => {
       const occ = allSheep.filter(s2 => s2.alive && s2 !== s && Math.abs((s2.x + SZ) - (p.x + p.w / 2)) < p.w * .6).length;
-      return { p, score: occ + (Math.random() * .4) };
+      // Height penalty: plateforms higher up (smaller y) are less attractive
+      // (p.y - top) / A → 0 at top, 1 at bottom; we want high y → low malus, low y → high malus
+      const heightFraction = Math.max(0, Math.min(1, (p.y - top) / A));
+      const heightMalus = (1 - heightFraction) * 1.6; // 0 = bottom, 1.6 = top
+      return { p, score: occ + heightMalus + (Math.random() * .4) };
     }).sort((a, b) => a.score - b.score);
     const tgt = scored[0].p;
     const tx = tgt.x + tgt.w / 2 - SZ;
@@ -432,21 +521,40 @@
     });
   }
 
-  function enterPipe(s, pairIdx) {
+  function enterPipe(s, entryPipe) {
     s.state = ST.PIPE; s.surf = null; s.vx = 0; s.vy = 0; clearZzz(s);
     const sv = s.el.querySelector('svg'); if (sv) sv.classList.add('es-p-in');
     setTimeout(() => {
       if (sv) sv.classList.remove('es-p-in');
       s.el.style.opacity = '0';
       setTimeout(() => {
-        const out = PIPES[pairIdx].out;
+        // Choose a random exit pipe — anything except the entry pipe
+        const candidates = ALL_PIPES.filter(p => p !== entryPipe);
+        if (!candidates.length) {
+          // edge case: no other pipes, exit from same one
+          candidates.push(entryPipe);
+        }
+        const out = candidates[Math.floor(Math.random() * candidates.length)];
+        // Position sheep at the mouth of the exit pipe
         s.x = out.midX - SZ;
-        s.y = out.mouthY - SZ * 2 - 4;
+        if (out.mouthDir === 'up') {
+          // Pop out from top of pipe, going up
+          s.y = out.mouthY - SZ * 2 + FOOT_OFFSET - 4;
+        } else {
+          // Pop out from bottom of pipe (hanging pipe), falling down
+          s.y = out.mouthY + 4;
+        }
         pos(s); s.el.style.opacity = '1'; rdr(s, ST.FALL);
         const sv2 = s.el.querySelector('svg'); if (sv2) sv2.classList.add('es-p-out');
         setTimeout(() => {
           if (sv2) sv2.classList.remove('es-p-out');
-          s.state = ST.FALL; s.vy = -(5 + Math.random() * 3); s.vx = (Math.random() - .5) * 2;
+          s.state = ST.FALL;
+          if (out.mouthDir === 'up') {
+            s.vy = -(5 + Math.random() * 3);
+          } else {
+            s.vy = 1 + Math.random() * 2;
+          }
+          s.vx = (Math.random() - .5) * 2;
           s.dir = s.vx >= 0 ? 1 : -1; xfm(s);
         }, 380);
       }, 320);
@@ -471,37 +579,23 @@
         if (s.x > RIGHT) { s.x = RIGHT; s.vx = -Math.abs(s.vx) * .5; }
         if (s.y < topMargin()) { s.y = topMargin(); s.vy = Math.abs(s.vy) * .3; }
         for (const sf of ss) {
-          if (s.vy >= 0 && s.y + SZ * 2 >= sf.y - 4 && s.y + SZ * 2 <= sf.y + 32 && s.x + SZ * 2 > sf.x + 2 && s.x < sf.x + sf.w - 2) {
-            s.y = sf.y - SZ * 2; s.vy = 0; s.vx = 0; s.surf = sf;
+          // Foot position is at s.y + SZ*2 - FOOT_OFFSET (closer to bottom of sprite, where feet are drawn)
+          const footY = s.y + SZ * 2 - FOOT_OFFSET;
+          if (s.vy >= 0 && footY >= sf.y - 4 && footY <= sf.y + 32 && s.x + SZ * 2 > sf.x + 2 && s.x < sf.x + sf.w - 2) {
+            s.y = sf.y - SZ * 2 + FOOT_OFFSET; s.vy = 0; s.vx = 0; s.surf = sf;
             go(s, ST.WALK); s.timer = 80 + Math.floor(Math.random() * 120); s.dir = Math.random() < .5 ? 1 : -1; xfm(s); break;
           }
         }
-        for (let pi = 0; pi < PIPES.length; pi++) {
-          const pin = PIPES[pi].in;
-          if (s.x + SZ * 2 > pin.x + 4 && s.x < pin.x + pin.w - 4 && Math.abs(s.y + SZ * 2 - pin.mouthY) < 24) { enterPipe(s, pi); return; }
-        }
-        if (s.vy < 0) {
-          for (const sp of SKY_PIPES) {
-            if (s.x + SZ * 2 > sp.x + 4 && s.x < sp.x + sp.w - 4 && Math.abs(s.y + SZ * 2 - sp.mouthY) < 20) {
-              s.state = ST.PIPE; s.surf = null; s.vx = 0; s.vy = 0;
-              const sv = s.el.querySelector('svg'); if (sv) sv.classList.add('es-p-in');
-              const tgt = sp.tgt;
-              setTimeout(() => {
-                if (sv) sv.classList.remove('es-p-in');
-                s.el.style.opacity = '0';
-                setTimeout(() => {
-                  s.x = tgt.x + Math.random() * Math.max(0, tgt.w - SZ * 2);
-                  s.y = tgt.y - SZ * 2 - 4;
-                  pos(s); s.el.style.opacity = '1'; rdr(s, ST.FALL);
-                  const sv2 = s.el.querySelector('svg'); if (sv2) sv2.classList.add('es-p-out');
-                  setTimeout(() => {
-                    if (sv2) sv2.classList.remove('es-p-out');
-                    s.state = ST.FALL; s.vy = 0; s.vx = (Math.random() - .5) * 2;
-                    s.dir = s.vx >= 0 ? 1 : -1; xfm(s);
-                  }, 380);
-                }, 320);
-              }, 350);
-              return;
+        for (let pi = 0; pi < ALL_PIPES.length; pi++) {
+          const p = ALL_PIPES[pi];
+          if (s.x + SZ * 2 > p.x + 4 && s.x < p.x + p.w - 4) {
+            const footY = s.y + SZ * 2 - FOOT_OFFSET;
+            if (p.mouthDir === 'up' && Math.abs(footY - p.mouthY) < 24) {
+              enterPipe(s, p); return;
+            }
+            // mouthDir === 'down': sheep entering from below (must be moving up)
+            if (p.mouthDir === 'down' && s.vy < 0 && Math.abs(s.y - p.mouthY) < 20) {
+              enterPipe(s, p); return;
             }
           }
         }
@@ -528,9 +622,11 @@
         s.x += s.dir * spd;
         if (s.x < 0) { s.x = 0; s.dir = 1; xfm(s); }
         if (s.x > RIGHT) { s.x = RIGHT; s.dir = -1; xfm(s); }
-        for (let pi = 0; pi < PIPES.length; pi++) {
-          const pin = PIPES[pi].in;
-          if (s.x + SZ * 2 > pin.x + 4 && s.x < pin.x + pin.w - 4 && Math.abs(s.y + SZ * 2 - pin.mouthY) < 24) { enterPipe(s, pi); return; }
+        for (let pi = 0; pi < ALL_PIPES.length; pi++) {
+          const p = ALL_PIPES[pi];
+          if (p.mouthDir !== 'up') continue;
+          const footY = s.y + SZ * 2 - FOOT_OFFSET;
+          if (s.x + SZ * 2 > p.x + 4 && s.x < p.x + p.w - 4 && Math.abs(footY - p.mouthY) < 24) { enterPipe(s, p); return; }
         }
         if (s.tick % 20 === 0) {
           const crowdCheck = isCrowded(s);
@@ -541,10 +637,11 @@
               s.dir = s.x < cx ? -1 : 1; xfm(s);
             }
             let usedPipe = false;
-            for (let pi = 0; pi < PIPES.length; pi++) {
-              const pin = PIPES[pi].in;
-              if (Math.abs((s.x + SZ) - pin.midX) < 120 && Math.random() < .3) {
-                s.dir = s.x + SZ < pin.midX ? 1 : -1; xfm(s); usedPipe = true; break;
+            for (let pi = 0; pi < ALL_PIPES.length; pi++) {
+              const p = ALL_PIPES[pi];
+              if (p.mouthDir !== 'up') continue;
+              if (Math.abs((s.x + SZ) - p.midX) < 120 && Math.random() < .3) {
+                s.dir = s.x + SZ < p.midX ? 1 : -1; xfm(s); usedPipe = true; break;
               }
             }
             if (!usedPipe && Math.random() < .5) tryJump(s);
@@ -594,7 +691,7 @@
       if (!s.alive || s.grabbed || s.state === ST.PIPE) return;
       clearZzz(s); s.surf = null; s.windOut = true;
       s.vx = -(9 + Math.random() * 7); s.vy = -(1 + Math.random() * 3); s.dir = -1;
-      s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" class="W-wind" style="--fx:-1">${pWindFly()}</svg>`;
+      s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" class="W-wind" style="--fx:-1">${pWindFly(s.black)}</svg>`;
       ft(s, WINDTXT[Math.floor(Math.random() * WINDTXT.length)]);
     });
     hideDecor();
@@ -632,7 +729,25 @@
     document.body.appendChild(bm); setTimeout(() => bm.remove(), 900);
     setTimeout(() => {
       if (!s.alive) return;
-      s.alive = false; clearZzz(s); s.el.classList.add('es-burning');
+      s.alive = false; clearZzz(s);
+      // Brief electric flash
+      s.el.style.filter = 'brightness(7) sepia(1) saturate(6)';
+      setTimeout(() => { if (s.el) s.el.style.filter = 'sepia(.6) brightness(.85)'; }, 180);
+      // Render KO state with X X eyes (immediately, sheep stays visible 5s)
+      s.state = 'ko';
+      const koSVG = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','dead',s.black)}</svg>`;
+      // Smoke puffs above the KO sheep
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => {
+          if (!s.el || !s.el.parentNode) return;
+          const sm = document.createElement('div');
+          sm.style.cssText = `position:fixed;z-index:${Z_FLOAT};pointer-events:none;font-size:${12+Math.random()*8}px;left:${s.x+10+Math.random()*(SZ*1.6)}px;top:${s.y+Math.random()*8}px;animation:esFtUp ${1.2+Math.random()*.6}s ease forwards;opacity:.7`;
+          sm.textContent = ['💨', '·', '°'][Math.floor(Math.random() * 3)];
+          document.body.appendChild(sm);
+          setTimeout(() => sm.remove(), 1800);
+        }, 250 + i * 600);
+      }
+      // Initial sparks
       for (let i = 0; i < 5; i++) {
         const sp = document.createElement('div');
         sp.style.cssText = `position:fixed;z-index:${Z_FLOAT};pointer-events:none;font-size:${10+Math.random()*12}px;left:${s.x+Math.random()*SZ*2}px;top:${s.y+Math.random()*16}px;animation:esFtUp ${.4+Math.random()*.5}s ease forwards`;
@@ -640,7 +755,17 @@
         document.body.appendChild(sp);
         setTimeout(() => sp.remove(), 700);
       }
-      setTimeout(() => { s.el.remove(); checkDecor(); }, 800);
+      setTimeout(() => {
+        if (!s.el) return;
+        s.el.innerHTML = koSVG;
+      }, 380);
+      // Stay KO for ~5s, then fade out and remove
+      setTimeout(() => {
+        if (!s.el) return;
+        s.el.style.transition = 'opacity 1s ease';
+        s.el.style.opacity = '0';
+        setTimeout(() => { if (s.el) { s.el.remove(); } checkDecor(); }, 1100);
+      }, 5000);
     }, 280);
   }
   function schedLight() {
@@ -681,7 +806,7 @@
     tornadoActive = true;
     const top = topMargin();
 
-    // Warning text first
+    // Warning text
     const warn = document.createElement('div');
     warn.className = 'es-tornado-warning';
     warn.textContent = '🌪 TORNADO !';
@@ -690,43 +815,78 @@
     document.body.appendChild(warn);
     setTimeout(() => warn.remove(), 1600);
 
-    // Tornado SVG: layered rotating ellipses forming a vortex shape
+    // Tornado container — anchored at spot.x, bottom at spot.y
     const tornadoEl = document.createElement('div');
-    tornadoEl.className = 'es-tornado';
-    tornadoEl.style.left = (spot.x - 70) + 'px';
-    tornadoEl.style.top = (spot.y - 280) + 'px';
-    tornadoEl.style.animation = 'esTornadoDrop 2.8s ease-out forwards';
-    tornadoEl.innerHTML = `
-      <div class="es-tornado-inner">
-        <svg viewBox="0 0 140 280" width="140" height="280" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="es-torG1" cx="50%" cy="50%">
-              <stop offset="0%" stop-color="#cbd5e1" stop-opacity=".9"/>
-              <stop offset="60%" stop-color="#64748b" stop-opacity=".7"/>
-              <stop offset="100%" stop-color="#334155" stop-opacity=".4"/>
-            </radialGradient>
-          </defs>
-          <!-- vortex layers, narrower at bottom -->
-          <ellipse cx="70" cy="260" rx="14" ry="10" fill="url(#es-torG1)"/>
-          <ellipse cx="70" cy="230" rx="22" ry="14" fill="url(#es-torG1)" opacity=".85"/>
-          <ellipse cx="70" cy="195" rx="32" ry="18" fill="url(#es-torG1)" opacity=".8"/>
-          <ellipse cx="70" cy="155" rx="42" ry="22" fill="url(#es-torG1)" opacity=".75"/>
-          <ellipse cx="70" cy="110" rx="54" ry="26" fill="url(#es-torG1)" opacity=".7"/>
-          <ellipse cx="70" cy="60" rx="64" ry="30" fill="url(#es-torG1)" opacity=".65"/>
-          <ellipse cx="70" cy="20" rx="68" ry="22" fill="url(#es-torG1)" opacity=".5"/>
-          <!-- Debris particles -->
-          <circle cx="40" cy="90" r="3" fill="#94a3b8" opacity=".8"/>
-          <circle cx="100" cy="140" r="2" fill="#cbd5e1" opacity=".9"/>
-          <circle cx="55" cy="180" r="2.5" fill="#94a3b8" opacity=".7"/>
-          <circle cx="90" cy="210" r="2" fill="#e2e8f0" opacity=".8"/>
-          <circle cx="65" cy="50" r="2" fill="#cbd5e1" opacity=".6"/>
-        </svg>
-      </div>
-    `;
+    tornadoEl.className = 'es-tornado-v2';
+    const tWidth = 200, tHeight = 300;
+    tornadoEl.style.cssText = `position:fixed;left:${spot.x - tWidth/2}px;top:${spot.y - tHeight}px;width:${tWidth}px;height:${tHeight}px;z-index:${Z_FX};pointer-events:none;animation:esTornFullCycle 6s ease-in-out forwards`;
+
+    // Build the serpent body (24 arcs with cascading delay)
+    const bandSpec = [
+      {y:22,rx:80,col:'#f1f5f9',op:.8,thick:7},
+      {y:32,rx:78,col:'#94a3b8',op:.7,thick:7},
+      {y:42,rx:80,col:'#e2e8f0',op:.75,thick:7},
+      {y:52,rx:75,col:'#cbd5e1',op:.7,thick:7},
+      {y:62,rx:78,col:'#f1f5f9',op:.8,thick:7},
+      {y:72,rx:73,col:'#94a3b8',op:.75,thick:7},
+      {y:82,rx:73,col:'#e2e8f0',op:.75,thick:7},
+      {y:92,rx:68,col:'#cbd5e1',op:.75,thick:7},
+      {y:102,rx:68,col:'#f1f5f9',op:.8,thick:6},
+      {y:112,rx:62,col:'#94a3b8',op:.75,thick:6},
+      {y:122,rx:60,col:'#e2e8f0',op:.75,thick:6},
+      {y:132,rx:56,col:'#cbd5e1',op:.8,thick:6},
+      {y:142,rx:54,col:'#f1f5f9',op:.8,thick:6},
+      {y:152,rx:50,col:'#94a3b8',op:.8,thick:6},
+      {y:162,rx:48,col:'#e2e8f0',op:.8,thick:5},
+      {y:174,rx:44,col:'#cbd5e1',op:.8,thick:5},
+      {y:186,rx:42,col:'#f1f5f9',op:.85,thick:5},
+      {y:196,rx:38,col:'#94a3b8',op:.85,thick:5},
+      {y:208,rx:34,col:'#e2e8f0',op:.85,thick:5},
+      {y:220,rx:30,col:'#cbd5e1',op:.85,thick:4},
+      {y:232,rx:26,col:'#f1f5f9',op:.9,thick:4},
+      {y:244,rx:22,col:'#94a3b8',op:.9,thick:4},
+      {y:254,rx:18,col:'#e2e8f0',op:.9,thick:3.5},
+      {y:264,rx:14,col:'#cbd5e1',op:.95,thick:3},
+      {y:274,rx:10,col:'#94a3b8',op:.95,thick:2.5},
+      {y:282,rx:6,col:'#cbd5e1',op:.95,thick:2}
+    ];
+
+    // Halo (subtle background ellipse)
+    const halo1 = document.createElement('div');
+    halo1.style.cssText = `position:absolute;left:5px;top:35px;width:190px;height:250px;background:#94a3b8;opacity:.12;border-radius:50%;pointer-events:none`;
+    tornadoEl.appendChild(halo1);
+    const halo2 = document.createElement('div');
+    halo2.style.cssText = `position:absolute;left:40px;top:40px;width:120px;height:240px;background:#cbd5e1;opacity:.08;border-radius:50%;pointer-events:none`;
+    tornadoEl.appendChild(halo2);
+
+    bandSpec.forEach((b, i) => {
+      const band = document.createElement('div');
+      const lineH = b.thick * 4;
+      band.style.cssText = `position:absolute;left:50%;top:${b.y}px;width:${b.rx*2}px;height:${lineH}px;border-style:solid;border-color:transparent;border-top-color:${b.col};border-width:${b.thick}px 0 0 0;border-radius:50% 50% 0 0;opacity:${b.op};animation:esTornBandSway .7s ease-in-out infinite;animation-delay:${(-i*.025).toFixed(3)}s;pointer-events:none`;
+      tornadoEl.appendChild(band);
+    });
+
+    // Debris (42 particles in vertical-axis orbit)
+    const cols = ['#cbd5e1', '#94a3b8', '#64748b', '#e2e8f0', '#475569'];
+    for (let i = 0; i < 42; i++) {
+      const ty = 20 + Math.random() * 240;
+      const dist = Math.abs(ty - 160);
+      const rx = Math.max(15, Math.min(130, (160 - dist) * 0.85 + 15 + Math.random() * 55));
+      const dur = (.8 + Math.random() * 1.4).toFixed(2);
+      const delay = (-Math.random() * 2).toFixed(2);
+      const size = 2 + Math.random() * 4;
+      const col = cols[Math.floor(Math.random() * cols.length)];
+      const isRect = Math.random() < .25;
+      const w = isRect ? size * 1.4 : size;
+      const h = isRect ? size * .7 : size;
+      const p = document.createElement('div');
+      p.style.cssText = `position:absolute;left:${tWidth/2}px;top:${ty}px;width:${w}px;height:${h}px;margin-left:${-w/2}px;margin-top:${-h/2}px;background:${col};border-radius:${isRect?'1px':'50%'};animation:esTornDebrisOrb ${dur}s linear infinite;animation-delay:${delay}s;pointer-events:none;--rx:${rx}px`;
+      tornadoEl.appendChild(p);
+    }
+
     document.body.appendChild(tornadoEl);
 
-    // Phase 1: tornado landing — pull sheep slightly toward center
-    const landDelay = 850;
+    // Phase 1: pull sheep toward center (after formation, ~1.5s in)
     setTimeout(() => {
       const radius = 280;
       allSheep.forEach(s => {
@@ -735,16 +895,14 @@
         const dy = s.y + SZ - spot.y;
         const dist = Math.hypot(dx, dy);
         if (dist > radius) return;
-        // Pull inward briefly
         s.surf = null;
         s.vx = -dx / 30;
         s.vy = -Math.abs(dy) / 40 - 2;
         s.state = ST.FALL;
       });
-    }, landDelay);
+    }, 1500);
 
-    // Phase 2: explosion — scatter sheep radially with strong velocities
-    const explodeDelay = 1800;
+    // Phase 2: explosion — scatter sheep radially (~3s in)
     setTimeout(() => {
       const radius = 340;
       allSheep.forEach(s => {
@@ -755,22 +913,21 @@
         if (dist > radius) return;
         clearZzz(s);
         s.surf = null;
-        // Radial direction (or random if at center)
         const ang = dist < 5 ? Math.random() * Math.PI * 2 : Math.atan2(dy, dx);
         const force = 14 + Math.random() * 6;
         s.vx = Math.cos(ang) * force;
-        s.vy = Math.sin(ang) * force - 8; // upward bias
+        s.vy = Math.sin(ang) * force - 8;
         s.dir = s.vx >= 0 ? 1 : -1;
         s.state = ST.FALL;
         ft(s, ['BÊÊÊ !', 'AAAH !', 'NOOOON !', '🌪'][Math.floor(Math.random() * 4)], '#fbbf24');
       });
-    }, explodeDelay);
+    }, 3000);
 
-    // Cleanup
+    // Cleanup at end of cycle (6s)
     setTimeout(() => {
       tornadoEl.remove();
       tornadoActive = false;
-    }, 2800);
+    }, 6000);
   }
 
   function schedTornado() {
@@ -839,7 +996,9 @@
     allSheep.forEach(s => { s.alive = false; clearZzz(s); if (s.el) s.el.remove(); });
     allSheep = [];
     DECOR.forEach(e => e.remove()); DECOR = [];
-    PLATS = []; PIPES = []; SKY_PIPES = [];
+    PLATS = []; PIPES = []; SKY_PIPES = []; ALL_PIPES = [];
+    cloudsEls = [];
+    groundEl = null;
     if (dotsBar) { dotsBar.remove(); dotsBar = null; }
     decorOn = false;
     removeStyles();
@@ -853,7 +1012,6 @@
     injectHotspotStyles();
     hotspot = document.createElement('div');
     hotspot.className = 'es-hotspot';
-    hotspot.title = 'eSheep';
     hotspot.setAttribute('aria-label', 'eSheep toggle');
     hotspot.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     document.body.appendChild(hotspot);
@@ -874,10 +1032,8 @@
     const s = document.createElement('style');
     s.id = HOTSPOT_STYLE_ID;
     s.textContent = `
-.es-hotspot{position:fixed!important;left:calc(var(--sidebar-w, 220px) + 8px)!important;bottom:8px!important;width:18px!important;height:18px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(0,212,168,.18)!important;border:1.5px solid rgba(0,212,168,.55)!important;box-shadow:0 0 8px rgba(0,212,168,.35),inset 0 0 4px rgba(0,212,168,.25)!important;transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-hotspot:hover{background:rgba(0,212,168,.45)!important;border-color:rgba(0,212,168,.9)!important;box-shadow:0 0 14px rgba(0,212,168,.7),inset 0 0 6px rgba(0,212,168,.4)!important;transform:scale(1.25)!important}
-.es-hotspot::after{content:'';position:absolute;inset:5px;border-radius:50%;background:rgba(0,212,168,.7);animation:esHotPulse 2.4s ease-in-out infinite;pointer-events:none}
-@keyframes esHotPulse{0%,100%{opacity:.5;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+.es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
 `;
     document.head.appendChild(s);
   }
