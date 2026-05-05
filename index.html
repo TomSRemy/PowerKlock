@@ -1191,12 +1191,18 @@
                 <span id="zone-filter-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <div id="zone-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
-                  <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
-                  <div style="display:flex;gap:6px">
-                    <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 8px;font-weight:600">Select all</button>
-                    <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 8px">Select none</button>
+              <div id="zone-filter-panel" onclick="event.stopPropagation()" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
+                    <div style="display:flex;gap:4px">
+                      <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button onclick="selectNeighbours()" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+                    <button onclick="selectWithGenMix()" style="font-size:10px;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
                   </div>
                 </div>
                 <div id="zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>
@@ -1242,7 +1248,7 @@
                 <span id="compare-filter-label">FR selected</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <div id="compare-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+              <div id="compare-filter-panel" onclick="event.stopPropagation()" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
                   <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Compare zones</span>
                   <div style="display:flex;gap:6px">

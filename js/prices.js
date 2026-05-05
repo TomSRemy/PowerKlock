@@ -693,7 +693,22 @@ function toggleZoneFilterPanel() {
 
 function selectAllZones() {
   if (!window._pricesSorted) return;
-  window._pricesZoneFilter = null; // null = all
+  window._pricesZoneFilter = null;
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
+}
+
+function selectNeighbours() {
+  // FR + direct neighbours with significant interconnection
+  window._pricesZoneFilter = new Set(['FR','DE_LU','BE','NL','ES','GB','IT_NORD','CH','AT']);
+  buildZoneFilterDropdown();
+  renderPricesTableBody();
+}
+
+function selectWithGenMix() {
+  // Zones that have generation mix data in genmix.json
+  const genMixZones = window._genmixData ? new Set(Object.keys(window._genmixData)) : new Set(['FR','DE_LU','ES','BE','NL','IT_NORD','GB']);
+  window._pricesZoneFilter = genMixZones.size > 0 ? genMixZones : null;
   buildZoneFilterDropdown();
   renderPricesTableBody();
 }
