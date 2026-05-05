@@ -1318,15 +1318,16 @@ function buildHourlyDetail(idx, z) {
   inner.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${idx}">
       ${[
-        {k:'avg',     l:'Avg',                v:avg.toFixed(2),                            sub:'24h average',           u:'€/MWh'},
-        {k:'peak',    l:'Peak avg (08-20)',   v:peakAvg!=null?peakAvg.toFixed(2):'--',     sub:'avg over peak hours',   u:'€/MWh'},
-        {k:'offpeak', l:'Off-peak avg',       v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   sub:'00-08 / 20-24',         u:'€/MWh'},
-        {k:'min',     l:'Min slot',           v:minV.toFixed(2),                           sub:'@'+minSlotLabel,        u:'€/MWh'},
-        {k:'max',     l:'Max slot',           v:maxV.toFixed(2),                           sub:'@'+maxSlotLabel,        u:'€/MWh'},
-      ].map(k=>`<div id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${col};border-radius:6px;padding:9px 12px;transition:border-left-color 0.2s">
-        <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
-        <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--tx)">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
-        <div class="row-kpi-sub" data-kpi="${k.k}" style="font-size:10px;color:var(--tx3)">${k.sub}</div>
+        {k:'avg',     l:'Avg',              v:avg.toFixed(2),                            meta:'24h average',     u:'€/MWh'},
+        {k:'peak',    l:'Peak avg',         v:peakAvg!=null?peakAvg.toFixed(2):'--',     meta:'08h–20h',         u:'€/MWh'},
+        {k:'offpeak', l:'Off-peak avg',     v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   meta:'00h–08h / 20h–24h', u:'€/MWh'},
+        {k:'min',     l:'Min slot',         v:minV.toFixed(2),                           meta:'@'+minSlotLabel,   u:'€/MWh'},
+        {k:'max',     l:'Max slot',         v:maxV.toFixed(2),                           meta:'@'+maxSlotLabel,   u:'€/MWh'},
+      ].map(k=>`<div id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid var(--text3);border-radius:6px;padding:10px 12px;transition:border-left-color 0.2s">
+        <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">${k.l}</div>
+        <div style="font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em;color:var(--text)">${k.v}<span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:3px"> ${k.u||''}</span></div>
+        <div class="row-kpi-chg" data-kpi="${k.k}" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px">--</div>
+        <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px">${k.meta}</div>
       </div>`).join('')}
     </div>
     <div style="font-size:11px;margin-bottom:8px">
@@ -1518,19 +1519,18 @@ async function applyExpandKPIColours(idx, z, today) {
     if (!card) return;
     if (todayVal == null || yVal == null) return;
     const delta = todayVal - yVal;
-    let borderColor = null, subColor = 'var(--tx3)', subTxt = null;
+    let borderColor = 'var(--text3)', subColor = 'var(--text3)';
     if (Math.abs(delta) >= 1) {
       if (delta > 0) { borderColor = 'var(--down)'; subColor = 'var(--down)'; }
       else           { borderColor = 'var(--up)';   subColor = 'var(--up)'; }
     }
-    if (borderColor) card.style.borderLeftColor = borderColor;
+    card.style.borderLeftColor = borderColor;
     const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
     const sign  = delta > 0 ? '+' : '';
-    subTxt = `${arrow} ${sign}${delta.toFixed(1)} vs J-1`;
-    const sub = card.querySelector('.row-kpi-sub');
-    if (sub && subTxt) {
-      sub.style.color = subColor;
-      sub.textContent = subTxt;
+    const chg = card.querySelector('.row-kpi-chg');
+    if (chg) {
+      chg.style.color = subColor;
+      chg.textContent = `${arrow} ${sign}${delta.toFixed(1)} vs J-1`;
     }
   };
 
