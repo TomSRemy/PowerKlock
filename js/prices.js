@@ -474,12 +474,13 @@ async function loadPricesWithDates(periodStart, periodEnd) {
       return (await Promise.all(promises)).filter(Boolean);
     };
     const batchSize = 6;
+    const histDateISO = `${periodStart.slice(0,4)}-${periodStart.slice(4,6)}-${periodStart.slice(6,8)}`;
     for (let i = 0; i < ZONES.length; i += batchSize) {
       const batchRes = await batch(ZONES.slice(i, i+batchSize));
       results.push(...batchRes);
       pricesData = results.sort((a,b) => b.today - a.today);
       renderPricesTable(pricesData);
-      updateKPIs(pricesData);
+      updateKPIs(pricesData, histDateISO);
     }
     buildTicker(pricesData);
     document.getElementById('prices-updated').textContent = `Historical · ${periodStart.slice(0,8)}`;
@@ -532,13 +533,14 @@ async function loadPrices() {
       return (await Promise.all(promises)).filter(Boolean);
     };
 
+    const liveDateISO = `${periodStart.slice(0,4)}-${periodStart.slice(4,6)}-${periodStart.slice(6,8)}`;
     const batchSize = 6;
     for (let i = 0; i < ZONES.length; i += batchSize) {
       const batchResults = await batch(ZONES.slice(i, i + batchSize));
       results.push(...batchResults);
       pricesData = results.sort((a,b) => b.today - a.today);
       renderPricesTable(pricesData);
-      updateKPIs(pricesData);
+      updateKPIs(pricesData, liveDateISO);
     }
 
     buildTicker(pricesData);
@@ -553,31 +555,67 @@ async function loadPrices() {
   }
 }
 
-function updateKPIs(data) {
+function updateKPIs(data, dataDateStr) {
   const fr = data.find(d => d.code === 'FR');
   const de = data.find(d => d.code === 'DE_LU');
   const avg = data.reduce((a,b) => a + b.today, 0) / data.length;
   const maxZ = data[0];
   const minZ = data[data.length - 1];
 
+  // Resolve display date for MAX/MIN labels
+  const todayISO = new Date().toISOString().slice(0,10);
+  const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
+  const fmtShort = s => {
+    const [y,m,d] = s.split('-');
+    return new Date(+y, +m-1, +d).toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+  };
+
+  // Reset all cards to flat by default — async vs-J-1 colorisation runs after
+  ['kpicard-fr','kpicard-de','kpicard-avg','kpicard-peak','kpicard-offpeak','kpicard-max','kpicard-min']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('kpi-up','kpi-down');
+        el.classList.add('kpi-flat');
+      }
+    });
+
+  // FR
   if (fr) {
     document.getElementById('kpi-fr').innerHTML = `${fr.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
     document.getElementById('kpi-fr-chg').innerHTML = fr.vsYday != null
-      ? `<span class="${fr.vsYday >= 0 ? 'up':'down'}">${fr.vsYday >= 0 ? '▲':'▼'} ${Math.abs(fr.vsYday).toFixed(1)} vs yday</span>`
+      ? `<span class="${fr.vsYday >= 0 ? 'down':'up'}">${fr.vsYday >= 0 ? '▲':'▼'} ${Math.abs(fr.vsYday).toFixed(1)} vs yday</span>`
       : '<span style="color:var(--text3)">FR bidding zone</span>';
   }
+
+  // DE
   if (de) {
     document.getElementById('kpi-de').innerHTML = `${de.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
     document.getElementById('kpi-de').className = `kpi-value ${de.today < 0 ? 'down' : de.today > 80 ? 'up' : ''}`;
+    document.getElementById('kpi-de-chg').innerHTML = de.vsYday != null
+      ? `<span class="${de.vsYday >= 0 ? 'down':'up'}">${de.vsYday >= 0 ? '▲':'▼'} ${Math.abs(de.vsYday).toFixed(1)} vs yday</span>`
+      : '<span style="color:var(--text3)">DE/LU bidding zone</span>';
+  } else {
+    document.getElementById('kpi-de-chg').innerHTML = '<span style="color:var(--text3)">data unavailable</span>';
   }
+
+  // EU Average
   document.getElementById('kpi-avg').innerHTML = `${avg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
   document.getElementById('kpi-avg-chg').textContent = `${data.length} zones loaded`;
+
+  // MAX / MIN — labels with date, sub-line keeps the zone
+  const dateLbl = fmtShort(displayDate);
+  const maxLbl = document.getElementById('kpi-max-label');
+  const minLbl = document.getElementById('kpi-min-label');
+  if (maxLbl) maxLbl.textContent = `Max ${dateLbl}`;
+  if (minLbl) minLbl.textContent = `Min ${dateLbl}`;
   document.getElementById('kpi-max').innerHTML = `${maxZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
   document.getElementById('kpi-max-zone').textContent = `${maxZ.flag} ${maxZ.name}`;
   document.getElementById('kpi-min').innerHTML = `${minZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
   document.getElementById('kpi-min-zone').textContent = `${minZ.flag} ${minZ.name}`;
 
-  // Peak / Off-Peak for FR
+  // Peak / Off-Peak for FR — compute today's values and store for vs-J-1 colorisation
+  let peakAvg = null, offPeakAvg = null;
   if (fr && fr.hourly && fr.hourly.length >= 24) {
     const h = fr.hourly;
     const nPerHour = Math.round(h.length / 24);
@@ -587,8 +625,8 @@ function updateKPIs(data) {
       const hr = Math.floor(i / nPerHour);
       (hr >= 8 && hr < 20 ? peakVals : offPeakVals).push(v);
     });
-    const peakAvg    = peakVals.length    ? peakVals.reduce((a,b)=>a+b,0)/peakVals.length       : fr.today;
-    const offPeakAvg = offPeakVals.length ? offPeakVals.reduce((a,b)=>a+b,0)/offPeakVals.length : fr.today;
+    peakAvg    = peakVals.length    ? peakVals.reduce((a,b)=>a+b,0)/peakVals.length       : fr.today;
+    offPeakAvg = offPeakVals.length ? offPeakVals.reduce((a,b)=>a+b,0)/offPeakVals.length : fr.today;
     const el_pk = document.getElementById('kpi-fr-peak');
     const el_op = document.getElementById('kpi-fr-offpeak');
     if (el_pk) el_pk.innerHTML = `${peakAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
@@ -599,6 +637,59 @@ function updateKPIs(data) {
     if (el_pks) el_pks.textContent = `spread ${spread >= 0 ? '+' : ''}${spread.toFixed(1)} €`;
     if (el_ops) el_ops.textContent = `00h–08h / 20h–24h`;
   }
+
+  // Async: fetch J-1 and colourise direction borders on every card
+  // Threshold ±1 €/MWh below which we treat it as flat
+  const today = {
+    fr:        fr ? fr.today : null,
+    de:        de ? de.today : null,
+    avg,
+    frPeak:    peakAvg,
+    frOffPeak: offPeakAvg,
+    maxLvl:    maxZ ? maxZ.today : null,
+    minLvl:    minZ ? minZ.today : null,
+  };
+  applyVsYesterdayColours(displayDate, today);
+}
+
+// Apply ±1 €/MWh threshold coloring on every KPI card vs J-1 historical data.
+// FR/DE may already have vsYday in the payload — use it; otherwise fall back to fetched J-1.
+async function applyVsYesterdayColours(displayDate, today) {
+  if (typeof fetchYesterdayDaily !== 'function') return;
+  const yData = await fetchYesterdayDaily(displayDate);
+  const yKpi = yData ? computeKPIs(yData.zones) : null;
+
+  const setDir = (cardId, todayVal, ydayVal, payloadDelta) => {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    let delta = null;
+    // Prefer payload-provided delta (for FR/DE in live mode where vsYday is included)
+    if (payloadDelta != null && !isNaN(payloadDelta)) {
+      delta = payloadDelta;
+    } else if (todayVal != null && ydayVal != null) {
+      delta = todayVal - ydayVal;
+    }
+    card.classList.remove('kpi-up','kpi-down','kpi-flat');
+    if (delta == null || isNaN(delta) || Math.abs(delta) < 1) {
+      card.classList.add('kpi-flat');
+    } else if (delta > 0) {
+      card.classList.add('kpi-down'); // price up vs J-1 → red
+    } else {
+      card.classList.add('kpi-up');   // price down vs J-1 → green
+    }
+  };
+
+  // Pull payload deltas (live FR/DE only)
+  const frPayload = window.pricesData?.find(d => d.code === 'FR');
+  const dePayload = window.pricesData?.find(d => d.code === 'DE_LU');
+
+  setDir('kpicard-fr',      today.fr,        yKpi ? (yData.zones.FR?.avg    ?? null) : null, frPayload?.vsYday);
+  setDir('kpicard-de',      today.de,        yKpi ? (yData.zones.DE_LU?.avg ?? null) : null, dePayload?.vsYday);
+  setDir('kpicard-avg',     today.avg,       yKpi ? yKpi.avg       : null);
+  setDir('kpicard-peak',    today.frPeak,    yKpi ? yKpi.frPeak    : null);
+  setDir('kpicard-offpeak', today.frOffPeak, yKpi ? yKpi.frOffPeak : null);
+  setDir('kpicard-max',     today.maxLvl,    yKpi ? yKpi.maxLvl    : null);
+  setDir('kpicard-min',     today.minLvl,    yKpi ? yKpi.minLvl    : null);
 }
 
 // Country code → ISO2 + display name mapping
