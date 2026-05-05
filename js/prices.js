@@ -694,23 +694,32 @@ function toggleZoneFilterPanel() {
 function selectAllZones() {
   if (!window._pricesSorted) return;
   window._pricesZoneFilter = null;
-  buildZoneFilterDropdown();
-  renderPricesTableBody();
+  applyZoneFilter();
 }
 
 function selectNeighbours() {
-  // FR + direct neighbours with significant interconnection
-  window._pricesZoneFilter = new Set(['FR','DE_LU','BE','NL','ES','GB','IT_NORD','CH','AT']);
-  buildZoneFilterDropdown();
-  renderPricesTableBody();
+  window._pricesZoneFilter = new Set(['FR','DE_LU','BE','NL','ES','IT_NORD','CH','AT','PT']);
+  applyZoneFilter();
 }
 
 function selectWithGenMix() {
-  // Zones that have generation mix data in genmix.json
-  const genMixZones = window._genmixData ? new Set(Object.keys(window._genmixData)) : new Set(['FR','DE_LU','ES','BE','NL','IT_NORD','GB']);
-  window._pricesZoneFilter = genMixZones.size > 0 ? genMixZones : null;
+  const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+  window._pricesZoneFilter = new Set(gmKeys);
+  applyZoneFilter();
+}
+
+function applyZoneFilter() {
+  // Rebuild dropdown (visual state of checkboxes)
   buildZoneFilterDropdown();
+  // Re-render table with new filter
   renderPricesTableBody();
+  // Update button label
+  const lbl = document.getElementById('zone-filter-label');
+  if (lbl) {
+    const zones = (window._pricesSorted||[]).filter(z=>z.today!=null);
+    const n = window._pricesZoneFilter ? window._pricesZoneFilter.size : zones.length;
+    lbl.textContent = window._pricesZoneFilter ? `${n} / ${zones.length} zones` : 'All zones';
+  }
 }
 
 function selectAllCompareZones() {
@@ -870,11 +879,8 @@ function filterPricesZones(sel) {
 }
 
 function clearZoneFilter() {
-  // Select none: Set vide (distinct de null qui = tout)
-  const zones = (window._pricesSorted||[]).filter(z=>z.today!=null && !isNaN(z.today));
   window._pricesZoneFilter = new Set(); // Set vide = rien affiché
-  buildZoneFilterDropdown();
-  renderPricesTableBody();
+  applyZoneFilter();
 }
 
 function renderPricesTableBody() {
