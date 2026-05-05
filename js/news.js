@@ -195,14 +195,16 @@ const PAGE_LOADERS = {
   imbalance:  () => drawImbalance(),
   eua:        () => drawEUA(),
   euafwd:     () => drawEUAFwd(),
-  spark:      () => typeof renderSpark!=="undefined" && renderSpark(),
-  goprices:   () => typeof renderGO!=="undefined" && renderGO(),
+  spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
+  goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
   gohist: () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
   wxcities:   () => loadWeather(),
-  wxhdd:      () => typeof renderHDD!=="undefined" && renderHDD(),
+  wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
 
 // Patch showPage to handle new sections
+// showPage patch applied after all scripts load
+window.addEventListener("load", () => { if (typeof showPage === "undefined") return;
 const _origShowPage = showPage;
 window.showPage = function(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -221,6 +223,7 @@ window.showPage = function(id) {
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
 };
+});  // end load listener
 
 // ── DEMO DATA
 const GM_DEMO = {
