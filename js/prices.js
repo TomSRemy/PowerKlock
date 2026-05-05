@@ -570,7 +570,7 @@ function updateKPIs(data, dataDateStr) {
     return new Date(+y, +m-1, +d).toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
   };
 
-  // Reset all cards to flat by default — async vs-J-1 colorisation runs after
+  // Reset all cards to flat — async vs-J-1 colorisation runs after
   ['kpicard-fr','kpicard-de','kpicard-avg','kpicard-peak','kpicard-offpeak','kpicard-max','kpicard-min']
     .forEach(id => {
       const el = document.getElementById(id);
@@ -580,46 +580,31 @@ function updateKPIs(data, dataDateStr) {
       }
     });
 
-  // FR
+  // Main values — neutral colour everywhere
   if (fr) {
     document.getElementById('kpi-fr').innerHTML = `${fr.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
-    document.getElementById('kpi-fr-chg').innerHTML = fr.vsYday != null
-      ? `<span class="${fr.vsYday >= 0 ? 'down':'up'}">${fr.vsYday >= 0 ? '▲':'▼'} ${Math.abs(fr.vsYday).toFixed(1)} vs yday</span>`
-      : '<span style="color:var(--text3)">FR bidding zone</span>';
   }
-
-  // DE
   if (de) {
     document.getElementById('kpi-de').innerHTML = `${de.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
-    document.getElementById('kpi-de').className = `kpi-value ${de.today < 0 ? 'down' : de.today > 80 ? 'up' : ''}`;
-    document.getElementById('kpi-de-chg').innerHTML = de.vsYday != null
-      ? `<span class="${de.vsYday >= 0 ? 'down':'up'}">${de.vsYday >= 0 ? '▲':'▼'} ${Math.abs(de.vsYday).toFixed(1)} vs yday</span>`
-      : '<span style="color:var(--text3)">DE/LU bidding zone</span>';
-  } else {
-    document.getElementById('kpi-de-chg').innerHTML = '<span style="color:var(--text3)">data unavailable</span>';
   }
-
-  // EU Average
   document.getElementById('kpi-avg').innerHTML = `${avg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
   document.getElementById('kpi-avg-chg').textContent = `${data.length} zones loaded`;
 
-  // MAX / MIN — labels with date, sub-line keeps the zone
+  // MAX / MIN — date in label, zone in sub
   const dateLbl = fmtShort(displayDate);
   const maxLbl = document.getElementById('kpi-max-label');
   const minLbl = document.getElementById('kpi-min-label');
   if (maxLbl) maxLbl.textContent = `Max ${dateLbl}`;
   if (minLbl) minLbl.textContent = `Min ${dateLbl}`;
   document.getElementById('kpi-max').innerHTML = `${maxZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
-  document.getElementById('kpi-max-zone').textContent = `${maxZ.flag} ${maxZ.name}`;
   document.getElementById('kpi-min').innerHTML = `${minZ.today.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
-  document.getElementById('kpi-min-zone').textContent = `${minZ.flag} ${minZ.name}`;
 
-  // Peak / Off-Peak for FR — compute today's values and store for vs-J-1 colorisation
+  // Peak / Off-Peak FR
   let peakAvg = null, offPeakAvg = null;
   if (fr && fr.hourly && fr.hourly.length >= 24) {
     const h = fr.hourly;
     const nPerHour = Math.round(h.length / 24);
-    const peakVals    = [], offPeakVals = [];
+    const peakVals = [], offPeakVals = [];
     h.forEach((v, i) => {
       if (v == null) return;
       const hr = Math.floor(i / nPerHour);
@@ -631,15 +616,9 @@ function updateKPIs(data, dataDateStr) {
     const el_op = document.getElementById('kpi-fr-offpeak');
     if (el_pk) el_pk.innerHTML = `${peakAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
     if (el_op) el_op.innerHTML = `${offPeakAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`;
-    const spread = peakAvg - offPeakAvg;
-    const el_pks = document.getElementById('kpi-fr-peak-chg');
-    const el_ops = document.getElementById('kpi-fr-offpeak-chg');
-    if (el_pks) el_pks.textContent = `spread ${spread >= 0 ? '+' : ''}${spread.toFixed(1)} €`;
-    if (el_ops) el_ops.textContent = `00h–08h / 20h–24h`;
   }
 
-  // Async: fetch J-1 and colourise direction borders on every card
-  // Threshold ±1 €/MWh below which we treat it as flat
+  // Async: fetch J-1 and apply direction-based colouring on borders + sub-texts
   const today = {
     fr:        fr ? fr.today : null,
     de:        de ? de.today : null,
@@ -649,47 +628,101 @@ function updateKPIs(data, dataDateStr) {
     maxLvl:    maxZ ? maxZ.today : null,
     minLvl:    minZ ? minZ.today : null,
   };
-  applyVsYesterdayColours(displayDate, today);
+  applyVsYesterdayColours(displayDate, today, { fr, de, maxZ, minZ, dataDateStr: displayDate, zoneCount: data.length });
 }
 
-// Apply ±1 €/MWh threshold coloring on every KPI card vs J-1 historical data.
-// FR/DE may already have vsYday in the payload — use it; otherwise fall back to fetched J-1.
-async function applyVsYesterdayColours(displayDate, today) {
+// Apply vs-J-1 colour on every KPI card (border-left + sub-text tint).
+// Sub-text content is preserved (zone / spread / etc.); only its colour is tinted.
+async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (typeof fetchYesterdayDaily !== 'function') return;
   const yData = await fetchYesterdayDaily(displayDate);
-  const yKpi = yData ? computeKPIs(yData.zones) : null;
+  const yKpi  = yData ? computeKPIs(yData.zones) : null;
 
-  const setDir = (cardId, todayVal, ydayVal, payloadDelta) => {
+  // Compute the delta and pick the colour class
+  const directionFromDelta = (delta) => {
+    if (delta == null || isNaN(delta) || Math.abs(delta) < 1) return { cls:'kpi-flat', txtColor:'var(--text3)' };
+    return delta > 0
+      ? { cls:'kpi-down', txtColor:'var(--down)' }
+      : { cls:'kpi-up',   txtColor:'var(--up)' };
+  };
+
+  const setCard = (cardId, todayVal, ydayVal, payloadDelta) => {
     const card = document.getElementById(cardId);
-    if (!card) return;
+    if (!card) return null;
     let delta = null;
-    // Prefer payload-provided delta (for FR/DE in live mode where vsYday is included)
-    if (payloadDelta != null && !isNaN(payloadDelta)) {
-      delta = payloadDelta;
-    } else if (todayVal != null && ydayVal != null) {
-      delta = todayVal - ydayVal;
-    }
+    if (payloadDelta != null && !isNaN(payloadDelta)) delta = payloadDelta;
+    else if (todayVal != null && ydayVal != null)     delta = todayVal - ydayVal;
+    const dir = directionFromDelta(delta);
     card.classList.remove('kpi-up','kpi-down','kpi-flat');
-    if (delta == null || isNaN(delta) || Math.abs(delta) < 1) {
-      card.classList.add('kpi-flat');
-    } else if (delta > 0) {
-      card.classList.add('kpi-down'); // price up vs J-1 → red
+    card.classList.add(dir.cls);
+    return { delta, ...dir };
+  };
+
+  // Helper: render sub-text with the J-1 delta + preserved info, tinted to match border
+  const renderSub = (subId, dir, mainContent, fallbackContent) => {
+    const sub = document.getElementById(subId);
+    if (!sub) return;
+    sub.style.color = dir.txtColor;
+    if (dir.delta != null && !isNaN(dir.delta)) {
+      const arrow = dir.delta > 0 ? '▲' : dir.delta < 0 ? '▼' : '·';
+      const sign  = dir.delta > 0 ? '+' : '';
+      sub.innerHTML = `<span style="color:${dir.txtColor}">${arrow} ${sign}${dir.delta.toFixed(1)} vs J-1</span>` +
+                      (mainContent ? ` <span style="color:var(--text3)">· ${mainContent}</span>` : '');
     } else {
-      card.classList.add('kpi-up');   // price down vs J-1 → green
+      sub.innerHTML = `<span style="color:var(--text3)">${fallbackContent || mainContent || '--'}</span>`;
     }
   };
 
-  // Pull payload deltas (live FR/DE only)
-  const frPayload = window.pricesData?.find(d => d.code === 'FR');
-  const dePayload = window.pricesData?.find(d => d.code === 'DE_LU');
+  // FR
+  const frDir = setCard('kpicard-fr', today.fr,
+    yData ? (yData.zones.FR?.avg ?? null) : null, ctx.fr?.vsYday);
+  if (frDir) renderSub('kpi-fr-chg', frDir, 'FR bidding zone', 'FR bidding zone');
 
-  setDir('kpicard-fr',      today.fr,        yKpi ? (yData.zones.FR?.avg    ?? null) : null, frPayload?.vsYday);
-  setDir('kpicard-de',      today.de,        yKpi ? (yData.zones.DE_LU?.avg ?? null) : null, dePayload?.vsYday);
-  setDir('kpicard-avg',     today.avg,       yKpi ? yKpi.avg       : null);
-  setDir('kpicard-peak',    today.frPeak,    yKpi ? yKpi.frPeak    : null);
-  setDir('kpicard-offpeak', today.frOffPeak, yKpi ? yKpi.frOffPeak : null);
-  setDir('kpicard-max',     today.maxLvl,    yKpi ? yKpi.maxLvl    : null);
-  setDir('kpicard-min',     today.minLvl,    yKpi ? yKpi.minLvl    : null);
+  // DE
+  const deDir = setCard('kpicard-de', today.de,
+    yData ? (yData.zones.DE_LU?.avg ?? null) : null, ctx.de?.vsYday);
+  if (deDir) renderSub('kpi-de-chg', deDir, 'DE/LU bidding zone', 'DE/LU bidding zone');
+
+  // EU avg
+  const avgDir = setCard('kpicard-avg', today.avg, yKpi ? yKpi.avg : null);
+  if (avgDir) {
+    const sub = document.getElementById('kpi-avg-chg');
+    if (sub) {
+      sub.style.color = avgDir.txtColor;
+      const zonesTxt = ctx.zoneCount != null ? `${ctx.zoneCount} zones` : '';
+      if (avgDir.delta != null) {
+        const arrow = avgDir.delta > 0 ? '▲' : avgDir.delta < 0 ? '▼' : '·';
+        const sign  = avgDir.delta > 0 ? '+' : '';
+        sub.innerHTML = `<span style="color:${avgDir.txtColor}">${arrow} ${sign}${avgDir.delta.toFixed(1)} vs J-1</span>` +
+                        (zonesTxt ? ` <span style="color:var(--text3)">· ${zonesTxt}</span>` : '');
+      } else {
+        sub.innerHTML = `<span style="color:var(--text3)">${zonesTxt || '--'}</span>`;
+      }
+    }
+  }
+
+  // Peak
+  const pkDir = setCard('kpicard-peak', today.frPeak, yKpi ? yKpi.frPeak : null);
+  if (pkDir) {
+    const spread = (today.frPeak != null && today.frOffPeak != null)
+      ? `spread ${(today.frPeak - today.frOffPeak >= 0 ? '+' : '')}${(today.frPeak - today.frOffPeak).toFixed(1)} €`
+      : 'avg over peak hours';
+    renderSub('kpi-fr-peak-chg', pkDir, spread, 'avg over peak hours');
+  }
+
+  // Off-Peak
+  const opDir = setCard('kpicard-offpeak', today.frOffPeak, yKpi ? yKpi.frOffPeak : null);
+  if (opDir) renderSub('kpi-fr-offpeak-chg', opDir, '00–08h / 20–24h', '00–08h / 20–24h');
+
+  // Max
+  const maxDir = setCard('kpicard-max', today.maxLvl, yKpi ? yKpi.maxLvl : null);
+  const maxZoneTxt = ctx.maxZ ? `${ctx.maxZ.flag} ${ctx.maxZ.name}` : '--';
+  if (maxDir) renderSub('kpi-max-zone', maxDir, maxZoneTxt, maxZoneTxt);
+
+  // Min
+  const minDir = setCard('kpicard-min', today.minLvl, yKpi ? yKpi.minLvl : null);
+  const minZoneTxt = ctx.minZ ? `${ctx.minZ.flag} ${ctx.minZ.name}` : '--';
+  if (minDir) renderSub('kpi-min-zone', minDir, minZoneTxt, minZoneTxt);
 }
 
 // Country code → ISO2 + display name mapping
@@ -1233,10 +1266,24 @@ function buildHourlyDetail(idx, z) {
 
   const valid = h24.filter(v => v != null);
   const avg   = valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : 0;
-  const minV  = valid.length ? Math.min(...valid) : 0;
-  const maxV  = valid.length ? Math.max(...valid) : 0;
-  const minIdx = h24.indexOf(minV);
-  const maxIdx = h24.indexOf(maxV);
+
+  // Min/Max on RAW slots (15-min if available) — the true intraday extremes
+  // h24 is downsampled to 24h averages and would smooth out the real peaks
+  const rawValid = hourly.filter(v => v != null);
+  const minV = rawValid.length ? Math.min(...rawValid) : 0;
+  const maxV = rawValid.length ? Math.max(...rawValid) : 0;
+  const minRawIdx = hourly.indexOf(minV);
+  const maxRawIdx = hourly.indexOf(maxV);
+  // Format slot label as HH:MM based on slot resolution
+  const fmtSlot = (idx) => {
+    if (idx < 0) return '--';
+    const totalMin = idx * resMin;
+    const hh = Math.floor(totalMin / 60);
+    const mm = totalMin % 60;
+    return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+  };
+  const minSlotLabel = fmtSlot(minRawIdx);
+  const maxSlotLabel = fmtSlot(maxRawIdx);
 
   // Peak (08-20) and Off-peak
   const peakHours = h24.slice(8,20).filter(v=>v!=null);
@@ -1274,17 +1321,17 @@ function buildHourlyDetail(idx, z) {
   const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${idx}">
       ${[
-        {l:'Average',      v:avg.toFixed(2),                              u:'€/MWh', c:''},
-        {l:'Peak (08-20)', v:peakAvg!=null?peakAvg.toFixed(2):'--',       u:'€/MWh', c:'dn'},
-        {l:'Off-Peak',     v:offPkAvg!=null?offPkAvg.toFixed(2):'--',     u:'€/MWh', c:'up'},
-        {l:'Min',          v:minV.toFixed(2), sub:'@'+String(minIdx).padStart(2,'0')+'h', u:'€/MWh', c:minV<0?'warn':'up'},
-        {l:'Max',          v:maxV.toFixed(2), sub:'@'+String(maxIdx).padStart(2,'0')+'h', u:'€/MWh', c:'dn'},
-      ].map(k=>`<div style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid ${col};border-radius:6px;padding:9px 12px">
+        {k:'avg',     l:'Avg',                v:avg.toFixed(2),                            sub:'24h average',           u:'€/MWh'},
+        {k:'peak',    l:'Peak avg (08-20)',   v:peakAvg!=null?peakAvg.toFixed(2):'--',     sub:'avg over peak hours',   u:'€/MWh'},
+        {k:'offpeak', l:'Off-peak avg',       v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   sub:'00-08 / 20-24',         u:'€/MWh'},
+        {k:'min',     l:'Min slot',           v:minV.toFixed(2),                           sub:'@'+minSlotLabel,        u:'€/MWh'},
+        {k:'max',     l:'Max slot',           v:maxV.toFixed(2),                           sub:'@'+maxSlotLabel,        u:'€/MWh'},
+      ].map(k=>`<div class="kpi-flat" id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:4px solid var(--kpi-flat);border-radius:0 6px 6px 0;padding:9px 12px;transition:border-left-color 0.2s">
         <div style="font-size:9px;color:var(--tx3);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px">${k.l}</div>
-        <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--${k.c||'tx'})">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
-        ${k.sub ? `<div style="font-size:10px;color:var(--tx3)">${k.sub}</div>` : ''}
+        <div style="font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--tx)">${k.v}<span style="font-size:10px;color:var(--tx3);font-weight:400"> ${k.u||''}</span></div>
+        <div class="row-kpi-sub" data-kpi="${k.k}" style="font-size:10px;color:var(--tx3)">${k.sub}</div>
       </div>`).join('')}
     </div>
     <div style="font-size:11px;margin-bottom:8px">
@@ -1433,6 +1480,71 @@ function buildHourlyDetail(idx, z) {
       },
     },
   });
+
+  // Async: colourise expand KPI cards (border + sub-text) vs J-1 for this zone
+  applyExpandKPIColours(idx, z, {
+    avg, peakAvg, offPkAvg, minV, maxV,
+  });
+}
+
+// Compute today's KPI values for a zone, fetch J-1 from history, and apply
+// matching border-left colour + sub-text tint based on direction (±1 €/MWh)
+async function applyExpandKPIColours(idx, z, today) {
+  const displayDate = window.DP?.selectedDate || new Date().toISOString().slice(0,10);
+  if (typeof fetchYesterdayDaily !== 'function') return;
+  const yData = await fetchYesterdayDaily(displayDate);
+  if (!yData) return;
+  const yz = yData.zones[z.code];
+  if (!yz) return;
+
+  // Compute J-1 reference values for this zone
+  const yHourly = yz.hourly || [];
+  const yValid  = yHourly.filter(v => v != null);
+  if (yValid.length === 0) return;
+  const yAvg = yz.avg ?? (yValid.reduce((a,b)=>a+b,0) / yValid.length);
+  const yMin = yz.min ?? Math.min(...yValid);
+  const yMax = yz.max ?? Math.max(...yValid);
+
+  // Yesterday peak / off-peak from raw hourly
+  const yNph = yHourly.length > 24 ? Math.round(yHourly.length / 24) : 1;
+  const yPeak = [], yOff = [];
+  yHourly.forEach((v, i) => {
+    if (v == null) return;
+    const hr = Math.floor(i / yNph);
+    (hr >= 8 && hr < 20 ? yPeak : yOff).push(v);
+  });
+  const yPeakAvg = yPeak.length ? yPeak.reduce((a,b)=>a+b,0)/yPeak.length : null;
+  const yOffAvg  = yOff.length  ? yOff.reduce((a,b)=>a+b,0)/yOff.length   : null;
+
+  const apply = (kpiKey, todayVal, yVal) => {
+    const card = document.getElementById(`row-kpi-${idx}-${kpiKey}`);
+    if (!card) return;
+    let cls = 'kpi-flat', subColor = 'var(--tx3)', subTxt = null;
+    if (todayVal != null && yVal != null) {
+      const delta = todayVal - yVal;
+      if (Math.abs(delta) >= 1) {
+        if (delta > 0) { cls = 'kpi-down'; subColor = 'var(--down)'; }
+        else           { cls = 'kpi-up';   subColor = 'var(--up)'; }
+      }
+      const sign = delta >= 0 ? '+' : '';
+      subTxt = `${sign}${delta.toFixed(1)} vs J-1`;
+    }
+    card.classList.remove('kpi-up','kpi-down','kpi-flat');
+    card.classList.add(cls);
+    card.style.borderLeftColor = `var(--${cls === 'kpi-up' ? 'up' : cls === 'kpi-down' ? 'down' : 'kpi-flat'})`;
+    // Update sub-text colour and content (preserve original sub if no delta)
+    const sub = card.querySelector('.row-kpi-sub');
+    if (sub && subTxt) {
+      sub.style.color = subColor;
+      sub.textContent = subTxt;
+    }
+  };
+
+  apply('avg',     today.avg,     yAvg);
+  apply('peak',    today.peakAvg, yPeakAvg);
+  apply('offpeak', today.offPkAvg, yOffAvg);
+  apply('min',     today.minV,    yMin);
+  apply('max',     today.maxV,    yMax);
 }
 
 
