@@ -422,10 +422,12 @@
   .kpi-card.kpi-up   { border-left-color: var(--up); }
   .kpi-card.kpi-down { border-left-color: var(--down); }
   .kpi-card.kpi-flat { border-left-color: var(--kpi-flat); }
-  .kpi-label { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .kpi-label { font-size: 10px; color: var(--text2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
   .kpi-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
   .kpi-unit { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
   .kpi-chg { font-size: 11px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+  .kpi-meta { font-size: 10px; color: var(--text3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .kpi-meta-zone { font-size: 11px; color: var(--text); font-family: 'Inter', sans-serif; font-weight: 500; }
 
   /* ── PRICES TABLE ── */
   .table-wrap {
@@ -1157,29 +1159,34 @@
           <div class="kpi-chg" id="kpi-de-chg">--</div>
         </div>
         <div class="kpi-card kpi-flat" id="kpicard-avg">
-          <div class="kpi-label">EU avg</div>
+          <div class="kpi-label">Loaded zones avg</div>
           <div class="kpi-value" id="kpi-avg">--<span class="kpi-unit">€/MWh</span></div>
-          <div class="kpi-chg" id="kpi-avg-chg">Loading...</div>
+          <div class="kpi-chg" id="kpi-avg-chg">--</div>
+          <div class="kpi-meta" id="kpi-avg-meta">--</div>
         </div>
         <div class="kpi-card kpi-flat" id="kpicard-peak">
-          <div class="kpi-label">FR peak avg (08–20h)</div>
+          <div class="kpi-label">FR peak avg</div>
           <div class="kpi-value" id="kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-fr-peak-chg">--</div>
+          <div class="kpi-meta">08h–20h</div>
         </div>
         <div class="kpi-card kpi-flat" id="kpicard-offpeak">
-          <div class="kpi-label">FR off-peak avg (00–08 / 20–24h)</div>
+          <div class="kpi-label">FR off-peak avg</div>
           <div class="kpi-value" id="kpi-fr-offpeak">--<span class="kpi-unit">€/MWh</span></div>
           <div class="kpi-chg" id="kpi-fr-offpeak-chg">--</div>
+          <div class="kpi-meta">00h–08h / 20h–24h</div>
         </div>
         <div class="kpi-card kpi-flat" id="kpicard-max">
           <div class="kpi-label" id="kpi-max-label">Max today</div>
           <div class="kpi-value" id="kpi-max">--<span class="kpi-unit">€/MWh</span></div>
-          <div class="kpi-chg" id="kpi-max-zone">--</div>
+          <div class="kpi-chg" id="kpi-max-chg">--</div>
+          <div class="kpi-meta kpi-meta-zone" id="kpi-max-zone">--</div>
         </div>
         <div class="kpi-card kpi-flat" id="kpicard-min">
           <div class="kpi-label" id="kpi-min-label">Min today</div>
           <div class="kpi-value" id="kpi-min">--<span class="kpi-unit">€/MWh</span></div>
-          <div class="kpi-chg" id="kpi-min-zone">--</div>
+          <div class="kpi-chg" id="kpi-min-chg">--</div>
+          <div class="kpi-meta kpi-meta-zone" id="kpi-min-zone">--</div>
         </div>
       </div>
 
