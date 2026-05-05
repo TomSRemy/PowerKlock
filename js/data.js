@@ -1,3 +1,88 @@
+// ─────────────────────────────────────────────────────────────
+// Yesterday data — cache + fetch + KPI computation
+// Used by updateKPIs to compute vs-J-1 direction across all KPIs
+// ─────────────────────────────────────────────────────────────
+window._yesterdayCache = window._yesterdayCache || {};
+
+// Returns the ISO date string for J-1 given an ISO date string
+function _prevDateISO(dateISO) {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() - 1);
+  return dt.toISOString().slice(0, 10);
+}
+
+// Fetch the historical daily JSON for J-1 of the given ISO date
+// Returns { zones: {code: {avg, hourly, ...}} } or null on failure
+async function fetchYesterdayDaily(currentDateISO) {
+  if (!DATA_BASE || !currentDateISO) return null;
+  const yKey = _prevDateISO(currentDateISO);
+  if (window._yesterdayCache[yKey] !== undefined) {
+    return window._yesterdayCache[yKey];
+  }
+  try {
+    const r = await fetch(DATA_BASE + 'history/daily/' + yKey + '.json?t=' + Date.now());
+    if (!r.ok) { window._yesterdayCache[yKey] = null; return null; }
+    const data = await r.json();
+    // Normalise into { zones: {code: {...}} } regardless of array/dict source
+    const norm = { zones: {} };
+    if (Array.isArray(data.zones)) {
+      data.zones.forEach(z => {
+        norm.zones[z.code] = {
+          avg:    z.today ?? z.avg ?? null,
+          hourly: z.hourly || [],
+          min:    z.min ?? null,
+          max:    z.max ?? null,
+        };
+      });
+    } else if (data.zones && typeof data.zones === 'object') {
+      Object.entries(data.zones).forEach(([code, z]) => {
+        norm.zones[code] = {
+          avg:    z.avg ?? z.today ?? null,
+          hourly: z.hourly || [],
+          min:    z.min ?? null,
+          max:    z.max ?? null,
+        };
+      });
+    }
+    window._yesterdayCache[yKey] = norm;
+    return norm;
+  } catch (e) {
+    window._yesterdayCache[yKey] = null;
+    return null;
+  }
+}
+
+// Compute summary KPIs (avg, peak, off-peak, max, min) from a {zones} dict
+// Used to derive J-1 reference values matching today's metric computations
+function computeKPIs(zonesDict) {
+  if (!zonesDict) return null;
+  const codes = Object.keys(zonesDict);
+  if (codes.length === 0) return null;
+  const avgs = codes.map(c => zonesDict[c].avg).filter(v => v != null);
+  if (avgs.length === 0) return null;
+  const out = {
+    avg:    avgs.reduce((a,b) => a+b, 0) / avgs.length,
+    maxLvl: Math.max(...avgs),
+    minLvl: Math.min(...avgs),
+    frPeak: null,
+    frOffPeak: null,
+  };
+  const fr = zonesDict.FR;
+  if (fr && fr.hourly && fr.hourly.length >= 24) {
+    const h = fr.hourly;
+    const nph = Math.round(h.length / 24);
+    const peak = [], off = [];
+    h.forEach((v, i) => {
+      if (v == null) return;
+      const hr = Math.floor(i / nph);
+      (hr >= 8 && hr < 20 ? peak : off).push(v);
+    });
+    out.frPeak    = peak.length ? peak.reduce((a,b)=>a+b,0)/peak.length : null;
+    out.frOffPeak = off.length  ? off.reduce((a,b)=>a+b,0)/off.length   : null;
+  }
+  return out;
+}
 
 async function loadLastAvailable() {
   if (!DATA_BASE) return;
@@ -43,7 +128,7 @@ async function loadFromJSON() {
     // Extract date from JSON updated field
     const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
     renderPricesTable(pricesData, jsonDate);
-    updateKPIs(pricesData);
+    updateKPIs(pricesData, jsonDate);
     buildTicker(pricesData);
     const upd = prices.updated
       ? new Date(prices.updated).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' UTC'
@@ -310,7 +395,7 @@ async function loadPricesForDate(dateStr) {
         if (mapped.length) {
           pricesData = mapped.sort((a,b) => b.today - a.today);
           renderPricesTable(pricesData, dateStr);
-          updateKPIs(pricesData);
+          updateKPIs(pricesData, dateStr);
           buildTicker(pricesData);
           if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';
           return;
