@@ -1085,9 +1085,9 @@ function renderPricesTableBody() {
         return slice.length ? slice.reduce((a,b)=>a+b,0)/slice.length : null;
       }).filter(v=>v!=null);
     }
-    // Color: green if positive avg, red if mostly negative, orange if mixed
-    const sparkPositive = z.today >= 0 ? true : z.today < -20 ? false : 'mixed';
-    const sparkSvg = makeSVGSparklineSmooth(h24spark, sparkPositive);
+    // Sparkline: shows the SHAPE of the daily profile, not a sentiment.
+    // Single neutral colour for all zones — semantic info is on the row's other cells.
+    const sparkSvg = makeSVGSparklineSmooth(h24spark, 'mixed');
 
     const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)">${FLAG_MAP[z.code]||''} ${z.code}</td>
@@ -1096,8 +1096,8 @@ function renderPricesTableBody() {
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 08h–20h">${peakStr}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)" title="Avg over 00h–08h / 20h–24h">${offPeakStr}</td>
       <td style="color:${vsColor}">${vsText}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?z.min.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${z.minHr??''}h</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?z.max.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${z.maxHr??''}h</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?z.min.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.minHr === 'string' ? z.minHr : (z.minHr!=null ? String(z.minHr).padStart(2,'0')+'h' : '')}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?z.max.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.maxHr === 'string' ? z.maxHr : (z.maxHr!=null ? String(z.maxHr).padStart(2,'0')+'h' : '')}</span></td>
       <td>${negFmt(z.negHrs)}</td>
       <td>${renPctStr}</td>
       <td>${domFuelHtml}</td>
@@ -1120,7 +1120,8 @@ function makeSVGSparklineSmooth(data, positive) {
   if (!data || data.length < 2) return '';
   const w=80, h=28, pad=2;
   const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
-  const col = positive === true ? '#10b981' : positive === 'mixed' ? '#f59e0b' : '#f05060';
+  // Neutral accent colour — the sparkline shows shape only, not sentiment
+  const col = positive === true ? '#10b981' : positive === 'mixed' ? '#94a3b8' : '#f05060';
   const pts = data.map((v,i) => ({
     x: pad + (i/(data.length-1))*(w-pad*2),
     y: h-pad-((v-mn)/rng)*(h-pad*2)
@@ -1264,12 +1265,11 @@ function buildHourlyDetail(idx, z) {
     });
   }
 
-  const valid = h24.filter(v => v != null);
-  const avg   = valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : 0;
-
-  // Min/Max on RAW slots (15-min if available) — the true intraday extremes
-  // h24 is downsampled to 24h averages and would smooth out the real peaks
+  // All KPIs computed on RAW slots (15-min if available) for consistency with the table row
+  // h24 (24-pt downsampled) is kept only for the chart rendering below
   const rawValid = hourly.filter(v => v != null);
+  const avg = rawValid.length ? rawValid.reduce((a,b)=>a+b,0)/rawValid.length : 0;
+
   const minV = rawValid.length ? Math.min(...rawValid) : 0;
   const maxV = rawValid.length ? Math.max(...rawValid) : 0;
   const minRawIdx = hourly.indexOf(minV);
@@ -1285,11 +1285,16 @@ function buildHourlyDetail(idx, z) {
   const minSlotLabel = fmtSlot(minRawIdx);
   const maxSlotLabel = fmtSlot(maxRawIdx);
 
-  // Peak (08-20) and Off-peak
-  const peakHours = h24.slice(8,20).filter(v=>v!=null);
-  const offPkHours = [...h24.slice(0,8), ...h24.slice(20)].filter(v=>v!=null);
-  const peakAvg   = peakHours.length ? peakHours.reduce((a,b)=>a+b,0)/peakHours.length : null;
-  const offPkAvg  = offPkHours.length ? offPkHours.reduce((a,b)=>a+b,0)/offPkHours.length : null;
+  // Peak (08-20) and Off-peak — on raw slots, not downsampled hours
+  const nph = hourly.length > 24 ? Math.round(hourly.length / 24) : 1;
+  const peakSlots = [], offSlots = [];
+  hourly.forEach((v, i) => {
+    if (v == null) return;
+    const hr = Math.floor(i / nph);
+    (hr >= 8 && hr < 20 ? peakSlots : offSlots).push(v);
+  });
+  const peakAvg  = peakSlots.length ? peakSlots.reduce((a,b)=>a+b,0)/peakSlots.length : null;
+  const offPkAvg = offSlots.length  ? offSlots.reduce((a,b)=>a+b,0)/offSlots.length   : null;
   const peakRatio = (peakAvg && offPkAvg && offPkAvg !== 0) ? peakAvg/offPkAvg : null;
   const isFlatter = peakRatio !== null && peakRatio < 1.20;
   const flatText  = peakRatio !== null
@@ -1297,12 +1302,12 @@ function buildHourlyDetail(idx, z) {
     : '';
   const flatColor = isFlatter ? '#00d4a8' : '#e8a020';
 
-  // Neg hours
-  const negSlots = h24.filter(v => v != null && v < 0);
-  const negH     = negSlots.length;
-  const negHours = Math.floor(negH);
-  const negMins  = Math.round((negH - negHours) * 60);
-  const negMin   = negSlots.length ? Math.min(...negSlots) : null;
+  // Negative hours — count from raw slots, convert to total minutes
+  const negSlotsRaw = hourly.filter(v => v != null && v < 0);
+  const negTotalMin = negSlotsRaw.length * resMin;
+  const negHours    = Math.floor(negTotalMin / 60);
+  const negMins     = negTotalMin % 60;
+  const negMin      = negSlotsRaw.length ? Math.min(...negSlotsRaw) : null;
 
   // Labels
   const labels = h24.map((_, i) => `${String(i).padStart(2,'0')}:00`);
@@ -1345,7 +1350,7 @@ function buildHourlyDetail(idx, z) {
       <span>— Today</span><span style="opacity:.5">- - - Yesterday</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
-    ${negH > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
+    ${negTotalMin > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
     <details style="margin-top:4px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
         Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
