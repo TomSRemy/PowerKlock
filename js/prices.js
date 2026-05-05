@@ -497,13 +497,10 @@ async function loadPrices() {
   const isDemo = ENTSOE_TOKEN === 'YOUR_ENTSOE_TOKEN_HERE';
 
   if (isDemo) {
-    // Use demo data
-    pricesData = getDemoData();
-    renderPricesTable(pricesData);
-    document.getElementById('prices-updated').textContent = '⚠ Demo data — add ENTSO-E token';
-    document.getElementById('prices-updated').style.color = 'var(--warn)';
-    updateKPIs(pricesData);
-    buildTicker(pricesData);
+    // No token — load last available historical data instead of demo
+    if (typeof loadLastAvailable === 'function') {
+      loadLastAvailable();
+    }
     return;
   }
 

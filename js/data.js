@@ -317,8 +317,17 @@ async function loadPricesForDate(dateStr) {
     } catch(e) { console.warn('Historical fetch failed:', e); }
   }
 
-  // If today and no historical file yet → use live prices.json
-  if (dateStr === todayStr) { loadPrices(); return; }
+  // If today and no historical file yet:
+  // - with token: try live ENTSO-E fetch
+  // - without token: load last available
+  if (dateStr === todayStr) {
+    if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
+      loadPrices();
+    } else {
+      loadLastAvailable();
+    }
+    return;
+  }
 
   // ── 2. Real ENTSO-E token
   if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
