@@ -59,14 +59,74 @@ async function loadFromJSON() {
   if (cb?.countries) { window._cbData = cb.countries; console.log('✅ Cross-border from JSON'); }
 }
 
+
+// ── Load last available date from history/daily/
+async function loadLastAvailable() {
+  if (!DATA_BASE) {
+    // Can't scan directory — try yesterday, day before, up to 7 days back
+    const today = new Date();
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0,10);
+      try {
+        const r = await fetch(DATA_BASE + 'history/daily/' + dateStr + '.json?t=' + Date.now());
+        if (r.ok) {
+          console.log('Last available:', dateStr);
+          dpSelect(dateStr);
+          return;
+        }
+      } catch(e) {}
+    }
+    return;
+  }
+
+  // Try last 14 days in reverse order
+  const today = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0,10);
+    try {
+      const url = DATA_BASE + 'history/daily/' + dateStr + '.json?t=' + Date.now();
+      const r = await fetch(url);
+      if (r.ok) {
+        const data = await r.json();
+        const hasZones = (Array.isArray(data.zones) && data.zones.length > 0) ||
+                         (data.zones && typeof data.zones === 'object' && Object.keys(data.zones).length > 0);
+        if (hasZones) {
+          console.log('✅ Last available data:', dateStr);
+          // Update date picker to this date
+          dpSelect(dateStr);
+          return;
+        }
+      }
+    } catch(e) {}
+  }
+  console.warn('No historical data found in last 14 days');
+}
+
 // ════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════
-loadPrices();
+// On startup: try to load today's JSON, fall back to last available if too early
+(async () => {
+  await loadFromJSON();
+  // If no prices loaded yet (published after 13h CET), load last available
+  if (!pricesData || pricesData.length === 0) {
+    await loadLastAvailable();
+  }
+  // Also set agenda to the date being displayed
+  if (pricesData && pricesData.length > 0 && window.DP) {
+    // Check if we're showing today or historical
+    const badge = document.getElementById('prices-updated');
+    if (badge && badge.textContent.includes('historical')) {
+      // Already handled by dpSelect in loadLastAvailable
+    }
+  }
+})();
 updateConverter();
 updateCapacity();
-// Tente de charger les JSON (silencieux si non disponibles)
-loadFromJSON();
 
 
 // ══════════════════════════════════════════════════════
@@ -301,32 +361,20 @@ async function loadPricesForDate(dateStr) {
     return;
   }
 
-  // ── 3. Fallback: deterministic demo seeded by date
-  const seed = dateStr.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
-  const rng  = (mn, mx, off=0) => {
-    const s = Math.sin(seed*9301 + off*49297 + 233995)*0.5+0.5;
-    return mn + s*(mx-mn);
-  };
-  const dt = new Date(dateStr);
-  const isWeekend = dt.getDay()===0||dt.getDay()===6;
-  const m = dt.getMonth();
-  const base = (m<=1||m>=10?1.3:m>=5&&m<=8?0.7:1.0)*(isWeekend?0.75:1.0);
-  const seededData = getDemoData().map((z,zi) => {
-    const sc  = base*rng(0.7,1.4,zi);
-    const avg = z.today*sc;
-    const mn  = avg*rng(0.3,0.7,zi+100);
-    const mx  = avg*rng(1.2,2.0,zi+200);
-    const neg = avg<15 ? Math.round(rng(0,8,zi+300)) : 0;
-    return {...z, today:Math.round(avg*10)/10, min:Math.round(mn*10)/10,
-      max:Math.round(mx*10)/10, negHrs:neg,
-      hourly:gen96(avg, Math.min(mn,avg*0.4), mx, neg),
-      vsYday:Math.round(rng(-25,25,zi+400)*10)/10};
-  });
-  pricesData = seededData.sort((a,b)=>b.today-a.today);
-  renderPricesTable(pricesData);
-  updateKPIs(pricesData);
-  buildTicker(pricesData);
-  if (updEl) updEl.textContent = 'Demo · ' + fmtDate(dateStr);
+  // ── 3. No data available — show message, load last available instead
+  showNoDataMessage(dateStr);
+  loadLastAvailable(); // auto-load the most recent date with data
+}
+
+function showNoDataMessage(dateStr) {
+  const tbody = document.getElementById('prices-tbody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--tx3)">
+    <div style="font-size:14px;margin-bottom:8px">No data available for ${dateStr}</div>
+    <div style="font-size:11px">ENTSO-E publishes Day-Ahead prices after 13:00 CET.<br>
+    Loading last available date…</div>
+  </td></tr>`;
+  const updEl = document.getElementById('prices-updated');
+  if (updEl) updEl.textContent = 'No data · ' + dateStr;
 }
 function showPricesUnavailable(dateStr) {
   const tbody = document.getElementById('prices-tbody');
