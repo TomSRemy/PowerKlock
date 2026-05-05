@@ -1178,6 +1178,8 @@ function buildHourlyDetail(idx, z) {
   });
 
   // Build inner HTML
+  const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
+
   inner.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
       ${[
@@ -1242,17 +1244,16 @@ function buildHourlyDetail(idx, z) {
     </details>
   `;
 
+  // Color — defined early so it can be used in KPI cards AND chart
+  const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
+  const negFraction = chartData.filter(v=>v!=null&&v<0).length / Math.max(1, chartData.filter(v=>v!=null).length);
+
   // Render chart — use full 15-min data
   const canvas = document.getElementById(`row-chart-${idx}`);
   if (!canvas) return;
   if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
 
-  // Use 96-pt data if available, fallback to h24
-  const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
   const chartLabels = makeTimeLabels(chartData.length);
-  // Color: zone color if positive avg, red/orange if significant negative prices
-  const negFraction = chartData.filter(v=>v!=null&&v<0).length / chartData.filter(v=>v!=null).length;
-  const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : zoneColor(z.code);
   const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== new Date().toISOString().slice(0,10))
     ? -1 : new Date().getHours() * (chartData.length / 24);
 
