@@ -1280,19 +1280,31 @@
               </div>
             </div>
           </div>
-          <div style="position:relative;height:340px;overflow:hidden;margin-bottom:0"><canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas></div>
+          <!-- View tabs (Insta-style) -->
+          <div id="cc-tabs-bar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
+            <div id="cc-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
+            <div id="cc-ref-wrap" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--text3)">
+              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">REF</span>
+              <select id="cc-ref-select" onchange="setSpreadRef(this.value)" style="font-size:11px;background:var(--bg);color:var(--text);border:1px solid var(--bd);border-radius:4px;padding:3px 6px;font-family:'JetBrains Mono',monospace"></select>
+            </div>
+          </div>
+          <!-- Chart canvas (used by Lines / Profile / Bands / Spread; Heatmap renders its own DOM) -->
+          <div id="cc-chart-wrap" style="position:relative;height:340px;overflow:hidden;margin-bottom:0">
+            <canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas>
+            <div id="cc-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
+          </div>
+          <!-- Auto-generated analysis banner -->
+          <div id="cc-analysis" style="margin:10px 0 0;padding:10px 14px;background:var(--bg3);border-left:3px solid var(--text3);border-radius:0 6px 6px 0;font-size:12px;color:var(--text2);line-height:1.55;display:none"></div>
           <!-- Compare zones data table (replaces KPI cards) -->
           <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px">
-            <table id="compare-data-table" style="font-size:11px">
+            <table id="compare-data-table" style="font-size:11px;table-layout:fixed">
               <thead>
                 <tr>
-                  <th>Zone</th>
-                  <th>Avg €/MWh</th>
-                  <th>Min</th>
-                  <th>Max</th>
-                  <th>Peak avg</th>
-                  <th>Off-peak avg</th>
-                  <th>Spread P/OP</th>
+                  <th style="width:18%">Zone</th>
+                  <th style="width:9%;text-align:right" title="24h average price (raw 15-min slots if available)">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                  <th style="width:30%;text-align:left" title="Intraday range — min slot to max slot, scale shared across selected zones">Range<br><span style="color:var(--tx3);font-weight:400;font-size:9px">min slot — max slot · €/MWh</span></th>
+                  <th style="width:21%;text-align:right" title="Peak avg = mean over 08h-20h | Off-peak avg = mean over 00-08h + 20-24h">Peak avg / Off-pk avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08-20h / 00-08+20-24h · €/MWh</span></th>
+                  <th style="width:13%;text-align:right" title="Spread = Peak avg − Off-peak avg. Negative = inverted (duck curve, off-peak more expensive than peak)">Spread P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
                 </tr>
               </thead>
               <tbody id="compare-data-tbody">
