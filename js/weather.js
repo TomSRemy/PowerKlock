@@ -169,7 +169,7 @@ function negToColor(neg) {
 }
 
 function deltaToColor(delta) {
-  if (delta === null) return '#1A2D44';
+  if (delta === null) return '#1e2d3d';
   if (delta > 0) return `rgba(240,80,96,${Math.min(0.9, Math.abs(delta)/30)})`;
   return `rgba(16,185,129,${Math.min(0.9, Math.abs(delta)/30)})`;
 }

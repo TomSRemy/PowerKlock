@@ -169,9 +169,7 @@ async function loadLoad() {
         legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
         tooltip: { mode:'index', callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(1)} GW` } },
         zoom: ZOOM_CFG,
-        annotation: { annotations: { nowLine:{ type:'line', xMin:curHr2, xMax:curHr2, borderColor:'rgba(255,220,100,.6)', borderWidth:1.5, borderDash:[4,3],
-          label:{ display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9}, backgroundColor:'transparent' }
-        } } }
+        annotation: { annotations: (() => { const a = nowLineAnnotation(); return a ? { nowLine: a } : {}; })() }
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3} },
