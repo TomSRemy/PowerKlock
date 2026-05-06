@@ -14543,7 +14543,7 @@
 //# sourceMappingURL=leaflet-src.js.map
 
 // ── CHART.JS GLOBAL DEFAULTS
-Chart.defaults.color = '#7a9ab8';
+Chart.defaults.color = '#B8C9D9';
 
 // Fix infinite resize loop: use ResizeObserver guard
 const _chartResizeGuard = new Map();
@@ -14565,8 +14565,8 @@ Chart.defaults.plugins.tooltip.backgroundColor = '#192534';
 Chart.defaults.plugins.tooltip.borderColor = '#223344';
 Chart.defaults.plugins.tooltip.borderWidth = 1;
 Chart.defaults.plugins.tooltip.padding = 10;
-Chart.defaults.plugins.tooltip.titleColor = '#dce8f5';
-Chart.defaults.plugins.tooltip.bodyColor = '#7a9ab8';
+Chart.defaults.plugins.tooltip.titleColor = '#FFFFFF';
+Chart.defaults.plugins.tooltip.bodyColor = '#B8C9D9';
 Chart.defaults.plugins.tooltip.cornerRadius = 6;
 Chart.defaults.animation.duration = 400;
 
@@ -14606,7 +14606,7 @@ function addFullscreen(canvasId) {
   const btn = document.createElement('button');
   btn.innerHTML = '⛶';
   btn.title = 'Plein écran';
-  btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#7a9ab8;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
+  btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     const wrap = canvas.closest('.chart-container') || canvas.parentElement;
     if (document.fullscreenElement) document.exitFullscreen();
@@ -14625,7 +14625,7 @@ function addDownload(canvasId, filename) {
   const btn = document.createElement('button');
   btn.innerHTML = '↓';
   btn.title = 'Télécharger PNG';
-  btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#7a9ab8;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
+  btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     if (!CHARTS[canvasId]) return;
     const a = document.createElement('a');
@@ -14643,18 +14643,18 @@ const GRID = { color: 'rgba(26,45,63,.5)', drawTicks: false };
 const GRID_NONE = { display: false };
 
 // Color helpers
-const C_UP   = '#10b981';
-const C_DN   = '#f05060';
+const C_UP   = '#14D3A9';
+const C_DN   = '#ED6965';
 const C_WARN = '#e8a020';
-const C_ACC  = '#10b981';
-const C_WIND = '#60a5fa';
-const C_SOLAR= '#f59e0b';
-const C_NUC  = '#3b82f6';
-const C_HYD  = '#34d399';
-const C_FOS  = '#f87171';
-const C_BIO  = '#6ee7b7';
-const C_TX2  = '#7a9ab8';
-const C_TX3  = '#3d5a7a';
+const C_ACC  = '#14D3A9';
+const C_WIND = '#C4A57B';
+const C_SOLAR= '#FBBF24';
+const C_NUC  = '#7B4B9C';
+const C_HYD  = '#94D2BD';
+const C_FOS  = '#ED6965';
+const C_BIO  = '#94D2BD';
+const C_TX2  = '#B8C9D9';
+const C_TX3  = '#7A93AB';
 
 function rgba(hex, a) {
   const r = parseInt(hex.slice(1,3),16);

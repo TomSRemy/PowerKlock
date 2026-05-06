@@ -19,12 +19,12 @@ async function loadGenMix() {
   const total = mix.total;
 
   const fuels = [
-    { key:'nuclear', name:'Nuclear',  color:'#3b82f6', type:'NUCLEAR',   isRen:false },
-    { key:'wind',    name:'Wind',     color:'#00d4a8', type:'RENEWABLE',  isRen:true  },
-    { key:'solar',   name:'Solar',    color:'#fbbf24', type:'RENEWABLE',  isRen:true  },
-    { key:'hydro',   name:'Hydro',    color:'#34d399', type:'RENEWABLE',  isRen:true  },
-    { key:'fossil',  name:'Fossil',   color:'#f87171', type:'FOSSIL',     isRen:false },
-    { key:'imports', name:'Imports',  color:'#94a3b8', type:'OTHER',      isRen:false },
+    { key:'nuclear', name:'Nuclear',  color:C_NUC,   type:'NUCLEAR',   isRen:false },
+    { key:'wind',    name:'Wind',     color:C_WIND,  type:'RENEWABLE',  isRen:true  },
+    { key:'solar',   name:'Solar',    color:C_SOLAR, type:'RENEWABLE',  isRen:true  },
+    { key:'hydro',   name:'Hydro',    color:C_HYD,   type:'RENEWABLE',  isRen:true  },
+    { key:'fossil',  name:'Fossil',   color:C_FOS,   type:'FOSSIL',     isRen:false },
+    { key:'imports', name:'Imports',  color:C_TX3,   type:'OTHER',      isRen:false },
   ];
 
   // KPI fuel cards
@@ -97,7 +97,7 @@ function drawGenMixChart(canvas, mix, fuels, type, showDA) {
         label: 'DA Price (€/MWh)',
         data: frData.hourly,
         type: 'line',
-        borderColor: '#f59e0b',
+        borderColor: '#FBBF24',
         borderWidth: 2,
         pointRadius: 0,
         fill: false,
@@ -123,7 +123,7 @@ function drawGenMixChart(canvas, mix, fuels, type, showDA) {
       scales: {
         x: { stacked: type!=='area', grid:GRID, ticks:{color:C_TX3} },
         y: { stacked: type!=='area', grid:GRID, ticks:{color:C_TX3, callback: v=>(v/1000).toFixed(0)+'GW'}, title:{display:true,text:'GW',color:C_TX3,font:{size:10}} },
-        ...(showDA && window._pricesSorted ? { yPrice:{ position:'right', grid:{display:false}, ticks:{color:'#f59e0b',font:{size:9},callback:v=>v+'€'}, title:{display:true,text:'€/MWh',color:'#f59e0b',font:{size:9}} } } : {})
+        ...(showDA && window._pricesSorted ? { yPrice:{ position:'right', grid:{display:false}, ticks:{color:'#FBBF24',font:{size:9},callback:v=>v+'€'}, title:{display:true,text:'€/MWh',color:'#FBBF24',font:{size:9}} } } : {})
       }
     }
   });
@@ -138,10 +138,10 @@ function renderGenMixBreakdown(mix, fuels, total, isLive) {
     const val = mix[f.key] || 0;
     const pct = total ? (val/total*100) : 0;
     const barColor = f.color;
-    const typeLabel = f.type === 'NUCLEAR' ? `<span style="background:rgba(59,130,246,.15);color:#3b82f6;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">NUCLEAR</span>`
-      : f.type === 'RENEWABLE' ? `<span style="background:rgba(16,185,129,.15);color:#10b981;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">RENEWABLE</span>`
-      : f.type === 'FOSSIL' ? `<span style="background:rgba(248,113,113,.15);color:#f87171;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">FOSSIL</span>`
-      : `<span style="background:rgba(148,163,184,.1);color:#94a3b8;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">OTHER</span>`;
+    const typeLabel = f.type === 'NUCLEAR' ? `<span style="background:rgba(59,130,246,.15);color:#7B4B9C;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">NUCLEAR</span>`
+      : f.type === 'RENEWABLE' ? `<span style="background:rgba(16,185,129,.15);color:#14D3A9;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">RENEWABLE</span>`
+      : f.type === 'FOSSIL' ? `<span style="background:rgba(248,113,113,.15);color:#ED6965;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">FOSSIL</span>`
+      : `<span style="background:rgba(148,163,184,.1);color:#B8C9D9;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:600">OTHER</span>`;
     const bar = `<div style="display:flex;align-items:center;gap:6px">
       <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${Math.min(pct,100).toFixed(1)}%;background:${barColor};border-radius:3px"></div>
@@ -161,7 +161,7 @@ function renderGenMixBreakdown(mix, fuels, total, isLive) {
   rows.push(`<tr style="border-top:1px solid var(--bd2);font-weight:600">
     <td colspan="1" style="color:var(--tx2)">Total</td>
     <td style="font-family:'JetBrains Mono',monospace">${(total/1000).toFixed(2)}</td>
-    <td><span style="font-size:10px;color:#10b981">🌱 ${renPct}% renewable</span></td>
+    <td><span style="font-size:10px;color:#14D3A9">🌱 ${renPct}% renewable</span></td>
     <td></td>
   </tr>`);
   tbody.innerHTML = rows.join('');

@@ -148,9 +148,9 @@ function mkHistChart(canvasId, config) {
 }
 
 // Colour aliases (redefined here since const doesn't cross script blocks)
-var _HIST_TX3  = '#4a6280';
-var _HIST_ACC  = '#00d4a8';
-var _HIST_WARN = '#e8a020';
+var _HIST_TX3  = '#4A6280';
+var _HIST_ACC  = '#14D3A9';
+var _HIST_WARN = '#EE9B00';
 var _HIST_DN   = '#ef4444';
 var _HIST_UP   = '#22c55e';
 var _HIST_GRID = 'rgba(255,255,255,0.04)';
@@ -332,7 +332,7 @@ async function renderHistSpread() {
           backgroundColor: spreads.map(v => v != null && v > 100 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
           borderWidth: 0,
         },
-        { label: '30D avg', data: roll30, type: 'line', borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order:0 },
+        { label: '30D avg', data: roll30, type: 'line', borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order:0 },
       ],
     },
     options: {
@@ -858,7 +858,7 @@ async function renderHistCapture(tech) {
     data: {
       labels,
       datasets: [
-        { label:'365d rolling', data: roll365, borderColor:'#f59e0b', borderWidth:2.5, pointRadius:0, tension:0, spanGaps:true, order:1 },
+        { label:'365d rolling', data: roll365, borderColor:'#FBBF24', borderWidth:2.5, pointRadius:0, tension:0, spanGaps:true, order:1 },
         { label:'90d rolling',  data: roll90,  borderColor: color,    borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[6,3], order:2 },
         { label:'30d rolling',  data: roll30,  borderColor:'rgba(255,255,255,0.3)', borderWidth:1, pointRadius:0, tension:0, spanGaps:true, borderDash:[2,2], order:3 },
         {

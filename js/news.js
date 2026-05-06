@@ -112,9 +112,9 @@ function loadOverview() {
   document.getElementById('market-status').innerHTML = `
     <div style="margin-bottom:10px"><span style="color:var(--accent)">⚡ Power</span><br>
     FR price ${fr?.today < 10 ? 'very low' : fr?.today < 50 ? 'below average' : 'elevated'} at ${fr?.today?.toFixed(1)} €/MWh. ${fr?.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}</div>
-    <div style="margin-bottom:10px"><span style="color:#60a5fa">⛽ Gas</span><br>
+    <div style="margin-bottom:10px"><span style="color:#C4A57B">⛽ Gas</span><br>
     TTF Day-Ahead at 45.14 €/MWh, up 2.35% vs prior close.</div>
-    <div><span style="color:#a78bfa">🌿 Carbon</span><br>
+    <div><span style="color:#A87DC4">🌿 Carbon</span><br>
     EUA at 74.09 €/t, near 6-month average.</div>
   `;
 }
@@ -237,9 +237,9 @@ const GM_DEMO = {
   PT:{nuclear:0,wind:4000,solar:3500,hydro:2500,fossil:1500,biomass:400,total:12000},
 };
 const FUELS = [
-  {k:'nuclear',l:'Nuclear',c:'#a78bfa'},{k:'wind',l:'Wind',c:'#60a5fa'},
-  {k:'solar',l:'Solar',c:'#f59e0b'},{k:'hydro',l:'Hydro',c:'#34d399'},
-  {k:'fossil',l:'Fossil',c:'#f87171'},{k:'biomass',l:'Biomass',c:'#6ee7b7'},
+  {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},
+  {k:'solar',l:'Solar',c:'#FBBF24'},{k:'hydro',l:'Hydro',c:'#94D2BD'},
+  {k:'fossil',l:'Fossil',c:'#ED6965'},{k:'biomass',l:'Biomass',c:'#94D2BD'},
 ];
 const WX_CITIES = [
   {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},

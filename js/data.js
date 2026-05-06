@@ -450,7 +450,7 @@ function showPricesUnavailable(dateStr) {
 // HISTORICAL CHARTS ENGINE
 // Colour tokens (var = window-scoped, accessible across script blocks)
 var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#4a6280';
-var _HIST_ACC  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00d4a8';
+var _HIST_ACC  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14D3A9';
 var _HIST_WARN = '#e8a020';
 var _HIST_DN   = '#ef4444';
 var _HIST_UP   = '#22c55e';
@@ -458,16 +458,16 @@ var _HIST_GRID = 'rgba(255,255,255,0.04)';
 
 // ── Fixed country colours ──
 var ZONE_COLORS = {
-  'FR':      '#00d4a8',
-  'DE_LU':   '#60a5fa',
+  'FR':      '#14D3A9',
+  'DE_LU':   '#C4A57B',
   'BE':      '#fbbf24',
-  'NL':      '#a78bfa',
-  'ES':      '#f87171',
+  'NL':      '#A87DC4',
+  'ES':      '#ED6965',
   'PT':      '#fb923c',
-  'IT_NORD': '#34d399',
-  'IT_SICI': '#6ee7b7',
+  'IT_NORD': '#94D2BD',
+  'IT_SICI': '#94D2BD',
   'AT':      '#e879f9',
-  'CH':      '#94a3b8',
+  'CH':      '#B8C9D9',
   'CZ':      '#f472b6',
   'SK':      '#38bdf8',
   'HU':      '#facc15',
@@ -475,11 +475,11 @@ var ZONE_COLORS = {
   'HR':      '#fb7185',
   'SI':      '#c084fc',
   'GR':      '#2dd4bf',
-  'BG':      '#e2e8f0',
+  'BG':      '#FFFFFF',
   'DK_W':    '#7dd3fc',
   'DK_E':    '#93c5fd',
   'SE':      '#86efac',
-  'NO_1':    '#6ee7b7',
+  'NO_1':    '#94D2BD',
   'FI':      '#fda4af',
   'LT':      '#fdba74',
   'LV':      '#fcd34d',
@@ -491,7 +491,7 @@ var ZONE_COLORS = {
 };
 
 function zoneColor(code) {
-  return ZONE_COLORS[code] || '#94a3b8';
+  return ZONE_COLORS[code] || '#B8C9D9';
 }
 
 // ── Period label ──

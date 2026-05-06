@@ -65,11 +65,11 @@ async function loadWeather() {
 function drawWxForecastChart() {
   const canvas=document.getElementById('wx-forecast-canvas');
   if(!canvas||!window._wxCities?.length) return;
-  const varColors={'temp':'#60a5fa','wind':'#00d4a8','precip':'#a78bfa','radiation':'#fbbf24'};
+  const varColors={'temp':'#C4A57B','wind':'#14D3A9','precip':'#A87DC4','radiation':'#fbbf24'};
   const varLabels={'temp':'°C','wind':'km/h','precip':'mm','radiation':'MJ/m²'};
   const el=document.getElementById('wx-chart-title'); if(el) el.textContent={'temp':'Temperature','wind':'Wind Speed','precip':'Precipitation','radiation':'Solar Radiation'}[wxVar]+' — 14-day Forecast';
   const datasets=window._wxCities.slice(0,5).map((city,ci)=>{
-    const col=['#60a5fa','#00d4a8','#f59e0b','#34d399','#f87171'][ci]||'#60a5fa';
+    const col=['#C4A57B','#14D3A9','#FBBF24','#94D2BD','#ED6965'][ci]||'#C4A57B';
     let data;
     if(wxVar==='temp')      data=city.daily?.temperature_2m_max?.slice(0,14);
     else if(wxVar==='wind') data=city.daily?.windspeed_10m_max?.slice(0,14);
@@ -109,7 +109,7 @@ function renderHDD() {
   const hddLabels=Array.from({length:n2},(_,i)=>i%17===0?['Oct','Nov','Dec','Jan','Feb','Mar','Apr'][Math.floor(i/17)]||'':'');
   mkChart('hdd-canvas', {
     type:'line', data:{ labels:hddLabels, datasets:[
-      { label:'Actual 2025-26', data:cumD, borderColor:'#3b82f6', borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba('#3b82f6',.15), tension:0.3 },
+      { label:'Actual 2025-26', data:cumD, borderColor:'#7B4B9C', borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba('#7B4B9C',.15), tension:0.3 },
       { label:'Normale 20 ans', data:normD, borderColor:rgba(C_TX2,.5), borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false },
     ]},
     options:{ responsive:true, maintainAspectRatio:false,
@@ -169,7 +169,7 @@ function negToColor(neg) {
 }
 
 function deltaToColor(delta) {
-  if (delta === null) return '#1a2d3f';
+  if (delta === null) return '#1A2D44';
   if (delta > 0) return `rgba(240,80,96,${Math.min(0.9, Math.abs(delta)/30)})`;
   return `rgba(16,185,129,${Math.min(0.9, Math.abs(delta)/30)})`;
 }
