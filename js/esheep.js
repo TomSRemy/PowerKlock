@@ -55,7 +55,7 @@
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
 .es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-.es-dotsbar{position:fixed;right:14px;bottom:14px;display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
+.es-dotsbar{position:fixed;left:200px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
 .es-dot.wind:hover{background:#fb923c}
@@ -199,46 +199,45 @@
     return `${L_(45,138,'ls')}${L_(95,138,'ls')}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,'ls')}${L_(86,134,'ls')}${E_(80,50)}${H_(80,50,'sleep')}`;
   }
   function pRun(black = false) {
-    // New design: long body, uniform wool, front-facing head, tongue + animated ears + tail
-    // Coordinates aligned with sheep viewBox -10 -5 180 215, body centred ~ x=80
+    // Body shorter (~150px wide instead of 180), head matches pStand size (rx=44 ry=46)
     const wc = black ? '#1c1c1c' : WO;
     return `<g transform="translate(0,30)">
-<g class="lrb" style="transform-origin:16px 100px"><rect x="10" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="7" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lrb" style="transform-origin:38px 100px"><rect x="32" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="29" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lra" style="transform-origin:130px 100px"><rect x="124" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="121" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lra" style="transform-origin:150px 100px"><rect x="144" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="141" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<ellipse cx="84" cy="62" rx="86" ry="30" fill="${wc}"/>
-<circle cx="10" cy="40" r="24" fill="${wc}"/>
-<circle cx="36" cy="32" r="24" fill="${wc}"/>
-<circle cx="62" cy="28" r="24" fill="${wc}"/>
-<circle cx="88" cy="28" r="24" fill="${wc}"/>
-<circle cx="114" cy="32" r="24" fill="${wc}"/>
-<circle cx="140" cy="40" r="24" fill="${wc}"/>
-<circle cx="-2" cy="52" r="22" fill="${wc}"/>
-<circle cx="0" cy="72" r="22" fill="${wc}"/>
-<circle cx="14" cy="82" r="22" fill="${wc}"/>
-<circle cx="40" cy="88" r="22" fill="${wc}"/>
-<circle cx="66" cy="90" r="22" fill="${wc}"/>
-<circle cx="92" cy="90" r="22" fill="${wc}"/>
-<circle cx="118" cy="88" r="22" fill="${wc}"/>
-<circle cx="142" cy="82" r="22" fill="${wc}"/>
-<circle cx="158" cy="70" r="20" fill="${wc}"/>
-<circle cx="160" cy="52" r="18" fill="${wc}"/>
-<g class="t-wag" style="transform-origin:-18px 28px"><circle cx="-18" cy="28" r="14" fill="${wc}"/></g>
-<g transform="translate(174,28)">
-<path d="M0 -32 C22 -32 36 -16 36 4 C36 26 22 40 0 42 C-22 40 -36 26 -36 4 C-36 -16 -22 -32 0 -32 Z" fill="${DK}"/>
-<circle cx="-12" cy="-2" r="9" fill="${WH}"/>
-<circle cx="12" cy="-2" r="9" fill="${WH}"/>
-<circle cx="-11" cy="0" r="5" fill="${DK}"/>
-<circle cx="13" cy="0" r="5" fill="${DK}"/>
-<circle cx="-13" cy="-4" r="2" fill="${WH}"/>
-<circle cx="11" cy="-4" r="2" fill="${WH}"/>
-<ellipse cx="0" cy="20" rx="13" ry="8" fill="${HF}"/>
-<g class="es-tongue" style="transform-origin:0px 22px"><rect x="-40" y="18" width="40" height="8" rx="4" fill="#ec7194"/></g>
-<ellipse cx="3" cy="20" rx="10" ry="8" fill="${HF}"/>
-<ellipse cx="3" cy="18" rx="3" ry="2.2" fill="${DK}"/>
-<g class="es-ear-back" style="transform-origin:-22px -20px"><path d="M-22 -20 C-30 -18 -68 -8 -74 2 C-68 12 -30 2 -20 -10Z" fill="${DK}"/></g>
-<g class="es-ear-front" style="transform-origin:22px -20px"><path d="M22 -20 C14 -18 -24 -8 -30 2 C-24 12 14 2 24 -10Z" fill="${DK}" stroke="#1a0e08" stroke-width="1.5"/></g>
+<g class="lrb" style="transform-origin:30px 100px"><rect x="24" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="21" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lrb" style="transform-origin:50px 100px"><rect x="44" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="41" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:118px 100px"><rect x="112" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="109" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:138px 100px"><rect x="132" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="129" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<ellipse cx="80" cy="62" rx="72" ry="32" fill="${wc}"/>
+<circle cx="20" cy="42" r="22" fill="${wc}"/>
+<circle cx="44" cy="34" r="22" fill="${wc}"/>
+<circle cx="68" cy="30" r="22" fill="${wc}"/>
+<circle cx="92" cy="30" r="22" fill="${wc}"/>
+<circle cx="116" cy="34" r="22" fill="${wc}"/>
+<circle cx="138" cy="42" r="22" fill="${wc}"/>
+<circle cx="8" cy="54" r="20" fill="${wc}"/>
+<circle cx="10" cy="72" r="20" fill="${wc}"/>
+<circle cx="22" cy="84" r="20" fill="${wc}"/>
+<circle cx="46" cy="88" r="20" fill="${wc}"/>
+<circle cx="70" cy="90" r="20" fill="${wc}"/>
+<circle cx="92" cy="90" r="20" fill="${wc}"/>
+<circle cx="114" cy="88" r="20" fill="${wc}"/>
+<circle cx="136" cy="84" r="20" fill="${wc}"/>
+<circle cx="148" cy="72" r="18" fill="${wc}"/>
+<circle cx="150" cy="56" r="16" fill="${wc}"/>
+<g class="t-wag" style="transform-origin:-8px 32px"><circle cx="-8" cy="32" r="14" fill="${wc}"/></g>
+<g transform="translate(170,38)">
+<path d="M0 -36 C28 -36 44 -16 44 10 C44 38 26 54 0 56 C-26 54 -44 38 -44 10 C-44 -16 -28 -36 0 -36Z" fill="${DK}"/>
+<circle cx="-15" cy="6" r="14" fill="${WH}"/>
+<circle cx="15" cy="6" r="14" fill="${WH}"/>
+<circle cx="-14" cy="8" r="8" fill="${DK}"/>
+<circle cx="16" cy="8" r="8" fill="${DK}"/>
+<circle cx="-17" cy="3" r="3.5" fill="${WH}"/>
+<circle cx="13" cy="3" r="3.5" fill="${WH}"/>
+<ellipse cx="0" cy="30" rx="15" ry="9" fill="${HF}"/>
+<g class="es-tongue" style="transform-origin:0px 32px"><rect x="-46" y="28" width="46" height="9" rx="4.5" fill="#ec7194"/></g>
+<ellipse cx="3" cy="30" rx="12" ry="9" fill="${HF}"/>
+<ellipse cx="3" cy="28" rx="3.5" ry="2.5" fill="${DK}"/>
+<g class="es-ear-back" style="transform-origin:-26px -22px"><path d="M-26 -22 C-34 -20 -76 -8 -82 2 C-76 14 -34 4 -24 -10Z" fill="${DK}"/></g>
+<g class="es-ear-front" style="transform-origin:26px -22px"><path d="M26 -22 C18 -20 -28 -8 -34 2 C-28 14 18 4 28 -10Z" fill="${DK}" stroke="#1a0e08" stroke-width="1.8"/></g>
 </g>
 </g>`;
   }
@@ -351,22 +350,30 @@
     if (PLATS.length >= 5) {
       const cloudCx = W * 0.5;
       const cloudCy = top + 30;
-      // Build cloud — wrapper that drifts horizontally
+      // Build cloud — fluffy oval shape with many bumps
       const cloud = document.createElement('div');
       cloud.className = 'es-cloud';
-      cloud.style.cssText = `position:fixed;left:${cloudCx - 95}px;top:${cloudCy - 30}px;width:190px;height:70px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudDrift 14s ease-in-out infinite`;
+      cloud.style.cssText = `position:fixed;left:${cloudCx - 110}px;top:${cloudCy - 36}px;width:220px;height:80px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudDrift 14s ease-in-out infinite`;
       cloud.innerHTML = `
-        <svg viewBox="0 0 190 70" width="190" height="70" xmlns="http://www.w3.org/2000/svg" overflow="visible">
-          <ellipse cx="95" cy="44" rx="92" ry="11" fill="#a8b8c8" opacity=".55"/>
-          <ellipse cx="50" cy="40" rx="36" ry="20" fill="#a8b8c8"/>
-          <ellipse cx="138" cy="42" rx="32" ry="18" fill="#a8b8c8"/>
-          <ellipse cx="60" cy="32" rx="38" ry="22" fill="#e8eef4"/>
-          <ellipse cx="100" cy="22" rx="44" ry="26" fill="#f5f8fb"/>
-          <ellipse cx="138" cy="32" rx="36" ry="22" fill="#e8eef4"/>
-          <ellipse cx="34" cy="42" rx="22" ry="14" fill="#d8e1ea"/>
-          <ellipse cx="160" cy="44" rx="22" ry="14" fill="#d8e1ea"/>
-          <ellipse cx="90" cy="10" rx="18" ry="6" fill="#ffffff" opacity=".75"/>
-          <ellipse cx="120" cy="8" rx="12" ry="4" fill="#ffffff" opacity=".65"/>
+        <svg viewBox="0 0 220 80" width="220" height="80" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <ellipse cx="110" cy="56" rx="106" ry="11" fill="#a8b8c8" opacity=".55"/>
+          <ellipse cx="40" cy="50" rx="30" ry="18" fill="#a8b8c8"/>
+          <ellipse cx="180" cy="52" rx="28" ry="17" fill="#a8b8c8"/>
+          <ellipse cx="110" cy="40" rx="100" ry="32" fill="#e8eef4"/>
+          <circle cx="38" cy="44" r="22" fill="#f5f8fb"/>
+          <circle cx="62" cy="32" r="26" fill="#f5f8fb"/>
+          <circle cx="88" cy="22" r="24" fill="#fbfdff"/>
+          <circle cx="112" cy="18" r="28" fill="#fbfdff"/>
+          <circle cx="138" cy="22" r="24" fill="#fbfdff"/>
+          <circle cx="160" cy="32" r="26" fill="#f5f8fb"/>
+          <circle cx="184" cy="44" r="22" fill="#f5f8fb"/>
+          <circle cx="76" cy="48" r="18" fill="#f5f8fb"/>
+          <circle cx="100" cy="50" r="20" fill="#f5f8fb"/>
+          <circle cx="124" cy="50" r="20" fill="#f5f8fb"/>
+          <circle cx="148" cy="48" r="18" fill="#f5f8fb"/>
+          <ellipse cx="96" cy="14" rx="14" ry="5" fill="#ffffff" opacity=".75"/>
+          <ellipse cx="128" cy="12" rx="10" ry="4" fill="#ffffff" opacity=".65"/>
+          <ellipse cx="60" cy="28" rx="8" ry="3" fill="#ffffff" opacity=".55"/>
         </svg>
       `;
       document.body.appendChild(cloud);
@@ -586,31 +593,51 @@
   function enterPipe(s, entryPipe) {
     s.state = ST.PIPE; s.surf = null; s.vx = 0; s.vy = 0; clearZzz(s);
 
-    // === MARIO ENTRY: progressive slide-down + fade ===
-    // Position the sheep right at the pipe mouth, then slide it down + clip it
+    // Force the front-facing standing sprite for the pipe entry (no profile run sprite).
+    s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','open',s.black)}</svg>`;
+    s.el.style.transform = '';
+
+    // === MARIO ENTRY: sprite positioned ABOVE the pipe cap, slides down, clipped at cap line ===
+    // The sheep starts standing on top of the pipe (feet at cap level).
+    // As it slides down, a horizontal clip-path hides everything that goes below the cap.
+    // No fade — the clip itself makes the sheep "disappear" into the pipe.
     s.x = entryPipe.midX - SZ;
     if (entryPipe.mouthDir === 'up') {
+      // Ground pipe: position the sprite so its FEET rest exactly ON THE TOP EDGE of the cap.
+      // mouthY = top of the cap. Sprite foot Y in document = s.y + SZ*2 - FOOT_OFFSET.
+      // Setting foot Y = mouthY → s.y = mouthY - SZ*2 + FOOT_OFFSET.
       s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
     } else {
+      // Hanging pipe (mouth down): mirror — sprite head touches the cap bottom edge
       s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
     }
     pos(s);
-    // Animate: progressively translateY downward into the pipe + scaleY squash + fade
-    s.el.style.transition = 'transform .45s cubic-bezier(.4,.1,.6,1), opacity .35s ease-in .15s';
+
+    const sprH = SZ * 2;
+    // Visible height = portion of sprite that is ABOVE the cap line (before slide).
+    const visibleH = Math.max(0, entryPipe.mouthY - s.y);
+
+    s.el.style.zIndex = Z_DECOR + 1; // sheep above pipe; clip removes the part below cap
+    s.el.style.clipPath = `inset(0 0 ${sprH - visibleH}px 0)`;
+    void s.el.offsetWidth;
+    s.el.style.transition = 'transform .55s cubic-bezier(.4,.05,.6,1), clip-path .55s cubic-bezier(.4,.05,.6,1)';
     const enterDir = entryPipe.mouthDir === 'up' ? 1 : -1;
-    s.el.style.transform = `translateY(${enterDir * (SZ * 1.6)}px) scaleY(.45)`;
-    s.el.style.opacity = '0';
+    // At end: translateY = sprite height → entire sprite is below cap = entirely clipped
+    s.el.style.transform = `translateY(${enterDir * sprH}px)`;
+    s.el.style.clipPath = `inset(0 0 ${sprH}px 0)`;
 
     setTimeout(() => {
       s.el.style.transition = '';
       s.el.style.transform = '';
-      s.el.style.opacity = '0';
+      s.el.style.clipPath = '';
+      s.el.style.zIndex = '';
+      s.el.style.opacity = '0'; // hidden during teleport
       // Choose a random exit pipe
       const candidates = ALL_PIPES.filter(p => p !== entryPipe);
       if (!candidates.length) candidates.push(entryPipe);
       const out = candidates[Math.floor(Math.random() * candidates.length)];
 
-      // Position sheep INSIDE the exit pipe, ready to slide out
+      // Final position when fully out: feet on the top edge of the exit pipe cap
       s.x = out.midX - SZ;
       if (out.mouthDir === 'up') {
         s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
@@ -618,32 +645,40 @@
         s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
       }
       pos(s);
-      // Start position: tucked inside the pipe (squashed + offset)
-      const exitDir = out.mouthDir === 'up' ? 1 : -1;
-      s.el.style.transform = `translateY(${exitDir * (SZ * 1.6)}px) scaleY(.45)`;
-      s.el.style.opacity = '1';
-      rdr(s, ST.FALL);
 
-      // Force reflow so the next transition triggers
+      s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','open',s.black)}</svg>`;
+
+      // Start position: tucked DOWN inside the pipe — clip masks all of it
+      const exitDir = out.mouthDir === 'up' ? 1 : -1;
+      s.el.style.zIndex = Z_DECOR + 1;
+      s.el.style.transform = `translateY(${exitDir * sprH}px)`;
+      s.el.style.clipPath = `inset(0 0 ${sprH}px 0)`;
+      s.el.style.opacity = '1';
+
       void s.el.offsetWidth;
 
-      // Animate out: slide back to natural position
-      s.el.style.transition = 'transform .45s cubic-bezier(.3,.7,.5,1.2)';
+      // Animate out: slide back up to natural position, clip recedes to 0
+      s.el.style.transition = 'transform .55s cubic-bezier(.3,.7,.5,1), clip-path .55s cubic-bezier(.3,.7,.5,1)';
       s.el.style.transform = '';
+      const visibleH2 = Math.max(0, out.mouthY - s.y);
+      s.el.style.clipPath = `inset(0 0 ${sprH - visibleH2}px 0)`;
 
       setTimeout(() => {
         s.el.style.transition = '';
+        s.el.style.clipPath = '';
+        s.el.style.zIndex = '';
         s.state = ST.FALL;
         if (out.mouthDir === 'up') {
-          // Mario-style: little jump out of the pipe
-          s.vy = -(7 + Math.random() * 3);
+          // Mario-style: sideways jump out of the pipe
+          s.vy = -(8 + Math.random() * 3);
+          s.vx = (Math.random() < .5 ? -1 : 1) * (4 + Math.random() * 2); // side jump
         } else {
           s.vy = 1 + Math.random() * 2;
+          s.vx = (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 2);
         }
-        s.vx = (Math.random() - .5) * 2;
         s.dir = s.vx >= 0 ? 1 : -1; xfm(s);
-      }, 450);
-    }, 500);
+      }, 550);
+    }, 600);
   }
 
   function tick(s) {
@@ -862,11 +897,11 @@
           s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','dead',true)}</svg>`;
         }, 200);
 
-        // Ghost rises from the head
+        // Ghost rises from the head — duration matches 3s lifecycle
         setTimeout(() => {
           if (!s.el || !s.el.parentNode) return;
           const ghost = document.createElement('div');
-          ghost.style.cssText = `position:fixed;left:${s.x + SZ * .75}px;top:${s.y + 6}px;width:36px;height:42px;z-index:${Z_FLOAT};pointer-events:none;animation:esGhostRise 3.5s ease-out forwards`;
+          ghost.style.cssText = `position:fixed;left:${s.x + SZ * .75}px;top:${s.y + 6}px;width:36px;height:42px;z-index:${Z_FLOAT};pointer-events:none;animation:esGhostRise 2.5s ease-out forwards`;
           ghost.innerHTML = `<svg viewBox="-18 -22 36 42" width="36" height="42" overflow="visible">
             <path d="M-14 -8 Q-14 -20 0 -20 Q14 -20 14 -8 L14 12 L9 6 L4 12 L0 6 L-4 12 L-9 6 L-14 12 Z" fill="#fff" stroke="#94a3b8" stroke-width="1" opacity=".9"/>
             <circle cx="-5" cy="-10" r="2.2" fill="#1c1c1c"/>
@@ -874,8 +909,8 @@
             <ellipse cx="0" cy="-2" rx="2.5" ry="2" fill="#1c1c1c"/>
           </svg>`;
           document.body.appendChild(ghost);
-          setTimeout(() => ghost.remove(), 3700);
-        }, 800);
+          setTimeout(() => ghost.remove(), 2700);
+        }, 600);
 
         // Smoke puffs
         for (let i = 0; i < 4; i++) {
@@ -886,16 +921,16 @@
             sm.textContent = ['💨', '·', '°'][Math.floor(Math.random() * 3)];
             document.body.appendChild(sm);
             setTimeout(() => sm.remove(), 1800);
-          }, 250 + i * 600);
+          }, 200 + i * 450);
         }
 
-        // Stay KO for 4s, then fade out and disappear
+        // Stay KO for 3s, then fade out and disappear
         setTimeout(() => {
           if (!s.el) return;
-          s.el.style.transition = 'opacity 1s ease';
+          s.el.style.transition = 'opacity 0.7s ease';
           s.el.style.opacity = '0';
-          setTimeout(() => { if (s.el) { s.el.remove(); } checkDecor(); }, 1100);
-        }, 4000);
+          setTimeout(() => { if (s.el) { s.el.remove(); } checkDecor(); }, 800);
+        }, 3000);
       }
     }, 280);
   }
@@ -1019,7 +1054,7 @@
 
     // Phase 1: pull sheep toward center (after formation, ~1.5s in)
     setTimeout(() => {
-      const radius = 280;
+      const radius = 480;
       allSheep.forEach(s => {
         if (!s.alive || s.grabbed || s.state === ST.PIPE || s.windOut) return;
         const dx = s.x + SZ - spot.x;
@@ -1035,7 +1070,7 @@
 
     // Phase 2: explosion — scatter sheep radially (~3s in)
     setTimeout(() => {
-      const radius = 340;
+      const radius = 560;
       allSheep.forEach(s => {
         if (!s.alive || s.grabbed || s.state === ST.PIPE || s.windOut) return;
         const dx = s.x + SZ - spot.x;
@@ -1072,12 +1107,11 @@
     }, delay);
   }
 
-  // ── SOCIAL: dialogue + fight ──
+  // ── SOCIAL: fights only (no chat) ──
   let socialFrame = 0;
-  const CHAT_TXT = ['Bêê ?', 'Bêê !', 'Bêê bêê !', 'Béé..', 'Hé !', 'Meeeh ?'];
   function socialTick() {
     socialFrame++;
-    if (socialFrame % 30 !== 0) return; // ~ every 0.5s @ 60fps
+    if (socialFrame % 30 !== 0) return; // check every ~0.5s
     const live = allSheep.filter(s => s.alive && !s.grabbed && s.state !== ST.PIPE && !s.windOut && s.state !== 'ko');
     if (live.length < 2) return;
 
@@ -1088,45 +1122,62 @@
         const dy = (a.y + SZ) - (b.y + SZ);
         const dist = Math.hypot(dx, dy);
 
-        // FIGHT: very close + both walking/running toward each other
-        if (dist < SZ * 1.2 && Math.abs(dy) < SZ * .7 &&
+        // === VIOLENT FIGHT: close + walking/running toward each other ===
+        if (dist < SZ * 1.3 && Math.abs(dy) < SZ * .8 &&
             (a.state === ST.WALK || a.state === ST.RUN) &&
             (b.state === ST.WALK || b.state === ST.RUN) &&
             ((dx > 0 && a.dir < 0 && b.dir > 0) || (dx < 0 && a.dir > 0 && b.dir < 0))) {
-          // Clash flash
+
           const fx = (a.x + b.x) / 2 + SZ;
           const fy = (a.y + b.y) / 2 + SZ;
+
+          // Big yellow flash
           const flash = document.createElement('div');
-          flash.style.cssText = `position:fixed;left:${fx-22}px;top:${fy-22}px;width:44px;height:44px;z-index:${Z_FLOAT};pointer-events:none;background:radial-gradient(circle,#fbbf24 0%,rgba(251,191,36,0) 70%);animation:esBFlash .35s ease forwards`;
+          flash.style.cssText = `position:fixed;left:${fx-50}px;top:${fy-50}px;width:100px;height:100px;z-index:${Z_FLOAT};pointer-events:none;background:radial-gradient(circle,#fff 0%,#fbbf24 30%,#ef4444 60%,rgba(239,68,68,0) 80%);animation:esBFlash .5s ease forwards;border-radius:50%`;
           document.body.appendChild(flash);
-          setTimeout(() => flash.remove(), 400);
-          ft({ x: fx - 24, y: fy - 18 }, 'CLASH !', '#fbbf24');
+          setTimeout(() => flash.remove(), 550);
 
-          // Eject the loser (random pick)
-          const loser = Math.random() < .5 ? a : b;
-          const winner = loser === a ? b : a;
-          loser.surf = null;
-          loser.state = ST.FALL;
-          const pushDir = (loser.x < winner.x) ? -1 : 1;
-          loser.vx = pushDir * (8 + Math.random() * 4);
-          loser.vy = -(5 + Math.random() * 3);
-          loser.dir = pushDir;
-          xfm(loser);
-          ft(loser, ['Aïe !', 'BÊÊ !', 'Eh !'][Math.floor(Math.random() * 3)], '#ef4444');
-          // Winner brags
-          if (Math.random() < .5) ft(winner, 'Bêê !', '#fff');
+          // Multiple impact stars/sparks
+          for (let k = 0; k < 12; k++) {
+            const angle = (k / 12) * Math.PI * 2;
+            const dist2 = 30 + Math.random() * 40;
+            const px = fx + Math.cos(angle) * dist2;
+            const py = fy + Math.sin(angle) * dist2;
+            const star = document.createElement('div');
+            star.style.cssText = `position:fixed;left:${px-8}px;top:${py-8}px;font-size:${14+Math.random()*10}px;z-index:${Z_FLOAT};pointer-events:none;animation:esFtUp .7s ease forwards`;
+            star.textContent = ['💥', '⭐', '✨', '⚡', '💫'][Math.floor(Math.random() * 5)];
+            document.body.appendChild(star);
+            setTimeout(() => star.remove(), 800);
+          }
+
+          // Onomatopoeia: BAM/POW/KO
+          ft({ x: fx - 30, y: fy - 30 }, ['BAM !', 'POW !', 'BOUM !', 'PAF !'][Math.floor(Math.random() * 4)], '#fbbf24');
+
+          // BOTH sheep get violently knocked away — no winner this time, real bagarre
+          const aDir = (a.x < b.x) ? -1 : 1;
+          const bDir = -aDir;
+          a.surf = null; a.state = ST.FALL;
+          a.vx = aDir * (14 + Math.random() * 6);   // was 8 — much more violent
+          a.vy = -(9 + Math.random() * 4);          // was 5 — much higher launch
+          a.dir = aDir; xfm(a);
+          b.surf = null; b.state = ST.FALL;
+          b.vx = bDir * (14 + Math.random() * 6);
+          b.vy = -(9 + Math.random() * 4);
+          b.dir = bDir; xfm(b);
+
+          // Pain shouts
+          ft(a, ['AÏE !', 'BÊÊÊ !', 'OUCH !'][Math.floor(Math.random() * 3)], '#ef4444');
+          ft(b, ['AÏE !', 'BÊÊÊ !', 'OUCH !'][Math.floor(Math.random() * 3)], '#ef4444');
+
+          // Screen shake
+          if (typeof document !== 'undefined' && document.body) {
+            document.body.style.transition = 'transform .08s';
+            document.body.style.transform = 'translate(3px, -2px)';
+            setTimeout(() => { document.body.style.transform = 'translate(-3px, 2px)'; }, 80);
+            setTimeout(() => { document.body.style.transform = ''; document.body.style.transition = ''; }, 160);
+          }
+
           return; // one event per tick
-        }
-
-        // CHAT: close-ish, both calm, occasional dialogue
-        if (dist < 180 && dist > SZ * 1.2 && Math.random() < .12 &&
-            (a.state === ST.WALK || a.state === ST.STARE) &&
-            (b.state === ST.WALK || b.state === ST.STARE)) {
-          ft(a, CHAT_TXT[Math.floor(Math.random() * CHAT_TXT.length)], '#fff');
-          setTimeout(() => {
-            if (b.alive) ft(b, CHAT_TXT[Math.floor(Math.random() * CHAT_TXT.length)], '#fff');
-          }, 400 + Math.random() * 400);
-          return;
         }
       }
     }
