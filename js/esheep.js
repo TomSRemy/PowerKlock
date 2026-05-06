@@ -123,20 +123,20 @@
   100%{transform:translateX(var(--rx)) scale(1);opacity:1}
 }
 .es-tornado-warning{position:fixed;font-size:20px;font-weight:900;color:#fbbf24;z-index:${Z_FLOAT};pointer-events:none;text-shadow:0 0 18px #fbbf24,0 1px 4px rgba(0,0,0,.95);font-family:monospace;animation:esFtUp 1.6s ease forwards}
-.W-walk{animation:esWWalk .5s ease-in-out infinite}.W-run{animation:esWRun .22s ease-in-out infinite}
+.W-walk{animation:esWWalk .5s ease-in-out infinite}.W-run{animation:esWRun .32s ease-in-out infinite}
 .W-fall{animation:esWFall .38s ease-in-out infinite}.W-sleep{animation:esWSleep 2.6s ease-in-out infinite}
 .W-yawn{animation:esWYawn 2s ease-in-out infinite}.W-nod{animation:esWNod .55s ease-in-out infinite}
 .W-scratch{animation:esWScratch .14s ease-in-out infinite}.W-stare{animation:esWStare 2.2s ease-in-out infinite}
 .W-dance{animation:esWDance .62s ease-in-out infinite}.W-hang{animation:esWHang 1.1s ease-in-out infinite}
 .W-wind{animation:esWWind .65s linear infinite}
 .la{animation:esLegA .5s ease-in-out infinite}.lb{animation:esLegB .5s ease-in-out infinite}
-.lra{animation:esLegRA .22s ease-in-out infinite}.lrb{animation:esLegRB .22s ease-in-out infinite}
+.lra{animation:esLegRA .32s ease-in-out infinite}.lrb{animation:esLegRB .32s ease-in-out infinite}
 .ls{animation:none}.dl{animation:esDanceL .62s ease-in-out infinite}.dr{animation:esDanceR .62s ease-in-out infinite}
 .hla{animation:esHangL .9s ease-in-out infinite}.hlb{animation:esHangR .9s ease-in-out infinite}
 .jla{animation:esLegA .4s ease-in-out infinite}.jlb{animation:esLegB .4s ease-in-out infinite}
 .dla{animation:esLegA .62s ease-in-out infinite}.dlb{animation:esLegB .62s ease-in-out infinite}
 .e-l{animation:esEarFL 4.2s ease-in-out infinite}.e-r{animation:esEarFR 2.8s ease-in-out infinite}
-.e-run{animation:esEarRun .22s ease-in-out infinite}
+.e-run{animation:esEarRun .32s ease-in-out infinite}
 .l-l{animation:esBlinkD 4.5s ease-in-out infinite;transform-origin:center top}
 .l-r{animation:esBlinkD 4.5s ease-in-out infinite .07s;transform-origin:center top}
 .t-wag{animation:esTWag .9s ease-in-out infinite}
@@ -199,32 +199,29 @@
     return `${L_(45,138,'ls')}${L_(95,138,'ls')}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,'ls')}${L_(86,134,'ls')}${E_(80,50)}${H_(80,50,'sleep')}`;
   }
   function pRun(black = false) {
-    // Body shorter (~150px wide instead of 180), head matches pStand size (rx=44 ry=46)
+    // Body proportions matched to pStand (ratio ~1.78 instead of 2.44 which looked weird).
+    // Body width 160px, scallops symmetrical top/bottom for a rounder silhouette.
     const wc = black ? '#1c1c1c' : WO;
     return `<g transform="translate(0,30)">
-<g class="lrb" style="transform-origin:30px 100px"><rect x="24" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="21" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lrb" style="transform-origin:50px 100px"><rect x="44" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="41" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lra" style="transform-origin:118px 100px"><rect x="112" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="109" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<g class="lra" style="transform-origin:138px 100px"><rect x="132" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="129" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
-<ellipse cx="80" cy="62" rx="72" ry="32" fill="${wc}"/>
-<circle cx="20" cy="42" r="22" fill="${wc}"/>
-<circle cx="44" cy="34" r="22" fill="${wc}"/>
-<circle cx="68" cy="30" r="22" fill="${wc}"/>
-<circle cx="92" cy="30" r="22" fill="${wc}"/>
-<circle cx="116" cy="34" r="22" fill="${wc}"/>
-<circle cx="138" cy="42" r="22" fill="${wc}"/>
-<circle cx="8" cy="54" r="20" fill="${wc}"/>
-<circle cx="10" cy="72" r="20" fill="${wc}"/>
-<circle cx="22" cy="84" r="20" fill="${wc}"/>
-<circle cx="46" cy="88" r="20" fill="${wc}"/>
-<circle cx="70" cy="90" r="20" fill="${wc}"/>
-<circle cx="92" cy="90" r="20" fill="${wc}"/>
-<circle cx="114" cy="88" r="20" fill="${wc}"/>
-<circle cx="136" cy="84" r="20" fill="${wc}"/>
-<circle cx="148" cy="72" r="18" fill="${wc}"/>
-<circle cx="150" cy="56" r="16" fill="${wc}"/>
-<g class="t-wag" style="transform-origin:-8px 32px"><circle cx="-8" cy="32" r="14" fill="${wc}"/></g>
-<g transform="translate(170,38)">
+<g class="lrb" style="transform-origin:36px 110px"><rect x="30" y="100" width="13" height="50" rx="5" fill="${DK}"/><rect x="27" y="146" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lrb" style="transform-origin:56px 110px"><rect x="50" y="100" width="13" height="50" rx="5" fill="${DK}"/><rect x="47" y="146" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:110px 110px"><rect x="104" y="100" width="13" height="50" rx="5" fill="${DK}"/><rect x="101" y="146" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:130px 110px"><rect x="124" y="100" width="13" height="50" rx="5" fill="${DK}"/><rect x="121" y="146" width="19" height="7" rx="3" fill="${HF}"/></g>
+<ellipse cx="78" cy="74" rx="62" ry="42" fill="${wc}"/>
+<circle cx="22" cy="56" r="22" fill="${wc}"/>
+<circle cx="46" cy="42" r="24" fill="${wc}"/>
+<circle cx="72" cy="34" r="24" fill="${wc}"/>
+<circle cx="98" cy="34" r="24" fill="${wc}"/>
+<circle cx="120" cy="42" r="24" fill="${wc}"/>
+<circle cx="138" cy="56" r="22" fill="${wc}"/>
+<circle cx="22" cy="92" r="20" fill="${wc}"/>
+<circle cx="46" cy="106" r="22" fill="${wc}"/>
+<circle cx="72" cy="112" r="22" fill="${wc}"/>
+<circle cx="98" cy="112" r="22" fill="${wc}"/>
+<circle cx="120" cy="106" r="22" fill="${wc}"/>
+<circle cx="138" cy="92" r="20" fill="${wc}"/>
+<g class="t-wag" style="transform-origin:0px 50px"><circle cx="0" cy="50" r="13" fill="${wc}"/></g>
+<g transform="translate(154,50)">
 <path d="M0 -36 C28 -36 44 -16 44 10 C44 38 26 54 0 56 C-26 54 -44 38 -44 10 C-44 -16 -28 -36 0 -36Z" fill="${DK}"/>
 <circle cx="-15" cy="6" r="14" fill="${WH}"/>
 <circle cx="15" cy="6" r="14" fill="${WH}"/>
@@ -233,7 +230,7 @@
 <circle cx="-17" cy="3" r="3.5" fill="${WH}"/>
 <circle cx="13" cy="3" r="3.5" fill="${WH}"/>
 <ellipse cx="0" cy="30" rx="15" ry="9" fill="${HF}"/>
-<g class="es-tongue" style="transform-origin:0px 32px"><rect x="-46" y="28" width="46" height="9" rx="4.5" fill="#ec7194"/></g>
+<g class="es-tongue" style="transform-origin:0px 32px"><rect x="-44" y="28" width="44" height="9" rx="4.5" fill="#ec7194"/></g>
 <ellipse cx="3" cy="30" rx="12" ry="9" fill="${HF}"/>
 <ellipse cx="3" cy="28" rx="3.5" ry="2.5" fill="${DK}"/>
 <g class="es-ear-back" style="transform-origin:-26px -22px"><path d="M-26 -22 C-34 -20 -76 -8 -82 2 C-76 14 -34 4 -24 -10Z" fill="${DK}"/></g>
@@ -425,7 +422,7 @@
   const ST = { FALL: 'fall', WALK: 'walk', RUN: 'run', DANCE: 'dance', SCRATCH: 'scratch', HANG: 'hang', YAWN: 'yawn', STARE: 'stare', SLEEP: 'sleep', NOD: 'nod', PIPE: 'pipe', GRAB: 'grab' };
   const BEEHS = ['Beeeh !', 'Bêê !', 'Béé..', 'Bééé !', 'Beeh !!', 'Bêê bêê !', 'Meeeh !', 'BÊÊÊH !'];
   const ZZZES = ['z', 'zz', 'z z z', 'Zzz..', '💤'];
-  const WINDTXT = ['BÊÊÊ !!', 'Aaah !', 'Noooon !', 'Beeeh !!', '💨'];
+  const WINDTXT = ['BÊÊÊ !!', 'Bêêêê !', 'Beeeh !!', 'Béééh !', 'Bêêh !', '💨'];
   const POSE_MAP = { [ST.WALK]: 'W-walk', [ST.RUN]: 'W-run', [ST.FALL]: 'W-fall', [ST.SLEEP]: 'W-sleep', [ST.YAWN]: 'W-yawn', [ST.NOD]: 'W-nod', [ST.SCRATCH]: 'W-scratch', [ST.STARE]: 'W-stare', [ST.DANCE]: 'W-dance', [ST.HANG]: 'W-hang' };
 
   function surfs() { return [{ x: 0, y: gnd(), w: viewW(), isGround: true }, ...PLATS.map(p => ({ x: p.x, y: p.y, w: p.w, isGround: false }))]; }
@@ -593,75 +590,71 @@
   function enterPipe(s, entryPipe) {
     s.state = ST.PIPE; s.surf = null; s.vx = 0; s.vy = 0; clearZzz(s);
 
-    // Force the front-facing standing sprite for the pipe entry (no profile run sprite).
+    // Force the front-facing standing sprite for the pipe entry.
     s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','open',s.black)}</svg>`;
     s.el.style.transform = '';
 
-    // === MARIO ENTRY: sprite positioned ABOVE the pipe cap, slides down, clipped at cap line ===
-    // The sheep starts standing on top of the pipe (feet at cap level).
-    // As it slides down, a horizontal clip-path hides everything that goes below the cap.
-    // No fade — the clip itself makes the sheep "disappear" into the pipe.
+    // === MARIO ENTRY: sprite starts ABOVE pipe cap, slides down. ===
+    // The clip line is FIXED in document space at the cap top (mouthY).
+    // As the sprite translates down by N px, the clip-path "bottom inset" must increase by N
+    // so the clip line stays at mouthY in viewport space.
+    //
+    // Sprite top y in viewport = s.y (initial) + translateY (animation).
+    // We want bottom-of-visible region (in viewport) = mouthY.
+    // So: visible-height-in-sprite = mouthY - s.y - translateY.
+    // Clip inset bottom = SZ*2 - visible-height = SZ*2 - mouthY + s.y + translateY.
+
     s.x = entryPipe.midX - SZ;
-    if (entryPipe.mouthDir === 'up') {
-      // Ground pipe: position the sprite so its FEET rest exactly ON THE TOP EDGE of the cap.
-      // mouthY = top of the cap. Sprite foot Y in document = s.y + SZ*2 - FOOT_OFFSET.
-      // Setting foot Y = mouthY → s.y = mouthY - SZ*2 + FOOT_OFFSET.
-      s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
-    } else {
-      // Hanging pipe (mouth down): mirror — sprite head touches the cap bottom edge
-      s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
-    }
+    // Position: feet rest exactly on top of cap (mouthY = top of cap)
+    s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
     pos(s);
 
     const sprH = SZ * 2;
-    // Visible height = portion of sprite that is ABOVE the cap line (before slide).
-    const visibleH = Math.max(0, entryPipe.mouthY - s.y);
+    // At translateY=0, bottom inset = sprH - (mouthY - s.y) = sprH - (SZ*2 - FOOT_OFFSET) = FOOT_OFFSET
+    // Round value: hide just the FOOT_OFFSET bottom padding (10px) at start
+    const initialClip = sprH - (entryPipe.mouthY - s.y);
+    // At translateY=sprH, bottom inset = initialClip + sprH = entire sprite hidden
+    const finalClip = initialClip + sprH;
 
-    s.el.style.zIndex = Z_DECOR + 1; // sheep above pipe; clip removes the part below cap
-    s.el.style.clipPath = `inset(0 0 ${sprH - visibleH}px 0)`;
+    s.el.style.zIndex = Z_DECOR + 1;
+    s.el.style.clipPath = `inset(0 0 ${initialClip}px 0)`;
     void s.el.offsetWidth;
-    s.el.style.transition = 'transform .55s cubic-bezier(.4,.05,.6,1), clip-path .55s cubic-bezier(.4,.05,.6,1)';
-    const enterDir = entryPipe.mouthDir === 'up' ? 1 : -1;
-    // At end: translateY = sprite height → entire sprite is below cap = entirely clipped
-    s.el.style.transform = `translateY(${enterDir * sprH}px)`;
-    s.el.style.clipPath = `inset(0 0 ${sprH}px 0)`;
+    s.el.style.transition = 'transform .55s ease-in, clip-path .55s ease-in';
+    s.el.style.transform = `translateY(${sprH}px)`;
+    s.el.style.clipPath = `inset(0 0 ${finalClip}px 0)`;
 
     setTimeout(() => {
       s.el.style.transition = '';
       s.el.style.transform = '';
       s.el.style.clipPath = '';
       s.el.style.zIndex = '';
-      s.el.style.opacity = '0'; // hidden during teleport
-      // Choose a random exit pipe
+      s.el.style.opacity = '0';
+
       const candidates = ALL_PIPES.filter(p => p !== entryPipe);
       if (!candidates.length) candidates.push(entryPipe);
       const out = candidates[Math.floor(Math.random() * candidates.length)];
 
-      // Final position when fully out: feet on the top edge of the exit pipe cap
+      // Final position: feet on top of exit pipe cap
       s.x = out.midX - SZ;
-      if (out.mouthDir === 'up') {
-        s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
-      } else {
-        s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
-      }
+      s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
       pos(s);
 
       s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','open',s.black)}</svg>`;
 
-      // Start position: tucked DOWN inside the pipe — clip masks all of it
-      const exitDir = out.mouthDir === 'up' ? 1 : -1;
+      // Start: sprite tucked DOWN (translateY = sprH), entirely clipped (bottom inset = finalClip)
+      const initialClip2 = sprH - (out.mouthY - s.y);
+      const finalClip2 = initialClip2 + sprH;
       s.el.style.zIndex = Z_DECOR + 1;
-      s.el.style.transform = `translateY(${exitDir * sprH}px)`;
-      s.el.style.clipPath = `inset(0 0 ${sprH}px 0)`;
+      s.el.style.clipPath = `inset(0 0 ${finalClip2}px 0)`;
+      s.el.style.transform = `translateY(${sprH}px)`;
       s.el.style.opacity = '1';
 
       void s.el.offsetWidth;
 
-      // Animate out: slide back up to natural position, clip recedes to 0
-      s.el.style.transition = 'transform .55s cubic-bezier(.3,.7,.5,1), clip-path .55s cubic-bezier(.3,.7,.5,1)';
+      // Animate out: slide back up, clip recedes back to initial
+      s.el.style.transition = 'transform .55s ease-out, clip-path .55s ease-out';
       s.el.style.transform = '';
-      const visibleH2 = Math.max(0, out.mouthY - s.y);
-      s.el.style.clipPath = `inset(0 0 ${sprH - visibleH2}px 0)`;
+      s.el.style.clipPath = `inset(0 0 ${initialClip2}px 0)`;
 
       setTimeout(() => {
         s.el.style.transition = '';
@@ -671,7 +664,7 @@
         if (out.mouthDir === 'up') {
           // Mario-style: sideways jump out of the pipe
           s.vy = -(8 + Math.random() * 3);
-          s.vx = (Math.random() < .5 ? -1 : 1) * (4 + Math.random() * 2); // side jump
+          s.vx = (Math.random() < .5 ? -1 : 1) * (4 + Math.random() * 2);
         } else {
           s.vy = 1 + Math.random() * 2;
           s.vx = (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 2);
@@ -733,7 +726,7 @@
       case ST.WALK:
       case ST.RUN: {
         const crowdedNow = isCrowded(s);
-        const spd = s.state === ST.RUN ? (crowdedNow ? 4.5 : 2.8) : (crowdedNow ? 1.8 : 0.9);
+        const spd = s.state === ST.RUN ? (crowdedNow ? 2.8 : 1.8) : (crowdedNow ? 1.8 : 0.9);
         if (s.surf && !s.surf.isGround) {
           if (s.x + SZ * 2 < s.surf.x - 2 || s.x > s.surf.x + s.surf.w + 2) { s.surf = null; s.state = ST.FALL; s.vy = .5; break; }
           if (s.x <= s.surf.x) { s.x = s.surf.x; s.dir = 1; xfm(s); }
@@ -1107,8 +1100,10 @@
     }, delay);
   }
 
-  // ── SOCIAL: fights only (no chat) ──
+  // ── SOCIAL: BEH dialogues + occasional fights ──
   let socialFrame = 0;
+  // Variations of "Bêêêh" — only animal sounds, no words
+  const BEH_TXT = ['Bêê', 'Bêêêh', 'Bêêh ?', 'Bê !', 'Bêêêêh', 'Mêêh', 'Mêh', 'Bééé', 'Bê bê', 'Bêêêh.', 'Bêh ?'];
   function socialTick() {
     socialFrame++;
     if (socialFrame % 30 !== 0) return; // check every ~0.5s
@@ -1122,11 +1117,12 @@
         const dy = (a.y + SZ) - (b.y + SZ);
         const dist = Math.hypot(dx, dy);
 
-        // === VIOLENT FIGHT: close + walking/running toward each other ===
+        // === FIGHT: rare (5% chance when conditions met) but violent ===
         if (dist < SZ * 1.3 && Math.abs(dy) < SZ * .8 &&
             (a.state === ST.WALK || a.state === ST.RUN) &&
             (b.state === ST.WALK || b.state === ST.RUN) &&
-            ((dx > 0 && a.dir < 0 && b.dir > 0) || (dx < 0 && a.dir > 0 && b.dir < 0))) {
+            ((dx > 0 && a.dir < 0 && b.dir > 0) || (dx < 0 && a.dir > 0 && b.dir < 0)) &&
+            Math.random() < .05) {
 
           const fx = (a.x + b.x) / 2 + SZ;
           const fy = (a.y + b.y) / 2 + SZ;
@@ -1137,7 +1133,7 @@
           document.body.appendChild(flash);
           setTimeout(() => flash.remove(), 550);
 
-          // Multiple impact stars/sparks
+          // Multiple impact stars
           for (let k = 0; k < 12; k++) {
             const angle = (k / 12) * Math.PI * 2;
             const dist2 = 30 + Math.random() * 40;
@@ -1150,24 +1146,23 @@
             setTimeout(() => star.remove(), 800);
           }
 
-          // Onomatopoeia: BAM/POW/KO
           ft({ x: fx - 30, y: fy - 30 }, ['BAM !', 'POW !', 'BOUM !', 'PAF !'][Math.floor(Math.random() * 4)], '#fbbf24');
 
-          // BOTH sheep get violently knocked away — no winner this time, real bagarre
+          // BOTH sheep get violently knocked away
           const aDir = (a.x < b.x) ? -1 : 1;
           const bDir = -aDir;
           a.surf = null; a.state = ST.FALL;
-          a.vx = aDir * (14 + Math.random() * 6);   // was 8 — much more violent
-          a.vy = -(9 + Math.random() * 4);          // was 5 — much higher launch
+          a.vx = aDir * (14 + Math.random() * 6);
+          a.vy = -(9 + Math.random() * 4);
           a.dir = aDir; xfm(a);
           b.surf = null; b.state = ST.FALL;
           b.vx = bDir * (14 + Math.random() * 6);
           b.vy = -(9 + Math.random() * 4);
           b.dir = bDir; xfm(b);
 
-          // Pain shouts
-          ft(a, ['AÏE !', 'BÊÊÊ !', 'OUCH !'][Math.floor(Math.random() * 3)], '#ef4444');
-          ft(b, ['AÏE !', 'BÊÊÊ !', 'OUCH !'][Math.floor(Math.random() * 3)], '#ef4444');
+          // Pain BEH (no words)
+          ft(a, 'BÊÊÊH !', '#ef4444');
+          ft(b, 'BÊÊÊH !', '#ef4444');
 
           // Screen shake
           if (typeof document !== 'undefined' && document.body) {
@@ -1177,7 +1172,18 @@
             setTimeout(() => { document.body.style.transform = ''; document.body.style.transition = ''; }, 160);
           }
 
-          return; // one event per tick
+          return;
+        }
+
+        // === BEH chat: close-ish, both calm, occasional dialogue (BEH only, no words) ===
+        if (dist < 180 && dist > SZ * 1.2 && Math.random() < .08 &&
+            (a.state === ST.WALK || a.state === ST.STARE) &&
+            (b.state === ST.WALK || b.state === ST.STARE)) {
+          ft(a, BEH_TXT[Math.floor(Math.random() * BEH_TXT.length)], '#fff');
+          setTimeout(() => {
+            if (b.alive) ft(b, BEH_TXT[Math.floor(Math.random() * BEH_TXT.length)], '#fff');
+          }, 400 + Math.random() * 600);
+          return;
         }
       }
     }
