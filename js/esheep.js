@@ -95,6 +95,12 @@
 @keyframes esBlinkD{0%,82%,100%{transform:scaleY(0)}88%{transform:scaleY(1)}}
 @keyframes esTWag{0%,100%{transform:rotate(-14deg) scale(1)}50%{transform:rotate(14deg) scale(1.08)}}
 @keyframes esZzUp{0%{transform:translateY(0) scale(1);opacity:.9}100%{transform:translateY(-28px) scale(.5);opacity:0}}
+@keyframes esSerpent{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
+.es-tongue{animation:esSerpent .5s ease-in-out infinite}
+.es-ear-back{animation:esSerpent .5s ease-in-out infinite}
+.es-ear-front{animation:esSerpent .5s ease-in-out infinite -.25s}
+@keyframes esGhostRise{0%{transform:translateY(0);opacity:0}15%{opacity:.95}100%{transform:translateY(-90px);opacity:0}}
+@keyframes esCloudDrift{0%,100%{transform:translateX(-25px)}50%{transform:translateX(25px)}}
 @keyframes esPipeFall{0%{transform:translateY(-120px);opacity:0}8%{opacity:1}100%{transform:translateY(0);opacity:1}}
 @keyframes esPipeHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes esCloudFloat{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
@@ -193,8 +199,48 @@
     return `${L_(45,138,'ls')}${L_(95,138,'ls')}${T_(18,115,black)}${W_(80,105,58,black)}${L_(36,134,'ls')}${L_(86,134,'ls')}${E_(80,50)}${H_(80,50,'sleep')}`;
   }
   function pRun(black = false) {
+    // New design: long body, uniform wool, front-facing head, tongue + animated ears + tail
+    // Coordinates aligned with sheep viewBox -10 -5 180 215, body centred ~ x=80
     const wc = black ? '#1c1c1c' : WO;
-    return `<g transform="translate(-8,0)">${L_(24,136,'lrb')}${L_(56,140,'lrb')}<ellipse cx="88" cy="100" rx="68" ry="50" fill="${wc}"/><circle cx="34" cy="88" r="36" fill="${wc}"/><circle cx="52" cy="62" r="36" fill="${wc}"/><circle cx="82" cy="54" r="34" fill="${wc}"/><circle cx="112" cy="62" r="34" fill="${wc}"/><circle cx="130" cy="84" r="32" fill="${wc}"/><circle cx="126" cy="108" r="28" fill="${wc}"/>${T_(10,102,black)}<circle cx="36" cy="108" r="28" fill="${wc}"/><circle cx="14" cy="94" r="20" fill="${wc}"/>${L_(88,136,'lra')}${L_(116,132,'lra')}<g class="e-run" style="transform-origin:148px 58px"><path d="M148 58 C154 56 192 64 196 72 C188 82 154 76 146 68Z" fill="${DK}"/></g><path d="M152 30 C174 30 188 48 188 68 C188 90 174 106 152 108 C130 106 116 90 116 68 C116 48 130 30 152 30Z" fill="${DK}"/><circle cx="162" cy="64" r="12" fill="${WH}"/><circle cx="163" cy="66" r="7" fill="${DK}"/><circle cx="160" cy="61" r="3" fill="${WH}"/><ellipse cx="178" cy="82" rx="8" ry="5" fill="${HF}" opacity=".6"/></g>`;
+    return `<g transform="translate(0,30)">
+<g class="lrb" style="transform-origin:16px 100px"><rect x="10" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="7" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lrb" style="transform-origin:38px 100px"><rect x="32" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="29" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:130px 100px"><rect x="124" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="121" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<g class="lra" style="transform-origin:150px 100px"><rect x="144" y="90" width="13" height="50" rx="5" fill="${DK}"/><rect x="141" y="136" width="19" height="7" rx="3" fill="${HF}"/></g>
+<ellipse cx="84" cy="62" rx="86" ry="30" fill="${wc}"/>
+<circle cx="10" cy="40" r="24" fill="${wc}"/>
+<circle cx="36" cy="32" r="24" fill="${wc}"/>
+<circle cx="62" cy="28" r="24" fill="${wc}"/>
+<circle cx="88" cy="28" r="24" fill="${wc}"/>
+<circle cx="114" cy="32" r="24" fill="${wc}"/>
+<circle cx="140" cy="40" r="24" fill="${wc}"/>
+<circle cx="-2" cy="52" r="22" fill="${wc}"/>
+<circle cx="0" cy="72" r="22" fill="${wc}"/>
+<circle cx="14" cy="82" r="22" fill="${wc}"/>
+<circle cx="40" cy="88" r="22" fill="${wc}"/>
+<circle cx="66" cy="90" r="22" fill="${wc}"/>
+<circle cx="92" cy="90" r="22" fill="${wc}"/>
+<circle cx="118" cy="88" r="22" fill="${wc}"/>
+<circle cx="142" cy="82" r="22" fill="${wc}"/>
+<circle cx="158" cy="70" r="20" fill="${wc}"/>
+<circle cx="160" cy="52" r="18" fill="${wc}"/>
+<g class="t-wag" style="transform-origin:-18px 28px"><circle cx="-18" cy="28" r="14" fill="${wc}"/></g>
+<g transform="translate(174,28)">
+<path d="M0 -32 C22 -32 36 -16 36 4 C36 26 22 40 0 42 C-22 40 -36 26 -36 4 C-36 -16 -22 -32 0 -32 Z" fill="${DK}"/>
+<circle cx="-12" cy="-2" r="9" fill="${WH}"/>
+<circle cx="12" cy="-2" r="9" fill="${WH}"/>
+<circle cx="-11" cy="0" r="5" fill="${DK}"/>
+<circle cx="13" cy="0" r="5" fill="${DK}"/>
+<circle cx="-13" cy="-4" r="2" fill="${WH}"/>
+<circle cx="11" cy="-4" r="2" fill="${WH}"/>
+<ellipse cx="0" cy="20" rx="13" ry="8" fill="${HF}"/>
+<g class="es-tongue" style="transform-origin:0px 22px"><rect x="-40" y="18" width="40" height="8" rx="4" fill="#ec7194"/></g>
+<ellipse cx="3" cy="20" rx="10" ry="8" fill="${HF}"/>
+<ellipse cx="3" cy="18" rx="3" ry="2.2" fill="${DK}"/>
+<g class="es-ear-back" style="transform-origin:-22px -20px"><path d="M-22 -20 C-30 -18 -68 -8 -74 2 C-68 12 -30 2 -20 -10Z" fill="${DK}"/></g>
+<g class="es-ear-front" style="transform-origin:22px -20px"><path d="M22 -20 C14 -18 -24 -8 -30 2 C-24 12 14 2 24 -10Z" fill="${DK}" stroke="#1a0e08" stroke-width="1.5"/></g>
+</g>
+</g>`;
   }
   function pDance(black = false) {
     return `${T_(18,115,black)}${W_(80,108,58,black)}${LB_(52,126,-50,42,'dla')}${LB_(108,126,-130,42,'dlb')}${E_(80,54)}${H_(80,54)}${L_(46,136,'dl')}${L_(88,136,'dr')}`;
@@ -305,17 +351,22 @@
     if (PLATS.length >= 5) {
       const cloudCx = W * 0.5;
       const cloudCy = top + 30;
-      // Build cloud
+      // Build cloud — wrapper that drifts horizontally
       const cloud = document.createElement('div');
       cloud.className = 'es-cloud';
-      cloud.style.cssText = `position:fixed;left:${cloudCx - 75}px;top:${cloudCy - 22}px;width:150px;height:50px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudFloat 6s ease-in-out infinite`;
+      cloud.style.cssText = `position:fixed;left:${cloudCx - 95}px;top:${cloudCy - 30}px;width:190px;height:70px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudDrift 14s ease-in-out infinite`;
       cloud.innerHTML = `
-        <svg viewBox="0 0 150 50" width="150" height="50" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="40" cy="32" rx="28" ry="14" fill="#cbd5e1" opacity=".88"/>
-          <ellipse cx="70" cy="22" rx="32" ry="18" fill="#e2e8f0" opacity=".92"/>
-          <ellipse cx="100" cy="28" rx="30" ry="16" fill="#cbd5e1" opacity=".9"/>
-          <ellipse cx="120" cy="34" rx="22" ry="12" fill="#94a3b8" opacity=".85"/>
-          <ellipse cx="55" cy="38" rx="24" ry="10" fill="#94a3b8" opacity=".75"/>
+        <svg viewBox="0 0 190 70" width="190" height="70" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <ellipse cx="95" cy="44" rx="92" ry="11" fill="#a8b8c8" opacity=".55"/>
+          <ellipse cx="50" cy="40" rx="36" ry="20" fill="#a8b8c8"/>
+          <ellipse cx="138" cy="42" rx="32" ry="18" fill="#a8b8c8"/>
+          <ellipse cx="60" cy="32" rx="38" ry="22" fill="#e8eef4"/>
+          <ellipse cx="100" cy="22" rx="44" ry="26" fill="#f5f8fb"/>
+          <ellipse cx="138" cy="32" rx="36" ry="22" fill="#e8eef4"/>
+          <ellipse cx="34" cy="42" rx="22" ry="14" fill="#d8e1ea"/>
+          <ellipse cx="160" cy="44" rx="22" ry="14" fill="#d8e1ea"/>
+          <ellipse cx="90" cy="10" rx="18" ry="6" fill="#ffffff" opacity=".75"/>
+          <ellipse cx="120" cy="8" rx="12" ry="4" fill="#ffffff" opacity=".65"/>
         </svg>
       `;
       document.body.appendChild(cloud);
@@ -324,11 +375,9 @@
 
       // Sky pipe: mouth down, body hidden inside cloud
       const skyPipeBodyH = 40;
-      const skyPipeCapH = 16;
-      const skyPipeTotal = skyPipeBodyH + skyPipeCapH;
-      const skyPipe = mkPipe(cloudCx - 27, cloudCy + 5, skyPipeBodyH, 'down');
-      // Override animation to make it float with cloud
-      skyPipe.el.style.animation = 'esCloudFloat 6s ease-in-out infinite';
+      const skyPipe = mkPipe(cloudCx - 27, cloudCy + 8, skyPipeBodyH, 'down');
+      // Pipe drifts together with the cloud — same animation
+      skyPipe.el.style.animation = 'esCloudDrift 14s ease-in-out infinite';
       ALL_PIPES.push(skyPipe);
     }
 
@@ -352,7 +401,17 @@
     DECOR.forEach(e => { e.style.transition = 'opacity 1.8s ease'; e.style.opacity = '0'; });
   }
   function checkDecor() {
-    if (allSheep.filter(s => s.alive).length === 0 && decorOn) hideDecor();
+    if (allSheep.filter(s => s.alive).length === 0 && decorOn) {
+      hideDecor();
+      // Auto-stop: cancel timers so no phantom wind/lightning/tornado fires later
+      autoStopTimers();
+    }
+  }
+  function autoStopTimers() {
+    if (lightTimer) { clearTimeout(lightTimer); lightTimer = null; }
+    if (windTimer) { clearTimeout(windTimer); windTimer = null; }
+    if (autoWindTimer) { clearTimeout(autoWindTimer); autoWindTimer = null; }
+    if (tornadoTimer) { clearTimeout(tornadoTimer); tornadoTimer = null; }
   }
 
   // ── STATE / SHEEP LOGIC ──
@@ -500,6 +559,9 @@
     });
     allSheep.push(s);
     showDecor();
+    // If timers were auto-stopped, restart them
+    if (active && !lightTimer) schedLight();
+    if (active && !tornadoTimer) schedTornado();
     setTimeout(() => {
       if (!s.alive) return;
       s.alive = false; clearZzz(s);
@@ -523,42 +585,65 @@
 
   function enterPipe(s, entryPipe) {
     s.state = ST.PIPE; s.surf = null; s.vx = 0; s.vy = 0; clearZzz(s);
-    const sv = s.el.querySelector('svg'); if (sv) sv.classList.add('es-p-in');
+
+    // === MARIO ENTRY: progressive slide-down + fade ===
+    // Position the sheep right at the pipe mouth, then slide it down + clip it
+    s.x = entryPipe.midX - SZ;
+    if (entryPipe.mouthDir === 'up') {
+      s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
+    } else {
+      s.y = entryPipe.mouthY - SZ * 2 + FOOT_OFFSET;
+    }
+    pos(s);
+    // Animate: progressively translateY downward into the pipe + scaleY squash + fade
+    s.el.style.transition = 'transform .45s cubic-bezier(.4,.1,.6,1), opacity .35s ease-in .15s';
+    const enterDir = entryPipe.mouthDir === 'up' ? 1 : -1;
+    s.el.style.transform = `translateY(${enterDir * (SZ * 1.6)}px) scaleY(.45)`;
+    s.el.style.opacity = '0';
+
     setTimeout(() => {
-      if (sv) sv.classList.remove('es-p-in');
+      s.el.style.transition = '';
+      s.el.style.transform = '';
       s.el.style.opacity = '0';
+      // Choose a random exit pipe
+      const candidates = ALL_PIPES.filter(p => p !== entryPipe);
+      if (!candidates.length) candidates.push(entryPipe);
+      const out = candidates[Math.floor(Math.random() * candidates.length)];
+
+      // Position sheep INSIDE the exit pipe, ready to slide out
+      s.x = out.midX - SZ;
+      if (out.mouthDir === 'up') {
+        s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
+      } else {
+        s.y = out.mouthY - SZ * 2 + FOOT_OFFSET;
+      }
+      pos(s);
+      // Start position: tucked inside the pipe (squashed + offset)
+      const exitDir = out.mouthDir === 'up' ? 1 : -1;
+      s.el.style.transform = `translateY(${exitDir * (SZ * 1.6)}px) scaleY(.45)`;
+      s.el.style.opacity = '1';
+      rdr(s, ST.FALL);
+
+      // Force reflow so the next transition triggers
+      void s.el.offsetWidth;
+
+      // Animate out: slide back to natural position
+      s.el.style.transition = 'transform .45s cubic-bezier(.3,.7,.5,1.2)';
+      s.el.style.transform = '';
+
       setTimeout(() => {
-        // Choose a random exit pipe — anything except the entry pipe
-        const candidates = ALL_PIPES.filter(p => p !== entryPipe);
-        if (!candidates.length) {
-          // edge case: no other pipes, exit from same one
-          candidates.push(entryPipe);
-        }
-        const out = candidates[Math.floor(Math.random() * candidates.length)];
-        // Position sheep at the mouth of the exit pipe
-        s.x = out.midX - SZ;
+        s.el.style.transition = '';
+        s.state = ST.FALL;
         if (out.mouthDir === 'up') {
-          // Pop out from top of pipe, going up
-          s.y = out.mouthY - SZ * 2 + FOOT_OFFSET - 4;
+          // Mario-style: little jump out of the pipe
+          s.vy = -(7 + Math.random() * 3);
         } else {
-          // Pop out from bottom of pipe (hanging pipe), falling down
-          s.y = out.mouthY + 4;
+          s.vy = 1 + Math.random() * 2;
         }
-        pos(s); s.el.style.opacity = '1'; rdr(s, ST.FALL);
-        const sv2 = s.el.querySelector('svg'); if (sv2) sv2.classList.add('es-p-out');
-        setTimeout(() => {
-          if (sv2) sv2.classList.remove('es-p-out');
-          s.state = ST.FALL;
-          if (out.mouthDir === 'up') {
-            s.vy = -(5 + Math.random() * 3);
-          } else {
-            s.vy = 1 + Math.random() * 2;
-          }
-          s.vx = (Math.random() - .5) * 2;
-          s.dir = s.vx >= 0 ? 1 : -1; xfm(s);
-        }, 380);
-      }, 320);
-    }, 350);
+        s.vx = (Math.random() - .5) * 2;
+        s.dir = s.vx >= 0 ? 1 : -1; xfm(s);
+      }, 450);
+    }, 500);
   }
 
   function tick(s) {
@@ -677,6 +762,7 @@
   let windActive = false;
   function triggerWind() {
     if (windActive) return;
+    if (allSheep.filter(s => s.alive).length === 0) return;
     windActive = true;
     const H = window.innerHeight;
     const top = topMargin();
@@ -691,7 +777,9 @@
       if (!s.alive || s.grabbed || s.state === ST.PIPE) return;
       clearZzz(s); s.surf = null; s.windOut = true;
       s.vx = -(9 + Math.random() * 7); s.vy = -(1 + Math.random() * 3); s.dir = -1;
-      s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" class="W-wind" style="--fx:-1">${pWindFly(s.black)}</svg>`;
+      // KO sheep also get blown away — render them as flying KO (black + dead eyes)
+      const flyBlack = s.black || s.state === 'ko';
+      s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" class="W-wind" style="--fx:-1">${pWindFly(flyBlack)}</svg>`;
       ft(s, WINDTXT[Math.floor(Math.random() * WINDTXT.length)]);
     });
     hideDecor();
@@ -703,7 +791,7 @@
 
   // ── LIGHTNING ──
   function lightning() {
-    const tgts = allSheep.filter(s => s.alive && !s.grabbed && s.state !== ST.PIPE && !s.windOut);
+    const tgts = allSheep.filter(s => s.alive && !s.grabbed && s.state !== ST.PIPE && !s.windOut && s.state !== 'ko');
     if (!tgts.length) return;
     const s = tgts[Math.floor(Math.random() * tgts.length)];
     const cx = s.x + SZ, top = topMargin(), bH = Math.max(10, s.y - top);
@@ -729,24 +817,14 @@
     document.body.appendChild(bm); setTimeout(() => bm.remove(), 900);
     setTimeout(() => {
       if (!s.alive) return;
-      s.alive = false; clearZzz(s);
+      // === KO PROGRESSIF: 1er coup = stun 2s + noir, 2e coup = fantôme + meurt ===
+      s.koCount = (s.koCount || 0) + 1;
+
       // Brief electric flash
       s.el.style.filter = 'brightness(7) sepia(1) saturate(6)';
-      setTimeout(() => { if (s.el) s.el.style.filter = 'sepia(.6) brightness(.85)'; }, 180);
-      // Render KO state with X X eyes (immediately, sheep stays visible 5s)
-      s.state = 'ko';
-      const koSVG = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','dead',s.black)}</svg>`;
-      // Smoke puffs above the KO sheep
-      for (let i = 0; i < 4; i++) {
-        setTimeout(() => {
-          if (!s.el || !s.el.parentNode) return;
-          const sm = document.createElement('div');
-          sm.style.cssText = `position:fixed;z-index:${Z_FLOAT};pointer-events:none;font-size:${12+Math.random()*8}px;left:${s.x+10+Math.random()*(SZ*1.6)}px;top:${s.y+Math.random()*8}px;animation:esFtUp ${1.2+Math.random()*.6}s ease forwards;opacity:.7`;
-          sm.textContent = ['💨', '·', '°'][Math.floor(Math.random() * 3)];
-          document.body.appendChild(sm);
-          setTimeout(() => sm.remove(), 1800);
-        }, 250 + i * 600);
-      }
+      setTimeout(() => { if (s.el) s.el.style.filter = ''; }, 180);
+      clearZzz(s);
+
       // Initial sparks
       for (let i = 0; i < 5; i++) {
         const sp = document.createElement('div');
@@ -755,17 +833,70 @@
         document.body.appendChild(sp);
         setTimeout(() => sp.remove(), 700);
       }
-      setTimeout(() => {
-        if (!s.el) return;
-        s.el.innerHTML = koSVG;
-      }, 380);
-      // Stay KO for ~5s, then fade out and remove
-      setTimeout(() => {
-        if (!s.el) return;
-        s.el.style.transition = 'opacity 1s ease';
-        s.el.style.opacity = '0';
-        setTimeout(() => { if (s.el) { s.el.remove(); } checkDecor(); }, 1100);
-      }, 5000);
+
+      if (s.koCount === 1) {
+        // ===== 1er COUP: KO 2s, devient noir, puis se relève =====
+        s.state = 'ko';
+        s.black = true;
+        s.surf = null;
+        s.vx = 0; s.vy = 0;
+        setTimeout(() => {
+          if (!s.el || !s.alive) return;
+          s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','dead',true)}</svg>`;
+        }, 200);
+        // Recover after 2s — sheep gets back up but stays black
+        setTimeout(() => {
+          if (!s.el || !s.alive) return;
+          s.state = ST.WALK;
+          s.timer = 60 + Math.floor(Math.random() * 60);
+          rdr(s, ST.WALK);
+        }, 2000);
+      } else {
+        // ===== 2e COUP: KO 4s + fantôme + disparait =====
+        s.alive = false;
+        s.state = 'ko';
+        s.surf = null;
+        s.vx = 0; s.vy = 0;
+        setTimeout(() => {
+          if (!s.el) return;
+          s.el.innerHTML = `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" style="--fx:${s.dir}">${pStand('la','lb','dead',true)}</svg>`;
+        }, 200);
+
+        // Ghost rises from the head
+        setTimeout(() => {
+          if (!s.el || !s.el.parentNode) return;
+          const ghost = document.createElement('div');
+          ghost.style.cssText = `position:fixed;left:${s.x + SZ * .75}px;top:${s.y + 6}px;width:36px;height:42px;z-index:${Z_FLOAT};pointer-events:none;animation:esGhostRise 3.5s ease-out forwards`;
+          ghost.innerHTML = `<svg viewBox="-18 -22 36 42" width="36" height="42" overflow="visible">
+            <path d="M-14 -8 Q-14 -20 0 -20 Q14 -20 14 -8 L14 12 L9 6 L4 12 L0 6 L-4 12 L-9 6 L-14 12 Z" fill="#fff" stroke="#94a3b8" stroke-width="1" opacity=".9"/>
+            <circle cx="-5" cy="-10" r="2.2" fill="#1c1c1c"/>
+            <circle cx="5" cy="-10" r="2.2" fill="#1c1c1c"/>
+            <ellipse cx="0" cy="-2" rx="2.5" ry="2" fill="#1c1c1c"/>
+          </svg>`;
+          document.body.appendChild(ghost);
+          setTimeout(() => ghost.remove(), 3700);
+        }, 800);
+
+        // Smoke puffs
+        for (let i = 0; i < 4; i++) {
+          setTimeout(() => {
+            if (!s.el || !s.el.parentNode) return;
+            const sm = document.createElement('div');
+            sm.style.cssText = `position:fixed;z-index:${Z_FLOAT};pointer-events:none;font-size:${12+Math.random()*8}px;left:${s.x+10+Math.random()*(SZ*1.6)}px;top:${s.y+Math.random()*8}px;animation:esFtUp ${1.2+Math.random()*.6}s ease forwards;opacity:.7`;
+            sm.textContent = ['💨', '·', '°'][Math.floor(Math.random() * 3)];
+            document.body.appendChild(sm);
+            setTimeout(() => sm.remove(), 1800);
+          }, 250 + i * 600);
+        }
+
+        // Stay KO for 4s, then fade out and disappear
+        setTimeout(() => {
+          if (!s.el) return;
+          s.el.style.transition = 'opacity 1s ease';
+          s.el.style.opacity = '0';
+          setTimeout(() => { if (s.el) { s.el.remove(); } checkDecor(); }, 1100);
+        }, 4000);
+      }
     }, 280);
   }
   function schedLight() {
@@ -941,8 +1072,72 @@
     }, delay);
   }
 
+  // ── SOCIAL: dialogue + fight ──
+  let socialFrame = 0;
+  const CHAT_TXT = ['Bêê ?', 'Bêê !', 'Bêê bêê !', 'Béé..', 'Hé !', 'Meeeh ?'];
+  function socialTick() {
+    socialFrame++;
+    if (socialFrame % 30 !== 0) return; // ~ every 0.5s @ 60fps
+    const live = allSheep.filter(s => s.alive && !s.grabbed && s.state !== ST.PIPE && !s.windOut && s.state !== 'ko');
+    if (live.length < 2) return;
+
+    for (let i = 0; i < live.length; i++) {
+      for (let j = i + 1; j < live.length; j++) {
+        const a = live[i], b = live[j];
+        const dx = (a.x + SZ) - (b.x + SZ);
+        const dy = (a.y + SZ) - (b.y + SZ);
+        const dist = Math.hypot(dx, dy);
+
+        // FIGHT: very close + both walking/running toward each other
+        if (dist < SZ * 1.2 && Math.abs(dy) < SZ * .7 &&
+            (a.state === ST.WALK || a.state === ST.RUN) &&
+            (b.state === ST.WALK || b.state === ST.RUN) &&
+            ((dx > 0 && a.dir < 0 && b.dir > 0) || (dx < 0 && a.dir > 0 && b.dir < 0))) {
+          // Clash flash
+          const fx = (a.x + b.x) / 2 + SZ;
+          const fy = (a.y + b.y) / 2 + SZ;
+          const flash = document.createElement('div');
+          flash.style.cssText = `position:fixed;left:${fx-22}px;top:${fy-22}px;width:44px;height:44px;z-index:${Z_FLOAT};pointer-events:none;background:radial-gradient(circle,#fbbf24 0%,rgba(251,191,36,0) 70%);animation:esBFlash .35s ease forwards`;
+          document.body.appendChild(flash);
+          setTimeout(() => flash.remove(), 400);
+          ft({ x: fx - 24, y: fy - 18 }, 'CLASH !', '#fbbf24');
+
+          // Eject the loser (random pick)
+          const loser = Math.random() < .5 ? a : b;
+          const winner = loser === a ? b : a;
+          loser.surf = null;
+          loser.state = ST.FALL;
+          const pushDir = (loser.x < winner.x) ? -1 : 1;
+          loser.vx = pushDir * (8 + Math.random() * 4);
+          loser.vy = -(5 + Math.random() * 3);
+          loser.dir = pushDir;
+          xfm(loser);
+          ft(loser, ['Aïe !', 'BÊÊ !', 'Eh !'][Math.floor(Math.random() * 3)], '#ef4444');
+          // Winner brags
+          if (Math.random() < .5) ft(winner, 'Bêê !', '#fff');
+          return; // one event per tick
+        }
+
+        // CHAT: close-ish, both calm, occasional dialogue
+        if (dist < 180 && dist > SZ * 1.2 && Math.random() < .12 &&
+            (a.state === ST.WALK || a.state === ST.STARE) &&
+            (b.state === ST.WALK || b.state === ST.STARE)) {
+          ft(a, CHAT_TXT[Math.floor(Math.random() * CHAT_TXT.length)], '#fff');
+          setTimeout(() => {
+            if (b.alive) ft(b, CHAT_TXT[Math.floor(Math.random() * CHAT_TXT.length)], '#fff');
+          }, 400 + Math.random() * 400);
+          return;
+        }
+      }
+    }
+  }
+
   // ── LOOP ──
-  function loop() { allSheep.forEach(s => { if (!s.alive) return; tick(s); }); rafId = requestAnimationFrame(loop); }
+  function loop() {
+    allSheep.forEach(s => { if (!s.alive) return; tick(s); });
+    socialTick();
+    rafId = requestAnimationFrame(loop);
+  }
 
   // ── ACTIVATE / DEACTIVATE ──
   function buildDots() {
