@@ -55,8 +55,8 @@
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
 .es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-.es-dotsbar{position:fixed;left:200px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1A2D44;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
-.es-dot{width:10px;height:10px;border-radius:50%;background:#1A2D44;cursor:pointer;transition:background .15s}
+.es-dotsbar{position:fixed;left:200px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
+.es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
 .es-dot.wind:hover{background:#fb923c}
 .es-dot.tornado:hover{background:#B8C9D9}

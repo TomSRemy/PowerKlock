@@ -1418,13 +1418,8 @@ function buildHourlyDetail(idx, z) {
 
   // Annotations
   const annotations = {};
-  if (curSlot > 0) {
-    annotations.nowLine = {
-      type:'line', xMin:curSlot, xMax:curSlot,
-      borderColor:'rgba(255,220,100,.7)', borderWidth:1.5, borderDash:[4,3],
-      label:{display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9,weight:'600'}, backgroundColor:'transparent', padding:2}
-    };
-  }
+  const _nowAnn = nowLineAnnotation({ slots: chartData.length });
+  if (_nowAnn) annotations.nowLine = _nowAnn;
   // Min/Max points — chartData uses raw 96pt (15-min) when available, else 24h
   // minRawIdx/maxRawIdx are already indexes into the raw `hourly` array, which
   // matches chartData when length === 96. When chartData is downsampled (24h),
@@ -1542,7 +1537,34 @@ async function applyExpandKPIColours(idx, z, today) {
 }
 
 
-const COMPARE_COLORS = ['#14D3A9','#C4A57B','#FBBF24','#A87DC4','#ED6965','#94D2BD','#f472b6','#38bdf8','#fb923c','#818cf8'];
+// Compare-mode pool: use SERIES_POOL from globals.js (8 hand-picked + farthest-point fallback)
+const COMPARE_COLORS = SERIES_POOL;
+
+// Build a colour map for a list of zones. Priority:
+//  1. ZONE_COLORS[code] if defined (FR=Mint Leaf, etc — fixed identity)
+//  2. else: pick from SERIES_POOL by index, skipping colours already used
+function buildZoneColorMap(zones) {
+  const map = {};
+  const used = new Set();
+  // Pass 1: assign fixed colours from ZONE_COLORS
+  zones.forEach(z => {
+    const fixed = (typeof ZONE_COLORS !== 'undefined') ? ZONE_COLORS[z.code] : null;
+    if (fixed) { map[z.code] = fixed; used.add(fixed.toUpperCase()); }
+  });
+  // Pass 2: assign generated colours, skipping ones already used by Pass 1
+  let poolIdx = 0;
+  zones.forEach(z => {
+    if (map[z.code]) return;
+    let c, guard = 0;
+    do {
+      c = getSeriesColor(poolIdx++);
+      guard++;
+    } while (used.has(c.toUpperCase()) && guard < 100);
+    map[z.code] = c;
+    used.add(c.toUpperCase());
+  });
+  return map;
+}
 
 function buildCompareDropdown() { buildCompareChips(); } // alias kept
 
@@ -1583,8 +1605,7 @@ function buildCompareChips() {
   if (!container || !window._pricesSorted) return;
   const selected = window._compareZones || new Set(['FR']);
   if (!window._zoneColorMap) {
-    window._zoneColorMap = {};
-    window._pricesSorted.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+    window._zoneColorMap = buildZoneColorMap(window._pricesSorted);
   }
   container.innerHTML = window._pricesSorted.map(z => {
     const isOn = selected.has(z.code);
@@ -1728,10 +1749,9 @@ function ccGetSelectedZones(data, selected) {
 
 function ccZoneColor(code, data, idx) {
   if (!window._zoneColorMap) {
-    window._zoneColorMap = {};
-    data.forEach((z, i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+    window._zoneColorMap = buildZoneColorMap(data);
   }
-  return window._zoneColorMap[code] || COMPARE_COLORS[idx % COMPARE_COLORS.length];
+  return window._zoneColorMap[code] || getSeriesColor(idx);
 }
 
 function ccBuildCommonShading(nPts) {
@@ -1838,10 +1858,7 @@ function renderCCLines(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: { nowline: {
-          type:'line', xMin:curIdx, xMax:curIdx, borderColor:'rgba(255,220,100,.7)', borderWidth:1.5, borderDash:[4,3],
-          label:{ display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9,weight:'600'}, backgroundColor:'transparent', padding:2 }
-        }}}
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts }); return a ? { nowLine: a } : {}; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -1966,11 +1983,16 @@ function renderCCProfile(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(0)}% of daily avg`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: {
-          baseline: { type:'line', yMin:100, yMax:100, borderColor:'rgba(148,163,184,.4)', borderWidth:1, borderDash:[3,3],
-            label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
-          }
-        }}
+        annotation: { annotations: (() => {
+          const ann = {
+            baseline: { type:'line', yMin:100, yMax:100, borderColor:'rgba(148,163,184,.4)', borderWidth:1, borderDash:[3,3],
+              label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
+            }
+          };
+          const a = nowLineAnnotation();
+          if (a) ann.nowLine = a;
+          return ann;
+        })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -2129,11 +2151,16 @@ function renderCCSpread(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; const sign = v >= 0 ? '+' : ''; return ` ${c.dataset.label}: ${sign}${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: {
-          baseline: { type:'line', yMin:0, yMax:0, borderColor:'rgba(148,163,184,.5)', borderWidth:1.5,
-            label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
-          }
-        }}
+        annotation: { annotations: (() => {
+          const ann = {
+            baseline: { type:'line', yMin:0, yMax:0, borderColor:'rgba(148,163,184,.5)', borderWidth:1.5,
+              label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
+            }
+          };
+          const a = nowLineAnnotation();
+          if (a) ann.nowLine = a;
+          return ann;
+        })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},

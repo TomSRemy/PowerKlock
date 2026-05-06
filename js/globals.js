@@ -226,6 +226,47 @@ function rgba(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
+// ── NOW line helper for daily charts
+// Returns a Chart.js annotation object for the current hour, or null if the
+// chart is showing a date other than today (DP.selectedDate is past/future).
+//   - xValue: position on the chart (defaults to current hour 0-23)
+//   - opts.slots: total x-axis slots (24 for hourly, 96 for 15-min). Default 24.
+//   - opts.label: label text (default 'NOW')
+// Usage:
+//   const ann = nowLineAnnotation();           // hourly chart
+//   const ann = nowLineAnnotation({slots:96}); // 15-min chart
+//   if (ann) annotations.nowLine = ann;
+function nowLineAnnotation(opts = {}) {
+  const today = new Date().toISOString().slice(0, 10);
+  const selected = window.DP && window.DP.selectedDate;
+  if (selected && selected !== today) return null;
+
+  const slots = opts.slots || 24;
+  const now = new Date();
+  // For 24h charts: x = hour + minute fraction. For 96-slot 15-min charts: x = hour*4 + minute/15.
+  const x = slots === 96
+    ? now.getHours() * 4 + now.getMinutes() / 15
+    : now.getHours() + now.getMinutes() / 60;
+
+  return {
+    type: 'line',
+    xMin: x,
+    xMax: x,
+    borderColor: '#FFFD82',
+    borderWidth: 1.5,
+    borderDash: [4, 3],
+    label: {
+      display: true,
+      content: opts.label || 'NOW',
+      position: 'start',
+      color: '#FFFD82',
+      font: { size: 10, weight: '600', family: "'IBM Plex Mono', monospace" },
+      backgroundColor: 'transparent',
+      padding: 2,
+    },
+  };
+}
+
 // ── App constants (needed by multiple modules)
 
 const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];

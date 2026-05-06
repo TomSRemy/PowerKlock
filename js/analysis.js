@@ -298,7 +298,7 @@ function drawRenChart() {
         legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
         tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw/1000).toFixed(2)+' GW' } },
         zoom: ZOOM_CFG,
-        annotation:{ annotations:{ nowline:{ type:'line', xMin:new Date().getHours(), xMax:new Date().getHours(), borderColor:'rgba(255,220,100,.7)', borderWidth:1.5, borderDash:[4,3], label:{ display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9,weight:'600'}, backgroundColor:'transparent', padding:2 } } } },
+        annotation:{ annotations: (() => { const a = nowLineAnnotation(); return a ? { nowLine: a } : {}; })() },
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:8} },

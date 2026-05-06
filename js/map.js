@@ -28,7 +28,7 @@ function geoStyle(feature) {
   const mn = Math.min(...prices);
   const mx = Math.max(...prices);
 
-  let fillColor = '#0A1B2E';
+  let fillColor = '#0f1419';
   let fillOpacity = 0.3;
 
   if (zone) {
@@ -69,7 +69,7 @@ function onEachFeature(feature, layer) {
 
   // Tooltip
   layer.bindTooltip(`
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#FFFFFF;background:#0A1B2E;border:1px solid #244562;border-radius:5px;padding:6px 10px;line-height:1.6">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#FFFFFF;background:#0f1419;border:1px solid #243447;border-radius:5px;padding:6px 10px;line-height:1.6">
       <b style="color:#FFFFFF">${zone.name}</b><br>
       <span style="color:${(zone.today||0)<30?'#14D3A9':(zone.today||0)>100?'#ED6965':'#FFFFFF'}">${(zone.today||0).toFixed(1)} €/MWh</span>
       ${(zone.vsYday||zone.vsY) !== null ? `<span style="color:#B8C9D9"> · ${(zone.vsYday||zone.vsY||0)>=0?'▲':'▼'}${Math.abs(zone.vsYday||zone.vsY||0).toFixed(1)}</span>` : ''}
@@ -316,7 +316,7 @@ function renderMapLegend() {
   } else if (mapView === 'delta') {
     el.innerHTML = [
       {l:'▲ +30€',c:'rgba(240,80,96,.9)'},{l:'▲ +15€',c:'rgba(240,80,96,.5)'},
-      {l:'≈ 0',c:'#1A2D44'},
+      {l:'≈ 0',c:'#1e2d3d'},
       {l:'▼ -15€',c:'rgba(16,185,129,.5)'},{l:'▼ -30€',c:'rgba(16,185,129,.9)'},
     ].map(s=>`<div style="display:flex;align-items:center;gap:6px">
       <div style="width:14px;height:8px;border-radius:2px;background:${s.c}"></div>
@@ -395,7 +395,12 @@ function showMapDetail(zone) {
     }]},
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.raw.toFixed(2)+' €/MWh'}}, zoom:ZOOM_CFG },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>ctx.raw.toFixed(2)+' €/MWh'}},
+        zoom:ZOOM_CFG,
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: hourly.length }); return a ? { nowLine: a } : {}; })() }
+      },
       scales:{
         x:{grid:GRID, ticks:{color:C_TX3}},
         y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+'€'}}
@@ -409,14 +414,14 @@ function showMapDetail(zone) {
 const mapStyle = document.createElement('style');
 mapStyle.textContent = `
   .map-popup .leaflet-popup-content-wrapper {
-    background:#0A1B2E;border:1px solid #244562;border-radius:8px;color:#FFFFFF;box-shadow:0 8px 32px rgba(0,0,0,.5);
+    background:#0f1419;border:1px solid #243447;border-radius:8px;color:#FFFFFF;box-shadow:0 8px 32px rgba(0,0,0,.5);
   }
-  .map-popup .leaflet-popup-tip { background:#0A1B2E; }
+  .map-popup .leaflet-popup-tip { background:#0f1419; }
   .map-popup .leaflet-popup-content { margin:14px; }
   .map-popup .leaflet-popup-close-button { color:#B8C9D9!important;font-size:16px!important; }
-  .leaflet-control-zoom a { background:#0A1B2E!important;border-color:#244562!important;color:#B8C9D9!important; }
+  .leaflet-control-zoom a { background:#0f1419!important;border-color:#243447!important;color:#B8C9D9!important; }
   .leaflet-control-zoom a:hover { background:#131d28!important;color:#FFFFFF!important; }
-  .leaflet-bar { border:1px solid #244562!important;border-radius:6px!important;overflow:hidden; }
+  .leaflet-bar { border:1px solid #243447!important;border-radius:6px!important;overflow:hidden; }
   .leaflet-attribution-flag { display:none!important; }
   .geo-tooltip { background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important; }
   .geo-tooltip .leaflet-tooltip-content { padding:0; }
