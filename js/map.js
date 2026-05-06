@@ -28,7 +28,7 @@ function geoStyle(feature) {
   const mn = Math.min(...prices);
   const mx = Math.max(...prices);
 
-  let fillColor = '#0e151d';
+  let fillColor = '#0A1B2E';
   let fillOpacity = 0.3;
 
   if (zone) {
@@ -69,11 +69,11 @@ function onEachFeature(feature, layer) {
 
   // Tooltip
   layer.bindTooltip(`
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#dce8f5;background:#0e151d;border:1px solid #223344;border-radius:5px;padding:6px 10px;line-height:1.6">
-      <b style="color:#dce8f5">${zone.name}</b><br>
-      <span style="color:${(zone.today||0)<30?'#10b981':(zone.today||0)>100?'#f05060':'#dce8f5'}">${(zone.today||0).toFixed(1)} €/MWh</span>
-      ${(zone.vsYday||zone.vsY) !== null ? `<span style="color:#7a9ab8"> · ${(zone.vsYday||zone.vsY||0)>=0?'▲':'▼'}${Math.abs(zone.vsYday||zone.vsY||0).toFixed(1)}</span>` : ''}
-      ${(zone.negHrs||zone.neg||0)>0 ? `<br><span style="color:#e8a020">${zone.negHrs||zone.neg}h negative</span>` : ''}
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#FFFFFF;background:#0A1B2E;border:1px solid #244562;border-radius:5px;padding:6px 10px;line-height:1.6">
+      <b style="color:#FFFFFF">${zone.name}</b><br>
+      <span style="color:${(zone.today||0)<30?'#14D3A9':(zone.today||0)>100?'#ED6965':'#FFFFFF'}">${(zone.today||0).toFixed(1)} €/MWh</span>
+      ${(zone.vsYday||zone.vsY) !== null ? `<span style="color:#B8C9D9"> · ${(zone.vsYday||zone.vsY||0)>=0?'▲':'▼'}${Math.abs(zone.vsYday||zone.vsY||0).toFixed(1)}</span>` : ''}
+      ${(zone.negHrs||zone.neg||0)>0 ? `<br><span style="color:#EE9B00">${zone.negHrs||zone.neg}h negative</span>` : ''}
     </div>
   `, { sticky: true, className: 'geo-tooltip' });
 }
@@ -135,7 +135,7 @@ function addMapPriceLabels() {
     else { val = (zone.vsYday||0)>=0?'+'+zone.vsYday?.toFixed(1):zone.vsYday?.toFixed(1); unit='€'; }
 
     const textColor = mapView==='price'
-      ? (zone.today<20?'#10b981':zone.today>100?'#fca5a5':'#fff')
+      ? (zone.today<20?'#14D3A9':zone.today>100?'#fca5a5':'#fff')
       : '#fff';
 
     const label = L.divIcon({
@@ -271,14 +271,14 @@ function updateMapMarkers() {
     // Popup on click
     marker.bindPopup(`
       <div style="font-family:'IBM Plex Sans',sans-serif;min-width:180px">
-        <div style="font-size:13px;font-weight:600;color:#dce8f5;margin-bottom:8px">${zone.name} <span style="font-size:10px;color:#7a9ab8">${code}</span></div>
+        <div style="font-size:13px;font-weight:600;color:#FFFFFF;margin-bottom:8px">${zone.name} <span style="font-size:10px;color:#B8C9D9">${code}</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">DA Price</div><div style="font-size:14px;font-weight:700;color:#dce8f5">${zone.today?.toFixed(1)} €/MWh</div></div>
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">vs Yday</div><div style="font-size:14px;font-weight:700;color:${(zone.vsYday||zone.vsY||0)>=0?'#f05060':'#10b981'}">${(zone.vsYday||zone.vsY||0)>=0?'+':''}${(zone.vsYday||zone.vsY||0).toFixed(1)}</div></div>
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">Min @h</div><div style="font-size:12px;color:#10b981">${zone.min?.toFixed(1)} @${zone.minHr||zone.minH||0}h</div></div>
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">Max @h</div><div style="font-size:12px;color:#f05060">${zone.max?.toFixed(1)} @${zone.maxHr||zone.maxH||0}h</div></div>
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">Neg Hrs</div><div style="font-size:12px;color:${(zone.negHrs||zone.neg||0)>0?'#e8a020':'#3d5a7a'}">${zone.negHrs||zone.neg||0}h</div></div>
-          <div><div style="font-size:9px;color:#3d5a7a;text-transform:uppercase;letter-spacing:.06em">Spark CSS</div><div style="font-size:12px;color:${(zone.spark||0)>=0?'#10b981':'#f05060'}">${(zone.spark||0)>=0?'+':''}${(zone.spark||0).toFixed(1)}</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">DA Price</div><div style="font-size:14px;font-weight:700;color:#FFFFFF">${zone.today?.toFixed(1)} €/MWh</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">vs Yday</div><div style="font-size:14px;font-weight:700;color:${(zone.vsYday||zone.vsY||0)>=0?'#ED6965':'#14D3A9'}">${(zone.vsYday||zone.vsY||0)>=0?'+':''}${(zone.vsYday||zone.vsY||0).toFixed(1)}</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">Min @h</div><div style="font-size:12px;color:#14D3A9">${zone.min?.toFixed(1)} @${zone.minHr||zone.minH||0}h</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">Max @h</div><div style="font-size:12px;color:#ED6965">${zone.max?.toFixed(1)} @${zone.maxHr||zone.maxH||0}h</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">Neg Hrs</div><div style="font-size:12px;color:${(zone.negHrs||zone.neg||0)>0?'#EE9B00':'#7A93AB'}">${zone.negHrs||zone.neg||0}h</div></div>
+          <div><div style="font-size:9px;color:#7A93AB;text-transform:uppercase;letter-spacing:.06em">Spark CSS</div><div style="font-size:12px;color:${(zone.spark||0)>=0?'#14D3A9':'#ED6965'}">${(zone.spark||0)>=0?'+':''}${(zone.spark||0).toFixed(1)}</div></div>
         </div>
       </div>
     `, { className: 'map-popup' });
@@ -302,7 +302,7 @@ function renderMapLegend() {
       const col = priceToColor(v, mn2, mx2);
       return `<div style="display:flex;align-items:center;gap:6px">
         <div style="width:14px;height:8px;border-radius:2px;background:${col}"></div>
-        <span style="font-size:10px;color:#7a9ab8;font-family:'IBM Plex Mono',monospace">${v} €</span>
+        <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${v} €</span>
       </div>`;
     }).join('');
   } else if (mapView === 'neg') {
@@ -310,24 +310,24 @@ function renderMapLegend() {
       const col = negToColor(v);
       return `<div style="display:flex;align-items:center;gap:6px">
         <div style="width:14px;height:8px;border-radius:2px;background:${col}"></div>
-        <span style="font-size:10px;color:#7a9ab8;font-family:'IBM Plex Mono',monospace">${v}h</span>
+        <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${v}h</span>
       </div>`;
     }).join('');
   } else if (mapView === 'delta') {
     el.innerHTML = [
       {l:'▲ +30€',c:'rgba(240,80,96,.9)'},{l:'▲ +15€',c:'rgba(240,80,96,.5)'},
-      {l:'≈ 0',c:'#1a2d3f'},
+      {l:'≈ 0',c:'#1A2D44'},
       {l:'▼ -15€',c:'rgba(16,185,129,.5)'},{l:'▼ -30€',c:'rgba(16,185,129,.9)'},
     ].map(s=>`<div style="display:flex;align-items:center;gap:6px">
       <div style="width:14px;height:8px;border-radius:2px;background:${s.c}"></div>
-      <span style="font-size:10px;color:#7a9ab8;font-family:'IBM Plex Mono',monospace">${s.l}</span>
+      <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${s.l}</span>
     </div>`).join('');
   } else {
     el.innerHTML = [
       {l:'CSS > 0',c:'rgba(16,185,129,.8)'},{l:'CSS < 0',c:'rgba(240,80,96,.8)'},
     ].map(s=>`<div style="display:flex;align-items:center;gap:6px">
       <div style="width:14px;height:8px;border-radius:2px;background:${s.c}"></div>
-      <span style="font-size:10px;color:#7a9ab8;font-family:'IBM Plex Mono',monospace">${s.l}</span>
+      <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${s.l}</span>
     </div>`).join('');
   }
 }
@@ -409,14 +409,14 @@ function showMapDetail(zone) {
 const mapStyle = document.createElement('style');
 mapStyle.textContent = `
   .map-popup .leaflet-popup-content-wrapper {
-    background:#0e151d;border:1px solid #223344;border-radius:8px;color:#dce8f5;box-shadow:0 8px 32px rgba(0,0,0,.5);
+    background:#0A1B2E;border:1px solid #244562;border-radius:8px;color:#FFFFFF;box-shadow:0 8px 32px rgba(0,0,0,.5);
   }
-  .map-popup .leaflet-popup-tip { background:#0e151d; }
+  .map-popup .leaflet-popup-tip { background:#0A1B2E; }
   .map-popup .leaflet-popup-content { margin:14px; }
-  .map-popup .leaflet-popup-close-button { color:#7a9ab8!important;font-size:16px!important; }
-  .leaflet-control-zoom a { background:#0e151d!important;border-color:#223344!important;color:#7a9ab8!important; }
-  .leaflet-control-zoom a:hover { background:#131d28!important;color:#dce8f5!important; }
-  .leaflet-bar { border:1px solid #223344!important;border-radius:6px!important;overflow:hidden; }
+  .map-popup .leaflet-popup-close-button { color:#B8C9D9!important;font-size:16px!important; }
+  .leaflet-control-zoom a { background:#0A1B2E!important;border-color:#244562!important;color:#B8C9D9!important; }
+  .leaflet-control-zoom a:hover { background:#131d28!important;color:#FFFFFF!important; }
+  .leaflet-bar { border:1px solid #244562!important;border-radius:6px!important;overflow:hidden; }
   .leaflet-attribution-flag { display:none!important; }
   .geo-tooltip { background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important; }
   .geo-tooltip .leaflet-tooltip-content { padding:0; }

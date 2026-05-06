@@ -193,21 +193,21 @@ function loadFranceDashboard() {
           labels,
           datasets: [{
             data: vals,
-            borderColor: '#00d4a8',
+            borderColor: '#14D3A9',
             backgroundColor: 'rgba(0,212,168,0.08)',
             borderWidth: 2,
             tension: 0.3,
             fill: true,
             pointRadius: 3,
-            pointBackgroundColor: '#00d4a8'
+            pointBackgroundColor: '#14D3A9'
           }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a6280', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a6280', font: { size: 11 } }, title: { display: true, text: '€/MWh', color: '#4a6280', font: { size: 10 } } }
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } }, title: { display: true, text: '€/MWh', color: '#4A6280', font: { size: 10 } } }
           }
         }
       });
@@ -223,14 +223,14 @@ function loadFranceDashboard() {
         labels: ['Nucléaire', 'Eolien', 'Solaire', 'Hydro', 'Gaz', 'Autres'],
         datasets: [{
           data: [42.3, 9.2, 5.1, 8.8, 3.4, 2.2],
-          backgroundColor: ['#00d4a8','#60a5fa','#fbbf24','#34d399','#a78bfa','#4a6280'],
+          backgroundColor: ['#14D3A9','#C4A57B','#fbbf24','#94D2BD','#A87DC4','#4A6280'],
           borderWidth: 0
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 10, boxWidth: 10 } }
+          legend: { position: 'bottom', labels: { color: '#B8C9D9', font: { size: 11 }, padding: 10, boxWidth: 10 } }
         }
       }
     });
@@ -247,7 +247,7 @@ function loadFranceDashboard() {
         <div style="font-size:11px;font-weight:600;color:var(--text)">Flamanville 1 — arrêt fortuit</div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">1 330 MW indisponible · retour prévu 05 mai</div>
       </div>
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid #4a6280">
+      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid #4A6280">
         <div style="font-size:11px;font-weight:600;color:var(--text)">Belleville 1 — programmé</div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">1 310 MW · rechargement combustible</div>
       </div>
@@ -895,12 +895,12 @@ function buildZoneFilterDropdown() {
       display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;
       border:none;text-align:left;margin-top:4px;
       background:${allOn ? 'rgba(0,212,168,.08)' : 'transparent'};
-      color:${allOn ? '#00d4a8' : someOn ? '#f59e0b' : 'rgba(255,255,255,.35)'};
+      color:${allOn ? '#14D3A9' : someOn ? '#FBBF24' : 'rgba(255,255,255,.35)'};
     ">
       <span style="width:14px;height:14px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-        border:1.5px solid ${allOn?'#00d4a8':someOn?'#f59e0b':'rgba(255,255,255,.2)'};
+        border:1.5px solid ${allOn?'#14D3A9':someOn?'#FBBF24':'rgba(255,255,255,.2)'};
         background:${allOn?'rgba(0,212,168,.2)':someOn?'rgba(245,158,11,.15)':'transparent'}">
-        ${allOn ? checkSvg('#00d4a8') : someOn ? '<div style="width:6px;height:2px;background:#f59e0b;border-radius:1px"></div>' : ''}
+        ${allOn ? checkSvg('#14D3A9') : someOn ? '<div style="width:6px;height:2px;background:#FBBF24;border-radius:1px"></div>' : ''}
       </span>
       <span style="letter-spacing:.04em">${group.cc} — ${group.country}</span>
       <span style="margin-left:auto;font-size:10px;font-weight:400;color:var(--tx3)">${group.zones.length} zone${group.zones.length>1?'s':''}</span>
@@ -914,12 +914,12 @@ function buildZoneFilterDropdown() {
           display:flex;align-items:center;gap:5px;width:100%;padding:4px 8px 4px 26px;border-radius:5px;font-size:11px;cursor:pointer;
           border:none;text-align:left;
           background:${isOn ? 'rgba(0,212,168,.06)' : 'transparent'};
-          color:${isOn ? '#00d4a8' : 'rgba(255,255,255,.35)'};
+          color:${isOn ? '#14D3A9' : 'rgba(255,255,255,.35)'};
         ">
           <span style="width:12px;height:12px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-            border:1.5px solid ${isOn?'#00d4a8':'rgba(255,255,255,.15)'};
+            border:1.5px solid ${isOn?'#14D3A9':'rgba(255,255,255,.15)'};
             background:${isOn?'rgba(0,212,168,.2)':'transparent'}">
-            ${isOn ? checkSvg('#00d4a8') : ''}
+            ${isOn ? checkSvg('#14D3A9') : ''}
           </span>
           <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${isOn?'var(--acc)':'rgba(255,255,255,.4)'};min-width:56px">${z.flag||''} ${z.code}</span>
           <span>${(ZONE_META[z.code]||{}).country||z.name||z.code}</span>
@@ -1016,12 +1016,12 @@ function renderPricesTableBody() {
   // Fuel config for domFuel
   const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
   const fuelMeta = {
-    nuclear: {emoji:'⚛', label:'Nuclear',  color:'#3b82f6'},
-    wind:    {emoji:'🌬', label:'Wind',     color:'#00d4a8'},
-    solar:   {emoji:'☀', label:'Solar',    color:'#fbbf24'},
-    hydro:   {emoji:'💧', label:'Hydro',    color:'#34d399'},
-    biomass: {emoji:'🌿', label:'Biomass',  color:'#6ee7b7'},
-    fossil:  {emoji:'🔥', label:'Fossil',   color:'#f87171'},
+    nuclear: {emoji:'⚛', label:'Nuclear',  color:C_NUC},
+    wind:    {emoji:'🌬', label:'Wind',     color:C_WIND},
+    solar:   {emoji:'☀', label:'Solar',    color:C_SOLAR},
+    hydro:   {emoji:'💧', label:'Hydro',    color:C_HYD},
+    biomass: {emoji:'🌿', label:'Biomass',  color:C_BIO},
+    fossil:  {emoji:'🔥', label:'Fossil',   color:C_FOS},
   };
 
   const rows = sorted.map((z, i) => {
@@ -1029,10 +1029,10 @@ function renderPricesTableBody() {
     if (zoneFilter && !zoneFilter.has(z.code)) return {html:'', z, i};
 
     const meta = ZONE_META[z.code] || {cc:z.code, country:z.name||z.code};
-    const priceColor = z.today < 0 ? '#f05060' : z.today > 150 ? '#f59e0b' : z.today < 20 ? '#10b981' : 'var(--tx)';
+    const priceColor = z.today < 0 ? '#ED6965' : z.today > 150 ? '#FBBF24' : z.today < 20 ? '#14D3A9' : 'var(--tx)';
     const vsColor = z.vsYday == null ? 'var(--tx3)' : z.vsYday >= 0 ? 'var(--dn)' : 'var(--up)';
     const vsText  = z.vsYday == null ? '–' : `${z.vsYday >= 0 ? '▲' : '▼'} ${Math.abs(z.vsYday).toFixed(1)}`;
-    const sparkColor = z.spark == null ? 'var(--tx3)' : z.spark >= 0 ? '#10b981' : '#f05060';
+    const sparkColor = z.spark == null ? 'var(--tx3)' : z.spark >= 0 ? '#14D3A9' : '#ED6965';
     const sparkText  = z.spark == null ? '–' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
 
     // Peak / Off-Peak
@@ -1054,7 +1054,7 @@ function renderPricesTableBody() {
       const total = mix.total || 1;
       const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
       const renP  = Math.round(renMW/total*100);
-      const renColor = renP >= 60 ? '#10b981' : renP >= 40 ? '#f59e0b' : '#f87171';
+      const renColor = renP >= 60 ? '#14D3A9' : renP >= 40 ? '#FBBF24' : '#ED6965';
       renPctStr = `<span style="color:${renColor};font-weight:600">${renP}%</span>`;
       // Dominant fuel
       let domKey = fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
@@ -1111,7 +1111,7 @@ function makeSVGSparklineSmooth(data, positive) {
   const w=80, h=28, pad=2;
   const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
   // Neutral accent colour — the sparkline shows shape only, not sentiment
-  const col = positive === true ? '#10b981' : positive === 'mixed' ? '#94a3b8' : '#f05060';
+  const col = positive === true ? '#14D3A9' : positive === 'mixed' ? '#B8C9D9' : '#ED6965';
   const pts = data.map((v,i) => ({
     x: pad + (i/(data.length-1))*(w-pad*2),
     y: h-pad-((v-mn)/rng)*(h-pad*2)
@@ -1290,7 +1290,7 @@ function buildHourlyDetail(idx, z) {
   const flatText  = peakRatio !== null
     ? (isFlatter ? '● Flatter than normal' : '● Normal profile')
     : '';
-  const flatColor = isFlatter ? '#00d4a8' : '#e8a020';
+  const flatColor = isFlatter ? '#14D3A9' : '#EE9B00';
 
   // Negative hours — count from raw slots, convert to total minutes
   const negSlotsRaw = hourly.filter(v => v != null && v < 0);
@@ -1313,7 +1313,7 @@ function buildHourlyDetail(idx, z) {
   // Color — defined before inner.innerHTML so KPI cards can use it
   const chartData   = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
   const negFraction = chartData.filter(v=>v!=null&&v<0).length / Math.max(1, chartData.filter(v=>v!=null).length);
-  const col = negFraction >= 0.5 ? '#f05060' : negFraction >= 0.2 ? '#f59e0b' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
+  const col = negFraction >= 0.5 ? '#ED6965' : negFraction >= 0.2 ? '#FBBF24' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${idx}">
@@ -1467,15 +1467,15 @@ function buildHourlyDetail(idx, z) {
       responsive:true, maintainAspectRatio:false, animation:{duration:100},
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display: datasets.length>1, labels:{color:'#4a6280',font:{size:10},boxWidth:16,usePointStyle:true,pointStyle:'line'}},
+        legend:{display: datasets.length>1, labels:{color:'#4A6280',font:{size:10},boxWidth:16,usePointStyle:true,pointStyle:'line'}},
         tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(2)+' €/MWh':'n/a'}`}},
         annotation:{annotations},
         zoom:ZOOM_CFG,
       },
       scales:{
-        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:9},maxTicksLimit:12}},
-        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4a6280',font:{size:10},callback:v=>v+'€/MWh'},
-           title:{display:true,text:'€/MWh',color:'#4a6280',font:{size:10}}},
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:9},maxTicksLimit:12}},
+        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:10},callback:v=>v+'€/MWh'},
+           title:{display:true,text:'€/MWh',color:'#4A6280',font:{size:10}}},
       },
     },
   });
@@ -1542,7 +1542,7 @@ async function applyExpandKPIColours(idx, z, today) {
 }
 
 
-const COMPARE_COLORS = ['#10b981','#60a5fa','#f59e0b','#a78bfa','#f05060','#34d399','#f472b6','#38bdf8','#fb923c','#818cf8'];
+const COMPARE_COLORS = ['#14D3A9','#C4A57B','#FBBF24','#A87DC4','#ED6965','#94D2BD','#f472b6','#38bdf8','#fb923c','#818cf8'];
 
 function buildCompareDropdown() { buildCompareChips(); } // alias kept
 
@@ -1588,7 +1588,7 @@ function buildCompareChips() {
   }
   container.innerHTML = window._pricesSorted.map(z => {
     const isOn = selected.has(z.code);
-    const col  = window._zoneColorMap[z.code] || '#4a6280';
+    const col  = window._zoneColorMap[z.code] || '#4A6280';
     const meta = ZONE_META[z.code] || {country: z.name || z.code};
     return `<button onclick="toggleCompareChip('${z.code}')" id="chip-${z.code}" style="
       display:flex;align-items:center;gap:5px;width:100%;padding:5px 8px;border-radius:5px;font-size:11px;cursor:pointer;
@@ -1635,7 +1635,7 @@ function renderComparePeakStrip() {
   const cards = [];
   window._pricesSorted.forEach(z => {
     if (!selected.has(z.code)) return;
-    const col = window._zoneColorMap?.[z.code] || '#4a6280';
+    const col = window._zoneColorMap?.[z.code] || '#4A6280';
     if (!z.hourly || z.hourly.length < 24) return;
     const h = z.hourly; const nph = Math.round(h.length/24);
     const pkV=[], opV=[];
@@ -1804,7 +1804,7 @@ function renderCCLines(data, selected) {
     const baseCol = ccZoneColor(z.code, data, i);
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
     const negFracCC = hourly.filter(v => v != null && v < 0).length / Math.max(1, hourly.filter(v => v != null).length);
-    const col = negFracCC >= 0.5 ? '#f05060' : negFracCC >= 0.2 ? '#f59e0b' : baseCol;
+    const col = negFracCC >= 0.5 ? '#ED6965' : negFracCC >= 0.2 ? '#FBBF24' : baseCol;
     datasets.push({
       label: `${z.code} · ${z.name}`, data: hourly, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
@@ -2320,7 +2320,7 @@ function renderCompareKPIs(data, selected) {
   };
 
   const html = rows.map(r => {
-    const col = window._zoneColorMap?.[r.code] || '#94a3b8';
+    const col = window._zoneColorMap?.[r.code] || '#B8C9D9';
     const meta = ZONE_META[r.code] || { country: r.z.name || r.code };
     // Bar lives in a fixed-width inner zone between the two labels.
     // leftPct/widthPct are computed against that inner zone, not the full cell.
@@ -2376,7 +2376,7 @@ function makeSVGSparkline(data, positive) {
   const w = 80, h = 28, pad = 2;
   const mn = Math.min(...data), mx = Math.max(...data);
   const rng = mx - mn || 1;
-  const col = positive ? '#10b981' : '#f05060';
+  const col = positive ? '#14D3A9' : '#ED6965';
   const pts = data.map((v, i) => {
     const x = pad + (i / (data.length - 1)) * (w - pad * 2);
     const y = h - pad - ((v - mn) / rng) * (h - pad * 2);

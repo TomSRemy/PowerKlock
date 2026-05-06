@@ -42,7 +42,7 @@ async function loadCrossBorder() {
       data:{ labels:cbLabels, datasets:[
         { label:'Exports MW', data:flows.map(f=>f.exports),      backgroundColor:'rgba(16,185,129,.65)',  borderWidth:0, borderRadius:3 },
         { label:'Imports MW', data:flows.map(f=>-f.imports),     backgroundColor:'rgba(240,80,96,.55)',   borderWidth:0, borderRadius:3 },
-        { label:'Net MW',     data:flows.map(f=>f.net),          type:'line', borderColor:'#f59e0b', borderWidth:2, pointRadius:4, pointBackgroundColor:'#f59e0b', fill:false },
+        { label:'Net MW',     data:flows.map(f=>f.net),          type:'line', borderColor:'#FBBF24', borderWidth:2, pointRadius:4, pointBackgroundColor:'#FBBF24', fill:false },
       ]},
       options:{ responsive:true, maintainAspectRatio:false,
         interaction:{mode:'index',intersect:false},

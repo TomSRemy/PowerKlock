@@ -55,11 +55,11 @@
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
 .es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-.es-dotsbar{position:fixed;left:200px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
-.es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
+.es-dotsbar{position:fixed;left:200px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1A2D44;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
+.es-dot{width:10px;height:10px;border-radius:50%;background:#1A2D44;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
 .es-dot.wind:hover{background:#fb923c}
-.es-dot.tornado:hover{background:#94a3b8}
+.es-dot.tornado:hover{background:#B8C9D9}
 .es-dot.close:hover{background:#ef4444}
 .es-dotsbar-label{font-size:9px;color:#2a3f54;letter-spacing:.1em;margin-right:2px}
 .es-p-in{animation:esPIn .35s ease forwards}.es-p-out{animation:esPOut .35s ease forwards}
@@ -353,9 +353,9 @@
       cloud.style.cssText = `position:fixed;left:${cloudCx - 110}px;top:${cloudCy - 36}px;width:220px;height:80px;z-index:${Z_DECOR};pointer-events:none;opacity:0;transition:opacity 1.2s ease;animation:esCloudDrift 14s ease-in-out infinite`;
       cloud.innerHTML = `
         <svg viewBox="0 0 220 80" width="220" height="80" xmlns="http://www.w3.org/2000/svg" overflow="visible">
-          <ellipse cx="110" cy="56" rx="106" ry="11" fill="#a8b8c8" opacity=".55"/>
-          <ellipse cx="40" cy="50" rx="30" ry="18" fill="#a8b8c8"/>
-          <ellipse cx="180" cy="52" rx="28" ry="17" fill="#a8b8c8"/>
+          <ellipse cx="110" cy="56" rx="106" ry="11" fill="#B8C9D9" opacity=".55"/>
+          <ellipse cx="40" cy="50" rx="30" ry="18" fill="#B8C9D9"/>
+          <ellipse cx="180" cy="52" rx="28" ry="17" fill="#B8C9D9"/>
           <ellipse cx="110" cy="40" rx="100" ry="32" fill="#e8eef4"/>
           <circle cx="38" cy="44" r="22" fill="#f5f8fb"/>
           <circle cx="62" cy="32" r="26" fill="#f5f8fb"/>
@@ -896,7 +896,7 @@
           const ghost = document.createElement('div');
           ghost.style.cssText = `position:fixed;left:${s.x + SZ * .75}px;top:${s.y + 6}px;width:36px;height:42px;z-index:${Z_FLOAT};pointer-events:none;animation:esGhostRise 2.5s ease-out forwards`;
           ghost.innerHTML = `<svg viewBox="-18 -22 36 42" width="36" height="42" overflow="visible">
-            <path d="M-14 -8 Q-14 -20 0 -20 Q14 -20 14 -8 L14 12 L9 6 L4 12 L0 6 L-4 12 L-9 6 L-14 12 Z" fill="#fff" stroke="#94a3b8" stroke-width="1" opacity=".9"/>
+            <path d="M-14 -8 Q-14 -20 0 -20 Q14 -20 14 -8 L14 12 L9 6 L4 12 L0 6 L-4 12 L-9 6 L-14 12 Z" fill="#fff" stroke="#B8C9D9" stroke-width="1" opacity=".9"/>
             <circle cx="-5" cy="-10" r="2.2" fill="#1c1c1c"/>
             <circle cx="5" cy="-10" r="2.2" fill="#1c1c1c"/>
             <ellipse cx="0" cy="-2" rx="2.5" ry="2" fill="#1c1c1c"/>
@@ -983,39 +983,39 @@
     // Build the serpent body (24 arcs with cascading delay)
     const bandSpec = [
       {y:22,rx:80,col:'#f1f5f9',op:.8,thick:7},
-      {y:32,rx:78,col:'#94a3b8',op:.7,thick:7},
-      {y:42,rx:80,col:'#e2e8f0',op:.75,thick:7},
-      {y:52,rx:75,col:'#cbd5e1',op:.7,thick:7},
+      {y:32,rx:78,col:'#B8C9D9',op:.7,thick:7},
+      {y:42,rx:80,col:'#FFFFFF',op:.75,thick:7},
+      {y:52,rx:75,col:'#FFFFFF',op:.7,thick:7},
       {y:62,rx:78,col:'#f1f5f9',op:.8,thick:7},
-      {y:72,rx:73,col:'#94a3b8',op:.75,thick:7},
-      {y:82,rx:73,col:'#e2e8f0',op:.75,thick:7},
-      {y:92,rx:68,col:'#cbd5e1',op:.75,thick:7},
+      {y:72,rx:73,col:'#B8C9D9',op:.75,thick:7},
+      {y:82,rx:73,col:'#FFFFFF',op:.75,thick:7},
+      {y:92,rx:68,col:'#FFFFFF',op:.75,thick:7},
       {y:102,rx:68,col:'#f1f5f9',op:.8,thick:6},
-      {y:112,rx:62,col:'#94a3b8',op:.75,thick:6},
-      {y:122,rx:60,col:'#e2e8f0',op:.75,thick:6},
-      {y:132,rx:56,col:'#cbd5e1',op:.8,thick:6},
+      {y:112,rx:62,col:'#B8C9D9',op:.75,thick:6},
+      {y:122,rx:60,col:'#FFFFFF',op:.75,thick:6},
+      {y:132,rx:56,col:'#FFFFFF',op:.8,thick:6},
       {y:142,rx:54,col:'#f1f5f9',op:.8,thick:6},
-      {y:152,rx:50,col:'#94a3b8',op:.8,thick:6},
-      {y:162,rx:48,col:'#e2e8f0',op:.8,thick:5},
-      {y:174,rx:44,col:'#cbd5e1',op:.8,thick:5},
+      {y:152,rx:50,col:'#B8C9D9',op:.8,thick:6},
+      {y:162,rx:48,col:'#FFFFFF',op:.8,thick:5},
+      {y:174,rx:44,col:'#FFFFFF',op:.8,thick:5},
       {y:186,rx:42,col:'#f1f5f9',op:.85,thick:5},
-      {y:196,rx:38,col:'#94a3b8',op:.85,thick:5},
-      {y:208,rx:34,col:'#e2e8f0',op:.85,thick:5},
-      {y:220,rx:30,col:'#cbd5e1',op:.85,thick:4},
+      {y:196,rx:38,col:'#B8C9D9',op:.85,thick:5},
+      {y:208,rx:34,col:'#FFFFFF',op:.85,thick:5},
+      {y:220,rx:30,col:'#FFFFFF',op:.85,thick:4},
       {y:232,rx:26,col:'#f1f5f9',op:.9,thick:4},
-      {y:244,rx:22,col:'#94a3b8',op:.9,thick:4},
-      {y:254,rx:18,col:'#e2e8f0',op:.9,thick:3.5},
-      {y:264,rx:14,col:'#cbd5e1',op:.95,thick:3},
-      {y:274,rx:10,col:'#94a3b8',op:.95,thick:2.5},
-      {y:282,rx:6,col:'#cbd5e1',op:.95,thick:2}
+      {y:244,rx:22,col:'#B8C9D9',op:.9,thick:4},
+      {y:254,rx:18,col:'#FFFFFF',op:.9,thick:3.5},
+      {y:264,rx:14,col:'#FFFFFF',op:.95,thick:3},
+      {y:274,rx:10,col:'#B8C9D9',op:.95,thick:2.5},
+      {y:282,rx:6,col:'#FFFFFF',op:.95,thick:2}
     ];
 
     // Halo (subtle background ellipse)
     const halo1 = document.createElement('div');
-    halo1.style.cssText = `position:absolute;left:5px;top:35px;width:190px;height:250px;background:#94a3b8;opacity:.12;border-radius:50%;pointer-events:none`;
+    halo1.style.cssText = `position:absolute;left:5px;top:35px;width:190px;height:250px;background:#B8C9D9;opacity:.12;border-radius:50%;pointer-events:none`;
     tornadoEl.appendChild(halo1);
     const halo2 = document.createElement('div');
-    halo2.style.cssText = `position:absolute;left:40px;top:40px;width:120px;height:240px;background:#cbd5e1;opacity:.08;border-radius:50%;pointer-events:none`;
+    halo2.style.cssText = `position:absolute;left:40px;top:40px;width:120px;height:240px;background:#FFFFFF;opacity:.08;border-radius:50%;pointer-events:none`;
     tornadoEl.appendChild(halo2);
 
     bandSpec.forEach((b, i) => {
@@ -1026,7 +1026,7 @@
     });
 
     // Debris (42 particles in vertical-axis orbit)
-    const cols = ['#cbd5e1', '#94a3b8', '#64748b', '#e2e8f0', '#475569'];
+    const cols = ['#FFFFFF', '#B8C9D9', '#64748b', '#FFFFFF', '#475569'];
     for (let i = 0; i < 42; i++) {
       const ty = 20 + Math.random() * 240;
       const dist = Math.abs(ty - 160);

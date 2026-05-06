@@ -9,23 +9,59 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0e13;
-    --bg2: #0f1419;
-    --bg3: #151c24;
-    --bg4: #1a2332;
-    --border: #1e2d3d;
-    --border2: #243447;
-    --accent: #00d4a8;
-    --accent2: #00b894;
-    --accent-dim: rgba(0,212,168,0.12);
-    --up: #00d4a8;
-    --down: #ff4d6d;
-    --warn: #f59e0b;
-    /* KPI accent — flat / no-data (up & down reuse --up / --down) */
-    --kpi-flat: #4a6280;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #4a6280;
+    /* ── Backgrounds (5 levels) */
+    --bg-void: #000810;
+    --bg: #011627;
+    --bg2: #0A1B2E;
+    --bg3: #142A42;
+    --bg4: #1F3A55;
+
+    /* ── Borders */
+    --border: #1A2D44;
+    --border2: #244562;
+    --border3: #3A6080;
+
+    /* ── Brand & semantic */
+    --accent: #14D3A9;
+    --accent2: #0FAC8A;
+    --accent-dim: rgba(20,211,169,0.12);
+    --accent-dim-strong: rgba(20,211,169,0.30);
+
+    --up: #14D3A9;
+    --up-dim: rgba(20,211,169,0.12);
+    --down: #ED6965;
+    --down-dim: rgba(237,105,101,0.12);
+    --warn: #EE9B00;
+    --warn-dim: rgba(238,155,0,0.12);
+    --highlight: #FFFD82;
+    --kpi-flat: #4A6280;
+
+    /* ── Text scale (4 levels + brand) */
+    --text: #FFFFFF;
+    --text2: #B8C9D9;
+    --text3: #7A93AB;
+    --text4: #4A6280;
+    --text-brand: #14D3A9;
+
+    /* ── Energy mix (production sectors) */
+    --gen-nuclear: #7B4B9C;
+    --gen-wind: #14D3A9;
+    --gen-solar: #FBBF24;
+    --gen-hydro: #3FA6B4;
+    --gen-fossil: #ED6965;
+    --gen-biomass: #94D2BD;
+
+    /* ── Market categories (ticker, news) */
+    --cat-power: #14D3A9;
+    --cat-power-dim: rgba(20,211,169,0.12);
+    --cat-gas: #C4A57B;
+    --cat-gas-dim: rgba(196,165,123,0.15);
+    --cat-carbon: #A87DC4;
+    --cat-carbon-dim: rgba(168,125,196,0.12);
+    --cat-go: #94D2BD;
+    --cat-go-dim: rgba(148,210,189,0.15);
+
+    /* ── Layout (unchanged) */
     --sidebar-w: 220px;
     --ticker-h: 36px;
     --topbar-h: 52px;
@@ -86,10 +122,10 @@
   .dd-check { width:14px; height:14px; border-radius:3px; border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:9px; font-weight:700; transition:all 0.12s; }
   .dd-row.on .dd-check { background:var(--accent); border-color:var(--accent); color:#000; }
   .dd-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-  .dd-dot.power { background:var(--accent); }
-  .dd-dot.gas { background:#60a5fa; }
-  .dd-dot.carbon { background:#a78bfa; }
-  .dd-dot.go { background:#34d399; }
+  .dd-dot.power { background:var(--cat-power); }
+  .dd-dot.gas { background:var(--cat-gas); }
+  .dd-dot.carbon { background:var(--cat-carbon); }
+  .dd-dot.go { background:var(--cat-go); }
 
   .ticker-label {
     padding: 0 14px;
@@ -129,15 +165,15 @@
   .ticker-item:hover { background: var(--bg3); }
   .ticker-name { color: var(--text2); font-size: 11px; }
   .ticker-cat { font-size: 9px; color: var(--text3); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border2); }
-  .ticker-cat.power { color: var(--accent); border-color: var(--accent-dim); }
-  .ticker-cat.gas { color: #60a5fa; border-color: rgba(96,165,250,0.2); }
-  .ticker-cat.carbon { color: #a78bfa; border-color: rgba(167,139,250,0.2); }
-  .ticker-cat.go { color: #34d399; border-color: rgba(52,211,153,0.2); }
+  .ticker-cat.power { color: var(--cat-power); border-color: var(--cat-power-dim); }
+  .ticker-cat.gas { color: var(--cat-gas); border-color: var(--cat-gas-dim); }
+  .ticker-cat.carbon { color: var(--cat-carbon); border-color: var(--cat-carbon-dim); }
+  .ticker-cat.go { color: var(--cat-go); border-color: var(--cat-go-dim); }
   /* News source badges */
-  .news-source.recharge { background: rgba(52,211,153,0.15); color: #34d399; }
+  .news-source.recharge { background: rgba(148,210,189,0.15); color: #94D2BD; }
   .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
-  .news-source.carbonpulse { background: rgba(167,139,250,0.15); color: #a78bfa; }
-  .news-source.gasnaturally { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .news-source.carbonpulse { background: rgba(168,125,196,0.15); color: #A87DC4; }
+  .news-source.gasnaturally { background: rgba(196,165,123,0.15); color: #C4A57B; }
   .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
   .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
@@ -225,9 +261,9 @@
   .topbar-nav { display: none; }
   .topbar-btn { display: none; }
   .dot-power { background: var(--accent); }
-  .dot-gas { background: #60a5fa; }
-  .dot-carbon { background: #a78bfa; }
-  .dot-storage { background: #f59e0b; }
+  .dot-gas { background: #C4A57B; }
+  .dot-carbon { background: #A87DC4; }
+  .dot-storage { background: #FBBF24; }
   .topbar-right {
     margin-left: auto;
     display: flex;
@@ -533,11 +569,11 @@
   .fuel-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
   .fuel-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); overflow: hidden; }
   .fuel-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
-  .fuel-nuclear { background: #3b82f6; }
-  .fuel-solar { background: #f59e0b; }
-  .fuel-wind { background: #60a5fa; }
-  .fuel-hydro { background: #34d399; }
-  .fuel-fossil { background: #f87171; }
+  .fuel-nuclear { background: #7B4B9C; }
+  .fuel-solar { background: #FBBF24; }
+  .fuel-wind { background: #C4A57B; }
+  .fuel-hydro { background: #94D2BD; }
+  .fuel-fossil { background: #ED6965; }
   .fuel-other { background: var(--text3); }
 
   /* chart container */
@@ -604,10 +640,10 @@
     padding: 2px 7px;
     border-radius: 3px;
   }
-  .news-source.rte { color: #60a5fa; background: rgba(96,165,250,0.1); }
-  .news-source.cre { color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .news-source.rte { color: #C4A57B; background: rgba(196,165,123,0.15); }
+  .news-source.cre { color: #A87DC4; background: rgba(168,125,196,0.12); }
   .news-source.entsoe { color: var(--accent); }
-  .news-source.acer { color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .news-source.acer { color: #FBBF24; background: rgba(251,191,36,0.12); }
   .news-source.google { color: var(--text2); background: var(--bg3); }
   .news-time { font-size: 11px; color: var(--text3); margin-left: auto; }
   .news-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
@@ -984,7 +1020,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 14px">
         <span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)">Power zones</span>
         <div style="display:flex;gap:4px">
-          <button onclick="tickerSelectAllZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(0,212,168,.4);background:rgba(0,212,168,.1);color:#00d4a8;font-weight:600">All</button>
+          <button onclick="tickerSelectAllZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(20,211,169,0.30);background:rgba(20,211,169,0.12);color:#14D3A9;font-weight:600">All</button>
           <button onclick="tickerSelectNoneZones()" style="font-size:9px;padding:1px 6px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--text3)">None</button>
         </div>
       </div>
@@ -1130,7 +1166,7 @@
 
       <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleHistSection('prices-main')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div>
 <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
-  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(0,212,168,.1);color:var(--acc);white-space:nowrap">↺ Latest data</button>
+  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap">↺ Latest data</button>
   <div class="date-picker-wrap" id="date-picker-wrap-hdr">
     <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1210,13 +1246,13 @@
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                     <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
                     <div style="display:flex;gap:4px">
-                      <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="selectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
                       <button onclick="clearZoneFilter()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
                     </div>
                   </div>
                   <div style="display:flex;gap:4px;flex-wrap:wrap">
-                    <button onclick="selectNeighbours()" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
-                    <button onclick="selectWithGenMix()" style="font-size:10px;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
+                    <button onclick="selectNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+                    <button onclick="selectWithGenMix()" style="font-size:10px;color:#14D3A9;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
                   </div>
                 </div>
                 <div id="zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>
@@ -1267,13 +1303,13 @@
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                     <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Compare zones</span>
                     <div style="display:flex;gap:4px">
-                      <button onclick="selectAllCompareZones()" style="font-size:10px;color:var(--acc);background:rgba(0,212,168,.1);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="selectAllCompareZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
                       <button onclick="clearCompareZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
                     </div>
                   </div>
                   <div style="display:flex;gap:4px;flex-wrap:wrap">
-                    <button onclick="compareNeighbours()" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
-                    <button onclick="compareWithGenMix()" style="font-size:10px;color:#10b981;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
+                    <button onclick="compareNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+                    <button onclick="compareWithGenMix()" style="font-size:10px;color:#14D3A9;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
                   </div>
                 </div>
                 <div id="compare-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
@@ -1926,7 +1962,7 @@
       <!-- Nuclear KPIs -->
       <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">⚛ Nuclear</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
-        <div class="kpi-card"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#3b82f6" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg up" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
+        <div class="kpi-card"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#7B4B9C" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg up" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
         <div class="kpi-card"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
         <div class="kpi-card"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg down" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
         <div class="kpi-card"><div class="kpi-label">Active Outages</div><div class="kpi-value down" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
@@ -1953,9 +1989,9 @@
         <table>
           <thead><tr><th>Asset</th><th>Capacity MW</th><th>Unavail. MW</th><th>Start</th><th>End</th><th>Type</th><th>Reason</th></tr></thead>
           <tbody id="nuc-remit-tbody">
-            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Gravelines 4</td><td>900</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td>Nuclear</td><td style="color:var(--tx3)">Planned maint.</td></tr>
-            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Cattenom 2</td><td>1 300</td><td class="down">1 300</td><td>2026-04-22</td><td>2026-05-30</td><td>Nuclear</td><td style="color:var(--tx3)">Scheduled refuel</td></tr>
-            <tr><td><span style="font-size:10px;color:#3b82f6;font-weight:600;margin-right:4px">FR</span>Paluel 1</td><td>1 330</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td>Nuclear</td><td style="color:var(--down)">Unplanned</td></tr>
+            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Gravelines 4</td><td>900</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td>Nuclear</td><td style="color:var(--tx3)">Planned maint.</td></tr>
+            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Cattenom 2</td><td>1 300</td><td class="down">1 300</td><td>2026-04-22</td><td>2026-05-30</td><td>Nuclear</td><td style="color:var(--tx3)">Scheduled refuel</td></tr>
+            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Paluel 1</td><td>1 330</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td>Nuclear</td><td style="color:var(--down)">Unplanned</td></tr>
           </tbody>
         </table>
       </div>
@@ -2051,8 +2087,8 @@
         <span class="updated-badge">ICE · EEX · Demo</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-        <div class="kpi-card"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#a78bfa">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">&#9660;0.09% vs close</div></div>
-        <div class="kpi-card"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#a78bfa">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg up">&#9650;0.32%</div></div>
+        <div class="kpi-card"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#A87DC4">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">&#9660;0.09% vs close</div></div>
+        <div class="kpi-card"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#A87DC4">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg up">&#9650;0.32%</div></div>
         <div class="kpi-card"><div class="kpi-label">YTD Change</div><div class="kpi-value down">-8.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg down">from 82.5 Jan 1</div></div>
         <div class="kpi-card"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
       </div>
@@ -2080,12 +2116,12 @@
         <div class="table-header"><span class="table-title">EUA Futures — December contracts</span></div>
         <table><thead><tr><th>Contract</th><th>Last (€/t)</th><th>Bid</th><th>Ask</th><th>Change</th><th>Chg %</th><th>Volume</th><th>OI</th></tr></thead>
         <tbody>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
-          <tr><td><span style="font-size:10px;color:#a78bfa;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
+          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
         </tbody></table>
       </div>
       <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><canvas id="eua-fwd-canvas" style="width:100%;height:160px"></canvas></div>
@@ -2910,7 +2946,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	background-color: #fff;
 	border: 1px solid #fff;
 	border-radius: 3px;
-	color: #222;
+	color: #142A42;
 	white-space: nowrap;
 	-webkit-user-select: none;
 	-moz-user-select: none;

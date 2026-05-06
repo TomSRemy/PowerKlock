@@ -1,5 +1,5 @@
 // ── CHART.JS GLOBAL DEFAULTS
-Chart.defaults.color = '#7a9ab8';
+Chart.defaults.color = '#B8C9D9';
 
 // Fix infinite resize loop: use ResizeObserver guard
 const _chartResizeGuard = new Map();
@@ -21,8 +21,8 @@ Chart.defaults.plugins.tooltip.backgroundColor = '#192534';
 Chart.defaults.plugins.tooltip.borderColor = '#223344';
 Chart.defaults.plugins.tooltip.borderWidth = 1;
 Chart.defaults.plugins.tooltip.padding = 10;
-Chart.defaults.plugins.tooltip.titleColor = '#dce8f5';
-Chart.defaults.plugins.tooltip.bodyColor = '#7a9ab8';
+Chart.defaults.plugins.tooltip.titleColor = '#FFFFFF';
+Chart.defaults.plugins.tooltip.bodyColor = '#B8C9D9';
 Chart.defaults.plugins.tooltip.cornerRadius = 6;
 Chart.defaults.animation.duration = 400;
 
@@ -62,7 +62,7 @@ function addFullscreen(canvasId) {
   const btn = document.createElement('button');
   btn.innerHTML = '⛶';
   btn.title = 'Plein écran';
-  btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#7a9ab8;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
+  btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     const wrap = canvas.closest('.chart-container') || canvas.parentElement;
     if (document.fullscreenElement) document.exitFullscreen();
@@ -81,7 +81,7 @@ function addDownload(canvasId, filename) {
   const btn = document.createElement('button');
   btn.innerHTML = '↓';
   btn.title = 'Télécharger PNG';
-  btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#7a9ab8;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
+  btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     if (!CHARTS[canvasId]) return;
     const a = document.createElement('a');
@@ -98,19 +98,126 @@ function addDownload(canvasId, filename) {
 const GRID = { color: 'rgba(26,45,63,.5)', drawTicks: false };
 const GRID_NONE = { display: false };
 
-// Color helpers
-const C_UP   = '#10b981';
-const C_DN   = '#f05060';
-const C_WARN = '#e8a020';
-const C_ACC  = '#10b981';
-const C_WIND = '#60a5fa';
-const C_SOLAR= '#f59e0b';
-const C_NUC  = '#3b82f6';
-const C_HYD  = '#34d399';
-const C_FOS  = '#f87171';
-const C_BIO  = '#6ee7b7';
-const C_TX2  = '#7a9ab8';
-const C_TX3  = '#3d5a7a';
+// ── Color constants (aligned with Klock palette V3 — see :root in index.html)
+// Brand & semantic
+const C_UP   = '#14D3A9';   // Mint Leaf — up, primary, power, wind
+const C_DN   = '#ED6965';   // Vibrant Coral — down, fossil, alert
+const C_WARN = '#EE9B00';   // Golden Orange — warning
+const C_ACC  = '#14D3A9';   // accent (= up)
+const C_HL   = '#FFFD82';   // Canary Yellow — highlight, breaking event
+
+// Energy sectors
+const C_WIND = '#14D3A9';   // Mint Leaf — wind (= primary)
+const C_SOLAR= '#FBBF24';   // Solar Gold
+const C_NUC  = '#7B4B9C';   // Amethyst — nuclear (was bleu, now violet)
+const C_HYD  = '#3FA6B4';   // Sea Glass — hydro
+const C_FOS  = '#ED6965';   // Vibrant Coral — fossil
+const C_BIO  = '#94D2BD';   // Pearl Aqua — biomass
+
+// Market categories
+const C_GAS    = '#C4A57B'; // Sand — gas
+const C_CARBON = '#A87DC4'; // Lavender — carbon / EUA
+const C_GO     = '#94D2BD'; // Pearl Aqua — guarantees of origin
+
+// Text scale
+const C_TX1  = '#FFFFFF';   // primary
+const C_TX2  = '#B8C9D9';   // secondary
+const C_TX3  = '#7A93AB';   // tertiary
+const C_TX4  = '#4A6280';   // disabled / no-data
+
+// Multi-zone series pool — 8 hand-picked colours with max contrast
+const SERIES_POOL = [
+  '#14D3A9',  // 1. Mint Leaf
+  '#ED6965',  // 2. Vibrant Coral
+  '#FFFD82',  // 3. Canary Yellow
+  '#1A7B8C',  // 4. Lagoon
+  '#CA6702',  // 5. Burnt Caramel
+  '#BB3E03',  // 6. Rusty Spice
+  '#7DD3FC',  // 7. Sky Blue
+  '#8B7FB5',  // 8. Slate Violet
+];
+
+// ── Farthest-point colour generation for indices 9+
+// Each new colour is the candidate that maximises the minimum perceptual
+// distance to ALL previously used colours (pool + already generated).
+// Distance is computed in approximate Lab space (better than RGB euclidean
+// for perceptual contrast).
+
+function _hexToRgb(hex) {
+  const h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function _rgbToLab(r, g, b) {
+  // sRGB → linear
+  const lin = c => { c /= 255; return c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); };
+  const R = lin(r), G = lin(g), B = lin(b);
+  // linear RGB → XYZ (D65)
+  const X = R*0.4124 + G*0.3576 + B*0.1805;
+  const Y = R*0.2126 + G*0.7152 + B*0.0722;
+  const Z = R*0.0193 + G*0.1192 + B*0.9505;
+  // XYZ → Lab
+  const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787*t + 16/116;
+  const fx = f(X/0.95047), fy = f(Y), fz = f(Z/1.08883);
+  return [116*fy - 16, 500*(fx-fy), 200*(fy-fz)];
+}
+function _hexToLab(hex) { const [r,g,b] = _hexToRgb(hex); return _rgbToLab(r,g,b); }
+function _labDist(a, b) { return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2); }
+function _hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => {
+    const c = l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
+    return Math.round(c*255).toString(16).padStart(2,'0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// Cache for generated colours so same index always returns same hex
+const _seriesCache = [];
+let _seriesUsedLabs = null;
+
+function _initLabCache() {
+  _seriesUsedLabs = SERIES_POOL.map(_hexToLab);
+}
+
+function getSeriesColor(index) {
+  if (index < SERIES_POOL.length) return SERIES_POOL[index];
+  if (_seriesCache[index]) return _seriesCache[index];
+  if (!_seriesUsedLabs) _initLabCache();
+
+  // Build all generated colours up to and including `index` so cache is filled
+  // in order (later calls with smaller indices stay deterministic).
+  for (let i = SERIES_POOL.length; i <= index; i++) {
+    if (_seriesCache[i]) continue;
+
+    // Generate a grid of candidates across HSL space — wide hue, mid-high
+    // saturation, mid lightness (readable on dark bg).
+    let bestHex = null;
+    let bestMinDist = -1;
+    for (let h = 0; h < 360; h += 12) {
+      for (const s of [55, 70, 85]) {
+        for (const l of [50, 62, 72]) {
+          const hex = _hslToHex(h, s, l);
+          const lab = _hexToLab(hex);
+          // Min distance to all already-used colours
+          let minD = Infinity;
+          for (const u of _seriesUsedLabs) {
+            const d = _labDist(lab, u);
+            if (d < minD) minD = d;
+          }
+          if (minD > bestMinDist) { bestMinDist = minD; bestHex = hex; }
+        }
+      }
+    }
+    _seriesCache[i] = bestHex;
+    _seriesUsedLabs.push(_hexToLab(bestHex));
+  }
+  return _seriesCache[index];
+}
+
+const SERIES_NEUTRAL = '#7A93AB';
+const SERIES_MAX_DISTINCT = 8;
 
 function rgba(hex, a) {
   const r = parseInt(hex.slice(1,3),16);
@@ -174,9 +281,9 @@ const GM_DEMO = {
   PT:{nuclear:0,wind:4000,solar:3500,hydro:2500,fossil:1500,biomass:400,total:12000},
 };
 const FUELS = [
-  {k:'nuclear',l:'Nuclear',c:'#a78bfa'},{k:'wind',l:'Wind',c:'#60a5fa'},
-  {k:'solar',l:'Solar',c:'#f59e0b'},{k:'hydro',l:'Hydro',c:'#34d399'},
-  {k:'fossil',l:'Fossil',c:'#f87171'},{k:'biomass',l:'Biomass',c:'#6ee7b7'},
+  {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},
+  {k:'solar',l:'Solar',c:'#FBBF24'},{k:'hydro',l:'Hydro',c:'#94D2BD'},
+  {k:'fossil',l:'Fossil',c:'#ED6965'},{k:'biomass',l:'Biomass',c:'#94D2BD'},
 ];
 const WX_CITIES = [
   {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},
