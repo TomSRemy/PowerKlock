@@ -1664,11 +1664,134 @@ function onCompareSelectChange(sel) {
   renderCompareChart();
 }
 
+// ════════════════════════════════════════════
+// COMPARE CHART — multi-view router (Insta-style tabs)
+// ════════════════════════════════════════════
+// Available views: 'lines' (default), 'heatmap', 'profile', 'bands', 'spread'
+// State: window._ccView holds the current view, window._ccSpreadRef the spread reference zone
+
+const CC_VIEWS = [
+  { key:'lines',   label:'Lines',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M3 12c4 0 4-7 8-7s4 9 8 9"/></svg>' },
+  { key:'heatmap', label:'Heatmap', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/></svg>' },
+  { key:'profile', label:'Profile', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h2l2-8 4 16 3-12 2 6h5"/></svg>' },
+  { key:'bands',   label:'Bands',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 18c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/><path d="M3 6c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/></svg>' },
+  { key:'spread',  label:'Spread',  icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 19 4-7 6 4 7-12"/><path d="M14 4h7v7"/></svg>' },
+];
+
+function renderCCTabs() {
+  const tabs = document.getElementById('cc-tabs');
+  if (!tabs) return;
+  const cur = window._ccView || 'lines';
+  tabs.innerHTML = CC_VIEWS.map(v => `
+    <button onclick="setCCView('${v.key}')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:${v.key===cur?'var(--bg3)':'transparent'};color:${v.key===cur?'var(--text)':'var(--text3)'};font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.03em;transition:all .15s">
+      <span style="display:inline-flex;width:14px;height:14px">${v.icon}</span>${v.label}
+    </button>
+  `).join('');
+}
+
+function setCCView(view) {
+  window._ccView = view;
+  renderCCTabs();
+  // Show/hide spread reference selector
+  const refWrap = document.getElementById('cc-ref-wrap');
+  if (refWrap) refWrap.style.display = view === 'spread' ? 'flex' : 'none';
+  // Show/hide canvas vs heatmap div
+  const canvas = document.getElementById('price-compare-canvas');
+  const heat   = document.getElementById('cc-heatmap');
+  if (canvas) canvas.style.display = view === 'heatmap' ? 'none' : 'block';
+  if (heat)   heat.style.display   = view === 'heatmap' ? 'block' : 'none';
+  renderCompareChart();
+}
+window.setCCView = setCCView;
+
+function setSpreadRef(code) {
+  window._ccSpreadRef = code;
+  renderCompareChart();
+}
+window.setSpreadRef = setSpreadRef;
+
+function populateSpreadRefSelect(data) {
+  const sel = document.getElementById('cc-ref-select');
+  if (!sel || !data) return;
+  const cur = window._ccSpreadRef || 'FR';
+  sel.innerHTML = data.map(z => `<option value="${z.code}" ${z.code===cur?'selected':''}>${z.code}</option>`).join('');
+}
+
+// ────────────────────────────────────────────
+// Helpers shared across views
+// ────────────────────────────────────────────
+function ccGetSelectedZones(data, selected) {
+  const out = [];
+  data.forEach(z => { if (selected.has(z.code)) out.push(z); });
+  return out;
+}
+
+function ccZoneColor(code, data, idx) {
+  if (!window._zoneColorMap) {
+    window._zoneColorMap = {};
+    data.forEach((z, i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
+  }
+  return window._zoneColorMap[code] || COMPARE_COLORS[idx % COMPARE_COLORS.length];
+}
+
+function ccBuildCommonShading(nPts) {
+  return {
+    id: 'ccShading',
+    beforeDraw(chart) {
+      const { ctx, chartArea, scales: { x } } = chart;
+      if (!x || !chartArea) return;
+      const { top, bottom } = chartArea;
+      const sc = nPts / 24;
+      const zones = [
+        { from: 7*sc,  to: 9*sc,   color: 'rgba(232,160,32,0.05)' },
+        { from: 11*sc, to: 14*sc,  color: 'rgba(0,212,168,0.04)' },
+        { from: 17*sc, to: 21*sc,  color: 'rgba(232,160,32,0.05)' },
+      ];
+      ctx.save();
+      zones.forEach(({ from, to, color }) => {
+        const x0 = x.getPixelForValue(from), x1 = x.getPixelForValue(to);
+        ctx.fillStyle = color;
+        ctx.fillRect(x0, top, x1 - x0, bottom - top);
+      });
+      ctx.restore();
+    }
+  };
+}
+
+// ────────────────────────────────────────────
+// Router
+// ────────────────────────────────────────────
 function renderCompareChart() {
   const data = window._pricesSorted;
   if (!data || !data.length) return;
   const selected = window._compareZones || new Set(['FR']);
-  // Use resolution of first selected zone's data
+  const view = window._ccView || 'lines';
+
+  populateSpreadRefSelect(data);
+
+  switch (view) {
+    case 'heatmap': renderCCHeatmap(data, selected); break;
+    case 'profile': renderCCProfile(data, selected); break;
+    case 'bands':   renderCCBands(data, selected);   break;
+    case 'spread':  renderCCSpread(data, selected);  break;
+    case 'lines':
+    default:        renderCCLines(data, selected);
+  }
+
+  // Refresh the data table below the chart
+  renderCompareKPIs(data, selected);
+  // Generate analysis banner for current view
+  setTimeout(() => {
+    if (view !== 'heatmap') addFullscreen('price-compare-canvas');
+    if (view !== 'heatmap') addDownload('price-compare-canvas','price-comparison');
+    renderCCAnalysis(view, data, selected);
+  }, 100);
+}
+
+// ────────────────────────────────────────────
+// View 1: LINES (existing chart, refactored)
+// ────────────────────────────────────────────
+function renderCCLines(data, selected) {
   const firstZone = data.find(z => selected.has(z.code));
   const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
   const hours = makeTimeLabels(nPts);
@@ -1676,164 +1799,577 @@ function renderCompareChart() {
   const curIdx = Math.min(curHr, nPts - 1);
 
   const datasets = [];
-  let colorIdx = 0;
-  if (!window._zoneColorMap) {
-    window._zoneColorMap = {};
-    data.forEach((z,i) => { window._zoneColorMap[z.code] = COMPARE_COLORS[i % COMPARE_COLORS.length]; });
-  }
-  data.forEach((z,i) => {
+  data.forEach((z, i) => {
     if (!selected.has(z.code)) return;
-    const baseCol = window._zoneColorMap[z.code] || COMPARE_COLORS[i % COMPARE_COLORS.length];
+    const baseCol = ccZoneColor(z.code, data, i);
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-    const negFracCC = hourly.filter(v=>v!=null&&v<0).length / Math.max(1, hourly.filter(v=>v!=null).length);
+    const negFracCC = hourly.filter(v => v != null && v < 0).length / Math.max(1, hourly.filter(v => v != null).length);
     const col = negFracCC >= 0.5 ? '#f05060' : negFracCC >= 0.2 ? '#f59e0b' : baseCol;
-    // Today — solid with transparent fill
     datasets.push({
-      label:`${z.code} · ${z.name}`,
-      data:hourly,
-      borderColor:col,
-      borderWidth:2,
-      pointRadius:0,
-      pointHoverRadius:5,
-      pointHoverBackgroundColor:col,
-      pointHoverBorderColor:'#fff',
-      pointHoverBorderWidth:2,
-      fill:true,
-      backgroundColor:(ctx2) => {
+      label: `${z.code} · ${z.name}`, data: hourly, borderColor: col, borderWidth: 2,
+      pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+      pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2, fill: true,
+      backgroundColor: (ctx2) => {
         const g = ctx2.chart.ctx.createLinearGradient(0,0,0,320);
         g.addColorStop(0, col+'28'); g.addColorStop(1, col+'00'); return g;
       },
-      tension:0.3,
+      tension: 0.3,
     });
-    // J-1 — dashed, same color, 50% opacity
     if (z.hourlyYday && z.hourlyYday.length) {
-      datasets.push({
-        label:`${z.code} J-1`,
-        data: z.hourlyYday,
-        borderColor: col,
-        borderWidth: 1.2,
-        borderDash: [5,4],
-        pointRadius: 0,
-        fill: false,
-        tension: 0,
-        opacity: 0.5,
-      });
+      datasets.push({ label:`${z.code} J-1`, data:z.hourlyYday, borderColor:col, borderWidth:1.2, borderDash:[5,4], pointRadius:0, fill:false, tension:0, opacity:0.5 });
     }
-    // J-2 — dashed, more transparent
     if (z.hourlyJ2 && z.hourlyJ2.length) {
-      datasets.push({
-        label:`${z.code} J-2`,
-        data: z.hourlyJ2,
-        borderColor: col,
-        borderWidth: 1,
-        borderDash: [2,4],
-        pointRadius: 0,
-        fill: false,
-        tension: 0,
-        opacity: 0.3,
-      });
+      datasets.push({ label:`${z.code} J-2`, data:z.hourlyJ2, borderColor:col, borderWidth:1, borderDash:[2,4], pointRadius:0, fill:false, tension:0, opacity:0.3 });
     }
   });
 
-  // Shading plugin for compare chart
-  const ccShadingPlugin = {
-    id:'ccShading',
-    beforeDraw(chart) {
-      const {ctx,chartArea,scales:{x}}=chart; if(!x||!chartArea) return;
-      const {top,bottom}=chartArea; const sc=nPts/24;
-      const zones=[
-        {from:7*sc,to:9*sc,  color:'rgba(232,160,32,0.05)'},
-        {from:11*sc,to:14*sc,color:'rgba(0,212,168,0.04)'},
-        {from:17*sc,to:21*sc,color:'rgba(232,160,32,0.05)'},
-      ];
-      ctx.save();
-      zones.forEach(({from,to,color})=>{
-        const x0=x.getPixelForValue(from),x1=x.getPixelForValue(to);
-        ctx.fillStyle=color; ctx.fillRect(x0,top,x1-x0,bottom-top);
-      });
-      ctx.restore();
-    }
-  };
-
   mkChart('price-compare-canvas', {
-    type:'line',
-    data:{ labels:hours, datasets },
-    plugins:[ccShadingPlugin],
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      interaction:{ mode:'index', intersect:false },
-      plugins:{
-        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10,
-          filter: item => !(item.text.includes('J-1')||item.text.includes('J-2'))
+    type: 'line',
+    data: { labels: hours, datasets },
+    plugins: [ ccBuildCommonShading(nPts) ],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10,
+          filter: item => !(item.text.includes('J-1') || item.text.includes('J-2')) }},
+        tooltip: { mode:'index', intersect:false, callbacks: {
+          title: c => c[0].label,
+          label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
-        tooltip:{
-          mode:'index', intersect:false,
-          callbacks:{
-            title: c => c[0].label,
-            label: c => {
-              const v = c.raw; if (v==null) return null;
-              return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`;
-            }
-          }
-        },
-        zoom:ZOOM_CFG,
-        annotation:{
-          annotations:{
-            nowline:{
-              type:'line', xMin:curIdx, xMax:curIdx,
-              borderColor:'rgba(255,220,100,.7)', borderWidth:1.5, borderDash:[4,3],
-              label:{display:true,content:'NOW',position:'start',color:'rgba(255,220,100,.9)',font:{size:9,weight:'600'},backgroundColor:'transparent',padding:2}
-            }
-          }
-        }
+        zoom: ZOOM_CFG,
+        annotation: { annotations: { nowline: {
+          type:'line', xMin:curIdx, xMax:curIdx, borderColor:'rgba(255,220,100,.7)', borderWidth:1.5, borderDash:[4,3],
+          label:{ display:true, content:'NOW', position:'start', color:'rgba(255,220,100,.9)', font:{size:9,weight:'600'}, backgroundColor:'transparent', padding:2 }
+        }}}
       },
-      scales:{
-        x:{grid:GRID, ticks:{color:C_TX3, font:{size:9}, maxTicksLimit:12}},
-        y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+' €'}, title:{display:true,text:'€/MWh',color:C_TX3,font:{size:9}}}
+      scales: {
+        x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }}
       }
     }
   });
+}
 
-  // KPI strip per selected zone below chart
-  renderCompareKPIs(data, selected);
-  setTimeout(()=>{ addFullscreen('price-compare-canvas'); addDownload('price-compare-canvas','price-comparison'); renderCompareKPIs(data, selected); },100);
+// ────────────────────────────────────────────
+// View 2: HEATMAP — zones × hours grid, color = price
+// ────────────────────────────────────────────
+function renderCCHeatmap(data, selected) {
+  const host = document.getElementById('cc-heatmap');
+  if (!host) return;
+  const zones = ccGetSelectedZones(data, selected);
+  if (!zones.length) { host.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">No zones selected</div>'; return; }
+
+  const nPts = zones[0].hourly && zones[0].hourly.length ? zones[0].hourly.length : 24;
+  const nph = nPts > 24 ? Math.round(nPts/24) : 1;
+  // Aggregate to hourly granularity for the heatmap (24 cols always)
+  const grid = zones.map(z => {
+    const h = z.hourly && z.hourly.length ? z.hourly : [];
+    const hr = [];
+    for (let i = 0; i < 24; i++) {
+      const slots = [];
+      for (let j = 0; j < nph; j++) {
+        const v = h[i*nph + j];
+        if (v != null) slots.push(v);
+      }
+      hr.push(slots.length ? slots.reduce((a,b)=>a+b,0)/slots.length : null);
+    }
+    return { code: z.code, flag: z.flag, color: ccZoneColor(z.code, data, 0), hourly: hr };
+  });
+
+  // Global colour scale
+  let mn = Infinity, mx = -Infinity;
+  grid.forEach(r => r.hourly.forEach(v => { if (v != null) { mn = Math.min(mn, v); mx = Math.max(mx, v); } }));
+  const colorFor = (v) => {
+    if (v == null) return 'var(--bg)';
+    if (v < 0)    return '#5b1a2a';
+    const t = Math.max(0, Math.min(1, (v - Math.max(0,mn)) / (mx - Math.max(0,mn) || 1)));
+    if (t < .15) return '#0f4434';
+    if (t < .35) return '#155f4a';
+    if (t < .55) return '#2a7a3a';
+    if (t < .70) return '#a37a1a';
+    if (t < .85) return '#c25526';
+    return '#a82a3a';
+  };
+
+  let html = '<div style="font-family:\'JetBrains Mono\',monospace;padding:8px 4px">';
+  // header row
+  html += '<div style="display:flex;align-items:end;margin-bottom:6px"><div style="width:80px"></div><div style="flex:1;display:grid;grid-template-columns:repeat(24,1fr);gap:1px;color:var(--text3);font-size:9px;padding-bottom:3px">';
+  for (let h = 0; h < 24; h++) html += `<div style="text-align:center">${h%3===0?String(h).padStart(2,'0')+'h':''}</div>`;
+  html += '</div></div>';
+  // body rows
+  grid.forEach(r => {
+    html += `<div style="display:flex;align-items:center;margin-bottom:2px">
+      <div style="width:80px;color:${r.color};font-weight:700;font-size:11px">${r.flag||''} ${r.code}</div>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(24,1fr);gap:1px;height:26px">`;
+    r.hourly.forEach((v, i) => {
+      const c = colorFor(v);
+      const lbl = v == null ? '·' : Math.round(v);
+      const tip = v == null ? `${r.code} ${i}h: no data` : `${r.code} ${i}h: ${v.toFixed(1)} €/MWh`;
+      html += `<div title="${tip}" style="background:${c};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;border-radius:1px;font-weight:500">${lbl}</div>`;
+    });
+    html += '</div></div>';
+  });
+  // scale legend
+  html += `<div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:10px;color:var(--text3);padding-left:80px">
+    <span>min ${Math.round(mn)}€</span>
+    <div style="display:flex;height:8px;width:200px">
+      <div style="flex:1;background:#5b1a2a"></div>
+      <div style="flex:1;background:#0f4434"></div>
+      <div style="flex:1;background:#155f4a"></div>
+      <div style="flex:1;background:#2a7a3a"></div>
+      <div style="flex:1;background:#a37a1a"></div>
+      <div style="flex:1;background:#c25526"></div>
+      <div style="flex:1;background:#a82a3a"></div>
+    </div>
+    <span>max ${Math.round(mx)}€</span>
+  </div></div>`;
+  host.innerHTML = html;
+}
+
+// ────────────────────────────────────────────
+// View 3: PROFILE — normalized to % of daily avg
+// ────────────────────────────────────────────
+function renderCCProfile(data, selected) {
+  const firstZone = data.find(z => selected.has(z.code));
+  const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
+  const hours = makeTimeLabels(nPts);
+
+  const datasets = [];
+  data.forEach((z, i) => {
+    if (!selected.has(z.code)) return;
+    const col = ccZoneColor(z.code, data, i);
+    const h = z.hourly && z.hourly.length ? z.hourly : [];
+    const valid = h.filter(v => v != null);
+    if (!valid.length) return;
+    const avg = valid.reduce((a,b)=>a+b,0) / valid.length;
+    if (Math.abs(avg) < 0.5) return; // can't normalize on near-zero average
+    const norm = h.map(v => v == null ? null : (v / avg) * 100);
+    datasets.push({
+      label: `${z.code}`, data: norm, borderColor: col, borderWidth: 2,
+      pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+      fill: false, tension: 0.3, spanGaps: true,
+    });
+  });
+
+  mkChart('price-compare-canvas', {
+    type: 'line',
+    data: { labels: hours, datasets },
+    plugins: [ ccBuildCommonShading(nPts) ],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
+        tooltip: { mode:'index', intersect:false, callbacks: {
+          title: c => c[0].label,
+          label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(0)}% of daily avg`; }
+        }},
+        zoom: ZOOM_CFG,
+        annotation: { annotations: {
+          baseline: { type:'line', yMin:100, yMax:100, borderColor:'rgba(148,163,184,.4)', borderWidth:1, borderDash:[3,3],
+            label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
+          }
+        }}
+      },
+      scales: {
+        x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' %' }, title:{ display:true, text:'% of daily average', color:C_TX3, font:{size:9} }}
+      }
+    }
+  });
+}
+
+// ────────────────────────────────────────────
+// View 4: BANDS — single zone, today + 30-day envelope
+// ────────────────────────────────────────────
+async function renderCCBands(data, selected) {
+  const zones = ccGetSelectedZones(data, selected);
+  // Use the first selected zone (could be made a dropdown later)
+  const z = zones[0] || data[0];
+  if (!z) return;
+  const col = ccZoneColor(z.code, data, 0);
+
+  const nPts = z.hourly && z.hourly.length ? z.hourly.length : 24;
+  const hours = makeTimeLabels(nPts);
+  const today = z.hourly || [];
+
+  // Build 30-day envelope from history (downsampled to nPts)
+  const envelope = await fetchHistoricalEnvelope(z.code, 30, nPts);
+
+  const datasets = [];
+  if (envelope) {
+    datasets.push({
+      label: 'Max (30d)', data: envelope.max, borderColor: 'transparent',
+      backgroundColor: col + '22', fill: '+1', spanGaps: true, pointRadius: 0, tension: 0.3, order: 3,
+    });
+    datasets.push({
+      label: 'Min (30d)', data: envelope.min, borderColor: 'transparent',
+      backgroundColor: 'transparent', fill: false, spanGaps: true, pointRadius: 0, tension: 0.3, order: 3,
+    });
+    datasets.push({
+      label: 'Median (30d)', data: envelope.median, borderColor: 'rgba(148,163,184,.5)',
+      borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: false, tension: 0.3, spanGaps: true, order: 2,
+    });
+  }
+  datasets.push({
+    label: `${z.code} today`, data: today, borderColor: col, borderWidth: 2.5,
+    pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+    fill: false, tension: 0.3, spanGaps: true, order: 1,
+  });
+
+  mkChart('price-compare-canvas', {
+    type: 'line',
+    data: { labels: hours, datasets },
+    plugins: [ ccBuildCommonShading(nPts) ],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
+        tooltip: { mode:'index', intersect:false, callbacks: {
+          title: c => c[0].label,
+          label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
+        }},
+        zoom: ZOOM_CFG,
+      },
+      scales: {
+        x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }}
+      }
+    }
+  });
+}
+
+// Fetch 30-day envelope (min/max/median per hour) from history files
+async function fetchHistoricalEnvelope(code, nDays, nPts) {
+  if (window._envelopeCache && window._envelopeCache[code]) return window._envelopeCache[code];
+  const today = new Date();
+  const dates = [];
+  for (let i = 1; i <= nDays; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  const all = []; // array of hourly arrays (nPts each)
+  await Promise.all(dates.map(async (dt) => {
+    try {
+      const r = await fetch(`data/history/daily/${dt}.json`);
+      if (!r.ok) return;
+      const j = await r.json();
+      let z = null;
+      if (j.zones && j.zones[code]) z = j.zones[code];
+      else if (Array.isArray(j.zones)) z = j.zones.find(x => x.code === code);
+      if (!z) return;
+      const h = z.hourly || z.h;
+      if (!Array.isArray(h) || !h.length) return;
+      // Resample to match nPts
+      const ratio = h.length / nPts;
+      const resampled = [];
+      for (let i = 0; i < nPts; i++) {
+        const start = Math.floor(i * ratio);
+        const end = Math.max(start + 1, Math.floor((i+1) * ratio));
+        const slice = h.slice(start, end).filter(v => v != null);
+        resampled.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
+      }
+      all.push(resampled);
+    } catch (e) { /* silent */ }
+  }));
+  if (!all.length) return null;
+  const min = [], max = [], median = [];
+  for (let i = 0; i < nPts; i++) {
+    const vals = all.map(arr => arr[i]).filter(v => v != null).sort((a,b)=>a-b);
+    if (!vals.length) { min.push(null); max.push(null); median.push(null); continue; }
+    min.push(vals[0]);
+    max.push(vals[vals.length - 1]);
+    median.push(vals[Math.floor(vals.length / 2)]);
+  }
+  const result = { min, max, median, n: all.length };
+  window._envelopeCache = window._envelopeCache || {};
+  window._envelopeCache[code] = result;
+  return result;
+}
+
+// ────────────────────────────────────────────
+// View 5: SPREAD — all selected zones minus reference (default FR)
+// ────────────────────────────────────────────
+function renderCCSpread(data, selected) {
+  const refCode = window._ccSpreadRef || 'FR';
+  const ref = data.find(z => z.code === refCode);
+  if (!ref || !ref.hourly) return;
+  const refH = ref.hourly;
+  const nPts = refH.length;
+  const hours = makeTimeLabels(nPts);
+
+  const datasets = [];
+  data.forEach((z, i) => {
+    if (!selected.has(z.code) || z.code === refCode) return;
+    const col = ccZoneColor(z.code, data, i);
+    const h = z.hourly && z.hourly.length === nPts ? z.hourly : null;
+    if (!h) return;
+    const spread = h.map((v, idx) => (v == null || refH[idx] == null) ? null : v - refH[idx]);
+    datasets.push({
+      label: `${z.code} − ${refCode}`, data: spread, borderColor: col, borderWidth: 2,
+      pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+      fill: false, tension: 0.3, spanGaps: true,
+    });
+  });
+
+  mkChart('price-compare-canvas', {
+    type: 'line',
+    data: { labels: hours, datasets },
+    plugins: [ ccBuildCommonShading(nPts) ],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
+        tooltip: { mode:'index', intersect:false, callbacks: {
+          title: c => c[0].label,
+          label: c => { const v = c.raw; if (v == null) return null; const sign = v >= 0 ? '+' : ''; return ` ${c.dataset.label}: ${sign}${v.toFixed(1)} €/MWh`; }
+        }},
+        zoom: ZOOM_CFG,
+        annotation: { annotations: {
+          baseline: { type:'line', yMin:0, yMax:0, borderColor:'rgba(148,163,184,.5)', borderWidth:1.5,
+            label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
+          }
+        }}
+      },
+      scales: {
+        x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>(v>0?'+':'')+v.toFixed(0)+' €' }, title:{ display:true, text:`€/MWh vs ${refCode}`, color:C_TX3, font:{size:9} }}
+      }
+    }
+  });
+}
+
+// ────────────────────────────────────────────
+// Auto-generated analysis banner
+// ────────────────────────────────────────────
+function renderCCAnalysis(view, data, selected) {
+  const host = document.getElementById('cc-analysis');
+  if (!host) return;
+  const zones = ccGetSelectedZones(data, selected);
+  if (!zones.length) { host.style.display = 'none'; return; }
+
+  const nph = zones[0].hourly && zones[0].hourly.length > 24 ? Math.round(zones[0].hourly.length/24) : 1;
+  // Helper: peak/off-peak avg per zone
+  const stats = zones.map(z => {
+    const h = z.hourly || [];
+    const valid = h.filter(v => v != null);
+    if (!valid.length) return null;
+    const pkV = [], opV = [];
+    h.forEach((v, idx) => {
+      if (v == null) return;
+      const hr = Math.floor(idx / nph);
+      (hr >= 8 && hr < 20 ? pkV : opV).push(v);
+    });
+    const avg = valid.reduce((a,b)=>a+b,0)/valid.length;
+    const pk  = pkV.length ? pkV.reduce((a,b)=>a+b,0)/pkV.length : avg;
+    const op  = opV.length ? opV.reduce((a,b)=>a+b,0)/opV.length : avg;
+    return { code:z.code, avg, mn:Math.min(...valid), mx:Math.max(...valid), pk, op, spread:pk-op };
+  }).filter(Boolean);
+
+  let lines = [];
+  let tone = 'info'; // info | warn | alert
+
+  if (view === 'lines') {
+    const inverted = stats.filter(s => s.spread < -5).length;
+    const mostExpensive = [...stats].sort((a,b) => b.avg - a.avg)[0];
+    const cheapest = [...stats].sort((a,b) => a.avg - b.avg)[0];
+    lines.push(`Today's range across selected zones: ${cheapest.code} cheapest at <b>${cheapest.avg.toFixed(1)} €/MWh</b> avg, ${mostExpensive.code} most expensive at <b>${mostExpensive.avg.toFixed(1)} €/MWh</b> (gap: ${(mostExpensive.avg-cheapest.avg).toFixed(1)} €).`);
+    if (inverted > 0) {
+      lines.push(`<b>${inverted} of ${stats.length}</b> zones show inverted P/OP spread today (off-peak more expensive than peak — duck curve from solar generation).`);
+      tone = inverted >= stats.length / 2 ? 'warn' : 'info';
+    }
+  } else if (view === 'heatmap') {
+    const negZones = stats.filter(s => s.mn < 0);
+    const veryLowZones = stats.filter(s => s.mn < 5 && s.mn >= 0);
+    if (negZones.length) {
+      lines.push(`<b>Negative prices</b> in ${negZones.map(z=>z.code).join(', ')} (min: ${Math.min(...negZones.map(z=>z.mn)).toFixed(1)} €/MWh). Solar oversupply during midday hours.`);
+      tone = 'warn';
+    } else if (veryLowZones.length) {
+      lines.push(`Near-zero prices in ${veryLowZones.map(z=>z.code).join(', ')} during the solar trough (typical 11h-15h).`);
+    }
+    const peakZone = [...stats].sort((a,b) => b.mx - a.mx)[0];
+    lines.push(`Highest peak: <b>${peakZone.code}</b> at ${peakZone.mx.toFixed(1)} €/MWh. Read rows left-to-right to spot zones that share or diverge in their daily shape.`);
+  } else if (view === 'profile') {
+    // Find zone with widest profile (max/min ratio)
+    const profiles = stats.map(s => ({ ...s, spread: s.mx - s.mn, ratio: s.avg !== 0 ? (s.mx - s.mn) / Math.abs(s.avg) : 0 }));
+    const flattest = [...profiles].sort((a,b) => a.ratio - b.ratio)[0];
+    const peakiest = [...profiles].sort((a,b) => b.ratio - a.ratio)[0];
+    lines.push(`Shape comparison normalised on each zone's daily average. <b>${peakiest.code}</b> has the most pronounced shape (max swing ${(peakiest.ratio*100).toFixed(0)}% of avg), <b>${flattest.code}</b> is the flattest (${(flattest.ratio*100).toFixed(0)}%).`);
+    lines.push(`Useful for PPA shape risk: same shape ≠ same risk if avg levels differ — a 50% swing on a €30 base costs less than on a €130 base.`);
+  } else if (view === 'bands') {
+    const z = zones[0];
+    if (z) {
+      const env = window._envelopeCache && window._envelopeCache[z.code];
+      if (env && env.n) {
+        lines.push(`<b>${z.code}</b> today vs ${env.n}-day envelope. Shaded area = historical min/max range, dashed line = median.`);
+        // Check if today is outside envelope
+        const today = z.hourly || [];
+        let above = 0, below = 0;
+        today.forEach((v, i) => {
+          if (v == null || env.max[i] == null) return;
+          if (v > env.max[i]) above++;
+          if (v < env.min[i]) below++;
+        });
+        if (above > today.length * 0.1) { lines.push(`Today's prices are <b>above the historical max</b> for ${above} hours — abnormal upside.`); tone = 'warn'; }
+        else if (below > today.length * 0.1) { lines.push(`Today's prices are <b>below the historical min</b> for ${below} hours — abnormal downside.`); tone = 'warn'; }
+        else lines.push(`Today's prices stay within the envelope — typical day for this zone.`);
+      } else {
+        lines.push(`Loading historical envelope for <b>${z.code}</b>… If empty, history files may not be available for this zone.`);
+      }
+    }
+  } else if (view === 'spread') {
+    const refCode = window._ccSpreadRef || 'FR';
+    const ref = data.find(z => z.code === refCode);
+    if (ref && ref.hourly) {
+      const refStats = stats.find(s => s.code === refCode);
+      const others = stats.filter(s => s.code !== refCode);
+      if (others.length && refStats) {
+        const premium = others.filter(s => s.avg > refStats.avg);
+        const discount = others.filter(s => s.avg < refStats.avg);
+        if (premium.length) lines.push(`<b>Premium vs ${refCode}</b>: ${premium.sort((a,b)=>(b.avg-refStats.avg)-(a.avg-refStats.avg)).map(s=>`${s.code} +${(s.avg-refStats.avg).toFixed(1)}€`).join(', ')}.`);
+        if (discount.length) lines.push(`<b>Discount vs ${refCode}</b>: ${discount.sort((a,b)=>(a.avg-refStats.avg)-(b.avg-refStats.avg)).map(s=>`${s.code} ${(s.avg-refStats.avg).toFixed(1)}€`).join(', ')}.`);
+        lines.push(`Spreads above the 0-line indicate import opportunities into ${refCode}; below indicate export.`);
+      }
+    }
+  }
+
+  if (!lines.length) { host.style.display = 'none'; return; }
+
+  const toneColor = tone === 'warn' ? 'var(--warn)' : tone === 'alert' ? 'var(--down)' : 'var(--accent, var(--text2))';
+  host.style.borderLeftColor = toneColor;
+  host.style.display = 'block';
+  host.innerHTML = lines.map(l => `<div style="margin:2px 0">${l}</div>`).join('');
+}
+
+// Initialise tabs on first load
+if (typeof window !== 'undefined') {
+  const initCCTabs = () => {
+    if (!window._ccView) window._ccView = 'lines';
+    if (!window._ccSpreadRef) window._ccSpreadRef = 'FR';
+    renderCCTabs();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCCTabs);
+  } else {
+    initCCTabs();
+  }
 }
 
 function renderCompareKPIs(data, selected) {
-  // Now renders a table instead of KPI cards
+  // Renders a comparison table with horizontal Range bar (option C).
+  // All metrics computed on raw slots (15-min if available) for consistency.
   const tbody = document.getElementById('compare-data-tbody');
   if (!tbody || !data) return;
+
+  // First pass: compute all rows so we can find global min/max for Range bar scaling
   const rows = [];
   data.forEach(z => {
     if (!selected.has(z.code)) return;
-    const col = window._zoneColorMap?.[z.code] || '#4a6280';
     const h = z.hourly && z.hourly.length ? z.hourly : [];
-    const valid = h.filter(v=>v!=null);
+    const valid = h.filter(v => v != null);
     if (!valid.length) return;
-    const avg = valid.reduce((a,b)=>a+b,0)/valid.length;
-    const mn  = Math.min(...valid), mx = Math.max(...valid);
+    const avg = valid.reduce((a,b)=>a+b,0) / valid.length;
+    const mn  = Math.min(...valid);
+    const mx  = Math.max(...valid);
     const nph = h.length > 24 ? Math.round(h.length/24) : 1;
-    const pkV=[], opV=[];
-    h.forEach((v,i)=>{ if(v==null)return; const hr=Math.floor(i/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
+    const resMin = nph === 4 ? 15 : 60;
+    const minIdx = h.indexOf(mn);
+    const maxIdx = h.indexOf(mx);
+    const fmtSlot = (idx) => {
+      if (idx < 0) return '--';
+      const totalMin = idx * resMin;
+      const hh = Math.floor(totalMin / 60);
+      const mm = totalMin % 60;
+      return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
+    };
+    const pkV = [], opV = [];
+    h.forEach((v, i) => {
+      if (v == null) return;
+      const hr = Math.floor(i / nph);
+      (hr >= 8 && hr < 20 ? pkV : opV).push(v);
+    });
     const pk = pkV.length ? pkV.reduce((a,b)=>a+b,0)/pkV.length : avg;
     const op = opV.length ? opV.reduce((a,b)=>a+b,0)/opV.length : avg;
-    const spread = pk - op;
-    const meta = ZONE_META[z.code] || {country:z.name||z.code};
-    rows.push(`<tr>
-      <td>
-        <span style="display:inline-block;width:3px;height:14px;background:${col};border-radius:2px;vertical-align:middle;margin-right:6px"></span>
-        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col}">${z.flag||''} ${z.code}</span>
-        <span style="color:var(--tx3);margin-left:4px">${meta.country}</span>
-      </td>
-      <td style="font-family:'JetBrains Mono',monospace;font-weight:600;color:${avg<0?'var(--dn)':avg<20?'var(--up)':'var(--tx)'}">${avg.toFixed(1)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--up)">${mn.toFixed(1)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--dn)">${mx.toFixed(1)}</td>
-      <td style="font-family:'JetBrains Mono',monospace">${pk.toFixed(1)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)">${op.toFixed(1)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:${spread>=0?'var(--up)':'var(--tx3)'}">${spread>=0?'+':''}${spread.toFixed(1)}</td>
-    </tr>`);
+    rows.push({
+      z, code: z.code, avg, mn, mx,
+      minHr: fmtSlot(minIdx),
+      maxHr: fmtSlot(maxIdx),
+      pk, op, spread: pk - op,
+    });
   });
-  tbody.innerHTML = rows.join('') || '<tr><td colspan="7" style="color:var(--tx3);text-align:center">No zones selected</td></tr>';
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--tx3);text-align:center;padding:14px">No zones selected</td></tr>';
+    return;
+  }
+
+  // Global scale for Range bar (across all selected zones)
+  const globalMin = Math.min(...rows.map(r => r.mn));
+  const globalMax = Math.max(...rows.map(r => r.mx));
+  const globalRng = globalMax - globalMin || 1;
+
+  // Helper: spread colour by severity
+  const spreadColor = (s) => {
+    if (s >= 0) return 'var(--text2)';                  // normal: peak >= off-peak
+    if (s > -20) return 'var(--warn)';                  // mildly inverted
+    return 'var(--down)';                               // deeply inverted
+  };
+
+  const html = rows.map(r => {
+    const col = window._zoneColorMap?.[r.code] || '#94a3b8';
+    const meta = ZONE_META[r.code] || { country: r.z.name || r.code };
+    // Bar lives in a fixed-width inner zone between the two labels.
+    // leftPct/widthPct are computed against that inner zone, not the full cell.
+    const leftPct  = ((r.mn - globalMin) / globalRng) * 100;
+    const widthPct = ((r.mx - r.mn) / globalRng) * 100;
+    const negMin = r.mn < 0;
+    const negMax = r.mx < 0;
+
+    // Spread: value line 1, qualitative tag line 2
+    let spreadValue, spreadTag = '';
+    if (r.spread >= 0) {
+      spreadValue = `<span style="color:var(--text2)">+${r.spread.toFixed(1)}</span>`;
+    } else if (r.spread > -20) {
+      spreadValue = `<span style="color:var(--warn)">${r.spread.toFixed(1)}</span>`;
+      spreadTag = `<div style="font-size:9px;color:var(--text3);margin-top:2px">inverted</div>`;
+    } else {
+      spreadValue = `<span style="color:var(--down)">${r.spread.toFixed(1)}</span>`;
+      spreadTag = `<div style="font-size:9px;color:var(--down);opacity:.75;margin-top:2px">deeply inverted</div>`;
+    }
+
+    return `<tr style="border-bottom:1px solid rgba(30,45,61,.5)">
+      <td style="padding:14px;vertical-align:middle">
+        <span style="display:inline-block;width:3px;height:14px;background:${col};border-radius:2px;vertical-align:middle;margin-right:8px"></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col};font-size:11px">${r.z.flag||''} ${r.code}</span>
+        <span style="color:var(--text3);margin-left:6px;font-family:'Inter',sans-serif;font-size:11px">${meta.country||''}</span>
+      </td>
+      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(1)}</td>
+      <td style="padding:10px 14px;vertical-align:middle">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:0 0 56px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:${negMin?'var(--down)':'var(--text2)'};line-height:12px">
+            ${r.mn.toFixed(1)}<br><span style="color:var(--text3);font-size:9px">@${r.minHr}</span>
+          </div>
+          <div style="flex:1;position:relative;height:10px">
+            <div style="position:absolute;top:0;left:0;right:0;height:100%;background:var(--bg);border-radius:2px"></div>
+            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.55;border-radius:2px"></div>
+          </div>
+          <div style="flex:0 0 56px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;color:${negMax?'var(--down)':'var(--text2)'};line-height:12px">
+            ${r.mx.toFixed(1)}<br><span style="color:var(--text3);font-size:9px">@${r.maxHr}</span>
+          </div>
+        </div>
+      </td>
+      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;vertical-align:middle">
+        <span style="color:var(--text)">${r.pk.toFixed(1)}</span> <span style="color:var(--text3)">/</span> <span style="color:var(--text2)">${r.op.toFixed(1)}</span>
+      </td>
+      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;vertical-align:middle">${spreadValue}${spreadTag}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html.join('');
 }
 
 function makeSVGSparkline(data, positive) {
