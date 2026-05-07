@@ -123,8 +123,9 @@ function nowLineAnnotation(opts) {
   var chartDate = opts.chartDate || (window.DP && window.DP.selectedDate);
 
   // Visibility logic depends on the calling context:
-  // - mode 'single' (default): show NOW only when chart represents today's
-  //   delivery. The single-zone chart tracks live evolution for the running day.
+  // - mode 'single' (default): show NOW when chart represents today's or
+  //   yesterday's delivery. The single-zone chart in the price table tracks
+  //   live evolution and prior-day context until new prices arrive.
   // - mode 'compare': show NOW only on J-1 delivery. Today's prices are fully
   //   cleared (auction at 12:00 CET J-1) so NOW would be misleading; forward
   //   and older historical dates are too far from current time to be useful.
@@ -136,7 +137,7 @@ function nowLineAnnotation(opts) {
     if (mode === 'compare') {
       if (diffDays !== -1) return null;
     } else {
-      if (diffDays !== 0) return null;
+      if (diffDays !== 0 && diffDays !== -1) return null;
     }
   }
 
