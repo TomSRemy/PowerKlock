@@ -1421,7 +1421,7 @@ function buildHourlyDetail(idx, z) {
 
   // Annotations
   const annotations = {};
-  const _nowAnn = nowLineAnnotation({ slots: chartData.length, chartDate: window._currentPriceDate });
+  const _nowAnn = nowLineAnnotation({ slots: chartData.length, labels: chartLabels, chartDate: window._currentPriceDate });
   if (_nowAnn) annotations.nowLine = _nowAnn;
   // Min/Max points — chartData uses raw 96pt (15-min) when available, else 24h
   // minRawIdx/maxRawIdx are already indexes into the raw `hourly` array, which
@@ -1861,7 +1861,7 @@ function renderCCLines(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() }
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -1992,7 +1992,7 @@ function renderCCProfile(data, selected) {
               label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
             }
           };
-          const a = nowLineAnnotation({ chartDate: window._currentPriceDate });
+          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate });
           if (a) ann.nowLine = a;
           return ann;
         })() }
@@ -2160,7 +2160,7 @@ function renderCCSpread(data, selected) {
               label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
             }
           };
-          const a = nowLineAnnotation({ chartDate: window._currentPriceDate });
+          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate });
           if (a) ann.nowLine = a;
           return ann;
         })() }
@@ -2205,11 +2205,24 @@ function renderCCAnalysis(view, data, selected) {
 
   if (view === 'lines') {
     const inverted = stats.filter(s => s.spread < -5).length;
-    const mostExpensive = [...stats].sort((a,b) => b.avg - a.avg)[0];
-    const cheapest = [...stats].sort((a,b) => a.avg - b.avg)[0];
-    lines.push(`Today's range across selected zones: ${cheapest.code} cheapest at <b>${cheapest.avg.toFixed(1)} €/MWh</b> avg, ${mostExpensive.code} most expensive at <b>${mostExpensive.avg.toFixed(1)} €/MWh</b> (gap: ${(mostExpensive.avg-cheapest.avg).toFixed(1)} €).`);
+    const dateLabel = (window._currentPriceDate && window._currentPriceDate !== new Date().toISOString().slice(0,10)) ? 'On this day' : "Today";
+
+    if (stats.length === 1) {
+      // Single zone: report intra-day shape, not cross-zone comparison
+      const s = stats[0];
+      const range = s.mx - s.mn;
+      lines.push(`<b>${s.code}</b> ${dateLabel.toLowerCase()}: avg <b>${s.avg.toFixed(1)} €/MWh</b> · range ${s.mn.toFixed(1)} → ${s.mx.toFixed(1)} (${range.toFixed(1)} € swing).`);
+    } else {
+      const mostExpensive = [...stats].sort((a,b) => b.avg - a.avg)[0];
+      const cheapest = [...stats].sort((a,b) => a.avg - b.avg)[0];
+      lines.push(`${dateLabel}'s range across selected zones: ${cheapest.code} cheapest at <b>${cheapest.avg.toFixed(1)} €/MWh</b> avg, ${mostExpensive.code} most expensive at <b>${mostExpensive.avg.toFixed(1)} €/MWh</b> (gap: ${(mostExpensive.avg-cheapest.avg).toFixed(1)} €).`);
+    }
     if (inverted > 0) {
-      lines.push(`<b>${inverted} of ${stats.length}</b> zones show inverted P/OP spread today (off-peak more expensive than peak — duck curve from solar generation).`);
+      if (stats.length === 1) {
+        lines.push(`<b>${stats[0].code}</b> shows inverted P/OP spread (off-peak more expensive than peak — duck curve from solar generation).`);
+      } else {
+        lines.push(`<b>${inverted} of ${stats.length}</b> zones show inverted P/OP spread today (off-peak more expensive than peak — duck curve from solar generation).`);
+      }
       tone = inverted >= stats.length / 2 ? 'warn' : 'info';
     }
   } else if (view === 'heatmap') {
