@@ -12,19 +12,17 @@ function _prevDateISO(dateISO) {
   return dt.toISOString().slice(0, 10);
 }
 
-// Fetch the historical daily JSON for J-1 of the given ISO date
+// Fetch the historical daily JSON for any given ISO date (cached)
 // Returns { zones: {code: {avg, hourly, ...}} } or null on failure
-async function fetchYesterdayDaily(currentDateISO) {
-  if (!DATA_BASE || !currentDateISO) return null;
-  const yKey = _prevDateISO(currentDateISO);
-  if (window._yesterdayCache[yKey] !== undefined) {
-    return window._yesterdayCache[yKey];
+async function fetchHistoricalDaily(dateISO) {
+  if (!DATA_BASE || !dateISO) return null;
+  if (window._yesterdayCache[dateISO] !== undefined) {
+    return window._yesterdayCache[dateISO];
   }
   try {
-    const r = await fetch(DATA_BASE + 'history/daily/' + yKey + '.json?t=' + Date.now());
-    if (!r.ok) { window._yesterdayCache[yKey] = null; return null; }
+    const r = await fetch(DATA_BASE + 'history/daily/' + dateISO + '.json?t=' + Date.now());
+    if (!r.ok) { window._yesterdayCache[dateISO] = null; return null; }
     const data = await r.json();
-    // Normalise into { zones: {code: {...}} } regardless of array/dict source
     const norm = { zones: {} };
     if (Array.isArray(data.zones)) {
       data.zones.forEach(z => {
@@ -45,12 +43,19 @@ async function fetchYesterdayDaily(currentDateISO) {
         };
       });
     }
-    window._yesterdayCache[yKey] = norm;
+    window._yesterdayCache[dateISO] = norm;
     return norm;
   } catch (e) {
-    window._yesterdayCache[yKey] = null;
+    window._yesterdayCache[dateISO] = null;
     return null;
   }
+}
+
+// Fetch the historical daily JSON for J-1 of the given ISO date
+// Returns { zones: {code: {avg, hourly, ...}} } or null on failure
+async function fetchYesterdayDaily(currentDateISO) {
+  if (!currentDateISO) return null;
+  return fetchHistoricalDaily(_prevDateISO(currentDateISO));
 }
 
 // Compute summary KPIs (avg, peak, off-peak, max, min) from a {zones} dict
@@ -453,6 +458,33 @@ async function loadPricesForDate(dateStr) {
               if (touched) {
                 renderPricesTable(pricesData, deliveryStr);
                 updateKPIs(pricesData, deliveryStr);
+              }
+            });
+          }
+
+          // Backfill hourlyYday (J-1) and hourlyJ2 (J-2) for chart overlays
+          if (typeof fetchHistoricalDaily === 'function') {
+            const j1Date = _prevDateISO(dateStr);
+            const j2Date = _prevDateISO(j1Date);
+            Promise.all([
+              fetchHistoricalDaily(j1Date),
+              fetchHistoricalDaily(j2Date),
+            ]).then(([j1, j2]) => {
+              let touched = false;
+              pricesData.forEach(z => {
+                if (j1 && j1.zones && j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
+                  z.hourlyYday = j1.zones[z.code].hourly;
+                  touched = true;
+                }
+                if (j2 && j2.zones && j2.zones[z.code] && Array.isArray(j2.zones[z.code].hourly) && j2.zones[z.code].hourly.length) {
+                  z.hourlyJ2 = j2.zones[z.code].hourly;
+                  touched = true;
+                }
+              });
+              if (touched) {
+                // Repaint anything that consumes hourlyYday/hourlyJ2
+                if (typeof renderCompareChart === 'function' && window._compareZones) renderCompareChart();
+                if (typeof rerenderOpenRowDetail === 'function') rerenderOpenRowDetail();
               }
             });
           }
