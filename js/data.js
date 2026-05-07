@@ -4,6 +4,22 @@
 // ─────────────────────────────────────────────────────────────
 window._yesterdayCache = window._yesterdayCache || {};
 
+// Upsample hourly data to 96 slots (15-min resolution) by duplicating each value.
+// Some zones (e.g. CH) deliver DA prices at 1h resolution while most are 15-min.
+// Since the price is constant over the hour for those zones, duplicating x4 is
+// not fake precision — it's the actual price applied across the 4 quarters.
+// - 24 values (1h)  -> duplicated x4 to give 96 slots
+// - 48 values (30m) -> duplicated x2 to give 96 slots
+// - 96 values (15m) -> returned as-is
+// - other lengths   -> returned as-is (caller decides)
+function upsampleHourly(hourly) {
+  if (!Array.isArray(hourly)) return hourly;
+  const n = hourly.length;
+  if (n === 24) return hourly.flatMap(v => [v, v, v, v]);
+  if (n === 48) return hourly.flatMap(v => [v, v]);
+  return hourly;
+}
+
 // Returns the ISO date string for J-1 given an ISO date string
 function _prevDateISO(dateISO) {
   const [y, m, d] = dateISO.split('-').map(Number);
@@ -28,7 +44,7 @@ async function fetchHistoricalDaily(dateISO) {
       data.zones.forEach(z => {
         norm.zones[z.code] = {
           avg:    z.today ?? z.avg ?? null,
-          hourly: z.hourly || [],
+          hourly: upsampleHourly(z.hourly || []),
           min:    z.min ?? null,
           max:    z.max ?? null,
         };
@@ -37,7 +53,7 @@ async function fetchHistoricalDaily(dateISO) {
       Object.entries(data.zones).forEach(([code, z]) => {
         norm.zones[code] = {
           avg:    z.avg ?? z.today ?? null,
-          hourly: z.hourly || [],
+          hourly: upsampleHourly(z.hourly || []),
           min:    z.min ?? null,
           max:    z.max ?? null,
         };
@@ -133,7 +149,7 @@ async function loadFromJSON(opts) {
       maxHr:   z.maxHour || 0,
       negHrs:  z.negHours || 0,
       spark:   z.spark,
-      hourly:  z.hourly || [],
+      hourly:  upsampleHourly(z.hourly || []),
     }));
     // Extract date from JSON updated field
     const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
@@ -420,13 +436,13 @@ async function loadPricesForDate(dateStr) {
             maxHr:  z.maxHour ?? z.maxHr ?? 0,
             negHrs: z.negHours ?? z.negH ?? 0,
             spark:  z.spark ?? null,
-            hourly: z.hourly || [],
+            hourly: upsampleHourly(z.hourly || []),
           }));
         } else if (d.zones && typeof d.zones === 'object') {
           // dict format: { FR: { avg, min, max, negH, hourly }, ... }
           mapped = Object.entries(d.zones).map(([code, z]) => {
             const meta   = ZONE_META[code] || {};
-            const hourly = z.hourly || [];
+            const hourly = upsampleHourly(z.hourly || []);
             const valid  = hourly.filter(v => v != null);
             const avg    = z.avg ?? (valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : 0);
             const mn     = z.min ?? (valid.length ? Math.min(...valid) : 0);
@@ -478,12 +494,18 @@ async function loadPricesForDate(dateStr) {
           if (typeof fetchHistoricalDaily === 'function') {
             const j1Date = _prevDateISO(dateStr);
             fetchHistoricalDaily(j1Date).then(j1 => {
-              if (!j1 || !j1.zones) return;
+              if (!j1 || !j1.zones) {
+                console.warn('J-1 hourly file not available:', j1Date);
+                return;
+              }
               let touched = false;
               pricesData.forEach(z => {
                 if (j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
                   z.hourlyYday = j1.zones[z.code].hourly;
                   touched = true;
+                } else {
+                  // Clear stale J-1 data from a previous date
+                  delete z.hourlyYday;
                 }
               });
               if (touched && typeof rerenderOpenRowDetail === 'function') {
