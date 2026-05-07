@@ -482,6 +482,32 @@ async function loadPricesWithDates(periodStart, periodEnd) {
       renderPricesTable(pricesData);
       updateKPIs(pricesData, histDateISO);
     }
+
+    // Backfill vsYday from J-1 daily file (J-1 delivery = histDateISO − 1, file = histDateISO − 2)
+    if (typeof fetchHistoricalDaily === 'function' && histDateISO) {
+      try {
+        const [y,m,d] = histDateISO.split('-').map(Number);
+        const j1Auc = new Date(Date.UTC(y, m-1, d));
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
+        if (yData && yData.zones) {
+          let touched = false;
+          pricesData.forEach(z => {
+            if (z.vsYday != null) return;
+            const y = yData.zones[z.code];
+            if (y && y.avg != null && z.today != null) {
+              z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
+              touched = true;
+            }
+          });
+          if (touched) {
+            renderPricesTable(pricesData);
+            updateKPIs(pricesData, histDateISO);
+          }
+        }
+      } catch (e) { console.warn('vsYday backfill (historical live) failed:', e); }
+    }
+
     buildTicker(pricesData);
     document.getElementById('prices-updated').textContent = `Historical · ${periodStart.slice(0,8)}`;
   } catch(e) {
@@ -541,6 +567,31 @@ async function loadPrices() {
       pricesData = results.sort((a,b) => b.today - a.today);
       renderPricesTable(pricesData);
       updateKPIs(pricesData, liveDateISO);
+    }
+
+    // Backfill vsYday for live data: J-1 delivery = liveDateISO − 1, file = liveDateISO − 2
+    if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
+      try {
+        const [y,m,d] = liveDateISO.split('-').map(Number);
+        const j1Auc = new Date(Date.UTC(y, m-1, d));
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
+        if (yData && yData.zones) {
+          let touched = false;
+          pricesData.forEach(z => {
+            if (z.vsYday != null) return;
+            const y = yData.zones[z.code];
+            if (y && y.avg != null && z.today != null) {
+              z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
+              touched = true;
+            }
+          });
+          if (touched) {
+            renderPricesTable(pricesData);
+            updateKPIs(pricesData, liveDateISO);
+          }
+        }
+      } catch (e) { console.warn('vsYday backfill (live) failed:', e); }
     }
 
     buildTicker(pricesData);
@@ -1538,9 +1589,14 @@ function buildHourlyDetail(idx, z) {
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
 // matching border-left colour + sub-text tint based on direction (±1 €/MWh)
 async function applyExpandKPIColours(idx, z, today) {
-  const displayDate = window.DP?.selectedDate || new Date().toISOString().slice(0,10);
-  if (typeof fetchYesterdayDaily !== 'function') return;
-  const yData = await fetchYesterdayDaily(displayDate);
+  const displayDate = window._currentPriceDate || window.DP?.selectedDate || new Date().toISOString().slice(0,10);
+  if (typeof fetchHistoricalDaily !== 'function') return;
+  // Files are named by AUCTION date. J-1 delivery file = displayDate − 2 (auction).
+  const [yy,mm,dd] = displayDate.split('-').map(Number);
+  const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
+  j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+  const j1FileISO = j1Auc.toISOString().slice(0,10);
+  const yData = await fetchHistoricalDaily(j1FileISO);
   if (!yData) return;
   const yz = yData.zones[z.code];
   if (!yz) return;
@@ -1566,7 +1622,12 @@ async function applyExpandKPIColours(idx, z, today) {
   const apply = (kpiKey, todayVal, yVal) => {
     const card = document.getElementById(`row-kpi-${idx}-${kpiKey}`);
     if (!card) return;
-    if (todayVal == null || yVal == null) return;
+    const chg = card.querySelector('.row-kpi-chg');
+    if (todayVal == null || yVal == null) {
+      card.style.borderLeftColor = 'var(--text3)';
+      if (chg) { chg.style.color = 'var(--text3)'; chg.textContent = '--'; }
+      return;
+    }
     const delta = todayVal - yVal;
     let borderColor = 'var(--text3)', subColor = 'var(--text3)';
     if (Math.abs(delta) >= 1) {
@@ -1574,12 +1635,15 @@ async function applyExpandKPIColours(idx, z, today) {
       else           { borderColor = 'var(--up)';   subColor = 'var(--up)'; }
     }
     card.style.borderLeftColor = borderColor;
-    const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
-    const sign  = delta > 0 ? '+' : '';
-    const chg = card.querySelector('.row-kpi-chg');
     if (chg) {
       chg.style.color = subColor;
-      chg.textContent = `${arrow} ${sign}${delta.toFixed(1)} vs J-1`;
+      if (Math.abs(delta) < 0.5) {
+        chg.textContent = '≈ 0 vs J-1';
+      } else {
+        const arrow = delta > 0 ? '▲' : '▼';
+        const sign  = delta > 0 ? '+' : '';
+        chg.textContent = `${arrow} ${sign}${delta.toFixed(1)} vs J-1`;
+      }
     }
   };
 
