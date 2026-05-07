@@ -14,6 +14,15 @@
 //   nowLineAnnotation(opts)  — Chart.js annotation for today's current hour
 // ════════════════════════════════════════════
 
+// Register chartjs-plugin-annotation if it has been loaded via <script> tag.
+// Without this, NOW line and zero-line annotations are silently ignored.
+if (typeof Chart !== 'undefined' && typeof window !== 'undefined') {
+  var __ann = window['chartjs-plugin-annotation'] || window.ChartAnnotation || (window.ChartjsPluginAnnotation && window.ChartjsPluginAnnotation.default);
+  if (__ann && typeof Chart.register === 'function') {
+    try { Chart.register(__ann); } catch (e) { /* already registered or auto-registered */ }
+  }
+}
+
 // Multi-zone series pool — 8 hand-picked colours with max contrast
 var SERIES_POOL = [
   '#14D3A9',  // 1. Mint Leaf
