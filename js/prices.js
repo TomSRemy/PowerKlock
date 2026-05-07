@@ -1516,8 +1516,8 @@ function buildHourlyDetail(idx, z) {
     datasets.push({
       label: ccFmtDayShift(window._currentPriceDate, -1) || 'J-1',
       data: z.hourlyYday,
-      borderColor: 'rgba(255,255,255,0.25)',
-      borderWidth: 1.2, borderDash:[5,3], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
+      borderColor: 'rgba(255,255,255,0.55)',
+      borderWidth: 1.6, borderDash:[6,4], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
     });
   }
 
@@ -2012,6 +2012,7 @@ function renderCCLines(data, selected) {
       pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
       fill: false,
       tension: 0.3,
+      spanGaps: true,
     });
   });
 
