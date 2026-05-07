@@ -122,13 +122,22 @@ function nowLineAnnotation(opts) {
   var today = new Date().toISOString().slice(0, 10);
   var chartDate = opts.chartDate || (window.DP && window.DP.selectedDate);
 
-  // Show NOW when chart represents today's delivery OR yesterday's delivery
-  // (prior-day prices remain useful context until the new day's prices arrive)
+  // Visibility logic depends on the calling context:
+  // - mode 'single' (default): show NOW only when chart represents today's
+  //   delivery. The single-zone chart tracks live evolution for the running day.
+  // - mode 'compare': show NOW only on J-1 delivery. Today's prices are fully
+  //   cleared (auction at 12:00 CET J-1) so NOW would be misleading; forward
+  //   and older historical dates are too far from current time to be useful.
+  var mode = opts.mode || 'single';
   if (chartDate) {
     var dt1 = new Date(chartDate + 'T00:00:00Z');
     var dt2 = new Date(today + 'T00:00:00Z');
     var diffDays = Math.round((dt1 - dt2) / 86400000);
-    if (diffDays !== 0 && diffDays !== -1) return null;
+    if (mode === 'compare') {
+      if (diffDays !== -1) return null;
+    } else {
+      if (diffDays !== 0) return null;
+    }
   }
 
   var slots = opts.slots || 24;
