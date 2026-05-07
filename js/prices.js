@@ -640,7 +640,8 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
   const yKpi  = yData ? computeKPIs(yData.zones) : null;
 
   const directionFromDelta = (delta) => {
-    if (delta == null || isNaN(delta) || Math.abs(delta) < 1) return { cls:'kpi-flat', txtColor:'var(--text3)' };
+    if (delta == null || isNaN(delta))      return { cls:'kpi-flat', txtColor:'var(--text3)' };
+    if (Math.abs(delta) < 1)                 return { cls:'kpi-flat', txtColor:'var(--text3)' };
     return delta > 0
       ? { cls:'kpi-down', txtColor:'var(--down)' }
       : { cls:'kpi-up',   txtColor:'var(--up)' };
@@ -659,16 +660,19 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
   };
 
   // Line 3: delta vs J-1 only (no extra info), tinted to match border colour
+  // Show '--' when no J-1 data, '~ 0' when delta is < 0.5, full value otherwise
   const renderChg = (chgId, dir) => {
     const el = document.getElementById(chgId);
     if (!el) return;
     el.style.color = dir.txtColor;
-    if (dir.delta != null && !isNaN(dir.delta)) {
-      const arrow = dir.delta > 0 ? '▲' : dir.delta < 0 ? '▼' : '·';
+    if (dir.delta == null || isNaN(dir.delta)) {
+      el.textContent = '--';
+    } else if (Math.abs(dir.delta) < 0.5) {
+      el.textContent = `≈ 0 vs J-1`;
+    } else {
+      const arrow = dir.delta > 0 ? '▲' : '▼';
       const sign  = dir.delta > 0 ? '+' : '';
       el.textContent = `${arrow} ${sign}${dir.delta.toFixed(1)} vs J-1`;
-    } else {
-      el.textContent = '--';
     }
   };
 
@@ -698,16 +702,18 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
   const opDir = setCard('kpicard-offpeak', today.frOffPeak, yKpi ? yKpi.frOffPeak : null);
   if (opDir) renderChg('kpi-fr-offpeak-chg', opDir);
 
-  // Max
-  const maxDir = setCard('kpicard-max', today.maxLvl, yKpi ? yKpi.maxLvl : null);
+  // Max — compare today's max-zone with the SAME zone's J-1 avg
+  const maxYday = (yData && ctx.maxZ) ? (yData.zones[ctx.maxZ.code]?.avg ?? null) : null;
+  const maxDir = setCard('kpicard-max', today.maxLvl, maxYday);
   if (maxDir) {
     renderChg('kpi-max-chg', maxDir);
     const zone = document.getElementById('kpi-max-zone');
     if (zone) zone.textContent = ctx.maxZ ? `${ctx.maxZ.flag} ${ctx.maxZ.name}` : '--';
   }
 
-  // Min
-  const minDir = setCard('kpicard-min', today.minLvl, yKpi ? yKpi.minLvl : null);
+  // Min — compare today's min-zone with the SAME zone's J-1 avg
+  const minYday = (yData && ctx.minZ) ? (yData.zones[ctx.minZ.code]?.avg ?? null) : null;
+  const minDir = setCard('kpicard-min', today.minLvl, minYday);
   if (minDir) {
     renderChg('kpi-min-chg', minDir);
     const zone = document.getElementById('kpi-min-zone');
@@ -1213,6 +1219,16 @@ function sortPricesTable(key) {
 
 // ── TOGGLE INLINE ROW DETAIL (Hourly DA Prices) ──
 let _openRow = null;
+
+// Re-render the currently expanded row detail (used when J-1/J-2 hourly data arrives async)
+function rerenderOpenRowDetail() {
+  if (_openRow == null) return;
+  const z = (window._pricesSorted || [])[_openRow];
+  if (!z) return;
+  buildHourlyDetail(_openRow, z);
+}
+window.rerenderOpenRowDetail = rerenderOpenRowDetail;
+
 let _rowCharts = {};
 
 function togglePriceRow(idx, e) {
@@ -1341,7 +1357,7 @@ function buildHourlyDetail(idx, z) {
       <canvas id="row-chart-${idx}" style="width:100%;height:180px"></canvas>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:8px">
-      <span>— Today</span><span style="opacity:.5">- - - Yesterday</span>
+      <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
     ${negTotalMin > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
@@ -1394,7 +1410,7 @@ function buildHourlyDetail(idx, z) {
     ? -1 : new Date().getHours() * (chartData.length / 24);
 
   const datasets = [{
-    label: `${z.code} Today`,
+    label: `${z.code} ${ccFmtDay(window._currentPriceDate)}`,
     data: chartData,
     borderColor: col,
     borderWidth: 2,
@@ -1412,7 +1428,7 @@ function buildHourlyDetail(idx, z) {
   // J-1 overlay from zone data
   if (z.hourlyYday && z.hourlyYday.length) {
     datasets.push({
-      label:'J-1',
+      label: ccFmtDayShift(window._currentPriceDate, -1) || 'J-1',
       data: z.hourlyYday,
       borderColor: 'rgba(255,255,255,0.25)',
       borderWidth: 1.2, borderDash:[5,3], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
@@ -1852,6 +1868,26 @@ function renderCompareChart() {
 }
 
 // ────────────────────────────────────────────
+// Date helpers — produce 'Wed 06 May' style labels for Today / J-1 / J-2
+// ────────────────────────────────────────────
+function ccFmtDay(dateISO) {
+  if (!dateISO) return 'Today';
+  try {
+    const [y, m, d] = dateISO.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+  } catch (e) { return dateISO; }
+}
+function ccFmtDayShift(dateISO, deltaDays) {
+  if (!dateISO) return null;
+  try {
+    const [y, m, d] = dateISO.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + deltaDays);
+    return dt.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+  } catch (e) { return null; }
+}
+
+// ────────────────────────────────────────────
 // View 1: LINES (existing chart, refactored)
 // ────────────────────────────────────────────
 function renderCCLines(data, selected) {
@@ -1860,6 +1896,9 @@ function renderCCLines(data, selected) {
   const hours = makeTimeLabels(nPts);
   const curHr = new Date().getHours();
   const curIdx = Math.min(curHr, nPts - 1);
+  const dayLbl = ccFmtDay(window._currentPriceDate);
+  const yLbl   = ccFmtDayShift(window._currentPriceDate, -1) || 'J-1';
+  const j2Lbl  = ccFmtDayShift(window._currentPriceDate, -2) || 'J-2';
 
   const datasets = [];
   data.forEach((z, i) => {
@@ -1874,10 +1913,10 @@ function renderCCLines(data, selected) {
       tension: 0.3,
     });
     if (z.hourlyYday && z.hourlyYday.length) {
-      datasets.push({ label:`${z.code} J-1`, data:z.hourlyYday, borderColor:col, borderWidth:1.2, borderDash:[5,4], pointRadius:0, fill:false, tension:0, opacity:0.5 });
+      datasets.push({ label:`${z.code} ${yLbl}`, data:z.hourlyYday, borderColor:col, borderWidth:1.2, borderDash:[5,4], pointRadius:0, fill:false, tension:0, opacity:0.5 });
     }
     if (z.hourlyJ2 && z.hourlyJ2.length) {
-      datasets.push({ label:`${z.code} J-2`, data:z.hourlyJ2, borderColor:col, borderWidth:1, borderDash:[2,4], pointRadius:0, fill:false, tension:0, opacity:0.3 });
+      datasets.push({ label:`${z.code} ${j2Lbl}`, data:z.hourlyJ2, borderColor:col, borderWidth:1, borderDash:[2,4], pointRadius:0, fill:false, tension:0, opacity:0.3 });
     }
   });
 
@@ -1890,7 +1929,7 @@ function renderCCLines(data, selected) {
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10,
-          filter: item => !(item.text.includes('J-1') || item.text.includes('J-2')) }},
+          filter: item => !(item.text.includes(yLbl) || item.text.includes(j2Lbl)) }},
         tooltip: { mode:'index', intersect:false, callbacks: {
           title: c => c[0].label,
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
