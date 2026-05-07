@@ -468,7 +468,8 @@ async function loadPricesWithDates(periodStart, periodEnd) {
           const minHr = prices.find(p => p.price===minP)?.hour || 0;
           const maxHr = prices.find(p => p.price===maxP)?.hour || 0;
           const negHrs = vals.filter(v => v < 0).length;
-          return { ...zone, today: Math.round(avg*10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly: vals, vsYday: null, spark: null };
+          const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
+          return { ...zone, today: Math.round(avg*10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
         } catch { return null; }
       });
       return (await Promise.all(promises)).filter(Boolean);
@@ -553,7 +554,8 @@ async function loadPrices() {
           const minHr = prices.find(p => p.price === minP)?.hour || 0;
           const maxHr = prices.find(p => p.price === maxP)?.hour || 0;
           const negHrs = vals.filter(v => v < 0).length;
-          return { ...zone, today: Math.round(avg * 10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly: vals, vsYday: null, spark: null };
+          const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
+          return { ...zone, today: Math.round(avg * 10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
         } catch { return null; }
       });
       return (await Promise.all(promises)).filter(Boolean);
@@ -1347,6 +1349,11 @@ function buildHourlyDetail(idx, z) {
   const inner = document.getElementById(`row-detail-inner-${idx}`);
   if (!inner) return;
 
+  // Debug: verify hourly data presence
+  if (!z.hourly || !z.hourly.length) {
+    console.warn('[buildHourlyDetail] No hourly data for zone', z.code, '— showing demo. _currentPriceDate=', window._currentPriceDate);
+  }
+
   const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
   const resMin = getResolution(hourly);
   const slotsPerHour = 60 / resMin;
@@ -1516,8 +1523,8 @@ function buildHourlyDetail(idx, z) {
     datasets.push({
       label: ccFmtDayShift(window._currentPriceDate, -1) || 'J-1',
       data: z.hourlyYday,
-      borderColor: 'rgba(255,255,255,0.55)',
-      borderWidth: 1.6, borderDash:[6,4], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
+      borderColor: 'rgba(255,255,255,0.35)',
+      borderWidth: 1.3, borderDash:[5,4], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
     });
   }
 
@@ -1584,6 +1591,22 @@ function buildHourlyDetail(idx, z) {
   applyExpandKPIColours(idx, z, {
     avg, peakAvg, offPkAvg, minV, maxV,
   });
+
+  // Lazy-fetch J-1 hourly if missing (e.g. user clicked before backfill completed,
+  // or J-1 file is dated differently from current view)
+  if ((!z.hourlyYday || !z.hourlyYday.length) && typeof fetchHistoricalDaily === 'function') {
+    const displayDate = window._currentPriceDate || new Date().toISOString().slice(0,10);
+    const [yy,mm,dd] = displayDate.split('-').map(Number);
+    const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
+    j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+    const j1FileISO = j1Auc.toISOString().slice(0,10);
+    fetchHistoricalDaily(j1FileISO).then(j1 => {
+      if (!j1 || !j1.zones || !j1.zones[z.code] || !Array.isArray(j1.zones[z.code].hourly) || !j1.zones[z.code].hourly.length) return;
+      z.hourlyYday = j1.zones[z.code].hourly;
+      // Rerender only if this row is still open
+      if (_openRow === idx) buildHourlyDetail(idx, z);
+    });
+  }
 }
 
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
