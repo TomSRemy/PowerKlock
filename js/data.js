@@ -435,6 +435,27 @@ async function loadPricesForDate(dateStr) {
           updateKPIs(pricesData, deliveryStr);
           buildTicker(pricesData);
           if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';
+
+          // Backfill vsYday async if missing (dict-format historical files don't carry it)
+          const needsBackfill = mapped.some(z => z.vsYday == null);
+          if (needsBackfill && typeof fetchYesterdayDaily === 'function') {
+            fetchYesterdayDaily(dateStr).then(yData => {
+              if (!yData || !yData.zones) return;
+              let touched = false;
+              pricesData.forEach(z => {
+                if (z.vsYday != null) return;
+                const y = yData.zones[z.code];
+                if (y && y.avg != null && z.today != null) {
+                  z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
+                  touched = true;
+                }
+              });
+              if (touched) {
+                renderPricesTable(pricesData, deliveryStr);
+                updateKPIs(pricesData, deliveryStr);
+              }
+            });
+          }
           return;
         }
       }
