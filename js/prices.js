@@ -1324,11 +1324,14 @@ function togglePriceRow(idx, e) {
   if (!z || z.today == null) return;
 
   if (_openRow !== null && _openRow !== idx) {
-    document.getElementById(`row-detail-${_openRow}`).style.display = 'none';
+    const prevDetail = document.getElementById(`row-detail-${_openRow}`);
+    if (prevDetail) prevDetail.style.display = 'none';
     if (_rowCharts[_openRow]) { _rowCharts[_openRow].destroy(); delete _rowCharts[_openRow]; }
+    _openRow = null;
   }
 
   const detailRow = document.getElementById(`row-detail-${idx}`);
+  if (!detailRow) return;
   const isOpen = detailRow.style.display !== 'none';
 
   if (isOpen) {
