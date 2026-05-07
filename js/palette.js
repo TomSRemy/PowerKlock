@@ -94,16 +94,34 @@ function getSeriesColor(index) {
 
 // ── NOW line helper for daily charts
 // Returns a Chart.js annotation object for the current hour, or null if the
-// chart is showing a date other than today (DP.selectedDate is past/future).
+// chart is showing a date other than today.
 //
-// Works with both numeric (linear/time) and category (string-label) X axes.
-// For category axes, Chart.js annotation plugin interprets numeric xMin/xMax
-// as fractional indices when the scale is configured properly.
+// IMPORTANT: for Day-Ahead price charts, the date shown is often NOT today's
+// calendar date — it's the delivery date of the data (which is yesterday's
+// settled prices before 14h CET, or tomorrow's DA after publication). The
+// caller should pass `chartDate` (YYYY-MM-DD) so we can correctly skip the
+// NOW line whenever the chart's data window does not include the current hour.
+//
+// Options:
+//   opts.slots     — number of x-axis slots (24 hourly, 48 30-min, 96 15-min)
+//   opts.label     — label text (default 'NOW')
+//   opts.chartDate — YYYY-MM-DD of the data shown on the chart. If provided
+//                    and != today's local date, returns null. If omitted,
+//                    falls back to DP.selectedDate logic (for non-DA charts
+//                    like genmix, load, renewables, etc. where the chart
+//                    follows selectedDate directly).
 function nowLineAnnotation(opts) {
   opts = opts || {};
   var today = new Date().toISOString().slice(0, 10);
-  var selected = window.DP && window.DP.selectedDate;
-  if (selected && selected !== today) return null;
+
+  // Primary check: explicit chartDate from caller (most reliable for DA charts)
+  if (opts.chartDate != null) {
+    if (opts.chartDate !== today) return null;
+  } else {
+    // Fallback: rely on the date picker selection
+    var selected = window.DP && window.DP.selectedDate;
+    if (selected && selected !== today) return null;
+  }
 
   var slots = opts.slots || 24;
   var now = new Date();
