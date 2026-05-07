@@ -111,12 +111,16 @@ function getSeriesColor(index) {
 function nowLineAnnotation(opts) {
   opts = opts || {};
   var today = new Date().toISOString().slice(0, 10);
+  var chartDate = opts.chartDate || (window.DP && window.DP.selectedDate);
 
-  if (opts.chartDate != null) {
-    if (opts.chartDate !== today) return null;
-  } else {
-    var selected = window.DP && window.DP.selectedDate;
-    if (selected && selected !== today) return null;
+  // Compute day-difference between chart date and today
+  // Show NOW only when chart represents today's delivery (chartDate === today),
+  // OR no chartDate is provided (caller didn't specify — assume live).
+  if (chartDate) {
+    var dt1 = new Date(chartDate + 'T00:00:00Z');
+    var dt2 = new Date(today + 'T00:00:00Z');
+    var diffDays = Math.round((dt1 - dt2) / 86400000);
+    if (diffDays !== 0) return null;
   }
 
   var slots = opts.slots || 24;
@@ -141,16 +145,17 @@ function nowLineAnnotation(opts) {
     xMin: xIdx,
     xMax: xIdx,
     borderColor: '#FFFD82',
-    borderWidth: 1.5,
-    borderDash: [4, 3],
+    borderWidth: 2,
+    borderDash: [5, 4],
     label: {
       display: true,
       content: opts.label || 'NOW',
       position: 'start',
-      color: '#FFFD82',
-      font: { size: 10, weight: '600', family: "'IBM Plex Mono', monospace" },
-      backgroundColor: 'transparent',
-      padding: 2,
+      color: '#0A1218',
+      backgroundColor: '#FFFD82',
+      borderRadius: 3,
+      font: { size: 10, weight: '700', family: "'IBM Plex Mono', monospace" },
+      padding: { top: 2, bottom: 2, left: 6, right: 6 },
     },
   };
 }
