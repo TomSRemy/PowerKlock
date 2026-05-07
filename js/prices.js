@@ -1582,7 +1582,8 @@ function buildHourlyDetail(idx, z) {
       scales:{
         x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:9},maxTicksLimit:12}},
         y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:10},callback:v=>v+'€/MWh'},
-           title:{display:true,text:'€/MWh',color:'#4A6280',font:{size:10}}},
+           title:{display:true,text:'€/MWh',color:'#4A6280',font:{size:10}},
+           grace:'15%'},
       },
     },
   });
@@ -1944,19 +1945,10 @@ function ccZeroLineAnnotation() {
     type: 'line',
     yMin: 0,
     yMax: 0,
-    borderColor: 'rgba(237,105,101,.85)',
-    borderWidth: 1.5,
-    borderDash: [6, 4],
-    label: {
-      display: true,
-      content: '0 €/MWh',
-      position: 'start',
-      color: '#fff',
-      font: { size: 10, weight: '600' },
-      backgroundColor: 'rgba(237,105,101,.85)',
-      borderRadius: 3,
-      padding: { top: 2, bottom: 2, left: 6, right: 6 },
-    }
+    borderColor: 'rgba(237,105,101,.45)',
+    borderWidth: 1,
+    borderDash: [4, 4],
+    label: { display: false }
   };
 }
 
