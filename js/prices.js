@@ -1895,19 +1895,19 @@ function renderCCHeatmap(data, selected) {
     return { code: z.code, flag: z.flag, color: ccZoneColor(z.code, data, 0), hourly: hr };
   });
 
-  // Global colour scale
+  // Global colour scale — originator perspective: high price = green (good), low price = red (bad), negative = deep red
   let mn = Infinity, mx = -Infinity;
   grid.forEach(r => r.hourly.forEach(v => { if (v != null) { mn = Math.min(mn, v); mx = Math.max(mx, v); } }));
   const colorFor = (v) => {
     if (v == null) return 'var(--bg)';
     if (v < 0)    return '#5b1a2a';
     const t = Math.max(0, Math.min(1, (v - Math.max(0,mn)) / (mx - Math.max(0,mn) || 1)));
-    if (t < .15) return '#0f4434';
-    if (t < .35) return '#155f4a';
-    if (t < .55) return '#2a7a3a';
-    if (t < .70) return '#a37a1a';
-    if (t < .85) return '#c25526';
-    return '#a82a3a';
+    if (t < .15) return '#a82a3a';
+    if (t < .35) return '#c25526';
+    if (t < .55) return '#a37a1a';
+    if (t < .70) return '#2a7a3a';
+    if (t < .85) return '#155f4a';
+    return '#0f4434';
   };
 
   let html = '<div style="font-family:\'JetBrains Mono\',monospace;padding:8px 4px">';
@@ -1933,12 +1933,12 @@ function renderCCHeatmap(data, selected) {
     <span>min ${Math.round(mn)}€</span>
     <div style="display:flex;height:8px;width:200px">
       <div style="flex:1;background:#5b1a2a"></div>
-      <div style="flex:1;background:#0f4434"></div>
-      <div style="flex:1;background:#155f4a"></div>
-      <div style="flex:1;background:#2a7a3a"></div>
-      <div style="flex:1;background:#a37a1a"></div>
-      <div style="flex:1;background:#c25526"></div>
       <div style="flex:1;background:#a82a3a"></div>
+      <div style="flex:1;background:#c25526"></div>
+      <div style="flex:1;background:#a37a1a"></div>
+      <div style="flex:1;background:#2a7a3a"></div>
+      <div style="flex:1;background:#155f4a"></div>
+      <div style="flex:1;background:#0f4434"></div>
     </div>
     <span>max ${Math.round(mx)}€</span>
   </div></div>`;
