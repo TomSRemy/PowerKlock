@@ -820,11 +820,16 @@ function positionPanel(panelId, btnId) {
   const btn   = document.getElementById(btnId);
   if (!panel || !btn) return;
   const r = btn.getBoundingClientRect();
+  const margin = 10;
   panel.style.top  = (r.bottom + 4) + 'px';
+  // Constrain max-height to the available space below the button so the inner scroll works
+  const availableBelow = window.innerHeight - r.bottom - margin - 4;
+  panel.style.maxHeight = Math.max(200, availableBelow) + 'px';
+  panel.style.overflowY = 'auto';
   // Prefer left-aligned; if off-screen, right-align
   const leftPos = r.left;
   const panelW  = 300;
-  if (leftPos + panelW > window.innerWidth - 10) {
+  if (leftPos + panelW > window.innerWidth - margin) {
     panel.style.left = 'auto';
     panel.style.right = (window.innerWidth - r.right) + 'px';
   } else {
@@ -1846,23 +1851,24 @@ function ccBuildCommonShading(nPts) {
   };
 }
 
-// Zero-line annotation: subtle red marker for the 0 €/MWh threshold (negative price boundary)
+// Zero-line annotation: red marker for the 0 €/MWh threshold (negative price boundary)
 function ccZeroLineAnnotation() {
   return {
     type: 'line',
     yMin: 0,
     yMax: 0,
-    borderColor: 'rgba(237,105,101,.5)',
-    borderWidth: 1,
-    borderDash: [4, 4],
+    borderColor: 'rgba(237,105,101,.85)',
+    borderWidth: 1.5,
+    borderDash: [6, 4],
     label: {
       display: true,
       content: '0 €/MWh',
       position: 'start',
-      color: 'rgba(237,105,101,.85)',
-      font: { size: 9, weight: '500' },
-      backgroundColor: 'transparent',
-      padding: 2,
+      color: '#fff',
+      font: { size: 10, weight: '600' },
+      backgroundColor: 'rgba(237,105,101,.85)',
+      borderRadius: 3,
+      padding: { top: 2, bottom: 2, left: 6, right: 6 },
     }
   };
 }
@@ -1875,6 +1881,10 @@ function renderCompareChart() {
   if (!data || !data.length) return;
   const selected = window._compareZones || new Set(['FR']);
   const view = window._ccView || 'lines';
+
+  // Update the date label next to the section title
+  const dateLbl = document.getElementById('compare-zones-date');
+  if (dateLbl) dateLbl.textContent = ccFmtDay(window._currentPriceDate);
 
   populateSpreadRefSelect(data, selected);
 
