@@ -158,7 +158,7 @@ function nowLineAnnotation(opts) {
       display: true,
       content: opts.label || 'NOW',
       position: 'start',
-      yAdjust: -10,
+      yAdjust: 8,
       color: '#0A1218',
       backgroundColor: '#FFFD82',
       borderRadius: 2,
