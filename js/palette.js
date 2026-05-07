@@ -95,6 +95,10 @@ function getSeriesColor(index) {
 // ── NOW line helper for daily charts
 // Returns a Chart.js annotation object for the current hour, or null if the
 // chart is showing a date other than today (DP.selectedDate is past/future).
+//
+// Works with both numeric (linear/time) and category (string-label) X axes.
+// For category axes, Chart.js annotation plugin interprets numeric xMin/xMax
+// as fractional indices when the scale is configured properly.
 function nowLineAnnotation(opts) {
   opts = opts || {};
   var today = new Date().toISOString().slice(0, 10);
@@ -103,13 +107,21 @@ function nowLineAnnotation(opts) {
 
   var slots = opts.slots || 24;
   var now = new Date();
-  var x = slots === 96
-    ? now.getHours() * 4 + now.getMinutes() / 15
-    : now.getHours() + now.getMinutes() / 60;
+  // Position on x-axis as fractional index
+  //   24 slots (hourly):     x = hour + minute/60        (0..24)
+  //   48 slots (30-min):     x = hour*2 + minute/30      (0..48)
+  //   96 slots (15-min):     x = hour*4 + minute/15      (0..96)
+  var x;
+  if (slots === 96) x = now.getHours() * 4 + now.getMinutes() / 15;
+  else if (slots === 48) x = now.getHours() * 2 + now.getMinutes() / 30;
+  else x = now.getHours() + now.getMinutes() / 60;
 
   return {
     type: 'line',
-    xMin: x,
+    scaleID: 'x',
+    xScaleID: 'x',
+    value: x,        // for category axes (Chart.js accepts fractional indices)
+    xMin: x,         // for linear/time axes
     xMax: x,
     borderColor: '#FFFD82',
     borderWidth: 1.5,
