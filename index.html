@@ -1330,8 +1330,12 @@
           <div id="cc-tabs-bar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
             <div id="cc-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
             <div id="cc-ref-wrap" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--text3)">
-              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">REF</span>
+              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">SPREAD vs</span>
               <select id="cc-ref-select" onchange="setSpreadRef(this.value)" style="font-size:11px;background:var(--bg);color:var(--text);border:1px solid var(--bd);border-radius:4px;padding:3px 6px;font-family:'JetBrains Mono',monospace"></select>
+            </div>
+            <div id="cc-bands-wrap" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--text3)">
+              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">ZONE</span>
+              <select id="cc-bands-select" onchange="setBandsZone(this.value)" style="font-size:11px;background:var(--bg);color:var(--text);border:1px solid var(--bd);border-radius:4px;padding:3px 6px;font-family:'JetBrains Mono',monospace"></select>
             </div>
           </div>
           <!-- Chart canvas (used by Lines / Profile / Bands / Spread; Heatmap renders its own DOM) -->
