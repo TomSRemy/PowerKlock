@@ -1299,7 +1299,10 @@
       </div>
         <div style="margin-top:20px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Compare zones</span>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Compare zones</span>
+              <span id="compare-zones-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+            </div>
             <!-- Compare zone dropdown -->
             <div style="position:relative" id="compare-filter-wrap">
               <button onclick="toggleCompareFilterPanel()" id="compare-filter-btn"
