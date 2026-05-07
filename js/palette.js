@@ -96,51 +96,50 @@ function getSeriesColor(index) {
 // Returns a Chart.js annotation object for the current hour, or null if the
 // chart is showing a date other than today.
 //
-// IMPORTANT: for Day-Ahead price charts, the date shown is often NOT today's
-// calendar date — it's the delivery date of the data (which is yesterday's
-// settled prices before 14h CET, or tomorrow's DA after publication). The
-// caller should pass `chartDate` (YYYY-MM-DD) so we can correctly skip the
-// NOW line whenever the chart's data window does not include the current hour.
+// Important: Chart.js annotation plugin does NOT support fractional indices
+// on category axes (string-labelled). For those charts we round to the
+// nearest integer slot and use the actual label string. For numeric axes
+// we keep the fractional value for sub-slot precision.
 //
 // Options:
-//   opts.slots     — number of x-axis slots (24 hourly, 48 30-min, 96 15-min)
-//   opts.label     — label text (default 'NOW')
-//   opts.chartDate — YYYY-MM-DD of the data shown on the chart. If provided
-//                    and != today's local date, returns null. If omitted,
-//                    falls back to DP.selectedDate logic (for non-DA charts
-//                    like genmix, load, renewables, etc. where the chart
-//                    follows selectedDate directly).
+//   opts.slots     — number of x-axis slots (24, 48, 96)
+//   opts.labels    — array of label strings (the chart's data.labels). If
+//                    provided, the annotation uses the exact label at the
+//                    rounded index — required for category axes.
+//   opts.label     — annotation label text (default 'NOW')
+//   opts.chartDate — YYYY-MM-DD of the data shown. If != today, returns null.
 function nowLineAnnotation(opts) {
   opts = opts || {};
   var today = new Date().toISOString().slice(0, 10);
 
-  // Primary check: explicit chartDate from caller (most reliable for DA charts)
   if (opts.chartDate != null) {
     if (opts.chartDate !== today) return null;
   } else {
-    // Fallback: rely on the date picker selection
     var selected = window.DP && window.DP.selectedDate;
     if (selected && selected !== today) return null;
   }
 
   var slots = opts.slots || 24;
   var now = new Date();
-  // Position on x-axis as fractional index
-  //   24 slots (hourly):     x = hour + minute/60        (0..24)
-  //   48 slots (30-min):     x = hour*2 + minute/30      (0..48)
-  //   96 slots (15-min):     x = hour*4 + minute/15      (0..96)
-  var x;
-  if (slots === 96) x = now.getHours() * 4 + now.getMinutes() / 15;
-  else if (slots === 48) x = now.getHours() * 2 + now.getMinutes() / 30;
-  else x = now.getHours() + now.getMinutes() / 60;
+  // Fractional position
+  var xFrac;
+  if (slots === 96) xFrac = now.getHours() * 4 + now.getMinutes() / 15;
+  else if (slots === 48) xFrac = now.getHours() * 2 + now.getMinutes() / 30;
+  else xFrac = now.getHours() + now.getMinutes() / 60;
+
+  // Round to nearest integer index — chartjs-plugin-annotation uses integer
+  // positions on category axes (same convention as minPt/maxPt with xValue).
+  var xIdx = Math.round(xFrac);
+  if (xIdx < 0) xIdx = 0;
+  if (xIdx >= slots) xIdx = slots - 1;
 
   return {
     type: 'line',
     scaleID: 'x',
     xScaleID: 'x',
-    value: x,        // for category axes (Chart.js accepts fractional indices)
-    xMin: x,         // for linear/time axes
-    xMax: x,
+    value: xIdx,
+    xMin: xIdx,
+    xMax: xIdx,
     borderColor: '#FFFD82',
     borderWidth: 1.5,
     borderDash: [4, 3],
