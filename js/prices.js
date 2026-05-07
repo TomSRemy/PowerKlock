@@ -1719,6 +1719,9 @@ function setCCView(view) {
   // Show/hide spread reference selector
   const refWrap = document.getElementById('cc-ref-wrap');
   if (refWrap) refWrap.style.display = view === 'spread' ? 'flex' : 'none';
+  // Show/hide bands zone selector
+  const bandsWrap = document.getElementById('cc-bands-wrap');
+  if (bandsWrap) bandsWrap.style.display = view === 'bands' ? 'flex' : 'none';
   // Show/hide canvas vs heatmap div
   const canvas = document.getElementById('price-compare-canvas');
   const heat   = document.getElementById('cc-heatmap');
@@ -1824,18 +1827,13 @@ function renderCCLines(data, selected) {
   const datasets = [];
   data.forEach((z, i) => {
     if (!selected.has(z.code)) return;
-    const baseCol = ccZoneColor(z.code, data, i);
+    const col = ccZoneColor(z.code, data, i);
     const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
-    const negFracCC = hourly.filter(v => v != null && v < 0).length / Math.max(1, hourly.filter(v => v != null).length);
-    const col = negFracCC >= 0.5 ? '#ED6965' : negFracCC >= 0.2 ? '#FBBF24' : baseCol;
     datasets.push({
       label: `${z.code} · ${z.name}`, data: hourly, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-      pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2, fill: true,
-      backgroundColor: (ctx2) => {
-        const g = ctx2.chart.ctx.createLinearGradient(0,0,0,320);
-        g.addColorStop(0, col+'28'); g.addColorStop(1, col+'00'); return g;
-      },
+      pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+      fill: false,
       tension: 0.3,
     });
     if (z.hourlyYday && z.hourlyYday.length) {
@@ -1865,7 +1863,7 @@ function renderCCLines(data, selected) {
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
-        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }}
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
       }
     }
   });
@@ -2008,12 +2006,28 @@ function renderCCProfile(data, selected) {
 // ────────────────────────────────────────────
 // View 4: BANDS — single zone, today + 30-day envelope
 // ────────────────────────────────────────────
+function setBandsZone(code) {
+  window._ccBandsZone = code;
+  renderCompareChart();
+}
+window.setBandsZone = setBandsZone;
+
+function populateBandsZoneSelect(zones, current) {
+  const sel = document.getElementById('cc-bands-select');
+  if (!sel) return;
+  sel.innerHTML = zones.map(z => `<option value="${z.code}" ${z.code===current?'selected':''}>${z.code}</option>`).join('');
+}
+
 async function renderCCBands(data, selected) {
   const zones = ccGetSelectedZones(data, selected);
-  // Use the first selected zone (could be made a dropdown later)
-  const z = zones[0] || data[0];
+  // Default: first selected zone, persisted across renders
+  if (!window._ccBandsZone || !zones.find(x => x.code === window._ccBandsZone)) {
+    window._ccBandsZone = (zones[0] || data[0])?.code;
+  }
+  const z = data.find(x => x.code === window._ccBandsZone) || zones[0] || data[0];
   if (!z) return;
-  const col = ccZoneColor(z.code, data, 0);
+  const col = ccZoneColor(z.code, data, data.indexOf(z));
+  populateBandsZoneSelect(zones, z.code);
 
   const nPts = z.hourly && z.hourly.length ? z.hourly.length : 24;
   const hours = makeTimeLabels(nPts);
@@ -2156,8 +2170,8 @@ function renderCCSpread(data, selected) {
         zoom: ZOOM_CFG,
         annotation: { annotations: (() => {
           const ann = {
-            baseline: { type:'line', yMin:0, yMax:0, borderColor:'rgba(148,163,184,.5)', borderWidth:1.5,
-              label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
+            baseline: { type:'line', yMin:0, yMax:0, borderColor:'rgba(148,163,184,.7)', borderWidth:1.5,
+              label:{ display:true, content:`baseline · ${refCode}`, position:'end', color:'rgba(148,163,184,1)', font:{size:10,weight:'600'}, backgroundColor:'rgba(0,0,0,.4)', padding:4 }
             }
           };
           const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate });
