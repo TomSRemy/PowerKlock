@@ -548,6 +548,25 @@ async function loadPrices() {
     const now = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit' });
     document.getElementById('prices-updated').textContent = `Updated ${now} CET`;
 
+    // Backfill hourlyYday for the single-zone chart overlay (J-1 delivery = today-1, file = today-2)
+    if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
+      const [y,m,d] = liveDateISO.split('-').map(Number);
+      const j1Auc = new Date(Date.UTC(y, m-1, d));
+      j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+      const j1FileISO = j1Auc.toISOString().slice(0,10);
+      fetchHistoricalDaily(j1FileISO).then(j1 => {
+        if (!j1 || !j1.zones) return;
+        let touched = false;
+        pricesData.forEach(z => {
+          if (j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
+            z.hourlyYday = j1.zones[z.code].hourly;
+            touched = true;
+          }
+        });
+        if (touched && typeof rerenderOpenRowDetail === 'function') rerenderOpenRowDetail();
+      });
+    }
+
   } catch (e) {
     console.error(e);
     document.getElementById('prices-tbody').innerHTML =
@@ -635,8 +654,19 @@ function updateKPIs(data, dataDateStr) {
 // Line 3 (kpi-chg) = delta vs J-1 only, coloured to match border.
 // Line 4 (kpi-meta) = static context (zones count for AVG, country for MAX/MIN, hours for peak/off-peak).
 async function applyVsYesterdayColours(displayDate, today, ctx) {
-  if (typeof fetchYesterdayDaily !== 'function') return;
-  const yData = await fetchYesterdayDaily(displayDate);
+  if (typeof fetchHistoricalDaily !== 'function' && typeof fetchYesterdayDaily !== 'function') return;
+  // Files are named by AUCTION date. Today's delivery file = auction (displayDate - 1).
+  // So J-1's delivery file = auction (displayDate - 2). We pass that filename directly.
+  let yData = null;
+  if (displayDate && typeof fetchHistoricalDaily === 'function') {
+    const [y,m,d] = displayDate.split('-').map(Number);
+    const j1Auction = new Date(Date.UTC(y, m-1, d));
+    j1Auction.setUTCDate(j1Auction.getUTCDate() - 2);
+    const j1FileISO = j1Auction.toISOString().slice(0,10);
+    yData = await fetchHistoricalDaily(j1FileISO);
+  } else if (typeof fetchYesterdayDaily === 'function') {
+    yData = await fetchYesterdayDaily(displayDate);
+  }
   const yKpi  = yData ? computeKPIs(yData.zones) : null;
 
   const directionFromDelta = (delta) => {
@@ -1896,9 +1926,6 @@ function renderCCLines(data, selected) {
   const hours = makeTimeLabels(nPts);
   const curHr = new Date().getHours();
   const curIdx = Math.min(curHr, nPts - 1);
-  const dayLbl = ccFmtDay(window._currentPriceDate);
-  const yLbl   = ccFmtDayShift(window._currentPriceDate, -1) || 'J-1';
-  const j2Lbl  = ccFmtDayShift(window._currentPriceDate, -2) || 'J-2';
 
   const datasets = [];
   data.forEach((z, i) => {
@@ -1912,12 +1939,6 @@ function renderCCLines(data, selected) {
       fill: false,
       tension: 0.3,
     });
-    if (z.hourlyYday && z.hourlyYday.length) {
-      datasets.push({ label:`${z.code} ${yLbl}`, data:z.hourlyYday, borderColor:col, borderWidth:1.2, borderDash:[5,4], pointRadius:0, fill:false, tension:0, opacity:0.5 });
-    }
-    if (z.hourlyJ2 && z.hourlyJ2.length) {
-      datasets.push({ label:`${z.code} ${j2Lbl}`, data:z.hourlyJ2, borderColor:col, borderWidth:1, borderDash:[2,4], pointRadius:0, fill:false, tension:0, opacity:0.3 });
-    }
   });
 
   mkChart('price-compare-canvas', {
@@ -1928,8 +1949,7 @@ function renderCCLines(data, selected) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10,
-          filter: item => !(item.text.includes(yLbl) || item.text.includes(j2Lbl)) }},
+        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
         tooltip: { mode:'index', intersect:false, callbacks: {
           title: c => c[0].label,
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
