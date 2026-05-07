@@ -479,7 +479,7 @@ async function loadPricesWithDates(periodStart, periodEnd) {
       const batchRes = await batch(ZONES.slice(i, i+batchSize));
       results.push(...batchRes);
       pricesData = results.sort((a,b) => b.today - a.today);
-      renderPricesTable(pricesData);
+      renderPricesTable(pricesData, histDateISO);
       updateKPIs(pricesData, histDateISO);
     }
 
@@ -501,7 +501,7 @@ async function loadPricesWithDates(periodStart, periodEnd) {
             }
           });
           if (touched) {
-            renderPricesTable(pricesData);
+            renderPricesTable(pricesData, histDateISO);
             updateKPIs(pricesData, histDateISO);
           }
         }
@@ -565,7 +565,7 @@ async function loadPrices() {
       const batchResults = await batch(ZONES.slice(i, i + batchSize));
       results.push(...batchResults);
       pricesData = results.sort((a,b) => b.today - a.today);
-      renderPricesTable(pricesData);
+      renderPricesTable(pricesData, liveDateISO);
       updateKPIs(pricesData, liveDateISO);
     }
 
@@ -587,7 +587,7 @@ async function loadPrices() {
             }
           });
           if (touched) {
-            renderPricesTable(pricesData);
+            renderPricesTable(pricesData, liveDateISO);
             updateKPIs(pricesData, liveDateISO);
           }
         }
