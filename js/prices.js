@@ -759,6 +759,9 @@ function renderPricesTable(data, dataDateStr) {
   const fmtLong = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
   const todayISO = new Date().toISOString().slice(0,10);
   const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
+  // Store globally so chart helpers (e.g. nowLineAnnotation) can determine
+  // whether the current price data is for today or another day (DA settled or fwd).
+  window._currentPriceDate = displayDate;
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong(displayDate) + ' · ENTSO-E';
   // Remove loading row if still there
@@ -1418,7 +1421,7 @@ function buildHourlyDetail(idx, z) {
 
   // Annotations
   const annotations = {};
-  const _nowAnn = nowLineAnnotation({ slots: chartData.length });
+  const _nowAnn = nowLineAnnotation({ slots: chartData.length, chartDate: window._currentPriceDate });
   if (_nowAnn) annotations.nowLine = _nowAnn;
   // Min/Max points — chartData uses raw 96pt (15-min) when available, else 24h
   // minRawIdx/maxRawIdx are already indexes into the raw `hourly` array, which
@@ -1858,7 +1861,7 @@ function renderCCLines(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts }); return a ? { nowLine: a } : {}; })() }
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -1989,7 +1992,7 @@ function renderCCProfile(data, selected) {
               label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
             }
           };
-          const a = nowLineAnnotation();
+          const a = nowLineAnnotation({ chartDate: window._currentPriceDate });
           if (a) ann.nowLine = a;
           return ann;
         })() }
@@ -2157,7 +2160,7 @@ function renderCCSpread(data, selected) {
               label:{ display:true, content:`= ${refCode}`, position:'end', color:'rgba(148,163,184,.8)', font:{size:9}, backgroundColor:'transparent', padding:2 }
             }
           };
-          const a = nowLineAnnotation();
+          const a = nowLineAnnotation({ chartDate: window._currentPriceDate });
           if (a) ann.nowLine = a;
           return ann;
         })() }
