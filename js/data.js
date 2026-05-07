@@ -88,17 +88,20 @@ async function loadLastAvailable() {
   if (!DATA_BASE) return;
   for (let i = 1; i <= 14; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0,10);
+    const auctionStr = d.toISOString().slice(0,10);
     try {
-      const r = await fetch(DATA_BASE + 'history/daily/' + dateStr + '.json?t=' + Date.now());
+      const r = await fetch(DATA_BASE + 'history/daily/' + auctionStr + '.json?t=' + Date.now());
       if (r.ok) {
         const data = await r.json();
         const hasData = Array.isArray(data.zones) ? data.zones.length > 0
           : (data.zones && Object.keys(data.zones).length > 0);
         if (hasData) {
-          console.log('Last available:', dateStr);
-          if (typeof dpSelect === 'function') dpSelect(dateStr);
-          else loadPricesForDate(dateStr);
+          // Auction date in filename → delivery date = auction + 1
+          const deliveryDt = new Date(auctionStr); deliveryDt.setDate(deliveryDt.getDate() + 1);
+          const deliveryStr = deliveryDt.toISOString().slice(0,10);
+          console.log('Last available delivery:', deliveryStr, '(auction:', auctionStr + ')');
+          if (typeof dpSelect === 'function') dpSelect(deliveryStr);
+          else loadPricesForDate(auctionStr);
           return;
         }
       }
@@ -106,10 +109,12 @@ async function loadLastAvailable() {
   }
 }
 
-async function loadFromJSON() {
-  // Prices
-  const prices = await fetchJSON('prices.json');
-  if (prices?.zones?.length) {
+async function loadFromJSON(opts) {
+  opts = opts || {};
+  // Prices (skippable: caller may prefer the daily history file for "delivery today")
+  if (!opts.skipPrices) {
+    const prices = await fetchJSON('prices.json');
+    if (prices?.zones?.length) {
     // Map JSON fields to dashboard format
     pricesData = prices.zones.map(z => ({
       code:    z.code,
@@ -146,6 +151,7 @@ async function loadFromJSON() {
     if (leafletMap && document.getElementById('page-map')?.classList.contains('active')) {
       updateMapMarkers(); renderMapKPIs(); refreshGeoLayer();
     }
+    }
   }
 
   // Genmix
@@ -174,10 +180,27 @@ async function loadFromJSON() {
 // ════════════════════════════════════════════
 updateConverter();
 updateCapacity();
-// Load data: try JSON first, then last available
+// Load data strategy:
+//   ENTSO-E publishes DA prices in the afternoon (~14h CET) for next-day delivery.
+//   Convention used by the fetcher: filename = AUCTION date (the day the prices
+//   were published), NOT the delivery date.
+//   So `yesterday.json` contains prices for delivery TODAY (auction yesterday).
+//      `today.json`     contains prices for delivery TOMORROW (auction today,
+//                       only available after ~14h CET).
+//   Default view = delivery today => load yesterday.json.
 (async () => {
-  await loadFromJSON();
-  if (!pricesData || pricesData.length === 0) {
+  // Load auxiliary JSON (genmix, renewables, load, crossborder) but skip prices
+  // — we want the daily history file, not the live snapshot which is one day
+  // ahead of what the user expects to see by default.
+  await loadFromJSON({ skipPrices: true });
+
+  // Load DA prices for "delivery today" = auction yesterday's history file
+  const today = new Date();
+  const ySrc  = new Date(today); ySrc.setDate(ySrc.getDate() - 1);
+  const auctionDate = ySrc.toISOString().slice(0, 10);
+  if (typeof loadPricesForDate === 'function') {
+    await loadPricesForDate(auctionDate);
+  } else if (!pricesData || pricesData.length === 0) {
     await loadLastAvailable();
   }
 })();
@@ -281,11 +304,18 @@ function dpRender() {
 }
 
 function dpSelect(dateStr) {
+  // dateStr = the DELIVERY date the user clicked in the calendar.
+  // The fetcher's history files are named by AUCTION date = delivery - 1 day.
   const todayStr = new Date().toISOString().slice(0,10);
   const isToday  = dateStr === todayStr;
   DP.selectedDate = isToday ? null : dateStr;
 
-  // Update picker button label — European format DD/MM/YY
+  // Compute auction date = delivery - 1 (used to find the right history file)
+  const _dt = new Date(dateStr);
+  _dt.setDate(_dt.getDate() - 1);
+  const auctionDate = _dt.toISOString().slice(0, 10);
+
+  // Update picker button label — European format DD/MM/YY (delivery date)
   const lbl = document.getElementById('date-picker-label');
   if (lbl) {
     if (isToday) {
@@ -296,13 +326,13 @@ function dpSelect(dateStr) {
     }
   }
 
-  // Update prices-date-label immediately
+  // Update prices-date-label immediately (show DELIVERY date, not auction)
   const fmtLong2 = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong2(dateStr) + ' · ENTSO-E';
 
   dpRender();
-  loadPricesForDate(dateStr);
+  loadPricesForDate(auctionDate);
   document.getElementById('date-picker-btn')?.classList.remove('open');
   document.getElementById('date-picker-popup')?.classList.remove('open');
 }
@@ -318,12 +348,19 @@ function dpChangeMonth(dir) {
 }
 
 // ── Load prices for a specific date ──
+// `dateStr` is the AUCTION date (= filename in data/history/daily/),
+// per the fetcher's naming convention. The DELIVERY date is auction + 1 day.
 async function loadPricesForDate(dateStr) {
   if (!dateStr) { loadPrices(); return; }
   const todayStr = new Date().toISOString().slice(0,10);
 
+  // Compute delivery date (= auction + 1 day)
+  const _auctionDt = new Date(dateStr);
+  _auctionDt.setDate(_auctionDt.getDate() + 1);
+  const deliveryStr = _auctionDt.toISOString().slice(0, 10);
+
   const updEl = document.getElementById('prices-updated');
-  if (updEl) updEl.textContent = 'Loading ' + dateStr + '...';
+  if (updEl) updEl.textContent = 'Loading ' + deliveryStr + '...';
 
   const fmtDate = s => { const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y.slice(2); };
 
@@ -394,8 +431,8 @@ async function loadPricesForDate(dateStr) {
 
         if (mapped.length) {
           pricesData = mapped.sort((a,b) => b.today - a.today);
-          renderPricesTable(pricesData, dateStr);
-          updateKPIs(pricesData, dateStr);
+          renderPricesTable(pricesData, deliveryStr);
+          updateKPIs(pricesData, deliveryStr);
           buildTicker(pricesData);
           if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';
           return;
