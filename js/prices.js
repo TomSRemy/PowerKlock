@@ -1083,7 +1083,7 @@ function renderPricesTableBody() {
     const sparkSvg = makeSVGSparklineSmooth(h24spark, 'mixed');
 
     const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)">${FLAG_MAP[z.code]||''} ${z.code}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${FLAG_MAP[z.code]||''} ${z.code}</td>
       <td style="font-size:11px;color:var(--tx2)">${meta.country||z.name||z.code}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${z.today.toFixed(1)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 08h–20h">${peakStr}</td>
