@@ -462,29 +462,20 @@ async function loadPricesForDate(dateStr) {
             });
           }
 
-          // Backfill hourlyYday (J-1) and hourlyJ2 (J-2) for chart overlays
+          // Backfill hourlyYday (J-1) for the single-zone chart overlay
           if (typeof fetchHistoricalDaily === 'function') {
             const j1Date = _prevDateISO(dateStr);
-            const j2Date = _prevDateISO(j1Date);
-            Promise.all([
-              fetchHistoricalDaily(j1Date),
-              fetchHistoricalDaily(j2Date),
-            ]).then(([j1, j2]) => {
+            fetchHistoricalDaily(j1Date).then(j1 => {
+              if (!j1 || !j1.zones) return;
               let touched = false;
               pricesData.forEach(z => {
-                if (j1 && j1.zones && j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
+                if (j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
                   z.hourlyYday = j1.zones[z.code].hourly;
                   touched = true;
                 }
-                if (j2 && j2.zones && j2.zones[z.code] && Array.isArray(j2.zones[z.code].hourly) && j2.zones[z.code].hourly.length) {
-                  z.hourlyJ2 = j2.zones[z.code].hourly;
-                  touched = true;
-                }
               });
-              if (touched) {
-                // Repaint anything that consumes hourlyYday/hourlyJ2
-                if (typeof renderCompareChart === 'function' && window._compareZones) renderCompareChart();
-                if (typeof rerenderOpenRowDetail === 'function') rerenderOpenRowDetail();
+              if (touched && typeof rerenderOpenRowDetail === 'function') {
+                rerenderOpenRowDetail();
               }
             });
           }
