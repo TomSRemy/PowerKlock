@@ -1533,6 +1533,10 @@ function buildHourlyDetail(idx, z) {
 
   // Annotations
   const annotations = {};
+  // Zero line — same discreet style as in Compare zones
+  if (typeof ccZeroLineAnnotation === 'function') {
+    annotations.zeroLine = ccZeroLineAnnotation();
+  }
   const _nowAnn = nowLineAnnotation({ slots: chartData.length, labels: chartLabels, chartDate: window._currentPriceDate });
   if (_nowAnn) annotations.nowLine = _nowAnn;
   // Min/Max points — chartData uses raw 96pt (15-min) when available, else 24h
@@ -2048,7 +2052,7 @@ function renderCCLines(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); if (a) ann.nowLine = a; return ann; })() }
+        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate, mode: 'compare' }); if (a) ann.nowLine = a; return ann; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -2179,7 +2183,7 @@ function renderCCProfile(data, selected) {
               label:{ display:true, content:'avg = 100%', position:'end', color:'rgba(148,163,184,.7)', font:{size:9}, backgroundColor:'transparent', padding:2 }
             }
           };
-          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate });
+          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate, mode: 'compare' });
           if (a) ann.nowLine = a;
           return ann;
         })() }
@@ -2278,7 +2282,7 @@ async function renderCCBands(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); if (a) ann.nowLine = a; return ann; })() }
+        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate, mode: 'compare' }); if (a) ann.nowLine = a; return ann; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -2382,7 +2386,7 @@ function renderCCSpread(data, selected) {
               label:{ display:true, content:`baseline · ${refCode}`, position:'end', color:'rgba(148,163,184,1)', font:{size:10,weight:'600'}, backgroundColor:'rgba(0,0,0,.4)', padding:4 }
             }
           };
-          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate });
+          const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate, mode: 'compare' });
           if (a) ann.nowLine = a;
           return ann;
         })() }
