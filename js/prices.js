@@ -1737,11 +1737,27 @@ function setSpreadRef(code) {
 }
 window.setSpreadRef = setSpreadRef;
 
-function populateSpreadRefSelect(data) {
-  const sel = document.getElementById('cc-ref-select');
-  if (!sel || !data) return;
-  const cur = window._ccSpreadRef || 'FR';
-  sel.innerHTML = data.map(z => `<option value="${z.code}" ${z.code===cur?'selected':''}>${z.code}</option>`).join('');
+function populateSpreadRefSelect(data, selected) {
+  const host = document.getElementById('cc-ref-chips');
+  if (!host || !data) return;
+  // Only zones currently in the compare selection
+  const sel = selected || window._compareZones || new Set(['FR']);
+  const zones = data.filter(z => sel.has(z.code));
+  // Resolve current ref: explicit pick if still in selection, else FR if present, else first selected
+  let cur = window._ccSpreadRef;
+  if (!cur || !sel.has(cur)) {
+    cur = sel.has('FR') ? 'FR' : (zones[0]?.code || 'FR');
+    window._ccSpreadRef = cur;
+  }
+  host.innerHTML = zones.map(z => {
+    const isOn = z.code === cur;
+    const col  = (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
+    return `<button onclick="setSpreadRef('${z.code}')" style="
+      padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid ${isOn?col:'rgba(255,255,255,.12)'};
+      background:${isOn?col+'22':'transparent'};color:${isOn?col:'rgba(255,255,255,.55)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
+    ">${z.code}</button>`;
+  }).join('');
 }
 
 // ────────────────────────────────────────────
@@ -1784,6 +1800,27 @@ function ccBuildCommonShading(nPts) {
   };
 }
 
+// Zero-line annotation: subtle red marker for the 0 €/MWh threshold (negative price boundary)
+function ccZeroLineAnnotation() {
+  return {
+    type: 'line',
+    yMin: 0,
+    yMax: 0,
+    borderColor: 'rgba(237,105,101,.5)',
+    borderWidth: 1,
+    borderDash: [4, 4],
+    label: {
+      display: true,
+      content: '0 €/MWh',
+      position: 'start',
+      color: 'rgba(237,105,101,.85)',
+      font: { size: 9, weight: '500' },
+      backgroundColor: 'transparent',
+      padding: 2,
+    }
+  };
+}
+
 // ────────────────────────────────────────────
 // Router
 // ────────────────────────────────────────────
@@ -1793,7 +1830,7 @@ function renderCompareChart() {
   const selected = window._compareZones || new Set(['FR']);
   const view = window._ccView || 'lines';
 
-  populateSpreadRefSelect(data);
+  populateSpreadRefSelect(data, selected);
 
   switch (view) {
     case 'heatmap': renderCCHeatmap(data, selected); break;
@@ -1859,7 +1896,7 @@ function renderCCLines(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() }
+        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); if (a) ann.nowLine = a; return ann; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
@@ -2013,9 +2050,17 @@ function setBandsZone(code) {
 window.setBandsZone = setBandsZone;
 
 function populateBandsZoneSelect(zones, current) {
-  const sel = document.getElementById('cc-bands-select');
-  if (!sel) return;
-  sel.innerHTML = zones.map(z => `<option value="${z.code}" ${z.code===current?'selected':''}>${z.code}</option>`).join('');
+  const host = document.getElementById('cc-bands-chips');
+  if (!host) return;
+  host.innerHTML = zones.map(z => {
+    const isOn = z.code === current;
+    const col  = (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
+    return `<button onclick="setBandsZone('${z.code}')" style="
+      padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid ${isOn?col:'rgba(255,255,255,.12)'};
+      background:${isOn?col+'22':'transparent'};color:${isOn?col:'rgba(255,255,255,.55)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
+    ">${z.code}</button>`;
+  }).join('');
 }
 
 async function renderCCBands(data, selected) {
@@ -2071,10 +2116,11 @@ async function renderCCBands(data, selected) {
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
         }},
         zoom: ZOOM_CFG,
+        annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate }); if (a) ann.nowLine = a; return ann; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
-        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }}
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
       }
     }
   });
