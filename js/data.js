@@ -137,6 +137,23 @@ async function loadFromJSON(opts) {
     }));
     // Extract date from JSON updated field
     const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
+
+    // Backfill vsYday synchronously if missing (so the table never shows '–' when J-1 is available)
+    if (jsonDate && typeof fetchYesterdayDaily === 'function' && pricesData.some(z => z.vsYday == null)) {
+      try {
+        const yData = await fetchYesterdayDaily(jsonDate);
+        if (yData && yData.zones) {
+          pricesData.forEach(z => {
+            if (z.vsYday != null) return;
+            const y = yData.zones[z.code];
+            if (y && y.avg != null && z.today != null) {
+              z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
+            }
+          });
+        }
+      } catch (e) { console.warn('vsYday backfill (loadFromJSON) failed:', e); }
+    }
+
     renderPricesTable(pricesData, jsonDate);
     updateKPIs(pricesData, jsonDate);
     buildTicker(pricesData);
@@ -435,34 +452,29 @@ async function loadPricesForDate(dateStr) {
         }
 
         if (mapped.length) {
+          // Backfill vsYday SYNCHRONOUSLY before first render, so '–' never appears when J-1 data is available
+          if (typeof fetchYesterdayDaily === 'function' && mapped.some(z => z.vsYday == null)) {
+            try {
+              const yData = await fetchYesterdayDaily(dateStr);
+              if (yData && yData.zones) {
+                mapped.forEach(z => {
+                  if (z.vsYday != null) return;
+                  const y = yData.zones[z.code];
+                  if (y && y.avg != null && z.today != null) {
+                    z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
+                  }
+                });
+              }
+            } catch (e) { console.warn('vsYday backfill failed:', e); }
+          }
+
           pricesData = mapped.sort((a,b) => b.today - a.today);
           renderPricesTable(pricesData, deliveryStr);
           updateKPIs(pricesData, deliveryStr);
           buildTicker(pricesData);
           if (updEl) updEl.textContent = fmtDate(dateStr) + ' · ENTSO-E historical';
 
-          // Backfill vsYday async if missing (dict-format historical files don't carry it)
-          const needsBackfill = mapped.some(z => z.vsYday == null);
-          if (needsBackfill && typeof fetchYesterdayDaily === 'function') {
-            fetchYesterdayDaily(dateStr).then(yData => {
-              if (!yData || !yData.zones) return;
-              let touched = false;
-              pricesData.forEach(z => {
-                if (z.vsYday != null) return;
-                const y = yData.zones[z.code];
-                if (y && y.avg != null && z.today != null) {
-                  z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
-                  touched = true;
-                }
-              });
-              if (touched) {
-                renderPricesTable(pricesData, deliveryStr);
-                updateKPIs(pricesData, deliveryStr);
-              }
-            });
-          }
-
-          // Backfill hourlyYday (J-1) for the single-zone chart overlay
+          // Backfill hourlyYday (J-1) for the single-zone chart overlay (async, doesn't block rendering)
           if (typeof fetchHistoricalDaily === 'function') {
             const j1Date = _prevDateISO(dateStr);
             fetchHistoricalDaily(j1Date).then(j1 => {
