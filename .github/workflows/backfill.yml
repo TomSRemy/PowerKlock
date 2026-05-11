@@ -3,39 +3,61 @@ name: Backfill Historical Data
 on:
   workflow_dispatch:
     inputs:
-      start_date:
-        description: 'Start date (YYYY-MM-DD)'
+      mode:
+        description: 'How to choose the date range'
         required: true
-        default: '2015-01-01'
-      end_date:
-        description: 'End date (YYYY-MM-DD) — leave blank for today'
+        default: 'year'
+        type: choice
+        options:
+          - 'year'
+          - 'range'
+      year:
+        description: 'If mode=year: which calendar year (e.g. 2024)'
+        required: false
+        default: '2024'
+      date_from:
+        description: 'If mode=range: start date YYYY-MM-DD (e.g. 2023-01-01)'
+        required: false
+        default: ''
+      date_to:
+        description: 'If mode=range: end date YYYY-MM-DD (inclusive)'
         required: false
         default: ''
       zones:
-        description: 'Zones (comma-separated) — recommended: FR,DE_LU,ES,BE,NL'
-        required: false
-        default: 'FR,DE_LU,ES,BE,NL'
-      with_generation:
-        description: 'Include wind/solar generation (A75) — run prices first'
-        type: boolean
+        description: 'Comma-separated zones to fetch'
+        required: true
+        default: 'FR,DE_LU,ES,BE,NL,GB,PT'
+      with_genmix:
+        description: 'Also fetch generation mix (5x slower, adds renPct + domFuel)'
+        required: true
         default: false
-      delay:
-        description: 'Delay between requests in seconds (0.4 recommended)'
-        required: false
-        default: '0.4'
+        type: boolean
+      overwrite:
+        description: 'Overwrite existing daily files (default = skip them with --resume)'
+        required: true
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Dry run (just print the plan, no API calls)'
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: backfill-historical
+  cancel-in-progress: false
 
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 350
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -43,42 +65,64 @@ jobs:
       - name: Install dependencies
         run: pip install requests==2.33.1
 
-      - name: Compute end date
-        id: dates
+      - name: Build CLI args
+        id: args
         run: |
-          if [ -z "${{ inputs.end_date }}" ]; then
-            echo "end=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          ARGS="--fetch-historical"
+          if [ "${{ inputs.mode }}" = "year" ]; then
+            ARGS="$ARGS --year ${{ inputs.year }}"
           else
-            echo "end=${{ inputs.end_date }}" >> $GITHUB_OUTPUT
+            if [ -z "${{ inputs.date_from }}" ] || [ -z "${{ inputs.date_to }}" ]; then
+              echo "ERROR: mode=range requires both date_from and date_to" >&2
+              exit 1
+            fi
+            ARGS="$ARGS --from ${{ inputs.date_from }} --to ${{ inputs.date_to }}"
           fi
+          ARGS="$ARGS --zones ${{ inputs.zones }}"
+          if [ "${{ inputs.with_genmix }}" = "true" ]; then
+            ARGS="$ARGS --with-genmix"
+          fi
+          if [ "${{ inputs.overwrite }}" = "false" ]; then
+            ARGS="$ARGS --resume"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "args=$ARGS" >> $GITHUB_OUTPUT
+          echo "Final args: $ARGS"
 
       - name: Run backfill
-        run: |
-          ARGS="--start ${{ inputs.start_date }} --end ${{ steps.dates.outputs.end }}"
-          ARGS="$ARGS --delay ${{ inputs.delay }}"
-          if [ -n "${{ inputs.zones }}" ]; then
-            ARGS="$ARGS --zones ${{ inputs.zones }}"
-          fi
-          if [ "${{ inputs.with_generation }}" = "true" ]; then
-            ARGS="$ARGS --with-generation"
-          fi
-          echo "Running: python scripts/backfill.py $ARGS"
-          python scripts/backfill.py $ARGS
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/enrich_summary.py ${{ steps.args.outputs.args }}
 
-      - name: Commit and push history data
+      - name: Commit and push
+        if: ${{ inputs.dry_run == false }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add data/history/
           if git diff --cached --quiet; then
             echo "No changes to commit"
-          else
-            MSG="backfill: ${{ inputs.start_date }} to ${{ steps.dates.outputs.end }} zones=${{ inputs.zones }}"
-            if [ "${{ inputs.with_generation }}" = "true" ]; then
-              MSG="$MSG +generation"
-            fi
-            git commit -m "$MSG"
-            git push
+            exit 0
           fi
+          if [ "${{ inputs.mode }}" = "year" ]; then
+            RANGE="year=${{ inputs.year }}"
+          else
+            RANGE="${{ inputs.date_from }} to ${{ inputs.date_to }}"
+          fi
+          MSG="backfill: $RANGE zones=${{ inputs.zones }}"
+          if [ "${{ inputs.with_genmix }}" = "true" ]; then
+            MSG="$MSG +genmix"
+          fi
+          if [ "${{ inputs.overwrite }}" = "true" ]; then
+            MSG="$MSG (overwrite)"
+          fi
+          git commit -m "$MSG"
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push attempt $i failed, retrying in 8s..."
+            sleep 8
+          done
+          echo "Failed to push after 5 attempts"
+          exit 1
