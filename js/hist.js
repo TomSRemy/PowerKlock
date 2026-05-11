@@ -59,13 +59,6 @@ function toggleHistSection(id) {
       'capture-wind':     () => renderHistCapture('wind'),
       'multicc':          renderCompareChart,
       'prices-main':      () => {},
-      'cch':              renderCompareHist,
-      'yoy':              renderHistYoY,
-      'seasonal':         renderHistSeasonal,
-      'hourly':           renderHistHourly,
-      'weekly':           renderHistWeekly,
-      'vol':              renderHistVol,
-      'monthly':          renderHistMonthly,
     };
     if (renders[id]) renders[id]();
   }
@@ -79,12 +72,6 @@ function setHistZone(key, zone) {
     'spot':     renderHistSpot,
     'spread':   renderHistSpread,
     'neg':      renderHistNeg,
-    'yoy':      renderHistYoY,
-    'seasonal': renderHistSeasonal,
-    'hourly':   renderHistHourly,
-    'weekly':   renderHistWeekly,
-    'vol':      renderHistVol,
-    'monthly':  renderHistMonthly,
   };
   if (renders[key]) renders[key]();
 }
@@ -113,13 +100,10 @@ function setHistWindow(key, window, btn) {
     'eua-hist':  renderHistEUA,
     'cap-solar': () => renderHistCapture('solar'),
     'cap-wind':  () => renderHistCapture('wind'),
-    'cch':       renderCompareHist,
-    'yoy':       renderHistYoY,
-    'seasonal':  renderHistSeasonal,
-    'hourly':    renderHistHourly,
-    'weekly':    renderHistWeekly,
-    'vol':       renderHistVol,
-    'monthly':   renderHistMonthly,
+    'ho':        renderHistOverview,
+    'hsz':       renderHistSingle,
+    'hmz':       renderHistMulti,
+    'hms':       renderHistMonthlyTable,
   };
   if (renders[key]) renders[key]();
 }
@@ -962,349 +946,639 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+
 // ════════════════════════════════════════════════════════════════
-// HISTORICAL · 7 NEW VIEWS (Compare Zones Historical + 6 others)
+// HISTORICAL TAB · NEW LAYOUT (4 blocks)
+// 1. Overview table (multi-zone)
+// 2. Single zone section (insta tabs: Lines/YoY/Seasonal/Hourly/Weekly/Vol)
+// 3. Multi zone section (insta tabs: Lines/Heatmap/Profile/Bands/Spread)
+// 4. Monthly summary table
 // ════════════════════════════════════════════════════════════════
 
-// State for Compare Zones · Historical
-const CCH = {
-  zones: ['FR'],   // currently selected zones
-  baseline: 'FR',  // baseline zone for vs-FR column
-};
-
-// All zones available in summary (built lazily from data)
-function cchAllZones() {
-  const s = HIST.summary;
-  if (!s?.zones) return [];
-  return Object.keys(s.zones).sort();
+// ── Global zone state (shared across Daily Compare + Historical + Prices Table) ──
+function getUserZones() {
+  if (!window._userZones) {
+    const gmKeys = (typeof window._genmixData === 'object' && window._genmixData)
+      ? Object.keys(window._genmixData)
+      : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+    window._userZones = new Set(gmKeys);
+  }
+  return Array.from(window._userZones);
 }
 
-// ── Zone filter panel control ──
-function toggleCchFilterPanel() {
-  const p = document.getElementById('cch-filter-panel');
+function setUserZones(zones) {
+  window._userZones = new Set(zones);
+  // Sync with Daily Compare's set (used by buildCompareChips etc.)
+  window._compareZones = new Set(zones);
+  // Dispatch event so all listeners update
+  document.dispatchEvent(new CustomEvent('zones-changed', { detail: { zones } }));
+}
+
+// Listen for changes and re-render concerned sections
+document.addEventListener('zones-changed', () => {
+  // Re-render Daily Compare
+  if (typeof renderCompareChart === 'function') renderCompareChart();
+  if (typeof buildCompareChips === 'function') buildCompareChips();
+  // Re-render Historical sections (multi-zone)
+  if (typeof renderHistOverview === 'function') renderHistOverview();
+  if (typeof renderHistMulti === 'function') renderHistMulti();
+  // Update zone labels
+  updateZoneLabels();
+});
+
+function updateZoneLabels() {
+  const n = (window._userZones || new Set()).size;
+  const lbl1 = document.getElementById('ho-zone-label');
+  if (lbl1) lbl1.textContent = n + (n > 1 ? ' zones' : ' zone');
+  const lbl2 = document.getElementById('hmz-zone-label');
+  if (lbl2) lbl2.textContent = n + (n > 1 ? ' zones' : ' zone');
+  // Existing Daily Compare label
+  const lbl3 = document.getElementById('compare-filter-label');
+  if (lbl3) lbl3.textContent = n + (n > 1 ? ' zones selected' : ' zone selected');
+}
+
+// ── Global zone panel (the dropdown checkbox panel) ──
+function toggleGlobalZonePanel() {
+  const p = document.getElementById('global-zone-panel');
   if (!p) return;
   const open = p.style.display === 'block';
   if (open) { p.style.display = 'none'; return; }
-  // Position panel under the button
-  const btn = document.getElementById('cch-filter-btn');
-  const r = btn.getBoundingClientRect();
-  p.style.top = (r.bottom + 6) + 'px';
-  p.style.left = Math.max(8, r.right - 320) + 'px';
+
+  // Anchor to whatever button was clicked
+  const target = event?.currentTarget || document.getElementById('ho-zone-btn');
+  if (target) {
+    const r = target.getBoundingClientRect();
+    p.style.top = (r.bottom + 6) + 'px';
+    p.style.left = Math.max(8, r.right - 320) + 'px';
+  }
   p.style.display = 'block';
-  renderCchZoneChips();
+  renderGlobalZoneChips();
 }
 
 document.addEventListener('click', (e) => {
-  const p = document.getElementById('cch-filter-panel');
-  const wrap = document.getElementById('cch-filter-wrap');
-  if (p && p.style.display === 'block' && wrap && !wrap.contains(e.target)) {
-    p.style.display = 'none';
-  }
+  const p = document.getElementById('global-zone-panel');
+  if (!p || p.style.display !== 'block') return;
+  // Don't close if clicking inside panel or on a zone-toggle button
+  if (p.contains(e.target)) return;
+  if (e.target.closest('#ho-zone-btn, [onclick*="toggleGlobalZonePanel"]')) return;
+  p.style.display = 'none';
 });
 
-function renderCchZoneChips() {
-  const wrap = document.getElementById('cch-zone-chips');
+function renderGlobalZoneChips() {
+  const wrap = document.getElementById('global-zone-chips');
   if (!wrap) return;
-  const all = cchAllZones();
-  if (!all.length) { wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);padding:6px">Loading zones...</div>'; return; }
-  wrap.innerHTML = all.map(code => {
-    const on = CCH.zones.includes(code);
+  const s = HIST.summary;
+  const allZones = s?.zones ? Object.keys(s.zones).sort() : [];
+  if (!allZones.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--tx3);padding:6px">Loading zones...</div>';
+    return;
+  }
+  const selected = window._userZones || new Set(getUserZones());
+  wrap.innerHTML = allZones.map(code => {
+    const on = selected.has(code);
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[code]) || '';
     const color = zoneColor(code);
-    return `<label style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;${on?'background:rgba(20,211,169,0.08)':''}" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='${on?'rgba(20,211,169,0.08)':'transparent'}'">
-      <input type="checkbox" ${on?'checked':''} onchange="toggleCchZone('${code}')" style="cursor:pointer;accent-color:${color}">
+    return `<label style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;${on?'background:rgba(20,211,169,0.08)':''}">
+      <input type="checkbox" ${on?'checked':''} onchange="toggleGlobalZone('${code}')" style="cursor:pointer;accent-color:${color}">
       <span style="font-family:'JetBrains Mono',monospace;color:var(--tx2);min-width:60px">${flag} ${code}</span>
       <span style="width:8px;height:8px;border-radius:50%;background:${color};margin-left:auto"></span>
     </label>`;
   }).join('');
 }
 
-function toggleCchZone(code) {
-  const idx = CCH.zones.indexOf(code);
-  if (idx >= 0) CCH.zones.splice(idx, 1);
-  else CCH.zones.push(code);
-  renderCchZoneChips();
-  updateCchFilterLabel();
-  renderCompareHist();
+function toggleGlobalZone(code) {
+  const current = new Set(getUserZones());
+  if (current.has(code)) current.delete(code);
+  else current.add(code);
+  setUserZones(Array.from(current));
+  renderGlobalZoneChips();
 }
 
-function selectAllCchZones() {
-  CCH.zones = cchAllZones().slice();
-  renderCchZoneChips();
-  updateCchFilterLabel();
-  renderCompareHist();
+function selectAllGlobalZones() {
+  const s = HIST.summary;
+  if (!s?.zones) return;
+  setUserZones(Object.keys(s.zones));
+  renderGlobalZoneChips();
 }
 
-function clearCchZones() {
-  CCH.zones = ['FR'];
-  renderCchZoneChips();
-  updateCchFilterLabel();
-  renderCompareHist();
+function clearGlobalZones() {
+  setUserZones(['FR']);
+  renderGlobalZoneChips();
 }
 
-function cchNeighbours() {
-  CCH.zones = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'CH'].filter(z => cchAllZones().includes(z));
-  renderCchZoneChips();
-  updateCchFilterLabel();
-  renderCompareHist();
+function presetGlobalNeighbours() {
+  const s = HIST.summary;
+  const avail = s?.zones ? Object.keys(s.zones) : [];
+  const want = ['FR','DE_LU','BE','NL','ES','CH'].filter(z => avail.includes(z));
+  setUserZones(want);
+  renderGlobalZoneChips();
 }
 
-function cchPresetCore() {
-  CCH.zones = ['FR', 'DE_LU', 'BE', 'NL'].filter(z => cchAllZones().includes(z));
-  renderCchZoneChips();
-  updateCchFilterLabel();
-  renderCompareHist();
+function presetGlobalGenMix() {
+  const s = HIST.summary;
+  const avail = s?.zones ? Object.keys(s.zones) : [];
+  const gm = (typeof window._genmixData === 'object' && window._genmixData)
+    ? Object.keys(window._genmixData)
+    : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+  const want = gm.filter(z => avail.includes(z));
+  setUserZones(want.length ? want : gm);
+  renderGlobalZoneChips();
 }
 
-function updateCchFilterLabel() {
-  const lbl = document.getElementById('cch-filter-label');
-  if (!lbl) return;
-  if (CCH.zones.length === 0) lbl.textContent = 'No zone';
-  else if (CCH.zones.length === 1) lbl.textContent = CCH.zones[0] + ' selected';
-  else lbl.textContent = CCH.zones.length + ' zones';
-}
+window.toggleGlobalZonePanel = toggleGlobalZonePanel;
+window.toggleGlobalZone = toggleGlobalZone;
+window.selectAllGlobalZones = selectAllGlobalZones;
+window.clearGlobalZones = clearGlobalZones;
+window.presetGlobalNeighbours = presetGlobalNeighbours;
+window.presetGlobalGenMix = presetGlobalGenMix;
 
-// Expose for inline handlers
-window.toggleCchFilterPanel = toggleCchFilterPanel;
-window.toggleCchZone = toggleCchZone;
-window.selectAllCchZones = selectAllCchZones;
-window.clearCchZones = clearCchZones;
-window.cchNeighbours = cchNeighbours;
-window.cchPresetCore = cchPresetCore;
+
+// ────────────────────────────────────────────────────────────
+// HELPERS · stats for a daily series with optional 15-min source
+// ────────────────────────────────────────────────────────────
+function _statsForZone(series) {
+  // series = filtered array of { d, avg, peakAvg, offAvg, negH, ... }
+  const valid = series.map(d => d.avg).filter(v => v != null && !isNaN(v));
+  if (!valid.length) return null;
+  const sum = valid.reduce((a, b) => a + b, 0);
+  const avg = sum / valid.length;
+  const max = Math.max(...valid);
+  const min = Math.min(...valid);
+  const variance = valid.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / valid.length;
+  const sigma = Math.sqrt(variance);
+  // Peak/off-peak avgs (if available in series)
+  const peakVals = series.map(d => d.peakAvg).filter(v => v != null);
+  const offVals  = series.map(d => d.offAvg ?? d.offPkAvg).filter(v => v != null);
+  const peakAvg = peakVals.length ? peakVals.reduce((a,b)=>a+b,0)/peakVals.length : null;
+  const offAvg  = offVals.length  ? offVals.reduce((a,b)=>a+b,0)/offVals.length  : null;
+  const negH = series.reduce((a, d) => a + (d.negH || 0), 0);
+  return { avg, max, min, sigma, peakAvg, offAvg, negH, days: valid.length };
+}
 
 
 // ════════════════════════════════════════════
-// VIEW 1 · Compare Zones · Historical (Lines)
+// BLOCK 1 · OVERVIEW TABLE (multi-zone)
 // ════════════════════════════════════════════
-async function renderCompareHist() {
-  const w = HIST.windows['cch'] || '3M';
+async function renderHistOverview() {
+  const w = HIST.windows['ho'] || '3M';
   const s = await fetchSummary();
-  if (!s?.zones) return noDataMsg('cch-canvas');
+  if (!s?.zones) return;
 
-  // Ensure label/chips reflect state
-  updateCchFilterLabel();
-  if (document.getElementById('cch-filter-panel')?.style.display === 'block') {
-    renderCchZoneChips();
+  updateZoneLabels();
+
+  const selected = getUserZones().filter(z => s.zones[z]);
+  if (!selected.length) {
+    document.getElementById('ho-table-tbody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No zone selected</td></tr>';
+    return;
   }
 
-  // Selected zones, filtered to those actually in summary
-  const selected = CCH.zones.filter(z => s.zones[z]);
-  if (!selected.length) return noDataMsg('cch-canvas', 'Select at least one zone');
+  // Compute stats per zone
+  const stats = {};
+  let earliest = null, latest = null;
+  selected.forEach(z => {
+    const filtered = filterByWindow(s.zones[z], w);
+    stats[z] = _statsForZone(filtered);
+    if (filtered.length) {
+      const first = filtered[0].d, last = filtered[filtered.length-1].d;
+      if (!earliest || first < earliest) earliest = first;
+      if (!latest || last > latest) latest = last;
+    }
+  });
 
-  // Build common labels: union of all dates from selected zones (filtered by window)
-  const perZoneFiltered = {};
-  selected.forEach(z => { perZoneFiltered[z] = filterByWindow(s.zones[z], w); });
+  // Period label
+  const periodEl = document.getElementById('ho-period-label');
+  if (periodEl && earliest && latest) {
+    periodEl.textContent = periodLabel([{ d: earliest }, { d: latest }]);
+  }
 
-  // Build sorted union of dates
+  // Table
+  const tbody = document.getElementById('ho-table-tbody');
+  if (!tbody) return;
+  const frAvg = stats['FR']?.avg;
+  tbody.innerHTML = selected.map(z => {
+    const st = stats[z];
+    if (!st) {
+      return `<tr><td style="color:var(--tx3)">${z}</td><td colspan="6" style="text-align:center;color:var(--tx3);font-size:10px">no data</td></tr>`;
+    }
+    const vsFr = (frAvg != null && z !== 'FR') ? (st.avg - frAvg) : null;
+    const vsFrStr = z === 'FR' ? '<span style="color:var(--acc);font-weight:600">·BASE</span>' :
+      (vsFr == null ? '--' : (vsFr >= 0 ? '+' : '') + vsFr.toFixed(1));
+    const vsFrColor = vsFr == null ? 'var(--tx3)' : (vsFr > 0 ? _HIST_UP : (vsFr < 0 ? _HIST_DN : 'var(--tx2)'));
+    const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+    const color = zoneColor(z);
+    return `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle"></span>${flag} ${z}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.avg.toFixed(1)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.max.toFixed(1)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.min.toFixed(1)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.sigma.toFixed(1)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${vsFrColor}">${vsFrStr}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
+    </tr>`;
+  }).join('');
+}
+window.renderHistOverview = renderHistOverview;
+
+
+// ════════════════════════════════════════════
+// BLOCK 2 · SINGLE ZONE SECTION (insta tabs)
+// Tabs: Lines · YoY · Seasonal · Hourly · Weekly · Volatility
+// ════════════════════════════════════════════
+
+const HSZ = {
+  zone: 'FR',
+  tab: 'lines',
+  tabs: [
+    { id: 'lines',    label: 'Lines' },
+    { id: 'yoy',      label: 'YoY' },
+    { id: 'seasonal', label: 'Seasonal' },
+    { id: 'hourly',   label: 'Hourly' },
+    { id: 'weekly',   label: 'Weekly' },
+    { id: 'vol',      label: 'Volatility' },
+  ],
+};
+
+function setHistSingleZone(zone) {
+  HSZ.zone = zone;
+  renderHistSingle();
+}
+window.setHistSingleZone = setHistSingleZone;
+
+function setHistSingleTab(tabId) {
+  HSZ.tab = tabId;
+  buildHistSingleTabs();
+  renderHistSingle();
+}
+window.setHistSingleTab = setHistSingleTab;
+
+function buildHistSingleTabs() {
+  const wrap = document.getElementById('hsz-tabs');
+  if (!wrap) return;
+  wrap.innerHTML = HSZ.tabs.map(t => {
+    const on = t.id === HSZ.tab;
+    return `<button onclick="setHistSingleTab('${t.id}')" style="
+      padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;
+      border:none;background:${on?'var(--bg3)':'transparent'};
+      color:${on?'var(--text)':'var(--tx3)'};
+      letter-spacing:.03em;
+    ">${t.label}</button>`;
+  }).join('');
+}
+
+async function renderHistSingle() {
+  buildHistSingleTabs();
+  const w = HIST.windows['hsz'] || '3M';
+  const zone = HSZ.zone;
+  const s = await fetchSummary();
+  if (!s?.zones?.[zone]) {
+    _hszPlaceholder('No data for ' + zone);
+    return;
+  }
+
+  const filtered = filterByWindow(s.zones[zone], w);
+  if (!filtered.length) {
+    _hszPlaceholder('No data in selected window');
+    return;
+  }
+
+  // KPI strip (always shown, computed from filtered)
+  const st = _statsForZone(filtered);
+  if (st) {
+    document.getElementById('hsz-kpi-avg-v').innerHTML = st.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hsz-kpi-avg-meta').textContent = zone + ' · ' + st.days + 'd';
+    document.getElementById('hsz-kpi-peak-v').innerHTML = (st.peakAvg != null ? st.peakAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hsz-kpi-offpeak-v').innerHTML = (st.offAvg != null ? st.offAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hsz-kpi-vol-v').innerHTML = st.sigma.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hsz-kpi-neg-v').innerHTML = st.negH + '<span class="kpi-unit">h</span>';
+    const spread = (st.peakAvg != null && st.offAvg != null) ? (st.peakAvg - st.offAvg) : null;
+    document.getElementById('hsz-kpi-spread-v').innerHTML = (spread != null ? spread.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
+  }
+
+  // Period label
+  const periodEl = document.getElementById('hsz-period');
+  if (periodEl) periodEl.textContent = periodLabel(filtered);
+
+  // Toggle canvas vs heatmap
+  const canvas = document.getElementById('hsz-canvas');
+  const heatmap = document.getElementById('hsz-heatmap');
+  if (canvas) canvas.style.display = '';
+  if (heatmap) heatmap.style.display = 'none';
+
+  // Dispatch render by tab
+  if (HSZ.tab === 'lines') return _hszRenderLines(filtered, zone);
+  return _hszPlaceholder('🚧 ' + HSZ.tab + ' · data ready · chart coming next');
+}
+window.renderHistSingle = renderHistSingle;
+
+function _hszPlaceholder(msg) {
+  const canvas = document.getElementById('hsz-canvas');
+  if (!canvas) return;
+  const wrap = canvas.parentNode;
+  const old = wrap.querySelector('.no-data-msg');
+  if (old) old.remove();
+  canvas.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = 'no-data-msg';
+  div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--tx3);font-size:12px;font-style:italic;letter-spacing:0.04em;text-align:center;padding:0 20px';
+  div.innerHTML = msg;
+  wrap.appendChild(div);
+}
+
+function _hszRenderLines(filtered, zone) {
+  const labels = filtered.map(d => d.d);
+  const avgs = filtered.map(d => d.avg);
+  const roll7 = rolling(avgs, 7);
+  const roll30 = rolling(avgs, 30);
+  const color = zoneColor(zone);
+
+  // Min/max annotations
+  const validAvgs = avgs.filter(v => v != null);
+  const annotations = {};
+  if (validAvgs.length) {
+    const minVal = Math.min(...validAvgs);
+    const maxVal = Math.max(...validAvgs);
+    annotations.minPt = {
+      type: 'point', xValue: avgs.indexOf(minVal), yValue: minVal,
+      backgroundColor: _HIST_DN, radius: 4,
+      label: { enabled: true, content: minVal.toFixed(0)+'€', color:'#fff', font:{size:9}, backgroundColor:_HIST_DN, position:'bottom', padding:2 }
+    };
+    annotations.maxPt = {
+      type: 'point', xValue: avgs.indexOf(maxVal), yValue: maxVal,
+      backgroundColor: _HIST_UP, radius: 4,
+      label: { enabled: true, content: maxVal.toFixed(0)+'€', color:'#fff', font:{size:9}, backgroundColor:_HIST_UP, position:'top', padding:2 }
+    };
+  }
+
+  mkHistChart('hsz-canvas', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false },
+        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3] },
+      ],
+    },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        annotation: { annotations }
+      }
+    }
+  });
+}
+
+
+// ════════════════════════════════════════════
+// BLOCK 3 · MULTI ZONE SECTION (insta tabs)
+// Tabs: Lines · Heatmap · Profile · Bands · Spread
+// ════════════════════════════════════════════
+
+const HMZ = {
+  tab: 'lines',
+  tabs: [
+    { id: 'lines',   label: 'Lines' },
+    { id: 'heatmap', label: 'Heatmap' },
+    { id: 'profile', label: 'Profile' },
+    { id: 'bands',   label: 'Bands' },
+    { id: 'spread',  label: 'Spread' },
+  ],
+};
+
+function setHistMultiTab(tabId) {
+  HMZ.tab = tabId;
+  buildHistMultiTabs();
+  renderHistMulti();
+}
+window.setHistMultiTab = setHistMultiTab;
+
+function buildHistMultiTabs() {
+  const wrap = document.getElementById('hmz-tabs');
+  if (!wrap) return;
+  wrap.innerHTML = HMZ.tabs.map(t => {
+    const on = t.id === HMZ.tab;
+    return `<button onclick="setHistMultiTab('${t.id}')" style="
+      padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;
+      border:none;background:${on?'var(--bg3)':'transparent'};
+      color:${on?'var(--text)':'var(--tx3)'};
+      letter-spacing:.03em;
+    ">${t.label}</button>`;
+  }).join('');
+}
+
+async function renderHistMulti() {
+  buildHistMultiTabs();
+  const w = HIST.windows['hmz'] || '3M';
+  const s = await fetchSummary();
+  if (!s?.zones) return;
+
+  updateZoneLabels();
+
+  const selected = getUserZones().filter(z => s.zones[z]);
+  if (!selected.length) {
+    _hmzPlaceholder('No zone selected');
+    return;
+  }
+
+  // Build per-zone filtered data + stats
+  const perZone = {};
+  const stats = {};
+  selected.forEach(z => {
+    perZone[z] = filterByWindow(s.zones[z], w);
+    stats[z] = _statsForZone(perZone[z]);
+  });
+
+  // KPI strip
+  const baseline = selected.includes('FR') ? 'FR' : selected[0];
+  const baseStats = stats[baseline];
+  document.getElementById('hmz-kpi-zones-v').innerHTML = selected.length + '<span class="kpi-unit">zones</span>';
+  document.getElementById('hmz-kpi-zones-meta').textContent = baseline + ' as baseline';
+  if (baseStats) {
+    document.getElementById('hmz-kpi-avg-v').innerHTML = baseStats.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-avg-meta').textContent = baseline + ' · ' + baseStats.days + 'd';
+  }
+  // Cheapest / Most expensive
+  const validStats = selected.filter(z => stats[z]).map(z => ({ z, avg: stats[z].avg }));
+  if (validStats.length) {
+    validStats.sort((a, b) => a.avg - b.avg);
+    const cheap = validStats[0], pricey = validStats[validStats.length-1];
+    document.getElementById('hmz-kpi-cheapest-v').innerHTML = cheap.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-cheapest-meta').textContent = cheap.z;
+    document.getElementById('hmz-kpi-priciest-v').innerHTML = pricey.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-priciest-meta').textContent = pricey.z;
+    document.getElementById('hmz-kpi-spread-v').innerHTML = (pricey.avg - cheap.avg).toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+  }
+
+  // Period label
+  let firstD = null, lastD = null;
+  Object.values(perZone).forEach(arr => {
+    if (arr.length) {
+      const f = arr[0].d, l = arr[arr.length-1].d;
+      if (!firstD || f < firstD) firstD = f;
+      if (!lastD || l > lastD)   lastD = l;
+    }
+  });
+  const periodEl = document.getElementById('hmz-period');
+  if (periodEl && firstD && lastD) periodEl.textContent = periodLabel([{d:firstD},{d:lastD}]);
+
+  // Toggle canvas vs heatmap
+  const canvas = document.getElementById('hmz-canvas');
+  const heatmap = document.getElementById('hmz-heatmap');
+  if (canvas) canvas.style.display = '';
+  if (heatmap) heatmap.style.display = 'none';
+
+  // Dispatch by tab
+  if (HMZ.tab === 'lines') return _hmzRenderLines(perZone, selected);
+  return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
+}
+window.renderHistMulti = renderHistMulti;
+
+function _hmzPlaceholder(msg) {
+  const canvas = document.getElementById('hmz-canvas');
+  if (!canvas) return;
+  const wrap = canvas.parentNode;
+  const old = wrap.querySelector('.no-data-msg');
+  if (old) old.remove();
+  canvas.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = 'no-data-msg';
+  div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--tx3);font-size:12px;font-style:italic;letter-spacing:0.04em;text-align:center;padding:0 20px';
+  div.innerHTML = msg;
+  wrap.appendChild(div);
+}
+
+function _hmzRenderLines(perZone, selected) {
+  // Union of dates
   const dateSet = new Set();
-  selected.forEach(z => perZoneFiltered[z].forEach(d => dateSet.add(d.d)));
+  selected.forEach(z => perZone[z].forEach(d => dateSet.add(d.d)));
   const labels = Array.from(dateSet).sort();
 
-  // Datasets · one daily-avg line per zone + rolling 7D dashed
-  const datasets = [];
-  selected.forEach(z => {
+  const datasets = selected.map(z => {
     const map = {};
-    perZoneFiltered[z].forEach(d => { map[d.d] = d.avg; });
-    const avgs = labels.map(l => map[l] ?? null);
-    const color = zoneColor(z);
-    datasets.push({
-      label: z + ' daily',
-      data: avgs,
-      borderColor: color,
+    perZone[z].forEach(d => { map[d.d] = d.avg; });
+    return {
+      label: z,
+      data: labels.map(l => map[l] ?? null),
+      borderColor: zoneColor(z),
       borderWidth: 1.4,
       pointRadius: 0,
       tension: 0,
       spanGaps: true,
       fill: false,
-    });
+    };
   });
 
-  // Period label
-  const periodEl = document.getElementById('cch-period');
-  if (periodEl && labels.length) {
-    periodEl.textContent = periodLabel(labels.map(l => ({ d: l })));
-  }
-
-  // Render chart
-  mkHistChart('cch-canvas', {
+  mkHistChart('hmz-canvas', {
     type: 'line',
     data: { labels, datasets },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          align: 'end',
-          labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 }
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`
-          }
-        }
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } }
       }
     }
   });
-
-  // Build per-zone stats
-  const stats = {};
-  selected.forEach(z => {
-    const valid = perZoneFiltered[z].map(d => d.avg).filter(v => v != null && !isNaN(v));
-    if (!valid.length) { stats[z] = null; return; }
-    const sum = valid.reduce((a, b) => a + b, 0);
-    const avg = sum / valid.length;
-    const max = Math.max(...valid);
-    const min = Math.min(...valid);
-    const variance = valid.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / valid.length;
-    const sigma = Math.sqrt(variance);
-    stats[z] = { avg, max, min, sigma, days: valid.length };
-  });
-
-  // KPI strip · use FR as baseline if present, else first selected
-  const baseline = selected.includes('FR') ? 'FR' : selected[0];
-  const baseStats = stats[baseline];
-  if (baseStats) {
-    document.getElementById('cch-kpi-avg-v').innerHTML = baseStats.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('cch-kpi-avg-meta').textContent = baseline + ' · ' + baseStats.days + 'd';
-    document.getElementById('cch-kpi-max-v').innerHTML = baseStats.max.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('cch-kpi-max-meta').textContent = baseline + ' daily peak';
-    document.getElementById('cch-kpi-min-v').innerHTML = baseStats.min.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('cch-kpi-min-meta').textContent = baseline + ' daily trough';
-    document.getElementById('cch-kpi-vol-v').innerHTML = baseStats.sigma.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-  }
-  document.getElementById('cch-kpi-zones-v').innerHTML = selected.length + '<span class="kpi-unit">zones</span>';
-  document.getElementById('cch-kpi-zones-meta').textContent = (CCH.zones.length === selected.length)
-    ? 'all selected available'
-    : (CCH.zones.length - selected.length) + ' missing data';
-
-  // Color KPI accents based on volatility tier (flat by default, up if high, down if very low)
-  // Keep all kpi-flat for now -- no direction context applicable on long history
-  ['cch-kpi-avg', 'cch-kpi-max', 'cch-kpi-min', 'cch-kpi-vol', 'cch-kpi-zones'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.className = 'kpi-card kpi-flat';
-  });
-
-  // Data table
-  const tbody = document.getElementById('cch-data-tbody');
-  if (tbody) {
-    const frAvg = stats[baseline]?.avg;
-    tbody.innerHTML = selected.map(z => {
-      const st = stats[z];
-      if (!st) {
-        return `<tr><td style="color:var(--tx3)">${z}</td><td colspan="6" style="text-align:center;color:var(--tx3);font-size:10px">no data</td></tr>`;
-      }
-      const vsBase = frAvg != null ? (st.avg - frAvg) : null;
-      const vsBaseStr = vsBase == null ? '--' : (vsBase >= 0 ? '+' : '') + vsBase.toFixed(1);
-      const vsBaseColor = vsBase == null ? 'var(--tx3)' : (vsBase > 0 ? _HIST_UP : (vsBase < 0 ? _HIST_DN : 'var(--tx2)'));
-      const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-      const color = zoneColor(z);
-      return `<tr>
-        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle"></span>${flag} ${z}${z===baseline?' <span style="font-size:9px;color:var(--acc);font-weight:600">·BASE</span>':''}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.avg.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.max.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.min.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${st.sigma.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${vsBaseColor}">${vsBaseStr}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
-      </tr>`;
-    }).join('');
-  }
 }
-window.renderCompareHist = renderCompareHist;
 
 
 // ════════════════════════════════════════════
-// VIEW 2-7 · Skeleton renderers (placeholders)
-// Each loads summary data and shows a "Coming soon" placeholder for now,
-// but the data hook is wired so we just have to swap the chart body later.
+// BLOCK 4 · MONTHLY SUMMARY TABLE
 // ════════════════════════════════════════════
 
-function _histPlaceholder(canvasId, msg) {
-  const c = document.getElementById(canvasId);
-  if (!c) return;
-  const wrap = c.parentNode;
-  const old = wrap.querySelector('.no-data-msg');
-  if (old) old.remove();
-  c.style.display = 'none';
-  const div = document.createElement('div');
-  div.className = 'no-data-msg';
-  div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--tx3);font-size:12px;font-style:italic;letter-spacing:0.04em;text-align:center;padding:0 20px';
-  div.innerHTML = msg || 'Implementation in progress · data already loaded · chart coming next';
-  wrap.appendChild(div);
+function setHistMonthlyZone(zone) {
+  HIST.zones = HIST.zones || {};
+  HIST.zones['hms'] = zone;
+  renderHistMonthlyTable();
 }
+window.setHistMonthlyZone = setHistMonthlyZone;
 
-async function renderHistYoY() {
+async function renderHistMonthlyTable() {
+  const w = HIST.windows['hms'] || '2Y';
+  const zone = (HIST.zones && HIST.zones['hms']) || 'FR';
   const s = await fetchSummary();
-  const zone = getHistZone('yoy');
-  const periodEl = document.getElementById('hist-yoy-period');
-  if (periodEl) periodEl.textContent = zone + ' · data loaded · ' + (s?.zones?.[zone]?.length || 0) + ' days available';
-  _histPlaceholder('hist-yoy-canvas', '🚧 YoY comparison chart<br><span style="font-size:10px;opacity:0.7">overlay 2024 / 2025 / 2026 on same calendar axis</span>');
-}
+  if (!s?.zones?.[zone]) return;
 
-async function renderHistSeasonal() {
-  const s = await fetchSummary();
-  const zone = getHistZone('seasonal');
-  const periodEl = document.getElementById('hist-seasonal-period');
-  if (periodEl) periodEl.textContent = zone + ' · 5Y baseline · current year overlay';
-  _histPlaceholder('hist-seasonal-canvas', '🚧 Seasonal · normal vs current year<br><span style="font-size:10px;opacity:0.7">P25–P75 corridor + current year line</span>');
-}
-
-async function renderHistHourly() {
-  const zone = getHistZone('hourly');
-  const periodEl = document.getElementById('hist-hourly-period');
-  if (periodEl) periodEl.textContent = zone + ' · 24h profile per year';
-  _histPlaceholder('hist-hourly-canvas', '🚧 Hourly profile · duck curve evolution<br><span style="font-size:10px;opacity:0.7">one line per year, 24h x-axis</span>');
-}
-
-async function renderHistWeekly() {
-  const zone = getHistZone('weekly');
-  const periodEl = document.getElementById('hist-weekly-period');
-  if (periodEl) periodEl.textContent = zone + ' · Mon → Sun distribution';
-  _histPlaceholder('hist-weekly-canvas', '🚧 Weekly profile · box plot<br><span style="font-size:10px;opacity:0.7">7 box plots — weekday vs weekend</span>');
-}
-
-async function renderHistVol() {
-  const zone = getHistZone('vol');
-  const periodEl = document.getElementById('hist-vol-period');
-  if (periodEl) periodEl.textContent = zone + ' · rolling 30D σ';
-  _histPlaceholder('hist-vol-canvas', '🚧 Volatility metrics<br><span style="font-size:10px;opacity:0.7">rolling 30D σ + coefficient of variation</span>');
-}
-
-async function renderHistMonthly() {
-  const zone = getHistZone('monthly');
-  const periodEl = document.getElementById('hist-monthly-period');
-  if (periodEl) periodEl.textContent = zone + ' · monthly aggregation';
-  const tbody = document.getElementById('hist-monthly-tbody');
-  if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--tx3);font-style:italic;font-size:11px">🚧 Monthly summary table · data already loaded · table render coming next</td></tr>';
+  const filtered = filterByWindow(s.zones[zone], w);
+  if (!filtered.length) {
+    document.getElementById('hms-table-tbody').innerHTML =
+      '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No data</td></tr>';
+    return;
   }
-}
 
-window.renderHistYoY = renderHistYoY;
-window.renderHistSeasonal = renderHistSeasonal;
-window.renderHistHourly = renderHistHourly;
-window.renderHistWeekly = renderHistWeekly;
-window.renderHistVol = renderHistVol;
-window.renderHistMonthly = renderHistMonthly;
+  // Group by YYYY-MM
+  const monthly = {};
+  filtered.forEach(d => {
+    const ym = d.d.slice(0, 7);
+    if (!monthly[ym]) monthly[ym] = { rows: [] };
+    monthly[ym].rows.push(d);
+  });
+
+  // Aggregate per month
+  const months = Object.keys(monthly).sort();
+  const aggregated = months.map(ym => {
+    const rows = monthly[ym].rows;
+    const st = _statsForZone(rows);
+    const spread = (st?.peakAvg != null && st?.offAvg != null) ? (st.peakAvg - st.offAvg) : null;
+    return { ym, ...st, spread };
+  });
+
+  // Compute vs LY (same month previous year)
+  aggregated.forEach((row, i) => {
+    const [y, m] = row.ym.split('-');
+    const prevYm = (parseInt(y)-1) + '-' + m;
+    const prev = aggregated.find(r => r.ym === prevYm);
+    row.vsLY = (prev && prev.avg != null && row.avg != null) ? (row.avg - prev.avg) : null;
+  });
+
+  // Period label
+  const periodEl = document.getElementById('hms-period');
+  if (periodEl) periodEl.textContent = zone + ' · ' + months[0] + ' → ' + months[months.length-1];
+
+  // Render rows (most recent first)
+  const tbody = document.getElementById('hms-table-tbody');
+  tbody.innerHTML = aggregated.slice().reverse().map(r => {
+    const fmt = v => v == null ? '--' : v.toFixed(1);
+    const vsLY = r.vsLY == null ? '--' : (r.vsLY >= 0 ? '+' : '') + r.vsLY.toFixed(1);
+    const vsLYColor = r.vsLY == null ? 'var(--tx3)' : (r.vsLY > 0 ? _HIST_DN : (r.vsLY < 0 ? _HIST_UP : 'var(--tx2)'));
+    // Format month: Jan 2026
+    const [y, m] = r.ym.split('-');
+    const dt = new Date(parseInt(y), parseInt(m)-1, 1);
+    const monthLabel = dt.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    return `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:600">${monthLabel}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.avg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.peakAvg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.offAvg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.spread)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.negH > 0 ? _HIST_WARN : 'var(--tx3)'}">${r.negH || 0}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${r.days}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${vsLYColor}">${vsLY}</td>
+    </tr>`;
+  }).join('');
+}
+window.renderHistMonthlyTable = renderHistMonthlyTable;
 
 
 // ════════════════════════════════════════════
 // AUTO-RENDER on tab activation
 // ════════════════════════════════════════════
-// Hook into existing tab switcher: when "historical" tab becomes active,
-// the Compare Zones · Historical section is already open (default) → render it
 document.addEventListener('DOMContentLoaded', () => {
-  // Watch for the Historical tab being activated, then render the open section
   const obs = new MutationObserver(() => {
     const panel = document.getElementById('prtab-historical');
     if (panel && panel.classList.contains('active')) {
-      // Render the default-open Compare Zones · Historical section once
-      if (!window._cchInitialised) {
-        window._cchInitialised = true;
-        setTimeout(() => renderCompareHist(), 50);
+      if (!window._histInited) {
+        window._histInited = true;
+        setTimeout(() => {
+          renderHistOverview();
+          renderHistSingle();
+          renderHistMulti();
+          renderHistMonthlyTable();
+        }, 50);
       }
     }
   });
