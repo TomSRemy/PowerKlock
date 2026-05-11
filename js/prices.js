@@ -1176,7 +1176,7 @@ function renderPricesTableBody() {
     // Single neutral colour for all zones — semantic info is on the row's other cells.
     const sparkSvg = makeSVGSparklineSmooth(h24spark, 'mixed');
 
-    const html = `<tr style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
+    const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${FLAG_MAP[z.code]||''} ${z.code}</td>
       <td style="font-size:11px;color:var(--tx2)">${meta.country||z.name||z.code}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${z.today.toFixed(1)}</td>
@@ -1323,11 +1323,17 @@ function togglePriceRow(idx, e) {
   const z = window._pricesSorted?.[idx];
   if (!z || z.today == null) return;
 
+  // Helper: clear .is-open class
+  const clearOpenClass = () => {
+    document.querySelectorAll('tr.zone-row.is-open').forEach(tr => tr.classList.remove('is-open'));
+  };
+
   if (_openRow !== null && _openRow !== idx) {
     const prevDetail = document.getElementById(`row-detail-${_openRow}`);
     if (prevDetail) prevDetail.style.display = 'none';
     if (_rowCharts[_openRow]) { _rowCharts[_openRow].destroy(); delete _rowCharts[_openRow]; }
     _openRow = null;
+    clearOpenClass();
   }
 
   const detailRow = document.getElementById(`row-detail-${idx}`);
@@ -1338,11 +1344,17 @@ function togglePriceRow(idx, e) {
     detailRow.style.display = 'none';
     _openRow = null;
     if (_rowCharts[idx]) { _rowCharts[idx].destroy(); delete _rowCharts[idx]; }
+    clearOpenClass();
     return;
   }
 
   detailRow.style.display = 'table-row';
   _openRow = idx;
+  // Highlight the clicked row
+  clearOpenClass();
+  const clickedRow = document.querySelector(`tr.zone-row[data-row-idx="${idx}"]`);
+  if (clickedRow) clickedRow.classList.add('is-open');
+
   setTimeout(() => detailRow.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
 
   buildHourlyDetail(idx, z);
@@ -1448,6 +1460,15 @@ function buildHourlyDetail(idx, z) {
     <div style="font-size:11px;margin-bottom:8px">
       <span style="color:${flatColor};font-weight:600">${flatText}</span>
       ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px">
+      <div style="font-size:11px;color:var(--tx2);font-weight:600;letter-spacing:.05em;text-transform:uppercase">
+        ${FLAG_MAP[z.code]||''} ${z.code} — ${ccFmtDay(window._currentPriceDate)}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+        <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+      </div>
     </div>
     <div style="position:relative;height:180px;margin-bottom:4px">
       <canvas id="row-chart-${idx}" style="width:100%;height:180px"></canvas>
@@ -3078,5 +3099,147 @@ function drawSparkline(canvas, data, avg) {
 }
 
 // ════════════════════════════════════════════
-// TICKER
+// FULLSCREEN + SCREENSHOT
 // ════════════════════════════════════════════
+
+// Download the row chart as a PNG image
+function downloadRowChart(idx) {
+  const chart = _rowCharts[idx];
+  if (!chart) {
+    console.warn('No chart found for row', idx);
+    return;
+  }
+  const z = window._pricesSorted?.[idx];
+  const code = z?.code || `zone-${idx}`;
+  const dateStr = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  // High-res PNG with theme bg color
+  const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+  const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `powerklock_${code}_${dateStr}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// Open the row detail in native fullscreen with chart left, table right
+function openRowFullscreen(idx) {
+  const z = window._pricesSorted?.[idx];
+  if (!z) return;
+  const inner = document.getElementById(`row-detail-inner-${idx}`);
+  if (!inner) return;
+
+  // Build fullscreen container if not already there
+  let fs = document.getElementById('zone-fullscreen-overlay');
+  if (fs) fs.remove();
+
+  fs = document.createElement('div');
+  fs.id = 'zone-fullscreen-overlay';
+  fs.style.cssText = `
+    position: fixed; inset: 0; background: var(--bg);
+    z-index: 9999; display: flex; flex-direction: column;
+    padding: 16px 24px 24px; overflow: hidden;
+  `;
+
+  const code = z.code;
+  const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[code]) || '';
+  const country = z.name || code;
+  const dateStr = (typeof ccFmtDay === 'function') ? ccFmtDay(window._currentPriceDate) : (window._currentPriceDate || '');
+
+  fs.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
+          ${flag} ${code} — ${country}
+        </div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:2px">${dateStr}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="fs-download-btn" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 Download PNG</button>
+        <button id="fs-close-btn" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;flex:1;min-height:0">
+      <div id="fs-chart-pane" style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0">
+        <div id="fs-kpis" style="margin-bottom:12px;flex-shrink:0"></div>
+        <div style="flex:1;position:relative;min-height:0">
+          <canvas id="fs-chart-${idx}" style="width:100%;height:100%"></canvas>
+        </div>
+      </div>
+      <div id="fs-table-pane" style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">15-min slot breakdown</div>
+        <div id="fs-table-container"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(fs);
+
+  // Clone KPIs from the inline detail (if present)
+  const inlineKpis = document.getElementById(`row-kpis-${idx}`);
+  if (inlineKpis) {
+    document.getElementById('fs-kpis').innerHTML = inlineKpis.outerHTML;
+  }
+
+  // Clone the breakdown table from the inline <details>
+  const inlineDetails = inner.querySelector('details');
+  if (inlineDetails) {
+    const tableWrap = inlineDetails.querySelector('table');
+    if (tableWrap) {
+      document.getElementById('fs-table-container').innerHTML = tableWrap.outerHTML;
+    }
+  }
+
+  // Clone chart config from inline chart and render bigger
+  const srcChart = _rowCharts[idx];
+  if (srcChart) {
+    // Deep clone of config (Chart.js needs fresh objects)
+    const cfg = {
+      type: srcChart.config.type,
+      data: JSON.parse(JSON.stringify(srcChart.config.data)),
+      options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
+    };
+    // Preserve aspect-fit in fullscreen
+    cfg.options.maintainAspectRatio = false;
+    cfg.options.responsive = true;
+    // Restore line dataset functions (lost in JSON clone) — keep simple line style
+    const fsCanvas = document.getElementById(`fs-chart-${idx}`);
+    if (fsCanvas && typeof Chart !== 'undefined') {
+      try {
+        fs._fsChart = new Chart(fsCanvas, cfg);
+      } catch (e) {
+        console.warn('Failed to clone chart for fullscreen', e);
+      }
+    }
+  }
+
+  // Wire up buttons
+  const closeFs = () => {
+    if (fs._fsChart) { try { fs._fsChart.destroy(); } catch(e){} }
+    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+    fs.remove();
+    document.removeEventListener('keydown', escHandler);
+  };
+  const escHandler = (ev) => { if (ev.key === 'Escape') closeFs(); };
+  document.addEventListener('keydown', escHandler);
+
+  document.getElementById('fs-close-btn').onclick = closeFs;
+  document.getElementById('fs-download-btn').onclick = () => {
+    if (!fs._fsChart) return;
+    const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+    const dataUrl = fs._fsChart.toBase64Image('image/png', 1, bgFill);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `powerklock_${code}_${(window._currentPriceDate||'')}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  };
+
+  // Request native fullscreen
+  if (fs.requestFullscreen) {
+    fs.requestFullscreen().catch(err => console.warn('Fullscreen denied:', err));
+  }
+}
+
+// Expose for inline onclick handlers
+window.openRowFullscreen = openRowFullscreen;
+window.downloadRowChart = downloadRowChart;
