@@ -1457,11 +1457,11 @@ function buildHourlyDetail(idx, z) {
         <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px">${k.meta}</div>
       </div>`).join('')}
     </div>
-    <div style="font-size:11px;margin-bottom:8px">
+    <div style="font-size:11px;margin-bottom:4px">
       <span style="color:${flatColor};font-weight:600">${flatText}</span>
       ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px">
       <div style="font-size:11px;color:var(--tx2);font-weight:600;letter-spacing:.05em;text-transform:uppercase">
         ${FLAG_MAP[z.code]||''} ${z.code} — ${ccFmtDay(window._currentPriceDate)}
       </div>
@@ -1470,8 +1470,8 @@ function buildHourlyDetail(idx, z) {
         <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
     </div>
-    <div style="position:relative;height:180px;margin-bottom:4px">
-      <canvas id="row-chart-${idx}" style="width:100%;height:180px"></canvas>
+    <div style="position:relative;height:260px;margin-bottom:4px">
+      <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:8px">
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
@@ -3124,6 +3124,7 @@ function downloadRowChart(idx) {
 }
 
 // Open the row detail in native fullscreen with chart left, table right
+// Table pane is resizable via a drag handle.
 function openRowFullscreen(idx) {
   const z = window._pricesSorted?.[idx];
   if (!z) return;
@@ -3156,19 +3157,27 @@ function openRowFullscreen(idx) {
         <div style="font-size:12px;color:var(--tx2);margin-top:2px">${dateStr}</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button id="fs-download-btn" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 Download PNG</button>
+        <button id="fs-csv-btn" title="Export 15-min breakdown as CSV" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
+        <button id="fs-download-btn" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+        <button id="fs-resize-btn" title="Reset table width" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
         <button id="fs-close-btn" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;flex:1;min-height:0">
-      <div id="fs-chart-pane" style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0">
+    <div id="fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
+      <div id="fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
         <div id="fs-kpis" style="margin-bottom:12px;flex-shrink:0"></div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="fs-chart-${idx}" style="width:100%;height:100%"></canvas>
         </div>
       </div>
-      <div id="fs-table-pane" style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0">
-        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">15-min slot breakdown</div>
+      <div id="fs-divider" title="Drag to resize · double-click to reset" style="width:8px;cursor:col-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent">
+        <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
+      </div>
+      <div id="fs-table-pane" style="width:340px;flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:240px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase">15-min breakdown</div>
+          <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace" id="fs-table-count">--</div>
+        </div>
         <div id="fs-table-container"></div>
       </div>
     </div>
@@ -3182,27 +3191,29 @@ function openRowFullscreen(idx) {
   }
 
   // Clone the breakdown table from the inline <details>
+  let tableData = null; // for CSV export
   const inlineDetails = inner.querySelector('details');
   if (inlineDetails) {
-    const tableWrap = inlineDetails.querySelector('table');
-    if (tableWrap) {
-      document.getElementById('fs-table-container').innerHTML = tableWrap.outerHTML;
+    const tableEl = inlineDetails.querySelector('table');
+    if (tableEl) {
+      document.getElementById('fs-table-container').innerHTML = tableEl.outerHTML;
+      tableData = tableEl;
+      const rowCount = tableEl.querySelectorAll('tbody tr').length;
+      const cntEl = document.getElementById('fs-table-count');
+      if (cntEl) cntEl.textContent = rowCount + ' slots';
     }
   }
 
   // Clone chart config from inline chart and render bigger
   const srcChart = _rowCharts[idx];
   if (srcChart) {
-    // Deep clone of config (Chart.js needs fresh objects)
     const cfg = {
       type: srcChart.config.type,
       data: JSON.parse(JSON.stringify(srcChart.config.data)),
       options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
     };
-    // Preserve aspect-fit in fullscreen
     cfg.options.maintainAspectRatio = false;
     cfg.options.responsive = true;
-    // Restore line dataset functions (lost in JSON clone) — keep simple line style
     const fsCanvas = document.getElementById(`fs-chart-${idx}`);
     if (fsCanvas && typeof Chart !== 'undefined') {
       try {
@@ -3213,12 +3224,61 @@ function openRowFullscreen(idx) {
     }
   }
 
-  // Wire up buttons
+  // ── Resizable table pane (drag handle) ─────────────
+  const divider = document.getElementById('fs-divider');
+  const tablePane = document.getElementById('fs-table-pane');
+  const splitEl = document.getElementById('fs-split');
+  const dividerBar = divider.querySelector('div');
+  let isDragging = false;
+
+  const startDrag = (e) => {
+    isDragging = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    dividerBar.style.background = 'var(--acc)';
+    e.preventDefault();
+  };
+  const onDrag = (e) => {
+    if (!isDragging) return;
+    const splitRect = splitEl.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    const newWidth = splitRect.right - clientX;
+    const minW = 200;
+    const maxW = splitRect.width - 320;
+    tablePane.style.width = Math.max(minW, Math.min(maxW, newWidth)) + 'px';
+    // Resize chart to fit new chart pane size
+    if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
+  };
+  const stopDrag = () => {
+    isDragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    dividerBar.style.background = 'var(--bd)';
+  };
+  divider.addEventListener('mousedown', startDrag);
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+  divider.addEventListener('dblclick', () => {
+    tablePane.style.width = '340px';
+    if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
+  });
+  divider.addEventListener('mouseenter', () => { dividerBar.style.background = 'var(--acc)'; });
+  divider.addEventListener('mouseleave', () => { if (!isDragging) dividerBar.style.background = 'var(--bd)'; });
+
+  // Reset button
+  document.getElementById('fs-resize-btn').onclick = () => {
+    tablePane.style.width = '340px';
+    if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
+  };
+
+  // ── Buttons ─────────────
   const closeFs = () => {
     if (fs._fsChart) { try { fs._fsChart.destroy(); } catch(e){} }
     if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
     fs.remove();
     document.removeEventListener('keydown', escHandler);
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
   };
   const escHandler = (ev) => { if (ev.key === 'Escape') closeFs(); };
   document.addEventListener('keydown', escHandler);
@@ -3234,10 +3294,60 @@ function openRowFullscreen(idx) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
+  // CSV export
+  document.getElementById('fs-csv-btn').onclick = () => {
+    exportRowCSV(idx, code, window._currentPriceDate);
+  };
+
   // Request native fullscreen
   if (fs.requestFullscreen) {
     fs.requestFullscreen().catch(err => console.warn('Fullscreen denied:', err));
   }
+}
+
+// Export 15-min breakdown to CSV
+function exportRowCSV(idx, code, dateStr) {
+  const z = window._pricesSorted?.[idx];
+  if (!z) return;
+
+  // Get the inline table (most reliable source)
+  const inner = document.getElementById(`row-detail-inner-${idx}`);
+  const tableEl = inner?.querySelector('details table');
+  if (!tableEl) {
+    alert('No breakdown data available to export');
+    return;
+  }
+
+  // Extract headers
+  const headerCells = tableEl.querySelectorAll('thead th');
+  const headers = Array.from(headerCells).map(th => {
+    // Clean up: strip HTML, keep first line
+    return th.textContent.trim().replace(/\s+/g, ' ').split(/\s{2,}/)[0];
+  });
+
+  // Extract rows
+  const dataRows = tableEl.querySelectorAll('tbody tr');
+  const rows = Array.from(dataRows).map(tr => {
+    const cells = tr.querySelectorAll('td');
+    return Array.from(cells).map(td => {
+      const txt = td.textContent.trim().replace(/\s+/g, ' ');
+      // Escape CSV: wrap in quotes if contains comma/quote/newline
+      if (/[,"\n]/.test(txt)) return '"' + txt.replace(/"/g, '""') + '"';
+      return txt;
+    });
+  });
+
+  // Build CSV
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `powerklock_${code}_${dateStr||'today'}_15min.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // Expose for inline onclick handlers
