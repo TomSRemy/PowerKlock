@@ -1377,6 +1377,37 @@
     color: var(--text);
     margin-bottom: 8px;
   }
+  /* ──────────────────────────────────────────
+     Zone row highlight when detail is expanded
+     ────────────────────────────────────────── */
+  tr.zone-row.is-open > td {
+    background: var(--bg3, rgba(255, 255, 255, 0.04)) !important;
+    border-top: 1px solid var(--acc, #00d4a8);
+    border-bottom: 1px solid var(--acc, #00d4a8);
+    transition: background 0.15s ease;
+  }
+  tr.zone-row.is-open > td:first-child {
+    border-left: 3px solid var(--acc, #00d4a8);
+    padding-left: 8px;
+  }
+  tr.zone-row.is-open > td:last-child {
+    border-right: 1px solid var(--acc, #00d4a8);
+  }
+  tr.zone-row:hover > td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Fullscreen overlay scrollbar styling */
+  #zone-fullscreen-overlay ::-webkit-scrollbar { width: 8px; height: 8px; }
+  #zone-fullscreen-overlay ::-webkit-scrollbar-track { background: transparent; }
+  #zone-fullscreen-overlay ::-webkit-scrollbar-thumb {
+    background: var(--bd, rgba(255,255,255,0.1));
+    border-radius: 4px;
+  }
+  #zone-fullscreen-overlay button:hover {
+    background: var(--bg3, rgba(255,255,255,0.06)) !important;
+    color: var(--tx, #fff) !important;
+  }
 
 </style>
 </head>
