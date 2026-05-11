@@ -1379,14 +1379,18 @@
   }
   /* ──────────────────────────────────────────
      Zone row highlight when detail is expanded
-     Same bg colour as native hover (var(--bg3)) + green accent bar on left
-     Only on the table row itself — NOT on the detail row below
+     Background tint + continuous green accent bar on the left,
+     across the table row AND the detail row (chart + breakdown).
      ────────────────────────────────────────── */
   tbody tr.zone-row.is-open,
   tbody tr.zone-row.is-open:hover {
     background: var(--bg3) !important;
   }
   tbody tr.zone-row.is-open > td:first-child {
+    box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
+  }
+  /* Continue the green bar on the detail row (chart + breakdown) */
+  tbody tr.zone-row.is-open + tr > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
   /* Breakdown table row hover (sync with chart point) */
