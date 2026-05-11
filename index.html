@@ -1379,23 +1379,20 @@
   }
   /* ──────────────────────────────────────────
      Zone row highlight when detail is expanded
-     Same background as hover + accent bar on left only
+     Same bg colour as native hover (var(--bg3)) + green accent bar on left
      ────────────────────────────────────────── */
-  tr.zone-row.is-open > td {
-    background: rgba(255, 255, 255, 0.02) !important;
-    transition: background 0.15s ease;
+  tbody tr.zone-row.is-open,
+  tbody tr.zone-row.is-open:hover {
+    background: var(--bg3) !important;
   }
-  tr.zone-row.is-open > td:first-child {
+  tbody tr.zone-row.is-open > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
-  tr.zone-row:hover > td {
-    background: rgba(255, 255, 255, 0.02);
-  }
   /* Detail row (the expand panel) gets the same subtle background */
-  tr.zone-row.is-open + tr > td {
-    background: rgba(255, 255, 255, 0.02) !important;
+  tbody tr.zone-row.is-open + tr {
+    background: var(--bg3) !important;
   }
-  tr.zone-row.is-open + tr > td:first-child {
+  tbody tr.zone-row.is-open + tr > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
 
