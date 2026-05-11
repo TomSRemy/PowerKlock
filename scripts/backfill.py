@@ -137,11 +137,21 @@ def parse_prices_for_date(xml_text):
         return None
 
     max_slot = max(pos_buckets.keys())
-    n = 96 if (is_15min and max_slot > 23) else 24
+    native_15min = (max_slot > 23)
+
+    # Always return 96-slot array (quarter-hourly grid).
+    # Hourly-native zones (CH, ME…) get each value duplicated ×4.
     result = []
-    for i in range(n):
-        vals = pos_buckets.get(i)
-        result.append(round(sum(vals)/len(vals), 2) if vals else None)
+    if native_15min:
+        for i in range(96):
+            vals = pos_buckets.get(i)
+            result.append(round(sum(vals)/len(vals), 2) if vals else None)
+    else:
+        for hour in range(24):
+            vals = pos_buckets.get(hour)
+            v = round(sum(vals)/len(vals), 2) if vals else None
+            for _ in range(4):
+                result.append(v)
     return result
 
 def summarise(hourly):
