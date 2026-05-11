@@ -1379,10 +1379,10 @@
   }
   /* ──────────────────────────────────────────
      Zone row highlight when detail is expanded
-     Sidebar-style: subtle background + accent bar on left only
+     Same background as hover + accent bar on left only
      ────────────────────────────────────────── */
   tr.zone-row.is-open > td {
-    background: rgba(20, 211, 169, 0.04) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
     transition: background 0.15s ease;
   }
   tr.zone-row.is-open > td:first-child {
@@ -1391,9 +1391,9 @@
   tr.zone-row:hover > td {
     background: rgba(255, 255, 255, 0.02);
   }
-  /* Detail row (the expand panel) gets a matching subtle background */
+  /* Detail row (the expand panel) gets the same subtle background */
   tr.zone-row.is-open + tr > td {
-    background: rgba(20, 211, 169, 0.025) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
   }
   tr.zone-row.is-open + tr > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
