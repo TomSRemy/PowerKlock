@@ -3170,7 +3170,7 @@ function openRowFullscreen(idx) {
         <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
           ${flag} ${code} — ${country}
         </div>
-        <div style="font-size:12px;color:var(--tx2);margin-top:2px">${dateStr}</div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:2px">${dateStr} <span style="color:var(--tx3);margin-left:12px">· Click-drag to zoom · Double-click to reset</span></div>
       </div>
       <div style="display:flex;gap:8px">
         <button id="fs-csv-btn" title="Export 15-min breakdown as CSV" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
@@ -3245,10 +3245,58 @@ function openRowFullscreen(idx) {
     };
     cfg.options.maintainAspectRatio = false;
     cfg.options.responsive = true;
+
+    // ── Bigger axis fonts in fullscreen (≈ Word 10pt) ─────
+    cfg.options.scales = cfg.options.scales || {};
+    Object.keys(cfg.options.scales).forEach(k => {
+      const sc = cfg.options.scales[k];
+      sc.ticks = sc.ticks || {};
+      sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
+      if (sc.title) {
+        sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
+      }
+    });
+    // Legend + tooltip fonts also bigger
+    cfg.options.plugins = cfg.options.plugins || {};
+    cfg.options.plugins.legend = cfg.options.plugins.legend || {};
+    cfg.options.plugins.legend.labels = Object.assign(
+      {}, cfg.options.plugins.legend.labels || {},
+      { font: { size: 13 } }
+    );
+    cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
+    cfg.options.plugins.tooltip.titleFont = Object.assign(
+      {}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 }
+    );
+    cfg.options.plugins.tooltip.bodyFont = Object.assign(
+      {}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 }
+    );
+
+    // ── Drag-select zoom (chartjs-plugin-zoom) ────────────
+    cfg.options.plugins.zoom = {
+      zoom: {
+        drag: {
+          enabled: true,
+          backgroundColor: 'rgba(20, 211, 169, 0.15)',
+          borderColor: 'rgba(20, 211, 169, 0.8)',
+          borderWidth: 1
+        },
+        wheel: { enabled: false },
+        pinch: { enabled: true },
+        mode: 'x'
+      },
+      pan: { enabled: false }
+    };
+
     const fsCanvas = document.getElementById(`fs-chart-${idx}`);
     if (fsCanvas && typeof Chart !== 'undefined') {
       try {
         fs._fsChart = new Chart(fsCanvas, cfg);
+        // Double-click on canvas → reset zoom
+        fsCanvas.addEventListener('dblclick', () => {
+          if (fs._fsChart && typeof fs._fsChart.resetZoom === 'function') {
+            fs._fsChart.resetZoom();
+          }
+        });
       } catch (e) {
         console.warn('Failed to clone chart for fullscreen', e);
       }
