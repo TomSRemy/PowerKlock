@@ -1395,6 +1395,13 @@
   tbody tr.zone-row.is-open + tr > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
+  /* Breakdown table row hover (sync with chart point) */
+  tr[data-slot]:hover {
+    background: rgba(20, 211, 169, 0.08) !important;
+  }
+  tr[data-slot] {
+    transition: background 0.1s ease;
+  }
 
   /* Fullscreen overlay scrollbar styling */
   #zone-fullscreen-overlay ::-webkit-scrollbar { width: 8px; height: 8px; }
