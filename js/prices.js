@@ -860,7 +860,11 @@ function renderPricesTable(data, dataDateStr) {
   const sorted = [...data].sort((a,b) => b.today - a.today);
   window._pricesSorted = sorted;
   window._pricesSortDir = window._pricesSortDir || {};
-  window._compareZones = window._compareZones || new Set(['FR']);
+  // Default Compare Zones selection: countries with generation mix data
+  if (!window._compareZones) {
+    const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+    window._compareZones = new Set(gmKeys);
+  }
   renderPricesTableBody();
   buildZoneFilterDropdown();
   renderCompareChart();
@@ -1540,7 +1544,7 @@ function buildHourlyDetail(idx, z) {
                 diffCell = `${sign}${diffAbs.toFixed(1)} (${sign}${diffPct.toFixed(1)}%)`;
               }
 
-              return `<tr style="border-bottom:1px solid rgba(255,255,255,.03);${isNow?'background:rgba(0,212,168,.06)':''}">
+              return `<tr data-slot="${i}" onmouseenter="hoverSlotOnChart(${idx},${i})" onmouseleave="clearSlotHover(${idx})" style="border-bottom:1px solid rgba(255,255,255,.03);cursor:default;${isNow?'background:rgba(0,212,168,.06)':''}">
                 <td style="padding:3px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${timeLabel}</span></td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2);opacity:0.55">${j1Cell}</td>
@@ -3174,7 +3178,7 @@ function openRowFullscreen(idx) {
       <div id="fs-divider" title="Drag to resize · double-click to reset" style="width:8px;cursor:col-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent">
         <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
       </div>
-      <div id="fs-table-pane" style="width:340px;flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:240px">
+      <div id="fs-table-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:200px;max-width:50%">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase">15-min breakdown</div>
           <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace" id="fs-table-count">--</div>
@@ -3204,6 +3208,21 @@ function openRowFullscreen(idx) {
       if (cntEl) cntEl.textContent = rowCount + ' slots';
     }
   }
+
+  // Auto-fit table pane width to its natural content after layout
+  requestAnimationFrame(() => {
+    const tablePaneEl = document.getElementById('fs-table-pane');
+    const tableElInside = document.querySelector('#fs-table-container table');
+    if (tablePaneEl && tableElInside) {
+      // Measure: table's natural width + container padding (32px = 16px x 2)
+      const naturalW = Math.ceil(tableElInside.getBoundingClientRect().width) + 36;
+      // Clamp between min (200) and 50% of viewport
+      const clamped = Math.min(Math.max(naturalW, 200), Math.floor(window.innerWidth * 0.5));
+      tablePaneEl.style.width = clamped + 'px';
+      // Trigger chart resize after width is set
+      if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
+    }
+  });
 
   // Clone chart config from inline chart and render bigger
   const srcChart = _rowCharts[idx];
@@ -3260,7 +3279,13 @@ function openRowFullscreen(idx) {
   document.addEventListener('mousemove', onDrag);
   document.addEventListener('mouseup', stopDrag);
   divider.addEventListener('dblclick', () => {
-    tablePane.style.width = '340px';
+    const tableElInside = document.querySelector('#fs-table-container table');
+    if (tableElInside) {
+      const naturalW = Math.ceil(tableElInside.getBoundingClientRect().width) + 36;
+      tablePane.style.width = Math.min(Math.max(naturalW, 200), Math.floor(window.innerWidth * 0.5)) + 'px';
+    } else {
+      tablePane.style.width = '340px';
+    }
     if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
   });
   divider.addEventListener('mouseenter', () => { dividerBar.style.background = 'var(--acc)'; });
@@ -3268,7 +3293,13 @@ function openRowFullscreen(idx) {
 
   // Reset button
   document.getElementById('fs-resize-btn').onclick = () => {
-    tablePane.style.width = '340px';
+    const tableElInside = document.querySelector('#fs-table-container table');
+    if (tableElInside) {
+      const naturalW = Math.ceil(tableElInside.getBoundingClientRect().width) + 36;
+      tablePane.style.width = Math.min(Math.max(naturalW, 200), Math.floor(window.innerWidth * 0.5)) + 'px';
+    } else {
+      tablePane.style.width = '340px';
+    }
     if (fs._fsChart) { try { fs._fsChart.resize(); } catch(e){} }
   };
 
@@ -3354,3 +3385,57 @@ function exportRowCSV(idx, code, dateStr) {
 // Expose for inline onclick handlers
 window.openRowFullscreen = openRowFullscreen;
 window.downloadRowChart = downloadRowChart;
+window.exportRowCSV = exportRowCSV;
+window.hoverSlotOnChart = hoverSlotOnChart;
+window.clearSlotHover = clearSlotHover;
+
+
+// ── Sync hover between breakdown table rows and chart points ───────
+// Highlights the matching point on the chart (inline + fullscreen).
+function hoverSlotOnChart(idx, slotIdx) {
+  // Find which chart to use: prefer fullscreen if open, else inline
+  let chart = null;
+  const fs = document.getElementById('zone-fullscreen-overlay');
+  if (fs && fs._fsChart) {
+    chart = fs._fsChart;
+  } else {
+    chart = _rowCharts[idx];
+  }
+  if (!chart) return;
+
+  // Find the first dataset that has a non-null value at this slot
+  // (datasets typically: today, yesterday, etc.)
+  const datasets = chart.data?.datasets || [];
+  let targetDS = -1;
+  for (let d = 0; d < datasets.length; d++) {
+    const v = datasets[d].data?.[slotIdx];
+    if (v != null) { targetDS = d; break; }
+  }
+  if (targetDS === -1) return;
+
+  try {
+    chart.setActiveElements([{ datasetIndex: targetDS, index: slotIdx }]);
+    if (chart.tooltip) {
+      chart.tooltip.setActiveElements([{ datasetIndex: targetDS, index: slotIdx }], { x: 0, y: 0 });
+    }
+    chart.update('none');
+  } catch (e) {
+    // Chart.js version mismatch; ignore silently
+  }
+}
+
+function clearSlotHover(idx) {
+  let chart = null;
+  const fs = document.getElementById('zone-fullscreen-overlay');
+  if (fs && fs._fsChart) {
+    chart = fs._fsChart;
+  } else {
+    chart = _rowCharts[idx];
+  }
+  if (!chart) return;
+  try {
+    chart.setActiveElements([]);
+    if (chart.tooltip) chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+    chart.update('none');
+  } catch (e) {}
+}
