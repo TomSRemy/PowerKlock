@@ -860,11 +860,13 @@ function renderPricesTable(data, dataDateStr) {
   const sorted = [...data].sort((a,b) => b.today - a.today);
   window._pricesSorted = sorted;
   window._pricesSortDir = window._pricesSortDir || {};
-  // Default Compare Zones selection: countries with generation mix data
-  if (!window._compareZones) {
+  // Default Compare Zones selection: shared global zones (default = GenMix)
+  if (!window._userZones) {
     const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
-    window._compareZones = new Set(gmKeys);
+    window._userZones = new Set(gmKeys);
   }
+  // _compareZones always mirrors _userZones (global state)
+  window._compareZones = window._userZones;
   renderPricesTableBody();
   buildZoneFilterDropdown();
   renderCompareChart();
@@ -1793,24 +1795,30 @@ function toggleCompareFilterPanel() {
 
 function clearCompareZones() {
   window._compareZones = new Set();
+  window._userZones = window._compareZones;
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
+  document.dispatchEvent(new CustomEvent('zones-changed'));
 }
 
 function compareNeighbours() {
   window._compareZones = new Set(['FR','DE_LU','BE','NL','ES','IT_NORD','CH','AT','PT']);
+  window._userZones = window._compareZones;
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
+  document.dispatchEvent(new CustomEvent('zones-changed'));
 }
 
 function compareWithGenMix() {
   const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
   window._compareZones = new Set(gmKeys);
+  window._userZones = window._compareZones;
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
+  document.dispatchEvent(new CustomEvent('zones-changed'));
 }
 
 function buildCompareChips() {
@@ -1857,9 +1865,12 @@ function toggleCompareChip(code) {
     window._compareZones.add(code);
   }
 
+  // Sync global state
+  window._userZones = window._compareZones;
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
+  document.dispatchEvent(new CustomEvent('zones-changed'));
 }
 
 function renderComparePeakStrip() {
