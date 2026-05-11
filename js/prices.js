@@ -1443,18 +1443,18 @@ function buildHourlyDetail(idx, z) {
   const col = negFraction >= 0.5 ? '#ED6965' : negFraction >= 0.2 ? '#FBBF24' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px" id="row-kpis-${idx}">
+    <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px" id="row-kpis-${idx}">
       ${[
         {k:'avg',     l:'Avg',              v:avg.toFixed(2),                            meta:'24h average',     u:'€/MWh'},
         {k:'peak',    l:'Peak avg',         v:peakAvg!=null?peakAvg.toFixed(2):'--',     meta:'08h–20h',         u:'€/MWh'},
         {k:'offpeak', l:'Off-peak avg',     v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   meta:'00h–08h / 20h–24h', u:'€/MWh'},
         {k:'min',     l:'Min slot',         v:minV.toFixed(2),                           meta:'@'+minSlotLabel,   u:'€/MWh'},
         {k:'max',     l:'Max slot',         v:maxV.toFixed(2),                           meta:'@'+maxSlotLabel,   u:'€/MWh'},
-      ].map(k=>`<div id="row-kpi-${idx}-${k.k}" style="background:var(--bg2);border:1px solid var(--bd);border-left:3px solid var(--text3);border-radius:6px;padding:10px 12px;transition:border-left-color 0.2s">
-        <div style="font-size:10px;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">${k.l}</div>
-        <div style="font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em;color:var(--text)">${k.v}<span style="font-size:11px;color:var(--text2);font-weight:400;margin-left:3px"> ${k.u||''}</span></div>
-        <div class="row-kpi-chg" data-kpi="${k.k}" style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px">--</div>
-        <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px">${k.meta}</div>
+      ].map(k=>`<div class="kpi-card kpi-flat" id="row-kpi-${idx}-${k.k}">
+        <div class="kpi-label">${k.l}</div>
+        <div class="kpi-value">${k.v}<span class="kpi-unit">${k.u||''}</span></div>
+        <div class="kpi-chg row-kpi-chg" data-kpi="${k.k}">--</div>
+        <div class="kpi-meta">${k.meta}</div>
       </div>`).join('')}
     </div>
     <div style="font-size:11px;margin-bottom:4px">
@@ -1713,18 +1713,19 @@ async function applyExpandKPIColours(idx, z, today) {
     const card = document.getElementById(`row-kpi-${idx}-${kpiKey}`);
     if (!card) return;
     const chg = card.querySelector('.row-kpi-chg');
+    card.classList.remove('kpi-up','kpi-down','kpi-flat');
     if (todayVal == null || yVal == null) {
-      card.style.borderLeftColor = 'var(--text3)';
+      card.classList.add('kpi-flat');
       if (chg) { chg.style.color = 'var(--text3)'; chg.textContent = '--'; }
       return;
     }
     const delta = todayVal - yVal;
-    let borderColor = 'var(--text3)', subColor = 'var(--text3)';
+    let cls = 'kpi-flat', subColor = 'var(--text3)';
     if (Math.abs(delta) >= 1) {
-      if (delta > 0) { borderColor = 'var(--down)'; subColor = 'var(--down)'; }
-      else           { borderColor = 'var(--up)';   subColor = 'var(--up)'; }
+      if (delta > 0) { cls = 'kpi-down'; subColor = 'var(--down)'; }
+      else           { cls = 'kpi-up';   subColor = 'var(--up)'; }
     }
-    card.style.borderLeftColor = borderColor;
+    card.classList.add(cls);
     if (chg) {
       chg.style.color = subColor;
       if (Math.abs(delta) < 0.5) {
