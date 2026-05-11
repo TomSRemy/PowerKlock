@@ -1,8 +1,75 @@
 {
-  "updated": "2026-05-10T12:59:07.194258Z",
+  "updated": "2026-05-11T08:20:42.681931Z",
   "countries": {
-    "FR": [],
+    "FR": [
+      {
+        "partner": "DE_LU \u00b7 Germany",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "ES \u00b7 Spain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "IT_NORD \u00b7 Italy North",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "CH \u00b7 Switzerland",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "GB \u00b7 Great Britain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      }
+    ],
     "DE_LU": [
+      {
+        "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "NL \u00b7 Netherlands",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "AT \u00b7 Austria",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "CH \u00b7 Switzerland",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
       {
         "partner": "CZ \u00b7 Czechia",
         "imports": 0,
