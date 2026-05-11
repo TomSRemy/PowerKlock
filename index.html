@@ -3,7 +3,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PowerKlock — European Energy Intelligence</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMGQ0YTgiLz48cGF0aCBkPSJNMTguNSA0TDggMThoOGwtMiAxMCAxNC0xNmgtOHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1431,9 +1434,246 @@ background: var(–bg3, rgba(255,255,255,0.06)) !important;
 color: var(–tx, #fff) !important;
 }
 
+/* ════════════════════════════════════════════════════════════
+MOBILE RESPONSIVE (iPhone Safari priority — 375-430px)
+Targets Daily + Historical (Prices page). Other pages fallback.
+════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+```
+/* ── Page chrome ── */
+body { font-size: 13px; }
+
+/* Ticker: smaller and tighter */
+.ticker { height: 28px; font-size: 11px; }
+.ticker .dd-btn { padding: 4px 8px; font-size: 10px; }
+.ticker-track { font-size: 11px; }
+
+/* Topbar: stack-friendly, hide nav tabs (move into sidebar drawer) */
+.topbar {
+  padding: 8px 12px;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.logo-text { font-size: 14px; }
+.topbar-tabs { display: none !important; }
+.topbar-right { gap: 6px; }
+.live-badge { font-size: 9px; padding: 3px 6px; }
+.live-badge svg { display: none; }
+.clock { font-size: 10px; }
+
+/* Burger button (only visible on mobile, injected by JS) */
+.mobile-burger {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.mobile-burger svg { width: 18px; height: 18px; stroke: var(--text); stroke-width: 2; }
+
+/* ── Layout: sidebar becomes off-canvas drawer ── */
+.layout {
+  flex-direction: column;
+}
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 80vw;
+  max-width: 300px;
+  height: 100vh;
+  z-index: 999;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 4px 0 18px rgba(0,0,0,0.5);
+  padding-top: 12px;
+}
+.sidebar.open { transform: translateX(0); }
+
+/* Backdrop when drawer is open */
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 998;
+  backdrop-filter: blur(2px);
+}
+.mobile-backdrop.open { display: block; }
+
+/* Main content: full width, smaller padding */
+.main { width: 100%; }
+.page { padding: 12px 10px 60px; }
+
+/* ── Page header: stack title + badge ── */
+.page-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.page-title { font-size: 15px; }
+.page-subtitle { font-size: 11px; }
+
+/* ── Section headers (Pries page) ── */
+.pr-overview-header {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+
+/* ── Tabs bar (Day-Ahead / Historical / etc.) ── */
+.pr-tabs, .prtabs, [class*="-tabs"] {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap !important;
+}
+.pr-tabs::-webkit-scrollbar { display: none; }
+.pr-tab, .prtab, [class*="-tab"]:not(.tab-panel):not(.nav-tab):not(.tab-icon) {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── KPI strips: 2 cols max on mobile ── */
+.kpi-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 6px; }
+.kpi-card { padding: 8px 10px !important; }
+.kpi-label { font-size: 9px; }
+.kpi-value { font-size: 15px !important; }
+.kpi-unit { font-size: 9px !important; }
+.kpi-chg, .kpi-meta { font-size: 9px !important; }
+
+/* ── Tables: horizontal scroll, keep first column sticky ── */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 6px;
+}
+.table-wrap table {
+  font-size: 10px !important;
+  min-width: 600px; /* force horizontal scroll on narrow screens */
+}
+.table-wrap table thead th {
+  font-size: 9px !important;
+  padding: 6px 4px !important;
+  white-space: nowrap;
+}
+.table-wrap table tbody td {
+  padding: 6px 4px !important;
+  white-space: nowrap;
+}
+
+/* Sticky first column (Zone) for both DA + Historical tables */
+#prices-table tbody td:first-child,
+#prices-table thead th:first-child,
+#ho-table tbody td:first-child,
+#ho-table thead th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--bg2);
+  z-index: 2;
+  box-shadow: 2px 0 0 rgba(255,255,255,0.04);
+}
+/* Keep the green accent visible on sticky col */
+#prices-table tbody tr.zone-row.is-open td:first-child,
+#ho-table tbody tr.ho-row.is-open td:first-child {
+  background: #25303c !important;
+}
+
+/* ── Detail expand row: full padding rework ── */
+#prices-table tr.zone-row.is-open + tr > td,
+#ho-table tr.ho-row.is-open + tr > td {
+  padding: 10px !important;
+}
+/* KPI strip inside detail row → 2 cols */
+#ho-detail-row .kpi-strip,
+#ho-detail-row [style*="grid-template-columns:repeat(7"],
+#ho-detail-row [style*="grid-template-columns: repeat(7"] {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+/* Daily detail breakdown table inside detail row: scroll */
+#prices-table tr + tr td > div { font-size: 11px; }
+
+/* ── Historical filters: stack ── */
+#hw-ho {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap !important;
+}
+#hw-ho .hw-btn {
+  flex-shrink: 0;
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+}
+/* Date pickers: full width on next line */
+[id^="ho-date-"] { font-size: 12px; }
+
+/* ── Charts: reduce min height ── */
+canvas { max-width: 100% !important; }
+#ho-detail-chart { height: 240px !important; }
+
+/* ── Global zone panel (filter): full-width sheet ── */
+#global-zone-panel {
+  left: 8px !important;
+  right: 8px !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* ── News / market / map: hide secondary widgets by default ── */
+.news-grid { grid-template-columns: 1fr !important; }
+
+/* ── Hide print-only / desktop-only elements ── */
+.desktop-only { display: none !important; }
+
+/* ── Sub-section spacing tighter ── */
+.hist-section-header { padding: 10px 12px; font-size: 11px; }
+.hist-two-col { grid-template-columns: 1fr !important; }
+```
+
+}
+
+/* Very narrow phones (iPhone SE etc.) */
+@media (max-width: 380px) {
+.page { padding: 10px 6px 60px; }
+.table-wrap table { font-size: 9px !important; }
+.table-wrap table thead th { font-size: 8px !important; padding: 4px 3px !important; }
+.table-wrap table tbody td { padding: 4px 3px !important; }
+.kpi-value { font-size: 13px !important; }
+}
+
+/* Touch device: disable hover sticky, make rows clearly tappable */
+@media (hover: none) and (pointer: coarse) {
+tr.zone-row:hover, tr.ho-row:hover {
+background: transparent !important;
+}
+tr.zone-row:active, tr.ho-row:active {
+background: rgba(255,255,255,0.05) !important;
+}
+/* Bigger tap targets on buttons */
+.hw-btn, .pr-tab, .nav-tab {
+min-height: 34px;
+}
+}
+
+/* Burger button — hidden on desktop, shown via media query above */
+.mobile-burger { display: none; }
+.mobile-backdrop { display: none; }
+
 </style>
 </head>
 <body>
+
+<!-- Mobile sidebar backdrop -->
+
+<div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>
 
 <!-- TICKER -->
 
@@ -1469,6 +1709,9 @@ color: var(–tx, #fff) !important;
 <!-- TOPBAR -->
 
 <div class="topbar">
+  <button class="mobile-burger" onclick="toggleMobileSidebar()" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="logo">
     <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
     <span class="logo-text">PowerKlock</span>
@@ -4099,6 +4342,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
       e.preventDefault();
       toggleSidebar();
+    }
+  });
+
+  // ── MOBILE: sidebar drawer toggle ──
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('mobile-backdrop');
+    if (!sidebar || !backdrop) return;
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    backdrop.classList.toggle('open', willOpen);
+    // Prevent body scroll when drawer is open
+    document.body.style.overflow = willOpen ? 'hidden' : '';
+  }
+  window.toggleMobileSidebar = toggleMobileSidebar;
+
+  // Auto-close drawer after navigation (mobile only)
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    sidebar.addEventListener('click', (e) => {
+      // Only auto-close if we're in mobile drawer mode (open class active)
+      if (!sidebar.classList.contains('open')) return;
+      // Close only when clicking a navigable item (not section labels)
+      const clickedNav = e.target.closest('.sidebar-item, .sidebar-subitem');
+      if (clickedNav) {
+        // Small delay so the navigation has time to register first
+        setTimeout(() => toggleMobileSidebar(), 120);
+      }
+    });
+  });
+
+  // Close drawer if user resizes back to desktop
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobile-backdrop');
+      if (sidebar) sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+      document.body.style.overflow = '';
     }
   });
 </script>
