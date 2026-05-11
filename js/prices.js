@@ -1466,11 +1466,31 @@ function buildHourlyDetail(idx, z) {
           <thead><tr>
             <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Slot</th>
             <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Price €/MWh</th>
+            <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd);opacity:0.6">J-1 €/MWh</th>
+            <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Diff</th>
             <th style="text-align:center;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Period</th>
           </tr></thead>
           <tbody>${(() => {
             // Use 96-pt (15min) if available, else 24h
             const tblData = (z.hourly && z.hourly.length === 96) ? z.hourly : h24;
+            // J-1 data : aligned on the same resolution as tblData
+            const j1Raw = z.hourlyYday || null;
+            let j1Data = null;
+            if (j1Raw && j1Raw.length) {
+              if (j1Raw.length === tblData.length) {
+                j1Data = j1Raw;
+              } else if (j1Raw.length === 96 && tblData.length === 24) {
+                // Downsample J-1 from 15min to hourly
+                j1Data = Array.from({length:24}, (_,h) => {
+                  const s = j1Raw.slice(h*4, h*4+4).filter(v=>v!=null);
+                  return s.length ? s.reduce((a,b)=>a+b,0)/s.length : null;
+                });
+              } else if (j1Raw.length === 24 && tblData.length === 96) {
+                // Upsample J-1 from hourly to 15min (repeat each value 4x)
+                j1Data = [];
+                j1Raw.forEach(v => { for (let k=0;k<4;k++) j1Data.push(v); });
+              }
+            }
             const nph = tblData.length > 24 ? Math.round(tblData.length/24) : 1; // pts per hour
             const nowSlot = new Date().getHours() * nph + Math.floor(new Date().getMinutes()/(60/nph));
             const isToday = !DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10);
@@ -1483,9 +1503,27 @@ function buildHourlyDetail(idx, z) {
                 : '<span style="color:var(--tx3);font-size:10px">OFF-PEAK</span>';
               const priceColor = v==null ? 'var(--tx3)' : v<0 ? 'var(--warn)' : 'var(--tx)';
               const isNow = isToday && i === nowSlot;
+
+              // J-1 cell
+              const vj1 = j1Data ? j1Data[i] : null;
+              const j1Cell = vj1!=null ? vj1.toFixed(2) : '--';
+
+              // Diff cell (J vs J-1)
+              let diffCell = '--';
+              let diffColor = 'var(--tx3)';
+              if (v!=null && vj1!=null && vj1 !== 0) {
+                const diffAbs = v - vj1;
+                const diffPct = (diffAbs / Math.abs(vj1)) * 100;
+                const sign = diffAbs >= 0 ? '+' : '';
+                diffColor = diffAbs > 0 ? '#ED6965' : diffAbs < 0 ? '#14D3A9' : 'var(--tx3)';
+                diffCell = `${sign}${diffAbs.toFixed(1)} (${sign}${diffPct.toFixed(1)}%)`;
+              }
+
               return `<tr style="border-bottom:1px solid rgba(255,255,255,.03);${isNow?'background:rgba(0,212,168,.06)':''}">
                 <td style="padding:3px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${timeLabel}</span></td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
+                <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2);opacity:0.55">${j1Cell}</td>
+                <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${diffColor};font-size:10px">${diffCell}</td>
                 <td style="padding:3px 8px;text-align:center">${period}</td>
               </tr>`;
             }).join('');
@@ -1588,7 +1626,7 @@ function buildHourlyDetail(idx, z) {
       },
       scales:{
         x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:9},maxTicksLimit:12}},
-        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:10},callback:v=>v+'€/MWh'},
+        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4A6280',font:{size:10}},
            title:{display:true,text:'€/MWh',color:'#4A6280',font:{size:10}},
            grace:'15%'},
       },
@@ -2056,7 +2094,7 @@ function renderCCLines(data, selected) {
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
-        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0) }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
       }
     }
   });
@@ -2286,7 +2324,7 @@ async function renderCCBands(data, selected) {
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
-        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0)+' €' }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
+        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0) }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
       }
     }
   });
