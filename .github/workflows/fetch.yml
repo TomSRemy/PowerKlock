@@ -1,38 +1,48 @@
 name: Fetch Energy Data
-
 on:
   schedule:
     - cron: '0 5 * * *'   # 05:00 UTC = 07:00 CET — avant ouverture marchés
     - cron: '0 12 * * *'  # 12:00 UTC = 14:00 CET — après publication prix DA
   workflow_dispatch:       # bouton manuel dans GitHub
 
+concurrency:
+  group: fetch-energy-data
+  cancel-in-progress: false
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests==2.33.1
-
       - name: Fetch data from ENTSO-E
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: python scripts/fetch_data.py
-
-      - name: Commit data files
+      - name: Commit and push data files
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
           git add data/
-          git diff --staged --quiet || git commit -m "data: update $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git push
+          # If no changes, exit cleanly
+          if git diff --staged --quiet; then
+            echo "No data changes — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: update $(date -u '+%Y-%m-%d %H:%M UTC')"
+          # Retry up to 5 times if main has moved (manual push during this run)
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "Failed to push after 5 attempts."
+          exit 1
