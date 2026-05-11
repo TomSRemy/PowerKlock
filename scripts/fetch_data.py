@@ -151,22 +151,26 @@ def parse_prices(xml_text):
 
     # Determine native resolution: if any slot > 23 exists, it's truly 15min data
     max_slot = max(pos_buckets.keys()) if pos_buckets else 0
-    if max_slot > 23:
-        n_slots = 96
-    elif is_15min_global and max_slot <= 23:
-        # 15min flag but all slots fit in 24 → hourly data stored with PT15M resolution
-        # Keep as 24-slot (e.g. RS, MK send PT60M values labelled PT15M in some TS)
-        n_slots = 24
-    else:
-        n_slots = 24
+    native_15min = (max_slot > 23)
 
+    # Always output 96 slots (quarter-hourly grid).
+    # If native resolution is hourly (CH, ME, RS, MK… in PT60M),
+    # duplicate each hourly value ×4 to fill the four quarter-hour slots.
     result = []
-    for slot in range(n_slots):
-        vals = pos_buckets.get(slot)
-        if vals:
-            result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
-        else:
-            result.append({'hour': slot, 'price': None})
+    if native_15min:
+        for slot in range(96):
+            vals = pos_buckets.get(slot)
+            if vals:
+                result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
+            else:
+                result.append({'hour': slot, 'price': None})
+    else:
+        # Hourly native: pos_buckets keys are 0..23 → expand each to 4 quarter-slots
+        for hour in range(24):
+            vals = pos_buckets.get(hour)
+            price = round(sum(vals) / len(vals), 2) if vals else None
+            for q in range(4):
+                result.append({'hour': hour * 4 + q, 'price': price})
     return result
 
 def strip_ns(tag):
@@ -241,10 +245,11 @@ def parse_generation(xml_text):
                 avg = sum(vals) / len(vals)
                 result[psr_type][hour] = result[psr_type].get(hour, 0) + avg
 
-    # Convert to sorted list of 24 values
+    # Convert to sorted list of 96 quarter-hourly values.
+    # Generation is aggregated hourly above, so duplicate each value ×4.
     final = {}
     for psr, pos_dict in result.items():
-        final[psr] = [round(pos_dict.get(i, 0)) for i in range(24)]
+        final[psr] = [round(pos_dict.get(h, 0)) for h in range(24) for _ in range(4)]
     return final
 
 PSR_MAP = {
@@ -386,19 +391,17 @@ def fetch_renewables():
             raw_a = parse_generation(xml_a)
 
             def get_profile_psr(raw, psr_codes):
-                """Sum specific PSR types hour by hour."""
-                hourly = {}
+                """Sum specific PSR types slot by slot (96 quarter-hours)."""
+                acc = [0]*96
                 for psr, vals in raw.items():
                     if psr in psr_codes:
-                        for i, v in enumerate(vals[:24]):
-                            hourly[i] = hourly.get(i, 0) + v
-                if not hourly:
-                    return [0]*24
-                return [round(hourly.get(i, 0)) for i in range(24)]
+                        for i in range(min(96, len(vals))):
+                            acc[i] += vals[i]
+                return [round(v) for v in acc]
 
             def get_profile(raw, key):
-                """Sum all matching PSR types hour by hour."""
-                hourly = {}
+                """Sum all matching PSR types slot by slot (96 quarter-hours)."""
+                acc = [0]*96
                 for psr, vals in raw.items():
                     name = PSR_MAP.get(psr,'')
                     match = (key=='wind' and 'Wind' in name) or \
@@ -407,11 +410,9 @@ def fetch_renewables():
                             (key=='solar' and 'Solar' in name) or \
                             (key=='hydro' and 'Hydro' in name)
                     if match:
-                        for i, v in enumerate(vals[:24]):
-                            hourly[i] = hourly.get(i, 0) + v
-                if not hourly:
-                    return [0]*24
-                return [round(hourly.get(i, 0)) for i in range(24)]
+                        for i in range(min(96, len(vals))):
+                            acc[i] += vals[i]
+                return [round(v) for v in acc]
 
             wind_onshore_act  = get_profile(raw_a, 'wind_onshore')
             wind_offshore_act = get_profile(raw_a, 'wind_offshore')
@@ -419,7 +420,7 @@ def fetch_renewables():
             solar_act         = get_profile(raw_a, 'solar')
 
             # Forecast — try A69 then A71
-            wind_onshore_fc, wind_offshore_fc, solar_fc = [0]*24, [0]*24, [0]*24
+            wind_onshore_fc, wind_offshore_fc, solar_fc = [0]*96, [0]*96, [0]*96
             for doc_type in ['A69', 'A71']:
                 try:
                     xml_f = fetch({'documentType': doc_type, 'processType':'A01',
@@ -450,11 +451,12 @@ def fetch_renewables():
             wind_err  = [round(a-f) for a,f in zip(wind_act, wind_fc)]
             solar_err = [round(a-f) for a,f in zip(solar_act, solar_fc)]
 
-            avg_wf = max(1, sum(wind_fc)/24)
-            avg_sf = max(1, sum(solar_fc)/24)
+            avg_wf = max(1, sum(wind_fc)/96)
+            avg_sf = max(1, sum(solar_fc)/96)
 
             import datetime as dt
-            cur_hr = min(23, dt.datetime.utcnow().hour)
+            now = dt.datetime.utcnow()
+            cur_slot = min(95, now.hour * 4 + now.minute // 15)
 
             result[code] = {
                 'windActual':         wind_act,
@@ -467,14 +469,14 @@ def fetch_renewables():
                 'solarForecast':      solar_fc,
                 'windError':          wind_err,
                 'solarError':         solar_err,
-                'windErrorPct':       round(sum(abs(e) for e in wind_err)/24/avg_wf*100, 1),
-                'solarErrorPct':      round(sum(abs(e) for e in solar_err)/24/avg_sf*100, 1),
-                'windNow':            wind_act[cur_hr],
-                'windOnshoreNow':     wind_onshore_act[cur_hr],
-                'windOffshoreNow':    wind_offshore_act[cur_hr],
-                'solarNow':           solar_act[cur_hr],
+                'windErrorPct':       round(sum(abs(e) for e in wind_err)/96/avg_wf*100, 1),
+                'solarErrorPct':      round(sum(abs(e) for e in solar_err)/96/avg_sf*100, 1),
+                'windNow':            wind_act[cur_slot],
+                'windOnshoreNow':     wind_onshore_act[cur_slot],
+                'windOffshoreNow':    wind_offshore_act[cur_slot],
+                'solarNow':           solar_act[cur_slot],
             }
-            print(f"  {code}: wind_on {round(sum(wind_onshore_act)/24)} MW · wind_off {round(sum(wind_offshore_act)/24)} MW · solar {round(sum(solar_act)/24)} MW")
+            print(f"  {code}: wind_on {round(sum(wind_onshore_act)/96)} MW · wind_off {round(sum(wind_offshore_act)/96)} MW · solar {round(sum(solar_act)/96)} MW")
         except Exception as e:
             print(f"  {code}: ERROR — {e}")
     return result
@@ -482,6 +484,113 @@ def fetch_renewables():
 # ─────────────────────────────────────────────
 # FETCH LOAD
 # ─────────────────────────────────────────────
+def _parse_quantity_series(xml_text):
+    """
+    Generic A65/A11-style parser. Returns a 96-slot quarter-hourly list,
+    duplicating ×4 when source is hourly (PT60M).
+    """
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return [None]*96
+
+    # doc start (for absolute slot offset across multiple periods)
+    doc_start_str = ''
+    for el in root.iter():
+        if strip_ns(el.tag) == 'start' and el.text and len(el.text) >= 8:
+            doc_start_str = el.text
+            break
+    doc_start = None
+    if doc_start_str:
+        for fmt in ('%Y-%m-%dT%H:%MZ','%Y-%m-%dT%H:%M:%SZ'):
+            try:
+                from datetime import timezone
+                doc_start = datetime.strptime(doc_start_str, fmt).replace(tzinfo=timezone.utc)
+                break
+            except ValueError:
+                continue
+
+    buckets = {}      # abs_slot (0..95) -> list of values
+    native_15min = False
+
+    for ts in root.iter():
+        if strip_ns(ts.tag) != 'TimeSeries':
+            continue
+        period = None
+        for c in ts:
+            if strip_ns(c.tag) == 'Period':
+                period = c; break
+        if period is None:
+            continue
+        res = 'PT60M'
+        period_start_str = ''
+        for c in period:
+            t = strip_ns(c.tag)
+            if t == 'resolution':
+                res = c.text or 'PT60M'
+            elif t == 'timeInterval':
+                for s in c:
+                    if strip_ns(s.tag) == 'start':
+                        period_start_str = s.text or ''
+        is_15min = (res == 'PT15M')
+        if is_15min:
+            native_15min = True
+        res_minutes = 15 if is_15min else 60
+
+        # offset in NATIVE slots from doc_start
+        period_start = None
+        if period_start_str:
+            for fmt in ('%Y-%m-%dT%H:%MZ','%Y-%m-%dT%H:%M:%SZ'):
+                try:
+                    from datetime import timezone
+                    period_start = datetime.strptime(period_start_str, fmt).replace(tzinfo=timezone.utc)
+                    break
+                except ValueError:
+                    continue
+        slot_offset = 0
+        if period_start and doc_start:
+            diff_min = int((period_start - doc_start).total_seconds()/60)
+            slot_offset = diff_min // res_minutes
+
+        for child in period:
+            if strip_ns(child.tag) != 'Point':
+                continue
+            pos = qty = None
+            for sub in child:
+                t = strip_ns(sub.tag)
+                if t == 'position':
+                    pos = int(sub.text)
+                elif t == 'quantity':
+                    qty = float(sub.text)
+            if pos is None or qty is None:
+                continue
+            native_slot = slot_offset + (pos - 1)
+            # cap at 96 quarter-hours
+            if is_15min:
+                if 0 <= native_slot < 96:
+                    buckets.setdefault(native_slot, []).append(qty)
+            else:
+                # native hourly: native_slot is 0..23
+                if 0 <= native_slot < 24:
+                    buckets.setdefault(native_slot, []).append(qty)
+
+    if not buckets:
+        return [None]*96
+
+    result = [None]*96
+    if native_15min:
+        for i in range(96):
+            vals = buckets.get(i)
+            if vals:
+                result[i] = round(sum(vals)/len(vals))
+    else:
+        for h in range(24):
+            vals = buckets.get(h)
+            v = round(sum(vals)/len(vals)) if vals else None
+            for q in range(4):
+                result[h*4 + q] = v
+    return result
+
 def fetch_load():
     print("Fetching load...")
     today, tomorrow = date_str(0), date_str(1)
@@ -494,18 +603,16 @@ def fetch_load():
             xml = fetch({'documentType':'A65','processType':'A16',
                           'outBiddingZone_Domain':eic,
                           'periodStart':today,'periodEnd':tomorrow})
-            ns = {'ns':'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
-            root = ET.fromstring(xml)
-            pts = []
-            for pt in root.findall('.//ns:Point', ns):
-                qty = pt.findtext('ns:quantity',None,ns)
-                if qty:
-                    pts.append(round(float(qty)))
-            if pts:
+            pts = _parse_quantity_series(xml)
+            valid = [v for v in pts if v is not None]
+            if valid:
+                now = datetime.utcnow()
+                cur_slot = min(95, now.hour*4 + now.minute//15)
+                cur_val = pts[cur_slot] if pts[cur_slot] is not None else valid[-1]
                 result[code] = {
-                    'actual': pts[:24],
-                    'peak': max(pts),
-                    'current': pts[min(datetime.utcnow().hour, len(pts)-1)],
+                    'actual':  pts,
+                    'peak':    max(valid),
+                    'current': cur_val,
                 }
                 print(f"  {code}: current {result[code]['current']} MW")
         except Exception as e:
