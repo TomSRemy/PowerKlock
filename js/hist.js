@@ -956,6 +956,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // 4. Monthly summary table
 // ════════════════════════════════════════════════════════════════
 
+// Legacy stubs — no-op if old renderers are still referenced anywhere
+// (defensive against stale browser caches or external callers)
+window.renderCompareHist = function(){};
+window.renderHistYoY = function(){};
+window.renderHistSeasonal = function(){};
+window.renderHistHourly = function(){};
+window.renderHistWeekly = function(){};
+window.renderHistVol = function(){};
+window.renderHistMonthly = function(){};
+
 // ── Global zone state (shared across Daily Compare + Historical + Prices Table) ──
 function getUserZones() {
   if (!window._userZones) {
