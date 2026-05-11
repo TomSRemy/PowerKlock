@@ -701,6 +701,39 @@ if __name__ == '__main__':
     monthly_path = f'data/history/monthly/{today_str[:7]}.json'
     summary_path = 'data/history/summary.json'
 
+    # ── Helper: compute peak/off-peak averages from 96 quarter-hourly slots ──
+    # Peak = 08-20h CET (slots 32-79 inclusive). Off-peak = the rest.
+    def peak_offpeak_from_hourly(hourly96):
+        if not hourly96 or len(hourly96) < 96:
+            return None, None
+        peak_slots = [v for v in hourly96[32:80] if v is not None]
+        off_slots  = [v for i, v in enumerate(hourly96) if (i < 32 or i >= 80) and v is not None]
+        peak_avg = round(sum(peak_slots) / len(peak_slots), 2) if peak_slots else None
+        off_avg  = round(sum(off_slots)  / len(off_slots),  2) if off_slots  else None
+        return peak_avg, off_avg
+
+    # ── Helper: compute %REN and dominant fuel from genmix snapshot ──
+    # genmix entry expected: {nuclear, solar, wind, hydro, fossil, biomass, other, total}
+    def ren_pct_and_dom_fuel(gm):
+        if not gm:
+            return None, None
+        total = gm.get('total') or 0
+        if total <= 0:
+            return None, None
+        ren_mw = (gm.get('wind') or 0) + (gm.get('solar') or 0) + (gm.get('hydro') or 0)
+        ren_pct = round(100 * ren_mw / total, 1)
+        # Dominant fuel: max of the 6 known categories
+        categories = {
+            'Nuclear': gm.get('nuclear') or 0,
+            'Gas':     gm.get('fossil') or 0,   # 'fossil' in current genmix is gas-dominated
+            'Wind':    gm.get('wind') or 0,
+            'Solar':   gm.get('solar') or 0,
+            'Hydro':   gm.get('hydro') or 0,
+            'Biomass': gm.get('biomass') or 0,
+        }
+        dom = max(categories, key=categories.get) if max(categories.values()) > 0 else None
+        return ren_pct, dom
+
     # Build daily snapshot (prices + generation if available)
     daily_snap = {'date': today_str, 'zones': {}}
     for z in prices:
@@ -711,6 +744,12 @@ if __name__ == '__main__':
             'negH':   z['negHours'],
             'hourly': z['hourly'],
         }
+        # Peak/off-peak averages from hourly slots
+        pk, off = peak_offpeak_from_hourly(z['hourly'])
+        if pk is not None:
+            zone_entry['peakAvg'] = pk
+        if off is not None:
+            zone_entry['offAvg'] = off
         # Attach generation data if available in renewables
         ren_code = z['code']
         if renewables and ren_code in renewables:
@@ -719,6 +758,15 @@ if __name__ == '__main__':
             zone_entry['windOffshore'] = r.get('windOffshoreActual', [])
             zone_entry['wind']         = r.get('windActual',         [])
             zone_entry['solar']        = r.get('solarActual',        [])
+        # Attach genmix snapshot of the day for this zone (if covered)
+        if genmix and ren_code in genmix:
+            gm = genmix[ren_code]
+            zone_entry['genmix'] = gm
+            rp, dom = ren_pct_and_dom_fuel(gm)
+            if rp is not None:
+                zone_entry['renPct'] = rp
+            if dom is not None:
+                zone_entry['domFuel'] = dom
         daily_snap['zones'][z['code']] = zone_entry
     write_json(daily_path, daily_snap)
 
@@ -732,7 +780,21 @@ if __name__ == '__main__':
 
     for z in prices:
         code = z['code']
-        entry = {'d': today_str, 'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours']}
+        # Reuse helpers above
+        pk, off = peak_offpeak_from_hourly(z['hourly'])
+        gm = genmix.get(code) if genmix else None
+        rp, dom = ren_pct_and_dom_fuel(gm) if gm else (None, None)
+        entry = {
+            'd': today_str,
+            'avg': z['today'],
+            'min': z['min'],
+            'max': z['max'],
+            'negH': z['negHours'],
+        }
+        if pk is not None:  entry['peakAvg'] = pk
+        if off is not None: entry['offAvg']  = off
+        if rp is not None:  entry['renPct']  = rp
+        if dom is not None: entry['domFuel'] = dom
         if code not in monthly_data['zones']:
             monthly_data['zones'][code] = []
         # Replace or append today
@@ -751,7 +813,20 @@ if __name__ == '__main__':
 
     for z in prices:
         code = z['code']
-        entry = {'d': today_str, 'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours']}
+        pk, off = peak_offpeak_from_hourly(z['hourly'])
+        gm = genmix.get(code) if genmix else None
+        rp, dom = ren_pct_and_dom_fuel(gm) if gm else (None, None)
+        entry = {
+            'd': today_str,
+            'avg': z['today'],
+            'min': z['min'],
+            'max': z['max'],
+            'negH': z['negHours'],
+        }
+        if pk is not None:  entry['peakAvg'] = pk
+        if off is not None: entry['offAvg']  = off
+        if rp is not None:  entry['renPct']  = rp
+        if dom is not None: entry['domFuel'] = dom
         if code not in summary['zones']:
             summary['zones'][code] = []
         summary['zones'][code] = [d for d in summary['zones'][code] if d['d'] != today_str]
