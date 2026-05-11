@@ -1379,13 +1379,8 @@
   }
   /* ──────────────────────────────────────────
      Zone row highlight when detail is expanded
-     Same bg colour as native hover (var(--bg3)) + green accent bar on left
-     Only on the table row itself — NOT on the detail row below
+     Just the green accent bar on the left — no background tint
      ────────────────────────────────────────── */
-  tbody tr.zone-row.is-open,
-  tbody tr.zone-row.is-open:hover {
-    background: var(--bg3) !important;
-  }
   tbody tr.zone-row.is-open > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
