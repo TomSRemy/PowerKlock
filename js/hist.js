@@ -2395,7 +2395,12 @@ async function renderHistSingle() {
   if (heatmap) heatmap.style.display = 'none';
 
   // Dispatch render by tab
-  if (HSZ.tab === 'lines') return _hszRenderLines(filtered, zone);
+  if (HSZ.tab === 'lines')    return _hszRenderLines(filtered, zone);
+  if (HSZ.tab === 'yoy')      return _hszRenderYoY(filtered, zone, s);
+  if (HSZ.tab === 'seasonal') return _hszRenderSeasonal(filtered, zone, s);
+  if (HSZ.tab === 'hourly')   return _hszRenderHourly(filtered, zone);
+  if (HSZ.tab === 'weekly')   return _hszRenderWeekly(filtered, zone);
+  if (HSZ.tab === 'vol')      return _hszRenderVolatility(filtered, zone);
   return _hszPlaceholder('🚧 ' + HSZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistSingle = renderHistSingle;
@@ -2458,6 +2463,282 @@ function _hszRenderLines(filtered, zone) {
       }
     }
   });
+}
+
+// ── HSZ · YoY: same calendar window vs same window N-1 (and N-2 if available) ──
+function _hszRenderYoY(filtered, zone, summary) {
+  // Build aligned series for current and previous year(s). We anchor on
+  // month-day so daily series can be plotted by day-of-period.
+  const color = zoneColor(zone);
+  const all = summary.zones[zone] || [];
+  if (!filtered.length || !all.length) return _hszPlaceholder('Not enough data for YoY');
+
+  const curFrom = filtered[0].d;
+  const curTo   = filtered[filtered.length - 1].d;
+  const periodLen = filtered.length;
+
+  // Build shifted window N-1 and N-2 from the full history
+  const shiftY = (iso, years) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${y - years}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  };
+
+  const sliceWindow = (fromStr, toStr) => {
+    const out = all.filter(e => e.d >= fromStr && e.d <= toStr);
+    // Pad / truncate to match periodLen (align by index from end)
+    return out;
+  };
+
+  const ny1 = sliceWindow(shiftY(curFrom, 1), shiftY(curTo, 1));
+  const ny2 = sliceWindow(shiftY(curFrom, 2), shiftY(curTo, 2));
+
+  // Use day-of-period index as label for alignment
+  const labels = filtered.map((_, i) => `D${i+1}`);
+  // Map curr/prev by day index
+  const cur  = filtered.map(d => d.avg);
+  const prev1 = labels.map((_, i) => ny1[i]?.avg ?? null);
+  const prev2 = labels.map((_, i) => ny2[i]?.avg ?? null);
+
+  // Compute aggregate deltas for an info row
+  const curMean = _meanIgnoreNull(cur);
+  const p1Mean  = _meanIgnoreNull(prev1);
+  const p2Mean  = _meanIgnoreNull(prev2);
+
+  mkHistChart('hsz-canvas', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: zone + ' · current',    data: cur,   borderColor: color,                  borderWidth: 2,   pointRadius: 0, tension: 0, spanGaps: true, fill: false },
+        { label: zone + ' · N-1',        data: prev1, borderColor: 'rgba(255,255,255,0.4)', borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3] },
+        { label: zone + ' · N-2',        data: prev2, borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1.2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [2,4] },
+      ],
+    },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` },
+          title: ctx => 'Day ' + (ctx[0]?.dataIndex + 1) + ' of period' },
+        subtitle: {
+          display: true,
+          text: curMean != null && p1Mean != null
+            ? `Period avg: ${curMean.toFixed(1)} €/MWh · N-1: ${p1Mean.toFixed(1)} (Δ ${((curMean - p1Mean)).toFixed(1)})${p2Mean != null ? ' · N-2: ' + p2Mean.toFixed(1) : ''}`
+            : 'Period vs previous year(s)',
+          color: _HIST_TX3, font: { size: 11 }, padding: { bottom: 8 },
+        },
+      }
+    }
+  });
+}
+
+// ── HSZ · Seasonal: avg per calendar month across years ──
+function _hszRenderSeasonal(filtered, zone, summary) {
+  const color = zoneColor(zone);
+  const all = summary.zones[zone] || [];
+  if (!all.length) return _hszPlaceholder('No seasonal data');
+
+  // Group every entry by month (1-12) and year
+  // For each (year, month) compute monthly avg, then plot one line per year
+  const byYM = {};
+  all.forEach(e => {
+    if (e.avg == null) return;
+    const [y, m] = e.d.split('-');
+    const ymKey = y + '-' + m;
+    if (!byYM[ymKey]) byYM[ymKey] = [];
+    byYM[ymKey].push(e.avg);
+  });
+
+  // Pivot: { year: [12 monthly avgs] }
+  const byYear = {};
+  Object.keys(byYM).forEach(ymKey => {
+    const [y, m] = ymKey.split('-');
+    if (!byYear[y]) byYear[y] = Array(12).fill(null);
+    const vals = byYM[ymKey];
+    byYear[y][parseInt(m) - 1] = vals.reduce((a,b)=>a+b,0) / vals.length;
+  });
+
+  const years = Object.keys(byYear).sort();
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const colors = ['#7B4B9C','#3FA6B4','#14D3A9','#FBBF24','#ED6965','#94D2BD','#94a3b8','#A87DC4'];
+
+  const datasets = years.map((y, i) => {
+    const isCurrent = i === years.length - 1;
+    return {
+      label: y,
+      data: byYear[y],
+      borderColor: isCurrent ? color : colors[i % colors.length],
+      borderWidth: isCurrent ? 2.5 : 1.5,
+      pointRadius: 3,
+      pointBackgroundColor: isCurrent ? color : colors[i % colors.length],
+      tension: 0.25,
+      spanGaps: true,
+      fill: false,
+    };
+  });
+
+  mkHistChart('hsz-canvas', {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+      }
+    }
+  });
+}
+
+// ── HSZ · Hourly: peak vs off-peak vs avg (proxy from daily peak/off splits) ──
+// Note: summary.json doesn't have true hourly history. We use peakAvg/offAvg
+// per day to give a proxy view of "typical peak vs off-peak shape over time".
+function _hszRenderHourly(filtered, zone) {
+  const color = zoneColor(zone);
+  // Aggregate by week instead of day to make the chart legible
+  // Show 3 series: Peak avg, Off-peak avg, Daily avg — by week
+  if (!filtered.length) return _hszPlaceholder('No data');
+
+  // Group by ISO week
+  const byWeek = {};
+  filtered.forEach(e => {
+    const dt = new Date(e.d);
+    // ISO week label "YYYY-Wnn"
+    const y = dt.getUTCFullYear();
+    const onejan = new Date(Date.UTC(y, 0, 1));
+    const w = Math.ceil(((dt - onejan) / 86400000 + onejan.getUTCDay() + 1) / 7);
+    const key = `${y}-W${String(w).padStart(2,'0')}`;
+    if (!byWeek[key]) byWeek[key] = { avg: [], peak: [], off: [] };
+    if (e.avg != null) byWeek[key].avg.push(e.avg);
+    if (e.peakAvg != null) byWeek[key].peak.push(e.peakAvg);
+    if (e.offAvg != null) byWeek[key].off.push(e.offAvg);
+  });
+
+  const labels = Object.keys(byWeek).sort();
+  const avgArr  = labels.map(k => _meanIgnoreNull(byWeek[k].avg));
+  const peakArr = labels.map(k => _meanIgnoreNull(byWeek[k].peak));
+  const offArr  = labels.map(k => _meanIgnoreNull(byWeek[k].off));
+
+  mkHistChart('hsz-canvas', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Peak avg (08-20h)',  data: peakArr, borderColor: _HIST_WARN, backgroundColor: 'rgba(238,155,0,0.06)', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false },
+        { label: 'Off-peak avg',       data: offArr,  borderColor: '#14D3A9',  backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false },
+        { label: 'Daily avg',          data: avgArr,  borderColor: color,      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3] },
+      ],
+    },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        subtitle: { display: true, text: 'Weekly aggregated peak/off-peak (proxy from daily splits)', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+      }
+    }
+  });
+}
+
+// ── HSZ · Weekly: avg per day-of-week (Mon..Sun) ──
+function _hszRenderWeekly(filtered, zone) {
+  const color = zoneColor(zone);
+  if (!filtered.length) return _hszPlaceholder('No data');
+
+  // Group by day-of-week (0=Mon ... 6=Sun)
+  const byDow = Array.from({length: 7}, () => ({ avg: [], peak: [], off: [] }));
+  filtered.forEach(e => {
+    if (e.avg == null) return;
+    const dt = new Date(e.d);
+    let dow = dt.getUTCDay(); // 0 = Sun, 6 = Sat
+    dow = (dow + 6) % 7;       // Convert to Mon=0..Sun=6
+    byDow[dow].avg.push(e.avg);
+    if (e.peakAvg != null) byDow[dow].peak.push(e.peakAvg);
+    if (e.offAvg != null) byDow[dow].off.push(e.offAvg);
+  });
+
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const avgArr  = byDow.map(g => _meanIgnoreNull(g.avg));
+  const peakArr = byDow.map(g => _meanIgnoreNull(g.peak));
+  const offArr  = byDow.map(g => _meanIgnoreNull(g.off));
+
+  mkHistChart('hsz-canvas', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Daily avg',     data: avgArr,  backgroundColor: color + '99',     borderColor: color,     borderWidth: 1, borderRadius: 4 },
+        { label: 'Peak avg',      data: peakArr, backgroundColor: _HIST_WARN + '66', borderColor: _HIST_WARN, borderWidth: 1, borderRadius: 4 },
+        { label: 'Off-peak avg',  data: offArr,  backgroundColor: '#14D3A966',      borderColor: '#14D3A9', borderWidth: 1, borderRadius: 4 },
+      ],
+    },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+      }
+    }
+  });
+}
+
+// ── HSZ · Volatility: rolling σ on 7D / 30D windows ──
+function _hszRenderVolatility(filtered, zone) {
+  const color = zoneColor(zone);
+  if (!filtered.length) return _hszPlaceholder('No data');
+
+  const labels = filtered.map(d => d.d);
+  const avgs   = filtered.map(d => d.avg);
+
+  // Rolling sigma on a window
+  const rollingSigma = (arr, n) => arr.map((_, i) => {
+    const slice = arr.slice(Math.max(0, i-n+1), i+1).filter(v => v != null);
+    if (slice.length < 3) return null;
+    const m = slice.reduce((a,b)=>a+b,0) / slice.length;
+    const v = slice.reduce((a,b)=>a+Math.pow(b-m,2),0) / slice.length;
+    return Math.sqrt(v);
+  });
+
+  const sig7  = rollingSigma(avgs, 7);
+  const sig30 = rollingSigma(avgs, 30);
+
+  // Annotate the global σ for reference
+  const valid = avgs.filter(v => v != null);
+  const periodMean = valid.length ? valid.reduce((a,b)=>a+b,0) / valid.length : 0;
+  const periodSigma = valid.length ? Math.sqrt(valid.reduce((a,b)=>a+Math.pow(b-periodMean,2),0) / valid.length) : 0;
+
+  mkHistChart('hsz-canvas', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'σ 7D rolling',  data: sig7,  borderColor: _HIST_WARN, backgroundColor: 'rgba(238,155,0,0.10)', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: true },
+        { label: 'σ 30D rolling', data: sig30, borderColor: color,      backgroundColor: 'transparent',          borderWidth: 2,   pointRadius: 0, tension: 0.3, spanGaps: true, fill: false },
+      ],
+    },
+    options: {
+      ...baseOptions('σ (€/MWh)'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        subtitle: { display: true, text: `Period σ: ${periodSigma.toFixed(2)} €/MWh — rule of thumb: <15 stable · 15-30 moderate · >30 volatile`, color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        annotation: {
+          annotations: {
+            ref15: { type: 'line', yMin: 15, yMax: 15, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
+              label: { enabled: true, content: 'stable', color: '#14D3A9', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } },
+            ref30: { type: 'line', yMin: 30, yMax: 30, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
+              label: { enabled: true, content: 'volatile', color: '#ED6965', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } },
+          }
+        }
+      }
+    }
+  });
+}
+
+// Helper: mean ignoring null / NaN
+function _meanIgnoreNull(arr) {
+  const v = arr.filter(x => x != null && !isNaN(x));
+  return v.length ? v.reduce((a,b)=>a+b,0) / v.length : null;
 }
 
 
@@ -2576,7 +2857,11 @@ async function renderHistMulti() {
   if (heatmap) heatmap.style.display = 'none';
 
   // Dispatch by tab
-  if (HMZ.tab === 'lines') return _hmzRenderLines(perZone, selected);
+  if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
+  if (HMZ.tab === 'heatmap') return _hmzRenderHeatmap(perZone, selected);
+  if (HMZ.tab === 'profile') return _hmzRenderProfile(perZone, selected);
+  if (HMZ.tab === 'bands')   return _hmzRenderBands(perZone, selected, baseline);
+  if (HMZ.tab === 'spread')  return _hmzRenderSpread(perZone, selected, baseline);
   return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistMulti = renderHistMulti;
@@ -2626,6 +2911,265 @@ function _hmzRenderLines(perZone, selected) {
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } }
       }
     }
+  });
+}
+
+// ── HMZ · Heatmap: zone × month, color by monthly avg price ──
+function _hmzRenderHeatmap(perZone, selected) {
+  const canvas = document.getElementById('hmz-canvas');
+  const heatmap = document.getElementById('hmz-heatmap');
+  if (canvas) canvas.style.display = 'none';
+  if (!heatmap) return;
+  heatmap.style.display = 'block';
+
+  // Collect all months across zones
+  const monthsSet = new Set();
+  selected.forEach(z => perZone[z].forEach(d => monthsSet.add(d.d.slice(0,7))));
+  const months = Array.from(monthsSet).sort();
+
+  if (!months.length || !selected.length) {
+    heatmap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:11px">No data</div>';
+    return;
+  }
+
+  // Build matrix: monthly avg per (zone, month)
+  const matrix = {};
+  let globalMin = Infinity, globalMax = -Infinity;
+  selected.forEach(z => {
+    matrix[z] = {};
+    const byMonth = {};
+    perZone[z].forEach(d => {
+      const m = d.d.slice(0,7);
+      if (!byMonth[m]) byMonth[m] = [];
+      if (d.avg != null) byMonth[m].push(d.avg);
+    });
+    months.forEach(m => {
+      if (byMonth[m] && byMonth[m].length) {
+        const avg = byMonth[m].reduce((a,b)=>a+b,0) / byMonth[m].length;
+        matrix[z][m] = avg;
+        if (avg < globalMin) globalMin = avg;
+        if (avg > globalMax) globalMax = avg;
+      } else {
+        matrix[z][m] = null;
+      }
+    });
+  });
+
+  // Color scale: green (cheap) → yellow → red (expensive)
+  const colorFor = (val) => {
+    if (val == null || isNaN(val)) return 'transparent';
+    const t = Math.max(0, Math.min(1, (val - globalMin) / Math.max(1, globalMax - globalMin)));
+    // 3-stop gradient
+    if (t < 0.5) {
+      // green → yellow
+      const k = t * 2;
+      const r = Math.round(20 + (251-20)*k);
+      const g = Math.round(211 + (191-211)*k);
+      const b = Math.round(169 + (36-169)*k);
+      return `rgb(${r},${g},${b})`;
+    } else {
+      // yellow → red
+      const k = (t - 0.5) * 2;
+      const r = Math.round(251 + (237-251)*k);
+      const g = Math.round(191 + (105-191)*k);
+      const b = Math.round(36 + (101-36)*k);
+      return `rgb(${r},${g},${b})`;
+    }
+  };
+
+  // Build the heatmap as a CSS grid
+  const monthLabels = months.map(m => {
+    const [y, mo] = m.split('-');
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${names[parseInt(mo)-1]} ${y.slice(2)}`;
+  });
+
+  let html = `<div style="display:inline-block;min-width:100%;padding:8px">`;
+  html += `<table style="border-collapse:separate;border-spacing:2px;font-size:10px;font-family:'JetBrains Mono',monospace">`;
+  // Header row with month labels
+  html += `<thead><tr><th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600">Zone</th>`;
+  monthLabels.forEach(ml => {
+    html += `<th style="text-align:center;padding:4px;color:var(--tx3);font-weight:600;min-width:42px">${ml}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+  // One row per zone
+  selected.forEach(z => {
+    const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+    html += `<tr><td style="padding:4px 8px;color:var(--tx);font-weight:600;white-space:nowrap">${flag} ${z}</td>`;
+    months.forEach(m => {
+      const v = matrix[z][m];
+      const bg = colorFor(v);
+      const txt = v != null ? v.toFixed(0) : '--';
+      const txCol = v != null && (v > globalMin + (globalMax - globalMin) * 0.3) ? '#000' : '#fff';
+      html += `<td title="${z} · ${m}: ${v != null ? v.toFixed(2) + ' €/MWh' : 'no data'}" style="background:${bg};color:${txCol};text-align:center;padding:6px 4px;border-radius:3px;min-width:42px;font-weight:600">${txt}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  // Color scale legend
+  html += `<div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
+    <span>Cheap</span>
+    <div style="flex:1;max-width:240px;height:10px;background:linear-gradient(to right, rgb(20,211,169), rgb(251,191,36), rgb(237,105,101));border-radius:2px"></div>
+    <span>Expensive</span>
+    <span style="margin-left:12px">${globalMin.toFixed(0)} → ${globalMax.toFixed(0)} €/MWh</span>
+  </div>`;
+  html += `</div>`;
+  heatmap.innerHTML = html;
+}
+
+// ── HMZ · Profile: avg per day-of-week per zone (bar chart, grouped) ──
+function _hmzRenderProfile(perZone, selected) {
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  const datasets = selected.map(z => {
+    const byDow = Array.from({length: 7}, () => []);
+    perZone[z].forEach(e => {
+      if (e.avg == null) return;
+      const dt = new Date(e.d);
+      let dow = dt.getUTCDay();
+      dow = (dow + 6) % 7;
+      byDow[dow].push(e.avg);
+    });
+    const data = byDow.map(g => _meanIgnoreNull(g));
+    return {
+      label: z,
+      data,
+      backgroundColor: zoneColor(z) + 'B3',
+      borderColor: zoneColor(z),
+      borderWidth: 1,
+      borderRadius: 3,
+    };
+  });
+
+  mkHistChart('hmz-canvas', {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        subtitle: { display: true, text: 'Average price per day of week — grouped by zone', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+      },
+    },
+  });
+}
+
+// ── HMZ · Bands: P10 / P50 / P90 of daily avg per zone ──
+function _hmzRenderBands(perZone, selected, baseline) {
+  // Compute P10 / P50 (median) / P90 + min/max per zone
+  const labels = selected;
+  const p10 = [], p50 = [], p90 = [], mins = [], maxes = [];
+  selected.forEach(z => {
+    const avgs = perZone[z].map(d => d.avg).filter(v => v != null).sort((a,b) => a-b);
+    if (!avgs.length) {
+      p10.push(null); p50.push(null); p90.push(null); mins.push(null); maxes.push(null);
+      return;
+    }
+    const pct = (p) => avgs[Math.floor(p * (avgs.length - 1))];
+    p10.push(pct(0.10));
+    p50.push(pct(0.50));
+    p90.push(pct(0.90));
+    mins.push(avgs[0]);
+    maxes.push(avgs[avgs.length - 1]);
+  });
+
+  // Use line chart with shaded area between p10 and p90 + median line + min/max points
+  // Trick: stacked-like fill not native; we use two datasets with fill between them
+  const datasets = [
+    {
+      label: 'P90', data: p90, borderColor: 'rgba(255,255,255,0)', backgroundColor: 'rgba(20,211,169,0.18)',
+      pointRadius: 0, fill: '+1', tension: 0, type: 'line',
+    },
+    {
+      label: 'P10', data: p10, borderColor: 'rgba(255,255,255,0)', backgroundColor: 'transparent',
+      pointRadius: 0, fill: false, tension: 0, type: 'line',
+    },
+    {
+      label: 'Median (P50)', data: p50,
+      borderColor: '#14D3A9', backgroundColor: '#14D3A9',
+      borderWidth: 2, pointRadius: 5, pointStyle: 'rectRot', fill: false, tension: 0, type: 'line',
+    },
+    {
+      label: 'Min', data: mins,
+      borderColor: '#ED6965', backgroundColor: '#ED6965',
+      pointRadius: 5, pointStyle: 'triangle', fill: false, showLine: false, type: 'line',
+    },
+    {
+      label: 'Max', data: maxes,
+      borderColor: '#FBBF24', backgroundColor: '#FBBF24',
+      pointRadius: 5, pointStyle: 'triangle', rotation: 180, fill: false, showLine: false, type: 'line',
+    },
+  ];
+
+  mkHistChart('hmz-canvas', {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8, filter: (item) => item.text !== 'P10' && item.text !== 'P90' } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        subtitle: { display: true, text: 'P10-P90 band (filled), median (●), min/max (▲) per zone', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 11 } } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+// ── HMZ · Spread: peak-offpeak spread per zone (bar chart) ──
+function _hmzRenderSpread(perZone, selected, baseline) {
+  const labels = selected;
+
+  const spreadAvg = selected.map(z => {
+    const valid = perZone[z].filter(d => d.peakAvg != null && d.offAvg != null);
+    if (!valid.length) return null;
+    const m = valid.reduce((a,d) => a + (d.peakAvg - d.offAvg), 0) / valid.length;
+    return m;
+  });
+
+  const intradayAvg = selected.map(z => {
+    const valid = perZone[z].filter(d => d.max != null && d.min != null);
+    if (!valid.length) return null;
+    const m = valid.reduce((a,d) => a + (d.max - d.min), 0) / valid.length;
+    return m;
+  });
+
+  // Color: green if spread > 30 (BESS-friendly), yellow 15-30, grey < 15
+  const colorFor = (v) => v == null ? 'rgba(255,255,255,0.15)' : (v > 50 ? '#14D3A9' : v > 25 ? '#FBBF24' : 'rgba(255,255,255,0.35)');
+
+  const datasets = [
+    {
+      label: 'Peak – Off-peak',
+      data: spreadAvg,
+      backgroundColor: spreadAvg.map(colorFor),
+      borderWidth: 0,
+      borderRadius: 4,
+    },
+    {
+      label: 'Intraday spread (max-min)',
+      data: intradayAvg,
+      backgroundColor: intradayAvg.map(v => v == null ? 'rgba(255,255,255,0.12)' : 'rgba(20,211,169,0.4)'),
+      borderColor: '#14D3A9',
+      borderWidth: 1,
+      borderRadius: 4,
+    },
+  ];
+
+  mkHistChart('hmz-canvas', {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      ...baseOptions('€/MWh'),
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        subtitle: { display: true, text: 'Peak-Off-peak spread and intraday spread per zone — BESS arbitrage proxy', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+      },
+    },
   });
 }
 
