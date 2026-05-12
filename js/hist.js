@@ -2788,7 +2788,8 @@ function _hszRenderSeasonal(filtered, zone, summary) {
 
   const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Build envelope (min, max, median) per month across envYears
+  // Build envelope (P5, P95, median) per month across envYears to avoid
+  // extreme outlier years (e.g. 2022 gas crisis) crushing the Y axis.
   const envMin = Array(12).fill(null);
   const envMax = Array(12).fill(null);
   const envMedian = Array(12).fill(null);
@@ -2796,8 +2797,14 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     const vals = envYears.map(y => byYear[y][m]).filter(v => v != null);
     if (vals.length) {
       const sorted = [...vals].sort((a, b) => a - b);
-      envMin[m] = sorted[0];
-      envMax[m] = sorted[sorted.length - 1];
+      if (sorted.length < 4) {
+        // Too few years — use absolute min/max
+        envMin[m] = sorted[0];
+        envMax[m] = sorted[sorted.length - 1];
+      } else {
+        envMin[m] = _percentile(sorted, 0.05);
+        envMax[m] = _percentile(sorted, 0.95);
+      }
       envMedian[m] = _percentile(sorted, 0.5);
     }
   }
@@ -3125,120 +3132,145 @@ function _hszRenderWeekly(filtered, zone) {
 
   const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  // Floating bar dataset for IQR (P25-P75)
-  const iqrData = stats.map(s => s ? [s.p25, s.p75] : null);
-  // Median as a thin floating bar around p50
-  const medianBars = stats.map(s => s ? [s.p50 - 0.5, s.p50 + 0.5] : null);
+  // Compute Y range: cap at 1.15× P90 max but only if outliers exceed it significantly
+  const validStats = stats.filter(s => s);
+  const p90Max = Math.max(...validStats.map(s => s.p90));
+  const p10Min = Math.min(...validStats.map(s => s.p10));
+  const dataMax = Math.max(...validStats.map(s => s.max));
+  const dataMin = Math.min(...validStats.map(s => s.min));
+  // If dataMax > 1.5× p90Max, cap at p90Max × 1.4 (outliers visible just above box)
+  // Otherwise use real data extent
+  const yTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
+  const yBot = (dataMin < p10Min * 0.5 || dataMin < 0) ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10 : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
 
-  // Scatter points for outliers / whisker caps
-  const p10Pts = stats.map((s, i) => s ? { x: i, y: s.p10 } : null).filter(p => p);
-  const p90Pts = stats.map((s, i) => s ? { x: i, y: s.p90 } : null).filter(p => p);
-  const minPts = stats.map((s, i) => s ? { x: i, y: s.min } : null).filter(p => p);
-  const maxPts = stats.map((s, i) => s ? { x: i, y: s.max } : null).filter(p => p);
+  const colorIqrFill = _toRgba(color, 0.25);
+  const colorWhisker = _toRgba(color, 0.7);
 
-  // Whisker lines: draw as line dataset with NaN gaps between segments
-  // For each Dow with stats: vertical line from p10 to p25 and from p75 to p90
-  const whiskerData = [];
-  stats.forEach((s, i) => {
-    if (!s) return;
-    // Lower whisker (p10 → p25)
-    whiskerData.push({ x: i, y: s.p10 });
-    whiskerData.push({ x: i, y: s.p25 });
-    whiskerData.push({ x: i, y: NaN });  // break
-    // Upper whisker (p75 → p90)
-    whiskerData.push({ x: i, y: s.p75 });
-    whiskerData.push({ x: i, y: s.p90 });
-    whiskerData.push({ x: i, y: NaN });  // break
-  });
+  // Custom plugin: draw the whole box plot in afterDatasetsDraw
+  // Uses the chart's scales to convert (categoryIdx, value) → pixels
+  const boxPlotPlugin = {
+    id: 'boxPlot',
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      const xScale = scales.x;
+      const yScale = scales.y;
+      const boxHalfWidth = (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.22;
+      stats.forEach((s, i) => {
+        if (!s) return;
+        const xPx = xScale.getPixelForValue(i);
+        const yP25 = yScale.getPixelForValue(s.p25);
+        const yP75 = yScale.getPixelForValue(s.p75);
+        const yP10 = yScale.getPixelForValue(s.p10);
+        const yP90 = yScale.getPixelForValue(s.p90);
+        const yP50 = yScale.getPixelForValue(s.p50);
 
-  const fillColor = _toRgba(color, 0.25);
+        // IQR box (P25-P75)
+        ctx.fillStyle = colorIqrFill;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(xPx - boxHalfWidth, yP75, boxHalfWidth * 2, yP25 - yP75);
+        ctx.fill();
+        ctx.stroke();
+
+        // Median line (thick horizontal line at P50)
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xPx - boxHalfWidth, yP50);
+        ctx.lineTo(xPx + boxHalfWidth, yP50);
+        ctx.stroke();
+
+        // Whiskers (vertical lines + caps)
+        ctx.strokeStyle = colorWhisker;
+        ctx.lineWidth = 1.2;
+        // Lower whisker
+        ctx.beginPath();
+        ctx.moveTo(xPx, yP25);
+        ctx.lineTo(xPx, yP10);
+        ctx.stroke();
+        // Upper whisker
+        ctx.beginPath();
+        ctx.moveTo(xPx, yP75);
+        ctx.lineTo(xPx, yP90);
+        ctx.stroke();
+        // Whisker caps (small horizontal lines at P10 / P90)
+        const capWidth = boxHalfWidth * 0.45;
+        ctx.beginPath();
+        ctx.moveTo(xPx - capWidth, yP10);
+        ctx.lineTo(xPx + capWidth, yP10);
+        ctx.moveTo(xPx - capWidth, yP90);
+        ctx.lineTo(xPx + capWidth, yP90);
+        ctx.stroke();
+
+        // Min / Max as small dots (if within Y range, else they're clipped by Chart.js naturally)
+        if (s.min >= yScale.min && s.min <= yScale.max) {
+          const yMin = yScale.getPixelForValue(s.min);
+          ctx.fillStyle = _HIST_DN;
+          ctx.beginPath();
+          ctx.arc(xPx, yMin, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        if (s.max >= yScale.min && s.max <= yScale.max) {
+          const yMax = yScale.getPixelForValue(s.max);
+          ctx.fillStyle = _HIST_WARN;
+          ctx.beginPath();
+          ctx.arc(xPx, yMax, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      });
+    },
+  };
 
   mkHistChart('hsz-canvas', {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        // IQR floating bar
+        // Invisible bar to drive the X categorical axis and tooltip
         {
-          type: 'bar', label: 'P25-P75 (IQR)',
-          data: iqrData,
-          backgroundColor: fillColor,
-          borderColor: color, borderWidth: 1.5,
-          borderRadius: 2,
-          barPercentage: 0.45, categoryPercentage: 0.6,
-          order: 5,
-        },
-        // Median bar (very thin)
-        {
-          type: 'bar', label: 'Median',
-          data: medianBars,
-          backgroundColor: color, borderColor: color, borderWidth: 0,
-          barPercentage: 0.55, categoryPercentage: 0.6,
-          order: 1,
-        },
-        // Whiskers (P10-P25 and P75-P90)
-        {
-          type: 'line', label: 'Whiskers (P10-P90)',
-          data: whiskerData, parsing: false,
-          borderColor: color, borderWidth: 1.5,
-          pointRadius: 0, tension: 0, spanGaps: false, fill: false,
-          order: 3,
-        },
-        // P10 caps
-        {
-          type: 'scatter', label: 'P10', data: p10Pts, parsing: false,
-          backgroundColor: color, pointStyle: 'rectRot', pointRadius: 4, pointBorderColor: color,
-          order: 2,
-        },
-        // P90 caps
-        {
-          type: 'scatter', label: 'P90', data: p90Pts, parsing: false,
-          backgroundColor: color, pointStyle: 'rectRot', pointRadius: 4, pointBorderColor: color,
-          order: 2,
-        },
-        // Min outliers (red)
-        {
-          type: 'scatter', label: 'Min', data: minPts, parsing: false,
-          backgroundColor: _HIST_DN, pointStyle: 'circle', pointRadius: 3,
-          order: 2,
-        },
-        // Max outliers (amber)
-        {
-          type: 'scatter', label: 'Max', data: maxPts, parsing: false,
-          backgroundColor: _HIST_WARN, pointStyle: 'circle', pointRadius: 3,
-          order: 2,
+          label: 'Box plot',
+          data: stats.map(s => s ? s.p50 : null),
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          borderWidth: 0,
+          barPercentage: 0.001,
+          categoryPercentage: 1,
         },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: {
-          display: true, position: 'top', align: 'end',
-          labels: {
-            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8,
-            filter: (item) => !['Whiskers (P10-P90)'].includes(item.text),
-          },
-        },
+        legend: { display: false },
         tooltip: {
           mode: 'index', intersect: false,
           callbacks: {
             label: (ctx) => {
               const s = stats[ctx.dataIndex];
               if (!s) return '';
-              if (ctx.datasetIndex === 0) return ` IQR: ${s.p25.toFixed(1)} – ${s.p75.toFixed(1)} €/MWh`;
-              if (ctx.datasetIndex === 1) return ` Median: ${s.p50.toFixed(1)} €/MWh (n=${s.n})`;
-              return '';
+              return [
+                ` Min:    ${s.min.toFixed(1)} €/MWh`,
+                ` P10:    ${s.p10.toFixed(1)} €/MWh`,
+                ` P25:    ${s.p25.toFixed(1)} €/MWh`,
+                ` Median: ${s.p50.toFixed(1)} €/MWh`,
+                ` P75:    ${s.p75.toFixed(1)} €/MWh`,
+                ` P90:    ${s.p90.toFixed(1)} €/MWh`,
+                ` Max:    ${s.max.toFixed(1)} €/MWh`,
+                ` n = ${s.n}`,
+              ];
             },
           },
         },
-        subtitle: { display: true, text: 'Box: P25-P75 · Diamonds: P10/P90 · Dots: min/max', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        subtitle: { display: true, text: 'Box: P25-P75 · Whiskers: P10-P90 · Dots: min/max (when within range) · Scroll to zoom Y · drag to pan', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        zoom: _zoomConfig({ mode: 'y' }),
       },
       scales: {
         x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } } },
-        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: yBot, max: yTop, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
       },
     },
+    plugins: [boxPlotPlugin],
   });
 }
 
@@ -3267,6 +3299,13 @@ function _hszRenderVolatility(filtered, zone) {
   const periodMean = valid.length ? valid.reduce((a,b)=>a+b,0) / valid.length : 0;
   const periodSigma = valid.length ? Math.sqrt(valid.reduce((a,b)=>a+Math.pow(b-periodMean,2),0) / valid.length) : 0;
 
+  // Compute dynamic Y range based on actual σ values (not the static 0-200 box)
+  const allSig = [...sig7, ...sig30].filter(v => v != null && !isNaN(v));
+  const sigMax = allSig.length ? Math.max(...allSig) : 30;
+  // Round up to a sensible value, leave 10% headroom, but cap at a value that
+  // makes the 3 regime zones look reasonable
+  const yMaxData = Math.ceil(Math.max(sigMax * 1.1, 35) / 5) * 5;
+
   mkHistChart('hsz-canvas', {
     type: 'line',
     data: {
@@ -3286,17 +3325,22 @@ function _hszRenderVolatility(filtered, zone) {
         subtitle: { display: true, text: `Period σ: ${periodSigma.toFixed(2)} €/MWh — Stable < 15 < Moderate < 30 < Volatile`, color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
         annotation: {
           annotations: {
-            // Regime zones in the background
-            zoneStable:   { type: 'box', yMin: 0,  yMax: 15, backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 0 },
-            zoneModerate: { type: 'box', yMin: 15, yMax: 30, backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 0 },
-            zoneVolatile: { type: 'box', yMin: 30, yMax: 200, backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
-            // Reference lines at σ=15 and σ=30
-            ref15: { type: 'line', yMin: 15, yMax: 15, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
-              label: { enabled: true, content: 'σ=15 · stable', color: '#14D3A9', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } },
-            ref30: { type: 'line', yMin: 30, yMax: 30, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
-              label: { enabled: true, content: 'σ=30 · volatile', color: '#ED6965', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } },
+            // Regime zones in the background — cap at actual data max
+            zoneStable:   { type: 'box', yMin: 0,  yMax: Math.min(15, yMaxData), backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 0 },
+            zoneModerate: { type: 'box', yMin: 15, yMax: Math.min(30, yMaxData), backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 0 },
+            zoneVolatile: { type: 'box', yMin: 30, yMax: yMaxData,               backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
+            // Reference lines at σ=15 and σ=30 (only if within range)
+            ref15: yMaxData >= 15 ? { type: 'line', yMin: 15, yMax: 15, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
+              label: { enabled: true, content: 'σ=15 · stable', color: '#14D3A9', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } } : undefined,
+            ref30: yMaxData >= 30 ? { type: 'line', yMin: 30, yMax: 30, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
+              label: { enabled: true, content: 'σ=30 · volatile', color: '#ED6965', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } } : undefined,
           },
         },
+        zoom: _zoomConfig({ mode: 'y' }),
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: 0, max: yMaxData, title: { display: true, text: 'σ (€/MWh)', color: _HIST_TX3, font: { size: 10 } } },
       },
     },
   });
@@ -3384,6 +3428,8 @@ function _shiftYearsISO(iso, years) {
 // Compute period historical min/max envelope by day-of-period.
 // Returns {minLine: [...], maxLine: [...], medianLine: [...]} aligned with `currentSeries` length.
 // `allHistory` should be entries from years OTHER than the current one.
+// Uses P5/P95 by default (not absolute min/max) to avoid extreme outliers
+// (e.g. 2022 gas crisis) crushing the Y axis.
 function _historicalEnvelope(currentSeries, allHistory) {
   const len = currentSeries.length;
   // For each day-of-period (0..len-1), collect all historical values that fall on same month-day
@@ -3396,8 +3442,18 @@ function _historicalEnvelope(currentSeries, allHistory) {
       }
     });
   });
-  const minLine = buckets.map(b => b.length ? Math.min(...b) : null);
-  const maxLine = buckets.map(b => b.length ? Math.max(...b) : null);
+  const minLine = buckets.map(b => {
+    if (!b.length) return null;
+    if (b.length < 4) return Math.min(...b);
+    const s = [...b].sort((a, b) => a - b);
+    return _percentile(s, 0.05);  // P5 instead of absolute min
+  });
+  const maxLine = buckets.map(b => {
+    if (!b.length) return null;
+    if (b.length < 4) return Math.max(...b);
+    const s = [...b].sort((a, b) => a - b);
+    return _percentile(s, 0.95);  // P95 instead of absolute max
+  });
   const medianLine = buckets.map(b => {
     if (!b.length) return null;
     const s = [...b].sort((a, b) => a - b);
@@ -3415,6 +3471,24 @@ function _toRgba(hex, alpha) {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Zoom plugin config for charts with capped Y range (outliers exist beyond the visible range).
+// Pan with drag, zoom with wheel or pinch. Reset with double-click.
+// Falls back to a no-op object if chartjs-plugin-zoom is not loaded.
+function _zoomConfig(opts = {}) {
+  if (typeof window.Chart === 'undefined' || !window.Chart.registry || !window.Chart.registry.plugins.get('zoom')) {
+    return {};
+  }
+  return {
+    pan: { enabled: true, mode: opts.mode || 'y', modifierKey: null },
+    zoom: {
+      wheel: { enabled: true },
+      pinch: { enabled: true },
+      mode: opts.mode || 'y',
+    },
+    limits: opts.limits || {},
+  };
 }
 
 
@@ -3829,32 +3903,90 @@ function _hmzRenderBands(perZone, selected, baseline) {
 
   if (stats.every(s => s == null)) return;
 
-  // IQR floating bar (P25 → P75) per zone
-  const iqrData = stats.map(s => s ? [s.p25, s.p75] : null);
-  // Median floating bar (very narrow) at P50
-  const medianBars = stats.map(s => s ? [s.p50 - 0.5, s.p50 + 0.5] : null);
-  // Whisker line points
-  const whiskerData = [];
-  stats.forEach((s, i) => {
-    if (!s) return;
-    whiskerData.push({ x: i, y: s.p10 });
-    whiskerData.push({ x: i, y: s.p25 });
-    whiskerData.push({ x: i, y: NaN });
-    whiskerData.push({ x: i, y: s.p75 });
-    whiskerData.push({ x: i, y: s.p90 });
-    whiskerData.push({ x: i, y: NaN });
-  });
-  // Outliers (min, max) as scatter
-  const minPts = stats.map((s, i) => s ? { x: i, y: s.min } : null).filter(p => p);
-  const maxPts = stats.map((s, i) => s ? { x: i, y: s.max } : null).filter(p => p);
-  // P10 / P90 caps as scatter diamonds
-  const p10Pts = stats.map((s, i) => s ? { x: i, y: s.p10 } : null).filter(p => p);
-  const p90Pts = stats.map((s, i) => s ? { x: i, y: s.p90 } : null).filter(p => p);
+  // Compute Y range: smart capping based on outliers vs P90
+  const validStats = stats.filter(s => s);
+  const p90Max = validStats.length ? Math.max(...validStats.map(s => s.p90)) : 100;
+  const p10Min = validStats.length ? Math.min(...validStats.map(s => s.p10)) : 0;
+  const dataMax = validStats.length ? Math.max(...validStats.map(s => s.max)) : 100;
+  const dataMin = validStats.length ? Math.min(...validStats.map(s => s.min)) : 0;
+  // If outlier max is way above P90, cap; else use real max
+  const yTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
+  const yBot = (dataMin < p10Min * 0.5 || dataMin < 0) ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10 : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
 
-  // Color each zone's IQR box with its zone color
-  const iqrBg = selected.map(z => _toRgba(zoneColor(z), 0.25));
-  const iqrBorder = selected.map(z => zoneColor(z));
-  const medianBg = selected.map(z => zoneColor(z));
+  // Per-zone colors for boxes
+  const zoneColors = selected.map(z => zoneColor(z));
+  const zoneIqrFills = zoneColors.map(c => _toRgba(c, 0.25));
+  const zoneWhiskers = zoneColors.map(c => _toRgba(c, 0.7));
+
+  // Custom plugin: draw box plot using chart's scales
+  const boxPlotPlugin = {
+    id: 'hmzBoxPlot',
+    afterDatasetsDraw(chart) {
+      const { ctx, scales } = chart;
+      const xScale = scales.x;
+      const yScale = scales.y;
+      const boxHalfWidth = (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.2;
+      stats.forEach((s, i) => {
+        if (!s) return;
+        const xPx = xScale.getPixelForValue(i);
+        const yP25 = yScale.getPixelForValue(s.p25);
+        const yP75 = yScale.getPixelForValue(s.p75);
+        const yP10 = yScale.getPixelForValue(s.p10);
+        const yP90 = yScale.getPixelForValue(s.p90);
+        const yP50 = yScale.getPixelForValue(s.p50);
+
+        // IQR box
+        ctx.fillStyle = zoneIqrFills[i];
+        ctx.strokeStyle = zoneColors[i];
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(xPx - boxHalfWidth, yP75, boxHalfWidth * 2, yP25 - yP75);
+        ctx.fill();
+        ctx.stroke();
+
+        // Median line (thick horizontal at P50)
+        ctx.strokeStyle = zoneColors[i];
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xPx - boxHalfWidth, yP50);
+        ctx.lineTo(xPx + boxHalfWidth, yP50);
+        ctx.stroke();
+
+        // Whiskers + caps
+        ctx.strokeStyle = zoneWhiskers[i];
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(xPx, yP25);
+        ctx.lineTo(xPx, yP10);
+        ctx.moveTo(xPx, yP75);
+        ctx.lineTo(xPx, yP90);
+        ctx.stroke();
+        const capWidth = boxHalfWidth * 0.45;
+        ctx.beginPath();
+        ctx.moveTo(xPx - capWidth, yP10);
+        ctx.lineTo(xPx + capWidth, yP10);
+        ctx.moveTo(xPx - capWidth, yP90);
+        ctx.lineTo(xPx + capWidth, yP90);
+        ctx.stroke();
+
+        // Min / Max dots (only if within Y range)
+        if (s.min >= yScale.min && s.min <= yScale.max) {
+          const yMin = yScale.getPixelForValue(s.min);
+          ctx.fillStyle = _HIST_DN;
+          ctx.beginPath();
+          ctx.arc(xPx, yMin, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        if (s.max >= yScale.min && s.max <= yScale.max) {
+          const yMax = yScale.getPixelForValue(s.max);
+          ctx.fillStyle = _HIST_WARN;
+          ctx.beginPath();
+          ctx.arc(xPx, yMax, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      });
+    },
+  };
 
   mkHistChart('hmz-canvas', {
     type: 'bar',
@@ -3862,78 +3994,50 @@ function _hmzRenderBands(perZone, selected, baseline) {
       labels,
       datasets: [
         {
-          type: 'bar', label: 'P25-P75 (IQR)',
-          data: iqrData,
-          backgroundColor: iqrBg,
-          borderColor: iqrBorder, borderWidth: 1.5, borderRadius: 2,
-          barPercentage: 0.45, categoryPercentage: 0.6,
-          order: 5,
-        },
-        {
-          type: 'bar', label: 'Median',
-          data: medianBars,
-          backgroundColor: medianBg, borderColor: medianBg, borderWidth: 0,
-          barPercentage: 0.55, categoryPercentage: 0.6,
-          order: 1,
-        },
-        {
-          type: 'line', label: 'Whiskers',
-          data: whiskerData, parsing: false,
-          borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1.5,
-          pointRadius: 0, tension: 0, spanGaps: false, fill: false,
-          order: 3,
-        },
-        {
-          type: 'scatter', label: 'P10', data: p10Pts, parsing: false,
-          backgroundColor: 'rgba(255,255,255,0.85)', pointStyle: 'rectRot', pointRadius: 4,
-          order: 2,
-        },
-        {
-          type: 'scatter', label: 'P90', data: p90Pts, parsing: false,
-          backgroundColor: 'rgba(255,255,255,0.85)', pointStyle: 'rectRot', pointRadius: 4,
-          order: 2,
-        },
-        {
-          type: 'scatter', label: 'Min', data: minPts, parsing: false,
-          backgroundColor: _HIST_DN, pointStyle: 'circle', pointRadius: 3, pointBorderColor: '#fff', pointBorderWidth: 0.5,
-          order: 2,
-        },
-        {
-          type: 'scatter', label: 'Max', data: maxPts, parsing: false,
-          backgroundColor: _HIST_WARN, pointStyle: 'circle', pointRadius: 3, pointBorderColor: '#fff', pointBorderWidth: 0.5,
-          order: 2,
+          label: 'Box plot',
+          data: stats.map(s => s ? s.p50 : null),
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          borderWidth: 0,
+          barPercentage: 0.001,
+          categoryPercentage: 1,
         },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: {
-          display: true, position: 'top', align: 'end',
-          labels: {
-            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 8, padding: 8,
-            filter: (item) => !['Whiskers'].includes(item.text),
-          },
-        },
+        legend: { display: false },
         tooltip: {
           mode: 'index', intersect: false,
           callbacks: {
             label: (ctx) => {
               const s = stats[ctx.dataIndex];
+              const z = selected[ctx.dataIndex];
               if (!s) return '';
-              if (ctx.datasetIndex === 0) return ` IQR (${selected[ctx.dataIndex]}): ${s.p25.toFixed(1)} – ${s.p75.toFixed(1)} €/MWh`;
-              if (ctx.datasetIndex === 1) return ` Median: ${s.p50.toFixed(1)} €/MWh (n=${s.n})`;
-              return '';
+              return [
+                ` ${z}`,
+                ` Min:    ${s.min.toFixed(1)} €/MWh`,
+                ` P10:    ${s.p10.toFixed(1)} €/MWh`,
+                ` P25:    ${s.p25.toFixed(1)} €/MWh`,
+                ` Median: ${s.p50.toFixed(1)} €/MWh`,
+                ` P75:    ${s.p75.toFixed(1)} €/MWh`,
+                ` P90:    ${s.p90.toFixed(1)} €/MWh`,
+                ` Max:    ${s.max.toFixed(1)} €/MWh`,
+                ` n = ${s.n}`,
+              ];
             },
           },
         },
-        subtitle: { display: true, text: 'Box: P25-P75 · Whiskers: P10-P90 · Diamonds: P10/P90 caps · Dots: min/max', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        subtitle: { display: true, text: 'Box: P25-P75 · Whiskers: P10-P90 · Dots: min/max (when within range) · Scroll to zoom Y · drag to pan', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        zoom: _zoomConfig({ mode: 'y' }),
       },
       scales: {
         x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 11 } } },
-        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: yBot, max: yTop, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
       },
     },
+    plugins: [boxPlotPlugin],
   });
 }
 
