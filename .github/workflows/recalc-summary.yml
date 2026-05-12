@@ -1,0 +1,40 @@
+name: Recalc Summary
+
+on:
+  workflow_dispatch:
+
+jobs:
+  recalc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests==2.33.1
+
+      - name: Recalc summary from daily files
+        run: |
+          echo "Running: python scripts/enrich_summary.py"
+          python scripts/enrich_summary.py
+
+      - name: Commit and push summary
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/summary.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit — summary already up to date"
+          else
+            git commit -m "recalc: refresh summary.json (incl. intraday profiles by Q)"
+            git push
+          fi
