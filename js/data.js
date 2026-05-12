@@ -4,6 +4,53 @@
 // ─────────────────────────────────────────────────────────────
 window._yesterdayCache = window._yesterdayCache || {};
 
+// ─────────────────────────────────────────────────────────────
+// GenMix zone defaults
+// Returns the list of zone codes that have actual generation mix data
+// loaded from genmix.json. Used as the default filter "With GenMix"
+// across Daily, Compare, Historical Overview, and Historical Multi-zone.
+// Falls back to a hard-coded conservative list if data not yet loaded.
+// ─────────────────────────────────────────────────────────────
+function getGenMixDefaultZones() {
+  if (window._genmixData && typeof window._genmixData === 'object') {
+    const keys = Object.keys(window._genmixData);
+    if (keys.length) return keys;
+  }
+  // Fallback while genmix.json hasn't loaded yet
+  return ['FR', 'DE_LU', 'ES', 'BE', 'NL', 'GB', 'PT'];
+}
+
+// Apply GenMix default zones to all zone filters (called once when genmix.json
+// finishes loading, to set the default filter state across the app).
+function applyDefaultGenMixZones() {
+  const zones = getGenMixDefaultZones();
+  const set = new Set(zones);
+  // Daily Prices table filter
+  window._pricesZoneFilter = new Set(set);
+  // Daily Compare + Historical shared user zones (via setUserZones if available,
+  // else direct mutation)
+  if (typeof setUserZones === 'function') {
+    setUserZones(zones);  // also dispatches 'zones-changed'
+  } else {
+    window._userZones = new Set(set);
+    window._compareZones = new Set(set);
+  }
+  // Re-render daily tables and chips if those renderers exist
+  if (typeof renderPricesTableBody === 'function') renderPricesTableBody();
+  if (typeof buildZoneFilterDropdown === 'function') buildZoneFilterDropdown();
+  if (typeof renderCompareChart === 'function')   renderCompareChart();
+  if (typeof buildCompareChips === 'function')    buildCompareChips();
+  // Update button labels
+  const n = zones.length;
+  const labelText = `${n} / ${n} zones`;
+  ['zone-filter-label', 'zone-filter-label-hdr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = labelText;
+  });
+}
+window.getGenMixDefaultZones = getGenMixDefaultZones;
+window.applyDefaultGenMixZones = applyDefaultGenMixZones;
+
 // Upsample hourly data to 96 slots (15-min resolution) by duplicating each value.
 // Some zones (e.g. CH) deliver DA prices at 1h resolution while most are 15-min.
 // Since the price is constant over the hour for those zones, duplicating x4 is
@@ -194,7 +241,12 @@ async function loadFromJSON(opts) {
 
   // Genmix
   const genmix = await fetchJSON('genmix.json');
-  if (genmix?.countries) { window._genmixData = genmix.countries; console.log('✅ Genmix from JSON'); }
+  if (genmix?.countries) {
+    window._genmixData = genmix.countries;
+    console.log('✅ Genmix from JSON');
+    // Re-apply default zone filters now that we know which zones have genmix data
+    if (typeof applyDefaultGenMixZones === 'function') applyDefaultGenMixZones();
+  }
 
   // Renewables
   const ren = await fetchJSON('renewables.json');
