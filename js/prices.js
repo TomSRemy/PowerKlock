@@ -904,7 +904,13 @@ function toggleZoneFilterPanel() {
   const isOpen = panel.style.display !== 'none';
   panel.style.display   = isOpen ? 'none' : 'block';
   if (overlay) overlay.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) { positionPanel('zone-filter-panel','zone-filter-btn'); buildZoneFilterDropdown(); }
+  if (!isOpen) {
+    // Prefer header button if visible, fallback to original
+    const hdrBtn = document.getElementById('zone-filter-btn-hdr');
+    const anchorId = (hdrBtn && hdrBtn.offsetParent !== null) ? 'zone-filter-btn-hdr' : 'zone-filter-btn';
+    positionPanel('zone-filter-panel', anchorId);
+    buildZoneFilterDropdown();
+  }
   const cp = document.getElementById('compare-filter-panel');
   if (cp) cp.style.display = 'none';
 }
@@ -931,13 +937,14 @@ function applyZoneFilter() {
   buildZoneFilterDropdown();
   // Re-render table with new filter
   renderPricesTableBody();
-  // Update button label
-  const lbl = document.getElementById('zone-filter-label');
-  if (lbl) {
-    const zones = (window._pricesSorted||[]).filter(z=>z.today!=null);
-    const n = window._pricesZoneFilter ? window._pricesZoneFilter.size : zones.length;
-    lbl.textContent = window._pricesZoneFilter ? `${n} / ${zones.length} zones` : 'All zones';
-  }
+  // Update button labels (both old position + new header position)
+  const zones = (window._pricesSorted||[]).filter(z=>z.today!=null);
+  const n = window._pricesZoneFilter ? window._pricesZoneFilter.size : zones.length;
+  const text = window._pricesZoneFilter ? `${n} / ${zones.length} zones` : 'All zones';
+  const lbl1 = document.getElementById('zone-filter-label');
+  if (lbl1) lbl1.textContent = text;
+  const lbl2 = document.getElementById('zone-filter-label-hdr');
+  if (lbl2) lbl2.textContent = text;
 }
 
 function selectAllCompareZones() {
@@ -1033,12 +1040,13 @@ function buildZoneFilterDropdown() {
 
   container.innerHTML = html;
 
-  // Update button label
-  const lbl = document.getElementById('zone-filter-label');
-  if (lbl) {
-    const nOn = active ? active.size : zones.length;
-    lbl.textContent = active ? `${nOn} / ${zones.length} zones` : 'All zones';
-  }
+  // Update button labels (both old position + new header position)
+  const nOn = active ? active.size : zones.length;
+  const text = active ? `${nOn} / ${zones.length} zones` : 'All zones';
+  const lbl1 = document.getElementById('zone-filter-label');
+  if (lbl1) lbl1.textContent = text;
+  const lbl2 = document.getElementById('zone-filter-label-hdr');
+  if (lbl2) lbl2.textContent = text;
 }
 
 function toggleCountryFilter(cc) {
