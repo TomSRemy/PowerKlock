@@ -1212,6 +1212,16 @@ function _setHoKpi(id, val, unit) {
   el.innerHTML = `${v}<span class="kpi-unit">${unit || '€/MWh'}</span>`;
 }
 
+// Format negative hours as "HH h MM min" — no decimals, no float noise
+// Examples: 193.10 → "193 h 06 min" · 0.5 → "0 h 30 min" · 0 → "0 h 00 min"
+function _fmtNegH(val) {
+  if (val == null || isNaN(val)) return '--';
+  const totalMin = Math.round(val * 60);
+  const h  = Math.floor(totalMin / 60);
+  const m  = totalMin % 60;
+  return `${h} h ${String(m).padStart(2, '0')} min`;
+}
+
 function _resetHoKpiStrip() {
   ['ho-kpi-fr-avg', 'ho-kpi-loaded-avg', 'ho-kpi-fr-peak', 'ho-kpi-fr-off', 'ho-kpi-fr-sigma'].forEach(id => {
     const el = document.getElementById(id);
@@ -1306,9 +1316,9 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
     setMetric('ho-kpi-fr-peak',  'ho-kpi-fr-peak-meta',  fr.peakAvg, ref?.peakAvg ?? null, st, null, '€/MWh');
     setMetric('ho-kpi-fr-off',   'ho-kpi-fr-off-meta',   fr.offAvg,  ref?.offAvg  ?? null, st, null, '€/MWh');
     setMetric('ho-kpi-fr-sigma', 'ho-kpi-fr-sigma-meta', fr.sigma,   ref?.sigma   ?? null, st, null, '€/MWh');
-    // Neg hours
+    // Neg hours — formatted as "HH h MM min" (no decimals/floats)
     const elN = document.getElementById('ho-kpi-fr-negh');
-    if (elN) elN.innerHTML = `${fr.negH.toFixed(0)}<span class="kpi-unit">h</span>`;
+    if (elN) elN.innerHTML = _fmtNegH(fr.negH);
     const elNm = document.getElementById('ho-kpi-fr-negh-meta');
     if (elNm) {
       const { html } = _formatYoYDelta(fr.negH, ref?.negH ?? null, st);
@@ -1446,7 +1456,7 @@ async function renderHistOverview() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${ratioStr}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.sigma)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${negColor}">${st.negH.toFixed(0)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${negColor}">${_fmtNegH(st.negH)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${renHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fuelHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
@@ -1671,7 +1681,7 @@ async function _renderHoDetailKpis(zone, series, st) {
       key: 'negh',
       cls: cls(st.negH, ref?.negH, ystat),
       label: 'Neg hours',
-      value: `${st.negH.toFixed(0)}<span class="kpi-unit">h</span>`,
+      value: _fmtNegH(st.negH),
       metaHtml: meta(st.negH, ref?.negH, ystat),
     },
     {
@@ -1791,7 +1801,7 @@ function _openHoFullscreen(zone) {
     ['σ daily',       `${fmt(st?.sigma)} €/MWh`],
     ['Min',           `${fmt(st?.min)} €/MWh`],
     ['Max',           `${fmt(st?.max)} €/MWh`],
-    ['Neg hours',     `${st?.negH?.toFixed(0) ?? '--'} h`],
+    ['Neg hours',     _fmtNegH(st?.negH)],
     ['% REN avg',     st?.renPctAvg != null ? `${Math.round(st.renPctAvg)}%` : '--'],
     ['Dom. fuel',     st?.domFuel || '--'],
   ];
