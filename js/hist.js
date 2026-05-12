@@ -1736,10 +1736,12 @@ function _openHoRow(zone, series, st) {
 
         <!-- Legend + actions (above chart, Daily-style) -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:16px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
+          <div style="display:flex;align-items:center;gap:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
             <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:5px"></span>${zone} · ${series.length}D</span>
             <span><span style="display:inline-block;width:12px;height:1px;border-top:1.5px dashed #94a3b8;vertical-align:middle;margin-right:5px"></span>7D rolling</span>
             <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:5px"></span>30D rolling</span>
+            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:5px"></span>Daily max</span>
+            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:5px"></span>Daily min</span>
           </div>
           <div style="display:flex;gap:6px">
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
@@ -2010,10 +2012,12 @@ function _openHoFullscreen(zone) {
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
         </div>
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0">
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
           <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
           <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
           <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
+          <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
+          <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
         </div>
         <!-- Alert neg prices (shown only if negH > 0) -->
         ${st.negH > 0 ? `
@@ -2183,6 +2187,21 @@ function _buildHoChart(zone, series, fullscreen) {
     if (daily[i] != null && (daily[maxIdx] == null || daily[i] > daily[maxIdx])) maxIdx = i;
   }
 
+  // ── Y range capping (same logic as _hszRenderLines) ──
+  // Use the daily AVG line as reference, not max/min outliers.
+  // Range = [avg_min - margin, avg_max + margin], margin = 30% of avg range.
+  const validDaily = daily.filter(v => v != null);
+  let yMinCap = null, yMaxCap = null;
+  if (validDaily.length) {
+    const avgMin = Math.min(...validDaily);
+    const avgMax = Math.max(...validDaily);
+    const avgRange = Math.max(avgMax - avgMin, 20);
+    const margin = avgRange * 0.3;
+    yMaxCap = Math.ceil((avgMax + margin) / 10) * 10;
+    yMinCap = Math.floor((avgMin - margin) / 10) * 10;
+    if (avgMin < 0 && yMinCap > avgMin) yMinCap = Math.floor(avgMin * 1.1 / 10) * 10;
+  }
+
   const targetVar = fullscreen ? '_HO_FS_CHART' : '_HO_CHART';
   if (window[targetVar]) {
     try { window[targetVar].destroy(); } catch (_) {}
@@ -2292,7 +2311,8 @@ function _buildHoChart(zone, series, fullscreen) {
             },
           },
         },
-        // Drag-zoom only in fullscreen
+        // Zoom: in non-fullscreen mode, allow Y-axis zoom with the wheel
+        // and pan with drag. In fullscreen, additionally support X drag-zoom.
         zoom: fullscreen ? {
           zoom: {
             drag: {
@@ -2301,12 +2321,13 @@ function _buildHoChart(zone, series, fullscreen) {
               borderColor: 'rgba(20, 211, 169, 0.8)',
               borderWidth: 1,
             },
-            wheel: { enabled: false },
+            wheel: { enabled: true },
             pinch: { enabled: true },
-            mode: 'x',
+            mode: 'xy',
           },
-          pan: { enabled: false },
-        } : undefined,
+          pan: { enabled: true, mode: 'xy' },
+          limits: { y: { min: 'original', max: 'original', minRange: 5 } },
+        } : _zoomConfig({ mode: 'y' }),
       },
       layout: { padding: { top: 16, bottom: 8 } },
       scales: {
@@ -2323,6 +2344,7 @@ function _buildHoChart(zone, series, fullscreen) {
         },
         y: {
           grace: '10%',
+          min: yMinCap, max: yMaxCap,
           ticks: {
             color: 'rgba(184,201,217,.5)',
             font: { size: fontSize, family: "'JetBrains Mono', monospace" },
@@ -2486,10 +2508,9 @@ function _hszRenderLines(filtered, zone) {
   const color = zoneColor(zone);
 
   // Convert zone color to rgba for ribbon fill (~12% opacity)
-  // Try to parse hex like #14D3A9 → rgba(20,211,169,0.12)
   let ribbonFill = 'rgba(20,211,169,0.12)';
-  let maxBorder  = 'rgba(251,191,36,0.45)';   // amber for max
-  let minBorder  = 'rgba(237,105,101,0.40)';  // red for min
+  let maxBorder  = 'rgba(251,191,36,0.55)';   // amber for max
+  let minBorder  = 'rgba(237,105,101,0.50)';  // red for min
   if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
@@ -2497,8 +2518,26 @@ function _hszRenderLines(filtered, zone) {
     ribbonFill = `rgba(${r},${g},${b},0.12)`;
   }
 
-  // Min/max annotations (point markers + label at chart extremes)
+  // ── Y range capping ──
+  // Strategy: use the AVG line (daily avg) as the reference, not the daily
+  // max/min outliers which can swing -500 to +500 €/MWh.
+  // Range = [avg_min - margin, avg_max + margin], where margin = 30% of the
+  // avg range. This shows the main curve clearly + the ribbon edges, and
+  // outliers can be explored via the zoom plugin (scroll wheel / drag).
   const validAvgs = avgs.filter(v => v != null);
+  let yMin = null, yMax = null;
+  if (validAvgs.length) {
+    const avgMin = Math.min(...validAvgs);
+    const avgMax = Math.max(...validAvgs);
+    const avgRange = Math.max(avgMax - avgMin, 20);  // floor of 20 to avoid tiny ranges
+    const margin = avgRange * 0.3;
+    yMax = Math.ceil((avgMax + margin) / 10) * 10;
+    yMin = Math.floor((avgMin - margin) / 10) * 10;
+    // Always include 0 if we cross negative territory naturally
+    if (avgMin < 0 && yMin > avgMin) yMin = Math.floor(avgMin * 1.1 / 10) * 10;
+  }
+
+  // Min/max avg annotations (markers on the avg line — not on max/min daily)
   const annotations = {};
   if (validAvgs.length) {
     const minVal = Math.min(...validAvgs);
@@ -2521,9 +2560,6 @@ function _hszRenderLines(filtered, zone) {
       labels,
       datasets: [
         // ── Ribbon: max-min daily envelope ──
-        // Trick: 2 paired datasets, the first fills DOWN to the next (Min).
-        // Both have hidden borders (transparent main line) but we draw thin
-        // explicit Max/Min lines on top for clarity.
         {
           label: 'Daily max',
           data: maxes,
@@ -2534,7 +2570,7 @@ function _hszRenderLines(filtered, zone) {
           tension: 0,
           spanGaps: true,
           fill: '+1',          // fill area down to the next dataset (Min)
-          order: 5,            // render below the main lines
+          order: 5,
         },
         {
           label: 'Daily min',
@@ -2549,9 +2585,9 @@ function _hszRenderLines(filtered, zone) {
           order: 5,
         },
         // ── Main 3 lines (above the ribbon) ──
-        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
-        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
-        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
+        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
+        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.8, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
       ],
     },
     options: {
@@ -2561,16 +2597,21 @@ function _hszRenderLines(filtered, zone) {
           display: true, position: 'top', align: 'end',
           labels: {
             color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
-            // Hide the Max/Min datasets from the legend (they're decorative)
-            filter: (item) => item.text !== 'Daily max' && item.text !== 'Daily min',
+            // Show ALL items including Daily max / Daily min
           },
         },
         tooltip: {
           mode: 'index', intersect: false,
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` }
         },
-        annotation: { annotations }
-      }
+        annotation: { annotations },
+        subtitle: yMin != null && yMax != null ? { display: true, text: `Y axis: ${yMin} → ${yMax} €/MWh (daily avg ± margin) · Outliers may be clipped · Scroll to zoom · drag to pan`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
+        zoom: _zoomConfig({ mode: 'y' }),
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: yMin, max: yMax, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+      },
     }
   });
 }
