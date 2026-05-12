@@ -164,6 +164,41 @@ def _avg_max_from_series(arr):
     return avg, mx
 
 
+def _q_of_month(month):
+    """Return the quarter (1..4) for a given month (1..12)."""
+    return (month - 1) // 3 + 1
+
+
+def _hourly_to_24h(hourly):
+    """Reduce a 96-slot quarter-hourly array (or 24-slot hourly) into a 24-bucket
+    hourly array. Returns list of 24 floats or None.
+    """
+    if not hourly:
+        return None
+    n = len(hourly)
+    if n == 24:
+        return [v if v is not None else None for v in hourly]
+    if n == 96:
+        out = []
+        for h in range(24):
+            slots = hourly[h*4:(h+1)*4]
+            valid = [v for v in slots if v is not None]
+            out.append(sum(valid) / len(valid) if valid else None)
+        return out
+    # Generic resampler
+    if n > 0:
+        step = n / 24
+        out = []
+        for h in range(24):
+            i0 = int(h * step)
+            i1 = max(i0 + 1, int((h + 1) * step))
+            slice_ = hourly[i0:i1]
+            valid = [v for v in slice_ if v is not None]
+            out.append(sum(valid) / len(valid) if valid else None)
+        return out
+    return None
+
+
 def build_entry_from_daily(date_str, zone_data):
     entry = {
         'd':   date_str,
@@ -429,8 +464,13 @@ def recalc_summary_from_daily():
         sys.exit(1)
 
     print(f"Recalc: scanning {len(files)} daily files...")
-    summary = {'zones': {}}
-    stats = {'files': 0, 'entries': 0, 'peak': 0, 'ren': 0}
+    summary = {'zones': {}, 'intraday': {}}
+    stats = {'files': 0, 'entries': 0, 'peak': 0, 'ren': 0, 'intraday': 0}
+
+    # Accumulators for intraday profiles by zone × year × Q
+    # Structure: { code: { year: { Q: [ [24h_profile_day1], [24h_profile_day2], ...] } } }
+    # We accumulate raw 24h profiles per day, then average them at the end.
+    intraday_accum = {}
 
     for fp in files:
         date_str = os.path.basename(fp).replace('.json', '')
@@ -440,6 +480,14 @@ def recalc_summary_from_daily():
         except Exception as e:
             print(f"  WARN skipping {fp}: {e}")
             continue
+        # Parse date for intraday accumulator keys
+        try:
+            year_int = int(date_str[:4])
+            month_int = int(date_str[5:7])
+            q_int = _q_of_month(month_int)
+        except Exception:
+            year_int = None
+            q_int = None
         for code, zdata in daily.get('zones', {}).items():
             if not zdata or zdata.get('avg') is None:
                 continue
@@ -448,10 +496,40 @@ def recalc_summary_from_daily():
             stats['entries'] += 1
             if 'peakAvg' in entry: stats['peak'] += 1
             if 'renPct'  in entry: stats['ren']  += 1
+
+            # Accumulate 24h intraday profile (for Hourly Quarter/YoY views)
+            if year_int is not None and q_int is not None:
+                hourly = zdata.get('hourly')
+                profile = _hourly_to_24h(hourly)
+                if profile:
+                    intraday_accum.setdefault(code, {}).setdefault(year_int, {}).setdefault(q_int, []).append(profile)
+                    stats['intraday'] += 1
         stats['files'] += 1
 
     for code in summary['zones']:
         summary['zones'][code].sort(key=lambda x: x['d'])
+
+    # ── Compute aggregated intraday profiles per zone × year × Q ──
+    # For each (code, year, Q): average all 24h profiles of that period
+    for code, years in intraday_accum.items():
+        zone_intraday = {}
+        for year, quarters in years.items():
+            # Q1..Q4 individual profiles
+            for q, profiles in quarters.items():
+                avg_profile = []
+                for h in range(24):
+                    valid = [p[h] for p in profiles if p[h] is not None]
+                    avg_profile.append(round(sum(valid) / len(valid), 2) if valid else None)
+                zone_intraday.setdefault(str(year), {})[f'Q{q}'] = avg_profile
+            # 'all' = average over the entire year
+            all_profiles = [p for q_profiles in quarters.values() for p in q_profiles]
+            if all_profiles:
+                avg_all = []
+                for h in range(24):
+                    valid = [p[h] for p in all_profiles if p[h] is not None]
+                    avg_all.append(round(sum(valid) / len(valid), 2) if valid else None)
+                zone_intraday.setdefault(str(year), {})['all'] = avg_all
+        summary['intraday'][code] = zone_intraday
 
     os.makedirs(os.path.dirname(SUMMARY_PATH), exist_ok=True)
     with open(SUMMARY_PATH, 'w') as f:
@@ -462,7 +540,9 @@ def recalc_summary_from_daily():
     print(f"  Entries written: {stats['entries']}")
     print(f"  Peak/off filled: {stats['peak']}")
     print(f"  Ren%/dom filled: {stats['ren']}")
+    print(f"  Intraday samples:{stats['intraday']}")
     print(f"  Zones tracked:   {len(summary['zones'])}")
+    print(f"  Intraday zones:  {len(summary['intraday'])}")
     print(f"  Output:          {SUMMARY_PATH}")
 
 
