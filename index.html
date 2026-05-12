@@ -2130,14 +2130,14 @@
 <!-- ════════════════════════════════════════════════════════
      BLOCK 1 · MULTI-ZONE OVERVIEW TABLE (style Daily DA)
      ════════════════════════════════════════════════════════ -->
-<div style="margin-bottom:24px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Historical overview · selected zones</span>
-      <span id="ho-period-label" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+<div class="hist-section" id="hs-ho-main">
+  <div class="hist-section-header open">
+    <div class="hist-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Power Day-Ahead Prices · Historical
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <!-- Global zone filter button (mirrors Daily Compare) -->
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
+      <!-- Global zone filter button -->
       <button onclick="toggleGlobalZonePanel()" id="ho-zone-btn"
         style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
@@ -2168,27 +2168,71 @@
           style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:2px 4px;cursor:pointer;color-scheme:dark">
       </div>
     </div>
+    <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
-  <!-- Overview table -->
-  <div class="table-wrap" style="margin-top:0">
-    <table id="ho-table" style="font-size:11px;table-layout:fixed">
-      <thead>
-        <tr>
-          <th style="width:14%">Zone</th>
-          <th style="width:9%;text-align:right" title="Average price over selected window">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:9%;text-align:right" title="Average peak price (08-20h CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:9%;text-align:right" title="Average off-peak price (00-08h + 20-24h CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:8%;text-align:right" title="Peak / off-peak ratio (1.30x = typical day/night signal)">P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">ratio</span></th>
-          <th style="width:8%;text-align:right" title="Standard deviation of daily averages">σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:9%;text-align:right" title="Minimum / Maximum daily average">Min/Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:8%;text-align:right" title="Hours below 0 €/MWh (renewable stress)">Neg h<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
-          <th style="width:8%;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">avg</span></th>
-          <th style="width:10%;text-align:right" title="Dominant fuel in generation mix">Dom. fuel<br><span style="color:var(--tx3);font-weight:400;font-size:9px"></span></th>
-          <th style="width:8%;text-align:right" title="Number of days with data">Days<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
-        </tr>
-      </thead>
-      <tbody id="ho-table-tbody"></tbody>
-    </table>
+  <div class="hist-section-body open" id="hs-body-ho-main">
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip" id="ho-kpi-strip">
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR avg</div>
+        <div class="kpi-value" id="ho-kpi-fr-avg">--<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-avg-meta">--</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">Loaded zones avg</div>
+        <div class="kpi-value" id="ho-kpi-loaded-avg">--<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-meta" id="ho-kpi-loaded-meta">--</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR peak avg</div>
+        <div class="kpi-value" id="ho-kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-peak-meta">08-20h</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR off-peak avg</div>
+        <div class="kpi-value" id="ho-kpi-fr-off">--<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-off-meta">00-08h / 20-24h</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR σ daily</div>
+        <div class="kpi-value" id="ho-kpi-fr-sigma">--<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-sigma-meta">volatility</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR neg hours</div>
+        <div class="kpi-value" id="ho-kpi-fr-negh">--<span class="kpi-unit">h</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-negh-meta">below 0 €/MWh</div>
+      </div>
+    </div>
+
+    <!-- Sub-header (period + zone count) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;border-bottom:1px solid var(--border);font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">
+      <span>Historical overview · <span id="ho-period-label" style="text-transform:none;font-family:'JetBrains Mono',monospace;color:var(--text2);letter-spacing:0">--</span></span>
+      <span id="ho-zones-label" style="font-family:'JetBrains Mono',monospace;color:var(--text2);letter-spacing:0;text-transform:none">--</span>
+    </div>
+
+    <!-- Overview table -->
+    <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px;border:none;background:transparent">
+      <table id="ho-table" style="font-size:11px;table-layout:fixed">
+        <thead>
+          <tr>
+            <th style="width:11%;text-align:left">Zone</th>
+            <th style="width:10%;text-align:right" title="Average price over selected window">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:10%;text-align:right" title="Average peak price (08-20h CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:10%;text-align:right" title="Average off-peak price (00-08h + 20-24h CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:7%;text-align:right" title="Peak / off-peak ratio (1.30x = typical day/night signal)">P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">ratio</span></th>
+            <th style="width:7%;text-align:right" title="Standard deviation of daily averages">σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:11%;text-align:right" title="Minimum / Maximum daily average">Min/Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:7%;text-align:right" title="Hours below 0 €/MWh (renewable stress)">Neg h<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
+            <th style="width:7%;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">avg</span></th>
+            <th style="width:13%;text-align:right" title="Dominant fuel in generation mix">Dom. fuel</th>
+            <th style="width:7%;text-align:right" title="Number of days with data">Days<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
+          </tr>
+        </thead>
+        <tbody id="ho-table-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
