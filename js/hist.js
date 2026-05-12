@@ -1521,11 +1521,19 @@ function _openHoRow(zone, series, st) {
     ? `${HIST.customRange.from} → ${HIST.customRange.to}`
     : periodLabel(series);
 
+  // Cache for later (fullscreen + dynamic KPI strip refresh)
+  window._HO_LAST_SERIES = series;
+  window._HO_LAST_ZONE = zone;
+  window._HO_LAST_STATS = st;
+
   const detail = document.createElement('tr');
   detail.id = 'ho-detail-row';
+  // Outer wrap: same style as Daily (no extra inner background)
   detail.innerHTML = `
-    <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
-      <div style="padding:14px 16px">
+    <td colspan="11" style="padding:0;background:var(--bg2);border-bottom:2px solid var(--bd2)">
+      <div id="ho-detail-inner" style="padding:14px 16px">
+
+        <!-- Header: zone title + actions -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
@@ -1533,67 +1541,36 @@ function _openHoRow(zone, series, st) {
             <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodTxt}</span>
           </div>
           <div style="display:flex;gap:6px">
-            <button onclick="_openHoFullscreen('${zone}')" title="Open chart fullscreen"
-              style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
-            <button onclick="_closeHoRow()"
-              style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+            <button onclick="event.stopPropagation();_closeHoRow()"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
           </div>
         </div>
 
-        <!-- KPI strip -->
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:14px">
-          <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Avg</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.avg)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">${st.days} d</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid #ED6965;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Peak avg</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.peakAvg)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">08:00-20:00</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid #14D3A9;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Off-peak</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.offAvg)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">00:00-08:00 / 20:00-24:00</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px" title="Standard deviation of daily averages — measures price variability over the period">σ daily</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.sigma)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">volatility</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">P / OP ratio</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${ratioStr}</div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">1.30x baseline</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid ${st.negH > 50 ? '#ED6965' : '#4A6280'};border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Neg h</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${st.negH.toFixed(0)}<span style="font-size:10px;color:#888780;margin-left:3px">h</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">below 0 €/MWh</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid ${fuelColor};border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Mix</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${renHtml}</div>
-            <div style="font-size:10px;color:${fuelColor};font-family:'JetBrains Mono',monospace;margin-top:3px">${fuelLabel}</div>
-          </div>
+        <!-- KPI strip (7 cards) -->
+        <div id="ho-detail-kpi-strip" class="kpi-strip" style="grid-template-columns:repeat(7,1fr);margin-bottom:14px">
+          <!-- filled by _renderHoDetailKpis -->
         </div>
 
-        <!-- Chart -->
-        <div style="background:#0a0d12;border-radius:6px;padding:12px;height:340px;position:relative">
-          <canvas id="ho-detail-chart"></canvas>
+        <!-- Chart container — no background, matches Daily style -->
+        <div style="position:relative;height:340px;margin-bottom:4px">
+          <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
-          <span>— Daily avg &nbsp;&nbsp; — 7D rolling &nbsp;&nbsp; — 30D rolling</span>
-          <span>${series.length} data points</span>
+
+        <!-- Legend, right-aligned, Daily style -->
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">
+          <span><span style="display:inline-block;width:10px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
+          <span><span style="display:inline-block;width:10px;height:2px;background:#94a3b8;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
+          <span><span style="display:inline-block;width:10px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
+          <span style="margin-left:8px;opacity:.6">${series.length} data points</span>
         </div>
       </div>
     </td>`;
   row.after(detail);
 
-  // Cache series for fullscreen access
-  window._HO_LAST_SERIES = series;
-  window._HO_LAST_ZONE = zone;
+  // Render the KPI strip with dynamic border-left colors (vs Y-1)
+  _renderHoDetailKpis(zone, series, st);
 
   // Build chart
   _buildHoChart(zone, series);
@@ -1601,44 +1578,287 @@ function _openHoRow(zone, series, st) {
 window._closeHoRow = _closeHoRow;
 window._toggleHoRow = _toggleHoRow;
 
-// ── Fullscreen for Historical chart ──
+// ── Render the 7 KPI cards in the detail row with dynamic border-left colors ──
+// Each card uses the standard .kpi-card class + .kpi-up / .kpi-down / .kpi-flat
+// for the left accent bar, based on YoY comparison.
+async function _renderHoDetailKpis(zone, series, st) {
+  const container = document.getElementById('ho-detail-kpi-strip');
+  if (!container) return;
+
+  // 2 decimals
+  const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
+  const ratio = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
+    ? (st.peakAvg / st.offAvg) : null;
+  const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
+
+  // %REN + fuel meta
+  let renHtml = '<span style="color:var(--tx3)">--</span>';
+  if (st.renPctAvg != null) {
+    const rp = Math.round(st.renPctAvg);
+    const c = rp >= 60 ? '#14D3A9' : rp >= 40 ? '#FBBF24' : '#ED6965';
+    renHtml = `<span style="color:${c};font-weight:600">${rp}%</span>`;
+  }
+  const fm = st.domFuel ? _HO_FUEL_META[st.domFuel] : null;
+  const fuelLabel = fm ? `${fm.emoji} ${fm.label}` : '--';
+  const fuelColor = fm ? fm.color : 'var(--tx3)';
+
+  // YoY for this zone — drives the color of the border-left
+  const useCustom = !!(HIST.customRange && HIST.customRange.from && HIST.customRange.to);
+  const yoy = await _computeYoYStats(zone, series, useCustom);
+  const ref = yoy.ref;
+  const ystat = yoy.status;
+
+  // Decide kpi-up / kpi-down / kpi-flat based on YoY delta for each metric
+  // Convention: rouge si plus haut (= plus cher/volatile = mauvais), vert si plus bas
+  const cls = (cur, prev, status) => {
+    if (status === 'no-ref' || prev == null || cur == null) return 'kpi-flat';
+    if (status === 'partial') return 'kpi-flat'; // ne pas trancher si data partielle
+    if (Math.abs(cur - prev) < 0.01 * Math.max(1, Math.abs(prev))) return 'kpi-flat';
+    return cur > prev ? 'kpi-up' : 'kpi-down';
+  };
+
+  // Mini delta line under value (concise, with arrow)
+  const meta = (cur, prev, status) => {
+    if (status === 'no-ref' || prev == null || cur == null || prev === 0) {
+      return '<span style="color:var(--tx3)">— no Y-1 ref</span>';
+    }
+    const pct = ((cur - prev) / Math.abs(prev)) * 100;
+    const arrow = pct >= 0 ? '▲' : '▼';
+    const sign  = pct >= 0 ? '+' : '';
+    const colr = status === 'partial' ? '#FBBF24' : (pct >= 0 ? '#ED6965' : '#14D3A9');
+    const badge = status === 'partial' ? ' <span style="color:var(--tx3);font-size:9px">(~partial)</span>' : '';
+    return `<span style="color:${colr}">${arrow} ${sign}${pct.toFixed(1)}% vs Y-1${badge}</span>`;
+  };
+
+  const cards = [
+    {
+      key: 'avg',
+      cls: cls(st.avg, ref?.avg, ystat),
+      label: 'Avg',
+      value: `${fmt(st.avg)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.avg, ref?.avg, ystat),
+    },
+    {
+      key: 'peak',
+      cls: cls(st.peakAvg, ref?.peakAvg, ystat),
+      label: 'Peak avg',
+      value: `${fmt(st.peakAvg)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.peakAvg, ref?.peakAvg, ystat),
+    },
+    {
+      key: 'off',
+      cls: cls(st.offAvg, ref?.offAvg, ystat),
+      label: 'Off-peak',
+      value: `${fmt(st.offAvg)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.offAvg, ref?.offAvg, ystat),
+    },
+    {
+      key: 'pop',
+      cls: 'kpi-flat', // ratio: pas de YoY logique évident
+      label: 'P / OP ratio',
+      value: ratioStr,
+      metaHtml: '<span style="color:var(--tx3)">1.30x baseline</span>',
+    },
+    {
+      key: 'sigma',
+      cls: cls(st.sigma, ref?.sigma, ystat),
+      label: 'σ daily',
+      value: `${fmt(st.sigma)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.sigma, ref?.sigma, ystat),
+      title: 'Standard deviation of daily averages — measures price variability over the period',
+    },
+    {
+      key: 'negh',
+      cls: cls(st.negH, ref?.negH, ystat),
+      label: 'Neg hours',
+      value: `${st.negH.toFixed(0)}<span class="kpi-unit">h</span>`,
+      metaHtml: meta(st.negH, ref?.negH, ystat),
+    },
+    {
+      key: 'mix',
+      cls: 'kpi-flat',
+      label: 'Mix',
+      value: renHtml,
+      metaHtml: `<span style="color:${fuelColor}">${fuelLabel}</span>`,
+    },
+  ];
+
+  container.innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}"${c.title ? ` title="${c.title}"` : ''}>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-meta">${c.metaHtml}</div>
+    </div>
+  `).join('');
+}
+
+// ── Fullscreen for Historical chart (aligned with Daily openRowFullscreen) ──
 function _openHoFullscreen(zone) {
   const series = window._HO_LAST_SERIES;
+  const st     = window._HO_LAST_STATS;
   if (!series || !series.length || !zone) return;
+
   const country = _HO_NAMES[zone] || zone;
-  const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
+  const flag    = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
+  const color   = zoneColor(zone);
+  const fmt     = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
 
-  // Build overlay if not exists
-  let overlay = document.getElementById('ho-fs-overlay');
-  if (overlay) overlay.remove();
+  const periodTxt = (HIST.customRange && HIST.customRange.from)
+    ? `${HIST.customRange.from} → ${HIST.customRange.to}`
+    : periodLabel(series);
 
-  overlay = document.createElement('div');
-  overlay.id = 'ho-fs-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0d12;z-index:9999;display:flex;flex-direction:column;padding:24px;overflow:auto';
-  overlay.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+  // Remove existing overlay
+  let fs = document.getElementById('ho-fs-overlay');
+  if (fs) fs.remove();
+
+  fs = document.createElement('div');
+  fs.id = 'ho-fs-overlay';
+  fs.style.cssText = `
+    position: fixed; inset: 0; background: var(--bg);
+    z-index: 9999; display: flex; flex-direction: column;
+    padding: 16px 24px 24px; overflow: hidden;
+  `;
+
+  fs.innerHTML = `
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
       <div>
-        <div style="font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</div>
-        <div style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:2px">${series[0].d} → ${series[series.length-1].d} · ${series.length} data points · Click-drag to zoom · Double-click to reset</div>
+        <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
+          ${flag} ${zone} — ${country}
+        </div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:2px">
+          ${periodTxt}
+          <span style="color:var(--tx3);margin-left:12px">· Click-drag to zoom · Double-click to reset</span>
+        </div>
       </div>
-      <button onclick="_closeHoFullscreen()"
-        style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:8px 16px;font-size:12px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+      <div style="display:flex;gap:8px">
+        <button id="ho-fs-resize-btn" title="Reset side pane width"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
+        <button id="ho-fs-close-btn"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
+      </div>
     </div>
-    <div style="flex:1;min-height:400px;background:#0f1419;border-radius:8px;padding:20px;position:relative">
-      <canvas id="ho-fs-chart"></canvas>
+
+    <!-- Split: chart left, info right, drag handle in between -->
+    <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
+      <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
+        <div id="ho-fs-kpis" style="margin-bottom:12px;flex-shrink:0"></div>
+        <div style="flex:1;position:relative;min-height:0">
+          <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
+        </div>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0">
+          <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
+          <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
+          <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
+        </div>
+      </div>
+
+      <div id="ho-fs-divider" title="Drag to resize · double-click to reset"
+        style="width:8px;cursor:col-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent">
+        <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
+      </div>
+
+      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:240px;max-width:50%;width:340px">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Period stats</div>
+        <div id="ho-fs-stats-list"></div>
+      </div>
     </div>
-    <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
-      <span style="color:${zoneColor(zone)}">— Daily avg</span>
-      <span style="color:#94a3b8">- - 7D rolling</span>
-      <span style="color:#14D3A9">— 30D rolling</span>
-    </div>`;
-  document.body.appendChild(overlay);
+  `;
+
+  document.body.appendChild(fs);
   document.body.style.overflow = 'hidden';
 
-  // Build fullscreen chart (larger fonts + drag zoom)
+  // Inject the KPI strip (reuse the inline one if present, else render fresh)
+  const inlineStrip = document.getElementById('ho-detail-kpi-strip');
+  const kpiTarget = document.getElementById('ho-fs-kpis');
+  if (inlineStrip && kpiTarget) {
+    kpiTarget.innerHTML = inlineStrip.outerHTML;
+    // Strip the duplicate id from the clone
+    const cloned = kpiTarget.querySelector('#ho-detail-kpi-strip');
+    if (cloned) cloned.id = 'ho-fs-detail-kpi-strip';
+  }
+
+  // Right-pane stats table (simple list, vs-Y-1 already in KPI strip)
+  const ratio = (st?.peakAvg != null && st?.offAvg != null && st.offAvg !== 0)
+    ? (st.peakAvg / st.offAvg) : null;
+  const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
+  const rows = [
+    ['Days',          `${st?.days ?? '--'}`],
+    ['Avg',           `${fmt(st?.avg)} €/MWh`],
+    ['Peak avg',      `${fmt(st?.peakAvg)} €/MWh`],
+    ['Off-peak avg',  `${fmt(st?.offAvg)} €/MWh`],
+    ['P / OP ratio',  ratioStr],
+    ['σ daily',       `${fmt(st?.sigma)} €/MWh`],
+    ['Min',           `${fmt(st?.min)} €/MWh`],
+    ['Max',           `${fmt(st?.max)} €/MWh`],
+    ['Neg hours',     `${st?.negH?.toFixed(0) ?? '--'} h`],
+    ['% REN avg',     st?.renPctAvg != null ? `${Math.round(st.renPctAvg)}%` : '--'],
+    ['Dom. fuel',     st?.domFuel || '--'],
+  ];
+  const statsHtml = rows.map(([k, v]) => `
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-family:'JetBrains Mono',monospace;font-size:11px">
+      <span style="color:var(--tx3)">${k}</span>
+      <span style="color:var(--tx)">${v}</span>
+    </div>
+  `).join('');
+  const statsTarget = document.getElementById('ho-fs-stats-list');
+  if (statsTarget) statsTarget.innerHTML = statsHtml;
+
+  // Build the fullscreen chart
   setTimeout(() => _buildHoChart(zone, series, true), 50);
+
+  // Drag-resize handle
+  const divider  = document.getElementById('ho-fs-divider');
+  const infoPane = document.getElementById('ho-fs-info-pane');
+  const split    = document.getElementById('ho-fs-split');
+  if (divider && infoPane && split) {
+    let dragging = false;
+    divider.addEventListener('mousedown', (e) => {
+      dragging = true;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const rect = split.getBoundingClientRect();
+      const newWidth = Math.max(240, Math.min(rect.right - e.clientX, rect.width * 0.7));
+      infoPane.style.width = newWidth + 'px';
+      // Resize chart
+      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
+    });
+    document.addEventListener('mouseup', () => {
+      if (dragging) {
+        dragging = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+      }
+    });
+    divider.addEventListener('dblclick', () => {
+      infoPane.style.width = '340px';
+      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
+    });
+  }
+
+  // Reset width button
+  const resetBtn = document.getElementById('ho-fs-resize-btn');
+  if (resetBtn && infoPane) {
+    resetBtn.addEventListener('click', () => {
+      infoPane.style.width = '340px';
+      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
+    });
+  }
+
+  // Close button + Esc key
+  const closeBtn = document.getElementById('ho-fs-close-btn');
+  if (closeBtn) closeBtn.addEventListener('click', _closeHoFullscreen);
+  document.addEventListener('keydown', _hoFsEscHandler);
 }
 window._openHoFullscreen = _openHoFullscreen;
+
+function _hoFsEscHandler(e) {
+  if (e.key === 'Escape') _closeHoFullscreen();
+}
 
 function _closeHoFullscreen() {
   const overlay = document.getElementById('ho-fs-overlay');
@@ -1648,6 +1868,7 @@ function _closeHoFullscreen() {
     try { window._HO_FS_CHART.destroy(); } catch(_) {}
     window._HO_FS_CHART = null;
   }
+  document.removeEventListener('keydown', _hoFsEscHandler);
 }
 window._closeHoFullscreen = _closeHoFullscreen;
 
