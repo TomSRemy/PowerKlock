@@ -150,6 +150,20 @@ def ren_pct_and_dom_fuel(gm):
     return ren_pct, dom
 
 
+def _avg_max_from_series(arr):
+    """Return (avg, max) of a hourly/quarter-hourly array; None if empty/all zero."""
+    if not arr:
+        return None, None
+    clean = [v for v in arr if v is not None]
+    if not clean:
+        return None, None
+    avg = round(sum(clean) / len(clean))
+    mx  = max(clean)
+    if avg == 0 and mx == 0:
+        return None, None
+    return avg, mx
+
+
 def build_entry_from_daily(date_str, zone_data):
     entry = {
         'd':   date_str,
@@ -166,6 +180,12 @@ def build_entry_from_daily(date_str, zone_data):
         rp, dom = ren_pct_and_dom_fuel(gm)
         if rp is not None:  entry['renPct']  = rp
         if dom is not None: entry['domFuel'] = dom
+    # NEW: per-fuel daily avg/max (MW) — from hourly arrays in the daily snapshot
+    # These power Block 4 of the GenMix tab (Historical wind/solar trends)
+    for fuel in ('wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass'):
+        avg, mx = _avg_max_from_series(zone_data.get(fuel))
+        if avg is not None: entry[f'{fuel}Avg'] = avg
+        if mx  is not None: entry[f'{fuel}Max'] = mx
     return entry
 
 
