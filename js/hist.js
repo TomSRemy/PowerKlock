@@ -1189,13 +1189,14 @@ const _HO_NAMES = {
   SK:'Slovakia',
 };
 
-const _HO_FUEL_COLOR = {
-  Nuclear: '#9b7cff',
-  Gas:     '#ED6965',
-  Wind:    '#14D3A9',
-  Solar:   '#F0B400',
-  Hydro:   '#4FB3FF',
-  Biomass: '#7ABE5A',
+// Fuel config aligned with Daily DA (js/prices.js)
+const _HO_FUEL_META = {
+  Nuclear: { emoji: '⚛', label: 'Nuclear', color: '#7B4B9C' },
+  Wind:    { emoji: '🌬', label: 'Wind',    color: '#14D3A9' },
+  Solar:   { emoji: '☀', label: 'Solar',   color: '#FBBF24' },
+  Hydro:   { emoji: '💧', label: 'Hydro',   color: '#3FA6B4' },
+  Biomass: { emoji: '🌿', label: 'Biomass', color: '#94D2BD' },
+  Gas:     { emoji: '🔥', label: 'Fossil',  color: '#ED6965' },
 };
 
 // Track which row is open and chart instance for that detail row
@@ -1206,33 +1207,112 @@ window._HO_CHART = null;
 function _setHoKpi(id, val, unit) {
   const el = document.getElementById(id);
   if (!el) return;
-  const v = (val == null || isNaN(val)) ? '--' : (Math.abs(val) >= 100 ? val.toFixed(0) : val.toFixed(1));
+  const v = (val == null || isNaN(val)) ? '--' : val.toFixed(2);
   el.innerHTML = `${v}<span class="kpi-unit">${unit || '€/MWh'}</span>`;
-}
-function _setHoMeta(id, txt) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = txt;
 }
 
 function _resetHoKpiStrip() {
-  ['ho-kpi-fr-avg', 'ho-kpi-loaded-avg', 'ho-kpi-fr-peak', 'ho-kpi-fr-off', 'ho-kpi-fr-sigma', 'ho-kpi-fr-negh'].forEach(id => {
+  ['ho-kpi-fr-avg', 'ho-kpi-loaded-avg', 'ho-kpi-fr-peak', 'ho-kpi-fr-off', 'ho-kpi-fr-sigma'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '--<span class="kpi-unit">€/MWh</span>';
   });
+  const elN = document.getElementById('ho-kpi-fr-negh');
+  if (elN) elN.innerHTML = '--<span class="kpi-unit">h</span>';
+  ['ho-kpi-fr-avg-meta', 'ho-kpi-loaded-meta', 'ho-kpi-fr-peak-meta', 'ho-kpi-fr-off-meta', 'ho-kpi-fr-sigma-meta', 'ho-kpi-fr-negh-meta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '--';
+    if (el) el.style.color = 'var(--tx3)';
+  });
 }
 
-function _updateHoKpiStrip(stats, selected) {
+// Compute YoY comparison stats by shifting current range exactly 1 year earlier
+async function _computeYoYStats(zone, currentSeries, useCustom) {
+  const s = await fetchSummary();
+  if (!s?.zones?.[zone] || !currentSeries?.length) return { ref: null, status: 'no-ref' };
+  const allData = s.zones[zone];
+  if (!allData.length) return { ref: null, status: 'no-ref' };
+  // Current window bounds
+  const curFrom = currentSeries[0].d;
+  const curTo   = currentSeries[currentSeries.length - 1].d;
+  // Shift by 1 year
+  const shiftYear = (dateStr) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return `${y - 1}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  };
+  const prevFrom = shiftYear(curFrom);
+  const prevTo   = shiftYear(curTo);
+  // Earliest date in data
+  const earliestData = allData[0].d;
+  // If prevFrom is before earliestData, we have less than full coverage
+  const expectedDays = currentSeries.length;
+  const refSeries = allData.filter(d => d.d >= prevFrom && d.d <= prevTo);
+  const coverage = refSeries.length / Math.max(1, expectedDays);
+
+  if (coverage === 0 || refSeries.length === 0) {
+    return { ref: null, status: 'no-ref' };
+  }
+  const refStats = _statsForZone(refSeries);
+  if (coverage < 0.5) {
+    return { ref: refStats, status: 'no-ref' };  // not enough coverage to be meaningful
+  }
+  return { ref: refStats, status: coverage < 0.95 ? 'partial' : 'comparable' };
+}
+
+// Format a YoY delta on a KPI meta line
+// metric: 'price' (avg/peak/off/sigma) or 'count' (negH)
+// inversed: if true, lower current = bad (e.g. negH increase is bad) — not used currently
+function _formatYoYDelta(currentVal, refVal, status, fallbackText) {
+  if (status === 'no-ref' || refVal == null || currentVal == null || refVal === 0) {
+    return { html: fallbackText || '<span style="color:var(--tx3)">— no Y-1 ref</span>', color: 'var(--tx3)' };
+  }
+  const deltaPct = ((currentVal - refVal) / Math.abs(refVal)) * 100;
+  const arrow = deltaPct >= 0 ? '▲' : '▼';
+  const sign  = deltaPct >= 0 ? '+' : '';
+  // Color: rouge si plus haut (= plus cher/plus volatile = mauvais signal), vert si plus bas
+  let color;
+  if (status === 'partial') {
+    color = '#FBBF24';  // amber = partial coverage
+  } else {
+    color = deltaPct >= 0 ? '#ED6965' : '#14D3A9';
+  }
+  const partialBadge = status === 'partial' ? ' <span style="color:var(--tx3);font-size:9px">(~partial)</span>' : '';
+  return {
+    html: `<span style="color:${color}">${arrow} ${sign}${deltaPct.toFixed(1)}% vs Y-1${partialBadge}</span>`,
+    color,
+  };
+}
+
+async function _updateHoKpiStrip(stats, selected, seriesByZone) {
   const fr = stats['FR'];
+  const useCustom = !!(HIST.customRange && HIST.customRange.from && HIST.customRange.to);
+
+  // Helper to set a metric value + meta YoY delta
+  const setMetric = (idVal, idMeta, currentVal, refVal, status, fallbackText, unit) => {
+    _setHoKpi(idVal, currentVal, unit);
+    const elMeta = document.getElementById(idMeta);
+    if (elMeta) {
+      const { html } = _formatYoYDelta(currentVal, refVal, status, fallbackText);
+      elMeta.innerHTML = html;
+    }
+  };
+
   // FR-centric metrics
-  if (fr) {
-    _setHoKpi('ho-kpi-fr-avg',   fr.avg,     '€/MWh');
-    _setHoMeta('ho-kpi-fr-avg-meta',   `${fr.days} d`);
-    _setHoKpi('ho-kpi-fr-peak',  fr.peakAvg, '€/MWh');
-    _setHoKpi('ho-kpi-fr-off',   fr.offAvg,  '€/MWh');
-    _setHoKpi('ho-kpi-fr-sigma', fr.sigma,   '€/MWh');
-    // Neg hours card uses h, not €/MWh
+  if (fr && seriesByZone['FR']?.length) {
+    const yoy = await _computeYoYStats('FR', seriesByZone['FR'], useCustom);
+    const ref = yoy.ref;
+    const st = yoy.status;
+    setMetric('ho-kpi-fr-avg',   'ho-kpi-fr-avg-meta',   fr.avg,     ref?.avg     ?? null, st, null, '€/MWh');
+    setMetric('ho-kpi-fr-peak',  'ho-kpi-fr-peak-meta',  fr.peakAvg, ref?.peakAvg ?? null, st, null, '€/MWh');
+    setMetric('ho-kpi-fr-off',   'ho-kpi-fr-off-meta',   fr.offAvg,  ref?.offAvg  ?? null, st, null, '€/MWh');
+    setMetric('ho-kpi-fr-sigma', 'ho-kpi-fr-sigma-meta', fr.sigma,   ref?.sigma   ?? null, st, null, '€/MWh');
+    // Neg hours
     const elN = document.getElementById('ho-kpi-fr-negh');
     if (elN) elN.innerHTML = `${fr.negH.toFixed(0)}<span class="kpi-unit">h</span>`;
+    const elNm = document.getElementById('ho-kpi-fr-negh-meta');
+    if (elNm) {
+      const { html } = _formatYoYDelta(fr.negH, ref?.negH ?? null, st);
+      elNm.innerHTML = html;
+    }
   } else {
     _setHoKpi('ho-kpi-fr-avg',   null);
     _setHoKpi('ho-kpi-fr-peak',  null);
@@ -1240,13 +1320,42 @@ function _updateHoKpiStrip(stats, selected) {
     _setHoKpi('ho-kpi-fr-sigma', null);
     const elN = document.getElementById('ho-kpi-fr-negh');
     if (elN) elN.innerHTML = '--<span class="kpi-unit">h</span>';
-    _setHoMeta('ho-kpi-fr-avg-meta', '--');
+    ['ho-kpi-fr-avg-meta','ho-kpi-fr-peak-meta','ho-kpi-fr-off-meta','ho-kpi-fr-sigma-meta','ho-kpi-fr-negh-meta'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<span style="color:var(--tx3)">— no Y-1 ref</span>';
+    });
   }
-  // Loaded zones avg = simple mean of zone avgs
+
+  // Loaded zones avg
   const validAvgs = selected.map(z => stats[z]?.avg).filter(v => v != null);
   const loadedAvg = validAvgs.length ? validAvgs.reduce((a,b)=>a+b,0)/validAvgs.length : null;
   _setHoKpi('ho-kpi-loaded-avg', loadedAvg, '€/MWh');
-  _setHoMeta('ho-kpi-loaded-meta', `${validAvgs.length} zones`);
+
+  // YoY for loaded avg: compute per-zone YoY refs and average them
+  if (loadedAvg != null && selected.length) {
+    const refAvgs = [];
+    let anyPartial = false;
+    let anyComparable = false;
+    for (const z of selected) {
+      if (!seriesByZone[z]?.length) continue;
+      const yoy = await _computeYoYStats(z, seriesByZone[z], useCustom);
+      if (yoy.ref?.avg != null && yoy.status !== 'no-ref') {
+        refAvgs.push(yoy.ref.avg);
+        if (yoy.status === 'partial') anyPartial = true;
+        if (yoy.status === 'comparable') anyComparable = true;
+      }
+    }
+    const refLoadedAvg = refAvgs.length ? refAvgs.reduce((a,b)=>a+b,0)/refAvgs.length : null;
+    const st = refAvgs.length === 0 ? 'no-ref' : (anyPartial && !anyComparable ? 'partial' : (anyPartial ? 'partial' : 'comparable'));
+    const elMeta = document.getElementById('ho-kpi-loaded-meta');
+    if (elMeta) {
+      const { html } = _formatYoYDelta(loadedAvg, refLoadedAvg, st, `<span style="color:var(--tx3)">${refAvgs.length}/${selected.length} zones · — no Y-1 ref</span>`);
+      elMeta.innerHTML = html;
+    }
+  } else {
+    const elMeta = document.getElementById('ho-kpi-loaded-meta');
+    if (elMeta) elMeta.innerHTML = '<span style="color:var(--tx3)">— no Y-1 ref</span>';
+  }
 }
 
 async function renderHistOverview() {
@@ -1294,8 +1403,8 @@ async function renderHistOverview() {
   const zonesLabel = document.getElementById('ho-zones-label');
   if (zonesLabel) zonesLabel.textContent = `${selected.length} zones loaded`;
 
-  // ── KPI strip globale (FR-centric + loaded avg) ──
-  _updateHoKpiStrip(stats, selected);
+  // ── KPI strip globale (FR-centric + loaded avg) avec vs Y-1 ──
+  _updateHoKpiStrip(stats, selected, seriesByZone);
 
   // ── Table rows ──
   const tbody = document.getElementById('ho-table-tbody');
@@ -1307,17 +1416,26 @@ async function renderHistOverview() {
       return `<tr class="ho-row" data-zone="${z}"><td style="color:var(--tx3)">${z}</td><td colspan="10" style="text-align:center;color:var(--tx3);font-size:10px">no data in selected window</td></tr>`;
     }
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-    const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(1);
-    // P/OP ratio
+    // 2 decimals everywhere for prices/€
+    const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
+    // P/OP ratio (2 decimals)
     const ratio = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
       ? (st.peakAvg / st.offAvg) : null;
     const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
-    // %REN — no coloring (style aligned with Daily)
-    const renStr = st.renPctAvg == null ? '--' : st.renPctAvg.toFixed(0) + '%';
-    // Dom fuel — no coloring (style aligned with Daily)
-    const fuelStr = st.domFuel || '--';
-    // Neg h — colored only if elevated (genuine signal, not decorative)
-    const negColor = st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#F0B400' : 'var(--tx2)');
+    // %REN — colored like Daily (≥60 green, 40-60 yellow, <40 red)
+    let renHtml = '<span style="color:var(--tx3)">--</span>';
+    if (st.renPctAvg != null) {
+      const rp = Math.round(st.renPctAvg);
+      const c = rp >= 60 ? '#14D3A9' : rp >= 40 ? '#FBBF24' : '#ED6965';
+      renHtml = `<span style="color:${c};font-weight:600">${rp}%</span>`;
+    }
+    // Dom fuel — emoji + color from FUEL_META, aligned with Daily
+    const fm = st.domFuel ? _HO_FUEL_META[st.domFuel] : null;
+    const fuelHtml = fm
+      ? `<span style="color:${fm.color};font-size:11px">${fm.emoji} ${fm.label}</span>`
+      : '<span style="color:var(--tx3)">--</span>';
+    // Neg h colored only if elevated
+    const negColor = st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#FBBF24' : 'var(--tx2)');
 
     return `<tr class="ho-row" data-zone="${z}" style="cursor:pointer">
       <td style="text-align:left">${flag} ${z}</td>
@@ -1328,8 +1446,8 @@ async function renderHistOverview() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.sigma)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${negColor}">${st.negH.toFixed(0)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${renStr}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fuelStr}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${renHtml}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fuelHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
     </tr>`;
   }).join('');
@@ -1383,12 +1501,21 @@ function _openHoRow(zone, series, st) {
   const country = _HO_NAMES[zone] || zone;
   const flag    = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
   const color   = zoneColor(zone);
-  const fmt     = v => (v == null || isNaN(v)) ? '--' : v.toFixed(1);
+  // 2 decimals partout
+  const fmt     = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
   const ratio   = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
     ? (st.peakAvg / st.offAvg) : null;
   const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
-  const renStr   = st.renPctAvg == null ? '--' : st.renPctAvg.toFixed(0) + '%';
-  const fuelColor = _HO_FUEL_COLOR[st.domFuel] || 'var(--tx3)';
+  // %REN + fuel meta cohérents avec Daily
+  let renHtml = '<span style="color:var(--tx3)">--</span>';
+  if (st.renPctAvg != null) {
+    const rp = Math.round(st.renPctAvg);
+    const c = rp >= 60 ? '#14D3A9' : rp >= 40 ? '#FBBF24' : '#ED6965';
+    renHtml = `<span style="color:${c};font-weight:600">${rp}%</span>`;
+  }
+  const fm = st.domFuel ? _HO_FUEL_META[st.domFuel] : null;
+  const fuelLabel = fm ? `${fm.emoji} ${fm.label}` : '--';
+  const fuelColor = fm ? fm.color : 'var(--tx3)';
   const periodTxt = (HIST.customRange && HIST.customRange.from)
     ? `${HIST.customRange.from} → ${HIST.customRange.to}`
     : periodLabel(series);
@@ -1404,8 +1531,12 @@ function _openHoRow(zone, series, st) {
             <span style="font-size:14px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</span>
             <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodTxt}</span>
           </div>
-          <button onclick="_closeHoRow()"
-            style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="_openHoFullscreen('${zone}')" title="Open chart fullscreen"
+              style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+            <button onclick="_closeHoRow()"
+              style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          </div>
         </div>
 
         <!-- KPI strip -->
@@ -1418,22 +1549,22 @@ function _openHoRow(zone, series, st) {
           <div style="background:#0f1419;border-left:4px solid #ED6965;border-radius:6px;padding:10px 12px">
             <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Peak avg</div>
             <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.peakAvg)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">08-20h</div>
+            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">08:00-20:00</div>
           </div>
           <div style="background:#0f1419;border-left:4px solid #14D3A9;border-radius:6px;padding:10px 12px">
             <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Off-peak</div>
             <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.offAvg)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">00-08 / 20-24</div>
+            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">00:00-08:00 / 20:00-24:00</div>
+          </div>
+          <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
+            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px" title="Standard deviation of daily averages — measures price variability over the period">σ daily</div>
+            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.sigma)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
+            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">volatility</div>
           </div>
           <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
             <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">P / OP ratio</div>
             <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${ratioStr}</div>
             <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">1.30x baseline</div>
-          </div>
-          <div style="background:#0f1419;border-left:4px solid #4A6280;border-radius:6px;padding:10px 12px">
-            <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">σ daily</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(st.sigma)}<span style="font-size:10px;color:#888780;margin-left:3px">€/MWh</span></div>
-            <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:3px">volatility</div>
           </div>
           <div style="background:#0f1419;border-left:4px solid ${st.negH > 50 ? '#ED6965' : '#4A6280'};border-radius:6px;padding:10px 12px">
             <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Neg h</div>
@@ -1442,8 +1573,8 @@ function _openHoRow(zone, series, st) {
           </div>
           <div style="background:#0f1419;border-left:4px solid ${fuelColor};border-radius:6px;padding:10px 12px">
             <div style="font-size:9px;color:#888780;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Mix</div>
-            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${renStr}</div>
-            <div style="font-size:10px;color:${fuelColor};font-family:'JetBrains Mono',monospace;margin-top:3px">${st.domFuel || '--'}</div>
+            <div style="font-size:18px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--tx)">${renHtml}</div>
+            <div style="font-size:10px;color:${fuelColor};font-family:'JetBrains Mono',monospace;margin-top:3px">${fuelLabel}</div>
           </div>
         </div>
 
@@ -1459,15 +1590,71 @@ function _openHoRow(zone, series, st) {
     </td>`;
   row.after(detail);
 
+  // Cache series for fullscreen access
+  window._HO_LAST_SERIES = series;
+  window._HO_LAST_ZONE = zone;
+
   // Build chart
   _buildHoChart(zone, series);
 }
 window._closeHoRow = _closeHoRow;
 window._toggleHoRow = _toggleHoRow;
 
+// ── Fullscreen for Historical chart ──
+function _openHoFullscreen(zone) {
+  const series = window._HO_LAST_SERIES;
+  if (!series || !series.length || !zone) return;
+  const country = _HO_NAMES[zone] || zone;
+  const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
+
+  // Build overlay if not exists
+  let overlay = document.getElementById('ho-fs-overlay');
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement('div');
+  overlay.id = 'ho-fs-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a0d12;z-index:9999;display:flex;flex-direction:column;padding:24px;overflow:auto';
+  overlay.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</div>
+        <div style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:2px">${series[0].d} → ${series[series.length-1].d} · ${series.length} data points · Click-drag to zoom · Double-click to reset</div>
+      </div>
+      <button onclick="_closeHoFullscreen()"
+        style="background:transparent;border:1px solid var(--bd);color:var(--tx2);padding:8px 16px;font-size:12px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+    </div>
+    <div style="flex:1;min-height:400px;background:#0f1419;border-radius:8px;padding:20px;position:relative">
+      <canvas id="ho-fs-chart"></canvas>
+    </div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
+      <span style="color:${zoneColor(zone)}">— Daily avg</span>
+      <span style="color:#94a3b8">- - 7D rolling</span>
+      <span style="color:#14D3A9">— 30D rolling</span>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  // Build fullscreen chart (larger fonts + drag zoom)
+  setTimeout(() => _buildHoChart(zone, series, true), 50);
+}
+window._openHoFullscreen = _openHoFullscreen;
+
+function _closeHoFullscreen() {
+  const overlay = document.getElementById('ho-fs-overlay');
+  if (overlay) overlay.remove();
+  document.body.style.overflow = '';
+  if (window._HO_FS_CHART) {
+    try { window._HO_FS_CHART.destroy(); } catch(_) {}
+    window._HO_FS_CHART = null;
+  }
+}
+window._closeHoFullscreen = _closeHoFullscreen;
+
 // ── Build the daily / 7D / 30D rolling chart for the open zone ──
-function _buildHoChart(zone, series) {
-  const canvas = document.getElementById('ho-detail-chart');
+// fullscreen=true → renders to ho-fs-chart canvas with larger fonts and drag-zoom
+function _buildHoChart(zone, series, fullscreen) {
+  const canvasId = fullscreen ? 'ho-fs-chart' : 'ho-detail-chart';
+  const canvas = document.getElementById(canvasId);
   if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = series.map(d => d.d);
@@ -1483,12 +1670,15 @@ function _buildHoChart(zone, series) {
     if (daily[i] != null && (daily[maxIdx] == null || daily[i] > daily[maxIdx])) maxIdx = i;
   }
 
-  if (window._HO_CHART) {
-    try { window._HO_CHART.destroy(); } catch (_) {}
-    window._HO_CHART = null;
+  const targetVar = fullscreen ? '_HO_FS_CHART' : '_HO_CHART';
+  if (window[targetVar]) {
+    try { window[targetVar].destroy(); } catch (_) {}
+    window[targetVar] = null;
   }
 
-  window._HO_CHART = new Chart(canvas, {
+  const fontSize = fullscreen ? 13 : 10;
+
+  const cfg = {
     type: 'line',
     data: {
       labels,
@@ -1498,7 +1688,7 @@ function _buildHoChart(zone, series) {
           data: daily,
           borderColor: color,
           backgroundColor: color + '20',
-          borderWidth: 1,
+          borderWidth: fullscreen ? 1.5 : 1,
           pointRadius: 0,
           pointHoverRadius: 4,
           tension: 0,
@@ -1509,7 +1699,7 @@ function _buildHoChart(zone, series) {
           data: r7,
           borderColor: '#94a3b8',
           backgroundColor: 'transparent',
-          borderWidth: 1.5,
+          borderWidth: fullscreen ? 2 : 1.5,
           borderDash: [4, 3],
           pointRadius: 0,
           tension: 0.2,
@@ -1520,7 +1710,7 @@ function _buildHoChart(zone, series) {
           data: r30,
           borderColor: '#14D3A9',
           backgroundColor: 'transparent',
-          borderWidth: 2,
+          borderWidth: fullscreen ? 2.5 : 2,
           pointRadius: 0,
           tension: 0.3,
           fill: false,
@@ -1537,11 +1727,11 @@ function _buildHoChart(zone, series) {
           backgroundColor: '#0f1419',
           borderColor: 'rgba(255,255,255,.08)',
           borderWidth: 1,
-          padding: 10,
-          titleFont: { size: 11, family: "'JetBrains Mono', monospace" },
-          bodyFont:  { size: 11, family: "'JetBrains Mono', monospace" },
+          padding: fullscreen ? 14 : 10,
+          titleFont: { size: fontSize, family: "'JetBrains Mono', monospace" },
+          bodyFont:  { size: fontSize, family: "'JetBrains Mono', monospace" },
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '--' : ctx.parsed.y.toFixed(1)} €/MWh`,
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '--' : ctx.parsed.y.toFixed(2)} €/MWh`,
           },
         },
         annotation: {
@@ -1552,43 +1742,71 @@ function _buildHoChart(zone, series) {
             },
             minPt: {
               type: 'point', xValue: labels[minIdx], yValue: daily[minIdx],
-              backgroundColor: '#ED6965', radius: 4, borderColor: '#fff', borderWidth: 1,
+              backgroundColor: '#ED6965', radius: fullscreen ? 6 : 4, borderColor: '#fff', borderWidth: 1,
             },
             maxPt: {
               type: 'point', xValue: labels[maxIdx], yValue: daily[maxIdx],
-              backgroundColor: '#14D3A9', radius: 4, borderColor: '#fff', borderWidth: 1,
+              backgroundColor: '#14D3A9', radius: fullscreen ? 6 : 4, borderColor: '#fff', borderWidth: 1,
             },
           },
         },
+        // Drag-zoom only in fullscreen
+        zoom: fullscreen ? {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(20, 211, 169, 0.15)',
+              borderColor: 'rgba(20, 211, 169, 0.8)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: false },
+            pinch: { enabled: true },
+            mode: 'x',
+          },
+          pan: { enabled: false },
+        } : undefined,
       },
+      layout: { padding: { top: 16, bottom: 8 } },
       scales: {
         x: {
           type: 'category',
           ticks: {
             color: 'rgba(184,201,217,.5)',
-            font: { size: 10, family: "'JetBrains Mono', monospace" },
+            font: { size: fontSize, family: "'JetBrains Mono', monospace" },
             maxRotation: 0,
             autoSkip: true,
-            maxTicksLimit: 10,
+            maxTicksLimit: fullscreen ? 14 : 10,
           },
           grid: { color: 'rgba(255,255,255,.03)' },
         },
         y: {
+          grace: '10%',
           ticks: {
             color: 'rgba(184,201,217,.5)',
-            font: { size: 10, family: "'JetBrains Mono', monospace" },
-            callback: v => v + '',
+            font: { size: fontSize, family: "'JetBrains Mono', monospace" },
+            callback: v => v.toFixed(0),
           },
           grid: { color: 'rgba(255,255,255,.04)' },
           title: {
             display: true, text: '€/MWh',
             color: 'rgba(184,201,217,.4)',
-            font: { size: 10, family: "'JetBrains Mono', monospace" },
+            font: { size: fontSize, family: "'JetBrains Mono', monospace" },
           },
         },
       },
     },
-  });
+  };
+
+  window[targetVar] = new Chart(canvas, cfg);
+
+  // Add double-click to reset zoom in fullscreen
+  if (fullscreen) {
+    canvas.addEventListener('dblclick', () => {
+      if (window._HO_FS_CHART && typeof window._HO_FS_CHART.resetZoom === 'function') {
+        window._HO_FS_CHART.resetZoom();
+      }
+    });
+  }
 }
 
 
