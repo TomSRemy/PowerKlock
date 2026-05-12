@@ -860,13 +860,16 @@ function renderPricesTable(data, dataDateStr) {
   const sorted = [...data].sort((a,b) => b.today - a.today);
   window._pricesSorted = sorted;
   window._pricesSortDir = window._pricesSortDir || {};
-  // Default Compare Zones selection: shared global zones (default = GenMix)
+  // Default Compare Zones selection: shared global zones (default = GenMix data-driven)
   if (!window._userZones) {
-    const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
-    window._userZones = new Set(gmKeys);
+    window._userZones = new Set(getGenMixDefaultZones());
   }
   // _compareZones always mirrors _userZones (global state)
   window._compareZones = window._userZones;
+  // Default Daily prices table filter: same GenMix zones (data-driven, "With GenMix")
+  if (window._pricesZoneFilter === undefined) {
+    window._pricesZoneFilter = new Set(getGenMixDefaultZones());
+  }
   renderPricesTableBody();
   buildZoneFilterDropdown();
   renderCompareChart();
@@ -927,8 +930,7 @@ function selectNeighbours() {
 }
 
 function selectWithGenMix() {
-  const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
-  window._pricesZoneFilter = new Set(gmKeys);
+  window._pricesZoneFilter = new Set(getGenMixDefaultZones());
   applyZoneFilter();
 }
 
@@ -1820,8 +1822,7 @@ function compareNeighbours() {
 }
 
 function compareWithGenMix() {
-  const gmKeys = window._genmixData ? Object.keys(window._genmixData) : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
-  window._compareZones = new Set(gmKeys);
+  window._compareZones = new Set(getGenMixDefaultZones());
   window._userZones = window._compareZones;
   window._zoneColorMap = null;
   buildCompareChips();
