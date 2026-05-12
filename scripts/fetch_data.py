@@ -309,7 +309,14 @@ def fetch_prices():
                 return f"{h:02d}:{m:02d}"
             min_hr = slot_to_hhmm(min_slot)
             max_hr = slot_to_hhmm(max_slot)
-            neg_hrs = round(sum(1 for p in prices if p < 0) * (24*60/len(pts)) / 60, 1)
+            # ── Negative hours: count slots with price < 0, multiply by slot duration
+            # Use mins_per_slot (computed above) to be consistent across granularities.
+            # Store in MINUTES (integer) to avoid float noise; the frontend converts to "HH h MM min".
+            neg_slot_count = sum(1 for p in pts if p['price'] is not None and p['price'] < 0)
+            neg_minutes = neg_slot_count * mins_per_slot   # always integer minutes
+            neg_hrs = round(neg_minutes / 60, 2)            # for backward compat (zones in 60-min get whole hours)
+            # We also store the exact minute count to be precise on the frontend
+            neg_min_total = neg_minutes  # not yet wired but kept for future use
 
             # Yesterday for delta
             vs_yday = None
