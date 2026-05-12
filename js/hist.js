@@ -1143,13 +1143,19 @@ window.presetGlobalGenMix = presetGlobalGenMix;
 // HELPERS · stats for a daily series with optional 15-min source
 // ────────────────────────────────────────────────────────────
 function _statsForZone(series) {
-  // series = filtered array of { d, avg, peakAvg, offAvg, negH, renPct, domFuel, ... }
+  // series = filtered array of { d, avg, peakAvg, offAvg, negH, renPct, domFuel, max, min, ... }
   const valid = series.map(d => d.avg).filter(v => v != null && !isNaN(v));
   if (!valid.length) return null;
   const sum = valid.reduce((a, b) => a + b, 0);
   const avg = sum / valid.length;
   const max = Math.max(...valid);
   const min = Math.min(...valid);
+  // Dates of min/max (for Extremes card)
+  let minDate = null, maxDate = null;
+  for (const d of series) {
+    if (d.avg === min && !minDate) minDate = d.d;
+    if (d.avg === max && !maxDate) maxDate = d.d;
+  }
   const variance = valid.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / valid.length;
   const sigma = Math.sqrt(variance);
   // Peak/off-peak avgs (if available in series)
@@ -1157,6 +1163,16 @@ function _statsForZone(series) {
   const offVals  = series.map(d => d.offAvg ?? d.offPkAvg).filter(v => v != null);
   const peakAvg = peakVals.length ? peakVals.reduce((a,b)=>a+b,0)/peakVals.length : null;
   const offAvg  = offVals.length  ? offVals.reduce((a,b)=>a+b,0)/offVals.length  : null;
+  // Intraday spread average = mean of (max_day - min_day) across the series
+  // Uses each day's intra-day max/min if present, falls back to peak-offpeak proxy
+  const intradayDeltas = series.map(d => {
+    if (d.max != null && d.min != null) return d.max - d.min;
+    if (d.peakAvg != null && d.offAvg != null) return d.peakAvg - d.offAvg;
+    return null;
+  }).filter(v => v != null);
+  const intradaySpread = intradayDeltas.length
+    ? intradayDeltas.reduce((a,b)=>a+b,0) / intradayDeltas.length
+    : null;
   const negH = series.reduce((a, d) => a + (d.negH || 0), 0);
   // %REN avg (only days where renPct present)
   const renVals = series.map(d => d.renPct).filter(v => v != null);
@@ -1169,7 +1185,12 @@ function _statsForZone(series) {
   const domFuel = Object.keys(fuelCounts).length
     ? Object.keys(fuelCounts).reduce((a,b) => fuelCounts[a] > fuelCounts[b] ? a : b)
     : null;
-  return { avg, max, min, sigma, peakAvg, offAvg, negH, renPctAvg, domFuel, days: valid.length };
+  return {
+    avg, max, min, minDate, maxDate, sigma,
+    peakAvg, offAvg, intradaySpread,
+    negH, renPctAvg, domFuel,
+    days: valid.length
+  };
 }
 
 
@@ -1429,10 +1450,10 @@ async function renderHistOverview() {
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
     // 2 decimals everywhere for prices/€
     const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
-    // P/OP ratio (2 decimals)
-    const ratio = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
-      ? (st.peakAvg / st.offAvg) : null;
-    const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
+    // Intraday spread (proxy BESS) — coloured to highlight high spreads
+    const spreadColor = st.intradaySpread == null
+      ? 'var(--tx3)'
+      : (st.intradaySpread > 80 ? '#14D3A9' : (st.intradaySpread > 40 ? 'var(--tx)' : 'var(--tx2)'));
     // %REN — colored like Daily (≥60 green, 40-60 yellow, <40 red)
     let renHtml = '<span style="color:var(--tx3)">--</span>';
     if (st.renPctAvg != null) {
@@ -1453,7 +1474,7 @@ async function renderHistOverview() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${fmt(st.avg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.peakAvg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.offAvg)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${ratioStr}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${spreadColor}">${fmt(st.intradaySpread)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.sigma)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${negColor}">${_fmtNegH(st.negH)}</td>
@@ -1501,6 +1522,150 @@ function _closeHoRow() {
   window._HO_OPEN_ZONE = null;
 }
 
+// ── Helper: download Historical detail chart as PNG (calqué sur Daily downloadRowChart) ──
+function _downloadHoChart(zone) {
+  const chart = window._HO_CHART;
+  if (!chart) {
+    console.warn('No Historical chart found for download');
+    return;
+  }
+  const series = window._HO_LAST_SERIES;
+  const periodStr = series && series.length
+    ? `${series[0].d}_to_${series[series.length-1].d}`
+    : new Date().toISOString().slice(0,10);
+  // High-res PNG with theme bg color
+  const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0a0d12';
+  const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `powerklock_historical_${zone}_${periodStr}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+window._downloadHoChart = _downloadHoChart;
+
+// ── Helper: short date "15 Feb 2026" ──
+function _fmtShortDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[m-1]} ${y}`;
+}
+
+// ── Helper: build "verdict" sentence summarising the period ──
+// Format: "● {Verdict} period · σ {σ} €/MWh · {%REN}% renewable · {neg days} days below 0"
+// Verdict categorisation:
+//   avg < 50 → "Cheap"          50 ≤ avg ≤ 100 → "Average"        avg > 100 → "Expensive"
+//   σ < 15  → "stable"          15 ≤ σ < 30   → "moderate"        σ ≥ 30   → "volatile"
+function _buildHoVerdict(st) {
+  if (!st || st.avg == null) return '';
+  // Price level
+  let level;
+  if (st.avg < 50)      level = 'Cheap';
+  else if (st.avg <= 100) level = 'Average';
+  else                  level = 'Expensive';
+  // Volatility
+  let vol;
+  if (st.sigma == null || st.sigma < 15)      vol = 'stable';
+  else if (st.sigma < 30)                     vol = 'moderate';
+  else                                        vol = 'volatile';
+  // Dot colour based on level
+  const dotColor = level === 'Cheap'    ? '#14D3A9'
+                 : level === 'Average'  ? '#FBBF24'
+                 :                        '#ED6965';
+  // Build secondary indicators
+  const parts = [];
+  if (st.sigma != null)      parts.push(`σ ${st.sigma.toFixed(1)} €/MWh`);
+  if (st.renPctAvg != null)  parts.push(`${Math.round(st.renPctAvg)}% renewable`);
+  // Days with negative prices (count distinct days where negH > 0 in the period)
+  // We don't have access to series here; fallback to total negH if days unknown
+  if (st.negH > 0)           parts.push(`${_fmtNegH(st.negH)} negative`);
+  const secondary = parts.length ? ' · ' + parts.join(' · ') : '';
+
+  // "stable" → use lowercase joined "Cheap & stable", "Expensive & volatile" etc.
+  const phrase = `${level} & ${vol}`;
+  return `<span style="color:${dotColor};margin-right:6px">●</span><span style="color:var(--tx)">${phrase} period</span><span style="color:var(--tx3)">${secondary}</span>`;
+}
+
+// ── Helper: render the monthly breakdown inside the row detail ──
+// Replaces the standalone Block 4 table — filtered on the zone + period currently open
+async function _renderHoDetailMonthly(zone, series) {
+  const container = document.getElementById('ho-detail-monthly');
+  if (!container || !series || !series.length) return;
+
+  // Group by YYYY-MM
+  const monthly = {};
+  series.forEach(d => {
+    const ym = d.d.slice(0, 7);
+    if (!monthly[ym]) monthly[ym] = { rows: [] };
+    monthly[ym].rows.push(d);
+  });
+
+  const months = Object.keys(monthly).sort();
+  if (!months.length) {
+    container.innerHTML = '<div style="color:var(--tx3);font-size:11px;padding:8px">No data in this period</div>';
+    return;
+  }
+
+  // Aggregate per month using _statsForZone (consistent with the rest of the module)
+  const aggregated = months.map(ym => {
+    const rows = monthly[ym].rows;
+    const mst = _statsForZone(rows);
+    const spread = (mst?.peakAvg != null && mst?.offAvg != null) ? (mst.peakAvg - mst.offAvg) : null;
+    return { ym, ...mst, spread };
+  });
+
+  // vs LY (same month previous year)
+  aggregated.forEach(row => {
+    const [y, m] = row.ym.split('-');
+    const prevYm = (parseInt(y)-1) + '-' + m;
+    const prev = aggregated.find(r => r.ym === prevYm);
+    row.vsLY = (prev && prev.avg != null && row.avg != null) ? (row.avg - prev.avg) : null;
+  });
+
+  const fmt = v => v == null ? '--' : v.toFixed(2);
+  const upColor = '#14D3A9', dnColor = '#ED6965', warnColor = '#FBBF24';
+
+  // Render rows (most recent first)
+  const rowsHtml = aggregated.slice().reverse().map(r => {
+    const vsLY = r.vsLY == null ? '--' : (r.vsLY >= 0 ? '+' : '') + r.vsLY.toFixed(2);
+    const vsLYColor = r.vsLY == null ? 'var(--tx3)' : (r.vsLY > 0 ? dnColor : (r.vsLY < 0 ? upColor : 'var(--tx2)'));
+    // Format month: Jan 2026
+    const [y, m] = r.ym.split('-');
+    const dt = new Date(parseInt(y), parseInt(m)-1, 1);
+    const monthLabel = dt.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    return `<tr>
+      <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;font-weight:600">${monthLabel}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.avg)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.peakAvg)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.offAvg)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.spread)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${r.negH > 0 ? warnColor : 'var(--tx3)'}">${_fmtNegH(r.negH || 0)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${r.days}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${vsLYColor}">${vsLY}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--bd)">
+          <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Month</th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Avg <span style="font-weight:400;font-size:9px">€/MWh</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Peak avg <span style="font-weight:400;font-size:9px">08:00-20:00</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Off-peak <span style="font-weight:400;font-size:9px">€/MWh</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Spread <span style="font-weight:400;font-size:9px">P-OP</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Neg hours</th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Days</th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">vs LY <span style="font-weight:400;font-size:9px">€/MWh</span></th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+}
+
 function _openHoRow(zone, series, st) {
   if (!st || !series || !series.length) return;
   const tbody = document.getElementById('ho-table-tbody');
@@ -1543,24 +1708,40 @@ function _openHoRow(zone, series, st) {
     <td colspan="11" style="padding:0;background:var(--bg2);border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
-        <!-- Header: zone title + actions -->
+        <!-- Header: zone title + close -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:10px">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
             <span style="font-size:14px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</span>
             <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodTxt}</span>
           </div>
-          <div style="display:flex;gap:6px">
-            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
-            <button onclick="event.stopPropagation();_closeHoRow()"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
-          </div>
+          <button onclick="event.stopPropagation();_closeHoRow()"
+            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
         </div>
 
-        <!-- KPI strip (7 cards) -->
-        <div id="ho-detail-kpi-strip" class="kpi-strip" style="grid-template-columns:repeat(7,1fr);margin-bottom:14px">
+        <!-- KPI strip (8 cards) -->
+        <div id="ho-detail-kpi-strip" class="kpi-strip" style="grid-template-columns:repeat(8,1fr);margin-bottom:14px">
           <!-- filled by _renderHoDetailKpis -->
+        </div>
+
+        <!-- Verdict bandeau ("Cheap & stable period · σ X · X% renewable · X neg days") -->
+        <div id="ho-detail-verdict" style="font-size:11px;color:var(--tx2);margin-bottom:10px;font-family:'Inter',sans-serif;padding:6px 0">
+          ${_buildHoVerdict(st)}
+        </div>
+
+        <!-- Legend + actions (above chart, Daily-style) -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
+          <div style="display:flex;align-items:center;gap:16px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
+            <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:5px"></span>${zone} · ${series.length}D</span>
+            <span><span style="display:inline-block;width:12px;height:1px;border-top:1.5px dashed #94a3b8;vertical-align:middle;margin-right:5px"></span>7D rolling</span>
+            <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:5px"></span>30D rolling</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+          </div>
         </div>
 
         <!-- Chart container — no background, matches Daily style -->
@@ -1568,13 +1749,20 @@ function _openHoRow(zone, series, st) {
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
 
-        <!-- Legend, right-aligned, Daily style -->
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:4px;font-family:'JetBrains Mono',monospace">
-          <span><span style="display:inline-block;width:10px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
-          <span><span style="display:inline-block;width:10px;height:2px;background:#94a3b8;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
-          <span><span style="display:inline-block;width:10px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
-          <span style="margin-left:8px;opacity:.6">${series.length} data points</span>
-        </div>
+        <!-- Alert neg prices (shown only if negH > 0) -->
+        ${st.negH > 0 ? `
+          <div style="font-size:11px;color:#FBBF24;margin-top:8px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
+            ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
+          </div>
+        ` : ''}
+
+        <!-- Monthly breakdown collapsible (replaces standalone Block 4) -->
+        <details style="margin-top:12px">
+          <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
+            ▶ Monthly breakdown
+          </summary>
+          <div id="ho-detail-monthly" style="margin-top:8px;overflow-x:auto"></div>
+        </details>
       </div>
     </td>`;
   row.after(detail);
@@ -1584,6 +1772,14 @@ function _openHoRow(zone, series, st) {
 
   // Build chart
   _buildHoChart(zone, series);
+
+  // Render monthly breakdown inside the <details> (lazy: only when expanded)
+  const detailsEl = detail.querySelector('details');
+  if (detailsEl) {
+    detailsEl.addEventListener('toggle', () => {
+      if (detailsEl.open) _renderHoDetailMonthly(zone, series);
+    }, { once: false });
+  }
 }
 window._closeHoRow = _closeHoRow;
 window._toggleHoRow = _toggleHoRow;
@@ -1597,9 +1793,6 @@ async function _renderHoDetailKpis(zone, series, st) {
 
   // 2 decimals
   const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
-  const ratio = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
-    ? (st.peakAvg / st.offAvg) : null;
-  const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
 
   // %REN + fuel meta
   let renHtml = '<span style="color:var(--tx3)">--</span>';
@@ -1612,6 +1805,14 @@ async function _renderHoDetailKpis(zone, series, st) {
   const fuelLabel = fm ? `${fm.emoji} ${fm.label}` : '--';
   const fuelColor = fm ? fm.color : 'var(--tx3)';
 
+  // Format date for Extremes card (short: "15 Feb 2026")
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d} ${months[m-1]} ${y}`;
+  };
+
   // YoY for this zone — drives the color of the border-left
   const useCustom = !!(HIST.customRange && HIST.customRange.from && HIST.customRange.to);
   const yoy = await _computeYoYStats(zone, series, useCustom);
@@ -1622,20 +1823,33 @@ async function _renderHoDetailKpis(zone, series, st) {
   // Convention: rouge si plus haut (= plus cher/volatile = mauvais), vert si plus bas
   const cls = (cur, prev, status) => {
     if (status === 'no-ref' || prev == null || cur == null) return 'kpi-flat';
-    if (status === 'partial') return 'kpi-flat'; // ne pas trancher si data partielle
+    if (status === 'partial') return 'kpi-flat';
     if (Math.abs(cur - prev) < 0.01 * Math.max(1, Math.abs(prev))) return 'kpi-flat';
     return cur > prev ? 'kpi-up' : 'kpi-down';
   };
 
+  // For spread: higher is "good" for BESS arbitrage → inverse colour convention
+  const clsSpread = (cur, prev, status) => {
+    if (status === 'no-ref' || prev == null || cur == null) return 'kpi-flat';
+    if (status === 'partial') return 'kpi-flat';
+    if (Math.abs(cur - prev) < 0.01 * Math.max(1, Math.abs(prev))) return 'kpi-flat';
+    return cur > prev ? 'kpi-down' : 'kpi-up';  // up spread = good (green)
+  };
+
   // Mini delta line under value (concise, with arrow)
-  const meta = (cur, prev, status) => {
+  const meta = (cur, prev, status, inversed) => {
     if (status === 'no-ref' || prev == null || cur == null || prev === 0) {
       return '<span style="color:var(--tx3)">— no Y-1 ref</span>';
     }
     const pct = ((cur - prev) / Math.abs(prev)) * 100;
     const arrow = pct >= 0 ? '▲' : '▼';
     const sign  = pct >= 0 ? '+' : '';
-    const colr = status === 'partial' ? '#FBBF24' : (pct >= 0 ? '#ED6965' : '#14D3A9');
+    // Colour convention: rouge si plus haut (mauvais), vert si plus bas (bon).
+    // inversed=true → inverse (used for spread, where higher = better for BESS)
+    let colr;
+    if (status === 'partial') colr = '#FBBF24';
+    else if (inversed) colr = pct >= 0 ? '#14D3A9' : '#ED6965';
+    else colr = pct >= 0 ? '#ED6965' : '#14D3A9';
     const badge = status === 'partial' ? ' <span style="color:var(--tx3);font-size:9px">(~partial)</span>' : '';
     return `<span style="color:${colr}">${arrow} ${sign}${pct.toFixed(1)}% vs Y-1${badge}</span>`;
   };
@@ -1663,11 +1877,12 @@ async function _renderHoDetailKpis(zone, series, st) {
       metaHtml: meta(st.offAvg, ref?.offAvg, ystat),
     },
     {
-      key: 'pop',
-      cls: 'kpi-flat', // ratio: pas de YoY logique évident
-      label: 'P / OP ratio',
-      value: ratioStr,
-      metaHtml: '<span style="color:var(--tx3)">1.30x baseline</span>',
+      key: 'spread',
+      cls: clsSpread(st.intradaySpread, ref?.intradaySpread, ystat),
+      label: 'Spread intraday',
+      value: `${fmt(st.intradaySpread)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.intradaySpread, ref?.intradaySpread, ystat, true),
+      title: 'Average intraday spread (max - min per day) — proxy for BESS arbitrage potential',
     },
     {
       key: 'sigma',
@@ -1676,6 +1891,18 @@ async function _renderHoDetailKpis(zone, series, st) {
       value: `${fmt(st.sigma)}<span class="kpi-unit">€/MWh</span>`,
       metaHtml: meta(st.sigma, ref?.sigma, ystat),
       title: 'Standard deviation of daily averages — measures price variability over the period',
+    },
+    {
+      key: 'extremes',
+      cls: 'kpi-flat',
+      label: 'Extremes',
+      // Custom 2-line layout instead of single value
+      customHtml: `
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#14D3A9;line-height:1.15">▲ ${fmt(st.max)}<span style="font-size:9px;color:var(--tx3);margin-left:3px">€/MWh</span></div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">${fmtDate(st.maxDate)}</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ED6965;line-height:1.15">▼ ${fmt(st.min)}<span style="font-size:9px;color:var(--tx3);margin-left:3px">€/MWh</span></div>
+        <div style="font-size:9px;color:var(--tx3)">${fmtDate(st.minDate)}</div>
+      `,
     },
     {
       key: 'negh',
@@ -1693,13 +1920,22 @@ async function _renderHoDetailKpis(zone, series, st) {
     },
   ];
 
-  container.innerHTML = cards.map(c => `
-    <div class="kpi-card ${c.cls}"${c.title ? ` title="${c.title}"` : ''}>
-      <div class="kpi-label">${c.label}</div>
-      <div class="kpi-value">${c.value}</div>
-      <div class="kpi-meta">${c.metaHtml}</div>
-    </div>
-  `).join('');
+  container.innerHTML = cards.map(c => {
+    // Extremes card has 2-line layout, no kpi-value / kpi-meta wrapper
+    if (c.customHtml) {
+      return `
+        <div class="kpi-card ${c.cls}"${c.title ? ` title="${c.title}"` : ''}>
+          <div class="kpi-label">${c.label}</div>
+          ${c.customHtml}
+        </div>`;
+    }
+    return `
+      <div class="kpi-card ${c.cls}"${c.title ? ` title="${c.title}"` : ''}>
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-value">${c.value}</div>
+        <div class="kpi-meta">${c.metaHtml}</div>
+      </div>`;
+  }).join('');
 }
 
 // ── Fullscreen for Historical chart (aligned with Daily openRowFullscreen) ──
@@ -1789,21 +2025,18 @@ function _openHoFullscreen(zone) {
   }
 
   // Right-pane stats table (simple list, vs-Y-1 already in KPI strip)
-  const ratio = (st?.peakAvg != null && st?.offAvg != null && st.offAvg !== 0)
-    ? (st.peakAvg / st.offAvg) : null;
-  const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
   const rows = [
-    ['Days',          `${st?.days ?? '--'}`],
-    ['Avg',           `${fmt(st?.avg)} €/MWh`],
-    ['Peak avg',      `${fmt(st?.peakAvg)} €/MWh`],
-    ['Off-peak avg',  `${fmt(st?.offAvg)} €/MWh`],
-    ['P / OP ratio',  ratioStr],
-    ['σ daily',       `${fmt(st?.sigma)} €/MWh`],
-    ['Min',           `${fmt(st?.min)} €/MWh`],
-    ['Max',           `${fmt(st?.max)} €/MWh`],
-    ['Neg hours',     _fmtNegH(st?.negH)],
-    ['% REN avg',     st?.renPctAvg != null ? `${Math.round(st.renPctAvg)}%` : '--'],
-    ['Dom. fuel',     st?.domFuel || '--'],
+    ['Days',             `${st?.days ?? '--'}`],
+    ['Avg',              `${fmt(st?.avg)} €/MWh`],
+    ['Peak avg',         `${fmt(st?.peakAvg)} €/MWh`],
+    ['Off-peak avg',     `${fmt(st?.offAvg)} €/MWh`],
+    ['Intraday spread',  `${fmt(st?.intradaySpread)} €/MWh`],
+    ['σ daily',          `${fmt(st?.sigma)} €/MWh`],
+    ['Max (▲)',          `${fmt(st?.max)} €/MWh${st?.maxDate ? ' · ' + _fmtShortDate(st.maxDate) : ''}`],
+    ['Min (▼)',          `${fmt(st?.min)} €/MWh${st?.minDate ? ' · ' + _fmtShortDate(st.minDate) : ''}`],
+    ['Neg hours',        _fmtNegH(st?.negH)],
+    ['% REN avg',        st?.renPctAvg != null ? `${Math.round(st.renPctAvg)}%` : '--'],
+    ['Dom. fuel',        st?.domFuel || '--'],
   ];
   const statsHtml = rows.map(([k, v]) => `
     <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-family:'JetBrains Mono',monospace;font-size:11px">
@@ -2358,6 +2591,13 @@ function setHistMonthlyZone(zone) {
 window.setHistMonthlyZone = setHistMonthlyZone;
 
 async function renderHistMonthlyTable() {
+  // NOTE: Block 4 standalone has been removed — monthly breakdown is now
+  // a collapsible <details> inside each Historical Overview row detail
+  // (see _renderHoDetailMonthly). This function is kept as a no-op stub
+  // for backward compatibility with old window-toggle dispatchers.
+  const tbody = document.getElementById('hms-table-tbody');
+  if (!tbody) return;  // Block 4 was removed → silently skip
+
   const w = HIST.windows['hms'] || '2Y';
   const zone = (HIST.zones && HIST.zones['hms']) || 'FR';
   const s = await fetchSummary();
@@ -2365,8 +2605,7 @@ async function renderHistMonthlyTable() {
 
   const filtered = filterByWindow(s.zones[zone], w);
   if (!filtered.length) {
-    document.getElementById('hms-table-tbody').innerHTML =
-      '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No data</td></tr>';
     return;
   }
 
@@ -2399,8 +2638,7 @@ async function renderHistMonthlyTable() {
   const periodEl = document.getElementById('hms-period');
   if (periodEl) periodEl.textContent = zone + ' · ' + months[0] + ' → ' + months[months.length-1];
 
-  // Render rows (most recent first)
-  const tbody = document.getElementById('hms-table-tbody');
+  // Render rows (most recent first) — tbody declared at top of function
   tbody.innerHTML = aggregated.slice().reverse().map(r => {
     const fmt = v => v == null ? '--' : v.toFixed(1);
     const vsLY = r.vsLY == null ? '--' : (r.vsLY >= 0 ? '+' : '') + r.vsLY.toFixed(1);
