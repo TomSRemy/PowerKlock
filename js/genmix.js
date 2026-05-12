@@ -871,46 +871,91 @@ window.setGmHistWindow = setGmHistWindow;
 async function renderGmHistory() {
   const zone = GM.histZone;
   const w    = GM.histWindow;
-  // We rely on history/daily/*.json which has wind+solar hourly per day
-  // For perf, fetch summary first to know date range, then iterate
-  // For simplicity here we fetch the per-day JSONs directly for the relevant window
-  const days = _gmHistDaysForWindow(w);
   const canvas = document.getElementById('gm-hist-canvas');
   const periodEl = document.getElementById('gm-hist-period');
 
   if (periodEl) periodEl.textContent = `${zone} · ${w} · loading...`;
 
-  // Try fetching the daily files
-  const series = [];
-  const today = new Date();
-  for (let i = 0; i < days; i++) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0, 10);
-    try {
-      const r = await fetch(`data/history/daily/${ds}.json`);
-      if (!r.ok) continue;
-      const j = await r.json();
-      const z = j?.zones?.[zone];
-      if (!z) continue;
-      // Daily averages of hourly arrays
-      const windArr  = (z.wind  || []).filter(v => v != null);
-      const solarArr = (z.solar || []).filter(v => v != null);
-      if (!windArr.length && !solarArr.length) continue;
-      const windAvg  = windArr.length  ? windArr.reduce((a,b)=>a+b,0)/windArr.length  : null;
-      const solarAvg = solarArr.length ? solarArr.reduce((a,b)=>a+b,0)/solarArr.length : null;
-      const windMax  = windArr.length  ? Math.max(...windArr)  : null;
-      const solarMax = solarArr.length ? Math.max(...solarArr) : null;
-      series.push({ d: ds, windAvg, solarAvg, windMax, solarMax });
-    } catch (e) {
-      // silent
+  // ──────────────────────────────────────────────────────────────
+  // Fetch enriched summary.json — contains per-fuel daily avg/max
+  // (windAvg, solarAvg, nuclearAvg, hydroAvg, fossilAvg, biomassAvg, ...Max)
+  // Falls back to per-day fetch if summary lacks these fields (backward compat)
+  // ──────────────────────────────────────────────────────────────
+  let series = [];
+  try {
+    if (!window._GM_HIST_SUMMARY_CACHE) {
+      const r = await fetch('data/history/summary.json');
+      if (r.ok) window._GM_HIST_SUMMARY_CACHE = await r.json();
     }
+    const summary = window._GM_HIST_SUMMARY_CACHE;
+    const zoneData = summary?.zones?.[zone];
+    if (zoneData && zoneData.length) {
+      // Filter by window
+      const days = _gmHistDaysForWindow(w);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const filtered = (w === 'All') ? zoneData : zoneData.filter(e => e.d >= cutoffStr);
+      series = filtered.map(e => ({
+        d:         e.d,
+        windAvg:   e.windAvg    ?? null,
+        windMax:   e.windMax    ?? null,
+        solarAvg:  e.solarAvg   ?? null,
+        solarMax:  e.solarMax   ?? null,
+        nuclearAvg:e.nuclearAvg ?? null,
+        hydroAvg:  e.hydroAvg   ?? null,
+        fossilAvg: e.fossilAvg  ?? null,
+        biomassAvg:e.biomassAvg ?? null,
+      })).filter(s => s.windAvg != null || s.solarAvg != null);
+    }
+  } catch (e) {
+    console.warn('GenMix history fetch error:', e);
   }
-  series.sort((a, b) => a.d.localeCompare(b.d));
+
+  // Backward-compatible fallback (slow path): fetch daily files if summary empty
+  if (!series.length) {
+    if (periodEl) periodEl.textContent = `${zone} · ${w} · fallback fetch (slow)`;
+    const days = _gmHistDaysForWindow(w);
+    const today = new Date();
+    for (let i = 0; i < Math.min(days, 31); i++) {  // cap fallback at 31 days for safety
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      try {
+        const r = await fetch(`data/history/daily/${ds}.json`);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const z = j?.zones?.[zone];
+        if (!z) continue;
+        const meanOf = arr => {
+          const vv = (arr || []).filter(v => v != null);
+          return vv.length ? vv.reduce((a,b)=>a+b,0)/vv.length : null;
+        };
+        const maxOf = arr => {
+          const vv = (arr || []).filter(v => v != null);
+          return vv.length ? Math.max(...vv) : null;
+        };
+        if ((z.wind || z.solar) && (z.wind?.length || z.solar?.length)) {
+          series.push({
+            d: ds,
+            windAvg:   meanOf(z.wind),  windMax:   maxOf(z.wind),
+            solarAvg:  meanOf(z.solar), solarMax:  maxOf(z.solar),
+            nuclearAvg:meanOf(z.nuclear),
+            hydroAvg:  meanOf(z.hydro),
+            fossilAvg: meanOf(z.fossil),
+            biomassAvg:meanOf(z.biomass),
+          });
+        }
+      } catch (e) { /* silent */ }
+    }
+    series.sort((a, b) => a.d.localeCompare(b.d));
+  }
 
   if (!series.length) {
     if (periodEl) periodEl.textContent = `${zone} · ${w} · no data`;
-    _setText('gm-hist-kpi-wind', '--', 'GW');
+    _setText('gm-hist-kpi-wind',  '--', 'GW');
     _setText('gm-hist-kpi-solar', '--', 'GW');
+    _setText('gm-hist-kpi-windmax',  '--', 'GW');
+    _setText('gm-hist-kpi-solarmax', '--', 'GW');
+    _setText('gm-hist-kpi-cf', '--', '%');
     if (canvas) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -918,6 +963,9 @@ async function renderGmHistory() {
       ctx.font = '13px Inter';
       ctx.textAlign = 'center';
       ctx.fillText('No wind/solar history found for this zone & window', canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = '#5A6F88';
+      ctx.font = '11px Inter';
+      ctx.fillText('Run enrich_summary.py to populate the summary, or check fetch_data.py', canvas.width / 2, canvas.height / 2 + 22);
     }
     return;
   }
@@ -949,8 +997,11 @@ async function renderGmHistory() {
   if (!canvas || typeof Chart === 'undefined') return;
 
   const labels = series.map(s => s.d);
-  const windData  = series.map(s => s.windAvg  != null ? s.windAvg  / 1000 : null);
-  const solarData = series.map(s => s.solarAvg != null ? s.solarAvg / 1000 : null);
+  const windData    = series.map(s => s.windAvg    != null ? s.windAvg    / 1000 : null);
+  const solarData   = series.map(s => s.solarAvg   != null ? s.solarAvg   / 1000 : null);
+  const nuclearData = series.map(s => s.nuclearAvg != null ? s.nuclearAvg / 1000 : null);
+  const hydroData   = series.map(s => s.hydroAvg   != null ? s.hydroAvg   / 1000 : null);
+  const fossilData  = series.map(s => s.fossilAvg  != null ? s.fossilAvg  / 1000 : null);
   // 7D rolling on wind
   const r7 = (arr) => arr.map((_, i, a) => {
     const s = Math.max(0, i - 6);
@@ -959,16 +1010,19 @@ async function renderGmHistory() {
   });
   const windR7 = r7(windData);
 
+  // Build datasets — only include fuels with non-null data
+  const datasets = [
+    { label: 'Wind',        data: windData,    borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.08)', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: true, spanGaps: true },
+    { label: 'Solar',       data: solarData,   borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.08)', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: true, spanGaps: true },
+  ];
+  if (nuclearData.some(v => v != null && v > 0)) datasets.push({ label: 'Nuclear', data: nuclearData, borderColor: '#7B4B9C', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
+  if (hydroData.some(v => v != null && v > 0))   datasets.push({ label: 'Hydro',   data: hydroData,   borderColor: '#3FA6B4', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
+  if (fossilData.some(v => v != null && v > 0))  datasets.push({ label: 'Fossil',  data: fossilData,  borderColor: '#ED6965', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
+  datasets.push({ label: 'Wind 7D rolling', data: windR7, borderColor: '#94a3b8', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.2, fill: false, spanGaps: true });
+
   window._GM_HIST_CHART = new Chart(canvas, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Wind',        data: windData,  borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.08)', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: true,  spanGaps: true },
-        { label: 'Solar',       data: solarData, borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.08)', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: true,  spanGaps: true },
-        { label: 'Wind 7D',     data: windR7,    borderColor: '#94a3b8', backgroundColor: 'transparent',           borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.2, fill: false, spanGaps: true },
-      ],
-    },
+    data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
