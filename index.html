@@ -2228,9 +2228,9 @@
             <th style="width:10%;text-align:right" title="Average price over selected window">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
             <th style="width:10%;text-align:right" title="Average peak price (08:00-20:00 CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
             <th style="width:10%;text-align:right" title="Average off-peak price (00:00-08:00 + 20:00-24:00 CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:7%;text-align:right" title="Peak / off-peak ratio (1.30x = typical day/night signal)">P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">ratio</span></th>
+            <th style="width:8%;text-align:right" title="Average intraday spread (max - min per day, averaged over period) — proxy for BESS arbitrage potential">Spread<br><span style="color:var(--tx3);font-weight:400;font-size:9px">intraday</span></th>
             <th style="width:7%;text-align:right" title="Standard deviation of daily averages">σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:11%;text-align:right" title="Minimum / Maximum daily average">Min/Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:11%;text-align:right" title="Minimum / Maximum daily average">Min / Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
             <th style="width:7%;text-align:right" title="Hours below 0 €/MWh (renewable stress)">Neg h<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
             <th style="width:7%;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">avg</span></th>
             <th style="width:13%;text-align:right" title="Dominant fuel in generation mix">Dom. fuel</th>
@@ -2385,44 +2385,9 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════
-     BLOCK 4 · MONTHLY SUMMARY
+     BLOCK 4 · (removed — monthly breakdown now collapsible
+     inside each Historical Overview row detail)
      ════════════════════════════════════════════════════════ -->
-<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Monthly summary</span>
-      <span id="hms-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select class="hist-zone-select" id="hms-zone" onchange="setHistMonthlyZone(this.value)">
-        <option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option>
-      </select>
-      <div class="hist-window-btns" id="hw-hms">
-        <button class="hw-btn" onclick="setHistWindow('hms','1Y',this)">1Y</button>
-        <button class="hw-btn active" onclick="setHistWindow('hms','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hms','5Y',this)">5Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hms','All',this)">All</button>
-      </div>
-    </div>
-  </div>
-  <div class="table-wrap" style="margin-top:0">
-    <table id="hms-table" style="font-size:11px;table-layout:fixed">
-      <thead>
-        <tr>
-          <th style="width:14%">Month</th>
-          <th style="width:13%;text-align:right">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-          <th style="width:13%;text-align:right">Peak avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08-20h</span></th>
-          <th style="width:13%;text-align:right">Off-peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">00-08/20-24</span></th>
-          <th style="width:13%;text-align:right">Spread<br><span style="color:var(--tx3);font-weight:400;font-size:9px">P − OP</span></th>
-          <th style="width:12%;text-align:right">Neg hours<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
-          <th style="width:11%;text-align:right">Days<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
-          <th style="width:11%;text-align:right">vs LY<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-        </tr>
-      </thead>
-      <tbody id="hms-table-tbody"></tbody>
-    </table>
-  </div>
-</div>
 
 <!-- Global zone selector panel · shared across all sections -->
 <div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
