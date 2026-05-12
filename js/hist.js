@@ -340,7 +340,7 @@ async function renderHistSpot() {
     { l: '30D avg',  v: roll30.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '€/MWh' },
     { l: 'Min',      v: Math.min(...data.map(d=>d.min)).toFixed(1), u: '€/MWh' },
     { l: 'Max',      v: Math.max(...data.map(d=>d.max)).toFixed(1), u: '€/MWh' },
-    { l: 'Neg h',    v: data.reduce((a,d)=>a+(d.negH||0),0).toFixed(0), u: 'h' },
+    { l: 'Neg h',    v: Math.round(data.reduce((a,d)=>a+(d.negH||0),0)), u: 'h' },
   ]);
 }
 
@@ -420,7 +420,7 @@ async function renderHistNeg() {
       ...baseOptions('Hours'),
       plugins: {
         legend: { display: false },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.parsed.y?.toFixed(1)} neg hours` } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${_fmtNegH(ctx.parsed.y)} negative` } },
       },
     },
   });
@@ -428,9 +428,9 @@ async function renderHistNeg() {
   const totalNeg = negH.reduce((a,b)=>a+b,0);
   const daysNeg  = negH.filter(v=>v>0).length;
   setStats('hist-neg-stats', [
-    { l: 'Total neg h',    v: totalNeg.toFixed(0), u: 'h' },
+    { l: 'Total neg h',    v: Math.round(totalNeg), u: 'h' },
     { l: 'Days with neg',  v: daysNeg },
-    { l: 'Max neg hours',  v: Math.max(...negH).toFixed(1), u: 'h' },
+    { l: 'Max neg hours',  v: Math.round(Math.max(...negH)), u: 'h' },
     { l: '% days with neg',v: data.length ? (daysNeg/data.length*100).toFixed(0) : '0', u: '%' },
   ]);
 
@@ -458,9 +458,9 @@ async function renderHistNeg() {
   const el_w = document.getElementById('neg-kpi-worst');
   const el_ms = document.getElementById('neg-kpi-month-sub');
   const el_ws = document.getElementById('neg-kpi-worst-sub');
-  if (el_m) el_m.innerHTML = `${monthH.toFixed(1)}<span class="kpi-unit">h</span>`;
-  if (el_y) el_y.innerHTML = `${yearH.toFixed(1)}<span class="kpi-unit">h</span>`;
-  if (el_w) el_w.innerHTML = `${worstH.toFixed(1)}<span class="kpi-unit">h</span>`;
+  if (el_m) el_m.innerHTML = _fmtNegH(monthH);
+  if (el_y) el_y.innerHTML = _fmtNegH(yearH);
+  if (el_w) el_w.innerHTML = _fmtNegH(worstH);
   if (el_ms) el_ms.textContent = curMonth;
   if (el_ws) el_ws.textContent = worstM;
 
@@ -565,7 +565,7 @@ function renderNegMonthlySummary(byMonth) {
     const col = h > 40 ? '#ef4444' : h > 20 ? '#f97316' : h > 5 ? '#fbbf24' : 'rgba(16,185,129,0.7)';
     return `<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;text-align:center">
       <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">${m}</div>
-      <div style="font-size:16px;font-weight:700;color:${col}">${h.toFixed(0)}<span style="font-size:10px;font-weight:400;color:var(--tx3)">h</span></div>
+      <div style="font-size:16px;font-weight:700;color:${col}">${Math.round(h)}<span style="font-size:10px;font-weight:400;color:var(--tx3)">h</span></div>
     </div>`;
   }).join('');
 }
@@ -2111,7 +2111,7 @@ async function renderHistSingle() {
     document.getElementById('hsz-kpi-peak-v').innerHTML = (st.peakAvg != null ? st.peakAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
     document.getElementById('hsz-kpi-offpeak-v').innerHTML = (st.offAvg != null ? st.offAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
     document.getElementById('hsz-kpi-vol-v').innerHTML = st.sigma.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hsz-kpi-neg-v').innerHTML = st.negH + '<span class="kpi-unit">h</span>';
+    document.getElementById('hsz-kpi-neg-v').innerHTML = _fmtNegH(st.negH);
     const spread = (st.peakAvg != null && st.offAvg != null) ? (st.peakAvg - st.offAvg) : null;
     document.getElementById('hsz-kpi-spread-v').innerHTML = (spread != null ? spread.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
   }
@@ -2415,7 +2415,7 @@ async function renderHistMonthlyTable() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.peakAvg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.offAvg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.spread)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${r.negH > 0 ? _HIST_WARN : 'var(--tx3)'}">${r.negH || 0}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${r.negH > 0 ? _HIST_WARN : 'var(--tx3)'}">${_fmtNegH(r.negH || 0)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${r.days}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${vsLYColor}">${vsLY}</td>
     </tr>`;
