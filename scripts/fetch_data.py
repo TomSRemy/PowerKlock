@@ -408,7 +408,11 @@ def fetch_renewables():
                             (key=='wind_onshore' and psr == 'B19') or \
                             (key=='wind_offshore' and psr == 'B18') or \
                             (key=='solar' and 'Solar' in name) or \
-                            (key=='hydro' and 'Hydro' in name)
+                            (key=='hydro' and 'Hydro' in name) or \
+                            (key=='nuclear' and 'Nuclear' in name) or \
+                            (key=='fossil' and 'Fossil' in name) or \
+                            (key=='biomass' and ('Biomass' in name or 'Waste' in name)) or \
+                            (key=='other' and ('Geothermal' in name or 'Marine' in name or name == 'Other' or 'Other renewable' in name))
                     if match:
                         for i in range(min(96, len(vals))):
                             acc[i] += vals[i]
@@ -418,6 +422,12 @@ def fetch_renewables():
             wind_offshore_act = get_profile(raw_a, 'wind_offshore')
             wind_act          = [a+b for a,b in zip(wind_onshore_act, wind_offshore_act)]
             solar_act         = get_profile(raw_a, 'solar')
+            # All fuels — full GenMix hourly profile (B-codes aggregated by category)
+            nuclear_act       = get_profile(raw_a, 'nuclear')
+            hydro_act         = get_profile(raw_a, 'hydro')
+            fossil_act        = get_profile(raw_a, 'fossil')
+            biomass_act       = get_profile(raw_a, 'biomass')
+            other_act         = get_profile(raw_a, 'other')
 
             # Forecast — try A69 then A71
             wind_onshore_fc, wind_offshore_fc, solar_fc = [0]*96, [0]*96, [0]*96
@@ -463,6 +473,12 @@ def fetch_renewables():
                 'windOnshoreActual':  wind_onshore_act,
                 'windOffshoreActual': wind_offshore_act,
                 'solarActual':        solar_act,
+                # Full GenMix hourly profile (NEW — aggregated by fuel category)
+                'nuclearActual':      nuclear_act,
+                'hydroActual':        hydro_act,
+                'fossilActual':       fossil_act,
+                'biomassActual':      biomass_act,
+                'otherActual':        other_act,
                 'windForecast':       wind_fc,
                 'windOnshoreForecast':  wind_onshore_fc,
                 'windOffshoreForecast': wind_offshore_fc,
@@ -758,6 +774,12 @@ if __name__ == '__main__':
             zone_entry['windOffshore'] = r.get('windOffshoreActual', [])
             zone_entry['wind']         = r.get('windActual',         [])
             zone_entry['solar']        = r.get('solarActual',        [])
+            # NEW: full GenMix profile (each fuel as a 96-slot hourly array)
+            zone_entry['nuclear']      = r.get('nuclearActual',      [])
+            zone_entry['hydro']        = r.get('hydroActual',        [])
+            zone_entry['fossil']       = r.get('fossilActual',       [])
+            zone_entry['biomass']      = r.get('biomassActual',      [])
+            zone_entry['other']        = r.get('otherActual',        [])
         # Attach genmix snapshot of the day for this zone (if covered)
         if genmix and ren_code in genmix:
             gm = genmix[ren_code]
