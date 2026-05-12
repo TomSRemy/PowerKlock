@@ -2159,9 +2159,22 @@ function _buildHoChart(zone, series, fullscreen) {
 
   const labels = series.map(d => d.d);
   const daily  = series.map(d => d.avg);
+  const maxes  = series.map(d => d.max);
+  const mins   = series.map(d => d.min);
   const r7     = rolling(daily, 7);
   const r30    = rolling(daily, 30);
   const color  = zoneColor(zone);
+
+  // Ribbon colors (max-min envelope)
+  let ribbonFill = 'rgba(20,211,169,0.12)';
+  let maxBorder  = 'rgba(251,191,36,0.45)';
+  let minBorder  = 'rgba(237,105,101,0.40)';
+  if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    ribbonFill = `rgba(${r},${g},${b},0.12)`;
+  }
 
   // Find min/max for annotations
   let minIdx = 0, maxIdx = 0;
@@ -2183,6 +2196,32 @@ function _buildHoChart(zone, series, fullscreen) {
     data: {
       labels,
       datasets: [
+        // ── Ribbon: max-min daily envelope ──
+        {
+          label: 'Daily max',
+          data: maxes,
+          borderColor: maxBorder,
+          backgroundColor: ribbonFill,
+          borderWidth: 1,
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: true,
+          fill: '+1',        // fill DOWN to the next dataset (Daily min)
+          order: 5,          // render below the main lines
+        },
+        {
+          label: 'Daily min',
+          data: mins,
+          borderColor: minBorder,
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: true,
+          fill: false,
+          order: 5,
+        },
+        // ── Main 3 lines on top ──
         {
           label: 'Daily avg',
           data: daily,
@@ -2193,6 +2232,7 @@ function _buildHoChart(zone, series, fullscreen) {
           pointHoverRadius: 4,
           tension: 0,
           fill: false,
+          order: 3,
         },
         {
           label: '7D rolling',
@@ -2204,6 +2244,7 @@ function _buildHoChart(zone, series, fullscreen) {
           pointRadius: 0,
           tension: 0.2,
           fill: false,
+          order: 2,
         },
         {
           label: '30D rolling',
@@ -2214,6 +2255,7 @@ function _buildHoChart(zone, series, fullscreen) {
           pointRadius: 0,
           tension: 0.3,
           fill: false,
+          order: 1,
         },
       ],
     },
@@ -2421,12 +2463,26 @@ function _hszPlaceholder(msg) {
 
 function _hszRenderLines(filtered, zone) {
   const labels = filtered.map(d => d.d);
-  const avgs = filtered.map(d => d.avg);
-  const roll7 = rolling(avgs, 7);
+  const avgs   = filtered.map(d => d.avg);
+  const maxes  = filtered.map(d => d.max);
+  const mins   = filtered.map(d => d.min);
+  const roll7  = rolling(avgs, 7);
   const roll30 = rolling(avgs, 30);
   const color = zoneColor(zone);
 
-  // Min/max annotations
+  // Convert zone color to rgba for ribbon fill (~12% opacity)
+  // Try to parse hex like #14D3A9 → rgba(20,211,169,0.12)
+  let ribbonFill = 'rgba(20,211,169,0.12)';
+  let maxBorder  = 'rgba(251,191,36,0.45)';   // amber for max
+  let minBorder  = 'rgba(237,105,101,0.40)';  // red for min
+  if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    ribbonFill = `rgba(${r},${g},${b},0.12)`;
+  }
+
+  // Min/max annotations (point markers + label at chart extremes)
   const validAvgs = avgs.filter(v => v != null);
   const annotations = {};
   if (validAvgs.length) {
@@ -2449,16 +2505,55 @@ function _hszRenderLines(filtered, zone) {
     data: {
       labels,
       datasets: [
-        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false },
-        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false },
-        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3] },
+        // ── Ribbon: max-min daily envelope ──
+        // Trick: 2 paired datasets, the first fills DOWN to the next (Min).
+        // Both have hidden borders (transparent main line) but we draw thin
+        // explicit Max/Min lines on top for clarity.
+        {
+          label: 'Daily max',
+          data: maxes,
+          borderColor: maxBorder,
+          backgroundColor: ribbonFill,
+          borderWidth: 1,
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: true,
+          fill: '+1',          // fill area down to the next dataset (Min)
+          order: 5,            // render below the main lines
+        },
+        {
+          label: 'Daily min',
+          data: mins,
+          borderColor: minBorder,
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: true,
+          fill: false,
+          order: 5,
+        },
+        // ── Main 3 lines (above the ribbon) ──
+        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
+        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: {
+            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
+            // Hide the Max/Min datasets from the legend (they're decorative)
+            filter: (item) => item.text !== 'Daily max' && item.text !== 'Daily min',
+          },
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` }
+        },
         annotation: { annotations }
       }
     }
