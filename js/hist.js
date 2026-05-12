@@ -1003,10 +1003,11 @@ window.renderHistMonthly = function(){};
 // ── Global zone state (shared across Daily Compare + Historical + Prices Table) ──
 function getUserZones() {
   if (!window._userZones) {
-    const gmKeys = (typeof window._genmixData === 'object' && window._genmixData)
-      ? Object.keys(window._genmixData)
-      : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
-    window._userZones = new Set(gmKeys);
+    // Default: zones with actual GenMix data
+    const defaults = typeof getGenMixDefaultZones === 'function'
+      ? getGenMixDefaultZones()
+      : ['FR','DE_LU','ES','BE','NL','GB','PT'];
+    window._userZones = new Set(defaults);
   }
   return Array.from(window._userZones);
 }
@@ -1122,9 +1123,9 @@ function presetGlobalNeighbours() {
 function presetGlobalGenMix() {
   const s = HIST.summary;
   const avail = s?.zones ? Object.keys(s.zones) : [];
-  const gm = (typeof window._genmixData === 'object' && window._genmixData)
-    ? Object.keys(window._genmixData)
-    : ['FR','DE_LU','ES','BE','NL','IT_NORD'];
+  const gm = typeof getGenMixDefaultZones === 'function'
+    ? getGenMixDefaultZones()
+    : ['FR','DE_LU','ES','BE','NL','GB','PT'];
   const want = gm.filter(z => avail.includes(z));
   setUserZones(want.length ? want : gm);
   renderGlobalZoneChips();
