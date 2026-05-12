@@ -896,10 +896,12 @@
   }
   .hist-zone-select {
     background: var(--bg3); border: 1px solid var(--border2);
-    color: var(--text2); font-size: 11px; padding: 4px 8px;
+    color: var(--text2); font-size: 11px; padding: 0 8px;
     border-radius: 5px; cursor: pointer; font-family: 'Outfit','Inter',sans-serif;
     margin-bottom: 10px;
+    height: 28px; box-sizing: border-box;
   }
+  .hist-filter-bar .hist-zone-select { margin-bottom: 0; }
   .hist-zone-select:focus { outline: none; border-color: var(--accent); }
   .hist-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
   .hist-window-btns {
@@ -909,9 +911,37 @@
     padding: 4px 11px; border-radius: 4px; font-size: 11px; font-weight: 600;
     cursor: pointer; border: 1px solid var(--bd); color: var(--tx3);
     background: none; font-family: 'Outfit','Inter',sans-serif; transition: all 0.12s;
+    height: 28px; line-height: 1; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center;
   }
   .hw-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,.3); }
   .hw-btn:hover:not(.active) { color: var(--tx2); border-color: var(--tx3); }
+
+  /* ── Unified filter bar (zone + window + date range) — same height everywhere ── */
+  .hist-filter-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hist-filter-bar > * { height: 28px; box-sizing: border-box; }
+  .hist-filter-bar > button { display: inline-flex; align-items: center; }
+  .hist-filter-bar .hist-window-btns { margin-bottom: 0; }
+  .hist-filter-bar .hf-date-range {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0 8px; background: var(--bg3); border: 1px solid var(--bd); border-radius: 6px;
+    height: 28px; box-sizing: border-box;
+  }
+  .hist-filter-bar .hf-date-range input[type="date"] {
+    background: transparent; border: none; color: var(--tx); font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; padding: 0 2px; cursor: pointer;
+    color-scheme: dark; height: 24px; line-height: 1;
+  }
+  .hist-filter-bar .hf-date-range span {
+    font-size: 10px; color: var(--tx3); text-transform: uppercase;
+    letter-spacing: .06em; font-weight: 600;
+  }
+  .hist-filter-bar .hf-zone-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--bd); background: var(--bg3); color: var(--tx2);
+    height: 28px; box-sizing: border-box; line-height: 1;
+  }
   .hist-stats-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px; margin-top: 12px;
@@ -2143,10 +2173,9 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Power Day-Ahead Prices · Historical
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
+    <div class="hist-filter-bar" style="margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
       <!-- Global zone filter button -->
-      <button onclick="toggleGlobalZonePanel()" id="ho-zone-btn"
-        style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+      <button onclick="toggleGlobalZonePanel()" id="ho-zone-btn" class="hf-zone-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
         <span id="ho-zone-label">-- zones</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2164,15 +2193,11 @@
         <button class="hw-btn" onclick="setHistWindow('ho','All',this)">All</button>
       </div>
       <!-- Date range picker -->
-      <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px">
-        <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
-        <input type="date" id="ho-date-from"
-          onchange="setHistCustomRange()"
-          style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:2px 4px;cursor:pointer;color-scheme:dark">
-        <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
-        <input type="date" id="ho-date-to"
-          onchange="setHistCustomRange()"
-          style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:2px 4px;cursor:pointer;color-scheme:dark">
+      <div class="hf-date-range">
+        <span>From</span>
+        <input type="date" id="ho-date-from" onchange="setHistCustomRange()">
+        <span>To</span>
+        <input type="date" id="ho-date-to" onchange="setHistCustomRange()">
       </div>
     </div>
     <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2253,7 +2278,7 @@
       <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Single zone</span>
       <span id="hsz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div class="hist-filter-bar">
       <select class="hist-zone-select" id="hsz-zone" onchange="setHistSingleZone(this.value)">
         <option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option>
       </select>
@@ -2325,12 +2350,27 @@
       <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Compare zones</span>
       <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button onclick="toggleGlobalZonePanel()" style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+    <div class="hist-filter-bar">
+      <button onclick="toggleGlobalZonePanel()" class="hf-zone-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
         <span id="hmz-zone-label">-- zones</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
+      <!-- Baseline zone selector -->
+      <label class="hf-zone-btn" style="cursor:default;padding-right:4px">
+        <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Baseline</span>
+        <select id="hmz-baseline-select" onchange="setHmzBaseline(this.value)"
+          style="background:transparent;border:none;color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
+          <option value="FR">FR</option>
+          <option value="DE_LU">DE_LU</option>
+          <option value="ES">ES</option>
+          <option value="BE">BE</option>
+          <option value="NL">NL</option>
+          <option value="GB">GB</option>
+          <option value="PT">PT</option>
+          <option value="IT_NORD">IT_NORD</option>
+        </select>
+      </label>
       <div class="hist-window-btns" id="hw-hmz">
         <button class="hw-btn" onclick="setHistWindow('hmz','7D',this)">7D</button>
         <button class="hw-btn" onclick="setHistWindow('hmz','1M',this)">1M</button>
