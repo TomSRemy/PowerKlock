@@ -1928,8 +1928,15 @@
 
         <!-- TAB · DAILY -->
         <div class="tab-panel active" data-tab-panel="daily" id="prtab-daily">
-<div class="hist-section" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices</div>
-<div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
+<div class="hist-section" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices · Daily</div>
+<div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
+  <!-- Zone filter (moved here for visual consistency with Historical header) -->
+  <button onclick="toggleZoneFilterPanel()" id="zone-filter-btn-hdr"
+    style="display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+    <span id="zone-filter-label-hdr">All zones</span>
+    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
   <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap">↺ Latest data</button>
   <div class="date-picker-wrap" id="date-picker-wrap-hdr">
     <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
@@ -1997,8 +2004,8 @@
             <span id="prices-date-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Day-Ahead prices · loading...</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <!-- Zone filter dropdown panel -->
-            <div style="position:relative" id="zone-filter-wrap">
+            <!-- Zone filter dropdown panel — bouton caché (déplacé dans le header du wrapper) -->
+            <div style="position:relative;display:none" id="zone-filter-wrap">
               <button onclick="toggleZoneFilterPanel()" id="zone-filter-btn"
                 style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
@@ -2110,7 +2117,7 @@
                   <th style="width:18%">Zone</th>
                   <th style="width:9%;text-align:right" title="24h average price (raw 15-min slots if available)">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
                   <th style="width:30%;text-align:left" title="Intraday range — min slot to max slot, scale shared across selected zones">Range<br><span style="color:var(--tx3);font-weight:400;font-size:9px">min slot — max slot · €/MWh</span></th>
-                  <th style="width:21%;text-align:right" title="Peak avg = mean over 08h-20h | Off-peak avg = mean over 00-08h + 20-24h">Peak avg / Off-pk avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08-20h / 00-08+20-24h · €/MWh</span></th>
+                  <th style="width:21%;text-align:right" title="Peak avg = mean over 08:00-20:00 | Off-peak avg = mean over 00:00-08:00 + 20:00-24:00">Peak avg / Off-pk avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08:00-20:00 / 00:00-08:00+20:00-24:00 · €/MWh</span></th>
                   <th style="width:13%;text-align:right" title="Spread = Peak avg − Off-peak avg. Negative = inverted (duck curve, off-peak more expensive than peak)">Spread P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
                 </tr>
               </thead>
@@ -2187,12 +2194,12 @@
       <div class="kpi-card kpi-flat">
         <div class="kpi-label">FR peak avg</div>
         <div class="kpi-value" id="ho-kpi-fr-peak">--<span class="kpi-unit">€/MWh</span></div>
-        <div class="kpi-meta" id="ho-kpi-fr-peak-meta">08-20h</div>
+        <div class="kpi-meta" id="ho-kpi-fr-peak-meta">08:00-20:00</div>
       </div>
       <div class="kpi-card kpi-flat">
         <div class="kpi-label">FR off-peak avg</div>
         <div class="kpi-value" id="ho-kpi-fr-off">--<span class="kpi-unit">€/MWh</span></div>
-        <div class="kpi-meta" id="ho-kpi-fr-off-meta">00-08h / 20-24h</div>
+        <div class="kpi-meta" id="ho-kpi-fr-off-meta">00:00-08:00 / 20:00-24:00</div>
       </div>
       <div class="kpi-card kpi-flat">
         <div class="kpi-label">FR σ daily</div>
@@ -2219,8 +2226,8 @@
           <tr>
             <th style="width:11%;text-align:left">Zone</th>
             <th style="width:10%;text-align:right" title="Average price over selected window">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:10%;text-align:right" title="Average peak price (08-20h CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:10%;text-align:right" title="Average off-peak price (00-08h + 20-24h CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:10%;text-align:right" title="Average peak price (08:00-20:00 CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+            <th style="width:10%;text-align:right" title="Average off-peak price (00:00-08:00 + 20:00-24:00 CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
             <th style="width:7%;text-align:right" title="Peak / off-peak ratio (1.30x = typical day/night signal)">P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">ratio</span></th>
             <th style="width:7%;text-align:right" title="Standard deviation of daily averages">σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
             <th style="width:11%;text-align:right" title="Minimum / Maximum daily average">Min/Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
@@ -2243,7 +2250,7 @@
 <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:20px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">DA Prices · single zone</span>
+      <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Single zone</span>
       <span id="hsz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2315,7 +2322,7 @@
 <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:20px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Compare zones · Historical</span>
+      <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Compare zones</span>
       <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
