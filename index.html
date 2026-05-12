@@ -900,7 +900,9 @@
     border-radius: 5px; cursor: pointer; font-family: 'Outfit','Inter',sans-serif;
     margin-bottom: 10px;
     height: 28px; box-sizing: border-box;
+    color-scheme: dark;
   }
+  .hist-zone-select option { background: var(--bg2); color: var(--tx); }
   .hist-filter-bar .hist-zone-select { margin-bottom: 0; }
   .hist-zone-select:focus { outline: none; border-color: var(--accent); }
   .hist-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -2357,18 +2359,18 @@
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <!-- Baseline zone selector -->
-      <label class="hf-zone-btn" style="cursor:default;padding-right:4px">
+      <label class="hf-zone-btn" style="cursor:default;padding:0 4px 0 10px;gap:8px">
         <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Baseline</span>
         <select id="hmz-baseline-select" onchange="setHmzBaseline(this.value)"
-          style="background:transparent;border:none;color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;outline:none">
-          <option value="FR">FR</option>
-          <option value="DE_LU">DE_LU</option>
-          <option value="ES">ES</option>
-          <option value="BE">BE</option>
-          <option value="NL">NL</option>
-          <option value="GB">GB</option>
-          <option value="PT">PT</option>
-          <option value="IT_NORD">IT_NORD</option>
+          style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;outline:none;height:22px;padding:0 6px;border-radius:4px;color-scheme:dark">
+          <option value="FR" style="background:var(--bg2);color:var(--tx)">FR</option>
+          <option value="DE_LU" style="background:var(--bg2);color:var(--tx)">DE_LU</option>
+          <option value="ES" style="background:var(--bg2);color:var(--tx)">ES</option>
+          <option value="BE" style="background:var(--bg2);color:var(--tx)">BE</option>
+          <option value="NL" style="background:var(--bg2);color:var(--tx)">NL</option>
+          <option value="GB" style="background:var(--bg2);color:var(--tx)">GB</option>
+          <option value="PT" style="background:var(--bg2);color:var(--tx)">PT</option>
+          <option value="IT_NORD" style="background:var(--bg2);color:var(--tx)">IT_NORD</option>
         </select>
       </label>
       <div class="hist-window-btns" id="hw-hmz">
