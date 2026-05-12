@@ -1233,11 +1233,17 @@ function _setHoKpi(id, val, unit) {
   el.innerHTML = `${v}<span class="kpi-unit">${unit || '€/MWh'}</span>`;
 }
 
-// Format negative hours as "HH h MM min" — no decimals, no float noise
-// Examples: 193.10 → "193 h 06 min" · 0.5 → "0 h 30 min" · 0 → "0 h 00 min"
+// Format negative hours as "HH h MM min" — snapped to the 15-min slot grid
+// (because DA prices use 15-min granularity in most ENTSO-E zones, neg hours
+// can only be a multiple of 15 min, never 18 or 22 min — that would be a float
+// artefact from upstream aggregation). For hourly-only zones, multiples of 60 min.
+// Examples: 193.10 → "193 h 00 min" · 0.5 → "0 h 30 min" · 0.30 → "0 h 15 min"
 function _fmtNegH(val) {
   if (val == null || isNaN(val)) return '--';
-  const totalMin = Math.round(val * 60);
+  // Round to the nearest 15-min step to eliminate float noise from upstream
+  // (any zone with 60-min granularity will still land cleanly on 60-min multiples)
+  const totalMinRaw = val * 60;
+  const totalMin = Math.round(totalMinRaw / 15) * 15;
   const h  = Math.floor(totalMin / 60);
   const m  = totalMin % 60;
   return `${h} h ${String(m).padStart(2, '0')} min`;
