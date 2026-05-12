@@ -2545,68 +2545,245 @@
       <div class="page-header">
         <div>
           <div class="page-title">Generation Mix</div>
-          <div class="page-subtitle">Actual generation by fuel type · France (FR)</div>
+          <div class="page-subtitle">Live snapshot · Single zone deep-dive · Cross-zone compare · Historical trends</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <select class="country-select" id="genmix-country" onchange="loadGenMix()">
-            <option value="FR">France (FR)</option>
-            <option value="DE_LU">Germany (DE)</option>
-            <option value="ES">Spain (ES)</option>
-            <option value="BE">Belgium (BE)</option>
-            <option value="NL">Netherlands (NL)</option>
-            <option value="PT">Portugal (PT)</option>
-            <option value="IT_NORD">Italy North (IT)</option>
-          </select>
-          <span class="updated-badge" id="genmix-updated">Loading...</span>
+          <span class="updated-badge" id="genmix-updated">ENTSO-E A75</span>
         </div>
       </div>
 
-      <div class="fuel-grid" id="fuel-grid">
-        <div class="kpi-card"><div class="kpi-label">Loading...</div></div>
+      <!-- ════════════════════════════════════════════════════════
+           BLOCK 1 · MULTI-ZONE LIVE SNAPSHOT TABLE
+           Click a zone row to expand for KPI strip + 2 charts
+           ════════════════════════════════════════════════════════ -->
+      <div class="hist-section" id="hs-gm-main">
+        <div class="hist-section-header open">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22v-6"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m7 20.66 1-1.73"/></svg>
+            Generation Mix · Live snapshot
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-gm-main">
+          <!-- KPI strip globale (FR-centric + loaded avg) -->
+          <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">FR Total gen</div>
+              <div class="kpi-value" id="gm-kpi-fr-total">--<span class="kpi-unit">GW</span></div>
+              <div class="kpi-meta" id="gm-kpi-fr-total-meta">live</div>
+            </div>
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">FR % renewable</div>
+              <div class="kpi-value" id="gm-kpi-fr-ren">--<span class="kpi-unit">%</span></div>
+              <div class="kpi-meta" id="gm-kpi-fr-ren-meta">wind + solar + hydro + bio</div>
+            </div>
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">FR % low-carbon</div>
+              <div class="kpi-value" id="gm-kpi-fr-lowc">--<span class="kpi-unit">%</span></div>
+              <div class="kpi-meta" id="gm-kpi-fr-lowc-meta">REN + nuclear</div>
+            </div>
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">FR CO₂ intensity</div>
+              <div class="kpi-value" id="gm-kpi-fr-co2">--<span class="kpi-unit">g/kWh</span></div>
+              <div class="kpi-meta" id="gm-kpi-fr-co2-meta">proxy from mix</div>
+            </div>
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">EU-7 avg %REN</div>
+              <div class="kpi-value" id="gm-kpi-eu-ren">--<span class="kpi-unit">%</span></div>
+              <div class="kpi-meta" id="gm-kpi-eu-ren-meta">avg across loaded zones</div>
+            </div>
+            <div class="kpi-card kpi-flat">
+              <div class="kpi-label">EU-7 total gen</div>
+              <div class="kpi-value" id="gm-kpi-eu-total">--<span class="kpi-unit">GW</span></div>
+              <div class="kpi-meta" id="gm-kpi-eu-total-meta">sum across loaded zones</div>
+            </div>
+          </div>
+
+          <!-- Multi-zone table -->
+          <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px;border:none;background:transparent">
+            <table id="gm-table" style="font-size:11px;table-layout:fixed">
+              <thead>
+                <tr>
+                  <th style="width:11%;text-align:left">Zone</th>
+                  <th style="width:9%;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                  <th style="width:8%;text-align:right" title="% low-carbon = REN + nuclear">% LowC<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                  <th style="width:8%;text-align:right" title="Wind generation (onshore + offshore)">⌬ Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:13%;text-align:right" title="Dominant fuel">Dom. fuel</th>
+                  <th style="width:11%;text-align:center" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                </tr>
+              </thead>
+              <tbody id="gm-table-tbody">
+                <tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <!-- Chart type toggle + DA Price overlay -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-        <div style="display:flex;gap:4px" id="genmix-type-btns">
-          <button class="day-tab active" onclick="setGenMixType('bar',this)">Bars</button>
-          <button class="day-tab" onclick="setGenMixType('area',this)">Area</button>
-          <button class="day-tab" onclick="setGenMixType('donut',this)">Donut</button>
+      <!-- ════════════════════════════════════════════════════════
+           BLOCK 2 · SINGLE ZONE DEEP-DIVE
+           Insta tabs: Donut · Bars · Stacked · Capacity factor
+           ════════════════════════════════════════════════════════ -->
+      <div class="hist-section" id="hs-gm-single">
+        <div class="hist-section-header open">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>
+            Single zone · Deep-dive
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer">
-          <input type="checkbox" id="genmix-da-overlay" onchange="loadGenMix()" style="accent-color:var(--acc)">
-          Show DA Prices
-        </label>
+        <div class="hist-section-body open" id="hs-body-gm-single">
+          <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Single zone</span>
+                <span id="gm-single-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select class="hist-zone-select" id="gm-single-zone" onchange="setGmSingleZone(this.value)">
+                  <option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="GB">Great Britain</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Insta tabs -->
+            <div class="hist-window-btns" style="margin-bottom:14px" id="gm-single-tabs">
+              <button class="hw-btn active" onclick="setGmSingleTab('donut',this)">Donut</button>
+              <button class="hw-btn" onclick="setGmSingleTab('bars',this)">Bars</button>
+              <button class="hw-btn" onclick="setGmSingleTab('stacked',this)">Stacked</button>
+              <button class="hw-btn" onclick="setGmSingleTab('capacity',this)">Capacity factor</button>
+            </div>
+
+            <!-- Chart area -->
+            <div style="position:relative;height:340px;margin-bottom:6px">
+              <canvas id="gm-single-canvas" style="width:100%;height:340px"></canvas>
+            </div>
+            <div id="gm-single-legend" style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px"></div>
+          </div>
+        </div>
       </div>
 
-      <div class="chart-container">
-        <div class="table-header" style="padding:0 0 12px;border:none">
-          <span class="table-title" id="genmix-chart-title">Hourly Generation Mix (MW)</span>
-          <span class="source-badge">ENTSO-E A75</span>
+      <!-- ════════════════════════════════════════════════════════
+           BLOCK 3 · CROSS-ZONE COMPARE
+           Heatmap %fuel + Sorted %REN bar + Auto insights
+           ════════════════════════════════════════════════════════ -->
+      <div class="hist-section" id="hs-gm-compare">
+        <div class="hist-section-header open">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Cross-zones · Compare
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="chart-area">
-          <canvas id="genmix-canvas" style="width:100%;height:300px"></canvas>
+        <div class="hist-section-body open" id="hs-body-gm-compare">
+          <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Fuel-mix heatmap</span>
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">% share per fuel · per zone</span>
+            </div>
+            <!-- Heatmap container -->
+            <div id="gm-compare-heatmap" style="overflow-x:auto;margin-bottom:18px">
+              <div style="color:var(--tx3);font-size:11px;padding:16px">Loading...</div>
+            </div>
+
+            <!-- Sorted %REN bar -->
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">% Renewable · sorted</span>
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">descending</span>
+            </div>
+            <div id="gm-compare-renbar" style="margin-bottom:16px"></div>
+
+            <!-- Auto insights -->
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+              <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Key insights</span>
+            </div>
+            <div id="gm-compare-insights" style="display:flex;flex-direction:column;gap:6px">
+              <div style="color:var(--tx3);font-size:11px">Loading...</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Generation Breakdown Table -->
-      <div class="table-wrap" style="margin-top:16px">
-        <div class="table-header">
-          <span class="table-title">Generation Breakdown</span>
-          <span class="source-badge" id="genmix-breakdown-updated">ENTSO-E A75</span>
+      <!-- ════════════════════════════════════════════════════════
+           BLOCK 4 · HISTORICAL TRENDS
+           Wind + Solar generation time-series over selected window
+           ════════════════════════════════════════════════════════ -->
+      <div class="hist-section" id="hs-gm-history">
+        <div class="hist-section-header open">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="3 16 9 10 13 14 21 6"/></svg>
+            Wind &amp; Solar · Historical trends
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Source</th>
-              <th>GW ↕</th>
-              <th style="min-width:100px">% Share</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody id="genmix-breakdown-tbody">
-            <tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr>
-          </tbody>
-        </table>
+        <div class="hist-section-body open" id="hs-body-gm-history">
+          <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <span style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em">Wind + Solar trend</span>
+                <span id="gm-hist-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select class="hist-zone-select" id="gm-hist-zone" onchange="setGmHistZone(this.value)">
+                  <option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="GB">Great Britain</option>
+                </select>
+                <div class="hist-window-btns" id="hw-gmh">
+                  <button class="hw-btn" onclick="setGmHistWindow('7D',this)">7D</button>
+                  <button class="hw-btn active" onclick="setGmHistWindow('1M',this)">1M</button>
+                  <button class="hw-btn" onclick="setGmHistWindow('3M',this)">3M</button>
+                  <button class="hw-btn" onclick="setGmHistWindow('1Y',this)">1Y</button>
+                  <button class="hw-btn" onclick="setGmHistWindow('2Y',this)">2Y</button>
+                  <button class="hw-btn" onclick="setGmHistWindow('5Y',this)">5Y</button>
+                  <button class="hw-btn" onclick="setGmHistWindow('All',this)">All</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- KPI strip historical -->
+            <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">Wind avg</div>
+                <div class="kpi-value" id="gm-hist-kpi-wind">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gm-hist-kpi-wind-meta">period mean</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">Wind peak</div>
+                <div class="kpi-value" id="gm-hist-kpi-windmax">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gm-hist-kpi-windmax-meta">period max</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">Solar avg</div>
+                <div class="kpi-value" id="gm-hist-kpi-solar">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gm-hist-kpi-solar-meta">period mean</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">Solar peak</div>
+                <div class="kpi-value" id="gm-hist-kpi-solarmax">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gm-hist-kpi-solarmax-meta">period max</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">Wind capacity factor</div>
+                <div class="kpi-value" id="gm-hist-kpi-cf">--<span class="kpi-unit">%</span></div>
+                <div class="kpi-meta" id="gm-hist-kpi-cf-meta">avg / peak</div>
+              </div>
+            </div>
+
+            <!-- Chart -->
+            <div style="position:relative;height:360px;margin-bottom:6px">
+              <canvas id="gm-hist-canvas" style="width:100%;height:360px"></canvas>
+            </div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:16px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace">
+              <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:5px"></span>Wind</span>
+              <span><span style="display:inline-block;width:12px;height:2px;background:#FBBF24;vertical-align:middle;margin-right:5px"></span>Solar</span>
+              <span><span style="display:inline-block;width:12px;height:2px;background:#94a3b8;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:5px"></span>7D rolling</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4073,7 +4250,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/palette.js"></script>
 <script src="js/prices.js"></script>
 <script src="js/ticker.js"></script>
-<script src="js/genmix.js"></script>
+<script src="js/genmix-v2.js"></script>
 <script src="js/market.js"></script>
 <script src="js/news.js"></script>
 <script src="js/analysis.js"></script>
