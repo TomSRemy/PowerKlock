@@ -31,7 +31,7 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add data/summary.json
+          git add data/history/summary.json
           if git diff --cached --quiet; then
             echo "No changes to commit — summary already up to date"
           else
