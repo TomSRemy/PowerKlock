@@ -1711,13 +1711,12 @@ function _openHoRow(zone, series, st) {
   detail.id = 'ho-detail-row';
   // Outer wrap: same style as Daily (no extra inner background)
   detail.innerHTML = `
-    <td colspan="11" style="padding:0;background:var(--bg2);border-bottom:2px solid var(--bd2)">
+    <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
         <!-- Header: zone title + close -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>
             <span style="font-size:14px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</span>
             <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodTxt}</span>
           </div>
@@ -1765,7 +1764,7 @@ function _openHoRow(zone, series, st) {
         <!-- Monthly breakdown collapsible (replaces standalone Block 4) -->
         <details style="margin-top:12px">
           <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
-            ▶ Monthly breakdown
+            Monthly breakdown
           </summary>
           <div id="ho-detail-monthly" style="margin-top:8px;overflow-x:auto"></div>
         </details>
@@ -1878,7 +1877,7 @@ async function _renderHoDetailKpis(zone, series, st) {
     {
       key: 'off',
       cls: cls(st.offAvg, ref?.offAvg, ystat),
-      label: 'Off-peak',
+      label: 'Off-peak avg',
       value: `${fmt(st.offAvg)}<span class="kpi-unit">€/MWh</span>`,
       metaHtml: meta(st.offAvg, ref?.offAvg, ystat),
     },
@@ -1893,10 +1892,10 @@ async function _renderHoDetailKpis(zone, series, st) {
     {
       key: 'sigma',
       cls: cls(st.sigma, ref?.sigma, ystat),
-      label: 'σ daily',
+      label: 'Volatility (σ)',
       value: `${fmt(st.sigma)}<span class="kpi-unit">€/MWh</span>`,
       metaHtml: meta(st.sigma, ref?.sigma, ystat),
-      title: 'Standard deviation of daily averages — measures price variability over the period',
+      title: 'Volatility = standard deviation of daily average prices over the selected period. Higher σ means prices swing more day-to-day. Rule of thumb: <15 stable · 15-30 moderate · >30 volatile.',
     },
     {
       key: 'extremes',
@@ -1921,8 +1920,13 @@ async function _renderHoDetailKpis(zone, series, st) {
       key: 'mix',
       cls: 'kpi-flat',
       label: 'Mix',
-      value: renHtml,
-      metaHtml: `<span style="color:${fuelColor}">${fuelLabel}</span>`,
+      // Custom 2-line layout: each line explicitly labelled
+      customHtml: `
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">${renHtml}<span style="font-size:9px;color:var(--tx3);margin-left:5px;font-weight:400">renewable share</span></div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">(W + S + H + B)</div>
+        <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${fuelColor};line-height:1.15">${fuelLabel}</div>
+        <div style="font-size:9px;color:var(--tx3)">dominant fuel</div>
+      `,
     },
   ];
 
@@ -1980,7 +1984,7 @@ function _openHoFullscreen(zone) {
         </div>
         <div style="font-size:12px;color:var(--tx2);margin-top:2px">
           ${periodTxt}
-          <span style="color:var(--tx3);margin-left:12px">· Click-drag to zoom · Double-click to reset</span>
+          <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
         </div>
       </div>
       <div style="display:flex;gap:8px">
@@ -1991,10 +1995,18 @@ function _openHoFullscreen(zone) {
       </div>
     </div>
 
-    <!-- Split: chart left, info right, drag handle in between -->
+    <!-- KPI strip full width at the top -->
+    <div id="ho-fs-kpis" style="margin-bottom:14px;flex-shrink:0"></div>
+
+    <!-- Verdict bandeau full width -->
+    <div id="ho-fs-verdict" style="font-size:12px;color:var(--tx2);margin-bottom:12px;font-family:'Inter',sans-serif;flex-shrink:0">
+      ${_buildHoVerdict(st)}
+    </div>
+
+    <!-- Split: chart left, Monthly breakdown right, drag handle in between -->
     <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
       <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
-        <div id="ho-fs-kpis" style="margin-bottom:12px;flex-shrink:0"></div>
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0">Daily price chart</div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
         </div>
@@ -2003,6 +2015,12 @@ function _openHoFullscreen(zone) {
           <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
           <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
         </div>
+        <!-- Alert neg prices (shown only if negH > 0) -->
+        ${st.negH > 0 ? `
+          <div style="font-size:11px;color:#FBBF24;margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
+            ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
+          </div>
+        ` : ''}
       </div>
 
       <div id="ho-fs-divider" title="Drag to resize · double-click to reset"
@@ -2010,9 +2028,9 @@ function _openHoFullscreen(zone) {
         <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
       </div>
 
-      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:240px;max-width:50%;width:340px">
-        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Period stats</div>
-        <div id="ho-fs-stats-list"></div>
+      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:280px;max-width:60%;width:440px;display:flex;flex-direction:column">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0">Monthly breakdown</div>
+        <div id="ho-fs-monthly" style="flex:1;overflow-y:auto;min-height:0"></div>
       </div>
     </div>
   `;
@@ -2020,38 +2038,49 @@ function _openHoFullscreen(zone) {
   document.body.appendChild(fs);
   document.body.style.overflow = 'hidden';
 
-  // Inject the KPI strip (reuse the inline one if present, else render fresh)
-  const inlineStrip = document.getElementById('ho-detail-kpi-strip');
+  // Render the KPI strip directly in the fullscreen target (8 cards, identical to inline)
   const kpiTarget = document.getElementById('ho-fs-kpis');
-  if (inlineStrip && kpiTarget) {
-    kpiTarget.innerHTML = inlineStrip.outerHTML;
-    // Strip the duplicate id from the clone
-    const cloned = kpiTarget.querySelector('#ho-detail-kpi-strip');
-    if (cloned) cloned.id = 'ho-fs-detail-kpi-strip';
+  if (kpiTarget) {
+    // Temporarily swap the target id so _renderHoDetailKpis writes here
+    const inlineStrip = document.getElementById('ho-detail-kpi-strip');
+    let originalParent = null;
+    let originalNext = null;
+    if (inlineStrip) {
+      // Move the inline strip aside while we render into the fs target
+      originalParent = inlineStrip.parentNode;
+      originalNext = inlineStrip.nextSibling;
+    }
+    // Create a temporary div with the same id and render into it, then move into kpiTarget
+    const tmp = document.createElement('div');
+    tmp.id = 'ho-detail-kpi-strip';
+    tmp.className = 'kpi-strip';
+    tmp.style.cssText = 'grid-template-columns:repeat(8,1fr)';
+    document.body.appendChild(tmp);
+    // Hide the original temporarily if it exists (avoid id collision)
+    if (inlineStrip) inlineStrip.id = 'ho-detail-kpi-strip-bak';
+    _renderHoDetailKpis(zone, series, st).then(() => {
+      // Move rendered HTML into the fullscreen target
+      kpiTarget.innerHTML = `<div class="kpi-strip" style="grid-template-columns:repeat(8,1fr)">${tmp.innerHTML}</div>`;
+      tmp.remove();
+      if (inlineStrip) inlineStrip.id = 'ho-detail-kpi-strip';
+    });
   }
 
-  // Right-pane stats table (simple list, vs-Y-1 already in KPI strip)
-  const rows = [
-    ['Days',             `${st?.days ?? '--'}`],
-    ['Avg',              `${fmt(st?.avg)} €/MWh`],
-    ['Peak avg',         `${fmt(st?.peakAvg)} €/MWh`],
-    ['Off-peak avg',     `${fmt(st?.offAvg)} €/MWh`],
-    ['Intraday spread',  `${fmt(st?.intradaySpread)} €/MWh`],
-    ['σ daily',          `${fmt(st?.sigma)} €/MWh`],
-    ['Max (▲)',          `${fmt(st?.max)} €/MWh${st?.maxDate ? ' · ' + _fmtShortDate(st.maxDate) : ''}`],
-    ['Min (▼)',          `${fmt(st?.min)} €/MWh${st?.minDate ? ' · ' + _fmtShortDate(st.minDate) : ''}`],
-    ['Neg hours',        _fmtNegH(st?.negH)],
-    ['% REN avg',        st?.renPctAvg != null ? `${Math.round(st.renPctAvg)}%` : '--'],
-    ['Dom. fuel',        st?.domFuel || '--'],
-  ];
-  const statsHtml = rows.map(([k, v]) => `
-    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-family:'JetBrains Mono',monospace;font-size:11px">
-      <span style="color:var(--tx3)">${k}</span>
-      <span style="color:var(--tx)">${v}</span>
-    </div>
-  `).join('');
-  const statsTarget = document.getElementById('ho-fs-stats-list');
-  if (statsTarget) statsTarget.innerHTML = statsHtml;
+  // Render the Monthly breakdown directly in the right pane
+  const monthlyTarget = document.getElementById('ho-fs-monthly');
+  if (monthlyTarget) {
+    // _renderHoDetailMonthly writes into #ho-detail-monthly — temporarily swap ids
+    const inlineMonthly = document.getElementById('ho-detail-monthly');
+    if (inlineMonthly) inlineMonthly.id = 'ho-detail-monthly-bak';
+    const tmp = document.createElement('div');
+    tmp.id = 'ho-detail-monthly';
+    document.body.appendChild(tmp);
+    _renderHoDetailMonthly(zone, series).then(() => {
+      monthlyTarget.innerHTML = tmp.innerHTML;
+      tmp.remove();
+      if (inlineMonthly) inlineMonthly.id = 'ho-detail-monthly';
+    });
+  }
 
   // Build the fullscreen chart
   setTimeout(() => _buildHoChart(zone, series, true), 50);
@@ -2469,6 +2498,12 @@ function buildHistMultiTabs() {
   }).join('');
 }
 
+function setHmzBaseline(zone) {
+  HIST.hmzBaseline = zone;
+  renderHistMulti();
+}
+window.setHmzBaseline = setHmzBaseline;
+
 async function renderHistMulti() {
   buildHistMultiTabs();
   const w = HIST.windows['hmz'] || '3M';
@@ -2491,15 +2526,25 @@ async function renderHistMulti() {
     stats[z] = _statsForZone(perZone[z]);
   });
 
-  // KPI strip
-  const baseline = selected.includes('FR') ? 'FR' : selected[0];
+  // KPI strip — baseline is user-configurable via the Compare header dropdown
+  let baseline = HIST.hmzBaseline || 'FR';
+  // Fallback: if the chosen baseline isn't in the selected zones, use FR or the first one
+  if (!selected.includes(baseline)) {
+    baseline = selected.includes('FR') ? 'FR' : selected[0];
+  }
   const baseStats = stats[baseline];
+  // Sync the dropdown value (in case it was set programmatically)
+  const baselineSelect = document.getElementById('hmz-baseline-select');
+  if (baselineSelect && baselineSelect.value !== baseline) baselineSelect.value = baseline;
   document.getElementById('hmz-kpi-zones-v').innerHTML = selected.length + '<span class="kpi-unit">zones</span>';
   document.getElementById('hmz-kpi-zones-meta').textContent = baseline + ' as baseline';
   if (baseStats) {
-    document.getElementById('hmz-kpi-avg-v').innerHTML = baseStats.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-avg-v').innerHTML = baseStats.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
     document.getElementById('hmz-kpi-avg-meta').textContent = baseline + ' · ' + baseStats.days + 'd';
   }
+  // Update the "Baseline avg" KPI card label dynamically
+  const baseLabelEl = document.querySelector('#hmz-kpi-avg .kpi-label');
+  if (baseLabelEl) baseLabelEl.textContent = baseline + ' avg';
   // Cheapest / Most expensive
   const validStats = selected.filter(z => stats[z]).map(z => ({ z, avg: stats[z].avg }));
   if (validStats.length) {
