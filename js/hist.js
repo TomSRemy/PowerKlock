@@ -1202,6 +1202,53 @@ const _HO_FUEL_COLOR = {
 window._HO_OPEN_ZONE = null;
 window._HO_CHART = null;
 
+// ── KPI strip Historical (FR-centric + loaded avg) ──
+function _setHoKpi(id, val, unit) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = (val == null || isNaN(val)) ? '--' : (Math.abs(val) >= 100 ? val.toFixed(0) : val.toFixed(1));
+  el.innerHTML = `${v}<span class="kpi-unit">${unit || '€/MWh'}</span>`;
+}
+function _setHoMeta(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = txt;
+}
+
+function _resetHoKpiStrip() {
+  ['ho-kpi-fr-avg', 'ho-kpi-loaded-avg', 'ho-kpi-fr-peak', 'ho-kpi-fr-off', 'ho-kpi-fr-sigma', 'ho-kpi-fr-negh'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '--<span class="kpi-unit">€/MWh</span>';
+  });
+}
+
+function _updateHoKpiStrip(stats, selected) {
+  const fr = stats['FR'];
+  // FR-centric metrics
+  if (fr) {
+    _setHoKpi('ho-kpi-fr-avg',   fr.avg,     '€/MWh');
+    _setHoMeta('ho-kpi-fr-avg-meta',   `${fr.days} d`);
+    _setHoKpi('ho-kpi-fr-peak',  fr.peakAvg, '€/MWh');
+    _setHoKpi('ho-kpi-fr-off',   fr.offAvg,  '€/MWh');
+    _setHoKpi('ho-kpi-fr-sigma', fr.sigma,   '€/MWh');
+    // Neg hours card uses h, not €/MWh
+    const elN = document.getElementById('ho-kpi-fr-negh');
+    if (elN) elN.innerHTML = `${fr.negH.toFixed(0)}<span class="kpi-unit">h</span>`;
+  } else {
+    _setHoKpi('ho-kpi-fr-avg',   null);
+    _setHoKpi('ho-kpi-fr-peak',  null);
+    _setHoKpi('ho-kpi-fr-off',   null);
+    _setHoKpi('ho-kpi-fr-sigma', null);
+    const elN = document.getElementById('ho-kpi-fr-negh');
+    if (elN) elN.innerHTML = '--<span class="kpi-unit">h</span>';
+    _setHoMeta('ho-kpi-fr-avg-meta', '--');
+  }
+  // Loaded zones avg = simple mean of zone avgs
+  const validAvgs = selected.map(z => stats[z]?.avg).filter(v => v != null);
+  const loadedAvg = validAvgs.length ? validAvgs.reduce((a,b)=>a+b,0)/validAvgs.length : null;
+  _setHoKpi('ho-kpi-loaded-avg', loadedAvg, '€/MWh');
+  _setHoMeta('ho-kpi-loaded-meta', `${validAvgs.length} zones`);
+}
+
 async function renderHistOverview() {
   const w = HIST.windows['ho'] || '3M';
   const s = await fetchSummary();
@@ -1213,6 +1260,7 @@ async function renderHistOverview() {
   if (!selected.length) {
     document.getElementById('ho-table-tbody').innerHTML =
       '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No zone selected</td></tr>';
+    _resetHoKpiStrip();
     return;
   }
 
@@ -1234,19 +1282,22 @@ async function renderHistOverview() {
     }
   });
 
-  // Period label
+  // ── Period label + zones count (sub-header) ──
   const periodEl = document.getElementById('ho-period-label');
-  if (periodEl) {
-    if (HIST.customRange && HIST.customRange.from && HIST.customRange.to) {
-      periodEl.textContent = `${HIST.customRange.from} → ${HIST.customRange.to}`;
-    } else if (earliest && latest) {
-      periodEl.textContent = periodLabel([{ d: earliest }, { d: latest }]);
-    } else {
-      periodEl.textContent = '';
-    }
+  let periodText = '';
+  if (HIST.customRange && HIST.customRange.from && HIST.customRange.to) {
+    periodText = `${HIST.customRange.from} → ${HIST.customRange.to}`;
+  } else if (earliest && latest) {
+    periodText = periodLabel([{ d: earliest }, { d: latest }]);
   }
+  if (periodEl) periodEl.textContent = periodText || '--';
+  const zonesLabel = document.getElementById('ho-zones-label');
+  if (zonesLabel) zonesLabel.textContent = `${selected.length} zones loaded`;
 
-  // Build rows
+  // ── KPI strip globale (FR-centric + loaded avg) ──
+  _updateHoKpiStrip(stats, selected);
+
+  // ── Table rows ──
   const tbody = document.getElementById('ho-table-tbody');
   if (!tbody) return;
 
@@ -1256,26 +1307,20 @@ async function renderHistOverview() {
       return `<tr class="ho-row" data-zone="${z}"><td style="color:var(--tx3)">${z}</td><td colspan="10" style="text-align:center;color:var(--tx3);font-size:10px">no data in selected window</td></tr>`;
     }
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-    const color = zoneColor(z);
     const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(1);
     // P/OP ratio
     const ratio = (st.peakAvg != null && st.offAvg != null && st.offAvg !== 0)
       ? (st.peakAvg / st.offAvg) : null;
     const ratioStr = ratio == null ? '--' : ratio.toFixed(2) + 'x';
-    // %REN
+    // %REN — no coloring (style aligned with Daily)
     const renStr = st.renPctAvg == null ? '--' : st.renPctAvg.toFixed(0) + '%';
-    const renColor = st.renPctAvg == null ? 'var(--tx3)' :
-      (st.renPctAvg >= 60 ? '#14D3A9' : (st.renPctAvg >= 35 ? 'var(--tx2)' : 'var(--tx3)'));
-    // Dom fuel
-    const fuelColor = _HO_FUEL_COLOR[st.domFuel] || 'var(--tx3)';
-    const fuelStr = st.domFuel
-      ? `<span style="color:${fuelColor}">● ${st.domFuel}</span>`
-      : '<span style="color:var(--tx3)">--</span>';
-    // Neg h color
-    const negColor = st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#F0B400' : 'var(--tx3)');
+    // Dom fuel — no coloring (style aligned with Daily)
+    const fuelStr = st.domFuel || '--';
+    // Neg h — colored only if elevated (genuine signal, not decorative)
+    const negColor = st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#F0B400' : 'var(--tx2)');
 
     return `<tr class="ho-row" data-zone="${z}" style="cursor:pointer">
-      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle"></span>${flag} ${z}</td>
+      <td style="text-align:left">${flag} ${z}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${fmt(st.avg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.peakAvg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.offAvg)}</td>
@@ -1283,8 +1328,8 @@ async function renderHistOverview() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.sigma)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${negColor}">${st.negH.toFixed(0)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${renColor}">${renStr}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px">${fuelStr}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${renStr}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fuelStr}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
     </tr>`;
   }).join('');
