@@ -182,6 +182,22 @@ function mkHistChart(canvasId, config) {
   config.options = config.options || {};
   config.options.responsive = true;
   config.options.maintainAspectRatio = false;
+
+  // ── Auto-inject standard interactions (norme PowerKlock) ──
+  // Click-and-drag rectangle zoom + double-click reset on every chart.
+  config.options.plugins = config.options.plugins || {};
+  if (!('zoom' in config.options.plugins)) {
+    config.options.plugins.zoom = _zoomConfig({ mode: 'xy' });
+  }
+  if (!config.options.onClick) {
+    config.options.onClick = (evt) => {
+      if (evt && evt.native && evt.native.detail === 2) {
+        const c = HIST.charts[canvasId];
+        if (c && typeof c.resetZoom === 'function') c.resetZoom();
+      }
+    };
+  }
+
   HIST.charts[canvasId] = new Chart(canvas, config);
 }
 
@@ -2269,12 +2285,15 @@ function _buildHoChart(zone, series, fullscreen) {
     if (daily[i] != null && (daily[maxIdx] == null || daily[i] > daily[maxIdx])) maxIdx = i;
   }
 
-  // ── Y range capping based on preset (focus/standard/all) ──
+  // ── Y range capping based on preset (focus uses rolling lines range) ──
   const validMaxes = maxes.filter(v => v != null && !isNaN(v));
   const validMins  = mins.filter(v => v != null && !isNaN(v));
   const validDaily = daily.filter(v => v != null);
   const preset = window._HO_YPRESET || 'standard';
-  const { yMin: yMinCap, yMax: yMaxCap } = _computeYRange(validDaily, validMaxes, validMins, preset);
+  const { yMin: yMinCap, yMax: yMaxCap } = _computeYRange(validDaily, validMaxes, validMins, preset, r7, r30);
+
+  // In Focus mode, hide the ribbon entirely (pure trend view)
+  const showRibbon = preset !== 'focus';
 
   const targetVar = fullscreen ? '_HO_FS_CHART' : '_HO_CHART';
   if (window[targetVar]) {
@@ -2289,7 +2308,7 @@ function _buildHoChart(zone, series, fullscreen) {
     data: {
       labels,
       datasets: [
-        // ── Ribbon: max-min daily envelope (ultra-discreet) ──
+        // ── Ribbon: max-min daily envelope (ultra-discreet, hidden in Focus) ──
         {
           label: 'Daily max',
           data: maxes,
@@ -2301,6 +2320,7 @@ function _buildHoChart(zone, series, fullscreen) {
           spanGaps: true,
           fill: '+1',        // fill DOWN to the next dataset (Daily min)
           order: 5,          // render below the main lines
+          hidden: !showRibbon,
         },
         {
           label: 'Daily min',
@@ -2313,6 +2333,7 @@ function _buildHoChart(zone, series, fullscreen) {
           spanGaps: true,
           fill: false,
           order: 5,
+          hidden: !showRibbon,
         },
         // ── Main 3 lines on top ──
         {
@@ -2592,22 +2613,39 @@ function setHszYPreset(preset) {
 }
 window.setHszYPreset = setHszYPreset;
 
-function _computeYRange(validAvgs, validMaxes, validMins, preset) {
+function _computeYRange(validAvgs, validMaxes, validMins, preset, roll7, roll30) {
   // Returns {yMin, yMax} based on the preset:
-  //  - 'focus':    avg ± 20%  (tight, hides ribbon edges if extreme)
-  //  - 'standard': avg ± 30%  (default, balanced)
-  //  - 'all':      real daily max/min extremes (shows outliers)
+  //  - 'focus':    tight range around the rolling 7D/30D lines (the trend)
+  //                avg/ribbon may be clipped — pure trend view
+  //  - 'standard': avg ± 30% margin (default, balanced, shows ribbon)
+  //  - 'all':      real daily max/min extremes (shows outliers + ribbon)
   if (!validAvgs.length) return { yMin: null, yMax: null };
+
+  if (preset === 'focus' && roll7 && roll30) {
+    // Use min/max of the smoothed rolling lines (filtered for nulls)
+    const allRolls = [...roll7, ...roll30].filter(v => v != null && !isNaN(v));
+    if (allRolls.length) {
+      const rMin = Math.min(...allRolls);
+      const rMax = Math.max(...allRolls);
+      const rRange = Math.max(rMax - rMin, 10);
+      const margin = rRange * 0.15;  // 15% margin around the trend
+      const yMax = Math.ceil((rMax + margin) / 5) * 5;
+      const yMin = Math.floor((rMin - margin) / 5) * 5;
+      return { yMin, yMax };
+    }
+  }
+
   const avgMin = Math.min(...validAvgs);
   const avgMax = Math.max(...validAvgs);
   const avgRange = Math.max(avgMax - avgMin, 20);
   let yMin = null, yMax = null;
+
   if (preset === 'all' && validMaxes.length && validMins.length) {
     yMax = Math.ceil(Math.max(...validMaxes) * 1.05 / 25) * 25;
     yMin = Math.floor(Math.min(...validMins) * 1.05 / 25) * 25;
   } else {
-    const marginFactor = preset === 'focus' ? 0.2 : 0.3;
-    const margin = avgRange * marginFactor;
+    // Standard
+    const margin = avgRange * 0.3;
     yMax = Math.ceil((avgMax + margin) / 10) * 10;
     yMin = Math.floor((avgMin - margin) / 10) * 10;
     if (avgMin < 0 && yMin > avgMin) yMin = Math.floor(avgMin * 1.1 / 10) * 10;
@@ -2667,11 +2705,14 @@ function _hszRenderLines(filtered, zone) {
   const maxBorder = 'rgba(251,191,36,0.30)';
   const minBorder = 'rgba(237,105,101,0.28)';
 
-  // Compute Y range based on preset
+  // Compute Y range based on preset (Focus uses rolling lines range)
   const validAvgs  = avgs.filter(v => v != null);
   const validMaxes = maxes.filter(v => v != null && !isNaN(v));
   const validMins  = mins.filter(v => v != null && !isNaN(v));
-  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszYPreset);
+  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszYPreset, roll7, roll30);
+
+  // In Focus mode, hide the ribbon entirely (we want pure trend view)
+  const showRibbon = _hszYPreset !== 'focus';
 
   // Min/max avg markers
   const annotations = {};
@@ -2698,7 +2739,7 @@ function _hszRenderLines(filtered, zone) {
     data: {
       labels,
       datasets: [
-        // Ribbon: max-min daily envelope (ultra discreet, toggleable from legend)
+        // Ribbon: max-min daily envelope (ultra discreet, hidden in Focus mode)
         {
           label: 'Daily max',
           data: maxes,
@@ -2710,7 +2751,7 @@ function _hszRenderLines(filtered, zone) {
           spanGaps: true,
           fill: '+1',
           order: 5,
-          hidden: false,
+          hidden: !showRibbon,
         },
         {
           label: 'Daily min',
@@ -2723,7 +2764,7 @@ function _hszRenderLines(filtered, zone) {
           spanGaps: true,
           fill: false,
           order: 5,
-          hidden: false,
+          hidden: !showRibbon,
         },
         // Main 3 lines
         { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
@@ -2764,7 +2805,7 @@ function _hszRenderLines(filtered, zone) {
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` }
         },
         annotation: { annotations },
-        subtitle: yMin != null && yMax != null ? { display: true, text: `Y axis: ${yMin} → ${yMax} €/MWh (${_hszYPreset}) · Click ribbon legend to toggle · Drag to zoom area · Double-click to reset`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
+        subtitle: yMin != null && yMax != null ? { display: true, text: `${_hszYPreset === 'focus' ? 'Focus: rolling trend ('+yMin+'→'+yMax+' €/MWh, ribbon hidden)' : (_hszYPreset === 'all' ? 'All: full daily range ('+yMin+'→'+yMax+' €/MWh)' : 'Standard: avg ± margin ('+yMin+'→'+yMax+' €/MWh)')} · Drag to zoom area · Double-click to reset`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
         // Click-and-drag zoom (rectangle selection), no wheel zoom (less intrusive)
         zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
           zoom: {
@@ -3695,21 +3736,45 @@ function _toRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// Zoom plugin config for charts with capped Y range (outliers exist beyond the visible range).
-// Pan with drag, zoom with wheel or pinch. Reset with double-click.
-// Falls back to a no-op object if chartjs-plugin-zoom is not loaded.
+// Zoom plugin config: click-and-drag rectangle zoom (XY), no wheel zoom.
+// Reset via double-click on the chart or via dedicated reset button.
+// Falls back to {} if chartjs-plugin-zoom is not loaded.
 function _zoomConfig(opts = {}) {
   if (typeof window.Chart === 'undefined' || !window.Chart.registry || !window.Chart.registry.plugins.get('zoom')) {
     return {};
   }
+  const mode = opts.mode || 'xy';
   return {
-    pan: { enabled: true, mode: opts.mode || 'y', modifierKey: null },
+    pan: { enabled: false },
     zoom: {
-      wheel: { enabled: true },
+      drag: {
+        enabled: true,
+        backgroundColor: 'rgba(20,211,169,0.15)',
+        borderColor: 'rgba(20,211,169,0.6)',
+        borderWidth: 1,
+      },
+      wheel: { enabled: false },
       pinch: { enabled: true },
-      mode: opts.mode || 'y',
+      mode,
     },
-    limits: opts.limits || {},
+    limits: opts.limits || { y: { min: 'original', max: 'original' } },
+  };
+}
+
+// Reusable reset zoom button HTML — pass the JS expression to call.
+// Usage: _resetZoomBtn("HIST.charts['hsz-canvas']") or _resetZoomBtn("_rowCharts[0]") etc.
+function _resetZoomBtn(chartRefExpr, label) {
+  return `<button onclick="event.stopPropagation();(function(){var c=${chartRefExpr};if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
+    style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ ${label || 'Reset'}</button>`;
+}
+
+// Generic onClick handler for charts: double-click resets the zoom.
+function _dblClickResetZoom(canvasId, chartsObj) {
+  return (evt) => {
+    if (evt && evt.native && evt.native.detail === 2) {
+      const c = chartsObj ? chartsObj[canvasId] : null;
+      if (c && typeof c.resetZoom === 'function') c.resetZoom();
+    }
   };
 }
 
