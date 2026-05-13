@@ -43,15 +43,49 @@ function mkChart(id, config) {
   canvas.style.width = '100%';
   canvas.style.height = h;
   canvas.style.display = 'block';
+
+  // ── Norme PowerKlock: click-drag rectangle zoom + double-click reset ──
+  // Auto-injected on every chart unless the caller explicitly set `zoom` in plugins.
+  config.options = config.options || {};
+  config.options.plugins = config.options.plugins || {};
+  if (!('zoom' in config.options.plugins) && typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) {
+    config.options.plugins.zoom = {
+      pan: { enabled: false },
+      zoom: {
+        drag: {
+          enabled: true,
+          backgroundColor: 'rgba(20,211,169,0.15)',
+          borderColor: 'rgba(20,211,169,0.6)',
+          borderWidth: 1,
+        },
+        wheel: { enabled: false },
+        pinch: { enabled: true },
+        mode: 'xy',
+      },
+      limits: { y: { min: 'original', max: 'original' } },
+    };
+  }
+  if (!config.options.onClick) {
+    config.options.onClick = (evt) => {
+      if (evt && evt.native && evt.native.detail === 2) {
+        const c = CHARTS[id];
+        if (c && typeof c.resetZoom === 'function') c.resetZoom();
+      }
+    };
+  }
+
   const chart = new Chart(canvas, config);
   CHARTS[id] = chart;
   return chart;
 }
 
-// Zoom plugin default config
+// Legacy zoom plugin config (kept for backward compat; new code uses mkChart auto-inject)
 const ZOOM_CFG = {
-  zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-  pan:  { enabled: true, mode: 'x' },
+  zoom: {
+    drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
+    wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy',
+  },
+  pan: { enabled: false },
 };
 
 // Fullscreen button helper
