@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-12T13:59:12.828067Z",
+  "updated": "2026-05-13T07:45:11.566185Z",
   "countries": {
     "FR": [
       {
@@ -10,6 +10,18 @@
       },
       {
         "partner": "BE \u00b7 Belgium",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "ES \u00b7 Spain",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "IT_NORD \u00b7 Italy North",
         "imports": 0,
         "exports": 0,
         "net": 0
