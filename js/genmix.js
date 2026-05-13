@@ -1088,3 +1088,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ── Backward-compat shim ──
+// Legacy code (news.js, globals.js, prices.js, ticker.js) still calls
+// loadGenMix() — keep it working by aliasing to the V2 init function.
+window.loadGenMix = function() {
+  window._genmixLoaded = true;
+  if (typeof _gmInit === 'function') _gmInit();
+};
