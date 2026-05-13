@@ -2337,6 +2337,8 @@
 
   <!-- Chart -->
   <div style="position:relative;height:340px;overflow:hidden;margin-bottom:10px">
+    <button onclick="(function(){var c=HIST.charts['hsz-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
+      style="position:absolute;top:8px;right:8px;z-index:10;background:rgba(15,20,25,0.85);border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
     <canvas id="hsz-canvas" style="width:100%;height:340px"></canvas>
     <div id="hsz-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
   </div>
@@ -2421,6 +2423,8 @@
 
   <!-- Chart -->
   <div style="position:relative;height:340px;overflow:hidden;margin-bottom:10px">
+    <button onclick="(function(){var c=HIST.charts['hmz-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
+      style="position:absolute;top:8px;right:8px;z-index:10;background:rgba(15,20,25,0.85);border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
     <canvas id="hmz-canvas" style="width:100%;height:340px"></canvas>
     <div id="hmz-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
   </div>
