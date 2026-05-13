@@ -1224,6 +1224,41 @@ const _HO_FUEL_META = {
 // Track which row is open and chart instance for that detail row
 window._HO_OPEN_ZONE = null;
 window._HO_CHART = null;
+window._HO_YPRESET = 'standard';  // 'focus' | 'standard' | 'all'
+
+window._hoSetYPreset = function(preset) {
+  window._HO_YPRESET = preset;
+  const zone = window._HO_OPEN_ZONE;
+  const series = window._HO_LAST_SERIES;
+  if (zone && series && typeof _buildHoChart === 'function') {
+    // Re-render the chart (non-fullscreen) with the new preset
+    _buildHoChart(zone, series, false);
+    // Also update the preset buttons UI
+    _hoRenderPresetButtons();
+  }
+};
+
+window._hoResetZoom = function() {
+  if (window._HO_CHART && typeof window._HO_CHART.resetZoom === 'function') {
+    window._HO_CHART.resetZoom();
+  }
+  if (window._HO_FS_CHART && typeof window._HO_FS_CHART.resetZoom === 'function') {
+    window._HO_FS_CHART.resetZoom();
+  }
+};
+
+// Update the preset button styles to reflect the active preset
+function _hoRenderPresetButtons() {
+  ['focus', 'standard', 'all'].forEach(p => {
+    const btns = document.querySelectorAll(`[data-ho-preset="${p}"]`);
+    const active = window._HO_YPRESET === p;
+    btns.forEach(b => {
+      b.style.background = active ? 'rgba(20,211,169,0.15)' : 'transparent';
+      b.style.borderColor = active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
+      b.style.color = active ? '#14D3A9' : 'var(--tx3)';
+    });
+  });
+}
 
 // ── KPI strip Historical (FR-centric + loaded avg) ──
 function _setHoKpi(id, val, unit) {
@@ -1619,7 +1654,12 @@ async function _renderHoDetailMonthly(zone, series) {
     const rows = monthly[ym].rows;
     const mst = _statsForZone(rows);
     const spread = (mst?.peakAvg != null && mst?.offAvg != null) ? (mst.peakAvg - mst.offAvg) : null;
-    return { ym, ...mst, spread };
+    // Absolute intra-day min/max across all days of the month (uses d.max / d.min if present)
+    const allMaxes = rows.map(r => r.max).filter(v => v != null);
+    const allMins  = rows.map(r => r.min).filter(v => v != null);
+    const absMax = allMaxes.length ? Math.max(...allMaxes) : null;
+    const absMin = allMins.length  ? Math.min(...allMins)  : null;
+    return { ym, ...mst, spread, absMax, absMin };
   });
 
   // vs LY (same month previous year)
@@ -1644,6 +1684,8 @@ async function _renderHoDetailMonthly(zone, series) {
     return `<tr>
       <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;font-weight:600">${monthLabel}</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.avg)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${dnColor}">${fmt(r.absMin)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${warnColor}">${fmt(r.absMax)}</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.peakAvg)}</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.offAvg)}</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.spread)}</td>
@@ -1659,6 +1701,8 @@ async function _renderHoDetailMonthly(zone, series) {
         <tr style="border-bottom:1px solid var(--bd)">
           <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Month</th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Avg <span style="font-weight:400;font-size:9px">€/MWh</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Min <span style="font-weight:400;font-size:9px">intra-day</span></th>
+          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Max <span style="font-weight:400;font-size:9px">intra-day</span></th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Peak avg <span style="font-weight:400;font-size:9px">08:00-20:00</span></th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Off-peak <span style="font-weight:400;font-size:9px">€/MWh</span></th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Spread <span style="font-weight:400;font-size:9px">P-OP</span></th>
@@ -1743,7 +1787,17 @@ function _openHoRow(zone, series, st) {
             <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:5px"></span>Daily max</span>
             <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:5px"></span>Daily min</span>
           </div>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
+              <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis — hides outliers"
+                style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
+              <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
+                style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
+              <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
+                style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+              <button onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom"
+                style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺</button>
+            </div>
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
               style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
             <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
@@ -2008,7 +2062,19 @@ function _openHoFullscreen(zone) {
     <!-- Split: chart left, Monthly breakdown right, drag handle in between -->
     <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
       <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
-        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0">Daily price chart</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0">
+          <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase">Daily price chart</div>
+          <div style="display:flex;gap:3px">
+            <button data-ho-preset="focus" onclick="_hoSetYPreset('focus');_renderHoFsChart('${zone}')" title="Tight Y axis"
+              style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
+            <button data-ho-preset="standard" onclick="_hoSetYPreset('standard');_renderHoFsChart('${zone}')" title="Default Y axis"
+              style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
+            <button data-ho-preset="all" onclick="_hoSetYPreset('all');_renderHoFsChart('${zone}')" title="Full Y range"
+              style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+            <button onclick="window._hoResetZoom()" title="Reset zoom"
+              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
+          </div>
+        </div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
         </div>
@@ -2087,7 +2153,23 @@ function _openHoFullscreen(zone) {
   }
 
   // Build the fullscreen chart
-  setTimeout(() => _buildHoChart(zone, series, true), 50);
+  window._renderHoFsChart = function(zone) {
+  const series = window._HO_LAST_SERIES;
+  if (!zone || !series) return;
+  if (typeof _buildHoChart === 'function') {
+    _buildHoChart(zone, series, true);
+  }
+  // Update FS button styles
+  document.querySelectorAll('#ho-fs-chart-pane [data-ho-preset]').forEach(btn => {
+    const p = btn.dataset.hoPreset;
+    const active = window._HO_YPRESET === p || (p === 'standard' && !window._HO_YPRESET);
+    btn.style.background = active ? 'rgba(20,211,169,0.15)' : 'transparent';
+    btn.style.borderColor = active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
+    btn.style.color = active ? '#14D3A9' : 'var(--tx3)';
+  });
+};
+
+setTimeout(() => _buildHoChart(zone, series, true), 50);
 
   // Drag-resize handle
   const divider  = document.getElementById('ho-fs-divider');
@@ -2169,15 +2251,15 @@ function _buildHoChart(zone, series, fullscreen) {
   const r30    = rolling(daily, 30);
   const color  = zoneColor(zone);
 
-  // Ribbon colors (max-min envelope)
-  let ribbonFill = 'rgba(20,211,169,0.12)';
-  let maxBorder  = 'rgba(251,191,36,0.45)';
-  let minBorder  = 'rgba(237,105,101,0.40)';
+  // Ribbon colors (max-min envelope) — now ultra-discreet
+  let ribbonFill = 'rgba(20,211,169,0.05)';
+  let maxBorder  = 'rgba(251,191,36,0.30)';
+  let minBorder  = 'rgba(237,105,101,0.28)';
   if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    ribbonFill = `rgba(${r},${g},${b},0.12)`;
+    ribbonFill = `rgba(${r},${g},${b},0.05)`;
   }
 
   // Find min/max for annotations
@@ -2187,20 +2269,12 @@ function _buildHoChart(zone, series, fullscreen) {
     if (daily[i] != null && (daily[maxIdx] == null || daily[i] > daily[maxIdx])) maxIdx = i;
   }
 
-  // ── Y range capping (same logic as _hszRenderLines) ──
-  // Use the daily AVG line as reference, not max/min outliers.
-  // Range = [avg_min - margin, avg_max + margin], margin = 30% of avg range.
+  // ── Y range capping based on preset (focus/standard/all) ──
+  const validMaxes = maxes.filter(v => v != null && !isNaN(v));
+  const validMins  = mins.filter(v => v != null && !isNaN(v));
   const validDaily = daily.filter(v => v != null);
-  let yMinCap = null, yMaxCap = null;
-  if (validDaily.length) {
-    const avgMin = Math.min(...validDaily);
-    const avgMax = Math.max(...validDaily);
-    const avgRange = Math.max(avgMax - avgMin, 20);
-    const margin = avgRange * 0.3;
-    yMaxCap = Math.ceil((avgMax + margin) / 10) * 10;
-    yMinCap = Math.floor((avgMin - margin) / 10) * 10;
-    if (avgMin < 0 && yMinCap > avgMin) yMinCap = Math.floor(avgMin * 1.1 / 10) * 10;
-  }
+  const preset = window._HO_YPRESET || 'standard';
+  const { yMin: yMinCap, yMax: yMaxCap } = _computeYRange(validDaily, validMaxes, validMins, preset);
 
   const targetVar = fullscreen ? '_HO_FS_CHART' : '_HO_CHART';
   if (window[targetVar]) {
@@ -2215,13 +2289,13 @@ function _buildHoChart(zone, series, fullscreen) {
     data: {
       labels,
       datasets: [
-        // ── Ribbon: max-min daily envelope ──
+        // ── Ribbon: max-min daily envelope (ultra-discreet) ──
         {
           label: 'Daily max',
           data: maxes,
           borderColor: maxBorder,
           backgroundColor: ribbonFill,
-          borderWidth: 1,
+          borderWidth: 0.7,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
@@ -2233,7 +2307,7 @@ function _buildHoChart(zone, series, fullscreen) {
           data: mins,
           borderColor: minBorder,
           backgroundColor: 'transparent',
-          borderWidth: 1,
+          borderWidth: 0.7,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
@@ -2311,23 +2385,29 @@ function _buildHoChart(zone, series, fullscreen) {
             },
           },
         },
-        // Zoom: in non-fullscreen mode, allow Y-axis zoom with the wheel
-        // and pan with drag. In fullscreen, additionally support X drag-zoom.
-        zoom: fullscreen ? {
+        // Click-and-drag rectangle zoom (both modes).
+        // No wheel zoom (too intrusive). Reset via double-click or button.
+        zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
           zoom: {
             drag: {
               enabled: true,
               backgroundColor: 'rgba(20, 211, 169, 0.15)',
-              borderColor: 'rgba(20, 211, 169, 0.8)',
+              borderColor: 'rgba(20, 211, 169, 0.6)',
               borderWidth: 1,
             },
-            wheel: { enabled: true },
+            wheel: { enabled: false },
             pinch: { enabled: true },
             mode: 'xy',
           },
-          pan: { enabled: true, mode: 'xy' },
-          limits: { y: { min: 'original', max: 'original', minRange: 5 } },
-        } : _zoomConfig({ mode: 'y' }),
+          pan: { enabled: false },
+          limits: { y: { min: 'original', max: 'original' } },
+        } : {},
+      },
+      onClick: (evt) => {
+        // Double-click resets the zoom
+        if (evt && evt.native && evt.native.detail === 2) {
+          window._hoResetZoom();
+        }
       },
       layout: { padding: { top: 16, bottom: 8 } },
       scales: {
@@ -2472,6 +2552,11 @@ async function renderHistSingle() {
     const qg = document.getElementById('hsz-quarter-grid');
     if (qg) qg.remove();
   }
+  // Cleanup Lines-specific Y preset bar when switching to another tab
+  if (HSZ.tab !== 'lines') {
+    const yp = document.getElementById('hsz-y-presets');
+    if (yp) yp.remove();
+  }
 
   // Dispatch render by tab
   if (HSZ.tab === 'lines')    return _hszRenderLines(filtered, zone);
@@ -2498,6 +2583,69 @@ function _hszPlaceholder(msg) {
   wrap.appendChild(div);
 }
 
+// HSZ Y zoom preset state (kept per-zone but for simplicity at module level)
+let _hszYPreset = 'standard';  // 'focus' | 'standard' | 'all'
+
+function setHszYPreset(preset) {
+  _hszYPreset = preset;
+  renderHistSingle();
+}
+window.setHszYPreset = setHszYPreset;
+
+function _computeYRange(validAvgs, validMaxes, validMins, preset) {
+  // Returns {yMin, yMax} based on the preset:
+  //  - 'focus':    avg ± 20%  (tight, hides ribbon edges if extreme)
+  //  - 'standard': avg ± 30%  (default, balanced)
+  //  - 'all':      real daily max/min extremes (shows outliers)
+  if (!validAvgs.length) return { yMin: null, yMax: null };
+  const avgMin = Math.min(...validAvgs);
+  const avgMax = Math.max(...validAvgs);
+  const avgRange = Math.max(avgMax - avgMin, 20);
+  let yMin = null, yMax = null;
+  if (preset === 'all' && validMaxes.length && validMins.length) {
+    yMax = Math.ceil(Math.max(...validMaxes) * 1.05 / 25) * 25;
+    yMin = Math.floor(Math.min(...validMins) * 1.05 / 25) * 25;
+  } else {
+    const marginFactor = preset === 'focus' ? 0.2 : 0.3;
+    const margin = avgRange * marginFactor;
+    yMax = Math.ceil((avgMax + margin) / 10) * 10;
+    yMin = Math.floor((avgMin - margin) / 10) * 10;
+    if (avgMin < 0 && yMin > avgMin) yMin = Math.floor(avgMin * 1.1 / 10) * 10;
+  }
+  return { yMin, yMax };
+}
+
+// Inject Y preset buttons in the HSZ header area (above tabs / chart)
+function _hszInjectYPresets() {
+  const canvas = document.getElementById('hsz-canvas');
+  if (!canvas) return;
+  const wrap = canvas.parentNode;
+  const old = document.getElementById('hsz-y-presets');
+  if (old) old.remove();
+  // Only inject for 'lines' tab (the one where Y range matters most)
+  if (HSZ.tab !== 'lines') return;
+  const bar = document.createElement('div');
+  bar.id = 'hsz-y-presets';
+  bar.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;font-size:10px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
+  const mkBtn = (id, label, title) => {
+    const active = _hszYPreset === id;
+    return `<button onclick="setHszYPreset('${id}')" title="${title}" style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">${label}</button>`;
+  };
+  bar.innerHTML = `
+    ${mkBtn('focus', 'Focus', 'Y axis ± 20% around avg — hides outliers')}
+    ${mkBtn('standard', 'Standard', 'Y axis ± 30% around avg — default')}
+    ${mkBtn('all', 'All', 'Y axis covers daily max/min — shows outliers')}
+    <button onclick="_hszResetZoom()" title="Reset any manual zoom/pan" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">↺ Reset</button>
+  `;
+  wrap.insertBefore(bar, canvas);
+}
+
+function _hszResetZoom() {
+  const ch = HIST.charts['hsz-canvas'];
+  if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+}
+window._hszResetZoom = _hszResetZoom;
+
 function _hszRenderLines(filtered, zone) {
   const labels = filtered.map(d => d.d);
   const avgs   = filtered.map(d => d.avg);
@@ -2507,37 +2655,25 @@ function _hszRenderLines(filtered, zone) {
   const roll30 = rolling(avgs, 30);
   const color = zoneColor(zone);
 
-  // Convert zone color to rgba for ribbon fill (~12% opacity)
-  let ribbonFill = 'rgba(20,211,169,0.12)';
-  let maxBorder  = 'rgba(251,191,36,0.55)';   // amber for max
-  let minBorder  = 'rgba(237,105,101,0.50)';  // red for min
+  // Convert zone color to rgba for ribbon fill (now ultra-discreet: 5%)
+  let ribbonFill = 'rgba(20,211,169,0.05)';
   if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    ribbonFill = `rgba(${r},${g},${b},0.12)`;
+    ribbonFill = `rgba(${r},${g},${b},0.05)`;
   }
+  // Very thin, very faint max/min lines (decorative guides)
+  const maxBorder = 'rgba(251,191,36,0.30)';
+  const minBorder = 'rgba(237,105,101,0.28)';
 
-  // ── Y range capping ──
-  // Strategy: use the AVG line (daily avg) as the reference, not the daily
-  // max/min outliers which can swing -500 to +500 €/MWh.
-  // Range = [avg_min - margin, avg_max + margin], where margin = 30% of the
-  // avg range. This shows the main curve clearly + the ribbon edges, and
-  // outliers can be explored via the zoom plugin (scroll wheel / drag).
-  const validAvgs = avgs.filter(v => v != null);
-  let yMin = null, yMax = null;
-  if (validAvgs.length) {
-    const avgMin = Math.min(...validAvgs);
-    const avgMax = Math.max(...validAvgs);
-    const avgRange = Math.max(avgMax - avgMin, 20);  // floor of 20 to avoid tiny ranges
-    const margin = avgRange * 0.3;
-    yMax = Math.ceil((avgMax + margin) / 10) * 10;
-    yMin = Math.floor((avgMin - margin) / 10) * 10;
-    // Always include 0 if we cross negative territory naturally
-    if (avgMin < 0 && yMin > avgMin) yMin = Math.floor(avgMin * 1.1 / 10) * 10;
-  }
+  // Compute Y range based on preset
+  const validAvgs  = avgs.filter(v => v != null);
+  const validMaxes = maxes.filter(v => v != null && !isNaN(v));
+  const validMins  = mins.filter(v => v != null && !isNaN(v));
+  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszYPreset);
 
-  // Min/max avg annotations (markers on the avg line — not on max/min daily)
+  // Min/max avg markers
   const annotations = {};
   if (validAvgs.length) {
     const minVal = Math.min(...validAvgs);
@@ -2554,40 +2690,45 @@ function _hszRenderLines(filtered, zone) {
     };
   }
 
+  // Inject preset buttons in the header
+  setTimeout(_hszInjectYPresets, 0);
+
   mkHistChart('hsz-canvas', {
     type: 'line',
     data: {
       labels,
       datasets: [
-        // ── Ribbon: max-min daily envelope ──
+        // Ribbon: max-min daily envelope (ultra discreet, toggleable from legend)
         {
           label: 'Daily max',
           data: maxes,
           borderColor: maxBorder,
           backgroundColor: ribbonFill,
-          borderWidth: 1,
+          borderWidth: 0.7,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
-          fill: '+1',          // fill area down to the next dataset (Min)
+          fill: '+1',
           order: 5,
+          hidden: false,
         },
         {
           label: 'Daily min',
           data: mins,
           borderColor: minBorder,
           backgroundColor: 'transparent',
-          borderWidth: 1,
+          borderWidth: 0.7,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
           fill: false,
           order: 5,
+          hidden: false,
         },
-        // ── Main 3 lines (above the ribbon) ──
+        // Main 3 lines
         { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
-        { label: '7D avg',    data: roll7,  borderColor: color,                   borderWidth: 1.8, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
-        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,              borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
+        { label: '7D avg',    data: roll7,  borderColor: color,                    borderWidth: 2,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
+        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,               borderWidth: 2,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
       ],
     },
     options: {
@@ -2595,9 +2736,27 @@ function _hszRenderLines(filtered, zone) {
       plugins: {
         legend: {
           display: true, position: 'top', align: 'end',
+          // Allow toggling visibility by clicking legend items (including Daily max/min)
           labels: {
             color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
-            // Show ALL items including Daily max / Daily min
+          },
+          onClick: (e, legendItem, legend) => {
+            const ci = legend.chart;
+            const index = legendItem.datasetIndex;
+            // Special handling: clicking on "Daily max" or "Daily min" toggles BOTH
+            const lbl = ci.data.datasets[index].label;
+            if (lbl === 'Daily max' || lbl === 'Daily min') {
+              // Find both indices
+              const maxIdx = ci.data.datasets.findIndex(d => d.label === 'Daily max');
+              const minIdx = ci.data.datasets.findIndex(d => d.label === 'Daily min');
+              const wasVisible = ci.isDatasetVisible(maxIdx);
+              ci.setDatasetVisibility(maxIdx, !wasVisible);
+              ci.setDatasetVisibility(minIdx, !wasVisible);
+            } else {
+              const wasVisible = ci.isDatasetVisible(index);
+              ci.setDatasetVisibility(index, !wasVisible);
+            }
+            ci.update();
           },
         },
         tooltip: {
@@ -2605,8 +2764,30 @@ function _hszRenderLines(filtered, zone) {
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` }
         },
         annotation: { annotations },
-        subtitle: yMin != null && yMax != null ? { display: true, text: `Y axis: ${yMin} → ${yMax} €/MWh (daily avg ± margin) · Outliers may be clipped · Scroll to zoom · drag to pan`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
-        zoom: _zoomConfig({ mode: 'y' }),
+        subtitle: yMin != null && yMax != null ? { display: true, text: `Y axis: ${yMin} → ${yMax} €/MWh (${_hszYPreset}) · Click ribbon legend to toggle · Drag to zoom area · Double-click to reset`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
+        // Click-and-drag zoom (rectangle selection), no wheel zoom (less intrusive)
+        zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(20,211,169,0.15)',
+              borderColor: 'rgba(20,211,169,0.6)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: false },
+            pinch: { enabled: true },
+            mode: 'xy',
+          },
+          pan: { enabled: false },
+          limits: { y: { min: 'original', max: 'original' } },
+        } : {},
+      },
+      onClick: (evt) => {
+        // Double-click resets the zoom
+        if (evt.native && evt.native.detail === 2) {
+          const ch = HIST.charts['hsz-canvas'];
+          if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+        }
       },
       scales: {
         x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
