@@ -1482,6 +1482,8 @@ function buildHourlyDetail(idx, z) {
         ${FLAG_MAP[z.code]||''} ${z.code} — ${ccFmtDay(window._currentPriceDate)}
       </div>
       <div style="display:flex;gap:6px">
+        <button onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
+          style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
         <button onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
         <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
@@ -1655,6 +1657,12 @@ function buildHourlyDetail(idx, z) {
     options:{
       responsive:true, maintainAspectRatio:false, animation:{duration:100},
       interaction:{mode:'index',intersect:false},
+      onClick: (evt) => {
+        if (evt && evt.native && evt.native.detail === 2) {
+          const c = _rowCharts[idx];
+          if (c && typeof c.resetZoom === 'function') c.resetZoom();
+        }
+      },
       plugins:{
         legend:{display: datasets.length>1, labels:{color:'#4A6280',font:{size:10},boxWidth:16,usePointStyle:true,pointStyle:'line'}},
         tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(2)+' €/MWh':'n/a'}`}},
@@ -3190,6 +3198,11 @@ function openRowFullscreen(idx) {
     </div>
     <div id="fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
       <div id="fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0">
+          <div style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">Drag to zoom area · double-click to reset</div>
+          <button onclick="(function(){var fs=document.getElementById('zone-fullscreen-overlay');if(fs&&fs._fsChart&&fs._fsChart.resetZoom)fs._fsChart.resetZoom();})()" title="Reset zoom"
+            style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:10px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
+        </div>
         <div id="fs-kpis" style="margin-bottom:12px;flex-shrink:0"></div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="fs-chart-${idx}" style="width:100%;height:100%"></canvas>
@@ -3286,12 +3299,12 @@ function openRowFullscreen(idx) {
         drag: {
           enabled: true,
           backgroundColor: 'rgba(20, 211, 169, 0.15)',
-          borderColor: 'rgba(20, 211, 169, 0.8)',
+          borderColor: 'rgba(20, 211, 169, 0.6)',
           borderWidth: 1
         },
         wheel: { enabled: false },
         pinch: { enabled: true },
-        mode: 'x'
+        mode: 'xy'
       },
       pan: { enabled: false }
     };
