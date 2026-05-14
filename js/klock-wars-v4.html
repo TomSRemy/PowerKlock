@@ -1146,7 +1146,7 @@ function initGame(mission) {
   const tank = TANKS[state.currentTank];
   document.getElementById('hudP1Name').textContent = 'P1 ' + tank.name;
   const inventory = {};
-  state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? 8 : 3; });
+  state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : 3; });
 
   const game = state.game = {
     running: true, mission, ctx, W, H, tank,
@@ -1211,8 +1211,8 @@ function renderWeaponBar() {
     const slot = document.createElement('div');
     slot.className = 'weapon-slot';
     if (key === g.currentWeapon) slot.classList.add('active');
-    if (qty <= 0) slot.classList.add('disabled');
-    slot.innerHTML = `<span class="icon">${w.icon}</span><span class="name">${w.name}</span><span class="qty">×${qty}</span>`;
+    if (qty !== Infinity && qty <= 0) slot.classList.add('disabled');
+    slot.innerHTML = `<span class="icon">${w.icon}</span><span class="name">${w.name}</span><span class="qty">${qty === Infinity ? '∞' : '×' + qty}</span>`;
     slot.onclick = () => selectWeapon(key);
     bar.appendChild(slot);
   });
@@ -1220,7 +1220,7 @@ function renderWeaponBar() {
 
 function selectWeapon(key) {
   const g = state.game;
-  if (!g || g.inventory[key] <= 0) return;
+  if (!g || (g.inventory[key] !== Infinity && g.inventory[key] <= 0)) return;
   const w = WEAPONS[key];
   if (w.instant) { useInstantWeapon(key); return; }
   g.currentWeapon = key;
@@ -1387,8 +1387,9 @@ function drawScene() {
 
   if (!g.projectile && g.turn === 'player' && !g.gameOver) {
     const w = WEAPONS[g.currentWeapon];
-    if (w.preview === 'precise') drawTrajectoryPreview(false);
-    else if (w.preview === 'fuzzy') drawTrajectoryPreview(true);
+    if (w.preview === 'precise') drawTrajectoryPreview(false, 400);
+    else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 400);
+    else drawAimIndicator(); // Short free aim hint
   }
   drawTank(g.p1, tank.color, tank.trackColor, true);
   drawTank(g.p2, '#EE9B00', '#BB3E03', false);
@@ -1419,7 +1420,33 @@ function drawTank(tank, body, track, facingRight) {
   ctx.restore();
 }
 
-function drawTrajectoryPreview(fuzzy) {
+function drawAimIndicator() {
+  // Short visible aim hint at barrel exit - no physics, just a directional cue
+  const g = state.game;
+  const ctx = g.ctx;
+  const angRad = g.angle * Math.PI / 180;
+  const startX = g.p1.x + Math.cos(angRad) * 14;
+  const startY = g.p1.y - 4 - Math.sin(angRad) * 14;
+  const len = 35;
+  // Gradient fade from gold to transparent
+  for (let i = 0; i < 4; i++) {
+    const t1 = i / 4, t2 = (i + 1) / 4;
+    const alpha = 0.5 * (1 - t1);
+    ctx.strokeStyle = `rgba(238, 155, 0, ${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX + Math.cos(angRad) * len * t1, startY - Math.sin(angRad) * len * t1);
+    ctx.lineTo(startX + Math.cos(angRad) * len * t2, startY - Math.sin(angRad) * len * t2);
+    ctx.stroke();
+  }
+  // Small dot at the tip
+  ctx.fillStyle = 'rgba(238, 155, 0, 0.4)';
+  ctx.beginPath();
+  ctx.arc(startX + Math.cos(angRad) * len, startY - Math.sin(angRad) * len, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTrajectoryPreview(fuzzy, maxSteps = 400) {
   const g = state.game;
   const ctx = g.ctx;
   const angRad = g.angle * Math.PI / 180;
@@ -1438,7 +1465,7 @@ function drawTrajectoryPreview(fuzzy) {
     const gr = 0.25;
     const wa = (g.cancelWindNextTurn ? 0 : g.wind + windOffset) * 0.012 * g.tank.windResist;
     ctx.beginPath(); ctx.moveTo(px, py);
-    for (let s = 0; s < 400; s++) {
+    for (let s = 0; s < maxSteps; s++) {
       vx += wa; vy += gr; px += vx; py += vy;
       if (px < 0 || px > g.W || py > g.H) break;
       if (px >= 0 && px < g.W && py >= g.terrain[Math.floor(px)]) break;
@@ -1702,8 +1729,8 @@ function playerShoot() {
   const g = state.game;
   if (!g || g.turn !== 'player' || g.projectile || g.gameOver) return;
   const wKey = g.currentWeapon;
-  if (g.inventory[wKey] <= 0) { showGameMsg(t('no_ammo'), t('pick_other')); return; }
-  g.inventory[wKey]--;
+  if (g.inventory[wKey] !== Infinity && g.inventory[wKey] <= 0) { showGameMsg(t('no_ammo'), t('pick_other')); return; }
+  if (g.inventory[wKey] !== Infinity) g.inventory[wKey]--;
   if (wKey !== 'standard' && g.inventory[wKey] <= 0) g.currentWeapon = 'standard';
   renderWeaponBar();
   g.shotsP1++;
@@ -1718,9 +1745,21 @@ function playerShoot() {
 function moveTank(direction) {
   const g = state.game;
   if (!g || g.turn !== 'player' || g.projectile || g.gameOver) return;
-  const fuelUsed = 4;
+  // Calculate slope at current position to determine fuel cost and step size
+  const cx = Math.floor(g.p1.x);
+  const sampleDx = 5;
+  const yHere = g.terrain[cx] || g.p1.y;
+  const targetX = cx + direction * sampleDx;
+  const yAhead = g.terrain[Math.max(0, Math.min(g.W - 1, targetX))] || yHere;
+  const slope = Math.abs(yAhead - yHere) / sampleDx; // pixels per pixel
+  // Slope penalty: flat = 1x, 45° = ~2x, steep climb = 3x
+  const slopePenalty = 1 + slope * 1.8;
+  const goingUp = (direction > 0 && yAhead < yHere) || (direction < 0 && yAhead < yHere);
+  const uphillMult = goingUp ? 1.0 : 0.7; // downhill cheaper
+  const fuelUsed = Math.max(2, Math.round(4 * slopePenalty * uphillMult));
+  const stepSize = Math.max(2, Math.round(4 / slopePenalty)); // steeper = smaller step
   if (g.p1fuel < fuelUsed) { showGameMsg(t('no_fuel'), '€' + g.fuelCost + '/u'); return; }
-  const newX = Math.max(40, Math.min(g.W * 0.45, g.p1.x + direction * 8));
+  const newX = Math.max(40, Math.min(g.W * 0.45, g.p1.x + direction * stepSize));
   if (Math.abs(newX - g.p1.x) < 1) return;
   g.p1.x = newX;
   g.p1.y = g.terrain[Math.floor(newX)] - 12;
