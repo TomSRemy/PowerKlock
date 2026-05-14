@@ -1272,7 +1272,7 @@
     gamespot.className = 'es-gamespot';
     gamespot.title = 'Klock Wars';
     gamespot.setAttribute('aria-label', 'Launch Klock Wars');
-    gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars-v4.html', '_blank'); });
+    gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars.html', '_blank'); });
     document.body.appendChild(gamespot);
     // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
     keepOnTopInterval = setInterval(() => {
