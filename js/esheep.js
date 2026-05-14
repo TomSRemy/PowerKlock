@@ -1267,6 +1267,13 @@
     hotspot.setAttribute('aria-label', 'eSheep toggle');
     hotspot.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     document.body.appendChild(hotspot);
+    // Sibling dot next to the eSheep hotspot: launches the Klock Wars game in a new tab
+    const gamespot = document.createElement('div');
+    gamespot.className = 'es-gamespot';
+    gamespot.title = 'Klock Wars';
+    gamespot.setAttribute('aria-label', 'Launch Klock Wars');
+    gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars-v4.html', '_blank'); });
+    document.body.appendChild(gamespot);
     // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
     keepOnTopInterval = setInterval(() => {
       if (hotspot && hotspot.parentNode === document.body && document.body.lastElementChild !== hotspot) {
@@ -1286,6 +1293,8 @@
     s.textContent = `
 .es-hotspot{position:fixed!important;left:178px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
+.es-gamespot{position:fixed!important;left:194px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483646!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-gamespot:hover{background:rgba(20,211,169,.7)!important;transform:scale(1.4)!important}
 `;
     document.head.appendChild(s);
   }
