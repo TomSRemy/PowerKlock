@@ -109,7 +109,7 @@
         "negH": 0.5,
         "peakAvg": 11.24,
         "offAvg": 38.47,
-        "renPct": 29.0,
+        "renPct": 35.1,
         "domFuel": "Nuclear"
       }
     ],
@@ -327,14 +327,14 @@
       },
       {
         "d": "2026-05-14",
-        "avg": 50.31,
-        "min": -5.5,
-        "max": 103.69,
-        "negH": 2.0,
-        "peakAvg": 13.07,
-        "offAvg": 84.38,
-        "renPct": 61.1,
-        "domFuel": "Hydro"
+        "avg": 49.04,
+        "min": -5.66,
+        "max": 102.63,
+        "negH": 1.75,
+        "peakAvg": 12.88,
+        "offAvg": 83.66,
+        "renPct": 75.0,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -445,8 +445,8 @@
         "negH": 0.0,
         "peakAvg": 55.73,
         "offAvg": 113.0,
-        "renPct": 62.6,
-        "domFuel": "Wind"
+        "renPct": 75.6,
+        "domFuel": "Solar"
       }
     ],
     "NL": [
@@ -612,6 +612,15 @@
         "negH": 0.0,
         "peakAvg": 50.51,
         "offAvg": 135.59
+      },
+      {
+        "d": "2026-05-14",
+        "avg": 93.67,
+        "min": 0.1,
+        "max": 206.5,
+        "negH": 0.0,
+        "peakAvg": 61.11,
+        "offAvg": 108.93
       }
     ],
     "IT_NORD": [
@@ -882,12 +891,12 @@
       },
       {
         "d": "2026-05-14",
-        "avg": 100.32,
+        "avg": 96.86,
         "min": 15.47,
         "max": 181.39,
         "negH": 0.0,
-        "peakAvg": 66.84,
-        "offAvg": 133.8
+        "peakAvg": 81.29,
+        "offAvg": 104.65
       }
     ],
     "RS": [
@@ -1066,12 +1075,12 @@
       },
       {
         "d": "2026-05-14",
-        "avg": 121.18,
+        "avg": 126.86,
         "min": 84.0,
         "max": 160.0,
         "negH": 0.0,
-        "peakAvg": 109.07,
-        "offAvg": 134.4
+        "peakAvg": 133.84,
+        "offAvg": 123.48
       }
     ],
     "NO_1": [
@@ -2364,7 +2373,7 @@
         "negH": 0.5,
         "peakAvg": 19.43,
         "offAvg": 96.31,
-        "renPct": 79.8,
+        "renPct": 83.3,
         "domFuel": "Hydro"
       }
     ],
