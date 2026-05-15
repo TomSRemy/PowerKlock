@@ -94,6 +94,29 @@ function setHistWindow(key, window, btn) {
   const btns = btn.closest('.hist-window-btns').querySelectorAll('.hw-btn');
   btns.forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  // Sync the global sticky bar period buttons
+  // ho/hsz/hmz share the Historical sticky bar; dist has its own.
+  if (key === 'ho' || key === 'hsz' || key === 'hmz') {
+    const grp = document.getElementById('pk-gf-hist-period');
+    if (grp) {
+      grp.querySelectorAll('.pk-gf-btn').forEach(b => {
+        if (b.dataset.w === window) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+    }
+    // Mirror to the other two blocs so all three stay in sync
+    HIST.windows['ho']  = window;
+    HIST.windows['hsz'] = window;
+    HIST.windows['hmz'] = window;
+  } else if (key === 'dist') {
+    const grp = document.getElementById('pk-gf-dist-period');
+    if (grp) {
+      grp.querySelectorAll('.pk-gf-btn').forEach(b => {
+        if (String(b.dataset.w).toLowerCase() === String(window).toLowerCase()) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+    }
+  }
   // Re-render
   const renders = {
     'spot':      renderHistSpot,
@@ -1050,13 +1073,19 @@ document.addEventListener('zones-changed', () => {
 
 function updateZoneLabels() {
   const n = (window._userZones || new Set()).size;
+  const txt = n + (n > 1 ? ' zones' : ' zone');
   const lbl1 = document.getElementById('ho-zone-label');
-  if (lbl1) lbl1.textContent = n + (n > 1 ? ' zones' : ' zone');
+  if (lbl1) lbl1.textContent = txt;
   const lbl2 = document.getElementById('hmz-zone-label');
-  if (lbl2) lbl2.textContent = n + (n > 1 ? ' zones' : ' zone');
+  if (lbl2) lbl2.textContent = txt;
   // Existing Daily Compare label
   const lbl3 = document.getElementById('compare-filter-label');
   if (lbl3) lbl3.textContent = n + (n > 1 ? ' zones selected' : ' zone selected');
+  // New sticky-bar global filter labels
+  const lblHistSticky = document.getElementById('pk-gf-hist-zones-label');
+  if (lblHistSticky) lblHistSticky.textContent = txt;
+  const lblDailySticky = document.getElementById('pk-gf-daily-zones-label');
+  if (lblDailySticky) lblDailySticky.textContent = txt;
 }
 
 // ── Global zone panel (the dropdown checkbox panel) ──
