@@ -132,7 +132,6 @@ function setHistWindow(key, window, btn) {
     'cap-solar': () => renderHistCapture('solar'),
     'cap-wind':  () => renderHistCapture('wind'),
     'ho':        renderHistOverview,
-    'hsz':       renderHistSingle,
     'hmz':       renderHistMulti,
     'hms':       renderHistMonthlyTable,
   };
@@ -1275,10 +1274,9 @@ window._hoSetYPreset = function(preset) {
   window._HO_YPRESET = preset;
   const zone = window._HO_OPEN_ZONE;
   const series = window._HO_LAST_SERIES;
-  if (zone && series && typeof _buildHoChart === 'function') {
-    // Re-render the chart (non-fullscreen) with the new preset
-    _buildHoChart(zone, series, false);
-    // Also update the preset buttons UI
+  if (zone && series && typeof _buildHoTabChart === 'function') {
+    const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+    _buildHoTabChart(zone, series, tab, false);
     _hoRenderPresetButtons();
   }
 };
@@ -1303,6 +1301,93 @@ function _hoRenderPresetButtons() {
       b.style.color = active ? '#14D3A9' : 'var(--tx3)';
     });
   });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Tabs bar inside the ho-detail drill-down row.
+// Mirrors the HSZ.tabs list, but writes to the drill-down canvas.
+// State is kept in window._HO_TABS[zone] = 'lines' | 'yoy' | …
+// ─────────────────────────────────────────────────────────────
+function _hoRenderTabsBar(zone, series) {
+  const bar = document.getElementById('ho-detail-tabs-bar');
+  if (!bar) return;
+  const current = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+  bar.innerHTML = HSZ.tabs.map(t => {
+    const on = t.id === current;
+    return `<button data-ho-tab="${t.id}" onclick="event.stopPropagation();_hoSetTab('${zone}','${t.id}')" style="
+      padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;
+      border:none;background:${on?'var(--bg3)':'transparent'};
+      color:${on?'var(--text)':'var(--tx3)'};
+      letter-spacing:.03em;
+    ">${t.label}</button>`;
+  }).join('');
+}
+
+window._hoSetTab = function(zone, tabId) {
+  if (!window._HO_TABS) window._HO_TABS = {};
+  window._HO_TABS[zone] = tabId;
+  const series = window._HO_LAST_SERIES;
+  if (!series) return;
+  _hoRenderTabsBar(zone, series);
+  _hoApplyTabVisibility(tabId);
+  _buildHoTabChart(zone, series, tabId, false);
+};
+
+// Show/hide controls that only make sense on the Lines tab.
+// Y-presets (Focus/Standard/All) → Lines only.
+// Reset ↺, legend (Daily/7D/30D/max/min), PNG, Fullscreen → all tabs.
+function _hoApplyTabVisibility(tabId) {
+  const yp = document.getElementById('ho-detail-ypresets-wrap');
+  const legend = document.getElementById('ho-detail-legend');
+  if (yp)     yp.style.display     = (tabId === 'lines') ? 'flex' : 'none';
+  if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
+}
+
+// Dispatcher used by the drill-down row to render any tab on the
+// detail canvas (ho-detail-chart) or the fullscreen canvas (ho-fs-chart).
+// For 'lines' we keep the existing _buildHoChart (Now marker + Min/Max annotations).
+// For the other tabs we swap _HSZ_TARGET to point at the detail/fs canvas
+// and delegate to _hszRenderTab.
+async function _buildHoTabChart(zone, series, tab, fullscreen) {
+  const canvasId = fullscreen ? 'ho-fs-chart' : 'ho-detail-chart';
+  // Clear any previous content/grid from the chart wrap (hourly-quarter mode injects one)
+  const canvas = document.getElementById(canvasId);
+  if (canvas) {
+    const wrap = canvas.parentNode;
+    // Remove leftover quarter grid + hourly toggle from previous renders
+    const prefix = fullscreen ? 'ho-fs' : 'ho-detail';
+    const oldGrid = document.getElementById(prefix + '-quarter-grid');
+    if (oldGrid) oldGrid.remove();
+    const oldTog = document.getElementById(prefix + '-hourly-toggle');
+    if (oldTog) oldTog.remove();
+    // Restore canvas visibility (some tabs hide it then show it back)
+    canvas.style.display = '';
+  }
+
+  if (tab === 'lines') {
+    // Existing Lines renderer (handles Now marker + Min/Max annotations + Y-presets)
+    return _buildHoChart(zone, series, fullscreen);
+  }
+
+  // Other tabs delegate to the shared HSZ renderers, with the context pointing
+  // at the drill-down (or fullscreen) canvas.
+  const prevTarget = { ..._HSZ_TARGET };
+  _HSZ_TARGET.canvasId    = canvasId;
+  _HSZ_TARGET.tabsId      = null;
+  _HSZ_TARGET.togglePrefix = fullscreen ? 'ho-fs' : 'ho-detail';
+  _HSZ_TARGET.getWindow    = () => HIST.windows['ho'] || '3M';
+  _HSZ_TARGET.getHourlyMode = () => HSZ.hourlyMode;
+  _HSZ_TARGET.getZone       = () => zone;
+  _HSZ_TARGET.getTab        = () => tab;
+  _HSZ_TARGET.getYPreset    = () => window._HO_YPRESET || 'standard';
+
+  try {
+    const summary = await fetchSummary();
+    await _hszRenderTab(series, zone, tab, summary);
+  } finally {
+    // Restore previous context (defensive; nothing else uses it right now)
+    Object.assign(_HSZ_TARGET, prevTarget);
+  }
 }
 
 // ── KPI strip Historical (FR-centric + loaded avg) ──
@@ -1907,9 +1992,12 @@ function _openHoRow(zone, series, st) {
           ${_buildHoVerdict(st)}
         </div>
 
+        <!-- Tabs bar: Lines / YoY / Seasonal / Hourly / Weekly / Volatility / Distribution -->
+        <div id="ho-detail-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:10px;flex-wrap:wrap"></div>
+
         <!-- Legend + actions (above chart, Daily-style) -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
+          <div id="ho-detail-legend" style="display:flex;align-items:center;gap:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
             <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:5px"></span>${zone} · ${series.length}D</span>
             <span><span style="display:inline-block;width:12px;height:1px;border-top:1.5px dashed #94a3b8;vertical-align:middle;margin-right:5px"></span>7D rolling</span>
             <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:5px"></span>30D rolling</span>
@@ -1917,16 +2005,16 @@ function _openHoRow(zone, series, st) {
             <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:5px"></span>Daily min</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <div style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
+            <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis — hides outliers"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
               <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
                 style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
               <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
                 style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
-              <button onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom"
-                style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺</button>
             </div>
+            <button id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom"
+              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px">↺</button>
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
               style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
             <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
@@ -1960,8 +2048,23 @@ function _openHoRow(zone, series, st) {
   // Render the KPI strip with dynamic border-left colors (vs Y-1)
   _renderHoDetailKpis(zone, series, st);
 
-  // Build chart
-  _buildHoChart(zone, series);
+  // Initialise the tab state for this zone (default: 'lines')
+  if (!window._HO_TABS) window._HO_TABS = {};
+  if (!window._HO_TABS[zone]) window._HO_TABS[zone] = 'lines';
+
+  // Build the tabs bar + chart
+  _hoRenderTabsBar(zone, series);
+  _hoApplyTabVisibility(window._HO_TABS[zone]);
+  _buildHoTabChart(zone, series, window._HO_TABS[zone], false);
+
+  // Register the rerender callback so that shared controls
+  // (Y presets, hourly mode toggle) can refresh the active chart.
+  _setHszRerender(() => {
+    const z = window._HO_OPEN_ZONE;
+    const s2 = window._HO_LAST_SERIES;
+    if (!z || !s2) return;
+    _buildHoTabChart(z, s2, (window._HO_TABS && window._HO_TABS[z]) || 'lines', false);
+  });
 
   // Render monthly breakdown inside the <details> (lazy: only when expanded)
   const detailsEl = detail.querySelector('details');
@@ -2285,8 +2388,9 @@ function _openHoFullscreen(zone) {
   window._renderHoFsChart = function(zone) {
   const series = window._HO_LAST_SERIES;
   if (!zone || !series) return;
-  if (typeof _buildHoChart === 'function') {
-    _buildHoChart(zone, series, true);
+  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+  if (typeof _buildHoTabChart === 'function') {
+    _buildHoTabChart(zone, series, tab, true);
   }
   // Update FS button styles
   document.querySelectorAll('#ho-fs-chart-pane [data-ho-preset]').forEach(btn => {
@@ -2298,7 +2402,10 @@ function _openHoFullscreen(zone) {
   });
 };
 
-setTimeout(() => _buildHoChart(zone, series, true), 50);
+setTimeout(() => {
+  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+  _buildHoTabChart(zone, series, tab, true);
+}, 50);
 
   // Drag-resize handle
   const divider  = document.getElementById('ho-fs-divider');
@@ -2608,105 +2715,77 @@ const HSZ = {
   ],
 };
 
+// _HSZ_TARGET: indirection layer used by _hszRender* so the renderers can
+// write to the drill-down canvas inside an opened ho-table row (or the
+// fullscreen canvas). The legacy hsz-canvas block has been removed; this
+// target is mutated by _buildHoTabChart before rendering, then restored.
+// Keys:
+//   canvasId      → which canvas to draw on
+//   tabsId        → unused (legacy); kept for future
+//   togglePrefix  → prefix for hourly-toggle/quarter-grid ids (must be unique
+//                   per concurrent rendering host to avoid DOM collisions)
+//   getWindow()   → returns the active window key (e.g. '3M', '1Y')
+//   getHourlyMode() → 'quarter' | 'yoy'
+//   getZone()     → active zone code
+//   getTab()      → active tab id
+//   getYPreset()  → active Y range preset ('focus'|'standard'|'all')
+const _HSZ_TARGET = {
+  canvasId: null,
+  tabsId: null,
+  togglePrefix: 'ho-detail',
+  getWindow: () => HIST.windows['ho'] || '3M',
+  getHourlyMode: () => HSZ.hourlyMode,
+  getZone: () => HSZ.zone,
+  getTab:  () => HSZ.tab,
+  getYPreset: () => _hszYPreset,
+};
+function _hszCtx() { return _HSZ_TARGET; }
+
+// State callback: the drill-down row registers a "rerender" function so that
+// shared controls (Y presets, hourly mode toggle) can refresh the active chart
+// without knowing which row owns it.
+let _HSZ_RERENDER = null;
+function _setHszRerender(fn) { _HSZ_RERENDER = fn; }
+function _hszRerender() { if (typeof _HSZ_RERENDER === 'function') _HSZ_RERENDER(); }
+
 function setHistHourlyMode(mode) {
   HSZ.hourlyMode = mode;
-  renderHistSingle();
+  _hszRerender();
 }
 window.setHistHourlyMode = setHistHourlyMode;
 
-function setHistSingleZone(zone) {
-  HSZ.zone = zone;
-  renderHistSingle();
-}
-window.setHistSingleZone = setHistSingleZone;
-
-function setHistSingleTab(tabId) {
-  HSZ.tab = tabId;
-  buildHistSingleTabs();
-  renderHistSingle();
-}
-window.setHistSingleTab = setHistSingleTab;
-
-function buildHistSingleTabs() {
-  const wrap = document.getElementById('hsz-tabs');
-  if (!wrap) return;
-  wrap.innerHTML = HSZ.tabs.map(t => {
-    const on = t.id === HSZ.tab;
-    return `<button onclick="setHistSingleTab('${t.id}')" style="
-      padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;
-      border:none;background:${on?'var(--bg3)':'transparent'};
-      color:${on?'var(--text)':'var(--tx3)'};
-      letter-spacing:.03em;
-    ">${t.label}</button>`;
-  }).join('');
-}
-
-async function renderHistSingle() {
-  buildHistSingleTabs();
-  const w = HIST.windows['hsz'] || '3M';
-  const zone = HSZ.zone;
-  const s = await fetchSummary();
-  if (!s?.zones?.[zone]) {
-    _hszPlaceholder('No data for ' + zone);
-    return;
-  }
-
-  const filtered = filterByWindow(s.zones[zone], w);
-  if (!filtered.length) {
-    _hszPlaceholder('No data in selected window');
-    return;
-  }
-
-  // KPI strip (always shown, computed from filtered)
-  const st = _statsForZone(filtered);
-  if (st) {
-    document.getElementById('hsz-kpi-avg-v').innerHTML = st.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hsz-kpi-avg-meta').textContent = zone + ' · ' + st.days + 'd';
-    document.getElementById('hsz-kpi-peak-v').innerHTML = (st.peakAvg != null ? st.peakAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hsz-kpi-offpeak-v').innerHTML = (st.offAvg != null ? st.offAvg.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hsz-kpi-vol-v').innerHTML = st.sigma.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hsz-kpi-neg-v').innerHTML = _fmtNegH(st.negH);
-    const spread = (st.peakAvg != null && st.offAvg != null) ? (st.peakAvg - st.offAvg) : null;
-    document.getElementById('hsz-kpi-spread-v').innerHTML = (spread != null ? spread.toFixed(1) : '--') + '<span class="kpi-unit">€/MWh</span>';
-  }
-
-  // Period label
-  const periodEl = document.getElementById('hsz-period');
-  if (periodEl) periodEl.textContent = periodLabel(filtered);
-
-  // Toggle canvas vs heatmap
-  const canvas = document.getElementById('hsz-canvas');
-  const heatmap = document.getElementById('hsz-heatmap');
+// _hszRenderTab: shared dispatcher used by the drill-down row.
+// `filtered` = filtered series, `zone` = zone code, `tab` = active tab id,
+// `summary` = the fetchSummary() result (needed by YoY / Seasonal renderers).
+// The renderers read `_hszCtx()` for canvas/window/etc., so make sure the
+// caller has set _HSZ_TARGET appropriately before invoking.
+async function _hszRenderTab(filtered, zone, tab, summary) {
+  // Toggle canvas vs heatmap (some renderers swap to a grid)
+  const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) canvas.style.display = '';
-  if (heatmap) heatmap.style.display = 'none';
 
-  // Cleanup Hourly-specific UI when switching to another tab
-  if (HSZ.tab !== 'hourly') {
-    const tg = document.getElementById('hsz-hourly-toggle');
+  // Cleanup Hourly-specific UI when not on hourly
+  const togPrefix = _hszCtx().togglePrefix;
+  if (tab !== 'hourly') {
+    const tg = document.getElementById(togPrefix + '-hourly-toggle');
     if (tg) tg.remove();
-    const qg = document.getElementById('hsz-quarter-grid');
+    const qg = document.getElementById(togPrefix + '-quarter-grid');
     if (qg) qg.remove();
-  }
-  // Cleanup Lines-specific Y preset bar when switching to another tab
-  if (HSZ.tab !== 'lines') {
-    const yp = document.getElementById('hsz-y-presets');
-    if (yp) yp.remove();
   }
 
   // Dispatch render by tab
-  if (HSZ.tab === 'lines')    return _hszRenderLines(filtered, zone);
-  if (HSZ.tab === 'yoy')      return _hszRenderYoY(filtered, zone, s);
-  if (HSZ.tab === 'seasonal') return _hszRenderSeasonal(filtered, zone, s);
-  if (HSZ.tab === 'hourly')   return _hszRenderHourly(filtered, zone);
-  if (HSZ.tab === 'weekly')   return _hszRenderWeekly(filtered, zone);
-  if (HSZ.tab === 'vol')      return _hszRenderVolatility(filtered, zone);
-  if (HSZ.tab === 'dist')     return _hszRenderDist(filtered, zone);
-  return _hszPlaceholder('🚧 ' + HSZ.tab + ' · data ready · chart coming next');
+  if (tab === 'lines')    return _hszRenderLines(filtered, zone);
+  if (tab === 'yoy')      return _hszRenderYoY(filtered, zone, summary);
+  if (tab === 'seasonal') return _hszRenderSeasonal(filtered, zone, summary);
+  if (tab === 'hourly')   return _hszRenderHourly(filtered, zone);
+  if (tab === 'weekly')   return _hszRenderWeekly(filtered, zone);
+  if (tab === 'vol')      return _hszRenderVolatility(filtered, zone);
+  if (tab === 'dist')     return _hszRenderDist(filtered, zone);
+  return _hszPlaceholder('🚧 ' + tab + ' · data ready · chart coming next');
 }
-window.renderHistSingle = renderHistSingle;
 
 function _hszPlaceholder(msg) {
-  const canvas = document.getElementById('hsz-canvas');
+  const canvas = document.getElementById(_hszCtx().canvasId);
   if (!canvas) return;
   const wrap = canvas.parentNode;
   const old = wrap.querySelector('.no-data-msg');
@@ -2724,7 +2803,7 @@ let _hszYPreset = 'standard';  // 'focus' | 'standard' | 'all'
 
 function setHszYPreset(preset) {
   _hszYPreset = preset;
-  renderHistSingle();
+  _hszRerender();
 }
 window.setHszYPreset = setHszYPreset;
 
@@ -2768,33 +2847,11 @@ function _computeYRange(validAvgs, validMaxes, validMins, preset, roll7, roll30)
   return { yMin, yMax };
 }
 
-// Inject Y preset buttons in the HSZ header area (above tabs / chart)
-function _hszInjectYPresets() {
-  const canvas = document.getElementById('hsz-canvas');
-  if (!canvas) return;
-  const wrap = canvas.parentNode;
-  const old = document.getElementById('hsz-y-presets');
-  if (old) old.remove();
-  // Only inject for 'lines' tab (the one where Y range matters most)
-  if (HSZ.tab !== 'lines') return;
-  const bar = document.createElement('div');
-  bar.id = 'hsz-y-presets';
-  bar.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;font-size:10px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
-  const mkBtn = (id, label, title) => {
-    const active = _hszYPreset === id;
-    return `<button onclick="setHszYPreset('${id}')" title="${title}" style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">${label}</button>`;
-  };
-  bar.innerHTML = `
-    ${mkBtn('focus', 'Focus', 'Y axis ± 20% around avg — hides outliers')}
-    ${mkBtn('standard', 'Standard', 'Y axis ± 30% around avg — default')}
-    ${mkBtn('all', 'All', 'Y axis covers daily max/min — shows outliers')}
-    <button onclick="_hszResetZoom()" title="Reset any manual zoom/pan" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">↺ Reset</button>
-  `;
-  wrap.insertBefore(bar, canvas);
-}
+// _hszInjectYPresets removed — Y preset bar is rendered directly inside the
+// drill-down row by _openHoRow (see ho-detail-* IDs).
 
 function _hszResetZoom() {
-  const ch = HIST.charts['hsz-canvas'];
+  const ch = HIST.charts[_hszCtx().canvasId];
   if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
 }
 window._hszResetZoom = _hszResetZoom;
@@ -2824,10 +2881,10 @@ function _hszRenderLines(filtered, zone) {
   const validAvgs  = avgs.filter(v => v != null);
   const validMaxes = maxes.filter(v => v != null && !isNaN(v));
   const validMins  = mins.filter(v => v != null && !isNaN(v));
-  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszYPreset, roll7, roll30);
+  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszCtx().getYPreset(), roll7, roll30);
 
   // In Focus mode, hide the ribbon entirely (we want pure trend view)
-  const showRibbon = _hszYPreset !== 'focus';
+  const showRibbon = _hszCtx().getYPreset() !== 'focus';
 
   // Min/max avg markers
   const annotations = {};
@@ -2846,10 +2903,10 @@ function _hszRenderLines(filtered, zone) {
     };
   }
 
-  // Inject preset buttons in the header
-  setTimeout(_hszInjectYPresets, 0);
+  // Y preset buttons are rendered by the host container (drill-down row)
+  // — not injected here anymore.
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
@@ -2941,7 +2998,7 @@ function _hszRenderLines(filtered, zone) {
       onClick: (evt) => {
         // Double-click resets the zoom
         if (evt.native && evt.native.detail === 2) {
-          const ch = HIST.charts['hsz-canvas'];
+          const ch = HIST.charts[_hszCtx().canvasId];
           if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
         }
       },
@@ -2961,7 +3018,7 @@ function _hszRenderYoY(filtered, zone, summary) {
   if (!filtered.length || !all.length) return _hszPlaceholder('Not enough data for YoY');
 
   // Determine if we're in "long window" mode (2Y, 5Y, All) → calendar overlay
-  const w = HIST.windows['hsz'] || '3M';
+  const w = _hszCtx().getWindow();
   const longWindow = ['2Y', '5Y', 'All'].includes(w);
 
   if (longWindow) {
@@ -3003,7 +3060,7 @@ function _hszRenderYoY(filtered, zone, summary) {
 
   const ribbonFill = _toRgba(color, 0.08);
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
@@ -3118,7 +3175,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
     };
   });
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: { labels, datasets },
     options: {
@@ -3236,7 +3293,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     tension: 0.25, spanGaps: true, fill: false, order: 1,
   });
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: { labels, datasets },
     options: {
@@ -3275,7 +3332,7 @@ async function _hszRenderHourly(filtered, zone) {
     return _hszPlaceholder('No intraday profile data — run enrich_summary.py to populate it');
   }
 
-  const mode = HSZ.hourlyMode || 'quarter';
+  const mode = _hszCtx().getHourlyMode() || 'quarter';
 
   // Render the mode toggle UI in the chart area header (above the canvas/grid)
   _hszInjectHourlyToggle(mode);
@@ -3289,14 +3346,15 @@ async function _hszRenderHourly(filtered, zone) {
 
 // Inject a small Quarter / YoY toggle above the chart area
 function _hszInjectHourlyToggle(mode) {
-  const canvas = document.getElementById('hsz-canvas');
+  const canvas = document.getElementById(_hszCtx().canvasId);
   if (!canvas) return;
   const wrap = canvas.parentNode;
+  const togId = _hszCtx().togglePrefix + '-hourly-toggle';
   // Remove old toggle if any
-  const oldT = document.getElementById('hsz-hourly-toggle');
+  const oldT = document.getElementById(togId);
   if (oldT) oldT.remove();
   const toggle = document.createElement('div');
-  toggle.id = 'hsz-hourly-toggle';
+  toggle.id = togId;
   toggle.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;font-size:10px;font-family:\'JetBrains Mono\',monospace';
   toggle.innerHTML = `
     <button onclick="setHistHourlyMode('quarter')" style="background:${mode==='quarter'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${mode==='quarter'?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${mode==='quarter'?'#14D3A9':'var(--tx3)'};padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">BY QUARTER</button>
@@ -3323,22 +3381,22 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   if (!cur) return _hszPlaceholder('No intraday data');
 
   // Destroy any existing single chart
-  if (HIST.charts['hsz-canvas']) {
-    HIST.charts['hsz-canvas'].destroy();
-    delete HIST.charts['hsz-canvas'];
+  if (HIST.charts[_hszCtx().canvasId]) {
+    HIST.charts[_hszCtx().canvasId].destroy();
+    delete HIST.charts[_hszCtx().canvasId];
   }
   // Hide single canvas, render a 2×2 grid in its place
-  const canvas = document.getElementById('hsz-canvas');
+  const canvas = document.getElementById(_hszCtx().canvasId);
   if (!canvas) return;
   canvas.style.display = 'none';
   const wrap = canvas.parentNode;
 
   // Clean previous grid if any
-  const oldGrid = document.getElementById('hsz-quarter-grid');
+  const oldGrid = document.getElementById(_hszCtx().togglePrefix + '-quarter-grid');
   if (oldGrid) oldGrid.remove();
 
   const grid = document.createElement('div');
-  grid.id = 'hsz-quarter-grid';
+  grid.id = _hszCtx().togglePrefix + '-quarter-grid';
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;height:100%;min-height:340px';
 
   const Qmeta = [
@@ -3427,9 +3485,9 @@ function _hszRenderHourlyYoY(zone, intraday) {
   if (!cur) return _hszPlaceholder('No intraday data');
 
   // Remove the quarter grid if present, show the main canvas
-  const oldGrid = document.getElementById('hsz-quarter-grid');
+  const oldGrid = document.getElementById(_hszCtx().togglePrefix + '-quarter-grid');
   if (oldGrid) oldGrid.remove();
-  const canvas = document.getElementById('hsz-canvas');
+  const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) canvas.style.display = '';
 
   const curProfile = intraday[cur]?.all;
@@ -3465,7 +3523,7 @@ function _hszRenderHourlyYoY(zone, intraday) {
   const curMean = _meanIgnoreNull(curProfile);
   const n1Mean  = n1Profile ? _meanIgnoreNull(n1Profile) : null;
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: { labels: hours, datasets },
     options: {
@@ -3600,7 +3658,7 @@ function _hszRenderWeekly(filtered, zone) {
     },
   };
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'bar',
     data: {
       labels,
@@ -3684,7 +3742,7 @@ function _hszRenderVolatility(filtered, zone) {
   // makes the 3 regime zones look reasonable
   const yMaxData = Math.ceil(Math.max(sigMax * 1.1, 35) / 5) * 5;
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
@@ -3769,7 +3827,7 @@ function _hszRenderDist(filtered, zone) {
   const xMean = mean;
   const xMedian = median;
 
-  mkHistChart('hsz-canvas', {
+  mkHistChart(_hszCtx().canvasId, {
     type: 'bar',
     data: {
       labels: bins.map(b => b + '€'),
@@ -4956,7 +5014,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window._histInited = true;
         setTimeout(() => {
           renderHistOverview();
-          renderHistSingle();
           renderHistMulti();
           renderHistMonthlyTable();
         }, 50);
