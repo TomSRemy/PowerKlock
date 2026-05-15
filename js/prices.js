@@ -1597,7 +1597,7 @@ function buildHourlyDetail(idx, z) {
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
-    ${negTotalMin > 0 ? `<div style="font-size:11px;color:var(--warn);margin-bottom:8px">⚠ ${negHours}h ${String(negMins).padStart(2,'0')}min negative prices · min: ${negMin.toFixed(1)} €/MWh</div>` : ''}
+    ${negTotalMin > 0 ? `<div style="font-size:11px;color:#FBBF24;margin-top:8px;margin-bottom:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">⚠ ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} negative prices · min: ${negMin.toFixed(2)} €/MWh</div>` : ''}
     <details style="margin-top:4px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
         Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
