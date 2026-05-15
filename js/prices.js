@@ -3,6 +3,104 @@
 // ════════════════════════════════════════════
 const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
 
+// ════════════════════════════════════════════
+// PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
+// Single source of truth for number/delta/neg-hours formatting and
+// semantic color thresholds. Keep in sync with brief decisions.
+// ════════════════════════════════════════════
+window.PK_FMT = (function() {
+  // Decimal separator: point. Thousands separator: thin space.
+  // Always 2 decimals for prices (€/MWh).
+  function num(v, decimals) {
+    if (v == null || isNaN(v)) return '--';
+    const d = decimals == null ? 2 : decimals;
+    const fixed = Number(v).toFixed(d);
+    const [intPart, decPart] = fixed.split('.');
+    // Insert thin space (U+202F) every 3 digits from right; handle minus sign.
+    const sign = intPart.startsWith('-') ? '-' : '';
+    const absInt = sign ? intPart.slice(1) : intPart;
+    const withSep = absInt.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F');
+    return sign + withSep + (decPart != null ? '.' + decPart : '');
+  }
+
+  // Signed delta: "▲ +1.50" / "▼ -1.50" / "● 0.00".
+  // Returns {html, color}. Caller wraps with <span style="color:..."> if needed.
+  // priceContext = true means "lower is better for buyer": down=green, up=red.
+  function delta(v, opts) {
+    opts = opts || {};
+    const priceContext = opts.priceContext !== false; // default true
+    if (v == null || isNaN(v)) return { text: '–', color: 'var(--tx3)' };
+    const abs = Math.abs(v);
+    let arrow, color;
+    if (v > 0) {
+      arrow = '▲';
+      color = priceContext ? 'var(--dn)' : 'var(--up)';
+    } else if (v < 0) {
+      arrow = '▼';
+      color = priceContext ? 'var(--up)' : 'var(--dn)';
+    } else {
+      arrow = '●';
+      color = 'var(--tx3)';
+    }
+    const sign = v > 0 ? '+' : (v < 0 ? '-' : '');
+    return { text: `${arrow} ${sign}${num(abs, 2)}`, color };
+  }
+
+  // Negative hours: compact variable format.
+  //   - h <= 0      → '–'
+  //   - h < 1       → 'XXmin'   (15-min granularity)
+  //   - h < 100     → 'XhYY' (or 'Xh' when minutes are 0)
+  //   - h >= 100    → 'XXXh'    (integer hours)
+  function negHours(h) {
+    if (h == null || isNaN(h) || h <= 0) return '–';
+    if (h >= 100) return `${Math.round(h)}h`;
+    const totalMin = Math.round(h * 60 / 15) * 15;
+    const hrs = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    if (hrs === 0) return `${mins}min`;
+    if (mins === 0) return `${hrs}h`;
+    return `${hrs}h${String(mins).padStart(2,'0')}`;
+  }
+
+  // %REN color thresholds (harmonised T1 + T2):
+  //   < 35   → red
+  //   35-65  → orange
+  //   > 65   → green
+  function renColor(pct) {
+    if (pct == null || isNaN(pct)) return 'var(--tx3)';
+    if (pct < 35) return '#ED6965';
+    if (pct <= 65) return '#FBBF24';
+    return '#14D3A9';
+  }
+
+  // SPREAD INTRADAY color thresholds (T2):
+  //   < 80   → neutral grey
+  //   80-150 → light green
+  //   > 150  → intense green
+  function spreadColor(v) {
+    if (v == null || isNaN(v)) return 'var(--tx3)';
+    if (v < 80) return 'var(--tx2)';
+    if (v <= 150) return '#14D3A9';
+    return '#0FAC8A';
+  }
+
+  // NEG HOURS color (Daily T1 + Historical T2 share same logic):
+  //   - 0/null → muted
+  //   - light  → warn (orange)
+  //   - heavy  → red (>50h in window, or >2h on a single day)
+  function negColor(h, opts) {
+    opts = opts || {};
+    const heavy = opts.heavyThreshold != null ? opts.heavyThreshold : 50;
+    const light = opts.lightThreshold != null ? opts.lightThreshold : 0.001;
+    if (h == null || isNaN(h) || h <= 0) return 'var(--tx3)';
+    if (h > heavy) return '#ED6965';
+    if (h > light) return 'var(--warn)';
+    return 'var(--tx2)';
+  }
+
+  return { num, delta, negHours, renColor, spreadColor, negColor };
+})();
+
 // Zone config
 const ZONES = [
   { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South', eic:'10Y1001A1001A788' },
@@ -1120,10 +1218,7 @@ function renderPricesTableBody() {
 
   const negFmt = (h) => {
     if (!h || h <= 0) return '<span style="color:var(--tx3)">–</span>';
-    const totalSlots = Math.round(h * 4);
-    const hrs = Math.floor(totalSlots / 4), rem = totalSlots % 4;
-    const label = hrs > 0 ? (rem > 0 ? `${hrs}h${rem*15}` : `${hrs}h`) : `${rem*15}min`;
-    return `<span style="color:var(--warn);font-weight:600">${label}</span>`;
+    return `<span style="color:${PK_FMT.negColor(h, {lightThreshold:0, heavyThreshold:6})};font-weight:600">${PK_FMT.negHours(h)}</span>`;
   };
 
   // Fuel config for domFuel
@@ -1143,10 +1238,12 @@ function renderPricesTableBody() {
 
     const meta = ZONE_META[z.code] || {cc:z.code, country:z.name||z.code};
     const priceColor = z.today < 0 ? '#ED6965' : z.today > 150 ? '#FBBF24' : z.today < 20 ? '#14D3A9' : 'var(--tx)';
-    const vsColor = z.vsYday == null ? 'var(--tx3)' : z.vsYday >= 0 ? 'var(--dn)' : 'var(--up)';
-    const vsText  = z.vsYday == null ? '–' : `${z.vsYday >= 0 ? '▲' : '▼'} ${Math.abs(z.vsYday).toFixed(1)}`;
+    // Signed delta with triangle: ▲ +1.50 (red, price up) / ▼ -1.50 (green, price down)
+    const vs = PK_FMT.delta(z.vsYday, {priceContext:true});
+    // Spark spread: signed, but coloured by sign (positive=green, negative=red) — already aligned
     const sparkColor = z.spark == null ? 'var(--tx3)' : z.spark >= 0 ? '#14D3A9' : '#ED6965';
-    const sparkText  = z.spark == null ? '–' : `${z.spark >= 0 ? '+' : ''}${z.spark.toFixed(1)}`;
+    const sparkSign  = z.spark == null ? '' : (z.spark >= 0 ? '+' : '-');
+    const sparkText  = z.spark == null ? '–' : `${sparkSign}${PK_FMT.num(Math.abs(z.spark), 2)}`;
 
     // Peak / Off-Peak
     let peakStr = '–', offPeakStr = '–';
@@ -1154,8 +1251,8 @@ function renderPricesTableBody() {
       const h = z.hourly, nph = Math.round(h.length/24);
       const pkV=[], opV=[];
       h.forEach((v,idx)=>{ if(v==null)return; const hr=Math.floor(idx/nph); (hr>=8&&hr<20?pkV:opV).push(v); });
-      if (pkV.length) peakStr = (pkV.reduce((a,b)=>a+b,0)/pkV.length).toFixed(1);
-      if (opV.length) offPeakStr = (opV.reduce((a,b)=>a+b,0)/opV.length).toFixed(1);
+      if (pkV.length) peakStr = PK_FMT.num(pkV.reduce((a,b)=>a+b,0)/pkV.length, 2);
+      if (opV.length) offPeakStr = PK_FMT.num(opV.reduce((a,b)=>a+b,0)/opV.length, 2);
     }
 
     // % Renewables + Dominant fuel from GM_DEMO
@@ -1167,8 +1264,8 @@ function renderPricesTableBody() {
       const total = mix.total || 1;
       const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
       const renP  = Math.round(renMW/total*100);
-      const renColor = renP >= 60 ? '#14D3A9' : renP >= 40 ? '#FBBF24' : '#ED6965';
-      renPctStr = `<span style="color:${renColor};font-weight:600">${renP}%</span>`;
+      // Harmonised thresholds (T1 + T2): <35 red / 35-65 orange / >65 green
+      renPctStr = `<span style="color:${PK_FMT.renColor(renP)};font-weight:600">${renP}%</span>`;
       // Dominant fuel
       let domKey = fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
       const fm = fuelMeta[domKey] || {emoji:'', label:domKey, color:'var(--tx2)'};
@@ -1192,15 +1289,17 @@ function renderPricesTableBody() {
     // Single neutral colour for all zones — semantic info is on the row's other cells.
     const sparkSvg = makeSVGSparklineSmooth(h24spark, 'mixed');
 
+    // PEAK in tx (white/clear, bold-ish) — but AVG is the prime metric (font-weight:700)
+    // OFF-PK in tx3 (muted) so AVG visually dominates.
     const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${FLAG_MAP[z.code]||''} ${z.code}</td>
       <td style="font-size:11px;color:var(--tx2)">${meta.country||z.name||z.code}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${z.today.toFixed(1)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${PK_FMT.num(z.today, 2)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 08h–20h">${peakStr}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)" title="Avg over 00h–08h / 20h–24h">${offPeakStr}</td>
-      <td style="color:${vsColor}">${vsText}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?z.min.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.minHr === 'string' ? z.minHr : (z.minHr!=null ? String(z.minHr).padStart(2,'0')+'h' : '')}</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?z.max.toFixed(1):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.maxHr === 'string' ? z.maxHr : (z.maxHr!=null ? String(z.maxHr).padStart(2,'0')+'h' : '')}</span></td>
+      <td style="color:${vs.color};font-family:'JetBrains Mono',monospace">${vs.text}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?PK_FMT.num(z.min,2):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.minHr === 'string' ? z.minHr : (z.minHr!=null ? String(z.minHr).padStart(2,'0')+'h' : '')}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?PK_FMT.num(z.max,2):'–'}<span style="color:var(--tx3);font-size:9px"> @${typeof z.maxHr === 'string' ? z.maxHr : (z.maxHr!=null ? String(z.maxHr).padStart(2,'0')+'h' : '')}</span></td>
       <td>${negFmt(z.negHrs)}</td>
       <td>${renPctStr}</td>
       <td>${domFuelHtml}</td>
