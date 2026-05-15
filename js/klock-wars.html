@@ -364,6 +364,11 @@
         <span><div class="title-text" id="mpLbl">MULTIPLAYER</div><div class="desc" id="mpDescLbl">LOCAL · 1V1 · 2V2</div></span>
         <span class="arrow">▶</span>
       </button>
+      <button class="menu-btn" onclick="go('custommap')">
+        <span class="icon">🎨</span>
+        <span><div class="title-text" id="customLbl">CUSTOM MAP</div><div class="desc" id="customDescLbl">BUILD YOUR OWN CURVE</div></span>
+        <span class="arrow">▶</span>
+      </button>
     </div>
     <div class="pnl-display" onclick="openPnLEditor()" style="cursor: pointer;" title="Click to edit your bank">
       <span class="lbl" id="pnlLbl">PnL BANK</span>
@@ -399,6 +404,10 @@
         <div><div class="lbl" id="timerLbl2">TURN TIMER</div><div class="desc" id="timerDesc">Time pressure scales</div></div>
         <div class="toggle on" id="toggleTimer" onclick="toggleSetting('turnTimer')"></div>
       </div>
+      <div class="toggle-row" style="margin-top:8px;border-top:1px solid rgba(148,210,189,0.15);padding-top:14px;">
+        <div><div class="lbl">RESET PROGRESS</div><div class="desc">Erase save · cannot be undone</div></div>
+        <button onclick="pkResetSave()" style="padding:6px 12px;background:transparent;border:1px solid var(--blood);color:var(--blood);font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.15em;cursor:pointer;border-radius:4px;">RESET</button>
+      </div>
     </div>
   </div>
 </div>
@@ -430,6 +439,109 @@
       <div id="mpRulesText">
         Each player picks their tank · 2 free weapons each · Random mission · No PnL · Mouse shared between turns · Winner takes glory only.
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-custommap">
+  <div class="screen-inner">
+    <button class="back-btn" onclick="go('menu')">◀ BACK</button>
+    <div class="section-title">🎨 CUSTOM MAP BUILDER</div>
+    <div style="max-width:900px;margin:24px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div>
+          <div style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);margin-bottom:6px;font-family:var(--font-mono);">MAP NAME</div>
+          <input type="text" id="cmName" maxlength="22" placeholder="MY CUSTOM MARKET" value="MY CUSTOM MARKET" style="width:100%;padding:10px 14px;background:rgba(10,147,150,0.06);border:1px solid rgba(148,210,189,0.3);border-radius:4px;color:var(--aqua);font-family:var(--font-mono);font-size:14px;letter-spacing:0.1em;outline:none;">
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);font-family:var(--font-mono);">AVERAGE PRICE</span>
+            <span id="cmAvgVal" style="font-family:var(--font-mono);font-size:13px;color:var(--sand);">80 €/MWh</span>
+          </div>
+          <input type="range" id="cmAvg" min="30" max="300" value="80" step="5" oninput="cmRedraw()" style="width:100%;">
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);font-family:var(--font-mono);">SPREAD</span>
+            <span id="cmSpreadVal" style="font-family:var(--font-mono);font-size:13px;color:var(--sand);">80 €/MWh</span>
+          </div>
+          <input type="range" id="cmSpread" min="10" max="300" value="80" step="5" oninput="cmRedraw()" style="width:100%;">
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);font-family:var(--font-mono);">NEGATIVE HOURS</span>
+            <span id="cmNegVal" style="font-family:var(--font-mono);font-size:13px;color:var(--sand);">0 h</span>
+          </div>
+          <input type="range" id="cmNeg" min="0" max="12" value="0" step="1" oninput="cmRedraw()" style="width:100%;">
+        </div>
+
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);font-family:var(--font-mono);">VOLATILITY</span>
+            <span id="cmVolVal" style="font-family:var(--font-mono);font-size:13px;color:var(--sand);">smooth</span>
+          </div>
+          <input type="range" id="cmVol" min="0" max="100" value="20" step="5" oninput="cmRedraw()" style="width:100%;">
+        </div>
+
+        <div>
+          <div style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);margin-bottom:6px;font-family:var(--font-mono);">PEAK BIAS</div>
+          <div id="cmBiasGroup" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+            <button class="cm-bias-btn" data-bias="morning" onclick="cmSetBias('morning',this)" style="padding:8px;background:transparent;border:1px solid rgba(148,210,189,0.3);color:var(--aqua);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">MORNING</button>
+            <button class="cm-bias-btn" data-bias="midday" onclick="cmSetBias('midday',this)" style="padding:8px;background:transparent;border:1px solid rgba(148,210,189,0.3);color:var(--aqua);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">MIDDAY</button>
+            <button class="cm-bias-btn active" data-bias="evening" onclick="cmSetBias('evening',this)" style="padding:8px;background:rgba(10,147,150,0.3);border:1px solid var(--aqua);color:var(--aqua);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">EVENING</button>
+            <button class="cm-bias-btn" data-bias="dual" onclick="cmSetBias('dual',this)" style="padding:8px;background:transparent;border:1px solid rgba(148,210,189,0.3);color:var(--aqua);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">DUAL PEAKS</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <button onclick="cmRandomize()" style="flex:1;padding:10px;background:transparent;border:1px solid var(--aqua);color:var(--aqua);font-family:var(--font-mono);font-size:11px;letter-spacing:0.15em;cursor:pointer;border-radius:4px;">🎲 RANDOMIZE</button>
+          <button class="primary" onclick="cmLaunch()" style="flex:2;padding:10px;background:var(--cyan);color:var(--ink);border:none;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:0.15em;cursor:pointer;border-radius:4px;">▶ LAUNCH BATTLE</button>
+        </div>
+
+        <div id="cmModeBox" style="font-size:11px;color:var(--aqua);opacity:0.7;line-height:1.6;font-family:var(--font-mono);">
+          <span id="cmModeText">Mode: SOLO (vs AI) · Toggle below</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="cm-mode-btn active" data-mode="solo" onclick="cmSetMode('solo',this)" style="flex:1;padding:6px;background:rgba(10,147,150,0.2);border:1px solid var(--aqua);color:var(--aqua);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">vs AI</button>
+          <button class="cm-mode-btn" data-mode="1v1" onclick="cmSetMode('1v1',this)" style="flex:1;padding:6px;background:transparent;border:1px solid rgba(238,155,0,0.4);color:var(--gold);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;border-radius:4px;">1v1 LOCAL</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);font-family:var(--font-mono);">CURVE PREVIEW</div>
+        <canvas id="cmCanvas" width="420" height="240" style="width:100%;height:auto;border:1px solid rgba(148,210,189,0.25);border-radius:4px;background:#001219;"></canvas>
+        <div id="cmStats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font-mono);font-size:11px;">
+          <div style="padding:8px;background:rgba(10,147,150,0.06);border-radius:4px;"><span style="color:var(--aqua);opacity:0.6;">MIN</span> <span id="cmStatMin" style="float:right;color:var(--sand);">—</span></div>
+          <div style="padding:8px;background:rgba(10,147,150,0.06);border-radius:4px;"><span style="color:var(--aqua);opacity:0.6;">MAX</span> <span id="cmStatMax" style="float:right;color:var(--sand);">—</span></div>
+          <div style="padding:8px;background:rgba(10,147,150,0.06);border-radius:4px;"><span style="color:var(--aqua);opacity:0.6;">AVG</span> <span id="cmStatAvg" style="float:right;color:var(--sand);">—</span></div>
+          <div style="padding:8px;background:rgba(10,147,150,0.06);border-radius:4px;"><span style="color:var(--aqua);opacity:0.6;">σ</span> <span id="cmStatStd" style="float:right;color:var(--sand);">—</span></div>
+        </div>
+        <div style="font-size:10px;color:var(--aqua);opacity:0.55;line-height:1.6;">
+          24h curve · X = hour 0–23 · Y = €/MWh · Same physics as career missions but with your parameters.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-1v1-names">
+  <div class="screen-inner">
+    <button class="back-btn" onclick="go('multiplayer')">◀ BACK</button>
+    <div class="section-title">⚔ 1v1 LOCAL · PLAYERS</div>
+    <div style="max-width:500px;margin:40px auto 0;display:flex;flex-direction:column;gap:24px;">
+      <div>
+        <div style="font-size:11px;letter-spacing:0.2em;color:var(--aqua);margin-bottom:8px;font-family:var(--font-mono);">PLAYER 1 · AQUA</div>
+        <input type="text" id="p1NameInput" maxlength="14" placeholder="P1" style="width:100%;padding:14px 16px;background:rgba(10,147,150,0.08);border:1px solid rgba(148,210,189,0.4);border-radius:6px;color:var(--aqua);font-family:var(--font-mono);font-size:18px;letter-spacing:0.1em;outline:none;">
+      </div>
+      <div>
+        <div style="font-size:11px;letter-spacing:0.2em;color:var(--gold);margin-bottom:8px;font-family:var(--font-mono);">PLAYER 2 · GOLD</div>
+        <input type="text" id="p2NameInput" maxlength="14" placeholder="P2" style="width:100%;padding:14px 16px;background:rgba(238,155,0,0.08);border:1px solid rgba(238,155,0,0.4);border-radius:6px;color:var(--gold);font-family:var(--font-mono);font-size:18px;letter-spacing:0.1em;outline:none;">
+      </div>
+      <button class="primary" onclick="confirmNames1v1()" style="padding:14px;background:var(--cyan);color:var(--ink);border:none;border-radius:6px;font-family:var(--font-mono);font-size:13px;font-weight:700;letter-spacing:0.2em;cursor:pointer;">▶ START · TANK SELECT</button>
     </div>
   </div>
 </div>
@@ -1204,6 +1316,11 @@ function go(screen) {
   const cur = document.getElementById('screen-' + state.currentScreen);
   const next = document.getElementById('screen-' + screen);
   if (!next) return;
+  // Safety: clear 1v1 state whenever we navigate back to main menu
+  // (prevents leaking is1v1 into subsequent solo missions)
+  if (screen === 'menu') {
+    state.mp1v1 = null;
+  }
   cur.classList.remove('active');
   setTimeout(() => {
     next.classList.add('active');
@@ -1213,6 +1330,7 @@ function go(screen) {
     if (screen === 'gp') renderGPSetup();
     if (screen === 'menu') updatePnLDisplay();
     if (screen === 'tankselect') renderTanks();
+    if (screen === 'custommap') cmInit();
   }, 250);
 }
 
@@ -1235,9 +1353,10 @@ function savePnLEditor() {
   state.pnl = Math.max(0, Math.min(999999999999, val));
   updatePnLDisplay();
   closePnLEditor();
+  pkSaveState();
 }
 
-function setLang(lang) { state.lang = lang; applyLang(); }
+function setLang(lang) { state.lang = lang; applyLang(); pkSaveState(); }
 
 // ===== DIFFICULTY =====
 const DIFF_PARAMS = {
@@ -1262,6 +1381,7 @@ function setDifficulty(d) {
     senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc',
   };
   setText('diffDescText', t(descMap[d]));
+  pkSaveState();
 }
 
 function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
@@ -1310,6 +1430,7 @@ function toggleSetting(key) {
   state.settings[key] = !state.settings[key];
   const map = { marketCrash: 'toggleCrash', turnTimer: 'toggleTimer' };
   document.getElementById(map[key]).classList.toggle('on', state.settings[key]);
+  pkSaveState();
 }
 
 function goBackFromBriefing() {
@@ -1432,6 +1553,26 @@ function selectFromCarousel() {
 function renderTanks() {
   const grid = document.getElementById('tanksGrid');
   grid.innerHTML = '';
+  // 1v1 mode: show clearly who is currently picking
+  if (state.mp1v1 && state.mp1v1.active) {
+    const isP1 = state.mp1v1.phase === 'pickP1Tank';
+    const name = isP1 ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
+    const color = isP1 ? 'var(--aqua)' : 'var(--gold)';
+    const arrow = isP1 ? '◆' : '◆';
+    const titleEl = document.getElementById('tankTitle');
+    if (titleEl) titleEl.innerHTML = `<span style="color:${color}">${arrow} ${name}</span> · ${t('select_tank')}`;
+    const hintEl = document.getElementById('tankHint');
+    if (hintEl) {
+      const tankPicked = isP1 ? 'P1' : 'P2';
+      hintEl.innerHTML = `<span style="color:${color}; font-weight:600">${name}</span> ${state.lang === 'fr' ? 'choisit son tank' : 'is picking their tank'}`;
+    }
+  } else {
+    // Solo mode: restore default title
+    const titleEl = document.getElementById('tankTitle');
+    if (titleEl) titleEl.textContent = '🎯 ' + t('select_tank');
+    const hintEl = document.getElementById('tankHint');
+    if (hintEl) hintEl.textContent = t('tank_hint');
+  }
   Object.entries(TANKS).forEach(([key, tk]) => {
     const card = document.createElement('div');
     card.className = 'tank-card' + (state.currentTank === key ? ' selected' : '');
@@ -1493,6 +1634,8 @@ function confirmTank() {
 
 function buildCurrentMissionData() {
   const key = state.currentMission;
+  // Custom missions are built inline by cmLaunch — don't overwrite them
+  if (state.currentMissionData && state.currentMissionData.type === 'custom' && state.currentMissionData._key === key) return;
   if (EVENTS[key]) {
     state.currentMissionData = { ...EVENTS[key], _key: key };
   } else if (ARCHETYPES[key]) {
@@ -1627,14 +1770,294 @@ function startLocal1v1() {
     phase: 'pickP1Tank',  // pickP1Tank | pickP1Weapons | pickP2Tank | pickP2Weapons | inGame
     p1Tank: null, p1Weapons: ['standard'],
     p2Tank: null, p2Weapons: ['standard'],
+    p1Name: 'P1', p2Name: 'P2',
   };
   // Reset current selections
   state.currentTank = null;
   state.selectedWeapons = ['standard'];
+  // Pre-fill inputs with last known names (if any persisted via localStorage)
+  try {
+    const saved = JSON.parse(localStorage.getItem('klockwars_1v1_names') || '{}');
+    setTimeout(() => {
+      const p1in = document.getElementById('p1NameInput');
+      const p2in = document.getElementById('p2NameInput');
+      if (p1in) p1in.value = saved.p1 || '';
+      if (p2in) p2in.value = saved.p2 || '';
+      if (p1in) p1in.focus();
+    }, 300);
+  } catch (_) {}
+  go('1v1-names');
+}
+
+function confirmNames1v1() {
+  const p1 = (document.getElementById('p1NameInput').value || '').trim().slice(0, 14) || 'P1';
+  const p2 = (document.getElementById('p2NameInput').value || '').trim().slice(0, 14) || 'P2';
+  state.mp1v1.p1Name = p1;
+  state.mp1v1.p2Name = p2;
+  // Persist last-used names for next time
+  try {
+    localStorage.setItem('klockwars_1v1_names', JSON.stringify({ p1, p2 }));
+  } catch (_) {}
   go('tankselect');
 }
 
 function endLocal1v1() { state.mp1v1 = null; go('menu'); }
+
+// ─── CUSTOM MAP BUILDER ───
+// Generates a synthetic 24h power price curve from user parameters
+// and feeds it into the regular mission pipeline.
+state.cmConfig = { bias: 'evening', mode: 'solo' };
+state.cmPrices = null; // cached prices for the latest generation
+
+function cmInit() {
+  // Reset bias buttons to match state and redraw
+  document.querySelectorAll('.cm-bias-btn').forEach(b => {
+    const isActive = b.dataset.bias === state.cmConfig.bias;
+    b.classList.toggle('active', isActive);
+    if (isActive) {
+      b.style.background = 'rgba(10,147,150,0.3)';
+      b.style.borderColor = 'var(--aqua)';
+    } else {
+      b.style.background = 'transparent';
+      b.style.borderColor = 'rgba(148,210,189,0.3)';
+    }
+  });
+  cmRedraw();
+}
+
+function cmSetBias(bias, btn) {
+  state.cmConfig.bias = bias;
+  document.querySelectorAll('.cm-bias-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.borderColor = 'rgba(148,210,189,0.3)';
+  });
+  btn.classList.add('active');
+  btn.style.background = 'rgba(10,147,150,0.3)';
+  btn.style.borderColor = 'var(--aqua)';
+  cmRedraw();
+}
+
+function cmSetMode(mode, btn) {
+  state.cmConfig.mode = mode;
+  document.querySelectorAll('.cm-mode-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.borderColor = b.dataset.mode === '1v1' ? 'rgba(238,155,0,0.4)' : 'rgba(148,210,189,0.4)';
+  });
+  btn.classList.add('active');
+  btn.style.background = mode === '1v1' ? 'rgba(238,155,0,0.2)' : 'rgba(10,147,150,0.2)';
+  btn.style.borderColor = mode === '1v1' ? 'var(--gold)' : 'var(--aqua)';
+  const txt = document.getElementById('cmModeText');
+  if (txt) txt.textContent = mode === '1v1'
+    ? 'Mode: 1v1 LOCAL (2 humans) · You pick tanks/weapons next'
+    : 'Mode: SOLO (vs AI) · Standard career rules apply';
+}
+
+function cmRandomize() {
+  document.getElementById('cmAvg').value     = 50 + Math.floor(Math.random() * 200);
+  document.getElementById('cmSpread').value  = 30 + Math.floor(Math.random() * 200);
+  document.getElementById('cmNeg').value     = Math.random() < 0.4 ? Math.floor(Math.random() * 8) : 0;
+  document.getElementById('cmVol').value     = Math.floor(Math.random() * 100);
+  const biases = ['morning', 'midday', 'evening', 'dual'];
+  const newBias = biases[Math.floor(Math.random() * biases.length)];
+  const newBtn = document.querySelector(`.cm-bias-btn[data-bias="${newBias}"]`);
+  if (newBtn) cmSetBias(newBias, newBtn);
+  else cmRedraw();
+}
+
+function cmGeneratePrices() {
+  const avg     = parseInt(document.getElementById('cmAvg').value, 10);
+  const spread  = parseInt(document.getElementById('cmSpread').value, 10);
+  const negH    = parseInt(document.getElementById('cmNeg').value, 10);
+  const vol     = parseInt(document.getElementById('cmVol').value, 10);
+  const bias    = state.cmConfig.bias;
+  const N = 24;
+  const prices = [];
+  // Base shape by bias
+  for (let h = 0; h < N; h++) {
+    let v = 0;
+    if (bias === 'morning')      v = Math.exp(-Math.pow((h - 8) / 3, 2));   // peak ~8h
+    else if (bias === 'midday')  v = Math.exp(-Math.pow((h - 13) / 3, 2));  // peak ~13h
+    else if (bias === 'evening') v = Math.exp(-Math.pow((h - 19) / 3, 2));  // peak ~19h
+    else if (bias === 'dual')    v = Math.max(
+      Math.exp(-Math.pow((h - 8)  / 2.5, 2)),
+      Math.exp(-Math.pow((h - 19) / 2.5, 2))
+    );
+    prices.push(v); // 0..1
+  }
+  // Normalise so min=0, max=1
+  let minV = Math.min(...prices), maxV = Math.max(...prices);
+  for (let h = 0; h < N; h++) prices[h] = (prices[h] - minV) / (maxV - minV + 1e-9);
+  // Apply spread + average: result will have spread (max-min)
+  for (let h = 0; h < N; h++) prices[h] = avg + (prices[h] - 0.5) * spread;
+  // Negative hours: force the N lowest hours below 0
+  if (negH > 0) {
+    const idxs = prices.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v).slice(0, negH).map(o => o.i);
+    idxs.forEach(i => { prices[i] = -5 - Math.random() * 15; });
+  }
+  // Volatility / jagged noise
+  const noiseAmp = (vol / 100) * spread * 0.35;
+  for (let h = 0; h < N; h++) prices[h] += (Math.random() - 0.5) * 2 * noiseAmp;
+  // Light smoothing if vol < 50 to make it look natural
+  if (vol < 50) {
+    const sm = [...prices];
+    for (let i = 1; i < N - 1; i++) prices[i] = (sm[i - 1] + sm[i] * 2 + sm[i + 1]) / 4;
+  }
+  state.cmPrices = prices;
+  return prices;
+}
+
+function cmRedraw() {
+  const prices = cmGeneratePrices();
+  // Update slider labels
+  const vol = parseInt(document.getElementById('cmVol').value, 10);
+  document.getElementById('cmAvgVal').textContent    = document.getElementById('cmAvg').value + ' €/MWh';
+  document.getElementById('cmSpreadVal').textContent = document.getElementById('cmSpread').value + ' €/MWh';
+  document.getElementById('cmNegVal').textContent    = document.getElementById('cmNeg').value + ' h';
+  document.getElementById('cmVolVal').textContent    = vol < 25 ? 'smooth' : (vol < 60 ? 'normal' : 'jagged');
+  // Compute stats
+  const minV = Math.min(...prices), maxV = Math.max(...prices);
+  const avgV = prices.reduce((s, p) => s + p, 0) / prices.length;
+  const std = Math.sqrt(prices.reduce((s, p) => s + Math.pow(p - avgV, 2), 0) / prices.length);
+  document.getElementById('cmStatMin').textContent = Math.round(minV) + ' €';
+  document.getElementById('cmStatMax').textContent = Math.round(maxV) + ' €';
+  document.getElementById('cmStatAvg').textContent = Math.round(avgV) + ' €';
+  document.getElementById('cmStatStd').textContent = Math.round(std) + ' €';
+  // Draw preview
+  cmDrawCanvas(prices);
+}
+
+function cmDrawCanvas(prices) {
+  const cv = document.getElementById('cmCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  // Background
+  ctx.fillStyle = '#001219';
+  ctx.fillRect(0, 0, W, H);
+  // Axes ref
+  const padL = 36, padR = 12, padT = 12, padB = 24;
+  const minV = Math.min(0, Math.min(...prices));
+  const maxV = Math.max(...prices);
+  const range = maxV - minV || 1;
+  const xOf = i => padL + (i / (prices.length - 1)) * (W - padL - padR);
+  const yOf = v => padT + (1 - (v - minV) / range) * (H - padT - padB);
+  // Zero line if there are negative prices
+  if (minV < 0) {
+    ctx.strokeStyle = 'rgba(238,155,0,0.4)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padL, yOf(0));
+    ctx.lineTo(W - padR, yOf(0));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(238,155,0,0.5)';
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillText('0', 4, yOf(0) + 3);
+  }
+  // Fill under curve (terrain-style)
+  ctx.fillStyle = 'rgba(10,147,150,0.18)';
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), H - padB);
+  for (let i = 0; i < prices.length; i++) ctx.lineTo(xOf(i), yOf(prices[i]));
+  ctx.lineTo(xOf(prices.length - 1), H - padB);
+  ctx.closePath();
+  ctx.fill();
+  // Curve
+  ctx.strokeStyle = 'var(--aqua)';
+  ctx.strokeStyle = '#94D2BD';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < prices.length; i++) {
+    const x = xOf(i), y = yOf(prices[i]);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  // Hour labels
+  ctx.fillStyle = 'rgba(148,210,189,0.5)';
+  ctx.font = '10px JetBrains Mono';
+  [0, 6, 12, 18, 23].forEach(h => {
+    const x = xOf(h);
+    ctx.fillText(String(h).padStart(2, '0') + 'h', x - 8, H - 6);
+  });
+  // Y labels
+  ctx.textAlign = 'right';
+  ctx.fillText(Math.round(maxV) + '', padL - 4, padT + 8);
+  ctx.fillText(Math.round(minV) + '', padL - 4, H - padB);
+  ctx.textAlign = 'start';
+}
+
+function cmLaunch() {
+  const prices = cmGeneratePrices();
+  const name = (document.getElementById('cmName').value || 'CUSTOM MARKET').trim();
+  const avg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
+  const spread = Math.round(Math.max(...prices) - Math.min(...prices));
+  // Build mission data inline (mimics ARCHETYPES output)
+  const customMission = {
+    _key: 'custom_' + Date.now(),
+    type: 'custom',
+    title: name,
+    flag: '🎨',
+    date: 'CUSTOM',
+    zone: 'CUSTOM',
+    diff: 'CUSTOM',
+    stars: 2,
+    prices,
+    spread,
+    avg,
+    timerSec: 25,
+    reward: 0, // no PnL in custom
+    weather: { icon: '🌤', text: 'CUSTOM', windBase: 1.2, type: 'standard' },
+    genmix: [
+      { name: 'Nuclear', pct: 35, color: '#0A9396' },
+      { name: 'Wind',    pct: 20, color: '#94D2BD' },
+      { name: 'Solar',   pct: 15, color: '#EE9B00' },
+      { name: 'Hydro',   pct: 15, color: '#005F73' },
+      { name: 'Gas',     pct: 15, color: '#BB3E03' },
+    ],
+    fuelPrice: 50,
+    blockedWeapons: [],
+    freeWeapon: null,
+    storyTemplates: { fr: ['Marché personnalisé · vos paramètres.'], en: ['Custom market · your parameters.'] },
+    funfact: { fr: ['Bien joué ! Tu as battu ton propre marché.'], en: ['Well played! You beat your own market.'] },
+    warn: 'CUSTOM PARAMETERS',
+    unlock: '',
+  };
+  state.currentMissionData = customMission;
+  state.currentMission = customMission._key;
+  state.navigationOrigin = 'custommap';
+  if (state.cmConfig.mode === '1v1') {
+    // Route through the 1v1 names screen then tankselect
+    state.mp1v1 = {
+      active: true,
+      phase: 'pickP1Tank',
+      p1Tank: null, p1Weapons: ['standard'],
+      p2Tank: null, p2Weapons: ['standard'],
+      p1Name: 'P1', p2Name: 'P2',
+      customMission, // remember to reuse instead of rebuilding
+    };
+    state.currentTank = null;
+    state.selectedWeapons = ['standard'];
+    try {
+      const saved = JSON.parse(localStorage.getItem('klockwars_1v1_names') || '{}');
+      setTimeout(() => {
+        const p1in = document.getElementById('p1NameInput');
+        const p2in = document.getElementById('p2NameInput');
+        if (p1in) p1in.value = saved.p1 || '';
+        if (p2in) p2in.value = saved.p2 || '';
+        if (p1in) p1in.focus();
+      }, 300);
+    } catch (_) {}
+    go('1v1-names');
+  } else {
+    // Solo: go to tank select directly
+    state.currentTank = null;
+    state.selectedWeapons = ['standard'];
+    go('tankselect');
+  }
+}
 
 function startQuickBattle() {
   const choices = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es','event1'];
@@ -1658,8 +2081,20 @@ function renderArmory() {
   // In 1v1 mode, everything is free (no PnL cost)
   const is1v1 = state.mp1v1 && state.mp1v1.active;
   const maxWeapons = is1v1 ? 3 : 3; // standard + 2 free
+  // 1v1: colored title that says clearly who is picking
+  const titleEl = document.getElementById('armoryTitle');
+  if (titleEl) {
+    if (is1v1) {
+      const isP1 = state.mp1v1.phase === 'pickP1Weapons';
+      const name = isP1 ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
+      const color = isP1 ? 'var(--aqua)' : 'var(--gold)';
+      titleEl.innerHTML = `<span style="color:${color}">◆ ${name}</span> · ${state.lang === 'fr' ? 'CHOIX DES ARMES' : 'PICK WEAPONS'}`;
+    } else {
+      titleEl.textContent = '🎯 ' + t('armory');
+    }
+  }
   document.getElementById('armoryBudget').textContent = is1v1
-    ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 P1' : '👤 P2')
+    ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 ' + (state.mp1v1.p1Name || 'P1') : '👤 ' + (state.mp1v1.p2Name || 'P2'))
     : ('€' + state.pnl.toLocaleString());
   document.getElementById('armoryCount').textContent = state.selectedWeapons.length + '/' + maxWeapons;
   setText('budgetLbl', is1v1 ? 'PLAYER' : t('budget'));
@@ -1731,6 +2166,7 @@ function confirmArmory() {
   }
   // Solo flow (unchanged): pay for weapons
   state.selectedWeapons.forEach(key => { if (key === 'standard' || key === m.freeWeapon) return; state.pnl -= WEAPONS[key].cost; });
+  pkSaveState();
   launchGame();
 }
 
@@ -1746,8 +2182,12 @@ function initGame(mission) {
   // 1v1 mode: P2 has its own tank and inventory; otherwise P2 is the AI (existing behavior)
   const is1v1 = !!(state.mp1v1 && state.mp1v1.active && state.mp1v1.phase === 'inGame');
   const p2Tank = is1v1 ? TANKS[state.mp1v1.p2Tank] : tank;
-  document.getElementById('hudP1Name').textContent = 'P1 ' + tank.name;
-  document.getElementById('hudP2Name').textContent = is1v1 ? ('P2 ' + p2Tank.name) : 'GOLD AI';
+  document.getElementById('hudP1Name').textContent = is1v1
+    ? (state.mp1v1.p1Name + ' · ' + tank.name)
+    : ('P1 ' + tank.name);
+  document.getElementById('hudP2Name').textContent = is1v1
+    ? (state.mp1v1.p2Name + ' · ' + p2Tank.name)
+    : 'GOLD AI';
   const inventory = {};
   state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : 3; });
   const p2Inventory = {};
@@ -1828,12 +2268,16 @@ function renderWeaponBar() {
   const g = state.game;
   const bar = document.getElementById('weaponBar');
   bar.innerHTML = '';
-  Object.keys(g.inventory).forEach(key => {
+  // In 1v1, show the active player's inventory (P1's during P1 turn, P2's during P2 turn)
+  const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+  const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
+  const currentWeapon = isP2HumanTurn ? g.p2CurrentWeapon : g.currentWeapon;
+  Object.keys(inv).forEach(key => {
     const w = WEAPONS[key];
-    const qty = g.inventory[key];
+    const qty = inv[key];
     const slot = document.createElement('div');
     slot.className = 'weapon-slot';
-    if (key === g.currentWeapon) slot.classList.add('active');
+    if (key === currentWeapon) slot.classList.add('active');
     if (qty !== Infinity && qty <= 0) slot.classList.add('disabled');
     slot.innerHTML = `<span class="icon">${w.icon}</span><span class="name">${w.name}</span><span class="qty">${qty === Infinity ? '∞' : '×' + qty}</span>`;
     slot.onclick = () => selectWeapon(key);
@@ -1843,10 +2287,15 @@ function renderWeaponBar() {
 
 function selectWeapon(key) {
   const g = state.game;
-  if (!g || (g.inventory[key] !== Infinity && g.inventory[key] <= 0)) return;
+  if (!g) return;
+  // Route to the right inventory based on whose turn it is
+  const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+  const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
+  if (inv[key] !== Infinity && inv[key] <= 0) return;
   const w = WEAPONS[key];
   if (w.instant) { useInstantWeapon(key); return; }
-  g.currentWeapon = key;
+  if (isP2HumanTurn) g.p2CurrentWeapon = key;
+  else g.currentWeapon = key;
   renderWeaponBar();
 }
 
@@ -1891,8 +2340,18 @@ function updateTurnIndicator() {
   if (!el) return;
   if (!g) { el.textContent = t('your_turn'); return; }
   if (g.gameOver) el.textContent = t('game_over');
-  else if (g.turn === 'player') el.textContent = g.is1v1 ? '◆ P1' : t('your_turn');
-  else el.textContent = g.is1v1 ? '◆ P2' : t('ai_aiming');
+  else if (g.turn === 'player') {
+    if (g.is1v1) {
+      const name = (state.mp1v1 && state.mp1v1.p1Name) || 'P1';
+      el.textContent = '◆ ' + name;
+    } else el.textContent = t('your_turn');
+  }
+  else {
+    if (g.is1v1) {
+      const name = (state.mp1v1 && state.mp1v1.p2Name) || 'P2';
+      el.textContent = '◆ ' + name;
+    } else el.textContent = t('ai_aiming');
+  }
   const fb = document.getElementById('fireBtn');
   if (fb) {
     // In 1v1, both turns are human-controlled — enable FIRE when no projectile in flight
@@ -1902,8 +2361,14 @@ function updateTurnIndicator() {
   }
 }
 
-function showP1TurnOverlay() { showTurnOverlay('P1', 'var(--aqua)'); }
-function showP2TurnOverlay() { showTurnOverlay('P2', 'var(--gold)'); }
+function showP1TurnOverlay() {
+  const label = (state.mp1v1 && state.mp1v1.p1Name) ? state.mp1v1.p1Name : 'P1';
+  showTurnOverlay(label, 'var(--aqua)');
+}
+function showP2TurnOverlay() {
+  const label = (state.mp1v1 && state.mp1v1.p2Name) ? state.mp1v1.p2Name : 'P2';
+  showTurnOverlay(label, 'var(--gold)');
+}
 
 function showTurnOverlay(label, color) {
   let ov = document.getElementById('turnOverlay');
@@ -2052,14 +2517,20 @@ function drawScene() {
   // Draw shot history (3 fading trajectories per side) - hidden in head_of_desk
   if (!getDiff().hideAids) drawShotHistory();
   
-  if (!g.projectile && g.turn === 'player' && !g.gameOver) {
-    const w = WEAPONS[g.currentWeapon];
+  if (!g.projectile && !g.gameOver && (g.turn === 'player' || (g.is1v1 && g.turn === 'ai'))) {
+    const wKey = (g.is1v1 && g.turn === 'ai') ? g.p2CurrentWeapon : g.currentWeapon;
+    const w = WEAPONS[wKey];
     if (w.preview === 'precise') drawTrajectoryPreview(false, 400);
     else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 400);
     else if (!getDiff().hideAids) drawAimIndicator(); // Short free aim hint, hidden in head_of_desk
   }
-  drawTank(g.p1, tank.color, tank.trackColor, true);
-  drawTank(g.p2, '#EE9B00', '#BB3E03', false);
+  if (g.deadTank !== 'p1') drawTank(g.p1, tank.color, tank.trackColor, true);
+  if (g.deadTank !== 'p2') {
+    // In 1v1, P2 uses its own tank colors; in solo, P2 keeps the AI gold/rust default
+    const p2BodyColor = (g.is1v1 && g.p2Tank) ? g.p2Tank.color : '#EE9B00';
+    const p2TrackColor = (g.is1v1 && g.p2Tank) ? g.p2Tank.trackColor : '#BB3E03';
+    drawTank(g.p2, p2BodyColor, p2TrackColor, false);
+  }
   if (g.projectile) drawProjectile();
   drawParticles();
   if (g.explosion) drawExplosion();
@@ -2123,50 +2594,75 @@ function drawShotHistory() {
   });
 }
 
+// ─── Geometry helper: where exactly is the barrel tip (and which way does it point)? ───
+// Single source of truth for: aim indicator, trajectory preview, projectile spawn.
+// Keeps drawing and physics in sync — no more visual/projectile mismatch.
+function getBarrelTip(side) {
+  const g = state.game;
+  const origin = side === 'p2' ? g.p2 : g.p1;
+  const dirSign = side === 'p2' ? -1 : 1;
+  const angRad = g.angle * Math.PI / 180;
+  // Barrel length in drawTank is 22, base is at (origin.x, origin.y) — same translate point
+  const barrelLen = 22;
+  return {
+    x: origin.x + dirSign * Math.cos(angRad) * barrelLen,
+    y: origin.y - Math.sin(angRad) * barrelLen,
+    dirSign,
+    angRad,
+  };
+}
+
 function drawAimIndicator() {
   // Short visible aim hint at barrel exit - no physics, just a directional cue
   const g = state.game;
   const ctx = g.ctx;
-  const angRad = g.angle * Math.PI / 180;
-  const startX = g.p1.x + Math.cos(angRad) * 14;
-  const startY = g.p1.y - 4 - Math.sin(angRad) * 14;
+  const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+  const side = isP2HumanTurn ? 'p2' : 'p1';
+  const tip = getBarrelTip(side);
+  // Color by player: P1 = aqua, P2 = gold
+  const baseRGB = isP2HumanTurn ? '238, 155, 0' : '148, 210, 189';
   const len = 35;
-  // Gradient fade from gold to transparent
+  // Gradient fade starting AT the barrel tip, extending in the firing direction
   for (let i = 0; i < 4; i++) {
     const t1 = i / 4, t2 = (i + 1) / 4;
     const alpha = 0.5 * (1 - t1);
-    ctx.strokeStyle = `rgba(238, 155, 0, ${alpha})`;
+    ctx.strokeStyle = `rgba(${baseRGB}, ${alpha})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(startX + Math.cos(angRad) * len * t1, startY - Math.sin(angRad) * len * t1);
-    ctx.lineTo(startX + Math.cos(angRad) * len * t2, startY - Math.sin(angRad) * len * t2);
+    ctx.moveTo(tip.x + tip.dirSign * Math.cos(tip.angRad) * len * t1, tip.y - Math.sin(tip.angRad) * len * t1);
+    ctx.lineTo(tip.x + tip.dirSign * Math.cos(tip.angRad) * len * t2, tip.y - Math.sin(tip.angRad) * len * t2);
     ctx.stroke();
   }
   // Small dot at the tip
-  ctx.fillStyle = 'rgba(238, 155, 0, 0.4)';
+  ctx.fillStyle = `rgba(${baseRGB}, 0.4)`;
   ctx.beginPath();
-  ctx.arc(startX + Math.cos(angRad) * len, startY - Math.sin(angRad) * len, 2, 0, Math.PI * 2);
+  ctx.arc(tip.x + tip.dirSign * Math.cos(tip.angRad) * len, tip.y - Math.sin(tip.angRad) * len, 2, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function drawTrajectoryPreview(fuzzy, maxSteps = 400) {
   const g = state.game;
   const ctx = g.ctx;
-  const angRad = g.angle * Math.PI / 180;
-  const vx0 = Math.cos(angRad) * g.power * 0.18;
-  const vy0 = -Math.sin(angRad) * g.power * 0.18;
+  // Side-aware origin via the same helper used elsewhere
+  const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+  const side = isP2HumanTurn ? 'p2' : 'p1';
+  const tip = getBarrelTip(side);
+  const baseRGB = isP2HumanTurn ? '238, 155, 0' : '148, 210, 189';
+  const tankObj = isP2HumanTurn ? g.p2Tank : g.tank;
+  const vx0 = tip.dirSign * Math.cos(tip.angRad) * g.power * 0.18;
+  const vy0 = -Math.sin(tip.angRad) * g.power * 0.18;
   const trials = fuzzy ? 5 : 1;
   for (let trial = 0; trial < trials; trial++) {
-    ctx.strokeStyle = fuzzy ? 'rgba(238, 155, 0, 0.2)' : 'rgba(238, 155, 0, 0.5)';
+    ctx.strokeStyle = fuzzy ? `rgba(${baseRGB}, 0.2)` : `rgba(${baseRGB}, 0.5)`;
     ctx.lineWidth = fuzzy ? 1.5 : 1.2;
     ctx.setLineDash([3, 4]);
-    let px = g.p1.x, py = g.p1.y - 4;
+    let px = tip.x, py = tip.y;
     const variance = fuzzy ? 0.06 : 0;
     let vx = vx0 * (1 + (Math.random() - 0.5) * variance);
     let vy = vy0 * (1 + (Math.random() - 0.5) * variance);
     const windOffset = fuzzy ? (Math.random() - 0.5) * 0.8 : 0;
     const gr = 0.25;
-    const wa = (g.cancelWindNextTurn ? 0 : g.wind + windOffset) * 0.012 * g.tank.windResist;
+    const wa = (g.cancelWindNextTurn ? 0 : g.wind + windOffset) * 0.012 * tankObj.windResist;
     ctx.beginPath(); ctx.moveTo(px, py);
     for (let s = 0; s < maxSteps; s++) {
       vx += wa; vy += gr; px += vx; py += vy;
@@ -2189,10 +2685,41 @@ function drawProjectile() {
   ctx.fillStyle = '#EE9B00'; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
 }
 
+function triggerTankExplosion(side) {
+  // side: 'p1' | 'p2' — large explosion + particles + dead-tank flag
+  const g = state.game;
+  if (!g) return;
+  const pos = side === 'p1' ? g.p1 : g.p2;
+  // Big explosion (similar to bigBoom weapon)
+  g.explosion = { x: pos.x, y: pos.y - 2, t: 0, big: true, deathBlast: true };
+  // Mark this tank dead so drawScene can hide it (or render a wreck)
+  g.deadTank = side;
+  // Particle burst
+  if (!g.particles) g.particles = [];
+  for (let i = 0; i < 60; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 6;
+    const colors = ['238,155,0', '187,62,3', '155,34,38', '233,216,166'];
+    g.particles.push({
+      x: pos.x + (Math.random() - 0.5) * 10,
+      y: pos.y - 4 + (Math.random() - 0.5) * 10,
+      vx: Math.cos(ang) * speed,
+      vy: Math.sin(ang) * speed - 2,
+      life: 30 + Math.floor(Math.random() * 30),
+      maxLife: 60,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  // Screen shake / damage flash
+  flashDamage();
+}
+
 function drawExplosion() {
   const g = state.game, ctx = g.ctx, e = g.explosion;
-  const alpha = 1 - e.t / 24;
-  const scale = (e.big ? 1.6 : 1) * g.tank.radiusMult;
+  const maxT = e.deathBlast ? 40 : 24;
+  const alpha = 1 - e.t / maxT;
+  const scaleMult = e.deathBlast ? 2.4 : (e.big ? 1.6 : 1);
+  const scale = scaleMult * g.tank.radiusMult;
   ctx.fillStyle = `rgba(238,155,0,${alpha * 0.5})`;
   ctx.beginPath(); ctx.arc(e.x, e.y, e.t * 2 * scale, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = `rgba(187,62,3,${alpha * 0.8})`;
@@ -2200,7 +2727,7 @@ function drawExplosion() {
   ctx.fillStyle = `rgba(233,216,166,${alpha})`;
   ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(0, 8 - e.t * 0.3) * scale, 0, Math.PI * 2); ctx.fill();
   e.t++;
-  if (e.t > 24) g.explosion = null;
+  if (e.t > maxT) g.explosion = null;
 }
 
 function drawParticles() {
@@ -2350,13 +2877,56 @@ function marketCrash() {
   const g = state.game;
   flashCrash();
   showGameMsg(t('market_crash_msg'), t('volatility_shock'));
+  // 1) Bigger terrain deformation: shock wave with non-uniform amplitude
+  //    The wave has 2-3 peaks/troughs that create real obstacles or pits
   const dir = Math.random() > 0.5 ? 1 : -1;
-  for (let i = 0; i < g.W; i++) {
-    g.terrain[i] += dir * (Math.random() * 18 + 6);
-    g.terrain[i] = Math.max(80, Math.min(g.H - 10, g.terrain[i]));
+  const numPeaks = 2 + Math.floor(Math.random() * 2); // 2 or 3
+  const peakPositions = [];
+  for (let i = 0; i < numPeaks; i++) {
+    peakPositions.push(Math.random() * g.W);
   }
+  const peakAmplitudes = peakPositions.map(() => 35 + Math.random() * 35); // 35-70 px
+  for (let x = 0; x < g.W; x++) {
+    let totalShift = 0;
+    peakPositions.forEach((px, i) => {
+      const dx = x - px;
+      // Gaussian-shaped peak (sigma ~ W/8)
+      const sigma = g.W / 8;
+      const weight = Math.exp(-(dx * dx) / (2 * sigma * sigma));
+      const localDir = (i % 2 === 0) ? dir : -dir; // alternating
+      totalShift += localDir * peakAmplitudes[i] * weight;
+    });
+    // Add a base small ripple
+    totalShift += dir * (Math.random() * 6);
+    g.terrain[x] = Math.max(80, Math.min(g.H - 10, g.terrain[x] + totalShift));
+  }
+  // 2) Smooth the terrain a bit to avoid pixelated edges
+  for (let pass = 0; pass < 2; pass++) {
+    const sm = [...g.terrain];
+    for (let i = 2; i < g.W - 2; i++) {
+      g.terrain[i] = (sm[i-2] + sm[i-1] + sm[i] + sm[i+1] + sm[i+2]) / 5;
+    }
+  }
+  // 3) Wind shock: large random wind shift
+  const m = g.mission;
+  const baseWind = m.weather.windBase;
+  g.wind = (Math.random() - 0.5) * baseWind * 4;
+  // 4) Reposition tanks on new terrain
   if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
   if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
+  // 5) Light shock damage to both tanks (8-12 HP) - represents the market hit
+  const shockDamage = 8 + Math.floor(Math.random() * 5);
+  g.p1hp = Math.max(0, g.p1hp - shockDamage);
+  g.p2hp = Math.max(0, g.p2hp - shockDamage);
+  g.p1.hitFlash = 10; g.p2.hitFlash = 10;
+  updateHUD();
+  setTimeout(() => showGameMsg('SHOCK · -' + shockDamage + ' HP', '', 1200), 500);
+  // 6) If shock killed a tank, trigger end-game
+  if (g.p1hp <= 0 || g.p2hp <= 0) {
+    const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
+    triggerTankExplosion(deadSide);
+    setTimeout(() => endGame(g.p1hp > 0), 1500);
+  }
 }
 
 function updatePhysics() {
@@ -2461,7 +3031,12 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       showGameMsg(t('you_got_hit'), '-' + damage + ' HP');
     }
     updateHUD();
-    if (g.p1hp <= 0 || g.p2hp <= 0) { setTimeout(() => endGame(g.p1hp > 0), 1500); return; }
+    if (g.p1hp <= 0 || g.p2hp <= 0) {
+      const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
+      triggerTankExplosion(deadSide);
+      setTimeout(() => endGame(g.p1hp > 0), 1500);
+      return;
+    }
   } else {
     if (p && p.fromPlayer) {
       g.combo = 0;
@@ -2475,7 +3050,12 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     else deformTerrain(x, w.radius || 32);
     updateHUD();
     // Check fall damage KO
-    if (g.p1hp <= 0 || g.p2hp <= 0) { setTimeout(() => endGame(g.p1hp > 0), 1500); return; }
+    if (g.p1hp <= 0 || g.p2hp <= 0) {
+      const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
+      triggerTankExplosion(deadSide);
+      setTimeout(() => endGame(g.p1hp > 0), 1500);
+      return;
+    }
   }
 
   const m = g.mission;
@@ -2516,7 +3096,7 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
         showGameMsg(t(msgKey), t('next_turn'), 2200);
       }
     }
-    updateHUD(); updateTurnIndicator();
+    updateHUD(); updateTurnIndicator(); renderWeaponBar();
     if (g.turn === 'ai') {
       stopTurnTimer();
       if (g.is1v1) {
@@ -2629,13 +3209,11 @@ function playerShoot() {
 
   // Projectile direction depends on who is firing
   // P1 fires rightward (default angle), P2 fires leftward (mirror angle)
-  const angRad = g.angle * Math.PI / 180;
-  const dirSign = isP1Turn ? 1 : -1;
-  const vx = dirSign * Math.cos(angRad) * g.power * 0.18;
-  const vy = -Math.sin(angRad) * g.power * 0.18;
-  const startPos = isP1Turn ? g.p1 : g.p2;
-  const startOffset = isP1Turn ? 6 : -6;
-  g.projectile = { x: startPos.x + startOffset, y: startPos.y - 4, vx, vy, trail: [], fromPlayer: isP1Turn, fromP2Human: isP2HumanTurn, weapon: wKey };
+  // Use getBarrelTip so spawn position matches the aim indicator exactly
+  const tip = getBarrelTip(isP1Turn ? 'p1' : 'p2');
+  const vx = tip.dirSign * Math.cos(tip.angRad) * g.power * 0.18;
+  const vy = -Math.sin(tip.angRad) * g.power * 0.18;
+  g.projectile = { x: tip.x, y: tip.y, vx, vy, trail: [], fromPlayer: isP1Turn, fromP2Human: isP2HumanTurn, weapon: wKey };
   updateTurnIndicator();
 }
 
@@ -2693,6 +3271,7 @@ function endGame(won) {
     const earned = Math.round((won ? g.mission.reward : Math.floor(g.mission.reward * 0.15)) * getDiff().pnlMult);
     state.pnl += earned;
     state.gp.scores.push({ mission: state.currentMission, flag: g.mission.flag, title: g.mission.title, won, score, earned, shots: g.shotsP1, hits: g.hitsP1 });
+    pkSaveState();
     setTimeout(() => showGPRaceResult(won), 1200);
   } else {
     setTimeout(() => showVictoryScreen(won), 1200);
@@ -2726,20 +3305,21 @@ function showVictoryScreen(won) {
 
   // 1v1 mode: dedicated victory screen, no PnL, no progress unlock
   if (g.is1v1) {
-    const winner = won ? 'P1' : 'P2';
+    const winnerName = won ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
+    const loserName  = won ? (state.mp1v1.p2Name || 'P2') : (state.mp1v1.p1Name || 'P1');
     const winnerColor = won ? 'var(--aqua)' : 'var(--gold)';
     const shotsW = won ? g.shotsP1 : g.shotsP2;
     const hitsW  = won ? g.hitsP1  : g.hitsP2;
     const accW = shotsW > 0 ? Math.round((hitsW / shotsW) * 100) : 0;
     const totalShots = g.shotsP1 + g.shotsP2;
     const html = `
-      <div class="victory-title" style="color:${winnerColor}">${winner} ${state.lang === 'fr' ? 'GAGNE' : 'WINS'}</div>
-      <div class="victory-sub">${state.lang === 'fr' ? '1v1 LOCAL · MATCH TERMINÉ' : '1v1 LOCAL · MATCH OVER'}</div>
+      <div class="victory-title" style="color:${winnerColor}">${winnerName} ${state.lang === 'fr' ? 'GAGNE' : 'WINS'}</div>
+      <div class="victory-sub">${state.lang === 'fr' ? '1v1 LOCAL · ' + winnerName + ' bat ' + loserName : '1v1 LOCAL · ' + winnerName + ' beats ' + loserName}</div>
       <div class="victory-stats">
         <div><div class="vstat-lbl">${t('turns')}</div><div class="vstat-val">${g.turnNum}</div></div>
         <div><div class="vstat-lbl">${state.lang === 'fr' ? 'TIRS TOTAL' : 'TOTAL SHOTS'}</div><div class="vstat-val">${totalShots}</div></div>
-        <div><div class="vstat-lbl">${t('accuracy')} ${winner}</div><div class="vstat-val" style="color:${winnerColor}">${accW}%</div></div>
-        <div><div class="vstat-lbl">HP ${winner}</div><div class="vstat-val" style="color:${winnerColor}">${won ? g.p1hp : g.p2hp}</div></div>
+        <div><div class="vstat-lbl">${t('accuracy')} ${winnerName}</div><div class="vstat-val" style="color:${winnerColor}">${accW}%</div></div>
+        <div><div class="vstat-lbl">HP ${winnerName}</div><div class="vstat-val" style="color:${winnerColor}">${won ? g.p1hp : g.p2hp}</div></div>
       </div>
       <div class="victory-actions">
         <button onclick="startLocal1v1()">${state.lang === 'fr' ? 'NOUVEAU MATCH' : 'NEW MATCH'}</button>
@@ -2768,6 +3348,8 @@ function showVictoryScreen(won) {
     earned = Math.floor(m.reward * 0.15);
     state.pnl += earned;
   }
+  pkSaveState();
+  updatePnLDisplay();
   const html = `
     <div class="victory-title ${won ? '' : 'defeat'}">${won ? t('victory') : t('defeat')}</div>
     <div class="victory-sub">${won ? t('you_outraded') : t('market_won')}</div>
@@ -2810,9 +3392,12 @@ window.addEventListener('keydown', (e) => {
   if (state.currentScreen !== 'game') return;
   if (e.key === ' ') { e.preventDefault(); playerShoot(); }
   if (e.key === 'Escape') quitGame();
-  if (state.game && /^[1-5]$/.test(e.key)) {
+  if (state.game && /^[1-3]$/.test(e.key)) {
+    const g = state.game;
+    const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+    const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
     const idx = parseInt(e.key) - 1;
-    const ks = Object.keys(state.game.inventory);
+    const ks = Object.keys(inv);
     if (ks[idx]) selectWeapon(ks[idx]);
   }
   if (e.key === 'a' || e.key === 'A') moveTank(-1);
@@ -2822,13 +3407,18 @@ window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
 setInterval(() => {
   const g = state.game;
-  if (!g || g.turn !== 'player' || g.gameOver || state.currentScreen !== 'game') return;
+  if (!g || g.gameOver || state.currentScreen !== 'game') return;
+  // Allow keyboard control on either human turn (P1 always, P2 only in 1v1)
+  const isHumanTurn = (g.turn === 'player') || (g.is1v1 && g.turn === 'ai');
+  if (!isHumanTurn) return;
   const fast = keys['Shift'];
   const step = fast ? 3 : 1;
   let changed = false;
   if (keys['ArrowLeft']) { g.angle = Math.max(0, g.angle - step); changed = true; }
   if (keys['ArrowRight']) { g.angle = Math.min(90, g.angle + step); changed = true; }
-  if (keys['ArrowUp']) { g.power = Math.min(g.tank.powerMax, g.power + step); changed = true; }
+  // Power max depends on the active player's tank
+  const activeTank = (g.is1v1 && g.turn === 'ai') ? g.p2Tank : g.tank;
+  if (keys['ArrowUp']) { g.power = Math.min(activeTank.powerMax, g.power + step); changed = true; }
   if (keys['ArrowDown']) { g.power = Math.max(10, g.power - step); changed = true; }
   if (changed) updateHUD();
 }, 30);
@@ -2846,9 +3436,72 @@ function startGameLoop() {
   loop();
 }
 
+// ─── Persistence: save/load state to localStorage ───
+const PK_SAVE_KEY = 'klockwars_save_v1';
+
+function pkSaveState() {
+  try {
+    const payload = {
+      pnl: state.pnl,
+      progress: state.progress,
+      difficulty: state.difficulty,
+      lang: state.lang,
+      settings: state.settings,
+      version: 1,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(PK_SAVE_KEY, JSON.stringify(payload));
+  } catch (_) {}
+}
+
+function pkLoadState() {
+  try {
+    const raw = localStorage.getItem(PK_SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (typeof data.pnl === 'number') state.pnl = data.pnl;
+    if (data.progress && typeof data.progress === 'object') {
+      // Merge: keep all default keys, override known ones from save
+      Object.keys(data.progress).forEach(k => {
+        if (k in state.progress) state.progress[k] = data.progress[k];
+      });
+    }
+    if (data.difficulty) state.difficulty = data.difficulty;
+    if (data.lang) state.lang = data.lang;
+    if (data.settings && typeof data.settings === 'object') {
+      Object.assign(state.settings, data.settings);
+    }
+    return true;
+  } catch (_) { return false; }
+}
+
+function pkResetSave() {
+  if (!confirm(state.lang === 'fr'
+    ? 'Effacer toute la progression ? Cette action est irréversible.'
+    : 'Erase all progress? This cannot be undone.')) return;
+  try { localStorage.removeItem(PK_SAVE_KEY); } catch (_) {}
+  // Reset in-memory state to defaults
+  state.pnl = 5000;
+  state.progress = {
+    rookie_summer_fr: 'current', junior_winter_fr: 'locked',
+    senior_duck_curve_es: 'locked', senior_dunkelflaute_de: 'locked',
+    director_negative_es: 'locked',
+    event1: 'unlocked', event2: 'locked', event3: 'locked',
+    event4: 'locked', event5: 'locked', event6: 'locked',
+    event7: 'locked', event8: 'locked',
+  };
+  state.difficulty = 'originator';
+  updatePnLDisplay();
+  setDifficulty('originator');
+  alert(state.lang === 'fr' ? 'Progression réinitialisée.' : 'Progress reset.');
+}
+window.pkResetSave = pkResetSave;
+
 updatePnLDisplay();
+pkLoadState();
 applyLang();
 setDifficulty(state.difficulty);
+updatePnLDisplay(); // refresh after load
 </script>
 
 </body>
