@@ -2575,6 +2575,7 @@ const HSZ = {
     { id: 'hourly',   label: 'Hourly' },
     { id: 'weekly',   label: 'Weekly' },
     { id: 'vol',      label: 'Volatility' },
+    { id: 'dist',     label: 'Distribution' },
   ],
 };
 
@@ -2670,6 +2671,7 @@ async function renderHistSingle() {
   if (HSZ.tab === 'hourly')   return _hszRenderHourly(filtered, zone);
   if (HSZ.tab === 'weekly')   return _hszRenderWeekly(filtered, zone);
   if (HSZ.tab === 'vol')      return _hszRenderVolatility(filtered, zone);
+  if (HSZ.tab === 'dist')     return _hszRenderDist(filtered, zone);
   return _hszPlaceholder('🚧 ' + HSZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistSingle = renderHistSingle;
@@ -3693,6 +3695,139 @@ function _hszRenderVolatility(filtered, zone) {
   });
 }
 
+// ── HSZ · Distribution: histogram of daily avgs for the selected zone ──
+function _hszRenderDist(filtered, zone) {
+  const color = zoneColor(zone);
+  if (!filtered.length) return _hszPlaceholder('No data');
+
+  const avgs = filtered.map(d => d.avg).filter(v => v != null && !isNaN(v));
+  if (avgs.length < 3) return _hszPlaceholder('Not enough data points');
+
+  // Stats
+  const sorted = [...avgs].sort((a, b) => a - b);
+  const mean   = avgs.reduce((a, b) => a + b, 0) / avgs.length;
+  const median = _percentile(sorted, 0.5);
+  const stddev = Math.sqrt(avgs.reduce((a, v) => a + (v - mean) ** 2, 0) / avgs.length);
+  const p5     = _percentile(sorted, 0.05);
+  const p95    = _percentile(sorted, 0.95);
+  const minV   = sorted[0];
+  const maxV   = sorted[sorted.length - 1];
+
+  // Bin size: adaptive — 10 €/MWh by default, finer when range is small
+  const range = maxV - minV;
+  const BIN_SIZE = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
+  const binMin = Math.floor(minV / BIN_SIZE) * BIN_SIZE;
+  const binMax = Math.ceil(maxV / BIN_SIZE) * BIN_SIZE;
+
+  const bins = [];
+  const counts = [];
+  for (let b = binMin; b < binMax; b += BIN_SIZE) {
+    bins.push(b);
+    counts.push(avgs.filter(v => v >= b && v < b + BIN_SIZE).length);
+  }
+
+  // Color bars: red for negative, zone color (with light fill) for positive
+  const barColors = bins.map(b => {
+    if (b < 0) return _toRgba('#ED6965', 0.75);
+    return _toRgba(color, 0.6);
+  });
+  const barBorders = bins.map(b => {
+    if (b < 0) return '#ED6965';
+    return color;
+  });
+
+  // Find which bin contains mean / median for annotation reference
+  const xMean = mean;
+  const xMedian = median;
+
+  mkHistChart('hsz-canvas', {
+    type: 'bar',
+    data: {
+      labels: bins.map(b => b + '€'),
+      datasets: [{
+        label: 'Days',
+        data: counts,
+        backgroundColor: barColors,
+        borderColor: barBorders,
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      ...baseOptions('Days'),
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => {
+              const b = bins[ctx[0].dataIndex];
+              return `${b} to ${b + BIN_SIZE} €/MWh`;
+            },
+            label: ctx => ` ${ctx.parsed.y} day${ctx.parsed.y > 1 ? 's' : ''}`,
+          },
+        },
+        subtitle: {
+          display: true,
+          text: `${zone} · n=${avgs.length} days · μ=${mean.toFixed(1)} · med=${median.toFixed(1)} · σ=${stddev.toFixed(1)} · [P5: ${p5.toFixed(1)} · P95: ${p95.toFixed(1)}]`,
+          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
+        },
+        annotation: {
+          annotations: {
+            // Vertical line at mean
+            meanLine: {
+              type: 'line',
+              scaleID: 'x',
+              value: bins.findIndex(b => b > xMean) - 0.5,
+              borderColor: _HIST_WARN,
+              borderWidth: 1.5,
+              borderDash: [4, 3],
+              label: {
+                enabled: true,
+                content: `μ ${xMean.toFixed(1)}`,
+                color: _HIST_WARN,
+                font: { size: 9, weight: 'bold' },
+                position: 'start',
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                padding: 3,
+              },
+            },
+            // Vertical line at median
+            medianLine: {
+              type: 'line',
+              scaleID: 'x',
+              value: bins.findIndex(b => b > xMedian) - 0.5,
+              borderColor: color,
+              borderWidth: 1.5,
+              label: {
+                enabled: true,
+                content: `med ${xMedian.toFixed(1)}`,
+                color: color,
+                font: { size: 9, weight: 'bold' },
+                position: 'end',
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                padding: 3,
+              },
+            },
+          },
+        },
+        zoom: _zoomConfig({ mode: 'y' }),
+      },
+      scales: {
+        x: {
+          grid: { color: _HIST_GRID, display: false },
+          ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 14 },
+          title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
+        },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 } },
+          title: { display: true, text: 'Days count', color: _HIST_TX3, font: { size: 10 } },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
 // Helper: mean ignoring null / NaN
 function _meanIgnoreNull(arr) {
   const v = arr.filter(x => x != null && !isNaN(x));
@@ -3876,6 +4011,7 @@ const HMZ = {
     { id: 'profile', label: 'Profile' },
     { id: 'bands',   label: 'Bands' },
     { id: 'spread',  label: 'Spread' },
+    { id: 'dist',    label: 'Distribution' },
   ],
 };
 
@@ -3983,6 +4119,7 @@ async function renderHistMulti() {
   if (HMZ.tab === 'profile') return _hmzRenderProfile(perZone, selected);
   if (HMZ.tab === 'bands')   return _hmzRenderBands(perZone, selected, baseline);
   if (HMZ.tab === 'spread')  return _hmzRenderSpread(perZone, selected, baseline);
+  if (HMZ.tab === 'dist')    return _hmzRenderDist(perZone, selected);
   return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistMulti = renderHistMulti;
@@ -4511,6 +4648,180 @@ function _hmzRenderSpread(perZone, selected, baseline) {
         },
       },
     },
+  });
+}
+
+
+// ── HMZ · Distribution: horizontal box plots, one row per zone ──
+function _hmzRenderDist(perZone, selected) {
+  // Make sure canvas is shown, heatmap is hidden
+  const canvas = document.getElementById('hmz-canvas');
+  const heatmap = document.getElementById('hmz-heatmap');
+  if (canvas) canvas.style.display = '';
+  if (heatmap) heatmap.style.display = 'none';
+
+  const stats = selected.map(z => _boxStats(perZone[z].map(d => d.avg)));
+  if (stats.every(s => s == null)) return _hmzPlaceholder('No data');
+
+  const validStats = stats.filter(s => s);
+  const p90Max = validStats.length ? Math.max(...validStats.map(s => s.p90)) : 100;
+  const p10Min = validStats.length ? Math.min(...validStats.map(s => s.p10)) : 0;
+  const dataMax = validStats.length ? Math.max(...validStats.map(s => s.max)) : 100;
+  const dataMin = validStats.length ? Math.min(...validStats.map(s => s.min)) : 0;
+  // Cap if outliers way above P90, leave headroom
+  const xTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
+  const xBot = (dataMin < p10Min * 0.5 || dataMin < 0)
+    ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10
+    : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
+
+  const zoneColors = selected.map(z => zoneColor(z));
+  const zoneIqrFills = zoneColors.map(c => _toRgba(c, 0.25));
+  const zoneWhiskers = zoneColors.map(c => _toRgba(c, 0.7));
+
+  // Custom plugin: horizontal box plot. X = price, Y = zone (categorical).
+  const boxPlotPlugin = {
+    id: 'hmzBoxPlotH',
+    afterDatasetsDraw(chart) {
+      const { ctx, scales } = chart;
+      const xScale = scales.x;
+      const yScale = scales.y;
+      // Bar height per zone — derive from y scale spacing
+      const yStep = Math.abs(yScale.getPixelForValue(1) - yScale.getPixelForValue(0));
+      const boxHalfHeight = Math.max(8, yStep * 0.22);
+
+      stats.forEach((s, i) => {
+        if (!s) return;
+        const yPx = yScale.getPixelForValue(i);
+        const xP25 = xScale.getPixelForValue(s.p25);
+        const xP75 = xScale.getPixelForValue(s.p75);
+        const xP10 = xScale.getPixelForValue(s.p10);
+        const xP90 = xScale.getPixelForValue(s.p90);
+        const xP50 = xScale.getPixelForValue(s.p50);
+        const xMin = xScale.getPixelForValue(s.min);
+        const xMax = xScale.getPixelForValue(s.max);
+
+        // Whiskers: P10 → P90, with min/max ticks beyond
+        ctx.save();
+        ctx.strokeStyle = zoneWhiskers[i];
+        ctx.lineWidth = 1.5;
+        // Left whisker (P10)
+        ctx.beginPath();
+        ctx.moveTo(xP10, yPx);
+        ctx.lineTo(xP25, yPx);
+        ctx.stroke();
+        // Right whisker (P90)
+        ctx.beginPath();
+        ctx.moveTo(xP75, yPx);
+        ctx.lineTo(xP90, yPx);
+        ctx.stroke();
+        // Whisker caps
+        ctx.beginPath();
+        ctx.moveTo(xP10, yPx - boxHalfHeight * 0.5);
+        ctx.lineTo(xP10, yPx + boxHalfHeight * 0.5);
+        ctx.moveTo(xP90, yPx - boxHalfHeight * 0.5);
+        ctx.lineTo(xP90, yPx + boxHalfHeight * 0.5);
+        ctx.stroke();
+
+        // IQR box (P25 → P75)
+        ctx.fillStyle = zoneIqrFills[i];
+        ctx.strokeStyle = zoneColors[i];
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(xP25, yPx - boxHalfHeight, xP75 - xP25, boxHalfHeight * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Median line (vertical thick)
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xP50, yPx - boxHalfHeight);
+        ctx.lineTo(xP50, yPx + boxHalfHeight);
+        ctx.stroke();
+
+        // Outliers: min/max as small circles if outside P10-P90 range
+        ctx.fillStyle = zoneWhiskers[i];
+        if (s.min < s.p10) {
+          ctx.beginPath();
+          ctx.arc(xMin, yPx, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (s.max > s.p90) {
+          ctx.beginPath();
+          ctx.arc(xMax, yPx, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+    },
+  };
+
+  mkHistChart('hmz-canvas', {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: stats.map((_, i) => ({ x: 0, y: i })),
+        pointRadius: 0,
+      }],
+    },
+    options: {
+      ...baseOptions('€/MWh'),
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          callbacks: {
+            title: () => '',
+            label: (ctx) => {
+              const i = Math.round(ctx.parsed.y);
+              const s = stats[i];
+              if (!s) return '';
+              return [
+                `${selected[i]}`,
+                `Min ${s.min.toFixed(1)} · P10 ${s.p10.toFixed(1)} · Median ${s.p50.toFixed(1)} · P90 ${s.p90.toFixed(1)} · Max ${s.max.toFixed(1)}`,
+                `IQR ${s.p25.toFixed(1)} → ${s.p75.toFixed(1)} (n=${s.n})`,
+              ];
+            },
+          },
+        },
+        subtitle: {
+          display: true,
+          text: 'Box = IQR (P25-P75) · White line = median · Whiskers = P10-P90 · Dots = outliers',
+          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
+        },
+        zoom: _zoomConfig({ mode: 'x' }),
+      },
+      scales: {
+        x: {
+          min: xBot,
+          max: xTop,
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 } },
+          title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
+        },
+        y: {
+          type: 'linear',
+          min: -0.5,
+          max: selected.length - 0.5,
+          reverse: true,
+          grid: { display: false },
+          ticks: {
+            stepSize: 1,
+            color: '#B8C9D9',
+            font: { size: 11, weight: '600', family: "'JetBrains Mono', monospace" },
+            callback: (v) => {
+              const z = selected[v];
+              if (!z) return '';
+              const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+              return `${flag} ${z}`;
+            },
+          },
+        },
+      },
+    },
+    plugins: [boxPlotPlugin],
   });
 }
 
