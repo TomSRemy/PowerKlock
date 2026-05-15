@@ -1366,7 +1366,7 @@ window._hoSetTab = function(zone, tabId) {
 // Chart-native legend is built into each chart so no manual hide needed here.
 function _hoApplyTabVisibility(tabId) {
   const yp = document.getElementById('ho-detail-ypresets-wrap');
-  const showYPresets = (tabId === 'lines' || tabId === 'yoy');
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal');
   if (yp) yp.style.display = showYPresets ? 'flex' : 'none';
 }
 
@@ -2014,7 +2014,7 @@ window._hoFsSetTab = function(zone, tabId) {
 function _hoApplyFsTabVisibility(tabId) {
   const legend = document.getElementById('ho-fs-legend');
   const yp     = document.getElementById('ho-fs-ypresets-wrap');
-  const showYPresets = (tabId === 'lines' || tabId === 'yoy');
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal');
   if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
   if (yp)     yp.style.display     = showYPresets ? 'flex' : 'none';
 }
@@ -3787,8 +3787,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
   });
 }
 
-// ── HSZ · Seasonal: avg per calendar month across years ──
-// ── HSZ · Seasonal: monthly P10-P90 envelope + median + 2 prior years + current ──
+// ── HSZ · Seasonal: monthly P5-P95 + Min-Max envelopes + median + Y-1, Y-2, current ──
 function _hszRenderSeasonal(filtered, zone, summary) {
   const color = zoneColor(zone);
   const all = summary.zones[zone] || [];
@@ -3812,82 +3811,156 @@ function _hszRenderSeasonal(filtered, zone, summary) {
   if (years.length === 0) return _hszPlaceholder('No seasonal data');
 
   const currentYear = years[years.length - 1];
-  const priorYears = years.slice(0, -1);  // all years except current
-  // For "2 prior years individuals", keep the 2 most recent past years
-  const recent2 = priorYears.slice(-2);
-  // For "historical envelope", use all years OLDER than the 2 recent ones (deep history)
-  // If we only have <= 3 years total, fall back to using all past years for envelope.
+  const priorYears = years.slice(0, -1);
+  // Y-1 and Y-2 (the 2 most recent past years; might not exist if too few years)
+  const yMinus1 = priorYears.length >= 1 ? priorYears[priorYears.length - 1] : null;
+  const yMinus2 = priorYears.length >= 2 ? priorYears[priorYears.length - 2] : null;
+  // Historical envelope: all years strictly older than Y-1/Y-2
+  // If we only have <= 3 years total, fall back to using all past years.
   const envYears = priorYears.length > 2 ? priorYears.slice(0, -2) : priorYears;
 
   const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Build envelope (P5, P95, median) per month across envYears to avoid
-  // extreme outlier years (e.g. 2022 gas crisis) crushing the Y axis.
-  const envMin = Array(12).fill(null);
-  const envMax = Array(12).fill(null);
-  const envMedian = Array(12).fill(null);
+  // Build envelopes per month: P0/P100 (absolute Min/Max) AND P5/P95 (typical)
+  const p0Line   = Array(12).fill(null);
+  const p100Line = Array(12).fill(null);
+  const p5Line   = Array(12).fill(null);
+  const p95Line  = Array(12).fill(null);
+  const medianLine = Array(12).fill(null);
   for (let m = 0; m < 12; m++) {
     const vals = envYears.map(y => byYear[y][m]).filter(v => v != null);
     if (vals.length) {
       const sorted = [...vals].sort((a, b) => a - b);
+      p0Line[m]   = sorted[0];
+      p100Line[m] = sorted[sorted.length - 1];
       if (sorted.length < 4) {
-        // Too few years — use absolute min/max
-        envMin[m] = sorted[0];
-        envMax[m] = sorted[sorted.length - 1];
+        p5Line[m]  = sorted[0];
+        p95Line[m] = sorted[sorted.length - 1];
       } else {
-        envMin[m] = _percentile(sorted, 0.05);
-        envMax[m] = _percentile(sorted, 0.95);
+        p5Line[m]  = _percentile(sorted, 0.05);
+        p95Line[m] = _percentile(sorted, 0.95);
       }
-      envMedian[m] = _percentile(sorted, 0.5);
+      medianLine[m] = _percentile(sorted, 0.5);
     }
   }
 
-  // 2 recent past years
-  const recent2Colors = ['rgba(63,166,180,0.55)', 'rgba(186,117,23,0.55)'];
+  // Mean of current year for subtitle
+  const curMean = _meanIgnoreNull(byYear[currentYear]);
+  const y1Mean  = yMinus1 ? _meanIgnoreNull(byYear[yMinus1]) : null;
+  const y2Mean  = yMinus2 ? _meanIgnoreNull(byYear[yMinus2]) : null;
 
-  const ribbonFill = 'rgba(255,255,255,0.05)';
+  // ── Bands ──
+  const outerFill = _toRgba(color, 0.04);
+  const innerFill = _toRgba(color, 0.10);
+
+  // ── Y-preset handling (Focus / Standard / All) ──
+  const preset = _hszCtx().getYPreset();
+  const hideBands = (preset === 'focus');
+  let yMin = null, yMax = null;
+  const currentLines = [
+    ...(byYear[currentYear] || []),
+    ...(yMinus1 ? byYear[yMinus1] : []),
+    ...(yMinus2 ? byYear[yMinus2] : []),
+  ].filter(v => v != null && !isNaN(v));
+  if (preset === 'focus' && currentLines.length) {
+    const lo = Math.min(...currentLines);
+    const hi = Math.max(...currentLines);
+    const pad = Math.max(5, (hi - lo) * 0.10);
+    yMin = lo - pad;
+    yMax = hi + pad;
+  } else if (preset === 'standard') {
+    const all95 = [...currentLines, ...p5Line.filter(v => v != null), ...p95Line.filter(v => v != null)];
+    if (all95.length) {
+      yMin = Math.min(...all95);
+      yMax = Math.max(...all95);
+      const pad = Math.max(5, (yMax - yMin) * 0.05);
+      yMin -= pad; yMax += pad;
+    }
+  }
+
+  // Subtitle: in plain English
+  let subtitleText = '';
+  if (curMean != null && y1Mean != null) {
+    const d = curMean - y1Mean;
+    const verb = d < 0 ? 'cheaper' : 'more expensive';
+    subtitleText = `${currentYear}: ${curMean.toFixed(1)} €/MWh average — ${Math.abs(d).toFixed(1)} ${verb} than ${yMinus1} (${y1Mean.toFixed(1)})`;
+    if (y2Mean != null) {
+      const d2 = curMean - y2Mean;
+      const v2 = d2 < 0 ? 'cheaper' : 'more expensive';
+      subtitleText += `, ${Math.abs(d2).toFixed(1)} ${v2} than ${yMinus2} (${y2Mean.toFixed(1)})`;
+    }
+  } else {
+    subtitleText = `Monthly averages compared across ${years.length} years`;
+  }
+
+  // HTML title block (hybrid style)
+  _setHoTitle({
+    eyebrow: `Prices · Seasonal · ${zone}`,
+    title: 'Monthly profile · current year vs Y-1, Y-2, and historical range',
+    subtitle: subtitleText,
+  });
 
   const datasets = [
-    // Envelope max + fill down to min
+    // ── Outer band: Min–Max absolute (P0–P100) ──
     {
-      label: 'Hist max', data: envMax,
-      borderColor: 'rgba(255,255,255,0.12)', backgroundColor: ribbonFill,
-      borderWidth: 0.5, pointRadius: 0, tension: 0, spanGaps: true, fill: '+1', order: 6,
+      label: 'Min–Max range', data: p100Line,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 8, _bandPair: 'outer', hidden: hideBands,
     },
     {
-      label: 'Hist min', data: envMin,
-      borderColor: 'rgba(255,255,255,0.12)', backgroundColor: 'transparent',
-      borderWidth: 0.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 6,
+      label: '_outer_min', data: p0Line,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 8, _bandPair: 'outer', _hideFromLegend: true, hidden: hideBands,
     },
-    // Median historical
+    // ── Inner band: typical regime (P5–P95) ──
     {
-      label: 'Hist median', data: envMedian,
-      borderColor: 'rgba(255,255,255,0.4)', borderWidth: 1.2,
-      pointRadius: 0, tension: 0.2, spanGaps: true, fill: false, borderDash: [3, 2], order: 5,
+      label: 'Typical range (P5–P95)', data: p95Line,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 7, _bandPair: 'inner', hidden: hideBands,
+    },
+    {
+      label: '_inner_min', data: p5Line,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true, hidden: hideBands,
+    },
+    // ── Historical median ──
+    {
+      label: 'Hist median', data: medianLine,
+      borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+      tension: 0.2, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
     },
   ];
 
-  // 2 recent past years (individual lines)
-  recent2.forEach((y, idx) => {
+  // ── Y-2 — fine, dashed, subordinate ──
+  if (yMinus2) {
     datasets.push({
-      label: y,
-      data: byYear[y],
-      borderColor: recent2Colors[idx],
-      borderWidth: 1.5,
-      pointRadius: 3,
-      pointBackgroundColor: recent2Colors[idx],
-      tension: 0.25, spanGaps: true, fill: false, order: 3,
+      label: yMinus2,
+      data: byYear[yMinus2],
+      borderColor: 'rgba(168,125,196,0.60)',
+      borderWidth: 1.4, pointRadius: 2, pointBackgroundColor: 'rgba(168,125,196,0.60)',
+      tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
-  });
-
-  // Current year (bold)
+  }
+  // ── Y-1 — fine, dashed, subordinate ──
+  if (yMinus1) {
+    datasets.push({
+      label: yMinus1,
+      data: byYear[yMinus1],
+      borderColor: 'rgba(255,255,255,0.55)',
+      borderWidth: 1.4, pointRadius: 2, pointBackgroundColor: 'rgba(255,255,255,0.55)',
+      tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+    });
+  }
+  // ── Current — the star: thick + saturated zone colour ──
   datasets.push({
     label: currentYear + ' (current)',
     data: byYear[currentYear],
     borderColor: color,
-    borderWidth: 3,
-    pointRadius: 4,
-    pointBackgroundColor: color,
+    borderWidth: 2.4, pointRadius: 3, pointBackgroundColor: color,
     tension: 0.25, spanGaps: true, fill: false, order: 1,
   });
 
@@ -3897,20 +3970,73 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
+        title: { display: false },
+        subtitle: { display: false },
         legend: {
           display: true, position: 'top', align: 'end',
           labels: {
-            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
-            filter: (item) => !['Hist max', 'Hist min'].includes(item.text),
+            color: _HIST_TX3, font: { size: 10 }, boxWidth: 14, boxHeight: 2, padding: 12,
+            filter: (item, chartData) => {
+              const ds = chartData.datasets[item.datasetIndex];
+              return !ds || !ds._hideFromLegend;
+            },
+          },
+          onClick: (e, legendItem, legend) => {
+            const ci = legend.chart;
+            const idx = legendItem.datasetIndex;
+            const ds = ci.data.datasets[idx];
+            if (ds && ds._bandPair) {
+              const pair = ds._bandPair;
+              const newVisible = !ci.isDatasetVisible(idx);
+              ci.data.datasets.forEach((d, i) => {
+                if (d._bandPair === pair) ci.setDatasetVisibility(i, newVisible);
+              });
+            } else {
+              ci.setDatasetVisibility(idx, !ci.isDatasetVisible(idx));
+            }
+            ci.update();
           },
         },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
-        subtitle: {
-          display: true,
-          text: envYears.length > 0
-            ? `Grey ribbon = historical range (${envYears.length} years before ${recent2[0] || currentYear}) · median dashed`
-            : 'Seasonal pattern',
-          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
+        tooltip: {
+          mode: 'index', intersect: false,
+          filter: (item) => {
+            const ds = item.chart.data.datasets[item.datasetIndex];
+            return !ds || !ds._hideFromLegend;
+          },
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
+          },
+        },
+        zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(20,211,169,0.12)',
+              borderColor: 'rgba(20,211,169,0.5)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: false },
+            pinch: { enabled: true },
+            mode: 'xy',
+          },
+          pan: { enabled: false },
+          limits: { y: { min: 'original', max: 'original' } },
+        } : {},
+      },
+      onClick: (evt) => {
+        if (evt.native && evt.native.detail === 2) {
+          const ch = HIST.charts[_hszCtx().canvasId];
+          if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+        }
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } } },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 } },
+          min: yMin != null ? yMin : undefined,
+          max: yMax != null ? yMax : undefined,
+          title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } },
         },
       },
     },
