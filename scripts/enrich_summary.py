@@ -172,10 +172,36 @@ def _q_of_month(month):
 def _hourly_to_24h(hourly):
     """Reduce a 96-slot quarter-hourly array (or 24-slot hourly) into a 24-bucket
     hourly array. Returns list of 24 floats or None.
+
+    Rejects partial-day data: if the source array has a long contiguous run of
+    nulls at the start or end (>20% of the array), the day is considered
+    incomplete and we return None. This prevents misleading 'half-day' profiles
+    when scraping returned only the first N hours of the day.
     """
     if not hourly:
         return None
     n = len(hourly)
+    # Reject partial-day data (long trailing or leading null run)
+    valid_count = sum(1 for v in hourly if v is not None)
+    if valid_count == 0:
+        return None
+    # Trailing null run
+    trail = 0
+    for v in reversed(hourly):
+        if v is None:
+            trail += 1
+        else:
+            break
+    # Leading null run
+    lead = 0
+    for v in hourly:
+        if v is None:
+            lead += 1
+        else:
+            break
+    threshold = int(n * 0.2)
+    if trail > threshold or lead > threshold:
+        return None  # incomplete day, do not contribute to averages
     if n == 24:
         return [v if v is not None else None for v in hourly]
     if n == 96:
