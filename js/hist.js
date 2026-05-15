@@ -1355,13 +1355,14 @@ window._hoSetTab = function(zone, tabId) {
   _buildHoTabChart(zone, series, tabId, false);
 };
 
-// Show/hide controls that only make sense on the Lines tab.
-// Y-presets (Focus/Standard/All) → Lines only.
+// Show/hide controls that only make sense on specific tabs.
+// Y-presets (Focus/Standard/All) → Lines AND YoY (both have a meaningful Y-range concept).
 // Reset ↺, PNG, Fullscreen → all tabs.
 // Chart-native legend is built into each chart so no manual hide needed here.
 function _hoApplyTabVisibility(tabId) {
   const yp = document.getElementById('ho-detail-ypresets-wrap');
-  if (yp) yp.style.display = (tabId === 'lines') ? 'flex' : 'none';
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy');
+  if (yp) yp.style.display = showYPresets ? 'flex' : 'none';
 }
 
 // Dispatcher used by the drill-down row to render any tab on the
@@ -2005,13 +2006,14 @@ window._hoFsSetTab = function(zone, tabId) {
 };
 
 // Show/hide controls that only apply to specific tabs in fullscreen.
-// Y-presets (Focus/Standard/All) and the bottom legend → Lines only.
+// Y-presets and the bottom legend → Lines AND YoY.
 // Reset ↺, PNG, CSV, tabs bar → all tabs.
 function _hoApplyFsTabVisibility(tabId) {
   const legend = document.getElementById('ho-fs-legend');
   const yp     = document.getElementById('ho-fs-ypresets-wrap');
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy');
   if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
-  if (yp)     yp.style.display     = (tabId === 'lines') ? 'flex' : 'none';
+  if (yp)     yp.style.display     = showYPresets ? 'flex' : 'none';
 }
 
 // ── Helper: short date "15 Feb 2026" ──
@@ -3312,7 +3314,7 @@ function _hszRenderLines(filtered, zone) {
   });
 }
 
-// ── HSZ · YoY: same calendar window vs N-1/N-2 with historical envelope.
+// ── HSZ · YoY: same calendar window vs Y-1/Y-2 with historical envelopes.
 // Auto-switches to "calendar overlay" mode for windows >= 2Y.
 function _hszRenderYoY(filtered, zone, summary) {
   const color = zoneColor(zone);
@@ -3328,106 +3330,228 @@ function _hszRenderYoY(filtered, zone, summary) {
     return _hszRenderYoYCalendar(filtered, zone, summary, all);
   }
 
-  // ── SUPERPOSITION MODE: current vs N-1 vs N-2 aligned by day-of-period ──
+  // ── SUPERPOSITION MODE: current vs Y-1 vs Y-2 aligned by day-of-period ──
   const curFrom = filtered[0].d;
   const curTo   = filtered[filtered.length - 1].d;
 
-  // Slice N-1 and N-2 windows by shifting the date range
+  // Slice Y-1 and Y-2 windows by shifting the date range
   const sliceWindow = (fromStr, toStr) => all.filter(e => e.d >= fromStr && e.d <= toStr);
   const ny1 = sliceWindow(_shiftYearsISO(curFrom, 1), _shiftYearsISO(curTo, 1));
   const ny2 = sliceWindow(_shiftYearsISO(curFrom, 2), _shiftYearsISO(curTo, 2));
 
-  // Use day-of-period index as label for alignment
-  const labels = filtered.map((_, i) => `D${i+1}`);
+  // Use REAL DATES (current period) as labels so X axis is informative.
+  // Y-1 / Y-2 are aligned by day-of-period index against these.
+  const labels = filtered.map(d => d.d);
 
   // Map curr/prev by day index (align position 0 of cur with position 0 of ny1/ny2)
-  const cur  = filtered.map(d => d.avg);
+  const cur   = filtered.map(d => d.avg);
   const prev1 = labels.map((_, i) => ny1[i]?.avg ?? null);
   const prev2 = labels.map((_, i) => ny2[i]?.avg ?? null);
 
-  // Build historical envelope: collect all entries from years OTHER than current/N-1/N-2
-  // to give a "min-max over all past years" backdrop.
-  const curYear = curFrom.slice(0, 4);
-  const histYears = all.filter(e => {
-    const y = e.d.slice(0, 4);
-    // Use all years strictly older than the current period start
-    return e.d < curFrom;
-  });
+  // Build historical envelopes from years strictly older than the current period start
+  const histYears = all.filter(e => e.d < curFrom);
   const env = _historicalEnvelope(filtered, histYears);
 
-  // Compute aggregate deltas for subtitle
+  // Aggregate means for subtitle / commentary
   const curMean = _meanIgnoreNull(cur);
   const p1Mean  = _meanIgnoreNull(prev1);
   const p2Mean  = _meanIgnoreNull(prev2);
 
-  const ribbonFill = _toRgba(color, 0.08);
+  // ── Bands ──
+  // Outer (P0–P100, Min–Max absolute) → very faint background ribbon
+  // Inner (P5–P95, typical regime)    → a bit more visible
+  const outerFill = _toRgba(color, 0.04);
+  const innerFill = _toRgba(color, 0.10);
+
+  // ── Date formatter (DD-MM-YYYY, UK style) ──
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    const [y, m, d] = String(iso).split('-');
+    if (!y || !m || !d) return iso;
+    return `${d}-${m}-${y}`;
+  };
+
+  // ── Y-preset handling (Focus / Standard / All) ──
+  // On YoY: Focus = clip Y to current+Y-1+Y-2 range (hides extreme historical envelope)
+  //         Standard = include P5-P95 band (typical historical)
+  //         All = include full Min-Max band (default behaviour)
+  const preset = _hszCtx().getYPreset();
+  let yMin = null, yMax = null;
+  const currentLines = [...cur, ...prev1, ...prev2].filter(v => v != null && !isNaN(v));
+  if (preset === 'focus' && currentLines.length) {
+    const lo = Math.min(...currentLines);
+    const hi = Math.max(...currentLines);
+    const pad = Math.max(5, (hi - lo) * 0.10);
+    yMin = lo - pad;
+    yMax = hi + pad;
+  } else if (preset === 'standard') {
+    const all95 = [...currentLines, ...env.p5Line.filter(v => v != null), ...env.p95Line.filter(v => v != null)];
+    if (all95.length) {
+      yMin = Math.min(...all95);
+      yMax = Math.max(...all95);
+      const pad = Math.max(5, (yMax - yMin) * 0.05);
+      yMin -= pad; yMax += pad;
+    }
+  } // 'all' → no clamp, chart auto-fits including Min-Max envelope
+
+  // ── Subtitle: enriched, in plain English ──
+  let subtitleText = '';
+  if (curMean != null && p1Mean != null) {
+    const delta1 = curMean - p1Mean;
+    const cheaper1 = delta1 < 0;
+    const verb1 = cheaper1 ? 'cheaper' : 'more expensive';
+    subtitleText = `This period averaged ${curMean.toFixed(1)} €/MWh — ${Math.abs(delta1).toFixed(1)} €/MWh ${verb1} than the same dates a year ago (Y-1: ${p1Mean.toFixed(1)})`;
+    if (p2Mean != null) {
+      const delta2 = curMean - p2Mean;
+      const cheaper2 = delta2 < 0;
+      const verb2 = cheaper2 ? 'cheaper' : 'more expensive';
+      subtitleText += ` · ${Math.abs(delta2).toFixed(1)} €/MWh ${verb2} than Y-2 (${p2Mean.toFixed(1)})`;
+    }
+  } else {
+    subtitleText = 'Daily prices vs same dates in previous years and historical envelope';
+  }
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        // Historical envelope (max line + fill down to min line)
+        // ── Outer band: Min–Max absolute (P0–P100) — ultra-faint background ──
         {
-          label: 'Hist max', data: env.maxLine,
-          borderColor: 'rgba(255,255,255,0.18)', backgroundColor: ribbonFill,
-          borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true, fill: '+1', order: 6,
+          label: 'Hist Max (P100)', data: env.p100Line,
+          borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
+          borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
+          fill: '+1', order: 8, _bandPair: 'outer',
         },
         {
-          label: 'Hist min', data: env.minLine,
-          borderColor: 'rgba(255,255,255,0.18)', backgroundColor: 'transparent',
-          borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 6,
+          label: 'Hist Min (P0)', data: env.p0Line,
+          borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+          borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
+          fill: false, order: 8, _bandPair: 'outer',
         },
-        // Historical median (thin reference line)
+        // ── Inner band: typical regime (P5–P95) — slightly more visible ──
+        {
+          label: 'Hist P95', data: env.p95Line,
+          borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
+          borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
+          fill: '+1', order: 7, _bandPair: 'inner',
+        },
+        {
+          label: 'Hist P5', data: env.p5Line,
+          borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+          borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
+          fill: false, order: 7, _bandPair: 'inner',
+        },
+        // ── Historical median (thin reference line) ──
         {
           label: 'Hist median', data: env.medianLine,
-          borderColor: 'rgba(255,255,255,0.35)', borderWidth: 1, pointRadius: 0,
-          tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 5,
+          borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+          tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
         },
-        // N-2 (more visible than before: brighter, thicker, distinct dash)
+        // ── Y-2 — fine, 60% opacity, dashed (subordinate) ──
         {
-          label: zone + ' · N-2', data: prev2,
-          borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.5, pointRadius: 0,
-          tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+          label: zone + ' · Y-2', data: prev2,
+          borderColor: 'rgba(168,125,196,0.60)', borderWidth: 1.4, pointRadius: 0,
+          tension: 0.2, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
         },
-        // N-1
+        // ── Y-1 — fine, 60% opacity, dashed (subordinate) ──
         {
-          label: zone + ' · N-1', data: prev1,
-          borderColor: 'rgba(255,255,255,0.6)', borderWidth: 1.5, pointRadius: 0,
-          tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+          label: zone + ' · Y-1', data: prev1,
+          borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4, pointRadius: 0,
+          tension: 0.2, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
         },
-        // Current (bold)
+        // ── Current — the star: thick + fully saturated zone colour ──
         {
           label: zone + ' · current', data: cur,
-          borderColor: color, borderWidth: 2.5, pointRadius: 0,
-          tension: 0, spanGaps: true, fill: false, order: 1,
+          borderColor: color, borderWidth: 2.4, pointRadius: 0,
+          tension: 0.2, spanGaps: true, fill: false, order: 1,
         },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
+        title: {
+          display: true,
+          text: 'Daily prices vs same calendar dates in Y-1, Y-2, typical historical range (P5–P95), and full range (Min–Max)',
+          color: 'var(--text)', font: { size: 12, weight: '600' },
+          align: 'start', padding: { top: 0, bottom: 6 },
+        },
+        subtitle: {
+          display: true, text: subtitleText,
+          color: _HIST_TX3, font: { size: 11 }, align: 'start', padding: { bottom: 12 },
+        },
         legend: {
           display: true, position: 'top', align: 'end',
           labels: {
-            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
-            // Hide envelope datasets from legend (decorative)
-            filter: (item) => !['Hist max', 'Hist min', 'Hist median'].includes(item.text),
+            color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10,
+            // Show only meaningful legend items; bands toggle together by pair
+            filter: (item) => !['Hist Max (P100)', 'Hist P95', 'Hist median'].includes(item.text)
+                            && item.text !== 'Hist Min (P0)' && item.text !== 'Hist P5',
+          },
+          // Custom click handler: clicking the synthetic band entries toggles both lines
+          onClick: (e, legendItem, legend) => {
+            const ci = legend.chart;
+            const idx = legendItem.datasetIndex;
+            const ds = ci.data.datasets[idx];
+            // If the clicked dataset has a _bandPair, toggle both members of the pair
+            if (ds && ds._bandPair) {
+              const pair = ds._bandPair;
+              ci.data.datasets.forEach((d, i) => {
+                if (d._bandPair === pair) ci.setDatasetVisibility(i, !ci.isDatasetVisible(i));
+              });
+            } else {
+              ci.setDatasetVisibility(idx, !ci.isDatasetVisible(idx));
+            }
+            ci.update();
           },
         },
         tooltip: {
           mode: 'index', intersect: false,
           callbacks: {
+            title: (items) => items.length ? fmtDate(items[0].label) : '',
             label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
-            title: ctx => 'Day ' + (ctx[0]?.dataIndex + 1) + ' of period',
           },
         },
-        subtitle: {
-          display: true,
-          text: curMean != null && p1Mean != null
-            ? `Period avg: ${curMean.toFixed(1)} €/MWh · N-1: ${p1Mean.toFixed(1)} (Δ ${((curMean - p1Mean)).toFixed(1)})${p2Mean != null ? ' · N-2: ' + p2Mean.toFixed(1) : ''}`
-            : 'Period vs previous year(s) + historical envelope (grey)',
-          color: _HIST_TX3, font: { size: 11 }, padding: { bottom: 8 },
+        zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(20,211,169,0.12)',
+              borderColor: 'rgba(20,211,169,0.5)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: false },
+            pinch: { enabled: true },
+            mode: 'xy',
+          },
+          pan: { enabled: false },
+          limits: { y: { min: 'original', max: 'original' } },
+        } : {},
+      },
+      onClick: (evt) => {
+        if (evt.native && evt.native.detail === 2) {
+          const ch = HIST.charts[_hszCtx().canvasId];
+          if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: _HIST_GRID },
+          ticks: {
+            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12,
+            callback: function(value) {
+              const lbl = this.getLabelForValue(value);
+              return fmtDate(lbl);
+            },
+          },
+        },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 } },
+          min: yMin != null ? yMin : undefined,
+          max: yMax != null ? yMax : undefined,
+          title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } },
         },
       },
     },
@@ -3483,9 +3607,19 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        title: {
+          display: true,
+          text: 'Monthly averages by year — calendar overlay (long window: shows all years on a Jan–Dec axis)',
+          color: 'var(--text)', font: { size: 12, weight: '600' },
+          align: 'start', padding: { top: 0, bottom: 6 },
+        },
+        subtitle: {
+          display: true,
+          text: `${years.length} years aligned by month · current year highlighted`,
+          color: _HIST_TX3, font: { size: 11 }, align: 'start', padding: { bottom: 10 },
+        },
+        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10 } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
-        subtitle: { display: true, text: `Calendar overlay · ${years.length} years aligned by month`, color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
       },
     },
   });
@@ -3622,8 +3756,8 @@ function _hszRenderSeasonal(filtered, zone, summary) {
 }
 
 // ── HSZ · Hourly: intraday profile, toggleable Quarter / YoY ──
-// Quarter mode: 4 mini-charts (Q1..Q4) each with 24h profile + N-1 + N-2 ghosts.
-// YoY mode: 1 chart with 24h profile of the whole period vs N-1 / N-2.
+// Quarter mode: 4 mini-charts (Q1..Q4) each with 24h profile + Y-1 + Y-2 ghosts.
+// YoY mode: 1 chart with 24h profile of the whole period vs Y-1 / Y-2.
 // Data source: summary.intraday[zone][year] = {Q1: [24h], Q2: [...], ..., all: [...]}
 async function _hszRenderHourly(filtered, zone) {
   if (!filtered.length) return _hszPlaceholder('No data');
@@ -3665,7 +3799,7 @@ function _hszInjectHourlyToggle(mode) {
   wrap.insertBefore(toggle, canvas);
 }
 
-// Determine "current year" and "N-1/N-2" years from the intraday data
+// Determine "current year" and "Y-1/Y-2" years from the intraday data
 // based on the current filter window's last date if possible.
 function _hszPickIntradayYears(intraday) {
   const years = Object.keys(intraday).filter(k => /^\d{4}$/.test(k)).sort();
@@ -3744,14 +3878,14 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     const datasets = [];
     if (n2Profile) {
       datasets.push({
-        label: n2 + ' (N-2)', data: n2Profile,
+        label: n2 + ' (Y-2)', data: n2Profile,
         borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1.2,
         pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [6,4], order: 4,
       });
     }
     if (n1Profile) {
       datasets.push({
-        label: n1 + ' (N-1)', data: n1Profile,
+        label: n1 + ' (Y-1)', data: n1Profile,
         borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1.3,
         pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [3,3], order: 3,
       });
@@ -3780,7 +3914,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   });
 }
 
-// YoY mode: single chart with 24h profile of period vs N-1 / N-2
+// YoY mode: single chart with 24h profile of period vs Y-1 / Y-2
 function _hszRenderHourlyYoY(zone, intraday) {
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
@@ -3803,14 +3937,14 @@ function _hszRenderHourlyYoY(zone, intraday) {
 
   if (n2Profile) {
     datasets.push({
-      label: n2 + ' (N-2)', data: n2Profile,
+      label: n2 + ' (Y-2)', data: n2Profile,
       borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1.5,
       pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
   if (n1Profile) {
     datasets.push({
-      label: n1 + ' (N-1)', data: n1Profile,
+      label: n1 + ' (Y-1)', data: n1Profile,
       borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.5,
       pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
@@ -3836,7 +3970,7 @@ function _hszRenderHourlyYoY(zone, intraday) {
         subtitle: {
           display: true,
           text: curMean != null && n1Mean != null
-            ? `Avg 24h profile · ${cur}: ${curMean.toFixed(1)} €/MWh · N-1: ${n1Mean.toFixed(1)} (Δ ${(curMean - n1Mean).toFixed(1)})`
+            ? `Avg 24h profile · ${cur}: ${curMean.toFixed(1)} €/MWh · Y-1: ${n1Mean.toFixed(1)} (Δ ${(curMean - n1Mean).toFixed(1)})`
             : `Avg 24h profile across the period`,
           color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
         },
@@ -4313,24 +4447,34 @@ function _historicalEnvelope(currentSeries, allHistory) {
       }
     });
   });
-  const minLine = buckets.map(b => {
+  // Robust band (P5–P95) — typical regime
+  const p5Line  = buckets.map(b => {
     if (!b.length) return null;
     if (b.length < 4) return Math.min(...b);
     const s = [...b].sort((a, b) => a - b);
-    return _percentile(s, 0.05);  // P5 instead of absolute min
+    return _percentile(s, 0.05);
   });
-  const maxLine = buckets.map(b => {
+  const p95Line = buckets.map(b => {
     if (!b.length) return null;
     if (b.length < 4) return Math.max(...b);
     const s = [...b].sort((a, b) => a - b);
-    return _percentile(s, 0.95);  // P95 instead of absolute max
+    return _percentile(s, 0.95);
   });
+  // Full band (P0–P100) — absolute min/max ever observed for this calendar day
+  const minLine = buckets.map(b => b.length ? Math.min(...b) : null);
+  const maxLine = buckets.map(b => b.length ? Math.max(...b) : null);
   const medianLine = buckets.map(b => {
     if (!b.length) return null;
     const s = [...b].sort((a, b) => a - b);
     return _percentile(s, 0.5);
   });
-  return { minLine, maxLine, medianLine };
+  // Backwards-compat aliases: maxLine/minLine map to the P5-P95 band by default
+  // (consumers that don't read p0/p100 keep the typical-regime behaviour).
+  return {
+    minLine: p5Line, maxLine: p95Line, medianLine,
+    p5Line, p95Line, p0Line: minLine, p100Line: maxLine,
+    sampleCount: buckets.map(b => b.length),
+  };
 }
 
 // hex/rgb color helper: convert "#RRGGBB" to rgba string
