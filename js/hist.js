@@ -1614,11 +1614,11 @@ async function renderHistOverview() {
       <td style="text-align:left;font-size:11px;color:var(--tx2)">${countryName}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tx)">${fmt(st.avg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.peakAvg)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${fmt(st.offAvg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.offAvg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${spreadColor};font-weight:600">${fmt(st.intradaySpread)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.sigma)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${negColor}">${_fmtNegH(st.negH)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${negColor}">${_fmtNegH(st.negH)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${renHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fuelHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
