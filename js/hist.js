@@ -1286,7 +1286,9 @@ window._hoSetYPreset = function(preset) {
 };
 
 window._hoResetZoom = function() {
-  // Reset zoom on whichever chart is currently visible (inline + fullscreen if open)
+  // Reset both the manual zoom (drag-selection) and the Y-preset.
+  // Even if no drag-zoom was active, this restores the "standard" Y range,
+  // which is what users intuitively expect from a Reset button.
   const inline = document.getElementById('ho-detail-chart');
   const fs     = document.getElementById('ho-fs-chart');
   [inline, fs].forEach(canvas => {
@@ -1294,6 +1296,20 @@ window._hoResetZoom = function() {
     const ch = Chart.getChart(canvas);
     if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
   });
+  // If currently on Lines tab and a non-standard preset is active, reset to standard
+  if (window._HO_YPRESET && window._HO_YPRESET !== 'standard') {
+    window._HO_YPRESET = 'standard';
+    const zone = window._HO_OPEN_ZONE;
+    const series = window._HO_LAST_SERIES;
+    if (zone && series && typeof _buildHoTabChart === 'function') {
+      const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+      _buildHoTabChart(zone, series, tab, false);
+      if (document.getElementById('ho-fs-overlay')) {
+        _buildHoTabChart(zone, series, tab, true);
+      }
+      if (typeof _hoRenderPresetButtons === 'function') _hoRenderPresetButtons();
+    }
+  }
 };
 
 // Update the preset button styles to reflect the active preset
@@ -1341,12 +1357,11 @@ window._hoSetTab = function(zone, tabId) {
 
 // Show/hide controls that only make sense on the Lines tab.
 // Y-presets (Focus/Standard/All) → Lines only.
-// Reset ↺, legend (Daily/7D/30D/max/min), PNG, Fullscreen → all tabs.
+// Reset ↺, PNG, Fullscreen → all tabs.
+// Chart-native legend is built into each chart so no manual hide needed here.
 function _hoApplyTabVisibility(tabId) {
   const yp = document.getElementById('ho-detail-ypresets-wrap');
-  const legend = document.getElementById('ho-detail-legend');
-  if (yp)     yp.style.display     = (tabId === 'lines') ? 'flex' : 'none';
-  if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
+  if (yp) yp.style.display = (tabId === 'lines') ? 'flex' : 'none';
 }
 
 // Dispatcher used by the drill-down row to render any tab on the
@@ -2014,32 +2029,31 @@ function _fmtShortDate(iso) {
 //   σ < 15  → "stable"          15 ≤ σ < 30   → "moderate"        σ ≥ 30   → "volatile"
 function _buildHoVerdict(st) {
   if (!st || st.avg == null) return '';
-  // Price level
-  let level;
-  if (st.avg < 50)      level = 'Cheap';
-  else if (st.avg <= 100) level = 'Average';
-  else                  level = 'Expensive';
-  // Volatility
-  let vol;
-  if (st.sigma == null || st.sigma < 15)      vol = 'stable';
-  else if (st.sigma < 30)                     vol = 'moderate';
-  else                                        vol = 'volatile';
+  // Price level (compared to typical European DA price ranges 2020-2024)
+  let level, levelExplain;
+  if (st.avg < 50)        { level = 'Low prices';      levelExplain = 'avg < 50 €/MWh — well below typical EU DA levels'; }
+  else if (st.avg <= 100) { level = 'Mid-range prices'; levelExplain = 'avg 50–100 €/MWh — within typical EU DA range'; }
+  else                    { level = 'High prices';      levelExplain = 'avg > 100 €/MWh — well above typical EU DA levels'; }
+  // Volatility (based on std deviation of daily averages)
+  let vol, volExplain;
+  if (st.sigma == null || st.sigma < 15) { vol = 'low volatility';     volExplain = 'σ < 15 €/MWh — daily prices move little'; }
+  else if (st.sigma < 30)                { vol = 'moderate volatility';volExplain = 'σ 15–30 €/MWh — daily prices swing noticeably'; }
+  else                                   { vol = 'high volatility';    volExplain = 'σ ≥ 30 €/MWh — daily prices swing strongly'; }
   // Dot colour based on level
-  const dotColor = level === 'Cheap'    ? '#14D3A9'
-                 : level === 'Average'  ? '#FBBF24'
-                 :                        '#ED6965';
+  const dotColor = level === 'Low prices'  ? '#14D3A9'
+                 : level === 'Mid-range prices' ? '#FBBF24'
+                 :                                '#ED6965';
   // Build secondary indicators
   const parts = [];
   if (st.sigma != null)      parts.push(`σ ${st.sigma.toFixed(1)} €/MWh`);
   if (st.renPctAvg != null)  parts.push(`${Math.round(st.renPctAvg)}% renewable`);
-  // Days with negative prices (count distinct days where negH > 0 in the period)
-  // We don't have access to series here; fallback to total negH if days unknown
   if (st.negH > 0)           parts.push(`${_fmtNegH(st.negH)} negative`);
   const secondary = parts.length ? ' · ' + parts.join(' · ') : '';
 
-  // "stable" → use lowercase joined "Cheap & stable", "Expensive & volatile" etc.
-  const phrase = `${level} & ${vol}`;
-  return `<span style="color:${dotColor};margin-right:6px">●</span><span style="color:var(--tx)">${phrase} period</span><span style="color:var(--tx3)">${secondary}</span>`;
+  // Tooltip combining both explanations
+  const tooltip = `Price level: ${levelExplain}\nVolatility: ${volExplain}\n\nThresholds are calibrated on typical EU DA prices 2020–2024.`;
+  const phrase = `${level}, ${vol}`;
+  return `<span title="${tooltip.replace(/"/g,'&quot;')}" style="cursor:help"><span style="color:${dotColor};margin-right:6px">●</span><span style="color:var(--tx)">${phrase}</span><span style="color:var(--tx3)">${secondary}</span></span>`;
 }
 
 // ── Helper: render the monthly breakdown inside the row detail ──
@@ -2194,25 +2208,19 @@ function _openHoRow(zone, series, st) {
         <!-- Tabs bar: Lines / YoY / Seasonal / Hourly / Weekly / Volatility / Distribution -->
         <div id="ho-detail-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:10px;flex-wrap:wrap"></div>
 
-        <!-- Legend + actions (above chart, Daily-style) -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
-          <div id="ho-detail-legend" style="display:flex;align-items:center;gap:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
-            <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:5px"></span>${zone} · ${series.length}D</span>
-            <span><span style="display:inline-block;width:12px;height:1px;border-top:1.5px dashed #94a3b8;vertical-align:middle;margin-right:5px"></span>7D rolling</span>
-            <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:5px"></span>30D rolling</span>
-            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:5px"></span>Daily max</span>
-            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:5px"></span>Daily min</span>
-          </div>
+        <!-- Actions row (Y-presets · Reset · PNG · Fullscreen). Legend is rendered
+             by Chart.js inside the chart for consistent placement across tabs. -->
+        <div style="display:flex;justify-content:flex-end;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
-              <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis — hides outliers"
+              <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
               <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
                 style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
               <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
                 style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
             </div>
-            <button id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom"
+            <button id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard"
               style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px">↺</button>
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
               style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
@@ -2403,7 +2411,9 @@ async function _renderHoDetailKpis(zone, series, st) {
       value: _fmtNegH(st.negH),
       metaHtml: meta(st.negH, ref?.negH, ystat),
     },
-    {
+    // MIX card: only show when at least one of renewable share or dominant fuel
+    // is available — otherwise the card is "-- / --" and adds no value.
+    ...((st.renPctAvg != null || st.domFuel) ? [{
       key: 'mix',
       cls: 'kpi-flat',
       label: 'Mix',
@@ -2414,7 +2424,7 @@ async function _renderHoDetailKpis(zone, series, st) {
         <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${fuelColor};line-height:1.15">${fuelLabel}</div>
         <div style="font-size:9px;color:var(--tx3)">dominant fuel</div>
       `,
-    },
+    }] : []),
   ];
 
   container.innerHTML = cards.map(c => {
@@ -3107,59 +3117,86 @@ function _hszRenderLines(filtered, zone) {
   const roll30 = rolling(avgs, 30);
   const color = zoneColor(zone);
 
-  // Convert zone color to rgba for ribbon fill (now ultra-discreet: 5%)
+  // ── Palette differentiation ──
+  // Daily avg  → zone colour (primary line, thick 2.2px)
+  // 7D rolling → white-ish dashed thin (subtle short-term trend)
+  // 30D rolling→ amber #FBBF24 thick solid (long-term trend, never collides with zone colour)
+  // Ribbon max/min → very faint, hidden in Focus
+  const dailyCol   = color;
+  const roll7Col   = 'rgba(255,255,255,0.55)';
+  const roll30Col  = '#FBBF24';
+
+  // Convert zone color to rgba for ribbon fill (ultra-discreet)
   let ribbonFill = 'rgba(20,211,169,0.05)';
   if (typeof color === 'string' && color.startsWith('#') && color.length === 7) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    ribbonFill = `rgba(${r},${g},${b},0.05)`;
+    ribbonFill = `rgba(${r},${g},${b},0.04)`;
   }
-  // Very thin, very faint max/min lines (decorative guides)
-  const maxBorder = 'rgba(251,191,36,0.30)';
-  const minBorder = 'rgba(237,105,101,0.28)';
+  const maxBorder = 'rgba(251,191,36,0.35)';
+  const minBorder = 'rgba(237,105,101,0.35)';
 
   // Compute Y range based on preset (Focus uses rolling lines range)
   const validAvgs  = avgs.filter(v => v != null);
   const validMaxes = maxes.filter(v => v != null && !isNaN(v));
   const validMins  = mins.filter(v => v != null && !isNaN(v));
-  const { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszCtx().getYPreset(), roll7, roll30);
+  let { yMin, yMax } = _computeYRange(validAvgs, validMaxes, validMins, _hszCtx().getYPreset(), roll7, roll30);
+
+  // ── Focus mode safety: ensure Daily avg stays visible ──
+  // Even in Focus (which targets rolling lines), clamp Y bounds so the
+  // primary Daily series is never clipped: extend by 10% on either side
+  // if needed. Daily *must* always be visible.
+  if (_hszCtx().getYPreset() === 'focus' && validAvgs.length) {
+    const dailyMin = Math.min(...validAvgs);
+    const dailyMax = Math.max(...validAvgs);
+    const span = Math.max(1, dailyMax - dailyMin);
+    const pad = span * 0.10;
+    if (yMin == null || dailyMin - pad < yMin) yMin = dailyMin - pad;
+    if (yMax == null || dailyMax + pad > yMax) yMax = dailyMax + pad;
+  }
 
   // In Focus mode, hide the ribbon entirely (we want pure trend view)
   const showRibbon = _hszCtx().getYPreset() !== 'focus';
 
-  // Min/max avg markers
+  // Min/max avg markers (now with explicit ▼ Min / ▲ Max labels)
   const annotations = {};
   if (validAvgs.length) {
     const minVal = Math.min(...validAvgs);
     const maxVal = Math.max(...validAvgs);
     annotations.minPt = {
       type: 'point', xValue: avgs.indexOf(minVal), yValue: minVal,
-      backgroundColor: _HIST_DN, radius: 4,
-      label: { enabled: true, content: minVal.toFixed(0)+'€', color:'#fff', font:{size:9}, backgroundColor:_HIST_DN, position:'bottom', padding:2 }
+      backgroundColor: _HIST_DN, radius: 5, borderColor: '#fff', borderWidth: 1,
+      label: { enabled: true, content: `▼ Min ${minVal.toFixed(2)}`, color:'#fff', font:{size:10, weight:'600'}, backgroundColor:_HIST_DN, position:'start', yAdjust:18, padding:4, borderRadius:3 }
     };
     annotations.maxPt = {
       type: 'point', xValue: avgs.indexOf(maxVal), yValue: maxVal,
-      backgroundColor: _HIST_UP, radius: 4,
-      label: { enabled: true, content: maxVal.toFixed(0)+'€', color:'#fff', font:{size:9}, backgroundColor:_HIST_UP, position:'top', padding:2 }
+      backgroundColor: _HIST_UP, radius: 5, borderColor: '#fff', borderWidth: 1,
+      label: { enabled: true, content: `▲ Max ${maxVal.toFixed(2)}`, color:'#fff', font:{size:10, weight:'600'}, backgroundColor:_HIST_UP, position:'start', yAdjust:-18, padding:4, borderRadius:3 }
     };
   }
 
-  // Y preset buttons are rendered by the host container (drill-down row)
-  // — not injected here anymore.
+  // ── Date formatter helper (DD-MM-YYYY, UK style) ──
+  // Reads original ISO labels and reformats to DD-MM-YYYY for display.
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    const [y, m, d] = String(iso).split('-');
+    if (!y || !m || !d) return iso;
+    return `${d}-${m}-${y}`;
+  };
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        // Ribbon: max-min daily envelope (ultra discreet, hidden in Focus mode)
+        // Ribbon: max-min daily envelope (faint, hidden in Focus)
         {
           label: 'Daily max',
           data: maxes,
           borderColor: maxBorder,
           backgroundColor: ribbonFill,
-          borderWidth: 0.7,
+          borderWidth: 0.8,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
@@ -3172,7 +3209,7 @@ function _hszRenderLines(filtered, zone) {
           data: mins,
           borderColor: minBorder,
           backgroundColor: 'transparent',
-          borderWidth: 0.7,
+          borderWidth: 0.8,
           pointRadius: 0,
           tension: 0,
           spanGaps: true,
@@ -3180,28 +3217,35 @@ function _hszRenderLines(filtered, zone) {
           order: 5,
           hidden: !showRibbon,
         },
-        // Main 3 lines
-        { label: 'Daily avg', data: avgs,   borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
-        { label: '7D avg',    data: roll7,  borderColor: color,                    borderWidth: 2,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 2 },
-        { label: '30D avg',   data: roll30, borderColor: _HIST_WARN,               borderWidth: 2,   pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [5,3], order: 1 },
+        // Main 3 lines (order matters for stacking)
+        { label: 'Daily avg', data: avgs,   borderColor: dailyCol,  borderWidth: 2.2, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false, order: 3 },
+        { label: '7D rolling', data: roll7, borderColor: roll7Col,  borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false, borderDash: [4,3], order: 2 },
+        { label: '30D rolling', data: roll30, borderColor: roll30Col, borderWidth: 2.4, pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1 },
       ],
     },
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
+        title: {
+          display: true,
+          text: 'Daily DA price history with short-term trend (7D) and long-term trend (30D)',
+          color: 'var(--text)',
+          font: { size: 12, weight: '600' },
+          align: 'start',
+          padding: { top: 0, bottom: 14 },
+        },
         legend: {
           display: true, position: 'top', align: 'end',
-          // Allow toggling visibility by clicking legend items (including Daily max/min)
           labels: {
-            color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8,
+            color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10,
+            usePointStyle: false,
           },
           onClick: (e, legendItem, legend) => {
             const ci = legend.chart;
             const index = legendItem.datasetIndex;
-            // Special handling: clicking on "Daily max" or "Daily min" toggles BOTH
+            // Clicking Daily max or Daily min toggles BOTH (they are a pair)
             const lbl = ci.data.datasets[index].label;
             if (lbl === 'Daily max' || lbl === 'Daily min') {
-              // Find both indices
               const maxIdx = ci.data.datasets.findIndex(d => d.label === 'Daily max');
               const minIdx = ci.data.datasets.findIndex(d => d.label === 'Daily min');
               const wasVisible = ci.isDatasetVisible(maxIdx);
@@ -3216,17 +3260,18 @@ function _hszRenderLines(filtered, zone) {
         },
         tooltip: {
           mode: 'index', intersect: false,
-          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` }
+          callbacks: {
+            title: (items) => items.length ? fmtDate(items[0].label) : '',
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
+          }
         },
         annotation: { annotations },
-        subtitle: yMin != null && yMax != null ? { display: true, text: `${_hszYPreset === 'focus' ? 'Focus: rolling trend ('+yMin+'→'+yMax+' €/MWh, ribbon hidden)' : (_hszYPreset === 'all' ? 'All: full daily range ('+yMin+'→'+yMax+' €/MWh)' : 'Standard: avg ± margin ('+yMin+'→'+yMax+' €/MWh)')} · Drag to zoom area · Double-click to reset`, color: _HIST_TX3, font: { size: 9 }, padding: { bottom: 8 } } : undefined,
-        // Click-and-drag zoom (rectangle selection), no wheel zoom (less intrusive)
         zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
           zoom: {
             drag: {
               enabled: true,
-              backgroundColor: 'rgba(20,211,169,0.15)',
-              borderColor: 'rgba(20,211,169,0.6)',
+              backgroundColor: 'rgba(20,211,169,0.12)',
+              borderColor: 'rgba(20,211,169,0.5)',
               borderWidth: 1,
             },
             wheel: { enabled: false },
@@ -3245,8 +3290,23 @@ function _hszRenderLines(filtered, zone) {
         }
       },
       scales: {
-        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
-        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: yMin, max: yMax, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+        x: {
+          grid: { color: _HIST_GRID },
+          ticks: {
+            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12,
+            callback: function(value) {
+              // Chart.js passes the tick index; resolve the label, then reformat
+              const lbl = this.getLabelForValue(value);
+              return fmtDate(lbl);
+            },
+          },
+        },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 } },
+          min: yMin, max: yMax,
+          title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } },
+        },
       },
     }
   });
