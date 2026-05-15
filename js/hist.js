@@ -1277,17 +1277,23 @@ window._hoSetYPreset = function(preset) {
   if (zone && series && typeof _buildHoTabChart === 'function') {
     const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
     _buildHoTabChart(zone, series, tab, false);
+    // If fullscreen overlay is open, also re-render its chart
+    if (document.getElementById('ho-fs-overlay')) {
+      _buildHoTabChart(zone, series, tab, true);
+    }
     _hoRenderPresetButtons();
   }
 };
 
 window._hoResetZoom = function() {
-  if (window._HO_CHART && typeof window._HO_CHART.resetZoom === 'function') {
-    window._HO_CHART.resetZoom();
-  }
-  if (window._HO_FS_CHART && typeof window._HO_FS_CHART.resetZoom === 'function') {
-    window._HO_FS_CHART.resetZoom();
-  }
+  // Reset zoom on whichever chart is currently visible (inline + fullscreen if open)
+  const inline = document.getElementById('ho-detail-chart');
+  const fs     = document.getElementById('ho-fs-chart');
+  [inline, fs].forEach(canvas => {
+    if (!canvas || typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') return;
+    const ch = Chart.getChart(canvas);
+    if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+  });
 };
 
 // Update the preset button styles to reflect the active preset
@@ -1362,6 +1368,29 @@ async function _buildHoTabChart(zone, series, tab, fullscreen) {
     if (oldTog) oldTog.remove();
     // Restore canvas visibility (some tabs hide it then show it back)
     canvas.style.display = '';
+
+    // ── CRITICAL: destroy ANY existing Chart.js instance attached to the
+    // canvas before re-rendering. Two systems can have left an instance:
+    //   • _buildHoChart stores it in window._HO_CHART (or _HO_FS_CHART)
+    //   • mkHistChart stores it in HIST.charts[canvasId]
+    // If we don't destroy first, Chart.js silently refuses to attach a
+    // second chart to the same canvas → the user keeps seeing the previous
+    // tab's chart, which is the "all graphs look like Lines" symptom.
+    const existing = (typeof Chart !== 'undefined' && typeof Chart.getChart === 'function')
+      ? Chart.getChart(canvas) : null;
+    if (existing) {
+      try { existing.destroy(); } catch (_) {}
+    }
+    // Clear our internal registries so neither side keeps a stale reference
+    const legacyVar = fullscreen ? '_HO_FS_CHART' : '_HO_CHART';
+    if (window[legacyVar]) {
+      try { window[legacyVar].destroy(); } catch (_) {}
+      window[legacyVar] = null;
+    }
+    if (HIST.charts[canvasId]) {
+      try { HIST.charts[canvasId].destroy(); } catch (_) {}
+      delete HIST.charts[canvasId];
+    }
   }
 
   if (tab === 'lines') {
@@ -1778,8 +1807,15 @@ function _closeHoRow() {
 }
 
 // ── Helper: download Historical detail chart as PNG (calqué sur Daily downloadRowChart) ──
-function _downloadHoChart(zone) {
-  const chart = window._HO_CHART;
+function _downloadHoChart(zone, fullscreen) {
+  // Prefer Chart.getChart on the active canvas — works whether the chart
+  // was created by _buildHoChart (legacy Lines, stored in window._HO_*_CHART)
+  // or by mkHistChart (other tabs, stored in HIST.charts[canvasId]).
+  const canvasId = fullscreen ? 'ho-fs-chart' : 'ho-detail-chart';
+  const canvas = document.getElementById(canvasId);
+  const chart = (canvas && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function')
+    ? Chart.getChart(canvas)
+    : (fullscreen ? window._HO_FS_CHART : window._HO_CHART);
   if (!chart) {
     console.warn('No Historical chart found for download');
     return;
@@ -1788,17 +1824,180 @@ function _downloadHoChart(zone) {
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
     : new Date().toISOString().slice(0,10);
+  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
   // High-res PNG with theme bg color
   const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0a0d12';
   const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
   const a = document.createElement('a');
   a.href = dataUrl;
-  a.download = `powerklock_historical_${zone}_${periodStr}.png`;
+  a.download = `powerklock_historical_${zone}_${tab}_${periodStr}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 window._downloadHoChart = _downloadHoChart;
+
+// ─────────────────────────────────────────────────────────────
+// Export the *current chart's* underlying data as CSV.
+// Reads Chart.js .data (labels + datasets) directly, so the export
+// always matches what the user sees on screen — works for any tab
+// (Lines / YoY / Seasonal / Hourly / Weekly / Volatility / Distribution).
+// ─────────────────────────────────────────────────────────────
+function _exportHoChartCsv(zone, fullscreen) {
+  const canvasId = fullscreen ? 'ho-fs-chart' : 'ho-detail-chart';
+  const canvas = document.getElementById(canvasId);
+  const chart = (canvas && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function')
+    ? Chart.getChart(canvas)
+    : (fullscreen ? window._HO_FS_CHART : window._HO_CHART);
+
+  // Hourly tab in 'quarter' mode renders a 2×2 grid of mini-charts instead of
+  // a single canvas — handle that separately.
+  if (!chart) {
+    const gridPrefix = fullscreen ? 'ho-fs' : 'ho-detail';
+    const grid = document.getElementById(gridPrefix + '-quarter-grid');
+    if (grid) {
+      return _exportHoQuarterGridCsv(zone, grid);
+    }
+    console.warn('No chart found for CSV export');
+    return;
+  }
+
+  const labels = (chart.data && chart.data.labels) || [];
+  const datasets = (chart.data && chart.data.datasets) || [];
+  if (!labels.length || !datasets.length) {
+    console.warn('Chart has no data to export');
+    return;
+  }
+
+  // Build CSV: first column = label (X), then one column per visible dataset.
+  // Skip datasets hidden via legend or `hidden: true` on the dataset itself.
+  const visibleDatasets = datasets.filter((ds, i) => {
+    const meta = chart.getDatasetMeta ? chart.getDatasetMeta(i) : null;
+    if (meta && meta.hidden === true) return false;
+    if (ds.hidden === true) return false;
+    return true;
+  });
+  const header = ['X', ...visibleDatasets.map(ds => ds.label || 'Series')];
+  const rows = labels.map((lab, i) => {
+    const cells = [String(lab == null ? '' : lab)];
+    visibleDatasets.forEach(ds => {
+      const v = ds.data ? ds.data[i] : null;
+      if (v == null || (typeof v === 'number' && isNaN(v))) cells.push('');
+      else if (typeof v === 'object' && v !== null && 'y' in v) cells.push(String(v.y));
+      else cells.push(String(v));
+    });
+    return cells;
+  });
+
+  const escape = (s) => {
+    if (s == null) return '';
+    const str = String(s);
+    return /[,"\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+  };
+  const csv = [header.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+
+  const series = window._HO_LAST_SERIES;
+  const periodStr = series && series.length
+    ? `${series[0].d}_to_${series[series.length-1].d}`
+    : new Date().toISOString().slice(0,10);
+  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `powerklock_historical_${zone}_${tab}_${periodStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window._exportHoChartCsv = _exportHoChartCsv;
+
+// Hourly · Quarter mode CSV: 4 mini-charts (Q1..Q4) → single CSV with
+// a `quarter` column to keep them in one file.
+function _exportHoQuarterGridCsv(zone, grid) {
+  if (typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') return;
+  const canvases = grid.querySelectorAll('canvas');
+  if (!canvases.length) return;
+  const rows = [['quarter', 'hour', 'series', 'value']];
+  canvases.forEach(c => {
+    const ch = Chart.getChart(c);
+    if (!ch || !ch.data) return;
+    const q = (c.id.match(/hsz-q-canvas-(Q\d)/) || [])[1] || c.id;
+    const labels = ch.data.labels || [];
+    (ch.data.datasets || []).forEach(ds => {
+      if (ds.hidden === true) return;
+      labels.forEach((lab, i) => {
+        const v = ds.data ? ds.data[i] : null;
+        if (v == null || (typeof v === 'number' && isNaN(v))) return;
+        rows.push([q, String(lab), ds.label || 'Series', String(v)]);
+      });
+    });
+  });
+  if (rows.length <= 1) return;
+  const escape = (s) => /[,"\n]/.test(String(s)) ? '"' + String(s).replace(/"/g, '""') + '"' : String(s);
+  const csv = rows.map(r => r.map(escape).join(',')).join('\n');
+  const series = window._HO_LAST_SERIES;
+  const periodStr = series && series.length
+    ? `${series[0].d}_to_${series[series.length-1].d}`
+    : new Date().toISOString().slice(0,10);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `powerklock_historical_${zone}_hourly-quarter_${periodStr}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Tabs bar inside the fullscreen header.
+// Mirrors the inline drill-down tabs and shares the same state
+// (window._HO_TABS[zone]) so switching tab in fullscreen also
+// updates the inline view when it's closed.
+// ─────────────────────────────────────────────────────────────
+function _hoRenderFsTabsBar(zone, series) {
+  const bar = document.getElementById('ho-fs-tabs-bar');
+  if (!bar) return;
+  const current = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+  bar.innerHTML = HSZ.tabs.map(t => {
+    const on = t.id === current;
+    return `<button data-ho-fs-tab="${t.id}" onclick="event.stopPropagation();_hoFsSetTab('${zone}','${t.id}')" style="
+      padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;
+      border:none;background:${on?'var(--bg3)':'transparent'};
+      color:${on?'var(--text)':'var(--tx3)'};
+      letter-spacing:.03em;
+    ">${t.label}</button>`;
+  }).join('');
+}
+
+window._hoFsSetTab = function(zone, tabId) {
+  if (!window._HO_TABS) window._HO_TABS = {};
+  window._HO_TABS[zone] = tabId;
+  const series = window._HO_LAST_SERIES;
+  if (!series) return;
+  _hoRenderFsTabsBar(zone, series);
+  _hoApplyFsTabVisibility(tabId);
+  _buildHoTabChart(zone, series, tabId, true);
+  // Also keep the inline view in sync (so closing fullscreen lands on the same tab)
+  if (document.getElementById('ho-detail-tabs-bar')) {
+    _hoRenderTabsBar(zone, series);
+    _hoApplyTabVisibility(tabId);
+  }
+};
+
+// Show/hide controls that only apply to specific tabs in fullscreen.
+// Y-presets (Focus/Standard/All) and the bottom legend → Lines only.
+// Reset ↺, PNG, CSV, tabs bar → all tabs.
+function _hoApplyFsTabVisibility(tabId) {
+  const legend = document.getElementById('ho-fs-legend');
+  const yp     = document.getElementById('ho-fs-ypresets-wrap');
+  if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
+  if (yp)     yp.style.display     = (tabId === 'lines') ? 'flex' : 'none';
+}
 
 // ── Helper: short date "15 Feb 2026" ──
 function _fmtShortDate(iso) {
@@ -2275,7 +2474,12 @@ function _openHoFullscreen(zone) {
           <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
         </div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div id="ho-fs-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px"></div>
+        <button id="ho-fs-csv-btn" title="Export chart data as CSV"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
+        <button id="ho-fs-png-btn" title="Download chart as PNG"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
         <button id="ho-fs-resize-btn" title="Reset side pane width"
           style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
         <button id="ho-fs-close-btn"
@@ -2296,13 +2500,15 @@ function _openHoFullscreen(zone) {
       <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0">
           <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase">Daily price chart</div>
-          <div style="display:flex;gap:3px">
-            <button data-ho-preset="focus" onclick="_hoSetYPreset('focus');_renderHoFsChart('${zone}')" title="Tight Y axis"
-              style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
-            <button data-ho-preset="standard" onclick="_hoSetYPreset('standard');_renderHoFsChart('${zone}')" title="Default Y axis"
-              style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
-            <button data-ho-preset="all" onclick="_hoSetYPreset('all');_renderHoFsChart('${zone}')" title="Full Y range"
-              style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+          <div style="display:flex;gap:3px;align-items:center">
+            <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
+              <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
+                style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
+              <button data-ho-preset="standard" onclick="_hoSetYPreset('standard')" title="Default Y axis"
+                style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
+              <button data-ho-preset="all" onclick="_hoSetYPreset('all')" title="Full Y range"
+                style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+            </div>
             <button onclick="window._hoResetZoom()" title="Reset zoom"
               style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
           </div>
@@ -2310,7 +2516,7 @@ function _openHoFullscreen(zone) {
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
         </div>
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
+        <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
           <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
           <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
           <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
@@ -2453,6 +2659,42 @@ setTimeout(() => {
   const closeBtn = document.getElementById('ho-fs-close-btn');
   if (closeBtn) closeBtn.addEventListener('click', _closeHoFullscreen);
   document.addEventListener('keydown', _hoFsEscHandler);
+
+  // ── Tabs bar in fullscreen header (Lines / YoY / Seasonal / …) ──
+  _hoRenderFsTabsBar(zone, series);
+  _hoApplyFsTabVisibility((window._HO_TABS && window._HO_TABS[zone]) || 'lines');
+
+  // ── PNG button: download the current fullscreen chart ──
+  const pngBtn = document.getElementById('ho-fs-png-btn');
+  if (pngBtn) {
+    pngBtn.addEventListener('click', () => _downloadHoChart(zone, true));
+  }
+
+  // ── CSV button: export the underlying data of the *current chart* ──
+  const csvBtn = document.getElementById('ho-fs-csv-btn');
+  if (csvBtn) {
+    csvBtn.addEventListener('click', () => _exportHoChartCsv(zone, true));
+  }
+
+  // ── Auto-fit the right info pane to its natural content (Daily-style) ──
+  requestAnimationFrame(() => {
+    const infoEl = document.getElementById('ho-fs-info-pane');
+    const monthlyEl = document.getElementById('ho-fs-monthly');
+    if (!infoEl) return;
+    let natural = 340;
+    if (monthlyEl) {
+      // Try to read content width: largest child element bounding rect.
+      let maxW = 0;
+      monthlyEl.querySelectorAll('table, div, ul').forEach(el => {
+        const w = Math.ceil(el.getBoundingClientRect().width);
+        if (w > maxW) maxW = w;
+      });
+      if (maxW > 0) natural = maxW + 36; // 32px pane padding + 4px buffer
+    }
+    const clamped = Math.min(Math.max(natural, 280), Math.floor(window.innerWidth * 0.6));
+    infoEl.style.width = clamped + 'px';
+    if (window._HO_FS_CHART) { try { window._HO_FS_CHART.resize(); } catch(_) {} }
+  });
 }
 window._openHoFullscreen = _openHoFullscreen;
 
