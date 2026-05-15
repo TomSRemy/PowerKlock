@@ -359,6 +359,11 @@
         <span><div class="title-text" id="quickLbl">QUICK BATTLE</div><div class="desc" id="quickDescLbl">RANDOM MISSION</div></span>
         <span class="arrow">▶</span>
       </button>
+      <button class="menu-btn" onclick="go('multiplayer')">
+        <span class="icon">👥</span>
+        <span><div class="title-text" id="mpLbl">MULTIPLAYER</div><div class="desc" id="mpDescLbl">LOCAL · 1V1 · 2V2</div></span>
+        <span class="arrow">▶</span>
+      </button>
     </div>
     <div class="pnl-display" onclick="openPnLEditor()" style="cursor: pointer;" title="Click to edit your bank">
       <span class="lbl" id="pnlLbl">PnL BANK</span>
@@ -403,6 +408,31 @@
 <div class="screen" id="screen-events"><div class="screen-inner"><button class="back-btn" onclick="go('menu')">◀ BACK</button><div class="section-title" id="eventsTitle">🔥 EVENTS</div><div class="carousel-wrap"><button class="carousel-arrow left" onclick="carouselNav(-1)">◀</button><div class="carousel-track" id="eventsCarousel"></div><button class="carousel-arrow right" onclick="carouselNav(1)">▶</button></div><div class="carousel-dots" id="eventsDots"></div><div class="carousel-help"><kbd>← →</kbd> NAV · <kbd>ENTER</kbd> SELECT</div></div></div>
 
 <div class="screen" id="screen-gp"><div class="screen-inner"><button class="back-btn" onclick="go('menu')">◀ BACK</button><div class="section-title" id="gpTitle">🏆 GRAND PRIX</div><div class="gp-setup" id="gpSetup"></div></div></div>
+
+<div class="screen" id="screen-multiplayer">
+  <div class="screen-inner">
+    <button class="back-btn" onclick="go('menu')">◀ BACK</button>
+    <div class="section-title" id="mpTitle">👥 MULTIPLAYER</div>
+    <div class="main-menu" style="margin-top: 30px;">
+      <button class="menu-btn" onclick="startLocal1v1()">
+        <span class="icon">⚔</span>
+        <span><div class="title-text" id="mp1v1Lbl">1v1 LOCAL</div><div class="desc" id="mp1v1DescLbl">2 HUMAN PLAYERS · SAME COMPUTER</div></span>
+        <span class="arrow">▶</span>
+      </button>
+      <button class="menu-btn" disabled style="opacity:0.5;cursor:not-allowed">
+        <span class="icon">🤝</span>
+        <span><div class="title-text">2v2</div><div class="desc">COMING SOON · MIXED HUMAN/AI</div></span>
+        <span class="arrow" style="opacity:0.3">▶</span>
+      </button>
+    </div>
+    <div style="margin-top: 30px; padding: 16px; background: rgba(10, 147, 150, 0.06); border: 1px solid rgba(10, 147, 150, 0.2); border-radius: 6px; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 12px; color: var(--aqua); line-height: 1.7;">
+      <div style="font-weight: 600; letter-spacing: 0.1em; font-size: 11px; margin-bottom: 8px; opacity: 0.8;" id="mpRulesLbl">⚙ RULES · 1v1 LOCAL</div>
+      <div id="mpRulesText">
+        Each player picks their tank · 2 free weapons each · Random mission · No PnL · Mouse shared between turns · Winner takes glory only.
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="screen" id="screen-tankselect"><div class="screen-inner"><button class="back-btn" onclick="goBackFromTank()">◀ BACK</button><div class="section-title" id="tankTitle">🎯 SELECT TANK</div><div class="tanks-grid" id="tanksGrid"></div><div class="selection-footer"><span class="hint" id="tankHint">Choose wisely.</span><button class="next" id="tankNextBtn" onclick="confirmTank()" disabled>▶ CONFIRM</button></div></div></div>
 
@@ -1437,6 +1467,25 @@ function buildTankSVG(tank) {
 
 function confirmTank() {
   if (!state.currentTank) return;
+  // 1v1 multiplayer flow: sequential P1 then P2 tank pick
+  if (state.mp1v1 && state.mp1v1.active) {
+    if (state.mp1v1.phase === 'pickP1Tank') {
+      state.mp1v1.p1Tank = state.currentTank;
+      state.mp1v1.phase = 'pickP1Weapons';
+      buildCurrentMissionData();
+      // Go straight to armoury for P1
+      goToArmory();
+      return;
+    }
+    if (state.mp1v1.phase === 'pickP2Tank') {
+      state.mp1v1.p2Tank = state.currentTank;
+      state.mp1v1.phase = 'pickP2Weapons';
+      // Mission data already built; go to armoury for P2
+      goToArmory();
+      return;
+    }
+  }
+  // Solo flow (unchanged)
   buildCurrentMissionData();
   go('briefing');
   setTimeout(showBriefing, 50);
@@ -1565,6 +1614,28 @@ function showGPPodium() {
 
 function endGPNow() { state.gp = null; go('menu'); }
 
+// ===== MULTIPLAYER · 1v1 LOCAL =====
+// State machine: pickP1Tank → pickP1Weapons → pickP2Tank → pickP2Weapons → game
+function startLocal1v1() {
+  // Pick a random mission (same pool as Quick Battle)
+  const choices = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es','event1'];
+  const missionKey = choices[Math.floor(Math.random() * choices.length)];
+  state.currentMission = missionKey;
+  state.navigationOrigin = 'multiplayer';
+  state.mp1v1 = {
+    active: true,
+    phase: 'pickP1Tank',  // pickP1Tank | pickP1Weapons | pickP2Tank | pickP2Weapons | inGame
+    p1Tank: null, p1Weapons: ['standard'],
+    p2Tank: null, p2Weapons: ['standard'],
+  };
+  // Reset current selections
+  state.currentTank = null;
+  state.selectedWeapons = ['standard'];
+  go('tankselect');
+}
+
+function endLocal1v1() { state.mp1v1 = null; go('menu'); }
+
 function startQuickBattle() {
   const choices = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es','event1'];
   state.currentMission = choices[Math.floor(Math.random() * choices.length)];
@@ -1584,9 +1655,16 @@ function renderArmory() {
   const m = state.currentMissionData;
   const blocked = m.blockedWeapons || [];
   const free = m.freeWeapon;
-  document.getElementById('armoryBudget').textContent = '€' + state.pnl.toLocaleString();
-  document.getElementById('armoryCount').textContent = state.selectedWeapons.length + '/3';
-  setText('budgetLbl', t('budget')); setText('selectedLbl', t('selected')); setText('deployBtn', t('deploy'));
+  // In 1v1 mode, everything is free (no PnL cost)
+  const is1v1 = state.mp1v1 && state.mp1v1.active;
+  const maxWeapons = is1v1 ? 3 : 3; // standard + 2 free
+  document.getElementById('armoryBudget').textContent = is1v1
+    ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 P1' : '👤 P2')
+    : ('€' + state.pnl.toLocaleString());
+  document.getElementById('armoryCount').textContent = state.selectedWeapons.length + '/' + maxWeapons;
+  setText('budgetLbl', is1v1 ? 'PLAYER' : t('budget'));
+  setText('selectedLbl', t('selected'));
+  setText('deployBtn', t('deploy'));
   const grid = document.getElementById('armoryGrid');
   grid.innerHTML = '';
   Object.entries(WEAPONS).forEach(([key, w]) => {
@@ -1594,9 +1672,10 @@ function renderArmory() {
     const isFree = key === free;
     const isBlocked = blocked.includes(key);
     const isSelected = state.selectedWeapons.includes(key);
-    const cost = isFree ? 0 : w.cost;
-    const unaffordable = !isSelected && cost > state.pnl && !isStandard && !isFree;
-    const disabled = isBlocked || isStandard || (state.selectedWeapons.length >= 3 && !isSelected);
+    // In 1v1, cost is always 0
+    const cost = is1v1 ? 0 : (isFree ? 0 : w.cost);
+    const unaffordable = !is1v1 && !isSelected && cost > state.pnl && !isStandard && !isFree;
+    const disabled = isBlocked || isStandard || (state.selectedWeapons.length >= maxWeapons && !isSelected);
     const div = document.createElement('div');
     div.className = 'weapon-card';
     if (isSelected) div.classList.add('selected');
@@ -1629,6 +1708,28 @@ function toggleWeapon(key) {
 
 function confirmArmory() {
   const m = state.currentMissionData;
+  // 1v1 flow: store P1 then route to P2 tank pick, or store P2 then launch game
+  if (state.mp1v1 && state.mp1v1.active) {
+    if (state.mp1v1.phase === 'pickP1Weapons') {
+      state.mp1v1.p1Weapons = [...state.selectedWeapons];
+      state.mp1v1.phase = 'pickP2Tank';
+      // Reset for P2 tank selection
+      state.currentTank = null;
+      state.selectedWeapons = ['standard'];
+      go('tankselect');
+      return;
+    }
+    if (state.mp1v1.phase === 'pickP2Weapons') {
+      state.mp1v1.p2Weapons = [...state.selectedWeapons];
+      state.mp1v1.phase = 'inGame';
+      // P1 tank goes back to state.currentTank for legacy init code; P2 stored separately
+      state.currentTank = state.mp1v1.p1Tank;
+      state.selectedWeapons = state.mp1v1.p1Weapons;
+      launchGame();
+      return;
+    }
+  }
+  // Solo flow (unchanged): pay for weapons
   state.selectedWeapons.forEach(key => { if (key === 'standard' || key === m.freeWeapon) return; state.pnl -= WEAPONS[key].cost; });
   launchGame();
 }
@@ -1642,22 +1743,34 @@ function initGame(mission) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const tank = TANKS[state.currentTank];
+  // 1v1 mode: P2 has its own tank and inventory; otherwise P2 is the AI (existing behavior)
+  const is1v1 = !!(state.mp1v1 && state.mp1v1.active && state.mp1v1.phase === 'inGame');
+  const p2Tank = is1v1 ? TANKS[state.mp1v1.p2Tank] : tank;
   document.getElementById('hudP1Name').textContent = 'P1 ' + tank.name;
+  document.getElementById('hudP2Name').textContent = is1v1 ? ('P2 ' + p2Tank.name) : 'GOLD AI';
   const inventory = {};
   state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : 3; });
+  const p2Inventory = {};
+  if (is1v1) {
+    state.mp1v1.p2Weapons.forEach(key => { p2Inventory[key] = key === 'standard' ? Infinity : 3; });
+  }
 
   const game = state.game = {
     running: true, mission, ctx, W, H, tank,
     angle: 45, power: 60, wind: 0, windPhase: 0,
     turn: 'player',
     p1hp: Math.round(tank.hp * 0.8), p1maxhp: Math.round(tank.hp * 0.8),
-    p2hp: 80, p2maxhp: 80,
+    p2hp: is1v1 ? Math.round(p2Tank.hp * 0.8) : 80,
+    p2maxhp: is1v1 ? Math.round(p2Tank.hp * 0.8) : 80,
     p1fuel: tank.fuelMax, p1maxfuel: tank.fuelMax,
+    p2fuel: is1v1 ? p2Tank.fuelMax : 0, p2maxfuel: is1v1 ? p2Tank.fuelMax : 0,
     projectile: null, explosion: null, particles: [], terrain: [],
     p1: { x: 80, y: 0, hitFlash: 0 },
     p2: { x: W - 80, y: 0, hitFlash: 0 },
-    turnNum: 1, gameOver: false, shotsP1: 0, hitsP1: 0, combo: 0,
+    turnNum: 1, gameOver: false, shotsP1: 0, hitsP1: 0, shotsP2: 0, hitsP2: 0, combo: 0,
     inventory, currentWeapon: 'standard',
+    p2Inventory, p2CurrentWeapon: 'standard', p2Tank,
+    is1v1,
     timerLeft: mission.timerSec + tank.timerBonus, timerActive: false,
     crashTriggered: false, sunPulse: 0, fogOffset: 0,
     cancelWindNextTurn: false, fuelCost: mission.fuelPrice || 50,
@@ -1707,6 +1820,8 @@ function initGame(mission) {
   updateTurnIndicator();
   startTurnTimer();
   startGameLoop();
+  // 1v1: announce P1's turn at start
+  if (game.is1v1) setTimeout(showP1TurnOverlay, 250);
 }
 
 function renderWeaponBar() {
@@ -1759,7 +1874,12 @@ function updateHUD() {
   document.getElementById('p2hp').textContent = g.p2hp + '/' + g.p2maxhp;
   document.getElementById('angle').textContent = Math.round(g.angle) + '°';
   document.getElementById('power').textContent = Math.round(g.power);
-  document.getElementById('fuelVal').textContent = Math.round(g.p1fuel);
+  // In 1v1, fuel display follows the active human turn (P1's fuel during P1 turn, P2's during P2 turn)
+  if (g.is1v1 && g.turn === 'ai') {
+    document.getElementById('fuelVal').textContent = Math.round(g.p2fuel);
+  } else {
+    document.getElementById('fuelVal').textContent = Math.round(g.p1fuel);
+  }
   document.getElementById('turnNum').textContent = g.turnNum;
   document.getElementById('comboText').textContent = '×' + g.combo;
   document.getElementById('windText').textContent = (g.wind > 0 ? '+' : '') + g.wind.toFixed(1) + ' m/s';
@@ -1771,10 +1891,43 @@ function updateTurnIndicator() {
   if (!el) return;
   if (!g) { el.textContent = t('your_turn'); return; }
   if (g.gameOver) el.textContent = t('game_over');
-  else if (g.turn === 'player') el.textContent = t('your_turn');
-  else el.textContent = t('ai_aiming');
+  else if (g.turn === 'player') el.textContent = g.is1v1 ? '◆ P1' : t('your_turn');
+  else el.textContent = g.is1v1 ? '◆ P2' : t('ai_aiming');
   const fb = document.getElementById('fireBtn');
-  if (fb) { fb.disabled = g.turn !== 'player' || g.projectile; if (!fb.disabled) fb.textContent = t('fire'); }
+  if (fb) {
+    // In 1v1, both turns are human-controlled — enable FIRE when no projectile in flight
+    const humanTurn = g.is1v1 ? true : (g.turn === 'player');
+    fb.disabled = !humanTurn || g.projectile;
+    if (!fb.disabled) fb.textContent = t('fire');
+  }
+}
+
+function showP1TurnOverlay() { showTurnOverlay('P1', 'var(--aqua)'); }
+function showP2TurnOverlay() { showTurnOverlay('P2', 'var(--gold)'); }
+
+function showTurnOverlay(label, color) {
+  let ov = document.getElementById('turnOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'turnOverlay';
+    ov.style.cssText = [
+      'position:fixed','inset:0','z-index:2000','display:flex',
+      'align-items:center','justify-content:center',
+      'background:rgba(0,18,25,0.75)','pointer-events:none',
+      'opacity:0','transition:opacity 0.25s'
+    ].join(';');
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `
+    <div style="text-align:center; color:${color}; font-family:'JetBrains Mono', monospace; letter-spacing:0.25em;">
+      <div style="font-size:60px; font-weight:700; line-height:1; margin-bottom:14px; text-shadow: 0 0 24px ${color};">${label}</div>
+      <div style="font-size:14px; opacity:0.8; font-weight:500;">${state.lang === 'fr' ? "À TOI DE JOUER" : "YOUR TURN"}</div>
+    </div>
+  `;
+  // Fade in then out
+  requestAnimationFrame(() => { ov.style.opacity = '1'; });
+  setTimeout(() => { ov.style.opacity = '0'; }, 1200);
+  setTimeout(() => { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 1500);
 }
 
 function showGameMsg(text, sub = '', duration = 1200) {
@@ -1791,8 +1944,11 @@ let timerInterval = null;
 function startTurnTimer() {
   const g = state.game;
   if (!g || !state.settings.turnTimer) { document.getElementById('timerFill').style.width = '100%'; return; }
-  if (g.turn !== 'player' || g.gameOver) return;
-  g.timerLeft = g.mission.timerSec + g.tank.timerBonus;
+  // Timer runs for human turns: 'player' always, 'ai' only when in 1v1 mode
+  const isHumanTurn = (g.turn === 'player') || (g.is1v1 && g.turn === 'ai');
+  if (!isHumanTurn || g.gameOver) return;
+  const baseTimer = g.is1v1 && g.turn === 'ai' ? (g.mission.timerSec + (g.p2Tank ? g.p2Tank.timerBonus : 0)) : (g.mission.timerSec + g.tank.timerBonus);
+  g.timerLeft = baseTimer;
   const total = g.timerLeft;
   g.timerActive = true;
   clearInterval(timerInterval);
@@ -2361,8 +2517,22 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       }
     }
     updateHUD(); updateTurnIndicator();
-    if (g.turn === 'ai') { stopTurnTimer(); setTimeout(aiShoot, 1000); }
-    else startTurnTimer();
+    if (g.turn === 'ai') {
+      stopTurnTimer();
+      if (g.is1v1) {
+        // 1v1 mode: it's P2's human turn, not AI
+        showP2TurnOverlay();
+        startTurnTimer();
+      } else {
+        setTimeout(aiShoot, 1000);
+      }
+    }
+    else {
+      if (g.is1v1) {
+        showP1TurnOverlay();
+      }
+      startTurnTimer();
+    }
   }, 900);
 }
 
@@ -2437,45 +2607,74 @@ function aiShoot() {
 
 function playerShoot() {
   const g = state.game;
-  if (!g || g.turn !== 'player' || g.projectile || g.gameOver) return;
-  const wKey = g.currentWeapon;
-  if (g.inventory[wKey] !== Infinity && g.inventory[wKey] <= 0) { showGameMsg(t('no_ammo'), t('pick_other')); return; }
-  if (g.inventory[wKey] !== Infinity) g.inventory[wKey]--;
-  if (wKey !== 'standard' && g.inventory[wKey] <= 0) g.currentWeapon = 'standard';
+  if (!g || g.projectile || g.gameOver) return;
+  // Determine who is firing: in 1v1, both 'player' and 'ai' turns are human-controlled
+  const is1v1 = g.is1v1;
+  const isP1Turn = g.turn === 'player';
+  const isP2HumanTurn = g.turn === 'ai' && is1v1;
+  if (!isP1Turn && !isP2HumanTurn) return;
+
+  // Pick inventory and weapon based on whose turn it is
+  const inv = isP1Turn ? g.inventory : g.p2Inventory;
+  const wKey = isP1Turn ? g.currentWeapon : g.p2CurrentWeapon;
+  if (inv[wKey] !== Infinity && inv[wKey] <= 0) { showGameMsg(t('no_ammo'), t('pick_other')); return; }
+  if (inv[wKey] !== Infinity) inv[wKey]--;
+  if (wKey !== 'standard' && inv[wKey] <= 0) {
+    if (isP1Turn) g.currentWeapon = 'standard';
+    else g.p2CurrentWeapon = 'standard';
+  }
   renderWeaponBar();
-  g.shotsP1++;
+  if (isP1Turn) g.shotsP1++; else g.shotsP2++;
   stopTurnTimer();
+
+  // Projectile direction depends on who is firing
+  // P1 fires rightward (default angle), P2 fires leftward (mirror angle)
   const angRad = g.angle * Math.PI / 180;
-  const vx = Math.cos(angRad) * g.power * 0.18;
+  const dirSign = isP1Turn ? 1 : -1;
+  const vx = dirSign * Math.cos(angRad) * g.power * 0.18;
   const vy = -Math.sin(angRad) * g.power * 0.18;
-  g.projectile = { x: g.p1.x + 6, y: g.p1.y - 4, vx, vy, trail: [], fromPlayer: true, weapon: wKey };
+  const startPos = isP1Turn ? g.p1 : g.p2;
+  const startOffset = isP1Turn ? 6 : -6;
+  g.projectile = { x: startPos.x + startOffset, y: startPos.y - 4, vx, vy, trail: [], fromPlayer: isP1Turn, fromP2Human: isP2HumanTurn, weapon: wKey };
   updateTurnIndicator();
 }
 
 function moveTank(direction) {
   const g = state.game;
-  if (!g || g.turn !== 'player' || g.projectile || g.gameOver) return;
-  // Calculate slope at current position to determine fuel cost and step size
-  const cx = Math.floor(g.p1.x);
+  if (!g || g.projectile || g.gameOver) return;
+  // In 1v1, both turns can move; in solo, only P1 can move (the AI doesn't move on demand)
+  const isP1Turn = g.turn === 'player';
+  const isP2HumanTurn = g.turn === 'ai' && g.is1v1;
+  if (!isP1Turn && !isP2HumanTurn) return;
+
+  // Pick the right tank position, fuel and movement bounds
+  const me = isP1Turn ? g.p1 : g.p2;
+  const myFuel = isP1Turn ? g.p1fuel : g.p2fuel;
+  const myMaxFuel = isP1Turn ? g.p1maxfuel : g.p2maxfuel;
+  // Bounds: P1 lives in the left half (40 → 0.45*W), P2 in the right half (0.55*W → W-40)
+  const xMin = isP1Turn ? 40 : Math.floor(g.W * 0.55);
+  const xMax = isP1Turn ? Math.floor(g.W * 0.45) : (g.W - 40);
+
+  const cx = Math.floor(me.x);
   const sampleDx = 5;
-  const yHere = g.terrain[cx] || g.p1.y;
+  const yHere = g.terrain[cx] || me.y;
   const targetX = cx + direction * sampleDx;
   const yAhead = g.terrain[Math.max(0, Math.min(g.W - 1, targetX))] || yHere;
-  const slope = Math.abs(yAhead - yHere) / sampleDx; // pixels per pixel
-  // Slope penalty: flat = 1x, 45° = ~2x, steep climb = 3x
+  const slope = Math.abs(yAhead - yHere) / sampleDx;
   const slopePenalty = 1 + slope * 1.8;
   const goingUp = (direction > 0 && yAhead < yHere) || (direction < 0 && yAhead < yHere);
-  const uphillMult = goingUp ? 1.0 : 0.7; // downhill cheaper
+  const uphillMult = goingUp ? 1.0 : 0.7;
   const fuelUsed = Math.max(2, Math.round(4 * slopePenalty * uphillMult));
-  const stepSize = Math.max(2, Math.round(4 / slopePenalty)); // steeper = smaller step
-  if (g.p1fuel < fuelUsed) { showGameMsg(t('no_fuel'), '€' + g.fuelCost + '/u'); return; }
-  const newX = Math.max(40, Math.min(g.W * 0.45, g.p1.x + direction * stepSize));
-  if (Math.abs(newX - g.p1.x) < 1) return;
-  g.p1.x = newX;
-  g.p1.y = g.terrain[Math.floor(newX)] - 12;
-  g.p1fuel -= fuelUsed;
-  // Invalidate AI walking shot memory if player moved significantly
-  if (g.aiMemory && Math.abs(newX - (g.lastPlayerX || newX)) > 30) {
+  const stepSize = Math.max(2, Math.round(4 / slopePenalty));
+  if (myFuel < fuelUsed) { showGameMsg(t('no_fuel'), '€' + g.fuelCost + '/u'); return; }
+  const newX = Math.max(xMin, Math.min(xMax, me.x + direction * stepSize));
+  if (Math.abs(newX - me.x) < 1) return;
+  me.x = newX;
+  me.y = g.terrain[Math.floor(newX)] - 12;
+  if (isP1Turn) g.p1fuel -= fuelUsed; else g.p2fuel -= fuelUsed;
+
+  // Solo only: invalidate AI walking shot memory if player moved significantly
+  if (isP1Turn && !g.is1v1 && g.aiMemory && Math.abs(newX - (g.lastPlayerX || newX)) > 30) {
     g.aiMemory.lastAngle = null;
     g.aiMemory.lastError = null;
     g.lastPlayerX = newX;
@@ -2524,6 +2723,35 @@ function showGPRaceResult(won) {
 function showVictoryScreen(won) {
   const g = state.game;
   const m = g.mission;
+
+  // 1v1 mode: dedicated victory screen, no PnL, no progress unlock
+  if (g.is1v1) {
+    const winner = won ? 'P1' : 'P2';
+    const winnerColor = won ? 'var(--aqua)' : 'var(--gold)';
+    const shotsW = won ? g.shotsP1 : g.shotsP2;
+    const hitsW  = won ? g.hitsP1  : g.hitsP2;
+    const accW = shotsW > 0 ? Math.round((hitsW / shotsW) * 100) : 0;
+    const totalShots = g.shotsP1 + g.shotsP2;
+    const html = `
+      <div class="victory-title" style="color:${winnerColor}">${winner} ${state.lang === 'fr' ? 'GAGNE' : 'WINS'}</div>
+      <div class="victory-sub">${state.lang === 'fr' ? '1v1 LOCAL · MATCH TERMINÉ' : '1v1 LOCAL · MATCH OVER'}</div>
+      <div class="victory-stats">
+        <div><div class="vstat-lbl">${t('turns')}</div><div class="vstat-val">${g.turnNum}</div></div>
+        <div><div class="vstat-lbl">${state.lang === 'fr' ? 'TIRS TOTAL' : 'TOTAL SHOTS'}</div><div class="vstat-val">${totalShots}</div></div>
+        <div><div class="vstat-lbl">${t('accuracy')} ${winner}</div><div class="vstat-val" style="color:${winnerColor}">${accW}%</div></div>
+        <div><div class="vstat-lbl">HP ${winner}</div><div class="vstat-val" style="color:${winnerColor}">${won ? g.p1hp : g.p2hp}</div></div>
+      </div>
+      <div class="victory-actions">
+        <button onclick="startLocal1v1()">${state.lang === 'fr' ? 'NOUVEAU MATCH' : 'NEW MATCH'}</button>
+        <button class="primary" onclick="endLocal1v1()">${t('menu')}</button>
+      </div>
+    `;
+    document.getElementById('victoryContent').innerHTML = html;
+    go('victory');
+    return;
+  }
+
+  // Solo flow (unchanged)
   const acc = g.shotsP1 > 0 ? Math.round((g.hitsP1 / g.shotsP1) * 100) : 0;
   let unlockHtml = '', earned = 0;
   if (won) {
