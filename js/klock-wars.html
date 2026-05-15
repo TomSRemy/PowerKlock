@@ -93,6 +93,13 @@
     letter-spacing: 2px; cursor: pointer; font-weight: 600;
   }
   .lang-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+  .diff-btn {
+    padding: 8px 6px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    line-height: 1.2;
+    text-align: center;
+  }
   .pnl-display {
     background: rgba(0, 38, 51, 0.6); border: 1px solid var(--gold);
     padding: 12px 18px; margin: 16px auto 0; max-width: 600px;
@@ -353,9 +360,10 @@
         <span class="arrow">▶</span>
       </button>
     </div>
-    <div class="pnl-display">
+    <div class="pnl-display" onclick="openPnLEditor()" style="cursor: pointer;" title="Click to edit your bank">
       <span class="lbl" id="pnlLbl">PnL BANK</span>
       <span class="val" id="pnlDisplay">€0</span>
+      <span style="color: var(--cyan); opacity: 0.5; font-size: 11px; margin-left: 10px;">✎ click to edit</span>
     </div>
     <div class="settings">
       <h3 id="settingsTitle">⚙ MARKET SETTINGS</h3>
@@ -364,6 +372,18 @@
         <div style="display: flex; gap: 6px;">
           <button class="lang-btn" id="langFR" onclick="setLang('fr')">FR</button>
           <button class="lang-btn" id="langEN" onclick="setLang('en')">EN</button>
+        </div>
+      </div>
+      <div class="toggle-row" style="flex-direction: column; align-items: stretch;">
+        <div style="margin-bottom: 8px;">
+          <div class="lbl" id="diffLbl">DIFFICULTY</div>
+          <div class="desc" id="diffDescText">Balanced (default)</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+          <button class="lang-btn diff-btn" id="diffJA" onclick="setDifficulty('junior_analyst')">JUNIOR ANALYST</button>
+          <button class="lang-btn diff-btn active" id="diffOR" onclick="setDifficulty('originator')">ORIGINATOR</button>
+          <button class="lang-btn diff-btn" id="diffST" onclick="setDifficulty('senior_trader')">SENIOR TRADER</button>
+          <button class="lang-btn diff-btn" id="diffHD" onclick="setDifficulty('head_of_desk')">HEAD OF DESK</button>
         </div>
       </div>
       <div class="toggle-row">
@@ -431,6 +451,54 @@
 
 <div class="footer-mock">KLOCK DASHBOARD · v3.2 <span class="play">🎮 KLOCK WARS</span></div>
 
+<!-- PnL Editor Modal -->
+<div id="pnlModal" style="display: none; position: fixed; inset: 0; background: rgba(0,18,25,0.92); z-index: 2000; align-items: center; justify-content: center;">
+  <div style="background: var(--ink); border: 2px solid var(--gold); border-radius: 4px; padding: 30px; max-width: 520px; width: 90%; box-shadow: 0 0 40px rgba(238,155,0,0.3);">
+    <h2 style="color: var(--gold); letter-spacing: 4px; margin-bottom: 8px; font-size: 22px;">💰 PnL BANK EDITOR</h2>
+    <p style="color: var(--sand); opacity: 0.7; font-size: 13px; margin-bottom: 24px;">Adjust your trading desk capital. Each preset matches a real-world role.</p>
+    
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; color: var(--aqua); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px;">CURRENT BANK</label>
+      <input type="text" id="pnlInput" style="width: 100%; padding: 12px; background: rgba(0,38,51,0.6); border: 1px solid var(--cyan); color: var(--gold); font-size: 22px; font-family: var(--font-mono); font-weight: 700; border-radius: 2px; text-align: center;" />
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; color: var(--aqua); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px;">QUICK PRESETS</label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button class="pnl-preset" onclick="applyPnLPreset(5000)" style="background: rgba(0,38,51,0.5); border: 1px solid var(--deep); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--aqua); font-size: 11px; letter-spacing: 1px;">JUNIOR ANALYST</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€5,000</div>
+        </button>
+        <button class="pnl-preset" onclick="applyPnLPreset(50000)" style="background: rgba(0,38,51,0.5); border: 1px solid var(--deep); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--aqua); font-size: 11px; letter-spacing: 1px;">ORIGINATOR</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€50,000</div>
+        </button>
+        <button class="pnl-preset" onclick="applyPnLPreset(500000)" style="background: rgba(0,38,51,0.5); border: 1px solid var(--deep); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--aqua); font-size: 11px; letter-spacing: 1px;">SENIOR TRADER</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€500,000</div>
+        </button>
+        <button class="pnl-preset" onclick="applyPnLPreset(5000000)" style="background: rgba(0,38,51,0.5); border: 1px solid var(--deep); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--aqua); font-size: 11px; letter-spacing: 1px;">HEAD OF DESK</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€5,000,000</div>
+        </button>
+        <button class="pnl-preset" onclick="applyPnLPreset(50000000)" style="background: rgba(0,38,51,0.5); border: 1px solid var(--rust); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--rust); font-size: 11px; letter-spacing: 1px;">CMO / PROP BOOK</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€50,000,000</div>
+        </button>
+        <button class="pnl-preset" onclick="applyPnLPreset(1000000000)" style="background: rgba(187,62,3,0.15); border: 1px solid var(--blood); color: var(--sand); padding: 10px; cursor: pointer; font-family: inherit; border-radius: 2px; text-align: left;">
+          <div style="color: var(--blood); font-size: 11px; letter-spacing: 1px;">VITOL CEO 🐲</div>
+          <div style="color: var(--gold); font-size: 16px; font-family: var(--font-mono); font-weight: 700;">€1B</div>
+        </button>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+      <button onclick="closePnLEditor()" style="background: transparent; border: 1px solid var(--cyan); color: var(--aqua); padding: 10px 20px; cursor: pointer; font-family: inherit; letter-spacing: 2px; font-size: 12px; border-radius: 2px;">CANCEL</button>
+      <button onclick="savePnLEditor()" style="background: var(--gold); color: var(--ink); border: none; padding: 10px 24px; cursor: pointer; font-family: inherit; letter-spacing: 2px; font-size: 12px; font-weight: 700; border-radius: 2px;">✓ APPLY</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const I18N = {
   fr: {
@@ -480,6 +548,23 @@ const I18N = {
     piloting: 'PILOTE', no_fuel: 'CARBURANT INSUFFISANT',
     near_miss: 'PRESQUE !', glancing: 'COUP RASANT', critical: 'COUP CRITIQUE',
     nav_help: 'NAVIGUER', select_help: 'SÉLECTIONNER',
+    difficulty: 'DIFFICULTÉ',
+    junior_analyst: 'JUNIOR ANALYST',
+    originator: 'ORIGINATOR',
+    senior_trader: 'SENIOR TRADER',
+    head_of_desk: 'HEAD OF DESK',
+    diff_easy_desc: '🎓 Stage d\'été · IA permissive, marché calme, vent doux. Pour apprendre.',
+    diff_normal_desc: '⚖️ Standard · IA équilibrée, vent normal, PnL ×1. Le défaut.',
+    diff_hard_desc: '🎯 Pression du desk · IA précise (corrige en 3 tirs), vent ×1.3, PnL ×1.4',
+    diff_hardcore_desc: '🔥 Crise de marché · IA expert, vent ×1.6, AUCUNE aide visuelle, PnL ×2',
+    sudden_death: '⚡ SUDDEN DEATH',
+    incoming_wind: 'INCOMING : WIND SHIFT',
+    incoming_fog: 'INCOMING : FOG ROLLING IN',
+    incoming_calm: 'INCOMING : DEAD CALM',
+    next_turn: 'Prochain tour',
+    walking_shot: 'IA en réglage',
+    high_ground: 'POSITION HAUTE',
+    low_ground: 'EN VALLÉE',
   },
   en: {
     subtitle: 'FORWARD CURVE ARTILLERY · V4',
@@ -528,6 +613,23 @@ const I18N = {
     piloting: 'PILOTING', no_fuel: 'INSUFFICIENT FUEL',
     near_miss: 'NEAR MISS!', glancing: 'GLANCING HIT', critical: 'CRITICAL HIT',
     nav_help: 'NAVIGATE', select_help: 'SELECT',
+    difficulty: 'DIFFICULTY',
+    junior_analyst: 'JUNIOR ANALYST',
+    originator: 'ORIGINATOR',
+    senior_trader: 'SENIOR TRADER',
+    head_of_desk: 'HEAD OF DESK',
+    diff_easy_desc: '🎓 Summer intern · Forgiving AI, calm market, soft wind. To learn.',
+    diff_normal_desc: '⚖️ Standard · Balanced AI, normal wind, PnL ×1. Default.',
+    diff_hard_desc: '🎯 Desk pressure · Sharp AI (corrects in 3 shots), wind ×1.3, PnL ×1.4',
+    diff_hardcore_desc: '🔥 Market crisis · Expert AI, wind ×1.6, NO visual aids, PnL ×2',
+    sudden_death: '⚡ SUDDEN DEATH',
+    incoming_wind: 'INCOMING: WIND SHIFT',
+    incoming_fog: 'INCOMING: FOG ROLLING IN',
+    incoming_calm: 'INCOMING: DEAD CALM',
+    next_turn: 'Next turn',
+    walking_shot: 'AI WALKING SHOT',
+    high_ground: 'HIGH GROUND',
+    low_ground: 'IN VALLEY',
   },
 };
 function t(key) {
@@ -570,45 +672,161 @@ const ARCHETYPES = {
     weather: { icon: '☀', text: '28°C · CLEAR', windBase: 0.8, type: 'sunny', sky: ['#7C4D2A','#005F73','#001219'] },
     genmix: [{pct:60,color:'#EE9B00',name:'NUKE'},{pct:22,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#0A9396',name:'HYDRO'},{pct:4,color:'#94D2BD',name:'WIND'},{pct:4,color:'#BB3E03',name:'OTHER'}],
     timerSec: 30, reward: 1000, fuelPrice: 40, title: 'BAPTÊME DU FEU',
-    storyTemplates: ["Un weekend d'août. Le mistral fait la sieste. La courbe forward dessine une vague calme — <span class='punch'>spread minime</span>.","Nucléaire à plein, soleil tape. <span class='punch'>C'est aujourd'hui qu'on apprend à viser</span>.","Carburant pas cher (€40/u), marché calme."],
+    storyTemplates: { fr: [
+      "Un dimanche d'août sur l'EPEX français. Le mistral fait la sieste, la Loire coule sans hâte, et le réseau ronronne dans sa torpeur estivale. <span class='punch'>La courbe forward dessine une vague à peine perceptible</span> — un spread minime, presque embarrassant.",
+      "Les 56 réacteurs nucléaires tournent à plein régime pendant que le solaire saute par-dessus son ombre à midi. La consommation industrielle est en vacances quelque part entre Biarritz et Saint-Tropez. <span class='punch'>Le marché est en mode économiseur d'écran</span>.",
+      "Carburant à €40/unit, vent quasi nul, météo clémente. C'est ton terrain d'apprentissage, ton bac à sable. <span class='punch'>Apprends à viser, à doser ta puissance, à lire la pente</span>. Les vrais combats viendront plus tard.",
+      "Une mission baptême du feu où l'ennemi est davantage ton inexpérience que le marché. Profite-en pour comprendre les fondamentaux avant que les choses deviennent intéressantes."
+    ], en: [
+      "A Sunday in August on the French EPEX. The mistral is napping, the Loire flows unhurriedly, and the grid hums in summer torpor. <span class='punch'>The forward curve traces a barely perceptible wave</span> — a spread so small it's almost embarrassing.",
+      "The 56 nuclear reactors are running flat out while solar leaps over its own shadow at noon. Industrial consumption is on holiday somewhere between Biarritz and Saint-Tropez. <span class='punch'>The market is in screensaver mode</span>.",
+      "Fuel at €40/unit, near-zero wind, gentle weather. This is your training ground, your sandbox. <span class='punch'>Learn to aim, to dose your power, to read the slope</span>. The real fights come later.",
+      "A baptism-of-fire mission where the enemy is your inexperience more than the market itself. Use this time to grasp the fundamentals before things get interesting."
+    ] },
     warn: "Terrain doux. Carburant abordable. Apprends les contrôles.",
-    funfact: ["En août, la demande FR tombe à <span class='punch'>~40 GW</span> en milieu de journée.","Les prix négatifs apparaissent le dimanche après-midi : trop de solaire, peu de demande.","PPA solaire baseload : captures en chute libre."],
+    funfact: { fr: [
+      "En plein cœur de l'été, la demande française tombe à <span class='punch'>~40 GW en milieu de journée</span> — contre 80+ GW en pic d'hiver. La moitié de la population est en congés, l'autre moitié dort.",
+      "Les prix négatifs deviennent fréquents le dimanche après-midi : trop de soleil, trop peu de demande, pas assez de flexibilité côté production thermique. <span class='punch'>Le solaire mange sa propre rentabilité</span> — c'est l'effet de cannibalisation.",
+      "Pour un PPA solaire baseload signé sur cette tranche horaire, attends-toi à des captures en chute libre. Le marché te dit gentiment que ton actif produit au pire moment de la journée.",
+      "Anecdote interne : à l'été 2024, certaines centrales solaires françaises ont eu des <span class='punch'>captures inférieures à 60% du baseload</span> sur juillet-août. Les originators ont passé l'automne à réécrire leurs modèles."
+    ], en: [
+      "At the height of summer, French demand drops to <span class='punch'>~40 GW mid-day</span> — versus 80+ GW in winter peak. Half the population is on holiday, the other half is asleep.",
+      "Negative prices become common on Sunday afternoons: too much sun, too little demand, not enough flexibility on the thermal side. <span class='punch'>Solar eats its own profitability</span> — the cannibalisation effect.",
+      "For a baseload solar PPA signed on this slot, expect captures in free-fall. The market is gently reminding you that your asset produces at the worst moment of the day.",
+      "Inside story: in summer 2024, some French solar plants saw <span class='punch'>captures below 60% of baseload</span> through July-August. Originators spent the autumn rewriting their models."
+    ] },
     unlock: 'JUNIOR LEAGUE' },
   junior_winter_fr: { type: 'career', flag: '🇫🇷', baseDate: 'FEB · WEEKDAY', zone: 'FRANCE · EPEX SPOT', diff: 'MEDIUM', stars: 2,
     profileHourly: [62,58,55,53,52,55,68,95,110,100,88,82,78,80,88,102,118,115,95,78,70,65,62,60], variance: 0.12,
     weather: { icon: '🌥', text: '-2°C · COLD', windBase: 2.5, type: 'cold', sky: ['#4A5560','#2A3F46','#001219'] },
     genmix: [{pct:65,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:8,color:'#94D2BD',name:'WIND'},{pct:8,color:'#BB3E03',name:'GAS'},{pct:4,color:'#E9D8A6',name:'SOLAR'},{pct:3,color:'#9B2226',name:'OTHER'}],
     timerSec: 25, reward: 1400, fuelPrice: 80, title: 'LE PIC DU SOIR',
-    storyTemplates: ["Mardi matin. <span class='punch'>-2°C à Paris</span>. La courbe fait deux bosses — matin et soir.","<span class='punch'>Peak du soir : €118/MWh</span>. Le profil typique de l'hiver.","Carburant à €80/u. Bouger coûte cher."],
+    storyTemplates: { fr: [
+      "Mardi matin de février. <span class='punch'>-2°C à Paris, vent du nord coupant</span>. Les radiateurs grimpent leur thermostat, les pompes à chaleur tirent comme jamais, et tout le tertiaire allume ses bureaux à 7h45 pétantes.",
+      "La courbe dessine son fameux <span class='punch'>profil bimodale</span> : une bosse matinale à 9h, un creux relatif en milieu de journée, puis le grand pic du soir à 18h-19h. C'est le rythme cardiaque de l'hiver européen.",
+      "Le peak du soir tape à <span class='punch'>€118/MWh</span> — pas un record, mais un classique. Le nucléaire est en tension, l'hydro pompe, et l'Allemagne nous regarde avec envie depuis ses centrales charbon en surrégime.",
+      "Carburant à €80/unit. Chaque déplacement de ton tank coûte vraiment. <span class='punch'>Optimise tes positions de tir au lieu de bouger constamment</span>. Les pros du marché ne courent pas après chaque tic-tac.",
+      "C'est la mission où tu apprends que <span class='punch'>l'intraday a un rythme</span>, que les pics du soir ne sont pas un bug mais une feature, et que ton modèle de revenue stacking doit en tenir compte."
+    ], en: [
+      "Tuesday morning in February. <span class='punch'>-2°C in Paris, cutting north wind</span>. Radiators crank up, heat pumps work overtime, and every office building flips its lights on at 7:45 sharp.",
+      "The curve traces its famous <span class='punch'>bimodal profile</span>: a morning bump at 9am, a relative trough mid-day, then the great evening peak at 6-7pm. This is the heartbeat of European winter.",
+      "The evening peak hits <span class='punch'>€118/MWh</span> — not a record, but a classic. Nuclear is stretched, hydro is pumping, and Germany is watching us enviously from its overworked coal plants.",
+      "Fuel at €80/unit. Every tank move costs real money. <span class='punch'>Optimise your firing positions instead of constantly moving</span>. Pros don't chase every tick.",
+      "This is the mission where you learn that <span class='punch'>intraday has rhythm</span>, that evening peaks aren't a bug but a feature, and that your revenue stacking model needs to account for it."
+    ] },
     warn: "Spread €66. Heures peak = collines élevées. Carburant plus cher.",
-    funfact: ["Le <span class='punch'>peak du soir hivernal français</span> est le plus marqué d'Europe.","BESS 1 cycle/jour : <span class='punch'>€60-80/MWh de spread</span>.","PPA solaire : capture très faible ce jour-là."],
+    funfact: { fr: [
+      "Le <span class='punch'>peak du soir hivernal français</span> est l'un des plus marqués d'Europe — conséquence directe d'un parc résidentiel chauffé à l'électricité bien au-dessus de la moyenne UE (~35% des logements).",
+      "Pour un BESS opéré en 1 cycle/jour sur ce profil, le <span class='punch'>spread day-ahead atteint €60-80/MWh</span>. Ajoute l'aFRR et la capacité, tu fais €120k-€180k/MW/an en France hivernale.",
+      "Un PPA solaire signé sur cette journée capturerait probablement <span class='punch'>30% sous baseload</span> : pas de soleil aux heures chères, beaucoup de soleil aux heures peu chères. Le profil défavorable absolu.",
+      "Anecdote : pendant l'hiver 2022-2023, le coupling FR-DE a tiré les prix peak du soir français au-dessus de €700/MWh sur certaines journées. <span class='punch'>L'Allemagne a payé son sevrage du gaz russe en partie sur la facture française</span>.",
+      "Pour mémoire : la France importe régulièrement 5-10 GW en hiver depuis l'Allemagne et la Belgique, malgré un parc nucléaire surdimensionné — preuve que c'est la flexibilité qui manque, pas la puissance installée."
+    ], en: [
+      "The <span class='punch'>French winter evening peak</span> is among Europe's most pronounced — a direct consequence of a residential stock heated by electricity well above EU average (~35% of homes).",
+      "For a BESS operated on 1 cycle/day with this profile, <span class='punch'>day-ahead spreads reach €60-80/MWh</span>. Add aFRR and capacity, you hit €120k-€180k/MW/year in French winter.",
+      "A solar PPA signed on this day would likely capture <span class='punch'>30% below baseload</span>: no sun during expensive hours, lots of sun during cheap hours. The absolute worst-case profile.",
+      "Story: during winter 2022-2023, FR-DE coupling pulled French evening peak prices above €700/MWh on some days. <span class='punch'>Germany partly paid for its Russian gas detox on the French bill</span>.",
+      "For reference: France regularly imports 5-10 GW in winter from Germany and Belgium, despite an oversized nuclear fleet — proof that what's missing is flexibility, not installed capacity."
+    ] },
     unlock: 'SENIOR LEAGUE' },
   senior_duck_curve_es: { type: 'career', flag: '🇪🇸', baseDate: 'SPRING · WEEKDAY', zone: 'IBERIA · OMIE', diff: 'HARD', stars: 3,
     profileHourly: [45,40,36,34,36,42,65,85,75,50,25,8,-5,-8,5,28,65,110,145,135,105,80,65,55], variance: 0.13,
     weather: { icon: '☀', text: '24°C · SUNNY', windBase: 1.5, type: 'sunny', sky: ['#8C5530','#005F73','#001219'] },
     genmix: [{pct:38,color:'#E9D8A6',name:'SOLAR'},{pct:20,color:'#94D2BD',name:'WIND'},{pct:20,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:8,color:'#BB3E03',name:'GAS'},{pct:2,color:'#9B2226',name:'OTHER'}],
     timerSec: 22, reward: 2000, freeWeapon: 'curve_smoother', fuelPrice: 25, title: 'THE DUCK CURVE',
-    storyTemplates: ["Le canard 🦆. À midi, <span class='punch'>18 GW de solaire écrasent le marché</span>. Prix à -€8.","À 19h, soleil couché, demande explose. <span class='punch'>Ramp de 150 GW/h</span>.","Solaire excédentaire = carburant cheap (€25/u). Profite-en."],
+    storyTemplates: { fr: [
+      "Le canard est de retour 🦆 — et il est espagnol maintenant. À midi, <span class='punch'>18 GW de solaire photovoltaïque écrasent le marché ibérique</span>. Le prix s'enfonce à -€8/MWh sous l'œil incrédule des merchant developers qui pensaient avoir signé le PPA du siècle.",
+      "Le duck curve, c'est cette forme de courbe horaire qui ressemble à un canard vu de profil : le ventre rebondi au milieu de la journée (solaire), la tête qui remonte brutalement en soirée. Inventé en Californie en 2013, il a traversé l'Atlantique.",
+      "À 19h, le soleil se couche derrière la Sierra de Guadarrama. La demande explose pour la cuisine et la climatisation résiduelle. <span class='punch'>Le ramp atteint 150 GW/h sur le système ibérique</span> — un défi pour les centrales à gaz qui doivent suivre.",
+      "Solaire excédentaire en milieu de journée = carburant ultra-cheap (€25/unit). C'est ta fenêtre pour bouger ton tank vers la meilleure position de tir, profite-en avant le ramp du soir.",
+      "Le Curve Smoother t'est offert pour cette mission. <span class='punch'>Utilise-le pour aplatir une montagne du soir gênante</span>, comme un BESS bien dimensionné le ferait sur le marché réel."
+    ], en: [
+      "The duck is back 🦆 — and it's Spanish now. At noon, <span class='punch'>18 GW of solar PV crush the Iberian market</span>. Prices sink to -€8/MWh while merchant developers stare in disbelief at the PPA they thought was the deal of the century.",
+      "The duck curve is the hourly shape that resembles a duck in profile: a fat belly at midday (solar), a head rising sharply in the evening. Born in California in 2013, it crossed the Atlantic.",
+      "At 7pm, the sun sets behind the Sierra de Guadarrama. Demand explodes for cooking and residual cooling. <span class='punch'>The ramp hits 150 GW/h on the Iberian system</span> — a challenge for gas plants that must follow.",
+      "Excess midday solar = ultra-cheap fuel (€25/unit). This is your window to move your tank to a better firing position. Take advantage before the evening ramp.",
+      "Curve Smoother is gifted for this mission. <span class='punch'>Use it to flatten a problematic evening mountain</span>, just as a well-sized BESS would on the real market."
+    ] },
     warn: "Profil canard. Ramp brutal midi-soir. Carburant cheap.",
-    funfact: ["<span class='punch'>Duck curve</span> née en Californie 2013. Espagne 2024.","Solution : <span class='punch'>BESS 4h-6h</span>, charge midi (gratuit), décharge 19h (€150+).","PPA solaire : production max aux heures moins valorisées."],
+    funfact: { fr: [
+      "La <span class='punch'>duck curve</span> est née en Californie en 2013 quand CAISO a publié son fameux graphique de demande nette. L'Espagne l'a rattrapée en 2024, l'Allemagne suivra vers 2027.",
+      "Solution canonique : <span class='punch'>BESS de 4h à 6h de stockage</span>, charge midi à prix négatif, décharge à 19h-21h à €150+/MWh. Spread quotidien régulier, IRR projet entre 12 et 18%.",
+      "Pour un PPA solaire classique signé sur l'Espagne en 2024, le risque de capture est devenu majeur : production max aux heures les moins valorisées, captures parfois <span class='punch'>< 40% du baseload</span>.",
+      "La réponse réglementaire espagnole : extension du mécanisme de capacité, accélération des appels d'offres BESS (CNMC), et discussion sur le redesign du marché intraday pour mieux valoriser la flexibilité.",
+      "Anecdote : Iberdrola a annoncé en 2024 un programme de <span class='punch'>5 GW de BESS d'ici 2030</span> en Espagne et Portugal — un pivot stratégique direct face à la duck curve qui détruit la rentabilité de ses propres actifs solaires."
+    ], en: [
+      "The <span class='punch'>duck curve</span> was born in California in 2013 when CAISO published its now-famous net demand chart. Spain caught up in 2024, Germany will follow around 2027.",
+      "Canonical solution: <span class='punch'>BESS with 4-6h storage</span>, charge midday at negative prices, discharge at 7-9pm at €150+/MWh. Steady daily spreads, project IRR between 12 and 18%.",
+      "For a classic solar PPA signed in Spain in 2024, capture risk has become major: peak production during least valued hours, captures sometimes <span class='punch'>< 40% of baseload</span>.",
+      "The Spanish regulatory response: extension of the capacity mechanism, acceleration of BESS auctions (CNMC), and discussions on redesigning the intraday market to better value flexibility.",
+      "Story: Iberdrola announced in 2024 a <span class='punch'>5 GW BESS programme by 2030</span> across Spain and Portugal — a direct strategic pivot facing a duck curve that destroys its own solar assets' profitability."
+    ] },
     unlock: 'DUNKELFLAUTE' },
   senior_dunkelflaute_de: { type: 'career', flag: '🇩🇪', baseDate: 'JAN · WEEKDAY', zone: 'GERMANY · EPEX', diff: 'HARD', stars: 3,
     profileHourly: [88,82,78,75,78,92,125,165,180,168,145,130,125,132,148,175,210,195,160,130,110,98,92,88], variance: 0.14,
     weather: { icon: '🌫', text: '1°C · FOG', windBase: 0.4, type: 'fog', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:38,color:'#001219',name:'COAL'},{pct:32,color:'#BB3E03',name:'GAS'},{pct:20,color:'#9B2226',name:'IMPORT'},{pct:6,color:'#94D2BD',name:'WIND'},{pct:4,color:'#0A9396',name:'HYDRO'}],
     timerSec: 21, reward: 1800, freeWeapon: 'bess_boost', fuelPrice: 280, title: 'NIEDRIGER WIND',
-    storyTemplates: ["Jeudi de janvier en Allemagne. <span class='punch'>4 GW de vent sur 70 GW installés</span>. Zéro solaire.","Habeck défend le charbon. <span class='punch'>'La situation est sous contrôle'</span> = on importe massivement depuis la France.","<span class='punch'>Carburant à €280/u</span> — bouger te coûtera cher."],
+    storyTemplates: { fr: [
+      "Jeudi de janvier en Allemagne. <span class='punch'>4 GW d'éolien sur les 70 GW installés</span>. Brouillard épais sur la mer du Nord, soleil aux abonnés absents depuis 72h. Le mot allemand pour ce phénomène existe — Dunkelflaute — et il est devenu plus connu hors d'Allemagne qu'à l'intérieur.",
+      "Berlin a beau s'enorgueillir de ses 130 GW de renouvelables installés, quand le vent ne souffle pas et que le soleil se cache, il ne reste plus que <span class='punch'>~30 GW de gaz et charbon en runtime maximum</span>, et la facture qui va avec.",
+      "Habeck défend la transition énergétique en conférence de presse. <span class='punch'>'La situation est sous contrôle'</span> — traduction directe : on importe massivement depuis la France, la Pologne et le Danemark, et on prie pour que ça tienne.",
+      "Carburant à <span class='punch'>€280/unit</span>. Bouger ton tank te coûtera cher. C'est exactement le ressenti d'un trader qui doit ré-équilibrer son book à chaque heure — chaque ajustement de position se paie comptant.",
+      "BESS Boost t'est offert pour cette mission. <span class='punch'>Les batteries sont les seuls actifs qui font fortune en Dunkelflaute</span>, capturant des spreads à 4 chiffres par MWh. Profite-en pour comprendre pourquoi tout le monde construit du BESS allemand en 2025-2026."
+    ], en: [
+      "Thursday in January in Germany. <span class='punch'>4 GW of wind on 70 GW installed</span>. Thick fog on the North Sea, sun missing for 72 hours. The German word for this phenomenon — Dunkelflaute — is now better known outside Germany than within.",
+      "Berlin may boast 130 GW of installed renewables, but when wind doesn't blow and sun hides, only <span class='punch'>~30 GW of gas and coal at maximum runtime remain</span>, plus the bill that comes with them.",
+      "Habeck defends the energy transition at a press conference. <span class='punch'>'The situation is under control'</span> — direct translation: we're importing massively from France, Poland and Denmark, and praying it holds.",
+      "Fuel at <span class='punch'>€280/unit</span>. Moving your tank costs dearly. This is exactly what a trader feels rebalancing their book hourly — every position adjustment is paid in cash.",
+      "BESS Boost is gifted for this mission. <span class='punch'>Batteries are the only assets making fortunes in Dunkelflaute</span>, capturing four-digit per-MWh spreads. Use it to understand why everyone is building German BESS in 2025-2026."
+    ] },
     warn: "Brouillard, terrain élevé, carburant cher. BESS Boost offert.",
-    funfact: ["Sans vent ni solaire : <span class='punch'>~30 GW de gaz/charbon</span> + imports.","Couplage FR-DE tire les prix français aussi.","BESS allemand : <span class='punch'>2× les revenus moyens</span>."],
+    funfact: { fr: [
+      "Sans vent ni solaire, le système allemand mobilise <span class='punch'>~30 GW de gaz et charbon</span> en runtime maximum, plus 5-12 GW d'imports européens. C'est le scénario cauchemar des modélisateurs réseau.",
+      "Le couplage FR-DE tire mécaniquement les prix peak français vers le haut : <span class='punch'>quand l'Allemagne crie famine, la France paie aussi son repas</span>. Les flux peuvent inverser plusieurs fois dans la journée.",
+      "Un BESS allemand bien dimensionné sur ce profil capture <span class='punch'>2 à 3× ses revenus moyens annuels</span> en seulement quelques jours de Dunkelflaute. Le risk/reward fait pencher les modèles vers le merchant pur sans floor.",
+      "L'hiver 2024-2025 a vu plusieurs épisodes de Dunkelflaute consécutifs, dont le record du 12 décembre 2024 (€936/MWh). Conséquence : <span class='punch'>+40% d'investissement BESS en Allemagne sur 2025</span> selon BloombergNEF.",
+      "Anecdote : Habeck a personnellement appelé Engie en novembre 2024 pour discuter d'extensions de contrats d'imports. <span class='punch'>La diplomatie énergétique est devenue un sport olympique</span>."
+    ], en: [
+      "Without wind or solar, the German system mobilises <span class='punch'>~30 GW of gas and coal</span> at maximum runtime, plus 5-12 GW of European imports. The nightmare scenario for grid modellers.",
+      "FR-DE coupling mechanically pulls French peak prices upward: <span class='punch'>when Germany cries famine, France also pays for its meal</span>. Flows can reverse several times during the day.",
+      "A well-sized German BESS on this profile captures <span class='punch'>2 to 3× its average annual revenues</span> in just a few Dunkelflaute days. The risk/reward tilts models toward pure merchant without floor.",
+      "Winter 2024-2025 saw several consecutive Dunkelflaute episodes, including the record of 12 December 2024 (€936/MWh). Consequence: <span class='punch'>+40% BESS investment in Germany over 2025</span> according to BloombergNEF.",
+      "Story: Habeck personally called Engie in November 2024 to discuss import contract extensions. <span class='punch'>Energy diplomacy has become an Olympic sport</span>."
+    ] },
     unlock: 'DIRECTOR LEAGUE' },
   director_negative_es: { type: 'career', flag: '🇪🇸', baseDate: 'EASTER · HOLIDAY', zone: 'SPAIN · OMIE', diff: 'EXTREME', stars: 4,
     profileHourly: [22,18,15,12,10,8,5,-2,-8,-15,-18,-20,-22,-20,-15,-5,8,25,42,38,32,28,25,22], variance: 0.15,
     weather: { icon: '☀', text: '22°C · BLINDING SUN', windBase: 2.2, type: 'sunny', sky: ['#A06030','#4A6570','#001219'] },
     genmix: [{pct:45,color:'#E9D8A6',name:'SOLAR'},{pct:18,color:'#94D2BD',name:'WIND'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:5,color:'#BB3E03',name:'GAS'},{pct:2,color:'#9B2226',name:'OTHER'}],
     timerSec: 18, reward: 2500, freeWeapon: 'negative_strike', fuelPrice: 15, title: 'NEGATIVE SUN',
-    storyTemplates: ["Lundi férié. Plage. <span class='punch'>18 GW de solaire pour personne</span>. Prix négatifs.","<span class='punch'>Carburant à €15/u</span> — quasi gratuit.","Courbe sous la mer. NEG STRIKE offert."],
+    storyTemplates: { fr: [
+      "Lundi férié de printemps en Espagne. Tout le monde est à la plage de Valence ou en sierra à pique-niquer. <span class='punch'>18 GW de solaire photovoltaïque produisent pour personne</span>, et personne ne dort à 14h pour les consommer.",
+      "Les prix s'effondrent. <span class='punch'>-€22/MWh en milieu de journée</span> — pas un bug d'affichage, c'est bien le marché qui paie les consommateurs pour absorber le surplus. Et encore, c'est la régulation espagnole qui empêche d'aller plus bas.",
+      "Carburant à <span class='punch'>€15/unit</span>. Quasi gratuit. Le réseau supplie qu'on consomme, qu'on stocke, qu'on exporte vers la France ou le Portugal. Bouge ton tank, profite, optimise tes tirs sur les vallées.",
+      "Ta courbe descend physiquement sous la surface de la mer dans le jeu. <span class='punch'>NEG STRIKE t'est offert</span> : exploite cette zone négative, double tes dégâts, capture la valeur que les autres laissent partir.",
+      "C'est la mission qui sépare les bons originators des excellents. <span class='punch'>Comprendre les prix négatifs, c'est comprendre pourquoi un PPA mal structuré peut détruire la valeur</span> au lieu de la créer. Les contrats avec floor à €0 et les PPA as-produced sont nés ici."
+    ], en: [
+      "Spring bank holiday in Spain. Everyone's on the beach in Valencia or picnicking in the sierra. <span class='punch'>18 GW of solar PV producing for nobody</span>, and nobody's around at 2pm to consume it.",
+      "Prices collapse. <span class='punch'>-€22/MWh mid-day</span> — not a display bug, the market is genuinely paying consumers to absorb the surplus. And that's with Spanish regulation preventing deeper negatives.",
+      "Fuel at <span class='punch'>€15/unit</span>. Almost free. The grid is begging us to consume, store, export to France or Portugal. Move your tank, take advantage, optimise shots in the valleys.",
+      "Your curve literally dips below the sea surface in the game. <span class='punch'>NEG STRIKE is gifted</span>: exploit this negative zone, double your damage, capture the value others let slip away.",
+      "This is the mission that separates good originators from great ones. <span class='punch'>Understanding negative prices means understanding why a poorly structured PPA destroys value</span> instead of creating it. Contracts with €0 floors and as-produced PPAs were born here."
+    ] },
     warn: "Prix négatifs. Carburant ultra-cheap. Vise les vallées.",
-    funfact: ["Espagne 2024 : records de <span class='punch'>prix négatifs</span>.","Merchant solaire pleure, CfD rigole.","Solution : BESS, hydrogène, demand response."],
+    funfact: { fr: [
+      "Espagne 2024 : <span class='punch'>247 heures de prix négatifs</span> sur l'année — un record absolu pour la péninsule ibérique, qui n'en avait quasi jamais connu avant 2023. La courbe d'apprentissage a été brutale pour les portfolios merchant.",
+      "Sur les heures négatives, les actifs solaires en PPA pay-as-produced perdent doublement : ils produisent à plein régime <span class='punch'>et</span> paient leur offtaker pour le faire. Le concept est devenu une étude de cas dans les masters d'économie énergétique.",
+      "Solution structurelle : passage progressif vers des <span class='punch'>PPA hybrides solaire + BESS</span> où la batterie absorbe la production aux heures négatives et la restitue en peak. IRR similaire, mais profil de risque drastiquement assaini.",
+      "Anecdote : un merchant solaire ibérique a fait faillite en juillet 2024 après avoir manqué de cash flow pour rembourser sa dette senior — son taux de capture annuel était tombé sous 55% du baseload. <span class='punch'>Le marché a appris dur</span>.",
+      "Le ministre de la transition écologique espagnole a annoncé en 2025 un mécanisme de contracts-for-difference inversé pour limiter les pertes des merchants. <span class='punch'>L'État reprend du terrain face au marché libre</span> — la fin d'un cycle."
+    ], en: [
+      "Spain 2024: <span class='punch'>247 hours of negative prices</span> for the year — an absolute record for the Iberian peninsula, which had almost never seen them before 2023. The learning curve has been brutal for merchant portfolios.",
+      "During negative hours, solar assets on pay-as-produced PPAs lose twice: they produce at full capacity <span class='punch'>and</span> pay their offtaker to do so. The concept has become a case study in energy economics masters programmes.",
+      "Structural solution: gradual shift to <span class='punch'>hybrid solar + BESS PPAs</span> where the battery absorbs production during negative hours and releases it at peak. Similar IRR, but drastically cleaner risk profile.",
+      "Story: an Iberian merchant solar player went bankrupt in July 2024 after running out of cash flow to service senior debt — its annual capture rate had fallen below 55% of baseload. <span class='punch'>The market learned hard</span>.",
+      "Spain's ecological transition minister announced in 2025 a reverse contracts-for-difference mechanism to limit merchant losses. <span class='punch'>The State takes back ground from the free market</span> — the end of a cycle."
+    ] },
     unlock: 'HALL OF ORIGINATION' },
 };
 
@@ -618,72 +836,296 @@ const EVENTS = {
     weather: { icon: '🔥', text: '45°C · HEATWAVE', windBase: 2.8, type: 'heat', sky: ['#9B2226','#BB3E03','#001219'] },
     genmix: [{pct:39,color:'#9B2226',name:'NUKE↓'},{pct:22,color:'#BB3E03',name:'GAS'},{pct:14,color:'#0A9396',name:'HYDRO↓'},{pct:12,color:'#E9D8A6',name:'SOLAR'},{pct:8,color:'#94D2BD',name:'WIND'},{pct:5,color:'#001219',name:'COAL'}],
     timerSec: 17, reward: 3500, blockedWeapons: ['ppa_hedge'], fuelPrice: 450, title: 'THE FRENCH NUKE CRISIS',
-    story: ["<span class='punch'>EDF compte ses réacteurs comme un dragon</span>, il en manque la moitié.","Cal+1 France à <span class='punch'>€1130/MWh</span>. PPA Hedge bloqué.","<span class='punch'>Carburant à €450/u</span> — bouger devient un luxe."],
+    story: { fr: [
+      "Mercredi 17 août 2022. Canicule sur l'Europe, le Rhône est presque à sec, et EDF compte ses réacteurs comme un dragon compte ses pièces d'or — <span class='punch'>32 sur 56 sont à l'arrêt</span>, corrosion sous contrainte, maintenance reportée, restrictions de rejet thermique.",
+      "L'origine de la crise remonte à octobre 2021 : EDF découvre des fissures de corrosion sur la tuyauterie de sûreté des circuits primaires. <span class='punch'>Le parc nucléaire français entre en hibernation forcée</span> au pire moment, juste avant le choc gazier russe.",
+      "Sur le marché forward, le Cal+1 France s'envole à <span class='punch'>€1130/MWh</span>. Vingt fois la moyenne historique. Les originators repassent leur CV en silence, les industriels font la queue chez leur banquier, et Bercy improvise un bouclier tarifaire à €40 milliards.",
+      "PPA Hedge est bloqué pour cette mission. <span class='punch'>Aucun trader ne veut prendre du risque price</span> sur ce niveau — les desks ferment les portefeuilles longs, les couvertures sont devenues impayables, et les conseils d'administration suspendent les autorisations de trading.",
+      "Carburant à <span class='punch'>€450/unit</span> — bouger ton tank devient un luxe. C'est le ressenti exact d'une équipe d'origination en août 2022 : chaque réunion client, chaque mouvement, chaque prise de position coûte une fortune. Le marché ne donne plus de seconde chance.",
+      "Cette mission est <span class='punch'>légendaire</span> non pas par sa difficulté technique mais par ce qu'elle représente : le moment où l'origination française a découvert qu'elle ne contrôlait plus rien."
+    ], en: [
+      "Wednesday 17 August 2022. Heatwave across Europe, the Rhône nearly dry, and EDF counts its reactors like a dragon counts its gold coins — <span class='punch'>32 out of 56 are offline</span>, stress corrosion cracking, deferred maintenance, thermal discharge restrictions.",
+      "The crisis originates in October 2021: EDF discovers corrosion cracks on safety piping in primary circuits. <span class='punch'>The French nuclear fleet enters forced hibernation</span> at the worst possible moment, just before the Russian gas shock.",
+      "On the forward market, French Cal+1 soars to <span class='punch'>€1130/MWh</span>. Twenty times the historical average. Originators silently update their CVs, industrials queue at their banker's, and the French Treasury improvises a €40 billion price shield.",
+      "PPA Hedge is blocked for this mission. <span class='punch'>No trader wants to take price risk</span> at this level — desks close long books, hedges have become unaffordable, and boards suspend trading authorisations.",
+      "Fuel at <span class='punch'>€450/unit</span> — moving your tank becomes a luxury. This is exactly how an origination team felt in August 2022: every client meeting, every move, every position costs a fortune. The market gives no second chances.",
+      "This mission is <span class='punch'>legendary</span> not for its technical difficulty but for what it represents: the moment French origination discovered it no longer controlled anything."
+    ] },
     warn: "Pic €1130. PPA bloqué. Carburant prohibitif.",
-    funfact: ["Cal+1 France <span class='punch'>€1130/MWh</span> — 20× la moyenne 2010-2020.","Un trader chez Engie a fait imprimer la courbe en poster.","Ministre : <span class='punch'>'préoccupante mais maîtrisée'</span> = on n'a aucune idée."],
+    funfact: { fr: [
+      "Le pic Cal+1 France à <span class='punch'>€1130/MWh</span> représente 20× la moyenne 2010-2020. À ce niveau, les actifs renouvelables ont des taux d'actualisation négatifs sur 10 ans — chose littéralement inédite dans l'histoire du secteur.",
+      "Un trader chez Engie a fait imprimer la courbe forward du 17 août 2022 en poster A2 et l'a accrochée dans son bureau. <span class='punch'>'Pour me rappeler que tout est possible'</span>. Le poster existe toujours.",
+      "Le ministre de l'Économie a qualifié la situation de <span class='punch'>'préoccupante mais maîtrisée'</span> en conférence de presse — formulation classique signifiant 'on n'a aucune idée de ce qui va arriver et on prie pour l'hiver'. C'est resté dans les annales.",
+      "Conséquence directe : naissance des PPA <span class='punch'>style 'corporate baseload'</span> avec floors à €60-80/MWh signés massivement fin 2022 et 2023. Les CFO de grands groupes industriels ne voulaient plus jamais revivre ça.",
+      "EDF a investi <span class='punch'>€5 milliards d'urgence</span> dans le programme de remise à niveau du parc nucléaire. Aujourd'hui, le taux de disponibilité est remonté à ~75%, mais le souvenir reste vif chez les originators.",
+      "Anecdote interne : les desks parisiens ont créé en privé un terme pour désigner août 2022 — '<span class='punch'>The Big One</span>'. Tout le monde sait de quoi on parle quand on le mentionne. Tu sais maintenant."
+    ], en: [
+      "The French Cal+1 peak at <span class='punch'>€1130/MWh</span> represents 20× the 2010-2020 average. At this level, renewable assets have negative discount rates over 10 years — literally unprecedented in the industry's history.",
+      "A trader at Engie had the 17 August 2022 forward curve printed as an A2 poster and hung it in his office. <span class='punch'>'To remind myself that anything is possible'</span>. The poster still exists.",
+      "The French Finance Minister called the situation <span class='punch'>'concerning but under control'</span> at a press conference — classic phrasing meaning 'we have no idea what's coming and we're praying for winter'. It went down in history.",
+      "Direct consequence: birth of <span class='punch'>'corporate baseload' PPAs</span> with €60-80/MWh floors signed massively in late 2022 and 2023. CFOs of major industrial groups never wanted to live through this again.",
+      "EDF invested <span class='punch'>€5 billion emergency</span> in the nuclear fleet upgrade programme. Today, availability is back to ~75%, but the memory remains vivid among originators.",
+      "Inside story: Parisian desks privately coined a term for August 2022 — '<span class='punch'>The Big One</span>'. Everyone knows what it means when you mention it. Now you do too."
+    ] },
     unlock: 'EVENT #02' },
   event2: { type: 'event', flag: '🇪🇺', date: 'THU · 24 FEB 2022', zone: 'EUROPE · TTF/POWER', diff: 'LEGENDARY', stars: 5,
     prices: [180,175,168,165,170,195,240,320,380,360,320,290,285,295,340,410,480,510,420,340,280,240,210,195],
     weather: { icon: '🌥', text: '4°C · OVERCAST', windBase: 1.8, type: 'cold', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:30,color:'#001219',name:'COAL'},{pct:28,color:'#BB3E03',name:'GAS'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:8,color:'#0A9396',name:'HYDRO'},{pct:6,color:'#9B2226',name:'OTHER'}],
     timerSec: 16, reward: 4500, forceCrash: true, fuelPrice: 380, title: 'THE INVASION SHOCK',
-    story: ["5h : chars russes en Ukraine. 9h : <span class='punch'>TTF +85%</span>.","Power explose. RWE rallume du charbon. <span class='punch'>Market Crash garanti</span>.","Carburant à €380/u. Le coût de la guerre."],
+    story: { fr: [
+      "5h00 du matin, jeudi 24 février 2022. Les premières colonnes de chars russes franchissent la frontière ukrainienne au nord de Kiev. À 6h, Vladimir Poutine prononce son discours télévisé annonçant l'<span class='punch'>'opération militaire spéciale'</span>.",
+      "À l'ouverture des marchés européens, le TTF day-ahead bondit instantanément. <span class='punch'>+85% en une seule session</span>. Les desks gaz crient au téléphone, les portefeuilles de couverture explosent, et les CFO de compagnies énergétiques convoquent des comex en urgence.",
+      "Le pouvoir mécanique se transmet immédiatement aux prix de l'électricité via le merit order : <span class='punch'>les centrales à gaz fixent le prix marginal</span>, le power suit le gaz à la trace. EPEX et Nord Pool deviennent des téléprinters de catastrophe.",
+      "RWE et Uniper rallument leurs centrales à charbon en stand-by, certaines décommissionnées depuis 18 mois. <span class='punch'>L'Allemagne brûle ses tabous environnementaux en direct</span> pour garder les lumières allumées. Habeck signe les autorisations à 4h du matin.",
+      "Market Crash garanti pour cette mission — c'est <span class='punch'>l'événement géopolitique du siècle</span> appliqué à un terrain de jeu. La volatilité dépasse 200% annualisée, les bid-ask spreads triplent, et plusieurs courtiers suspendent les transactions sur le forward.",
+      "Carburant à €380/unit. C'est le coût de la guerre, payé par chaque acteur du marché énergétique européen, des grands traders aux PME qui regardent leurs contrats indexés exploser."
+    ], en: [
+      "5:00 AM, Thursday 24 February 2022. The first Russian tank columns cross the Ukrainian border north of Kyiv. At 6 AM, Vladimir Putin delivers his televised speech announcing the <span class='punch'>'special military operation'</span>.",
+      "When European markets open, TTF day-ahead jumps instantly. <span class='punch'>+85% in a single session</span>. Gas desks shout into phones, hedge books explode, and energy company CFOs convene emergency committees.",
+      "The mechanical power transmits immediately to electricity prices through merit order: <span class='punch'>gas plants set the marginal price</span>, power follows gas step by step. EPEX and Nord Pool become disaster teleprinters.",
+      "RWE and Uniper restart their standby coal plants, some decommissioned 18 months ago. <span class='punch'>Germany burns its environmental taboos live</span> to keep the lights on. Habeck signs authorisations at 4 AM.",
+      "Market Crash guaranteed for this mission — it's <span class='punch'>the geopolitical event of the century</span> applied to a playing field. Volatility exceeds 200% annualised, bid-ask spreads triple, and several brokers suspend forward transactions.",
+      "Fuel at €380/unit. This is the cost of war, paid by every European energy market participant, from major traders to SMEs watching their indexed contracts explode."
+    ] },
     warn: "Volatilité historique. Crash forcé.",
-    funfact: ["24 fév 2022 : <span class='punch'>pire crise énergétique européenne depuis 1973</span>.","Contrats indexés TTF : faillites en cascade.","Conséquence : REPowerEU, explosion des PPA."],
+    funfact: { fr: [
+      "Le 24 février 2022 : <span class='punch'>la pire crise énergétique européenne depuis 1973</span>. La crise pétrolière était une question de prix ; celle-ci est une question de souveraineté. L'Europe découvre brutalement sa dépendance.",
+      "Contrats indexés TTF : les industriels signataires d'accords d'approvisionnement variables ont vu leurs factures multipliées par 5 à 8 en quelques semaines. <span class='punch'>Plusieurs faillites en cascade</span> chez les producteurs de verre, ciment et engrais.",
+      "Conséquence directe : <span class='punch'>REPowerEU</span> en mai 2022, plan d'urgence de €300 milliards. Accélération des renouvelables, hydrogène vert, économies d'énergie, diversification gaz. Le plus gros programme énergétique européen depuis le marché intérieur.",
+      "Explosion du marché des PPA : <span class='punch'>+250% de volumes signés en 2022</span> selon Pexapark. Les corporates qui résistaient aux PPA depuis des années ont signé en panique, parfois sur des termes désavantageux qu'ils regrettent depuis.",
+      "Anecdote : le directeur de Gazprom Germania a démissionné à 9h le 24 février. Sa porte de bureau aurait été retrouvée fermée à clé avec son badge à l'intérieur. <span class='punch'>Personne ne savait quoi faire</span>.",
+      "Trois ans plus tard, l'Europe a réduit sa dépendance au gaz russe de 40% à <span class='punch'>moins de 15%</span>. Le LNG américain est devenu le nouveau roi. La géopolitique a redessiné la carte énergétique mondiale en 36 mois."
+    ], en: [
+      "24 February 2022: <span class='punch'>the worst European energy crisis since 1973</span>. The oil crisis was a price question; this one is a sovereignty question. Europe brutally discovers its dependency.",
+      "TTF-indexed contracts: industrials signed to variable supply deals saw bills multiply by 5 to 8 in weeks. <span class='punch'>Several cascading bankruptcies</span> among glass, cement and fertiliser producers.",
+      "Direct consequence: <span class='punch'>REPowerEU</span> in May 2022, €300 billion emergency plan. Accelerated renewables, green hydrogen, energy savings, gas diversification. The largest European energy programme since the internal market.",
+      "PPA market explosion: <span class='punch'>+250% in volumes signed in 2022</span> according to Pexapark. Corporates resisting PPAs for years signed in panic, sometimes on disadvantageous terms they've regretted since.",
+      "Story: the head of Gazprom Germania resigned at 9 AM on 24 February. His office door was reportedly found locked with his badge inside. <span class='punch'>Nobody knew what to do</span>.",
+      "Three years later, Europe reduced its Russian gas dependency from 40% to <span class='punch'>under 15%</span>. American LNG became the new king. Geopolitics redrew the global energy map in 36 months."
+    ] },
     unlock: 'EVENT #03' },
   event3: { type: 'event', flag: '🇪🇺', date: 'MON · 22 AUG 2022', zone: 'EUROPE · TTF PEAK', diff: 'LEGENDARY', stars: 5,
     prices: [420,410,395,385,400,460,580,720,850,920,950,980,1020,1050,1080,1100,1080,1050,980,850,720,620,520,480],
     weather: { icon: '🔥', text: '38°C · DROUGHT', windBase: 1.5, type: 'heat', sky: ['#9B2226','#A06030','#001219'] },
     genmix: [{pct:35,color:'#BB3E03',name:'GAS'},{pct:22,color:'#001219',name:'COAL'},{pct:20,color:'#EE9B00',name:'NUKE'},{pct:10,color:'#E9D8A6',name:'SOLAR'},{pct:7,color:'#94D2BD',name:'WIND'},{pct:6,color:'#0A9396',name:'HYDRO↓'}],
     timerSec: 16, reward: 4200, fuelPrice: 500, title: 'TTF ALL-TIME PEAK',
-    story: ["Août 2022. <span class='punch'>TTF €343/MWh</span>, record absolu.","ArcelorMittal éteint des hauts fourneaux. <span class='punch'>La chaîne alimentaire vacille</span>.","Carburant à €500/u. Le record."],
+    story: { fr: [
+      "Lundi 22 août 2022. La sécheresse paralyse l'Europe : le Rhin n'est plus navigable, le Pô est à sec, et les centrales nucléaires françaises tournent au ralenti faute d'eau de refroidissement. Tout se conjugue pour pousser le gaz au pinacle.",
+      "À 11h heure de Londres, le TTF month-ahead franchit la barre symbolique des €343/MWh. <span class='punch'>Record absolu de tous les temps</span>. Le contrat équivaut à $40/MMBtu — environ 20 fois la moyenne pré-2021. Le gaz coûte plus cher que l'or à la tonne.",
+      "ArcelorMittal annonce l'extinction de hauts fourneaux à Hambourg et Dunkerque. Yara, le géant norvégien des engrais, ferme 60% de sa capacité ammoniac européenne. <span class='punch'>La chaîne alimentaire vacille</span> : sans ammoniac, pas d'engrais ; sans engrais, pas de récolte 2023.",
+      "Les ménages européens commencent à recevoir leurs factures hivernales prévisionnelles. <span class='punch'>+200%, +400% pour les contrats variables</span>. Les politiques improvisent des boucliers tarifaires, des chèques énergie, des plafonds, dans une cacophonie de mesures nationales incohérentes.",
+      "Sur ce terrain, le carburant est à <span class='punch'>€500/unit — le record</span>. Bouger un tank coûte presque autant qu'une mauvaise position. C'est exactement la sensation d'un trader gaz en août 2022 : chaque décision pèse, chaque hedge se paie cash, chaque erreur coûte le bonus annuel.",
+      "Cette mission, c'est l'apogée de la crise gazière. Comprendre comment elle s'est nouée, c'est comprendre pourquoi l'Europe a basculé idéologiquement sur les renouvelables, l'hydrogène et le nucléaire — par nécessité, pas par conviction."
+    ], en: [
+      "Monday 22 August 2022. Drought paralyses Europe: the Rhine is no longer navigable, the Po is dry, and French nuclear plants run at reduced load for lack of cooling water. Everything conspires to push gas to its peak.",
+      "At 11 AM London time, TTF month-ahead crosses the symbolic €343/MWh threshold. <span class='punch'>All-time absolute record</span>. The contract equates to $40/MMBtu — about 20× the pre-2021 average. Gas costs more per ton than gold.",
+      "ArcelorMittal announces blast furnace shutdowns in Hamburg and Dunkirk. Yara, the Norwegian fertiliser giant, closes 60% of its European ammonia capacity. <span class='punch'>The food chain wobbles</span>: no ammonia, no fertiliser; no fertiliser, no 2023 harvest.",
+      "European households start receiving winter bill forecasts. <span class='punch'>+200%, +400% for variable contracts</span>. Politicians improvise price shields, energy cheques, caps, in a cacophony of inconsistent national measures.",
+      "On this terrain, fuel is at <span class='punch'>€500/unit — the record</span>. Moving a tank costs nearly as much as a bad position. This is exactly how a gas trader felt in August 2022: every decision weighs, every hedge is paid cash, every mistake costs the annual bonus.",
+      "This mission is the gas crisis apogee. Understanding how it knotted is understanding why Europe ideologically pivoted to renewables, hydrogen and nuclear — by necessity, not conviction."
+    ] },
     warn: "Pic gaz historique. Carburant max.",
-    funfact: ["22 août 2022 : <span class='punch'>TTF €343/MWh</span>, ~20× moyenne pré-crise.","<span class='punch'>1 MWh gaz > 1 once d'or</span>.","Facture import UE : €313 Md → €693 Md."],
+    funfact: { fr: [
+      "Le 22 août 2022 : <span class='punch'>TTF €343/MWh</span>, soit environ 20× la moyenne pré-crise. À l'époque, certains analystes ont sérieusement modélisé des scénarios de €500/MWh — qui ne se sont heureusement jamais réalisés.",
+      "Mathématique amusante : à €343/MWh, <span class='punch'>1 MWh de gaz valait plus qu'1 once d'or</span> en équivalent énergétique. Les bureaux de Goldman Sachs et JP Morgan ont organisé des dégustations pour célébrer cette parité inédite.",
+      "Facture import énergétique UE : <span class='punch'>€313 milliards en 2021, €693 milliards en 2022</span>. Soit +€380 milliards en un an, l'équivalent du budget annuel de la France. Le plus gros transfert de richesse extra-européen de l'histoire moderne.",
+      "Conséquence : naissance du REMIT 2.0 et renforcement de l'ACER pour surveiller les manipulations sur le TTF. <span class='punch'>Des enquêtes pour 'abus de position dominante' ont été ouvertes</span> sur certains traders gaziers — affaire toujours en cours en 2026.",
+      "Anecdote : Yara aurait pendant deux semaines acheté son gaz directement aux Norvégiens via un contrat bilatéral hors-marché, à un prix négocié <span class='punch'>40% sous le TTF</span>. La Commission européenne a discrètement validé l'arrangement pour préserver l'industrie.",
+      "L'événement a accéléré le développement de l'hydrogène vert européen : <span class='punch'>+€20 milliards d'investissements annoncés en 6 mois</span> post-pic. La promesse étant d'avoir une alternative à l'ammoniac fossile dès 2028-2030."
+    ], en: [
+      "22 August 2022: <span class='punch'>TTF €343/MWh</span>, about 20× the pre-crisis average. At the time, some analysts seriously modelled €500/MWh scenarios — which fortunately never materialised.",
+      "Fun maths: at €343/MWh, <span class='punch'>1 MWh of gas was worth more than 1 ounce of gold</span> in energy equivalent. Goldman Sachs and JP Morgan desks organised tastings to celebrate this unprecedented parity.",
+      "EU energy import bill: <span class='punch'>€313 billion in 2021, €693 billion in 2022</span>. That's +€380 billion in one year, the equivalent of France's annual budget. The largest extra-European wealth transfer in modern history.",
+      "Consequence: birth of REMIT 2.0 and reinforcement of ACER to monitor TTF manipulation. <span class='punch'>'Abuse of dominant position' investigations were opened</span> on certain gas traders — case still ongoing in 2026.",
+      "Story: Yara reportedly purchased gas directly from Norwegians via bilateral off-market contract for two weeks, at a price negotiated <span class='punch'>40% below TTF</span>. The European Commission quietly validated the arrangement to preserve industry.",
+      "The event accelerated European green hydrogen development: <span class='punch'>+€20 billion in announced investments within 6 months</span> post-peak. The promise being to have an alternative to fossil ammonia by 2028-2030."
+    ] },
     unlock: 'EVENT #04' },
   event4: { type: 'event', flag: '🇩🇪', date: 'THU · 12 DEC 2024', zone: 'GERMANY · DUNKELFLAUTE', diff: 'LEGENDARY', stars: 4,
     prices: [180,175,170,168,172,210,285,420,580,540,450,380,360,380,440,580,780,936,720,520,380,290,240,210],
     weather: { icon: '🌫', text: '-3°C · DARK CALM', windBase: 0.3, type: 'fog', sky: ['#2A3540','#0F1A20','#001219'] },
     genmix: [{pct:42,color:'#001219',name:'COAL'},{pct:30,color:'#BB3E03',name:'GAS'},{pct:18,color:'#9B2226',name:'IMPORT'},{pct:5,color:'#94D2BD',name:'WIND'},{pct:3,color:'#0A9396',name:'HYDRO'},{pct:2,color:'#E9D8A6',name:'SOLAR'}],
     timerSec: 15, reward: 3800, freeWeapon: 'bess_boost', fuelPrice: 320, title: 'THE GREAT DUNKELFLAUTE',
-    story: ["12 décembre 2024. <span class='punch'>€936/MWh sur 17h-18h</span> — record 18 ans.","70 GW d'éolien produisent 5 GW. <span class='punch'>11 GW d'import depuis FR</span>.","BESS Boost offert."],
+    story: { fr: [
+      "Jeudi 12 décembre 2024, 8h. L'Allemagne se réveille sous un brouillard glacial qui s'étend de la Frise à la Bavière. Anticyclone bloquant, températures négatives, et surtout : <span class='punch'>vent à 0.3 m/s</span> sur tout le territoire. Le pire scénario que les modélisateurs avaient redouté.",
+      "Les 70 GW d'éolien installé produisent <span class='punch'>5 GW</span>. Les 88 GW de photovoltaïque produisent 1 GW en pic. Le système allemand mobilise tout son charbon, son gaz, son hydraulique, et toujours il manque <span class='punch'>11 GW d'imports européens</span> pour boucler le bilan.",
+      "À 17h-18h, le prix day-ahead allemand atteint <span class='punch'>€936/MWh</span> — record absolu depuis 2006. La France est devenue l'exportatrice de dernier recours : son nucléaire et son hydro tournent à plein régime pour sauver le voisin de l'est.",
+      "Les chaînes d'information allemandes interrompent leurs programmes pour des bulletins énergie. <span class='punch'>'Stromknappheit'</span> (pénurie d'électricité) devient le mot le plus googlé du jour. Le gouvernement Habeck convoque une cellule de crise.",
+      "Sur le terrain de jeu, BESS Boost t'est offert. C'est volontaire : <span class='punch'>les batteries sont les seules à faire fortune en Dunkelflaute</span>, capturant des spreads de €500-700/MWh sur quelques heures. Les développeurs BESS allemands ont fêté Noël en avance.",
+      "Carburant à €320/unit. Bouger te coûte cher, mais parfois c'est nécessaire. Cette journée a redéfini la valorisation des actifs flexibles en Europe : <span class='punch'>la résilience est devenue le nouveau prix de référence</span>."
+    ], en: [
+      "Thursday 12 December 2024, 8 AM. Germany wakes under an icy fog stretching from Frisia to Bavaria. Blocking high pressure, sub-zero temperatures, and above all: <span class='punch'>wind at 0.3 m/s</span> across the entire country. The worst scenario grid modellers had feared.",
+      "The 70 GW of installed wind produce <span class='punch'>5 GW</span>. The 88 GW of solar produce 1 GW at peak. The German system mobilises all its coal, gas, hydro, and still <span class='punch'>11 GW of European imports</span> are needed to balance.",
+      "At 5-6 PM, German day-ahead price reaches <span class='punch'>€936/MWh</span> — absolute record since 2006. France becomes exporter of last resort: nuclear and hydro running flat out to save the eastern neighbour.",
+      "German news channels interrupt programming for energy bulletins. <span class='punch'>'Stromknappheit'</span> (electricity shortage) becomes the most googled word of the day. The Habeck government convenes a crisis unit.",
+      "On the playing field, BESS Boost is gifted. This is intentional: <span class='punch'>batteries are the only ones making fortunes in Dunkelflaute</span>, capturing €500-700/MWh spreads over a few hours. German BESS developers celebrated Christmas early.",
+      "Fuel at €320/unit. Moving costs dearly, but sometimes necessary. This day redefined flexible asset valuation in Europe: <span class='punch'>resilience became the new benchmark price</span>."
+    ] },
     warn: "Pic €936. Mur de prix. BESS Boost offert.",
-    funfact: ["<span class='punch'>€936/MWh</span> 17-18h, 12 déc 2024 — plus haut depuis 2006.","Allemagne a importé <span class='punch'>11 GW depuis la France</span>.","Profils BESS 4h-6h : <span class='punch'>2-3× revenus moyens</span>."],
+    funfact: { fr: [
+      "12 décembre 2024, 17h-18h : <span class='punch'>€936/MWh</span> sur le day-ahead allemand. C'est le prix horaire le plus élevé depuis novembre 2006 — où le record était lié à une vague de froid russe ayant entièrement gelé le marché.",
+      "L'Allemagne a importé <span class='punch'>11 GW depuis la France</span> ce jour-là, soit environ 15% de sa consommation. Pour mémoire : la France était l'importatrice nette face à l'Allemagne sur 2022-2023 — l'inversion totale en 2024 est un signal géopolitique fort.",
+      "Pour un BESS allemand avec un profil 4h-6h optimisé, les revenus de cette seule journée représentaient <span class='punch'>2 à 3× les revenus moyens annuels</span>. Plusieurs opérateurs ont publié leurs P&L journaliers en triomphe sur LinkedIn.",
+      "Conséquence : <span class='punch'>+40% d'investissements BESS annoncés en Allemagne sur Q1 2025</span> selon BloombergNEF. Le développeur Eco Stor a levé €600M en mars 2025 sur cette dynamique.",
+      "La FfE (Forschungsstelle für Energiewirtschaft) a publié en mars 2025 une étude estimant que sans interconnexions européennes, l'Allemagne aurait eu un <span class='punch'>blackout partiel</span> ce jour-là. Le couplage européen a littéralement sauvé la mise.",
+      "Anecdote : un trader BESS chez RWE aurait gagné un bonus annuel équivalent à <span class='punch'>3 ans de salaire</span> sur cette seule journée. Le ratio risk/reward de la classe d'actifs ne s'est jamais aussi bien démontré."
+    ], en: [
+      "12 December 2024, 5-6 PM: <span class='punch'>€936/MWh</span> on German day-ahead. This is the highest hourly price since November 2006 — where the record was tied to a Russian cold wave that entirely froze the market.",
+      "Germany imported <span class='punch'>11 GW from France</span> that day, about 15% of consumption. For reference: France was the net importer facing Germany in 2022-2023 — total reversal in 2024 is a strong geopolitical signal.",
+      "For a German BESS with optimised 4-6h profile, revenues from this single day represented <span class='punch'>2-3× average annual revenues</span>. Several operators triumphantly published daily P&Ls on LinkedIn.",
+      "Consequence: <span class='punch'>+40% BESS investments announced in Germany in Q1 2025</span> per BloombergNEF. Developer Eco Stor raised €600M in March 2025 on this momentum.",
+      "FfE (Forschungsstelle für Energiewirtschaft) published in March 2025 a study estimating that without European interconnections, Germany would have had a <span class='punch'>partial blackout</span> that day. European coupling literally saved the day.",
+      "Story: a BESS trader at RWE reportedly earned an annual bonus equivalent to <span class='punch'>3 years of salary</span> on this single day. The risk/reward ratio of the asset class never demonstrated itself so well."
+    ] },
     unlock: 'EVENT #05' },
   event5: { type: 'event', flag: '🇪🇸', date: 'MON · 28 APR 2025 · 12:33', zone: 'IBERIA · BLACKOUT', diff: 'LEGENDARY', stars: 5,
     prices: [18,12,8,5,8,12,28,45,35,20,5,-5,-8,-12,0,0,0,0,0,0,25,48,65,55],
     weather: { icon: '☀', text: '24°C · OVERVOLTAGE', windBase: 1.8, type: 'sunny', sky: ['#A06030','#9B2226','#001219'] },
     genmix: [{pct:60,color:'#E9D8A6',name:'SOLAR'},{pct:18,color:'#94D2BD',name:'WIND'},{pct:12,color:'#EE9B00',name:'NUKE'},{pct:6,color:'#0A9396',name:'HYDRO'},{pct:3,color:'#BB3E03',name:'GAS'},{pct:1,color:'#9B2226',name:'OTHER'}],
     timerSec: 14, reward: 5000, forceCrash: true, fuelPrice: 60, title: 'THE GREAT BLACKOUT',
-    story: ["28 avril 2025, 12:33 CEST. <span class='punch'>78% renouvelable</span>. Tout va bien.","Puis 5 secondes. <span class='punch'>15 GW disparaissent</span>. Fréquence chute à 48 Hz.","<span class='punch'>47 millions dans le noir</span>. Market Crash garanti."],
+    story: { fr: [
+      "Lundi 28 avril 2025, 12:33 CEST. L'Espagne brille sous un soleil de printemps. La mix électrique ibérique affiche <span class='punch'>78% de renouvelables</span> — 60% de solaire, 18% d'éolien. Le rêve de la transition énergétique, vu par satellite, en haute définition.",
+      "12:32:55 : Une oscillation de tension apparaît dans la zone Granada-Sevilla. Quatre secondes plus tard, deux centrales solaires de 200 MW se déconnectent automatiquement par protection. <span class='punch'>15 GW disparaissent du réseau en 5 secondes</span>.",
+      "La fréquence européenne chute à 48 Hz — niveau critique. Le système ibérique se sépare automatiquement du continent au-dessus des Pyrénées. <span class='punch'>47 millions de personnes basculent dans le noir</span> en Espagne, Portugal et certaines parties du sud-ouest français.",
+      "Aéroports paralysés à Madrid, Barcelone, Lisbonne. Métros bloqués entre stations. Hôpitaux sur groupes électrogènes. Stations-service incapables de pomper. <span class='punch'>L'Espagne moderne découvre sa dépendance électrique absolue</span> en 8 heures de coupure.",
+      "Sur le terrain de jeu, Market Crash est garanti — la courbe va se réorganiser violemment. <span class='punch'>Les renouvelables ne sont pas coupables</span>, l'enquête le démontrera : ce sont les protections de tension fragmentées, l'absence de masse rotative, et le sous-dimensionnement des interconnexions.",
+      "Carburant à €60/unit (les prix s'effondrent dans le chaos). Cette mission est l'épreuve ultime : <span class='punch'>maîtriser un marché en pleine recomposition</span>, c'est l'avenir des originators européens dans un système décarboné."
+    ], en: [
+      "Monday 28 April 2025, 12:33 CEST. Spain shines under a spring sun. The Iberian electricity mix displays <span class='punch'>78% renewables</span> — 60% solar, 18% wind. The energy transition dream, seen from satellite, in HD.",
+      "12:32:55: A voltage oscillation appears in the Granada-Sevilla zone. Four seconds later, two 200 MW solar plants automatically disconnect for protection. <span class='punch'>15 GW disappear from the grid in 5 seconds</span>.",
+      "European frequency drops to 48 Hz — critical level. The Iberian system automatically separates from the continent above the Pyrenees. <span class='punch'>47 million people plunge into darkness</span> across Spain, Portugal and parts of southwestern France.",
+      "Airports paralysed in Madrid, Barcelona, Lisbon. Metros stuck between stations. Hospitals on generators. Petrol stations unable to pump. <span class='punch'>Modern Spain discovers its absolute electricity dependency</span> over 8 hours of blackout.",
+      "On the playing field, Market Crash is guaranteed — the curve will violently reorganise. <span class='punch'>Renewables are not guilty</span>, the investigation will demonstrate: fragmented voltage protections, lack of rotating mass, and undersized interconnections are.",
+      "Fuel at €60/unit (prices collapse in chaos). This mission is the ultimate test: <span class='punch'>mastering a market in full recomposition</span> is the future of European originators in a decarbonised system."
+    ] },
     warn: "Plus grand blackout EU depuis 20 ans. Crash forcé.",
-    funfact: ["28 avr 2025 12:33 : <span class='punch'>plus grand blackout européen depuis 20 ans</span>.","Cause : oscillations tension + contrôle fragmenté. <span class='punch'>Pas la faute des renouvelables</span>.","Taux interconnexion ibérique : <span class='punch'>3.4% vs cible UE 10-15%</span>."],
+    funfact: { fr: [
+      "28 avril 2025, 12:33 : <span class='punch'>plus grand blackout européen depuis 20 ans</span>. Aucun précédent à cette échelle depuis 2003 (Italie) ou 2006 (Allemagne-France). Les manuels de gestion réseau ont été réécrits.",
+      "Cause technique (rapport ENTSO-E final, septembre 2025) : oscillations de tension dans le sud-ouest espagnol + contrôle de tension fragmenté entre opérateurs + manque de masse rotative synchrone. <span class='punch'>Ce n'est PAS la faute des renouvelables</span> — c'est la faute du système qui ne s'est pas adapté.",
+      "Taux d'interconnexion ibérique : <span class='punch'>3.4% de la capacité installée vs cible UE de 10-15%</span>. La péninsule ibérique reste une 'île électrique' malgré 20 ans de promesses européennes d'investissement dans les interconnexions transfrontalières.",
+      "Coût économique estimé : <span class='punch'>€2-4 milliards</span> pour l'Espagne et le Portugal en 8 heures. La majeure partie absorbée par les industriels via pertes de production, dégradations matérielles, et indemnisations contractuelles.",
+      "Conséquence réglementaire : la CNMC espagnole a accéléré en septembre 2025 le déploiement de <span class='punch'>compensateurs synchrones</span> et de batteries grid-forming pour reconstituer la stabilité du réseau ibérique. Plan d'investissement à €8 milliards d'ici 2030.",
+      "Anecdote : le 28 avril, certains traders énergétiques européens ont vu leurs <span class='punch'>positions intraday se figer pendant 6 heures</span> faute de marché spot fonctionnel. Plusieurs poursuites contre les courtiers sont en cours pour défaillance de plateforme."
+    ], en: [
+      "28 April 2025, 12:33: <span class='punch'>largest European blackout in 20 years</span>. No precedent at this scale since 2003 (Italy) or 2006 (Germany-France). Grid management textbooks have been rewritten.",
+      "Technical cause (ENTSO-E final report, September 2025): voltage oscillations in southwestern Spain + fragmented voltage control between operators + lack of synchronous rotating mass. <span class='punch'>It's NOT renewables' fault</span> — it's the fault of a system that didn't adapt.",
+      "Iberian interconnection rate: <span class='punch'>3.4% of installed capacity vs EU target of 10-15%</span>. The Iberian peninsula remains an 'electrical island' despite 20 years of European promises to invest in cross-border interconnections.",
+      "Estimated economic cost: <span class='punch'>€2-4 billion</span> for Spain and Portugal in 8 hours. Most absorbed by industrials via production losses, material damage, and contractual compensation.",
+      "Regulatory consequence: Spanish CNMC accelerated in September 2025 the deployment of <span class='punch'>synchronous compensators</span> and grid-forming batteries to rebuild Iberian grid stability. €8 billion investment plan through 2030.",
+      "Story: on 28 April, some European energy traders saw their <span class='punch'>intraday positions freeze for 6 hours</span> due to non-functional spot market. Several lawsuits against brokers are ongoing for platform failure."
+    ] },
     unlock: 'EVENT #06' },
   event6: { type: 'event', flag: '🇩🇪', date: 'EASTER · 30 MAR 2024 · 12:45', zone: 'GERMANY · SAHARAN DUST', diff: 'LEGENDARY', stars: 5,
     prices: [38,32,28,25,28,35,55,95,145,220,380,580,4980,1850,450,180,95,75,85,105,95,75,58,48],
     weather: { icon: '🌫', text: '15°C · SAHARAN DUST', windBase: 1.0, type: 'fog', sky: ['#A06030','#BB3E03','#005F73'] },
     genmix: [{pct:28,color:'#E9D8A6',name:'SOLAR↓'},{pct:22,color:'#94D2BD',name:'WIND'},{pct:20,color:'#001219',name:'COAL'},{pct:18,color:'#BB3E03',name:'GAS'},{pct:8,color:'#0A9396',name:'HYDRO'},{pct:4,color:'#9B2226',name:'IMPORT'}],
     timerSec: 13, reward: 4500, freeWeapon: 'capture_strike', fuelPrice: 220, title: 'THE SAHARAN DUST SPIKE',
-    story: ["Dimanche de Pâques 2024. Ciel jaune-orangé. <span class='punch'>Poussières du Sahara sur les panneaux PV</span>.","12:45 : production solaire s'effondre. <span class='punch'>~€5000/MWh</span> en 15 minutes.","Capture Strike offert."],
+    story: { fr: [
+      "Dimanche de Pâques 2024. Berlin se réveille sous un ciel jaune-orangé surnaturel. Les voitures sont couvertes d'une fine poudre rouge, et chaque dépôt parisien fait la même constatation : <span class='punch'>les poussières du Sahara recouvrent l'Europe centrale</span>, transportées sur 3000 km par un sirocco exceptionnel.",
+      "L'événement météorologique commence vendredi 28 mars : une dépression sur le Maroc soulève des millions de tonnes de sable. Les modèles de prévision, calibrés sur des conditions normales, sous-estiment massivement l'impact sur les panneaux photovoltaïques européens.",
+      "12:45 le dimanche : la production solaire allemande s'effondre. Les panneaux, opacifiés par les poussières, perdent <span class='punch'>jusqu'à 80% de leur rendement instantané</span>. Sur le réseau, c'est l'équivalent de 2 GW qui disparaît en 15 minutes — l'équivalent de deux centrales nucléaires.",
+      "Les algorithmes de trading day-ahead, calibrés sur des forecast météo classiques, ne voient pas venir le spike. <span class='punch'>Le prix horaire bondit à ~€5000/MWh</span> entre 12h45 et 13h. Ceux qui suivaient les bulletins météorologiques sahariens en arabe se sont fait une année.",
+      "Capture Strike t'est offert pour cette mission — il cannibalise les pics renouvelables et créé un cratère sur ton terrain. <span class='punch'>C'est exactement ce que les poussières sahariennes ont fait au solaire allemand</span> : un événement de capture aigu qui détruit la rentabilité instantanée.",
+      "Carburant à €220/unit. Bouger reste possible, mais cher. Cette mission t'apprend que <span class='punch'>la météo extrême est devenue une variable financière de premier ordre</span> sur les marchés électriques européens."
+    ], en: [
+      "Easter Sunday 2024. Berlin wakes under an unnatural yellow-orange sky. Cars covered in fine red powder, every Parisian car park reporting the same observation: <span class='punch'>Saharan dust covers central Europe</span>, transported 3000 km by an exceptional sirocco.",
+      "The weather event began Friday 28 March: a depression over Morocco lifted millions of tons of sand. Forecast models, calibrated on normal conditions, massively underestimated the impact on European photovoltaic panels.",
+      "12:45 Sunday: German solar production collapses. Panels, opacified by dust, lose <span class='punch'>up to 80% of instantaneous yield</span>. On the grid, that's 2 GW disappearing in 15 minutes — equivalent to two nuclear plants.",
+      "Day-ahead trading algorithms, calibrated on classic weather forecasts, don't see the spike coming. <span class='punch'>Hourly price jumps to ~€5000/MWh</span> between 12:45 and 1 PM. Those who followed Arabic Saharan weather bulletins made their year.",
+      "Capture Strike is gifted for this mission — it cannibalises renewable peaks and creates a crater on your terrain. <span class='punch'>This is exactly what Saharan dust did to German solar</span>: an acute capture event destroying instantaneous profitability.",
+      "Fuel at €220/unit. Moving is still possible, but expensive. This mission teaches you that <span class='punch'>extreme weather has become a first-order financial variable</span> on European electricity markets."
+    ] },
     warn: "Spike à €5000. Capture Strike offert.",
-    funfact: ["30 mars 2024 : poussières sahariennes ont réduit le solaire allemand de <span class='punch'>~2 GW en pic</span>.","Prix <span class='punch'>~€5000/MWh sur 12h45-13h</span>. Moins de 30 min.","Leçon : intégrer les aérosols dans les forecast."],
+    funfact: { fr: [
+      "30 mars 2024 : les poussières sahariennes ont réduit la production solaire allemande de <span class='punch'>~2 GW en pic instantané</span>. C'est l'événement de cannibalisation météorologique le plus violent jamais enregistré sur l'EPEX allemand.",
+      "Le prix horaire a atteint <span class='punch'>~€5000/MWh entre 12h45 et 13h</span> — soit ~50× le prix moyen. La durée a été de moins de 30 minutes, ce qui rend l'événement quasi impossible à hedger pour les actifs renouvelables. Les BESS rapides ont raflé tout le profit.",
+      "Leçon majeure pour l'industrie : il faut désormais <span class='punch'>intégrer les aérosols et les phénomènes météorologiques rares dans les forecast solaires court-terme</span>. Plusieurs sociétés (EnAppSys, Solargis) ont lancé des services dédiés post-événement.",
+      "Conséquence indirecte : développement explosif des <span class='punch'>algorithmes de prédiction météo basés sur les données satellitaires haute fréquence</span> (Sentinel-2, NASA MODIS). L'IA appliquée à la météo est devenue un produit d'origination à part entière.",
+      "Anecdote : un trader gaz de chez Vitol qui suivait par habitude les modèles météorologiques marocains a anticipé l'événement <span class='punch'>72 heures à l'avance</span>. Il a positionné un long sur le power allemand intraday — bonus annuel sécurisé en une trade.",
+      "Cet événement a été ajouté en septembre 2024 au <span class='punch'>set d'événements de stress test des modèles VaR</span> chez les principaux énergéticiens européens. Saharan dust + Dunkelflaute combinés sont devenus le scénario tail-risk de référence."
+    ], en: [
+      "30 March 2024: Saharan dust reduced German solar production by <span class='punch'>~2 GW at instant peak</span>. This is the most violent meteorological cannibalisation event ever recorded on German EPEX.",
+      "Hourly price reached <span class='punch'>~€5000/MWh between 12:45 and 1 PM</span> — about 50× average price. Duration was less than 30 minutes, making the event nearly impossible to hedge for renewable assets. Fast BESS captured all the profit.",
+      "Major industry lesson: it's now necessary to <span class='punch'>integrate aerosols and rare weather phenomena into short-term solar forecasts</span>. Several companies (EnAppSys, Solargis) launched dedicated services post-event.",
+      "Indirect consequence: explosive development of <span class='punch'>weather prediction algorithms based on high-frequency satellite data</span> (Sentinel-2, NASA MODIS). AI applied to weather has become an origination product in its own right.",
+      "Story: a Vitol gas trader who habitually followed Moroccan weather models anticipated the event <span class='punch'>72 hours in advance</span>. He positioned long German intraday power — annual bonus secured in one trade.",
+      "This event was added in September 2024 to the <span class='punch'>VaR model stress test event set</span> at major European energy companies. Saharan dust + Dunkelflaute combined became the reference tail-risk scenario."
+    ] },
     unlock: 'EVENT #07' },
   event7: { type: 'event', flag: '🇪🇺', date: 'MON · 15 JUL 2024', zone: 'EUROPE · PRICE WALL', diff: 'HARD', stars: 4,
     prices: [85,78,72,68,72,88,125,165,195,220,240,260,270,265,250,235,245,280,320,285,220,165,125,95],
     weather: { icon: '🔥', text: '38°C · EAST HEATWAVE', windBase: 2.0, type: 'heat', sky: ['#A06030','#BB3E03','#005F73'] },
     genmix: [{pct:28,color:'#001219',name:'COAL'},{pct:22,color:'#BB3E03',name:'GAS'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:15,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:7,color:'#9B2226',name:'IMPORT'}],
     timerSec: 17, reward: 3200, fuelPrice: 180, title: 'EASTERN PRICE WALL',
-    story: ["Été 2024. Canicule à l'Est. <span class='punch'>Bulgarie €260, Allemagne €40</span>.","Interconnexions saturées. Mur de prix sur la carte.","<span class='punch'>Le coût de la non-Europe énergétique</span>."],
+    story: { fr: [
+      "Été 2024. Canicule exceptionnelle sur l'Europe de l'Est et les Balkans. Bucarest, Sofia, Budapest enregistrent des températures au-dessus de 40°C pendant 10 jours consécutifs. La demande en climatisation explose dans des pays peu équipés et mal préparés.",
+      "Le 15 juillet à 14h, le marché spot affiche une carte d'Europe presque géologique : <span class='punch'>Bulgarie à €260/MWh, Allemagne à €40/MWh</span>. Un écart de 6,5× entre deux pays distants de 800 km, sur le même réseau, dans le même marché supposément intégré.",
+      "Les interconnexions est-ouest sont saturées : <span class='punch'>les flux maximaux théoriques sont atteints et bloqués</span>. Les pays d'Europe centrale (Pologne, Roumanie, Hongrie) deviennent des goulots d'étranglement où s'accumulent les prix élevés que l'ouest ne peut plus absorber.",
+      "Ce n'est pas un événement physique catastrophique : pas de blackout, pas de coupures massives. C'est <span class='punch'>le coût exact de la non-Europe énergétique</span> — une démonstration en temps réel que l'intégration de marché ne suit pas l'intégration politique.",
+      "Sur ton terrain, la courbe affiche un plateau élevé persistant. <span class='punch'>Pas de pic violent, mais des prix soutenus pendant 18 heures</span>. C'est le genre d'événement qui crée des P&L positifs réguliers sur les BESS bien positionnés, sans nécessiter d'extreme weather.",
+      "Carburant à €180/unit. Cette mission révèle un défi structurel européen rarement médiatisé : <span class='punch'>l'asymétrie infrastructurelle entre ouest et est</span> coûte des milliards en pertes de welfare social chaque année."
+    ], en: [
+      "Summer 2024. Exceptional heatwave across Eastern Europe and the Balkans. Bucharest, Sofia, Budapest record temperatures above 40°C for 10 consecutive days. Air conditioning demand explodes in countries poorly equipped and unprepared.",
+      "15 July at 2 PM, the spot market displays an almost geological map of Europe: <span class='punch'>Bulgaria at €260/MWh, Germany at €40/MWh</span>. A 6.5× gap between two countries 800 km apart, on the same grid, in the same supposedly integrated market.",
+      "East-west interconnections are saturated: <span class='punch'>maximum theoretical flows are reached and blocked</span>. Central European countries (Poland, Romania, Hungary) become bottlenecks where high prices accumulate that the west can no longer absorb.",
+      "This is not a physical catastrophic event: no blackout, no massive cuts. It's <span class='punch'>the exact cost of non-Europe energy policy</span> — a real-time demonstration that market integration doesn't follow political integration.",
+      "On your terrain, the curve displays a persistent high plateau. <span class='punch'>No violent peak, but sustained prices for 18 hours</span>. The kind of event creating regular positive P&Ls on well-positioned BESS, without requiring extreme weather.",
+      "Fuel at €180/unit. This mission reveals a rarely publicised European structural challenge: <span class='punch'>infrastructural asymmetry between west and east</span> costs billions in social welfare losses each year."
+    ] },
     warn: "Spread est/ouest brutal. Terrain en plateau haut.",
-    funfact: ["15 juil 2024 : <span class='punch'>écart record Est/Ouest</span>. €260 vs €40.","NTC (Est) vs flow-based (Ouest). Capacités insuffisantes.","Infrastructure réseau Est en retard structurel."],
+    funfact: { fr: [
+      "15 juillet 2024 : <span class='punch'>écart record Est/Ouest sur le marché européen day-ahead</span>. €260/MWh en Bulgarie, €40/MWh en Allemagne, pour la même heure et la même fonction sur la même grille électrique européenne.",
+      "Causes méthodologiques : à l'Est, le calcul de capacité d'échange utilise encore le <span class='punch'>NTC (Net Transfer Capacity)</span> — une méthode statique conservative. À l'Ouest, on utilise le flow-based, plus permissif. Les capacités allouées sont structurellement plus basses à l'Est.",
+      "Coût économique annuel des congestions : <span class='punch'>€8-12 milliards de welfare loss</span> selon les estimations ACER 2023. Soit l'équivalent d'une grosse autoroute énergétique européenne par an, perdue dans l'inefficacité de marché.",
+      "L'infrastructure réseau Est-européenne accuse <span class='punch'>20 à 30 ans de retard structurel</span> sur l'Ouest. Les investissements n'ont jamais été à la hauteur des promesses faites lors des élargissements UE de 2004 et 2007.",
+      "Conséquence : développement de <span class='punch'>PPA transfrontaliers via guarantees of origin (GoO) virtuels</span>. Plusieurs corporates allemands signent du PPA solaire roumain en achetant les attributs renouvelables tout en consommant physiquement en Allemagne — arbitrage réglementaire pur.",
+      "L'événement de juillet 2024 a relancé le débat sur la <span class='punch'>réforme du marché européen de l'électricité</span>. La Commission von der Leyen a annoncé en 2025 un paquet d'harmonisation des méthodes de capacité d'échange — adoption visée pour 2027."
+    ], en: [
+      "15 July 2024: <span class='punch'>record East/West gap on European day-ahead market</span>. €260/MWh in Bulgaria, €40/MWh in Germany, for the same hour and same function on the same European electricity grid.",
+      "Methodological causes: in the East, exchange capacity calculation still uses <span class='punch'>NTC (Net Transfer Capacity)</span> — a static conservative method. In the West, flow-based is used, more permissive. Allocated capacities are structurally lower in the East.",
+      "Annual economic cost of congestion: <span class='punch'>€8-12 billion welfare loss</span> per ACER 2023 estimates. The equivalent of a major European energy highway per year, lost in market inefficiency.",
+      "Eastern European grid infrastructure shows <span class='punch'>20-30 years of structural lag</span> versus the West. Investments never matched promises made during 2004 and 2007 EU enlargements.",
+      "Consequence: development of <span class='punch'>cross-border PPAs via virtual guarantees of origin (GoO)</span>. Several German corporates sign Romanian solar PPAs buying renewable attributes while physically consuming in Germany — pure regulatory arbitrage.",
+      "The July 2024 event relaunched debate on <span class='punch'>European electricity market reform</span>. The von der Leyen Commission announced in 2025 a harmonisation package for capacity calculation methods — adoption targeted for 2027."
+    ] },
     unlock: 'EVENT #08' },
   event8: { type: 'event', flag: '🇪🇺', date: 'MAR 2026 · GAS SHOCK', zone: 'EUROPE · STORAGE CRISIS', diff: 'LEGENDARY', stars: 4,
     prices: [120,115,110,108,115,135,165,210,245,235,215,200,195,200,215,240,285,295,260,220,180,155,138,125],
     weather: { icon: '🌥', text: '6°C · LOW STORAGE', windBase: 1.5, type: 'cold', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:32,color:'#BB3E03',name:'GAS'},{pct:20,color:'#001219',name:'COAL'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:15,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:5,color:'#0A9396',name:'HYDRO'}],
     timerSec: 16, reward: 4000, fuelPrice: 250, title: 'THE 2026 GAS SHOCK',
-    story: ["Mars 2026. Stocks gaz UE au plus bas depuis 2022.","Pics sur DE, NL, IT, BE. <span class='punch'>+€2.5 Md en 10 jours</span>.","Espagne et France : peu dépendantes gaz, restent calmes."],
+    story: { fr: [
+      "Mars 2026. L'hiver européen aura été <span class='punch'>plus froid que prévu</span> — vagues de froid répétées sur l'Europe centrale, et un automne 2025 où l'éolien a sous-performé de 12% par rapport à la moyenne décennale. Les stocks gaz sortent de l'hiver à des niveaux historiquement bas.",
+      "Les inventaires AGSI tombent à <span class='punch'>~38% au 1er mars</span>, contre 55% moyenne historique. Pire encore : la trajectoire de remplissage estivale s'annonce difficile, car le LNG américain est mobilisé vers l'Asie (Chine en croissance, Japon post-Fukushima 2.0).",
+      "Sur les marchés forward, les pics se multiplient sur l'Allemagne, les Pays-Bas, l'Italie et la Belgique. <span class='punch'>+€2,5 milliards de coûts d'approvisionnement gaz en 10 jours</span> pour les industriels européens. Les contrats indexés explosent à nouveau.",
+      "L'Espagne et la France, peu dépendantes du gaz pour leur électricité, restent relativement épargnées. <span class='punch'>Le couplage européen tire toutefois leurs prix à la hausse</span> via les exports massifs vers leurs voisins. La diversification énergétique paie ses dividendes.",
+      "L'événement n'a pas la violence du choc de février 2022, mais sa <span class='punch'>persistance</span> est inquiétante. Les desks de trading commencent à modéliser des scénarios de pénurie gaz durable, et les CFO de chemicals européens convoquent leurs comités de risque.",
+      "Carburant à €250/unit. Cette mission représente <span class='punch'>la nouvelle normalité énergétique européenne</span> : pas de catastrophe spectaculaire, mais une volatilité structurellement plus haute, des marges fines, et des modèles à recalibrer en permanence."
+    ], en: [
+      "March 2026. The European winter was <span class='punch'>colder than expected</span> — repeated cold waves on Central Europe, and an autumn 2025 where wind underperformed by 12% vs decennial average. Gas stocks exit winter at historically low levels.",
+      "AGSI inventories fall to <span class='punch'>~38% on 1 March</span>, vs 55% historical average. Worse: summer refilling trajectory looks difficult, as American LNG is mobilised toward Asia (growing China, post-Fukushima 2.0 Japan).",
+      "On forward markets, peaks multiply on Germany, Netherlands, Italy and Belgium. <span class='punch'>+€2.5 billion in gas supply costs in 10 days</span> for European industrials. Indexed contracts explode again.",
+      "Spain and France, little dependent on gas for electricity, remain relatively spared. <span class='punch'>European coupling however pulls their prices up</span> via massive exports to neighbours. Energy diversification pays dividends.",
+      "The event lacks the violence of February 2022 shock, but its <span class='punch'>persistence</span> is worrying. Trading desks start modelling durable gas shortage scenarios, and European chemicals CFOs convene risk committees.",
+      "Fuel at €250/unit. This mission represents <span class='punch'>the new European energy normal</span>: no spectacular catastrophe, but structurally higher volatility, thin margins, and models requiring constant recalibration."
+    ] },
     warn: "Volatilité élevée, hausse continue.",
-    funfact: ["Mars 2026 : wholesale UE ~$95/MWh, <span class='punch'>+10% vs 2024</span>.","Pays peu dépendants gaz s'en sortent. <span class='punch'>Diversification = résilience</span>.","AIE prévoit -2% demande gaz UE 2026."],
+    funfact: { fr: [
+      "Mars 2026 : wholesale UE ~$95/MWh en moyenne, soit <span class='punch'>+10% vs 2024 et +20% vs la moyenne pré-Covid</span>. L'AIE prévoit que ce niveau pourrait devenir le nouveau plancher tant que la décarbonation gaz n'aura pas livré ses fruits.",
+      "Pays peu dépendants du gaz s'en sortent : France (nucléaire), Espagne (renouvelables + hydraulique), Pologne (charbon, hélas). <span class='punch'>La diversification énergétique = résilience</span> est devenue le mantra des stratèges énergétiques européens.",
+      "L'AIE prévoit dans son World Energy Outlook 2026 une <span class='punch'>baisse de 2% de la demande gaz UE en 2026</span>, principalement grâce à l'accélération des renouvelables et des pompes à chaleur. Les renouvelables installés en 2025 commencent à porter leurs fruits.",
+      "Le LNG américain représente désormais <span class='punch'>~45% des imports gaz UE</span>, contre 8% en 2021. Cette dépendance géopolitique nouvelle pose des questions stratégiques : qu'arrive-t-il si Washington restreint ses exports vers l'Europe ?",
+      "Les PPA gaz vert (biométhane, hydrogène vert) prennent leur envol : <span class='punch'>+180% de volumes signés en 2025</span>. Les corporates européens commencent à voir l'hydrogène comme un hedge naturel contre la volatilité gaz fossile.",
+      "Anecdote : un trader gaz chez Trafigura a publié en mars 2026 une note interne intitulée <span class='punch'>'La nouvelle ère de l'incertitude permanente'</span> — formulation reprise dans plusieurs rapports de banques. Le mot 'incertitude permanente' est devenu le concept structurant de la décennie."
+    ], en: [
+      "March 2026: EU wholesale ~$95/MWh average, that's <span class='punch'>+10% vs 2024 and +20% vs pre-Covid average</span>. IEA forecasts this level could become the new floor until gas decarbonisation delivers results.",
+      "Countries little dependent on gas fare well: France (nuclear), Spain (renewables + hydro), Poland (coal, alas). <span class='punch'>Energy diversification = resilience</span> has become the mantra of European energy strategists.",
+      "IEA forecasts in its 2026 World Energy Outlook a <span class='punch'>2% decline in EU gas demand in 2026</span>, mainly thanks to accelerated renewables and heat pumps. Renewables installed in 2025 start bearing fruit.",
+      "American LNG now represents <span class='punch'>~45% of EU gas imports</span>, vs 8% in 2021. This new geopolitical dependency poses strategic questions: what happens if Washington restricts exports to Europe?",
+      "Green gas PPAs (biomethane, green hydrogen) take off: <span class='punch'>+180% volumes signed in 2025</span>. European corporates begin to see hydrogen as a natural hedge against fossil gas volatility.",
+      "Story: a Trafigura gas trader published in March 2026 an internal note titled <span class='punch'>'The new era of permanent uncertainty'</span> — phrasing picked up in several bank reports. 'Permanent uncertainty' became the structuring concept of the decade."
+    ] },
     unlock: 'ALL CLEARED' },
 };
 
@@ -716,6 +1158,7 @@ const state = {
   carouselIndex: 0, carouselList: [], carouselType: null,
   navigationOrigin: 'menu', gp: null, lang: 'fr',
   settings: { marketCrash: false, turnTimer: true },
+  difficulty: 'originator', // junior_analyst | originator | senior_trader | head_of_desk
   progress: {
     rookie_summer_fr: 'current', junior_winter_fr: 'locked',
     senior_duck_curve_es: 'locked', senior_dunkelflaute_de: 'locked',
@@ -745,7 +1188,51 @@ function go(screen) {
 
 function updatePnLDisplay() { document.getElementById('pnlDisplay').textContent = '€' + state.pnl.toLocaleString(); }
 
+function openPnLEditor() {
+  document.getElementById('pnlInput').value = state.pnl;
+  document.getElementById('pnlModal').style.display = 'flex';
+}
+function closePnLEditor() {
+  document.getElementById('pnlModal').style.display = 'none';
+}
+function applyPnLPreset(amount) {
+  document.getElementById('pnlInput').value = amount;
+}
+function savePnLEditor() {
+  const raw = document.getElementById('pnlInput').value.replace(/[^0-9-]/g, '');
+  const val = parseInt(raw, 10);
+  if (isNaN(val)) return;
+  state.pnl = Math.max(0, Math.min(999999999999, val));
+  updatePnLDisplay();
+  closePnLEditor();
+}
+
 function setLang(lang) { state.lang = lang; applyLang(); }
+
+// ===== DIFFICULTY =====
+const DIFF_PARAMS = {
+  junior_analyst:  { aiErrorMult: 1.5,  aiPwrErrorMult: 1.4,  windMult: 0.7, pnlMult: 1.0, hideAids: false },
+  originator:      { aiErrorMult: 1.0,  aiPwrErrorMult: 1.0,  windMult: 1.0, pnlMult: 1.0, hideAids: false },
+  senior_trader:   { aiErrorMult: 0.6,  aiPwrErrorMult: 0.7,  windMult: 1.3, pnlMult: 1.4, hideAids: false },
+  head_of_desk:    { aiErrorMult: 0.35, aiPwrErrorMult: 0.5,  windMult: 1.6, pnlMult: 2.0, hideAids: true },
+};
+function getDiff() { return DIFF_PARAMS[state.difficulty] || DIFF_PARAMS.originator; }
+
+function setDifficulty(d) {
+  state.difficulty = d;
+  ['diffJA','diffOR','diffST','diffHD'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const map = { junior_analyst: 'diffJA', originator: 'diffOR', senior_trader: 'diffST', head_of_desk: 'diffHD' };
+  const btn = document.getElementById(map[d]);
+  if (btn) btn.classList.add('active');
+  const descMap = {
+    junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc',
+    senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc',
+  };
+  setText('diffDescText', t(descMap[d]));
+}
 
 function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 
@@ -762,6 +1249,10 @@ function applyLang() {
   setText('langLbl', t('language'));
   setText('crashLbl', t('market_crash')); setText('crashDesc', t('market_crash_desc'));
   setText('timerLbl2', t('turn_timer')); setText('timerDesc', t('turn_timer_desc'));
+  setText('diffLbl', t('difficulty'));
+  const descMap = { junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc',
+    senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc' };
+  setText('diffDescText', t(descMap[state.difficulty] || 'diff_normal_desc'));
   document.querySelectorAll('.back-btn').forEach(b => { if (b.textContent.includes('◀')) b.textContent = t('back'); });
   setText('careerTitle', '🏁 ' + t('career') + ' · ' + t('select_circuit'));
   setText('eventsTitle', '🔥 ' + t('historical_events'));
@@ -964,6 +1455,13 @@ function buildCurrentMissionData() {
   }
 }
 
+// Helper to get localized story/funfact (handles both old array form and new {fr,en} form)
+function localizedTexts(obj) {
+  if (!obj) return [];
+  if (Array.isArray(obj)) return obj;
+  return obj[state.lang] || obj.en || obj.fr || [];
+}
+
 function showBriefing() {
   const m = state.currentMissionData;
   if (!m) return;
@@ -989,7 +1487,7 @@ function showBriefing() {
       <div class="info-block"><div class="lbl">${t('fuel')}</div><div class="val">€${m.fuelPrice}/u</div></div>
       <div class="info-block"><div class="lbl">GENMIX</div><div class="genmix-bar">${genmixHtml}</div></div>
     </div>
-    <div class="brief-story">${m.story.map(p => '<p>' + p + '</p>').join('')}</div>
+    <div class="brief-story">${localizedTexts(m.story).map(p => '<p>' + p + '</p>').join('')}</div>
     <div class="brief-stats">
       <div class="brief-stat"><div class="brief-stat-lbl">${t('spread')}</div><div class="brief-stat-val ${m.spread > 100 ? 'danger' : m.spread > 50 ? 'warn' : ''}">€${m.spread}<span class="brief-stat-unit">/MWh</span></div></div>
       <div class="brief-stat"><div class="brief-stat-lbl">${t('avg')}</div><div class="brief-stat-val ${m.avg > 200 ? 'danger' : m.avg > 100 ? 'warn' : ''}">€${m.avg}<span class="brief-stat-unit">/MWh</span></div></div>
@@ -1152,8 +1650,8 @@ function initGame(mission) {
     running: true, mission, ctx, W, H, tank,
     angle: 45, power: 60, wind: 0, windPhase: 0,
     turn: 'player',
-    p1hp: tank.hp, p1maxhp: tank.hp,
-    p2hp: 100, p2maxhp: 100,
+    p1hp: Math.round(tank.hp * 0.8), p1maxhp: Math.round(tank.hp * 0.8),
+    p2hp: 80, p2maxhp: 80,
     p1fuel: tank.fuelMax, p1maxfuel: tank.fuelMax,
     projectile: null, explosion: null, particles: [], terrain: [],
     p1: { x: 80, y: 0, hitFlash: 0 },
@@ -1166,8 +1664,18 @@ function initGame(mission) {
   };
 
   const baseWind = mission.weather.windBase;
-  game.wind = (Math.random() - 0.5) * baseWind * 2;
+  const diff = getDiff();
+  game.wind = (Math.random() - 0.5) * baseWind * 2 * diff.windMult;
   if (mission.stars >= 3 && Math.random() < 0.7) game.wind = -Math.abs(game.wind) - 0.5;
+
+  // Walking shot AI memory (resets when player moves significantly)
+  game.aiMemory = { lastAngle: null, lastPower: null, lastImpactX: null, lastImpactY: null, lastError: null };
+  // Shot history: up to 3 trajectories per side, FIFO
+  game.shotHistory = { player: [], ai: [] };
+  // Weather event queue (for stars >= 3 missions)
+  game.weatherEventPending = null;
+  game.suddenDeath = false;
+  game.lastPlayerX = game.p1.x; // track movement to invalidate AI memory
 
   document.getElementById('windText').textContent = (game.wind > 0 ? '+' : '') + game.wind.toFixed(1) + ' m/s';
   document.getElementById('weatherIcon').textContent = mission.weather.icon;
@@ -1385,11 +1893,14 @@ function drawScene() {
   for (let x = 1; x < W; x++) ctx.lineTo(x, g.terrain[x]);
   ctx.stroke();
 
+  // Draw shot history (3 fading trajectories per side) - hidden in head_of_desk
+  if (!getDiff().hideAids) drawShotHistory();
+  
   if (!g.projectile && g.turn === 'player' && !g.gameOver) {
     const w = WEAPONS[g.currentWeapon];
     if (w.preview === 'precise') drawTrajectoryPreview(false, 400);
     else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 400);
-    else drawAimIndicator(); // Short free aim hint
+    else if (!getDiff().hideAids) drawAimIndicator(); // Short free aim hint, hidden in head_of_desk
   }
   drawTank(g.p1, tank.color, tank.trackColor, true);
   drawTank(g.p2, '#EE9B00', '#BB3E03', false);
@@ -1418,6 +1929,42 @@ function drawTank(tank, body, track, facingRight) {
   ctx.strokeStyle = body; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(bx, by); ctx.stroke();
   ctx.restore();
+}
+
+function drawShotHistory() {
+  const g = state.game;
+  if (!g.shotHistory) return;
+  const ctx = g.ctx;
+  ['player', 'ai'].forEach(side => {
+    const baseColor = side === 'player' ? '238, 155, 0' : '187, 62, 3';
+    const shots = g.shotHistory[side];
+    shots.forEach((shot, idx) => {
+      // idx 0 = most recent (alpha 0.6), idx 1 = older (0.3), idx 2 = oldest (0.12)
+      const alpha = [0.5, 0.25, 0.1][idx] || 0.05;
+      if (idx === 0) {
+        // Full trajectory for the most recent shot
+        ctx.strokeStyle = `rgba(${baseColor}, ${alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        shot.trail.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // Impact cross for all shots
+      ctx.strokeStyle = `rgba(${baseColor}, ${alpha + 0.15})`;
+      ctx.lineWidth = 1.5;
+      const sz = 5;
+      ctx.beginPath();
+      ctx.moveTo(shot.impactX - sz, shot.impactY - sz);
+      ctx.lineTo(shot.impactX + sz, shot.impactY + sz);
+      ctx.moveTo(shot.impactX + sz, shot.impactY - sz);
+      ctx.lineTo(shot.impactX - sz, shot.impactY + sz);
+      ctx.stroke();
+    });
+  });
 }
 
 function drawAimIndicator() {
@@ -1642,17 +2189,46 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
   const p = g.projectile;
   const wKey = p ? p.weapon : 'standard';
   const w = WEAPONS[wKey];
+  
+  // Store shot in history (trail for trajectory display)
+  if (p) {
+    const side = p.fromPlayer ? 'player' : 'ai';
+    const fullTrail = [...p.trail, { x: p.x, y: p.y }];
+    g.shotHistory[side].unshift({ trail: fullTrail, impactX: x, impactY: y, age: 0 });
+    if (g.shotHistory[side].length > 3) g.shotHistory[side].pop();
+    
+    // Update AI walking shot memory
+    if (!p.fromPlayer && p.initialAngle !== undefined) {
+      g.aiMemory.lastAngle = p.initialAngle;
+      g.aiMemory.lastPower = p.initialPower;
+      g.aiMemory.lastImpactX = x;
+      g.aiMemory.lastImpactY = y;
+      g.aiMemory.lastError = hitTank ? 0 : Math.sqrt((x - g.p1.x)**2 + (y - g.p1.y)**2);
+    }
+  }
+  
   g.explosion = { x, y, t: 0, big: w.bigBoom };
   spawnParticles(x, y, hitTank ? 28 : (w.bigBoom ? 30 : 16));
   g.projectile = null;
   if (hitTank) {
     flashDamage();
-    let damage = w.damage || 30;
-    // Graded damage by proximity (closer = more dmg)
+    // Base damage upped from 30 to 35
+    let damage = w.damage === 30 ? 35 : (w.damage || 30);
+    // First-hit bonus
+    if (hitByPlayer && g.hitsP1 === 0) damage = Math.round(damage * 1.4);
+    // Graded damage by proximity
     const proximity = Math.max(0, 1 - hitDist / 26);
     damage = Math.round(damage * (0.4 + proximity * 0.6));
     let critical = false;
     if (proximity > 0.8) { damage = Math.round(damage * 1.3); critical = true; }
+    // High ground bonus + valley protection
+    const avgT = g.terrain.reduce((a, b) => a + b, 0) / g.terrain.length;
+    const shooter = hitByPlayer ? g.p1 : g.p2;
+    const target = hitByPlayer ? g.p2 : g.p1;
+    if (shooter.y < avgT - 20) damage = Math.round(damage * 1.1);
+    if (target.y > avgT + 20) damage = Math.round(damage * 0.85);
+    // Sudden Death
+    if (g.suddenDeath) damage = Math.round(damage * 1.5);
     if (w.negBonus && g.negativeZoneY && y > g.negativeZoneY) {
       damage *= 2;
       showGameMsg(t('neg_bonus'), t('neg_zone_hit'));
@@ -1694,11 +2270,38 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
 
   setTimeout(() => {
     if (g.gameOver || !g.running) return;
-    g.wind = (Math.random() - 0.5) * m.weather.windBase * 2;
+    const diff = getDiff();
+    g.wind = (Math.random() - 0.5) * m.weather.windBase * 2 * diff.windMult;
     if (m.stars >= 3 && Math.random() < 0.6) g.wind = -Math.abs(g.wind);
+    
+    // Apply pending weather event NOW
+    if (g.weatherEventPending) {
+      const ev = g.weatherEventPending;
+      if (ev === 'calm') g.wind = 0;
+      else if (ev === 'wind') g.wind = (Math.random() > 0.5 ? 1 : -1) * m.weather.windBase * 2.5 * diff.windMult;
+      else if (ev === 'fog') g.wind = (Math.random() - 0.5) * 0.3; // dead calm
+      g.weatherEventPending = null;
+    }
+    
     g.cancelWindNextTurn = false;
     g.turn = g.turn === 'player' ? 'ai' : 'player';
-    if (g.turn === 'player') g.turnNum++;
+    if (g.turn === 'player') {
+      g.turnNum++;
+      // Sudden Death at turn 10
+      if (g.turnNum >= 10 && !g.suddenDeath) {
+        g.suddenDeath = true;
+        showGameMsg(t('sudden_death'), '+50% damage · wind ×2', 2000);
+      }
+      // Announce weather event on stars >= 3 missions (15% chance per turn, max 1 per game)
+      if (m.stars >= 3 && !g.weatherEventPending && !g.weatherEventDone && Math.random() < 0.15 && g.turnNum >= 3) {
+        const events = ['wind', 'fog', 'calm'];
+        const ev = events[Math.floor(Math.random() * events.length)];
+        g.weatherEventPending = ev;
+        g.weatherEventDone = true;
+        const msgKey = ev === 'wind' ? 'incoming_wind' : (ev === 'fog' ? 'incoming_fog' : 'incoming_calm');
+        showGameMsg(t(msgKey), t('next_turn'), 2200);
+      }
+    }
     updateHUD(); updateTurnIndicator();
     if (g.turn === 'ai') { stopTurnTimer(); setTimeout(aiShoot, 1000); }
     else startTurnTimer();
@@ -1708,21 +2311,70 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
 function aiShoot() {
   const g = state.game;
   if (g.gameOver || !g.running) return;
+  const diff = getDiff();
+  const stars = g.mission.stars || 2;
+  // Base error scales with stars: less stars = more error
+  const baseErrorMap = { 1: 18, 2: 14, 3: 10, 4: 7, 5: 5 };
+  const basePwrErrorMap = { 1: 20, 2: 16, 3: 12, 4: 9, 5: 7 };
+  const baseAngleErr = (baseErrorMap[stars] || 12) * diff.aiErrorMult;
+  const basePwrErr = (basePwrErrorMap[stars] || 14) * diff.aiPwrErrorMult;
+
+  let aiAngle, aiPower;
+  const mem = g.aiMemory;
   const dist = Math.abs(g.p1.x - g.p2.x);
   const dy = g.p1.y - g.p2.y;
-  let power = Math.min(95, Math.max(35, 30 + dist * 0.07 + Math.abs(dy) * 0.1));
-  const baseAngle = 42 + Math.random() * 14;
-  const stars = g.mission.stars || 2;
-  const errorMap = { 1: 16, 2: 12, 3: 8, 4: 7, 5: 6 };
-  const err = errorMap[stars] || 12;
-  let aiAngle = baseAngle + (Math.random() - 0.5) * err;
-  let aiPower = power + (Math.random() - 0.5) * 14;
+
+  // Walking shot: if we have memory and it's valid, correct based on last error
+  if (mem.lastAngle !== null && mem.lastError !== null) {
+    // Correction logic based on last impact relative to target
+    const impactErrorX = mem.lastImpactX - g.p1.x; // negative = too short (impact left of target from AI POV)
+    const impactErrorY = mem.lastImpactY - g.p1.y;
+    
+    aiAngle = mem.lastAngle;
+    aiPower = mem.lastPower;
+    
+    // AI shoots leftward (negative vx). "Too short" means impact x > p1.x (didn't reach far enough left)
+    // "Too long" means impact x < p1.x (overshot)
+    if (impactErrorX > 20) {
+      // Too short: increase power
+      aiPower = Math.min(95, aiPower + 8 + Math.random() * 5);
+    } else if (impactErrorX < -20) {
+      // Too long: decrease power
+      aiPower = Math.max(35, aiPower - 8 - Math.random() * 5);
+    } else {
+      // Within range horizontally, but missed vertically — adjust angle slightly
+      if (impactErrorY < -15) aiAngle = Math.max(15, aiAngle - 2);
+      else if (impactErrorY > 15) aiAngle = Math.min(80, aiAngle + 2);
+    }
+    
+    // Wind compensation (better players compensate more)
+    const windComp = g.wind * 0.4 * (1 - diff.aiErrorMult * 0.5);
+    aiPower += windComp;
+    
+    // Add residual random noise (shrinks with skill)
+    aiAngle += (Math.random() - 0.5) * baseAngleErr * 0.4;
+    aiPower += (Math.random() - 0.5) * basePwrErr * 0.4;
+    
+    showGameMsg(t('walking_shot'), '', 600);
+  } else {
+    // First shot: aim from scratch
+    let power = Math.min(95, Math.max(35, 30 + dist * 0.07 + Math.abs(dy) * 0.1));
+    const baseAngle = 42 + Math.random() * 14;
+    aiAngle = baseAngle + (Math.random() - 0.5) * baseAngleErr;
+    aiPower = power + (Math.random() - 0.5) * basePwrErr;
+    // Mild wind awareness even on first shot for higher levels
+    if (diff.aiErrorMult < 1.0) aiPower += g.wind * 0.2 * (1 - diff.aiErrorMult);
+  }
+
+  aiAngle = Math.max(15, Math.min(80, aiAngle));
   aiPower = Math.min(95, Math.max(35, aiPower));
   g.aiAngle = aiAngle;
+  
   const angRad = aiAngle * Math.PI / 180;
   const vx = -Math.cos(angRad) * aiPower * 0.18;
   const vy = -Math.sin(angRad) * aiPower * 0.18;
-  g.projectile = { x: g.p2.x - 6, y: g.p2.y - 4, vx, vy, trail: [], fromPlayer: false, weapon: 'standard' };
+  g.projectile = { x: g.p2.x - 6, y: g.p2.y - 4, vx, vy, trail: [], fromPlayer: false, weapon: 'standard',
+    initialAngle: aiAngle, initialPower: aiPower };
 }
 
 function playerShoot() {
@@ -1764,6 +2416,13 @@ function moveTank(direction) {
   g.p1.x = newX;
   g.p1.y = g.terrain[Math.floor(newX)] - 12;
   g.p1fuel -= fuelUsed;
+  // Invalidate AI walking shot memory if player moved significantly
+  if (g.aiMemory && Math.abs(newX - (g.lastPlayerX || newX)) > 30) {
+    g.aiMemory.lastAngle = null;
+    g.aiMemory.lastError = null;
+    g.lastPlayerX = newX;
+    showGameMsg('AI MEMORY RESET', '', 600);
+  }
   updateHUD();
 }
 
@@ -1774,7 +2433,7 @@ function endGame(won) {
   if (state.gp) {
     const acc = g.shotsP1 > 0 ? g.hitsP1 / g.shotsP1 : 0;
     const score = won ? Math.round(1000 + acc * 500 + (g.p1hp / g.p1maxhp) * 300) : Math.round(100 + acc * 200);
-    const earned = won ? g.mission.reward : Math.floor(g.mission.reward * 0.15);
+    const earned = Math.round((won ? g.mission.reward : Math.floor(g.mission.reward * 0.15)) * getDiff().pnlMult);
     state.pnl += earned;
     state.gp.scores.push({ mission: state.currentMission, flag: g.mission.flag, title: g.mission.title, won, score, earned, shots: g.shotsP1, hits: g.hitsP1 });
     setTimeout(() => showGPRaceResult(won), 1200);
@@ -1810,7 +2469,7 @@ function showVictoryScreen(won) {
   const acc = g.shotsP1 > 0 ? Math.round((g.hitsP1 / g.shotsP1) * 100) : 0;
   let unlockHtml = '', earned = 0;
   if (won) {
-    earned = m.reward;
+    earned = Math.round(m.reward * getDiff().pnlMult);
     state.pnl += earned;
     state.progress[state.currentMission] = 'completed';
     const order = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es'];
@@ -1835,7 +2494,7 @@ function showVictoryScreen(won) {
     ${won ? `
       <div class="fun-fact">
         <div class="fun-fact-hd">${t('did_you_know')}</div>
-        <div class="fun-fact-bd">${m.funfact.map(p => '<p>' + p + '</p>').join('')}</div>
+        <div class="fun-fact-bd">${localizedTexts(m.funfact).map(p => '<p>' + p + '</p>').join('')}</div>
       </div>
       ${unlockHtml}
     ` : `
@@ -1903,6 +2562,7 @@ function startGameLoop() {
 
 updatePnLDisplay();
 applyLang();
+setDifficulty(state.difficulty);
 </script>
 
 </body>
