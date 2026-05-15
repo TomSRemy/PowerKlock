@@ -1186,6 +1186,13 @@
     background: var(--bg);
     padding: 8px 0;
     margin-bottom: 16px;
+    transition: box-shadow 0.2s ease-out;
+  }
+  .pr-tabs-sticky.pk-scrolled {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .pr-tabs-sticky.pk-scrolled .pr-tabs-bar {
+    border-color: var(--border2);
   }
 
   .pr-tabs-bar {
@@ -1196,7 +1203,15 @@
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: 6px;
-    width: fit-content;
+    flex-wrap: wrap;
+    transition: border-color 0.2s ease-out;
+  }
+
+  .pr-tabs-bar-filters {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
@@ -1257,6 +1272,51 @@
   }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
+
+  /* Global filters in sticky bar */
+  .pk-gf-group {
+    display: flex;
+    gap: 2px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px;
+  }
+  .pk-gf-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pk-gf-btn:hover { color: var(--tx); background: var(--bg2); }
+  .pk-gf-btn.active {
+    background: var(--bg2);
+    color: var(--tx);
+  }
+  .pk-gf-zone-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--tx2);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pk-gf-zone-btn:hover { color: var(--tx); background: var(--bg2); border-color: var(--border2); }
 
   /* Subdomain panels */
   .subdomain-panel { display: none; }
@@ -1941,8 +2001,8 @@
       <!-- ═══ SUBDOMAIN · DAY-AHEAD · 3 onglets ═══ -->
       <div class="subdomain-panel" data-subdomain-panel="da">
 
-        <!-- Sticky bar : breadcrumb + tabs -->
-        <div class="pr-tabs-sticky">
+        <!-- Sticky bar : breadcrumb + tabs + global filters -->
+        <div class="pr-tabs-sticky" id="pr-da-sticky">
           <div class="pr-tabs-bar">
             <div class="pr-breadcrumb">
               <span class="pr-breadcrumb-parent" onclick="prSelectSubdomain('overview')">Prices</span>
@@ -1954,6 +2014,55 @@
               <button class="tab-btn active" data-tab="daily" onclick="prTabNav(event)">Daily</button>
               <button class="tab-btn" data-tab="historical" onclick="prTabNav(event)">Historical</button>
               <button class="tab-btn" data-tab="distribution" onclick="prTabNav(event)">Distribution</button>
+            </div>
+
+            <!-- Global filters, switched by active tab -->
+            <div class="pr-tabs-bar-filters">
+
+              <!-- DAILY filters: zones only -->
+              <div class="pk-gf-tabset" data-gf-tab="daily" style="display:flex;align-items:center;gap:8px">
+                <button class="pk-gf-zone-btn" onclick="toggleZoneFilterPanel()" id="pk-gf-daily-zones">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+                  <span id="pk-gf-daily-zones-label">All zones</span>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
+
+              <!-- HISTORICAL filters: period + zones -->
+              <div class="pk-gf-tabset" data-gf-tab="historical" style="display:none;align-items:center;gap:8px">
+                <div class="pk-gf-group" id="pk-gf-hist-period">
+                  <button class="pk-gf-btn" data-w="7D"  onclick="pkSetGlobalHistWindow('7D',this)">7D</button>
+                  <button class="pk-gf-btn" data-w="1M"  onclick="pkSetGlobalHistWindow('1M',this)">1M</button>
+                  <button class="pk-gf-btn active" data-w="3M" onclick="pkSetGlobalHistWindow('3M',this)">3M</button>
+                  <button class="pk-gf-btn" data-w="6M"  onclick="pkSetGlobalHistWindow('6M',this)">6M</button>
+                  <button class="pk-gf-btn" data-w="YTD" onclick="pkSetGlobalHistWindow('YTD',this)">YTD</button>
+                  <button class="pk-gf-btn" data-w="1Y"  onclick="pkSetGlobalHistWindow('1Y',this)">1Y</button>
+                  <button class="pk-gf-btn" data-w="2Y"  onclick="pkSetGlobalHistWindow('2Y',this)">2Y</button>
+                  <button class="pk-gf-btn" data-w="5Y"  onclick="pkSetGlobalHistWindow('5Y',this)">5Y</button>
+                  <button class="pk-gf-btn" data-w="All" onclick="pkSetGlobalHistWindow('All',this)">All</button>
+                </div>
+                <button class="pk-gf-zone-btn" onclick="toggleGlobalZonePanel()" id="pk-gf-hist-zones">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+                  <span id="pk-gf-hist-zones-label">-- zones</span>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
+
+              <!-- DISTRIBUTION filters: period + 1 zone -->
+              <div class="pk-gf-tabset" data-gf-tab="distribution" style="display:none;align-items:center;gap:8px">
+                <div class="pk-gf-group" id="pk-gf-dist-period">
+                  <button class="pk-gf-btn active" data-w="1Y" onclick="pkSetGlobalDistWindow('1Y',this)">1Y</button>
+                  <button class="pk-gf-btn" data-w="2Y" onclick="pkSetGlobalDistWindow('2Y',this)">2Y</button>
+                  <button class="pk-gf-btn" data-w="5Y" onclick="pkSetGlobalDistWindow('5Y',this)">5Y</button>
+                  <button class="pk-gf-btn" data-w="all" onclick="pkSetGlobalDistWindow('all',this)">All</button>
+                </div>
+                <button class="pk-gf-zone-btn" id="pk-gf-dist-zone-btn" onclick="pkOpenDistZoneSelect()">
+                  <span style="color:var(--tx3);font-size:10px">Zone</span>
+                  <span id="pk-gf-dist-zone-label">FR</span>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -4517,7 +4626,123 @@ svg.leaflet-image-layer.leaflet-interactive path {
     daPanel.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     const panel = daPanel.querySelector('[data-tab-panel="' + target + '"]');
     if (panel) panel.classList.add('active');
+
+    // Switch global filters visibility in sticky bar
+    document.querySelectorAll('.pk-gf-tabset').forEach(g => {
+      g.style.display = (g.dataset.gfTab === target) ? 'flex' : 'none';
+    });
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // Global filters · HISTORICAL period
+  // Pilots ho (overview), hsz (single zone), hmz (compare zones)
+  // and keeps the local hw-* button states in sync.
+  // ─────────────────────────────────────────────────────────────
+  function pkSetGlobalHistWindow(w, btn) {
+    // Update global group button state
+    const grp = btn.closest('.pk-gf-group');
+    if (grp) {
+      grp.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    // Propagate to existing per-bloc window state
+    if (typeof HIST !== 'undefined' && HIST && HIST.windows) {
+      HIST.windows['ho']  = w;
+      HIST.windows['hsz'] = w;
+      HIST.windows['hmz'] = w;
+      HIST.customRange = null;
+    }
+    // Sync local hw-* buttons (so legacy UI reflects the global choice)
+    ['hw-ho', 'hw-hsz', 'hw-hmz'].forEach(id => {
+      const wrap = document.getElementById(id);
+      if (!wrap) return;
+      wrap.querySelectorAll('.hw-btn').forEach(b => {
+        if (b.textContent.trim() === w) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+    });
+    // Clear local custom date inputs (consistent with setHistWindow behaviour)
+    const dfEl = document.getElementById('ho-date-from');
+    const dtEl = document.getElementById('ho-date-to');
+    if (dfEl) dfEl.value = '';
+    if (dtEl) dtEl.value = '';
+    // Re-render the 3 historical blocks
+    if (typeof renderHistOverview === 'function') renderHistOverview();
+    if (typeof renderHistSingle  === 'function') renderHistSingle();
+    if (typeof renderHistMulti   === 'function') renderHistMulti();
+  }
+  window.pkSetGlobalHistWindow = pkSetGlobalHistWindow;
+
+  // ─────────────────────────────────────────────────────────────
+  // Global filters · DISTRIBUTION period (1Y / 2Y / 5Y / All)
+  // ─────────────────────────────────────────────────────────────
+  function pkSetGlobalDistWindow(w, btn) {
+    const grp = btn.closest('.pk-gf-group');
+    if (grp) {
+      grp.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    if (typeof HIST !== 'undefined' && HIST && HIST.windows) {
+      HIST.windows['dist'] = w;
+    }
+    // Sync local hw-dist buttons
+    const wrap = document.getElementById('hw-dist');
+    if (wrap) {
+      wrap.querySelectorAll('.hw-btn').forEach(b => {
+        if (b.textContent.trim().toLowerCase() === String(w).toLowerCase()) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+    }
+    if (typeof renderHistDist === 'function') renderHistDist();
+  }
+  window.pkSetGlobalDistWindow = pkSetGlobalDistWindow;
+
+  // ─────────────────────────────────────────────────────────────
+  // Global Distribution zone selector (delegates to setHistZone for 'dist')
+  // ─────────────────────────────────────────────────────────────
+  function pkOpenDistZoneSelect() {
+    // Try to focus the existing local select; if not present, open a minimal prompt
+    const localSel = document.querySelector('select[onchange*="setHistZone(\'dist\'"], #hz-dist');
+    if (localSel) {
+      localSel.focus();
+      try { localSel.click(); } catch (_) {}
+      return;
+    }
+    // Fallback: cycle through a default zone list
+    const zones = ['FR','DE_LU','BE','NL','ES','PT','IT_NORD','AT','CH','GB'];
+    const current = (typeof HIST !== 'undefined' && HIST && HIST.zones && HIST.zones['dist']) || 'FR';
+    const idx = Math.max(0, zones.indexOf(current));
+    const next = zones[(idx + 1) % zones.length];
+    if (typeof setHistZone === 'function') setHistZone('dist', next);
+    pkSyncDistZoneLabel(next);
+  }
+  window.pkOpenDistZoneSelect = pkOpenDistZoneSelect;
+
+  function pkSyncDistZoneLabel(zone) {
+    const lbl = document.getElementById('pk-gf-dist-zone-label');
+    if (lbl) lbl.textContent = zone;
+  }
+  window.pkSyncDistZoneLabel = pkSyncDistZoneLabel;
+
+  // ─────────────────────────────────────────────────────────────
+  // Sticky bar scroll shadow
+  // Adds .pk-scrolled to .pr-tabs-sticky when its top edge has scrolled
+  // past the viewport top (i.e. it is in its "sticky" state).
+  // ─────────────────────────────────────────────────────────────
+  (function initStickyScrollShadow() {
+    function update() {
+      document.querySelectorAll('.pr-tabs-sticky').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        // When sticking (top <= 0 within a small margin), apply shadow
+        if (rect.top <= 1) el.classList.add('pk-scrolled');
+        else el.classList.remove('pk-scrolled');
+      });
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    // Initial state
+    setTimeout(update, 0);
+  })();
 
   // ─────────────────────────────────────────────────────────────
   // Toggle sidebar collapse/expand
