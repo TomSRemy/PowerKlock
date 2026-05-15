@@ -638,17 +638,17 @@ function t(key) {
 }
 
 const WEAPONS = {
-  standard: { name: 'STANDARD', icon: '◆', cost: 0, desc: { fr: 'Tir spot. Pas de prévisualisation. 8 charges.', en: 'Spot shot. No preview. 8 charges.' }, radius: 22, damage: 30, free: true },
-  spot_forecast: { name: 'SPOT FORECAST', icon: '👁', cost: 400, desc: { fr: 'Prévision floue (cône d\'incertitude). Public info.', en: 'Fuzzy forecast (uncertainty cone). Public info.' }, radius: 22, damage: 30, preview: 'fuzzy' },
-  radar_lock: { name: 'RADAR LOCK', icon: '🎯', cost: 1200, desc: { fr: 'Prévision précise (trajectoire claire). Premium.', en: 'Precise forecast (clear trajectory). Premium.' }, radius: 22, damage: 30, preview: 'precise' },
-  ppa_hedge: { name: 'PPA HEDGE', icon: '🛡', cost: 800, desc: { fr: 'Léger guidage (22% vers la cible). Couvert.', en: 'Mild homing (22% toward target). Hedged.' }, radius: 22, damage: 30, homing: 0.22 },
-  volatility: { name: 'VOLATILITY', icon: '💥', cost: 1000, desc: { fr: 'Double le rayon d\'explosion. Onde de choc.', en: 'Double blast radius. Shock wave.' }, radius: 44, damage: 35, bigBoom: true },
-  curtailment: { name: 'CURTAILMENT', icon: '✂', cost: 1000, desc: { fr: 'Tranche en V. Équilibrage forcé.', en: 'V-trench. Forced grid balancing.' }, radius: 26, damage: 30, trench: true },
+  standard: { name: 'STANDARD', icon: '◆', cost: 0, desc: { fr: 'Tir spot. Pas de prévisualisation. 8 charges.', en: 'Spot shot. No preview. 8 charges.' }, radius: 32, damage: 30, free: true },
+  spot_forecast: { name: 'SPOT FORECAST', icon: '👁', cost: 400, desc: { fr: 'Prévision floue (cône d\'incertitude). Public info.', en: 'Fuzzy forecast (uncertainty cone). Public info.' }, radius: 32, damage: 30, preview: 'fuzzy' },
+  radar_lock: { name: 'RADAR LOCK', icon: '🎯', cost: 1200, desc: { fr: 'Prévision précise (trajectoire claire). Premium.', en: 'Precise forecast (clear trajectory). Premium.' }, radius: 32, damage: 30, preview: 'precise' },
+  ppa_hedge: { name: 'PPA HEDGE', icon: '🛡', cost: 800, desc: { fr: 'Léger guidage (22% vers la cible). Couvert.', en: 'Mild homing (22% toward target). Hedged.' }, radius: 32, damage: 30, homing: 0.22 },
+  volatility: { name: 'VOLATILITY', icon: '💥', cost: 1000, desc: { fr: 'Double le rayon d\'explosion. Onde de choc.', en: 'Double blast radius. Shock wave.' }, radius: 60, damage: 35, bigBoom: true },
+  curtailment: { name: 'CURTAILMENT', icon: '✂', cost: 1000, desc: { fr: 'Tranche en V. Équilibrage forcé.', en: 'V-trench. Forced grid balancing.' }, radius: 36, damage: 30, trench: true },
   bess_boost: { name: 'BESS BOOST', icon: '🔋', cost: 900, desc: { fr: 'Récupère 25 PV. Stockage.', en: 'Restore 25 HP. Storage.' }, selfHeal: true, instant: true },
   curve_smoother: { name: 'CURVE SMOOTH', icon: '〰', cost: 900, desc: { fr: 'Aplatit le terrain en arc.', en: 'Flattens terrain in arc.' }, radius: 60, damage: 0, smooth: true },
-  negative_strike: { name: 'NEG STRIKE', icon: '↓', cost: 1300, desc: { fr: 'Dégâts ×2 si impact en zone négative.', en: 'Double dmg in negative zone.' }, radius: 24, damage: 30, negBonus: true },
+  negative_strike: { name: 'NEG STRIKE', icon: '↓', cost: 1300, desc: { fr: 'Dégâts ×2 si impact en zone négative.', en: 'Double dmg in negative zone.' }, radius: 34, damage: 30, negBonus: true },
   dunkelflaute: { name: 'DUNKEL WIND', icon: '🌫', cost: 600, desc: { fr: 'Annule le vent ce tour.', en: 'Cancels wind this turn.' }, cancelWind: true, instant: true },
-  capture_strike: { name: 'CAPTURE STRIKE', icon: '☀↓', cost: 1100, desc: { fr: 'Cratère + cannibalise les pics (-20%).', en: 'Crater + cannibalise peaks (-20%).' }, radius: 24, damage: 30, cannibalise: true },
+  capture_strike: { name: 'CAPTURE STRIKE', icon: '☀↓', cost: 1100, desc: { fr: 'Cratère + cannibalise les pics (-20%).', en: 'Crater + cannibalise peaks (-20%).' }, radius: 34, damage: 30, cannibalise: true },
 };
 
 const TANKS = {
@@ -2074,30 +2074,86 @@ function deformTerrain(x, radius = 22) {
   const g = state.game;
   const r = radius * g.tank.radiusMult;
   const xi = Math.floor(x);
+  // Save pre-explosion tank Y positions for fall damage calculation
+  const p1YBefore = g.p1.y;
+  const p2YBefore = g.p2.y;
   for (let dx = -r; dx <= r; dx++) {
     const i = xi + dx;
     if (i < 0 || i >= g.W) continue;
     const dist = Math.abs(dx);
     if (dist < r) {
-      const depth = Math.sqrt(r * r - dx * dx) * 0.6;
+      // Deeper crater: 0.85 instead of 0.6 (much more visible)
+      const depth = Math.sqrt(r * r - dx * dx) * 0.85;
       g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + depth);
     }
   }
-  if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
-  if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
+  // Light collapse: terrain just outside the crater also sags slightly (creates visual "overhang fall")
+  const collapseRange = Math.round(r * 0.4);
+  for (let dx = -r - collapseRange; dx <= r + collapseRange; dx++) {
+    const i = xi + dx;
+    if (i < 0 || i >= g.W) continue;
+    const distFromEdge = Math.abs(dx) - r;
+    if (distFromEdge > 0 && distFromEdge < collapseRange) {
+      const fade = 1 - (distFromEdge / collapseRange);
+      g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + fade * 6);
+    }
+  }
+  // Update tank positions and apply fall damage
+  if (g.p1.x >= 0 && g.p1.x < g.W) {
+    g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
+    const fall = g.p1.y - p1YBefore;
+    if (fall > 10 && !g.gameOver) {
+      const fallDmg = Math.min(20, Math.round(fall * 0.6));
+      g.p1hp = Math.max(0, g.p1hp - fallDmg);
+      g.p1.hitFlash = 10;
+      showGameMsg('GROUND COLLAPSE', '-' + fallDmg + ' HP', 1000);
+    }
+  }
+  if (g.p2.x >= 0 && g.p2.x < g.W) {
+    g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
+    const fall = g.p2.y - p2YBefore;
+    if (fall > 10 && !g.gameOver) {
+      const fallDmg = Math.min(20, Math.round(fall * 0.6));
+      g.p2hp = Math.max(0, g.p2hp - fallDmg);
+      g.p2.hitFlash = 10;
+      showGameMsg('AI TANK COLLAPSED', '-' + fallDmg + ' HP', 1000);
+    }
+  }
+  updateHUD();
 }
 
 function trenchTerrain(x, w = 30, d = 60) {
   const g = state.game;
   const xi = Math.floor(x);
+  const p1YBefore = g.p1.y;
+  const p2YBefore = g.p2.y;
   for (let dx = -w; dx <= w; dx++) {
     const i = xi + dx;
     if (i < 0 || i >= g.W) continue;
     const f = 1 - Math.abs(dx) / w;
     g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + d * f);
   }
-  if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
-  if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
+  if (g.p1.x >= 0 && g.p1.x < g.W) {
+    g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
+    const fall = g.p1.y - p1YBefore;
+    if (fall > 10 && !g.gameOver) {
+      const fallDmg = Math.min(20, Math.round(fall * 0.6));
+      g.p1hp = Math.max(0, g.p1hp - fallDmg);
+      g.p1.hitFlash = 10;
+      showGameMsg('GROUND COLLAPSE', '-' + fallDmg + ' HP', 1000);
+    }
+  }
+  if (g.p2.x >= 0 && g.p2.x < g.W) {
+    g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
+    const fall = g.p2.y - p2YBefore;
+    if (fall > 10 && !g.gameOver) {
+      const fallDmg = Math.min(20, Math.round(fall * 0.6));
+      g.p2hp = Math.max(0, g.p2hp - fallDmg);
+      g.p2.hitFlash = 10;
+      showGameMsg('AI TANK COLLAPSED', '-' + fallDmg + ' HP', 1000);
+    }
+  }
+  updateHUD();
 }
 
 function smoothTerrain(x, w = 60) {
@@ -2177,7 +2233,7 @@ function updatePhysics() {
   const target = p.fromPlayer ? g.p2 : g.p1;
   const dx = p.x - target.x, dy = p.y - target.y;
   const distSq = dx * dx + dy * dy;
-  if (distSq < 26 * 26 && dy > -12 && dy < 20) {
+  if (distSq < 35 * 35 && dy > -15 && dy < 24) {
     explodeAt(p.x, p.y, true, p.fromPlayer, Math.sqrt(distSq));
     return;
   }
@@ -2217,7 +2273,7 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     // First-hit bonus
     if (hitByPlayer && g.hitsP1 === 0) damage = Math.round(damage * 1.4);
     // Graded damage by proximity
-    const proximity = Math.max(0, 1 - hitDist / 26);
+    const proximity = Math.max(0, 1 - hitDist / 35);
     damage = Math.round(damage * (0.4 + proximity * 0.6));
     let critical = false;
     if (proximity > 0.8) { damage = Math.round(damage * 1.3); critical = true; }
@@ -2260,8 +2316,10 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     if (w.trench) trenchTerrain(x, 30, 60);
     else if (w.smooth) smoothTerrain(x, 60);
     else if (w.cannibalise) { cannibaliseTerrain(x); showGameMsg(t('capture_drop'), t('solar_cannibalised')); }
-    else deformTerrain(x, w.bigBoom ? 38 : 22);
+    else deformTerrain(x, w.radius || 32);
     updateHUD();
+    // Check fall damage KO
+    if (g.p1hp <= 0 || g.p2hp <= 0) { setTimeout(() => endGame(g.p1hp > 0), 1500); return; }
   }
 
   const m = g.mission;
