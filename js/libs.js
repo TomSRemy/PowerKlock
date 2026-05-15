@@ -14592,11 +14592,38 @@ function mkChart(id, config) {
   return chart;
 }
 
-// Zoom plugin default config
+// Zoom plugin default config.
+// Norm Klock: click-drag rectangle XY zoom, no scroll-wheel zoom, no pan-drag.
+// Pinch stays enabled for touch devices. Double-click resets (handled per-chart).
 const ZOOM_CFG = {
-  zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-  pan:  { enabled: true, mode: 'x' },
+  zoom: {
+    wheel: { enabled: false },
+    pinch: { enabled: true },
+    drag:  {
+      enabled: true,
+      backgroundColor: 'rgba(20,211,169,0.08)',
+      borderColor: 'rgba(20,211,169,0.45)',
+      borderWidth: 1,
+      threshold: 5,
+    },
+    mode: 'xy',
+  },
+  pan:  { enabled: false, mode: 'xy' },
+  limits: { x: { minRange: 1 }, y: { minRange: 1 } },
 };
+
+// Global dblclick → reset zoom on any Chart.js canvas. Delegated on
+// document so it covers all charts (existing + dynamically inserted by
+// the drill-down row, fullscreen overlays, etc.) without per-chart wiring.
+if (typeof window !== 'undefined' && !window._klockDblclickResetWired) {
+  window._klockDblclickResetWired = true;
+  document.addEventListener('dblclick', (e) => {
+    const canvas = e.target && e.target.closest && e.target.closest('canvas');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const chart = (typeof Chart.getChart === 'function') ? Chart.getChart(canvas) : null;
+    if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
+  }, true);
+}
 
 // Fullscreen button helper
 function addFullscreen(canvasId) {
