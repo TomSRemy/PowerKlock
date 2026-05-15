@@ -115,6 +115,12 @@ def parse_prices(xml_text):
             continue
 
         res = period.findtext('ns:resolution', 'PT60M', ns)
+        # SPOT day-ahead is ALWAYS either hourly (PT60M) or quarter-hourly (PT15M).
+        # Anything else (PT30M, etc.) is upstream noise → reject the period and warn.
+        if res not in ('PT60M', 'PT15M'):
+            doc_date = doc_start_str[:10] if doc_start_str else '?'
+            print(f"  ⚠ parse_prices: rejecting non-spot resolution {res} (TS[{ts_idx}] day={doc_date}) — expected PT60M or PT15M")
+            continue
         is_15min = (res == 'PT15M')
         if is_15min:
             is_15min_global = True
