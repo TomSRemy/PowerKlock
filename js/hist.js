@@ -2222,7 +2222,7 @@ function _openHoRow(zone, series, st) {
         <div style="display:flex;justify-content:flex-end;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <!-- Tab-specific toggle slot (e.g. Hourly: By quarter / YoY global) -->
-            <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px"></div>
+            <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
             <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
@@ -2538,7 +2538,7 @@ function _openHoFullscreen(zone) {
         <!-- Ypresets row below the title (Lines/YoY only) -->
         <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;flex-shrink:0">
           <div style="display:flex;gap:3px;align-items:center">
-            <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px"></div>
+            <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
             <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
@@ -3138,7 +3138,11 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
   });
   // Toggle canvas vs heatmap (some renderers swap to a grid)
   const canvas = document.getElementById(_hszCtx().canvasId);
-  if (canvas) canvas.style.display = '';
+  if (canvas) {
+    canvas.style.display = '';
+    // Restore wrap visibility too (Hourly Quarter hides it)
+    if (canvas.parentNode) canvas.parentNode.style.display = '';
+  }
 
   // Cleanup Hourly-specific UI when not on hourly
   const togPrefix = _hszCtx().togglePrefix;
@@ -3146,6 +3150,8 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
     _hszHideHourlyToggle();
     const qg = document.getElementById(togPrefix + '-quarter-grid');
     if (qg) qg.remove();
+    const ql = document.getElementById(togPrefix + '-quarter-legend');
+    if (ql) ql.remove();
   }
 
   // Dispatch render by tab
@@ -4137,21 +4143,24 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     subtitle: `Each panel shows the average price for every hour of day, aggregated over one quarter. Current ${cur}${n1 ? ', Y-1 ' + n1 : ''}${n2 ? ', Y-2 ' + n2 : ''}.`,
   });
 
-  // Global legend bar above the grid
+  // Global legend bar — inserted AFTER the wrap (canvas container) so it doesn't
+  // get clipped by wrap's fixed 340px height. The neg-prices banner sits after.
   const legendEl = document.createElement('div');
   legendEl.id = _hszCtx().togglePrefix + '-quarter-legend';
-  legendEl.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-bottom:8px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
+  legendEl.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin:8px 0;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
   legendEl.innerHTML = `
     <span><span style="display:inline-block;width:14px;height:2.4px;background:${color};vertical-align:middle;margin-right:5px"></span>${cur} (current)</span>
     ${n1 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(255,255,255,0.55);vertical-align:middle;margin-right:5px"></span>${n1} (Y-1)</span>` : ''}
     ${n2 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(168,125,196,0.7);vertical-align:middle;margin-right:5px"></span>${n2} (Y-2)</span>` : ''}
   `;
-  wrap.insertBefore(legendEl, canvas);
+  // Place the legend right after the canvas wrap (so before the rest of detail content)
+  if (wrap.nextSibling) wrap.parentNode.insertBefore(legendEl, wrap.nextSibling);
+  else wrap.parentNode.appendChild(legendEl);
 
-  // 2×2 grid
+  // 2×2 grid — placed AFTER the legend (i.e. AFTER the canvas wrap)
   const grid = document.createElement('div');
   grid.id = _hszCtx().togglePrefix + '-quarter-grid';
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;height:100%;min-height:340px';
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:520px;margin-bottom:8px';
 
   const Qmeta = [
     { id: 'Q1', label: 'Q1 · Winter', sub: 'Jan-Mar', color: '#A87DC4' },
@@ -4175,7 +4184,12 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     grid.appendChild(cell);
   });
 
-  wrap.appendChild(grid);
+  // Place the grid right after the legend (i.e. AFTER the canvas wrap)
+  if (legendEl.nextSibling) legendEl.parentNode.insertBefore(grid, legendEl.nextSibling);
+  else legendEl.parentNode.appendChild(grid);
+
+  // Also hide the canvas wrap entirely (saves 340px of empty space)
+  wrap.style.display = 'none';
 
   // Y-preset (shared across all 4 quarters)
   const preset = _hszCtx().getYPreset();
@@ -4312,7 +4326,10 @@ function _hszRenderHourlyYoY(zone, intraday) {
   const oldLg = document.getElementById(_hszCtx().togglePrefix + '-quarter-legend');
   if (oldLg) oldLg.remove();
   const canvas = document.getElementById(_hszCtx().canvasId);
-  if (canvas) canvas.style.display = '';
+  if (canvas) {
+    canvas.style.display = '';
+    if (canvas.parentNode) canvas.parentNode.style.display = '';
+  }
 
   // Sanitise sparse-data years (e.g. 2024 with 1 point every 2h → interpolated)
   const curProfile = _hszSanitiseHourlyProfile(intraday[cur]?.all);
@@ -4822,30 +4839,44 @@ function _meanIgnoreNull(arr) {
   return v.length ? v.reduce((a,b)=>a+b,0) / v.length : null;
 }
 
-// Sanitise an hourly profile. Some historical years have only 1 valid point
-// every 2 hours (data import bug → 1h/0.25h misalignment). Without this fix
-// the chart renders saw-tooth lines that are visually misleading.
+// Sanitise an hourly profile. Some historical years have only partial data
+// (data import bug → 1h vs 0.25h misalignment, or truncated days). Without
+// this fix the chart renders saw-tooth lines or flat-copies the last valid
+// value, both visually misleading.
+//
 // Strategy:
-//   • If validity >= 80% → return as-is.
-//   • If 40% <= validity < 80% → linearly interpolate the nulls.
-//   • If validity < 40% → consider corrupt, return null (drops series).
+//   • Compute validity ratio overall AND check trailing/leading null run.
+//   • If validity >= 80% AND no trailing/leading run > 20% → as-is.
+//   • If 40% <= validity AND trailing/leading run ≤ 20% → linearly interpolate
+//     internal nulls only (safe: we have anchors on both sides).
+//   • Otherwise → return null (renderer drops the series — better than lying).
 function _hszSanitiseHourlyProfile(arr) {
   if (!arr || arr.length === 0) return null;
   const n = arr.length;
-  const validCount = arr.filter(v => v != null && !isNaN(v)).length;
+  const isValid = v => v != null && !isNaN(v);
+  const validCount = arr.filter(isValid).length;
   const ratio = validCount / n;
   if (ratio < 0.4) return null;
+  // Leading run of nulls
+  let leadNull = 0;
+  while (leadNull < n && !isValid(arr[leadNull])) leadNull++;
+  // Trailing run of nulls
+  let trailNull = 0;
+  while (trailNull < n && !isValid(arr[n - 1 - trailNull])) trailNull++;
+  // If a long contiguous block at start or end is missing → data is broken,
+  // not a sparse-sampling case. Drop rather than fabricate.
+  const longRunThreshold = Math.floor(n * 0.2); // 20% of the series
+  if (leadNull > longRunThreshold || trailNull > longRunThreshold) return null;
   if (ratio >= 0.8) return arr.slice();
+  // Internal interpolation only (both sides have anchors)
   const out = arr.slice();
   for (let i = 0; i < n; i++) {
-    if (out[i] != null && !isNaN(out[i])) continue;
+    if (isValid(out[i])) continue;
     let prevI = -1;
-    for (let j = i - 1; j >= 0; j--) if (arr[j] != null && !isNaN(arr[j])) { prevI = j; break; }
+    for (let j = i - 1; j >= 0; j--) if (isValid(arr[j])) { prevI = j; break; }
     let nextI = -1;
-    for (let j = i + 1; j < n; j++) if (arr[j] != null && !isNaN(arr[j])) { nextI = j; break; }
-    if (prevI === -1 && nextI === -1) continue;
-    if (prevI === -1) { out[i] = arr[nextI]; continue; }
-    if (nextI === -1) { out[i] = arr[prevI]; continue; }
+    for (let j = i + 1; j < n; j++) if (isValid(arr[j])) { nextI = j; break; }
+    if (prevI === -1 || nextI === -1) continue; // safety, should not happen here
     const w = (i - prevI) / (nextI - prevI);
     out[i] = arr[prevI] * (1 - w) + arr[nextI] * w;
   }
