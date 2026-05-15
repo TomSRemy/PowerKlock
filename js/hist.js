@@ -1292,13 +1292,18 @@ window._hoSetYPreset = function(preset) {
 
 window._hoResetZoom = function() {
   // Reset both the manual zoom (drag-selection) and the Y-preset.
-  // Even if no drag-zoom was active, this restores the "standard" Y range,
-  // which is what users intuitively expect from a Reset button.
   const inline = document.getElementById('ho-detail-chart');
   const fs     = document.getElementById('ho-fs-chart');
   [inline, fs].forEach(canvas => {
     if (!canvas || typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') return;
     const ch = Chart.getChart(canvas);
+    if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+  });
+  // Also reset the 4 quarter mini-charts in Hourly Quarter mode
+  ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
+    const c = document.getElementById('hsz-q-canvas-' + q);
+    if (!c || typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') return;
+    const ch = Chart.getChart(c);
     if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
   });
   // If currently on Lines tab and a non-standard preset is active, reset to standard
@@ -1366,7 +1371,7 @@ window._hoSetTab = function(zone, tabId) {
 // Chart-native legend is built into each chart so no manual hide needed here.
 function _hoApplyTabVisibility(tabId) {
   const yp = document.getElementById('ho-detail-ypresets-wrap');
-  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal');
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal' || tabId === 'hourly');
   if (yp) yp.style.display = showYPresets ? 'flex' : 'none';
 }
 
@@ -1382,12 +1387,11 @@ async function _buildHoTabChart(zone, series, tab, fullscreen) {
   const canvas = document.getElementById(canvasId);
   if (canvas) {
     const wrap = canvas.parentNode;
-    // Remove leftover quarter grid + hourly toggle from previous renders
+    // Remove leftover quarter grid from previous renders + hide toggle slot
     const prefix = fullscreen ? 'ho-fs' : 'ho-detail';
     const oldGrid = document.getElementById(prefix + '-quarter-grid');
     if (oldGrid) oldGrid.remove();
-    const oldTog = document.getElementById(prefix + '-hourly-toggle');
-    if (oldTog) oldTog.remove();
+    if (typeof _hszHideHourlyToggle === 'function') _hszHideHourlyToggle();
     // Restore canvas visibility (some tabs hide it then show it back)
     canvas.style.display = '';
 
@@ -2014,7 +2018,7 @@ window._hoFsSetTab = function(zone, tabId) {
 function _hoApplyFsTabVisibility(tabId) {
   const legend = document.getElementById('ho-fs-legend');
   const yp     = document.getElementById('ho-fs-ypresets-wrap');
-  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal');
+  const showYPresets = (tabId === 'lines' || tabId === 'yoy' || tabId === 'seasonal' || tabId === 'hourly');
   if (legend) legend.style.display = (tabId === 'lines') ? 'flex' : 'none';
   if (yp)     yp.style.display     = showYPresets ? 'flex' : 'none';
 }
@@ -2217,6 +2221,8 @@ function _openHoRow(zone, series, st) {
              by Chart.js inside the chart for consistent placement across tabs. -->
         <div style="display:flex;justify-content:flex-end;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <!-- Tab-specific toggle slot (e.g. Hourly: By quarter / YoY global) -->
+            <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px"></div>
             <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
@@ -2532,6 +2538,7 @@ function _openHoFullscreen(zone) {
         <!-- Ypresets row below the title (Lines/YoY only) -->
         <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;flex-shrink:0">
           <div style="display:flex;gap:3px;align-items:center">
+            <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px"></div>
             <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
                 style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
@@ -3136,8 +3143,7 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
   // Cleanup Hourly-specific UI when not on hourly
   const togPrefix = _hszCtx().togglePrefix;
   if (tab !== 'hourly') {
-    const tg = document.getElementById(togPrefix + '-hourly-toggle');
-    if (tg) tg.remove();
+    _hszHideHourlyToggle();
     const qg = document.getElementById(togPrefix + '-quarter-grid');
     if (qg) qg.remove();
   }
@@ -4068,23 +4074,26 @@ async function _hszRenderHourly(filtered, zone) {
   }
 }
 
-// Inject a small Quarter / YoY toggle above the chart area
+// Inject a small Quarter / YoY toggle into the slot in the actions row.
+// Works for both drill-down (ho-detail-toggle-slot) and fullscreen (ho-fs-toggle-slot).
 function _hszInjectHourlyToggle(mode) {
-  const canvas = document.getElementById(_hszCtx().canvasId);
-  if (!canvas) return;
-  const wrap = canvas.parentNode;
-  const togId = _hszCtx().togglePrefix + '-hourly-toggle';
-  // Remove old toggle if any
-  const oldT = document.getElementById(togId);
-  if (oldT) oldT.remove();
-  const toggle = document.createElement('div');
-  toggle.id = togId;
-  toggle.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;font-size:10px;font-family:\'JetBrains Mono\',monospace';
-  toggle.innerHTML = `
-    <button onclick="setHistHourlyMode('quarter')" style="background:${mode==='quarter'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${mode==='quarter'?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${mode==='quarter'?'#14D3A9':'var(--tx3)'};padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">BY QUARTER</button>
-    <button onclick="setHistHourlyMode('yoy')" style="background:${mode==='yoy'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${mode==='yoy'?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${mode==='yoy'?'#14D3A9':'var(--tx3)'};padding:3px 10px;border-radius:3px;cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;letter-spacing:0.04em;text-transform:uppercase">YoY GLOBAL</button>
+  const fs = !!document.getElementById('ho-fs-overlay');
+  const slotId = fs ? 'ho-fs-toggle-slot' : 'ho-detail-toggle-slot';
+  const slot = document.getElementById(slotId);
+  if (!slot) return;
+  slot.style.display = 'flex';
+  slot.innerHTML = `
+    <button onclick="setHistHourlyMode('quarter')" style="background:${mode==='quarter'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${mode==='quarter'?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${mode==='quarter'?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">By quarter</button>
+    <button onclick="setHistHourlyMode('yoy')" style="background:${mode==='yoy'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${mode==='yoy'?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${mode==='yoy'?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">YoY global</button>
   `;
-  wrap.insertBefore(toggle, canvas);
+}
+
+// Cleanup helper: hide toggle slot when leaving Hourly
+function _hszHideHourlyToggle() {
+  ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) { s.style.display = 'none'; s.innerHTML = ''; }
+  });
 }
 
 // Determine "current year" and "Y-1/Y-2" years from the intraday data
@@ -4104,30 +4113,51 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
 
-  // Destroy any existing single chart
+  // Destroy any existing single chart on the main canvas
   if (HIST.charts[_hszCtx().canvasId]) {
     HIST.charts[_hszCtx().canvasId].destroy();
     delete HIST.charts[_hszCtx().canvasId];
   }
-  // Hide single canvas, render a 2×2 grid in its place
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (!canvas) return;
   canvas.style.display = 'none';
   const wrap = canvas.parentNode;
 
-  // Clean previous grid if any
+  // Clean previous grid
   const oldGrid = document.getElementById(_hszCtx().togglePrefix + '-quarter-grid');
   if (oldGrid) oldGrid.remove();
+  // Clean previous global legend
+  const oldLg = document.getElementById(_hszCtx().togglePrefix + '-quarter-legend');
+  if (oldLg) oldLg.remove();
 
+  // HTML title block (hybrid F)
+  _setHoTitle({
+    eyebrow: `Prices · Hourly · ${zone} · By quarter`,
+    title: 'Intraday 24h profile by quarter · current year vs Y-1 and Y-2',
+    subtitle: `Each panel shows the average price for every hour of day, aggregated over one quarter. Current ${cur}${n1 ? ', Y-1 ' + n1 : ''}${n2 ? ', Y-2 ' + n2 : ''}.`,
+  });
+
+  // Global legend bar above the grid
+  const legendEl = document.createElement('div');
+  legendEl.id = _hszCtx().togglePrefix + '-quarter-legend';
+  legendEl.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-bottom:8px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
+  legendEl.innerHTML = `
+    <span><span style="display:inline-block;width:14px;height:2.4px;background:${color};vertical-align:middle;margin-right:5px"></span>${cur} (current)</span>
+    ${n1 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(255,255,255,0.55);vertical-align:middle;margin-right:5px"></span>${n1} (Y-1)</span>` : ''}
+    ${n2 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(168,125,196,0.7);vertical-align:middle;margin-right:5px"></span>${n2} (Y-2)</span>` : ''}
+  `;
+  wrap.insertBefore(legendEl, canvas);
+
+  // 2×2 grid
   const grid = document.createElement('div');
   grid.id = _hszCtx().togglePrefix + '-quarter-grid';
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;height:100%;min-height:340px';
 
   const Qmeta = [
-    { id: 'Q1', label: 'Q1 Winter (Jan-Mar)', color: '#A87DC4' },
-    { id: 'Q2', label: 'Q2 Spring (Apr-Jun)', color: '#14D3A9' },
-    { id: 'Q3', label: 'Q3 Summer (Jul-Sep)', color: '#FBBF24' },
-    { id: 'Q4', label: 'Q4 Autumn (Oct-Dec)', color: '#ED6965' },
+    { id: 'Q1', label: 'Q1 · Winter', sub: 'Jan-Mar', color: '#A87DC4' },
+    { id: 'Q2', label: 'Q2 · Spring', sub: 'Apr-Jun', color: '#14D3A9' },
+    { id: 'Q3', label: 'Q3 · Summer', sub: 'Jul-Sep', color: '#FBBF24' },
+    { id: 'Q4', label: 'Q4 · Autumn', sub: 'Oct-Dec', color: '#ED6965' },
   ];
 
   Qmeta.forEach(q => {
@@ -4135,7 +4165,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     cell.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid var(--bd);border-radius:6px;padding:10px;display:flex;flex-direction:column;min-height:0';
     cell.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-        <span style="font-size:11px;font-weight:700;color:${q.color};font-family:'JetBrains Mono',monospace">${q.label}</span>
+        <span style="font-size:9px;font-weight:600;color:${q.color};font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase">${q.label} <span style="color:var(--tx3);font-weight:500">${q.sub}</span></span>
         <span id="hsz-q-meta-${q.id}" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace"></span>
       </div>
       <div style="flex:1;position:relative;min-height:140px">
@@ -4147,42 +4177,79 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 
   wrap.appendChild(grid);
 
-  // Build a chart per quarter
+  // Y-preset (shared across all 4 quarters)
+  const preset = _hszCtx().getYPreset();
+
   const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}h`);
   Qmeta.forEach(q => {
-    const curProfile = intraday[cur]?.[q.id];
-    const n1Profile  = n1 ? intraday[n1]?.[q.id] : null;
-    const n2Profile  = n2 ? intraday[n2]?.[q.id] : null;
+    const curRaw = intraday[cur]?.[q.id];
+    const n1Raw  = n1 ? intraday[n1]?.[q.id] : null;
+    const n2Raw  = n2 ? intraday[n2]?.[q.id] : null;
 
-    if (!curProfile || curProfile.every(v => v == null)) {
-      const cellMeta = document.getElementById(`hsz-q-meta-${q.id}`);
+    const curProfile = _hszSanitiseHourlyProfile(curRaw);
+    const n1Profile  = _hszSanitiseHourlyProfile(n1Raw);
+    const n2Profile  = _hszSanitiseHourlyProfile(n2Raw);
+
+    const cellMeta = document.getElementById(`hsz-q-meta-${q.id}`);
+
+    // If current is empty but Y-1 or Y-2 have data, render those (typical
+    // case: current=2026, Q3/Q4 not happened yet but historical context useful).
+    const hasAny = (curProfile && curProfile.some(v => v != null))
+                 || (n1Profile && n1Profile.some(v => v != null))
+                 || (n2Profile && n2Profile.some(v => v != null));
+    if (!hasAny) {
       if (cellMeta) cellMeta.textContent = 'no data';
       return;
     }
-    const curMean = _meanIgnoreNull(curProfile);
-    const cellMeta = document.getElementById(`hsz-q-meta-${q.id}`);
-    if (cellMeta) cellMeta.textContent = `avg ${curMean != null ? curMean.toFixed(1) : '--'} €/MWh`;
+
+    if (curProfile && curProfile.some(v => v != null)) {
+      const curMean = _meanIgnoreNull(curProfile);
+      if (cellMeta) cellMeta.textContent = `${cur} avg ${curMean != null ? curMean.toFixed(1) : '--'} €/MWh`;
+    } else if (cellMeta) {
+      cellMeta.textContent = `${cur} not in period · showing history`;
+      cellMeta.style.color = 'var(--tx3)';
+    }
 
     const datasets = [];
     if (n2Profile) {
       datasets.push({
         label: n2 + ' (Y-2)', data: n2Profile,
-        borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1.2,
-        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [6,4], order: 4,
+        borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
+        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
       });
     }
     if (n1Profile) {
       datasets.push({
         label: n1 + ' (Y-1)', data: n1Profile,
-        borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1.3,
-        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [3,3], order: 3,
+        borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
+        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
       });
     }
-    datasets.push({
-      label: cur + ' (current)', data: curProfile,
-      borderColor: q.color, borderWidth: 2.5,
-      pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
-    });
+    if (curProfile && curProfile.some(v => v != null)) {
+      datasets.push({
+        label: cur + ' (current)', data: curProfile,
+        borderColor: q.color, borderWidth: 2.4,
+        pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
+      });
+    }
+
+    // ── Y-presets: clip Y axis (per mini-chart) ──
+    let yMin = null, yMax = null;
+    const allVals = [];
+    datasets.forEach(d => d.data.forEach(v => { if (v != null && !isNaN(v)) allVals.push(v); }));
+    if (preset === 'focus' && curProfile && curProfile.some(v => v != null)) {
+      // Focus on current only — but include Y-1/Y-2 mean line
+      const focusVals = [];
+      datasets.forEach(d => d.data.forEach(v => { if (v != null && !isNaN(v)) focusVals.push(v); }));
+      if (focusVals.length) {
+        const lo = Math.min(...focusVals);
+        const hi = Math.max(...focusVals);
+        const pad = Math.max(5, (hi - lo) * 0.10);
+        yMin = lo - pad;
+        yMax = hi + pad;
+      }
+    }
+    // Standard / All let Chart.js auto-fit
 
     mkHistChart(`hsz-q-canvas-${q.id}`, {
       type: 'line',
@@ -4190,12 +4257,43 @@ function _hszRenderHourlyQuarter(zone, intraday) {
       options: {
         ...baseOptions(''),
         plugins: {
+          title: { display: false },
+          subtitle: { display: false },
           legend: { display: false },
-          tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €' : 'n/a'}` } },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` },
+          },
+          zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+            zoom: {
+              drag: {
+                enabled: true,
+                backgroundColor: 'rgba(20,211,169,0.12)',
+                borderColor: 'rgba(20,211,169,0.5)',
+                borderWidth: 1,
+              },
+              wheel: { enabled: false },
+              pinch: { enabled: true },
+              mode: 'xy',
+            },
+            pan: { enabled: false },
+            limits: { y: { min: 'original', max: 'original' } },
+          } : {},
+        },
+        onClick: (evt) => {
+          if (evt.native && evt.native.detail === 2) {
+            const ch = HIST.charts[`hsz-q-canvas-${q.id}`];
+            if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+          }
         },
         scales: {
           x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 9 }, maxTicksLimit: 8 } },
-          y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 9 } } },
+          y: {
+            grid: { color: _HIST_GRID },
+            ticks: { color: _HIST_TX3, font: { size: 9 } },
+            min: yMin != null ? yMin : undefined,
+            max: yMax != null ? yMax : undefined,
+          },
         },
       },
     });
@@ -4208,17 +4306,20 @@ function _hszRenderHourlyYoY(zone, intraday) {
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
 
-  // Remove the quarter grid if present, show the main canvas
+  // Remove the quarter grid + global legend if present, show the main canvas
   const oldGrid = document.getElementById(_hszCtx().togglePrefix + '-quarter-grid');
   if (oldGrid) oldGrid.remove();
+  const oldLg = document.getElementById(_hszCtx().togglePrefix + '-quarter-legend');
+  if (oldLg) oldLg.remove();
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) canvas.style.display = '';
 
-  const curProfile = intraday[cur]?.all;
-  const n1Profile  = n1 ? intraday[n1]?.all : null;
-  const n2Profile  = n2 ? intraday[n2]?.all : null;
+  // Sanitise sparse-data years (e.g. 2024 with 1 point every 2h → interpolated)
+  const curProfile = _hszSanitiseHourlyProfile(intraday[cur]?.all);
+  const n1Profile  = n1 ? _hszSanitiseHourlyProfile(intraday[n1]?.all) : null;
+  const n2Profile  = n2 ? _hszSanitiseHourlyProfile(intraday[n2]?.all) : null;
 
-  if (!curProfile) return _hszPlaceholder('No "all" intraday profile in summary');
+  if (!curProfile) return _hszPlaceholder('No "all" intraday profile for the current year');
 
   const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}h`);
   const datasets = [];
@@ -4226,26 +4327,66 @@ function _hszRenderHourlyYoY(zone, intraday) {
   if (n2Profile) {
     datasets.push({
       label: n2 + ' (Y-2)', data: n2Profile,
-      borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1.5,
+      borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
       pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
   if (n1Profile) {
     datasets.push({
       label: n1 + ' (Y-1)', data: n1Profile,
-      borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
       pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
   datasets.push({
     label: cur + ' (current)', data: curProfile,
-    borderColor: color, borderWidth: 2.8,
+    borderColor: color, borderWidth: 2.4,
     pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
   });
 
-  // Compute summary stats for the subtitle
+  // Stats for subtitle
   const curMean = _meanIgnoreNull(curProfile);
   const n1Mean  = n1Profile ? _meanIgnoreNull(n1Profile) : null;
+  const n2Mean  = n2Profile ? _meanIgnoreNull(n2Profile) : null;
+
+  let subtitle = '';
+  if (curMean != null) {
+    subtitle = `${cur}: ${curMean.toFixed(1)} €/MWh average`;
+    if (n1Mean != null) {
+      const d = curMean - n1Mean;
+      const v = d < 0 ? 'cheaper' : 'more expensive';
+      subtitle += ` — ${Math.abs(d).toFixed(1)} ${v} than ${n1} (${n1Mean.toFixed(1)})`;
+    }
+    if (n2Mean != null) {
+      const d = curMean - n2Mean;
+      const v = d < 0 ? 'cheaper' : 'more expensive';
+      subtitle += `, ${Math.abs(d).toFixed(1)} ${v} than ${n2} (${n2Mean.toFixed(1)})`;
+    }
+  } else {
+    subtitle = 'Average price for every hour of day, aggregated over the period';
+  }
+
+  // HTML title block (hybrid F)
+  _setHoTitle({
+    eyebrow: `Prices · Hourly · ${zone} · YoY global`,
+    title: 'Intraday 24h profile · current year vs Y-1 and Y-2',
+    subtitle,
+  });
+
+  // Y-preset
+  const preset = _hszCtx().getYPreset();
+  let yMin = null, yMax = null;
+  if (preset === 'focus') {
+    const vals = [];
+    datasets.forEach(d => d.data.forEach(v => { if (v != null && !isNaN(v)) vals.push(v); }));
+    if (vals.length) {
+      const lo = Math.min(...vals);
+      const hi = Math.max(...vals);
+      const pad = Math.max(5, (hi - lo) * 0.10);
+      yMin = lo - pad;
+      yMax = hi + pad;
+    }
+  }
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'line',
@@ -4253,14 +4394,50 @@ function _hszRenderHourlyYoY(zone, intraday) {
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
-        subtitle: {
-          display: true,
-          text: curMean != null && n1Mean != null
-            ? `Avg 24h profile · ${cur}: ${curMean.toFixed(1)} €/MWh · Y-1: ${n1Mean.toFixed(1)} (Δ ${(curMean - n1Mean).toFixed(1)})`
-            : `Avg 24h profile across the period`,
-          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
+        title: { display: false },
+        subtitle: { display: false },
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 14, boxHeight: 2, padding: 12 },
+          onClick: (e, legendItem, legend) => {
+            const ci = legend.chart;
+            ci.setDatasetVisibility(legendItem.datasetIndex, !ci.isDatasetVisible(legendItem.datasetIndex));
+            ci.update();
+          },
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` },
+        },
+        zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(20,211,169,0.12)',
+              borderColor: 'rgba(20,211,169,0.5)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: false },
+            pinch: { enabled: true },
+            mode: 'xy',
+          },
+          pan: { enabled: false },
+          limits: { y: { min: 'original', max: 'original' } },
+        } : {},
+      },
+      onClick: (evt) => {
+        if (evt.native && evt.native.detail === 2) {
+          const ch = HIST.charts[_hszCtx().canvasId];
+          if (ch && typeof ch.resetZoom === 'function') ch.resetZoom();
+        }
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } } },
+        y: {
+          grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } },
+          min: yMin != null ? yMin : undefined,
+          max: yMax != null ? yMax : undefined,
+          title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } },
         },
       },
     },
@@ -4643,6 +4820,36 @@ function _hszRenderDist(filtered, zone) {
 function _meanIgnoreNull(arr) {
   const v = arr.filter(x => x != null && !isNaN(x));
   return v.length ? v.reduce((a,b)=>a+b,0) / v.length : null;
+}
+
+// Sanitise an hourly profile. Some historical years have only 1 valid point
+// every 2 hours (data import bug → 1h/0.25h misalignment). Without this fix
+// the chart renders saw-tooth lines that are visually misleading.
+// Strategy:
+//   • If validity >= 80% → return as-is.
+//   • If 40% <= validity < 80% → linearly interpolate the nulls.
+//   • If validity < 40% → consider corrupt, return null (drops series).
+function _hszSanitiseHourlyProfile(arr) {
+  if (!arr || arr.length === 0) return null;
+  const n = arr.length;
+  const validCount = arr.filter(v => v != null && !isNaN(v)).length;
+  const ratio = validCount / n;
+  if (ratio < 0.4) return null;
+  if (ratio >= 0.8) return arr.slice();
+  const out = arr.slice();
+  for (let i = 0; i < n; i++) {
+    if (out[i] != null && !isNaN(out[i])) continue;
+    let prevI = -1;
+    for (let j = i - 1; j >= 0; j--) if (arr[j] != null && !isNaN(arr[j])) { prevI = j; break; }
+    let nextI = -1;
+    for (let j = i + 1; j < n; j++) if (arr[j] != null && !isNaN(arr[j])) { nextI = j; break; }
+    if (prevI === -1 && nextI === -1) continue;
+    if (prevI === -1) { out[i] = arr[nextI]; continue; }
+    if (nextI === -1) { out[i] = arr[prevI]; continue; }
+    const w = (i - prevI) / (nextI - prevI);
+    out[i] = arr[prevI] * (1 - w) + arr[nextI] * w;
+  }
+  return out;
 }
 
 // ── Stats helpers shared across multiple chart variants ──
