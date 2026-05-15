@@ -2349,14 +2349,14 @@
       </div>
     </div>
 
-    <!-- Sub-header (period + zone count) -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;border-bottom:1px solid var(--border);font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">
-      <span>Historical overview · <span id="ho-period-label" style="text-transform:none;font-family:'JetBrains Mono',monospace;color:var(--text2);letter-spacing:0">--</span></span>
-      <span id="ho-zones-label" style="font-family:'JetBrains Mono',monospace;color:var(--text2);letter-spacing:0;text-transform:none">--</span>
-    </div>
-
-    <!-- Overview table -->
-    <div class="table-wrap" style="margin-top:10px">
+    <!-- Overview table (Daily-aligned header style) -->
+    <div class="table-wrap" id="ho-table-wrap" style="margin-top:10px">
+      <div class="table-header" style="flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span id="ho-title-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Historical Day-Ahead prices · <span id="ho-period-label" style="text-transform:none;font-family:'JetBrains Mono',monospace;color:var(--text2);letter-spacing:0;font-weight:600">--</span></span>
+        </div>
+        <span id="ho-zones-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);letter-spacing:0;text-transform:none">--</span>
+      </div>
       <table id="ho-table" style="font-size:11px;table-layout:fixed">
         <thead>
           <tr>
@@ -2382,78 +2382,12 @@
     </div>
 
 <!-- ════════════════════════════════════════════════════════
-     BLOCK 2 · SINGLE ZONE · zoom (insta tabs)
-     Lines · YoY · Seasonal · Hourly · Weekly · Volatility
+     BLOCK 2 · SINGLE ZONE
+     Replaced by the row drill-down inside the table above.
+     Click any row in the overview table to expand a per-zone
+     panel with KPIs + tabs (Lines / YoY / Seasonal / Hourly /
+     Weekly / Volatility / Distribution).
      ════════════════════════════════════════════════════════ -->
-<div style="margin-top:20px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Single zone</span>
-      <span id="hsz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
-    </div>
-    <div class="hist-filter-bar">
-      <select class="hist-zone-select" id="hsz-zone" onchange="setHistSingleZone(this.value)">
-        <option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option>
-      </select>
-      <div class="hist-window-btns" id="hw-hsz">
-        <button class="hw-btn" onclick="setHistWindow('hsz','7D',this)">7D</button>
-        <button class="hw-btn" onclick="setHistWindow('hsz','1M',this)">1M</button>
-        <button class="hw-btn active" onclick="setHistWindow('hsz','3M',this)">3M</button>
-        <button class="hw-btn" onclick="setHistWindow('hsz','1Y',this)">1Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hsz','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hsz','5Y',this)">5Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hsz','All',this)">All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- KPI strip · single zone -->
-  <div class="kpi-strip" id="hsz-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">
-    <div class="kpi-card kpi-flat" id="hsz-kpi-avg">
-      <div class="kpi-label">Period avg</div>
-      <div class="kpi-value" id="hsz-kpi-avg-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta" id="hsz-kpi-avg-meta">--</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hsz-kpi-peak">
-      <div class="kpi-label">Peak avg</div>
-      <div class="kpi-value" id="hsz-kpi-peak-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta">08h–20h</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hsz-kpi-offpeak">
-      <div class="kpi-label">Off-peak avg</div>
-      <div class="kpi-value" id="hsz-kpi-offpeak-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta">00-08 / 20-24</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hsz-kpi-vol">
-      <div class="kpi-label">Volatility σ</div>
-      <div class="kpi-value" id="hsz-kpi-vol-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta">std dev daily</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hsz-kpi-neg">
-      <div class="kpi-label">Neg hours</div>
-      <div class="kpi-value" id="hsz-kpi-neg-v">--<span class="kpi-unit">h</span></div>
-      <div class="kpi-meta">over period</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hsz-kpi-spread">
-      <div class="kpi-label">Avg spread P/OP</div>
-      <div class="kpi-value" id="hsz-kpi-spread-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta">peak − offpeak</div>
-    </div>
-  </div>
-
-  <!-- Insta tabs : Single zone modes -->
-  <div style="display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:6px 0 10px;flex-wrap:wrap">
-    <div id="hsz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-  </div>
-
-  <!-- Chart -->
-  <div style="position:relative;height:340px;overflow:hidden;margin-bottom:10px">
-    <button onclick="(function(){var c=HIST.charts['hsz-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
-      style="position:absolute;top:8px;right:8px;z-index:10;background:rgba(15,20,25,0.85);border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
-    <canvas id="hsz-canvas" style="width:100%;height:340px"></canvas>
-    <div id="hsz-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
-  </div>
-</div>
 
 <!-- ════════════════════════════════════════════════════════
      BLOCK 3 · MULTI ZONE · Compare (insta tabs)
@@ -4666,9 +4600,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     const dtEl = document.getElementById('ho-date-to');
     if (dfEl) dfEl.value = '';
     if (dtEl) dtEl.value = '';
-    // Re-render the 3 historical blocks
+    // Re-render the historical blocks
     if (typeof renderHistOverview === 'function') renderHistOverview();
-    if (typeof renderHistSingle  === 'function') renderHistSingle();
     if (typeof renderHistMulti   === 'function') renderHistMulti();
   }
   window.pkSetGlobalHistWindow = pkSetGlobalHistWindow;
