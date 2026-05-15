@@ -223,8 +223,13 @@ function mkHistChart(canvasId, config) {
   HIST.charts[canvasId] = new Chart(canvas, config);
 }
 
-// Colour aliases (redefined here since const doesn't cross script blocks)
-var _HIST_TX3  = '#4A6280';
+// Colour aliases (redefined here since const doesn't cross script blocks).
+// IMPORTANT: Chart.js does NOT resolve CSS variables like `var(--text)` — it
+// reads them as literal strings and falls back to black. Always pass actual
+// hex/rgba values to Chart.js plugin options (title.color, ticks.color, …).
+var _HIST_TEXT = '#E1ECF7';  // main text (titles)
+var _HIST_TX2  = '#94A8BD';  // secondary text (subtitles, axis titles)
+var _HIST_TX3  = '#4A6280';  // tertiary text (axis ticks, faint legend)
 var _HIST_ACC  = '#14D3A9';
 var _HIST_WARN = '#EE9B00';
 var _HIST_DN   = '#ef4444';
@@ -1367,9 +1372,10 @@ function _hoApplyTabVisibility(tabId) {
 
 // Dispatcher used by the drill-down row to render any tab on the
 // detail canvas (ho-detail-chart) or the fullscreen canvas (ho-fs-chart).
-// For 'lines' we keep the existing _buildHoChart (Now marker + Min/Max annotations).
-// For the other tabs we swap _HSZ_TARGET to point at the detail/fs canvas
-// and delegate to _hszRenderTab.
+// All tabs (including Lines) are routed to _hszRenderTab. The legacy
+// _buildHoChart (kept below as dead code for now) is no longer used in the
+// drill-down flow — Now marker is intentionally dropped on historical
+// lookback windows (it only makes sense for live Daily charts).
 async function _buildHoTabChart(zone, series, tab, fullscreen) {
   const canvasId = fullscreen ? 'ho-fs-chart' : 'ho-detail-chart';
   // Clear any previous content/grid from the chart wrap (hourly-quarter mode injects one)
@@ -1409,13 +1415,10 @@ async function _buildHoTabChart(zone, series, tab, fullscreen) {
     }
   }
 
-  if (tab === 'lines') {
-    // Existing Lines renderer (handles Now marker + Min/Max annotations + Y-presets)
-    return _buildHoChart(zone, series, fullscreen);
-  }
-
-  // Other tabs delegate to the shared HSZ renderers, with the context pointing
-  // at the drill-down (or fullscreen) canvas.
+  // Tab dispatch: all tabs (Lines included) go through _hszRenderTab.
+  // The Now marker that used to live in _buildHoChart (legacy) is intentionally
+  // dropped here — it makes sense only on Daily charts where the last point IS
+  // "now", not on a historical lookback window where it would be misleading.
   const prevTarget = { ..._HSZ_TARGET };
   _HSZ_TARGET.canvasId    = canvasId;
   _HSZ_TARGET.tabsId      = null;
@@ -3231,7 +3234,7 @@ function _hszRenderLines(filtered, zone) {
         title: {
           display: true,
           text: 'Daily DA price history with short-term trend (7D) and long-term trend (30D)',
-          color: 'var(--text)',
+          color: _HIST_TEXT,
           font: { size: 12, weight: '600' },
           align: 'start',
           padding: { top: 0, bottom: 14 },
@@ -3330,23 +3333,29 @@ function _hszRenderYoY(filtered, zone, summary) {
     return _hszRenderYoYCalendar(filtered, zone, summary, all);
   }
 
-  // ── SUPERPOSITION MODE: current vs Y-1 vs Y-2 aligned by day-of-period ──
+  // ── SUPERPOSITION MODE: current vs Y-1 vs Y-2 aligned by MM-DD ──
   const curFrom = filtered[0].d;
   const curTo   = filtered[filtered.length - 1].d;
 
-  // Slice Y-1 and Y-2 windows by shifting the date range
+  // Build lookup maps for Y-1 and Y-2 sliced by shifted date window,
+  // then re-key by month-day so we align with current[i] regardless of
+  // leap-year / missing-day mismatches.
   const sliceWindow = (fromStr, toStr) => all.filter(e => e.d >= fromStr && e.d <= toStr);
-  const ny1 = sliceWindow(_shiftYearsISO(curFrom, 1), _shiftYearsISO(curTo, 1));
-  const ny2 = sliceWindow(_shiftYearsISO(curFrom, 2), _shiftYearsISO(curTo, 2));
+  const ny1Arr = sliceWindow(_shiftYearsISO(curFrom, 1), _shiftYearsISO(curTo, 1));
+  const ny2Arr = sliceWindow(_shiftYearsISO(curFrom, 2), _shiftYearsISO(curTo, 2));
+  const ny1ByMMDD = {};
+  ny1Arr.forEach(e => { ny1ByMMDD[e.d.slice(5)] = e.avg; });
+  const ny2ByMMDD = {};
+  ny2Arr.forEach(e => { ny2ByMMDD[e.d.slice(5)] = e.avg; });
 
   // Use REAL DATES (current period) as labels so X axis is informative.
-  // Y-1 / Y-2 are aligned by day-of-period index against these.
   const labels = filtered.map(d => d.d);
 
-  // Map curr/prev by day index (align position 0 of cur with position 0 of ny1/ny2)
+  // Align Y-1/Y-2 to current by MM-DD (NOT by index) so they stay
+  // mathematically inside the P0–P100 envelope built from the same buckets.
   const cur   = filtered.map(d => d.avg);
-  const prev1 = labels.map((_, i) => ny1[i]?.avg ?? null);
-  const prev2 = labels.map((_, i) => ny2[i]?.avg ?? null);
+  const prev1 = filtered.map(d => ny1ByMMDD[d.d.slice(5)] ?? null);
+  const prev2 = filtered.map(d => ny2ByMMDD[d.d.slice(5)] ?? null);
 
   // Build historical envelopes from years strictly older than the current period start
   const histYears = all.filter(e => e.d < curFrom);
@@ -3474,12 +3483,12 @@ function _hszRenderYoY(filtered, zone, summary) {
         title: {
           display: true,
           text: 'Daily prices vs same calendar dates in Y-1, Y-2, typical historical range (P5–P95), and full range (Min–Max)',
-          color: 'var(--text)', font: { size: 12, weight: '600' },
+          color: _HIST_TEXT, font: { size: 12, weight: '600' },
           align: 'start', padding: { top: 0, bottom: 6 },
         },
         subtitle: {
           display: true, text: subtitleText,
-          color: _HIST_TX3, font: { size: 11 }, align: 'start', padding: { bottom: 12 },
+          color: _HIST_TX2, font: { size: 11 }, align: 'start', padding: { bottom: 12 },
         },
         legend: {
           display: true, position: 'top', align: 'end',
@@ -3610,13 +3619,13 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
         title: {
           display: true,
           text: 'Monthly averages by year — calendar overlay (long window: shows all years on a Jan–Dec axis)',
-          color: 'var(--text)', font: { size: 12, weight: '600' },
+          color: _HIST_TEXT, font: { size: 12, weight: '600' },
           align: 'start', padding: { top: 0, bottom: 6 },
         },
         subtitle: {
           display: true,
           text: `${years.length} years aligned by month · current year highlighted`,
-          color: _HIST_TX3, font: { size: 11 }, align: 'start', padding: { bottom: 10 },
+          color: _HIST_TX2, font: { size: 11 }, align: 'start', padding: { bottom: 10 },
         },
         legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10 } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
