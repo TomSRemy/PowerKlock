@@ -1037,7 +1037,7 @@ function applyZoneFilter() {
   buildZoneFilterDropdown();
   // Re-render table with new filter
   renderPricesTableBody();
-  // Update button labels (both old position + new header position)
+  // Update button labels (both old position + new header position + sticky bar)
   const zones = (window._pricesSorted||[]).filter(z=>z.today!=null);
   const n = window._pricesZoneFilter ? window._pricesZoneFilter.size : zones.length;
   const text = window._pricesZoneFilter ? `${n} / ${zones.length} zones` : 'All zones';
@@ -1045,6 +1045,8 @@ function applyZoneFilter() {
   if (lbl1) lbl1.textContent = text;
   const lbl2 = document.getElementById('zone-filter-label-hdr');
   if (lbl2) lbl2.textContent = text;
+  const lbl3 = document.getElementById('pk-gf-daily-zones-label');
+  if (lbl3) lbl3.textContent = text;
 }
 
 function selectAllCompareZones() {
