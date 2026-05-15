@@ -2067,19 +2067,19 @@
         <table>
           <thead>
             <tr>
-              <th onclick="sortPricesTable('code')" style="cursor:pointer;user-select:none">Code <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('country')" style="cursor:pointer;user-select:none">Zone <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">Avg €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none" title="Avg over 08h–20h">Peak avg €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none" title="Avg over 00h–08h / 20h–24h">Off-pk avg €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none" title="Daily avg today minus yesterday">vs J-1 €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none" title="Min slot price (15-min if available)">Min slot €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none" title="Max slot price (15-min if available)">Max slot €/MWh <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('negHrs')" style="cursor:pointer;user-select:none" title="Hours with price below zero">Neg hrs <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('renPct')" style="cursor:pointer;user-select:none" title="Renewable share of generation mix">% Ren <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('domFuel')" style="cursor:pointer;user-select:none" title="Dominant fuel in generation mix">Dom. fuel <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('spark')" style="cursor:pointer;user-select:none" title="Spark spread = avg − TTF/eff − EUA × CO₂">Spark €/MWh <span style="opacity:.4">↕</span></th>
-              <th style="text-align:left;padding-left:16px">Shape</th>
+              <th onclick="sortPricesTable('code')" style="cursor:pointer;user-select:none">CODE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('country')" style="cursor:pointer;user-select:none">ZONE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('today')" style="cursor:pointer;user-select:none">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('peak')" style="cursor:pointer;user-select:none" title="Avg over 08h–20h">PEAK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('offpeak')" style="cursor:pointer;user-select:none" title="Avg over 00h–08h / 20h–24h">OFF-PK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('vsYday')" style="cursor:pointer;user-select:none" title="Daily avg today minus yesterday">VS J-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('minVal')" style="cursor:pointer;user-select:none" title="Min slot price (15-min if available)">MIN SLOT<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('maxVal')" style="cursor:pointer;user-select:none" title="Max slot price (15-min if available)">MAX SLOT<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('negHrs')" style="cursor:pointer;user-select:none" title="Hours with price below zero">NEG HRS <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('renPct')" style="cursor:pointer;user-select:none" title="Renewable share of generation mix">% REN <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('domFuel')" style="cursor:pointer;user-select:none" title="Dominant fuel in generation mix">DOM. FUEL <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('spark')" style="cursor:pointer;user-select:none" title="Spark spread = avg − TTF/eff − EUA × CO₂">SPARK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+              <th style="text-align:left;padding-left:16px">SHAPE</th>
             </tr>
           </thead>
           <tbody id="prices-tbody">
@@ -2251,21 +2251,25 @@
       <table id="ho-table" style="font-size:11px;table-layout:fixed">
         <thead>
           <tr>
-            <th style="width:11%;text-align:left">Zone</th>
-            <th style="width:10%;text-align:right" title="Average price over selected window">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:10%;text-align:right" title="Average peak price (08:00-20:00 CET)">Peak<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:10%;text-align:right" title="Average off-peak price (00:00-08:00 + 20:00-24:00 CET)">Off-pk<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:8%;text-align:right" title="Average intraday spread (max - min per day, averaged over period) — proxy for BESS arbitrage potential">Spread<br><span style="color:var(--tx3);font-weight:400;font-size:9px">intraday</span></th>
-            <th style="width:7%;text-align:right" title="Standard deviation of daily averages">σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:11%;text-align:right" title="Minimum / Maximum daily average">Min / Max<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-            <th style="width:7%;text-align:right" title="Hours below 0 €/MWh (renewable stress)">Neg h<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
-            <th style="width:7%;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">avg</span></th>
-            <th style="width:13%;text-align:right" title="Dominant fuel in generation mix">Dom. fuel</th>
-            <th style="width:7%;text-align:right" title="Number of days with data">Days<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span></th>
+            <th onclick="sortHoTable('code')" style="width:6%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('avg')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average price over selected window">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('peak')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average peak price (08:00-20:00 CET)">PEAK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('off')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average off-peak price (00:00-08:00 + 20:00-24:00 CET)">OFF-PK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('spread')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Average intraday spread (max - min per day, averaged over period) — proxy for BESS arbitrage potential">SPREAD<br><span style="color:var(--tx3);font-weight:400;font-size:9px">intraday · €/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('sigma')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Standard deviation of daily averages">Σ<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('minmax')" style="width:11%;cursor:pointer;user-select:none;text-align:right" title="Minimum / Maximum daily average">MIN / MAX<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('negh')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Hours below 0 €/MWh (renewable stress)">NEG H <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('ren')" style="width:6%;cursor:pointer;user-select:none;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('fuel')" style="width:11%;cursor:pointer;user-select:none;text-align:right" title="Dominant fuel in generation mix">DOM. FUEL <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('days')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Number of days with data">DAYS<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span> <span style="opacity:.4">↕</span></th>
           </tr>
         </thead>
         <tbody id="ho-table-tbody"></tbody>
       </table>
+      <div class="status-bar" style="padding:10px 16px">
+        <span id="ho-footer">ENTSO-E Transparency · Historical day-ahead · Updated daily after 13:00 CET</span>
+      </div>
     </div>
 
 <!-- ════════════════════════════════════════════════════════
