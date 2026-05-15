@@ -1290,15 +1290,82 @@ function _setHoKpi(id, val, unit) {
 // artefact from upstream aggregation). For hourly-only zones, multiples of 60 min.
 // Examples: 193.10 → "193 h 00 min" · 0.5 → "0 h 30 min" · 0.30 → "0 h 15 min"
 function _fmtNegH(val) {
+  // Delegate to shared helper (compact variable: 30min / 1h45 / 194h)
+  if (window.PK_FMT && typeof window.PK_FMT.negHours === 'function') {
+    return window.PK_FMT.negHours(val);
+  }
+  // Fallback (should not happen — PK_FMT lives in prices.js, loaded before hist.js)
   if (val == null || isNaN(val)) return '--';
-  // Round to the nearest 15-min step to eliminate float noise from upstream
-  // (any zone with 60-min granularity will still land cleanly on 60-min multiples)
   const totalMinRaw = val * 60;
   const totalMin = Math.round(totalMinRaw / 15) * 15;
   const h  = Math.floor(totalMin / 60);
   const m  = totalMin % 60;
   return `${h} h ${String(m).padStart(2, '0')} min`;
 }
+
+// ── Interactive sort for Historical Overview table (T2) ────────────────
+// State lives in window._HO_SORT = { key, dir }
+// Keys map to fields in stats[z] (or special: 'code', 'country', 'minmax' uses st.min)
+function _sortHoZones(zones, stats) {
+  const sort = window._HO_SORT || { key: 'avg', dir: 'desc' };
+  const arr = [...zones];
+
+  const getVal = (z, key) => {
+    if (key === 'code') return z;
+    if (key === 'country') return (_HO_NAMES[z] || z).toLowerCase();
+    const st = stats[z];
+    if (!st) return null;
+    switch (key) {
+      case 'avg':    return st.avg;
+      case 'peak':   return st.peakAvg;
+      case 'off':    return st.offAvg;
+      case 'spread': return st.intradaySpread;
+      case 'sigma':  return st.sigma;
+      case 'minmax': return st.min; // sort by min as proxy
+      case 'negh':   return st.negH;
+      case 'ren':    return st.renPctAvg;
+      case 'fuel':   return st.domFuel || '';
+      case 'days':   return st.days;
+      default:       return null;
+    }
+  };
+
+  arr.sort((a, b) => {
+    const va = getVal(a, sort.key);
+    const vb = getVal(b, sort.key);
+    // Nulls always sort to the bottom regardless of direction
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    let cmp;
+    if (typeof va === 'string' && typeof vb === 'string') {
+      cmp = va.localeCompare(vb);
+    } else {
+      cmp = (va > vb) ? 1 : (va < vb ? -1 : 0);
+    }
+    return sort.dir === 'desc' ? -cmp : cmp;
+  });
+  return arr;
+}
+
+window.sortHoTable = function(key) {
+  const cur = window._HO_SORT || { key: 'avg', dir: 'desc' };
+  if (cur.key === key) {
+    // Toggle direction
+    cur.dir = cur.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    // New key: default desc for numerics, asc for text (code/country/fuel)
+    cur.key = key;
+    cur.dir = (key === 'code' || key === 'country' || key === 'fuel') ? 'asc' : 'desc';
+  }
+  window._HO_SORT = cur;
+  // Re-render rows in place without re-fetching
+  if (window._HO_STATS && window._HO_SELECTED) {
+    const sortedZones = _sortHoZones(window._HO_SELECTED, window._HO_STATS);
+    // Trigger a full re-render to reuse the same row template
+    if (typeof renderHistOverview === 'function') renderHistOverview();
+  }
+};
 
 function _resetHoKpiStrip() {
   ['ho-kpi-fr-avg', 'ho-kpi-loaded-avg', 'ho-kpi-fr-peak', 'ho-kpi-fr-off', 'ho-kpi-fr-sigma'].forEach(id => {
@@ -1457,7 +1524,7 @@ async function renderHistOverview() {
   const selected = getUserZones().filter(z => s.zones[z]);
   if (!selected.length) {
     document.getElementById('ho-table-tbody').innerHTML =
-      '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No zone selected</td></tr>';
+      '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No zone selected</td></tr>';
     _resetHoKpiStrip();
     return;
   }
@@ -1495,27 +1562,41 @@ async function renderHistOverview() {
   // ── KPI strip globale (FR-centric + loaded avg) avec vs Y-1 ──
   _updateHoKpiStrip(stats, selected, seriesByZone);
 
+  // ── Persist state for interactive sort (sortHoTable) ──
+  window._HO_STATS = stats;
+  window._HO_SELECTED = selected;
+  window._HO_SERIES_BY_ZONE = seriesByZone;
+  if (!window._HO_SORT) window._HO_SORT = { key: 'avg', dir: 'desc' };
+
+  // Apply current sort to a copy of selected
+  const sortedZones = _sortHoZones(selected, stats);
+
   // ── Table rows ──
   const tbody = document.getElementById('ho-table-tbody');
   if (!tbody) return;
 
-  const rowsHtml = selected.map(z => {
+  const rowsHtml = sortedZones.map(z => {
     const st = stats[z];
-    if (!st) {
-      return `<tr class="ho-row" data-zone="${z}"><td style="color:var(--tx3)">${z}</td><td colspan="10" style="text-align:center;color:var(--tx3);font-size:10px">no data in selected window</td></tr>`;
-    }
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-    // 2 decimals everywhere for prices/€
-    const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
-    // Intraday spread (proxy BESS) — coloured to highlight high spreads
-    const spreadColor = st.intradaySpread == null
-      ? 'var(--tx3)'
-      : (st.intradaySpread > 80 ? '#14D3A9' : (st.intradaySpread > 40 ? 'var(--tx)' : 'var(--tx2)'));
-    // %REN — colored like Daily (≥60 green, 40-60 yellow, <40 red)
+    const countryName = _HO_NAMES[z] || z;
+    if (!st) {
+      return `<tr class="ho-row" data-zone="${z}">
+        <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+        <td style="text-align:left;font-size:11px;color:var(--tx2)">${countryName}</td>
+        <td colspan="10" style="text-align:center;color:var(--tx3);font-size:10px">no data in selected window</td>
+      </tr>`;
+    }
+    // 2 decimals everywhere for prices/€; thin-space thousands separator via PK_FMT.num.
+    const fmt = v => (window.PK_FMT ? PK_FMT.num(v, 2) : ((v == null || isNaN(v)) ? '--' : v.toFixed(2)));
+    // Intraday spread (proxy BESS) — harmonised thresholds: <80 neutral / 80-150 light green / >150 intense green
+    const spreadColor = window.PK_FMT
+      ? PK_FMT.spreadColor(st.intradaySpread)
+      : (st.intradaySpread == null ? 'var(--tx3)' : (st.intradaySpread > 80 ? '#14D3A9' : 'var(--tx)'));
+    // %REN — harmonised thresholds with Daily: <35 red / 35-65 orange / >65 green
     let renHtml = '<span style="color:var(--tx3)">--</span>';
     if (st.renPctAvg != null) {
       const rp = Math.round(st.renPctAvg);
-      const c = rp >= 60 ? '#14D3A9' : rp >= 40 ? '#FBBF24' : '#ED6965';
+      const c = window.PK_FMT ? PK_FMT.renColor(rp) : (rp >= 65 ? '#14D3A9' : rp >= 35 ? '#FBBF24' : '#ED6965');
       renHtml = `<span style="color:${c};font-weight:600">${rp}%</span>`;
     }
     // Dom fuel — emoji + color from FUEL_META, aligned with Daily
@@ -1523,16 +1604,19 @@ async function renderHistOverview() {
     const fuelHtml = fm
       ? `<span style="color:${fm.color};font-size:11px">${fm.emoji} ${fm.label}</span>`
       : '<span style="color:var(--tx3)">--</span>';
-    // Neg h colored only if elevated
-    const negColor = st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#FBBF24' : 'var(--tx2)');
+    // Neg h colored only if elevated (harmonised with Daily — orange for any, red for heavy)
+    const negColor = window.PK_FMT
+      ? PK_FMT.negColor(st.negH, {lightThreshold:0, heavyThreshold:50})
+      : (st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#FBBF24' : 'var(--tx2)'));
 
     return `<tr class="ho-row" data-zone="${z}" style="cursor:pointer">
-      <td style="text-align:left">${flag} ${z}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${fmt(st.avg)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.peakAvg)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.offAvg)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${spreadColor}">${fmt(st.intradaySpread)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(st.sigma)}</td>
+      <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+      <td style="text-align:left;font-size:11px;color:var(--tx2)">${countryName}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tx)">${fmt(st.avg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.peakAvg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${fmt(st.offAvg)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${spreadColor};font-weight:600">${fmt(st.intradaySpread)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.sigma)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:${negColor}">${_fmtNegH(st.negH)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${renHtml}</td>
@@ -1771,7 +1855,7 @@ function _openHoRow(zone, series, st) {
   detail.id = 'ho-detail-row';
   // Outer wrap: same style as Daily (no extra inner background)
   detail.innerHTML = `
-    <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
+    <td colspan="12" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
         <!-- Header: zone title + close -->
