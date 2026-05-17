@@ -62093,8 +62093,8 @@
         "negH": 0.75,
         "peakAvg": 46.9,
         "offAvg": 124.99,
-        "renPct": 51.0,
-        "domFuel": "Gas"
+        "renPct": 69.7,
+        "domFuel": "Solar"
       }
     ],
     "ES": [
@@ -81243,6 +81243,17 @@
         "offAvg": 84.01,
         "renPct": 75.0,
         "domFuel": "Solar"
+      },
+      {
+        "d": "2026-05-17",
+        "avg": 45.21,
+        "min": -10.25,
+        "max": 120.53,
+        "negH": 5.5,
+        "peakAvg": 7.81,
+        "offAvg": 82.61,
+        "renPct": 62.0,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -100342,7 +100353,7 @@
         "negH": 0.0,
         "peakAvg": 48.92,
         "offAvg": 118.05,
-        "renPct": 70.1,
+        "renPct": 77.7,
         "domFuel": "Wind"
       }
     ],
@@ -106245,7 +106256,7 @@
         "negH": 0.0,
         "peakAvg": 48.85,
         "offAvg": 119.75,
-        "renPct": 65.9,
+        "renPct": 61.1,
         "domFuel": "Wind"
       }
     ],
@@ -106434,6 +106445,15 @@
         "negH": 0.0,
         "peakAvg": 99.42,
         "offAvg": 137.72
+      },
+      {
+        "d": "2026-05-17",
+        "avg": 113.68,
+        "min": 1.0,
+        "max": 182.72,
+        "negH": 0.0,
+        "peakAvg": 76.78,
+        "offAvg": 141.35
       }
     ],
     "IT_SICI": [
@@ -106544,6 +106564,15 @@
         "negH": 0.0,
         "peakAvg": 97.19,
         "offAvg": 137.72
+      },
+      {
+        "d": "2026-05-17",
+        "avg": 113.68,
+        "min": 1.0,
+        "max": 182.72,
+        "negH": 0.0,
+        "peakAvg": 76.78,
+        "offAvg": 141.35
       }
     ],
     "ME": [
@@ -106666,12 +106695,12 @@
       },
       {
         "d": "2026-05-17",
-        "avg": 71.27,
+        "avg": 77.87,
         "min": 0.0,
-        "max": 147.0,
+        "max": 170.0,
         "negH": 0.0,
-        "peakAvg": 31.28,
-        "offAvg": 107.92
+        "peakAvg": 82.07,
+        "offAvg": 75.7
       }
     ],
     "RS": [
@@ -106913,12 +106942,12 @@
       },
       {
         "d": "2026-05-17",
-        "avg": 83.58,
+        "avg": 109.8,
         "min": 1.0,
-        "max": 161.53,
+        "max": 190.0,
         "negH": 0.0,
-        "peakAvg": 42.72,
-        "offAvg": 124.45
+        "peakAvg": 135.16,
+        "offAvg": 97.11
       }
     ],
     "NO_1": [
@@ -108648,6 +108677,17 @@
         "peakAvg": 7.73,
         "offAvg": 79.17,
         "renPct": 82.7,
+        "domFuel": "Hydro"
+      },
+      {
+        "d": "2026-05-17",
+        "avg": 60.09,
+        "min": -0.01,
+        "max": 120.67,
+        "negH": 0.25,
+        "peakAvg": 13.47,
+        "offAvg": 83.92,
+        "renPct": 83.2,
         "domFuel": "Hydro"
       }
     ],
