@@ -2609,7 +2609,7 @@ function _openHoFullscreen(zone) {
 
   fs.innerHTML = `
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-shrink:0">
       <div>
         <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
           ${flag} ${zone} — ${country}
@@ -2619,31 +2619,24 @@ function _openHoFullscreen(zone) {
           <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
         </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div id="ho-fs-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px"></div>
-        <button id="ho-fs-csv-btn" title="Export chart data as CSV"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
-        <button id="ho-fs-png-btn" title="Download chart as PNG"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-        <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)"
-          aria-label="Chart only mode"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:7px 10px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1;display:inline-flex;align-items:center;justify-content:center">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 14v6h6"/>
-            <path d="M20 10V4h-6"/>
-            <path d="M14 10l6-6"/>
-            <path d="M10 14l-6 6"/>
-          </svg>
-        </button>
-        <button id="ho-fs-resize-btn" title="Reset side pane width"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
-        <button id="ho-fs-close-btn"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
+      <!-- Right column: tabs-bar + actions on top row, YoY submenu pills below tabs-bar -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div id="ho-fs-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px"></div>
+          <button id="ho-fs-csv-btn" title="Export chart data as CSV"
+            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
+          <button id="ho-fs-png-btn" title="Download chart as PNG"
+            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+          <button id="ho-fs-resize-btn" title="Reset side pane width"
+            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
+          <button id="ho-fs-close-btn"
+            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
+        </div>
+        <!-- YoY sub-menu pills (Hourly / Daily / Weekly / Monthly + Hourly mode) — hidden unless YoY tab is active.
+             Aligned under the tabs-bar (right side, just under YoY tab). -->
+        <div id="ho-fs-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-right:4px"></div>
       </div>
     </div>
-
-    <!-- YoY sub-menu pills (Hourly / Daily / Monthly) — hidden unless YoY tab is active -->
-    <div id="ho-fs-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 12px 4px;flex-shrink:0"></div>
 
     <!-- KPI strip full width at the top -->
     <div id="ho-fs-kpis" style="margin-bottom:14px;flex-shrink:0"></div>
@@ -2681,6 +2674,19 @@ function _openHoFullscreen(zone) {
         </div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
+          <!-- Chart-only toggle (F): floating top-right corner of the FS chart -->
+          <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)"
+            aria-label="Chart only mode"
+            style="position:absolute;top:8px;right:8px;width:30px;height:30px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);z-index:5"
+            onmouseover="this.style.background='rgba(20,26,34,0.95)';this.style.borderColor='rgba(255,255,255,0.25)'"
+            onmouseout="if(!this.dataset.active){this.style.background='rgba(20,26,34,0.7)';this.style.borderColor='rgba(255,255,255,0.12)'}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 14v6h6"/>
+              <path d="M20 10V4h-6"/>
+              <path d="M14 10l6-6"/>
+              <path d="M10 14l-6 6"/>
+            </svg>
+          </button>
         </div>
         <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
           <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
@@ -2864,14 +2870,16 @@ setTimeout(() => {
     if (info)    info.style.display    = next ? 'none' : 'flex';
     if (div)     div.style.display     = next ? 'none' : 'flex';
     if (chartOnlyBtn) {
-      // SVG icons: "expand" arrows pointing outward (default), "compress" arrows pointing inward (active)
-      const svgExpand = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
-      const svgCompress = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
+      // SVG icons: "expand" outward (default), "compress" inward (active)
+      const svgExpand = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
+      const svgCompress = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
       chartOnlyBtn.innerHTML = next ? svgCompress : svgExpand;
       chartOnlyBtn.title = next ? 'Show all (F)' : 'Chart only · hide KPIs and side panel (F)';
       chartOnlyBtn.style.color = next ? '#14D3A9' : 'var(--tx2)';
-      chartOnlyBtn.style.background = next ? 'rgba(20,211,169,0.15)' : 'var(--bg2)';
-      chartOnlyBtn.style.borderColor = next ? 'rgba(20,211,169,0.4)' : 'var(--bd)';
+      chartOnlyBtn.style.background = next ? 'rgba(20,211,169,0.20)' : 'rgba(20,26,34,0.7)';
+      chartOnlyBtn.style.borderColor = next ? 'rgba(20,211,169,0.5)' : 'rgba(255,255,255,0.12)';
+      if (next) chartOnlyBtn.dataset.active = '1';
+      else delete chartOnlyBtn.dataset.active;
     }
     // Force chart to resize to the new container size
     const fsCanvas = document.getElementById('ho-fs-chart');
@@ -4056,8 +4064,10 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
   const priorYears = years.slice(0, -1);
   const yMinus1 = priorYears.length >= 1 ? priorYears[priorYears.length - 1] : null;
   const yMinus2 = priorYears.length >= 2 ? priorYears[priorYears.length - 2] : null;
-  // Historical envelope: years older than Y-1/Y-2 (fall back to all priors if too few)
-  const envYears = priorYears.length > 2 ? priorYears.slice(0, -2) : priorYears;
+  // Historical envelope: ALL prior years (including Y-1 and Y-2) so that the
+  // Y-1/Y-2 lines never visually escape the Min–Max range — the envelope
+  // represents "the historical span excluding the current year".
+  const envYears = priorYears;
 
   // X-axis: weeks 1..53
   const labels = [];
@@ -4313,9 +4323,10 @@ function _hszRenderSeasonal(filtered, zone, summary) {
   // Y-1 and Y-2 (the 2 most recent past years; might not exist if too few years)
   const yMinus1 = priorYears.length >= 1 ? priorYears[priorYears.length - 1] : null;
   const yMinus2 = priorYears.length >= 2 ? priorYears[priorYears.length - 2] : null;
-  // Historical envelope: all years strictly older than Y-1/Y-2
-  // If we only have <= 3 years total, fall back to using all past years.
-  const envYears = priorYears.length > 2 ? priorYears.slice(0, -2) : priorYears;
+  // Historical envelope: ALL prior years (including Y-1 and Y-2) so that the
+  // Y-1/Y-2 lines never visually escape the Min–Max range — the envelope
+  // represents "the historical span excluding the current year".
+  const envYears = priorYears;
 
   const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
