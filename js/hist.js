@@ -2976,9 +2976,9 @@ function _openHoRow(zone, series, st) {
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
 
-        <!-- Alert neg prices (shown only if negH > 0) -->
+        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:8px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
+          <div style="font-size:11px;color:#FBBF24;margin-top:18px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -3316,9 +3316,9 @@ function _openHoFullscreen(zone) {
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
         </div>
-        <!-- Alert neg prices (shown only if negH > 0) -->
+        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
+          <div style="font-size:11px;color:#FBBF24;margin-top:18px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -3944,16 +3944,17 @@ function _setHoTitle({ eyebrow, title, subtitle }) {
   const su = document.getElementById(prefix + '-subtitle');
   if (ey) ey.textContent = eyebrow || '';
   if (ti) ti.textContent = title || '';
-  if (su) su.textContent = subtitle || '';
-  // Also clear inline node when not in fullscreen mode and vice versa
-  // (so the visible side always has the right content).
+  // Subtitle: accept HTML so renderers can render multi-line / styled content
+  // (formula in italic gray + stats in bold). Renderers are responsible for
+  // safe content (no user-controlled input is interpolated raw).
+  if (su) su.innerHTML = subtitle || '';
   const otherPrefix = fs ? 'ho-detail' : 'ho-fs';
   const oey = document.getElementById(otherPrefix + '-eyebrow');
   const oti = document.getElementById(otherPrefix + '-title');
   const osu = document.getElementById(otherPrefix + '-subtitle');
   if (oey) oey.textContent = eyebrow || '';
   if (oti) oti.textContent = title || '';
-  if (osu) osu.textContent = subtitle || '';
+  if (osu) osu.innerHTML = subtitle || '';
 }
 
 async function _hszRenderTab(filtered, zone, tab, summary) {
@@ -3994,7 +3995,8 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
   }
   // Cleanup Volatility-specific UI unless we're on Volatility tab
   if (tab !== 'vol' && tab !== 'volatility') {
-    // (vol-toggle removed — now handled by unified ho-detail-tab-submenu)
+    const volLg = document.getElementById(togPrefix + '-vol-legend');
+    if (volLg) volLg.remove();
   }
   // Cleanup Distribution-specific UI (formula strip + legend) unless we're on Distribution tab
   if (tab !== 'dist' && tab !== 'distribution') {
@@ -6144,55 +6146,100 @@ function _hszRenderVolatility(filtered, zone) {
   else if (period7Mean < t2) regime = meta.thresholdLabels[1];
   else regime = meta.thresholdLabels[2];
 
-  // Eyebrow + title + subtitle (with formula + interpretation)
-  let subtitleText = `${meta.formula} · ${meta.explanation}`;
-  // Stats line (separate from formula): period mean, spike count, max
-  let statsText = `Period 7D avg: ${period7Mean.toFixed(1)} ${meta.unit} (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
-  if (periodMax) statsText += ` · Max ${periodMax.v.toFixed(1)} on ${periodMax.d}`;
+  // Subtitle on 2 lines:
+  //   Line 1 (italic gray): formula
+  //   Line 2 (regular): stats
+  let line1 = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
+  let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(1)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
+  if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(1)}</strong> on ${periodMax.d}`;
+  line2Stats += ` · <span style="color:var(--tx3)">${meta.explanation}</span>`;
 
   _setHoTitle({
     eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
     title: meta.label + ' — 7-day and 30-day rolling',
-    subtitle: subtitleText + ' · ' + statsText,
+    subtitle: `${line1}<br>${line2Stats}`,
   });
 
-  // Y-axis range
+  // Y-axis: add headroom so spike labels don't get clipped above (and a tiny baseline below)
+  // Headroom = max(15%, 8 €/MWh) — empirically enough for label box (height ~22px)
   const allVals = [...s7, ...s30].filter(v => v != null && !isNaN(v));
   const valMax = allVals.length ? Math.max(...allVals) : t2;
-  // Round up to a sensible value, leave 10% headroom
-  const yMaxData = Math.ceil(Math.max(valMax * 1.1, t2 * 1.2) / 5) * 5;
+  const headroom = Math.max(valMax * 0.15, 8);
+  const yMaxData = Math.ceil((valMax + headroom) / 5) * 5;
 
   // ── Toggle pills are rendered by _hszRenderYoYSubmenu (unified location, top of header) ──
   _hszRenderYoYSubmenu();
 
-  // ── Annotation: top spikes (with date + value) ──
+  // ── Annotation: top 5 spikes with anti-collision algorithm ──
+  // Each label is ~50px wide and ~18px tall. We sort spikes left-to-right and assign
+  // alternating vertical offsets so labels don't overlap.
+  // Spikes can be toggled off via the legend (state: window._volShowSpikes).
+  if (window._volShowSpikes === undefined) window._volShowSpikes = true;
+  const showSpikes = window._volShowSpikes;
   const spikeAnnotations = {};
-  topSpikes.forEach((sp, i) => {
-    spikeAnnotations[`spike${i}`] = {
-      type: 'point',
-      xValue: sp.d,
-      yValue: sp.v,
-      backgroundColor: '#FBBF24',
-      borderColor: '#000',
-      borderWidth: 1,
-      radius: 4,
-    };
-    spikeAnnotations[`spikeLabel${i}`] = {
-      type: 'label',
-      xValue: sp.d,
-      yValue: sp.v,
-      content: [`${sp.v.toFixed(1)}`, sp.d.slice(5)],  // value + MM-DD
-      color: '#FBBF24',
-      backgroundColor: 'rgba(11,15,21,0.85)',
-      borderColor: 'rgba(251,191,36,0.5)',
-      borderWidth: 1,
-      borderRadius: 3,
-      font: { size: 9, family: 'JetBrains Mono', weight: '600' },
-      padding: { top: 3, bottom: 3, left: 6, right: 6 },
-      // Place label above the point
-      yAdjust: -22,
-    };
-  });
+  if (showSpikes) {
+    // Compute pixel-distance proxy: x value index (in labels array)
+    const dateToIdx = {};
+    labels.forEach((d, i) => { dateToIdx[d] = i; });
+    const placed = [];  // [{ idx, yOffset }]
+    // Sort by date ascending for left-to-right placement
+    const sortedSpikes = [...topSpikes].sort((a, b) => dateToIdx[a.d] - dateToIdx[b.d]);
+    sortedSpikes.forEach((sp, i) => {
+      const idx = dateToIdx[sp.d];
+      // Default: label above the point at -22px
+      let yAdjust = -22;
+      // Check collision with previously placed labels (anything within ~6 indices and similar yOffset)
+      // Threshold: ~6 indices on x = ~50px on a 90-day chart in a 700px-wide canvas
+      const COLLISION_DIST_IDX = Math.max(3, Math.floor(labels.length / 18));
+      const collides = placed.find(p => Math.abs(p.idx - idx) < COLLISION_DIST_IDX && p.yOffset === yAdjust);
+      if (collides) {
+        // Push this one down (below the point) to avoid overlap
+        yAdjust = 22;
+        // If even that collides, push further
+        const collides2 = placed.find(p => Math.abs(p.idx - idx) < COLLISION_DIST_IDX && p.yOffset === yAdjust);
+        if (collides2) yAdjust = -44;  // double-up above
+      }
+      placed.push({ idx, yOffset: yAdjust });
+      spikeAnnotations[`spike${i}`] = {
+        type: 'point',
+        xValue: sp.d, yValue: sp.v,
+        backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4,
+      };
+      spikeAnnotations[`spikeLabel${i}`] = {
+        type: 'label',
+        xValue: sp.d, yValue: sp.v,
+        content: [`${sp.v.toFixed(1)}`, sp.d.slice(5)],
+        color: '#FBBF24',
+        backgroundColor: 'rgba(11,15,21,0.92)',
+        borderColor: 'rgba(251,191,36,0.5)',
+        borderWidth: 1, borderRadius: 3,
+        font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+        padding: { top: 3, bottom: 3, left: 6, right: 6 },
+        yAdjust,
+      };
+    });
+  }
+
+  // ── Custom HTML legend above the chart with Spikes toggle ──
+  const legendId = _hszCtx().togglePrefix + '-vol-legend';
+  const oldLg = document.getElementById(legendId);
+  if (oldLg) oldLg.remove();
+  const canvasEl = document.getElementById(_hszCtx().canvasId);
+  if (canvasEl && canvasEl.parentNode) {
+    const lg = document.createElement('div');
+    lg.id = legendId;
+    lg.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:12px;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
+    lg.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2px;background:${_HIST_WARN}"></span>7D rolling</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2.5px;background:${color}"></span>30D rolling</span>
+      <button onclick="event.stopPropagation();window._volShowSpikes=!window._volShowSpikes;if(_HSZ_RERENDER)_HSZ_RERENDER()"
+        title="Show/hide top 5 spike annotations"
+        style="background:${showSpikes?'rgba(251,191,36,0.15)':'transparent'};border:1px solid ${showSpikes?'rgba(251,191,36,0.4)':'rgba(255,255,255,0.15)'};color:${showSpikes?'#FBBF24':'var(--tx3)'};padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px">
+        <span style="width:5px;height:5px;border-radius:50%;background:#FBBF24;display:inline-block"></span>Top 5 spikes ${showSpikes ? '✓' : ''}
+      </button>
+    `;
+    canvasEl.parentNode.insertBefore(lg, canvasEl);
+  }
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'line',
@@ -6208,19 +6255,26 @@ function _hszRenderVolatility(filtered, zone) {
     options: {
       ...baseOptions(meta.unit),
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
+        legend: { display: false },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' ' + meta.unit : 'n/a'}` } },
         annotation: {
           annotations: {
-            // Regime zones in the background
-            zoneStable:   { type: 'box', yMin: 0,  yMax: Math.min(t1, yMaxData), backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 0 },
-            zoneModerate: { type: 'box', yMin: t1, yMax: Math.min(t2, yMaxData), backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 0 },
-            zoneVolatile: { type: 'box', yMin: t2, yMax: yMaxData,                backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
-            // Threshold reference lines
-            refLow: yMaxData >= t1 ? { type: 'line', yMin: t1, yMax: t1, borderColor: meta.thresholdColors[0], borderWidth: 1, borderDash: [3,3],
-              label: { display: true, content: `${meta.short}=${t1} · ${meta.thresholdLabels[0]}/${meta.thresholdLabels[1]}`, color: '#14D3A9', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } } : undefined,
-            refHigh: yMaxData >= t2 ? { type: 'line', yMin: t2, yMax: t2, borderColor: meta.thresholdColors[2], borderWidth: 1, borderDash: [3,3],
-              label: { display: true, content: `${meta.short}=${t2} · ${meta.thresholdLabels[1]}/${meta.thresholdLabels[2]}`, color: '#ED6965', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } } : undefined,
+            // Regime zones in the background (reinforced alpha 0.10)
+            zoneStable:   { type: 'box', yMin: 0,  yMax: Math.min(t1, yMaxData), backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 0 },
+            zoneModerate: { type: 'box', yMin: t1, yMax: Math.min(t2, yMaxData), backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 0 },
+            zoneVolatile: { type: 'box', yMin: t2, yMax: yMaxData,                backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
+            // Threshold reference lines — labels positioned 'start' (left edge, inside the chart area)
+            // with a small background so they read against the colored zones.
+            refLow: yMaxData >= t1 ? { type: 'line', yMin: t1, yMax: t1, borderColor: 'rgba(20,211,169,0.55)', borderWidth: 1, borderDash: [3,3],
+              label: { display: true, content: `${meta.short}=${t1} · ${meta.thresholdLabels[0]}/${meta.thresholdLabels[1]}`,
+                color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+                position: 'start', backgroundColor: 'rgba(11,15,21,0.7)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 },
+                yAdjust: -8 } } : undefined,
+            refHigh: yMaxData >= t2 ? { type: 'line', yMin: t2, yMax: t2, borderColor: 'rgba(237,105,101,0.55)', borderWidth: 1, borderDash: [3,3],
+              label: { display: true, content: `${meta.short}=${t2} · ${meta.thresholdLabels[1]}/${meta.thresholdLabels[2]}`,
+                color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+                position: 'start', backgroundColor: 'rgba(11,15,21,0.7)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 },
+                yAdjust: -8 } } : undefined,
             ...spikeAnnotations,
           },
         },
@@ -6323,13 +6377,17 @@ function _hszRenderDist(filtered, zone, summary) {
     canvasEl.parentNode.insertBefore(fl, canvasEl);
   }
 
-  // ── Title block ──
-  let subtitleText;
+  // ── Title block: 2-line subtitle ──
+  //   Line 1 (italic gray): formula
+  //   Line 2 (regular): stats
+  const formulaLine = (mode === 'cumulative')
+    ? `F(x) = days with price ≤ x  /  total · 100%  ·  Read: "X% of days were under price Y" — PPA floors, VaR`
+    : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE = smoothed probability density (Silverman bandwidth)`;
+  let statsLine;
   if (mode === 'cumulative') {
-    subtitleText = `${pct(nNeg + nLow)} of days under ${T_LOW.toFixed(0)} €/MWh · 50% under ${median.toFixed(0)} · 95% under ${p95.toFixed(0)} · ${nNeg} day${nNeg!==1?'s':''} negative`;
+    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(0)} €</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(0)} €</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(0)} €</strong> · <strong style="color:#ED6965">${nNeg}</strong> day${nNeg!==1?'s':''} negative`;
   } else {
     const mostFreqBucket = (() => {
-      // Quick bin-based mode estimation
       const range = maxV - minV;
       const BIN = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
       const bins = {};
@@ -6341,12 +6399,12 @@ function _hszRenderDist(filtered, zone, summary) {
       Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
       return best != null ? `${best}-${best+BIN} €` : '—';
     })();
-    subtitleText = `Median ${median.toFixed(1)} €/MWh · μ ${mean.toFixed(1)} · σ ${stddev.toFixed(1)} · ${nNeg} negative · ${nNormal} normal · Most frequent bucket: ${mostFreqBucket}`;
+    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(1)} €/MWh</strong> · μ <strong>${mean.toFixed(1)}</strong> · σ ${stddev.toFixed(1)} · <strong style="color:#ED6965">${nNeg}</strong> negative · <strong>${nNormal}</strong> normal · Most frequent: <strong>${mostFreqBucket}</strong>`;
   }
   _setHoTitle({
     eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
     title: mode === 'cumulative' ? 'Cumulative price distribution' : 'Daily average price distribution',
-    subtitle: subtitleText,
+    subtitle: `<span style="color:var(--tx3);font-style:italic">${formulaLine}</span><br>${statsLine}`,
   });
 
   // ── Render legend HTML above the chart (always visible, explains 4 categories) ──
@@ -6356,14 +6414,15 @@ function _hszRenderDist(filtered, zone, summary) {
   if (canvasEl && canvasEl.parentNode) {
     const lg = document.createElement('div');
     lg.id = legendId;
-    lg.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;padding:6px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
-    const buildItem = (col, label, count, lo, hi) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:${col};border:1px solid ${col.replace('0.07','0.3').replace('0.06','0.3').replace('0.10','0.4').replace('0.05','0.3').replace('0.04','0.2').replace('0.03','0.2')};border-radius:1px"></span>${label}: ${count} day${count!==1?'s':''} (${pct(count)})${lo!=null?` · ${lo}${hi!=null?'→'+hi:'+'} €`:''}</span>`;
+    // Grid layout: 5 categories on 2 rows (3 + 2) — clearer than wrap on a single line
+    lg.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 14px;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
+    const buildItem = (col, borderCol, label, count, rangeTxt) => `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:14px;height:10px;background:${col};border:1px solid ${borderCol};border-radius:1px;flex-shrink:0"></span><strong style="color:var(--tx2)">${label}</strong> · ${count}d (${pct(count)})${rangeTxt ? ' · ' + rangeTxt : ''}</span>`;
     lg.innerHTML = ''
-      + buildItem('rgba(237,105,101,0.10)', 'Negative',            nNeg,     null, 0)
-      + buildItem('rgba(20,211,169,0.05)',   'Low (under P25)',    nLow,     0,    T_LOW.toFixed(0))
-      + buildItem('rgba(255,255,255,0.04)',  'Normal (P25–P75)',   nNormal,  T_LOW.toFixed(0), T_HIGH.toFixed(0))
-      + buildItem('rgba(251,191,36,0.07)',   'High (P75–P95)',     nHigh,    T_HIGH.toFixed(0), T_EXTREME.toFixed(0))
-      + buildItem('rgba(237,105,101,0.10)',  'Extreme (over P95)', nExtreme, T_EXTREME.toFixed(0), null);
+      + buildItem('rgba(237,105,101,0.18)', 'rgba(237,105,101,0.5)',  'Negative',           nNeg,     '< 0 €')
+      + buildItem('rgba(20,211,169,0.18)',  'rgba(20,211,169,0.5)',   'Low',                nLow,     `0 → ${T_LOW.toFixed(0)} €`)
+      + buildItem('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.3)',  'Normal',             nNormal,  `${T_LOW.toFixed(0)} → ${T_HIGH.toFixed(0)} €`)
+      + buildItem('rgba(251,191,36,0.18)',  'rgba(251,191,36,0.5)',   'High',               nHigh,    `${T_HIGH.toFixed(0)} → ${T_EXTREME.toFixed(0)} €`)
+      + buildItem('rgba(237,105,101,0.22)', 'rgba(237,105,101,0.6)',  'Extreme',            nExtreme, `> ${T_EXTREME.toFixed(0)} €`);
     canvasEl.parentNode.insertBefore(lg, canvasEl);
   }
 
@@ -6384,30 +6443,30 @@ function _hszRenderDist(filtered, zone, summary) {
       return (n / sorted.length) * 100;
     });
 
-    // Annotations: P50 + P95 with dashed connecting lines
+    // Annotations: zones + threshold labels + P50/P95 crosshairs
     const annotations = {
-      // Background category zones (vertical bands)
-      bandNeg:     { type: 'box', xMin, xMax: T_NEG,      backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
-      bandLow:     { type: 'box', xMin: T_NEG, xMax: T_LOW,     backgroundColor: 'rgba(20,211,169,0.05)', borderWidth: 0 },
-      bandNormal:  { type: 'box', xMin: T_LOW, xMax: T_HIGH,    backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 0 },
-      bandHigh:    { type: 'box', xMin: T_HIGH, xMax: T_EXTREME, backgroundColor: 'rgba(251,191,36,0.07)', borderWidth: 0 },
-      bandExtreme: { type: 'box', xMin: T_EXTREME, xMax,        backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
-      // Threshold vertical lines with labels
-      thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.20)', borderWidth: 1, borderDash: [2,3] } : undefined,
-      thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)}`, color: '#14D3A9', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
-      thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.4)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)}`, color: '#FBBF24', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
-      thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)}`, color: '#ED6965', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
-      // 50% horizontal line + median crosshair
+      // Background category zones (reinforced alpha 0.10)
+      bandNeg:     { type: 'box', xMin, xMax: T_NEG,      backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
+      bandLow:     { type: 'box', xMin: T_NEG, xMax: T_LOW,     backgroundColor: 'rgba(20,211,169,0.08)', borderWidth: 0 },
+      bandNormal:  { type: 'box', xMin: T_LOW, xMax: T_HIGH,    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 0 },
+      bandHigh:    { type: 'box', xMin: T_HIGH, xMax: T_EXTREME, backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 0 },
+      bandExtreme: { type: 'box', xMin: T_EXTREME, xMax,        backgroundColor: 'rgba(237,105,101,0.13)', borderWidth: 0 },
+      // Threshold vertical lines with labels at TOP (position 'end') so they don't collide with x-axis labels
+      thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderDash: [2,3] } : undefined,
+      thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.55)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+      thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.55)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+      thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.55)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+      // 50% horizontal + median crosshair
       h50: { type: 'line', yMin: 50, yMax: 50, borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, borderDash: [2,3] },
-      medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 4 },
-      medianLabel: { type: 'label', xValue: median, yValue: 50, content: `P50 = ${median.toFixed(1)} €`, color: '#14D3A9', backgroundColor: 'rgba(11,15,21,0.85)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 4, xAdjust: 60, yAdjust: -8 },
+      medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 5 },
+      medianLabel: { type: 'label', xValue: median, yValue: 50, content: `P50 = ${median.toFixed(1)} €`, color: '#14D3A9', backgroundColor: 'rgba(11,15,21,0.90)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: 65, yAdjust: -10 },
       // 95% horizontal + P95 crosshair
       h95: { type: 'line', yMin: 95, yMax: 95, borderColor: 'rgba(251,191,36,0.35)', borderWidth: 1, borderDash: [2,3] },
-      p95Point: { type: 'point', xValue: p95, yValue: 95, backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4 },
-      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.85)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 4, xAdjust: -55, yAdjust: -8 },
+      p95Point: { type: 'point', xValue: p95, yValue: 95, backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 5 },
+      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.90)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: -60, yAdjust: -10 },
     };
 
     mkHistChart(_hszCtx().canvasId, {
@@ -6501,23 +6560,29 @@ function _hszRenderDist(filtered, zone, summary) {
   const annotations = {
     // Background category zones aligned with histogram bins (use xValue indices)
     // Note: bar chart x is categorical, so we use the bin index. Compute boundaries.
-    bandNeg:     { type: 'box', xMin: -0.5, xMax: bins.findIndex(b => b >= T_NEG) - 0.5,            backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
-    bandLow:     { type: 'box', xMin: bins.findIndex(b => b >= T_NEG) - 0.5, xMax: bins.findIndex(b => b >= T_LOW) - 0.5, backgroundColor: 'rgba(20,211,169,0.05)', borderWidth: 0 },
-    bandNormal:  { type: 'box', xMin: bins.findIndex(b => b >= T_LOW) - 0.5, xMax: bins.findIndex(b => b >= T_HIGH) - 0.5, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 0 },
-    bandHigh:    { type: 'box', xMin: bins.findIndex(b => b >= T_HIGH) - 0.5, xMax: bins.findIndex(b => b >= T_EXTREME) - 0.5, backgroundColor: 'rgba(251,191,36,0.07)', borderWidth: 0 },
-    bandExtreme: { type: 'box', xMin: bins.findIndex(b => b >= T_EXTREME) - 0.5, xMax: bins.length - 0.5, backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
-    // Mean (warning color) + Median (white)
+    bandNeg:     { type: 'box', xMin: -0.5, xMax: bins.findIndex(b => b >= T_NEG) - 0.5,            backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
+    bandLow:     { type: 'box', xMin: bins.findIndex(b => b >= T_NEG) - 0.5, xMax: bins.findIndex(b => b >= T_LOW) - 0.5, backgroundColor: 'rgba(20,211,169,0.08)', borderWidth: 0 },
+    bandNormal:  { type: 'box', xMin: bins.findIndex(b => b >= T_LOW) - 0.5, xMax: bins.findIndex(b => b >= T_HIGH) - 0.5, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 0 },
+    bandHigh:    { type: 'box', xMin: bins.findIndex(b => b >= T_HIGH) - 0.5, xMax: bins.findIndex(b => b >= T_EXTREME) - 0.5, backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 0 },
+    bandExtreme: { type: 'box', xMin: bins.findIndex(b => b >= T_EXTREME) - 0.5, xMax: bins.length - 0.5, backgroundColor: 'rgba(237,105,101,0.13)', borderWidth: 0 },
+    // μ (mean) and Median: labels positioned at TOP of chart to avoid mid-chart clutter
     meanLine: {
       type: 'line', scaleID: 'x',
       value: bins.findIndex(b => b + BIN_SIZE > mean) - 0.5,
-      borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1, borderDash: [3,3],
-      label: { display: true, content: `μ ${mean.toFixed(1)}`, color: 'rgba(255,255,255,0.8)', font: { size: 9, family: 'JetBrains Mono' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.7)', padding: 3, borderRadius: 2 },
+      borderColor: 'rgba(255,255,255,0.45)', borderWidth: 1, borderDash: [3,3],
+      label: { display: true, content: `μ ${mean.toFixed(1)} €`, color: 'rgba(255,255,255,0.85)',
+        font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+        position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2,
+        padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 },
     },
     medianLine: {
       type: 'line', scaleID: 'x',
       value: bins.findIndex(b => b + BIN_SIZE > median) - 0.5,
-      borderColor: '#FFFFFF', borderWidth: 1.5, borderDash: [4,2],
-      label: { display: true, content: `Med ${median.toFixed(1)}`, color: '#FFFFFF', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', padding: 3, borderRadius: 2 },
+      borderColor: '#14D3A9', borderWidth: 1.5, borderDash: [4,2],
+      label: { display: true, content: `Med ${median.toFixed(1)} €`, color: '#14D3A9',
+        font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+        position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 2,
+        padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 26 },
     },
   };
 
