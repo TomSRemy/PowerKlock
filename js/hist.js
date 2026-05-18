@@ -2321,17 +2321,20 @@ function _openHoRow(zone, series, st) {
           ${_buildHoVerdict(st)}
         </div>
 
-        <!-- Tabs bar: Lines / YoY / Weekly / Volatility / Distribution -->
+        <!-- Tabs bar: Lines / YoY / Weekday / Volatility / Distribution -->
         <div id="ho-detail-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:8px;flex-wrap:wrap"></div>
 
-        <!-- YoY sub-menu pills (Hourly / Daily / Monthly) — hidden unless YoY tab is active -->
-        <div id="ho-detail-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding-left:4px"></div>
+        <!-- Combined row: YoY sub-menu pills (left) + Actions (right) on the same baseline.
+             Pills are only visible when YoY tab is active. -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
+          <!-- YoY sub-menu pills (Hourly / Daily / Weekly / Monthly + Hourly mode) — hidden unless YoY tab is active -->
+          <div id="ho-detail-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-left:4px"></div>
+          <!-- Spacer so actions stay right-aligned even when pills are hidden -->
+          <div style="flex:1"></div>
 
-        <!-- Actions row (Y-presets · Reset · PNG · Fullscreen). Legend is rendered
-             by Chart.js inside the chart for consistent placement across tabs. -->
-        <div style="display:flex;justify-content:flex-end;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
+          <!-- Actions group: Y-presets · Reset · PNG · Fullscreen -->
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <!-- Tab-specific toggle slot (e.g. Hourly: By quarter / YoY global) -->
+            <!-- Tab-specific toggle slot (legacy, kept hidden) -->
             <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
             <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
               <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
@@ -2345,6 +2348,8 @@ function _openHoRow(zone, series, st) {
               style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px">↺</button>
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
               style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
           </div>
         </div>
 
@@ -2358,19 +2363,6 @@ function _openHoRow(zone, series, st) {
         <!-- Chart container — no background, matches Daily style -->
         <div style="position:relative;height:340px;margin-bottom:4px">
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
-          <!-- Fullscreen toggle: floating top-right corner of the chart -->
-          <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
-            aria-label="Open in fullscreen"
-            style="position:absolute;top:6px;right:6px;width:26px;height:26px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);z-index:5"
-            onmouseover="this.style.background='rgba(20,26,34,0.95)';this.style.borderColor='rgba(255,255,255,0.25)';this.style.color='#fff'"
-            onmouseout="this.style.background='rgba(20,26,34,0.7)';this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='var(--tx2)'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 14v6h6"/>
-              <path d="M20 10V4h-6"/>
-              <path d="M14 10l6-6"/>
-              <path d="M10 14l-6 6"/>
-            </svg>
-          </button>
         </div>
 
         <!-- Alert neg prices (shown only if negH > 0) -->
@@ -2634,7 +2626,15 @@ function _openHoFullscreen(zone) {
         <button id="ho-fs-png-btn" title="Download chart as PNG"
           style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
         <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:13px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1">▣</button>
+          aria-label="Chart only mode"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:7px 10px;border-radius:6px;cursor:pointer;font-family:inherit;line-height:1;display:inline-flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 14v6h6"/>
+            <path d="M20 10V4h-6"/>
+            <path d="M14 10l6-6"/>
+            <path d="M10 14l-6 6"/>
+          </svg>
+        </button>
         <button id="ho-fs-resize-btn" title="Reset side pane width"
           style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
         <button id="ho-fs-close-btn"
@@ -2864,7 +2864,10 @@ setTimeout(() => {
     if (info)    info.style.display    = next ? 'none' : 'flex';
     if (div)     div.style.display     = next ? 'none' : 'flex';
     if (chartOnlyBtn) {
-      chartOnlyBtn.textContent = next ? '▢' : '▣';
+      // SVG icons: "expand" arrows pointing outward (default), "compress" arrows pointing inward (active)
+      const svgExpand = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
+      const svgCompress = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
+      chartOnlyBtn.innerHTML = next ? svgCompress : svgExpand;
       chartOnlyBtn.title = next ? 'Show all (F)' : 'Chart only · hide KPIs and side panel (F)';
       chartOnlyBtn.style.color = next ? '#14D3A9' : 'var(--tx2)';
       chartOnlyBtn.style.background = next ? 'rgba(20,211,169,0.15)' : 'var(--bg2)';
@@ -3785,8 +3788,8 @@ function _hszRenderYoY(filtered, zone, summary) {
 
   // HTML title block (hybrid style)
   _setHoTitle({
-    eyebrow: `Prices · YoY · ${zone}`,
-    title: 'Year-on-year comparison · daily prices vs Y-1, Y-2, and historical range',
+    eyebrow: `Prices · YoY · ${zone} · Daily`,
+    title: 'Daily profile · current year vs Y-1, Y-2, and historical range',
     subtitle: subtitleText,
   });
 
@@ -3825,6 +3828,12 @@ function _hszRenderYoY(filtered, zone, summary) {
           borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
           fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true,
           hidden: hideBands,
+        },
+        // ── Historical median (thin reference line) ──
+        {
+          label: 'Hist median', data: env.medianLine,
+          borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+          tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
         },
         // ── Y-2 — fine, dashed, subordinate ──
         {
@@ -3982,7 +3991,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
 
   // HTML title block (hybrid style)
   _setHoTitle({
-    eyebrow: `Prices · YoY · ${zone}`,
+    eyebrow: `Prices · YoY · ${zone} · Daily`,
     title: 'Monthly averages by year · calendar overlay',
     subtitle: `${years.length} years aligned by month · current year highlighted`,
   });
@@ -4175,7 +4184,7 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
     datasets.push({
       label: yMinus2, data: y2Arr,
       borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
-      pointRadius: 2, pointBackgroundColor: 'rgba(168,125,196,0.65)',
+      pointRadius: 0,
       tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
@@ -4183,14 +4192,14 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
     datasets.push({
       label: yMinus1, data: y1Arr,
       borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
-      pointRadius: 2, pointBackgroundColor: 'rgba(255,255,255,0.55)',
+      pointRadius: 0,
       tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
   datasets.push({
     label: currentYear + ' (current)', data: curArr,
     borderColor: color, borderWidth: 2.4,
-    pointRadius: 3, pointBackgroundColor: color,
+    pointRadius: 0,
     tension: 0.25, spanGaps: true, fill: false, order: 1,
   });
 
@@ -4384,7 +4393,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
 
   // HTML title block (hybrid style)
   _setHoTitle({
-    eyebrow: `Prices · Seasonal · ${zone}`,
+    eyebrow: `Prices · YoY · ${zone} · Monthly`,
     title: 'Monthly profile · current year vs Y-1, Y-2, and historical range',
     subtitle: subtitleText,
   });
@@ -4430,7 +4439,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
       label: yMinus2,
       data: byYear[yMinus2],
       borderColor: 'rgba(168,125,196,0.60)',
-      borderWidth: 1.4, pointRadius: 2, pointBackgroundColor: 'rgba(168,125,196,0.60)',
+      borderWidth: 1.4, pointRadius: 0,
       tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
@@ -4440,7 +4449,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
       label: yMinus1,
       data: byYear[yMinus1],
       borderColor: 'rgba(255,255,255,0.55)',
-      borderWidth: 1.4, pointRadius: 2, pointBackgroundColor: 'rgba(255,255,255,0.55)',
+      borderWidth: 1.4, pointRadius: 0,
       tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
@@ -4449,7 +4458,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     label: currentYear + ' (current)',
     data: byYear[currentYear],
     borderColor: color,
-    borderWidth: 2.4, pointRadius: 3, pointBackgroundColor: color,
+    borderWidth: 2.4, pointRadius: 0,
     tension: 0.25, spanGaps: true, fill: false, order: 1,
   });
 
@@ -4553,7 +4562,7 @@ async function _hszRenderHourly(filtered, zone) {
   if (mode === 'quarter') {
     _hszRenderHourlyQuarter(zone, intraday);
   } else {
-    _hszRenderHourlyYoY(zone, intraday);
+    _hszRenderHourlyYoY(zone, intraday, summary);
   }
 }
 
@@ -4609,7 +4618,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 
   // HTML title block (hybrid F)
   _setHoTitle({
-    eyebrow: `Prices · Hourly · ${zone} · By quarter`,
+    eyebrow: `Prices · YoY · ${zone} · Hourly · By quarter`,
     title: 'Intraday 24h profile by quarter · current year vs Y-1 and Y-2',
     subtitle: `Each panel shows the average price for every hour of day, aggregated over one quarter. Current ${cur}${n1 ? ', Y-1 ' + n1 : ''}${n2 ? ', Y-2 ' + n2 : ''}.`,
   });
@@ -4786,7 +4795,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 }
 
 // YoY mode: single chart with 24h profile of period vs Y-1 / Y-2
-function _hszRenderHourlyYoY(zone, intraday) {
+function _hszRenderHourlyYoY(zone, intraday, summary) {
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
@@ -4809,8 +4818,58 @@ function _hszRenderHourlyYoY(zone, intraday) {
 
   if (!curProfile) return _hszPlaceholder('No "all" intraday profile for the current year');
 
+  // ── Historical distribution (P0-P100 outer + P5-P95 inner + median) ──
+  // Computed by enrich_summary.py on all years EXCEPT current.
+  // If missing (older summary.json), fall back to no-bands mode.
+  const dist = summary?.intradayDist?.[zone];
+  const hasBands = !!(dist && Array.isArray(dist.p0) && dist.p0.length === 24);
+
   const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}h`);
+
+  // ── Y-preset (compute first so we can pass hideBands to datasets) ──
+  const preset = _hszCtx().getYPreset();
+  const hideBands = (preset === 'focus');
+
+  // Convert zone color to rgba for band fills
+  const outerFill = _toRgba(color, 0.04);
+  const innerFill = _toRgba(color, 0.10);
+
   const datasets = [];
+
+  if (hasBands) {
+    // Outer Min–Max (P0–P100)
+    datasets.push({
+      label: 'Min–Max range', data: dist.p100,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 8, _bandPair: 'outer', hidden: hideBands,
+    });
+    datasets.push({
+      label: '_outer_min', data: dist.p0,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 8, _bandPair: 'outer', _hideFromLegend: true, hidden: hideBands,
+    });
+    // Inner P5–P95
+    datasets.push({
+      label: 'Typical range (P5–P95)', data: dist.p95,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 7, _bandPair: 'inner', hidden: hideBands,
+    });
+    datasets.push({
+      label: '_inner_min', data: dist.p5,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true, hidden: hideBands,
+    });
+    // Historical median
+    datasets.push({
+      label: 'Hist median', data: dist.p50,
+      borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+      tension: 0.2, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
+    });
+  }
 
   if (n2Profile) {
     datasets.push({
@@ -4856,23 +4915,38 @@ function _hszRenderHourlyYoY(zone, intraday) {
 
   // HTML title block (hybrid F)
   _setHoTitle({
-    eyebrow: `Prices · Hourly · ${zone} · YoY global`,
+    eyebrow: `Prices · YoY · ${zone} · Hourly · YoY global`,
     title: 'Intraday 24h profile · current year vs Y-1 and Y-2',
     subtitle,
   });
 
-  // Y-preset
-  const preset = _hszCtx().getYPreset();
+  // Y-preset: focus uses current+Y-1+Y-2 lines (NOT bands which would dominate)
   let yMin = null, yMax = null;
   if (preset === 'focus') {
-    const vals = [];
-    datasets.forEach(d => d.data.forEach(v => { if (v != null && !isNaN(v)) vals.push(v); }));
-    if (vals.length) {
-      const lo = Math.min(...vals);
-      const hi = Math.max(...vals);
+    const focusVals = [];
+    [curProfile, n1Profile, n2Profile].forEach(p => {
+      if (p) p.forEach(v => { if (v != null && !isNaN(v)) focusVals.push(v); });
+    });
+    if (focusVals.length) {
+      const lo = Math.min(...focusVals);
+      const hi = Math.max(...focusVals);
       const pad = Math.max(5, (hi - lo) * 0.10);
       yMin = lo - pad;
       yMax = hi + pad;
+    }
+  } else if (preset === 'standard' && hasBands) {
+    // Standard: include P5-P95 band
+    const vals = [];
+    [curProfile, n1Profile, n2Profile].forEach(p => {
+      if (p) p.forEach(v => { if (v != null && !isNaN(v)) vals.push(v); });
+    });
+    dist.p5.forEach(v => { if (v != null) vals.push(v); });
+    dist.p95.forEach(v => { if (v != null) vals.push(v); });
+    if (vals.length) {
+      yMin = Math.min(...vals);
+      yMax = Math.max(...vals);
+      const pad = Math.max(5, (yMax - yMin) * 0.05);
+      yMin -= pad; yMax += pad;
     }
   }
 
@@ -4886,15 +4960,38 @@ function _hszRenderHourlyYoY(zone, intraday) {
         subtitle: { display: false },
         legend: {
           display: true, position: 'top', align: 'end',
-          labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 14, boxHeight: 2, padding: 12 },
+          labels: {
+            color: _HIST_TX3, font: { size: 10 }, boxWidth: 14, boxHeight: 2, padding: 12,
+            // Hide the synthetic "lower bound" duplicate entries from the legend
+            filter: (item, chartData) => {
+              const ds = chartData.datasets[item.datasetIndex];
+              return !ds || !ds._hideFromLegend;
+            },
+          },
+          // Clicking a band entry toggles BOTH members of the pair
           onClick: (e, legendItem, legend) => {
             const ci = legend.chart;
-            ci.setDatasetVisibility(legendItem.datasetIndex, !ci.isDatasetVisible(legendItem.datasetIndex));
+            const idx = legendItem.datasetIndex;
+            const ds = ci.data.datasets[idx];
+            if (ds && ds._bandPair) {
+              const pair = ds._bandPair;
+              const newVisible = !ci.isDatasetVisible(idx);
+              ci.data.datasets.forEach((d, i) => {
+                if (d._bandPair === pair) ci.setDatasetVisibility(i, newVisible);
+              });
+            } else {
+              ci.setDatasetVisibility(idx, !ci.isDatasetVisible(idx));
+            }
             ci.update();
           },
         },
         tooltip: {
           mode: 'index', intersect: false,
+          // Filter out the synthetic duplicate band lines from the tooltip
+          filter: (item) => {
+            const ds = item.chart.data.datasets[item.datasetIndex];
+            return !ds || !ds._hideFromLegend;
+          },
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` },
         },
         zoom: (typeof window.Chart !== 'undefined' && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
