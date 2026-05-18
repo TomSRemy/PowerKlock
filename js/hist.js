@@ -2183,6 +2183,594 @@ function _buildHoVerdict(st) {
   return `<span title="${tooltip.replace(/"/g,'&quot;')}" style="cursor:help"><span style="color:${dotColor};margin-right:6px">●</span><span style="color:var(--tx)">${phrase}</span><span style="color:var(--tx3)">${secondary}</span></span>`;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// CONTEXTUAL BREAKDOWN MODULE
+// Each tab shows a different data table in the right-hand pane and below the
+// inline chart. Dispatched by _renderHoBreakdown(zone, series, summary).
+// Reads the currently active tab/sub-mode from HSZ state.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Common table style helpers
+const _BD_TABLE_STYLE = 'width:100%;border-collapse:collapse;font-family:\'JetBrains Mono\',monospace;font-size:11px';
+const _BD_TH_STYLE = 'text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);font-size:9px;font-weight:600;color:var(--tx3);letter-spacing:.05em;text-transform:uppercase';
+const _BD_TD_STYLE = 'text-align:right;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--tx2)';
+const _BD_TD_LABEL = 'text-align:left;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--tx)';
+
+function _bdFmt(v, dec = 2) {
+  if (v == null || isNaN(v)) return '<span style="color:var(--tx3)">–</span>';
+  return v.toFixed(dec);
+}
+function _bdDelta(v, dec = 1) {
+  if (v == null || isNaN(v)) return '<span style="color:var(--tx3)">–</span>';
+  const arrow = v >= 0 ? '▲' : '▼';
+  const color = v >= 0 ? '#ED6965' : '#14D3A9';  // for prices: higher = bad (red), lower = good (green)
+  return `<span style="color:${color}">${arrow} ${v.toFixed(dec)}</span>`;
+}
+
+// ── Central dispatcher ──────────────────────────────────────────────────────
+// Called after each tab render. Reads HSZ state, picks the right renderer,
+// writes into #ho-detail-monthly (inline) AND #ho-fs-monthly (fullscreen).
+function _renderHoBreakdown(zone, series, summary) {
+  if (!zone || !series || !series.length) return;
+
+  // Determine current view
+  const tab = HSZ.tab;
+  const yoyMode = HSZ.yoyMode;
+  const hourlyMode = HSZ.hourlyMode;
+
+  // Pick renderer + label
+  let label = 'Breakdown';
+  let renderer = null;
+  if (tab === 'lines') {
+    label = 'Monthly breakdown';
+    renderer = () => _bdLines(zone, series);
+  } else if (tab === 'yoy') {
+    if (yoyMode === 'daily') {
+      label = 'Monthly breakdown';
+      renderer = () => _bdLines(zone, series);
+    } else if (yoyMode === 'weekly') {
+      label = 'Weekly breakdown';
+      renderer = () => _bdYoYWeekly(zone, series, summary);
+    } else if (yoyMode === 'monthly') {
+      label = 'Monthly comparison YoY';
+      renderer = () => _bdYoYMonthly(zone, series, summary);
+    } else if (yoyMode === 'hourly') {
+      if (hourlyMode === 'quarter') {
+        label = 'Hourly × Quarter';
+        renderer = () => _bdHourlyQuarter(zone, summary);
+      } else {
+        label = 'Hourly breakdown';
+        renderer = () => _bdHourlyAnnual(zone, summary);
+      }
+    }
+  } else if (tab === 'weekday' || tab === 'weekly') {
+    label = 'Day of week breakdown';
+    renderer = () => _bdWeekday(zone, series);
+  } else if (tab === 'volatility') {
+    label = 'Volatility breakdown';
+    renderer = () => _bdVolatility(zone, series);
+  } else if (tab === 'distribution') {
+    label = 'Distribution breakdown';
+    renderer = () => _bdDistribution(zone, series);
+  }
+
+  // Update labels (inline + FS)
+  const inlineLabel = document.getElementById('ho-detail-breakdown-label');
+  if (inlineLabel) inlineLabel.textContent = label;
+  const fsLabel = document.getElementById('ho-fs-breakdown-label');
+  if (fsLabel) fsLabel.textContent = label;
+
+  // Render the HTML (renderer returns string)
+  const html = renderer ? (renderer() || '<div style="color:var(--tx3);font-size:11px;padding:8px">No data</div>') : '';
+
+  const inlineEl = document.getElementById('ho-detail-monthly');
+  if (inlineEl) inlineEl.innerHTML = html;
+  const fsEl = document.getElementById('ho-fs-monthly');
+  if (fsEl) fsEl.innerHTML = html;
+}
+
+// ── _bdLines / YoY Daily: Monthly breakdown (current behaviour) ────────────
+function _bdLines(zone, series) {
+  // Group by YYYY-MM
+  const monthly = {};
+  series.forEach(d => {
+    const ym = d.d.slice(0, 7);
+    if (!monthly[ym]) monthly[ym] = { rows: [] };
+    monthly[ym].rows.push(d);
+  });
+  const months = Object.keys(monthly).sort();
+  if (!months.length) return null;
+
+  const rows = months.map(ym => {
+    const monthRows = monthly[ym].rows;
+    const mst = _statsForZone(monthRows);
+    const spread = (mst?.peakAvg != null && mst?.offAvg != null) ? (mst.peakAvg - mst.offAvg) : null;
+    const allMaxes = monthRows.map(r => r.max).filter(v => v != null);
+    const allMins  = monthRows.map(r => r.min).filter(v => v != null);
+    const absMax = allMaxes.length ? Math.max(...allMaxes) : null;
+    const absMin = allMins.length  ? Math.min(...allMins)  : null;
+    const negH = monthRows.reduce((s, r) => s + (r.negHours || 0), 0);
+    return {
+      ym, avg: mst?.avg, peak: mst?.peakAvg, off: mst?.offAvg, spread,
+      absMax, absMin, negH, days: monthRows.length,
+    };
+  }).reverse();  // newest first
+
+  const monthLabel = ym => {
+    const [y, m] = ym.split('-');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1] + ' ' + y;
+  };
+  const fmtNeg = h => {
+    if (!h) return '–';
+    if (h >= 1) return `${Math.round(h)}h`;
+    return `${Math.round(h * 60)}min`;
+  };
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Month</th>
+      <th style="${_BD_TH_STYLE}">Avg €/MWh</th>
+      <th style="${_BD_TH_STYLE}">Min intra-day</th>
+      <th style="${_BD_TH_STYLE}">Max intra-day</th>
+      <th style="${_BD_TH_STYLE}">Peak avg</th>
+      <th style="${_BD_TH_STYLE}">Off-peak</th>
+      <th style="${_BD_TH_STYLE}">Spread P-OP</th>
+      <th style="${_BD_TH_STYLE}">Neg hours</th>
+      <th style="${_BD_TH_STYLE}">Days</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${monthLabel(r.ym)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.avg)}</td>
+        <td style="${_BD_TD_STYLE};color:#ED6965">${_bdFmt(r.absMin)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${_bdFmt(r.absMax)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.peak)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.off)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.spread)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${r.negH ? fmtNeg(r.negH) : '–'}</td>
+        <td style="${_BD_TD_STYLE}">${r.days}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdYoYWeekly: Weekly comparison with Y-1 and Y-2 ───────────────────────
+function _bdYoYWeekly(zone, series, summary) {
+  if (!summary || !summary.zones || !summary.zones[zone]) return null;
+  const allEntries = summary.zones[zone];
+  // Group by year + ISO week
+  const byYearWeek = {};
+  allEntries.forEach(e => {
+    if (e.avg == null) return;
+    const dt = new Date(e.d);
+    const { year, week } = _isoYearWeek(dt);
+    const k = `${year}-W${String(week).padStart(2,'0')}`;
+    if (!byYearWeek[k]) byYearWeek[k] = [];
+    byYearWeek[k].push(e.avg);
+  });
+  const meanByKey = {};
+  Object.keys(byYearWeek).forEach(k => {
+    const arr = byYearWeek[k];
+    meanByKey[k] = arr.reduce((a,b)=>a+b,0) / arr.length;
+  });
+
+  // Current year = max year present
+  const years = [...new Set(allEntries.map(e => new Date(e.d).getFullYear()))].sort();
+  const cy = years[years.length - 1];
+  const y1 = years.length >= 2 ? years[years.length - 2] : null;
+  const y2 = years.length >= 3 ? years[years.length - 3] : null;
+
+  // Iterate over current year's weeks (only those with data)
+  const cyWeeks = Object.keys(byYearWeek)
+    .filter(k => k.startsWith(cy + '-W'))
+    .sort()
+    .reverse();
+  if (!cyWeeks.length) return null;
+
+  const rows = cyWeeks.map(k => {
+    const w = k.split('-W')[1];
+    const curAvg = meanByKey[k];
+    const y1Key = y1 ? `${y1}-W${w}` : null;
+    const y2Key = y2 ? `${y2}-W${w}` : null;
+    const y1Avg = y1Key ? meanByKey[y1Key] : null;
+    const y2Avg = y2Key ? meanByKey[y2Key] : null;
+    const vsy1 = (y1Avg != null) ? (curAvg - y1Avg) : null;
+    const vsy1Pct = (y1Avg != null && y1Avg !== 0) ? ((curAvg - y1Avg) / Math.abs(y1Avg) * 100) : null;
+    return { week: 'W' + w, curAvg, y1Avg, y2Avg, vsy1, vsy1Pct };
+  });
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Week</th>
+      <th style="${_BD_TH_STYLE}">${cy} avg</th>
+      <th style="${_BD_TH_STYLE}">${y1 || 'Y-1'} avg</th>
+      <th style="${_BD_TH_STYLE}">${y2 || 'Y-2'} avg</th>
+      <th style="${_BD_TH_STYLE}">vs Y-1 €</th>
+      <th style="${_BD_TH_STYLE}">vs Y-1 %</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.week}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.curAvg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y1Avg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y2Avg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy1)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy1Pct)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// Helper: ISO year + week
+function _isoYearWeek(date) {
+  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNum = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNum + 3);
+  const firstThursday = target.valueOf();
+  target.setUTCMonth(0, 1);
+  if (target.getUTCDay() !== 4) {
+    target.setUTCMonth(0, 1 + ((4 - target.getUTCDay()) + 7) % 7);
+  }
+  const week = 1 + Math.ceil((firstThursday - target) / (7 * 24 * 60 * 60 * 1000));
+  return { year: date.getUTCFullYear(), week };
+}
+
+// ── _bdYoYMonthly: Monthly comparison with Y-1 and Y-2 ─────────────────────
+function _bdYoYMonthly(zone, series, summary) {
+  if (!summary || !summary.zones || !summary.zones[zone]) return null;
+  const allEntries = summary.zones[zone];
+  const byYearMonth = {};
+  allEntries.forEach(e => {
+    if (e.avg == null) return;
+    const y = e.d.slice(0,4), m = e.d.slice(5,7);
+    const k = `${y}-${m}`;
+    if (!byYearMonth[k]) byYearMonth[k] = [];
+    byYearMonth[k].push(e.avg);
+  });
+  const meanByKey = {};
+  Object.keys(byYearMonth).forEach(k => {
+    const arr = byYearMonth[k];
+    meanByKey[k] = arr.reduce((a,b)=>a+b,0) / arr.length;
+  });
+
+  const years = [...new Set(allEntries.map(e => e.d.slice(0,4)))].sort();
+  const cy = years[years.length - 1];
+  const y1 = years.length >= 2 ? years[years.length - 2] : null;
+  const y2 = years.length >= 3 ? years[years.length - 3] : null;
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rows = [];
+  for (let mi = 11; mi >= 0; mi--) {
+    const mm = String(mi + 1).padStart(2, '0');
+    const cyAvg = meanByKey[`${cy}-${mm}`];
+    if (cyAvg == null) continue;  // skip future months without data
+    const y1Avg = y1 ? meanByKey[`${y1}-${mm}`] : null;
+    const y2Avg = y2 ? meanByKey[`${y2}-${mm}`] : null;
+    const vsy1 = (y1Avg != null) ? (cyAvg - y1Avg) : null;
+    const vsy1Pct = (y1Avg != null && y1Avg !== 0) ? ((cyAvg - y1Avg) / Math.abs(y1Avg) * 100) : null;
+    const vsy2 = (y2Avg != null) ? (cyAvg - y2Avg) : null;
+    rows.push({ month: monthNames[mi] + ' ' + cy, cyAvg, y1Avg, y2Avg, vsy1, vsy1Pct, vsy2 });
+  }
+  if (!rows.length) return null;
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Month</th>
+      <th style="${_BD_TH_STYLE}">${cy}</th>
+      <th style="${_BD_TH_STYLE}">${y1 || 'Y-1'}</th>
+      <th style="${_BD_TH_STYLE}">${y2 || 'Y-2'}</th>
+      <th style="${_BD_TH_STYLE}">vs Y-1 €</th>
+      <th style="${_BD_TH_STYLE}">vs Y-1 %</th>
+      <th style="${_BD_TH_STYLE}">vs Y-2 €</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.month}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.cyAvg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y1Avg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y2Avg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy1)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy1Pct)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy2)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdHourlyAnnual: 24h breakdown with Y-1/Y-2 + Hist median ─────────────
+function _bdHourlyAnnual(zone, summary) {
+  if (!summary || !summary.intraday || !summary.intraday[zone]) return null;
+  const intra = summary.intraday[zone];
+  const years = Object.keys(intra).sort();
+  if (!years.length) return null;
+  const cy = years[years.length - 1];
+  const y1 = years.length >= 2 ? years[years.length - 2] : null;
+  const y2 = years.length >= 3 ? years[years.length - 3] : null;
+  const curP = intra[cy]?.all;
+  const n1P = y1 ? intra[y1]?.all : null;
+  const n2P = y2 ? intra[y2]?.all : null;
+  if (!curP) return null;
+  const dist = summary.intradayDist?.[zone];
+  const medLine = dist?.p50;
+
+  const rows = [];
+  for (let h = 0; h < 24; h++) {
+    const cur = curP[h];
+    const y1v = n1P ? n1P[h] : null;
+    const y2v = n2P ? n2P[h] : null;
+    const med = medLine ? medLine[h] : null;
+    const vsy1 = (cur != null && y1v != null) ? (cur - y1v) : null;
+    rows.push({ hour: `${String(h).padStart(2,'0')}h`, cur, y1v, y2v, med, vsy1 });
+  }
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Hour</th>
+      <th style="${_BD_TH_STYLE}">${cy} avg</th>
+      <th style="${_BD_TH_STYLE}">${y1 || 'Y-1'} avg</th>
+      <th style="${_BD_TH_STYLE}">${y2 || 'Y-2'} avg</th>
+      <th style="${_BD_TH_STYLE}">Hist median</th>
+      <th style="${_BD_TH_STYLE}">vs Y-1</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.hour}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.cur)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y1v)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.y2v)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.med)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsy1)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdHourlyQuarter: 24h × 4 quarters matrix ─────────────────────────────
+function _bdHourlyQuarter(zone, summary) {
+  if (!summary || !summary.intraday || !summary.intraday[zone]) return null;
+  const intra = summary.intraday[zone];
+  const years = Object.keys(intra).sort();
+  if (!years.length) return null;
+  const cy = years[years.length - 1];
+  const qs = ['Q1','Q2','Q3','Q4'];
+  const profilesByQ = qs.map(q => intra[cy]?.[q]);
+  // If a quarter has no data, mark its column as null
+  const rows = [];
+  for (let h = 0; h < 24; h++) {
+    const vals = profilesByQ.map(p => (p && p[h] != null) ? p[h] : null);
+    rows.push({ hour: `${String(h).padStart(2,'0')}h`, vals });
+  }
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Hour ${cy}</th>
+      <th style="${_BD_TH_STYLE};color:#A87DC4">Q1 Winter</th>
+      <th style="${_BD_TH_STYLE};color:#14D3A9">Q2 Spring</th>
+      <th style="${_BD_TH_STYLE};color:#FBBF24">Q3 Summer</th>
+      <th style="${_BD_TH_STYLE};color:#ED6965">Q4 Autumn</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.hour}</td>
+        ${r.vals.map(v => `<td style="${_BD_TD_STYLE}">${_bdFmt(v)}</td>`).join('')}
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdWeekday: 7-row day of week distribution table ──────────────────────
+function _bdWeekday(zone, series) {
+  if (!series.length) return null;
+  const byDow = Array.from({length: 7}, () => []);
+  series.forEach(e => {
+    if (e.avg == null) return;
+    const dt = new Date(e.d);
+    let dow = dt.getUTCDay();
+    dow = (dow + 6) % 7;
+    byDow[dow].push(e.avg);
+  });
+  const stats = byDow.map(arr => _boxStats(arr));
+  if (stats.every(s => s == null)) return null;
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const periodValues = series.map(e => e.avg).filter(v => v != null);
+  const periodMedian = periodValues.length ? _percentile([...periodValues].sort((a,b)=>a-b), 0.5) : null;
+
+  const sigma = (arr) => {
+    if (arr.length < 2) return null;
+    const m = arr.reduce((a,b)=>a+b,0) / arr.length;
+    const v = arr.reduce((s,x) => s + (x-m)*(x-m), 0) / (arr.length - 1);
+    return Math.sqrt(v);
+  };
+  const rows = stats.map((s, i) => {
+    if (!s) return null;
+    return {
+      day: labels[i],
+      isWeekend: i >= 5,
+      n: s.n,
+      med: s.p50,
+      p25: s.p25,
+      p75: s.p75,
+      p10: s.p10,
+      p90: s.p90,
+      min: s.min,
+      max: s.max,
+      vsPeriod: (periodMedian != null) ? (s.p50 - periodMedian) : null,
+      sd: sigma(byDow[i]),
+    };
+  }).filter(r => r);
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Day</th>
+      <th style="${_BD_TH_STYLE}">Median</th>
+      <th style="${_BD_TH_STYLE}">P25</th>
+      <th style="${_BD_TH_STYLE}">P75</th>
+      <th style="${_BD_TH_STYLE}">P10</th>
+      <th style="${_BD_TH_STYLE}">P90</th>
+      <th style="${_BD_TH_STYLE}">Min</th>
+      <th style="${_BD_TH_STYLE}">Max</th>
+      <th style="${_BD_TH_STYLE}">σ</th>
+      <th style="${_BD_TH_STYLE}">vs period med</th>
+      <th style="${_BD_TH_STYLE}">n</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr style="${r.isWeekend ? 'background:rgba(168,125,196,0.06)' : ''}">
+        <td style="${_BD_TD_LABEL}">${r.day}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.med)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.p25)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.p75)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.p10)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.p90)}</td>
+        <td style="${_BD_TD_STYLE};color:#ED6965">${_bdFmt(r.min)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${_bdFmt(r.max)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.sd)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdDelta(r.vsPeriod)}</td>
+        <td style="${_BD_TD_STYLE};${r.n < 5 ? 'color:#FBBF24' : ''}">${r.n}${r.n < 5 ? ' ⚠' : ''}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdVolatility: rolling σ table with weekly/monthly toggle ─────────────
+window._bdVolatilityGran = 'month';  // 'week' | 'month'
+function _bdSetVolGran(g) {
+  window._bdVolatilityGran = g;
+  // Trigger rerender of breakdown only
+  const zone = window._HO_OPEN_ZONE;
+  if (zone && _HO_LAST_SERIES && _HO_LAST_SERIES[zone] && _HO_LAST_SUMMARY) {
+    _renderHoBreakdown(zone, _HO_LAST_SERIES[zone], _HO_LAST_SUMMARY);
+  }
+}
+window._bdSetVolGran = _bdSetVolGran;
+
+function _bdVolatility(zone, series) {
+  if (!series.length) return null;
+  const gran = window._bdVolatilityGran || 'month';
+  // Bucket by week (YYYY-W##) or month (YYYY-MM)
+  const buckets = {};
+  series.forEach(d => {
+    if (d.avg == null) return;
+    const dt = new Date(d.d);
+    let key;
+    if (gran === 'week') {
+      const { year, week } = _isoYearWeek(dt);
+      key = `${year}-W${String(week).padStart(2,'0')}`;
+    } else {
+      key = d.d.slice(0, 7);
+    }
+    if (!buckets[key]) buckets[key] = [];
+    buckets[key].push({ d: d.d, avg: d.avg, max: d.max, min: d.min });
+  });
+  const keys = Object.keys(buckets).sort().reverse();
+  if (!keys.length) return null;
+  const sigma = (arr) => {
+    if (arr.length < 2) return null;
+    const m = arr.reduce((a,b)=>a+b,0) / arr.length;
+    const v = arr.reduce((s,x) => s + (x-m)*(x-m), 0) / (arr.length - 1);
+    return Math.sqrt(v);
+  };
+  const rows = keys.map(k => {
+    const arr = buckets[k];
+    const vals = arr.map(r => r.avg);
+    const sd = sigma(vals);
+    // Largest spike = day with max abs delta vs previous day
+    let maxSpike = null, maxSpikeDate = null;
+    for (let i = 1; i < arr.length; i++) {
+      const delta = Math.abs(arr[i].avg - arr[i-1].avg);
+      if (maxSpike == null || delta > maxSpike) { maxSpike = delta; maxSpikeDate = arr[i].d; }
+    }
+    const range = (vals.length) ? (Math.max(...vals) - Math.min(...vals)) : null;
+    return { period: k, sd, range, maxSpike, maxSpikeDate, n: arr.length };
+  });
+
+  const toggle = `<div style="display:flex;gap:4px;margin-bottom:8px;font-family:'JetBrains Mono',monospace">
+    <button onclick="_bdSetVolGran('week')" style="background:${gran==='week'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${gran==='week'?'rgba(20,211,169,0.4)':'var(--bd)'};color:${gran==='week'?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Week</button>
+    <button onclick="_bdSetVolGran('month')" style="background:${gran==='month'?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${gran==='month'?'rgba(20,211,169,0.4)':'var(--bd)'};color:${gran==='month'?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Month</button>
+  </div>`;
+
+  return toggle + `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">${gran === 'week' ? 'Week' : 'Month'}</th>
+      <th style="${_BD_TH_STYLE}">σ €/MWh</th>
+      <th style="${_BD_TH_STYLE}">Range (max-min)</th>
+      <th style="${_BD_TH_STYLE}">Max day Δ</th>
+      <th style="${_BD_TH_STYLE}">Spike date</th>
+      <th style="${_BD_TH_STYLE}">n days</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.period}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.sd)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.range)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${_bdFmt(r.maxSpike)}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx3);font-size:10px">${r.maxSpikeDate || '–'}</td>
+        <td style="${_BD_TD_STYLE}">${r.n}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── _bdDistribution: price bucket distribution (negatives, then ranges) ───
+function _bdDistribution(zone, series) {
+  if (!series.length) return null;
+  const vals = series.map(d => d.avg).filter(v => v != null);
+  if (!vals.length) return null;
+  // Pre-defined price buckets (in €/MWh)
+  const buckets = [
+    { lo: -Infinity, hi: 0,    label: '< 0' },
+    { lo: 0,         hi: 20,   label: '0 — 20' },
+    { lo: 20,        hi: 40,   label: '20 — 40' },
+    { lo: 40,        hi: 60,   label: '40 — 60' },
+    { lo: 60,        hi: 80,   label: '60 — 80' },
+    { lo: 80,        hi: 100,  label: '80 — 100' },
+    { lo: 100,       hi: 150,  label: '100 — 150' },
+    { lo: 150,       hi: 200,  label: '150 — 200' },
+    { lo: 200,       hi: Infinity, label: '≥ 200' },
+  ];
+  const counts = buckets.map(() => 0);
+  vals.forEach(v => {
+    for (let i = 0; i < buckets.length; i++) {
+      if (v >= buckets[i].lo && v < buckets[i].hi) { counts[i]++; break; }
+    }
+  });
+  const total = vals.length;
+  let cum = 0;
+  const rows = buckets.map((b, i) => {
+    cum += counts[i];
+    return {
+      label: b.label,
+      count: counts[i],
+      pct: (counts[i] / total) * 100,
+      cumPct: (cum / total) * 100,
+      isNeg: b.hi <= 0,
+      isHigh: b.lo >= 100,
+    };
+  });
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Bucket €/MWh</th>
+      <th style="${_BD_TH_STYLE}">Days</th>
+      <th style="${_BD_TH_STYLE}">% of period</th>
+      <th style="${_BD_TH_STYLE}">% cumulated</th>
+      <th style="${_BD_TH_STYLE};text-align:left">Visual</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL};${r.isNeg ? 'color:#ED6965' : (r.isHigh ? 'color:#FBBF24' : '')}">${r.label}</td>
+        <td style="${_BD_TD_STYLE}">${r.count}</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx)">${r.pct.toFixed(1)}%</td>
+        <td style="${_BD_TD_STYLE};color:var(--tx3)">${r.cumPct.toFixed(1)}%</td>
+        <td style="text-align:left;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="display:inline-block;width:${Math.max(2, r.pct * 1.5)}px;height:8px;background:${r.isNeg ? '#ED6965' : (r.isHigh ? '#FBBF24' : 'var(--zone-fr,#14D3A9)')};border-radius:1px;vertical-align:middle"></span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Helper: persist last series + summary for breakdown rerenders (toggle in Volatility) ──
+window._HO_LAST_SERIES = window._HO_LAST_SERIES || {};
+window._HO_LAST_SUMMARY = null;
+
 // ── Helper: render the monthly breakdown inside the row detail ──
 // Replaces the standalone Block 4 table — filtered on the zone + period currently open
 async function _renderHoDetailMonthly(zone, series) {
@@ -2384,9 +2972,9 @@ function _openHoRow(zone, series, st) {
         ` : ''}
 
         <!-- Monthly breakdown collapsible (replaces standalone Block 4) -->
-        <details style="margin-top:12px">
+        <details id="ho-detail-breakdown-details" style="margin-top:12px" open>
           <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
-            Monthly breakdown
+            <span id="ho-detail-breakdown-label">Monthly breakdown</span>
           </summary>
           <div id="ho-detail-monthly" style="margin-top:8px;overflow-x:auto"></div>
         </details>
@@ -2419,11 +3007,13 @@ function _openHoRow(zone, series, st) {
     _buildHoTabChart(z, s2, (window._HO_TABS && window._HO_TABS[z]) || 'lines', false);
   });
 
-  // Render monthly breakdown inside the <details> (lazy: only when expanded)
+  // Render the breakdown inside the <details> (lazy: only when expanded).
+  // Routed through the contextual breakdown dispatcher so it picks the right
+  // table depending on the active tab.
   const detailsEl = detail.querySelector('details');
   if (detailsEl) {
     detailsEl.addEventListener('toggle', () => {
-      if (detailsEl.open) _renderHoDetailMonthly(zone, series);
+      if (detailsEl.open) _renderHoBreakdown(zone, series, window._HO_LAST_SUMMARY);
     }, { once: false });
   }
 }
@@ -2727,7 +3317,7 @@ function _openHoFullscreen(zone) {
       </div>
 
       <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:280px;max-width:60%;width:440px;display:flex;flex-direction:column">
-        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0">Monthly breakdown</div>
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0"><span id="ho-fs-breakdown-label">Monthly breakdown</span></div>
         <div id="ho-fs-monthly" style="flex:1;overflow-y:auto;min-height:0"></div>
       </div>
     </div>
@@ -2764,21 +3354,11 @@ function _openHoFullscreen(zone) {
     });
   }
 
-  // Render the Monthly breakdown directly in the right pane
-  const monthlyTarget = document.getElementById('ho-fs-monthly');
-  if (monthlyTarget) {
-    // _renderHoDetailMonthly writes into #ho-detail-monthly — temporarily swap ids
-    const inlineMonthly = document.getElementById('ho-detail-monthly');
-    if (inlineMonthly) inlineMonthly.id = 'ho-detail-monthly-bak';
-    const tmp = document.createElement('div');
-    tmp.id = 'ho-detail-monthly';
-    document.body.appendChild(tmp);
-    _renderHoDetailMonthly(zone, series).then(() => {
-      monthlyTarget.innerHTML = tmp.innerHTML;
-      tmp.remove();
-      if (inlineMonthly) inlineMonthly.id = 'ho-detail-monthly';
-    });
-  }
+  // Render the contextual breakdown directly in the right pane
+  // (the dispatcher writes into both #ho-detail-monthly and #ho-fs-monthly)
+  try {
+    _renderHoBreakdown(zone, series, window._HO_LAST_SUMMARY);
+  } catch (e) { console.warn('FS breakdown render failed:', e); }
 
   // Build the fullscreen chart
   window._renderHoFsChart = function(zone) {
@@ -3377,20 +3957,42 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
     const ql = document.getElementById(togPrefix + '-quarter-legend');
     if (ql) ql.remove();
   }
+  // Cleanup Weekday HTML legend unless we're on Weekday tab
+  if (tab !== 'weekday' && tab !== 'weekly') {
+    const wdLg = document.getElementById(togPrefix + '-weekday-legend');
+    if (wdLg) wdLg.remove();
+  }
+
+  // Persist last series + summary for breakdown rerenders (Volatility toggle, etc.)
+  window._HO_LAST_SERIES = window._HO_LAST_SERIES || {};
+  window._HO_LAST_SERIES[zone] = filtered;
+  window._HO_LAST_SUMMARY = summary;
+  // Map our HSZ tab/yoyMode to the dispatcher (read by _renderHoBreakdown)
+  // Note: tab is normalised above (weekly→weekday)
+  HSZ.tab = tab;
 
   // Dispatch render by tab
-  if (tab === 'lines')   return _hszRenderLines(filtered, zone);
-  if (tab === 'yoy') {
+  let renderResult = null;
+  if (tab === 'lines')         renderResult = _hszRenderLines(filtered, zone);
+  else if (tab === 'yoy') {
     const mode = _hszCtx().getYoyMode();
-    if (mode === 'hourly')  return _hszRenderHourly(filtered, zone);
-    if (mode === 'weekly')  return _hszRenderWeeklyYoY(filtered, zone, summary);
-    if (mode === 'monthly') return _hszRenderSeasonal(filtered, zone, summary);
-    return _hszRenderYoY(filtered, zone, summary);  // default = daily
+    if (mode === 'hourly')       renderResult = _hszRenderHourly(filtered, zone);
+    else if (mode === 'weekly')  renderResult = _hszRenderWeeklyYoY(filtered, zone, summary);
+    else if (mode === 'monthly') renderResult = _hszRenderSeasonal(filtered, zone, summary);
+    else                          renderResult = _hszRenderYoY(filtered, zone, summary);  // default = daily
   }
-  if (tab === 'weekday') return _hszRenderWeekly(filtered, zone);  // box plot by DOW
-  if (tab === 'vol')     return _hszRenderVolatility(filtered, zone);
-  if (tab === 'dist')    return _hszRenderDist(filtered, zone);
-  return _hszPlaceholder('🚧 ' + tab + ' · data ready · chart coming next');
+  else if (tab === 'weekday')  renderResult = _hszRenderWeekly(filtered, zone);
+  else if (tab === 'vol')      renderResult = _hszRenderVolatility(filtered, zone);
+  else if (tab === 'dist')     renderResult = _hszRenderDist(filtered, zone);
+
+  // Normalise tab id for the breakdown dispatcher (vol → volatility, dist → distribution)
+  const bdTab = tab === 'vol' ? 'volatility' : (tab === 'dist' ? 'distribution' : tab);
+  const oldTab = HSZ.tab;
+  HSZ.tab = bdTab;
+  try { _renderHoBreakdown(zone, filtered, summary); } catch (e) { console.warn('Breakdown render failed:', e); }
+  HSZ.tab = oldTab;
+
+  return renderResult;
 }
 
 function _hszPlaceholder(msg) {
@@ -5068,7 +5670,6 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
 //  - line overlays for whiskers (P10/P90) and outliers (min/max)
 //  - thick median line via a bar dataset
 function _hszRenderWeekly(filtered, zone) {
-  const color = zoneColor(zone);
   if (!filtered.length) return _hszPlaceholder('No data');
 
   // Group avg values by day-of-week (Mon=0..Sun=6)
@@ -5086,49 +5687,138 @@ function _hszRenderWeekly(filtered, zone) {
 
   const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  // HTML title block (hybrid style)
-  // Compute weekend vs weekday means for subtitle
+  // ── Compute summary stats for HTML title block ──
   const wdMean = _meanIgnoreNull([].concat(byDow[0], byDow[1], byDow[2], byDow[3], byDow[4]));
   const weMean = _meanIgnoreNull([].concat(byDow[5], byDow[6]));
-  let subtitleText;
-  if (wdMean != null && weMean != null) {
-    const d = weMean - wdMean;
-    const v = d < 0 ? 'cheaper' : 'more expensive';
-    subtitleText = `Weekday avg ${wdMean.toFixed(1)} €/MWh, weekend ${weMean.toFixed(1)} (${Math.abs(d).toFixed(1)} ${v})`;
+  const periodValues = filtered.map(e => e.avg).filter(v => v != null);
+  const periodMedian = periodValues.length ? _percentile([...periodValues].sort((a,b)=>a-b), 0.5) : null;
+
+  // Find cheapest / most expensive day by median
+  let cheapestIdx = null, mostExpIdx = null;
+  let cheapestMed = Infinity, mostExpMed = -Infinity;
+  stats.forEach((s, i) => {
+    if (!s) return;
+    if (s.p50 < cheapestMed) { cheapestMed = s.p50; cheapestIdx = i; }
+    if (s.p50 > mostExpMed)  { mostExpMed  = s.p50; mostExpIdx  = i; }
+  });
+
+  // Subtitle: cheapest / most expensive + weekend gap
+  let subtitleText = '';
+  if (mostExpIdx != null && cheapestIdx != null) {
+    subtitleText = `Most expensive: ${labels[mostExpIdx]} (${stats[mostExpIdx].p50.toFixed(1)} €/MWh median) · Cheapest: ${labels[cheapestIdx]} (${stats[cheapestIdx].p50.toFixed(1)} €/MWh)`;
+    if (wdMean != null && weMean != null) {
+      const d = weMean - wdMean;
+      const v = d < 0 ? 'cheaper' : 'more expensive';
+      subtitleText += ` · Weekend ${Math.abs(d).toFixed(1)} €/MWh ${v} than weekday avg`;
+    }
   } else {
-    subtitleText = `Price distribution by day of week across the period`;
+    subtitleText = 'Price distribution by day of week across the period';
   }
+  const totalObs = stats.reduce((sum, s) => sum + (s ? s.n : 0), 0);
+
   _setHoTitle({
-    eyebrow: `Prices · Weekday · ${zone}`,
+    eyebrow: `Prices · Weekday · ${zone} · ${totalObs} days observed`,
     title: 'Price distribution by day of the week',
     subtitle: subtitleText,
   });
 
-  // Compute Y range: cap at 1.15× P90 max but only if outliers exceed it significantly
+  // ── Y range ──
   const validStats = stats.filter(s => s);
   const p90Max = Math.max(...validStats.map(s => s.p90));
   const p10Min = Math.min(...validStats.map(s => s.p10));
   const dataMax = Math.max(...validStats.map(s => s.max));
   const dataMin = Math.min(...validStats.map(s => s.min));
-  // If dataMax > 1.5× p90Max, cap at p90Max × 1.4 (outliers visible just above box)
-  // Otherwise use real data extent
   const yTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
   const yBot = (dataMin < p10Min * 0.5 || dataMin < 0) ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10 : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
 
-  const colorIqrFill = _toRgba(color, 0.25);
-  const colorWhisker = _toRgba(color, 0.7);
+  // ── Colour ramp by price (gradient green→amber→red across median ranking) ──
+  // Sort days by p50, assign colours: cheapest=green, most expensive=red
+  const orderedByMed = stats
+    .map((s, i) => ({ s, i }))
+    .filter(o => o.s)
+    .sort((a, b) => a.s.p50 - b.s.p50);
+  const colourByIdx = Array(7).fill(null);
+  orderedByMed.forEach((o, rank) => {
+    const t = orderedByMed.length === 1 ? 0.5 : rank / (orderedByMed.length - 1);
+    // 3-stop gradient: green #14D3A9 → amber #E88728 → red #ED6965
+    let r, g, b;
+    if (t < 0.5) {
+      const k = t * 2;
+      r = Math.round(20  + (232 - 20)  * k);
+      g = Math.round(211 + (135 - 211) * k);
+      b = Math.round(169 + (40  - 169) * k);
+    } else {
+      const k = (t - 0.5) * 2;
+      r = Math.round(232 + (237 - 232) * k);
+      g = Math.round(135 + (105 - 135) * k);
+      b = Math.round(40  + (101 - 40)  * k);
+    }
+    colourByIdx[o.i] = `rgb(${r},${g},${b})`;
+  });
 
-  // Custom plugin: draw the whole box plot in afterDatasetsDraw
-  // Uses the chart's scales to convert (categoryIdx, value) → pixels
+  // Median line color (same family as the box for visual link)
+  const fillForBox = (idx, alpha) => {
+    const c = colourByIdx[idx] || 'rgba(255,255,255,0.5)';
+    const m = c.match(/rgb\((\d+),(\d+),(\d+)\)/);
+    if (!m) return c;
+    return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`;
+  };
+
+  // ── Custom plugin: render box plots + weekend background tint + period median ──
   const boxPlotPlugin = {
     id: 'boxPlot',
     afterDatasetsDraw(chart) {
       const { ctx, chartArea, scales } = chart;
       const xScale = scales.x;
       const yScale = scales.y;
+
+      // 1. Tinted background for weekend (Sat = idx 5, Sun = idx 6)
+      const xSatLeft  = xScale.getPixelForValue(5) - (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) / 2;
+      const xSunRight = xScale.getPixelForValue(6) + (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) / 2;
+      ctx.fillStyle = 'rgba(168,125,196,0.06)';
+      ctx.fillRect(xSatLeft, chartArea.top, xSunRight - xSatLeft, chartArea.bottom - chartArea.top);
+
+      // 2. Vertical separator between Fri and Sat
+      const xSepX = xScale.getPixelForValue(5) - (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) / 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+      ctx.setLineDash([2, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xSepX, chartArea.top);
+      ctx.lineTo(xSepX, chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // "WEEKEND" label at top of tinted zone
+      ctx.fillStyle = 'rgba(168,125,196,0.7)';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('WEEKEND', (xSatLeft + xSunRight) / 2, chartArea.top + 2);
+
+      // 3. Period median horizontal line
+      if (periodMedian != null && periodMedian >= yScale.min && periodMedian <= yScale.max) {
+        const yMed = yScale.getPixelForValue(periodMedian);
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, yMed);
+        ctx.lineTo(chartArea.right, yMed);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Period median ${periodMedian.toFixed(1)}`, chartArea.right - 110, yMed - 8);
+      }
+
       const boxHalfWidth = (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.22;
+
+      // 4. Box plots
       stats.forEach((s, i) => {
         if (!s) return;
+        const boxColor = colourByIdx[i] || '#94A8BD';
         const xPx = xScale.getPixelForValue(i);
         const yP25 = yScale.getPixelForValue(s.p25);
         const yP75 = yScale.getPixelForValue(s.p75);
@@ -5136,38 +5826,39 @@ function _hszRenderWeekly(filtered, zone) {
         const yP90 = yScale.getPixelForValue(s.p90);
         const yP50 = yScale.getPixelForValue(s.p50);
 
-        // IQR box (P25-P75)
-        ctx.fillStyle = colorIqrFill;
-        ctx.strokeStyle = color;
+        // IQR box (P25-P75) — coloured by price rank
+        ctx.fillStyle = fillForBox(i, 0.22);
+        ctx.strokeStyle = boxColor;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.rect(xPx - boxHalfWidth, yP75, boxHalfWidth * 2, yP25 - yP75);
         ctx.fill();
         ctx.stroke();
 
-        // Median line (thick horizontal line at P50)
-        ctx.strokeStyle = color;
+        // Median line (white, thick, for high contrast against the colored box)
+        ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(xPx - boxHalfWidth, yP50);
         ctx.lineTo(xPx + boxHalfWidth, yP50);
         ctx.stroke();
 
-        // Whiskers (vertical lines + caps)
-        ctx.strokeStyle = colorWhisker;
+        // Whiskers (P10-P90) — dashed for clarity
+        ctx.strokeStyle = fillForBox(i, 0.7);
         ctx.lineWidth = 1.2;
-        // Lower whisker
+        ctx.setLineDash([3, 2]);
         ctx.beginPath();
         ctx.moveTo(xPx, yP25);
         ctx.lineTo(xPx, yP10);
         ctx.stroke();
-        // Upper whisker
         ctx.beginPath();
         ctx.moveTo(xPx, yP75);
         ctx.lineTo(xPx, yP90);
         ctx.stroke();
-        // Whisker caps (small horizontal lines at P10 / P90)
+        ctx.setLineDash([]);
+        // Whisker caps
         const capWidth = boxHalfWidth * 0.45;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(xPx - capWidth, yP10);
         ctx.lineTo(xPx + capWidth, yP10);
@@ -5175,7 +5866,7 @@ function _hszRenderWeekly(filtered, zone) {
         ctx.lineTo(xPx + capWidth, yP90);
         ctx.stroke();
 
-        // Min / Max as small dots (if within Y range, else they're clipped by Chart.js naturally)
+        // Min / Max outlier dots
         if (s.min >= yScale.min && s.min <= yScale.max) {
           const yMin = yScale.getPixelForValue(s.min);
           ctx.fillStyle = _HIST_DN;
@@ -5190,16 +5881,45 @@ function _hszRenderWeekly(filtered, zone) {
           ctx.arc(xPx, yMax, 3, 0, 2 * Math.PI);
           ctx.fill();
         }
+
+        // 5. Low-confidence warning (n < 5)
+        if (s.n < 5) {
+          ctx.fillStyle = '#FBBF24';
+          ctx.font = '600 9px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText(`⚠ n=${s.n}`, xPx, chartArea.bottom + 4);
+        }
       });
     },
   };
+
+  // ── Custom HTML legend above the chart (rendered separately into a div) ──
+  // Render legend by injecting into a sibling div BEFORE the canvas. We use the
+  // togglePrefix to find the right container.
+  const legendId = _hszCtx().togglePrefix + '-weekday-legend';
+  const oldLg = document.getElementById(legendId);
+  if (oldLg) oldLg.remove();
+  const canvas = document.getElementById(_hszCtx().canvasId);
+  if (canvas && canvas.parentNode) {
+    const lg = document.createElement('div');
+    lg.id = legendId;
+    lg.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;flex-wrap:wrap';
+    lg.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:linear-gradient(to right,#14D3A9,#E88728,#ED6965);border-radius:2px"></span>Box P25-P75 (color = price rank)</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2px;background:#fff"></span>Median (P50)</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;border-top:1.4px dashed rgba(255,255,255,0.55)"></span>Whiskers P10-P90</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;border-top:1px dashed rgba(255,255,255,0.5)"></span>Period median ${periodMedian != null ? periodMedian.toFixed(1) + ' €' : ''}</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;background:#FBBF24;border-radius:50%;display:inline-block"></span>Max <span style="width:6px;height:6px;background:#ED6965;border-radius:50%;display:inline-block;margin-left:4px"></span>Min</span>
+    `;
+    canvas.parentNode.insertBefore(lg, canvas);
+  }
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        // Invisible bar to drive the X categorical axis and tooltip
         {
           label: 'Box plot',
           data: stats.map(s => s ? s.p50 : null),
@@ -5214,6 +5934,8 @@ function _hszRenderWeekly(filtered, zone) {
     options: {
       ...baseOptions('€/MWh'),
       plugins: {
+        title: { display: false },
+        subtitle: { display: false },
         legend: { display: false },
         tooltip: {
           mode: 'index', intersect: false,
@@ -5221,7 +5943,7 @@ function _hszRenderWeekly(filtered, zone) {
             label: (ctx) => {
               const s = stats[ctx.dataIndex];
               if (!s) return '';
-              return [
+              const out = [
                 ` Min:    ${s.min.toFixed(1)} €/MWh`,
                 ` P10:    ${s.p10.toFixed(1)} €/MWh`,
                 ` P25:    ${s.p25.toFixed(1)} €/MWh`,
@@ -5229,13 +5951,16 @@ function _hszRenderWeekly(filtered, zone) {
                 ` P75:    ${s.p75.toFixed(1)} €/MWh`,
                 ` P90:    ${s.p90.toFixed(1)} €/MWh`,
                 ` Max:    ${s.max.toFixed(1)} €/MWh`,
-                ` n = ${s.n}`,
+                ` n = ${s.n}${s.n < 5 ? ' ⚠ low confidence' : ''}`,
               ];
+              return out;
             },
           },
         },
-        subtitle: { display: true, text: 'Box: P25-P75 · Whiskers: P10-P90 · Dots: min/max (when within range) · Scroll to zoom Y · drag to pan', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
         zoom: _zoomConfig({ mode: 'y' }),
+      },
+      layout: {
+        padding: { bottom: 18 },  // room for the ⚠ n=X warning under boxes
       },
       scales: {
         x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } } },
