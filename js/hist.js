@@ -3936,6 +3936,13 @@ window.setHistHourlyMode = setHistHourlyMode;
 // Chart.js native title/subtitle are NOT used anywhere on Historical drill-down
 // charts — we rely on this HTML block instead (multi-style typography).
 // ─────────────────────────────────────────────────────────────
+// Helper: format a title with an optional discrete description after a pipe ("Title | description")
+// The description appears in a smaller, grey weight to keep the main title prominent.
+function _titleWithDescription(title, description) {
+  if (!description) return title;
+  return `${title} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${description}</span>`;
+}
+
 function _setHoTitle({ eyebrow, title, subtitle }) {
   const fs = !!document.getElementById('ho-fs-overlay');
   const prefix = fs ? 'ho-fs' : 'ho-detail';
@@ -4228,7 +4235,7 @@ function _hszRenderLines(filtered, zone) {
   if (subtitleParts.length === 0) subtitleParts.push(`${filtered.length} daily observations`);
   _setHoTitle({
     eyebrow: `Prices · Lines · ${zone}`,
-    title: 'Daily prices with 7-day and 30-day moving averages',
+    title: _titleWithDescription('Daily prices with 7-day and 30-day moving averages', 'Daily average prices over the selected period'),
     subtitle: subtitleParts.join(' · '),
   });
 
@@ -4460,7 +4467,7 @@ function _hszRenderYoY(filtered, zone, summary) {
   // HTML title block (hybrid style)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Daily`,
-    title: 'Daily profile · current year vs Y-1, Y-2, and historical range',
+    title: _titleWithDescription('Daily profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
     subtitle: subtitleText,
   });
 
@@ -4791,7 +4798,7 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
   // HTML title block
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Weekly`,
-    title: 'Weekly profile · current year vs Y-1, Y-2, and historical range',
+    title: _titleWithDescription('Weekly profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
     subtitle: subtitleText,
   });
 
@@ -5068,7 +5075,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
   // HTML title block (hybrid style)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Monthly`,
-    title: 'Monthly profile · current year vs Y-1, Y-2, and historical range',
+    title: _titleWithDescription('Monthly profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
     subtitle: subtitleText,
   });
 
@@ -5293,7 +5300,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   // HTML title block (hybrid F)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Hourly · By quarter`,
-    title: 'Intraday 24h profile by quarter · current year vs Y-1 and Y-2',
+    title: _titleWithDescription('Intraday 24h profile by quarter', 'Q1, Q2, Q3, Q4 side-by-side — current year vs Y-1 and Y-2'),
     subtitle: `Each panel shows the average price for every hour of day, aggregated over one quarter. Current ${cur}${n1 ? ', Y-1 ' + n1 : ''}${n2 ? ', Y-2 ' + n2 : ''}.`,
   });
 
@@ -5593,7 +5600,7 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   // HTML title block (hybrid F)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Hourly · Annual average`,
-    title: 'Intraday 24h profile · current year vs Y-1 and Y-2',
+    title: _titleWithDescription('Intraday 24h profile', 'Average price by hour of day — current year vs Y-1 and Y-2'),
     subtitle,
   });
 
@@ -5761,7 +5768,7 @@ function _hszRenderWeekly(filtered, zone) {
 
   _setHoTitle({
     eyebrow: `Prices · Weekday · ${zone} · ${totalObs} days observed`,
-    title: 'Price distribution by day of the week',
+    title: _titleWithDescription('Price distribution by day of the week', 'Boxplot Mon → Sun · median, P25-P75, P5-P95, min/max'),
     subtitle: subtitleText,
   });
 
@@ -6034,7 +6041,7 @@ const _VOL_METRICS = {
     short: 'σ',
     unit: '€/MWh',
     formula: 'σ_N(D) = stddev of daily avg prices on [D-N+1 .. D]',
-    explanation: 'Day-to-day variability over a rolling window. High σ means daily averages diverge from their mean.',
+    explanation: 'Day-to-day variability over a rolling window. A high σ means daily prices diverge a lot from their mean; a low σ means they stay close to it.',
     thresholds: [15, 30],
     thresholdLabels: ['stable', 'moderate', 'volatile'],
     thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
@@ -6044,7 +6051,7 @@ const _VOL_METRICS = {
     short: 'Δ DoD',
     unit: '€/MWh',
     formula: 'ΔDoD_N(D) = mean of |P_d - P_{d-1}| on [D-N+1 .. D]',
-    explanation: 'Average absolute change from one day to the next. Intuitive read of price stability.',
+    explanation: 'Average absolute change from one day to the next. A high Δ means prices jump significantly day-to-day; a low Δ means they barely move.',
     thresholds: [10, 25],
     thresholdLabels: ['stable', 'moderate', 'volatile'],
     thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
@@ -6054,7 +6061,7 @@ const _VOL_METRICS = {
     short: 'Range',
     unit: '€/MWh',
     formula: 'Range_N(D) = mean of (max_h - min_h) per day on [D-N+1 .. D]',
-    explanation: 'Average daily peak-to-trough spread. Key metric for BESS arbitrage and intraday flexibility value.',
+    explanation: 'Average gap between the highest and lowest hourly prices each day. A wide range means strong intraday swings; a narrow range means flat days.',
     thresholds: [50, 100],
     thresholdLabels: ['narrow', 'moderate', 'wide'],
     thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
@@ -6148,7 +6155,7 @@ function _hszRenderVolatility(filtered, zone) {
 
   // Title with discrete description suffix ("Title | description")
   // and 2-line subtitle (formula italic + stats bold).
-  const titleHtml = `${meta.label} — 7-day and 30-day rolling <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${meta.explanation}</span>`;
+  const titleHtml = _titleWithDescription(`${meta.label} — 7-day and 30-day rolling`, meta.explanation);
   let line1 = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
   let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(1)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
   if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(1)}</strong> on ${periodMax.d}`;
@@ -6371,8 +6378,8 @@ function _hszRenderDist(filtered, zone, summary) {
 
   // ── Title block: "Title | discrete description" + 2-line subtitle (formula italic + stats) ──
   const titleHtml = (mode === 'cumulative')
-    ? `Cumulative price distribution <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| Read "X% of days were under price Y" — PPA floors, VaR analysis</span>`
-    : `Daily average price distribution <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| Histogram count + smoothed density (KDE) — see overall shape and detect modes</span>`;
+    ? _titleWithDescription('Cumulative price distribution', 'For any price level, what % of days fell below it. A steep curve means prices were concentrated in a narrow range; a flat curve means prices were spread out.')
+    : _titleWithDescription('Daily average price distribution', 'Frequency of daily prices by price range. Tall bars show the most common price levels; gaps or secondary peaks reveal less common regimes.');
   const formulaLine = (mode === 'cumulative')
     ? `F(x) = days with price ≤ x  /  total · 100%`
     : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: density(x) = (1/n·h) · Σ K((x-xᵢ)/h)`;
