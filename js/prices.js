@@ -1058,15 +1058,23 @@ function selectAllCompareZones() {
 }
 
 document.addEventListener('click', e => {
-  // Close zone filter panel if clicking outside both the button and the panel
-  const zBtn   = document.getElementById('zone-filter-btn');
+  // Close zone filter panel if clicking outside both ANY zone-filter button and the panel.
+  // Multiple buttons can open the same panel:
+  //   - 'zone-filter-btn'       (legacy inline button)
+  //   - 'zone-filter-btn-hdr'   (header button in Day-Ahead Daily)
+  //   - 'pk-gf-daily-zones'     (global filter button)
+  const zBtns = [
+    document.getElementById('zone-filter-btn'),
+    document.getElementById('zone-filter-btn-hdr'),
+    document.getElementById('pk-gf-daily-zones'),
+  ].filter(Boolean);
   const zPanel = document.getElementById('zone-filter-panel');
   if (zPanel && zPanel.style.display !== 'none') {
-    if (!zBtn?.contains(e.target) && !zPanel.contains(e.target)) {
+    const clickInButton = zBtns.some(b => b.contains(e.target));
+    if (!clickInButton && !zPanel.contains(e.target)) {
       zPanel.style.display = 'none';
       const ov2 = document.getElementById('zone-filter-overlay');
       if (ov2) ov2.style.display = 'none';
-
     }
   }
   const cBtn   = document.getElementById('compare-filter-btn');
