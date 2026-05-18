@@ -591,6 +591,60 @@ def recalc_summary_from_daily():
                 zone_intraday.setdefault(str(year), {})['all'] = avg_all
         summary['intraday'][code] = zone_intraday
 
+    # ── Compute hourly HISTORICAL DISTRIBUTION per zone (used by Hourly YoY global) ──
+    # For each zone, take every daily intraday profile from years OLDER than the
+    # current year, group by hour, and compute P0/P5/P50/P95/P100. The frontend
+    # plots these as enveloppes around the current/Y-1/Y-2 lines.
+    #
+    # Granularity: simple — pas de buckets par mois/quarter, c'est une distribution
+    # 24h moyenne historique (toutes saisons confondues).
+    #
+    # Storage: summary['intradayDist'][zone] = {
+    #   'p0': [24], 'p5': [24], 'p50': [24], 'p95': [24], 'p100': [24],
+    #   'years': int (count of years contributing)
+    # }
+    summary.setdefault('intradayDist', {})
+    for code, years in intraday_accum.items():
+        if not years:
+            continue
+        current_year = max(years.keys())
+        # Collect all daily profiles from years older than current
+        hist_profiles = []
+        contributing_years = set()
+        for y, quarters in years.items():
+            if y == current_year:
+                continue
+            for q_profiles in quarters.values():
+                hist_profiles.extend(q_profiles)
+                contributing_years.add(y)
+        if not hist_profiles:
+            continue
+        # Per-hour distribution
+        dist = {'p0': [], 'p5': [], 'p50': [], 'p95': [], 'p100': []}
+        for h in range(24):
+            vals = sorted(p[h] for p in hist_profiles if p[h] is not None)
+            if not vals:
+                for k in dist:
+                    dist[k].append(None)
+                continue
+            n = len(vals)
+            def pct(p):
+                if n == 1:
+                    return vals[0]
+                idx = p * (n - 1)
+                lo = int(idx)
+                hi = min(lo + 1, n - 1)
+                w = idx - lo
+                return round(vals[lo] * (1 - w) + vals[hi] * w, 2)
+            dist['p0'].append(round(vals[0], 2))
+            dist['p5'].append(pct(0.05))
+            dist['p50'].append(pct(0.50))
+            dist['p95'].append(pct(0.95))
+            dist['p100'].append(round(vals[-1], 2))
+        dist['years'] = sorted(contributing_years)
+        summary['intradayDist'][code] = dist
+    print(f"  Hourly historical distribution pre-computed for {len(summary.get('intradayDist', {}))} zones")
+
     os.makedirs(os.path.dirname(SUMMARY_PATH), exist_ok=True)
     with open(SUMMARY_PATH, 'w') as f:
         json.dump(summary, f, separators=(',', ':'))
