@@ -4227,10 +4227,10 @@ function _hszRenderLines(filtered, zone) {
     ? (validAvgsOnly.reduce((a, b) => a + b, 0) / validAvgsOnly.length)
     : null;
   let subtitleParts = [];
-  if (periodAvg != null) subtitleParts.push(`${periodAvg.toFixed(1)} €/MWh average`);
+  if (periodAvg != null) subtitleParts.push(`${periodAvg.toFixed(2)} €/MWh average`);
   if (validAvgsOnly.length >= 2) {
     const sigma = _stdDev(validAvgsOnly);
-    if (sigma != null && !isNaN(sigma)) subtitleParts.push(`σ ${sigma.toFixed(1)} €/MWh`);
+    if (sigma != null && !isNaN(sigma)) subtitleParts.push(`σ ${sigma.toFixed(2)} €/MWh`);
   }
   if (subtitleParts.length === 0) subtitleParts.push(`${filtered.length} daily observations`);
   _setHoTitle({
@@ -4454,7 +4454,7 @@ function _hszRenderYoY(filtered, zone, summary) {
     const delta1 = curMean - p1Mean;
     const cheaper1 = delta1 < 0;
     const verb1 = cheaper1 ? 'cheaper' : 'more expensive';
-    subtitleText = `${curMean.toFixed(1)} €/MWh average — ${Math.abs(delta1).toFixed(1)} ${verb1} than Y-1 (${p1Mean.toFixed(1)})`;
+    subtitleText = `${curMean.toFixed(2)} €/MWh average — ${Math.abs(delta1).toFixed(2)} €/MWh ${verb1} than Y-1 (${p1Mean.toFixed(2)} €/MWh)`;
     if (p2Mean != null) {
       const delta2 = curMean - p2Mean;
       const verb2 = delta2 < 0 ? 'cheaper' : 'more expensive';
@@ -4785,7 +4785,7 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
   if (curMean != null && y1Mean != null) {
     const d = curMean - y1Mean;
     const v = d < 0 ? 'cheaper' : 'more expensive';
-    subtitleText = `${currentYear}: ${curMean.toFixed(1)} €/MWh weekly average — ${Math.abs(d).toFixed(1)} ${v} than ${yMinus1} (${y1Mean.toFixed(1)})`;
+    subtitleText = `${currentYear}: ${curMean.toFixed(2)} €/MWh weekly average — ${Math.abs(d).toFixed(2)} €/MWh ${v} than ${yMinus1} (${y1Mean.toFixed(2)} €/MWh)`;
     if (y2Mean != null) {
       const d2 = curMean - y2Mean;
       const v2 = d2 < 0 ? 'cheaper' : 'more expensive';
@@ -5062,7 +5062,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
   if (curMean != null && y1Mean != null) {
     const d = curMean - y1Mean;
     const verb = d < 0 ? 'cheaper' : 'more expensive';
-    subtitleText = `${currentYear}: ${curMean.toFixed(1)} €/MWh average — ${Math.abs(d).toFixed(1)} ${verb} than ${yMinus1} (${y1Mean.toFixed(1)})`;
+    subtitleText = `${currentYear}: ${curMean.toFixed(2)} €/MWh average — ${Math.abs(d).toFixed(2)} €/MWh ${verb} than ${yMinus1} (${y1Mean.toFixed(2)} €/MWh)`;
     if (y2Mean != null) {
       const d2 = curMean - y2Mean;
       const v2 = d2 < 0 ? 'cheaper' : 'more expensive';
@@ -5755,7 +5755,7 @@ function _hszRenderWeekly(filtered, zone) {
   // Subtitle: cheapest / most expensive + weekend gap
   let subtitleText = '';
   if (mostExpIdx != null && cheapestIdx != null) {
-    subtitleText = `Most expensive: ${labels[mostExpIdx]} (${stats[mostExpIdx].p50.toFixed(1)} €/MWh median) · Cheapest: ${labels[cheapestIdx]} (${stats[cheapestIdx].p50.toFixed(1)} €/MWh)`;
+    subtitleText = `Most expensive: ${labels[mostExpIdx]} (${stats[mostExpIdx].p50.toFixed(2)} €/MWh median) · Cheapest: ${labels[cheapestIdx]} (${stats[cheapestIdx].p50.toFixed(2)} €/MWh)`;
     if (wdMean != null && weMean != null) {
       const d = weMean - wdMean;
       const v = d < 0 ? 'cheaper' : 'more expensive';
@@ -6157,8 +6157,8 @@ function _hszRenderVolatility(filtered, zone) {
   // and 2-line subtitle (formula italic + stats bold).
   const titleHtml = _titleWithDescription(`${meta.label} — 7-day and 30-day rolling`, meta.explanation);
   let line1 = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
-  let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(1)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
-  if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(1)}</strong> on ${periodMax.d}`;
+  let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(2)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2.toFixed(2)} ${meta.unit}`;
+  if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(2)} ${meta.unit}</strong> on ${periodMax.d}`;
 
   _setHoTitle({
     eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
@@ -6385,7 +6385,7 @@ function _hszRenderDist(filtered, zone, summary) {
     : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: density(x) = (1/n·h) · Σ K((x-xᵢ)/h)`;
   let statsLine;
   if (mode === 'cumulative') {
-    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(0)} €</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(0)} €</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(0)} €</strong> · <strong style="color:#ED6965">${nNeg}</strong> day${nNeg!==1?'s':''} negative`;
+    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(2)} €/MWh</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(2)} €/MWh</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(2)} €/MWh</strong> · <strong style="color:#ED6965">${nNeg}</strong> day${nNeg!==1?'s':''} negative`;
   } else {
     const mostFreqBucket = (() => {
       const range = maxV - minV;
@@ -6397,9 +6397,9 @@ function _hszRenderDist(filtered, zone, summary) {
       });
       let best = null, bestC = 0;
       Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
-      return best != null ? `${best}-${best+BIN} €` : '—';
+      return best != null ? `${best.toFixed(2)} → ${(best+BIN).toFixed(2)} €/MWh` : '—';
     })();
-    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(1)} €/MWh</strong> · μ <strong>${mean.toFixed(1)}</strong> · σ ${stddev.toFixed(1)} · <strong style="color:#ED6965">${nNeg}</strong> negative · <strong>${nNormal}</strong> normal · Most frequent: <strong>${mostFreqBucket}</strong>`;
+    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(2)} €/MWh</strong> · μ <strong>${mean.toFixed(2)} €/MWh</strong> · σ ${stddev.toFixed(2)} €/MWh · <strong style="color:#ED6965">${nNeg}</strong> negative · <strong>${nNormal}</strong> normal · Most frequent: <strong>${mostFreqBucket}</strong>`;
   }
   _setHoTitle({
     eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
@@ -6407,36 +6407,48 @@ function _hszRenderDist(filtered, zone, summary) {
     subtitle: `<span style="color:var(--tx3);font-style:italic">${formulaLine}</span><br>${statsLine}`,
   });
 
-  // ── Render legend HTML above the chart (always visible, explains 4 categories) ──
-  // New design: a coloured ribbon visually echoing the zone bands in the chart,
-  // with category name + day count + range on each tile.
+  // ── Compute shared chart X range (used for both legend ribbon widths and chart axis) ──
+  // Round to outer multiples of 10 for clean axis ticks.
+  const rawXMin = Math.min(minV, T_NEG - 5);
+  const rawXMax = Math.max(maxV, T_EXTREME + 10);
+  const chartXMin = Math.floor(rawXMin / 10) * 10;
+  const chartXMax = Math.ceil(rawXMax / 10) * 10;
+  const xSpan = chartXMax - chartXMin || 1;
+
+  // ── Render legend HTML above the chart, aligned with the chart's coloured zones ──
+  // Each tile's width is proportional to its PRICE RANGE on the x-axis (not its day count),
+  // so the ribbon visually echoes the bands behind the chart curve.
   const legendId = _hszCtx().togglePrefix + '-dist-legend';
   const oldLg = document.getElementById(legendId);
   if (oldLg) oldLg.remove();
   if (canvasEl && canvasEl.parentNode) {
     const lg = document.createElement('div');
     lg.id = legendId;
-    // Outer: tight strip, no large block padding — feels like it belongs to the chart
     lg.style.cssText = 'margin-top:14px;margin-bottom:0;font-family:\'JetBrains Mono\',monospace';
-    // The ribbon: 5 tiles side-by-side, each with its zone colour + content
-    // The width proportions follow the actual category share so the user sees "ah, normal is half the period"
-    const totalDays = avgs.length || 1;
-    const tile = (bg, borderBottom, label, count, rangeTxt) => {
-      const w = (count / totalDays) * 100;
-      // Minimum visible width so empty/small categories don't disappear
-      const minW = 10;
-      const flexBasis = Math.max(w, minW);
-      return `<div style="flex:${flexBasis} ${flexBasis} 0;min-width:0;background:${bg};border-bottom:2px solid ${borderBottom};padding:6px 8px;display:flex;flex-direction:column;gap:2px;justify-content:center;overflow:hidden">
+    // Width proportion: each category's price-range size divided by total chart x span
+    // (Negative covers [chartXMin..0], Low covers [0..P25], etc.)
+    const widths = {
+      neg:     Math.max(0, T_NEG - chartXMin) / xSpan,
+      low:     Math.max(0, T_LOW - T_NEG) / xSpan,
+      normal:  Math.max(0, T_HIGH - T_LOW) / xSpan,
+      high:    Math.max(0, T_EXTREME - T_HIGH) / xSpan,
+      extreme: Math.max(0, chartXMax - T_EXTREME) / xSpan,
+    };
+    // Minimum visible width so tiles never collapse to 0px even with extreme ratios
+    const minPct = 6;
+    const tile = (widthPct, bg, borderBottom, label, count, rangeTxt) => {
+      const w = Math.max(widthPct * 100, minPct);
+      return `<div style="flex:${w} ${w} 0;min-width:0;background:${bg};border-bottom:2px solid ${borderBottom};padding:6px 8px;display:flex;flex-direction:column;gap:2px;justify-content:center;overflow:hidden">
         <div style="font-size:10px;font-weight:600;color:var(--tx);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><strong>${label}</strong> · ${count}d (${pct(count)})</div>
         <div style="font-size:9px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rangeTxt}</div>
       </div>`;
     };
     lg.innerHTML = `<div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
-      ${tile('rgba(237,105,101,0.18)', 'rgba(237,105,101,0.6)', 'Negative', nNeg,     '< 0 €')}
-      ${tile('rgba(20,211,169,0.18)',  'rgba(20,211,169,0.6)',  'Low',      nLow,     `0 → ${T_LOW.toFixed(0)} €`)}
-      ${tile('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.35)', 'Normal',  nNormal,  `${T_LOW.toFixed(0)} → ${T_HIGH.toFixed(0)} €`)}
-      ${tile('rgba(251,191,36,0.18)',  'rgba(251,191,36,0.6)',  'High',     nHigh,    `${T_HIGH.toFixed(0)} → ${T_EXTREME.toFixed(0)} €`)}
-      ${tile('rgba(237,105,101,0.22)', 'rgba(237,105,101,0.7)', 'Extreme',  nExtreme, `> ${T_EXTREME.toFixed(0)} €`)}
+      ${tile(widths.neg,     'rgba(237,105,101,0.18)', 'rgba(237,105,101,0.6)', 'Negative', nNeg,     `< 0.00 €/MWh`)}
+      ${tile(widths.low,     'rgba(20,211,169,0.18)',  'rgba(20,211,169,0.6)',  'Low',      nLow,     `0.00 → ${T_LOW.toFixed(2)} €/MWh`)}
+      ${tile(widths.normal,  'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.35)', 'Normal',  nNormal,  `${T_LOW.toFixed(2)} → ${T_HIGH.toFixed(2)} €/MWh`)}
+      ${tile(widths.high,    'rgba(251,191,36,0.18)',  'rgba(251,191,36,0.6)',  'High',     nHigh,    `${T_HIGH.toFixed(2)} → ${T_EXTREME.toFixed(2)} €/MWh`)}
+      ${tile(widths.extreme, 'rgba(237,105,101,0.22)', 'rgba(237,105,101,0.7)', 'Extreme',  nExtreme, `> ${T_EXTREME.toFixed(2)} €/MWh`)}
     </div>`;
     canvasEl.parentNode.insertBefore(lg, canvasEl);
   }
@@ -6445,9 +6457,9 @@ function _hszRenderDist(filtered, zone, summary) {
   // MODE 1: CUMULATIVE (CDF)
   // ─────────────────────────────────────────────────────────────────────────
   if (mode === 'cumulative') {
-    // X grid: from min to max
-    const xMin = Math.min(minV, T_NEG - 5);
-    const xMax = Math.max(maxV, T_EXTREME + 10);
+    // X grid: use the shared chart range (rounded to outer multiples of 10)
+    const xMin = chartXMin;
+    const xMax = chartXMax;
     const N_POINTS = 100;
     const xGrid = [];
     for (let i = 0; i < N_POINTS; i++) xGrid.push(xMin + (xMax - xMin) * (i / (N_POINTS - 1)));
