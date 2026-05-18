@@ -2673,14 +2673,23 @@ function _bdVolatility(zone, series) {
     const arr = buckets[k];
     const vals = arr.map(r => r.avg);
     const sd = sigma(vals);
-    // Largest spike = day with max abs delta vs previous day
+    // Day-on-day Δ avg
+    let dodSum = 0, dodN = 0;
+    for (let i = 1; i < arr.length; i++) {
+      dodSum += Math.abs(arr[i].avg - arr[i-1].avg);
+      dodN++;
+    }
+    const dodAvg = dodN ? dodSum / dodN : null;
+    // Intra-day range avg
+    const ranges = arr.filter(r => r.max != null && r.min != null).map(r => r.max - r.min);
+    const rangeAvg = ranges.length ? ranges.reduce((a,b)=>a+b,0) / ranges.length : null;
+    // Largest spike (day-on-day jump)
     let maxSpike = null, maxSpikeDate = null;
     for (let i = 1; i < arr.length; i++) {
       const delta = Math.abs(arr[i].avg - arr[i-1].avg);
       if (maxSpike == null || delta > maxSpike) { maxSpike = delta; maxSpikeDate = arr[i].d; }
     }
-    const range = (vals.length) ? (Math.max(...vals) - Math.min(...vals)) : null;
-    return { period: k, sd, range, maxSpike, maxSpikeDate, n: arr.length };
+    return { period: k, sd, dodAvg, rangeAvg, maxSpike, maxSpikeDate, n: arr.length };
   });
 
   const toggle = `<div style="display:flex;gap:4px;margin-bottom:8px;font-family:'JetBrains Mono',monospace">
@@ -2692,8 +2701,9 @@ function _bdVolatility(zone, series) {
     <thead><tr>
       <th style="${_BD_TH_STYLE};text-align:left">${gran === 'week' ? 'Week' : 'Month'}</th>
       <th style="${_BD_TH_STYLE}">σ €/MWh</th>
-      <th style="${_BD_TH_STYLE}">Range (max-min)</th>
-      <th style="${_BD_TH_STYLE}">Max day Δ</th>
+      <th style="${_BD_TH_STYLE}">Δ DoD avg</th>
+      <th style="${_BD_TH_STYLE}">Range avg</th>
+      <th style="${_BD_TH_STYLE}">Max Δ DoD</th>
       <th style="${_BD_TH_STYLE}">Spike date</th>
       <th style="${_BD_TH_STYLE}">n days</th>
     </tr></thead>
@@ -2701,7 +2711,8 @@ function _bdVolatility(zone, series) {
       ${rows.map(r => `<tr>
         <td style="${_BD_TD_LABEL}">${r.period}</td>
         <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.sd)}</td>
-        <td style="${_BD_TD_STYLE}">${_bdFmt(r.range)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.dodAvg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.rangeAvg)}</td>
         <td style="${_BD_TD_STYLE};color:#FBBF24">${_bdFmt(r.maxSpike)}</td>
         <td style="${_BD_TD_STYLE};color:var(--tx3);font-size:10px">${r.maxSpikeDate || '–'}</td>
         <td style="${_BD_TD_STYLE}">${r.n}</td>
@@ -3961,6 +3972,11 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
   if (tab !== 'weekday' && tab !== 'weekly') {
     const wdLg = document.getElementById(togPrefix + '-weekday-legend');
     if (wdLg) wdLg.remove();
+  }
+  // Cleanup Volatility toggle unless we're on Volatility tab
+  if (tab !== 'vol' && tab !== 'volatility') {
+    const volTg = document.getElementById(togPrefix + '-vol-toggle');
+    if (volTg) volTg.remove();
   }
 
   // Persist last series + summary for breakdown rerenders (Volatility toggle, etc.)
@@ -5972,66 +5988,237 @@ function _hszRenderWeekly(filtered, zone) {
 }
 
 // ── HSZ · Volatility: rolling σ on 7D / 30D windows ──
+// ── Volatility metric state ────────────────────────────────────────────────
+window._volMetric = window._volMetric || 'sigma';  // 'sigma' | 'dod' | 'range'
+function _setVolMetric(m) {
+  window._volMetric = m;
+  // Rerender the active tab (which is volatility)
+  const zone = window._HO_OPEN_ZONE;
+  if (zone && window._HO_LAST_SERIES && window._HO_LAST_SERIES[zone] && _HSZ_RERENDER) {
+    _HSZ_RERENDER();
+  }
+}
+window._setVolMetric = _setVolMetric;
+
+// Each metric's metadata: label, formula, explanation, thresholds (low/high), unit
+const _VOL_METRICS = {
+  sigma: {
+    label: 'σ rolling',
+    short: 'σ',
+    unit: '€/MWh',
+    formula: 'σ_N(D) = stddev of daily avg prices on [D-N+1 .. D]',
+    explanation: 'Day-to-day variability over a rolling window. High σ means daily averages diverge from their mean.',
+    thresholds: [15, 30],
+    thresholdLabels: ['stable', 'moderate', 'volatile'],
+    thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
+  },
+  dod: {
+    label: 'Day-on-day Δ',
+    short: 'Δ DoD',
+    unit: '€/MWh',
+    formula: 'ΔDoD_N(D) = mean of |P_d - P_{d-1}| on [D-N+1 .. D]',
+    explanation: 'Average absolute change from one day to the next. Intuitive read of price stability.',
+    thresholds: [10, 25],
+    thresholdLabels: ['stable', 'moderate', 'volatile'],
+    thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
+  },
+  range: {
+    label: 'Intra-day range',
+    short: 'Range',
+    unit: '€/MWh',
+    formula: 'Range_N(D) = mean of (max_h - min_h) per day on [D-N+1 .. D]',
+    explanation: 'Average daily peak-to-trough spread. Key metric for BESS arbitrage and intraday flexibility value.',
+    thresholds: [50, 100],
+    thresholdLabels: ['narrow', 'moderate', 'wide'],
+    thresholdColors: ['rgba(20,211,169,0.4)', 'rgba(251,191,36,0.4)', 'rgba(237,105,101,0.4)'],
+  },
+};
+
+// Rolling mean of abs day-on-day deltas
+function _rollingDoDWithContext(filtered, fullSeries, window) {
+  const out = filtered.map(() => null);
+  if (!fullSeries.length) return out;
+  // Build a date-indexed map of full series for lookup
+  const idx = new Map();
+  fullSeries.forEach((e, i) => idx.set(e.d, i));
+  filtered.forEach((e, fi) => {
+    const i = idx.get(e.d);
+    if (i == null || i < window) return;
+    const deltas = [];
+    for (let j = i - window + 1; j <= i; j++) {
+      const p = fullSeries[j]?.avg;
+      const prev = fullSeries[j - 1]?.avg;
+      if (p != null && prev != null) deltas.push(Math.abs(p - prev));
+    }
+    if (deltas.length >= window / 2) {
+      out[fi] = deltas.reduce((a,b) => a+b, 0) / deltas.length;
+    }
+  });
+  return out;
+}
+
+// Rolling mean of intra-day range (max - min per day)
+function _rollingRangeWithContext(filtered, fullSeries, window) {
+  const out = filtered.map(() => null);
+  if (!fullSeries.length) return out;
+  const idx = new Map();
+  fullSeries.forEach((e, i) => idx.set(e.d, i));
+  filtered.forEach((e, fi) => {
+    const i = idx.get(e.d);
+    if (i == null || i < window - 1) return;
+    const ranges = [];
+    for (let j = i - window + 1; j <= i; j++) {
+      const day = fullSeries[j];
+      if (day?.max != null && day?.min != null) ranges.push(day.max - day.min);
+    }
+    if (ranges.length >= window / 2) {
+      out[fi] = ranges.reduce((a,b) => a+b, 0) / ranges.length;
+    }
+  });
+  return out;
+}
+
 function _hszRenderVolatility(filtered, zone) {
   const color = zoneColor(zone);
   if (!filtered.length) return _hszPlaceholder('No data');
 
+  const metricId = window._volMetric || 'sigma';
+  const meta = _VOL_METRICS[metricId];
   const labels = filtered.map(d => d.d);
-  const avgs   = filtered.map(d => d.avg);
-
-  // Rolling sigma on the FULL series — so a 7D window still gives a meaningful
-  // 30D sigma at the last visible point (the 30 days actually preceding it).
   const fullSeries = _hszCtx().getFullSeries() || [];
-  const sig7  = _rollingSigmaWithContext(filtered, fullSeries, 7);
-  const sig30 = _rollingSigmaWithContext(filtered, fullSeries, 30);
 
-  // Period-level mean & sigma for the annotation (period = visible window)
-  const valid = avgs.filter(v => v != null);
-  const periodMean = valid.length ? valid.reduce((a,b)=>a+b,0) / valid.length : 0;
-  const periodSigma = valid.length ? Math.sqrt(valid.reduce((a,b)=>a+Math.pow(b-periodMean,2),0) / valid.length) : 0;
+  // Compute the two rolling series (7D and 30D) for the selected metric
+  let s7, s30;
+  if (metricId === 'sigma') {
+    s7  = _rollingSigmaWithContext(filtered, fullSeries, 7);
+    s30 = _rollingSigmaWithContext(filtered, fullSeries, 30);
+  } else if (metricId === 'dod') {
+    s7  = _rollingDoDWithContext(filtered, fullSeries, 7);
+    s30 = _rollingDoDWithContext(filtered, fullSeries, 30);
+  } else {  // range
+    s7  = _rollingRangeWithContext(filtered, fullSeries, 7);
+    s30 = _rollingRangeWithContext(filtered, fullSeries, 30);
+  }
 
-  // Compute dynamic Y range based on actual σ values (not the static 0-200 box)
-  const allSig = [...sig7, ...sig30].filter(v => v != null && !isNaN(v));
-  const sigMax = allSig.length ? Math.max(...allSig) : 30;
-  // Round up to a sensible value, leave 10% headroom, but cap at a value that
-  // makes the 3 regime zones look reasonable
-  const yMaxData = Math.ceil(Math.max(sigMax * 1.1, 35) / 5) * 5;
+  // Period-level stats on the 7D series (more reactive than 30D)
+  const valid7  = s7.filter(v => v != null && !isNaN(v));
+  const period7Mean = valid7.length ? valid7.reduce((a,b)=>a+b,0) / valid7.length : 0;
+  // Count days above the "volatile" threshold
+  const [t1, t2] = meta.thresholds;
+  const daysAboveHigh = valid7.filter(v => v > t2).length;
+  // Find top 5 spikes (highest values in s7), keep their date labels
+  const indexedS7 = s7.map((v, i) => ({ v, i, d: labels[i] }))
+    .filter(o => o.v != null && !isNaN(o.v));
+  const topSpikes = [...indexedS7].sort((a,b) => b.v - a.v).slice(0, 5);
+  // Period max
+  const periodMax = topSpikes.length ? topSpikes[0] : null;
+
+  // Determine current regime label based on period mean
+  let regime;
+  if (period7Mean < t1) regime = meta.thresholdLabels[0];
+  else if (period7Mean < t2) regime = meta.thresholdLabels[1];
+  else regime = meta.thresholdLabels[2];
+
+  // Eyebrow + title + subtitle (with formula + interpretation)
+  let subtitleText = `${meta.formula} · ${meta.explanation}`;
+  // Stats line (separate from formula): period mean, spike count, max
+  let statsText = `Period 7D avg: ${period7Mean.toFixed(1)} ${meta.unit} (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
+  if (periodMax) statsText += ` · Max ${periodMax.v.toFixed(1)} on ${periodMax.d}`;
+
+  _setHoTitle({
+    eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
+    title: meta.label + ' — 7-day and 30-day rolling',
+    subtitle: subtitleText + ' · ' + statsText,
+  });
+
+  // Y-axis range
+  const allVals = [...s7, ...s30].filter(v => v != null && !isNaN(v));
+  const valMax = allVals.length ? Math.max(...allVals) : t2;
+  // Round up to a sensible value, leave 10% headroom
+  const yMaxData = Math.ceil(Math.max(valMax * 1.1, t2 * 1.2) / 5) * 5;
+
+  // ── Render toggle pills above the chart (HTML, inserted before canvas) ──
+  const toggleId = _hszCtx().togglePrefix + '-vol-toggle';
+  const oldToggle = document.getElementById(toggleId);
+  if (oldToggle) oldToggle.remove();
+  const canvas = document.getElementById(_hszCtx().canvasId);
+  if (canvas && canvas.parentNode) {
+    const tg = document.createElement('div');
+    tg.id = toggleId;
+    tg.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap';
+    const mkPill = (id, label) => {
+      const active = (metricId === id);
+      return `<button onclick="event.stopPropagation();_setVolMetric('${id}')"
+        style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
+    };
+    tg.innerHTML = mkPill('sigma', 'σ rolling') + mkPill('dod', 'Day-on-day Δ') + mkPill('range', 'Intra-day range');
+    canvas.parentNode.insertBefore(tg, canvas);
+  }
+
+  // ── Annotation: top spikes (with date + value) ──
+  const spikeAnnotations = {};
+  topSpikes.forEach((sp, i) => {
+    spikeAnnotations[`spike${i}`] = {
+      type: 'point',
+      xValue: sp.d,
+      yValue: sp.v,
+      backgroundColor: '#FBBF24',
+      borderColor: '#000',
+      borderWidth: 1,
+      radius: 4,
+    };
+    spikeAnnotations[`spikeLabel${i}`] = {
+      type: 'label',
+      xValue: sp.d,
+      yValue: sp.v,
+      content: [`${sp.v.toFixed(1)}`, sp.d.slice(5)],  // value + MM-DD
+      color: '#FBBF24',
+      backgroundColor: 'rgba(11,15,21,0.85)',
+      borderColor: 'rgba(251,191,36,0.5)',
+      borderWidth: 1,
+      borderRadius: 3,
+      font: { size: 9, family: 'JetBrains Mono', weight: '600' },
+      padding: { top: 3, bottom: 3, left: 6, right: 6 },
+      // Place label above the point
+      yAdjust: -22,
+    };
+  });
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        // σ 7D — no fill, clean line
-        { label: 'σ 7D rolling',  data: sig7,  borderColor: _HIST_WARN, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false },
-        // σ 30D — thicker, zone color
-        { label: 'σ 30D rolling', data: sig30, borderColor: color,      backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0, tension: 0.3, spanGaps: true, fill: false },
+        // 7D — thin orange (reactive line, holds the spikes)
+        { label: '7D rolling', data: s7,  borderColor: _HIST_WARN, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false },
+        // 30D — thicker zone color (trend line)
+        { label: '30D rolling', data: s30, borderColor: color,    backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0, tension: 0.3, spanGaps: true, fill: false },
       ],
     },
     options: {
-      ...baseOptions('σ (€/MWh)'),
+      ...baseOptions(meta.unit),
       plugins: {
         legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
-        subtitle: { display: true, text: `Period σ: ${periodSigma.toFixed(2)} €/MWh — Stable < 15 < Moderate < 30 < Volatile`, color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' ' + meta.unit : 'n/a'}` } },
         annotation: {
           annotations: {
-            // Regime zones in the background — cap at actual data max
-            zoneStable:   { type: 'box', yMin: 0,  yMax: Math.min(15, yMaxData), backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 0 },
-            zoneModerate: { type: 'box', yMin: 15, yMax: Math.min(30, yMaxData), backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 0 },
-            zoneVolatile: { type: 'box', yMin: 30, yMax: yMaxData,               backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
-            // Reference lines at σ=15 and σ=30 (only if within range)
-            ref15: yMaxData >= 15 ? { type: 'line', yMin: 15, yMax: 15, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
-              label: { enabled: true, content: 'σ=15 · stable', color: '#14D3A9', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } } : undefined,
-            ref30: yMaxData >= 30 ? { type: 'line', yMin: 30, yMax: 30, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
-              label: { enabled: true, content: 'σ=30 · volatile', color: '#ED6965', font: { size: 9 }, position: 'end', backgroundColor: 'transparent', padding: 2 } } : undefined,
+            // Regime zones in the background
+            zoneStable:   { type: 'box', yMin: 0,  yMax: Math.min(t1, yMaxData), backgroundColor: 'rgba(20,211,169,0.06)', borderWidth: 0 },
+            zoneModerate: { type: 'box', yMin: t1, yMax: Math.min(t2, yMaxData), backgroundColor: 'rgba(251,191,36,0.06)', borderWidth: 0 },
+            zoneVolatile: { type: 'box', yMin: t2, yMax: yMaxData,                backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
+            // Threshold reference lines
+            refLow: yMaxData >= t1 ? { type: 'line', yMin: t1, yMax: t1, borderColor: meta.thresholdColors[0], borderWidth: 1, borderDash: [3,3],
+              label: { display: true, content: `${meta.short}=${t1} · ${meta.thresholdLabels[0]}/${meta.thresholdLabels[1]}`, color: '#14D3A9', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } } : undefined,
+            refHigh: yMaxData >= t2 ? { type: 'line', yMin: t2, yMax: t2, borderColor: meta.thresholdColors[2], borderWidth: 1, borderDash: [3,3],
+              label: { display: true, content: `${meta.short}=${t2} · ${meta.thresholdLabels[1]}/${meta.thresholdLabels[2]}`, color: '#ED6965', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } } : undefined,
+            ...spikeAnnotations,
           },
         },
         zoom: _zoomConfig({ mode: 'y' }),
       },
       scales: {
         x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
-        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: 0, max: yMaxData, title: { display: true, text: 'σ (€/MWh)', color: _HIST_TX3, font: { size: 10 } } },
+        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: 0, max: yMaxData, title: { display: true, text: meta.unit, color: _HIST_TX3, font: { size: 10 } } },
       },
     },
   });
