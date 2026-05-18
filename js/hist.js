@@ -3202,8 +3202,8 @@ function _hszRenderYoYSubmenu() {
   HSZ.yoyModes.forEach(m => { html += pill(m.id, m.label, mode === m.id); });
   if (mode === 'hourly') {
     html += sep
-         + modePill('quarter', 'By quarter', hourlyMode === 'quarter')
-         + modePill('yoy',     'YoY global', hourlyMode === 'yoy');
+         + modePill('yoy',     'Annual average', hourlyMode === 'yoy')
+         + modePill('quarter', 'By quarter',     hourlyMode === 'quarter');
   }
 
   ['ho-detail-yoy-submenu', 'ho-fs-yoy-submenu'].forEach(id => {
@@ -4651,7 +4651,10 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   // 2×2 grid — placed AFTER the legend (i.e. AFTER the canvas wrap)
   const grid = document.createElement('div');
   grid.id = _hszCtx().togglePrefix + '-quarter-grid';
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:520px;margin-bottom:8px';
+  // Equal-height rows: each cell occupies exactly 1fr of the grid's height so
+  // empty quarters (e.g. Q3/Q4 when current year hasn't reached them yet)
+  // still match the height of populated ones.
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:520px;margin-bottom:8px';
 
   const Qmeta = [
     { id: 'Q1', label: 'Q1 · Winter', sub: 'Jan-Mar', color: '#A87DC4' },
@@ -4662,13 +4665,13 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 
   Qmeta.forEach(q => {
     const cell = document.createElement('div');
-    cell.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid var(--bd);border-radius:6px;padding:10px;display:flex;flex-direction:column;min-height:0';
+    cell.style.cssText = 'background:rgba(255,255,255,0.02);border:1px solid var(--bd);border-radius:6px;padding:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden';
     cell.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-shrink:0">
         <span style="font-size:9px;font-weight:600;color:${q.color};font-family:'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase">${q.label} <span style="color:var(--tx3);font-weight:500">${q.sub}</span></span>
         <span id="hsz-q-meta-${q.id}" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace"></span>
       </div>
-      <div style="flex:1;position:relative;min-height:140px">
+      <div style="flex:1;position:relative;min-height:0">
         <canvas id="hsz-q-canvas-${q.id}"></canvas>
       </div>
     `;
@@ -4926,7 +4929,7 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
 
   // HTML title block (hybrid F)
   _setHoTitle({
-    eyebrow: `Prices · YoY · ${zone} · Hourly · YoY global`,
+    eyebrow: `Prices · YoY · ${zone} · Hourly · Annual average`,
     title: 'Intraday 24h profile · current year vs Y-1 and Y-2',
     subtitle,
   });
