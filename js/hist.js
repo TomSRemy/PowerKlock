@@ -6361,11 +6361,13 @@ function _hszRenderDist(filtered, zone, summary) {
   _hszRenderYoYSubmenu();
 
   // ── Formula strip removed: formula is now part of the subtitle (line 1 italic gray) ──
-  // We still need canvasEl for the legend insertion later.
+  // Defensive: remove any stale formula strip from BOTH possible prefixes (inline + FS)
+  // in case the user toggled between modes/views and a previous render left it behind.
+  ['ho-detail-dist-formula', 'ho-fs-dist-formula'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
   const canvasEl = document.getElementById(_hszCtx().canvasId);
-  // Clean up any stale formula strip from previous renders
-  const oldFormula = document.getElementById(_hszCtx().togglePrefix + '-dist-formula');
-  if (oldFormula) oldFormula.remove();
 
   // ── Title block: "Title | discrete description" + 2-line subtitle (formula italic + stats) ──
   const titleHtml = (mode === 'cumulative')
@@ -6399,21 +6401,36 @@ function _hszRenderDist(filtered, zone, summary) {
   });
 
   // ── Render legend HTML above the chart (always visible, explains 4 categories) ──
+  // New design: a coloured ribbon visually echoing the zone bands in the chart,
+  // with category name + day count + range on each tile.
   const legendId = _hszCtx().togglePrefix + '-dist-legend';
   const oldLg = document.getElementById(legendId);
   if (oldLg) oldLg.remove();
   if (canvasEl && canvasEl.parentNode) {
     const lg = document.createElement('div');
     lg.id = legendId;
-    // Grid layout: 5 categories on 2 rows (3 + 2) — clearer than wrap on a single line
-    lg.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 14px;font-size:10px;color:var(--tx3);margin-top:10px;margin-bottom:14px;font-family:\'JetBrains Mono\',monospace;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
-    const buildItem = (col, borderCol, label, count, rangeTxt) => `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:14px;height:10px;background:${col};border:1px solid ${borderCol};border-radius:1px;flex-shrink:0"></span><strong style="color:var(--tx2)">${label}</strong> · ${count}d (${pct(count)})${rangeTxt ? ' · ' + rangeTxt : ''}</span>`;
-    lg.innerHTML = ''
-      + buildItem('rgba(237,105,101,0.18)', 'rgba(237,105,101,0.5)',  'Negative',           nNeg,     '< 0 €')
-      + buildItem('rgba(20,211,169,0.18)',  'rgba(20,211,169,0.5)',   'Low',                nLow,     `0 → ${T_LOW.toFixed(0)} €`)
-      + buildItem('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.3)',  'Normal',             nNormal,  `${T_LOW.toFixed(0)} → ${T_HIGH.toFixed(0)} €`)
-      + buildItem('rgba(251,191,36,0.18)',  'rgba(251,191,36,0.5)',   'High',               nHigh,    `${T_HIGH.toFixed(0)} → ${T_EXTREME.toFixed(0)} €`)
-      + buildItem('rgba(237,105,101,0.22)', 'rgba(237,105,101,0.6)',  'Extreme',            nExtreme, `> ${T_EXTREME.toFixed(0)} €`);
+    // Outer: tight strip, no large block padding — feels like it belongs to the chart
+    lg.style.cssText = 'margin-top:14px;margin-bottom:0;font-family:\'JetBrains Mono\',monospace';
+    // The ribbon: 5 tiles side-by-side, each with its zone colour + content
+    // The width proportions follow the actual category share so the user sees "ah, normal is half the period"
+    const totalDays = avgs.length || 1;
+    const tile = (bg, borderBottom, label, count, rangeTxt) => {
+      const w = (count / totalDays) * 100;
+      // Minimum visible width so empty/small categories don't disappear
+      const minW = 10;
+      const flexBasis = Math.max(w, minW);
+      return `<div style="flex:${flexBasis} ${flexBasis} 0;min-width:0;background:${bg};border-bottom:2px solid ${borderBottom};padding:6px 8px;display:flex;flex-direction:column;gap:2px;justify-content:center;overflow:hidden">
+        <div style="font-size:10px;font-weight:600;color:var(--tx);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><strong>${label}</strong> · ${count}d (${pct(count)})</div>
+        <div style="font-size:9px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rangeTxt}</div>
+      </div>`;
+    };
+    lg.innerHTML = `<div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
+      ${tile('rgba(237,105,101,0.18)', 'rgba(237,105,101,0.6)', 'Negative', nNeg,     '< 0 €')}
+      ${tile('rgba(20,211,169,0.18)',  'rgba(20,211,169,0.6)',  'Low',      nLow,     `0 → ${T_LOW.toFixed(0)} €`)}
+      ${tile('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.35)', 'Normal',  nNormal,  `${T_LOW.toFixed(0)} → ${T_HIGH.toFixed(0)} €`)}
+      ${tile('rgba(251,191,36,0.18)',  'rgba(251,191,36,0.6)',  'High',     nHigh,    `${T_HIGH.toFixed(0)} → ${T_EXTREME.toFixed(0)} €`)}
+      ${tile('rgba(237,105,101,0.22)', 'rgba(237,105,101,0.7)', 'Extreme',  nExtreme, `> ${T_EXTREME.toFixed(0)} €`)}
+    </div>`;
     canvasEl.parentNode.insertBefore(lg, canvasEl);
   }
 
@@ -6457,7 +6474,7 @@ function _hszRenderDist(filtered, zone, summary) {
       // 95% horizontal + P95 crosshair
       h95: { type: 'line', yMin: 95, yMax: 95, borderColor: 'rgba(251,191,36,0.35)', borderWidth: 1, borderDash: [2,3] },
       p95Point: { type: 'point', xValue: p95, yValue: 95, backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 5 },
-      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.90)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: -60, yAdjust: -10 },
+      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.92)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: -60, yAdjust: 22 },
     };
 
     mkHistChart(_hszCtx().canvasId, {
@@ -6476,12 +6493,29 @@ function _hszRenderDist(filtered, zone, summary) {
       },
       options: {
         ...baseOptions('Cumulative %'),
+        layout: { padding: { bottom: 8 } },
+        interaction: { mode: 'index', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: {
+            mode: 'index', axis: 'x', intersect: false,
+            backgroundColor: 'rgba(11,15,21,0.95)',
+            borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1,
+            titleColor: '#14D3A9', titleFont: { size: 11, family: 'JetBrains Mono', weight: '600' },
+            bodyColor: 'var(--tx)', bodyFont: { size: 11, family: 'JetBrains Mono' },
+            padding: 8, displayColors: false,
             callbacks: {
               title: ctx => ctx[0] ? `Price ≤ ${ctx[0].parsed.x.toFixed(1)} €/MWh` : '',
-              label: ctx => ` ${ctx.parsed.y.toFixed(1)}% of days`,
+              label: ctx => `  ${ctx.parsed.y.toFixed(1)}% of days`,
+              afterLabel: ctx => {
+                // Bonus: tell the user which category this price falls into
+                const p = ctx.parsed.x;
+                if (p < 0) return '  → Negative zone';
+                if (p < T_LOW) return `  → Low zone (under P25)`;
+                if (p < T_HIGH) return `  → Normal zone (P25–P75)`;
+                if (p < T_EXTREME) return `  → High zone (P75–P95)`;
+                return `  → Extreme zone (over P95)`;
+              },
             },
           },
           annotation: { annotations },
@@ -6607,22 +6641,37 @@ function _hszRenderDist(filtered, zone, summary) {
     },
     options: {
       ...baseOptions('Days'),
+      layout: { padding: { bottom: 8 } },
+      interaction: { mode: 'index', axis: 'x', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
+          mode: 'index', axis: 'x', intersect: false,
+          backgroundColor: 'rgba(11,15,21,0.95)',
+          borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1,
+          titleColor: '#14D3A9', titleFont: { size: 11, family: 'JetBrains Mono', weight: '600' },
+          bodyColor: 'var(--tx)', bodyFont: { size: 11, family: 'JetBrains Mono' },
+          padding: 8, displayColors: false,
           callbacks: {
             title: ctx => {
               if (!ctx[0]) return '';
               const b = bins[ctx[0].dataIndex];
-              return `${b} to ${b + BIN_SIZE} €/MWh`;
+              // Category badge in the title
+              let cat = 'Normal';
+              if (b < T_NEG) cat = 'Negative';
+              else if (b < T_LOW) cat = 'Low';
+              else if (b < T_HIGH) cat = 'Normal';
+              else if (b < T_EXTREME) cat = 'High';
+              else cat = 'Extreme';
+              return `${b} → ${b + BIN_SIZE} €/MWh · ${cat}`;
             },
             label: ctx => {
               if (ctx.dataset.type === 'bar') {
                 const cum = counts.slice(0, ctx.dataIndex + 1).reduce((a,b)=>a+b,0);
                 const cumPct = (cum / avgs.length) * 100;
                 return [
-                  ` ${ctx.parsed.y} day${ctx.parsed.y > 1 ? 's' : ''} (${((ctx.parsed.y / avgs.length) * 100).toFixed(1)}%)`,
-                  ` Cumulative: ${cumPct.toFixed(1)}%`,
+                  `  ${ctx.parsed.y} day${ctx.parsed.y > 1 ? 's' : ''} (${((ctx.parsed.y / avgs.length) * 100).toFixed(1)}%)`,
+                  `  Cumulative: ${cumPct.toFixed(1)}%`,
                 ];
               }
               return null;
