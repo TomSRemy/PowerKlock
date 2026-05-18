@@ -3978,6 +3978,13 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
     const volTg = document.getElementById(togPrefix + '-vol-toggle');
     if (volTg) volTg.remove();
   }
+  // Cleanup Distribution toggle + legend unless we're on Distribution tab
+  if (tab !== 'dist' && tab !== 'distribution') {
+    const dt = document.getElementById(togPrefix + '-dist-toggle');
+    if (dt) dt.remove();
+    const dl = document.getElementById(togPrefix + '-dist-legend');
+    if (dl) dl.remove();
+  }
 
   // Persist last series + summary for breakdown rerenders (Volatility toggle, etc.)
   window._HO_LAST_SERIES = window._HO_LAST_SERIES || {};
@@ -3999,7 +4006,7 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
   }
   else if (tab === 'weekday')  renderResult = _hszRenderWeekly(filtered, zone);
   else if (tab === 'vol')      renderResult = _hszRenderVolatility(filtered, zone);
-  else if (tab === 'dist')     renderResult = _hszRenderDist(filtered, zone);
+  else if (tab === 'dist')     renderResult = _hszRenderDist(filtered, zone, summary);
 
   // Normalise tab id for the breakdown dispatcher (vol → volatility, dist → distribution)
   const bdTab = tab === 'vol' ? 'volatility' : (tab === 'dist' ? 'distribution' : tab);
@@ -6225,61 +6232,327 @@ function _hszRenderVolatility(filtered, zone) {
 }
 
 // ── HSZ · Distribution: histogram of daily avgs for the selected zone ──
-function _hszRenderDist(filtered, zone) {
+// ── Distribution metric state ──────────────────────────────────────────────
+window._distMode = window._distMode || 'cumulative';  // 'cumulative' | 'histo'
+function _setDistMode(m) {
+  window._distMode = m;
+  const zone = window._HO_OPEN_ZONE;
+  if (zone && _HSZ_RERENDER) _HSZ_RERENDER();
+}
+window._setDistMode = _setDistMode;
+
+// Default fallback thresholds (used if summary.distThresholds[zone] is missing — typical
+// for old summary.json before re-running enrich). Tuned roughly on FR multi-year history.
+const _DIST_DEFAULT_THR = { p0: -50, p10: 10, p25: 25, p50: 50, p75: 75, p95: 110, p100: 200, n: 0 };
+
+// Gaussian kernel + KDE evaluator (Silverman rule of thumb for bandwidth)
+function _kde(values, xGrid) {
+  const n = values.length;
+  if (!n) return xGrid.map(() => 0);
+  const mean = values.reduce((a,b)=>a+b,0) / n;
+  const sd = Math.sqrt(values.reduce((s,v)=>s+(v-mean)*(v-mean),0) / n);
+  if (sd === 0) return xGrid.map(() => 0);
+  // Silverman's rule: h = 1.06 · σ · n^(-1/5)
+  const h = 1.06 * sd * Math.pow(n, -1/5);
+  const norm = 1 / (Math.sqrt(2 * Math.PI) * h);
+  return xGrid.map(x => {
+    let s = 0;
+    for (let i = 0; i < n; i++) {
+      const u = (x - values[i]) / h;
+      s += Math.exp(-0.5 * u * u);
+    }
+    return (s * norm) / n;
+  });
+}
+
+function _hszRenderDist(filtered, zone, summary) {
   const color = zoneColor(zone);
   if (!filtered.length) return _hszPlaceholder('No data');
 
   const avgs = filtered.map(d => d.avg).filter(v => v != null && !isNaN(v));
   if (avgs.length < 3) return _hszPlaceholder('Not enough data points');
 
-  // Stats
-  const sorted = [...avgs].sort((a, b) => a - b);
-  const mean   = avgs.reduce((a, b) => a + b, 0) / avgs.length;
-  const median = _percentile(sorted, 0.5);
-  const stddev = Math.sqrt(avgs.reduce((a, v) => a + (v - mean) ** 2, 0) / avgs.length);
-  const p5     = _percentile(sorted, 0.05);
-  const p95    = _percentile(sorted, 0.95);
-  const minV   = sorted[0];
-  const maxV   = sorted[sorted.length - 1];
+  const mode = window._distMode || 'cumulative';
 
-  // Bin size: adaptive — 10 €/MWh by default, finer when range is small
+  // ── Period-level stats ──
+  const sorted = [...avgs].sort((a, b) => a - b);
+  const mean    = avgs.reduce((a, b) => a + b, 0) / avgs.length;
+  const median  = _percentile(sorted, 0.5);
+  const stddev  = Math.sqrt(avgs.reduce((a, v) => a + (v - mean) ** 2, 0) / avgs.length);
+  const p5      = _percentile(sorted, 0.05);
+  const p95     = _percentile(sorted, 0.95);
+  const minV    = sorted[0];
+  const maxV    = sorted[sorted.length - 1];
+
+  // ── Zone-historical thresholds (auto-calibrated, fall back to defaults) ──
+  const thr = (summary?.distThresholds?.[zone]) || _DIST_DEFAULT_THR;
+  // 4 business categories defined by P25, P75, P95 of the zone's full history
+  // Negative anchor = 0 (always meaningful regardless of zone)
+  const T_NEG = 0;
+  const T_LOW = thr.p25;
+  const T_HIGH = thr.p75;
+  const T_EXTREME = thr.p95;
+
+  // Count days in each business category for subtitle
+  const nNeg     = avgs.filter(v => v < T_NEG).length;
+  const nLow     = avgs.filter(v => v >= T_NEG && v < T_LOW).length;
+  const nNormal  = avgs.filter(v => v >= T_LOW && v < T_HIGH).length;
+  const nHigh    = avgs.filter(v => v >= T_HIGH && v < T_EXTREME).length;
+  const nExtreme = avgs.filter(v => v >= T_EXTREME).length;
+  const pct = n => ((n / avgs.length) * 100).toFixed(1) + '%';
+
+  // ── Render the toggle pills + formula box above the chart ──
+  const toggleId = _hszCtx().togglePrefix + '-dist-toggle';
+  const oldToggle = document.getElementById(toggleId);
+  if (oldToggle) oldToggle.remove();
+  const canvasEl = document.getElementById(_hszCtx().canvasId);
+  if (canvasEl && canvasEl.parentNode) {
+    const tg = document.createElement('div');
+    tg.id = toggleId;
+    tg.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:8px';
+    const mkPill = (id, label) => {
+      const active = (mode === id);
+      return `<button onclick="event.stopPropagation();_setDistMode('${id}')"
+        style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
+    };
+    const formula = (mode === 'cumulative')
+      ? 'F(x) = days with price ≤ x  /  total · 100%  ·  Read: "X% of days were under price Y" — used for PPA floors and VaR'
+      : 'count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: smoothed probability density (Silverman bandwidth)';
+    tg.innerHTML = `
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${mkPill('cumulative', 'Cumulative')}
+        ${mkPill('histo', 'Histogram + KDE')}
+      </div>
+      <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;line-height:1.5">${formula}</div>
+    `;
+    canvasEl.parentNode.insertBefore(tg, canvasEl);
+  }
+
+  // ── Title block ──
+  let subtitleText;
+  if (mode === 'cumulative') {
+    subtitleText = `${pct(nNeg + nLow)} of days under ${T_LOW.toFixed(0)} €/MWh · 50% under ${median.toFixed(0)} · 95% under ${p95.toFixed(0)} · ${nNeg} day${nNeg!==1?'s':''} negative`;
+  } else {
+    const mostFreqBucket = (() => {
+      // Quick bin-based mode estimation
+      const range = maxV - minV;
+      const BIN = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
+      const bins = {};
+      avgs.forEach(v => {
+        const k = Math.floor(v / BIN) * BIN;
+        bins[k] = (bins[k] || 0) + 1;
+      });
+      let best = null, bestC = 0;
+      Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
+      return best != null ? `${best}-${best+BIN} €` : '—';
+    })();
+    subtitleText = `Median ${median.toFixed(1)} €/MWh · μ ${mean.toFixed(1)} · σ ${stddev.toFixed(1)} · ${nNeg} negative · ${nNormal} normal · Most frequent bucket: ${mostFreqBucket}`;
+  }
+  _setHoTitle({
+    eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
+    title: mode === 'cumulative' ? 'Cumulative price distribution' : 'Daily average price distribution',
+    subtitle: subtitleText,
+  });
+
+  // ── Render legend HTML above the chart (always visible, explains 4 categories) ──
+  const legendId = _hszCtx().togglePrefix + '-dist-legend';
+  const oldLg = document.getElementById(legendId);
+  if (oldLg) oldLg.remove();
+  if (canvasEl && canvasEl.parentNode) {
+    const lg = document.createElement('div');
+    lg.id = legendId;
+    lg.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;padding:6px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
+    const buildItem = (col, label, count, lo, hi) => `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:8px;background:${col};border:1px solid ${col.replace('0.07','0.3').replace('0.06','0.3').replace('0.10','0.4').replace('0.05','0.3').replace('0.04','0.2').replace('0.03','0.2')};border-radius:1px"></span>${label}: ${count} day${count!==1?'s':''} (${pct(count)})${lo!=null?` · ${lo}${hi!=null?'→'+hi:'+'} €`:''}</span>`;
+    lg.innerHTML = ''
+      + buildItem('rgba(237,105,101,0.10)', 'Negative',            nNeg,     null, 0)
+      + buildItem('rgba(20,211,169,0.05)',   'Low (under P25)',    nLow,     0,    T_LOW.toFixed(0))
+      + buildItem('rgba(255,255,255,0.04)',  'Normal (P25–P75)',   nNormal,  T_LOW.toFixed(0), T_HIGH.toFixed(0))
+      + buildItem('rgba(251,191,36,0.07)',   'High (P75–P95)',     nHigh,    T_HIGH.toFixed(0), T_EXTREME.toFixed(0))
+      + buildItem('rgba(237,105,101,0.10)',  'Extreme (over P95)', nExtreme, T_EXTREME.toFixed(0), null);
+    canvasEl.parentNode.insertBefore(lg, canvasEl);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MODE 1: CUMULATIVE (CDF)
+  // ─────────────────────────────────────────────────────────────────────────
+  if (mode === 'cumulative') {
+    // X grid: from min to max
+    const xMin = Math.min(minV, T_NEG - 5);
+    const xMax = Math.max(maxV, T_EXTREME + 10);
+    const N_POINTS = 100;
+    const xGrid = [];
+    for (let i = 0; i < N_POINTS; i++) xGrid.push(xMin + (xMax - xMin) * (i / (N_POINTS - 1)));
+    // CDF: for each x, % of values <= x
+    const cdf = xGrid.map(x => {
+      let n = 0;
+      for (let i = 0; i < sorted.length; i++) { if (sorted[i] <= x) n++; else break; }
+      return (n / sorted.length) * 100;
+    });
+
+    // Annotations: P50 + P95 with dashed connecting lines
+    const annotations = {
+      // Background category zones (vertical bands)
+      bandNeg:     { type: 'box', xMin, xMax: T_NEG,      backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
+      bandLow:     { type: 'box', xMin: T_NEG, xMax: T_LOW,     backgroundColor: 'rgba(20,211,169,0.05)', borderWidth: 0 },
+      bandNormal:  { type: 'box', xMin: T_LOW, xMax: T_HIGH,    backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 0 },
+      bandHigh:    { type: 'box', xMin: T_HIGH, xMax: T_EXTREME, backgroundColor: 'rgba(251,191,36,0.07)', borderWidth: 0 },
+      bandExtreme: { type: 'box', xMin: T_EXTREME, xMax,        backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
+      // Threshold vertical lines with labels
+      thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.20)', borderWidth: 1, borderDash: [2,3] } : undefined,
+      thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.4)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)}`, color: '#14D3A9', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
+      thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.4)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)}`, color: '#FBBF24', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
+      thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.4)', borderWidth: 1, borderDash: [3,3],
+        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)}`, color: '#ED6965', font: { size: 9 }, position: 'start', backgroundColor: 'transparent', padding: 2 } },
+      // 50% horizontal line + median crosshair
+      h50: { type: 'line', yMin: 50, yMax: 50, borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, borderDash: [2,3] },
+      medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 4 },
+      medianLabel: { type: 'label', xValue: median, yValue: 50, content: `P50 = ${median.toFixed(1)} €`, color: '#14D3A9', backgroundColor: 'rgba(11,15,21,0.85)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 4, xAdjust: 60, yAdjust: -8 },
+      // 95% horizontal + P95 crosshair
+      h95: { type: 'line', yMin: 95, yMax: 95, borderColor: 'rgba(251,191,36,0.35)', borderWidth: 1, borderDash: [2,3] },
+      p95Point: { type: 'point', xValue: p95, yValue: 95, backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4 },
+      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.85)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 4, xAdjust: -55, yAdjust: -8 },
+    };
+
+    mkHistChart(_hszCtx().canvasId, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Cumulative %',
+          data: xGrid.map((x, i) => ({ x, y: cdf[i] })),
+          borderColor: color,
+          backgroundColor: _toRgba(color, 0.08),
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0,
+          fill: 'origin',
+        }],
+      },
+      options: {
+        ...baseOptions('Cumulative %'),
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: ctx => ctx[0] ? `Price ≤ ${ctx[0].parsed.x.toFixed(1)} €/MWh` : '',
+              label: ctx => ` ${ctx.parsed.y.toFixed(1)}% of days`,
+            },
+          },
+          annotation: { annotations },
+          zoom: _zoomConfig({ mode: 'xy' }),
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: xMin, max: xMax,
+            grid: { color: _HIST_GRID },
+            ticks: { color: _HIST_TX3, font: { size: 10 } },
+            title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
+          },
+          y: {
+            min: 0, max: 100,
+            grid: { color: _HIST_GRID },
+            ticks: { color: _HIST_TX3, font: { size: 10 }, callback: v => v + '%' },
+            title: { display: true, text: '% of days under', color: _HIST_TX3, font: { size: 10 } },
+          },
+        },
+      },
+    });
+    return;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MODE 2: HISTOGRAM + KDE OVERLAY
+  // ─────────────────────────────────────────────────────────────────────────
+  // Bin size: adaptive
   const range = maxV - minV;
   const BIN_SIZE = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
-  const binMin = Math.floor(minV / BIN_SIZE) * BIN_SIZE;
-  const binMax = Math.ceil(maxV / BIN_SIZE) * BIN_SIZE;
-
-  const bins = [];
-  const counts = [];
+  const binMin = Math.floor(Math.min(minV, T_NEG - 5) / BIN_SIZE) * BIN_SIZE;
+  const binMax = Math.ceil(Math.max(maxV, T_EXTREME + 10) / BIN_SIZE) * BIN_SIZE;
+  const bins = [], counts = [];
   for (let b = binMin; b < binMax; b += BIN_SIZE) {
     bins.push(b);
     counts.push(avgs.filter(v => v >= b && v < b + BIN_SIZE).length);
   }
+  // Color bars by business category (based on bin lower bound)
+  const catColor = b => {
+    if (b < T_NEG) return _toRgba('#ED6965', 0.65);
+    if (b < T_LOW) return _toRgba('#14D3A9', 0.55);
+    if (b < T_HIGH) return _toRgba(color, 0.65);
+    if (b < T_EXTREME) return _toRgba('#FBBF24', 0.55);
+    return _toRgba('#ED6965', 0.55);
+  };
+  const catBorder = b => {
+    if (b < T_NEG) return '#ED6965';
+    if (b < T_LOW) return '#14D3A9';
+    if (b < T_HIGH) return color;
+    if (b < T_EXTREME) return '#FBBF24';
+    return '#ED6965';
+  };
+  const barColors = bins.map(catColor);
+  const barBorders = bins.map(catBorder);
 
-  // Color bars: red for negative, zone color (with light fill) for positive
-  const barColors = bins.map(b => {
-    if (b < 0) return _toRgba('#ED6965', 0.75);
-    return _toRgba(color, 0.6);
-  });
-  const barBorders = bins.map(b => {
-    if (b < 0) return '#ED6965';
-    return color;
-  });
+  // KDE curve over the same x range
+  const xGrid = bins.map(b => b + BIN_SIZE / 2);
+  const density = _kde(avgs, xGrid);
+  // Scale density to peak-match the histogram for visual co-location
+  const maxCount = Math.max(...counts);
+  const maxDensity = Math.max(...density);
+  const kdeScale = maxDensity > 0 ? (maxCount * 0.95) / maxDensity : 1;
+  const kdeScaled = density.map(d => d * kdeScale);
 
-  // Find which bin contains mean / median for annotation reference
-  const xMean = mean;
-  const xMedian = median;
+  // Annotations: zones + threshold lines + mean + median
+  const annotations = {
+    // Background category zones aligned with histogram bins (use xValue indices)
+    // Note: bar chart x is categorical, so we use the bin index. Compute boundaries.
+    bandNeg:     { type: 'box', xMin: -0.5, xMax: bins.findIndex(b => b >= T_NEG) - 0.5,            backgroundColor: 'rgba(237,105,101,0.06)', borderWidth: 0 },
+    bandLow:     { type: 'box', xMin: bins.findIndex(b => b >= T_NEG) - 0.5, xMax: bins.findIndex(b => b >= T_LOW) - 0.5, backgroundColor: 'rgba(20,211,169,0.05)', borderWidth: 0 },
+    bandNormal:  { type: 'box', xMin: bins.findIndex(b => b >= T_LOW) - 0.5, xMax: bins.findIndex(b => b >= T_HIGH) - 0.5, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 0 },
+    bandHigh:    { type: 'box', xMin: bins.findIndex(b => b >= T_HIGH) - 0.5, xMax: bins.findIndex(b => b >= T_EXTREME) - 0.5, backgroundColor: 'rgba(251,191,36,0.07)', borderWidth: 0 },
+    bandExtreme: { type: 'box', xMin: bins.findIndex(b => b >= T_EXTREME) - 0.5, xMax: bins.length - 0.5, backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
+    // Mean (warning color) + Median (white)
+    meanLine: {
+      type: 'line', scaleID: 'x',
+      value: bins.findIndex(b => b + BIN_SIZE > mean) - 0.5,
+      borderColor: 'rgba(255,255,255,0.5)', borderWidth: 1, borderDash: [3,3],
+      label: { display: true, content: `μ ${mean.toFixed(1)}`, color: 'rgba(255,255,255,0.8)', font: { size: 9, family: 'JetBrains Mono' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.7)', padding: 3, borderRadius: 2 },
+    },
+    medianLine: {
+      type: 'line', scaleID: 'x',
+      value: bins.findIndex(b => b + BIN_SIZE > median) - 0.5,
+      borderColor: '#FFFFFF', borderWidth: 1.5, borderDash: [4,2],
+      label: { display: true, content: `Med ${median.toFixed(1)}`, color: '#FFFFFF', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', padding: 3, borderRadius: 2 },
+    },
+  };
 
   mkHistChart(_hszCtx().canvasId, {
     type: 'bar',
     data: {
       labels: bins.map(b => b + '€'),
-      datasets: [{
-        label: 'Days',
-        data: counts,
-        backgroundColor: barColors,
-        borderColor: barBorders,
-        borderWidth: 1,
-      }],
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Days',
+          data: counts,
+          backgroundColor: barColors,
+          borderColor: barBorders,
+          borderWidth: 1,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'KDE density (scaled)',
+          data: kdeScaled,
+          borderColor: '#FBBF24',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+          fill: false,
+          order: 1,
+        },
+      ],
     },
     options: {
       ...baseOptions('Days'),
@@ -6288,56 +6561,24 @@ function _hszRenderDist(filtered, zone) {
         tooltip: {
           callbacks: {
             title: ctx => {
+              if (!ctx[0]) return '';
               const b = bins[ctx[0].dataIndex];
               return `${b} to ${b + BIN_SIZE} €/MWh`;
             },
-            label: ctx => ` ${ctx.parsed.y} day${ctx.parsed.y > 1 ? 's' : ''}`,
-          },
-        },
-        subtitle: {
-          display: true,
-          text: `${zone} · n=${avgs.length} days · μ=${mean.toFixed(1)} · med=${median.toFixed(1)} · σ=${stddev.toFixed(1)} · [P5: ${p5.toFixed(1)} · P95: ${p95.toFixed(1)}]`,
-          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
-        },
-        annotation: {
-          annotations: {
-            // Vertical line at mean
-            meanLine: {
-              type: 'line',
-              scaleID: 'x',
-              value: bins.findIndex(b => b > xMean) - 0.5,
-              borderColor: _HIST_WARN,
-              borderWidth: 1.5,
-              borderDash: [4, 3],
-              label: {
-                enabled: true,
-                content: `μ ${xMean.toFixed(1)}`,
-                color: _HIST_WARN,
-                font: { size: 9, weight: 'bold' },
-                position: 'start',
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                padding: 3,
-              },
-            },
-            // Vertical line at median
-            medianLine: {
-              type: 'line',
-              scaleID: 'x',
-              value: bins.findIndex(b => b > xMedian) - 0.5,
-              borderColor: color,
-              borderWidth: 1.5,
-              label: {
-                enabled: true,
-                content: `med ${xMedian.toFixed(1)}`,
-                color: color,
-                font: { size: 9, weight: 'bold' },
-                position: 'end',
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                padding: 3,
-              },
+            label: ctx => {
+              if (ctx.dataset.type === 'bar') {
+                const cum = counts.slice(0, ctx.dataIndex + 1).reduce((a,b)=>a+b,0);
+                const cumPct = (cum / avgs.length) * 100;
+                return [
+                  ` ${ctx.parsed.y} day${ctx.parsed.y > 1 ? 's' : ''} (${((ctx.parsed.y / avgs.length) * 100).toFixed(1)}%)`,
+                  ` Cumulative: ${cumPct.toFixed(1)}%`,
+                ];
+              }
+              return null;
             },
           },
         },
+        annotation: { annotations },
         zoom: _zoomConfig({ mode: 'y' }),
       },
       scales: {
