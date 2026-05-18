@@ -8,7 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PowerKlock — European Energy Intelligence</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMGQ0YTgiLz48cGF0aCBkPSJNMTguNSA0TDggMThoOGwtMiAxMCAxNC0xNmgtOHoiIGZpbGw9IiMwMDAiLz48L3N2Zz4=">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -214,6 +218,18 @@
     gap: 10px;
     text-decoration: none;
   }
+  .logo-img {
+    height: 32px;
+    width: auto;
+    display: block;
+  }
+  .logo-img-icon {
+    /* Icon-only version — hidden on desktop, shown on narrow viewports */
+    display: none;
+    height: 28px;
+    width: auto;
+  }
+  /* Legacy classes — kept for backward compat if anything else references them */
   .logo-icon {
     width: 30px; height: 30px;
     background: var(--accent);
@@ -1544,6 +1560,8 @@
       flex-wrap: nowrap;
     }
     .logo-text { font-size: 14px; }
+    .logo-img { display: none; }
+    .logo-img-icon { display: block; }
     .topbar-tabs { display: none !important; }
     .topbar-right { gap: 6px; }
     .live-badge { font-size: 9px; padding: 3px 6px; }
@@ -1796,8 +1814,8 @@
     <svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
   <div class="logo">
-    <div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#000" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-    <span class="logo-text">PowerKlock</span>
+    <img src="assets/logo-header.png" alt="PowerKlock" class="logo-img">
+    <img src="assets/favicon-64.png" alt="PowerKlock" class="logo-img-icon">
   </div>
   <div class="topbar-tabs">
     <button class="nav-tab active" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
