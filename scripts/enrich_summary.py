@@ -645,6 +645,45 @@ def recalc_summary_from_daily():
         summary['intradayDist'][code] = dist
     print(f"  Hourly historical distribution pre-computed for {len(summary.get('intradayDist', {}))} zones")
 
+    # ── Compute per-zone DISTRIBUTION THRESHOLDS on full historical series ──
+    # These power the auto-calibrated coloured zones on the Distribution tab.
+    # Each zone gets its own thresholds because price levels differ massively
+    # (Nordic ~40 €/MWh vs HU/RO ~110 €/MWh on average).
+    #
+    # 4 business categories computed from historical daily averages:
+    #   - Negative:  price < 0
+    #   - Low:       0 <= price < P25
+    #   - Normal:    P25 <= price < P75   (IQR — the typical 50% of days)
+    #   - High:      P75 <= price < P95
+    #   - Extreme:   price >= P95
+    #
+    # Storage: summary['distThresholds'][zone] = { p0, p10, p25, p50, p75, p95, p100, n }
+    summary.setdefault('distThresholds', {})
+    for code, entries in summary['zones'].items():
+        vals = sorted(e['avg'] for e in entries if e.get('avg') is not None)
+        if not vals:
+            continue
+        n = len(vals)
+        def pct(p):
+            if n == 1:
+                return vals[0]
+            idx = p * (n - 1)
+            lo = int(idx)
+            hi = min(lo + 1, n - 1)
+            w = idx - lo
+            return round(vals[lo] * (1 - w) + vals[hi] * w, 2)
+        summary['distThresholds'][code] = {
+            'p0':   round(vals[0], 2),
+            'p10':  pct(0.10),
+            'p25':  pct(0.25),
+            'p50':  pct(0.50),
+            'p75':  pct(0.75),
+            'p95':  pct(0.95),
+            'p100': round(vals[-1], 2),
+            'n':    n,
+        }
+    print(f"  Distribution thresholds pre-computed for {len(summary.get('distThresholds', {}))} zones")
+
     os.makedirs(os.path.dirname(SUMMARY_PATH), exist_ok=True)
     with open(SUMMARY_PATH, 'w') as f:
         json.dump(summary, f, separators=(',', ':'))
