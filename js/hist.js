@@ -2976,9 +2976,9 @@ function _openHoRow(zone, series, st) {
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
 
-        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels -->
+        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:18px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
+          <div style="font-size:11px;color:#FBBF24;margin-top:32px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -3316,9 +3316,9 @@ function _openHoFullscreen(zone) {
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
         </div>
-        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels -->
+        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:18px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
+          <div style="font-size:11px;color:#FBBF24;margin-top:32px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -3943,17 +3943,17 @@ function _setHoTitle({ eyebrow, title, subtitle }) {
   const ti = document.getElementById(prefix + '-title');
   const su = document.getElementById(prefix + '-subtitle');
   if (ey) ey.textContent = eyebrow || '';
-  if (ti) ti.textContent = title || '';
-  // Subtitle: accept HTML so renderers can render multi-line / styled content
-  // (formula in italic gray + stats in bold). Renderers are responsible for
-  // safe content (no user-controlled input is interpolated raw).
+  // Title and subtitle: HTML supported so renderers can render structured content
+  // (e.g. "Title | discrete description" in title, formula + stats in subtitle).
+  // Renderers are responsible for not interpolating user-controlled input raw.
+  if (ti) ti.innerHTML = title || '';
   if (su) su.innerHTML = subtitle || '';
   const otherPrefix = fs ? 'ho-detail' : 'ho-fs';
   const oey = document.getElementById(otherPrefix + '-eyebrow');
   const oti = document.getElementById(otherPrefix + '-title');
   const osu = document.getElementById(otherPrefix + '-subtitle');
   if (oey) oey.textContent = eyebrow || '';
-  if (oti) oti.textContent = title || '';
+  if (oti) oti.innerHTML = title || '';
   if (osu) osu.innerHTML = subtitle || '';
 }
 
@@ -6136,7 +6136,7 @@ function _hszRenderVolatility(filtered, zone) {
   // Find top 5 spikes (highest values in s7), keep their date labels
   const indexedS7 = s7.map((v, i) => ({ v, i, d: labels[i] }))
     .filter(o => o.v != null && !isNaN(o.v));
-  const topSpikes = [...indexedS7].sort((a,b) => b.v - a.v).slice(0, 5);
+  const topSpikes = [...indexedS7].sort((a,b) => b.v - a.v).slice(0, 3);
   // Period max
   const periodMax = topSpikes.length ? topSpikes[0] : null;
 
@@ -6146,17 +6146,16 @@ function _hszRenderVolatility(filtered, zone) {
   else if (period7Mean < t2) regime = meta.thresholdLabels[1];
   else regime = meta.thresholdLabels[2];
 
-  // Subtitle on 2 lines:
-  //   Line 1 (italic gray): formula
-  //   Line 2 (regular): stats
+  // Title with discrete description suffix ("Title | description")
+  // and 2-line subtitle (formula italic + stats bold).
+  const titleHtml = `${meta.label} — 7-day and 30-day rolling <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${meta.explanation}</span>`;
   let line1 = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
   let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(1)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2}`;
   if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(1)}</strong> on ${periodMax.d}`;
-  line2Stats += ` · <span style="color:var(--tx3)">${meta.explanation}</span>`;
 
   _setHoTitle({
     eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
-    title: meta.label + ' — 7-day and 30-day rolling',
+    title: titleHtml,
     subtitle: `${line1}<br>${line2Stats}`,
   });
 
@@ -6233,9 +6232,9 @@ function _hszRenderVolatility(filtered, zone) {
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2px;background:${_HIST_WARN}"></span>7D rolling</span>
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2.5px;background:${color}"></span>30D rolling</span>
       <button onclick="event.stopPropagation();window._volShowSpikes=!window._volShowSpikes;if(_HSZ_RERENDER)_HSZ_RERENDER()"
-        title="Show/hide top 5 spike annotations"
+        title="Show/hide top 3 spike annotations · hover the chart for exact values on any day"
         style="background:${showSpikes?'rgba(251,191,36,0.15)':'transparent'};border:1px solid ${showSpikes?'rgba(251,191,36,0.4)':'rgba(255,255,255,0.15)'};color:${showSpikes?'#FBBF24':'var(--tx3)'};padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px">
-        <span style="width:5px;height:5px;border-radius:50%;background:#FBBF24;display:inline-block"></span>Top 5 spikes ${showSpikes ? '✓' : ''}
+        <span style="width:5px;height:5px;border-radius:50%;background:#FBBF24;display:inline-block"></span>Top 3 spikes ${showSpikes ? '✓' : ''}
       </button>
     `;
     canvasEl.parentNode.insertBefore(lg, canvasEl);
@@ -6361,28 +6360,20 @@ function _hszRenderDist(filtered, zone, summary) {
   // ── Toggle pills are rendered by _hszRenderYoYSubmenu (unified location, top of header) ──
   _hszRenderYoYSubmenu();
 
-  // ── Formula + explanation line above the chart (small standalone strip) ──
-  const formulaId = _hszCtx().togglePrefix + '-dist-formula';
-  const oldFormula = document.getElementById(formulaId);
-  if (oldFormula) oldFormula.remove();
+  // ── Formula strip removed: formula is now part of the subtitle (line 1 italic gray) ──
+  // We still need canvasEl for the legend insertion later.
   const canvasEl = document.getElementById(_hszCtx().canvasId);
-  if (canvasEl && canvasEl.parentNode) {
-    const fl = document.createElement('div');
-    fl.id = formulaId;
-    const formula = (mode === 'cumulative')
-      ? 'F(x) = days with price ≤ x  /  total · 100%  ·  Read: "X% of days were under price Y" — used for PPA floors and VaR'
-      : 'count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: smoothed probability density (Silverman bandwidth)';
-    fl.style.cssText = 'font-size:10px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;line-height:1.5;margin-bottom:6px';
-    fl.textContent = formula;
-    canvasEl.parentNode.insertBefore(fl, canvasEl);
-  }
+  // Clean up any stale formula strip from previous renders
+  const oldFormula = document.getElementById(_hszCtx().togglePrefix + '-dist-formula');
+  if (oldFormula) oldFormula.remove();
 
-  // ── Title block: 2-line subtitle ──
-  //   Line 1 (italic gray): formula
-  //   Line 2 (regular): stats
+  // ── Title block: "Title | discrete description" + 2-line subtitle (formula italic + stats) ──
+  const titleHtml = (mode === 'cumulative')
+    ? `Cumulative price distribution <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| Read "X% of days were under price Y" — PPA floors, VaR analysis</span>`
+    : `Daily average price distribution <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| Histogram count + smoothed density (KDE) — see overall shape and detect modes</span>`;
   const formulaLine = (mode === 'cumulative')
-    ? `F(x) = days with price ≤ x  /  total · 100%  ·  Read: "X% of days were under price Y" — PPA floors, VaR`
-    : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE = smoothed probability density (Silverman bandwidth)`;
+    ? `F(x) = days with price ≤ x  /  total · 100%`
+    : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: density(x) = (1/n·h) · Σ K((x-xᵢ)/h)`;
   let statsLine;
   if (mode === 'cumulative') {
     statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(0)} €</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(0)} €</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(0)} €</strong> · <strong style="color:#ED6965">${nNeg}</strong> day${nNeg!==1?'s':''} negative`;
@@ -6403,7 +6394,7 @@ function _hszRenderDist(filtered, zone, summary) {
   }
   _setHoTitle({
     eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
-    title: mode === 'cumulative' ? 'Cumulative price distribution' : 'Daily average price distribution',
+    title: titleHtml,
     subtitle: `<span style="color:var(--tx3);font-style:italic">${formulaLine}</span><br>${statsLine}`,
   });
 
@@ -6415,7 +6406,7 @@ function _hszRenderDist(filtered, zone, summary) {
     const lg = document.createElement('div');
     lg.id = legendId;
     // Grid layout: 5 categories on 2 rows (3 + 2) — clearer than wrap on a single line
-    lg.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 14px;font-size:10px;color:var(--tx3);margin-bottom:6px;font-family:\'JetBrains Mono\',monospace;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
+    lg.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 14px;font-size:10px;color:var(--tx3);margin-top:10px;margin-bottom:14px;font-family:\'JetBrains Mono\',monospace;padding:8px 10px;background:rgba(255,255,255,0.025);border-radius:4px';
     const buildItem = (col, borderCol, label, count, rangeTxt) => `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:14px;height:10px;background:${col};border:1px solid ${borderCol};border-radius:1px;flex-shrink:0"></span><strong style="color:var(--tx2)">${label}</strong> · ${count}d (${pct(count)})${rangeTxt ? ' · ' + rangeTxt : ''}</span>`;
     lg.innerHTML = ''
       + buildItem('rgba(237,105,101,0.18)', 'rgba(237,105,101,0.5)',  'Negative',           nNeg,     '< 0 €')
@@ -6454,11 +6445,11 @@ function _hszRenderDist(filtered, zone, summary) {
       // Threshold vertical lines with labels at TOP (position 'end') so they don't collide with x-axis labels
       thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderDash: [2,3] } : undefined,
       thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
       thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
       thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
       // 50% horizontal + median crosshair
       h50: { type: 'line', yMin: 50, yMax: 50, borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, borderDash: [2,3] },
       medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 5 },
@@ -6501,7 +6492,7 @@ function _hszRenderDist(filtered, zone, summary) {
             type: 'linear',
             min: xMin, max: xMax,
             grid: { color: _HIST_GRID },
-            ticks: { color: _HIST_TX3, font: { size: 10 } },
+            ticks: { color: _HIST_TX3, font: { size: 10 }, stepSize: 10, maxRotation: 0, autoSkip: true, maxTicksLimit: 20 },
             title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
           },
           y: {
@@ -6572,7 +6563,7 @@ function _hszRenderDist(filtered, zone, summary) {
       borderColor: 'rgba(255,255,255,0.45)', borderWidth: 1, borderDash: [3,3],
       label: { display: true, content: `μ ${mean.toFixed(1)} €`, color: 'rgba(255,255,255,0.85)',
         font: { size: 9, family: 'JetBrains Mono', weight: '600' },
-        position: 'end', backgroundColor: 'rgba(11,15,21,0.85)', borderRadius: 2,
+        position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2,
         padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 },
     },
     medianLine: {
@@ -6581,7 +6572,7 @@ function _hszRenderDist(filtered, zone, summary) {
       borderColor: '#14D3A9', borderWidth: 1.5, borderDash: [4,2],
       label: { display: true, content: `Med ${median.toFixed(1)} €`, color: '#14D3A9',
         font: { size: 9, family: 'JetBrains Mono', weight: '600' },
-        position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 2,
+        position: 'start', backgroundColor: 'rgba(11,15,21,0.95)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 2,
         padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 26 },
     },
   };
@@ -6644,7 +6635,7 @@ function _hszRenderDist(filtered, zone, summary) {
       scales: {
         x: {
           grid: { color: _HIST_GRID, display: false },
-          ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 14 },
+          ticks: { color: _HIST_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 },
           title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
         },
         y: {
