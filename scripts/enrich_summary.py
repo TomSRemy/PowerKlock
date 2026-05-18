@@ -535,6 +535,40 @@ def recalc_summary_from_daily():
     for code in summary['zones']:
         summary['zones'][code].sort(key=lambda x: x['d'])
 
+    # ── Pre-compute rolling averages (7D / 30D / 90D / 365D) per entry ──
+    # Stored as keys: roll7, roll30, roll90, roll365 (None when insufficient data
+    # for the window — e.g. fewer than 1 valid points in the trailing window).
+    # The frontend reads these directly; no need to recompute client-side,
+    # and a 365D rolling is correct even on a 7D visible window.
+    def _rolling_avg(values, n):
+        """For each index i, mean of the last n values (including i), ignoring
+        Nones. Returns same-length list with None where window has no valid data."""
+        out = []
+        for i in range(len(values)):
+            lo = max(0, i - n + 1)
+            window = [v for v in values[lo:i+1] if v is not None]
+            out.append(round(sum(window) / len(window), 2) if window else None)
+        return out
+
+    for code, entries in summary['zones'].items():
+        avgs = [e.get('avg') for e in entries]
+        spreads = [
+            round(e['max'] - e['min'], 2) if (e.get('max') is not None and e.get('min') is not None) else None
+            for e in entries
+        ]
+        r7    = _rolling_avg(avgs, 7)
+        r30   = _rolling_avg(avgs, 30)
+        r90   = _rolling_avg(avgs, 90)
+        r365  = _rolling_avg(avgs, 365)
+        sp30  = _rolling_avg(spreads, 30)
+        for i, e in enumerate(entries):
+            e['roll7']        = r7[i]
+            e['roll30']       = r30[i]
+            e['roll90']       = r90[i]
+            e['roll365']      = r365[i]
+            e['spread30']     = sp30[i]
+    print(f"  Rolling 7/30/90/365D pre-computed for {len(summary['zones'])} zones")
+
     # ── Compute aggregated intraday profiles per zone × year × Q ──
     # For each (code, year, Q): average all 24h profiles of that period
     for code, years in intraday_accum.items():
