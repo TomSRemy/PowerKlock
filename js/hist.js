@@ -2978,7 +2978,7 @@ function _openHoRow(zone, series, st) {
 
         <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:32px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
+          <div style="font-size:11px;color:#FBBF24;margin-top:40px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -3318,7 +3318,7 @@ function _openHoFullscreen(zone) {
         </div>
         <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
         ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:32px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
+          <div style="font-size:11px;color:#FBBF24;margin-top:40px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
             ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
           </div>
         ` : ''}
@@ -6443,10 +6443,11 @@ function _hszRenderDist(filtered, zone, summary) {
         <div style="font-size:9px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rangeTxt}</div>
       </div>`;
     };
-    // Outer wrapper has L/R padding to approximate Chart.js canvas drawing area
-    // (~55px for Y-axis label + ticks on the left, ~12px right margin)
-    // so tiles visually align with the coloured zones behind the chart bars.
-    lg.innerHTML = `<div style="padding-left:55px;padding-right:12px"><div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
+    // Outer wrapper has placeholder L/R padding — will be adjusted post-render
+    // to match the actual Chart.js chartArea (left = Y-axis label + ticks width,
+    // right = right margin). This gives pixel-perfect alignment of the legend
+    // tiles with the coloured zone bands behind the chart.
+    lg.innerHTML = `<div id="${legendId}-inner" style="padding-left:50px;padding-right:12px;transition:padding 0.15s"><div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
       ${tile(widths.neg,     'rgba(237,105,101,0.18)', 'rgba(237,105,101,0.6)', 'Negative', nNeg,     `< 0.00 €/MWh`)}
       ${tile(widths.low,     'rgba(20,211,169,0.18)',  'rgba(20,211,169,0.6)',  'Low',      nLow,     `0.00 → ${T_LOW.toFixed(2)} €/MWh`)}
       ${tile(widths.normal,  'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.35)', 'Normal',  nNormal,  `${T_LOW.toFixed(2)} → ${T_HIGH.toFixed(2)} €/MWh`)}
@@ -6484,11 +6485,11 @@ function _hszRenderDist(filtered, zone, summary) {
       // Threshold vertical lines with labels at TOP (position 'end') so they don't collide with x-axis labels
       thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderDash: [2,3] } : undefined,
       thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
       thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
       thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 8 } },
+        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
       // 50% horizontal + median crosshair
       h50: { type: 'line', yMin: 50, yMax: 50, borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, borderDash: [2,3] },
       medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 5 },
@@ -6515,7 +6516,7 @@ function _hszRenderDist(filtered, zone, summary) {
       },
       options: {
         ...baseOptions('Cumulative %'),
-        layout: { padding: { bottom: 8 } },
+        layout: { padding: { bottom: 16 } },
         interaction: { mode: 'index', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
@@ -6560,6 +6561,20 @@ function _hszRenderDist(filtered, zone, summary) {
         },
       },
     });
+    // Post-render: align legend tiles with chart's drawing area (chartArea.left/right)
+    // for pixel-perfect alignment with the coloured zones behind the curve.
+    setTimeout(() => {
+      const chart = HIST.charts[_hszCtx().canvasId];
+      const canvas = document.getElementById(_hszCtx().canvasId);
+      const inner = document.getElementById(legendId + '-inner');
+      if (chart && canvas && inner && chart.chartArea) {
+        const canvasW = canvas.clientWidth;
+        const padLeft = Math.max(0, chart.chartArea.left);
+        const padRight = Math.max(0, canvasW - chart.chartArea.right);
+        inner.style.paddingLeft = padLeft + 'px';
+        inner.style.paddingRight = padRight + 'px';
+      }
+    }, 0);
     return;
   }
 
@@ -6718,6 +6733,19 @@ function _hszRenderDist(filtered, zone, summary) {
       },
     },
   });
+  // Post-render: align legend tiles with chart's drawing area
+  setTimeout(() => {
+    const chart = HIST.charts[_hszCtx().canvasId];
+    const canvas = document.getElementById(_hszCtx().canvasId);
+    const inner = document.getElementById(legendId + '-inner');
+    if (chart && canvas && inner && chart.chartArea) {
+      const canvasW = canvas.clientWidth;
+      const padLeft = Math.max(0, chart.chartArea.left);
+      const padRight = Math.max(0, canvasW - chart.chartArea.right);
+      inner.style.paddingLeft = padLeft + 'px';
+      inner.style.paddingRight = padRight + 'px';
+    }
+  }, 0);
 }
 
 // Helper: mean ignoring null / NaN
