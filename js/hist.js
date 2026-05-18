@@ -6385,7 +6385,7 @@ function _hszRenderDist(filtered, zone, summary) {
     : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: density(x) = (1/n·h) · Σ K((x-xᵢ)/h)`;
   let statsLine;
   if (mode === 'cumulative') {
-    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(2)} €/MWh</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(2)} €/MWh</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(2)} €/MWh</strong> · <strong style="color:#ED6965">${nNeg}</strong> day${nNeg!==1?'s':''} negative`;
+    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(2)} €/MWh</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(2)} €/MWh</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(2)} €/MWh</strong> · <strong style="color:#ED6965">${nNeg}</strong> negative day${nNeg!==1?'s':''}`;
   } else {
     const mostFreqBucket = (() => {
       const range = maxV - minV;
@@ -6399,7 +6399,7 @@ function _hszRenderDist(filtered, zone, summary) {
       Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
       return best != null ? `${best.toFixed(2)} → ${(best+BIN).toFixed(2)} €/MWh` : '—';
     })();
-    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(2)} €/MWh</strong> · μ <strong>${mean.toFixed(2)} €/MWh</strong> · σ ${stddev.toFixed(2)} €/MWh · <strong style="color:#ED6965">${nNeg}</strong> negative · <strong>${nNormal}</strong> normal · Most frequent: <strong>${mostFreqBucket}</strong>`;
+    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(2)} €/MWh</strong> · μ <strong>${mean.toFixed(2)} €/MWh</strong> · σ ${stddev.toFixed(2)} €/MWh · <strong style="color:#ED6965">${nNeg}</strong> negative days · <strong>${nNormal}</strong> normal days · Most frequent: <strong>${mostFreqBucket}</strong>`;
   }
   _setHoTitle({
     eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
@@ -6424,7 +6424,7 @@ function _hszRenderDist(filtered, zone, summary) {
   if (canvasEl && canvasEl.parentNode) {
     const lg = document.createElement('div');
     lg.id = legendId;
-    lg.style.cssText = 'margin-top:14px;margin-bottom:0;font-family:\'JetBrains Mono\',monospace';
+    lg.style.cssText = 'margin-top:14px;margin-bottom:18px;font-family:\'JetBrains Mono\',monospace';
     // Width proportion: each category's price-range size divided by total chart x span
     // (Negative covers [chartXMin..0], Low covers [0..P25], etc.)
     const widths = {
@@ -6443,13 +6443,16 @@ function _hszRenderDist(filtered, zone, summary) {
         <div style="font-size:9px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rangeTxt}</div>
       </div>`;
     };
-    lg.innerHTML = `<div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
+    // Outer wrapper has L/R padding to approximate Chart.js canvas drawing area
+    // (~55px for Y-axis label + ticks on the left, ~12px right margin)
+    // so tiles visually align with the coloured zones behind the chart bars.
+    lg.innerHTML = `<div style="padding-left:55px;padding-right:12px"><div style="display:flex;gap:2px;border-radius:3px;overflow:hidden">
       ${tile(widths.neg,     'rgba(237,105,101,0.18)', 'rgba(237,105,101,0.6)', 'Negative', nNeg,     `< 0.00 €/MWh`)}
       ${tile(widths.low,     'rgba(20,211,169,0.18)',  'rgba(20,211,169,0.6)',  'Low',      nLow,     `0.00 → ${T_LOW.toFixed(2)} €/MWh`)}
       ${tile(widths.normal,  'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.35)', 'Normal',  nNormal,  `${T_LOW.toFixed(2)} → ${T_HIGH.toFixed(2)} €/MWh`)}
       ${tile(widths.high,    'rgba(251,191,36,0.18)',  'rgba(251,191,36,0.6)',  'High',     nHigh,    `${T_HIGH.toFixed(2)} → ${T_EXTREME.toFixed(2)} €/MWh`)}
       ${tile(widths.extreme, 'rgba(237,105,101,0.22)', 'rgba(237,105,101,0.7)', 'Extreme',  nExtreme, `> ${T_EXTREME.toFixed(2)} €/MWh`)}
-    </div>`;
+    </div></div>`;
     canvasEl.parentNode.insertBefore(lg, canvasEl);
   }
 
@@ -6633,7 +6636,7 @@ function _hszRenderDist(filtered, zone, summary) {
   mkHistChart(_hszCtx().canvasId, {
     type: 'bar',
     data: {
-      labels: bins.map(b => b + '€'),
+      labels: bins.map(b => String(b)),
       datasets: [
         {
           type: 'bar',
