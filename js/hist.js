@@ -136,6 +136,17 @@ function setHistWindow(key, window, btn) {
     'hms':       renderHistMonthlyTable,
   };
   if (renders[key]) renders[key]();
+
+  // If the fullscreen overlay is open on Historical, rebuild it so the FS chart
+  // and KPIs reflect the new window (the overlay snapshots the filtered series
+  // at creation time, so a HIST.windows update isn't enough on its own).
+  if ((key === 'ho' || key === 'hsz' || key === 'hmz') && document.getElementById('ho-fs-overlay')) {
+    const fsZone = window._HO_OPEN_ZONE;
+    if (fsZone && typeof _openHoFullscreen === 'function') {
+      // Slight delay so renderHistOverview() can rebuild _HO_LAST_SERIES first.
+      setTimeout(() => _openHoFullscreen(fsZone), 30);
+    }
+  }
 }
 
 // ── Custom date range from picker ──
@@ -2619,9 +2630,17 @@ function _openHoFullscreen(zone) {
           <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
         </div>
       </div>
-      <!-- Right column: tabs-bar + actions on top row, YoY submenu pills below tabs-bar -->
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <!-- Right column: window selector + tabs-bar + actions, with YoY pills below tabs-bar -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <!-- Top row: window selector (7D/1M/3M/...) left, tabs-bar + actions right -->
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;flex-wrap:wrap">
+            ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => `
+              <button class="hw-btn${(HIST.windows['ho']||'3M')===w ? ' active' : ''}"
+                onclick="setHistWindow('ho','${w}',this)"
+                style="background:${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.15)' : 'transparent'};border:1px solid ${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.4)' : 'transparent'};color:${(HIST.windows['ho']||'3M')===w ? '#14D3A9' : 'var(--tx3)'};padding:4px 9px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${w}</button>
+            `).join('')}
+          </div>
           <div id="ho-fs-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px"></div>
           <button id="ho-fs-csv-btn" title="Export chart data as CSV"
             style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
@@ -2632,9 +2651,8 @@ function _openHoFullscreen(zone) {
           <button id="ho-fs-close-btn"
             style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
         </div>
-        <!-- YoY sub-menu pills (Hourly / Daily / Weekly / Monthly + Hourly mode) — hidden unless YoY tab is active.
-             Aligned under the tabs-bar (right side, just under YoY tab). -->
-        <div id="ho-fs-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-right:4px"></div>
+        <!-- YoY sub-menu pills aligned to the LEFT of the right column so they sit under the tabs-bar (where the YoY tab lives) -->
+        <div id="ho-fs-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;align-self:flex-start;padding-left:4px"></div>
       </div>
     </div>
 
