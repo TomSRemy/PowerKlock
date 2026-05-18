@@ -882,6 +882,7 @@ async function renderGmHistory() {
   // Falls back to per-day fetch if summary lacks these fields (backward compat)
   // ──────────────────────────────────────────────────────────────
   let series = [];
+  let fullZoneData = [];  // unfiltered series for rolling-window context
   try {
     if (!window._GM_HIST_SUMMARY_CACHE) {
       const r = await fetch('data/history/summary.json');
@@ -890,12 +891,7 @@ async function renderGmHistory() {
     const summary = window._GM_HIST_SUMMARY_CACHE;
     const zoneData = summary?.zones?.[zone];
     if (zoneData && zoneData.length) {
-      // Filter by window
-      const days = _gmHistDaysForWindow(w);
-      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
-      const filtered = (w === 'All') ? zoneData : zoneData.filter(e => e.d >= cutoffStr);
-      series = filtered.map(e => ({
+      fullZoneData = zoneData.map(e => ({
         d:         e.d,
         windAvg:   e.windAvg    ?? null,
         windMax:   e.windMax    ?? null,
@@ -905,7 +901,13 @@ async function renderGmHistory() {
         hydroAvg:  e.hydroAvg   ?? null,
         fossilAvg: e.fossilAvg  ?? null,
         biomassAvg:e.biomassAvg ?? null,
-      })).filter(s => s.windAvg != null || s.solarAvg != null);
+      }));
+      // Filter by window
+      const days = _gmHistDaysForWindow(w);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const filtered = (w === 'All') ? fullZoneData : fullZoneData.filter(e => e.d >= cutoffStr);
+      series = filtered.filter(s => s.windAvg != null || s.solarAvg != null);
     }
   } catch (e) {
     console.warn('GenMix history fetch error:', e);
@@ -1002,13 +1004,24 @@ async function renderGmHistory() {
   const nuclearData = series.map(s => s.nuclearAvg != null ? s.nuclearAvg / 1000 : null);
   const hydroData   = series.map(s => s.hydroAvg   != null ? s.hydroAvg   / 1000 : null);
   const fossilData  = series.map(s => s.fossilAvg  != null ? s.fossilAvg  / 1000 : null);
-  // 7D rolling on wind
-  const r7 = (arr) => arr.map((_, i, a) => {
-    const s = Math.max(0, i - 6);
-    const slice = a.slice(s, i + 1).filter(v => v != null);
-    return slice.length ? slice.reduce((x,y)=>x+y,0)/slice.length : null;
-  });
-  const windR7 = r7(windData);
+  // 7D rolling on wind, computed on the FULL zone series so a short window
+  // (e.g. 7D) still gives a meaningful trend at the last visible point. Each
+  // visible date looks up the 7 prior days from `fullZoneData`, even if those
+  // days are outside the visible window.
+  const r7Context = (filteredEntries, fullEntries, n, valKey) => {
+    if (!filteredEntries.length) return [];
+    const idx = new Map();
+    fullEntries.forEach((e, i) => idx.set(e.d, i));
+    const fullVals = fullEntries.map(e => (e[valKey] != null ? e[valKey] / 1000 : null));
+    return filteredEntries.map(fe => {
+      const i = idx.get(fe.d);
+      if (i == null) return null;
+      const slice = fullVals.slice(Math.max(0, i - n + 1), i + 1).filter(v => v != null);
+      if (!slice.length) return null;
+      return slice.reduce((a, b) => a + b, 0) / slice.length;
+    });
+  };
+  const windR7 = r7Context(series, fullZoneData, 7, 'windAvg');
 
   // Build datasets — only include fuels with non-null data
   const datasets = [
