@@ -2938,7 +2938,8 @@ function _openHoRow(zone, series, st) {
              Pills are only visible when YoY tab is active. -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
           <!-- YoY sub-menu pills (Hourly / Daily / Weekly / Monthly + Hourly mode) — hidden unless YoY tab is active -->
-          <div id="ho-detail-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-left:4px"></div>
+          <!-- Generic per-tab submenu slot (YoY pills, Volatility metrics, Distribution modes, etc.) — hidden unless the active tab provides pills -->
+          <div id="ho-detail-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-left:4px"></div>
           <!-- Spacer so actions stay right-aligned even when pills are hidden -->
           <div style="flex:1"></div>
 
@@ -3253,7 +3254,8 @@ function _openHoFullscreen(zone) {
             style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
         </div>
         <!-- YoY sub-menu pills aligned to the LEFT of the right column so they sit under the tabs-bar (where the YoY tab lives) -->
-        <div id="ho-fs-yoy-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;align-self:flex-start;padding-left:4px"></div>
+        <!-- Generic per-tab submenu slot — aligned to the LEFT of the right column so it sits under the tabs-bar -->
+        <div id="ho-fs-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;align-self:flex-start;padding-left:4px"></div>
       </div>
     </div>
 
@@ -3791,34 +3793,51 @@ function _buildHoChart(zone, series, fullscreen) {
 // Tabs: Lines · YoY · Seasonal · Hourly · Weekly · Volatility
 // ════════════════════════════════════════════
 
-// YoY sub-menu rendering: pills (Hourly / Daily / Monthly) + separator + Hourly mode (Quarter / Global)
-// Visible only when the YoY tab is active. Renders into both drill-down and FS slots.
+// Per-tab submenu rendering: pills for the active tab go in the same slot in both
+// drill-down and FS, with consistent YoY-style design (rounded 14px pills).
+// Handles: YoY (sub-modes + hourly mode), Volatility (3 metrics), Distribution (2 modes).
 function _hszRenderYoYSubmenu() {
-  const isYoy = (HSZ.tab === 'yoy');
+  const tab = HSZ.tab;
   const mode = HSZ.yoyMode;
   const hourlyMode = HSZ.hourlyMode;
 
-  // Pill style helpers
-  const pill = (id, label, active) => `
-    <button onclick="event.stopPropagation();setHistYoyMode('${id}')"
+  // Shared pill style helpers
+  const pill = (handler, id, label, active) => `
+    <button onclick="event.stopPropagation();${handler}('${id}')"
       style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.12)'};color:${active?'#14D3A9':'var(--tx2)'};padding:5px 12px;border-radius:14px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:500;letter-spacing:.02em">${label}</button>`;
   const sep = `<span style="width:1px;height:14px;background:rgba(255,255,255,0.18);margin:0 4px"></span>`;
-  const modePill = (id, label, active) => `
-    <button onclick="event.stopPropagation();setHistHourlyMode('${id}')"
+  const modePill = (handler, id, label, active) => `
+    <button onclick="event.stopPropagation();${handler}('${id}')"
       style="background:${active?'rgba(20,211,169,0.10)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.3)':'rgba(255,255,255,0.10)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;border-radius:14px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
 
   let html = '';
-  HSZ.yoyModes.forEach(m => { html += pill(m.id, m.label, mode === m.id); });
-  if (mode === 'hourly') {
-    html += sep
-         + modePill('yoy',     'Annual average', hourlyMode === 'yoy')
-         + modePill('quarter', 'By quarter',     hourlyMode === 'quarter');
+  let showSubmenu = false;
+
+  if (tab === 'yoy') {
+    showSubmenu = true;
+    HSZ.yoyModes.forEach(m => { html += pill('setHistYoyMode', m.id, m.label, mode === m.id); });
+    if (mode === 'hourly') {
+      html += sep
+           + modePill('setHistHourlyMode', 'yoy',     'Annual average', hourlyMode === 'yoy')
+           + modePill('setHistHourlyMode', 'quarter', 'By quarter',     hourlyMode === 'quarter');
+    }
+  } else if (tab === 'vol' || tab === 'volatility') {
+    showSubmenu = true;
+    const cur = window._volMetric || 'sigma';
+    html += pill('_setVolMetric', 'sigma', 'σ rolling',       cur === 'sigma');
+    html += pill('_setVolMetric', 'dod',   'Day-on-day Δ',    cur === 'dod');
+    html += pill('_setVolMetric', 'range', 'Intra-day range', cur === 'range');
+  } else if (tab === 'dist' || tab === 'distribution') {
+    showSubmenu = true;
+    const cur = window._distMode || 'cumulative';
+    html += pill('_setDistMode', 'cumulative', 'Cumulative',       cur === 'cumulative');
+    html += pill('_setDistMode', 'histo',      'Histogram + KDE',  cur === 'histo');
   }
 
-  ['ho-detail-yoy-submenu', 'ho-fs-yoy-submenu'].forEach(id => {
+  ['ho-detail-tab-submenu', 'ho-fs-tab-submenu'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (isYoy) {
+    if (showSubmenu) {
       el.style.display = 'flex';
       el.innerHTML = html;
     } else {
@@ -3973,15 +3992,14 @@ async function _hszRenderTab(filtered, zone, tab, summary) {
     const wdLg = document.getElementById(togPrefix + '-weekday-legend');
     if (wdLg) wdLg.remove();
   }
-  // Cleanup Volatility toggle unless we're on Volatility tab
+  // Cleanup Volatility-specific UI unless we're on Volatility tab
   if (tab !== 'vol' && tab !== 'volatility') {
-    const volTg = document.getElementById(togPrefix + '-vol-toggle');
-    if (volTg) volTg.remove();
+    // (vol-toggle removed — now handled by unified ho-detail-tab-submenu)
   }
-  // Cleanup Distribution toggle + legend unless we're on Distribution tab
+  // Cleanup Distribution-specific UI (formula strip + legend) unless we're on Distribution tab
   if (tab !== 'dist' && tab !== 'distribution') {
-    const dt = document.getElementById(togPrefix + '-dist-toggle');
-    if (dt) dt.remove();
+    const df = document.getElementById(togPrefix + '-dist-formula');
+    if (df) df.remove();
     const dl = document.getElementById(togPrefix + '-dist-legend');
     if (dl) dl.remove();
   }
@@ -6144,23 +6162,8 @@ function _hszRenderVolatility(filtered, zone) {
   // Round up to a sensible value, leave 10% headroom
   const yMaxData = Math.ceil(Math.max(valMax * 1.1, t2 * 1.2) / 5) * 5;
 
-  // ── Render toggle pills above the chart (HTML, inserted before canvas) ──
-  const toggleId = _hszCtx().togglePrefix + '-vol-toggle';
-  const oldToggle = document.getElementById(toggleId);
-  if (oldToggle) oldToggle.remove();
-  const canvas = document.getElementById(_hszCtx().canvasId);
-  if (canvas && canvas.parentNode) {
-    const tg = document.createElement('div');
-    tg.id = toggleId;
-    tg.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap';
-    const mkPill = (id, label) => {
-      const active = (metricId === id);
-      return `<button onclick="event.stopPropagation();_setVolMetric('${id}')"
-        style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
-    };
-    tg.innerHTML = mkPill('sigma', 'σ rolling') + mkPill('dod', 'Day-on-day Δ') + mkPill('range', 'Intra-day range');
-    canvas.parentNode.insertBefore(tg, canvas);
-  }
+  // ── Toggle pills are rendered by _hszRenderYoYSubmenu (unified location, top of header) ──
+  _hszRenderYoYSubmenu();
 
   // ── Annotation: top spikes (with date + value) ──
   const spikeAnnotations = {};
@@ -6301,31 +6304,23 @@ function _hszRenderDist(filtered, zone, summary) {
   const nExtreme = avgs.filter(v => v >= T_EXTREME).length;
   const pct = n => ((n / avgs.length) * 100).toFixed(1) + '%';
 
-  // ── Render the toggle pills + formula box above the chart ──
-  const toggleId = _hszCtx().togglePrefix + '-dist-toggle';
-  const oldToggle = document.getElementById(toggleId);
-  if (oldToggle) oldToggle.remove();
+  // ── Toggle pills are rendered by _hszRenderYoYSubmenu (unified location, top of header) ──
+  _hszRenderYoYSubmenu();
+
+  // ── Formula + explanation line above the chart (small standalone strip) ──
+  const formulaId = _hszCtx().togglePrefix + '-dist-formula';
+  const oldFormula = document.getElementById(formulaId);
+  if (oldFormula) oldFormula.remove();
   const canvasEl = document.getElementById(_hszCtx().canvasId);
   if (canvasEl && canvasEl.parentNode) {
-    const tg = document.createElement('div');
-    tg.id = toggleId;
-    tg.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:8px';
-    const mkPill = (id, label) => {
-      const active = (mode === id);
-      return `<button onclick="event.stopPropagation();_setDistMode('${id}')"
-        style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
-    };
+    const fl = document.createElement('div');
+    fl.id = formulaId;
     const formula = (mode === 'cumulative')
       ? 'F(x) = days with price ≤ x  /  total · 100%  ·  Read: "X% of days were under price Y" — used for PPA floors and VaR'
       : 'count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: smoothed probability density (Silverman bandwidth)';
-    tg.innerHTML = `
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        ${mkPill('cumulative', 'Cumulative')}
-        ${mkPill('histo', 'Histogram + KDE')}
-      </div>
-      <div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;line-height:1.5">${formula}</div>
-    `;
-    canvasEl.parentNode.insertBefore(tg, canvasEl);
+    fl.style.cssText = 'font-size:10px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;line-height:1.5;margin-bottom:6px';
+    fl.textContent = formula;
+    canvasEl.parentNode.insertBefore(fl, canvasEl);
   }
 
   // ── Title block ──
