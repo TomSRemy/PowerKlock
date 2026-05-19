@@ -3397,19 +3397,28 @@ function _openHoFullscreen(zone) {
         </div>
         <div style="flex:1;position:relative;min-height:0">
           <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
-          <!-- Chart-only toggle (F): floating top-right corner of the FS chart -->
-          <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)"
-            aria-label="Chart only mode"
-            style="position:absolute;top:8px;right:8px;width:30px;height:30px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);z-index:5"
-            onmouseover="this.style.background='rgba(20,26,34,0.95)';this.style.borderColor='rgba(255,255,255,0.25)'"
-            onmouseout="if(!this.dataset.active){this.style.background='rgba(20,26,34,0.7)';this.style.borderColor='rgba(255,255,255,0.12)'}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 14v6h6"/>
-              <path d="M20 10V4h-6"/>
-              <path d="M14 10l6-6"/>
-              <path d="M10 14l-6 6"/>
-            </svg>
-          </button>
+          <!-- Floating toggle buttons (top-right of FS chart): KPIs, Side panel, Chart-only (F) -->
+          <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5">
+            <button id="ho-fs-toggle-kpis" title="Toggle KPI strip (K)" aria-label="Toggle KPIs"
+              style="height:30px;padding:0 10px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="6" y1="18" x2="14" y2="18"/></svg>
+              <span>KPIs</span>
+            </button>
+            <button id="ho-fs-toggle-table" title="Toggle side table (T)" aria-label="Toggle side table"
+              style="height:30px;padding:0 10px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+              <span>Table</span>
+            </button>
+            <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)" aria-label="Chart only mode"
+              style="height:30px;width:30px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 14v6h6"/>
+                <path d="M20 10V4h-6"/>
+                <path d="M14 10l6-6"/>
+                <path d="M10 14l-6 6"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
           <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
@@ -3559,27 +3568,70 @@ setTimeout(() => {
     csvBtn.addEventListener('click', () => _exportHoChartCsv(zone, true));
   }
 
-  // ── Chart-only toggle: hides KPIs + Verdict + right info pane + divider
-  // so the chart takes the whole screen. Triggered by the icon button or 'F' key.
+  // ── Independent toggles: KPIs strip, Side table, and Chart-only (combined).
+  // Each toggle has its own button. Chart-only is a shortcut that hides both.
+  // At load, if the viewport is too small, auto-hide KPIs and side table.
+  const kpisBtn  = document.getElementById('ho-fs-toggle-kpis');
+  const tableBtn = document.getElementById('ho-fs-toggle-table');
   const chartOnlyBtn = document.getElementById('ho-fs-chartonly-btn');
+
+  // Helper to apply visual state of a toggle button (active = teal, inactive = grey)
+  const styleToggle = (btn, visible) => {
+    if (!btn) return;
+    btn.style.color = visible ? 'var(--tx2)' : '#14D3A9';
+    btn.style.background = visible ? 'rgba(20,26,34,0.7)' : 'rgba(20,211,169,0.20)';
+    btn.style.borderColor = visible ? 'rgba(255,255,255,0.12)' : 'rgba(20,211,169,0.5)';
+    if (visible) delete btn.dataset.active;
+    else btn.dataset.active = '1';
+    btn.title = visible
+      ? btn.title.replace('Show', 'Hide').replace('Toggle', 'Hide')
+      : btn.title.replace('Hide', 'Show').replace('Toggle', 'Show');
+  };
+
+  // Force chart to resize after toggle (containers change size)
+  const resizeFsChart = () => {
+    const fsCanvas = document.getElementById('ho-fs-chart');
+    if (fsCanvas && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
+      const ch = Chart.getChart(fsCanvas);
+      if (ch) requestAnimationFrame(() => ch.resize());
+    }
+  };
+
+  const toggleKpis = (forceState) => {
+    const kpis    = document.getElementById('ho-fs-kpis');
+    const verdict = document.getElementById('ho-fs-verdict');
+    if (!kpis) return;
+    const currentlyVisible = kpis.style.display !== 'none';
+    const showNext = (forceState !== undefined) ? !!forceState : !currentlyVisible;
+    kpis.style.display = showNext ? '' : 'none';
+    if (verdict) verdict.style.display = showNext ? '' : 'none';
+    styleToggle(kpisBtn, showNext);
+    resizeFsChart();
+  };
+
+  const toggleTable = (forceState) => {
+    const info    = document.getElementById('ho-fs-info-pane');
+    const divider = document.getElementById('ho-fs-divider');
+    if (!info) return;
+    const currentlyVisible = info.style.display !== 'none';
+    const showNext = (forceState !== undefined) ? !!forceState : !currentlyVisible;
+    info.style.display = showNext ? 'flex' : 'none';
+    if (divider) divider.style.display = showNext ? 'flex' : 'none';
+    styleToggle(tableBtn, showNext);
+    resizeFsChart();
+  };
+
   const toggleChartOnly = () => {
     const overlay = document.getElementById('ho-fs-overlay');
     if (!overlay) return;
     const active = overlay.dataset.chartOnly === '1';
     const next = !active;
     overlay.dataset.chartOnly = next ? '1' : '0';
-    const kpis    = document.getElementById('ho-fs-kpis');
-    const verdict = document.getElementById('ho-fs-verdict');
-    const info    = document.getElementById('ho-fs-info-pane');
-    const div     = document.getElementById('ho-fs-divider');
-    if (kpis)    kpis.style.display    = next ? 'none' : '';
-    if (verdict) verdict.style.display = next ? 'none' : '';
-    if (info)    info.style.display    = next ? 'none' : 'flex';
-    if (div)     div.style.display     = next ? 'none' : 'flex';
+    toggleKpis(!next);
+    toggleTable(!next);
     if (chartOnlyBtn) {
-      // SVG icons: "expand" outward (default), "compress" inward (active)
-      const svgExpand = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
-      const svgCompress = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
+      const svgExpand = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
+      const svgCompress = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
       chartOnlyBtn.innerHTML = next ? svgCompress : svgExpand;
       chartOnlyBtn.title = next ? 'Show all (F)' : 'Chart only · hide KPIs and side panel (F)';
       chartOnlyBtn.style.color = next ? '#14D3A9' : 'var(--tx2)';
@@ -3588,24 +3640,36 @@ setTimeout(() => {
       if (next) chartOnlyBtn.dataset.active = '1';
       else delete chartOnlyBtn.dataset.active;
     }
-    // Force chart to resize to the new container size
-    const fsCanvas = document.getElementById('ho-fs-chart');
-    if (fsCanvas && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
-      const ch = Chart.getChart(fsCanvas);
-      if (ch) requestAnimationFrame(() => ch.resize());
-    }
   };
+
+  if (kpisBtn)  kpisBtn.addEventListener('click', () => toggleKpis());
+  if (tableBtn) tableBtn.addEventListener('click', () => toggleTable());
   if (chartOnlyBtn) chartOnlyBtn.addEventListener('click', toggleChartOnly);
-  // Keyboard shortcut: F toggles chart-only when fullscreen is open
-  const fKeyHandler = (e) => {
-    if (e.key === 'f' || e.key === 'F') {
-      // Ignore if typing in an input
-      const ae = document.activeElement;
-      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
-      toggleChartOnly();
-    }
+
+  // Initialise toggle visual states (everything visible by default)
+  styleToggle(kpisBtn, true);
+  styleToggle(tableBtn, true);
+
+  // Auto-hide KPIs and/or side table if the viewport is too small
+  // Heuristic: < 1100px width = hide side table; < 700px height = also hide KPIs
+  const vpW = window.innerWidth;
+  const vpH = window.innerHeight;
+  if (vpW < 1100) {
+    toggleTable(false);
+  }
+  if (vpH < 700) {
+    toggleKpis(false);
+  }
+
+  // Keyboard shortcuts: K = KPIs, T = Table, F = Chart only
+  const keyHandler = (e) => {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+    if (e.key === 'f' || e.key === 'F') toggleChartOnly();
+    else if (e.key === 'k' || e.key === 'K') toggleKpis();
+    else if (e.key === 't' || e.key === 'T') toggleTable();
   };
-  document.addEventListener('keydown', fKeyHandler);
+  document.addEventListener('keydown', keyHandler);
   // Cleanup the key handler when overlay closes (Close button or Esc removes the overlay)
   const overlayEl = document.getElementById('ho-fs-overlay');
   if (overlayEl) {
@@ -3613,7 +3677,7 @@ setTimeout(() => {
       for (const m of muts) {
         for (const n of m.removedNodes) {
           if (n === overlayEl || (n.contains && n.contains(overlayEl))) {
-            document.removeEventListener('keydown', fKeyHandler);
+            document.removeEventListener('keydown', keyHandler);
             obs.disconnect();
             return;
           }
@@ -4204,22 +4268,29 @@ function _renderAnalystBanner(html) {
   const ctx = _hszCtx();
   const canvas = document.getElementById(ctx.canvasId);
   if (!canvas) return;
-  // The canvas sits inside a wrapper div with a fixed height (so chart fills it).
-  // We need to insert the banner AFTER the wrapper (in its parent), so it appears
-  // below the chart and doesn't get clipped.
-  const wrap = canvas.parentNode;          // fixed-height chart wrapper
-  const container = wrap ? wrap.parentNode : null;
-  if (!wrap || !container) return;
-  // Remove ANY existing banner across the detail-row (covers both inline canvas banners
-  // AND Quarter-grid banners that live in a different DOM position). This prevents
-  // stale banners from a previous tab/mode lingering after a switch.
+  // Detect whether we're in fullscreen mode
+  const isFs = (ctx.canvasId === 'ho-fs-chart');
+  // Clean all existing banners across all scopes (inline + FS)
   _clearAllAnalystBanners();
   if (!html) return;
-  // Insert after the wrapper
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   const banner = tmp.firstElementChild;
-  if (banner) {
+  if (!banner) return;
+  if (isFs) {
+    // Fullscreen: insert in ho-fs-chart-pane, AFTER the canvas wrapper but BEFORE ho-fs-legend
+    const pane = document.getElementById('ho-fs-chart-pane');
+    const legend = document.getElementById('ho-fs-legend');
+    if (pane && legend) {
+      pane.insertBefore(banner, legend);
+    } else if (pane) {
+      pane.appendChild(banner);
+    }
+  } else {
+    // Inline: insert in the canvas wrapper's parent (the chart container)
+    const wrap = canvas.parentNode;
+    const container = wrap ? wrap.parentNode : null;
+    if (!wrap || !container) return;
     if (wrap.nextSibling) container.insertBefore(banner, wrap.nextSibling);
     else container.appendChild(banner);
   }
@@ -6662,7 +6733,17 @@ function _hszRenderVolatility(filtered, zone) {
         ${showSpikes ? '✓' : ''}
       </button>
     `;
-    canvasEl.parentNode.insertBefore(lg, canvasEl);
+    // FS-aware insertion: in FS, place in chart-pane BEFORE the canvas wrapper
+    const isFs = (_hszCtx().canvasId === 'ho-fs-chart');
+    if (isFs) {
+      const pane = document.getElementById('ho-fs-chart-pane');
+      const canvasWrapFs = canvasEl.parentNode;
+      if (pane && canvasWrapFs) {
+        pane.insertBefore(lg, canvasWrapFs);
+      }
+    } else {
+      canvasEl.parentNode.insertBefore(lg, canvasEl);
+    }
   }
 
   mkHistChart(_hszCtx().canvasId, {
@@ -6890,7 +6971,18 @@ function _hszRenderDist(filtered, zone, summary) {
       ${tile(widths.high,    'rgba(251,191,36,0.18)',  'rgba(251,191,36,0.6)',  'High',     nHigh,    `${T_HIGH.toFixed(2)} → ${T_EXTREME.toFixed(2)} €/MWh`)}
       ${tile(widths.extreme, 'rgba(237,105,101,0.22)', 'rgba(237,105,101,0.7)', 'Extreme',  nExtreme, `> ${T_EXTREME.toFixed(2)} €/MWh`)}
     </div></div>`;
-    canvasEl.parentNode.insertBefore(lg, canvasEl);
+    // Insert in the right place depending on inline vs fullscreen
+    const isFs = (_hszCtx().canvasId === 'ho-fs-chart');
+    if (isFs) {
+      // FS: insert in chart-pane BEFORE the canvas wrapper (which is the parent of the canvas)
+      const pane = document.getElementById('ho-fs-chart-pane');
+      const canvasWrapFs = canvasEl.parentNode;
+      if (pane && canvasWrapFs) {
+        pane.insertBefore(lg, canvasWrapFs);
+      }
+    } else {
+      canvasEl.parentNode.insertBefore(lg, canvasEl);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
