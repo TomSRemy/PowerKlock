@@ -158,9 +158,16 @@ function setHistCustomRange() {
   // Both must be filled
   if (!from || !to) return;
   if (from > to) return;
-  // Activate custom mode: clear preset highlights
+  // Activate custom mode: clear preset highlights (all period pills, both A-mode and popup)
   HIST.customRange = { from, to };
-  document.querySelectorAll('#hw-ho .hw-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#hw-ho .hw-btn, #pk-gf-hist-period .pk-gf-btn, #pk-gf-hist-time-popup .pk-gf-popup-pill').forEach(b => b.classList.remove('active'));
+  // Sync popup inputs (so user sees the chosen range if they open the popup later)
+  const dfP = document.getElementById('ho-date-from-popup');
+  const dtP = document.getElementById('ho-date-to-popup');
+  if (dfP) dfP.value = from;
+  if (dtP) dtP.value = to;
+  // Update C-mode combo button label
+  if (typeof window.pkUpdateTimeComboLabel === 'function') window.pkUpdateTimeComboLabel(null, from, to);
   renderHistOverview();
 }
 window.setHistCustomRange = setHistCustomRange;
