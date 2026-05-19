@@ -3023,7 +3023,7 @@ function _openHoRow(zone, series, st) {
         </div>
 
         <!-- Chart title block (HTML, allows hybrid eyebrow + title + subtitle styling) -->
-        <div id="ho-detail-title-block" style="margin-bottom:8px">
+        <div id="ho-detail-title-block" style="margin-top:14px;margin-bottom:8px">
           <div id="ho-detail-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
           <div id="ho-detail-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
           <div id="ho-detail-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
@@ -3322,7 +3322,7 @@ function _openHoFullscreen(zone) {
     <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
       <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
         <!-- Chart title block (HTML, allows hybrid eyebrow + title + subtitle styling) -->
-        <div id="ho-fs-title-block" style="margin-bottom:8px;flex-shrink:0">
+        <div id="ho-fs-title-block" style="margin-top:14px;margin-bottom:8px;flex-shrink:0">
           <div id="ho-fs-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
           <div id="ho-fs-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
           <div id="ho-fs-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
@@ -4047,7 +4047,7 @@ function _buildAnalystBanner(mode, p) {
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
-  else if (mode === 'yoyHourlyAnnual' || mode === 'yoyHourlyQuarter') {
+  else if (mode === 'yoyHourlyAnnual') {
     const { peakHour, peakVal, floorHour, floorVal, prevFloorVal, prevPeakHour } = p;
     line1 = `Peak at ${W(peakHour + 'h (' + peakVal.toFixed(2) + ' €/MWh)')}, floor at ${W(floorHour + 'h (' + floorVal.toFixed(2) + ' €/MWh)')}.`;
     const midday = (floorHour >= 11 && floorHour <= 16);
@@ -4064,6 +4064,22 @@ function _buildAnalystBanner(mode, p) {
       read = `<b>Morning peak regime</b>. Demand front-loaded, evening softer.`;
     } else {
       read = `<b>Evening peak regime</b>. Demand follows industrial/residential pattern.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'yoyHourlyQuarter') {
+    const { strongestQuarterLabel, strongestPeakVal, strongestPeakHour,
+            weakestQuarterLabel, weakestFloorVal, weakestFloorHour } = p;
+    line1 = `Strongest peak in ${W(strongestQuarterLabel)} at ${W(strongestPeakHour + 'h (' + strongestPeakVal.toFixed(2) + ' €/MWh)')}, weakest floor in ${A(weakestQuarterLabel)} at ${A(weakestFloorHour + 'h (' + weakestFloorVal.toFixed(2) + ' €/MWh)')}.`;
+    const seasonalGap = strongestPeakVal - weakestFloorVal;
+    let read;
+    if (seasonalGap > 100) {
+      read = `<b>Seasonal regime highly polarised</b>. Winter scarcity hours dearer, summer solar floor lower — the year is splitting in two.`;
+    } else if (seasonalGap > 50) {
+      read = `<b>Pronounced seasonal contrast</b>. Quarters diverge significantly in intraday shape.`;
+    } else {
+      read = `<b>Balanced seasonal regime</b>. Intraday shape holds across quarters.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4129,7 +4145,7 @@ function _buildAnalystBanner(mode, p) {
   }
 
   if (!line1) return '';
-  return `<div class="ho-analyst-banner" style="margin-top:14px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+  return `<div class="ho-analyst-banner" style="margin-top:28px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
 
 // Insert/replace the analyst banner under a chart canvas (inline or fullscreen)
@@ -5574,6 +5590,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   const preset = _hszCtx().getYPreset();
 
   const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2,'0')}h`);
+  const quarterStats = {};   // for analyst banner
   Qmeta.forEach(q => {
     const curRaw = intraday[cur]?.[q.id];
     const n1Raw  = n1 ? intraday[n1]?.[q.id] : null;
@@ -5582,6 +5599,21 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     const curProfile = _hszSanitiseHourlyProfile(curRaw);
     const n1Profile  = _hszSanitiseHourlyProfile(n1Raw);
     const n2Profile  = _hszSanitiseHourlyProfile(n2Raw);
+
+    // Compute quarterly peak / floor / mean (current year) for analyst banner
+    if (curProfile && curProfile.some(v => v != null)) {
+      let pv = null, ph = null, fv = null, fh = null;
+      for (let h = 0; h < 24; h++) {
+        const v = curProfile[h];
+        if (v == null || isNaN(v)) continue;
+        if (pv == null || v > pv) { pv = v; ph = h; }
+        if (fv == null || v < fv) { fv = v; fh = h; }
+      }
+      quarterStats[q.id] = {
+        label: q.label, peakVal: pv, peakHour: ph, floorVal: fv, floorHour: fh,
+        mean: _meanIgnoreNull(curProfile),
+      };
+    }
 
     const cellMeta = document.getElementById(`hsz-q-meta-${q.id}`);
 
@@ -5691,6 +5723,29 @@ function _hszRenderHourlyQuarter(zone, intraday) {
       },
     });
   });
+
+  // Analyst banner Quarter — find strongest peak / weakest floor across quarters
+  const qWith = Object.values(quarterStats).filter(s => s.peakVal != null && s.floorVal != null);
+  if (qWith.length) {
+    const strongest = qWith.reduce((a, b) => (a.peakVal > b.peakVal ? a : b));
+    const weakest   = qWith.reduce((a, b) => (a.floorVal < b.floorVal ? a : b));
+    const html = _buildAnalystBanner('yoyHourlyQuarter', {
+      strongestQuarterLabel: strongest.label,
+      strongestPeakVal: strongest.peakVal,
+      strongestPeakHour: strongest.peakHour,
+      weakestQuarterLabel: weakest.label,
+      weakestFloorVal: weakest.floorVal,
+      weakestFloorHour: weakest.floorHour,
+    });
+    if (html) {
+      // Insert after the grid
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const banner = tmp.firstElementChild;
+      if (banner && grid.nextSibling) grid.parentNode.insertBefore(banner, grid.nextSibling);
+      else if (banner) grid.parentNode.appendChild(banner);
+    }
+  }
 }
 
 // YoY mode: single chart with 24h profile of period vs Y-1 / Y-2
@@ -6378,9 +6433,9 @@ function _hszRenderVolatility(filtered, zone) {
   else regime = meta.thresholdLabels[2];
 
   // Title with discrete description suffix ("Title | description")
-  // Subtitle keeps only the formula (italic); stats + verdict go in the analyst banner below the chart.
+  // Subtitle keeps only the formula (italic, smaller); stats + verdict go in the analyst banner below the chart.
   const titleHtml = _titleWithDescription(`${meta.label} — 7-day and 30-day rolling`, meta.explanation);
-  const formulaSubtitle = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
+  const formulaSubtitle = `<span style="color:var(--tx3);font-style:italic;font-size:10px">${meta.formula}</span>`;
 
   _setHoTitle({
     eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
@@ -6388,64 +6443,50 @@ function _hszRenderVolatility(filtered, zone) {
     subtitle: formulaSubtitle,
   });
 
-  // Y-axis: add headroom so spike labels don't get clipped above (and a tiny baseline below)
-  // Headroom = max(15%, 8 €/MWh) — empirically enough for label box (height ~22px)
+  // Y-axis: small headroom (5%) since min/max points no longer have labels
   const allVals = [...s7, ...s30].filter(v => v != null && !isNaN(v));
   const valMax = allVals.length ? Math.max(...allVals) : t2;
-  const headroom = Math.max(valMax * 0.15, 8);
+  const headroom = Math.max(valMax * 0.05, 3);
   const yMaxData = Math.ceil((valMax + headroom) / 5) * 5;
 
   // ── Toggle pills are rendered by _hszRenderYoYSubmenu (unified location, top of header) ──
   _hszRenderYoYSubmenu();
 
   // ── Annotation: top 5 spikes with anti-collision algorithm ──
-  // Each label is ~50px wide and ~18px tall. We sort spikes left-to-right and assign
-  // alternating vertical offsets so labels don't overlap.
-  // Spikes can be toggled off via the legend (state: window._volShowSpikes).
+  // ── Min/Max markers per curve: 4 points (max 7D, min 7D, max 30D, min 30D) ──
+  // No labels — values shown via hover tooltip on the chart's curves.
+  // Toggleable via the legend (state: window._volShowSpikes).
   if (window._volShowSpikes === undefined) window._volShowSpikes = true;
   const showSpikes = window._volShowSpikes;
   const spikeAnnotations = {};
   if (showSpikes) {
-    // Compute pixel-distance proxy: x value index (in labels array)
-    const dateToIdx = {};
-    labels.forEach((d, i) => { dateToIdx[d] = i; });
-    const placed = [];  // [{ idx, yOffset }]
-    // Sort by date ascending for left-to-right placement
-    const sortedSpikes = [...topSpikes].sort((a, b) => dateToIdx[a.d] - dateToIdx[b.d]);
-    sortedSpikes.forEach((sp, i) => {
-      const idx = dateToIdx[sp.d];
-      // Default: label above the point at -22px
-      let yAdjust = -22;
-      // Check collision with previously placed labels (anything within ~6 indices and similar yOffset)
-      // Threshold: ~6 indices on x = ~50px on a 90-day chart in a 700px-wide canvas
-      const COLLISION_DIST_IDX = Math.max(3, Math.floor(labels.length / 18));
-      const collides = placed.find(p => Math.abs(p.idx - idx) < COLLISION_DIST_IDX && p.yOffset === yAdjust);
-      if (collides) {
-        // Push this one down (below the point) to avoid overlap
-        yAdjust = 22;
-        // If even that collides, push further
-        const collides2 = placed.find(p => Math.abs(p.idx - idx) < COLLISION_DIST_IDX && p.yOffset === yAdjust);
-        if (collides2) yAdjust = -44;  // double-up above
-      }
-      placed.push({ idx, yOffset: yAdjust });
-      spikeAnnotations[`spike${i}`] = {
-        type: 'point',
-        xValue: sp.d, yValue: sp.v,
-        backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4,
-      };
-      spikeAnnotations[`spikeLabel${i}`] = {
-        type: 'label',
-        xValue: sp.d, yValue: sp.v,
-        content: [`${sp.v.toFixed(1)}`, sp.d.slice(5)],
-        color: '#FBBF24',
-        backgroundColor: 'rgba(11,15,21,0.92)',
-        borderColor: 'rgba(251,191,36,0.5)',
-        borderWidth: 1, borderRadius: 3,
-        font: { size: 9, family: 'JetBrains Mono', weight: '600' },
-        padding: { top: 3, bottom: 3, left: 6, right: 6 },
-        yAdjust,
-      };
-    });
+    const find = (series, label) => {
+      let maxV = null, maxD = null, minV = null, minD = null;
+      series.forEach((v, i) => {
+        if (v == null || isNaN(v)) return;
+        if (maxV == null || v > maxV) { maxV = v; maxD = labels[i]; }
+        if (minV == null || v < minV) { minV = v; minD = labels[i]; }
+      });
+      return { maxV, maxD, minV, minD };
+    };
+    const s7stats  = find(s7,  '7D');
+    const s30stats = find(s30, '30D');
+    if (s7stats.maxV != null) spikeAnnotations.max7 = {
+      type: 'point', xValue: s7stats.maxD, yValue: s7stats.maxV,
+      backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4,
+    };
+    if (s7stats.minV != null) spikeAnnotations.min7 = {
+      type: 'point', xValue: s7stats.minD, yValue: s7stats.minV,
+      backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 4,
+    };
+    if (s30stats.maxV != null) spikeAnnotations.max30 = {
+      type: 'point', xValue: s30stats.maxD, yValue: s30stats.maxV,
+      backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 3.5,
+    };
+    if (s30stats.minV != null) spikeAnnotations.min30 = {
+      type: 'point', xValue: s30stats.minD, yValue: s30stats.minV,
+      backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 3.5,
+    };
   }
 
   // ── Custom HTML legend above the chart with Spikes toggle ──
@@ -6710,6 +6751,8 @@ function _hszRenderDist(filtered, zone, summary) {
     });
 
     // Annotations: zones + threshold labels + P50/P95 crosshairs
+    // Label positions: P25 at TOP (low-price side); P75 and P95 at BOTTOM (high-price side, less crowded)
+    // P50 and P95 crosshair labels positioned directly BELOW their point.
     const annotations = {
       // Background category zones (reinforced alpha 0.10)
       bandNeg:     { type: 'box', xMin, xMax: T_NEG,      backgroundColor: 'rgba(237,105,101,0.10)', borderWidth: 0 },
@@ -6717,22 +6760,22 @@ function _hszRenderDist(filtered, zone, summary) {
       bandNormal:  { type: 'box', xMin: T_LOW, xMax: T_HIGH,    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 0 },
       bandHigh:    { type: 'box', xMin: T_HIGH, xMax: T_EXTREME, backgroundColor: 'rgba(251,191,36,0.10)', borderWidth: 0 },
       bandExtreme: { type: 'box', xMin: T_EXTREME, xMax,        backgroundColor: 'rgba(237,105,101,0.13)', borderWidth: 0 },
-      // Threshold vertical lines with labels at TOP (position 'end') so they don't collide with x-axis labels
+      // Threshold vertical lines: P25 label at TOP, P75/P95 labels at BOTTOM
       thrZero:    T_NEG >= xMin && T_NEG <= xMax ? { type: 'line', xMin: T_NEG, xMax: T_NEG, borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderDash: [2,3] } : undefined,
       thrLow:     { type: 'line', xMin: T_LOW, xMax: T_LOW, borderColor: 'rgba(20,211,169,0.55)', borderWidth: 1, borderDash: [3,3],
         label: { display: true, content: `P25 · ${T_LOW.toFixed(0)} €`, color: '#14D3A9', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
       thrHigh:    { type: 'line', xMin: T_HIGH, xMax: T_HIGH, borderColor: 'rgba(251,191,36,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
+        label: { display: true, content: `P75 · ${T_HIGH.toFixed(0)} €`, color: '#FBBF24', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: -12 } },
       thrExtreme: { type: 'line', xMin: T_EXTREME, xMax: T_EXTREME, borderColor: 'rgba(237,105,101,0.55)', borderWidth: 1, borderDash: [3,3],
-        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'end', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: 12 } },
-      // 50% horizontal + median crosshair
+        label: { display: true, content: `P95 · ${T_EXTREME.toFixed(0)} €`, color: '#ED6965', font: { size: 9, family: 'JetBrains Mono', weight: '600' }, position: 'start', backgroundColor: 'rgba(11,15,21,0.92)', borderRadius: 2, padding: { top: 2, bottom: 2, left: 5, right: 5 }, yAdjust: -12 } },
+      // 50% horizontal + median crosshair (label BELOW the point)
       h50: { type: 'line', yMin: 50, yMax: 50, borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, borderDash: [2,3] },
       medianPoint: { type: 'point', xValue: median, yValue: 50, backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 5 },
-      medianLabel: { type: 'label', xValue: median, yValue: 50, content: `P50 = ${median.toFixed(1)} €`, color: '#14D3A9', backgroundColor: 'rgba(11,15,21,0.90)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: 65, yAdjust: -10 },
-      // 95% horizontal + P95 crosshair
+      medianLabel: { type: 'label', xValue: median, yValue: 50, content: `P50 = ${median.toFixed(1)} €`, color: '#14D3A9', backgroundColor: 'rgba(11,15,21,0.90)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: 0, yAdjust: 22 },
+      // 95% horizontal + P95 crosshair (label BELOW the point)
       h95: { type: 'line', yMin: 95, yMax: 95, borderColor: 'rgba(251,191,36,0.35)', borderWidth: 1, borderDash: [2,3] },
       p95Point: { type: 'point', xValue: p95, yValue: 95, backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 5 },
-      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.92)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: -60, yAdjust: 22 },
+      p95Label: { type: 'label', xValue: p95, yValue: 95, content: `P95 = ${p95.toFixed(1)} €`, color: '#FBBF24', backgroundColor: 'rgba(11,15,21,0.92)', borderColor: 'rgba(251,191,36,0.5)', borderWidth: 1, borderRadius: 3, font: { size: 10, family: 'JetBrains Mono', weight: '600' }, padding: 5, xAdjust: 0, yAdjust: 22 },
     };
 
     mkHistChart(_hszCtx().canvasId, {
@@ -6968,6 +7011,7 @@ function _hszRenderDist(filtered, zone, summary) {
           ticks: { color: _HIST_TX3, font: { size: 10 } },
           title: { display: true, text: 'Days count', color: _HIST_TX3, font: { size: 10 } },
           beginAtZero: true,
+          suggestedMax: Math.ceil(maxCount * 1.10),
         },
       },
     },
