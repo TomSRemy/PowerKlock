@@ -4018,14 +4018,14 @@ function _buildAnalystBanner(mode, p) {
     const { avg, sigma, min, max, minDate, maxDate } = p;
     const sigmaRegime = sigma < 15 ? 'low' : sigma < 30 ? 'normal' : 'high';
     const levelTier = avg < 40 ? 'bearish baseline' : avg < 70 ? 'neutral baseline' : 'bullish baseline';
-    line1 = `Period averaged ${W(avg.toFixed(2) + ' €/MWh')} with ${W(sigmaRegime + ' volatility')} (σ ${sigma.toFixed(2)}). Prices spanned ${A(min.toFixed(2))} on ${A(fmtD(minDate))} to ${A(max.toFixed(2) + ' €/MWh')} on ${A(fmtD(maxDate))}.`;
+    line1 = `Period averaged ${W(avg.toFixed(2) + ' €/MWh')} with ${W(sigmaRegime + ' volatility')} (σ ${W(sigma.toFixed(2))}). Prices spanned ${A(min.toFixed(2))} on ${A(fmtD(minDate))} to ${A(max.toFixed(2) + ' €/MWh')} on ${A(fmtD(maxDate))}.`;
     const sigmaWord = sigma < 15 ? 'calm regime' : sigma < 30 ? 'normal regime' : 'stressed regime';
-    const desc = (avg < 40 && sigma > 30) ? 'Low absolute level with wide swings — fundamentals soft, but intraday risk elevated.'
-              : (avg > 70 && sigma > 30) ? 'High level combined with wide swings — tight market, pressure all around.'
-              : (sigma > 30) ? 'Wide day-to-day swings dominate the picture.'
-              : (avg < 40) ? 'Soft fundamentals, calm conditions.'
-              : (avg > 70) ? 'Firm levels, contained volatility.'
-              : 'Levels and dispersion both around historical norms.';
+    const desc = (avg < 40 && sigma > 30) ? 'Low absolute level combined with wide swings.'
+              : (avg > 70 && sigma > 30) ? 'High level combined with wide swings.'
+              : (sigma > 30) ? 'Wide day-to-day swings across the period.'
+              : (avg < 40) ? 'Low absolute level, contained dispersion.'
+              : (avg > 70) ? 'High level, contained dispersion.'
+              : 'Levels and dispersion both close to historical norms.';
     verdict = `${VR_OPEN}<b>${levelTier}, ${sigmaWord}</b>. ${desc}${VR_CLOSE}`;
   }
 
@@ -4037,15 +4037,15 @@ function _buildAnalystBanner(mode, p) {
     line1 = `${periodLabel} ${W(curMean.toFixed(2) + ' €/MWh')}, ${A(verb + delta.toFixed(2) + ' €/MWh (' + verb + pct.toFixed(1) + '%)')} vs Y-1.`;
     let read;
     if (Math.abs(pct) < 5) {
-      read = `<b>Stable year-on-year</b>. Underlying drivers broadly unchanged.`;
+      read = `<b>Stable year-on-year</b>. Spread within ±5%.`;
     } else if (pct > 15) {
-      read = `<b>Prices firming up sharply</b>. Trend points to tighter market conditions.`;
+      read = `<b>Sharply higher year-on-year</b>. Gap to Y-1 exceeds 15%.`;
     } else if (pct > 5) {
-      read = `<b>Prices firming up year-on-year</b>. Fundamentals supporting higher levels.`;
+      read = `<b>Higher year-on-year</b>. Current level sits above Y-1.`;
     } else if (pct < -15) {
-      read = `<b>Prices softening sharply</b>. Trend points to loose market conditions.`;
+      read = `<b>Sharply lower year-on-year</b>. Gap to Y-1 exceeds 15% on the downside.`;
     } else {
-      read = `<b>Prices softening year-on-year</b>. Fundamentals supporting lower levels.`;
+      read = `<b>Lower year-on-year</b>. Current level sits below Y-1.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4058,15 +4058,15 @@ function _buildAnalystBanner(mode, p) {
     const peakShifted = (prevPeakHour != null && peakHour > prevPeakHour);
     let read;
     if (midday && floorDeeper) {
-      read = `<b>Solar cannibalisation accelerating</b>. Midday surplus growing year-on-year ; evening tightness driving the peak.`;
+      read = `<b>Midday floor deepening</b>. Solar surplus widens the gap to last year; peak sits in the evening.`;
     } else if (midday && peakShifted) {
-      read = `<b>Solar regime entrenched</b>. Midday floor stable, peak shifting later as evening demand persists.`;
+      read = `<b>Peak shifting later</b>. Midday floor steady, evening hours extending into the night.`;
     } else if (midday) {
-      read = `<b>Solar-driven duck curve</b>. Midday surplus and evening tightness define the shape.`;
+      read = `<b>Duck-curve profile</b>. Midday floor and evening peak define the day.`;
     } else if (peakHour <= 10) {
-      read = `<b>Morning peak regime</b>. Demand front-loaded, evening softer.`;
+      read = `<b>Morning-peak profile</b>. Demand concentrated in the early hours.`;
     } else {
-      read = `<b>Evening peak regime</b>. Demand follows industrial/residential pattern.`;
+      read = `<b>Evening-peak profile</b>. Demand concentrated late in the day.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4074,15 +4074,15 @@ function _buildAnalystBanner(mode, p) {
   else if (mode === 'yoyHourlyQuarter') {
     const { strongestQuarterLabel, strongestPeakVal, strongestPeakHour,
             weakestQuarterLabel, weakestFloorVal, weakestFloorHour } = p;
-    line1 = `Strongest peak in ${W(strongestQuarterLabel)} at ${W(strongestPeakHour + 'h (' + strongestPeakVal.toFixed(2) + ' €/MWh)')}, weakest floor in ${A(weakestQuarterLabel)} at ${A(weakestFloorHour + 'h (' + weakestFloorVal.toFixed(2) + ' €/MWh)')}.`;
+    line1 = `Strongest peak in ${W(strongestQuarterLabel)} at ${W(strongestPeakHour + 'h (' + strongestPeakVal.toFixed(2) + ' €/MWh)')}, weakest floor in ${W(weakestQuarterLabel)} at ${W(weakestFloorHour + 'h (' + weakestFloorVal.toFixed(2) + ' €/MWh)')}.`;
     const seasonalGap = strongestPeakVal - weakestFloorVal;
     let read;
     if (seasonalGap > 100) {
-      read = `<b>Seasonal regime highly polarised</b>. Winter scarcity hours dearer, summer solar floor lower — the year is splitting in two.`;
+      read = `<b>Highly polarised quarters</b>. Spread between strongest peak and weakest floor exceeds 100 €/MWh.`;
     } else if (seasonalGap > 50) {
-      read = `<b>Pronounced seasonal contrast</b>. Quarters diverge significantly in intraday shape.`;
+      read = `<b>Pronounced quarterly contrast</b>. Quarters show meaningfully different intraday shapes.`;
     } else {
-      read = `<b>Balanced seasonal regime</b>. Intraday shape holds across quarters.`;
+      read = `<b>Balanced quarterly regime</b>. Intraday shape close across quarters.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4090,28 +4090,28 @@ function _buildAnalystBanner(mode, p) {
   else if (mode === 'weekday') {
     const { mostExpName, mostExpMedian, cheapestName, cheapestMedian } = p;
     const discount = mostExpMedian > 0 ? (1 - cheapestMedian / mostExpMedian) * 100 : 0;
-    line1 = `${W(mostExpName)} most expensive (median ${W(mostExpMedian.toFixed(2) + ' €/MWh')}), ${A(cheapestName)} cheapest (median ${A(cheapestMedian.toFixed(2) + ' €/MWh')}). Weekend discount ${A('~' + discount.toFixed(0) + '%')}.`;
+    line1 = `${W(mostExpName)} most expensive (median ${W(mostExpMedian.toFixed(2) + ' €/MWh')}), ${W(cheapestName)} cheapest (median ${W(cheapestMedian.toFixed(2) + ' €/MWh')}). Weekend discount ${W('~' + discount.toFixed(0) + '%')}.`;
     let read;
     if (discount > 30) {
-      read = `<b>Strong industrial demand signal</b>. Wide weekday-weekend gap reflects active industrial load — typical of a healthy economy.`;
+      read = `<b>Wide weekday-weekend gap</b>. Weekend prices sit more than 30% below the most expensive day.`;
     } else if (discount > 15) {
-      read = `<b>Moderate industrial demand</b>. Weekend discount present but contained.`;
+      read = `<b>Moderate weekday-weekend gap</b>. Spread between weekday and weekend is contained.`;
     } else {
-      read = `<b>Flat weekly pattern</b>. Weekend discount muted — typical of weak industrial activity or strong baseload.`;
+      read = `<b>Flat weekly pattern</b>. Weekday and weekend prices move close together.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
   else if (mode === 'volatility') {
     const { metricLabel, periodMean, regime, daysAbove, threshold, peakVal, peakDate, unit } = p;
-    line1 = `${metricLabel} averaged ${W(periodMean.toFixed(2) + ' ' + unit + ' (' + regime + ' regime)')}, ${A(daysAbove + ' days')} above ${threshold.toFixed(2)} ${unit}, peak ${A(peakVal != null ? peakVal.toFixed(2) + ' ' + unit : '--')}${peakDate ? ' on ' + A(fmtD(peakDate)) : ''}.`;
+    line1 = `${metricLabel} averaged ${W(periodMean.toFixed(2) + ' ' + unit + ' (' + regime + ' regime)')}, ${A(daysAbove + ' days')} above ${W(threshold.toFixed(2) + ' ' + unit)}, peak ${A(peakVal != null ? peakVal.toFixed(2) + ' ' + unit : '--')}${peakDate ? ' on ' + A(fmtD(peakDate)) : ''}.`;
     let read;
     if (regime === 'high') {
-      read = `<b>Structurally stressed</b>. Day-to-day swings well above historical norms — likely driven by intermittent renewables and tight conventional dispatch.`;
+      read = `<b>Stressed regime</b>. Day-to-day swings sit well above historical norms.`;
     } else if (regime === 'moderate') {
-      read = `<b>Normal volatility regime</b>. Some dispersion but contained within typical bounds.`;
+      read = `<b>Normal regime</b>. Dispersion within historical bounds.`;
     } else {
-      read = `<b>Calm conditions</b>. Day-to-day swings well below historical norms — market in balance.`;
+      read = `<b>Calm regime</b>. Day-to-day swings well below historical norms.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4119,14 +4119,14 @@ function _buildAnalystBanner(mode, p) {
   else if (mode === 'cumulative') {
     const { median, p95, p5 } = p;
     const skew = (p95 - median) > (median - p5);
-    line1 = `Half the days under ${W(median.toFixed(2) + ' €/MWh')}, 95% under ${W(p95.toFixed(2) + ' €/MWh')}. Distribution ${A(skew ? 'right-skewed' : 'symmetric')}.`;
+    line1 = `Half the days under ${W(median.toFixed(2) + ' €/MWh')}, 95% under ${W(p95.toFixed(2) + ' €/MWh')}. Distribution ${W(skew ? 'right-skewed' : 'symmetric')}.`;
     let read;
     if (skew && median < 60) {
-      read = `<b>Asymmetric risk, quiet baseline</b>. Most days are calm but occasional spikes pull the upper tail far — typical of supply-constrained or renewable-heavy markets.`;
+      read = `<b>Right-skewed with quiet baseline</b>. Most days sit low; upper tail stretches with occasional spikes.`;
     } else if (skew) {
-      read = `<b>Asymmetric upside risk</b>. Long tail above the median — spike events disproportionately weight the average.`;
+      read = `<b>Right-skewed distribution</b>. Long tail above the median weights the average.`;
     } else {
-      read = `<b>Balanced distribution</b>. Upside and downside swings roughly symmetric around the median.`;
+      read = `<b>Symmetric distribution</b>. Upside and downside dispersion close to balanced.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4135,14 +4135,14 @@ function _buildAnalystBanner(mode, p) {
     const { mostFreqBucket, mean, median } = p;
     const skewPct = median > 0 ? ((mean - median) / Math.abs(median)) * 100 : 0;
     const skewWord = Math.abs(skewPct) < 3 ? 'symmetric' : (skewPct > 0 ? 'positive skew' : 'negative skew');
-    line1 = `Most common range ${W(mostFreqBucket)} (mode). Mean ${W(mean.toFixed(2) + ' €/MWh')} ${mean > median ? '>' : '≤'} median ${median.toFixed(2)} — ${A(skewWord)}.`;
+    line1 = `Most common range ${W(mostFreqBucket)} (mode). Mean ${W(mean.toFixed(2) + ' €/MWh')} ${mean > median ? '>' : '≤'} median ${W(median.toFixed(2) + ' €/MWh')} — ${W(skewWord)}.`;
     let read;
     if (skewPct > 5) {
-      read = `<b>Most days are cheap, but spikes drag the average up</b>. The mean overstates a typical day — median or mode give a better picture.`;
+      read = `<b>Mean above median</b>. Upper-tail values pull the mean above the typical day.`;
     } else if (skewPct < -5) {
-      read = `<b>Most days are expensive, with occasional dips</b>. Average understates the typical level.`;
+      read = `<b>Mean below median</b>. Lower-tail values pull the mean below the typical day.`;
     } else {
-      read = `<b>Balanced distribution</b>. Mean and median both representative of typical conditions.`;
+      read = `<b>Mean and median aligned</b>. No material skew in the distribution.`;
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
@@ -4186,6 +4186,53 @@ function _clearAllAnalystBanners() {
     if (!root) return;
     root.querySelectorAll('.ho-analyst-banner').forEach(el => el.remove());
   });
+}
+
+// Align a zone-legend ribbon's inner padding with the active chart's drawing area
+// (chart.chartArea.left/right). Chart.js renders asynchronously, so chartArea is
+// not always available immediately after creation. We poll via requestAnimationFrame
+// for up to ~10 frames (~160ms) until chartArea is populated, then apply paddings.
+// Also re-applies on window resize so the alignment stays valid.
+function _alignLegendToChartArea(legendId, attempts) {
+  attempts = attempts || 0;
+  const apply = () => {
+    const chart = HIST.charts[_hszCtx().canvasId];
+    const canvas = document.getElementById(_hszCtx().canvasId);
+    const inner = document.getElementById(legendId + '-inner');
+    if (!chart || !canvas || !inner) return false;
+    if (!chart.chartArea || chart.chartArea.left == null) return false;
+    const canvasW = canvas.clientWidth;
+    const padLeft = Math.max(0, chart.chartArea.left);
+    const padRight = Math.max(0, canvasW - chart.chartArea.right);
+    inner.style.paddingLeft = padLeft + 'px';
+    inner.style.paddingRight = padRight + 'px';
+    return true;
+  };
+  if (apply()) {
+    // Hook resize re-alignment (only once per legend)
+    const legendEl = document.getElementById(legendId);
+    if (legendEl && !legendEl._pkResizeHooked) {
+      legendEl._pkResizeHooked = true;
+      const onResize = () => apply();
+      window.addEventListener('resize', onResize);
+      // Cleanup when legend removed (MutationObserver on parent)
+      const parent = legendEl.parentNode;
+      if (parent && typeof MutationObserver !== 'undefined') {
+        const obs = new MutationObserver(() => {
+          if (!document.contains(legendEl)) {
+            window.removeEventListener('resize', onResize);
+            obs.disconnect();
+          }
+        });
+        obs.observe(parent, { childList: true });
+      }
+    }
+    return;
+  }
+  // Retry up to 10 frames
+  if (attempts < 10) {
+    requestAnimationFrame(() => _alignLegendToChartArea(legendId, attempts + 1));
+  }
 }
 
 function _setHoTitle({ eyebrow, title, subtitle }) {
@@ -6859,18 +6906,7 @@ function _hszRenderDist(filtered, zone, summary) {
     });
     // Post-render: align legend tiles with chart's drawing area (chartArea.left/right)
     // for pixel-perfect alignment with the coloured zones behind the curve.
-    setTimeout(() => {
-      const chart = HIST.charts[_hszCtx().canvasId];
-      const canvas = document.getElementById(_hszCtx().canvasId);
-      const inner = document.getElementById(legendId + '-inner');
-      if (chart && canvas && inner && chart.chartArea) {
-        const canvasW = canvas.clientWidth;
-        const padLeft = Math.max(0, chart.chartArea.left);
-        const padRight = Math.max(0, canvasW - chart.chartArea.right);
-        inner.style.paddingLeft = padLeft + 'px';
-        inner.style.paddingRight = padRight + 'px';
-      }
-    }, 0);
+    _alignLegendToChartArea(legendId);
     // Analyst banner (Cumulative mode)
     _renderAnalystBanner(_buildAnalystBanner('cumulative', {
       median, p95, p5: distP5,
@@ -7035,18 +7071,7 @@ function _hszRenderDist(filtered, zone, summary) {
     },
   });
   // Post-render: align legend tiles with chart's drawing area
-  setTimeout(() => {
-    const chart = HIST.charts[_hszCtx().canvasId];
-    const canvas = document.getElementById(_hszCtx().canvasId);
-    const inner = document.getElementById(legendId + '-inner');
-    if (chart && canvas && inner && chart.chartArea) {
-      const canvasW = canvas.clientWidth;
-      const padLeft = Math.max(0, chart.chartArea.left);
-      const padRight = Math.max(0, canvasW - chart.chartArea.right);
-      inner.style.paddingLeft = padLeft + 'px';
-      inner.style.paddingRight = padRight + 'px';
-    }
-  }, 0);
+  _alignLegendToChartArea(legendId);
   // Analyst banner (Histo+KDE mode)
   _renderAnalystBanner(_buildAnalystBanner('histo', {
     mostFreqBucket, mean, median,
