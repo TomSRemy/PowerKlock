@@ -1341,6 +1341,7 @@ function _statsForZone(series) {
     ? intradayDeltas.reduce((a,b)=>a+b,0) / intradayDeltas.length
     : null;
   const negH = series.reduce((a, d) => a + (d.negH || 0), 0);
+  const highH = series.reduce((a, d) => a + (d.highH || 0), 0);
   // %REN avg (only days where renPct present)
   const renVals = series.map(d => d.renPct).filter(v => v != null);
   const renPctAvg = renVals.length ? renVals.reduce((a,b)=>a+b,0)/renVals.length : null;
@@ -1355,7 +1356,7 @@ function _statsForZone(series) {
   return {
     avg, max, min, minDate, maxDate, sigma,
     peakAvg, offAvg, intradaySpread,
-    negH, renPctAvg, domFuel,
+    negH, highH, renPctAvg, domFuel,
     days: valid.length
   };
 }
@@ -1659,7 +1660,9 @@ function _resetHoKpiStrip() {
   });
   const elN = document.getElementById('ho-kpi-fr-negh');
   if (elN) elN.innerHTML = '--<span class="kpi-unit">h</span>';
-  ['ho-kpi-fr-avg-meta', 'ho-kpi-loaded-meta', 'ho-kpi-fr-peak-meta', 'ho-kpi-fr-off-meta', 'ho-kpi-fr-sigma-meta', 'ho-kpi-fr-negh-meta'].forEach(id => {
+  const elH = document.getElementById('ho-kpi-fr-highh');
+  if (elH) elH.innerHTML = '--<span class="kpi-unit">h</span>';
+  ['ho-kpi-fr-avg-meta', 'ho-kpi-loaded-meta', 'ho-kpi-fr-peak-meta', 'ho-kpi-fr-off-meta', 'ho-kpi-fr-sigma-meta', 'ho-kpi-fr-negh-meta', 'ho-kpi-fr-highh-meta'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '--';
     if (el) el.style.color = 'var(--tx3)';
@@ -1727,13 +1730,29 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
   const fr = stats['FR'];
   const useCustom = !!(HIST.customRange && HIST.customRange.from && HIST.customRange.to);
 
-  // Helper to set a metric value + meta YoY delta
+  // Helper to set a metric value + meta YoY delta + apply directional class on parent card
   const setMetric = (idVal, idMeta, currentVal, refVal, status, fallbackText, unit) => {
     _setHoKpi(idVal, currentVal, unit);
     const elMeta = document.getElementById(idMeta);
     if (elMeta) {
       const { html } = _formatYoYDelta(currentVal, refVal, status, fallbackText);
       elMeta.innerHTML = html;
+    }
+    // Apply directional class to parent .kpi-card so the left border colour reflects YoY direction
+    const elVal = document.getElementById(idVal);
+    const card = elVal ? elVal.closest('.kpi-card') : null;
+    if (card) {
+      card.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+      let cls = 'kpi-flat';
+      if (status !== 'no-ref' && status !== 'partial' && refVal != null && currentVal != null) {
+        // Threshold 1% of |ref| to avoid noise on tiny changes
+        if (Math.abs(currentVal - refVal) < 0.01 * Math.max(1, Math.abs(refVal))) {
+          cls = 'kpi-flat';
+        } else {
+          cls = currentVal > refVal ? 'kpi-up' : 'kpi-down';
+        }
+      }
+      card.classList.add(cls);
     }
   };
 
@@ -1754,6 +1773,43 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
       const { html } = _formatYoYDelta(fr.negH, ref?.negH ?? null, st);
       elNm.innerHTML = html;
     }
+    // Apply directional class on neg hours card too
+    const cardN = elN ? elN.closest('.kpi-card') : null;
+    if (cardN) {
+      cardN.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+      let clsN = 'kpi-flat';
+      const refNegH = ref?.negH ?? null;
+      if (st !== 'no-ref' && st !== 'partial' && refNegH != null && fr.negH != null) {
+        if (Math.abs(fr.negH - refNegH) < 0.01 * Math.max(1, Math.abs(refNegH))) {
+          clsN = 'kpi-flat';
+        } else {
+          clsN = fr.negH > refNegH ? 'kpi-up' : 'kpi-down';
+        }
+      }
+      cardN.classList.add(clsN);
+    }
+    // High hours (> 100 EUR/MWh) — formatted same as neg hours
+    const elH = document.getElementById('ho-kpi-fr-highh');
+    if (elH) elH.innerHTML = _fmtNegH(fr.highH || 0);
+    const elHm = document.getElementById('ho-kpi-fr-highh-meta');
+    if (elHm) {
+      const { html } = _formatYoYDelta(fr.highH, ref?.highH ?? null, st);
+      elHm.innerHTML = html;
+    }
+    const cardH = elH ? elH.closest('.kpi-card') : null;
+    if (cardH) {
+      cardH.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+      let clsH = 'kpi-flat';
+      const refHighH = ref?.highH ?? null;
+      if (st !== 'no-ref' && st !== 'partial' && refHighH != null && fr.highH != null) {
+        if (Math.abs(fr.highH - refHighH) < 0.01 * Math.max(1, Math.abs(refHighH))) {
+          clsH = 'kpi-flat';
+        } else {
+          clsH = fr.highH > refHighH ? 'kpi-up' : 'kpi-down';
+        }
+      }
+      cardH.classList.add(clsH);
+    }
   } else {
     _setHoKpi('ho-kpi-fr-avg',   null);
     _setHoKpi('ho-kpi-fr-peak',  null);
@@ -1761,7 +1817,9 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
     _setHoKpi('ho-kpi-fr-sigma', null);
     const elN = document.getElementById('ho-kpi-fr-negh');
     if (elN) elN.innerHTML = '--<span class="kpi-unit">h</span>';
-    ['ho-kpi-fr-avg-meta','ho-kpi-fr-peak-meta','ho-kpi-fr-off-meta','ho-kpi-fr-sigma-meta','ho-kpi-fr-negh-meta'].forEach(id=>{
+    const elH = document.getElementById('ho-kpi-fr-highh');
+    if (elH) elH.innerHTML = '--<span class="kpi-unit">h</span>';
+    ['ho-kpi-fr-avg-meta','ho-kpi-fr-peak-meta','ho-kpi-fr-off-meta','ho-kpi-fr-sigma-meta','ho-kpi-fr-negh-meta','ho-kpi-fr-highh-meta'].forEach(id=>{
       const el = document.getElementById(id);
       if (el) el.innerHTML = '<span style="color:var(--tx3)">— no Y-1 ref</span>';
     });
