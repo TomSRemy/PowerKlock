@@ -2217,6 +2217,22 @@ function _fmtShortDate(iso) {
   return `${d} ${months[m-1]} ${y}`;
 }
 
+// Format any date-like label as "DD-MM-YYYY" (UK numeric) for chart axis ticks.
+// Accepts ISO "YYYY-MM-DD", US "MM/DD/YYYY", or any Date-parseable string.
+function _fmtTickUK(label) {
+  if (!label) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  // Fast-path: ISO format we can parse without ambiguity
+  if (typeof label === 'string' && /^\d{4}-\d{2}-\d{2}/.test(label)) {
+    const [y, m, d] = label.slice(0, 10).split('-');
+    return `${d}-${m}-${y}`;
+  }
+  // Fallback: parse anything else
+  const dt = new Date(label);
+  if (isNaN(dt)) return String(label);
+  return `${pad(dt.getDate())}-${pad(dt.getMonth() + 1)}-${dt.getFullYear()}`;
+}
+
 // ── Helper: build "verdict" sentence summarising the period ──
 // Format: "● {Verdict} period · σ {σ} €/MWh · {%REN}% renewable · {neg days} days below 0"
 // Verdict categorisation:
@@ -4649,11 +4665,10 @@ function _hszRenderLines(filtered, zone) {
         x: {
           grid: { color: _HIST_GRID },
           ticks: {
-            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12,
+            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 8,
             callback: function(value) {
-              // Chart.js passes the tick index; resolve the label, then reformat
               const lbl = this.getLabelForValue(value);
-              return fmtDate(lbl);
+              return _fmtTickUK(lbl);
             },
           },
         },
@@ -4908,10 +4923,10 @@ function _hszRenderYoY(filtered, zone, summary) {
         x: {
           grid: { color: _HIST_GRID },
           ticks: {
-            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12,
+            color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 8,
             callback: function(value) {
               const lbl = this.getLabelForValue(value);
-              return fmtDate(lbl);
+              return _fmtTickUK(lbl);
             },
           },
         },
@@ -6545,19 +6560,60 @@ function _hszRenderVolatility(filtered, zone) {
     const s30stats = find(s30, '30D');
     if (s7stats.maxV != null) spikeAnnotations.max7 = {
       type: 'point', xValue: s7stats.maxD, yValue: s7stats.maxV,
-      backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 4,
+      backgroundColor: '#ED6965', borderColor: '#000', borderWidth: 1, radius: 4,
+      // Hover label: shows "Max 7D: <value> on <date>"
+      label: {
+        display: false,
+        content: ['Max 7D', `${s7stats.maxV.toFixed(2)} ${meta.unit}`, _fmtShortDate(s7stats.maxD)],
+        color: '#fff', backgroundColor: 'rgba(11,15,21,0.95)',
+        borderColor: '#ED6965', borderWidth: 1, borderRadius: 4,
+        font: { size: 10, family: 'JetBrains Mono', weight: '600' },
+        padding: 6, position: 'start', yAdjust: -28,
+      },
+      enter(ctx) { ctx.element.options.label.display = true; ctx.chart.update(); },
+      leave(ctx) { ctx.element.options.label.display = false; ctx.chart.update(); },
     };
     if (s7stats.minV != null) spikeAnnotations.min7 = {
       type: 'point', xValue: s7stats.minD, yValue: s7stats.minV,
       backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 4,
+      label: {
+        display: false,
+        content: ['Min 7D', `${s7stats.minV.toFixed(2)} ${meta.unit}`, _fmtShortDate(s7stats.minD)],
+        color: '#fff', backgroundColor: 'rgba(11,15,21,0.95)',
+        borderColor: '#14D3A9', borderWidth: 1, borderRadius: 4,
+        font: { size: 10, family: 'JetBrains Mono', weight: '600' },
+        padding: 6, position: 'start', yAdjust: 28,
+      },
+      enter(ctx) { ctx.element.options.label.display = true; ctx.chart.update(); },
+      leave(ctx) { ctx.element.options.label.display = false; ctx.chart.update(); },
     };
     if (s30stats.maxV != null) spikeAnnotations.max30 = {
       type: 'point', xValue: s30stats.maxD, yValue: s30stats.maxV,
-      backgroundColor: '#FBBF24', borderColor: '#000', borderWidth: 1, radius: 3.5,
+      backgroundColor: '#ED6965', borderColor: '#000', borderWidth: 1, radius: 3.5,
+      label: {
+        display: false,
+        content: ['Max 30D', `${s30stats.maxV.toFixed(2)} ${meta.unit}`, _fmtShortDate(s30stats.maxD)],
+        color: '#fff', backgroundColor: 'rgba(11,15,21,0.95)',
+        borderColor: '#ED6965', borderWidth: 1, borderRadius: 4,
+        font: { size: 10, family: 'JetBrains Mono', weight: '600' },
+        padding: 6, position: 'start', yAdjust: -28,
+      },
+      enter(ctx) { ctx.element.options.label.display = true; ctx.chart.update(); },
+      leave(ctx) { ctx.element.options.label.display = false; ctx.chart.update(); },
     };
     if (s30stats.minV != null) spikeAnnotations.min30 = {
       type: 'point', xValue: s30stats.minD, yValue: s30stats.minV,
       backgroundColor: '#14D3A9', borderColor: '#000', borderWidth: 1, radius: 3.5,
+      label: {
+        display: false,
+        content: ['Min 30D', `${s30stats.minV.toFixed(2)} ${meta.unit}`, _fmtShortDate(s30stats.minD)],
+        color: '#fff', backgroundColor: 'rgba(11,15,21,0.95)',
+        borderColor: '#14D3A9', borderWidth: 1, borderRadius: 4,
+        font: { size: 10, family: 'JetBrains Mono', weight: '600' },
+        padding: 6, position: 'start', yAdjust: 28,
+      },
+      enter(ctx) { ctx.element.options.label.display = true; ctx.chart.update(); },
+      leave(ctx) { ctx.element.options.label.display = false; ctx.chart.update(); },
     };
   }
 
@@ -6574,9 +6630,11 @@ function _hszRenderVolatility(filtered, zone) {
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2px;background:${_HIST_WARN}"></span>7D rolling</span>
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:14px;height:2.5px;background:${color}"></span>30D rolling</span>
       <button onclick="event.stopPropagation();window._volShowSpikes=!window._volShowSpikes;if(_HSZ_RERENDER)_HSZ_RERENDER()"
-        title="Show/hide top 3 spike annotations · hover the chart for exact values on any day"
-        style="background:${showSpikes?'rgba(251,191,36,0.15)':'transparent'};border:1px solid ${showSpikes?'rgba(251,191,36,0.4)':'rgba(255,255,255,0.15)'};color:${showSpikes?'#FBBF24':'var(--tx3)'};padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px">
-        <span style="width:5px;height:5px;border-radius:50%;background:#FBBF24;display:inline-block"></span>Top 3 spikes ${showSpikes ? '✓' : ''}
+        title="Show/hide min and max markers · hover them for exact values"
+        style="background:${showSpikes?'rgba(255,255,255,0.06)':'transparent'};border:1px solid ${showSpikes?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.10)'};color:${showSpikes?'var(--tx)':'var(--tx3)'};padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px">
+        <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:6px;height:6px;border-radius:50%;background:#ED6965;display:inline-block"></span>Max</span>
+        <span style="display:inline-flex;align-items:center;gap:3px"><span style="width:6px;height:6px;border-radius:50%;background:#14D3A9;display:inline-block"></span>Min</span>
+        ${showSpikes ? '✓' : ''}
       </button>
     `;
     canvasEl.parentNode.insertBefore(lg, canvasEl);
@@ -6622,7 +6680,12 @@ function _hszRenderVolatility(filtered, zone) {
         zoom: _zoomConfig({ mode: 'y' }),
       },
       scales: {
-        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 12 } },
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 }, maxTicksLimit: 8,
+          callback: function(value) {
+            const lbl = this.getLabelForValue(value);
+            return _fmtTickUK(lbl);
+          }
+        } },
         y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: 0, max: yMaxData, title: { display: true, text: meta.unit, color: _HIST_TX3, font: { size: 10 } } },
       },
     },
@@ -6866,7 +6929,7 @@ function _hszRenderDist(filtered, zone, summary) {
       },
       options: {
         ...baseOptions('Cumulative %'),
-        layout: { padding: { bottom: 16 } },
+        layout: { padding: { bottom: 24 } },
         interaction: { mode: 'index', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
@@ -7021,7 +7084,7 @@ function _hszRenderDist(filtered, zone, summary) {
     },
     options: {
       ...baseOptions('Days'),
-      layout: { padding: { bottom: 8 } },
+      layout: { padding: { bottom: 24 } },
       interaction: { mode: 'index', axis: 'x', intersect: false },
       plugins: {
         legend: { display: false },
