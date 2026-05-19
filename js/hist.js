@@ -3034,13 +3034,6 @@ function _openHoRow(zone, series, st) {
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
 
-        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
-        ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:40px;margin-bottom:4px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">
-            ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
-          </div>
-        ` : ''}
-
         <!-- Monthly breakdown collapsible (replaces standalone Block 4) -->
         <details id="ho-detail-breakdown-details" style="margin-top:12px" open>
           <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
@@ -3374,12 +3367,6 @@ function _openHoFullscreen(zone) {
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
           <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
         </div>
-        <!-- Alert neg prices (shown only if negH > 0) — well separated from chart axis labels (32px buffer) -->
-        ${st.negH > 0 ? `
-          <div style="font-size:11px;color:#FBBF24;margin-top:40px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px;flex-shrink:0">
-            ⚠ ${_fmtNegH(st.negH)} negative prices in period · min: ${st.min != null ? st.min.toFixed(2) : '--'} €/MWh${st.minDate ? ' on ' + _fmtShortDate(st.minDate) : ''}
-          </div>
-        ` : ''}
       </div>
 
       <div id="ho-fs-divider" title="Drag to resize · double-click to reset"
@@ -4001,6 +3988,175 @@ function _titleWithDescription(title, description) {
   return `${title} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${description}</span>`;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Analyst banner — amber warning-style bar under each chart
+// Contains: line 1 (numbers + factual finding) + market read (verdict)
+// Pure market analyst tone: describe what the data says about the market.
+// No PPA / BESS / contracting language.
+// ─────────────────────────────────────────────────────────────
+function _buildAnalystBanner(mode, p) {
+  const W = (txt) => `<b style="color:#fff;font-weight:700">${txt}</b>`;     // white bold = key number
+  const A = (txt) => `<b style="font-weight:700">${txt}</b>`;                 // amber bold = secondary / extreme
+  const ICON = `<span style="font-size:13px;margin-right:6px;vertical-align:-1px">◈</span>`;
+  const VR_OPEN = `<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : `;
+  const VR_CLOSE = `</span>`;
+
+  // Helper: format date as "DD MMM" from YYYY-MM-DD
+  const fmtD = (d) => {
+    if (!d) return '--';
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  let line1 = '', verdict = '';
+
+  if (mode === 'lines') {
+    const { avg, sigma, min, max, minDate, maxDate } = p;
+    const sigmaRegime = sigma < 15 ? 'low' : sigma < 30 ? 'normal' : 'high';
+    const levelTier = avg < 40 ? 'bearish baseline' : avg < 70 ? 'neutral baseline' : 'bullish baseline';
+    line1 = `Period averaged ${W(avg.toFixed(2) + ' €/MWh')} with ${W(sigmaRegime + ' volatility')} (σ ${sigma.toFixed(2)}). Prices spanned ${A(min.toFixed(2))} on ${A(fmtD(minDate))} to ${A(max.toFixed(2) + ' €/MWh')} on ${A(fmtD(maxDate))}.`;
+    const sigmaWord = sigma < 15 ? 'calm regime' : sigma < 30 ? 'normal regime' : 'stressed regime';
+    const desc = (avg < 40 && sigma > 30) ? 'Low absolute level with wide swings — fundamentals soft, but intraday risk elevated.'
+              : (avg > 70 && sigma > 30) ? 'High level combined with wide swings — tight market, pressure all around.'
+              : (sigma > 30) ? 'Wide day-to-day swings dominate the picture.'
+              : (avg < 40) ? 'Soft fundamentals, calm conditions.'
+              : (avg > 70) ? 'Firm levels, contained volatility.'
+              : 'Levels and dispersion both around historical norms.';
+    verdict = `${VR_OPEN}<b>${levelTier}, ${sigmaWord}</b>. ${desc}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'yoyDaily' || mode === 'yoyWeekly' || mode === 'yoyMonthly') {
+    const { curMean, prevMean, delta, period } = p;
+    const pct = prevMean ? (delta / Math.abs(prevMean)) * 100 : 0;
+    const verb = delta > 0 ? '+' : '';
+    const periodLabel = mode === 'yoyDaily' ? 'This year' : mode === 'yoyWeekly' ? 'Weekly average' : 'This month';
+    line1 = `${periodLabel} ${W(curMean.toFixed(2) + ' €/MWh')}, ${A(verb + delta.toFixed(2) + ' €/MWh (' + verb + pct.toFixed(1) + '%)')} vs Y-1.`;
+    let read;
+    if (Math.abs(pct) < 5) {
+      read = `<b>Stable year-on-year</b>. Underlying drivers broadly unchanged.`;
+    } else if (pct > 15) {
+      read = `<b>Prices firming up sharply</b>. Trend points to tighter market conditions.`;
+    } else if (pct > 5) {
+      read = `<b>Prices firming up year-on-year</b>. Fundamentals supporting higher levels.`;
+    } else if (pct < -15) {
+      read = `<b>Prices softening sharply</b>. Trend points to loose market conditions.`;
+    } else {
+      read = `<b>Prices softening year-on-year</b>. Fundamentals supporting lower levels.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'yoyHourlyAnnual' || mode === 'yoyHourlyQuarter') {
+    const { peakHour, peakVal, floorHour, floorVal, prevFloorVal, prevPeakHour } = p;
+    line1 = `Peak at ${W(peakHour + 'h (' + peakVal.toFixed(2) + ' €/MWh)')}, floor at ${W(floorHour + 'h (' + floorVal.toFixed(2) + ' €/MWh)')}.`;
+    const midday = (floorHour >= 11 && floorHour <= 16);
+    const floorDeeper = (prevFloorVal != null && floorVal < prevFloorVal - 5);
+    const peakShifted = (prevPeakHour != null && peakHour > prevPeakHour);
+    let read;
+    if (midday && floorDeeper) {
+      read = `<b>Solar cannibalisation accelerating</b>. Midday surplus growing year-on-year ; evening tightness driving the peak.`;
+    } else if (midday && peakShifted) {
+      read = `<b>Solar regime entrenched</b>. Midday floor stable, peak shifting later as evening demand persists.`;
+    } else if (midday) {
+      read = `<b>Solar-driven duck curve</b>. Midday surplus and evening tightness define the shape.`;
+    } else if (peakHour <= 10) {
+      read = `<b>Morning peak regime</b>. Demand front-loaded, evening softer.`;
+    } else {
+      read = `<b>Evening peak regime</b>. Demand follows industrial/residential pattern.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'weekday') {
+    const { mostExpName, mostExpMedian, cheapestName, cheapestMedian } = p;
+    const discount = mostExpMedian > 0 ? (1 - cheapestMedian / mostExpMedian) * 100 : 0;
+    line1 = `${W(mostExpName)} most expensive (median ${W(mostExpMedian.toFixed(2) + ' €/MWh')}), ${A(cheapestName)} cheapest (median ${A(cheapestMedian.toFixed(2) + ' €/MWh')}). Weekend discount ${A('~' + discount.toFixed(0) + '%')}.`;
+    let read;
+    if (discount > 30) {
+      read = `<b>Strong industrial demand signal</b>. Wide weekday-weekend gap reflects active industrial load — typical of a healthy economy.`;
+    } else if (discount > 15) {
+      read = `<b>Moderate industrial demand</b>. Weekend discount present but contained.`;
+    } else {
+      read = `<b>Flat weekly pattern</b>. Weekend discount muted — typical of weak industrial activity or strong baseload.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'volatility') {
+    const { metricLabel, periodMean, regime, daysAbove, threshold, peakVal, peakDate, unit } = p;
+    line1 = `${metricLabel} averaged ${W(periodMean.toFixed(2) + ' ' + unit + ' (' + regime + ' regime)')}, ${A(daysAbove + ' days')} above ${threshold.toFixed(2)} ${unit}, peak ${A(peakVal != null ? peakVal.toFixed(2) + ' ' + unit : '--')}${peakDate ? ' on ' + A(fmtD(peakDate)) : ''}.`;
+    let read;
+    if (regime === 'high') {
+      read = `<b>Structurally stressed</b>. Day-to-day swings well above historical norms — likely driven by intermittent renewables and tight conventional dispatch.`;
+    } else if (regime === 'moderate') {
+      read = `<b>Normal volatility regime</b>. Some dispersion but contained within typical bounds.`;
+    } else {
+      read = `<b>Calm conditions</b>. Day-to-day swings well below historical norms — market in balance.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'cumulative') {
+    const { median, p95, p5 } = p;
+    const skew = (p95 - median) > (median - p5);
+    line1 = `Half the days under ${W(median.toFixed(2) + ' €/MWh')}, 95% under ${W(p95.toFixed(2) + ' €/MWh')}. Distribution ${A(skew ? 'right-skewed' : 'symmetric')}.`;
+    let read;
+    if (skew && median < 60) {
+      read = `<b>Asymmetric risk, quiet baseline</b>. Most days are calm but occasional spikes pull the upper tail far — typical of supply-constrained or renewable-heavy markets.`;
+    } else if (skew) {
+      read = `<b>Asymmetric upside risk</b>. Long tail above the median — spike events disproportionately weight the average.`;
+    } else {
+      read = `<b>Balanced distribution</b>. Upside and downside swings roughly symmetric around the median.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  else if (mode === 'histo') {
+    const { mostFreqBucket, mean, median } = p;
+    const skewPct = median > 0 ? ((mean - median) / Math.abs(median)) * 100 : 0;
+    const skewWord = Math.abs(skewPct) < 3 ? 'symmetric' : (skewPct > 0 ? 'positive skew' : 'negative skew');
+    line1 = `Most common range ${W(mostFreqBucket)} (mode). Mean ${W(mean.toFixed(2) + ' €/MWh')} ${mean > median ? '>' : '≤'} median ${median.toFixed(2)} — ${A(skewWord)}.`;
+    let read;
+    if (skewPct > 5) {
+      read = `<b>Most days are cheap, but spikes drag the average up</b>. The mean overstates a typical day — median or mode give a better picture.`;
+    } else if (skewPct < -5) {
+      read = `<b>Most days are expensive, with occasional dips</b>. Average understates the typical level.`;
+    } else {
+      read = `<b>Balanced distribution</b>. Mean and median both representative of typical conditions.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
+  if (!line1) return '';
+  return `<div class="ho-analyst-banner" style="margin-top:14px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+}
+
+// Insert/replace the analyst banner under a chart canvas (inline or fullscreen)
+function _renderAnalystBanner(html) {
+  const ctx = _hszCtx();
+  const canvas = document.getElementById(ctx.canvasId);
+  if (!canvas) return;
+  // The canvas sits inside a wrapper div with a fixed height (so chart fills it).
+  // We need to insert the banner AFTER the wrapper (in its parent), so it appears
+  // below the chart and doesn't get clipped.
+  const wrap = canvas.parentNode;          // fixed-height chart wrapper
+  const container = wrap ? wrap.parentNode : null;
+  if (!wrap || !container) return;
+  // Remove any existing banner in the same container
+  const existing = container.querySelector(':scope > .ho-analyst-banner');
+  if (existing) existing.remove();
+  if (!html) return;
+  // Insert after the wrapper
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const banner = tmp.firstElementChild;
+  if (banner) {
+    if (wrap.nextSibling) container.insertBefore(banner, wrap.nextSibling);
+    else container.appendChild(banner);
+  }
+}
+
 function _setHoTitle({ eyebrow, title, subtitle }) {
   const fs = !!document.getElementById('ho-fs-overlay');
   const prefix = fs ? 'ho-fs' : 'ho-detail';
@@ -4284,17 +4440,22 @@ function _hszRenderLines(filtered, zone) {
   const periodAvg = validAvgsOnly.length
     ? (validAvgsOnly.reduce((a, b) => a + b, 0) / validAvgsOnly.length)
     : null;
-  let subtitleParts = [];
-  if (periodAvg != null) subtitleParts.push(`${periodAvg.toFixed(2)} €/MWh average`);
+  // Compute sigma + min/max with dates for analyst banner
+  let sigma = null;
   if (validAvgsOnly.length >= 2) {
-    const sigma = _stdDev(validAvgsOnly);
-    if (sigma != null && !isNaN(sigma)) subtitleParts.push(`σ ${sigma.toFixed(2)} €/MWh`);
+    const s = _stdDev(validAvgsOnly);
+    if (s != null && !isNaN(s)) sigma = s;
   }
-  if (subtitleParts.length === 0) subtitleParts.push(`${filtered.length} daily observations`);
+  let minV = null, maxV = null, minDate = null, maxDate = null;
+  for (const d of filtered) {
+    if (d.avg == null || isNaN(d.avg)) continue;
+    if (minV == null || d.avg < minV) { minV = d.avg; minDate = d.d; }
+    if (maxV == null || d.avg > maxV) { maxV = d.avg; maxDate = d.d; }
+  }
   _setHoTitle({
     eyebrow: `Prices · Lines · ${zone}`,
     title: _titleWithDescription('Daily prices with 7-day and 30-day moving averages', 'Daily average prices over the selected period'),
-    subtitle: subtitleParts.join(' · '),
+    subtitle: '',
   });
 
   mkHistChart(_hszCtx().canvasId, {
@@ -4417,6 +4578,14 @@ function _hszRenderLines(filtered, zone) {
       },
     }
   });
+  // Analyst banner under the chart
+  if (periodAvg != null && sigma != null && minV != null && maxV != null) {
+    _renderAnalystBanner(_buildAnalystBanner('lines', {
+      avg: periodAvg, sigma, min: minV, max: maxV, minDate, maxDate,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · YoY: same calendar window vs Y-1/Y-2 with historical envelopes.
@@ -4506,27 +4675,15 @@ function _hszRenderYoY(filtered, zone, summary) {
     }
   } // 'all' → no clamp, chart auto-fits including Min-Max envelope
 
-  // ── Subtitle: elegant, single-line, plain English ──
-  let subtitleText = '';
-  if (curMean != null && p1Mean != null) {
-    const delta1 = curMean - p1Mean;
-    const cheaper1 = delta1 < 0;
-    const verb1 = cheaper1 ? 'cheaper' : 'more expensive';
-    subtitleText = `${curMean.toFixed(2)} €/MWh average — ${Math.abs(delta1).toFixed(2)} €/MWh ${verb1} than Y-1 (${p1Mean.toFixed(2)} €/MWh)`;
-    if (p2Mean != null) {
-      const delta2 = curMean - p2Mean;
-      const verb2 = delta2 < 0 ? 'cheaper' : 'more expensive';
-      subtitleText += `, ${Math.abs(delta2).toFixed(1)} ${verb2} than Y-2 (${p2Mean.toFixed(1)})`;
-    }
-  } else {
-    subtitleText = 'Daily prices compared to the same calendar dates in previous years';
-  }
+  // ── Subtitle cleared : analyst banner under the chart covers the content ──
+  const haveYoY = (curMean != null && p1Mean != null);
+  const yoyDelta = haveYoY ? curMean - p1Mean : null;
 
   // HTML title block (hybrid style)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Daily`,
     title: _titleWithDescription('Daily profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
-    subtitle: subtitleText,
+    subtitle: '',
   });
 
   mkHistChart(_hszCtx().canvasId, {
@@ -4680,6 +4837,14 @@ function _hszRenderYoY(filtered, zone, summary) {
       },
     },
   });
+  // Analyst banner
+  if (haveYoY) {
+    _renderAnalystBanner(_buildAnalystBanner('yoyDaily', {
+      curMean, prevMean: p1Mean, delta: yoyDelta,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · YoY Calendar Overlay (long windows: 2Y+) ──
@@ -4835,29 +5000,18 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
   const y1Arr  = seriesFor(yMinus1);
   const y2Arr  = seriesFor(yMinus2);
 
-  // Means for subtitle
+  // Means for analyst banner
   const curMean = _meanIgnoreNull(curArr);
   const y1Mean  = y1Arr ? _meanIgnoreNull(y1Arr) : null;
   const y2Mean  = y2Arr ? _meanIgnoreNull(y2Arr) : null;
-  let subtitleText = '';
-  if (curMean != null && y1Mean != null) {
-    const d = curMean - y1Mean;
-    const v = d < 0 ? 'cheaper' : 'more expensive';
-    subtitleText = `${currentYear}: ${curMean.toFixed(2)} €/MWh weekly average — ${Math.abs(d).toFixed(2)} €/MWh ${v} than ${yMinus1} (${y1Mean.toFixed(2)} €/MWh)`;
-    if (y2Mean != null) {
-      const d2 = curMean - y2Mean;
-      const v2 = d2 < 0 ? 'cheaper' : 'more expensive';
-      subtitleText += `, ${Math.abs(d2).toFixed(1)} ${v2} than ${yMinus2} (${y2Mean.toFixed(1)})`;
-    }
-  } else {
-    subtitleText = `Weekly averages across ${years.length} years`;
-  }
+  const haveYoYWk = (curMean != null && y1Mean != null);
+  const yoyDeltaWk = haveYoYWk ? curMean - y1Mean : null;
 
   // HTML title block
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Weekly`,
     title: _titleWithDescription('Weekly profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
-    subtitle: subtitleText,
+    subtitle: '',
   });
 
   // ── Bands & Y-presets ──
@@ -5021,6 +5175,13 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
       },
     },
   });
+  if (haveYoYWk) {
+    _renderAnalystBanner(_buildAnalystBanner('yoyWeekly', {
+      curMean, prevMean: y1Mean, delta: yoyDeltaWk,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · Seasonal: monthly P5-P95 + Min-Max envelopes + median + Y-1, Y-2, current ──
@@ -5115,26 +5276,15 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     }
   }
 
-  // Subtitle: in plain English
-  let subtitleText = '';
-  if (curMean != null && y1Mean != null) {
-    const d = curMean - y1Mean;
-    const verb = d < 0 ? 'cheaper' : 'more expensive';
-    subtitleText = `${currentYear}: ${curMean.toFixed(2)} €/MWh average — ${Math.abs(d).toFixed(2)} €/MWh ${verb} than ${yMinus1} (${y1Mean.toFixed(2)} €/MWh)`;
-    if (y2Mean != null) {
-      const d2 = curMean - y2Mean;
-      const v2 = d2 < 0 ? 'cheaper' : 'more expensive';
-      subtitleText += `, ${Math.abs(d2).toFixed(1)} ${v2} than ${yMinus2} (${y2Mean.toFixed(1)})`;
-    }
-  } else {
-    subtitleText = `Monthly averages compared across ${years.length} years`;
-  }
+  // Analyst banner data
+  const haveYoYMo = (curMean != null && y1Mean != null);
+  const yoyDeltaMo = haveYoYMo ? curMean - y1Mean : null;
 
   // HTML title block (hybrid style)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Monthly`,
     title: _titleWithDescription('Monthly profile', 'Current year vs Y-1, Y-2, and historical range (Min-Max, P5-P95)'),
-    subtitle: subtitleText,
+    subtitle: '',
   });
 
   const datasets = [
@@ -5278,6 +5428,13 @@ function _hszRenderSeasonal(filtered, zone, summary) {
       },
     },
   });
+  if (haveYoYMo) {
+    _renderAnalystBanner(_buildAnalystBanner('yoyMonthly', {
+      curMean, prevMean: y1Mean, delta: yoyDeltaMo,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · Hourly: intraday profile, toggleable Quarter / YoY ──
@@ -5633,33 +5790,35 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
     pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
   });
 
-  // Stats for subtitle
+  // Stats for analyst banner: peak hour, floor hour, peak val, floor val for current and prev year
   const curMean = _meanIgnoreNull(curProfile);
   const n1Mean  = n1Profile ? _meanIgnoreNull(n1Profile) : null;
   const n2Mean  = n2Profile ? _meanIgnoreNull(n2Profile) : null;
-
-  let subtitle = '';
-  if (curMean != null) {
-    subtitle = `${cur}: ${curMean.toFixed(1)} €/MWh average`;
-    if (n1Mean != null) {
-      const d = curMean - n1Mean;
-      const v = d < 0 ? 'cheaper' : 'more expensive';
-      subtitle += ` — ${Math.abs(d).toFixed(1)} ${v} than ${n1} (${n1Mean.toFixed(1)})`;
+  let peakHour = null, peakVal = null, floorHour = null, floorVal = null;
+  let prevPeakHour = null, prevFloorVal = null;
+  if (curProfile && curProfile.length === 24) {
+    for (let h = 0; h < 24; h++) {
+      const v = curProfile[h];
+      if (v == null || isNaN(v)) continue;
+      if (peakVal == null || v > peakVal) { peakVal = v; peakHour = h; }
+      if (floorVal == null || v < floorVal) { floorVal = v; floorHour = h; }
     }
-    if (n2Mean != null) {
-      const d = curMean - n2Mean;
-      const v = d < 0 ? 'cheaper' : 'more expensive';
-      subtitle += `, ${Math.abs(d).toFixed(1)} ${v} than ${n2} (${n2Mean.toFixed(1)})`;
+  }
+  if (n1Profile && n1Profile.length === 24) {
+    let pV = null, fV = null;
+    for (let h = 0; h < 24; h++) {
+      const v = n1Profile[h];
+      if (v == null || isNaN(v)) continue;
+      if (pV == null || v > pV) { pV = v; prevPeakHour = h; }
+      if (fV == null || v < fV) { fV = v; prevFloorVal = v; }
     }
-  } else {
-    subtitle = 'Average price for every hour of day, aggregated over the period';
   }
 
   // HTML title block (hybrid F)
   _setHoTitle({
     eyebrow: `Prices · YoY · ${zone} · Hourly · Annual average`,
     title: _titleWithDescription('Intraday 24h profile', 'Average price by hour of day — current year vs Y-1 and Y-2'),
-    subtitle,
+    subtitle: '',
   });
 
   // Y-preset: focus uses current+Y-1+Y-2 lines (NOT bands which would dominate)
@@ -5769,6 +5928,13 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
       },
     },
   });
+  if (peakHour != null && floorHour != null && peakVal != null && floorVal != null) {
+    _renderAnalystBanner(_buildAnalystBanner('yoyHourlyAnnual', {
+      peakHour, peakVal, floorHour, floorVal, prevFloorVal, prevPeakHour,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · Weekly: avg per day-of-week (Mon..Sun) ──
@@ -5810,24 +5976,13 @@ function _hszRenderWeekly(filtered, zone) {
     if (s.p50 > mostExpMed)  { mostExpMed  = s.p50; mostExpIdx  = i; }
   });
 
-  // Subtitle: cheapest / most expensive + weekend gap
-  let subtitleText = '';
-  if (mostExpIdx != null && cheapestIdx != null) {
-    subtitleText = `Most expensive: ${labels[mostExpIdx]} (${stats[mostExpIdx].p50.toFixed(2)} €/MWh median) · Cheapest: ${labels[cheapestIdx]} (${stats[cheapestIdx].p50.toFixed(2)} €/MWh)`;
-    if (wdMean != null && weMean != null) {
-      const d = weMean - wdMean;
-      const v = d < 0 ? 'cheaper' : 'more expensive';
-      subtitleText += ` · Weekend ${Math.abs(d).toFixed(1)} €/MWh ${v} than weekday avg`;
-    }
-  } else {
-    subtitleText = 'Price distribution by day of week across the period';
-  }
+  // Subtitle removed: analyst banner under chart conveys the analysis
   const totalObs = stats.reduce((sum, s) => sum + (s ? s.n : 0), 0);
 
   _setHoTitle({
     eyebrow: `Prices · Weekday · ${zone} · ${totalObs} days observed`,
     title: _titleWithDescription('Price distribution by day of the week', 'Boxplot Mon → Sun · median, P25-P75, P5-P95, min/max'),
-    subtitle: subtitleText,
+    subtitle: '',
   });
 
   // ── Y range ──
@@ -6077,6 +6232,17 @@ function _hszRenderWeekly(filtered, zone) {
     },
     plugins: [boxPlotPlugin],
   });
+  // Analyst banner
+  if (mostExpIdx != null && cheapestIdx != null) {
+    _renderAnalystBanner(_buildAnalystBanner('weekday', {
+      mostExpName: labels[mostExpIdx],
+      mostExpMedian: stats[mostExpIdx].p50,
+      cheapestName: labels[cheapestIdx],
+      cheapestMedian: stats[cheapestIdx].p50,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · Volatility: rolling σ on 7D / 30D windows ──
@@ -6212,16 +6378,14 @@ function _hszRenderVolatility(filtered, zone) {
   else regime = meta.thresholdLabels[2];
 
   // Title with discrete description suffix ("Title | description")
-  // and 2-line subtitle (formula italic + stats bold).
+  // Subtitle keeps only the formula (italic); stats + verdict go in the analyst banner below the chart.
   const titleHtml = _titleWithDescription(`${meta.label} — 7-day and 30-day rolling`, meta.explanation);
-  let line1 = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
-  let line2Stats = `Period 7D avg: <strong style="color:var(--tx)">${period7Mean.toFixed(2)} ${meta.unit}</strong> (${regime}) · ${daysAboveHigh} day${daysAboveHigh !== 1 ? 's' : ''} above ${t2.toFixed(2)} ${meta.unit}`;
-  if (periodMax) line2Stats += ` · Max <strong style="color:#FBBF24">${periodMax.v.toFixed(2)} ${meta.unit}</strong> on ${periodMax.d}`;
+  const formulaSubtitle = `<span style="color:var(--tx3);font-style:italic">${meta.formula}</span>`;
 
   _setHoTitle({
     eyebrow: `Prices · Volatility · ${zone} · ${meta.short}`,
     title: titleHtml,
-    subtitle: `${line1}<br>${line2Stats}`,
+    subtitle: formulaSubtitle,
   });
 
   // Y-axis: add headroom so spike labels don't get clipped above (and a tiny baseline below)
@@ -6350,6 +6514,21 @@ function _hszRenderVolatility(filtered, zone) {
       },
     },
   });
+  // Analyst banner
+  if (period7Mean != null) {
+    _renderAnalystBanner(_buildAnalystBanner('volatility', {
+      metricLabel: meta.label,
+      periodMean: period7Mean,
+      regime,
+      daysAbove: daysAboveHigh,
+      threshold: t2,
+      peakVal: periodMax ? periodMax.v : null,
+      peakDate: periodMax ? periodMax.d : null,
+      unit: meta.unit,
+    }));
+  } else {
+    _renderAnalystBanner('');
+  }
 }
 
 // ── HSZ · Distribution: histogram of daily avgs for the selected zone ──
@@ -6434,35 +6613,33 @@ function _hszRenderDist(filtered, zone, summary) {
   });
   const canvasEl = document.getElementById(_hszCtx().canvasId);
 
-  // ── Title block: "Title | discrete description" + 2-line subtitle (formula italic + stats) ──
+  // ── Title block: "Title | discrete description" + subtitle (formula italic only) ──
+  // Stats + verdict go in the analyst banner under the chart.
   const titleHtml = (mode === 'cumulative')
     ? _titleWithDescription('Cumulative price distribution', 'For any price level, what % of days fell below it. A steep curve means prices were concentrated in a narrow range; a flat curve means prices were spread out.')
     : _titleWithDescription('Daily average price distribution', 'Frequency of daily prices by price range. Tall bars show the most common price levels; gaps or secondary peaks reveal less common regimes.');
   const formulaLine = (mode === 'cumulative')
     ? `F(x) = days with price ≤ x  /  total · 100%`
     : `count(x) = days with price ∈ [x, x+bin_size]  ·  KDE: density(x) = (1/n·h) · Σ K((x-xᵢ)/h)`;
-  let statsLine;
-  if (mode === 'cumulative') {
-    statsLine = `<strong style="color:var(--tx)">${pct(nNeg + nLow)}</strong> of days under <strong>${T_LOW.toFixed(2)} €/MWh</strong> · <strong>50%</strong> under <strong style="color:#14D3A9">${median.toFixed(2)} €/MWh</strong> · <strong>95%</strong> under <strong style="color:#FBBF24">${p95.toFixed(2)} €/MWh</strong> · <strong style="color:#ED6965">${nNeg}</strong> negative day${nNeg!==1?'s':''}`;
-  } else {
-    const mostFreqBucket = (() => {
-      const range = maxV - minV;
-      const BIN = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
-      const bins = {};
-      avgs.forEach(v => {
-        const k = Math.floor(v / BIN) * BIN;
-        bins[k] = (bins[k] || 0) + 1;
-      });
-      let best = null, bestC = 0;
-      Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
-      return best != null ? `${best.toFixed(2)} → ${(best+BIN).toFixed(2)} €/MWh` : '—';
-    })();
-    statsLine = `Median <strong style="color:var(--tx)">${median.toFixed(2)} €/MWh</strong> · μ <strong>${mean.toFixed(2)} €/MWh</strong> · σ ${stddev.toFixed(2)} €/MWh · <strong style="color:#ED6965">${nNeg}</strong> negative days · <strong>${nNormal}</strong> normal days · Most frequent: <strong>${mostFreqBucket}</strong>`;
-  }
+  // Compute mostFreqBucket for histo banner (used in both modes for context)
+  const mostFreqBucket = (() => {
+    const range = maxV - minV;
+    const BIN = range < 30 ? 2 : range < 80 ? 5 : range < 200 ? 10 : 20;
+    const bins = {};
+    avgs.forEach(v => {
+      const k = Math.floor(v / BIN) * BIN;
+      bins[k] = (bins[k] || 0) + 1;
+    });
+    let best = null, bestC = 0;
+    Object.entries(bins).forEach(([k, c]) => { if (c > bestC) { best = +k; bestC = c; } });
+    return best != null ? `${best.toFixed(2)} → ${(best+BIN).toFixed(2)} €/MWh` : '—';
+  })();
+  // p5 for cumulative skew computation (banner)
+  const distP5 = sorted.length ? _percentile(sorted, 0.05) : null;
   _setHoTitle({
     eyebrow: `Prices · Distribution · ${zone} · ${avgs.length} days observed`,
     title: titleHtml,
-    subtitle: `<span style="color:var(--tx3);font-style:italic">${formulaLine}</span><br>${statsLine}`,
+    subtitle: `<span style="color:var(--tx3);font-style:italic">${formulaLine}</span>`,
   });
 
   // ── Compute shared chart X range (used for both legend ribbon widths and chart axis) ──
@@ -6633,6 +6810,10 @@ function _hszRenderDist(filtered, zone, summary) {
         inner.style.paddingRight = padRight + 'px';
       }
     }, 0);
+    // Analyst banner (Cumulative mode)
+    _renderAnalystBanner(_buildAnalystBanner('cumulative', {
+      median, p95, p5: distP5,
+    }));
     return;
   }
 
@@ -6804,6 +6985,10 @@ function _hszRenderDist(filtered, zone, summary) {
       inner.style.paddingRight = padRight + 'px';
     }
   }, 0);
+  // Analyst banner (Histo+KDE mode)
+  _renderAnalystBanner(_buildAnalystBanner('histo', {
+    mostFreqBucket, mean, median,
+  }));
 }
 
 // Helper: mean ignoring null / NaN
