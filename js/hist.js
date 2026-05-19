@@ -319,9 +319,9 @@ function baseOptions(yLabel) {
   return {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 200 },
-    // Reserve 20px of inner padding at the bottom so the X axis title doesn't
-    // get visually crowded by elements rendered just below the canvas (e.g. analyst banner).
-    layout: { padding: { bottom: 20 } },
+    // Reserve a few pixels at the bottom for the X axis title (the banner below
+    // already keeps a 32px margin-top, so this padding only handles axis title spacing).
+    layout: { padding: { bottom: 8 } },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -1748,7 +1748,9 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
       const { html } = _formatYoYDelta(currentVal, refVal, status, fallbackText);
       elMeta.innerHTML = html;
     }
-    // Apply directional class to parent .kpi-card so the left border colour reflects YoY direction
+    // Apply directional class to parent .kpi-card so the left border colour reflects YoY direction.
+    // Convention: "monter = rouge" (market stress signal) — applies to all KPIs (avg, peak, off-peak,
+    // σ, neg-hours, high-hours). Higher value vs Y-1 = red border; lower = green; ±1% = flat.
     const elVal = document.getElementById(idVal);
     const card = elVal ? elVal.closest('.kpi-card') : null;
     if (card) {
@@ -1759,7 +1761,8 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
         if (Math.abs(currentVal - refVal) < 0.01 * Math.max(1, Math.abs(refVal))) {
           cls = 'kpi-flat';
         } else {
-          cls = currentVal > refVal ? 'kpi-up' : 'kpi-down';
+          // INVERTED: higher current = stress signal = kpi-down (red border)
+          cls = currentVal > refVal ? 'kpi-down' : 'kpi-up';
         }
       }
       card.classList.add(cls);
@@ -1793,7 +1796,7 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
         if (Math.abs(fr.negH - refNegH) < 0.01 * Math.max(1, Math.abs(refNegH))) {
           clsN = 'kpi-flat';
         } else {
-          clsN = fr.negH > refNegH ? 'kpi-up' : 'kpi-down';
+          clsN = fr.negH > refNegH ? 'kpi-down' : 'kpi-up';
         }
       }
       cardN.classList.add(clsN);
@@ -1815,7 +1818,7 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
         if (Math.abs(fr.highH - refHighH) < 0.01 * Math.max(1, Math.abs(refHighH))) {
           clsH = 'kpi-flat';
         } else {
-          clsH = fr.highH > refHighH ? 'kpi-up' : 'kpi-down';
+          clsH = fr.highH > refHighH ? 'kpi-down' : 'kpi-up';
         }
       }
       cardH.classList.add(clsH);
@@ -1861,9 +1864,31 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
       const { html } = _formatYoYDelta(loadedAvg, refLoadedAvg, st, `<span style="color:var(--tx3)">${refAvgs.length}/${selected.length} zones · — no Y-1 ref</span>`);
       elMeta.innerHTML = html;
     }
+    // Apply directional class on Loaded card (same convention: monter = rouge)
+    const elLoadedVal = document.getElementById('ho-kpi-loaded-avg');
+    const cardLoaded = elLoadedVal ? elLoadedVal.closest('.kpi-card') : null;
+    if (cardLoaded) {
+      cardLoaded.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+      let clsL = 'kpi-flat';
+      if (st !== 'no-ref' && st !== 'partial' && refLoadedAvg != null && loadedAvg != null) {
+        if (Math.abs(loadedAvg - refLoadedAvg) < 0.01 * Math.max(1, Math.abs(refLoadedAvg))) {
+          clsL = 'kpi-flat';
+        } else {
+          clsL = loadedAvg > refLoadedAvg ? 'kpi-down' : 'kpi-up';
+        }
+      }
+      cardLoaded.classList.add(clsL);
+    }
   } else {
     const elMeta = document.getElementById('ho-kpi-loaded-meta');
     if (elMeta) elMeta.innerHTML = '<span style="color:var(--tx3)">— no Y-1 ref</span>';
+    // No reference: reset card to flat
+    const elLoadedVal = document.getElementById('ho-kpi-loaded-avg');
+    const cardLoaded = elLoadedVal ? elLoadedVal.closest('.kpi-card') : null;
+    if (cardLoaded) {
+      cardLoaded.classList.remove('kpi-up', 'kpi-down');
+      cardLoaded.classList.add('kpi-flat');
+    }
   }
 }
 
@@ -3145,12 +3170,12 @@ async function _renderHoDetailKpis(zone, series, st) {
   const ystat = yoy.status;
 
   // Decide kpi-up / kpi-down / kpi-flat based on YoY delta for each metric
-  // Convention: rouge si plus haut (= plus cher/volatile = mauvais), vert si plus bas
+  // Convention: monter = rouge (stress marché), baisser = vert. ±1% = flat.
   const cls = (cur, prev, status) => {
     if (status === 'no-ref' || prev == null || cur == null) return 'kpi-flat';
     if (status === 'partial') return 'kpi-flat';
     if (Math.abs(cur - prev) < 0.01 * Math.max(1, Math.abs(prev))) return 'kpi-flat';
-    return cur > prev ? 'kpi-up' : 'kpi-down';
+    return cur > prev ? 'kpi-down' : 'kpi-up';
   };
 
   // For spread: higher is "good" for BESS arbitrage → inverse colour convention
@@ -3158,7 +3183,7 @@ async function _renderHoDetailKpis(zone, series, st) {
     if (status === 'no-ref' || prev == null || cur == null) return 'kpi-flat';
     if (status === 'partial') return 'kpi-flat';
     if (Math.abs(cur - prev) < 0.01 * Math.max(1, Math.abs(prev))) return 'kpi-flat';
-    return cur > prev ? 'kpi-down' : 'kpi-up';  // up spread = good (green)
+    return cur > prev ? 'kpi-up' : 'kpi-down';  // up spread = good (green)
   };
 
   // Mini delta line under value (concise, with arrow)
@@ -4171,7 +4196,7 @@ function _buildAnalystBanner(mode, p) {
   }
 
   if (!line1) return '';
-  return `<div class="ho-analyst-banner" style="margin-top:8px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+  return `<div class="ho-analyst-banner" style="margin-top:32px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
 
 // Insert/replace the analyst banner under a chart canvas (inline or fullscreen)
@@ -6835,7 +6860,7 @@ function _hszRenderDist(filtered, zone, summary) {
   if (canvasEl && canvasEl.parentNode) {
     const lg = document.createElement('div');
     lg.id = legendId;
-    lg.style.cssText = 'margin-top:14px;margin-bottom:18px;font-family:\'JetBrains Mono\',monospace';
+    lg.style.cssText = 'margin-top:14px;margin-bottom:2px;font-family:\'JetBrains Mono\',monospace';
     // Width proportion: each category's price-range size divided by total chart x span
     // (Negative covers [chartXMin..0], Low covers [0..P25], etc.)
     const widths = {
@@ -6929,7 +6954,7 @@ function _hszRenderDist(filtered, zone, summary) {
       },
       options: {
         ...baseOptions('Cumulative %'),
-        layout: { padding: { bottom: 24 } },
+        layout: { padding: { bottom: 8 } },
         interaction: { mode: 'index', axis: 'x', intersect: false },
         plugins: {
           legend: { display: false },
@@ -7084,7 +7109,7 @@ function _hszRenderDist(filtered, zone, summary) {
     },
     options: {
       ...baseOptions('Days'),
-      layout: { padding: { bottom: 24 } },
+      layout: { padding: { bottom: 8 } },
       interaction: { mode: 'index', axis: 'x', intersect: false },
       plugins: {
         legend: { display: false },
