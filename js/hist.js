@@ -3041,7 +3041,7 @@ function _openHoRow(zone, series, st) {
         </div>
 
         <!-- Tabs bar: Lines / YoY / Weekday / Volatility / Distribution -->
-        <div id="ho-detail-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:8px;flex-wrap:wrap"></div>
+        <div id="ho-detail-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:8px;flex-wrap:wrap;align-self:flex-start;width:max-content;max-width:100%"></div>
 
         <!-- Combined row: YoY sub-menu pills (left) + Actions (right) on the same baseline.
              Pills are only visible when YoY tab is active. -->
@@ -3345,7 +3345,7 @@ function _openHoFullscreen(zone) {
                 style="background:${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.15)' : 'transparent'};border:1px solid ${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.4)' : 'transparent'};color:${(HIST.windows['ho']||'3M')===w ? '#14D3A9' : 'var(--tx3)'};padding:4px 9px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${w}</button>
             `).join('')}
           </div>
-          <div id="ho-fs-tabs-bar" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px"></div>
+          <div id="ho-fs-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px;width:max-content"></div>
           <button id="ho-fs-csv-btn" title="Export chart data as CSV"
             style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
           <button id="ho-fs-png-btn" title="Download chart as PNG"
@@ -4703,7 +4703,11 @@ function _hszRenderLines(filtered, zone) {
         // (hybrid eyebrow + title + subtitle style — multi-style impossible in plugins.title).
         title: { display: false },
         legend: {
-          display: true, position: 'top', align: 'end',
+          // In FS mode, the dedicated HTML legend below the chart serves this role
+          // and the top-right is occupied by toggle buttons (KPIs/Table/Chart-only).
+          // In inline mode, keep the native Chart.js legend.
+          display: (_hszCtx().canvasId !== 'ho-fs-chart'),
+          position: 'top', align: 'end',
           labels: {
             color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10,
             usePointStyle: false,
@@ -5104,7 +5108,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
       plugins: {
         title: { display: false },
         subtitle: { display: false },
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10 } },
+        legend: { display: (_hszCtx().canvasId !== 'ho-fs-chart'), position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 12, boxHeight: 2, padding: 10 } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } },
       },
     },
