@@ -1487,6 +1487,7 @@ function _hoRenderTabsBar(zone, series) {
 window._hoSetTab = function(zone, tabId) {
   if (!window._HO_TABS) window._HO_TABS = {};
   window._HO_TABS[zone] = tabId;
+  window._HO_TAB_LAST = tabId;  // remember last tab globally so switching zones preserves view
   HSZ.tab = tabId;  // sync HSZ state so submenu / dispatcher see the right tab
   const series = window._HO_LAST_SERIES;
   if (!series) return;
@@ -2212,6 +2213,7 @@ function _hoRenderFsTabsBar(zone, series) {
 window._hoFsSetTab = function(zone, tabId) {
   if (!window._HO_TABS) window._HO_TABS = {};
   window._HO_TABS[zone] = tabId;
+  window._HO_TAB_LAST = tabId;  // remember last tab globally for cross-zone persistence
   HSZ.tab = tabId;
   const series = window._HO_LAST_SERIES;
   if (!series) return;
@@ -3099,11 +3101,15 @@ function _openHoRow(zone, series, st) {
   // Render the KPI strip with dynamic border-left colors (vs Y-1)
   _renderHoDetailKpis(zone, series, st);
 
-  // Initialise the tab state for this zone (default: 'lines')
+  // Initialise the tab state for this zone:
+  // The last tab the user picked on ANY zone is used (cross-zone persistence).
+  // This way, switching countries keeps the same view (Lines → Lines, YoY → YoY, etc.)
+  // Fallback: any zone-specific value, then 'lines'.
   if (!window._HO_TABS) window._HO_TABS = {};
-  if (!window._HO_TABS[zone]) window._HO_TABS[zone] = 'lines';
+  const wantedTab = window._HO_TAB_LAST || window._HO_TABS[zone] || 'lines';
+  window._HO_TABS[zone] = wantedTab;
   // Sync HSZ state so submenu and dispatcher see the right tab/zone
-  HSZ.tab = window._HO_TABS[zone];
+  HSZ.tab = wantedTab;
   HSZ.zone = zone;
 
   // Build the tabs bar + chart
@@ -3549,10 +3555,13 @@ setTimeout(() => {
   document.addEventListener('keydown', _hoFsEscHandler);
 
   // ── Tabs bar in fullscreen header (Lines / YoY / Weekly / …) ──
+  // Use globally-tracked last tab so switching zones in FS keeps the same view.
+  if (!window._HO_TABS) window._HO_TABS = {};
+  const fsWantedTab = window._HO_TAB_LAST || window._HO_TABS[zone] || 'lines';
+  window._HO_TABS[zone] = fsWantedTab;
   _hoRenderFsTabsBar(zone, series);
-  _hoApplyFsTabVisibility((window._HO_TABS && window._HO_TABS[zone]) || 'lines');
-  // Sync HSZ and render YoY submenu
-  HSZ.tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
+  _hoApplyFsTabVisibility(fsWantedTab);
+  HSZ.tab = fsWantedTab;
   HSZ.zone = zone;
   if (typeof _hszRenderYoYSubmenu === 'function') _hszRenderYoYSubmenu();
 
