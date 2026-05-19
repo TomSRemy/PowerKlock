@@ -232,6 +232,7 @@ def build_entry_from_daily(date_str, zone_data):
         'min': zone_data.get('min'),
         'max': zone_data.get('max'),
         'negH': zone_data.get('negH', 0),
+        'highH': zone_data.get('highH', 0),
     }
     pk, off = peak_offpeak_from_hourly(zone_data.get('hourly'))
     if pk is not None:  entry['peakAvg'] = pk
@@ -457,11 +458,13 @@ def build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone):
         n_slots = len(hourly)
         mins_per_slot = round(24 * 60 / n_slots) if n_slots > 0 else 15
         neg_h = round(sum(1 for p in valid if p < 0) * mins_per_slot / 60, 1)
+        high_h = round(sum(1 for p in valid if p > 100) * mins_per_slot / 60, 1)
         zone_entry = {
             'avg':    round(sum(valid) / len(valid), 2),
             'min':    round(min(valid), 2),
             'max':    round(max(valid), 2),
             'negH':   neg_h,
+            'highH':  high_h,
             'hourly': hourly,
         }
         pk, off = peak_offpeak_from_hourly(hourly)
