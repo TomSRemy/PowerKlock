@@ -81318,7 +81318,7 @@
         "negH": 6.25,
         "peakAvg": 6.74,
         "offAvg": 79.25,
-        "renPct": 65.8,
+        "renPct": 67.0,
         "domFuel": "Solar"
       }
     ],
@@ -100441,7 +100441,7 @@
         "negH": 0.0,
         "peakAvg": 91.29,
         "offAvg": 130.52,
-        "renPct": 68.4,
+        "renPct": 70.0,
         "domFuel": "Wind"
       }
     ],
