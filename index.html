@@ -2042,16 +2042,30 @@
             <!-- Global filters, switched by active tab -->
             <div class="pr-tabs-bar-filters">
 
-              <!-- DAILY filters: zones only -->
+              <!-- DAILY filters: zones + Latest data + Date picker -->
               <div class="pk-gf-tabset" data-gf-tab="daily" style="display:flex;align-items:center;gap:8px">
                 <button class="pk-gf-zone-btn" onclick="toggleZoneFilterPanel()" id="pk-gf-daily-zones">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
                   <span id="pk-gf-daily-zones-label">All zones</span>
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
+                <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Latest data</button>
+                <div class="date-picker-wrap" id="date-picker-wrap-hdr" style="position:relative">
+                  <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:0 10px;height:26px">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span id="date-picker-label">Latest data</span>
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="date-picker-popup" id="date-picker-popup">
+                    <div class="dp-header"><button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button><span class="dp-month-label" id="dp-month-label"></span><button class="dp-nav" onclick="dpChangeMonth(1)">›</button></div>
+                    <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+                    <div class="dp-grid" id="dp-grid"></div>
+                    <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
+                  </div>
+                </div>
               </div>
 
-              <!-- HISTORICAL filters: period + zones -->
+              <!-- HISTORICAL filters: period + zones + date range -->
               <div class="pk-gf-tabset" data-gf-tab="historical" style="display:none;align-items:center;gap:8px">
                 <div class="pk-gf-group" id="pk-gf-hist-period">
                   <button class="pk-gf-btn" data-w="7D"  onclick="pkSetGlobalHistWindow('7D',this)">7D</button>
@@ -2069,6 +2083,12 @@
                   <span id="pk-gf-hist-zones-label">-- zones</span>
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
+                <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
+                  <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
+                  <input type="date" id="ho-date-from" onchange="setHistCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                  <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
+                  <input type="date" id="ho-date-to" onchange="setHistCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                </div>
               </div>
 
               <!-- DISTRIBUTION filters: period + 1 zone -->
@@ -2093,29 +2113,6 @@
         <!-- TAB · DAILY -->
         <div class="tab-panel active" data-tab-panel="daily" id="prtab-daily">
 <div class="hist-section" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices · Daily</div>
-<div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:10px;flex-wrap:wrap" onclick="event.stopPropagation()">
-  <!-- Zone filter (moved here for visual consistency with Historical header) -->
-  <button onclick="toggleZoneFilterPanel()" id="zone-filter-btn-hdr"
-    style="display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-    <span id="zone-filter-label-hdr">All zones</span>
-    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-  </button>
-  <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:3px 9px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap">↺ Latest data</button>
-  <div class="date-picker-wrap" id="date-picker-wrap-hdr">
-    <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:3px 9px">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span id="date-picker-label">Latest data</span>
-      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="date-picker-popup" id="date-picker-popup">
-      <div class="dp-header"><button class="dp-nav" onclick="dpChangeMonth(-1)">‹</button><span class="dp-month-label" id="dp-month-label"></span><button class="dp-nav" onclick="dpChangeMonth(1)">›</button></div>
-      <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
-      <div class="dp-grid" id="dp-grid"></div>
-      <div class="dp-footer"><button class="dp-today-btn" onclick="dpSelectToday()">Today</button></div>
-    </div>
-  </div>
-</div>
 <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
@@ -2306,33 +2303,6 @@
     <div class="hist-section-title">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Power Day-Ahead Prices · Historical
-    </div>
-    <div class="hist-filter-bar" style="margin-left:auto;margin-right:10px" onclick="event.stopPropagation()">
-      <!-- Global zone filter button -->
-      <button onclick="toggleGlobalZonePanel()" id="ho-zone-btn" class="hf-zone-btn">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
-        <span id="ho-zone-label">-- zones</span>
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <!-- Preset window buttons -->
-      <div class="hist-window-btns" id="hw-ho">
-        <button class="hw-btn" onclick="setHistWindow('ho','7D',this)">7D</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','1M',this)">1M</button>
-        <button class="hw-btn active" onclick="setHistWindow('ho','3M',this)">3M</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','6M',this)">6M</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','YTD',this)">YTD</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','1Y',this)">1Y</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','5Y',this)">5Y</button>
-        <button class="hw-btn" onclick="setHistWindow('ho','All',this)">All</button>
-      </div>
-      <!-- Date range picker -->
-      <div class="hf-date-range">
-        <span>From</span>
-        <input type="date" id="ho-date-from" onchange="setHistCustomRange()">
-        <span>To</span>
-        <input type="date" id="ho-date-to" onchange="setHistCustomRange()">
-      </div>
     </div>
     <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
