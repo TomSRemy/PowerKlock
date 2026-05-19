@@ -312,6 +312,9 @@ function baseOptions(yLabel) {
   return {
     responsive: true, maintainAspectRatio: false,
     animation: { duration: 200 },
+    // Reserve 20px of inner padding at the bottom so the X axis title doesn't
+    // get visually crowded by elements rendered just below the canvas (e.g. analyst banner).
+    layout: { padding: { bottom: 20 } },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -4145,7 +4148,7 @@ function _buildAnalystBanner(mode, p) {
   }
 
   if (!line1) return '';
-  return `<div class="ho-analyst-banner" style="margin-top:28px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+  return `<div class="ho-analyst-banner" style="margin-top:8px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
 
 // Insert/replace the analyst banner under a chart canvas (inline or fullscreen)
@@ -4159,9 +4162,10 @@ function _renderAnalystBanner(html) {
   const wrap = canvas.parentNode;          // fixed-height chart wrapper
   const container = wrap ? wrap.parentNode : null;
   if (!wrap || !container) return;
-  // Remove any existing banner in the same container
-  const existing = container.querySelector(':scope > .ho-analyst-banner');
-  if (existing) existing.remove();
+  // Remove ANY existing banner across the detail-row (covers both inline canvas banners
+  // AND Quarter-grid banners that live in a different DOM position). This prevents
+  // stale banners from a previous tab/mode lingering after a switch.
+  _clearAllAnalystBanners();
   if (!html) return;
   // Insert after the wrapper
   const tmp = document.createElement('div');
@@ -4171,6 +4175,17 @@ function _renderAnalystBanner(html) {
     if (wrap.nextSibling) container.insertBefore(banner, wrap.nextSibling);
     else container.appendChild(banner);
   }
+}
+
+// Remove every analyst banner in the active detail or fullscreen scope.
+// Called when switching tab/sub-mode so banners from the previous view don't linger.
+function _clearAllAnalystBanners() {
+  const scopes = ['ho-detail-row', 'ho-fs-overlay'];
+  scopes.forEach(id => {
+    const root = document.getElementById(id);
+    if (!root) return;
+    root.querySelectorAll('.ho-analyst-banner').forEach(el => el.remove());
+  });
 }
 
 function _setHoTitle({ eyebrow, title, subtitle }) {
@@ -4197,6 +4212,9 @@ function _setHoTitle({ eyebrow, title, subtitle }) {
 async function _hszRenderTab(filtered, zone, tab, summary) {
   // Backward-compat: legacy 'weekly' tab id → renamed to 'weekday'
   if (tab === 'weekly') tab = 'weekday';
+  // Clear ALL analyst banners from the previous tab/mode before rendering this one.
+  // (Each renderer will then insert its own banner if needed.)
+  _clearAllAnalystBanners();
   // Expose unfiltered zone series for rolling-window stats (7D/30D, sigma, etc.)
   // so they aren't truncated when the user shrinks the visible window.
   const fullZoneSeries = (summary && summary.zones && summary.zones[zone]) || [];
