@@ -520,6 +520,11 @@
     padding: 14px 16px;
     transition: border-color 0.15s, border-left-color 0.2s;
   }
+  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips */
+  #kpi-strip .kpi-card,
+  #ho-kpi-strip .kpi-card {
+    background: #1c242e;
+  }
   .kpi-card:hover { border-color: var(--border2); }
   /* KPI direction accents — vs J-1 (price up = red, price down = green) */
   .kpi-card.kpi-up   { border-left-color: var(--up); }
@@ -2364,6 +2369,11 @@
         <div class="kpi-label">FR neg hours</div>
         <div class="kpi-value" id="ho-kpi-fr-negh">--<span class="kpi-unit">h</span></div>
         <div class="kpi-meta" id="ho-kpi-fr-negh-meta">below 0 €/MWh</div>
+      </div>
+      <div class="kpi-card kpi-flat">
+        <div class="kpi-label">FR high hours</div>
+        <div class="kpi-value" id="ho-kpi-fr-highh">--<span class="kpi-unit">h</span></div>
+        <div class="kpi-meta" id="ho-kpi-fr-highh-meta">above 100 €/MWh</div>
       </div>
     </div>
 
