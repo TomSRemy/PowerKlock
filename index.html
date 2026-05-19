@@ -1340,19 +1340,17 @@
     white-space: nowrap;
   }
   .pk-gf-zone-btn:hover { color: var(--tx); background: var(--bg2); border-color: var(--border2); }
-  /* Sticky filter row should NOT wrap — keep everything on one line */
+  /* Sticky filter row should NOT wrap — keep everything on one line.
+     We detect overflow (scrollWidth > clientWidth) via JS and switch to C-mode in that case.
+     overflow:visible is necessary to let the popup escape the tabset bounds. */
   .pk-gf-tabset { flex-wrap: nowrap !important; }
 
-  /* Responsive A↔C bascule for Historical filters:
-     - Wide screens (≥1201px): A-mode (pills + date range visible separately)
-     - Narrow screens (≤1200px): C-mode (single combo button with popup) */
-  @media (max-width: 1200px) {
-    .pk-gf-amode { display: none !important; }
-    .pk-gf-cmode { display: inline-block !important; }
-  }
-  @media (min-width: 1201px) {
-    .pk-gf-cmode { display: none !important; }
-  }
+  /* Responsive A↔C bascule for Historical filters: detected via JS by measuring
+     real wrap (not a fixed breakpoint). When the row wraps, JS adds .pk-gf-narrow
+     to the tabset, swapping A-mode (pills + date range visible) for C-mode (combo button). */
+  .pk-gf-tabset.pk-gf-narrow .pk-gf-amode { display: none !important; }
+  .pk-gf-tabset.pk-gf-narrow .pk-gf-cmode { display: inline-block !important; }
+  .pk-gf-tabset:not(.pk-gf-narrow) .pk-gf-cmode { display: none !important; }
 
   /* Subdomain panels */
   .subdomain-panel { display: none; }
@@ -4741,6 +4739,45 @@ svg.leaflet-image-layer.leaflet-interactive path {
       popup.style.display = 'none';
     }
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // Responsive A↔C bascule: detect real overflow (not fixed breakpoint).
+  // The parent .pr-tabs-bar has flex-wrap:wrap so when content doesn't fit
+  // on one line, the row's height grows (filters drop to a second line).
+  // We measure the row's height: a single line ≈ 32-40px, a wrapped row ≈ 60-80px.
+  // If the row is taller than ~50px, switch the Historical filter tabset to C-mode.
+  // ─────────────────────────────────────────────────────────────
+  function pkCheckFilterOverflow() {
+    const row = document.querySelector('#pr-da-sticky .pr-tabs-bar');
+    const tabset = document.querySelector('.pk-gf-tabset[data-gf-tab="historical"]');
+    if (!row || !tabset) return;
+    // Step 1: remove the narrow class to measure the natural height with A-mode visible
+    tabset.classList.remove('pk-gf-narrow');
+    // Force a reflow then measure
+    void row.offsetHeight;
+    const rowH = row.offsetHeight;
+    // Threshold: if the row is taller than ~50px, it has wrapped (default ≈ 38-42px)
+    if (rowH > 50) {
+      tabset.classList.add('pk-gf-narrow');
+    }
+  }
+  window.pkCheckFilterOverflow = pkCheckFilterOverflow;
+
+  // Hook to: initial load, window resize, and DOM mutations in the sticky bar
+  setTimeout(pkCheckFilterOverflow, 150);
+  window.addEventListener('resize', pkCheckFilterOverflow);
+  // Also re-check after tab switches (different tab → different filter visible)
+  document.querySelectorAll('#pr-tabs-nav .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => setTimeout(pkCheckFilterOverflow, 50));
+  });
+  // ResizeObserver for any layout change to the sticky bar
+  if (typeof ResizeObserver !== 'undefined') {
+    const row = document.querySelector('#pr-da-sticky .pr-tabs-bar');
+    if (row) {
+      const ro = new ResizeObserver(() => pkCheckFilterOverflow());
+      ro.observe(row);
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────
   // Global filters · DISTRIBUTION period (1Y / 2Y / 5Y / All)
