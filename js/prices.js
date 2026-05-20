@@ -1592,11 +1592,18 @@ function buildHourlyDetail(idx, z) {
       <span style="color:${flatColor};font-weight:600">${flatText}</span>
       ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
       <div style="font-size:11px;color:var(--tx2);font-weight:600;letter-spacing:.05em;text-transform:uppercase">
         ${FLAG_MAP[z.code]||''} ${z.code} — ${ccFmtDay(window._currentPriceDate)}
       </div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Band window selector · pills inline (Off / 7D / 1M / 3M / 6M / YTD / 1Y) -->
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
+          <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="row-band-pills-${idx}">
+            ${_rowBandPillsHTML(idx)}
+          </div>
+        </div>
         <button onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
           style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
         <button onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
@@ -1779,7 +1786,12 @@ function buildHourlyDetail(idx, z) {
         }
       },
       plugins:{
-        legend:{display: datasets.length>1, labels:{color:'#4A6280',font:{size:10},boxWidth:16,usePointStyle:true,pointStyle:'line'}},
+        legend:{display: true, labels:{color:'#4A6280',font:{size:10},boxWidth:16,usePointStyle:true,pointStyle:'line',
+          filter: (item, data) => {
+            const lbl = data.datasets[item.datasetIndex]?.label || '';
+            return !lbl.startsWith('__band_');  // hide the internal P0 and P5 datasets (paired with their upper counterpart)
+          }
+        }},
         tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(2)+' €/MWh':'n/a'}`}},
         annotation:{annotations},
         zoom:ZOOM_CFG,
@@ -1813,7 +1825,120 @@ function buildHourlyDetail(idx, z) {
       if (_openRow === idx) buildHourlyDetail(idx, z);
     });
   }
+
+  // Apply band overlay (async, non-blocking) — fetches percentiles for the current window
+  _loadAndApplyRowBand(idx, z);
 }
+
+// ─── Row band overlay (P0/P5/P50/P95/P100) — drill-down only ───
+// State: window._drillBandWindow[idx] = 'off' | '7D' | '1M' | '3M' | '6M' | 'YTD' | '1Y'
+// Default = 'off' (band invisible until user clicks)
+const _ROW_BAND_OPTIONS = [
+  { key: 'off',  label: 'Off',  days: null },
+  { key: '7D',   label: '7D',   days: 7 },
+  { key: '1M',   label: '1M',   days: 30 },
+  { key: '3M',   label: '3M',   days: 90 },
+  { key: '6M',   label: '6M',   days: 180 },
+  { key: 'YTD',  label: 'YTD',  days: -1 },
+  { key: '1Y',   label: '1Y',   days: 365 },
+];
+
+function _rowBandPillsHTML(idx) {
+  window._drillBandWindow = window._drillBandWindow || {};
+  const cur = window._drillBandWindow[idx] || 'off';
+  return _ROW_BAND_OPTIONS.map(opt => {
+    const isOn = opt.key === cur;
+    const isOff = opt.key === 'off';
+    return `<button onclick="event.stopPropagation();setRowBandWindow(${idx},'${opt.key}')" data-win="${opt.key}"
+      style="padding:3px 8px;font-size:10px;color:${isOn?'#14D3A9':(isOff?'#5A6B7E':'#7A93AB')};
+             background:${isOn?'rgba(20,211,169,0.18)':'transparent'};
+             border:none;border-radius:3px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;cursor:pointer;transition:all .15s"
+    >${opt.label}</button>`;
+  }).join('');
+}
+
+function setRowBandWindow(idx, key) {
+  window._drillBandWindow = window._drillBandWindow || {};
+  window._drillBandWindow[idx] = key;
+  const host = document.getElementById(`row-band-pills-${idx}`);
+  if (host) host.innerHTML = _rowBandPillsHTML(idx);
+  const chart = _rowCharts[idx];
+  if (!chart) return;
+  if (key === 'off') {
+    _removeBandDatasets(chart);
+    chart.update('none');
+    return;
+  }
+  const z = window._pricesSorted ? window._pricesSorted[idx] : null;
+  if (!z) return;
+  _loadAndApplyRowBand(idx, z);
+}
+window.setRowBandWindow = setRowBandWindow;
+
+function _removeBandDatasets(chart) {
+  chart.data.datasets = chart.data.datasets.filter(ds => {
+    const lbl = ds.label || '';
+    return !lbl.startsWith('__band_')
+        && !lbl.startsWith('Hist median')
+        && !lbl.startsWith('Typical (P5–P95)')
+        && !lbl.startsWith('Min–Max range');
+  });
+}
+
+async function _loadAndApplyRowBand(idx, z) {
+  window._drillBandWindow = window._drillBandWindow || {};
+  const cur = window._drillBandWindow[idx] || 'off';
+  const chart = _rowCharts[idx];
+  if (!chart) return;
+  if (cur === 'off') { _removeBandDatasets(chart); chart.update('none'); return; }
+  const opt = _ROW_BAND_OPTIONS.find(o => o.key === cur);
+  if (!opt) return;
+  const nPts = chart.data.datasets[0]?.data?.length || 96;
+  if (typeof fetchHistoricalEnvelopeP !== 'function') return;
+  let env;
+  try {
+    env = await fetchHistoricalEnvelopeP(z.code, opt.days, nPts);
+  } catch (e) {
+    console.warn('[row-band] fetch failed', e);
+    return;
+  }
+  if (!env) return;
+  if ((window._drillBandWindow[idx] || 'off') !== cur) return; // user changed selection during fetch
+  _removeBandDatasets(chart);
+  chart.data.datasets.push(
+    {
+      label: `Min–Max range (${opt.label})`, data: env.p100,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)',
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 8,
+    },
+    {
+      label: '__band_outer_min', data: env.p0,
+      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 8,
+    },
+    {
+      label: `Typical (P5–P95) (${opt.label})`, data: env.p95,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: '+1', order: 7,
+    },
+    {
+      label: '__band_inner_min', data: env.p5,
+      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      fill: false, order: 7,
+    },
+    {
+      label: `Hist median (${opt.label})`, data: env.p50,
+      borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+      tension: 0.2, spanGaps: true, fill: false, borderDash: [2, 3], order: 6,
+    }
+  );
+  chart.update('none');
+}
+window._loadAndApplyRowBand = _loadAndApplyRowBand;
 
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
 // matching border-left colour + sub-text tint based on direction (±1 €/MWh)
