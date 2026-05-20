@@ -2297,6 +2297,34 @@
               </div>
             </div>
           </div>
+          <!-- KPI strip · Compare zones (Daily, 5 cards, no redundancy with main strip above) -->
+          <div class="kpi-strip" id="cc-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px">
+            <div class="kpi-card kpi-flat" id="cc-kpi-zones">
+              <div class="kpi-label">Zones loaded</div>
+              <div class="kpi-value" id="cc-kpi-zones-v">--<span class="kpi-unit">zones</span></div>
+              <div class="kpi-meta" id="cc-kpi-zones-meta">--</div>
+            </div>
+            <div class="kpi-card kpi-flat" id="cc-kpi-cheapest">
+              <div class="kpi-label">Cheapest zone</div>
+              <div class="kpi-value" id="cc-kpi-cheapest-v">--<span class="kpi-unit">€/MWh</span></div>
+              <div class="kpi-meta" id="cc-kpi-cheapest-meta">--</div>
+            </div>
+            <div class="kpi-card kpi-flat" id="cc-kpi-priciest">
+              <div class="kpi-label">Most expensive</div>
+              <div class="kpi-value" id="cc-kpi-priciest-v">--<span class="kpi-unit">€/MWh</span></div>
+              <div class="kpi-meta" id="cc-kpi-priciest-meta">--</div>
+            </div>
+            <div class="kpi-card kpi-flat" id="cc-kpi-spread">
+              <div class="kpi-label">Spread max-min</div>
+              <div class="kpi-value" id="cc-kpi-spread-v">--<span class="kpi-unit">€/MWh</span></div>
+              <div class="kpi-meta">cross-zone today</div>
+            </div>
+            <div class="kpi-card kpi-flat" id="cc-kpi-frgap">
+              <div class="kpi-label">FR vs cheapest</div>
+              <div class="kpi-value" id="cc-kpi-frgap-v">--<span class="kpi-unit">€/MWh</span></div>
+              <div class="kpi-meta" id="cc-kpi-frgap-meta">--</div>
+            </div>
+          </div>
           <!-- View tabs (Insta-style) -->
           <div id="cc-tabs-bar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
             <div id="cc-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
@@ -2476,17 +2504,12 @@
     </div>
   </div>
 
-  <!-- KPI strip · multi (FR baseline) -->
+  <!-- KPI strip · Compare zones (no redundancy with main Historical strip above) -->
   <div class="kpi-strip" id="hmz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
     <div class="kpi-card kpi-flat" id="hmz-kpi-zones">
       <div class="kpi-label">Zones loaded</div>
       <div class="kpi-value" id="hmz-kpi-zones-v">--<span class="kpi-unit">zones</span></div>
       <div class="kpi-meta" id="hmz-kpi-zones-meta">--</div>
-    </div>
-    <div class="kpi-card kpi-flat" id="hmz-kpi-avg">
-      <div class="kpi-label">FR avg</div>
-      <div class="kpi-value" id="hmz-kpi-avg-v">--<span class="kpi-unit">€/MWh</span></div>
-      <div class="kpi-meta" id="hmz-kpi-avg-meta">baseline</div>
     </div>
     <div class="kpi-card kpi-flat" id="hmz-kpi-cheapest">
       <div class="kpi-label">Cheapest zone</div>
@@ -2502,6 +2525,11 @@
       <div class="kpi-label">Spread max-min</div>
       <div class="kpi-value" id="hmz-kpi-spread-v">--<span class="kpi-unit">€/MWh</span></div>
       <div class="kpi-meta">cross-zone avg</div>
+    </div>
+    <div class="kpi-card kpi-flat" id="hmz-kpi-frgap">
+      <div class="kpi-label">FR vs cheapest</div>
+      <div class="kpi-value" id="hmz-kpi-frgap-v">--<span class="kpi-unit">€/MWh</span></div>
+      <div class="kpi-meta" id="hmz-kpi-frgap-meta">--</div>
     </div>
   </div>
 
