@@ -2733,7 +2733,80 @@ if (typeof window !== 'undefined') {
 // ────────────────────────────────────────────
 // Compare zones — table that adapts to the current view
 // ────────────────────────────────────────────
+// ── Daily Compare zones · KPI strip (5 cards: Zones+avg, Cheapest, Most exp, Spread, FR vs cheapest) ──
+// Sémantique : today's daily averages across selected zones.
+// Cohérent avec le strip Historical Compare zones — pas de redondance avec le strip Daily du haut.
+function renderCompareKpiStrip(data, selected) {
+  // Find the current price date row to compute today's per-zone daily avg
+  const dayRow = (data || []).find(r => r.date === window._currentPriceDate)
+              || (data || [])[data.length - 1];
+  if (!dayRow || !dayRow.zones) return;
+
+  // Build [{ z, avg }] for selected zones with data today
+  const validStats = [];
+  selected.forEach(z => {
+    const zStats = dayRow.zones[z];
+    if (zStats && zStats.avg != null && !isNaN(zStats.avg)) {
+      validStats.push({ z, avg: zStats.avg });
+    }
+  });
+
+  // KPI 1 · Zones loaded (value = count, meta = loaded avg)
+  const zonesVEl = document.getElementById('cc-kpi-zones-v');
+  const zonesMetaEl = document.getElementById('cc-kpi-zones-meta');
+  if (zonesVEl) zonesVEl.innerHTML = selected.size + '<span class="kpi-unit">zones</span>';
+  if (zonesMetaEl) {
+    if (validStats.length) {
+      const loadedAvg = validStats.reduce((s, x) => s + x.avg, 0) / validStats.length;
+      zonesMetaEl.innerHTML = `avg <strong style="color:var(--tx)">${loadedAvg.toFixed(2)} €/MWh</strong> · today`;
+    } else {
+      zonesMetaEl.textContent = 'no data today';
+    }
+  }
+
+  if (!validStats.length) return;
+
+  // KPI 2-3-4 · Cheapest / Most exp / Spread
+  validStats.sort((a, b) => a.avg - b.avg);
+  const cheap = validStats[0], pricey = validStats[validStats.length - 1];
+  const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  const setText = (id, txt)  => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setHTML('cc-kpi-cheapest-v', cheap.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>');
+  setText('cc-kpi-cheapest-meta', cheap.z);
+  setHTML('cc-kpi-priciest-v', pricey.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>');
+  setText('cc-kpi-priciest-meta', pricey.z);
+  setHTML('cc-kpi-spread-v', (pricey.avg - cheap.avg).toFixed(2) + '<span class="kpi-unit">€/MWh</span>');
+
+  // KPI 5 · FR vs cheapest
+  // Convention couleur: monter = rouge (FR plus cher que cheapest = défavorable),
+  //                    vert si FR est le moins cher (rare/win),
+  //                    flat si FR pas chargée.
+  const frEntry = validStats.find(x => x.z === 'FR');
+  const frgapCard = document.getElementById('cc-kpi-frgap');
+  if (frgapCard) frgapCard.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+  if (frEntry && cheap) {
+    const gap = frEntry.avg - cheap.avg;
+    const pct = cheap.avg > 0 ? (gap / cheap.avg) * 100 : 0;
+    setHTML('cc-kpi-frgap-v',
+      (gap >= 0 ? '+' : '') + gap.toFixed(2) + '<span class="kpi-unit">€/MWh</span>');
+    setText('cc-kpi-frgap-meta',
+      (pct >= 0 ? '+' : '') + pct.toFixed(1) + '% · ' + cheap.z + ' cheapest');
+    if (frgapCard) {
+      if (frEntry.z === cheap.z) frgapCard.classList.add('kpi-up');
+      else if (gap > 0)         frgapCard.classList.add('kpi-down');
+      else                       frgapCard.classList.add('kpi-up');
+    }
+  } else {
+    setHTML('cc-kpi-frgap-v', '--<span class="kpi-unit">€/MWh</span>');
+    setText('cc-kpi-frgap-meta', 'FR not loaded');
+    if (frgapCard) frgapCard.classList.add('kpi-flat');
+  }
+}
+
 function renderCompareKPIs(data, selected) {
+  // Populate the 5-card KPI strip above the chart
+  renderCompareKpiStrip(data, selected);
+
   const tbody = document.getElementById('compare-data-tbody');
   const table = document.getElementById('compare-data-table');
   if (!tbody || !data) return;
