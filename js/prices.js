@@ -2729,9 +2729,25 @@ function renderCCAnalysis(view, data, selected) {
     const loadedAvg = stats.reduce((s, x) => s + x.avg, 0) / stats.length;
     const frStats = stats.find(s => s.code === 'FR');
     const frGap = frStats ? (frStats.avg - cheap.avg) : null;
+    // Mode-specific stats from per-zone hourly slices (already computed above)
+    const peakOffSpread = stats.length
+      ? (stats.reduce((s, x) => s + x.pk, 0) / stats.length) - (stats.reduce((s, x) => s + x.op, 0) / stats.length)
+      : null;
+    const intradayRange = stats.length
+      ? stats.reduce((s, x) => s + (x.mx - x.mn), 0) / stats.length
+      : null;
+    // Reference for ccSpread = the spread reference selector (defaults to FR)
+    const refZone = window._ccSpreadRef || 'FR';
+    const refStats = stats.find(s => s.code === refZone);
+    const refAvg = refStats ? refStats.avg : null;
     const modeMap = { lines: 'ccLines', profile: 'ccProfile', bands: 'ccBands', spread: 'ccSpread', heatmap: 'ccHeatmap' };
     const html = window._buildAnalystBanner(modeMap[view] || 'ccLines', {
       cheap, pricey, frGap, loadedAvg, zoneCount: stats.length, view,
+      scope: 'daily',
+      peakOffSpread,
+      intradayRange,
+      refZone,
+      refAvg,
     });
     anchor.innerHTML = html;
   } else if (anchor) {
