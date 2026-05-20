@@ -4269,36 +4269,113 @@ function _buildAnalystBanner(mode, p) {
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
-  // ── Compare zones modes (used by Daily + Historical compare-zones charts) ──
+  // ── Compare zones modes (Daily + Historical compare-zones charts) ──
+  // Each view emphasises a different angle: Lines = trajectory/level, Profile = peak vs off-peak,
+  // Bands = intraday range, Spread = relative positioning vs baseline, Heatmap = pattern.
+  // Scope ('daily' or 'historical') tunes the vocabulary (today vs over the period).
   else if (mode === 'ccLines' || mode === 'ccProfile' || mode === 'ccBands' || mode === 'ccSpread' || mode === 'ccHeatmap') {
-    const { cheap, pricey, frGap, loadedAvg, zoneCount, view } = p;
+    const { cheap, pricey, frGap, loadedAvg, zoneCount, view, scope, periodLabel,
+            peakOffSpread, intradayRange, avgVolatility, refZone, refAvg } = p;
+    const isHist = scope === 'historical';
+    const ctx = isHist ? `over ${periodLabel || 'the period'}` : 'today';
     const cheapStr  = cheap  ? `${W(cheap.z + ' ' + cheap.avg.toFixed(2) + ' €/MWh')}`  : '--';
     const priceyStr = pricey ? `${W(pricey.z + ' ' + pricey.avg.toFixed(2) + ' €/MWh')}` : '--';
     const spread    = (cheap && pricey) ? (pricey.avg - cheap.avg) : null;
-    line1 = `${W(zoneCount)} zones · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
-      (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
-    // Verdict depends on spread magnitude and FR positioning
-    let read;
-    if (spread != null && cheap && cheap.avg > 0) {
-      const spreadPct = (spread / cheap.avg) * 100;
-      const frPart = (frGap != null && frGap > 0)
-        ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
-        : (frGap != null && frGap <= 0)
-          ? ` FR is the cheapest market.`
-          : '';
-      if (spreadPct > 100) {
-        read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
-      } else if (spreadPct > 40) {
-        read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
-      } else if (spreadPct > 15) {
-        read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
-      } else {
-        read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
-      }
-    } else {
-      read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
+    const spreadPct = (spread != null && cheap && cheap.avg > 0) ? (spread / cheap.avg) * 100 : null;
+    const frPart = (frGap != null && frGap > 0)
+      ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
+      : (frGap != null && frGap <= 0)
+        ? ` FR is the cheapest market.`
+        : '';
+
+    // ── ccLines: level + cross-zone dispersion ──
+    if (mode === 'ccLines') {
+      line1 = `${W(zoneCount)} zones ${ctx} · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
+        (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
+      let read;
+      if (spreadPct != null) {
+        if (spreadPct > 100) read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
+        else if (spreadPct > 40) read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
+        else if (spreadPct > 15) read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
+        else read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
+      } else read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
+      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
     }
-    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+
+    // ── ccProfile: peak vs off-peak shape ──
+    else if (mode === 'ccProfile') {
+      const pkStr = (peakOffSpread != null) ? A(peakOffSpread.toFixed(2) + ' €/MWh') : '--';
+      line1 = `Daily shape across ${W(zoneCount)} zones ${ctx}. Average peak-vs-offpeak gap ${pkStr}. Cheapest profile ${cheapStr}.`;
+      let read;
+      if (peakOffSpread == null) {
+        read = `<b>Profile data unavailable</b>. Hourly granularity required.`;
+      } else if (peakOffSpread < -5) {
+        read = `<b>Inverted duck curve</b>. Off-peak prices exceed peak — heavy solar penetration pulling daytime prices down.${frPart}`;
+      } else if (peakOffSpread < 5) {
+        read = `<b>Flat profile</b>. Peak and off-peak prices nearly aligned — limited intraday demand differentiation.${frPart}`;
+      } else if (peakOffSpread < 25) {
+        read = `<b>Classic peak shape</b>. Daytime prices moderately higher than off-peak.${frPart}`;
+      } else {
+        read = `<b>Pronounced peak structure</b>. Wide peak-vs-offpeak gap — strong arbitrage signal for storage.${frPart}`;
+      }
+      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+    }
+
+    // ── ccBands: intraday range per zone (min-avg-max) ──
+    else if (mode === 'ccBands') {
+      const rangeStr = (intradayRange != null) ? A(intradayRange.toFixed(2) + ' €/MWh') : '--';
+      line1 = `Intraday range across ${W(zoneCount)} zones ${ctx} · average ${rangeStr}. Widest swings ${priceyStr}.`;
+      let read;
+      if (intradayRange == null) {
+        read = `<b>Range data unavailable</b>. Hourly granularity required.`;
+      } else if (intradayRange < 30) {
+        read = `<b>Calm intraday regime</b>. Narrow daily ranges across zones — low storage opportunity.${frPart}`;
+      } else if (intradayRange < 80) {
+        read = `<b>Normal intraday swings</b>. Standard volatility patterns visible across the panel.${frPart}`;
+      } else if (intradayRange < 150) {
+        read = `<b>Wide intraday ranges</b>. Material BESS arbitrage potential in most zones.${frPart}`;
+      } else {
+        read = `<b>Stressed intraday markets</b>. Very wide swings — peak/off-peak dislocation prominent.${frPart}`;
+      }
+      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+    }
+
+    // ── ccSpread: zone vs baseline reference ──
+    else if (mode === 'ccSpread') {
+      const ref = refZone || 'FR';
+      const refStr = refAvg != null ? W(ref + ' ' + refAvg.toFixed(2) + ' €/MWh') : W(ref);
+      line1 = `Spreads vs ${refStr} ${ctx}. ${W(zoneCount - 1)} other zones compared. Largest premium ${priceyStr}, largest discount ${cheapStr}.`;
+      let read;
+      if (spread == null) {
+        read = `<b>Spread data unavailable</b>.`;
+      } else if (Math.abs(frGap || 0) < 5) {
+        read = `<b>${ref} aligned with neighbours</b>. Cross-zone gap small — limited import/export pressure.`;
+      } else if (frGap > 0) {
+        read = `<b>${ref} at premium</b>. Other markets cheaper — natural import incentive into ${ref}.`;
+      } else {
+        read = `<b>${ref} at discount</b>. Other markets pricier — export opportunity from ${ref}.`;
+      }
+      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+    }
+
+    // ── ccHeatmap: temporal pattern visibility ──
+    else if (mode === 'ccHeatmap') {
+      line1 = `Heatmap of ${W(zoneCount)} zones ${ctx}. Range ${cheapStr} to ${priceyStr}` +
+        (spread != null ? `. Cross-zone spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
+      let read;
+      if (spreadPct == null) {
+        read = `<b>Add zones</b> to see heatmap patterns.`;
+      } else if (isHist) {
+        read = spreadPct > 50
+          ? `<b>Persistent cross-zone divergence</b>. The pattern shows sustained regional fragmentation${frPart}`
+          : `<b>Coherent regional pattern</b>. Zones move together with limited divergence.${frPart}`;
+      } else {
+        read = spreadPct > 40
+          ? `<b>Sharp regional contrast today</b>. Zones diverge clearly — check transmission constraints.${frPart}`
+          : `<b>Uniform pattern across zones today</b>. No significant regional dislocations.${frPart}`;
+      }
+      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+    }
   }
 
   if (!line1) return '';
@@ -7691,8 +7768,28 @@ async function renderHistMulti() {
   if (anchor && cheap && pricey && typeof _buildAnalystBanner === 'function') {
     const frGap = frEntry ? (frEntry.avg - cheap.avg) : null;
     const modeMap = { lines: 'ccLines', heatmap: 'ccHeatmap', profile: 'ccProfile', bands: 'ccBands', spread: 'ccSpread', dist: 'ccLines' };
+    // Compute mode-specific stats from per-zone period stats
+    const peakVals = selected.map(z => stats[z]?.peakAvg).filter(v => v != null);
+    const offVals  = selected.map(z => stats[z]?.offAvg).filter(v => v != null);
+    const peakOffSpread = (peakVals.length && offVals.length)
+      ? (peakVals.reduce((a,b)=>a+b,0)/peakVals.length) - (offVals.reduce((a,b)=>a+b,0)/offVals.length)
+      : null;
+    const rangeVals = selected.map(z => stats[z]?.intradaySpread).filter(v => v != null);
+    const intradayRange = rangeVals.length ? rangeVals.reduce((a,b)=>a+b,0)/rangeVals.length : null;
+    // Reference zone for ccSpread = current baseline
+    const refAvg = stats[baseline]?.avg ?? null;
+    // Period label (e.g. "3 months") — built from window code
+    const periodLabel = (window.pkUpdateHistPeriodLabels && (HIST.windows?.hmz || HIST.windows?.ho))
+      ? ({ '7D':'7 days','1M':'1 month','3M':'3 months','6M':'6 months','YTD':'YTD','1Y':'1 year','2Y':'2 years','5Y':'5 years','all':'all time' }[HIST.windows.hmz] || HIST.windows.hmz)
+      : 'the period';
     const bannerHtml = _buildAnalystBanner(modeMap[HMZ.tab] || 'ccLines', {
       cheap, pricey, frGap, loadedAvg, zoneCount: validStats.length, view: HMZ.tab,
+      scope: 'historical',
+      periodLabel,
+      peakOffSpread,
+      intradayRange,
+      refZone: baseline,
+      refAvg,
     });
     anchor.innerHTML = bannerHtml || '';
   } else if (anchor) {
