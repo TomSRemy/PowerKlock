@@ -7658,35 +7658,35 @@ function setHmzBaseline(zone) {
 }
 window.setHmzBaseline = setHmzBaseline;
 
-// New: panel-style baseline picker (matches Daily compare-filter-btn style)
-function toggleHmzBaselinePanel() {
-  const panel = document.getElementById('hmz-baseline-panel');
-  if (!panel) return;
-  panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+// Inline chip picker (matches Daily Compare zones "SPREAD vs [chips]" UX)
+function _hmzPopulateRefChips(selected) {
+  const host = document.getElementById('hmz-ref-chips');
+  if (!host) return;
+  const sel = Array.isArray(selected) ? selected : Array.from(selected || []);
+  if (!sel.length) { host.innerHTML = ''; return; }
+  // Resolve current baseline: keep explicit pick if still in selection, else FR if present, else first
+  let cur = HIST.hmzBaseline;
+  if (!cur || !sel.includes(cur)) {
+    cur = sel.includes('FR') ? 'FR' : sel[0];
+    HIST.hmzBaseline = cur;
+  }
+  host.innerHTML = sel.map(z => {
+    const isOn = z === cur;
+    const col  = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
+    return `<button onclick="setHmzBaseline('${z}')" style="
+      padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid ${isOn?col:'rgba(255,255,255,.12)'};
+      background:${isOn?col+'22':'transparent'};color:${isOn?col:'rgba(255,255,255,.55)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
+    ">${z}</button>`;
+  }).join('');
 }
-window.toggleHmzBaselinePanel = toggleHmzBaselinePanel;
+window._hmzPopulateRefChips = _hmzPopulateRefChips;
 
-function pickHmzBaseline(zone) {
-  setHmzBaseline(zone);
-  const lbl = document.getElementById('hmz-baseline-label');
-  if (lbl) lbl.textContent = zone;
-  const panel = document.getElementById('hmz-baseline-panel');
-  if (panel) panel.style.display = 'none';
-  // Highlight active option
-  document.querySelectorAll('.hmz-baseline-opt').forEach(b => {
-    b.style.background = (b.dataset.z === zone) ? 'rgba(20,211,169,0.15)' : 'none';
-    b.style.color = (b.dataset.z === zone) ? 'var(--acc)' : 'var(--tx)';
-  });
+// Show/hide the SPREAD vs chips depending on active mode
+function _hmzToggleRefWrap(mode) {
+  const wrap = document.getElementById('hmz-ref-wrap');
+  if (wrap) wrap.style.display = (mode === 'spread') ? 'flex' : 'none';
 }
-window.pickHmzBaseline = pickHmzBaseline;
-
-// Close baseline panel on outside click
-document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('hmz-baseline-wrap');
-  const panel = document.getElementById('hmz-baseline-panel');
-  if (!panel || panel.style.display === 'none') return;
-  if (wrap && !wrap.contains(e.target)) panel.style.display = 'none';
-});
 
 async function renderHistMulti() {
   buildHistMultiTabs();
@@ -7717,14 +7717,6 @@ async function renderHistMulti() {
     baseline = selected.includes('FR') ? 'FR' : selected[0];
   }
   const baseStats = stats[baseline];
-  // Sync the baseline pill button label (replaces the old select element)
-  const baselineLabel = document.getElementById('hmz-baseline-label');
-  if (baselineLabel) baselineLabel.textContent = baseline;
-  // Highlight the active option in the panel
-  document.querySelectorAll('.hmz-baseline-opt').forEach(b => {
-    b.style.background = (b.dataset.z === baseline) ? 'rgba(20,211,169,0.15)' : 'none';
-    b.style.color = (b.dataset.z === baseline) ? 'var(--acc)' : 'var(--tx)';
-  });
 
   // KPI 1 · Zones loaded (value = zone count, meta = loaded avg + baseline tag)
   // Loaded avg = simple mean of per-zone period averages.
@@ -7833,6 +7825,11 @@ async function renderHistMulti() {
 
   // Render HMZ data table (mirrors Daily Compare zones · header + body per mode)
   renderHmzTable(HMZ.tab, stats, selected, baseline);
+
+  // Populate the SPREAD vs chips (always update so the active highlight stays correct)
+  // + show them only in Spread mode
+  _hmzPopulateRefChips(selected);
+  _hmzToggleRefWrap(HMZ.tab);
 
   // Dispatch by tab
   if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
