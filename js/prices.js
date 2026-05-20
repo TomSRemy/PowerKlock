@@ -951,6 +951,11 @@ function renderPricesTable(data, dataDateStr) {
   window._currentPriceDate = displayDate;
   const dateLabel = document.getElementById('prices-date-label');
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong(displayDate) + ' · ENTSO-E';
+  // Update the new section-header metas (page + board) with the current date
+  const pageMeta = document.getElementById('pr-daily-page-meta');
+  if (pageMeta) pageMeta.textContent = fmtLong(displayDate) + ' · ENTSO-E';
+  const boardMeta = document.getElementById('pr-daily-board-meta');
+  if (boardMeta) boardMeta.textContent = fmtLong(displayDate) + ' · ENTSO-E';
   // Remove loading row if still there
   const loadingRow = document.querySelector('#prices-tbody .loading-row');
   if (loadingRow) loadingRow.remove();
