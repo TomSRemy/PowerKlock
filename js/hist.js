@@ -2000,7 +2000,7 @@ async function renderHistOverview() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.min)} / ${fmt(st.max)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${negColor}">${_fmtNegH(st.negH)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${renHtml}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fuelHtml}</td>
+      <td style="text-align:left;font-family:'JetBrains Mono',monospace">${fuelHtml}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${st.days}</td>
     </tr>`;
   }).join('');
