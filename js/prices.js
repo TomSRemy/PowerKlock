@@ -1303,19 +1303,19 @@ function renderPricesTableBody() {
     // All other plain price cells use tx2 (single muted level).
     // Semantic-colored cells (VS J-1, NEG HRS, %REN, DOM FUEL, SPARK) keep their own colors.
     const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${FLAG_MAP[z.code]||''} ${z.code}</td>
-      <td style="font-size:11px;color:var(--tx2)">${meta.country||z.name||z.code}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor}">${PK_FMT.num(z.today, 2)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 08h–20h">${peakStr}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)" title="Avg over 00h–08h / 20h–24h">${offPeakStr}</td>
-      <td style="color:${vs.color};font-family:'JetBrains Mono',monospace">${vs.text}</td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.min!=null?PK_FMT.num(z.min,2):'–'}<span style="color:var(--tx3);font-size:10px"> @${typeof z.minHr === 'string' ? z.minHr : (z.minHr!=null ? String(z.minHr).padStart(2,'0')+'h' : '')}</span></td>
-      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${z.max!=null?PK_FMT.num(z.max,2):'–'}<span style="color:var(--tx3);font-size:10px"> @${typeof z.maxHr === 'string' ? z.maxHr : (z.maxHr!=null ? String(z.maxHr).padStart(2,'0')+'h' : '')}</span></td>
-      <td>${negFmt(z.negHrs)}</td>
-      <td>${renPctStr}</td>
-      <td>${domFuelHtml}</td>
-      <td style="color:${sparkColor};font-family:'JetBrains Mono',monospace">${sparkText}</td>
-      <td class="sparkline-cell">${sparkSvg}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left">${FLAG_MAP[z.code]||''} ${z.code}</td>
+      <td style="font-size:11px;color:var(--tx2);text-align:left">${meta.country||z.name||z.code}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor};text-align:right">${PK_FMT.num(z.today, 2)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right" title="Avg over 08h–20h">${peakStr}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right" title="Avg over 00h–08h / 20h–24h">${offPeakStr}</td>
+      <td style="color:${vs.color};font-family:'JetBrains Mono',monospace;text-align:right">${vs.text}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right">${z.min!=null?PK_FMT.num(z.min,2):'–'}<span style="color:var(--tx3);font-size:10px"> @${typeof z.minHr === 'string' ? z.minHr : (z.minHr!=null ? String(z.minHr).padStart(2,'0')+'h' : '')}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right">${z.max!=null?PK_FMT.num(z.max,2):'–'}<span style="color:var(--tx3);font-size:10px"> @${typeof z.maxHr === 'string' ? z.maxHr : (z.maxHr!=null ? String(z.maxHr).padStart(2,'0')+'h' : '')}</span></td>
+      <td style="text-align:right">${negFmt(z.negHrs)}</td>
+      <td style="text-align:right">${renPctStr}</td>
+      <td style="text-align:left">${domFuelHtml}</td>
+      <td style="color:${sparkColor};font-family:'JetBrains Mono',monospace;text-align:right">${sparkText}</td>
+      <td class="sparkline-cell" style="text-align:center">${sparkSvg}</td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
       <td colspan="13" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
