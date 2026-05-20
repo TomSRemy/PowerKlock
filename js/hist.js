@@ -1961,7 +1961,7 @@ async function renderHistOverview() {
     const countryName = _HO_NAMES[z] || z;
     if (!st) {
       return `<tr class="ho-row" data-zone="${z}">
-        <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+        <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.2;vertical-align:0"><polyline points="9 18 15 12 9 6"/></svg>${flag} ${z}</td>
         <td style="text-align:left;font-size:11px;color:var(--tx2)">${countryName}</td>
         <td colspan="10" style="text-align:center;color:var(--tx3);font-size:10px">no data in selected window</td>
       </tr>`;
@@ -1990,7 +1990,7 @@ async function renderHistOverview() {
       : (st.negH > 50 ? '#ED6965' : (st.negH > 10 ? '#FBBF24' : 'var(--tx2)'));
 
     return `<tr class="ho-row" data-zone="${z}" style="cursor:pointer">
-      <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+      <td style="text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.45;vertical-align:0;transition:transform 0.15s ease"><polyline points="9 18 15 12 9 6"/></svg>${flag} ${z}</td>
       <td style="text-align:left;font-size:11px;color:var(--tx2)">${countryName}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--tx)">${fmt(st.avg)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt(st.peakAvg)}</td>
