@@ -2046,7 +2046,6 @@
             <div class="tabs-nav" id="pr-tabs-nav" role="tablist">
               <button class="tab-btn active" data-tab="daily" onclick="prTabNav(event)">Daily</button>
               <button class="tab-btn" data-tab="historical" onclick="prTabNav(event)">Historical</button>
-              <button class="tab-btn" data-tab="distribution" onclick="prTabNav(event)">Distribution</button>
             </div>
 
             <!-- Global filters, switched by active tab -->
@@ -2158,8 +2157,21 @@
 
         <!-- TAB · DAILY -->
         <div class="tab-panel active" data-tab-panel="daily" id="prtab-daily">
-<div class="hist-section" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Power Day-Ahead Prices · Daily</div>
-<svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
+<!-- Page header (light): contextual subtitle for the active tab -->
+<div style="margin:8px 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+  <span style="font-size:14px;font-weight:500;color:var(--tx)">Day-Ahead · Daily</span>
+  <span id="pr-daily-page-meta" style="font-size:11.5px;color:var(--tx3);font-family:'JetBrains Mono',monospace">--</span>
+</div>
+<!-- Section: Day-Ahead prices board (KPI strip + multi-zone snapshot table) -->
+<div class="hist-section" id="hs-prices-main">
+  <div class="hist-section-header open">
+    <div class="hist-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Day-Ahead prices board
+      <span id="pr-daily-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span>
+    </div>
+  </div>
+  <div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
         <div class="kpi-card kpi-flat" id="kpicard-fr">
@@ -2264,8 +2276,11 @@
         <div class="status-bar" style="padding:10px 16px">
           <span id="prices-footer">ENTSO-E Transparency · Day-ahead market · Updated daily after 13:00 CET</span>
         </div>
-      </div>
-        <div class="hist-section" id="hs-cc-main" style="margin-top:20px">
+      </div><!-- /table-wrap -->
+  </div><!-- /hist-section-body #hs-body-prices-main -->
+</div><!-- /hist-section #hs-prices-main -->
+
+        <div class="hist-section" id="hs-cc-main" style="margin-top:14px">
           <div class="hist-section-header open">
             <div class="hist-section-title">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -2372,12 +2387,16 @@
           </div>
           </div><!-- /hist-section-body of hs-cc-main -->
         </div><!-- /hist-section #hs-cc-main -->
-        </div><!-- /hist-section-body of hs-prices-main -->
-        </div><!-- /hist-section #hs-prices-main -->
         </div><!-- /tab-panel daily -->
 
         <!-- TAB · HISTORICAL -->
         <div class="tab-panel" data-tab-panel="historical" id="prtab-historical">
+
+<!-- Page header (light): contextual subtitle for the active tab -->
+<div style="margin:8px 0 14px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+  <span style="font-size:14px;font-weight:500;color:var(--tx)">Day-Ahead · Historical</span>
+  <span id="pr-hist-page-meta" style="font-size:11.5px;color:var(--tx3);font-family:'JetBrains Mono',monospace">--</span>
+</div>
 
 <!-- ════════════════════════════════════════════════════════
      BLOCK 1 · MULTI-ZONE OVERVIEW TABLE (style Daily DA)
@@ -2386,9 +2405,9 @@
   <div class="hist-section-header open">
     <div class="hist-section-title">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-      Power Day-Ahead Prices · Historical
+      Day-Ahead prices over <span id="pr-hist-period-label">--</span>
+      <span id="pr-hist-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span>
     </div>
-    <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
   <div class="hist-section-body open" id="hs-body-ho-main">
 
@@ -2461,7 +2480,9 @@
       <div class="status-bar" style="padding:10px 16px">
         <span id="ho-footer">ENTSO-E Transparency · Historical day-ahead · Updated daily after 13:00 CET</span>
       </div>
-    </div>
+    </div><!-- /table-wrap -->
+  </div><!-- /hist-section-body #hs-body-ho-main -->
+</div><!-- /hist-section #hs-ho-main -->
 
 <!-- ════════════════════════════════════════════════════════
      BLOCK 2 · SINGLE ZONE
@@ -2475,13 +2496,16 @@
      BLOCK 3 · MULTI ZONE · Compare (insta tabs)
      Lines · Heatmap · Profile · Bands · Spread
      ════════════════════════════════════════════════════════ -->
-<div style="margin-top:20px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--tx3);opacity:0.7"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--tx2)">Compare zones · Historical</span>
-      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+<div class="hist-section" id="hs-hmz-main" style="margin-top:14px">
+  <div class="hist-section-header open">
+    <div class="hist-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Cross-zone analysis over <span id="pr-hmz-period-label">--</span>
+      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
     </div>
+  </div>
+  <div class="hist-section-body open">
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div class="hist-filter-bar">
       <button onclick="toggleGlobalZonePanel()" class="hf-zone-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
@@ -2562,10 +2586,8 @@
   <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
     ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
   </div>
-  </div><!-- /hist-section-body -->
+  </div><!-- /hist-section-body of hs-hmz-main -->
 </div><!-- /hist-section #hs-hmz-main -->
-  </div><!-- /hist-section-body #hs-body-ho-main -->
-</div><!-- /hist-section #hs-ho-main -->
 
 <!-- ════════════════════════════════════════════════════════
      BLOCK 4 · (removed — monthly breakdown now collapsible
@@ -4696,11 +4718,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (dtP) dtP.value = '';
     // Update C-mode combo button label
     pkUpdateTimeComboLabel(w, null, null);
+    // Update period labels in section headers (Historical: prices + cross-zone)
+    pkUpdateHistPeriodLabels(w);
     // Re-render the historical blocks
     if (typeof renderHistOverview === 'function') renderHistOverview();
     if (typeof renderHistMulti   === 'function') renderHistMulti();
   }
   window.pkSetGlobalHistWindow = pkSetGlobalHistWindow;
+
+  // ─────────────────────────────────────────────────────────────
+  // Update the [period] spans in Historical section headers
+  // Maps short codes (7D/1M/3M/...) to human-readable labels.
+  // ─────────────────────────────────────────────────────────────
+  function pkUpdateHistPeriodLabels(w) {
+    const labelMap = {
+      '7D': '7 days',
+      '1M': '1 month',
+      '3M': '3 months',
+      '6M': '6 months',
+      'YTD': 'YTD',
+      '1Y': '1 year',
+      '2Y': '2 years',
+      '5Y': '5 years',
+      'all': 'all time',
+      'All': 'all time',
+    };
+    const label = labelMap[w] || w;
+    const el1 = document.getElementById('pr-hist-period-label');
+    if (el1) el1.textContent = label;
+    const el2 = document.getElementById('pr-hmz-period-label');
+    if (el2) el2.textContent = label;
+    // Page-level meta (Day-Ahead · Historical)
+    const pageMeta = document.getElementById('pr-hist-page-meta');
+    if (pageMeta) pageMeta.textContent = label + ' · ENTSO-E';
+  }
+  window.pkUpdateHistPeriodLabels = pkUpdateHistPeriodLabels;
+  // Initialise on load with the default 3M
+  setTimeout(() => pkUpdateHistPeriodLabels('3M'), 100);
 
   // ─────────────────────────────────────────────────────────────
   // Historical time-combo (C-mode, narrow screens ≤1200px) helpers
