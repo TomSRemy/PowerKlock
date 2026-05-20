@@ -520,9 +520,12 @@
     padding: 14px 16px;
     transition: border-color 0.15s, border-left-color 0.2s;
   }
-  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips */
+  /* Unified card background — applied to ALL KPI strips: Daily main (#kpi-strip),
+     Historical main (#ho-kpi-strip), Daily Compare (#cc-kpi-strip), Historical Compare (#hmz-kpi-strip). */
   #kpi-strip .kpi-card,
-  #ho-kpi-strip .kpi-card {
+  #ho-kpi-strip .kpi-card,
+  #cc-kpi-strip .kpi-card,
+  #hmz-kpi-strip .kpi-card {
     background: #1c242e;
   }
   .kpi-card:hover { border-color: var(--border2); }
@@ -2261,8 +2264,8 @@
         <table id="prices-table" style="font-size:11px;table-layout:fixed">
           <thead>
             <tr>
-              <th onclick="sortPricesTable('code')" style="width:5%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
-              <th onclick="sortPricesTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('country')" style="width:8%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('today')" style="width:7%;cursor:pointer;user-select:none;text-align:right">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('peak')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Avg over 08h–20h">PEAK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('offpeak')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Avg over 00h–08h / 20h–24h">OFF-PK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
@@ -2368,8 +2371,6 @@
             <canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas>
             <div id="cc-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
           </div>
-          <!-- Analyst banner (filled by JS — amber style ◈ + Market read) -->
-          <div id="cc-analyst-banner-anchor"></div>
           <!-- Compare zones data table (replaces KPI cards) -->
           <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px">
             <table id="compare-data-table" style="font-size:11px;table-layout:fixed">
@@ -2388,10 +2389,8 @@
           </div>
           <div id="compare-peak-strip" style="display:none"></div>
           <div id="compare-kpi-strip" style="display:none"></div>
-          <!-- Footer: source -->
-          <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
-            ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
-          </div>
+          <!-- Analyst banner (filled by JS — amber style ◈ + Market read · placed under table as conclusion) -->
+          <div id="cc-analyst-banner-anchor"></div>
           </div><!-- /hist-section-body of hs-cc-main -->
         </div><!-- /hist-section #hs-cc-main -->
         </div><!-- /tab-panel daily -->
@@ -2468,8 +2467,8 @@
       <table id="ho-table" style="font-size:11px;table-layout:fixed">
         <thead>
           <tr>
-            <th onclick="sortHoTable('code')" style="width:6%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
-            <th onclick="sortHoTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('country')" style="width:8%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('avg')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average price over selected window">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('peak')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average peak price (08:00-20:00 CET)">PEAK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('off')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average off-peak price (00:00-08:00 + 20:00-24:00 CET)">OFF-PK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
@@ -2479,7 +2478,7 @@
             <th onclick="sortHoTable('negh')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Hours below 0 €/MWh (renewable stress)">NEG H <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('ren')" style="width:6%;cursor:pointer;user-select:none;text-align:right" title="Avg share of renewables (wind+solar+hydro / total)">% REN <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('fuel')" style="width:11%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel in generation mix">DOM. FUEL <span style="opacity:.4">↕</span></th>
-            <th onclick="sortHoTable('days')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Number of days with data">DAYS<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span> <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('days')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Number of days with data">DAYS<br><span style="color:var(--tx3);font-weight:400;font-size:9px">count</span> <span style="opacity:.4">↕</span></th>
           </tr>
         </thead>
         <tbody id="ho-table-tbody"></tbody>
@@ -2589,10 +2588,6 @@
   </div>
   <!-- Analyst banner anchor (filled by JS based on current view) -->
   <div id="hmz-analyst-banner-anchor"></div>
-  <!-- Footer: source -->
-  <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
-    ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
-  </div>
   </div><!-- /hist-section-body of hs-hmz-main -->
 </div><!-- /hist-section #hs-hmz-main -->
 
