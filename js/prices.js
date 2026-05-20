@@ -2606,9 +2606,14 @@ function renderCCSpread(data, selected) {
 // ────────────────────────────────────────────
 function renderCCAnalysis(view, data, selected) {
   const host = document.getElementById('cc-analysis');
-  if (!host) return;
+  // host may be missing now that we replaced it by the amber banner; only the anchor matters
   const zones = ccGetSelectedZones(data, selected);
-  if (!zones.length) { host.style.display = 'none'; return; }
+  if (!zones.length) {
+    if (host) host.style.display = 'none';
+    const anchor = document.getElementById('cc-analyst-banner-anchor');
+    if (anchor) anchor.innerHTML = '';
+    return;
+  }
 
   const nph = zones[0].hourly && zones[0].hourly.length > 24 ? Math.round(zones[0].hourly.length/24) : 1;
   // Helper: peak/off-peak avg per zone
@@ -2708,12 +2713,28 @@ function renderCCAnalysis(view, data, selected) {
     }
   }
 
-  if (!lines.length) { host.style.display = 'none'; return; }
+  // ── Build the unified amber analyst banner (cc-analyst-banner-anchor) ──
+  // Uses _buildAnalystBanner (defined in hist.js, exposed on window) — same style
+  // as Historical chart banners. cc-analysis (legacy gray banner) is left hidden.
+  const anchor = document.getElementById('cc-analyst-banner-anchor');
+  if (anchor && typeof window._buildAnalystBanner === 'function' && stats.length) {
+    const sortedByAvg = [...stats].sort((a, b) => a.avg - b.avg);
+    const cheap  = { z: sortedByAvg[0].code, avg: sortedByAvg[0].avg };
+    const pricey = { z: sortedByAvg[sortedByAvg.length - 1].code, avg: sortedByAvg[sortedByAvg.length - 1].avg };
+    const loadedAvg = stats.reduce((s, x) => s + x.avg, 0) / stats.length;
+    const frStats = stats.find(s => s.code === 'FR');
+    const frGap = frStats ? (frStats.avg - cheap.avg) : null;
+    const modeMap = { lines: 'ccLines', profile: 'ccProfile', bands: 'ccBands', spread: 'ccSpread', heatmap: 'ccHeatmap' };
+    const html = window._buildAnalystBanner(modeMap[view] || 'ccLines', {
+      cheap, pricey, frGap, loadedAvg, zoneCount: stats.length, view,
+    });
+    anchor.innerHTML = html;
+  } else if (anchor) {
+    anchor.innerHTML = '';
+  }
 
-  const toneColor = tone === 'warn' ? 'var(--warn)' : tone === 'alert' ? 'var(--down)' : 'var(--accent, var(--text2))';
-  host.style.borderLeftColor = toneColor;
-  host.style.display = 'block';
-  host.innerHTML = lines.map(l => `<div style="margin:2px 0">${l}</div>`).join('');
+  // Legacy cc-analysis: hide (we now use the amber banner above)
+  if (host) host.style.display = 'none';
 }
 
 // Initialise tabs on first load
