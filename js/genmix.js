@@ -1090,16 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Also trigger if already active
     if (page.classList.contains('active')) _gmInit();
   }
-  // Wire collapse/expand on hist-section headers (style aligned with Historical)
-  document.querySelectorAll('#page-genmix .hist-section-header').forEach(h => {
-    h.addEventListener('click', () => {
-      h.classList.toggle('open');
-      const body = h.nextElementSibling;
-      if (body && body.classList.contains('hist-section-body')) {
-        body.classList.toggle('open');
-      }
-    });
-  });
+  // Sections are always open — no collapse/expand listeners needed.
 });
 
 // ── Backward-compat shim ──
