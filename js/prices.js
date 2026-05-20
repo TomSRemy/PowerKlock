@@ -2883,48 +2883,48 @@ function renderCompareKPIs(data, selected) {
 function ccTableHeader(view) {
   const cols = {
     lines: [
-      { w:'18%', label:'Zone', tip:'' },
-      { w:'9%',  label:'Avg', sub:'€/MWh', align:'right', tip:'24h average' },
-      { w:'30%', label:'Range', sub:'min slot — max slot · €/MWh', align:'left', tip:'Intraday range, scale shared across zones' },
-      { w:'21%', label:'Peak avg / Off-pk avg', sub:'08-20h / 00-08+20-24h · €/MWh', align:'right', tip:'Peak vs off-peak averages' },
-      { w:'13%', label:'Spread P/OP', sub:'€/MWh', align:'right', tip:'Peak − Off-peak. Negative = inverted (duck curve)' },
+      { w:'14%', label:'Zone', tip:'' },
+      { w:'11%', label:'Avg', sub:'€/MWh', align:'right', tip:'24h average' },
+      { w:'30%', label:'Range', sub:'min — max · €/MWh', align:'left', tip:'Intraday range, scale shared across zones' },
+      { w:'24%', label:'Peak / Off-pk avg', sub:'08–20h / 00–08+20–24h · €/MWh', align:'right', tip:'Peak vs off-peak averages' },
+      { w:'21%', label:'Spread P/OP', sub:'€/MWh', align:'right', tip:'Peak − Off-peak. Negative = inverted (duck curve)' },
     ],
     heatmap: [
       { w:'18%', label:'Zone' },
       { w:'10%', label:'Avg', sub:'€/MWh', align:'right' },
-      { w:'12%', label:'Min @hr', sub:'€/MWh', align:'right', tip:'Cheapest slot of the day' },
-      { w:'12%', label:'Max @hr', sub:'€/MWh', align:'right', tip:'Most expensive slot of the day' },
-      { w:'10%', label:'Neg hrs', sub:'count', align:'right', tip:'Hours below 0 €/MWh' },
-      { w:'15%', label:'Top quartile', sub:'% of slots', align:'right', tip:'Share of slots in the top 25% globally' },
+      { w:'14%', label:'Min @hr', sub:'€/MWh', align:'right', tip:'Cheapest slot of the day' },
+      { w:'14%', label:'Max @hr', sub:'€/MWh', align:'right', tip:'Most expensive slot of the day' },
+      { w:'14%', label:'Neg hrs', sub:'count', align:'right', tip:'Hours below 0 €/MWh' },
+      { w:'30%', label:'Top quartile', sub:'% of slots', align:'right', tip:'Share of slots in the top 25% globally' },
     ],
     profile: [
       { w:'18%', label:'Zone' },
-      { w:'14%', label:'Volatility', sub:'max% − min%', align:'right', tip:'Spread of the normalised profile (high = peaky day)' },
-      { w:'14%', label:'Peak shape', sub:'peak/avg %', align:'right', tip:'Peak average as % of daily average. >100 = peak above avg' },
-      { w:'14%', label:'Off-pk shape', sub:'off-pk/avg %', align:'right' },
-      { w:'14%', label:'Duck index', sub:'eve − midday %', align:'right', tip:'17-21h avg vs 11-15h avg, in % of daily avg. High = duck curve' },
-      { w:'10%', label:'Neg hrs', sub:'count', align:'right' },
+      { w:'16%', label:'Volatility', sub:'max% − min%', align:'right', tip:'Spread of the normalised profile (high = peaky day)' },
+      { w:'16%', label:'Peak shape', sub:'peak/avg %', align:'right', tip:'Peak average as % of daily average. >100 = peak above avg' },
+      { w:'16%', label:'Off-pk shape', sub:'off-pk/avg %', align:'right' },
+      { w:'18%', label:'Duck index', sub:'eve − midday %', align:'right', tip:'17-21h avg vs 11-15h avg, in % of daily avg. High = duck curve' },
+      { w:'16%', label:'Neg hrs', sub:'count', align:'right' },
     ],
     bands: [
-      { w:'18%', label:'Zone' },
-      { w:'12%', label:'Today avg', sub:'€/MWh', align:'right' },
-      { w:'12%', label:'30d median', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Percentile', sub:'today vs 30d', align:'right', tip:'Where today sits in the 30-day distribution (0 = below all, 100 = above all)' },
-      { w:'14%', label:'Max divergence', sub:'€/MWh from median', align:'right', tip:'Largest gap between today and 30-day median across hours' },
-      { w:'14%', label:'Above max / below min', sub:'hrs', align:'right', tip:'Hours today exceeded the 30-day max or fell below the 30-day min' },
+      { w:'14%', label:'Zone' },
+      { w:'14%', label:'Today avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'30d median', sub:'€/MWh', align:'right' },
+      { w:'18%', label:'Percentile', sub:'today vs 30d', align:'right', tip:'Where today sits in the 30-day distribution (0 = below all, 100 = above all)' },
+      { w:'20%', label:'Max divergence', sub:'€/MWh from median', align:'right', tip:'Largest gap between today and 30-day median across hours' },
+      { w:'20%', label:'Above max / below min', sub:'hrs', align:'right', tip:'Hours today exceeded the 30-day max or fell below the 30-day min' },
     ],
     spread: [
-      { w:'18%', label:'Zone' },
-      { w:'14%', label:'Avg spread', sub:'€/MWh', align:'right', tip:'Daily mean of (zone − reference)' },
-      { w:'14%', label:'Max spread @hr', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Min spread @hr', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Hrs +/−', sub:'positive / negative', align:'right', tip:'Hours where the zone trades above / below the reference' },
-      { w:'12%', label:'Correlation', sub:'ρ vs ref', align:'right', tip:'Pearson correlation of hourly profiles' },
+      { w:'14%', label:'Zone' },
+      { w:'18%', label:'Avg spread', sub:'€/MWh', align:'right', tip:'Daily mean of (zone − reference)' },
+      { w:'18%', label:'Max spread @hr', sub:'€/MWh', align:'right' },
+      { w:'18%', label:'Min spread @hr', sub:'€/MWh', align:'right' },
+      { w:'18%', label:'Hrs +/−', sub:'positive / negative', align:'right', tip:'Hours where the zone trades above / below the reference' },
+      { w:'14%', label:'Correlation', sub:'ρ vs ref', align:'right', tip:'Pearson correlation of hourly profiles' },
     ],
   };
   const c = cols[view] || cols.lines;
   return '<tr>' + c.map(col => `
-    <th style="width:${col.w};text-align:${col.align||'left'}" ${col.tip?`title="${col.tip}"`:''}>
+    <th style="width:${col.w};text-align:${col.align||'left'};padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ${col.tip?`title="${col.tip}"`:''}>
       ${col.label}${col.sub?`<br><span style="color:var(--tx3);font-weight:400;font-size:9px">${col.sub}</span>`:''}
     </th>`).join('') + '</tr>';
 }
@@ -2933,291 +2933,175 @@ function ccTableHeader(view) {
 function _ccZoneCell(r) {
   const col = window._zoneColorMap?.[r.code] || '#B8C9D9';
   const meta = ZONE_META[r.code] || { country: r.z?.name || r.code };
-  return `<td style="padding:14px;vertical-align:middle">
-    <span style="display:inline-block;width:3px;height:14px;background:${col};border-radius:2px;vertical-align:middle;margin-right:8px"></span>
+  return `<td style="padding:9px 6px;vertical-align:middle">
+    <span style="display:inline-block;width:3px;height:12px;background:${col};border-radius:2px;vertical-align:middle;margin-right:6px"></span>
     <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col};font-size:11px">${r.z?.flag||''} ${r.code}</span>
-    <span style="color:var(--text3);margin-left:6px;font-family:'Inter',sans-serif;font-size:11px">${meta.country||''}</span>
+    <span style="color:var(--text3);margin-left:5px;font-family:'Inter',sans-serif;font-size:10.5px">${meta.country||''}</span>
   </td>`;
 }
 function _ccTr(r, cells) {
-  return `<tr data-zone="${r.code}" style="border-bottom:1px solid rgba(30,45,61,.5);cursor:pointer;transition:background .15s">
+  return `<tr data-zone="${r.code}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background .15s">
     ${_ccZoneCell(r)}${cells}
   </tr>`;
 }
-function _ccNum(v, color, decimals=1) {
+function _ccNum(v, color, decimals=2) {
   if (v == null || isNaN(v)) return '<span style="color:var(--text3)">--</span>';
   return `<span style="color:${color||'var(--text)'}">${v.toFixed(decimals)}</span>`;
 }
 
-// ── Compute rows: shared metrics, plus view-specific extras
-function ccComputeRows(data, selected, view) {
-  const out = [];
-  const zonesArr = data.filter(z => selected.has(z.code) && z.hourly && z.hourly.filter(v=>v!=null).length);
-  if (!zonesArr.length) return out;
+// ── Style helpers · COMPACT TEMPLATE for Compare zones (Daily + Historical) ──
+const _CC_TD_R = "text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _CC_TD_L = "text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _CC_TD_C = "text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _CC_SUB = "color:var(--text3);font-size:9px";
 
-  // Global pool of all valid prices across selected zones (for top-quartile, etc.)
-  const allValid = [];
-  zonesArr.forEach(z => z.hourly.forEach(v => { if (v != null) allValid.push(v); }));
-  const sortedAll = [...allValid].sort((a,b)=>a-b);
-  const q75 = sortedAll[Math.floor(sortedAll.length * 0.75)] ?? Infinity;
-
-  zonesArr.forEach(z => {
-    const h = z.hourly;
-    const valid = h.filter(v => v != null);
-    if (!valid.length) return;
-    const nph = h.length > 24 ? Math.round(h.length/24) : 1;
-    const resMin = nph === 4 ? 15 : (nph === 2 ? 30 : 60);
-    const avg = valid.reduce((a,b)=>a+b,0) / valid.length;
-    const mn = Math.min(...valid), mx = Math.max(...valid);
-    const minIdx = h.indexOf(mn), maxIdx = h.indexOf(mx);
-    const fmtSlot = (idx) => {
-      if (idx < 0) return '--';
-      const t = idx * resMin;
-      return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
-    };
-    const pkV = [], opV = [], midV = [], eveV = [];
-    h.forEach((v, i) => {
-      if (v == null) return;
-      const hr = Math.floor(i / nph);
-      if (hr >= 8 && hr < 20) pkV.push(v); else opV.push(v);
-      if (hr >= 11 && hr < 15) midV.push(v);
-      if (hr >= 17 && hr < 21) eveV.push(v);
-    });
-    const _avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
-    const pk = _avg(pkV) ?? avg;
-    const op = _avg(opV) ?? avg;
-    const negHrs = h.filter(v => v != null && v < 0).length / nph;
-    const topQ   = h.filter(v => v != null && v >= q75).length / valid.length * 100;
-    const mid = _avg(midV);
-    const eve = _avg(eveV);
-    const duck = (mid != null && eve != null && Math.abs(avg) > 0.5) ? ((eve - mid) / avg) * 100 : null;
-    const peakShape    = Math.abs(avg) > 0.5 ? (pk / avg) * 100 : null;
-    const offPeakShape = Math.abs(avg) > 0.5 ? (op / avg) * 100 : null;
-    // Volatility on the % profile (max% - min% of avg)
-    const profile = Math.abs(avg) > 0.5 ? valid.map(v => (v / avg) * 100) : [];
-    const volat = profile.length ? Math.max(...profile) - Math.min(...profile) : null;
-
-    out.push({
-      z, code: z.code, hourly: h, nph, resMin, valid, avg, mn, mx,
-      minHr: fmtSlot(minIdx), maxHr: fmtSlot(maxIdx),
-      pk, op, spread: pk - op,
-      negHrs, topQ, peakShape, offPeakShape, duck, volat,
-    });
-  });
-
-  // View-specific extras: bands and spread need extra fetches/computation
-  if (view === 'bands') {
-    out.forEach(r => {
-      const env = window._envelopeCache && window._envelopeCache[r.code];
-      if (!env) { r._noEnv = true; return; }
-      const med = env.median.filter(v => v != null);
-      r.med30 = med.length ? med.reduce((a,b)=>a+b,0)/med.length : null;
-      // Percentile of today's avg vs 30d hourly distribution
-      const pool = [];
-      env.median.forEach((_, i) => {
-        if (env.min[i] != null) pool.push(env.min[i]);
-        if (env.max[i] != null) pool.push(env.max[i]);
-        if (env.median[i] != null) pool.push(env.median[i]);
-      });
-      pool.sort((a,b)=>a-b);
-      const idx = pool.findIndex(v => v >= r.avg);
-      r.percentile = pool.length ? (idx < 0 ? 100 : (idx / pool.length) * 100) : null;
-      // Max divergence today vs median (hour by hour)
-      let maxDiv = 0;
-      const nPts = r.hourly.length;
-      for (let i = 0; i < nPts; i++) {
-        const t = r.hourly[i], m = env.median[i];
-        if (t != null && m != null) {
-          const d = Math.abs(t - m);
-          if (d > maxDiv) maxDiv = d;
-        }
-      }
-      r.maxDiv = maxDiv;
-      // Hours above 30d max / below 30d min
-      let above = 0, below = 0;
-      for (let i = 0; i < nPts; i++) {
-        const t = r.hourly[i];
-        if (t == null) continue;
-        if (env.max[i] != null && t > env.max[i]) above++;
-        if (env.min[i] != null && t < env.min[i]) below++;
-      }
-      r.aboveMaxHrs = above / r.nph;
-      r.belowMinHrs = below / r.nph;
-    });
-  }
-  if (view === 'spread') {
-    const refCode = window._ccSpreadRef || 'FR';
-    const ref = data.find(z => z.code === refCode);
-    if (ref && ref.hourly) {
-      const refH = ref.hourly;
-      out.forEach(r => {
-        if (r.code === refCode) { r._isRef = true; return; }
-        const n = Math.min(r.hourly.length, refH.length);
-        const sp = [];
-        for (let i = 0; i < n; i++) {
-          if (r.hourly[i] != null && refH[i] != null) sp.push({ v: r.hourly[i] - refH[i], i });
-        }
-        if (!sp.length) return;
-        const vals = sp.map(s => s.v);
-        const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-        const mxObj = sp.reduce((a,b)=> b.v > a.v ? b : a);
-        const mnObj = sp.reduce((a,b)=> b.v < a.v ? b : a);
-        const fmtSlot = (idx) => {
-          const t = idx * r.resMin;
-          return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
-        };
-        r.spreadAvg = avg;
-        r.spreadMax = mxObj.v; r.spreadMaxHr = fmtSlot(mxObj.i);
-        r.spreadMin = mnObj.v; r.spreadMinHr = fmtSlot(mnObj.i);
-        r.spreadPos = vals.filter(v => v > 0).length / r.nph;
-        r.spreadNeg = vals.filter(v => v < 0).length / r.nph;
-        // Pearson correlation
-        const xs = [], ys = [];
-        for (let i = 0; i < n; i++) {
-          if (r.hourly[i] != null && refH[i] != null) { xs.push(r.hourly[i]); ys.push(refH[i]); }
-        }
-        if (xs.length > 2) {
-          const mx_ = xs.reduce((a,b)=>a+b,0)/xs.length;
-          const my_ = ys.reduce((a,b)=>a+b,0)/ys.length;
-          let num=0, dx=0, dy=0;
-          for (let i = 0; i < xs.length; i++) {
-            const a = xs[i]-mx_, b = ys[i]-my_;
-            num += a*b; dx += a*a; dy += b*b;
-          }
-          r.corr = (dx>0 && dy>0) ? num / Math.sqrt(dx*dy) : null;
-        }
-      });
-    }
-  }
-
-  return out;
-}
-
-// ── Body builders per view
+// ── ccBodyLines · range bar with global-scale position (kept from original)
 function ccBodyLines(rows) {
   const globalMin = Math.min(...rows.map(r => r.mn));
   const globalMax = Math.max(...rows.map(r => r.mx));
   const globalRng = globalMax - globalMin || 1;
   const spreadCellHTML = (s) => {
     if (s == null) return '<span style="color:var(--text3)">--</span>';
-    if (s >= 0)    return `<span style="color:var(--text2)">+${s.toFixed(1)}</span>`;
-    if (s > -20)   return `<span style="color:var(--warn)">${s.toFixed(1)}</span><div style="font-size:9px;color:var(--text3);margin-top:2px">inverted</div>`;
-    return `<span style="color:var(--down)">${s.toFixed(1)}</span><div style="font-size:9px;color:var(--down);opacity:.75;margin-top:2px">deeply inverted</div>`;
+    if (s >= 0)    return `<span style="color:var(--up)">+${s.toFixed(2)}</span>`;
+    if (s > -20)   return `<span style="color:var(--warn)">${s.toFixed(2)}</span>`;
+    return `<span style="color:var(--down)">${s.toFixed(2)}</span>`;
   };
   return rows.map(r => {
     const col = window._zoneColorMap?.[r.code] || '#B8C9D9';
     const leftPct  = ((r.mn - globalMin) / globalRng) * 100;
     const widthPct = ((r.mx - r.mn) / globalRng) * 100;
     const cells = `
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(1)}</td>
-      <td style="padding:10px 14px;vertical-align:middle">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="flex:0 0 56px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:${r.mn<0?'var(--down)':'var(--text2)'};line-height:12px">
-            ${r.mn.toFixed(1)}<br><span style="color:var(--text3);font-size:9px">@${r.minHr}</span>
+      <td style="${_CC_TD_R};font-weight:700;color:var(--text)">${r.avg.toFixed(2)}</td>
+      <td style="padding:9px 6px;vertical-align:middle">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:0 0 48px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.mn<0?'var(--down)':'var(--text2)'};line-height:11px">
+            ${r.mn.toFixed(2)}<br><span style="${_CC_SUB}">@${r.minHr}</span>
           </div>
-          <div style="flex:1;position:relative;height:10px">
-            <div style="position:absolute;top:0;left:0;right:0;height:100%;background:var(--bg);border-radius:2px"></div>
-            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.55;border-radius:2px"></div>
+          <div style="flex:1;position:relative;height:8px">
+            <div style="position:absolute;top:0;left:0;right:0;height:100%;background:rgba(255,255,255,0.05);border-radius:2px"></div>
+            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.6;border-radius:2px"></div>
           </div>
-          <div style="flex:0 0 56px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;color:${r.mx<0?'var(--down)':'var(--text2)'};line-height:12px">
-            ${r.mx.toFixed(1)}<br><span style="color:var(--text3);font-size:9px">@${r.maxHr}</span>
+          <div style="flex:0 0 48px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.mx<0?'var(--down)':'var(--text2)'};line-height:11px">
+            ${r.mx.toFixed(2)}<br><span style="${_CC_SUB}">@${r.maxHr}</span>
           </div>
         </div>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;vertical-align:middle">
-        <span style="color:var(--text)">${r.pk.toFixed(1)}</span> <span style="color:var(--text3)">/</span> <span style="color:var(--text2)">${r.op.toFixed(1)}</span>
+      <td style="${_CC_TD_R}">
+        <span style="color:var(--text)">${r.pk.toFixed(2)}</span> <span style="color:var(--text3)">/</span> <span style="color:var(--text2)">${r.op.toFixed(2)}</span>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;vertical-align:middle">${spreadCellHTML(r.spread)}</td>`;
+      <td style="${_CC_TD_R}">${spreadCellHTML(r.spread)}</td>`;
     return _ccTr(r, cells);
   }).join('');
 }
 
+// ── ccBodyHeatmap · top quartile mini-bar 50px
 function ccBodyHeatmap(rows) {
   return rows.map(r => {
     const negCol = r.negHrs > 0 ? 'var(--down)' : 'var(--text3)';
+    const tqCol  = r.topQ > 50 ? '#ED6965' : (r.topQ > 25 ? '#FBBF24' : '#14D3A9');
+    const tqTextCol = r.topQ > 50 ? 'var(--down)' : (r.topQ > 25 ? 'var(--warn)' : 'var(--up)');
     const cells = `
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(1)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:${r.mn<0?'var(--down)':'var(--text2)'}">${r.mn.toFixed(1)}</span>
-        <div style="color:var(--text3);font-size:9px">@${r.minHr}</div>
+      <td style="${_CC_TD_R};font-weight:700;color:var(--text)">${r.avg.toFixed(2)}</td>
+      <td style="${_CC_TD_R}">
+        <span style="color:${r.mn<0?'var(--down)':'var(--text2)'}">${r.mn.toFixed(2)}</span> <span style="${_CC_SUB}">@${r.minHr}</span>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:var(--text)">${r.mx.toFixed(1)}</span>
-        <div style="color:var(--text3);font-size:9px">@${r.maxHr}</div>
+      <td style="${_CC_TD_R}">
+        <span style="color:var(--text)">${r.mx.toFixed(2)}</span> <span style="${_CC_SUB}">@${r.maxHr}</span>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${negCol};vertical-align:middle">${r.negHrs.toFixed(r.negHrs%1===0?0:1)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);vertical-align:middle">${r.topQ.toFixed(0)}%</td>`;
-    return _ccTr(r, cells);
-  }).join('');
-}
-
-function ccBodyProfile(rows) {
-  const fmtPct = (v, decimals=0) => v == null ? '--' : `${v >= 0 ? '' : ''}${v.toFixed(decimals)}%`;
-  return rows.map(r => {
-    const peakCol    = r.peakShape != null    && r.peakShape    > 100 ? 'var(--text)' : 'var(--warn)';
-    const offPeakCol = r.offPeakShape != null && r.offPeakShape < 100 ? 'var(--text2)' : 'var(--warn)';
-    const duckCol    = r.duck != null && r.duck > 30 ? 'var(--down)' : 'var(--text2)';
-    const cells = `
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);vertical-align:middle">${r.volat != null ? r.volat.toFixed(0)+'%' : '--'}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${peakCol};vertical-align:middle">${fmtPct(r.peakShape)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${offPeakCol};vertical-align:middle">${fmtPct(r.offPeakShape)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${duckCol};vertical-align:middle">${fmtPct(r.duck)}${r.duck != null && r.duck > 30 ? '<div style="font-size:9px;color:var(--down);opacity:.75;margin-top:2px">strong duck</div>' : ''}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${r.negHrs>0?'var(--down)':'var(--text3)'};vertical-align:middle">${r.negHrs.toFixed(r.negHrs%1===0?0:1)}</td>`;
-    return _ccTr(r, cells);
-  }).join('');
-}
-
-function ccBodyBands(rows) {
-  return rows.map(r => {
-    if (r._noEnv) {
-      const cells = `<td colspan="5" style="text-align:center;padding:14px;color:var(--text3);font-size:11px">Loading 30-day envelope…</td>`;
-      return _ccTr(r, cells);
-    }
-    const pctCol = r.percentile == null ? 'var(--text3)' : (r.percentile > 80 ? 'var(--up)' : r.percentile < 20 ? 'var(--down)' : 'var(--text2)');
-    const cells = `
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(1)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);vertical-align:middle">${r.med30 != null ? r.med30.toFixed(1) : '--'}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${pctCol};vertical-align:middle">${r.percentile != null ? 'P'+r.percentile.toFixed(0) : '--'}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);vertical-align:middle">${r.maxDiv != null ? r.maxDiv.toFixed(1) : '--'}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:${r.aboveMaxHrs>0?'var(--up)':'var(--text3)'}">${r.aboveMaxHrs.toFixed(r.aboveMaxHrs%1===0?0:1)}</span>
-        <span style="color:var(--text3)"> / </span>
-        <span style="color:${r.belowMinHrs>0?'var(--down)':'var(--text3)'}">${r.belowMinHrs.toFixed(r.belowMinHrs%1===0?0:1)}</span>
+      <td style="${_CC_TD_R};color:${negCol}">${r.negHrs.toFixed(r.negHrs%1===0?0:1)}</td>
+      <td style="${_CC_TD_R}">
+        <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;width:100%">
+          <span style="color:${tqTextCol}">${r.topQ.toFixed(0)}%</span>
+          <span style="display:inline-block;width:50px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative">
+            <span style="display:block;height:100%;width:${Math.min(r.topQ,100).toFixed(0)}%;background:${tqCol};opacity:.7;border-radius:2px"></span>
+          </span>
+        </div>
       </td>`;
     return _ccTr(r, cells);
   }).join('');
 }
 
+// ── ccBodyProfile · no mini-vis (% are self-explanatory)
+function ccBodyProfile(rows) {
+  const fmtPct = (v, decimals=0) => v == null ? '--' : `${v.toFixed(decimals)}%`;
+  return rows.map(r => {
+    const peakCol    = r.peakShape != null    && r.peakShape    > 100 ? 'var(--text)' : 'var(--warn)';
+    const offPeakCol = r.offPeakShape != null && r.offPeakShape < 100 ? 'var(--text2)' : 'var(--warn)';
+    const duckCol    = r.duck != null && r.duck > 30 ? 'var(--down)' : 'var(--text2)';
+    const volCol     = r.volat != null && r.volat > 200 ? 'var(--warn)' : 'var(--text)';
+    const cells = `
+      <td style="${_CC_TD_R};color:${volCol}">${r.volat != null ? r.volat.toFixed(0)+'%' : '--'}</td>
+      <td style="${_CC_TD_R};color:${peakCol}">${fmtPct(r.peakShape)}</td>
+      <td style="${_CC_TD_R};color:${offPeakCol}">${fmtPct(r.offPeakShape)}</td>
+      <td style="${_CC_TD_R};color:${duckCol}">${fmtPct(r.duck)}${r.duck != null && r.duck > 30 ? ' <span style="font-size:9px;color:var(--down);opacity:.85">duck</span>' : ''}</td>
+      <td style="${_CC_TD_R};color:${r.negHrs>0?'var(--down)':'var(--text3)'}">${r.negHrs.toFixed(r.negHrs%1===0?0:1)}</td>`;
+    return _ccTr(r, cells);
+  }).join('');
+}
+
+// ── ccBodyBands · no mini-vis (numbers + colors are self-explanatory)
+function ccBodyBands(rows) {
+  return rows.map(r => {
+    if (r._noEnv) {
+      const cells = `<td colspan="5" style="${_CC_TD_C};color:var(--text3)">Loading 30-day envelope…</td>`;
+      return _ccTr(r, cells);
+    }
+    const pctCol = r.percentile == null ? 'var(--text3)' : (r.percentile > 80 ? 'var(--down)' : r.percentile < 20 ? 'var(--up)' : 'var(--text2)');
+    const cells = `
+      <td style="${_CC_TD_R};font-weight:700;color:var(--text)">${r.avg.toFixed(2)}</td>
+      <td style="${_CC_TD_R};color:var(--text2)">${r.med30 != null ? r.med30.toFixed(2) : '--'}</td>
+      <td style="${_CC_TD_R};color:${pctCol}">${r.percentile != null ? 'P'+r.percentile.toFixed(0) : '--'}</td>
+      <td style="${_CC_TD_R};color:var(--text2)">${r.maxDiv != null ? r.maxDiv.toFixed(2) : '--'}</td>
+      <td style="${_CC_TD_R}">
+        <span style="color:${r.aboveMaxHrs>0?'var(--down)':'var(--text3)'}">${r.aboveMaxHrs.toFixed(r.aboveMaxHrs%1===0?0:1)}</span>
+        <span style="color:var(--text3)"> / </span>
+        <span style="color:${r.belowMinHrs>0?'var(--up)':'var(--text3)'}">${r.belowMinHrs.toFixed(r.belowMinHrs%1===0?0:1)}</span>
+      </td>`;
+    return _ccTr(r, cells);
+  }).join('');
+}
+
+// ── ccBodySpread · divergent bar centered on 0
 function ccBodySpread(rows) {
   const refCode = window._ccSpreadRef || 'FR';
+  const validSpreads = rows.filter(r => r.spreadAvg != null && !r._isRef).map(r => Math.abs(r.spreadAvg));
+  const maxAbs = validSpreads.length ? Math.max(...validSpreads) : 1;
   return rows.map(r => {
     if (r._isRef) {
-      const cells = `<td colspan="5" style="text-align:center;padding:14px;color:var(--text3);font-size:11px;font-style:italic">— reference —</td>`;
+      const cells = `<td colspan="5" style="${_CC_TD_C};color:var(--text3);font-style:italic">— reference —</td>`;
       return _ccTr(r, cells);
     }
     if (r.spreadAvg == null) {
-      const cells = `<td colspan="5" style="text-align:center;padding:14px;color:var(--text3);font-size:11px">No matching data vs ${refCode}</td>`;
+      const cells = `<td colspan="5" style="${_CC_TD_C};color:var(--text3)">No matching data vs ${refCode}</td>`;
       return _ccTr(r, cells);
     }
-    const avgCol = r.spreadAvg >= 0 ? 'var(--up)' : 'var(--down)';
+    const avgCol = r.spreadAvg >= 0 ? 'var(--down)' : 'var(--up)';
     const corrCol = r.corr == null ? 'var(--text3)' : (r.corr > 0.7 ? 'var(--up)' : r.corr < 0.3 ? 'var(--warn)' : 'var(--text2)');
     const sign = (v) => v >= 0 ? '+' : '';
+    // Divergent bar: barre 60px centrée sur 0, négatif part vers la gauche (vert), positif vers la droite (rouge)
+    const divPct = Math.min(Math.abs(r.spreadAvg) / maxAbs, 1) * 50;
+    const divHTML = r.spreadAvg >= 0
+      ? `<span style="display:inline-block;width:60px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative;vertical-align:middle"><span style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,0.15)"></span><span style="position:absolute;left:50%;top:0;height:100%;width:${divPct.toFixed(1)}%;background:#ED6965;opacity:.75;border-radius:2px"></span></span>`
+      : `<span style="display:inline-block;width:60px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative;vertical-align:middle"><span style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,0.15)"></span><span style="position:absolute;right:50%;top:0;height:100%;width:${divPct.toFixed(1)}%;background:#14D3A9;opacity:.75;border-radius:2px"></span></span>`;
     const cells = `
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${avgCol};vertical-align:middle">${sign(r.spreadAvg)}${r.spreadAvg.toFixed(1)}</td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:var(--up)">${sign(r.spreadMax)}${r.spreadMax.toFixed(1)}</span>
-        <div style="color:var(--text3);font-size:9px">@${r.spreadMaxHr}</div>
+      <td style="${_CC_TD_R}">
+        <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end">
+          <span style="font-weight:700;color:${avgCol}">${sign(r.spreadAvg)}${r.spreadAvg.toFixed(2)}</span>
+          ${divHTML}
+        </div>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:var(--down)">${sign(r.spreadMin)}${r.spreadMin.toFixed(1)}</span>
-        <div style="color:var(--text3);font-size:9px">@${r.spreadMinHr}</div>
+      <td style="${_CC_TD_R}">
+        <span style="color:var(--down)">${sign(r.spreadMax)}${r.spreadMax.toFixed(2)}</span> <span style="${_CC_SUB}">@${r.spreadMaxHr}</span>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:var(--up)">${r.spreadPos.toFixed(r.spreadPos%1===0?0:1)}</span>
+      <td style="${_CC_TD_R}">
+        <span style="color:var(--up)">${sign(r.spreadMin)}${r.spreadMin.toFixed(2)}</span> <span style="${_CC_SUB}">@${r.spreadMinHr}</span>
+      </td>
+      <td style="${_CC_TD_R}">
+        <span style="color:var(--down)">${r.spreadPos.toFixed(r.spreadPos%1===0?0:1)}</span>
         <span style="color:var(--text3)"> / </span>
-        <span style="color:var(--down)">${r.spreadNeg.toFixed(r.spreadNeg%1===0?0:1)}</span>
+        <span style="color:var(--up)">${r.spreadNeg.toFixed(r.spreadNeg%1===0?0:1)}</span>
       </td>
-      <td style="text-align:right;padding:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:${corrCol};vertical-align:middle">${r.corr != null ? r.corr.toFixed(2) : '--'}</td>`;
+      <td style="${_CC_TD_R};color:${corrCol}">${r.corr != null ? r.corr.toFixed(2) : '--'}</td>`;
     return _ccTr(r, cells);
   }).join('');
 }
