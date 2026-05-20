@@ -7579,25 +7579,59 @@ async function renderHistMulti() {
   // Sync the dropdown value (in case it was set programmatically)
   const baselineSelect = document.getElementById('hmz-baseline-select');
   if (baselineSelect && baselineSelect.value !== baseline) baselineSelect.value = baseline;
-  document.getElementById('hmz-kpi-zones-v').innerHTML = selected.length + '<span class="kpi-unit">zones</span>';
-  document.getElementById('hmz-kpi-zones-meta').textContent = baseline + ' as baseline';
-  if (baseStats) {
-    document.getElementById('hmz-kpi-avg-v').innerHTML = baseStats.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
-    document.getElementById('hmz-kpi-avg-meta').textContent = baseline + ' · ' + baseStats.days + 'd';
-  }
-  // Update the "Baseline avg" KPI card label dynamically
-  const baseLabelEl = document.querySelector('#hmz-kpi-avg .kpi-label');
-  if (baseLabelEl) baseLabelEl.textContent = baseline + ' avg';
-  // Cheapest / Most expensive
+
+  // KPI 1 · Zones loaded (value = zone count, meta = loaded avg + baseline tag)
+  // Loaded avg = simple mean of per-zone period averages.
   const validStats = selected.filter(z => stats[z]).map(z => ({ z, avg: stats[z].avg }));
+  const loadedAvg = validStats.length
+    ? validStats.reduce((s, x) => s + x.avg, 0) / validStats.length
+    : null;
+  document.getElementById('hmz-kpi-zones-v').innerHTML = selected.length + '<span class="kpi-unit">zones</span>';
+  const zonesMetaEl = document.getElementById('hmz-kpi-zones-meta');
+  if (zonesMetaEl) {
+    zonesMetaEl.innerHTML = loadedAvg != null
+      ? `avg <strong style="color:var(--tx)">${loadedAvg.toFixed(2)} €/MWh</strong> · ${baseline} baseline`
+      : `${baseline} baseline`;
+  }
+
+  // KPI 2-3-4 · Cheapest / Most expensive / Spread
+  let cheap = null, pricey = null;
   if (validStats.length) {
     validStats.sort((a, b) => a.avg - b.avg);
-    const cheap = validStats[0], pricey = validStats[validStats.length-1];
-    document.getElementById('hmz-kpi-cheapest-v').innerHTML = cheap.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    cheap = validStats[0];
+    pricey = validStats[validStats.length - 1];
+    document.getElementById('hmz-kpi-cheapest-v').innerHTML = cheap.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
     document.getElementById('hmz-kpi-cheapest-meta').textContent = cheap.z;
-    document.getElementById('hmz-kpi-priciest-v').innerHTML = pricey.avg.toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-priciest-v').innerHTML = pricey.avg.toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
     document.getElementById('hmz-kpi-priciest-meta').textContent = pricey.z;
-    document.getElementById('hmz-kpi-spread-v').innerHTML = (pricey.avg - cheap.avg).toFixed(1) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-spread-v').innerHTML = (pricey.avg - cheap.avg).toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
+  }
+
+  // KPI 5 · FR vs cheapest (gap = FR avg − cheapest avg)
+  // Convention: red if FR > cheapest (FR is more expensive than the bargain market),
+  //              green if FR ≤ cheapest (FR is the bargain or tied with it),
+  //              flat if FR not loaded.
+  const frEntry = validStats.find(x => x.z === 'FR');
+  const frgapCard = document.getElementById('hmz-kpi-frgap');
+  if (frgapCard) frgapCard.classList.remove('kpi-up', 'kpi-down', 'kpi-flat');
+  if (frEntry && cheap) {
+    const gap = frEntry.avg - cheap.avg;
+    const pct = cheap.avg > 0 ? (gap / cheap.avg) * 100 : 0;
+    document.getElementById('hmz-kpi-frgap-v').innerHTML =
+      (gap >= 0 ? '+' : '') + gap.toFixed(2) + '<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-frgap-meta').innerHTML =
+      (pct >= 0 ? '+' : '') + pct.toFixed(1) + '% · ' + cheap.z + ' cheapest';
+    // Color class: monter = rouge (FR plus cher = signal défavorable)
+    if (frgapCard) {
+      if (frEntry.z === cheap.z) frgapCard.classList.add('kpi-up');   // FR is the cheapest itself
+      else if (gap > 0)         frgapCard.classList.add('kpi-down');  // FR more expensive than cheapest
+      else                       frgapCard.classList.add('kpi-up');   // FR equal or cheaper (rare)
+    }
+  } else {
+    // FR not loaded
+    document.getElementById('hmz-kpi-frgap-v').innerHTML = '--<span class="kpi-unit">€/MWh</span>';
+    document.getElementById('hmz-kpi-frgap-meta').textContent = 'FR not loaded';
+    if (frgapCard) frgapCard.classList.add('kpi-flat');
   }
 
   // Period label
