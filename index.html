@@ -539,6 +539,13 @@
   .kpi-chg { font-size: 11px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
   .kpi-meta { font-size: 10px; color: var(--text3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
   .kpi-meta-zone { font-size: 11px; color: var(--text); font-family: 'Inter', sans-serif; font-weight: 500; }
+  /* Analyst banner in Compare zones: placed above the chart — override the default
+     margin-top:32px (which is meant for banners under charts to clear the X axis). */
+  #cc-analyst-banner-anchor .ho-analyst-banner,
+  #hmz-analyst-banner-anchor .ho-analyst-banner {
+    margin-top: 0 !important;
+    margin-bottom: 12px !important;
+  }
 
   /* ── PRICES TABLE ── */
   .table-wrap {
@@ -2366,6 +2373,8 @@
               <div id="cc-bands-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
             </div>
           </div>
+          <!-- Analyst banner (filled by JS — amber style ◈ + Market read · ABOVE the chart) -->
+          <div id="cc-analyst-banner-anchor"></div>
           <!-- Chart canvas (used by Lines / Profile / Bands / Spread; Heatmap renders its own DOM) -->
           <div id="cc-chart-wrap" style="position:relative;height:340px;overflow:hidden;margin-bottom:0">
             <canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas>
@@ -2376,11 +2385,11 @@
             <table id="compare-data-table" style="font-size:11px;table-layout:fixed">
               <thead>
                 <tr>
-                  <th style="width:18%">Zone</th>
-                  <th style="width:9%;text-align:right" title="24h average price (raw 15-min slots if available)">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-                  <th style="width:30%;text-align:left" title="Intraday range — min slot to max slot, scale shared across selected zones">Range<br><span style="color:var(--tx3);font-weight:400;font-size:9px">min slot — max slot · €/MWh</span></th>
-                  <th style="width:21%;text-align:right" title="Peak avg = mean over 08:00-20:00 | Off-peak avg = mean over 00:00-08:00 + 20:00-24:00">Peak avg / Off-pk avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08:00-20:00 / 00:00-08:00+20:00-24:00 · €/MWh</span></th>
-                  <th style="width:13%;text-align:right" title="Spread = Peak avg − Off-peak avg. Negative = inverted (duck curve, off-peak more expensive than peak)">Spread P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                  <th style="width:14%;padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Zone</th>
+                  <th style="width:11%;text-align:right;padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="24h average price (raw 15-min slots if available)">Avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                  <th style="width:30%;text-align:left;padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Intraday range — min slot to max slot, scale shared across selected zones">Range<br><span style="color:var(--tx3);font-weight:400;font-size:9px">min — max · €/MWh</span></th>
+                  <th style="width:24%;text-align:right;padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Peak avg = mean over 08:00-20:00 | Off-peak avg = mean over 00:00-08:00 + 20:00-24:00">Peak / Off-pk avg<br><span style="color:var(--tx3);font-weight:400;font-size:9px">08–20h / 00–08+20–24h · €/MWh</span></th>
+                  <th style="width:21%;text-align:right;padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="Spread = Peak avg − Off-peak avg. Negative = inverted (duck curve, off-peak more expensive than peak)">Spread P/OP<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
                 </tr>
               </thead>
               <tbody id="compare-data-tbody">
@@ -2389,8 +2398,6 @@
           </div>
           <div id="compare-peak-strip" style="display:none"></div>
           <div id="compare-kpi-strip" style="display:none"></div>
-          <!-- Analyst banner (filled by JS — amber style ◈ + Market read · placed under table as conclusion) -->
-          <div id="cc-analyst-banner-anchor"></div>
           </div><!-- /hist-section-body of hs-cc-main -->
         </div><!-- /hist-section #hs-cc-main -->
         </div><!-- /tab-panel daily -->
@@ -2512,35 +2519,24 @@
   </div>
   <div class="hist-section-body open">
   <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div class="hist-filter-bar">
-      <button onclick="toggleGlobalZonePanel()" class="hf-zone-btn">
+    <!-- Baseline selector (pill style — matches Daily compare-filter-btn) -->
+    <div style="position:relative" id="hmz-baseline-wrap">
+      <button onclick="toggleHmzBaselinePanel()" id="hmz-baseline-btn"
+        style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
-        <span id="hmz-zone-label">-- zones</span>
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Baseline</span>
+        <span id="hmz-baseline-label" style="color:var(--tx);font-weight:700">FR</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <!-- Baseline zone selector -->
-      <label class="hf-zone-btn" style="cursor:default;padding:0 4px 0 10px;gap:8px">
-        <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Baseline</span>
-        <select id="hmz-baseline-select" onchange="setHmzBaseline(this.value)"
-          style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;outline:none;height:22px;padding:0 6px;border-radius:4px;color-scheme:dark">
-          <option value="FR" style="background:var(--bg2);color:var(--tx)">FR</option>
-          <option value="DE_LU" style="background:var(--bg2);color:var(--tx)">DE_LU</option>
-          <option value="ES" style="background:var(--bg2);color:var(--tx)">ES</option>
-          <option value="BE" style="background:var(--bg2);color:var(--tx)">BE</option>
-          <option value="NL" style="background:var(--bg2);color:var(--tx)">NL</option>
-          <option value="GB" style="background:var(--bg2);color:var(--tx)">GB</option>
-          <option value="PT" style="background:var(--bg2);color:var(--tx)">PT</option>
-          <option value="IT_NORD" style="background:var(--bg2);color:var(--tx)">IT_NORD</option>
-        </select>
-      </label>
-      <div class="hist-window-btns" id="hw-hmz">
-        <button class="hw-btn" onclick="setHistWindow('hmz','7D',this)">7D</button>
-        <button class="hw-btn" onclick="setHistWindow('hmz','1M',this)">1M</button>
-        <button class="hw-btn active" onclick="setHistWindow('hmz','3M',this)">3M</button>
-        <button class="hw-btn" onclick="setHistWindow('hmz','1Y',this)">1Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hmz','2Y',this)">2Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hmz','5Y',this)">5Y</button>
-        <button class="hw-btn" onclick="setHistWindow('hmz','All',this)">All</button>
+      <div id="hmz-baseline-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:6px;min-width:130px;max-height:60vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+        <button onclick="pickHmzBaseline('FR')" class="hmz-baseline-opt" data-z="FR" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">FR · France</button>
+        <button onclick="pickHmzBaseline('DE_LU')" class="hmz-baseline-opt" data-z="DE_LU" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">DE_LU · Germany</button>
+        <button onclick="pickHmzBaseline('ES')" class="hmz-baseline-opt" data-z="ES" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">ES · Spain</button>
+        <button onclick="pickHmzBaseline('BE')" class="hmz-baseline-opt" data-z="BE" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">BE · Belgium</button>
+        <button onclick="pickHmzBaseline('NL')" class="hmz-baseline-opt" data-z="NL" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">NL · Netherlands</button>
+        <button onclick="pickHmzBaseline('GB')" class="hmz-baseline-opt" data-z="GB" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">GB · Great Britain</button>
+        <button onclick="pickHmzBaseline('PT')" class="hmz-baseline-opt" data-z="PT" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">PT · Portugal</button>
+        <button onclick="pickHmzBaseline('IT_NORD')" class="hmz-baseline-opt" data-z="IT_NORD" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">IT_NORD · Italy North</button>
       </div>
     </div>
   </div>
@@ -2579,6 +2575,9 @@
     <div id="hmz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
   </div>
 
+  <!-- Analyst banner anchor (filled by JS based on current view · ABOVE the chart) -->
+  <div id="hmz-analyst-banner-anchor"></div>
+
   <!-- Chart -->
   <div style="position:relative;height:340px;overflow:hidden;margin-bottom:10px">
     <button onclick="(function(){var c=HIST.charts['hmz-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
@@ -2586,8 +2585,6 @@
     <canvas id="hmz-canvas" style="width:100%;height:340px"></canvas>
     <div id="hmz-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
   </div>
-  <!-- Analyst banner anchor (filled by JS based on current view) -->
-  <div id="hmz-analyst-banner-anchor"></div>
   </div><!-- /hist-section-body of hs-hmz-main -->
 </div><!-- /hist-section #hs-hmz-main -->
 
