@@ -887,11 +887,10 @@
   }
   .hist-section-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 11px 16px; cursor: pointer; user-select: none;
-    border-bottom: 1px solid transparent; transition: background 0.15s;
+    padding: 11px 16px; user-select: none;
+    border-bottom: 1px solid var(--bd);
+    /* Collapse disabled — sections are always open. */
   }
-  .hist-section-header:hover { background: var(--bg3); }
-  .hist-section-header.open { border-bottom-color: var(--bd); }
   .hist-section-title {
     display: flex; align-items: center; gap: 8px;
     font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
@@ -904,10 +903,8 @@
     background: rgba(232,160,32,.1); border: 1px solid rgba(232,160,32,.25);
     padding: 2px 8px; border-radius: 3px; color: #c49a2a;
   }
-  .hist-section-chevron {
-    width: 12px; height: 12px; color: var(--tx3); transition: transform 0.2s;
-  }
-  .hist-section-header.open .hist-section-chevron { transform: rotate(180deg); }
+  /* Chevron retired — sections no longer collapse */
+  .hist-section-chevron { display: none !important; }
   .hist-section-body {
     display: block;
     padding: 16px;
