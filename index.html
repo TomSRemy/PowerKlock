@@ -2306,33 +2306,6 @@
             </div>
           </div>
           <div class="hist-section-body open">
-          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">
-            <!-- Compare zone dropdown -->
-            <div style="position:relative" id="compare-filter-wrap">
-              <button onclick="toggleCompareFilterPanel()" id="compare-filter-btn"
-                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
-                <span id="compare-filter-label">FR selected</span>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div id="compare-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
-                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                    <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Compare zones</span>
-                    <div style="display:flex;gap:4px">
-                      <button onclick="selectAllCompareZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
-                      <button onclick="clearCompareZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
-                    </div>
-                  </div>
-                  <div style="display:flex;gap:4px;flex-wrap:wrap">
-                    <button onclick="compareNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
-                    <button onclick="compareWithGenMix()" style="font-size:10px;color:#14D3A9;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
-                  </div>
-                </div>
-                <div id="compare-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
-              </div>
-            </div>
-          </div>
           <!-- KPI strip · Compare zones (Daily, 5 cards, no redundancy with main strip above) -->
           <div class="kpi-strip" id="cc-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px">
             <div class="kpi-card kpi-flat" id="cc-kpi-zones">
@@ -2518,28 +2491,6 @@
     </div>
   </div>
   <div class="hist-section-body open">
-  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <!-- Baseline selector (pill style — matches Daily compare-filter-btn) -->
-    <div style="position:relative" id="hmz-baseline-wrap">
-      <button onclick="toggleHmzBaselinePanel()" id="hmz-baseline-btn"
-        style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Baseline</span>
-        <span id="hmz-baseline-label" style="color:var(--tx);font-weight:700">FR</span>
-        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div id="hmz-baseline-panel" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:6px;min-width:130px;max-height:60vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
-        <button onclick="pickHmzBaseline('FR')" class="hmz-baseline-opt" data-z="FR" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">FR · France</button>
-        <button onclick="pickHmzBaseline('DE_LU')" class="hmz-baseline-opt" data-z="DE_LU" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">DE_LU · Germany</button>
-        <button onclick="pickHmzBaseline('ES')" class="hmz-baseline-opt" data-z="ES" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">ES · Spain</button>
-        <button onclick="pickHmzBaseline('BE')" class="hmz-baseline-opt" data-z="BE" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">BE · Belgium</button>
-        <button onclick="pickHmzBaseline('NL')" class="hmz-baseline-opt" data-z="NL" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">NL · Netherlands</button>
-        <button onclick="pickHmzBaseline('GB')" class="hmz-baseline-opt" data-z="GB" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">GB · Great Britain</button>
-        <button onclick="pickHmzBaseline('PT')" class="hmz-baseline-opt" data-z="PT" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">PT · Portugal</button>
-        <button onclick="pickHmzBaseline('IT_NORD')" class="hmz-baseline-opt" data-z="IT_NORD" style="display:block;width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;border-radius:4px">IT_NORD · Italy North</button>
-      </div>
-    </div>
-  </div>
 
   <!-- KPI strip · Compare zones (no redundancy with main Historical strip above) -->
   <div class="kpi-strip" id="hmz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
@@ -2571,8 +2522,13 @@
   </div>
 
   <!-- Insta tabs : Multi zone modes -->
-  <div style="display:flex;align-items:center;justify-content:flex-start;gap:10px;margin:6px 0 10px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;flex-wrap:wrap">
     <div id="hmz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
+    <!-- Spread reference chips (only visible in Spread mode, same UX as Daily Compare zones) -->
+    <div id="hmz-ref-wrap" style="display:none;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
+      <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">SPREAD vs</span>
+      <div id="hmz-ref-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    </div>
   </div>
 
   <!-- Analyst banner anchor (filled by JS based on current view · ABOVE the chart) -->
