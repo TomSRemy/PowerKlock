@@ -1307,8 +1307,8 @@ function renderPricesTableBody() {
     // 2-level color hierarchy: AVG is the prime metric (white/priceColor, bold).
     // All other plain price cells use tx2 (single muted level).
     // Semantic-colored cells (VS J-1, NEG HRS, %REN, DOM FUEL, SPARK) keep their own colors.
-    const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Expand 15-min chart">
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left">${FLAG_MAP[z.code]||''} ${z.code}</td>
+    const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand 15-min chart">
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.45;vertical-align:0;transition:transform 0.15s ease"><polyline points="9 18 15 12 9 6"/></svg>${FLAG_MAP[z.code]||''} ${z.code}</td>
       <td style="font-size:11px;color:var(--tx2);text-align:left">${meta.country||z.name||z.code}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor};text-align:right">${PK_FMT.num(z.today, 2)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right" title="Avg over 08h–20h">${peakStr}</td>
