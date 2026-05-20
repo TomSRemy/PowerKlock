@@ -4269,9 +4269,43 @@ function _buildAnalystBanner(mode, p) {
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
+  // ── Compare zones modes (used by Daily + Historical compare-zones charts) ──
+  else if (mode === 'ccLines' || mode === 'ccProfile' || mode === 'ccBands' || mode === 'ccSpread' || mode === 'ccHeatmap') {
+    const { cheap, pricey, frGap, loadedAvg, zoneCount, view } = p;
+    const cheapStr  = cheap  ? `${W(cheap.z + ' ' + cheap.avg.toFixed(2) + ' €/MWh')}`  : '--';
+    const priceyStr = pricey ? `${W(pricey.z + ' ' + pricey.avg.toFixed(2) + ' €/MWh')}` : '--';
+    const spread    = (cheap && pricey) ? (pricey.avg - cheap.avg) : null;
+    line1 = `${W(zoneCount)} zones · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
+      (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
+    // Verdict depends on spread magnitude and FR positioning
+    let read;
+    if (spread != null && cheap && cheap.avg > 0) {
+      const spreadPct = (spread / cheap.avg) * 100;
+      const frPart = (frGap != null && frGap > 0)
+        ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
+        : (frGap != null && frGap <= 0)
+          ? ` FR is the cheapest market.`
+          : '';
+      if (spreadPct > 100) {
+        read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
+      } else if (spreadPct > 40) {
+        read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
+      } else if (spreadPct > 15) {
+        read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
+      } else {
+        read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
+      }
+    } else {
+      read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
+    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+  }
+
   if (!line1) return '';
   return `<div class="ho-analyst-banner" style="margin-top:32px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
+// Expose globally so prices.js can reuse the same builder for Compare Zones (Daily)
+if (typeof window !== 'undefined') window._buildAnalystBanner = _buildAnalystBanner;
 
 // Insert/replace the analyst banner under a chart canvas (inline or fullscreen)
 function _renderAnalystBanner(html) {
@@ -7651,6 +7685,19 @@ async function renderHistMulti() {
   const heatmap = document.getElementById('hmz-heatmap');
   if (canvas) canvas.style.display = '';
   if (heatmap) heatmap.style.display = 'none';
+
+  // ── Analyst banner (amber style ◈ + Market read) ──
+  const anchor = document.getElementById('hmz-analyst-banner-anchor');
+  if (anchor && cheap && pricey && typeof _buildAnalystBanner === 'function') {
+    const frGap = frEntry ? (frEntry.avg - cheap.avg) : null;
+    const modeMap = { lines: 'ccLines', heatmap: 'ccHeatmap', profile: 'ccProfile', bands: 'ccBands', spread: 'ccSpread', dist: 'ccLines' };
+    const bannerHtml = _buildAnalystBanner(modeMap[HMZ.tab] || 'ccLines', {
+      cheap, pricey, frGap, loadedAvg, zoneCount: validStats.length, view: HMZ.tab,
+    });
+    anchor.innerHTML = bannerHtml || '';
+  } else if (anchor) {
+    anchor.innerHTML = '';
+  }
 
   // Dispatch by tab
   if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
