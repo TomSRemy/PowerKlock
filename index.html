@@ -2370,10 +2370,11 @@
           <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
             ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
           </div>
-          </div><!-- /hist-section-body -->
+          </div><!-- /hist-section-body of hs-cc-main -->
         </div><!-- /hist-section #hs-cc-main -->
-        </div><!-- /tab-panel daily wrapper -->
-        </div>
+        </div><!-- /hist-section-body of hs-prices-main -->
+        </div><!-- /hist-section #hs-prices-main -->
+        </div><!-- /tab-panel daily -->
 
         <!-- TAB · HISTORICAL -->
         <div class="tab-panel" data-tab-panel="historical" id="prtab-historical">
@@ -2474,16 +2475,13 @@
      BLOCK 3 · MULTI ZONE · Compare (insta tabs)
      Lines · Heatmap · Profile · Bands · Spread
      ════════════════════════════════════════════════════════ -->
-<div class="hist-section" id="hs-hmz-main" style="margin-top:20px">
-  <div class="hist-section-header open">
-    <div class="hist-section-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Compare zones · Historical
-      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
+<div style="margin-top:20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--tx3);opacity:0.7"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--tx2)">Compare zones · Historical</span>
+      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
     </div>
-  </div>
-  <div class="hist-section-body open">
-  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div class="hist-filter-bar">
       <button onclick="toggleGlobalZonePanel()" class="hf-zone-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
@@ -2592,7 +2590,7 @@
   <div id="global-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
 </div>
 
-        </div>
+        </div><!-- /tab-panel historical -->
 
 
         <!-- TAB · DISTRIBUTION -->
