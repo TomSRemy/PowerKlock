@@ -32,36 +32,37 @@ async function fetchDaily(dateStr) {
   } catch { return null; }
 }
 
-// ── Toggle section open/close ──
+// ── Section toggle: collapse is disabled (sections are always open).
+// This function is still called for ID-based renderers — we ensure body
+// stays "open" and trigger the render once.
 function toggleHistSection(id) {
   const header = document.querySelector('#hs-' + id + ' .hist-section-header');
   const body   = document.getElementById('hs-body-' + id);
   if (!header || !body) return;
-  const opening = !body.classList.contains('open');
-  header.classList.toggle('open', opening);
-  body.classList.toggle('open', opening);
-  if (opening) {
-    const renders = {
-      'spot-history':     renderHistSpot,
-      'hist-da':          renderHistSpot,
-      'spread-history':   renderHistSpread,
-      'hist-neg':         renderHistNeg,
-      'neghours-history': renderHistNeg,
-      'fr-neighbours':    renderHistNeighbours,
-      'hist-dist':        renderHistDist,
-      'distribution':     renderHistDist,
-      'ren-trend':        renderHistRenTrend,
-      'ren-stack':        renderHistRenStack,
-      'imb-history':      renderHistImb,
-      'fcr-history':      renderHistFCR,
-      'eua-history':      renderHistEUA,
-      'capture-solar':    () => renderHistCapture('solar'),
-      'capture-wind':     () => renderHistCapture('wind'),
-      'multicc':          renderCompareChart,
-      'prices-main':      () => {},
-    };
-    if (renders[id]) renders[id]();
-  }
+  // Always keep open (no collapse anymore)
+  header.classList.add('open');
+  body.classList.add('open');
+  // Trigger renderer
+  const renders = {
+    'spot-history':     renderHistSpot,
+    'hist-da':          renderHistSpot,
+    'spread-history':   renderHistSpread,
+    'hist-neg':         renderHistNeg,
+    'neghours-history': renderHistNeg,
+    'fr-neighbours':    renderHistNeighbours,
+    'hist-dist':        renderHistDist,
+    'distribution':     renderHistDist,
+    'ren-trend':        renderHistRenTrend,
+    'ren-stack':        renderHistRenStack,
+    'imb-history':      renderHistImb,
+    'fcr-history':      renderHistFCR,
+    'eua-history':      renderHistEUA,
+    'capture-solar':    () => renderHistCapture('solar'),
+    'capture-wind':     () => renderHistCapture('wind'),
+    'multicc':          renderCompareChart,
+    'prices-main':      () => {},
+  };
+  if (renders[id]) renders[id]();
 }
 
 // ── Window selector ──
