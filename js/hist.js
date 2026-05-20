@@ -4379,7 +4379,7 @@ function _buildAnalystBanner(mode, p) {
   }
 
   if (!line1) return '';
-  return `<div class="ho-analyst-banner" style="margin-top:32px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+  return `<div class="ho-analyst-banner" style="margin-top:32px;margin-bottom:12px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
 // Expose globally so prices.js can reuse the same builder for Compare Zones (Daily)
 if (typeof window !== 'undefined') window._buildAnalystBanner = _buildAnalystBanner;
@@ -7658,6 +7658,36 @@ function setHmzBaseline(zone) {
 }
 window.setHmzBaseline = setHmzBaseline;
 
+// New: panel-style baseline picker (matches Daily compare-filter-btn style)
+function toggleHmzBaselinePanel() {
+  const panel = document.getElementById('hmz-baseline-panel');
+  if (!panel) return;
+  panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+}
+window.toggleHmzBaselinePanel = toggleHmzBaselinePanel;
+
+function pickHmzBaseline(zone) {
+  setHmzBaseline(zone);
+  const lbl = document.getElementById('hmz-baseline-label');
+  if (lbl) lbl.textContent = zone;
+  const panel = document.getElementById('hmz-baseline-panel');
+  if (panel) panel.style.display = 'none';
+  // Highlight active option
+  document.querySelectorAll('.hmz-baseline-opt').forEach(b => {
+    b.style.background = (b.dataset.z === zone) ? 'rgba(20,211,169,0.15)' : 'none';
+    b.style.color = (b.dataset.z === zone) ? 'var(--acc)' : 'var(--tx)';
+  });
+}
+window.pickHmzBaseline = pickHmzBaseline;
+
+// Close baseline panel on outside click
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('hmz-baseline-wrap');
+  const panel = document.getElementById('hmz-baseline-panel');
+  if (!panel || panel.style.display === 'none') return;
+  if (wrap && !wrap.contains(e.target)) panel.style.display = 'none';
+});
+
 async function renderHistMulti() {
   buildHistMultiTabs();
   const w = HIST.windows['hmz'] || '3M';
@@ -7687,9 +7717,14 @@ async function renderHistMulti() {
     baseline = selected.includes('FR') ? 'FR' : selected[0];
   }
   const baseStats = stats[baseline];
-  // Sync the dropdown value (in case it was set programmatically)
-  const baselineSelect = document.getElementById('hmz-baseline-select');
-  if (baselineSelect && baselineSelect.value !== baseline) baselineSelect.value = baseline;
+  // Sync the baseline pill button label (replaces the old select element)
+  const baselineLabel = document.getElementById('hmz-baseline-label');
+  if (baselineLabel) baselineLabel.textContent = baseline;
+  // Highlight the active option in the panel
+  document.querySelectorAll('.hmz-baseline-opt').forEach(b => {
+    b.style.background = (b.dataset.z === baseline) ? 'rgba(20,211,169,0.15)' : 'none';
+    b.style.color = (b.dataset.z === baseline) ? 'var(--acc)' : 'var(--tx)';
+  });
 
   // KPI 1 · Zones loaded (value = zone count, meta = loaded avg + baseline tag)
   // Loaded avg = simple mean of per-zone period averages.
@@ -7796,6 +7831,9 @@ async function renderHistMulti() {
     anchor.innerHTML = '';
   }
 
+  // Render HMZ data table (mirrors Daily Compare zones · header + body per mode)
+  renderHmzTable(HMZ.tab, stats, selected, baseline);
+
   // Dispatch by tab
   if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
   if (HMZ.tab === 'heatmap') return _hmzRenderHeatmap(perZone, selected);
@@ -7806,6 +7844,299 @@ async function renderHistMulti() {
   return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistMulti = renderHistMulti;
+
+// ═══════════════════════════════════════════════════════════════════
+//  HMZ data table (mirrors Daily Compare zones · #compare-data-table)
+//  ─ Header columns adapt to the active mode (lines/heatmap/profile/bands/spread)
+//  ─ Body styled IDENTICALLY to Daily Compare zones (padding 14px, font 12px, JetBrains Mono, colored zone bar)
+//  ─ Hover/click row → highlight matching curve in #hmz-canvas
+// ═══════════════════════════════════════════════════════════════════
+function renderHmzTable(view, stats, selected, baseline) {
+  const thead = document.getElementById('hmz-data-thead');
+  const tbody = document.getElementById('hmz-data-tbody');
+  if (!thead || !tbody) return;
+  thead.innerHTML = _hmzTableHeader(view);
+  // Build rows from the per-zone period stats (already computed by renderHistMulti)
+  const rows = selected.map(z => {
+    const st = stats[z];
+    if (!st) return null;
+    return { code: z, ...st };
+  }).filter(Boolean);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:14px">No zones selected</td></tr>`;
+    return;
+  }
+  let html = '';
+  switch (view) {
+    case 'heatmap': html = _hmzBodyHeatmap(rows); break;
+    case 'profile': html = _hmzBodyProfile(rows); break;
+    case 'bands':   html = _hmzBodyBands(rows, baseline); break;
+    case 'spread':  html = _hmzBodySpread(rows, baseline); break;
+    case 'lines':
+    default:        html = _hmzBodyLines(rows);
+  }
+  tbody.innerHTML = html;
+  _hmzWireRowHighlight();
+}
+
+// Header builder (matches ccTableHeader from prices.js · same columns per view)
+// Header builder · same columns + style as ccTableHeader in prices.js
+function _hmzTableHeader(view) {
+  const cols = {
+    lines: [
+      { w:'24%', label:'Zone' },
+      { w:'11%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'30%', label:'Range', sub:'min — max · €/MWh', align:'left' },
+      { w:'21%', label:'Peak / Off-pk avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Intraday spread', sub:'€/MWh', align:'right' },
+    ],
+    heatmap: [
+      { w:'22%', label:'Zone' },
+      { w:'10%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Min', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Max', sub:'€/MWh', align:'right' },
+      { w:'10%', label:'Neg hrs', sub:'count', align:'right' },
+      { w:'30%', label:'High-stress hrs', sub:'count vs panel', align:'right' },
+    ],
+    profile: [
+      { w:'22%', label:'Zone' },
+      { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Peak avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Off-pk avg', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Peak shape', sub:'peak/avg %', align:'right' },
+      { w:'10%', label:'Off-pk shape', sub:'off-pk/avg %', align:'right' },
+      { w:'12%', label:'Spread P/OP', sub:'€/MWh', align:'right' },
+    ],
+    bands: [
+      { w:'22%', label:'Zone' },
+      { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'12%', label:'σ', sub:'std-dev', align:'right' },
+      { w:'14%', label:'Intraday spread', sub:'€/MWh', align:'right' },
+      { w:'12%', label:'Min', sub:'€/MWh', align:'right' },
+      { w:'12%', label:'Max', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Days', sub:'count', align:'right' },
+    ],
+    spread: [
+      { w:'22%', label:'Zone' },
+      { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'30%', label:'Avg spread vs ref', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'% vs ref', sub:'(zone−ref)/ref', align:'right' },
+      { w:'10%', label:'σ vs σ-ref', sub:'std-dev', align:'right' },
+      { w:'10%', label:'Min spread', align:'right' },
+    ],
+  };
+  const c = cols[view] || cols.lines;
+  return '<tr>' + c.map(col => `
+    <th style="width:${col.w};text-align:${col.align||'left'};padding:8px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" ${col.tip?`title="${col.tip}"`:''}>
+      ${col.label}${col.sub?`<br><span style="color:var(--tx3);font-weight:400;font-size:9px">${col.sub}</span>`:''}
+    </th>`).join('') + '</tr>';
+}
+
+// Zone cell · strictly identical to _ccZoneCell from prices.js
+function _hmzZoneCell(r) {
+  const col = (window._zoneColorMap && window._zoneColorMap[r.code]) || _hmzZoneColor(r.code) || '#B8C9D9';
+  const meta = (typeof ZONE_META !== 'undefined' && ZONE_META[r.code]) || {};
+  const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[r.code]) || '';
+  const country = meta.country || _HO_NAMES[r.code] || r.code;
+  return `<td style="padding:9px 6px;vertical-align:middle">
+    <span style="display:inline-block;width:3px;height:12px;background:${col};border-radius:2px;vertical-align:middle;margin-right:6px"></span>
+    <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col};font-size:11px">${flag} ${r.code}</span>
+    <span style="color:var(--text3);margin-left:5px;font-family:'Inter',sans-serif;font-size:10.5px">${country}</span>
+  </td>`;
+}
+function _hmzZoneColor(code) {
+  return (typeof HMZ_COLOR_FOR === 'function') ? HMZ_COLOR_FOR(code) : null;
+}
+function _hmzTr(r, cells) {
+  return `<tr data-zone="${r.code}" style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background .15s">
+    ${_hmzZoneCell(r)}${cells}
+  </tr>`;
+}
+
+// Style helpers · strictly identical to _CC_TD_* from prices.js
+const _HMZ_TD_R = "text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _HMZ_TD_L = "text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _HMZ_TD_C = "text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _HMZ_SUB = "color:var(--text3);font-size:9px";
+
+// ── _hmzBodyLines · range bar with global-scale position (same template as ccBodyLines)
+function _hmzBodyLines(rows) {
+  const allMins = rows.map(r => r.min).filter(v => v != null);
+  const allMaxs = rows.map(r => r.max).filter(v => v != null);
+  const globalMin = allMins.length ? Math.min(...allMins) : 0;
+  const globalMax = allMaxs.length ? Math.max(...allMaxs) : 1;
+  const globalRng = (globalMax - globalMin) || 1;
+  return rows.map(r => {
+    const col = (window._zoneColorMap && window._zoneColorMap[r.code]) || _hmzZoneColor(r.code) || '#B8C9D9';
+    const leftPct  = r.min != null ? ((r.min - globalMin) / globalRng) * 100 : 0;
+    const widthPct = (r.min != null && r.max != null) ? ((r.max - r.min) / globalRng) * 100 : 0;
+    const intra = r.intradaySpread != null ? r.intradaySpread.toFixed(2) : '--';
+    const cells = `
+      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="padding:9px 6px;vertical-align:middle">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:0 0 48px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.min<0?'var(--down)':'var(--text2)'};line-height:11px">
+            ${r.min != null ? r.min.toFixed(2) : '--'}
+          </div>
+          <div style="flex:1;position:relative;height:8px">
+            <div style="position:absolute;top:0;left:0;right:0;height:100%;background:rgba(255,255,255,0.05);border-radius:2px"></div>
+            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.6;border-radius:2px"></div>
+          </div>
+          <div style="flex:0 0 48px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.max<0?'var(--down)':'var(--text2)'};line-height:11px">
+            ${r.max != null ? r.max.toFixed(2) : '--'}
+          </div>
+        </div>
+      </td>
+      <td style="${_HMZ_TD_R}">
+        <span style="color:var(--text)">${r.peakAvg != null ? r.peakAvg.toFixed(2) : '--'}</span> <span style="color:var(--text3)">/</span> <span style="color:var(--text2)">${r.offAvg != null ? r.offAvg.toFixed(2) : '--'}</span>
+      </td>
+      <td style="${_HMZ_TD_R};color:var(--text)">${intra}</td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// ── _hmzBodyHeatmap · stress bar (high-stress hrs vs panel max) — same logic as ccBodyHeatmap top-quartile
+function _hmzBodyHeatmap(rows) {
+  const maxHigh = Math.max(...rows.map(r => r.highH || 0), 1);
+  return rows.map(r => {
+    const negCol = (r.negH || 0) > 0 ? 'var(--down)' : 'var(--text3)';
+    const highPct = ((r.highH || 0) / maxHigh) * 100;
+    const highCol = highPct > 50 ? '#ED6965' : (highPct > 25 ? '#FBBF24' : '#14D3A9');
+    const highTextCol = highPct > 50 ? 'var(--down)' : (highPct > 25 ? 'var(--warn)' : 'var(--up)');
+    const cells = `
+      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${r.min<0?'var(--down)':'var(--text2)'}">${r.min != null ? r.min.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text)">${r.max != null ? r.max.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${negCol}">${(r.negH || 0).toFixed(0)}</td>
+      <td style="${_HMZ_TD_R}">
+        <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;width:100%">
+          <span style="color:${highTextCol}">${(r.highH || 0).toFixed(0)}</span>
+          <span style="display:inline-block;width:50px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative">
+            <span style="display:block;height:100%;width:${Math.min(highPct,100).toFixed(0)}%;background:${highCol};opacity:.7;border-radius:2px"></span>
+          </span>
+        </div>
+      </td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// ── _hmzBodyProfile · no mini-vis (% are self-explanatory)
+function _hmzBodyProfile(rows) {
+  return rows.map(r => {
+    const peakShape    = (r.peakAvg != null && r.avg != null && Math.abs(r.avg) > 0.5) ? (r.peakAvg / r.avg) * 100 : null;
+    const offPeakShape = (r.offAvg != null  && r.avg != null && Math.abs(r.avg) > 0.5) ? (r.offAvg  / r.avg) * 100 : null;
+    const spreadPO     = (r.peakAvg != null && r.offAvg != null) ? (r.peakAvg - r.offAvg) : null;
+    const peakCol      = peakShape != null    && peakShape    > 100 ? 'var(--text)' : 'var(--warn)';
+    const offPeakCol   = offPeakShape != null && offPeakShape < 100 ? 'var(--text2)' : 'var(--warn)';
+    const spreadCol    = spreadPO == null ? 'var(--text3)' : (spreadPO < 0 ? 'var(--down)' : 'var(--text)');
+    const cells = `
+      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text)">${r.peakAvg != null ? r.peakAvg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.offAvg != null ? r.offAvg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${peakCol}">${peakShape != null ? peakShape.toFixed(0)+'%' : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${offPeakCol}">${offPeakShape != null ? offPeakShape.toFixed(0)+'%' : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${spreadCol}">${spreadPO != null ? (spreadPO>=0?'+':'')+spreadPO.toFixed(2) : '--'}</td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// ── _hmzBodyBands · no mini-vis
+function _hmzBodyBands(rows, baseline) {
+  return rows.map(r => {
+    const cells = `
+      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.sigma != null ? r.sigma.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text)">${r.intradaySpread != null ? r.intradaySpread.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${r.min<0?'var(--down)':'var(--text2)'}">${r.min != null ? r.min.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text)">${r.max != null ? r.max.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text3)">${r.days != null ? r.days : '--'}</td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// ── _hmzBodySpread · divergent bar centered on 0 (same template as ccBodySpread)
+function _hmzBodySpread(rows, baseline) {
+  const ref = rows.find(r => r.code === baseline);
+  const validSpreads = rows.filter(r => r.code !== baseline && r.avg != null && ref?.avg != null).map(r => Math.abs(r.avg - ref.avg));
+  const maxAbs = validSpreads.length ? Math.max(...validSpreads, 1) : 1;
+  return rows.map(r => {
+    if (r.code === baseline) {
+      const cells = `<td colspan="5" style="${_HMZ_TD_C};color:var(--text3);font-style:italic">— reference (${baseline}) —</td>`;
+      return _hmzTr(r, cells);
+    }
+    const avgSpread = (r.avg != null && ref?.avg != null) ? (r.avg - ref.avg) : null;
+    const pctVsRef  = (avgSpread != null && Math.abs(ref?.avg || 0) > 0.5) ? (avgSpread / ref.avg) * 100 : null;
+    const sigmaDiff = (r.sigma != null && ref?.sigma != null) ? (r.sigma - ref.sigma) : null;
+    const minSpread = (r.min != null && ref?.min != null) ? (r.min - ref.min) : null;
+    const avgCol = avgSpread == null ? 'var(--text3)' : (avgSpread > 0 ? 'var(--down)' : 'var(--up)');
+    const pctCol = pctVsRef == null ? 'var(--text3)' : (pctVsRef > 0 ? 'var(--down)' : 'var(--up)');
+    const sign = v => v >= 0 ? '+' : '';
+    // Divergent bar 60px centred on 0 (same template as ccBodySpread)
+    const divPct = avgSpread != null ? Math.min(Math.abs(avgSpread) / maxAbs, 1) * 50 : 0;
+    const divHTML = avgSpread == null
+      ? ''
+      : (avgSpread >= 0
+          ? `<span style="display:inline-block;width:60px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative;vertical-align:middle"><span style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,0.15)"></span><span style="position:absolute;left:50%;top:0;height:100%;width:${divPct.toFixed(1)}%;background:#ED6965;opacity:.75;border-radius:2px"></span></span>`
+          : `<span style="display:inline-block;width:60px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative;vertical-align:middle"><span style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,0.15)"></span><span style="position:absolute;right:50%;top:0;height:100%;width:${divPct.toFixed(1)}%;background:#14D3A9;opacity:.75;border-radius:2px"></span></span>`);
+    const cells = `
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R}">
+        <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end">
+          <span style="font-weight:700;color:${avgCol}">${avgSpread != null ? sign(avgSpread)+avgSpread.toFixed(2) : '--'}</span>
+          ${divHTML}
+        </div>
+      </td>
+      <td style="${_HMZ_TD_R};color:${pctCol}">${pctVsRef != null ? sign(pctVsRef)+pctVsRef.toFixed(0)+'%' : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${sigmaDiff != null ? sign(sigmaDiff)+sigmaDiff.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${minSpread != null ? sign(minSpread)+minSpread.toFixed(2) : '--'}</td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// Cross-highlight: hover/click row → highlight matching curve in #hmz-canvas
+function _hmzWireRowHighlight() {
+  const tbody = document.getElementById('hmz-data-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr[data-zone]').forEach(tr => {
+    tr.onmouseenter = () => _hmzHighlightZone(tr.dataset.zone, false);
+    tr.onmouseleave = () => _hmzHighlightZone(null, false);
+    tr.onclick = () => {
+      window._hmzFocusZone = (window._hmzFocusZone === tr.dataset.zone) ? null : tr.dataset.zone;
+      _hmzHighlightZone(window._hmzFocusZone, true);
+    };
+  });
+}
+function _hmzHighlightZone(code, isPersistent) {
+  const effective = code != null ? code : window._hmzFocusZone;
+  const chart = HIST.charts && HIST.charts['hmz-canvas'];
+  if (chart) {
+    chart.data.datasets.forEach(ds => {
+      const label = ds.label || '';
+      const matches = !effective || label.startsWith(effective + ' ') || label.startsWith(effective + ' ·') || label.startsWith(effective + ' −') || label === effective || label.startsWith(effective);
+      if (effective) {
+        if (ds._origBorderWidth == null) ds._origBorderWidth = ds.borderWidth ?? 2;
+        if (ds._origBorderColor == null) ds._origBorderColor = ds.borderColor;
+        ds.borderWidth = matches ? 3 : ds._origBorderWidth;
+        if (!matches && typeof ds._origBorderColor === 'string' && ds._origBorderColor.startsWith('#')) {
+          ds.borderColor = ds._origBorderColor + '40';
+        } else if (matches) {
+          ds.borderColor = ds._origBorderColor;
+        }
+      } else {
+        if (ds._origBorderWidth != null) ds.borderWidth = ds._origBorderWidth;
+        if (ds._origBorderColor != null) ds.borderColor = ds._origBorderColor;
+      }
+    });
+    chart.update('none');
+  }
+  // Row visual feedback
+  const tbody = document.getElementById('hmz-data-tbody');
+  if (tbody) {
+    tbody.querySelectorAll('tr[data-zone]').forEach(tr => {
+      tr.style.background = (effective && tr.dataset.zone === effective) ? 'rgba(255,255,255,0.04)' : '';
+    });
+  }
+}
 
 function _hmzPlaceholder(msg) {
   const canvas = document.getElementById('hmz-canvas');
