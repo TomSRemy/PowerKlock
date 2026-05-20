@@ -2265,12 +2265,16 @@
           <span id="prices-footer">ENTSO-E Transparency · Day-ahead market · Updated daily after 13:00 CET</span>
         </div>
       </div>
-        <div style="margin-top:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="display:flex;align-items:baseline;gap:10px">
-              <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Compare zones</span>
-              <span id="compare-zones-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+        <div class="hist-section" id="hs-cc-main" style="margin-top:20px">
+          <div class="hist-section-header open">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Compare zones · Day-Ahead
+              <span id="compare-zones-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
             </div>
+          </div>
+          <div class="hist-section-body open">
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px">
             <!-- Compare zone dropdown -->
             <div style="position:relative" id="compare-filter-wrap">
               <button onclick="toggleCompareFilterPanel()" id="compare-filter-btn"
@@ -2342,8 +2346,8 @@
             <canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas>
             <div id="cc-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
           </div>
-          <!-- Auto-generated analysis banner -->
-          <div id="cc-analysis" style="margin:10px 0 0;padding:10px 14px;background:var(--bg3);border-left:3px solid var(--text3);border-radius:0 6px 6px 0;font-size:12px;color:var(--text2);line-height:1.55;display:none"></div>
+          <!-- Analyst banner (filled by JS — amber style ◈ + Market read) -->
+          <div id="cc-analyst-banner-anchor"></div>
           <!-- Compare zones data table (replaces KPI cards) -->
           <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px">
             <table id="compare-data-table" style="font-size:11px;table-layout:fixed">
@@ -2362,8 +2366,13 @@
           </div>
           <div id="compare-peak-strip" style="display:none"></div>
           <div id="compare-kpi-strip" style="display:none"></div>
-        </div>
-      </div></div>
+          <!-- Footer: source -->
+          <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
+            ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
+          </div>
+          </div><!-- /hist-section-body -->
+        </div><!-- /hist-section #hs-cc-main -->
+        </div><!-- /tab-panel daily wrapper -->
         </div>
 
         <!-- TAB · HISTORICAL -->
@@ -2465,12 +2474,16 @@
      BLOCK 3 · MULTI ZONE · Compare (insta tabs)
      Lines · Heatmap · Profile · Bands · Spread
      ════════════════════════════════════════════════════════ -->
-<div style="margin-top:20px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Compare zones</span>
-      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace"></span>
+<div class="hist-section" id="hs-hmz-main" style="margin-top:20px">
+  <div class="hist-section-header open">
+    <div class="hist-section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Compare zones · Historical
+      <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
     </div>
+  </div>
+  <div class="hist-section-body open">
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div class="hist-filter-bar">
       <button onclick="toggleGlobalZonePanel()" class="hf-zone-btn">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
@@ -2545,7 +2558,14 @@
     <canvas id="hmz-canvas" style="width:100%;height:340px"></canvas>
     <div id="hmz-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
   </div>
-</div>
+  <!-- Analyst banner anchor (filled by JS based on current view) -->
+  <div id="hmz-analyst-banner-anchor"></div>
+  <!-- Footer: source -->
+  <div style="text-align:center;font-size:10.5px;color:var(--tx3);margin-top:14px;letter-spacing:0.02em">
+    ENTSO-E Transparency · Day-ahead market · Cross-zone comparison
+  </div>
+  </div><!-- /hist-section-body -->
+</div><!-- /hist-section #hs-hmz-main -->
   </div><!-- /hist-section-body #hs-body-ho-main -->
 </div><!-- /hist-section #hs-ho-main -->
 
