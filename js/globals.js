@@ -2433,6 +2433,87 @@ async function fetchHistoricalEnvelope(code, nDays, nPts) {
   return result;
 }
 
+// Fetch historical envelope with P0/P5/P50/P95/P100 percentiles per slot.
+// Cached by `code+nDays+nPts` so different window choices don't collide.
+async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
+  const cacheKey = `${code}|${nDays}|${nPts}`;
+  window._envelopePCache = window._envelopePCache || {};
+  if (window._envelopePCache[cacheKey]) return window._envelopePCache[cacheKey];
+
+  const today = new Date();
+  const dates = [];
+  // nDays === 0 means "All": use whatever exists. We'll bound it generously (5 years).
+  const limit = nDays === 0 ? 5 * 365 : nDays;
+  for (let i = 1; i <= limit; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  // YTD: filter to current year only
+  if (nDays === -1) {
+    const yr = today.getFullYear();
+    dates.length = 0;
+    for (let i = 1; i <= 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (d.getFullYear() === yr) dates.push(d.toISOString().slice(0,10));
+    }
+  }
+
+  const all = [];
+  await Promise.all(dates.map(async (dt) => {
+    try {
+      const r = await fetch(`data/history/daily/${dt}.json`);
+      if (!r.ok) return;
+      const j = await r.json();
+      let z = null;
+      if (j.zones && j.zones[code]) z = j.zones[code];
+      else if (Array.isArray(j.zones)) z = j.zones.find(x => x.code === code);
+      if (!z) return;
+      const h = z.hourly || z.h;
+      if (!Array.isArray(h) || !h.length) return;
+      // Resample to nPts
+      const ratio = h.length / nPts;
+      const resampled = [];
+      for (let i = 0; i < nPts; i++) {
+        const start = Math.floor(i * ratio);
+        const end = Math.max(start + 1, Math.floor((i+1) * ratio));
+        const slice = h.slice(start, end).filter(v => v != null);
+        resampled.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
+      }
+      all.push(resampled);
+    } catch (e) { /* silent */ }
+  }));
+
+  if (!all.length) return null;
+
+  // Local _percentile helper (mirrors hist.js · linear interpolation)
+  const _pct = (sortedArr, p) => {
+    if (!sortedArr.length) return null;
+    if (sortedArr.length === 1) return sortedArr[0];
+    const rank = p * (sortedArr.length - 1);
+    const lo = Math.floor(rank), hi = Math.ceil(rank);
+    if (lo === hi) return sortedArr[lo];
+    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (rank - lo);
+  };
+
+  const p0 = [], p5 = [], p50 = [], p95 = [], p100 = [];
+  for (let i = 0; i < nPts; i++) {
+    const vals = all.map(arr => arr[i]).filter(v => v != null).sort((a,b)=>a-b);
+    if (!vals.length) { p0.push(null); p5.push(null); p50.push(null); p95.push(null); p100.push(null); continue; }
+    p0.push(vals[0]);
+    p5.push(_pct(vals, 0.05));
+    p50.push(_pct(vals, 0.50));
+    p95.push(_pct(vals, 0.95));
+    p100.push(vals[vals.length - 1]);
+  }
+
+  const result = { p0, p5, p50, p95, p100, n: all.length };
+  window._envelopePCache[cacheKey] = result;
+  return result;
+}
+window.fetchHistoricalEnvelopeP = fetchHistoricalEnvelopeP;
+
 // ────────────────────────────────────────────
 // View 5: SPREAD — all selected zones minus reference (default FR)
 // ────────────────────────────────────────────
