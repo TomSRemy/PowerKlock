@@ -1520,6 +1520,13 @@
   tbody tr.zone-row.is-open + tr > td:first-child {
     box-shadow: inset 3px 0 0 var(--acc, #14D3A9);
   }
+  /* Expand chevron in the first column · rotates 90° when row is open · brightens on row hover */
+  tbody tr.zone-row .row-chevron,
+  tbody tr.ho-row .row-chevron { transition: transform 0.15s ease, opacity 0.15s ease; }
+  tbody tr.zone-row:hover .row-chevron,
+  tbody tr.ho-row:hover .row-chevron { opacity: 0.85 !important; }
+  tbody tr.zone-row.is-open .row-chevron,
+  tbody tr.ho-row.is-open .row-chevron { transform: rotate(90deg); opacity: 1 !important; color: var(--acc, #14D3A9); }
   /* Same highlight pattern for Historical Overview rows */
   tbody tr.ho-row:hover {
     background: rgba(255, 255, 255, 0.025);
