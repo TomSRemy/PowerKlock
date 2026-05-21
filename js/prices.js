@@ -1767,6 +1767,7 @@ function buildHourlyDetail(idx, z) {
       data: z.hourlyYday,
       borderColor: 'rgba(195,210,225,0.70)',
       borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0.3, fill: false, spanGaps: true,
+      _isJ1: true,
     });
   }
 
@@ -1952,6 +1953,21 @@ function _removeBandDatasets(chart) {
   });
 }
 
+// Toggle visibility of the J-1 dataset on the chart.
+// When bands turn on, J-1 is auto-hidden; when bands turn off, J-1 comes back.
+// The user can override at any time by clicking the J-1 entry in the legend.
+function _setJ1Hidden(chart, hidden) {
+  if (!chart || !chart.data || !chart.data.datasets) return;
+  const j1Idx = chart.data.datasets.findIndex(ds => ds && ds._isJ1);
+  if (j1Idx < 0) return;
+  if (typeof chart.getDatasetMeta === 'function') {
+    const meta = chart.getDatasetMeta(j1Idx);
+    if (meta) meta.hidden = hidden;
+  } else {
+    chart.data.datasets[j1Idx].hidden = hidden;
+  }
+}
+
 // ════════════════════════════════════════════
 // fetchHistoricalEnvelopeP — fetches per-zone historical envelope
 // (P0/P10/P50/P90/P100) over the last nDays. Resampled to nPts.
@@ -2048,6 +2064,9 @@ async function _loadAndApplyRowBand(idx, z) {
   if (!chart) return;
   if (cur === 'off') {
     _removeBandDatasets(chart);
+    // Auto-restore J-1 visibility when bands turn off (only if the user
+    // didn't manually hide it via the legend in the meantime).
+    _setJ1Hidden(chart, false);
     chart.update('none');
     _syncRowChartToFullscreen(chart);
     _clearBreakdownBandStats(idx);
@@ -2101,6 +2120,10 @@ async function _loadAndApplyRowBand(idx, z) {
       tension: 0.2, spanGaps: true, fill: false, borderDash: [3, 3], order: 6,
     }
   );
+  // Auto-hide J-1 once a band is active — the historical envelope already
+  // provides comparable context, and J-1 clutters the chart. User can
+  // re-show J-1 anytime by clicking its legend entry.
+  _setJ1Hidden(chart, true);
   chart.update('none');
   // ── Propagate to the fullscreen chart if open (so the band shows there too) ──
   _syncRowChartToFullscreen(chart);
@@ -3932,7 +3955,14 @@ function openRowFullscreen(idx) {
     return `<option value="${i}" ${i === idx ? 'selected' : ''}>${flagI} ${zi.code} — ${safeName}</option>`;
   }).join('');
 
+  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+
   const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
+      <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
+        style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+    </div>
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
       <select id="fs-row-zone-select-${idx}" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
@@ -3960,21 +3990,52 @@ function openRowFullscreen(idx) {
       // which now updates BOTH inline and fullscreen pill hosts.
       // Zone select needs explicit wiring: closing + reopening with the new idx.
       wire: (hostEl) => {
+        // ── Zone switch ─────────────────────────────────────
         const sel = hostEl.querySelector(`#fs-row-zone-select-${idx}`);
-        if (!sel) return;
-        sel.addEventListener('change', (e) => {
-          const newIdx = parseInt(e.target.value, 10);
-          if (isNaN(newIdx) || newIdx === idx) return;
-          // Make sure the new row is expanded inline (so its chart exists)
-          const inlineOpen = document.getElementById(`row-detail-inner-${newIdx}`);
-          if (!inlineOpen && typeof togglePriceRow === 'function') {
-            togglePriceRow(newIdx, { stopPropagation: () => {} });
-          }
-          // Close + re-open the fullscreen on the new index after a short tick
-          // so the inline chart has time to finish rendering.
-          if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
-          setTimeout(() => openRowFullscreen(newIdx), 60);
-        });
+        if (sel) {
+          sel.addEventListener('change', (e) => {
+            const newIdx = parseInt(e.target.value, 10);
+            if (isNaN(newIdx) || newIdx === idx) return;
+            const inlineOpen = document.getElementById(`row-detail-inner-${newIdx}`);
+            if (!inlineOpen && typeof togglePriceRow === 'function') {
+              togglePriceRow(newIdx, { stopPropagation: () => {} });
+            }
+            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+            setTimeout(() => openRowFullscreen(newIdx), 60);
+          });
+        }
+        // ── Date change ─────────────────────────────────────
+        // Reuses the global dpSelect() which reloads the board for that date,
+        // then re-opens the FS on the same idx after data has arrived.
+        const dateInp = hostEl.querySelector(`#fs-row-date-input-${idx}`);
+        if (dateInp) {
+          dateInp.addEventListener('change', (e) => {
+            const newDate = e.target.value;
+            if (!newDate || newDate === window._currentPriceDate) return;
+            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+            if (typeof dpSelect === 'function') {
+              dpSelect(newDate);
+              // Wait for loadPricesForDate to finish, then reopen the FS.
+              // The current idx may map to a different zone on the new date,
+              // so we resolve by zone CODE rather than idx.
+              const targetCode = code;
+              const waitAndReopen = (attempts) => {
+                if (attempts <= 0) return;
+                const newIdx = (window._pricesSorted || []).findIndex(z => z.code === targetCode);
+                if (newIdx >= 0 && window._currentPriceDate === newDate) {
+                  const inlineOpen = document.getElementById(`row-detail-inner-${newIdx}`);
+                  if (!inlineOpen && typeof togglePriceRow === 'function') {
+                    togglePriceRow(newIdx, { stopPropagation: () => {} });
+                  }
+                  setTimeout(() => openRowFullscreen(newIdx), 80);
+                } else {
+                  setTimeout(() => waitAndReopen(attempts - 1), 150);
+                }
+              };
+              setTimeout(() => waitAndReopen(20), 200);
+            }
+          });
+        }
       }
     },
     chartSource: {
