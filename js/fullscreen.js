@@ -65,6 +65,16 @@
 
     // Restore previous resize state if a storageKey was given
     if (config.storageKey) restoreLayout(root, config.storageKey);
+
+    // Auto-fit table + KPI to natural content on open, so the user sees
+    // a tidy layout immediately. We wait ~250ms for the chart canvas to
+    // finish laying out so the resize() call inside autofitTable has the
+    // right dimensions.
+    setTimeout(() => {
+      if (document.getElementById(OVERLAY_ID) === root) {
+        autofitTable(root);
+      }
+    }, 250);
   }
 
   // ── Build DOM ─────────────────────────────────────────────────
@@ -615,7 +625,86 @@
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
   }
 
+  // ── Hot-swap content of an open overlay ──────────────────────
+  // Use this instead of close+reopen when a user switches zone, view,
+  // date, etc. Keeps the overlay container, the resize state, and the
+  // ESC handler intact. Only the content (title, KPI, table, filters,
+  // analysis, chart) is replaced.
+  function pkUpdateContent(config) {
+    const root = document.getElementById(OVERLAY_ID);
+    if (!root) return false; // nothing open — caller should fall back to open
+    try {
+      // Title / subtitle
+      const titleEl = root.querySelector('.pk-fs-title');
+      const subtitleEl = root.querySelector('.pk-fs-subtitle');
+      if (titleEl) titleEl.textContent = config.title || '';
+      if (subtitleEl) subtitleEl.textContent = config.subtitle || '';
+
+      // KPI strip
+      const kpi = root.querySelector('.pk-fs-kpi');
+      if (kpi) {
+        kpi.innerHTML = (config.kpis && config.kpis.html) ? config.kpis.html : '';
+      }
+
+      // Filters
+      const filters = root.querySelector('.pk-fs-filters');
+      if (filters) {
+        filters.innerHTML = (config.filters && config.filters.html) ? config.filters.html : '';
+        if (config.filters && typeof config.filters.wire === 'function') {
+          try { config.filters.wire(filters); }
+          catch (e) { console.warn('[pk-fs] filters.wire failed', e); }
+        }
+      }
+
+      // Analysis
+      const analysis = root.querySelector('.pk-fs-analysis');
+      if (analysis) {
+        analysis.innerHTML = (config.analysis && config.analysis.html) ? config.analysis.html : '';
+      }
+
+      // Table
+      const tableZone = root.querySelector('.pk-fs-table-zone');
+      if (tableZone) {
+        tableZone.innerHTML = (config.table && config.table.html) ? config.table.html : '';
+      }
+
+      // Chart — destroy the current one and rebuild via the same chartSource path
+      const canvas = root.querySelector('.pk-fs-chart');
+      if (canvas) {
+        try { if (root._fsChart) root._fsChart.destroy(); } catch (_) {}
+        root._fsChart = null;
+        if (config.chartSource && typeof config.chartSource.rebuildInto === 'function') {
+          root._fsChart = config.chartSource.rebuildInto(canvas);
+        } else if (config.chartSource && config.chartSource.instance) {
+          root._fsChart = cloneChartTo(canvas, config.chartSource.instance);
+        }
+      }
+
+      // Filename stem (used by CSV/PNG exports) is stored on the overlay for later use
+      root._fsConfig = config;
+
+      // Re-run auto-fit so the new content settles into a tidy layout
+      setTimeout(() => {
+        if (document.getElementById(OVERLAY_ID) === root) autofitTable(root);
+      }, 200);
+      return true;
+    } catch (e) {
+      console.warn('[pk-fs] pkUpdateContent failed, falling back to close+open', e);
+      return false;
+    }
+  }
+
   // ── Export ───────────────────────────────────────────────────
   window.pkOpenFullscreen = pkOpenFullscreen;
   window.pkCloseFullscreen = closeOverlay;
+  window.pkUpdateContent = pkUpdateContent;
+  // Helper for callers: open if closed, else update in place
+  window.pkOpenOrUpdate = function(config) {
+    const root = document.getElementById(OVERLAY_ID);
+    if (root) {
+      const ok = pkUpdateContent(config);
+      if (ok) return;
+    }
+    pkOpenFullscreen(config);
+  };
 })();
