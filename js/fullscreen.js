@@ -166,6 +166,15 @@
         user-select: none;
       }
       .pk-fs * { box-sizing: border-box; }
+      /* Re-enable interaction on form controls: the overlay-wide user-select:none
+         can otherwise block opening native <select> dropdowns, focusing <input>s,
+         or selecting text inside textareas (varies by browser). */
+      .pk-fs input,
+      .pk-fs select,
+      .pk-fs textarea,
+      .pk-fs button {
+        user-select: auto;
+      }
 
       /* While any fullscreen overlay is in the DOM, hide every easter-egg
          layer (esheep sprites, dots bar, ground, platforms, pipes, lightning,
