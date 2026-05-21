@@ -2541,6 +2541,10 @@
             <canvas id="price-compare-canvas" style="width:100%;height:340px"></canvas>
             <div id="cc-heatmap" style="display:none;width:100%;height:340px;overflow:auto"></div>
           </div>
+          <!-- Shading legend — hidden in Heatmap view (Heatmap has its own colour code) -->
+          <div id="cc-shading-legend" style="display:flex;justify-content:flex-end;gap:16px;font-size:10px;color:var(--tx3);margin:4px 0 4px">
+            <span>Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
+          </div>
           <!-- Compare zones data table (replaces KPI cards) -->
           <div class="table-wrap" style="margin-top:8px;border-radius:7px">
             <table id="compare-data-table" style="font-size:11px;table-layout:fixed">
