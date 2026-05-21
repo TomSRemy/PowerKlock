@@ -1760,13 +1760,13 @@ function buildHourlyDetail(idx, z) {
     },
   }];
 
-  // J-1 overlay from zone data
+  // J-1 overlay from zone data — grey dashed, more legible than the 0.35 alpha used before
   if (z.hourlyYday && z.hourlyYday.length) {
     datasets.push({
       label: ccFmtDayShift(window._currentPriceDate, -1) || 'J-1',
       data: z.hourlyYday,
-      borderColor: 'rgba(255,255,255,0.35)',
-      borderWidth: 1.3, borderDash:[5,4], pointRadius:0, tension:0.3, fill:false, spanGaps:true,
+      borderColor: 'rgba(195,210,225,0.70)',
+      borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0.3, fill: false, spanGaps: true,
     });
   }
 
@@ -1832,7 +1832,26 @@ function buildHourlyDetail(idx, z) {
             return !lbl.startsWith('__band_');
           }
         }},
-        tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(2)+' €/MWh':'n/a'}`}},
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          filter: ctx => !(ctx.dataset.label || '').startsWith('__band_'),
+          itemSort: (a, b) => {
+            // Today first, J-1 second, then median, then bands
+            const order = (lbl) => {
+              if (!lbl) return 99;
+              if (lbl.startsWith('Range 0-100%')) return 4;
+              if (lbl.startsWith('Typical 10-90%')) return 3;
+              if (lbl.startsWith('Median ')) return 2;
+              if (lbl.includes('Wed') || lbl.includes('Tue') || lbl.includes('Mon') || lbl.includes('Thu') || lbl.includes('Fri') || lbl.includes('Sat') || lbl.includes('Sun') || lbl === 'J-1') return 1;
+              return 0;
+            };
+            return order(a.dataset.label) - order(b.dataset.label);
+          },
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`
+          }
+        },
         annotation:{annotations},
         zoom:ZOOM_CFG,
       },
@@ -1925,8 +1944,11 @@ function _removeBandDatasets(chart) {
     const lbl = ds.label || '';
     return !lbl.startsWith('__band_')
         && !lbl.startsWith('Hist median')
-        && !lbl.startsWith('Typical (P10–P90)')
-        && !lbl.startsWith('Min–Max range');
+        && !lbl.startsWith('Median ')           // new label
+        && !lbl.startsWith('Typical (P10–P90)') // legacy
+        && !lbl.startsWith('Typical 10-90%')    // new label
+        && !lbl.startsWith('Min–Max range')     // legacy
+        && !lbl.startsWith('Range 0-100%');     // new label
   });
 }
 
@@ -2046,35 +2068,37 @@ async function _loadAndApplyRowBand(idx, z) {
   if (!env) return;
   if ((window._drillBandWindow[idx] || 'off') !== cur) return;
   _removeBandDatasets(chart);
+  // Steel-blue palette for historical bands — distinguishes the past clearly
+  // from the mint-coloured today and the dashed grey J-1.
   chart.data.datasets.push(
     {
-      label: `Min–Max range (${opt.label})`, data: env.p100,
-      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.04)',
+      label: `Range 0-100% (${opt.label})`, data: env.p100,
+      borderColor: 'rgba(56,116,203,0.20)', backgroundColor: 'rgba(56,116,203,0.10)',
       borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: '+1', order: 8,
     },
     {
       label: '__band_outer_min', data: env.p0,
-      borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+      borderColor: 'rgba(56,116,203,0.20)', backgroundColor: 'transparent',
       borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: false, order: 8,
     },
     {
-      label: `Typical (P10–P90) (${opt.label})`, data: env.p90,
-      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'rgba(255,255,255,0.08)',
+      label: `Typical 10-90% (${opt.label})`, data: env.p90,
+      borderColor: 'rgba(56,116,203,0.40)', backgroundColor: 'rgba(56,116,203,0.22)',
       borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: '+1', order: 7,
     },
     {
       label: '__band_inner_min', data: env.p10,
-      borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+      borderColor: 'rgba(56,116,203,0.40)', backgroundColor: 'transparent',
       borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: false, order: 7,
     },
     {
-      label: `Hist median (${opt.label})`, data: env.p50,
-      borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
-      tension: 0.2, spanGaps: true, fill: false, borderDash: [2, 3], order: 6,
+      label: `Median ${opt.label}`, data: env.p50,
+      borderColor: 'rgba(120,170,230,0.95)', borderWidth: 1.4, pointRadius: 0,
+      tension: 0.2, spanGaps: true, fill: false, borderDash: [3, 3], order: 6,
     }
   );
   chart.update('none');
@@ -2183,16 +2207,14 @@ function _updateBreakdownBandStats(idx, z, env, periodLabel) {
   const divCol = maxDiv == null ? 'var(--tx3)' : (maxDiv > 0 ? '#ED6965' : '#14D3A9');
   const sign = v => v >= 0 ? '+' : '';
 
-  host.innerHTML = `
-    <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-right:8px">Today vs ${periodLabel} band</span>
-    <span style="color:var(--tx3)">Median </span><span style="color:var(--tx)">${medianAvg != null ? medianAvg.toFixed(2) : '--'}</span>
-    <span style="color:var(--tx3)"> · Percentile </span><span style="color:${pctCol};font-weight:600">${todayPercentile != null ? 'P'+todayPercentile.toFixed(0) : '--'}</span>
-    <span style="color:var(--tx3)"> · Today vs median </span><span style="color:${vsMedCol};font-weight:600">${todayVsMedian != null ? sign(todayVsMedian)+todayVsMedian.toFixed(2) : '--'}</span>
-    <span style="color:var(--tx3)"> · Max divergence </span><span style="color:${divCol};font-weight:600">${maxDiv != null ? sign(maxDiv)+maxDiv.toFixed(2) : '--'}</span>${maxDivSlot != null ? ` <span style="color:var(--tx3);font-size:9px">@${slotToHour(maxDivSlot)}</span>` : ''}
-  `;
-  host.style.display = 'block';
+  // The separate grey "Today vs 7D band · Median … · Percentile …" line
+  // has been merged into the amber Market Read banner below.
+  // Keep the host hidden so its DOM stays in place (referenced elsewhere).
+  host.innerHTML = '';
+  host.style.display = 'none';
 
-  // Extend Market Read banner with a "vs band" sentence
+  // Extend Market Read banner with a richer "vs band" sentence containing
+  // the median, percentile, today vs median delta and max divergence.
   const banderSpan = document.getElementById(`row-market-read-band-${idx}`);
   if (banderSpan) {
     if (todayPercentile != null && todayVsMedian != null) {
@@ -2200,7 +2222,12 @@ function _updateBreakdownBandStats(idx, z, env, periodLabel) {
       if (todayPercentile >= 80) qualifier = `<span style="color:#ED6965;font-weight:600">expensive</span>`;
       else if (todayPercentile <= 20) qualifier = `<span style="color:#14D3A9;font-weight:600">cheap</span>`;
       else qualifier = `<span style="color:var(--tx)">in line</span>`;
-      banderSpan.innerHTML = ` Day sits at <span style="color:${pctCol};font-weight:600">P${todayPercentile.toFixed(0)}</span> vs ${periodLabel} history — ${qualifier} with <span style="color:${vsMedCol};font-weight:600">${sign(todayVsMedian)}${todayVsMedian.toFixed(2)} €/MWh</span> vs ${periodLabel} median.`;
+
+      const divPart = (maxDiv != null && maxDivSlot != null)
+        ? ` Max divergence <span style="color:${divCol};font-weight:600">${sign(maxDiv)}${maxDiv.toFixed(2)} €/MWh</span> at ${slotToHour(maxDivSlot)}.`
+        : '';
+
+      banderSpan.innerHTML = ` <span style="display:block;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(251,191,36,0.25);font-style:italic">Today vs ${periodLabel}: sits at <span style="color:${pctCol};font-weight:600">P${todayPercentile.toFixed(0)}</span> — ${qualifier} with <span style="color:${vsMedCol};font-weight:600">${sign(todayVsMedian)}${todayVsMedian.toFixed(2)} €/MWh</span> vs median (${medianAvg != null ? medianAvg.toFixed(2) : '--'}).${divPart}</span>`;
     } else {
       banderSpan.innerHTML = '';
     }
@@ -3893,11 +3920,25 @@ function openRowFullscreen(idx) {
   const inlineBanner = document.getElementById(`row-analyst-banner-${idx}`);
   const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
 
-  // ── Filters HTML: Band pills + Reset (graph-scoped controls) ──
+  // ── Filters HTML: Zone selector (dropdown) + Band pills ──
+  // The Zone selector lists every zone currently loaded in the board
+  // (window._pricesSorted) so the user can hop from FR → DE → ES etc.
+  // without leaving the fullscreen.
   // The Band pills control the historical envelope overlay on the chart.
-  // We rebuild them with a new wrapper id (fs-row-band-pills-IDX) so we can
-  // hook onto them without conflicting with the inline ones.
+  const zonesList = window._pricesSorted || [];
+  const zoneOptions = zonesList.map((zi, i) => {
+    const flagI = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zi.code]) || '';
+    const safeName = (zi.name || zi.code).replace(/"/g, '&quot;');
+    return `<option value="${i}" ${i === idx ? 'selected' : ''}>${flagI} ${zi.code} — ${safeName}</option>`;
+  }).join('');
+
   const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
+      <select id="fs-row-zone-select-${idx}" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+        ${zoneOptions}
+      </select>
+    </div>
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="fs-row-band-pills-${idx}">
@@ -3915,9 +3956,26 @@ function openRowFullscreen(idx) {
     analysis: { html: analysisHtml },
     filters: {
       html: filtersHtml,
-      // Band pill clicks call setRowBandWindow() natively via their inline onclick,
-      // which now updates both inline AND fullscreen pill hosts. No extra wiring needed.
-      wire: null
+      // Band pill clicks call setRowBandWindow() via their inline onclick,
+      // which now updates BOTH inline and fullscreen pill hosts.
+      // Zone select needs explicit wiring: closing + reopening with the new idx.
+      wire: (hostEl) => {
+        const sel = hostEl.querySelector(`#fs-row-zone-select-${idx}`);
+        if (!sel) return;
+        sel.addEventListener('change', (e) => {
+          const newIdx = parseInt(e.target.value, 10);
+          if (isNaN(newIdx) || newIdx === idx) return;
+          // Make sure the new row is expanded inline (so its chart exists)
+          const inlineOpen = document.getElementById(`row-detail-inner-${newIdx}`);
+          if (!inlineOpen && typeof togglePriceRow === 'function') {
+            togglePriceRow(newIdx, { stopPropagation: () => {} });
+          }
+          // Close + re-open the fullscreen on the new index after a short tick
+          // so the inline chart has time to finish rendering.
+          if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+          setTimeout(() => openRowFullscreen(newIdx), 60);
+        });
+      }
     },
     chartSource: {
       rebuildInto: (canvas) => {
