@@ -8962,3 +8962,173 @@ document.addEventListener('DOMContentLoaded', () => {
   const target = document.getElementById('prtab-historical');
   if (target) obs.observe(target, { attributes: true, attributeFilter: ['class'] });
 });
+
+// ════════════════════════════════════════════
+// Historical Cross-zone fullscreen — wraps the hmz chart + table in pkOpenFullscreen.
+// Filters reproduce the view tabs (Lines/Heatmap/Profile/Bands/Spread) + window + ref.
+// ════════════════════════════════════════════
+function hmzOpenFullscreen() {
+  if (typeof window.pkOpenFullscreen !== 'function') {
+    console.error('[hmzOpenFullscreen] pkOpenFullscreen is not loaded');
+    return;
+  }
+  const view = (window.HMZ && HMZ.tab) || 'lines';
+  const w = (window.HIST && HIST.windows && HIST.windows['hmz']) || '3M';
+
+  // Title / subtitle
+  const periodMap = {
+    '7D': '7 days', '1M': '1 month', '3M': '3 months', '6M': '6 months',
+    '1Y': '1 year', '2Y': '2 years', '5Y': '5 years', 'All': 'all time', 'YTD': 'year-to-date',
+  };
+  const periodLabel = periodMap[w] || w;
+  const viewTitle = {
+    lines:'Lines', heatmap:'Heatmap', profile:'Profile', bands:'Bands', spread:'Spread'
+  }[view] || 'Lines';
+  const selectedZones = (window.HIST && HIST.hmzSelectedZones) ? Array.from(HIST.hmzSelectedZones) : [];
+  const zonesCount = selectedZones.length;
+
+  // Clone the inline data table
+  const inlineTable = document.getElementById('hmz-data-table');
+  const tableHtml = inlineTable ? (
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+       <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--tx2);text-transform:uppercase">${viewTitle} — ${zonesCount} zone${zonesCount > 1 ? 's' : ''}</span>
+       <span style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodLabel}</span>
+     </div>
+     ${inlineTable.outerHTML}`
+  ) : null;
+
+  // Clone the amber analyst banner
+  const inlineBanner = document.getElementById('hmz-analyst-banner-anchor');
+  const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
+
+  // Filters: window selector + view tabs + view-specific extras
+  const windowsHtml = ['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(wk => `
+    <button onclick="setHistWindow('hmz','${wk}');setTimeout(()=>{hmzRefreshFullscreen();},120)" style="
+      padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+      color:${wk === w ? '#14D3A9' : '#7A93AB'};
+      background:${wk === w ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+    ">${wk}</button>`).join('');
+
+  const tabs = (window.HMZ && HMZ.tabs) || [
+    { id:'lines', label:'Lines' }, { id:'heatmap', label:'Heatmap' },
+    { id:'profile', label:'Profile' }, { id:'bands', label:'Bands' }, { id:'spread', label:'Spread' }
+  ];
+  const tabsHtml = tabs.map(t => `
+    <button onclick="setHistMultiTab('${t.id}');setTimeout(()=>{hmzRefreshFullscreen();},80)" style="
+      padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+      color:${t.id === view ? '#14D3A9' : '#7A93AB'};
+      background:${t.id === view ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+    ">${t.label}</button>`).join('');
+
+  let extraHtml = '';
+  if (view === 'spread' && selectedZones.length) {
+    const refCode = (window.HIST && HIST.hmzBaseline) || (selectedZones.includes('FR') ? 'FR' : selectedZones[0]);
+    const refChips = selectedZones.map(code => {
+      const isOn = code === refCode;
+      return `<button onclick="setHmzBaseline('${code}');setTimeout(()=>{hmzRefreshFullscreen();},80)" style="
+        padding:3px 8px;font-size:10px;cursor:pointer;border-radius:3px;
+        color:${isOn ? '#14D3A9' : '#7A93AB'};
+        background:${isOn ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        border:1px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,0.10)'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${code}</button>`;
+    }).join('');
+    extraHtml = `
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Spread ref</span>
+        <div style="display:inline-flex;gap:3px;flex-wrap:wrap">${refChips}</div>
+      </div>`;
+  }
+
+  const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Window</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${tabsHtml}</div>
+    </div>
+    ${extraHtml}`;
+
+  pkOpenFullscreen({
+    title: `Historical Cross-zone · ${viewTitle}`,
+    subtitle: `${periodLabel} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
+    filenameStem: `powerklock_historical_crosszone_${view}_${w}`,
+    storageKey: 'historical-crosszone',
+    table: tableHtml ? { html: tableHtml } : null,
+    analysis: { html: analysisHtml },
+    filters: { html: filtersHtml, wire: null },
+    chartSource: {
+      rebuildInto: (canvas) => {
+        const srcChart = (window.HIST && HIST.charts && HIST.charts['hmz-canvas']);
+        if (!srcChart || typeof Chart === 'undefined') return null;
+        const cfg = {
+          type: srcChart.config.type,
+          data: JSON.parse(JSON.stringify(srcChart.config.data)),
+          options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
+        };
+        cfg.options.maintainAspectRatio = false;
+        cfg.options.responsive = true;
+        cfg.options.scales = cfg.options.scales || {};
+        Object.keys(cfg.options.scales).forEach(k => {
+          const sc = cfg.options.scales[k];
+          sc.ticks = sc.ticks || {};
+          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
+          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
+        });
+        cfg.options.plugins = cfg.options.plugins || {};
+        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
+        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
+        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
+        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
+        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
+        cfg.options.plugins.zoom = {
+          zoom: {
+            drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
+            wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
+          },
+          pan: { enabled: false }
+        };
+        try {
+          const chart = new Chart(canvas, cfg);
+          canvas.addEventListener('dblclick', () => {
+            if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
+          });
+          return chart;
+        } catch (e) {
+          console.warn('[hmzOpenFullscreen] chart build failed', e);
+          return null;
+        }
+      }
+    },
+    onCSV: () => buildHmzCSV(),
+  });
+}
+window.hmzOpenFullscreen = hmzOpenFullscreen;
+
+function hmzRefreshFullscreen() {
+  if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+  setTimeout(() => hmzOpenFullscreen(), 80);
+}
+window.hmzRefreshFullscreen = hmzRefreshFullscreen;
+
+function buildHmzCSV() {
+  const table = document.getElementById('hmz-data-table');
+  if (!table) return null;
+  const headerCells = table.querySelectorAll('thead th');
+  const headers = Array.from(headerCells).map(th =>
+    th.textContent.trim().replace(/\s+/g, ' ').split(/\s{2,}/)[0]
+  );
+  const dataRows = table.querySelectorAll('tbody tr');
+  const rows = Array.from(dataRows).map(tr => {
+    const cells = tr.querySelectorAll('td');
+    return Array.from(cells).map(td => {
+      const txt = td.textContent.trim().replace(/\s+/g, ' ');
+      if (/[,"\n]/.test(txt)) return '"' + txt.replace(/"/g, '""') + '"';
+      return txt;
+    });
+  });
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
