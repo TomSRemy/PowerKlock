@@ -2435,6 +2435,7 @@ async function fetchHistoricalEnvelope(code, nDays, nPts) {
 
 // Fetch historical envelope with P0/P5/P50/P95/P100 percentiles per slot.
 // Cached by `code+nDays+nPts` so different window choices don't collide.
+// nDays = -1 means YTD (year-to-date). nDays = 0 means All (up to 5 years).
 async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
   const cacheKey = `${code}|${nDays}|${nPts}`;
   window._envelopePCache = window._envelopePCache || {};
@@ -2442,28 +2443,27 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
 
   const today = new Date();
   const dates = [];
-  // nDays === 0 means "All": use whatever exists. We'll bound it generously (5 years).
-  const limit = nDays === 0 ? 5 * 365 : nDays;
-  for (let i = 1; i <= limit; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0,10));
-  }
-  // YTD: filter to current year only
   if (nDays === -1) {
     const yr = today.getFullYear();
-    dates.length = 0;
     for (let i = 1; i <= 365; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       if (d.getFullYear() === yr) dates.push(d.toISOString().slice(0,10));
+    }
+  } else {
+    const limit = nDays === 0 ? 5 * 365 : nDays;
+    for (let i = 1; i <= limit; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().slice(0,10));
     }
   }
 
   const all = [];
   await Promise.all(dates.map(async (dt) => {
     try {
-      const r = await fetch(`data/history/daily/${dt}.json`);
+      const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
+      const r = await fetch(base + 'history/daily/' + dt + '.json');
       if (!r.ok) return;
       const j = await r.json();
       let z = null;
@@ -2472,7 +2472,6 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
       if (!z) return;
       const h = z.hourly || z.h;
       if (!Array.isArray(h) || !h.length) return;
-      // Resample to nPts
       const ratio = h.length / nPts;
       const resampled = [];
       for (let i = 0; i < nPts; i++) {
@@ -2487,7 +2486,6 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
 
   if (!all.length) return null;
 
-  // Local _percentile helper (mirrors hist.js · linear interpolation)
   const _pct = (sortedArr, p) => {
     if (!sortedArr.length) return null;
     if (sortedArr.length === 1) return sortedArr[0];
