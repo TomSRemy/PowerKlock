@@ -5,14 +5,47 @@ function pkUpdateHistPeriodLabels(w) {
     '1Y': '1 year', '2Y': '2 years', '5Y': '5 years', 'All': 'all time', 'YTD': 'year-to-date',
   };
   const txt = labels[w] || w;
-  const ids = ['pr-hist-period-label', 'pr-hist-period-label-h', 'pr-hmz-period-label'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = txt;
-  });
-  // Update page meta with explicit period (mirrors Daily format: "<period> · ENTSO-E")
-  const pageMeta = document.getElementById('pr-hist-page-meta');
-  if (pageMeta) pageMeta.innerHTML = 'over <span id="pr-hist-period-label">' + txt + '</span> · ENTSO-E';
+
+  // Compute date range from period (mirrors pkUpdateTimeComboLabel logic in index.html)
+  const fmt = (d) => {
+    if (!(d instanceof Date) || isNaN(d)) return '';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+  const today = new Date();
+  let dateRange = '';
+  if (HIST.customRange && HIST.customRange.from && HIST.customRange.to) {
+    const from = new Date(HIST.customRange.from);
+    const to   = new Date(HIST.customRange.to);
+    dateRange = fmt(from) + ' \u2192 ' + fmt(to);
+  } else {
+    const dayMap = { '7D': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, '5Y': 1825 };
+    if (w === 'YTD') {
+      const start = new Date(today.getFullYear(), 0, 1);
+      dateRange = fmt(start) + ' \u2192 ' + fmt(today);
+    } else if (dayMap[w] != null) {
+      const start = new Date(today);
+      start.setDate(start.getDate() - dayMap[w]);
+      dateRange = fmt(start) + ' \u2192 ' + fmt(today);
+    }
+    // 'All' → no specific range
+  }
+
+  // Builds: "3 months · 19 Feb 2026 → 21 May 2026" (Cross-zone style)
+  //     or: "3 months · 19 Feb 2026 → 21 May 2026 · ENTSO-E" (DA Board style)
+  const baseLabel = dateRange ? (txt + ' \u00b7 ' + dateRange) : txt;
+  const boardLabel = baseLabel + ' \u00b7 ENTSO-E';
+
+  // pr-hist-period-label-h is inside the DA Board section header (gets ENTSO-E suffix)
+  const elBoard = document.getElementById('pr-hist-period-label-h');
+  if (elBoard) elBoard.textContent = boardLabel;
+
+  // pr-hmz-period-label is inside the Cross-zone section header (no ENTSO-E suffix)
+  const elHmz = document.getElementById('pr-hmz-period-label');
+  if (elHmz) elHmz.textContent = baseLabel;
+
+  // pr-hist-period-label is the legacy span used in some inline text — keep short form
+  const elLegacy = document.getElementById('pr-hist-period-label');
+  if (elLegacy) elLegacy.textContent = txt;
 }
 window.pkUpdateHistPeriodLabels = pkUpdateHistPeriodLabels;
 
