@@ -8846,9 +8846,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!window._histInited) {
         window._histInited = true;
         setTimeout(() => {
-          renderHistOverview();
-          renderHistMulti();
-          renderHistMonthlyTable();
+          try { renderHistOverview(); } catch (e) { console.error('[hist] renderHistOverview failed:', e); }
+          try { renderHistMulti(); } catch (e) { console.error('[hist] renderHistMulti failed:', e); }
+          try { renderHistMonthlyTable(); } catch (e) { console.error('[hist] renderHistMonthlyTable failed:', e); }
         }, 50);
       }
     }
