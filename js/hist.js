@@ -4289,6 +4289,79 @@ function _buildAnalystBanner(mode, p) {
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
+  // ── Daily drill-down (single zone, single day) ──
+  // Mirrors the 2-line layout used by Historical modes: facts on line 1,
+  // italic "Market read :" verdict on line 2.
+  else if (mode === 'dailyDrill') {
+    const { zone, dayLabel, today, j1Avg, delta, deltaPct,
+            peakAvg, offPkAvg, peakRatio,
+            min, max, minSlot, maxSlot,
+            negHours, negMins, negMin, negSlots,
+            bandIdSuffix } = p;
+    const sign = v => v >= 0 ? '+' : '';
+
+    // ── Line 1 · facts ──
+    const factParts = [];
+    if (today != null) {
+      let s = `Day printed ${W(today.toFixed(2) + ' €/MWh')}`;
+      if (delta != null) {
+        s += `, ${A(sign(delta) + delta.toFixed(2) + ' €/MWh')} vs J-1`;
+        if (deltaPct != null) s += ` (${A(sign(deltaPct) + deltaPct.toFixed(1) + '%')})`;
+      }
+      factParts.push(s);
+    }
+    if (peakAvg != null && offPkAvg != null) {
+      factParts.push(`peak ${W(peakAvg.toFixed(2))} / off-pk ${W(offPkAvg.toFixed(2))} €/MWh` +
+                     (peakRatio != null ? ` (ratio ${A(peakRatio.toFixed(2) + 'x')})` : ''));
+    }
+    if (min != null && max != null) {
+      factParts.push(`range ${A(min.toFixed(2))} on ${A(minSlot || '--')} → ${A(max.toFixed(2) + ' €/MWh')} on ${A(maxSlot || '--')}`);
+    }
+    if (negHours != null && (negHours > 0 || (negMins != null && negMins > 0))) {
+      const dur = negHours + 'h' + (negMins > 0 ? String(negMins).padStart(2,'0') : '');
+      factParts.push(`${A('negative-price episode')} ${A(dur)} below zero, min ${A(negMin != null ? negMin.toFixed(2) + ' €/MWh' : '--')}`);
+    }
+    line1 = factParts.join('. ') + (factParts.length ? '.' : '');
+
+    // ── Line 2 · verdict (market read) ──
+    let read;
+    const isNeg = negHours != null && negHours > 0;
+    const bigMove = (deltaPct != null && Math.abs(deltaPct) >= 15);
+    const isFlat = (peakRatio != null && peakRatio < 1.20);
+    const isInverted = (peakRatio != null && peakRatio < 1.0);
+    const isPeakier = (peakRatio != null && peakRatio > 1.6);
+
+    if (isNeg && isInverted) {
+      read = `<b>Renewable stress event</b>. Solar surplus pushed prices through zero and inverted the peak/off-peak relationship.`;
+    } else if (isNeg) {
+      read = `<b>Negative-price episode</b>. Renewable oversupply during the day; storage and flexible offtake captured rents.`;
+    } else if (isInverted) {
+      read = `<b>Inverted profile (duck curve)</b>. Off-peak more expensive than peak — solar-driven midday floor.`;
+    } else if (isFlat && bigMove && delta > 0) {
+      read = `<b>Tight day, sharply higher vs J-1</b>. Limited intraday swings but level reset upward.`;
+    } else if (isFlat) {
+      read = `<b>Flatter-than-normal day</b>. Peak/off-peak gap compressed vs the 1.30x baseline.`;
+    } else if (isPeakier && bigMove) {
+      read = `<b>Peaky day with sharp move</b>. Pronounced intraday shape on top of a strong directional shift vs J-1.`;
+    } else if (isPeakier) {
+      read = `<b>Peakier-than-normal day</b>. Wide intraday swings around the average.`;
+    } else if (bigMove && delta > 0) {
+      read = `<b>Sharp upside vs J-1</b>. Daily level reset higher with a normal profile shape.`;
+    } else if (bigMove && delta < 0) {
+      read = `<b>Sharp downside vs J-1</b>. Daily level reset lower with a normal profile shape.`;
+    } else {
+      read = `<b>Normal day</b>. Level and shape both close to the prior session.`;
+    }
+
+    // The band-stats sentence (P50 / vs median) is injected later by
+    // _loadAndApplyRowBand into the #row-market-read-band-* placeholder
+    // we leave embedded inside the verdict.
+    const bandSpan = bandIdSuffix
+      ? ` <span class="row-market-read-band" id="row-market-read-band-${bandIdSuffix}"></span>`
+      : '';
+    verdict = `${VR_OPEN}${read}${bandSpan}${VR_CLOSE}`;
+  }
+
   // ── Compare zones modes (used by Daily + Historical compare-zones charts) ──
   else if (mode === 'ccLines' || mode === 'ccProfile' || mode === 'ccBands' || mode === 'ccSpread' || mode === 'ccHeatmap') {
     const { cheap, pricey, frGap, loadedAvg, zoneCount, view } = p;
