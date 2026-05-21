@@ -1623,7 +1623,7 @@ function buildHourlyDetail(idx, z) {
     <div id="row-analyst-banner-${idx}"></div>
     <!-- Band stats line · populated when the band selector is active -->
     <div id="row-band-stats-${idx}" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.15);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.6"></div>
-    <details style="margin-top:4px">
+    <details style="margin-top:18px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
         Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
       </summary>
