@@ -1011,9 +1011,19 @@ function toggleZoneFilterPanel() {
   panel.style.display   = isOpen ? 'none' : 'block';
   if (overlay) overlay.style.display = isOpen ? 'none' : 'block';
   if (!isOpen) {
-    // Prefer header button if visible, fallback to original
-    const hdrBtn = document.getElementById('zone-filter-btn-hdr');
-    const anchorId = (hdrBtn && hdrBtn.offsetParent !== null) ? 'zone-filter-btn-hdr' : 'zone-filter-btn';
+    // Find the first visible anchor button. The header has gone through
+    // several iterations (legacy, hdr, pk-gf), so we try each in order.
+    const candidates = [
+      'pk-gf-daily-zones',   // current global filter button (Daily)
+      'zone-filter-btn-hdr', // old header button
+      'zone-filter-btn',     // legacy inline button
+    ];
+    let anchorId = null;
+    for (const id of candidates) {
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null) { anchorId = id; break; }
+    }
+    if (!anchorId) anchorId = candidates[0]; // last-resort, even if hidden
     positionPanel('zone-filter-panel', anchorId);
     buildZoneFilterDropdown();
   }
