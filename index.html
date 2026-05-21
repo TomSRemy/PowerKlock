@@ -950,23 +950,52 @@
   .hist-section-strong {
     background: var(--bg2);
     border: 1px solid var(--border2);
-    border-left: 3px solid var(--accent);
     border-radius: 10px;
-    margin-top: 32px;
+    margin-top: 48px;
     box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
     overflow: hidden;
   }
   .hist-section-strong:first-of-type { margin-top: 18px; }
   .hist-section-strong .hist-section-header {
-    background: linear-gradient(180deg, rgba(20,211,169,0.04) 0%, transparent 100%);
     padding: 13px 18px;
     border-bottom: 1px solid var(--border2);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .hist-section-strong .hist-section-header:hover {
+    background: rgba(255,255,255,0.02);
+  }
+  .hist-section-strong.collapsed .hist-section-header {
+    border-bottom-color: transparent;
   }
   .hist-section-strong .hist-section-title {
     gap: 10px;
     font-size: 12px;
   }
-  .hist-section-strong .hist-section-body { padding: 18px; }
+  /* Chevron — visible & rotatable only for .hist-section-strong */
+  .hist-section-strong .hist-section-chevron {
+    display: block !important;
+    width: 14px; height: 14px;
+    color: var(--tx3);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .hist-section-strong.collapsed .hist-section-chevron {
+    transform: rotate(-90deg);
+  }
+  /* Body — animated collapse via max-height */
+  .hist-section-strong .hist-section-body {
+    padding: 18px;
+    max-height: 8000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.2s ease, opacity 0.2s ease;
+  }
+  .hist-section-strong.collapsed .hist-section-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
   .hist-section-eyebrow {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 24px; height: 18px;
@@ -2237,8 +2266,7 @@
           <h2 style="font-size:18px;font-weight:600;color:var(--tx);letter-spacing:.02em;margin:0">Day-Ahead · Daily</h2>
           <span id="pr-daily-page-meta" style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;letter-spacing:.02em">--</span>
         </div>
-<div class="hist-section hist-section-strong" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><span class="hist-section-eyebrow">01</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Day-Ahead board<span id="pr-daily-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span></div>
-<svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
+<div class="hist-section hist-section-strong" id="hs-prices-main"><div class="hist-section-header open" onclick="toggleStrongSection('hs-prices-main')"><div class="hist-section-title"><span class="hist-section-eyebrow">01</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Day-Ahead board<span id="pr-daily-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span></div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
         <div class="kpi-card kpi-flat" id="kpicard-fr">
@@ -2347,13 +2375,14 @@
         </div><!-- /hist-section #hs-prices-main -->
 
         <div class="hist-section hist-section-strong" id="hs-cc-main">
-          <div class="hist-section-header open">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-cc-main')">
             <div class="hist-section-title">
               <span class="hist-section-eyebrow">02</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
               Cross-zone analysis
               <span id="compare-zones-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
             </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open">
           <!-- KPI strip · Compare zones (Daily, 5 cards, no redundancy with main strip above) -->
@@ -2443,7 +2472,7 @@
      BLOCK 1 · MULTI-ZONE OVERVIEW TABLE (style Daily DA)
      ════════════════════════════════════════════════════════ -->
 <div class="hist-section hist-section-strong" id="hs-ho-main">
-  <div class="hist-section-header open">
+  <div class="hist-section-header open" onclick="toggleStrongSection('hs-ho-main')">
     <div class="hist-section-title">
       <span class="hist-section-eyebrow">01</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
@@ -2538,13 +2567,14 @@
      Lines · Heatmap · Profile · Bands · Spread
      ════════════════════════════════════════════════════════ -->
 <div class="hist-section hist-section-strong" id="hs-hmz-main">
-  <div class="hist-section-header open">
+  <div class="hist-section-header open" onclick="toggleStrongSection('hs-hmz-main')">
     <div class="hist-section-title">
       <span class="hist-section-eyebrow">02</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Cross-zone analysis over <span id="pr-hmz-period-label">--</span>
       <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
     </div>
+    <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
   <div class="hist-section-body open">
 
@@ -4479,6 +4509,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
   // SAFETY STUBS · in case prices.js fails to load
   // These are no-ops if prices.js loaded successfully (it defines them first)
   // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // Toggle collapse on .hist-section-strong (Day-Ahead board, Cross-zone analysis)
+  // Standalone — does NOT affect the older .hist-section blocks which stay always-open.
+  // ─────────────────────────────────────────────────────────────
+  window.toggleStrongSection = function(sectionId) {
+    const sec = document.getElementById(sectionId);
+    if (!sec || !sec.classList.contains('hist-section-strong')) return;
+    sec.classList.toggle('collapsed');
+  };
+
   (function ensureGlobalStubs() {
     if (typeof window.showPage !== 'function') {
       window.showPage = function(id) {
