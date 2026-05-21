@@ -46,8 +46,8 @@
     const root = buildOverlay(config);
     document.body.appendChild(root);
 
-    // Native fullscreen — keeps ESC behaviour consistent across browsers
-    requestFullscreen(root);
+    // No native fullscreen — overlay sits on top of the page, keeps browser tabs visible.
+    // ESC is still wired below in wireESC().
 
     // Build the chart inside the FS canvas now that the DOM is in the document
     setupChart(root, config);
@@ -55,7 +55,7 @@
     // Wire interactions: resize handles, buttons, ESC, screenshot toggle
     wireResize(root, config);
     wireHeaderButtons(root, config);
-    wireExitOnFullscreenChange(root);
+    wireESC(root);
 
     // Filters (user-supplied HTML + wire callback)
     if (config.filters && typeof config.filters.wire === 'function') {
@@ -79,7 +79,7 @@
           ${cfg.subtitle ? `<div class="pk-fs-subtitle">${esc(cfg.subtitle)}</div>` : ''}
         </div>
         <div class="pk-fs-actions">
-          ${cfg.table ? `<button class="pk-fs-btn" data-act="autofit" title="Auto-fit table to content">⇆ Auto-fit</button>` : ''}
+          ${(cfg.table || cfg.kpis) ? `<button class="pk-fs-btn" data-act="autofit" title="Auto-fit KPI and table to natural size">⇆ Auto-fit</button>` : ''}
           <button class="pk-fs-btn" data-act="reset" title="Reset zoom">↺ Reset</button>
           <button class="pk-fs-btn" data-act="png" title="Download PNG">⤓ PNG</button>
           ${typeof cfg.onCSV === 'function' ? `<button class="pk-fs-btn" data-act="csv" title="Download CSV">⤓ CSV</button>` : ''}
@@ -91,23 +91,24 @@
 
       <div class="pk-fs-body">
 
-        ${cfg.kpis ? `
-        <div class="pk-fs-kpi" style="height:${DEFAULTS.kpiHeight}px">
-          ${cfg.kpis.html || ''}
-        </div>
-        <div class="pk-fs-resizer pk-fs-resizer-h" data-resizer="h" title="Drag to resize · double-click to collapse / restore">
-          <div class="pk-fs-resizer-grip"></div>
-        </div>
-        ` : ''}
-
         <div class="pk-fs-main">
 
-          <div class="pk-fs-graph-zone">
-            ${cfg.filters ? `<div class="pk-fs-filters">${cfg.filters.html || ''}</div>` : ''}
-            <div class="pk-fs-chart-wrap">
-              <canvas class="pk-fs-chart"></canvas>
+          <div class="pk-fs-left-col">
+            ${cfg.kpis ? `
+            <div class="pk-fs-kpi" style="height:${DEFAULTS.kpiHeight}px">
+              ${cfg.kpis.html || ''}
             </div>
-            ${cfg.analysis ? `<div class="pk-fs-analysis">${cfg.analysis.html || ''}</div>` : ''}
+            <div class="pk-fs-resizer pk-fs-resizer-h" data-resizer="h" title="Drag to resize · double-click to collapse / restore">
+              <div class="pk-fs-resizer-grip"></div>
+            </div>
+            ` : ''}
+            <div class="pk-fs-graph-zone">
+              ${cfg.filters ? `<div class="pk-fs-filters">${cfg.filters.html || ''}</div>` : ''}
+              <div class="pk-fs-chart-wrap">
+                <canvas class="pk-fs-chart"></canvas>
+              </div>
+              ${cfg.analysis ? `<div class="pk-fs-analysis">${cfg.analysis.html || ''}</div>` : ''}
+            </div>
           </div>
 
           ${cfg.table ? `
@@ -130,8 +131,7 @@
             ${cfg.subtitle ? `<div class="pk-fs-screenshot-subtitle">${esc(cfg.subtitle)}</div>` : ''}
           </div>
           <div class="pk-fs-screenshot-logo">
-            <span class="pk-fs-screenshot-dot"></span>
-            <span>power.klock</span>
+            <img src="assets/logo-header.png" alt="PowerKlock" class="pk-fs-screenshot-logo-img">
           </div>
         </div>
         <div class="pk-fs-screenshot-chart-wrap">
@@ -179,19 +179,22 @@
       .pk-fs-sep { width: 1px; height: 20px; background: #243447; margin: 0 4px; }
 
       .pk-fs-body {
-        flex: 1; display: flex; flex-direction: column; gap: 0;
-        padding: 14px 20px 18px; min-height: 0; overflow: hidden;
-      }
-
-      .pk-fs-kpi {
-        flex-shrink: 0; overflow: hidden;
+        flex: 1; padding: 14px 20px 18px;
+        min-height: 0; overflow: hidden;
       }
 
       .pk-fs-main {
-        display: flex; flex: 1; gap: 0; min-height: 0;
+        display: flex; flex: 1; gap: 0; min-height: 0; height: 100%;
+      }
+      .pk-fs-left-col {
+        flex: 1; min-width: 0; min-height: 0;
+        display: flex; flex-direction: column;
+      }
+      .pk-fs-kpi {
+        flex-shrink: 0; overflow: hidden;
       }
       .pk-fs-graph-zone {
-        flex: 1; min-width: 0; min-height: 0;
+        flex: 1; min-height: 0;
         background: #0f1419; border: 1px solid #1e2d3d; border-radius: 8px;
         padding: 10px; display: flex; flex-direction: column;
       }
@@ -246,11 +249,9 @@
       }
       .pk-fs-screenshot-logo {
         display: flex; align-items: center; gap: 9px;
-        font-size: 15px; font-weight: 700; color: #14D3A9; letter-spacing: 0.05em;
       }
-      .pk-fs-screenshot-dot {
-        display: inline-block; width: 20px; height: 20px;
-        border-radius: 50%; background: #14D3A9;
+      .pk-fs-screenshot-logo-img {
+        height: 36px; width: auto; display: block;
       }
       .pk-fs-screenshot-chart-wrap {
         flex: 1; background: #0a0e13; border: 1px solid #1e2d3d;
@@ -475,18 +476,36 @@
   }
 
   function autofitTable(root) {
-    const table = root.querySelector('.pk-fs-table-zone table');
-    const zone = root.querySelector('.pk-fs-table-zone');
-    if (!table || !zone) return;
-    // Measure natural content width
-    const prevWidth = zone.style.width;
-    zone.style.width = 'auto';
-    table.style.width = 'max-content';
-    const natural = table.offsetWidth + 24; // padding
-    table.style.width = '';
+    // Auto-fit the table column to its natural content width AND
+    // auto-fit the KPI strip height to fit its cards without scroll.
     const main = root.querySelector('.pk-fs-main');
-    const maxWidth = main.offsetWidth * DEFAULTS.maxTableRatio;
-    zone.style.width = Math.min(natural, maxWidth) + 'px';
+
+    // ── Table column ──
+    const tableZone = root.querySelector('.pk-fs-table-zone');
+    const table = tableZone ? tableZone.querySelector('table') : null;
+    if (tableZone && table) {
+      const prevWidth = tableZone.style.width;
+      tableZone.style.width = 'auto';
+      table.style.width = 'max-content';
+      const natural = table.offsetWidth + 24; // padding inside zone
+      table.style.width = '';
+      const maxWidth = main.offsetWidth * DEFAULTS.maxTableRatio;
+      tableZone.style.width = Math.min(natural, maxWidth) + 'px';
+      tableZone.style.display = '';
+    }
+
+    // ── KPI strip ──
+    const kpi = root.querySelector('.pk-fs-kpi');
+    if (kpi) {
+      // Save current style, measure natural height via temporary height:auto
+      const prevH = kpi.style.height;
+      kpi.style.height = 'auto';
+      const natural = kpi.scrollHeight;
+      // Clamp to MAX so a very large KPI doesn't eat the graph
+      kpi.style.height = Math.min(Math.max(natural, 40), DEFAULTS.maxKpi) + 'px';
+      kpi.style.display = '';
+    }
+
     if (root._fsChart && typeof root._fsChart.resize === 'function') root._fsChart.resize();
   }
 
@@ -514,38 +533,30 @@
     if (root._fsChart && typeof root._fsChart.resize === 'function') root._fsChart.resize();
   }
 
-  // ── Native fullscreen plumbing ────────────────────────────────
-  function requestFullscreen(el) {
-    if (el.requestFullscreen) el.requestFullscreen().catch(err => console.warn('[pk-fs] fullscreen denied', err));
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  }
-  function wireExitOnFullscreenChange(root) {
-    function onChange() {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        closeOverlay();
+  // ── ESC key handler (no native fullscreen) ───────────────────
+  function wireESC(root) {
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        // If in screenshot mode, exit it first; otherwise close overlay
+        const shot = root.querySelector('.pk-fs-screenshot');
+        if (shot && shot.style.display !== 'none') {
+          exitScreenshot(root);
+        } else {
+          closeOverlay();
+        }
       }
     }
-    document.addEventListener('fullscreenchange', onChange);
-    document.addEventListener('webkitfullscreenchange', onChange);
-    root._fsChange = onChange;
+    document.addEventListener('keydown', onKey);
+    root._keyHandler = onKey;
   }
 
   function closeOverlay() {
     const root = document.getElementById(OVERLAY_ID);
     if (!root) return;
-    // Exit native FS if still in it
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else if (document.webkitFullscreenElement) {
-      document.webkitExitFullscreen();
-    }
     // Cleanup listeners + chart
     if (root._mousemove) document.removeEventListener('mousemove', root._mousemove);
     if (root._mouseup) document.removeEventListener('mouseup', root._mouseup);
-    if (root._fsChange) {
-      document.removeEventListener('fullscreenchange', root._fsChange);
-      document.removeEventListener('webkitfullscreenchange', root._fsChange);
-    }
+    if (root._keyHandler) document.removeEventListener('keydown', root._keyHandler);
     try { if (root._fsChart) root._fsChart.destroy(); } catch (_) {}
     try { if (root._fsShotChart) root._fsShotChart.destroy(); } catch (_) {}
     root.parentNode && root.parentNode.removeChild(root);
