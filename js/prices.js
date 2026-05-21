@@ -2943,55 +2943,142 @@ function populateBandsZoneSelect(zones, current) {
   }).join('');
 }
 
+// ════════════════════════════════════════════
+// Bands period selector — controls the lookback window for the
+// envelope used by both the chart (Z-score / Raw) and the table column.
+// ════════════════════════════════════════════
+const _CC_BANDS_PERIODS = [
+  { key: '7D',  label: '7D',  days: 7 },
+  { key: '1M',  label: '1M',  days: 30 },
+  { key: '3M',  label: '3M',  days: 90 },
+  { key: '6M',  label: '6M',  days: 180 },
+  { key: 'YTD', label: 'YTD', days: -1 },
+  { key: '1Y',  label: '1Y',  days: 365 },
+];
+function _ccBandsPeriodDays() {
+  const key = window._ccBandsPeriod || '1M';
+  const found = _CC_BANDS_PERIODS.find(p => p.key === key);
+  return found ? found.days : 30;
+}
+window.setCCBandsPeriod = function(key) {
+  window._ccBandsPeriod = key;
+  // Re-render chart and table
+  const data = window._pricesSorted;
+  const selected = window._compareZones || new Set(['FR']);
+  if (data && (window._ccView || 'lines') === 'bands') {
+    renderCCBands(data, selected);
+    renderCompareKPIs(data, selected);
+  }
+};
+window.setCCBandsMode = function(mode) {
+  window._ccBandsMode = mode; // 'zscore' | 'raw'
+  const data = window._pricesSorted;
+  const selected = window._compareZones || new Set(['FR']);
+  if (data && (window._ccView || 'lines') === 'bands') {
+    renderCCBands(data, selected);
+  }
+};
+// Toggle a single zone's visibility in the Z-score chart
+window.toggleCCBandsZone = function(code) {
+  window._ccBandsHidden = window._ccBandsHidden || new Set();
+  if (window._ccBandsHidden.has(code)) window._ccBandsHidden.delete(code);
+  else window._ccBandsHidden.add(code);
+  const data = window._pricesSorted;
+  const selected = window._compareZones || new Set(['FR']);
+  if (data) renderCCBands(data, selected);
+};
+
 async function renderCCBands(data, selected) {
   const zones = ccGetSelectedZones(data, selected);
-  // Default: first selected zone, persisted across renders
-  if (!window._ccBandsZone || !zones.find(x => x.code === window._ccBandsZone)) {
-    window._ccBandsZone = (zones[0] || data[0])?.code;
-  }
-  const z = data.find(x => x.code === window._ccBandsZone) || zones[0] || data[0];
-  if (!z) return;
-  const col = ccZoneColor(z.code, data, data.indexOf(z));
-  populateBandsZoneSelect(zones, z.code);
+  if (!zones.length) return;
+  window._ccBandsMode = window._ccBandsMode || 'zscore';
+  window._ccBandsHidden = window._ccBandsHidden || new Set();
+  const mode = (zones.length >= 2) ? window._ccBandsMode : 'raw'; // 1 zone → raw bands fallback
 
-  const nPts = z.hourly && z.hourly.length ? z.hourly.length : 24;
+  const nPts = (zones[0].hourly && zones[0].hourly.length) ? zones[0].hourly.length : 24;
   const hours = makeTimeLabels(nPts);
-  const today = z.hourly || [];
+  const nDays = _ccBandsPeriodDays();
+  const periodLabel = (_CC_BANDS_PERIODS.find(p => p.key === (window._ccBandsPeriod || '1M')) || {}).label || '1M';
 
-  // Preload envelopes for ALL selected zones in parallel (so the table below can use them).
-  // The chart itself only needs the active zone's envelope, but the table reads all of them.
-  const otherZones = zones.filter(zz => zz.code !== z.code);
-  Promise.all(otherZones.map(zz => fetchHistoricalEnvelope(zz.code, 30, nPts))).then(() => {
-    // Re-render the table once all envelopes are cached, but only if we're still on Bands
-    if ((window._ccView || 'lines') === 'bands') {
-      renderCompareKPIs(window._pricesSorted, window._compareZones || new Set(['FR']));
-    }
-  });
+  // Fetch envelopes for every selected zone in parallel.
+  const envs = await Promise.all(zones.map(z => fetchHistoricalEnvelope(z.code, nDays, nPts)));
 
-  // Build 30-day envelope from history (downsampled to nPts)
-  const envelope = await fetchHistoricalEnvelope(z.code, 30, nPts);
+  // Render the filter strip in the chart header (period + mode + zone pills)
+  _renderCCBandsHeader(zones, mode);
 
   const datasets = [];
-  if (envelope) {
+
+  if (mode === 'zscore') {
+    // ── Z-score lines ──
+    // Faint background band ±1σ (which is Z = ±1) for visual reference.
+    const oneUp = new Array(nPts).fill(1);
+    const oneDn = new Array(nPts).fill(-1);
     datasets.push({
-      label: 'Max (30d)', data: envelope.max, borderColor: 'transparent',
-      backgroundColor: col + '22', fill: '+1', spanGaps: true, pointRadius: 0, tension: 0.3, order: 3,
+      label: '__band_+1σ', data: oneUp,
+      borderColor: 'transparent', backgroundColor: 'rgba(56,116,203,0.10)',
+      fill: '+1', pointRadius: 0, borderWidth: 0, order: 9, spanGaps: true,
     });
     datasets.push({
-      label: 'Min (30d)', data: envelope.min, borderColor: 'transparent',
-      backgroundColor: 'transparent', fill: false, spanGaps: true, pointRadius: 0, tension: 0.3, order: 3,
+      label: '__band_-1σ', data: oneDn,
+      borderColor: 'transparent', backgroundColor: 'transparent',
+      fill: false, pointRadius: 0, borderWidth: 0, order: 9, spanGaps: true,
     });
+    // Median (Z=0) dashed line
     datasets.push({
-      label: 'Median (30d)', data: envelope.median, borderColor: 'rgba(148,163,184,.5)',
-      borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: false, tension: 0.3, spanGaps: true, order: 2,
+      label: '__band_median', data: new Array(nPts).fill(0),
+      borderColor: 'rgba(251,191,36,0.45)', borderWidth: 1, borderDash: [4,3],
+      pointRadius: 0, fill: false, spanGaps: true, order: 8,
+    });
+    // Each zone: today's Z-score curve, coloured by its zone colour
+    zones.forEach((z, i) => {
+      if (window._ccBandsHidden.has(z.code)) return;
+      const env = envs[i];
+      const today = z.hourly || [];
+      const z2 = _computeZScores(today, env);
+      if (!z2) return;
+      const col = ccZoneColor(z.code, data, data.indexOf(z));
+      datasets.push({
+        label: `${z.code}`, data: z2.zSlots,
+        borderColor: col, borderWidth: 2.2,
+        pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+        fill: false, tension: 0.3, spanGaps: true, order: 1,
+      });
+    });
+  } else {
+    // ── Raw bands view: each visible zone shows today + its own band ──
+    zones.forEach((z, i) => {
+      if (window._ccBandsHidden.has(z.code)) return;
+      const env = envs[i];
+      const today = z.hourly || [];
+      const col = ccZoneColor(z.code, data, data.indexOf(z));
+      if (env) {
+        const fillColor = _hexToRgba(col, 0.10);
+        datasets.push({
+          label: `__band_${z.code}_max`, data: env.p90,
+          borderColor: 'transparent', backgroundColor: fillColor,
+          fill: '+1', pointRadius: 0, borderWidth: 0, tension: 0.3, spanGaps: true, order: 5,
+        });
+        datasets.push({
+          label: `__band_${z.code}_min`, data: env.p10,
+          borderColor: 'transparent', backgroundColor: 'transparent',
+          fill: false, pointRadius: 0, borderWidth: 0, tension: 0.3, spanGaps: true, order: 5,
+        });
+        datasets.push({
+          label: `${z.code} median`, data: env.median,
+          borderColor: _hexToRgba(col, 0.50), borderWidth: 1, borderDash: [3,3],
+          pointRadius: 0, fill: false, tension: 0.3, spanGaps: true, order: 3,
+        });
+      }
+      datasets.push({
+        label: `${z.code} today`, data: today,
+        borderColor: col, borderWidth: 2.2,
+        pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
+        fill: false, tension: 0.3, spanGaps: true, order: 1,
+      });
     });
   }
-  datasets.push({
-    label: `${z.code} today`, data: today, borderColor: col, borderWidth: 2.5,
-    pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-    fill: false, tension: 0.3, spanGaps: true, order: 1,
-  });
 
+  const isZ = (mode === 'zscore');
   mkChart('price-compare-canvas', {
     type: 'line',
     data: { labels: hours, datasets },
@@ -3000,32 +3087,137 @@ async function renderCCBands(data, selected) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
-        tooltip: { mode:'index', intersect:false, callbacks: {
-          title: c => c[0].label,
-          label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
-        }},
+        legend: {
+          display: !isZ,
+          position: 'bottom',
+          labels: {
+            color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10,
+            filter: (item) => !(item.text || '').startsWith('__band_'),
+          }
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          filter: ctx => !(ctx.dataset.label || '').startsWith('__band_'),
+          callbacks: {
+            title: c => c[0].label,
+            label: c => {
+              const v = c.raw;
+              if (v == null) return null;
+              if (isZ) return ` ${c.dataset.label}: Z = ${v.toFixed(2)}σ`;
+              return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`;
+            }
+          }
+        },
         zoom: ZOOM_CFG,
         annotation: { annotations: (() => { const ann = { zeroLine: ccZeroLineAnnotation() }; const a = nowLineAnnotation({ slots: nPts, labels: hours, chartDate: window._currentPriceDate, mode: 'compare' }); if (a) ann.nowLine = a; return ann; })() }
       },
       scales: {
         x: { grid: GRID, ticks:{ color:C_TX3, font:{size:9}, maxTicksLimit:12 }},
-        y: { grid: GRID, ticks:{ color:C_TX3, callback:v=>v.toFixed(0) }, title:{ display:true, text:'€/MWh', color:C_TX3, font:{size:9} }, grace: '12%' }
+        y: {
+          grid: GRID,
+          ticks: {
+            color: C_TX3,
+            callback: v => isZ ? (v.toFixed(1) + 'σ') : v.toFixed(0),
+          },
+          title: {
+            display: true,
+            text: isZ ? `Z-score (vs ${periodLabel} baseline)` : '€/MWh',
+            color: C_TX3, font: { size: 9 },
+          },
+          grace: '12%',
+          ...(isZ ? { suggestedMin: -3, suggestedMax: 3 } : {}),
+        }
       }
     }
   });
 }
 
+// Renders the chart's header strip: period selector + mode toggle + zone pills.
+// Targets the dedicated DOM node #cc-bands-header (defined in the Cross-zone block).
+function _renderCCBandsHeader(zones, mode) {
+  const host = document.getElementById('cc-bands-header');
+  if (!host) return;
+  const period = window._ccBandsPeriod || '1M';
+  const periodPills = _CC_BANDS_PERIODS.map(p => `
+    <button onclick="setCCBandsPeriod('${p.key}')" style="
+      padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+      color:${p.key === period ? '#14D3A9' : '#7A93AB'};
+      background:${p.key === period ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+    ">${p.label}</button>`).join('');
+
+  const modeUi = (zones.length >= 2) ? `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Mode</span>
+      <div style="display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px;font-family:'JetBrains Mono',monospace;font-size:10px">
+        <button onclick="setCCBandsMode('zscore')" style="background:${mode==='zscore'?'#14D3A9':'transparent'};color:${mode==='zscore'?'#060a0f':'#7A93AB'};border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-weight:600">Z-score</button>
+        <button onclick="setCCBandsMode('raw')" style="background:${mode==='raw'?'#14D3A9':'transparent'};color:${mode==='raw'?'#060a0f':'#7A93AB'};border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-weight:600">Raw bands</button>
+      </div>
+    </div>` : `<span style="font-size:10px;color:var(--tx3);font-style:italic">Select 2+ zones to enable Z-score mode</span>`;
+
+  window._ccBandsHidden = window._ccBandsHidden || new Set();
+  const zonePills = zones.map(z => {
+    const col = (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
+    const isOn = !window._ccBandsHidden.has(z.code);
+    return `<button onclick="toggleCCBandsZone('${z.code}')" style="
+      padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;
+      border:1px solid ${isOn ? col : 'rgba(255,255,255,.10)'};
+      background:${isOn ? col + '22' : 'transparent'};
+      color:${isOn ? col : 'rgba(255,255,255,.35)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;
+      opacity:${isOn ? 1 : 0.55};transition:all .15s">${z.code}</button>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${periodPills}</div>
+      </div>
+      ${modeUi}
+      <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zones</span>
+        <div style="display:inline-flex;gap:4px;flex-wrap:wrap">${zonePills}</div>
+      </div>
+    </div>`;
+}
+
+// Tiny hex→rgba helper used to fade zone colours for band fills.
+function _hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(74,98,128,${alpha})`;
+  let s = hex.replace('#','');
+  if (s.length === 3) s = s.split('').map(c => c+c).join('');
+  const r = parseInt(s.slice(0,2), 16);
+  const g = parseInt(s.slice(2,4), 16);
+  const b = parseInt(s.slice(4,6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 // Fetch 30-day envelope (min/max/median per hour) from history files
 async function fetchHistoricalEnvelope(code, nDays, nPts) {
-  if (window._envelopeCache && window._envelopeCache[code]) return window._envelopeCache[code];
+  const cacheKey = `${code}|${nDays}|${nPts}`;
+  window._envelopeCache = window._envelopeCache || {};
+  if (window._envelopeCache[cacheKey]) return window._envelopeCache[cacheKey];
+
   const today = new Date();
   const dates = [];
-  for (let i = 1; i <= nDays; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0,10));
+  if (nDays === -1) {
+    // YTD: every day of current year before today
+    const yr = today.getFullYear();
+    for (let i = 1; i <= 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (d.getFullYear() === yr) dates.push(d.toISOString().slice(0,10));
+    }
+  } else {
+    const limit = nDays === 0 ? 5 * 365 : nDays;
+    for (let i = 1; i <= limit; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().slice(0,10));
+    }
   }
+
   const all = []; // array of hourly arrays (nPts each)
   await Promise.all(dates.map(async (dt) => {
     try {
@@ -3038,7 +3230,6 @@ async function fetchHistoricalEnvelope(code, nDays, nPts) {
       if (!z) return;
       const h = z.hourly || z.h;
       if (!Array.isArray(h) || !h.length) return;
-      // Resample to match nPts
       const ratio = h.length / nPts;
       const resampled = [];
       for (let i = 0; i < nPts; i++) {
@@ -3051,18 +3242,66 @@ async function fetchHistoricalEnvelope(code, nDays, nPts) {
     } catch (e) { /* silent */ }
   }));
   if (!all.length) return null;
-  const min = [], max = [], median = [];
+
+  // Linear-interpolation percentile from a sorted array
+  const _pct = (sortedArr, p) => {
+    if (!sortedArr.length) return null;
+    if (sortedArr.length === 1) return sortedArr[0];
+    const rank = p * (sortedArr.length - 1);
+    const lo = Math.floor(rank), hi = Math.ceil(rank);
+    if (lo === hi) return sortedArr[lo];
+    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (rank - lo);
+  };
+
+  const min = [], max = [], median = [], p10 = [], p25 = [], p75 = [], p90 = [];
   for (let i = 0; i < nPts; i++) {
     const vals = all.map(arr => arr[i]).filter(v => v != null).sort((a,b)=>a-b);
-    if (!vals.length) { min.push(null); max.push(null); median.push(null); continue; }
+    if (!vals.length) {
+      min.push(null); max.push(null); median.push(null);
+      p10.push(null); p25.push(null); p75.push(null); p90.push(null);
+      continue;
+    }
     min.push(vals[0]);
     max.push(vals[vals.length - 1]);
-    median.push(vals[Math.floor(vals.length / 2)]);
+    median.push(_pct(vals, 0.50));
+    p10.push(_pct(vals, 0.10));
+    p25.push(_pct(vals, 0.25));
+    p75.push(_pct(vals, 0.75));
+    p90.push(_pct(vals, 0.90));
   }
-  const result = { min, max, median, n: all.length };
-  window._envelopeCache = window._envelopeCache || {};
-  window._envelopeCache[code] = result;
+  // Legacy compatibility: aliases p0 → min, p50 → median, p100 → max
+  const result = {
+    min, max, median, p10, p25, p75, p90,
+    p0: min, p50: median, p100: max,
+    n: all.length,
+  };
+  window._envelopeCache[cacheKey] = result;
   return result;
+}
+
+// ════════════════════════════════════════════
+// Z-score helpers — robust sigma via IQR/1.349, per-slot baseline
+// Used by Cross-zone Bands · Z-score view.
+// See Methodology page for the full formula and rationale.
+// ════════════════════════════════════════════
+const _Z_SIGMA_DIV = 1.349;
+function _computeZScores(todayArr, envelope) {
+  if (!envelope || !todayArr || !todayArr.length) return null;
+  const nPts = envelope.median.length;
+  const zSlots = new Array(nPts).fill(null);
+  for (let i = 0; i < nPts; i++) {
+    const t = todayArr[i];
+    const med = envelope.median[i];
+    const q1 = envelope.p25[i], q3 = envelope.p75[i];
+    if (t == null || med == null || q1 == null || q3 == null) continue;
+    const sigma = (q3 - q1) / _Z_SIGMA_DIV;
+    if (sigma <= 0 || !isFinite(sigma)) continue;
+    zSlots[i] = (t - med) / sigma;
+  }
+  // Day-level Z = mean of valid per-slot Z values
+  const validZ = zSlots.filter(v => v != null && isFinite(v));
+  const dayZ = validZ.length ? (validZ.reduce((a,b)=>a+b,0) / validZ.length) : null;
+  return { zSlots, dayZ };
 }
 
 // ────────────────────────────────────────────
@@ -3251,6 +3490,29 @@ function renderCCAnalysis(view, data, selected) {
       cheap, pricey, frGap, loadedAvg, zoneCount: stats.length, view,
     });
     anchor.innerHTML = html;
+
+    // ── Bands-specific outlier addendum ──
+    // After the generic banner is rendered, append a sentence listing zones with |Z| > 2
+    // using the dayZ values computed by ccComputeRows. This lives in the same amber box.
+    if (view === 'bands') {
+      const period = window._ccBandsPeriod || '1M';
+      const rows = ccComputeRows(data, selected, 'bands');
+      const outliers = rows.filter(r => r.dayZ != null && Math.abs(r.dayZ) > 2);
+      if (outliers.length) {
+        const partsHi = outliers.filter(r => r.dayZ > 2).map(r =>
+          `<span style="color:#ED6965;font-weight:600">${r.code} ${r.dayZ.toFixed(1)}σ (P${r.percentile != null ? r.percentile.toFixed(0) : '--'})</span>`);
+        const partsLo = outliers.filter(r => r.dayZ < -2).map(r =>
+          `<span style="color:#14D3A9;font-weight:600">${r.code} ${r.dayZ.toFixed(1)}σ (P${r.percentile != null ? r.percentile.toFixed(0) : '--'})</span>`);
+        const lines = [];
+        if (partsHi.length) lines.push(`uncommonly expensive: ${partsHi.join(', ')}`);
+        if (partsLo.length) lines.push(`uncommonly cheap: ${partsLo.join(', ')}`);
+        const banner = anchor.querySelector('.ho-analyst-banner');
+        if (banner) {
+          banner.insertAdjacentHTML('beforeend',
+            `<div style="margin-top:4px;padding-top:4px;border-top:1px dashed rgba(251,191,36,0.25);font-style:italic">Outliers vs ${period} baseline — ${lines.join(' · ')}.</div>`);
+        }
+      }
+    }
   } else if (anchor) {
     anchor.innerHTML = '';
   }
@@ -3406,12 +3668,13 @@ function ccTableHeader(view) {
       { w:'10%', label:'Neg hrs', sub:'count', align:'right' },
     ],
     bands: [
-      { w:'18%', label:'Zone' },
-      { w:'12%', label:'Today avg', sub:'€/MWh', align:'right' },
-      { w:'12%', label:'30d median', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Percentile', sub:'today vs 30d', align:'right', tip:'Where today sits in the 30-day distribution (0 = below all, 100 = above all)' },
-      { w:'14%', label:'Max divergence', sub:'€/MWh from median', align:'right', tip:'Largest gap between today and 30-day median across hours' },
-      { w:'14%', label:'Above max / below min', sub:'hrs', align:'right', tip:'Hours today exceeded the 30-day max or fell below the 30-day min' },
+      { w:'17%', label:'Zone' },
+      { w:'10%', label:'Today avg', sub:'€/MWh', align:'right' },
+      { w:'10%', label:'Median', sub:'€/MWh', align:'right', tip:'Per-day median over the selected lookback window' },
+      { w:'28%', label:'30D position', sub:'P10 — P25 → P50 ← P75 — P90', align:'center', tip:'Where today sits in the historical distribution (boxplot)' },
+      { w:'9%',  label:'Pctile', sub:'today vs hist', align:'right', tip:'Percentile rank of today in the lookback window' },
+      { w:'8%',  label:'Z', sub:'σ from median', align:'right', tip:'Robust Z-score: (today − median) / σ, with σ = IQR/1.349' },
+      { w:'18%', label:'Above max / below min', sub:'hrs', align:'right', tip:'Hours today exceeded the historical max or fell below the historical min' },
     ],
     spread: [
       { w:'18%', label:'Zone' },
@@ -3507,24 +3770,33 @@ function ccComputeRows(data, selected, view) {
 
   // View-specific extras: bands and spread need extra fetches/computation
   if (view === 'bands') {
+    const nDays = (typeof _ccBandsPeriodDays === 'function') ? _ccBandsPeriodDays() : 30;
     out.forEach(r => {
-      const env = window._envelopeCache && window._envelopeCache[r.code];
+      const nPts = r.hourly ? r.hourly.length : 96;
+      const cacheKey = `${r.code}|${nDays}|${nPts}`;
+      const env = window._envelopeCache && window._envelopeCache[cacheKey];
       if (!env) { r._noEnv = true; return; }
       const med = env.median.filter(v => v != null);
       r.med30 = med.length ? med.reduce((a,b)=>a+b,0)/med.length : null;
-      // Percentile of today's avg vs 30d hourly distribution
+
+      // Day-level percentile: rank today's daily avg in the pool of all
+      // historical *per-slot* values from the envelope (every percentile of every slot).
+      // This gives a fair "today value vs typical historical value" reading.
       const pool = [];
-      env.median.forEach((_, i) => {
-        if (env.min[i] != null) pool.push(env.min[i]);
-        if (env.max[i] != null) pool.push(env.max[i]);
-        if (env.median[i] != null) pool.push(env.median[i]);
-      });
+      for (let i = 0; i < nPts; i++) {
+        [env.min[i], env.p10[i], env.p25[i], env.median[i], env.p75[i], env.p90[i], env.max[i]]
+          .forEach(v => { if (v != null) pool.push(v); });
+      }
       pool.sort((a,b)=>a-b);
       const idx = pool.findIndex(v => v >= r.avg);
       r.percentile = pool.length ? (idx < 0 ? 100 : (idx / pool.length) * 100) : null;
+
+      // Robust Z-score per-day: average of per-slot Z values
+      const z2 = (typeof _computeZScores === 'function') ? _computeZScores(r.hourly, env) : null;
+      r.dayZ = z2 ? z2.dayZ : null;
+
       // Max divergence today vs median (hour by hour)
       let maxDiv = 0;
-      const nPts = r.hourly.length;
       for (let i = 0; i < nPts; i++) {
         const t = r.hourly[i], m = env.median[i];
         if (t != null && m != null) {
@@ -3533,7 +3805,8 @@ function ccComputeRows(data, selected, view) {
         }
       }
       r.maxDiv = maxDiv;
-      // Hours above 30d max / below 30d min
+
+      // Hours above historical max / below historical min
       let above = 0, below = 0;
       for (let i = 0; i < nPts; i++) {
         const t = r.hourly[i];
@@ -3543,6 +3816,20 @@ function ccComputeRows(data, selected, view) {
       }
       r.aboveMaxHrs = above / r.nph;
       r.belowMinHrs = below / r.nph;
+
+      // Distribution summary (day-level) for the 30D-position boxplot SVG:
+      // we summarise the envelope into 5 scalar numbers (mean of per-slot stats).
+      const meanOf = (arr) => {
+        const v = arr.filter(x => x != null);
+        return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+      };
+      r.distMin = meanOf(env.min);
+      r.distP10 = meanOf(env.p10);
+      r.distP25 = meanOf(env.p25);
+      r.distP50 = meanOf(env.median);
+      r.distP75 = meanOf(env.p75);
+      r.distP90 = meanOf(env.p90);
+      r.distMax = meanOf(env.max);
     });
   }
   if (view === 'spread') {
@@ -3676,21 +3963,91 @@ function ccBodyProfile(rows) {
 function ccBodyBands(rows) {
   return rows.map(r => {
     if (r._noEnv) {
-      const cells = `<td colspan="5" style="text-align:center;padding:9px 6px;color:var(--text3);font-size:11px">Loading 30-day envelope…</td>`;
+      const cells = `<td colspan="6" style="text-align:center;padding:9px 6px;color:var(--text3);font-size:11px">Loading envelope…</td>`;
       return _ccTr(r, cells);
     }
-    const pctCol = r.percentile == null ? 'var(--text3)' : (r.percentile > 80 ? 'var(--up)' : r.percentile < 20 ? 'var(--down)' : 'var(--text2)');
-    const cells = `
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(2)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);vertical-align:middle">${r.med30 != null ? r.med30.toFixed(2) : '--'}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:${pctCol};vertical-align:middle">${r.percentile != null ? 'P'+r.percentile.toFixed(0) : '--'}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);vertical-align:middle">${r.maxDiv != null ? r.maxDiv.toFixed(2) : '--'}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle">
-        <span style="color:${r.aboveMaxHrs>0?'var(--up)':'var(--text3)'}">${r.aboveMaxHrs.toFixed(r.aboveMaxHrs%1===0?0:1)}</span>
-        <span style="color:var(--text3)"> / </span>
-        <span style="color:${r.belowMinHrs>0?'var(--down)':'var(--text3)'}">${r.belowMinHrs.toFixed(r.belowMinHrs%1===0?0:1)}</span>
+
+    // Outlier highlight: |Z| > 2 colours the row background subtly
+    const z = r.dayZ;
+    const isHighOut = (z != null && z > 2);
+    const isLowOut  = (z != null && z < -2);
+    const rowExtraStyle = isHighOut
+      ? 'background:rgba(237,105,101,0.06)'
+      : (isLowOut ? 'background:rgba(20,211,169,0.06)' : '');
+
+    const pctCol = r.percentile == null ? 'var(--text3)'
+                  : (r.percentile > 80 ? 'var(--down)'
+                  : (r.percentile < 20 ? 'var(--up)' : 'var(--text2)'));
+    const zCol = (z == null) ? 'var(--text3)'
+                : (z > 2 ? 'var(--down)' : (z < -2 ? 'var(--up)' : 'var(--text2)'));
+    const sign = v => v >= 0 ? '+' : '';
+
+    // ── Mini-boxplot SVG (160 × 22) — see Methodology page for the layout ──
+    // Whiskers: min ↔ max | Box: P25 → P75 | Vertical tick: median | Bullet: today
+    const W = 200, H = 22, padL = 6, padR = 6, axisY = H / 2;
+    let boxSvg = `<td style="text-align:center;padding:6px;vertical-align:middle">--</td>`;
+    if (r.distMin != null && r.distMax != null && r.distP50 != null) {
+      const lo = r.distMin, hi = r.distMax;
+      const rng = hi - lo || 1;
+      const xOf = v => padL + ((v - lo) / rng) * (W - padL - padR);
+      const xMin = xOf(r.distMin);
+      const xMax = xOf(r.distMax);
+      const xP10 = xOf(r.distP10 != null ? r.distP10 : r.distMin);
+      const xP90 = xOf(r.distP90 != null ? r.distP90 : r.distMax);
+      const xP25 = xOf(r.distP25 != null ? r.distP25 : r.distMin);
+      const xP75 = xOf(r.distP75 != null ? r.distP75 : r.distMax);
+      const xMed = xOf(r.distP50);
+      const xToday = xOf(r.avg);
+      const todayCol = (window._zoneColorMap && window._zoneColorMap[r.code]) || '#14D3A9';
+      const outOfBox = (r.avg < r.distP25 || r.avg > r.distP75);
+      const tipParts = [
+        `min ${r.distMin.toFixed(1)}`,
+        `P10 ${r.distP10 != null ? r.distP10.toFixed(1) : '--'}`,
+        `P25 ${r.distP25 != null ? r.distP25.toFixed(1) : '--'}`,
+        `med ${r.distP50.toFixed(1)}`,
+        `P75 ${r.distP75 != null ? r.distP75.toFixed(1) : '--'}`,
+        `P90 ${r.distP90 != null ? r.distP90.toFixed(1) : '--'}`,
+        `max ${r.distMax.toFixed(1)}`,
+        `today ${r.avg.toFixed(1)}`,
+      ].join(' · ');
+      boxSvg = `<td style="padding:6px;vertical-align:middle" title="${tipParts}">
+        <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block;max-width:200px;margin:0 auto">
+          <line x1="${xMin}" y1="${axisY}" x2="${xP10}" y2="${axisY}" stroke="rgba(120,170,230,0.4)" stroke-width="1"/>
+          <line x1="${xMin}" y1="${axisY-4}" x2="${xMin}" y2="${axisY+4}" stroke="rgba(120,170,230,0.55)"/>
+          <line x1="${xP90}" y1="${axisY}" x2="${xMax}" y2="${axisY}" stroke="rgba(120,170,230,0.4)" stroke-width="1"/>
+          <line x1="${xMax}" y1="${axisY-4}" x2="${xMax}" y2="${axisY+4}" stroke="rgba(120,170,230,0.55)"/>
+          <line x1="${xP10}" y1="${axisY-3}" x2="${xP10}" y2="${axisY+3}" stroke="rgba(120,170,230,0.55)"/>
+          <line x1="${xP90}" y1="${axisY-3}" x2="${xP90}" y2="${axisY+3}" stroke="rgba(120,170,230,0.55)"/>
+          <rect x="${xP25}" y="${axisY-7}" width="${xP75-xP25}" height="14" fill="rgba(56,116,203,0.22)" stroke="rgba(56,116,203,0.6)" stroke-width="0.5"/>
+          <line x1="${xMed}" y1="${axisY-8}" x2="${xMed}" y2="${axisY+8}" stroke="rgba(120,170,230,0.85)" stroke-width="1.2"/>
+          <circle cx="${xToday}" cy="${axisY}" r="4.5" fill="${todayCol}" stroke="#060a0f" stroke-width="1.2"/>
+          ${outOfBox ? `<text x="${xToday + (xToday > W/2 ? -10 : 10)}" y="${axisY - 8}" font-family="JetBrains Mono" font-size="7" fill="${todayCol}" font-weight="700" text-anchor="${xToday > W/2 ? 'end' : 'start'}">!</text>` : ''}
+        </svg>
       </td>`;
-    return _ccTr(r, cells);
+    }
+
+    const cells = `
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);vertical-align:middle">${r.avg.toFixed(2)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text2);vertical-align:middle">${r.med30 != null ? r.med30.toFixed(2) : '--'}</td>
+      ${boxSvg}
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;color:${pctCol};font-weight:${(isHighOut||isLowOut)?'600':'400'};vertical-align:middle">${r.percentile != null ? 'P'+r.percentile.toFixed(0) : '--'}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;color:${zCol};font-weight:${(isHighOut||isLowOut)?'600':'400'};vertical-align:middle">${z != null ? sign(z)+z.toFixed(2) : '--'}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;vertical-align:middle">
+        <span style="color:${r.aboveMaxHrs>0?'var(--down)':'var(--text3)'}">${r.aboveMaxHrs.toFixed(r.aboveMaxHrs%1===0?0:1)}</span>
+        <span style="color:var(--text3)"> / </span>
+        <span style="color:${r.belowMinHrs>0?'var(--up)':'var(--text3)'}">${r.belowMinHrs.toFixed(r.belowMinHrs%1===0?0:1)}</span>
+      </td>`;
+
+    // Inject the optional row-extra-style by passing through _ccTr's template
+    const tr = _ccTr(r, cells);
+    // Splice row style into the <tr ...> tag if any
+    if (rowExtraStyle) {
+      return tr.replace(/<tr([^>]*)>/, (m, attrs) => {
+        if (/style=/.test(attrs)) return m.replace(/style="([^"]*)"/, (mm, s) => `style="${s};${rowExtraStyle}"`);
+        return `<tr${attrs} style="${rowExtraStyle}">`;
+      });
+    }
+    return tr;
   }).join('');
 }
 
