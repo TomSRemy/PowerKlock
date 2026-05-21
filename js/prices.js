@@ -3036,7 +3036,7 @@ function ccOpenFullscreen() {
     </div>
     ${extraHtml}`;
 
-  pkOpenFullscreen({
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
     title: `Cross-zone · ${viewTitle}`,
     subtitle: `${longDate} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
     filenameStem: `powerklock_crosszone_${view}_${currentDateISO}`,
@@ -3052,18 +3052,17 @@ function ccOpenFullscreen() {
           dateInp.addEventListener('change', (e) => {
             const newDate = e.target.value;
             if (!newDate || newDate === window._currentPriceDate) return;
-            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
             if (typeof dpSelect === 'function') {
               dpSelect(newDate);
-              const waitAndReopen = (attempts) => {
+              const waitAndUpdate = (attempts) => {
                 if (attempts <= 0) return;
                 if (window._currentPriceDate === newDate && window._pricesSorted) {
-                  setTimeout(() => ccOpenFullscreen(), 80);
+                  requestAnimationFrame(() => ccOpenFullscreen());
                 } else {
-                  setTimeout(() => waitAndReopen(attempts - 1), 150);
+                  setTimeout(() => waitAndUpdate(attempts - 1), 150);
                 }
               };
-              setTimeout(() => waitAndReopen(20), 200);
+              setTimeout(() => waitAndUpdate(20), 200);
             }
           });
         }
@@ -3132,8 +3131,11 @@ function ccOpenFullscreen() {
 window.ccOpenFullscreen = ccOpenFullscreen;
 
 function ccRefreshFullscreen() {
-  if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
-  setTimeout(() => ccOpenFullscreen(), 60);
+  // Hot-swap via pkOpenOrUpdate — no close, no flicker.
+  // Defer one tick so the inline state setters (setCCView, setSpreadRef,
+  // setCCBandsPeriod, …) finish updating window._ccView etc. before we
+  // read them back inside ccOpenFullscreen.
+  requestAnimationFrame(() => ccOpenFullscreen());
 }
 window.ccRefreshFullscreen = ccRefreshFullscreen;
 
@@ -4562,7 +4564,7 @@ function openRowFullscreen(idx) {
       </div>
     </div>`;
 
-  pkOpenFullscreen({
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
     title: `${flag} ${code} — ${country}`,
     subtitle: `${longDate} · 96 × 15min slots · ENTSO-E`,
     filenameStem: `powerklock_${code}_${window._currentPriceDate || 'today'}`,
@@ -4577,35 +4579,35 @@ function openRowFullscreen(idx) {
       // Zone select needs explicit wiring: closing + reopening with the new idx.
       wire: (hostEl) => {
         // ── Zone switch ─────────────────────────────────────
+        // pkOpenOrUpdate hot-swaps the open overlay in place — no close.
         const sel = hostEl.querySelector(`#fs-row-zone-select-${idx}`);
         if (sel) {
           sel.addEventListener('change', (e) => {
             const newIdx = parseInt(e.target.value, 10);
             if (isNaN(newIdx) || newIdx === idx) return;
+            // Make sure the inline row chart for the target index exists
+            // (openRowFullscreen reads its config from _rowCharts[newIdx])
             const inlineOpen = document.getElementById(`row-detail-inner-${newIdx}`);
             if (!inlineOpen && typeof togglePriceRow === 'function') {
               togglePriceRow(newIdx, { stopPropagation: () => {} });
             }
-            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
-            setTimeout(() => openRowFullscreen(newIdx), 60);
+            // Defer one tick so togglePriceRow finishes building the chart
+            requestAnimationFrame(() => openRowFullscreen(newIdx));
           });
         }
         // ── Date change ─────────────────────────────────────
-        // Reuses the global dpSelect() which reloads the board for that date,
-        // then re-opens the FS on the same idx after data has arrived.
+        // Date change has to reload the whole board, so we still wait for
+        // data to land before re-running openRowFullscreen (which will then
+        // hot-swap via pkOpenOrUpdate without closing the overlay).
         const dateInp = hostEl.querySelector(`#fs-row-date-input-${idx}`);
         if (dateInp) {
           dateInp.addEventListener('change', (e) => {
             const newDate = e.target.value;
             if (!newDate || newDate === window._currentPriceDate) return;
-            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
             if (typeof dpSelect === 'function') {
               dpSelect(newDate);
-              // Wait for loadPricesForDate to finish, then reopen the FS.
-              // The current idx may map to a different zone on the new date,
-              // so we resolve by zone CODE rather than idx.
               const targetCode = code;
-              const waitAndReopen = (attempts) => {
+              const waitAndUpdate = (attempts) => {
                 if (attempts <= 0) return;
                 const newIdx = (window._pricesSorted || []).findIndex(z => z.code === targetCode);
                 if (newIdx >= 0 && window._currentPriceDate === newDate) {
@@ -4613,12 +4615,12 @@ function openRowFullscreen(idx) {
                   if (!inlineOpen && typeof togglePriceRow === 'function') {
                     togglePriceRow(newIdx, { stopPropagation: () => {} });
                   }
-                  setTimeout(() => openRowFullscreen(newIdx), 80);
+                  requestAnimationFrame(() => openRowFullscreen(newIdx));
                 } else {
-                  setTimeout(() => waitAndReopen(attempts - 1), 150);
+                  setTimeout(() => waitAndUpdate(attempts - 1), 150);
                 }
               };
-              setTimeout(() => waitAndReopen(20), 200);
+              setTimeout(() => waitAndUpdate(20), 200);
             }
           });
         }
