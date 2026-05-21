@@ -1,3 +1,21 @@
+// ── Period label sync helper · maps window codes to human-friendly labels ──
+function pkUpdateHistPeriodLabels(w) {
+  const labels = {
+    '7D': '7 days', '1M': '1 month', '3M': '3 months', '6M': '6 months',
+    '1Y': '1 year', '2Y': '2 years', '5Y': '5 years', 'All': 'all time', 'YTD': 'year-to-date',
+  };
+  const txt = labels[w] || w;
+  const ids = ['pr-hist-period-label', 'pr-hist-period-label-h', 'pr-hmz-period-label'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  });
+  // Update page meta with explicit period
+  const pageMeta = document.getElementById('pr-hist-page-meta');
+  if (pageMeta) pageMeta.innerHTML = 'over <span id="pr-hist-period-label">' + txt + '</span>';
+}
+window.pkUpdateHistPeriodLabels = pkUpdateHistPeriodLabels;
+
 // ── Fetch helpers ──
 async function fetchSummary() {
   if (HIST.summary) return HIST.summary;
@@ -95,6 +113,8 @@ function setHistWindow(key, window, btn) {
   const btns = btn.closest('.hist-window-btns').querySelectorAll('.hw-btn');
   btns.forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  // Sync [period] labels in section titles
+  if (typeof pkUpdateHistPeriodLabels === 'function') pkUpdateHistPeriodLabels(window);
   // Sync the global sticky bar period buttons
   // ho/hsz/hmz share the Historical sticky bar; dist has its own.
   if (key === 'ho' || key === 'hsz' || key === 'hmz') {
@@ -4269,117 +4289,40 @@ function _buildAnalystBanner(mode, p) {
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
-  // ── Compare zones modes (Daily + Historical compare-zones charts) ──
-  // Each view emphasises a different angle: Lines = trajectory/level, Profile = peak vs off-peak,
-  // Bands = intraday range, Spread = relative positioning vs baseline, Heatmap = pattern.
-  // Scope ('daily' or 'historical') tunes the vocabulary (today vs over the period).
+  // ── Compare zones modes (used by Daily + Historical compare-zones charts) ──
   else if (mode === 'ccLines' || mode === 'ccProfile' || mode === 'ccBands' || mode === 'ccSpread' || mode === 'ccHeatmap') {
-    const { cheap, pricey, frGap, loadedAvg, zoneCount, view, scope, periodLabel,
-            peakOffSpread, intradayRange, avgVolatility, refZone, refAvg } = p;
-    const isHist = scope === 'historical';
-    const ctx = isHist ? `over ${periodLabel || 'the period'}` : 'today';
+    const { cheap, pricey, frGap, loadedAvg, zoneCount, view } = p;
     const cheapStr  = cheap  ? `${W(cheap.z + ' ' + cheap.avg.toFixed(2) + ' €/MWh')}`  : '--';
     const priceyStr = pricey ? `${W(pricey.z + ' ' + pricey.avg.toFixed(2) + ' €/MWh')}` : '--';
     const spread    = (cheap && pricey) ? (pricey.avg - cheap.avg) : null;
-    const spreadPct = (spread != null && cheap && cheap.avg > 0) ? (spread / cheap.avg) * 100 : null;
-    const frPart = (frGap != null && frGap > 0)
-      ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
-      : (frGap != null && frGap <= 0)
-        ? ` FR is the cheapest market.`
-        : '';
-
-    // ── ccLines: level + cross-zone dispersion ──
-    if (mode === 'ccLines') {
-      line1 = `${W(zoneCount)} zones ${ctx} · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
-        (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
-      let read;
-      if (spreadPct != null) {
-        if (spreadPct > 100) read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
-        else if (spreadPct > 40) read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
-        else if (spreadPct > 15) read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
-        else read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
-      } else read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
-      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
-    }
-
-    // ── ccProfile: peak vs off-peak shape ──
-    else if (mode === 'ccProfile') {
-      const pkStr = (peakOffSpread != null) ? A(peakOffSpread.toFixed(2) + ' €/MWh') : '--';
-      line1 = `Daily shape across ${W(zoneCount)} zones ${ctx}. Average peak-vs-offpeak gap ${pkStr}. Cheapest profile ${cheapStr}.`;
-      let read;
-      if (peakOffSpread == null) {
-        read = `<b>Profile data unavailable</b>. Hourly granularity required.`;
-      } else if (peakOffSpread < -5) {
-        read = `<b>Inverted duck curve</b>. Off-peak prices exceed peak — heavy solar penetration pulling daytime prices down.${frPart}`;
-      } else if (peakOffSpread < 5) {
-        read = `<b>Flat profile</b>. Peak and off-peak prices nearly aligned — limited intraday demand differentiation.${frPart}`;
-      } else if (peakOffSpread < 25) {
-        read = `<b>Classic peak shape</b>. Daytime prices moderately higher than off-peak.${frPart}`;
+    line1 = `${W(zoneCount)} zones · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
+      (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
+    // Verdict depends on spread magnitude and FR positioning
+    let read;
+    if (spread != null && cheap && cheap.avg > 0) {
+      const spreadPct = (spread / cheap.avg) * 100;
+      const frPart = (frGap != null && frGap > 0)
+        ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
+        : (frGap != null && frGap <= 0)
+          ? ` FR is the cheapest market.`
+          : '';
+      if (spreadPct > 100) {
+        read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
+      } else if (spreadPct > 40) {
+        read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
+      } else if (spreadPct > 15) {
+        read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
       } else {
-        read = `<b>Pronounced peak structure</b>. Wide peak-vs-offpeak gap — strong arbitrage signal for storage.${frPart}`;
+        read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
       }
-      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
+    } else {
+      read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
     }
-
-    // ── ccBands: intraday range per zone (min-avg-max) ──
-    else if (mode === 'ccBands') {
-      const rangeStr = (intradayRange != null) ? A(intradayRange.toFixed(2) + ' €/MWh') : '--';
-      line1 = `Intraday range across ${W(zoneCount)} zones ${ctx} · average ${rangeStr}. Widest swings ${priceyStr}.`;
-      let read;
-      if (intradayRange == null) {
-        read = `<b>Range data unavailable</b>. Hourly granularity required.`;
-      } else if (intradayRange < 30) {
-        read = `<b>Calm intraday regime</b>. Narrow daily ranges across zones — low storage opportunity.${frPart}`;
-      } else if (intradayRange < 80) {
-        read = `<b>Normal intraday swings</b>. Standard volatility patterns visible across the panel.${frPart}`;
-      } else if (intradayRange < 150) {
-        read = `<b>Wide intraday ranges</b>. Material BESS arbitrage potential in most zones.${frPart}`;
-      } else {
-        read = `<b>Stressed intraday markets</b>. Very wide swings — peak/off-peak dislocation prominent.${frPart}`;
-      }
-      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
-    }
-
-    // ── ccSpread: zone vs baseline reference ──
-    else if (mode === 'ccSpread') {
-      const ref = refZone || 'FR';
-      const refStr = refAvg != null ? W(ref + ' ' + refAvg.toFixed(2) + ' €/MWh') : W(ref);
-      line1 = `Spreads vs ${refStr} ${ctx}. ${W(zoneCount - 1)} other zones compared. Largest premium ${priceyStr}, largest discount ${cheapStr}.`;
-      let read;
-      if (spread == null) {
-        read = `<b>Spread data unavailable</b>.`;
-      } else if (Math.abs(frGap || 0) < 5) {
-        read = `<b>${ref} aligned with neighbours</b>. Cross-zone gap small — limited import/export pressure.`;
-      } else if (frGap > 0) {
-        read = `<b>${ref} at premium</b>. Other markets cheaper — natural import incentive into ${ref}.`;
-      } else {
-        read = `<b>${ref} at discount</b>. Other markets pricier — export opportunity from ${ref}.`;
-      }
-      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
-    }
-
-    // ── ccHeatmap: temporal pattern visibility ──
-    else if (mode === 'ccHeatmap') {
-      line1 = `Heatmap of ${W(zoneCount)} zones ${ctx}. Range ${cheapStr} to ${priceyStr}` +
-        (spread != null ? `. Cross-zone spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
-      let read;
-      if (spreadPct == null) {
-        read = `<b>Add zones</b> to see heatmap patterns.`;
-      } else if (isHist) {
-        read = spreadPct > 50
-          ? `<b>Persistent cross-zone divergence</b>. The pattern shows sustained regional fragmentation${frPart}`
-          : `<b>Coherent regional pattern</b>. Zones move together with limited divergence.${frPart}`;
-      } else {
-        read = spreadPct > 40
-          ? `<b>Sharp regional contrast today</b>. Zones diverge clearly — check transmission constraints.${frPart}`
-          : `<b>Uniform pattern across zones today</b>. No significant regional dislocations.${frPart}`;
-      }
-      verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
-    }
+    verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
 
   if (!line1) return '';
-  return `<div class="ho-analyst-banner" style="margin-top:32px;margin-bottom:12px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
+  return `<div class="ho-analyst-banner" style="margin-top:32px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">${ICON}${line1}${verdict}</div>`;
 }
 // Expose globally so prices.js can reuse the same builder for Compare Zones (Daily)
 if (typeof window !== 'undefined') window._buildAnalystBanner = _buildAnalystBanner;
@@ -7658,13 +7601,12 @@ function setHmzBaseline(zone) {
 }
 window.setHmzBaseline = setHmzBaseline;
 
-// Inline chip picker (matches Daily Compare zones "SPREAD vs [chips]" UX)
+// Inline chip picker (same UX as Daily Compare zones · "SPREAD vs [chips]")
 function _hmzPopulateRefChips(selected) {
   const host = document.getElementById('hmz-ref-chips');
   if (!host) return;
   const sel = Array.isArray(selected) ? selected : Array.from(selected || []);
   if (!sel.length) { host.innerHTML = ''; return; }
-  // Resolve current baseline: keep explicit pick if still in selection, else FR if present, else first
   let cur = HIST.hmzBaseline;
   if (!cur || !sel.includes(cur)) {
     cur = sel.includes('FR') ? 'FR' : sel[0];
@@ -7682,7 +7624,6 @@ function _hmzPopulateRefChips(selected) {
 }
 window._hmzPopulateRefChips = _hmzPopulateRefChips;
 
-// Show/hide the SPREAD vs chips depending on active mode
 function _hmzToggleRefWrap(mode) {
   const wrap = document.getElementById('hmz-ref-wrap');
   if (wrap) wrap.style.display = (mode === 'spread') ? 'flex' : 'none';
@@ -7795,35 +7736,15 @@ async function renderHistMulti() {
   if (anchor && cheap && pricey && typeof _buildAnalystBanner === 'function') {
     const frGap = frEntry ? (frEntry.avg - cheap.avg) : null;
     const modeMap = { lines: 'ccLines', heatmap: 'ccHeatmap', profile: 'ccProfile', bands: 'ccBands', spread: 'ccSpread', dist: 'ccLines' };
-    // Compute mode-specific stats from per-zone period stats
-    const peakVals = selected.map(z => stats[z]?.peakAvg).filter(v => v != null);
-    const offVals  = selected.map(z => stats[z]?.offAvg).filter(v => v != null);
-    const peakOffSpread = (peakVals.length && offVals.length)
-      ? (peakVals.reduce((a,b)=>a+b,0)/peakVals.length) - (offVals.reduce((a,b)=>a+b,0)/offVals.length)
-      : null;
-    const rangeVals = selected.map(z => stats[z]?.intradaySpread).filter(v => v != null);
-    const intradayRange = rangeVals.length ? rangeVals.reduce((a,b)=>a+b,0)/rangeVals.length : null;
-    // Reference zone for ccSpread = current baseline
-    const refAvg = stats[baseline]?.avg ?? null;
-    // Period label (e.g. "3 months") — built from window code
-    const periodLabel = (window.pkUpdateHistPeriodLabels && (HIST.windows?.hmz || HIST.windows?.ho))
-      ? ({ '7D':'7 days','1M':'1 month','3M':'3 months','6M':'6 months','YTD':'YTD','1Y':'1 year','2Y':'2 years','5Y':'5 years','all':'all time' }[HIST.windows.hmz] || HIST.windows.hmz)
-      : 'the period';
     const bannerHtml = _buildAnalystBanner(modeMap[HMZ.tab] || 'ccLines', {
       cheap, pricey, frGap, loadedAvg, zoneCount: validStats.length, view: HMZ.tab,
-      scope: 'historical',
-      periodLabel,
-      peakOffSpread,
-      intradayRange,
-      refZone: baseline,
-      refAvg,
     });
     anchor.innerHTML = bannerHtml || '';
   } else if (anchor) {
     anchor.innerHTML = '';
   }
 
-  // Render HMZ data table (mirrors Daily Compare zones · header + body per mode)
+  // Render HMZ data table (same template as Daily Compare zones · compact)
   renderHmzTable(HMZ.tab, stats, selected, baseline);
 
   // Populate the SPREAD vs chips (always update so the active highlight stays correct)
@@ -7843,9 +7764,9 @@ async function renderHistMulti() {
 window.renderHistMulti = renderHistMulti;
 
 // ═══════════════════════════════════════════════════════════════════
-//  HMZ data table (mirrors Daily Compare zones · #compare-data-table)
+//  HMZ data table · STRICTLY MIRRORS Daily Compare zones (compact 9px 6px, 11px, 2 decimals)
 //  ─ Header columns adapt to the active mode (lines/heatmap/profile/bands/spread)
-//  ─ Body styled IDENTICALLY to Daily Compare zones (padding 14px, font 12px, JetBrains Mono, colored zone bar)
+//  ─ Body styled identically to ccBody* in prices.js
 //  ─ Hover/click row → highlight matching curve in #hmz-canvas
 // ═══════════════════════════════════════════════════════════════════
 function renderHmzTable(view, stats, selected, baseline) {
@@ -7853,14 +7774,13 @@ function renderHmzTable(view, stats, selected, baseline) {
   const tbody = document.getElementById('hmz-data-tbody');
   if (!thead || !tbody) return;
   thead.innerHTML = _hmzTableHeader(view);
-  // Build rows from the per-zone period stats (already computed by renderHistMulti)
   const rows = selected.map(z => {
     const st = stats[z];
     if (!st) return null;
     return { code: z, ...st };
   }).filter(Boolean);
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:14px">No zones selected</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:9px 6px;font-size:11px">No zones selected</td></tr>`;
     return;
   }
   let html = '';
@@ -7876,24 +7796,22 @@ function renderHmzTable(view, stats, selected, baseline) {
   _hmzWireRowHighlight();
 }
 
-// Header builder (matches ccTableHeader from prices.js · same columns per view)
-// Header builder · same columns + style as ccTableHeader in prices.js
 function _hmzTableHeader(view) {
   const cols = {
     lines: [
-      { w:'24%', label:'Zone' },
-      { w:'11%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'22%', label:'Zone' },
+      { w:'10%', label:'Avg', sub:'€/MWh', align:'right' },
       { w:'30%', label:'Range', sub:'min — max · €/MWh', align:'left' },
-      { w:'21%', label:'Peak / Off-pk avg', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Intraday spread', sub:'€/MWh', align:'right' },
+      { w:'22%', label:'Peak / Off-pk avg', sub:'€/MWh', align:'right' },
+      { w:'16%', label:'Intraday spread', sub:'€/MWh', align:'right' },
     ],
     heatmap: [
       { w:'22%', label:'Zone' },
-      { w:'10%', label:'Avg', sub:'€/MWh', align:'right' },
+      { w:'12%', label:'Avg', sub:'€/MWh', align:'right' },
       { w:'14%', label:'Min', sub:'€/MWh', align:'right' },
       { w:'14%', label:'Max', sub:'€/MWh', align:'right' },
-      { w:'10%', label:'Neg hrs', sub:'count', align:'right' },
-      { w:'30%', label:'High-stress hrs', sub:'count vs panel', align:'right' },
+      { w:'12%', label:'Neg hrs', sub:'count', align:'right' },
+      { w:'26%', label:'High-stress hrs', sub:'count + bar', align:'right' },
     ],
     profile: [
       { w:'22%', label:'Zone' },
@@ -7901,24 +7819,24 @@ function _hmzTableHeader(view) {
       { w:'14%', label:'Peak avg', sub:'€/MWh', align:'right' },
       { w:'14%', label:'Off-pk avg', sub:'€/MWh', align:'right' },
       { w:'14%', label:'Peak shape', sub:'peak/avg %', align:'right' },
-      { w:'10%', label:'Off-pk shape', sub:'off-pk/avg %', align:'right' },
-      { w:'12%', label:'Spread P/OP', sub:'€/MWh', align:'right' },
+      { w:'12%', label:'Off-pk shape', sub:'off-pk/avg %', align:'right' },
+      { w:'10%', label:'Spread P/OP', sub:'€/MWh', align:'right' },
     ],
     bands: [
       { w:'22%', label:'Zone' },
       { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
       { w:'12%', label:'σ', sub:'std-dev', align:'right' },
-      { w:'14%', label:'Intraday spread', sub:'€/MWh', align:'right' },
-      { w:'12%', label:'Min', sub:'€/MWh', align:'right' },
-      { w:'12%', label:'Max', sub:'€/MWh', align:'right' },
-      { w:'14%', label:'Days', sub:'count', align:'right' },
+      { w:'14%', label:'Intraday', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Min', sub:'€/MWh', align:'right' },
+      { w:'14%', label:'Max', sub:'€/MWh', align:'right' },
+      { w:'10%', label:'Days', sub:'count', align:'right' },
     ],
     spread: [
       { w:'22%', label:'Zone' },
       { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
-      { w:'30%', label:'Avg spread vs ref', sub:'€/MWh', align:'right' },
+      { w:'30%', label:'Avg spread vs ref', sub:'€/MWh + bar', align:'right' },
       { w:'14%', label:'% vs ref', sub:'(zone−ref)/ref', align:'right' },
-      { w:'10%', label:'σ vs σ-ref', sub:'std-dev', align:'right' },
+      { w:'10%', label:'σ vs σ-ref', align:'right' },
       { w:'10%', label:'Min spread', align:'right' },
     ],
   };
@@ -7929,12 +7847,11 @@ function _hmzTableHeader(view) {
     </th>`).join('') + '</tr>';
 }
 
-// Zone cell · strictly identical to _ccZoneCell from prices.js
 function _hmzZoneCell(r) {
   const col = (window._zoneColorMap && window._zoneColorMap[r.code]) || _hmzZoneColor(r.code) || '#B8C9D9';
   const meta = (typeof ZONE_META !== 'undefined' && ZONE_META[r.code]) || {};
   const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[r.code]) || '';
-  const country = meta.country || _HO_NAMES[r.code] || r.code;
+  const country = meta.country || (typeof _HO_NAMES !== 'undefined' && _HO_NAMES[r.code]) || r.code;
   return `<td style="padding:9px 6px;vertical-align:middle">
     <span style="display:inline-block;width:3px;height:12px;background:${col};border-radius:2px;vertical-align:middle;margin-right:6px"></span>
     <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col};font-size:11px">${flag} ${r.code}</span>
@@ -7950,13 +7867,9 @@ function _hmzTr(r, cells) {
   </tr>`;
 }
 
-// Style helpers · strictly identical to _CC_TD_* from prices.js
 const _HMZ_TD_R = "text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
-const _HMZ_TD_L = "text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
-const _HMZ_TD_C = "text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
-const _HMZ_SUB = "color:var(--text3);font-size:9px";
+const _HMZ_SUB  = "color:var(--text3);font-size:9px";
 
-// ── _hmzBodyLines · range bar with global-scale position (same template as ccBodyLines)
 function _hmzBodyLines(rows) {
   const allMins = rows.map(r => r.min).filter(v => v != null);
   const allMaxs = rows.map(r => r.max).filter(v => v != null);
@@ -7967,9 +7880,8 @@ function _hmzBodyLines(rows) {
     const col = (window._zoneColorMap && window._zoneColorMap[r.code]) || _hmzZoneColor(r.code) || '#B8C9D9';
     const leftPct  = r.min != null ? ((r.min - globalMin) / globalRng) * 100 : 0;
     const widthPct = (r.min != null && r.max != null) ? ((r.max - r.min) / globalRng) * 100 : 0;
-    const intra = r.intradaySpread != null ? r.intradaySpread.toFixed(2) : '--';
     const cells = `
-      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};font-weight:600;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
       <td style="padding:9px 6px;vertical-align:middle">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="flex:0 0 48px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.min<0?'var(--down)':'var(--text2)'};line-height:11px">
@@ -7977,7 +7889,7 @@ function _hmzBodyLines(rows) {
           </div>
           <div style="flex:1;position:relative;height:8px">
             <div style="position:absolute;top:0;left:0;right:0;height:100%;background:rgba(255,255,255,0.05);border-radius:2px"></div>
-            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.6;border-radius:2px"></div>
+            <div style="position:absolute;top:0;left:${leftPct.toFixed(1)}%;width:${Math.max(widthPct,2).toFixed(1)}%;height:100%;background:${col};opacity:.55;border-radius:2px"></div>
           </div>
           <div style="flex:0 0 48px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.max<0?'var(--down)':'var(--text2)'};line-height:11px">
             ${r.max != null ? r.max.toFixed(2) : '--'}
@@ -7987,29 +7899,27 @@ function _hmzBodyLines(rows) {
       <td style="${_HMZ_TD_R}">
         <span style="color:var(--text)">${r.peakAvg != null ? r.peakAvg.toFixed(2) : '--'}</span> <span style="color:var(--text3)">/</span> <span style="color:var(--text2)">${r.offAvg != null ? r.offAvg.toFixed(2) : '--'}</span>
       </td>
-      <td style="${_HMZ_TD_R};color:var(--text)">${intra}</td>`;
+      <td style="${_HMZ_TD_R};color:var(--text)">${r.intradaySpread != null ? r.intradaySpread.toFixed(2) : '--'}</td>`;
     return _hmzTr(r, cells);
   }).join('');
 }
 
-// ── _hmzBodyHeatmap · stress bar (high-stress hrs vs panel max) — same logic as ccBodyHeatmap top-quartile
 function _hmzBodyHeatmap(rows) {
   const maxHigh = Math.max(...rows.map(r => r.highH || 0), 1);
   return rows.map(r => {
     const negCol = (r.negH || 0) > 0 ? 'var(--down)' : 'var(--text3)';
     const highPct = ((r.highH || 0) / maxHigh) * 100;
-    const highCol = highPct > 50 ? '#ED6965' : (highPct > 25 ? '#FBBF24' : '#14D3A9');
-    const highTextCol = highPct > 50 ? 'var(--down)' : (highPct > 25 ? 'var(--warn)' : 'var(--up)');
+    const highBarCol = highPct > 50 ? '#ED6965' : (highPct > 25 ? '#FBBF24' : '#14D3A9');
     const cells = `
-      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};font-weight:600;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:${r.min<0?'var(--down)':'var(--text2)'}">${r.min != null ? r.min.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text)">${r.max != null ? r.max.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:${negCol}">${(r.negH || 0).toFixed(0)}</td>
       <td style="${_HMZ_TD_R}">
         <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;width:100%">
-          <span style="color:${highTextCol}">${(r.highH || 0).toFixed(0)}</span>
+          <span style="color:var(--text2)">${(r.highH || 0).toFixed(0)}</span>
           <span style="display:inline-block;width:50px;height:6px;background:rgba(255,255,255,0.05);border-radius:2px;position:relative">
-            <span style="display:block;height:100%;width:${Math.min(highPct,100).toFixed(0)}%;background:${highCol};opacity:.7;border-radius:2px"></span>
+            <span style="display:block;height:100%;width:${Math.min(highPct,100).toFixed(0)}%;background:${highBarCol};opacity:.7;border-radius:2px"></span>
           </span>
         </div>
       </td>`;
@@ -8017,7 +7927,6 @@ function _hmzBodyHeatmap(rows) {
   }).join('');
 }
 
-// ── _hmzBodyProfile · no mini-vis (% are self-explanatory)
 function _hmzBodyProfile(rows) {
   return rows.map(r => {
     const peakShape    = (r.peakAvg != null && r.avg != null && Math.abs(r.avg) > 0.5) ? (r.peakAvg / r.avg) * 100 : null;
@@ -8027,7 +7936,7 @@ function _hmzBodyProfile(rows) {
     const offPeakCol   = offPeakShape != null && offPeakShape < 100 ? 'var(--text2)' : 'var(--warn)';
     const spreadCol    = spreadPO == null ? 'var(--text3)' : (spreadPO < 0 ? 'var(--down)' : 'var(--text)');
     const cells = `
-      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};font-weight:600;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text)">${r.peakAvg != null ? r.peakAvg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text2)">${r.offAvg != null ? r.offAvg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:${peakCol}">${peakShape != null ? peakShape.toFixed(0)+'%' : '--'}</td>
@@ -8037,11 +7946,10 @@ function _hmzBodyProfile(rows) {
   }).join('');
 }
 
-// ── _hmzBodyBands · no mini-vis
 function _hmzBodyBands(rows, baseline) {
   return rows.map(r => {
     const cells = `
-      <td style="${_HMZ_TD_R};font-weight:700;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};font-weight:600;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text2)">${r.sigma != null ? r.sigma.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text)">${r.intradaySpread != null ? r.intradaySpread.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:${r.min<0?'var(--down)':'var(--text2)'}">${r.min != null ? r.min.toFixed(2) : '--'}</td>
@@ -8051,24 +7959,23 @@ function _hmzBodyBands(rows, baseline) {
   }).join('');
 }
 
-// ── _hmzBodySpread · divergent bar centered on 0 (same template as ccBodySpread)
 function _hmzBodySpread(rows, baseline) {
   const ref = rows.find(r => r.code === baseline);
+  // Compute max absolute spread for divergent bar
   const validSpreads = rows.filter(r => r.code !== baseline && r.avg != null && ref?.avg != null).map(r => Math.abs(r.avg - ref.avg));
   const maxAbs = validSpreads.length ? Math.max(...validSpreads, 1) : 1;
   return rows.map(r => {
     if (r.code === baseline) {
-      const cells = `<td colspan="5" style="${_HMZ_TD_C};color:var(--text3);font-style:italic">— reference (${baseline}) —</td>`;
+      const cells = `<td colspan="5" style="text-align:center;padding:9px 6px;color:var(--text3);font-size:11px;font-style:italic">— reference (${baseline}) —</td>`;
       return _hmzTr(r, cells);
     }
     const avgSpread = (r.avg != null && ref?.avg != null) ? (r.avg - ref.avg) : null;
     const pctVsRef  = (avgSpread != null && Math.abs(ref?.avg || 0) > 0.5) ? (avgSpread / ref.avg) * 100 : null;
     const sigmaDiff = (r.sigma != null && ref?.sigma != null) ? (r.sigma - ref.sigma) : null;
     const minSpread = (r.min != null && ref?.min != null) ? (r.min - ref.min) : null;
-    const avgCol = avgSpread == null ? 'var(--text3)' : (avgSpread > 0 ? 'var(--down)' : 'var(--up)');
-    const pctCol = pctVsRef == null ? 'var(--text3)' : (pctVsRef > 0 ? 'var(--down)' : 'var(--up)');
+    const avgCol = avgSpread == null ? 'var(--text3)' : (avgSpread > 0 ? 'var(--up)' : 'var(--down)');
+    const pctCol = pctVsRef == null ? 'var(--text3)' : (pctVsRef > 0 ? 'var(--up)' : 'var(--down)');
     const sign = v => v >= 0 ? '+' : '';
-    // Divergent bar 60px centred on 0 (same template as ccBodySpread)
     const divPct = avgSpread != null ? Math.min(Math.abs(avgSpread) / maxAbs, 1) * 50 : 0;
     const divHTML = avgSpread == null
       ? ''
@@ -8079,7 +7986,7 @@ function _hmzBodySpread(rows, baseline) {
       <td style="${_HMZ_TD_R};color:var(--text2)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R}">
         <div style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end">
-          <span style="font-weight:700;color:${avgCol}">${avgSpread != null ? sign(avgSpread)+avgSpread.toFixed(2) : '--'}</span>
+          <span style="font-weight:600;color:${avgCol}">${avgSpread != null ? sign(avgSpread)+avgSpread.toFixed(2) : '--'}</span>
           ${divHTML}
         </div>
       </td>
@@ -8126,7 +8033,6 @@ function _hmzHighlightZone(code, isPersistent) {
     });
     chart.update('none');
   }
-  // Row visual feedback
   const tbody = document.getElementById('hmz-data-tbody');
   if (tbody) {
     tbody.querySelectorAll('tr[data-zone]').forEach(tr => {
@@ -8930,6 +8836,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const dtEl = document.getElementById('ho-date-to');
   if (dfEl) dfEl.max = todayStr;
   if (dtEl) dtEl.max = todayStr;
+
+  // Populate [period] labels with default window
+  pkUpdateHistPeriodLabels(HIST.windows?.ho || '3M');
 
   const obs = new MutationObserver(() => {
     const panel = document.getElementById('prtab-historical');
