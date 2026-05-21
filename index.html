@@ -951,11 +951,11 @@
     background: var(--bg2);
     border: 1px solid var(--border2);
     border-radius: 10px;
-    margin-top: 48px;
+    margin-top: 20px;
     box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
     overflow: hidden;
   }
-  .hist-section-strong:first-of-type { margin-top: 18px; }
+  .hist-section-strong:first-of-type { margin-top: 8px; }
   .hist-section-strong .hist-section-header {
     padding: 14px 18px;
     border-bottom: 2px solid var(--border2);
@@ -2266,7 +2266,7 @@
         <!-- TAB · DAILY -->
         <div class="tab-panel active" data-tab-panel="daily" id="prtab-daily">
         <!-- Page header (light, no border) -->
-        <div style="padding:14px 4px 12px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+        <div style="padding:8px 4px 4px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
           <h2 style="font-size:18px;font-weight:600;color:var(--tx);letter-spacing:.02em;margin:0">Day-Ahead · Daily</h2>
           <span id="pr-daily-page-meta" style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;letter-spacing:.02em">--</span>
         </div>
@@ -2459,14 +2459,13 @@
           </div>
           </div><!-- /hist-section-body -->
         </div><!-- /hist-section #hs-cc-main -->
-        </div><!-- /tab-panel daily wrapper -->
-        </div><!-- /tab-panel daily (real close — was missing) -->
+        </div><!-- /tab-panel daily -->
 
         <!-- TAB · HISTORICAL -->
         <div class="tab-panel" data-tab-panel="historical" id="prtab-historical">
 
         <!-- Page header (light, no border) -->
-        <div style="padding:14px 4px 12px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+        <div style="padding:8px 4px 4px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
           <h2 style="font-size:18px;font-weight:600;color:var(--tx);letter-spacing:.02em;margin:0">Day-Ahead · Historical</h2>
           <span id="pr-hist-page-meta" style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;letter-spacing:.02em">over <span id="pr-hist-period-label">--</span></span>
         </div>
@@ -2646,24 +2645,6 @@
      BLOCK 4 · (removed — monthly breakdown now collapsible
      inside each Historical Overview row detail)
      ════════════════════════════════════════════════════════ -->
-
-<!-- Global zone selector panel · shared across all sections -->
-<div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
-  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Zone selection (global)</span>
-      <div style="display:flex;gap:4px">
-        <button onclick="selectAllGlobalZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
-        <button onclick="clearGlobalZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
-      </div>
-    </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap">
-      <button onclick="presetGlobalNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
-      <button onclick="presetGlobalGenMix()" style="font-size:10px;color:#14D3A9;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
-    </div>
-  </div>
-  <div id="global-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
-</div>
 
         </div>
 
@@ -3822,6 +3803,23 @@
     </div>
 
   </main>
+  <!-- Global zone selector panel · shared across all sections, placed outside all pages so it remains accessible regardless of which tab is active -->
+  <div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Zone selection (global)</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="selectAllGlobalZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+          <button onclick="clearGlobalZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="presetGlobalNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+        <button onclick="presetGlobalGenMix()" style="font-size:10px;color:#14D3A9;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:4px;cursor:pointer;padding:2px 8px">⚡ With GenMix</button>
+      </div>
+    </div>
+    <div id="global-zone-chips" style="display:flex;flex-direction:column;gap:2px"></div>
+  </div>
   <!-- Zone filter overlay -->
   <div id="zone-filter-overlay" onclick="toggleZoneFilterPanel()" style="display:none;position:fixed;inset:0;z-index:9998;background:transparent"></div>
 </div>
