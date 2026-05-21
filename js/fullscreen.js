@@ -157,6 +157,14 @@
       }
       .pk-fs * { box-sizing: border-box; }
 
+      /* While the fullscreen overlay is in the DOM, hide every easter-egg
+         layer (esheep sprites, dots bar, ground, platforms, pipes, lightning,
+         tornado, etc.) so they don't bleed through the fullscreen view. */
+      body:has(#pk-fs-overlay) [class^="es-"],
+      body:has(#pk-fs-overlay) [class*=" es-"] {
+        display: none !important;
+      }
+
       .pk-fs-header {
         display: flex; justify-content: space-between; align-items: flex-start;
         padding: 14px 20px 12px; border-bottom: 1px solid #1e2d3d; flex-shrink: 0;
