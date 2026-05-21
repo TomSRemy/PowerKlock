@@ -3351,29 +3351,40 @@ function _renderCCBandsHeader(zones, mode) {
   const host = document.getElementById('cc-bands-header');
   if (!host) return;
   const period = window._ccBandsPeriod || '1M';
-  const periodPills = _CC_BANDS_PERIODS.map(p => `
-    <button onclick="setCCBandsPeriod('${p.key}')" style="
-      padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
-      color:${p.key === period ? '#14D3A9' : '#7A93AB'};
-      background:${p.key === period ? 'rgba(20,211,169,0.18)' : 'transparent'};
-      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
-    ">${p.label}</button>`).join('');
 
+  // ── Style: Historical sub-tabs ──
+  // Individual pills with a border, mint background + mint text + mint border if active,
+  // matching the Hourly/Daily/Weekly/Monthly look in Historical drill-down.
+  const subTabStyle = (active) => `
+    padding:4px 11px;font-size:10px;cursor:pointer;border-radius:14px;
+    background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};
+    color:${active ? '#14D3A9' : 'var(--tx3)'};
+    border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};
+    font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+    transition:all .15s`;
+
+  // Period pills — sub-tab style, individual pills with gap (no shared container)
+  const periodPills = _CC_BANDS_PERIODS.map(p => `
+    <button onclick="setCCBandsPeriod('${p.key}')" style="${subTabStyle(p.key === period)}">${p.label}</button>`).join('');
+
+  // Mode pills (Z-score / Raw bands) — same sub-tab style
   const modeUi = (zones.length >= 2) ? `
-    <div style="display:flex;align-items:center;gap:5px">
+    <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Mode</span>
-      <div style="display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px;font-family:'JetBrains Mono',monospace;font-size:10px">
-        <button onclick="setCCBandsMode('zscore')" style="background:${mode==='zscore'?'#14D3A9':'transparent'};color:${mode==='zscore'?'#060a0f':'#7A93AB'};border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-weight:600">Z-score</button>
-        <button onclick="setCCBandsMode('raw')" style="background:${mode==='raw'?'#14D3A9':'transparent'};color:${mode==='raw'?'#060a0f':'#7A93AB'};border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-weight:600">Raw bands</button>
+      <div style="display:inline-flex;gap:6px">
+        <button onclick="setCCBandsMode('zscore')" style="${subTabStyle(mode === 'zscore')}">Z-score</button>
+        <button onclick="setCCBandsMode('raw')" style="${subTabStyle(mode === 'raw')}">Raw bands</button>
       </div>
     </div>` : `<span style="font-size:10px;color:var(--tx3);font-style:italic">Select 2+ zones to enable Z-score mode</span>`;
 
+  // Zone pills — colour-coded per zone, sub-tab shape but with the zone's own colour
+  // so the chart legend is implicit. Hidden zones get a faint dim treatment.
   window._ccBandsHidden = window._ccBandsHidden || new Set();
   const zonePills = zones.map(z => {
     const col = (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
     const isOn = !window._ccBandsHidden.has(z.code);
     return `<button onclick="toggleCCBandsZone('${z.code}')" style="
-      padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;
+      padding:4px 11px;border-radius:14px;font-size:10px;cursor:pointer;
       border:1px solid ${isOn ? col : 'rgba(255,255,255,.10)'};
       background:${isOn ? col + '22' : 'transparent'};
       color:${isOn ? col : 'rgba(255,255,255,.35)'};
@@ -3382,15 +3393,20 @@ function _renderCCBandsHeader(zones, mode) {
   }).join('');
 
   host.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:5px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
-        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${periodPills}</div>
-      </div>
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <!-- Mode toggle (left) -->
       ${modeUi}
-      <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zones</span>
-        <div style="display:inline-flex;gap:4px;flex-wrap:wrap">${zonePills}</div>
+
+      <!-- Period + Zones (right) -->
+      <div style="display:flex;align-items:center;gap:18px;margin-left:auto;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+          <div style="display:inline-flex;gap:6px;flex-wrap:wrap">${periodPills}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zones</span>
+          <div style="display:inline-flex;gap:6px;flex-wrap:wrap">${zonePills}</div>
+        </div>
       </div>
     </div>`;
 }
