@@ -2711,7 +2711,8 @@ function renderCompareChart() {
   renderCompareKPIs(data, selected);
   // Generate analysis banner for current view
   setTimeout(() => {
-    if (view !== 'heatmap') addFullscreen('price-compare-canvas');
+    // Native fullscreen replaced by the unified pkOpenFullscreen — see ccOpenFullscreen().
+    // We keep addDownload here so the small ↓ button is still attached for inline PNG export.
     if (view !== 'heatmap') addDownload('price-compare-canvas','price-comparison');
     renderCCAnalysis(view, data, selected);
   }, 100);
@@ -2941,6 +2942,218 @@ function populateBandsZoneSelect(zones, current) {
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
     ">${z.code}</button>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════
+// Cross-zone fullscreen (Daily) — opens the compare-zones chart in the unified
+// pkOpenFullscreen overlay. Filters in the chart header reproduce the live
+// view tabs (Lines/Heatmap/Profile/Bands/Spread) + view-specific controls,
+// and the table + KPIs are cloned from the inline DOM.
+// ════════════════════════════════════════════
+function ccOpenFullscreen() {
+  if (typeof window.pkOpenFullscreen !== 'function') {
+    console.error('[ccOpenFullscreen] pkOpenFullscreen is not loaded');
+    return;
+  }
+  const view = window._ccView || 'lines';
+  const selected = window._compareZones || new Set(['FR']);
+  const data = window._pricesSorted || [];
+
+  // ── Title / subtitle ──
+  const longDate = (function(){
+    try {
+      const iso = window._currentPriceDate;
+      if (!iso) return '';
+      const [y,m,d] = iso.split('-').map(Number);
+      return new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    } catch(e){ return ''; }
+  })();
+  const viewTitle = {
+    lines:'Lines', heatmap:'Heatmap', profile:'Profile',
+    bands:'Bands', spread:'Spread',
+  }[view] || 'Lines';
+  const zonesCount = selected.size;
+
+  // ── KPIs: clone the 5-card strip above the chart ──
+  const inlineKpis = document.getElementById('cc-kpi-strip');
+  const kpisHtml = inlineKpis ? inlineKpis.outerHTML : '';
+
+  // ── Table: clone the compare-data-table ──
+  const inlineTable = document.getElementById('compare-data-table');
+  const tableHtml = inlineTable ? (
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+       <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--tx2);text-transform:uppercase">${viewTitle} — ${zonesCount} zone${zonesCount > 1 ? 's' : ''}</span>
+     </div>
+     ${inlineTable.outerHTML}`
+  ) : null;
+
+  // ── Analysis: clone the amber banner ──
+  const inlineBanner = document.getElementById('cc-analyst-banner-anchor');
+  const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
+
+  // ── Filters: View tabs + view-specific controls ──
+  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const todayISO = new Date().toISOString().slice(0,10);
+
+  const viewTabsHtml = ['lines','heatmap','profile','bands','spread'].map(v => `
+    <button onclick="setCCView('${v}');setTimeout(()=>{ccRefreshFullscreen();},80)" style="
+      padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+      color:${v === view ? '#14D3A9' : '#7A93AB'};
+      background:${v === view ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:capitalize;
+    ">${v}</button>`).join('');
+
+  let extraHtml = '';
+  if (view === 'spread') {
+    const refCode = window._ccSpreadRef || 'FR';
+    const refChips = data.filter(z => selected.has(z.code)).map(z => {
+      const isOn = z.code === refCode;
+      return `<button onclick="setSpreadRef('${z.code}');setTimeout(()=>{ccRefreshFullscreen();},80)" style="
+        padding:3px 8px;font-size:10px;cursor:pointer;border-radius:3px;
+        color:${isOn ? '#14D3A9' : '#7A93AB'};
+        background:${isOn ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        border:1px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,0.10)'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${z.code}</button>`;
+    }).join('');
+    extraHtml = `
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Spread ref</span>
+        <div style="display:inline-flex;gap:3px;flex-wrap:wrap">${refChips}</div>
+      </div>`;
+  } else if (view === 'bands') {
+    extraHtml = `<div id="fs-cc-bands-header" style="width:100%"></div>`;
+  }
+
+  const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
+      <input type="date" id="fs-cc-date-input" value="${currentDateISO}" max="${todayISO}"
+        style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+    </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewTabsHtml}</div>
+    </div>
+    ${extraHtml}`;
+
+  pkOpenFullscreen({
+    title: `Cross-zone · ${viewTitle}`,
+    subtitle: `${longDate} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
+    filenameStem: `powerklock_crosszone_${view}_${currentDateISO}`,
+    storageKey: 'daily-crosszone',
+    kpis: kpisHtml ? { html: kpisHtml } : null,
+    table: tableHtml ? { html: tableHtml } : null,
+    analysis: { html: analysisHtml },
+    filters: {
+      html: filtersHtml,
+      wire: (hostEl) => {
+        const dateInp = hostEl.querySelector('#fs-cc-date-input');
+        if (dateInp) {
+          dateInp.addEventListener('change', (e) => {
+            const newDate = e.target.value;
+            if (!newDate || newDate === window._currentPriceDate) return;
+            if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+            if (typeof dpSelect === 'function') {
+              dpSelect(newDate);
+              const waitAndReopen = (attempts) => {
+                if (attempts <= 0) return;
+                if (window._currentPriceDate === newDate && window._pricesSorted) {
+                  setTimeout(() => ccOpenFullscreen(), 80);
+                } else {
+                  setTimeout(() => waitAndReopen(attempts - 1), 150);
+                }
+              };
+              setTimeout(() => waitAndReopen(20), 200);
+            }
+          });
+        }
+        if (view === 'bands') {
+          const fsHost = hostEl.querySelector('#fs-cc-bands-header');
+          if (fsHost) {
+            const origHost = document.getElementById('cc-bands-header');
+            fsHost.id = 'cc-bands-header';
+            if (origHost) origHost.id = 'cc-bands-header-inline';
+            const zones = ccGetSelectedZones(data, selected);
+            const mode = (zones.length >= 2) ? (window._ccBandsMode || 'zscore') : 'raw';
+            _renderCCBandsHeader(zones, mode);
+            fsHost.id = 'fs-cc-bands-header';
+            if (origHost) origHost.id = 'cc-bands-header';
+          }
+        }
+      }
+    },
+    chartSource: {
+      rebuildInto: (canvas) => {
+        const srcChart = (window.CHARTS && window.CHARTS['price-compare-canvas'])
+          || (window._chartInstances && window._chartInstances['price-compare-canvas']);
+        if (!srcChart || typeof Chart === 'undefined') return null;
+        const cfg = {
+          type: srcChart.config.type,
+          data: JSON.parse(JSON.stringify(srcChart.config.data)),
+          options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
+        };
+        cfg.options.maintainAspectRatio = false;
+        cfg.options.responsive = true;
+        cfg.options.scales = cfg.options.scales || {};
+        Object.keys(cfg.options.scales).forEach(k => {
+          const sc = cfg.options.scales[k];
+          sc.ticks = sc.ticks || {};
+          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
+          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
+        });
+        cfg.options.plugins = cfg.options.plugins || {};
+        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
+        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
+        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
+        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
+        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
+        cfg.options.plugins.zoom = {
+          zoom: {
+            drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
+            wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
+          },
+          pan: { enabled: false }
+        };
+        try {
+          const chart = new Chart(canvas, cfg);
+          canvas.addEventListener('dblclick', () => {
+            if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
+          });
+          return chart;
+        } catch (e) {
+          console.warn('[ccOpenFullscreen] chart build failed', e);
+          return null;
+        }
+      }
+    },
+    onCSV: () => buildCCCSV(view, data, selected),
+  });
+}
+window.ccOpenFullscreen = ccOpenFullscreen;
+
+function ccRefreshFullscreen() {
+  if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
+  setTimeout(() => ccOpenFullscreen(), 60);
+}
+window.ccRefreshFullscreen = ccRefreshFullscreen;
+
+function buildCCCSV(view, data, selected) {
+  const table = document.getElementById('compare-data-table');
+  if (!table) return null;
+  const headerCells = table.querySelectorAll('thead th');
+  const headers = Array.from(headerCells).map(th =>
+    th.textContent.trim().replace(/\s+/g, ' ').split(/\s{2,}/)[0]
+  );
+  const dataRows = table.querySelectorAll('tbody tr');
+  const rows = Array.from(dataRows).map(tr => {
+    const cells = tr.querySelectorAll('td');
+    return Array.from(cells).map(td => {
+      const txt = td.textContent.trim().replace(/\s+/g, ' ');
+      if (/[,"\n]/.test(txt)) return '"' + txt.replace(/"/g, '""') + '"';
+      return txt;
+    });
+  });
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 }
 
 // ════════════════════════════════════════════
