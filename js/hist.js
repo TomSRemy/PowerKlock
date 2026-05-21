@@ -3398,12 +3398,14 @@ function _openHoFullscreen(zone) {
       <div style="display:flex;flex-direction:column;gap:8px">
         <!-- Top row: window selector (7D/1M/3M/...) left, tabs-bar + actions right -->
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-          <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;flex-wrap:wrap">
-            ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => `
-              <button class="hw-btn${(HIST.windows['ho']||'3M')===w ? ' active' : ''}"
-                onclick="setHistWindow('ho','${w}',this)"
-                style="background:${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.15)' : 'transparent'};border:1px solid ${(HIST.windows['ho']||'3M')===w ? 'rgba(20,211,169,0.4)' : 'transparent'};color:${(HIST.windows['ho']||'3M')===w ? '#14D3A9' : 'var(--tx3)'};padding:4px 9px;font-size:10px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${w}</button>
-            `).join('')}
+          <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:6px;flex-wrap:wrap">
+            ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
+              const active = (HIST.windows['ho']||'3M') === w;
+              return `
+                <button class="hw-btn${active ? ' active' : ''}"
+                  onclick="setHistWindow('ho','${w}',this)"
+                  style="padding:4px 11px;font-size:10px;cursor:pointer;border-radius:14px;background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase;transition:all .15s">${w}</button>`;
+            }).join('')}
           </div>
           <div id="ho-fs-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px;width:max-content"></div>
           <button id="ho-fs-csv-btn" title="Export chart data as CSV"
@@ -9052,7 +9054,7 @@ function hmzOpenFullscreen() {
     </div>
     ${extraHtml}`;
 
-  pkOpenFullscreen({
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
     title: `Historical Cross-zone · ${viewTitle}`,
     subtitle: `${periodLabel} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
     filenameStem: `powerklock_historical_crosszone_${view}_${w}`,
@@ -9109,8 +9111,8 @@ function hmzOpenFullscreen() {
 window.hmzOpenFullscreen = hmzOpenFullscreen;
 
 function hmzRefreshFullscreen() {
-  if (typeof window.pkCloseFullscreen === 'function') window.pkCloseFullscreen();
-  setTimeout(() => hmzOpenFullscreen(), 80);
+  // Hot-swap via pkOpenOrUpdate
+  requestAnimationFrame(() => hmzOpenFullscreen());
 }
 window.hmzRefreshFullscreen = hmzRefreshFullscreen;
 
