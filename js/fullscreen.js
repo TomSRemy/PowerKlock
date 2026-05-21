@@ -157,11 +157,14 @@
       }
       .pk-fs * { box-sizing: border-box; }
 
-      /* While the fullscreen overlay is in the DOM, hide every easter-egg
+      /* While any fullscreen overlay is in the DOM, hide every easter-egg
          layer (esheep sprites, dots bar, ground, platforms, pipes, lightning,
-         tornado, etc.) so they don't bleed through the fullscreen view. */
+         tornado, etc.) so they don't bleed through the fullscreen view.
+         Covers: pkOpenFullscreen (Daily drill, Cross-zone), Historical drill-down. */
       body:has(#pk-fs-overlay) [class^="es-"],
-      body:has(#pk-fs-overlay) [class*=" es-"] {
+      body:has(#pk-fs-overlay) [class*=" es-"],
+      body:has(#ho-fs-overlay) [class^="es-"],
+      body:has(#ho-fs-overlay) [class*=" es-"] {
         display: none !important;
       }
 
