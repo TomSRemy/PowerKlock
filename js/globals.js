@@ -2462,8 +2462,7 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
   const all = [];
   await Promise.all(dates.map(async (dt) => {
     try {
-      const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
-      const r = await fetch(base + 'history/daily/' + dt + '.json');
+      const r = await fetch(`data/history/daily/${dt}.json`);
       if (!r.ok) return;
       const j = await r.json();
       let z = null;
@@ -2481,10 +2480,14 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
         resampled.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
       }
       all.push(resampled);
-    } catch (e) { /* silent */ }
+    } catch (e) { /* silent — 404 on dates with no data is expected */ }
   }));
 
-  if (!all.length) return null;
+  if (!all.length) {
+    console.warn(`[fetchHistoricalEnvelopeP] no data found for ${code} over ${nDays}d (cache key ${cacheKey})`);
+    return null;
+  }
+  console.log(`[fetchHistoricalEnvelopeP] ${code}: aggregated ${all.length}/${dates.length} days`);
 
   const _pct = (sortedArr, p) => {
     if (!sortedArr.length) return null;
@@ -2495,18 +2498,18 @@ async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
     return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (rank - lo);
   };
 
-  const p0 = [], p5 = [], p50 = [], p95 = [], p100 = [];
+  const p0 = [], p10 = [], p50 = [], p90 = [], p100 = [];
   for (let i = 0; i < nPts; i++) {
     const vals = all.map(arr => arr[i]).filter(v => v != null).sort((a,b)=>a-b);
-    if (!vals.length) { p0.push(null); p5.push(null); p50.push(null); p95.push(null); p100.push(null); continue; }
+    if (!vals.length) { p0.push(null); p10.push(null); p50.push(null); p90.push(null); p100.push(null); continue; }
     p0.push(vals[0]);
-    p5.push(_pct(vals, 0.05));
+    p10.push(_pct(vals, 0.10));
     p50.push(_pct(vals, 0.50));
-    p95.push(_pct(vals, 0.95));
+    p90.push(_pct(vals, 0.90));
     p100.push(vals[vals.length - 1]);
   }
 
-  const result = { p0, p5, p50, p95, p100, n: all.length };
+  const result = { p0, p10, p50, p90, p100, n: all.length };
   window._envelopePCache[cacheKey] = result;
   return result;
 }
