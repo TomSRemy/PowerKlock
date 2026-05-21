@@ -597,6 +597,28 @@
     font-family: 'Inter', sans-serif;
     font-size: 13px;
   }
+  /* Harmonise font-size to 11px across all main tables (Daily DA, Historical DA, Compare zones Daily + Historical).
+     The default global `td { font-size: 13px }` is overridden here so all tables read the same. */
+  #prices-table tbody td,
+  #ho-table tbody td,
+  #compare-data-table tbody td,
+  #hmz-data-table tbody td {
+    font-size: 11px;
+  }
+  /* Same applies to thead — keep them uniform too */
+  #prices-table thead th,
+  #ho-table thead th,
+  #compare-data-table thead th,
+  #hmz-data-table thead th {
+    font-size: 10px;
+  }
+  /* First column (Zone/CODE) should also follow the 11px rule */
+  #prices-table tbody td:first-child,
+  #ho-table tbody td:first-child,
+  #compare-data-table tbody td:first-child,
+  #hmz-data-table tbody td:first-child {
+    font-size: 11px;
+  }
   .country-flag { font-size: 14px; margin-right: 6px; }
   .country-code {
     font-size: 10px;
