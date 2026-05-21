@@ -1618,6 +1618,8 @@ function buildHourlyDetail(idx, z) {
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
     ${negTotalMin > 0 ? `<div style="font-size:11px;color:#FBBF24;margin-top:8px;margin-bottom:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">⚠ ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} negative prices · min: ${negMin.toFixed(2)} €/MWh</div>` : ''}
+    <!-- Band stats line · populated when the band selector is active -->
+    <div id="row-band-stats-${idx}" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.15);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.6"></div>
     <details style="margin-top:4px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
         Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
@@ -1629,6 +1631,8 @@ function buildHourlyDetail(idx, z) {
             <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Price €/MWh</th>
             <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd);opacity:0.6">J-1 €/MWh</th>
             <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Diff</th>
+            <th class="bd-p50-h" style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd);display:none">P50 <span style="opacity:.6;font-weight:400" id="bd-p50-header-${idx}"></span></th>
+            <th class="bd-vsp50-h" style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd);display:none">vs P50</th>
             <th style="text-align:center;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Period</th>
           </tr></thead>
           <tbody>${(() => {
@@ -1680,11 +1684,13 @@ function buildHourlyDetail(idx, z) {
                 diffCell = `${sign}${diffAbs.toFixed(1)} (${sign}${diffPct.toFixed(1)}%)`;
               }
 
-              return `<tr data-slot="${i}" onmouseenter="hoverSlotOnChart(${idx},${i})" onmouseleave="clearSlotHover(${idx})" style="border-bottom:1px solid rgba(255,255,255,.03);cursor:default;${isNow?'background:rgba(0,212,168,.06)':''}">
+              return `<tr data-slot="${i}" data-row-idx="${idx}" onmouseenter="hoverSlotOnChart(${idx},${i})" onmouseleave="clearSlotHover(${idx})" style="border-bottom:1px solid rgba(255,255,255,.03);cursor:default;${isNow?'background:rgba(0,212,168,.06)':''}">
                 <td style="padding:3px 8px;color:var(--tx3)">${isNow?'▶ ':''}<span style="font-family:'JetBrains Mono',monospace">${timeLabel}</span></td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${priceColor};font-weight:${v!=null&&v<0?'700':'400'}">${v!=null?v.toFixed(2):'--'}</td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2);opacity:0.55">${j1Cell}</td>
                 <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${diffColor};font-size:10px">${diffCell}</td>
+                <td class="bd-p50-cell" data-bd-p50-row="${idx}-${i}" style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2);display:none">--</td>
+                <td class="bd-vsp50-cell" data-bd-vsp50-row="${idx}-${i}" style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);display:none">--</td>
                 <td style="padding:3px 8px;text-align:center">${period}</td>
               </tr>`;
             }).join('');
@@ -1866,6 +1872,8 @@ function setRowBandWindow(idx, key) {
   if (key === 'off') {
     _removeBandDatasets(chart);
     chart.update('none');
+    _clearBreakdownBandStats(idx);
+    _clearBreakdownTableP50(idx);
     return;
   }
   const z = window._pricesSorted ? window._pricesSorted[idx] : null;
@@ -1879,7 +1887,7 @@ function _removeBandDatasets(chart) {
     const lbl = ds.label || '';
     return !lbl.startsWith('__band_')
         && !lbl.startsWith('Hist median')
-        && !lbl.startsWith('Typical (P5–P95)')
+        && !lbl.startsWith('Typical (P10–P90)')
         && !lbl.startsWith('Min–Max range');
   });
 }
@@ -1889,7 +1897,13 @@ async function _loadAndApplyRowBand(idx, z) {
   const cur = window._drillBandWindow[idx] || 'off';
   const chart = _rowCharts[idx];
   if (!chart) return;
-  if (cur === 'off') { _removeBandDatasets(chart); chart.update('none'); return; }
+  if (cur === 'off') {
+    _removeBandDatasets(chart);
+    chart.update('none');
+    _clearBreakdownBandStats(idx);
+    _clearBreakdownTableP50(idx);
+    return;
+  }
   const opt = _ROW_BAND_OPTIONS.find(o => o.key === cur);
   if (!opt) return;
   const nPts = chart.data.datasets[0]?.data?.length || 96;
@@ -1918,13 +1932,13 @@ async function _loadAndApplyRowBand(idx, z) {
       fill: false, order: 8,
     },
     {
-      label: `Typical (P5–P95) (${opt.label})`, data: env.p95,
+      label: `Typical (P10–P90) (${opt.label})`, data: env.p90,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'rgba(255,255,255,0.08)',
       borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: '+1', order: 7,
     },
     {
-      label: '__band_inner_min', data: env.p5,
+      label: '__band_inner_min', data: env.p10,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
       borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
       fill: false, order: 7,
@@ -1936,8 +1950,169 @@ async function _loadAndApplyRowBand(idx, z) {
     }
   );
   chart.update('none');
+  // Update the breakdown stats line for this drill-down (median, today percentile, divergence)
+  _updateBreakdownBandStats(idx, z, env, opt.label);
+  // Update the breakdown table cells: show P50 + vs P50 columns per slot
+  _updateBreakdownTableP50(idx, z, env, opt.label);
 }
 window._loadAndApplyRowBand = _loadAndApplyRowBand;
+
+// Compute & inject the band stats line for a drill-down:
+//   Period · Median · Today percentile · Today vs median · Max divergence
+function _updateBreakdownBandStats(idx, z, env, periodLabel) {
+  const host = document.getElementById(`row-band-stats-${idx}`);
+  if (!host || !env) return;
+
+  // Today's hourly (96 × 15min or 24h) — pick the array used by the chart
+  const todayRaw = (z.hourly && z.hourly.length) ? z.hourly : (z.h24 || []);
+  const nPts = env.p50.length;
+  // Resample today to nPts (same logic as in fetchHistoricalEnvelopeP)
+  const today = [];
+  if (todayRaw.length === nPts) {
+    today.push(...todayRaw);
+  } else {
+    const ratio = todayRaw.length / nPts;
+    for (let i = 0; i < nPts; i++) {
+      const start = Math.floor(i * ratio);
+      const end = Math.max(start + 1, Math.floor((i+1) * ratio));
+      const slice = todayRaw.slice(start, end).filter(v => v != null);
+      today.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
+    }
+  }
+
+  // Median (single value = mean of P50 slots, weighted equally)
+  const validMed = env.p50.filter(v => v != null);
+  const medianAvg = validMed.length ? validMed.reduce((a,b)=>a+b,0) / validMed.length : null;
+
+  // Today's avg
+  const validToday = today.filter(v => v != null);
+  const todayAvg = validToday.length ? validToday.reduce((a,b)=>a+b,0) / validToday.length : null;
+
+  // Today percentile: rank today's avg within the distribution of all historical slot values
+  // We use the union of all env.p0...p100 per-slot data, then count how many are below todayAvg.
+  // Simpler & robust: compare each slot to its (p0..p100) — count fraction of slot ranks where today >= that slot's percentile range.
+  // Even simpler: for the daily avg, rank against the daily P50 distribution.
+  // Use a slot-by-slot percentile approach: for each slot, compute today's percentile in [p0, p50, p100] (linear interpolation).
+  // Then aggregate as mean percentile across slots.
+  const slotPercentiles = [];
+  for (let i = 0; i < nPts; i++) {
+    const t = today[i], p0 = env.p0[i], p10 = env.p10[i], p50 = env.p50[i], p90 = env.p90[i], p100 = env.p100[i];
+    if (t == null || p0 == null || p100 == null) continue;
+    // Piecewise linear interpolation: P0 → P10 → P50 → P90 → P100
+    let pct;
+    if (t <= p0) pct = 0;
+    else if (t >= p100) pct = 100;
+    else if (t <= p10) pct = 10 * (t - p0) / Math.max(p10 - p0, 0.01);
+    else if (t <= p50) pct = 10 + 40 * (t - p10) / Math.max(p50 - p10, 0.01);
+    else if (t <= p90) pct = 50 + 40 * (t - p50) / Math.max(p90 - p50, 0.01);
+    else               pct = 90 + 10 * (t - p90) / Math.max(p100 - p90, 0.01);
+    slotPercentiles.push(pct);
+  }
+  const todayPercentile = slotPercentiles.length
+    ? slotPercentiles.reduce((a,b)=>a+b,0) / slotPercentiles.length
+    : null;
+
+  // Today vs median (€/MWh)
+  const todayVsMedian = (todayAvg != null && medianAvg != null) ? (todayAvg - medianAvg) : null;
+
+  // Max divergence: largest signed gap (today - p50) across slots, with slot label
+  let maxDiv = null, maxDivSlot = null;
+  for (let i = 0; i < nPts; i++) {
+    if (today[i] == null || env.p50[i] == null) continue;
+    const diff = today[i] - env.p50[i];
+    if (maxDiv == null || Math.abs(diff) > Math.abs(maxDiv)) {
+      maxDiv = diff;
+      maxDivSlot = i;
+    }
+  }
+  const slotToHour = (i) => {
+    // If 96 slots, each = 15min; if 24, each = 1h
+    if (nPts === 96) {
+      const h = Math.floor(i / 4), m = (i % 4) * 15;
+      return `${String(h).padStart(2,'0')}h${m === 0 ? '' : String(m).padStart(2,'0')}`;
+    }
+    return `${String(i).padStart(2,'0')}h`;
+  };
+
+  // Color helpers
+  const pctCol = todayPercentile == null ? 'var(--tx3)' : (todayPercentile > 80 ? '#ED6965' : todayPercentile < 20 ? '#14D3A9' : 'var(--tx)');
+  const vsMedCol = todayVsMedian == null ? 'var(--tx3)' : (todayVsMedian > 0 ? '#ED6965' : '#14D3A9');
+  const divCol = maxDiv == null ? 'var(--tx3)' : (maxDiv > 0 ? '#ED6965' : '#14D3A9');
+  const sign = v => v >= 0 ? '+' : '';
+
+  host.innerHTML = `
+    <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-right:8px">Today vs ${periodLabel} band</span>
+    <span style="color:var(--tx3)">Median </span><span style="color:var(--tx)">${medianAvg != null ? medianAvg.toFixed(2) : '--'}</span>
+    <span style="color:var(--tx3)"> · Percentile </span><span style="color:${pctCol};font-weight:600">${todayPercentile != null ? 'P'+todayPercentile.toFixed(0) : '--'}</span>
+    <span style="color:var(--tx3)"> · Today vs median </span><span style="color:${vsMedCol};font-weight:600">${todayVsMedian != null ? sign(todayVsMedian)+todayVsMedian.toFixed(2) : '--'}</span>
+    <span style="color:var(--tx3)"> · Max divergence </span><span style="color:${divCol};font-weight:600">${maxDiv != null ? sign(maxDiv)+maxDiv.toFixed(2) : '--'}</span>${maxDivSlot != null ? ` <span style="color:var(--tx3);font-size:9px">@${slotToHour(maxDivSlot)}</span>` : ''}
+  `;
+  host.style.display = 'block';
+}
+
+function _clearBreakdownBandStats(idx) {
+  const host = document.getElementById(`row-band-stats-${idx}`);
+  if (host) {
+    host.innerHTML = '';
+    host.style.display = 'none';
+  }
+}
+
+// Show / update the P50 + vs P50 columns in the breakdown table for a given row idx.
+// env = { p0, p10, p50, p90, p100 } (from fetchHistoricalEnvelopeP).
+// periodLabel = '7D' | '1M' etc. (shown in the header).
+function _updateBreakdownTableP50(idx, z, env, periodLabel) {
+  if (!env || !env.p50) return;
+  // Show the columns (headers + cells) — they are display:none by default
+  document.querySelectorAll(`th.bd-p50-h, th.bd-vsp50-h`).forEach(el => el.style.display = '');
+  document.querySelectorAll(`td.bd-p50-cell, td.bd-vsp50-cell`).forEach(el => el.style.display = '');
+  // Update header label with current period
+  const hdr = document.getElementById(`bd-p50-header-${idx}`);
+  if (hdr) hdr.textContent = `(${periodLabel})`;
+
+  // Resample today to env's nPts (same as chart datasets)
+  const nPts = env.p50.length;
+  const todayRaw = (z.hourly && z.hourly.length) ? z.hourly : (z.h24 || []);
+  let today = [];
+  if (todayRaw.length === nPts) today = todayRaw;
+  else {
+    const ratio = todayRaw.length / nPts;
+    for (let i = 0; i < nPts; i++) {
+      const start = Math.floor(i * ratio);
+      const end = Math.max(start + 1, Math.floor((i+1) * ratio));
+      const slice = todayRaw.slice(start, end).filter(v => v != null);
+      today.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
+    }
+  }
+
+  // Resolve table data length (may be 96 if 15min, or 24 if hourly). Cells in DOM are based on tblData.
+  // We assume tblData.length === env.p50.length (both 96 by default). If not, resample.
+  const cells = document.querySelectorAll(`td[data-bd-p50-row^="${idx}-"]`);
+  cells.forEach(cell => {
+    const slotIdx = parseInt(cell.dataset.bdP50Row.split('-')[1], 10);
+    if (isNaN(slotIdx) || slotIdx >= env.p50.length) return;
+    const p50 = env.p50[slotIdx];
+    cell.textContent = p50 != null ? p50.toFixed(2) : '--';
+    cell.style.color = 'var(--tx2)';
+  });
+  document.querySelectorAll(`td[data-bd-vsp50-row^="${idx}-"]`).forEach(cell => {
+    const slotIdx = parseInt(cell.dataset.bdVsp50Row.split('-')[1], 10);
+    if (isNaN(slotIdx) || slotIdx >= env.p50.length) return;
+    const p50 = env.p50[slotIdx];
+    const t = today[slotIdx];
+    if (p50 == null || t == null) { cell.textContent = '--'; cell.style.color = 'var(--tx3)'; return; }
+    const diff = t - p50;
+    const sign = diff >= 0 ? '+' : '';
+    cell.textContent = `${sign}${diff.toFixed(2)}`;
+    cell.style.color = diff > 5 ? '#ED6965' : diff < -5 ? '#14D3A9' : 'var(--tx2)';
+  });
+}
+
+function _clearBreakdownTableP50(idx) {
+  // Hide the columns (cells in breakdown for this idx)
+  document.querySelectorAll(`th.bd-p50-h, th.bd-vsp50-h`).forEach(el => el.style.display = 'none');
+  document.querySelectorAll(`td.bd-p50-cell, td.bd-vsp50-cell`).forEach(el => el.style.display = 'none');
+}
 
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
 // matching border-left colour + sub-text tint based on direction (±1 €/MWh)
