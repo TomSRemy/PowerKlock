@@ -1610,6 +1610,7 @@ function buildHourlyDetail(idx, z) {
         <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
     </div>
+    ${negTotalMin > 0 ? `<div style="font-size:11px;color:#FBBF24;margin-top:2px;margin-bottom:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:0 4px 4px 0"><strong style="font-weight:600">◈ MARKET READ ·</strong> Negative-price episode: ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} below zero · min ${negMin.toFixed(2)} €/MWh</div>` : ''}
     <div style="position:relative;height:260px;margin-bottom:4px">
       <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
     </div>
@@ -1617,7 +1618,6 @@ function buildHourlyDetail(idx, z) {
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
-    ${negTotalMin > 0 ? `<div style="font-size:11px;color:#FBBF24;margin-top:8px;margin-bottom:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:3px">⚠ ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} negative prices · min: ${negMin.toFixed(2)} €/MWh</div>` : ''}
     <!-- Band stats line · populated when the band selector is active -->
     <div id="row-band-stats-${idx}" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.15);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.6"></div>
     <details style="margin-top:4px">
@@ -3062,17 +3062,16 @@ if (typeof window !== 'undefined') {
 // Sémantique : today's daily averages across selected zones.
 // Cohérent avec le strip Historical Compare zones — pas de redondance avec le strip Daily du haut.
 function renderCompareKpiStrip(data, selected) {
-  // Find the current price date row to compute today's per-zone daily avg
-  const dayRow = (data || []).find(r => r.date === window._currentPriceDate)
-              || (data || [])[data.length - 1];
-  if (!dayRow || !dayRow.zones) return;
+  // `data` is an array of zone objects: [{code, today, hourly, ...}, ...]
+  // We use the daily averages (z.today) from the selected zones.
+  if (!Array.isArray(data) || !data.length) return;
 
   // Build [{ z, avg }] for selected zones with data today
   const validStats = [];
-  selected.forEach(z => {
-    const zStats = dayRow.zones[z];
-    if (zStats && zStats.avg != null && !isNaN(zStats.avg)) {
-      validStats.push({ z, avg: zStats.avg });
+  data.forEach(z => {
+    if (!selected.has(z.code)) return;
+    if (z.today != null && !isNaN(z.today)) {
+      validStats.push({ z: z.code, avg: z.today });
     }
   });
 
