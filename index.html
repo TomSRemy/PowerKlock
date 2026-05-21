@@ -1013,6 +1013,107 @@
     border: 1px solid rgba(20,211,169,0.40);
   }
 
+  /* ── METHODOLOGY PAGE ── */
+  .meth-wrap { display: flex; gap: 32px; padding: 18px 24px 60px; max-width: 1300px; }
+  .meth-nav {
+    position: sticky; top: 18px; align-self: flex-start;
+    width: 240px; flex-shrink: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 14px 16px;
+    font-size: 12px; max-height: calc(100vh - 100px); overflow-y: auto;
+  }
+  .meth-nav-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--tx3);
+    padding-bottom: 8px; border-bottom: 1px solid var(--border2);
+    margin-bottom: 8px;
+  }
+  .meth-nav-link, .meth-nav-sublink {
+    display: block; padding: 5px 0; color: var(--text2);
+    text-decoration: none; font-weight: 500;
+    transition: color 0.12s ease;
+  }
+  .meth-nav-link:hover, .meth-nav-sublink:hover { color: var(--accent); }
+  .meth-nav-sublink {
+    font-size: 11px; padding: 3px 0 3px 10px;
+    color: var(--tx3); font-weight: 400;
+  }
+  .meth-body {
+    flex: 1; min-width: 0;
+    font-size: 14px; line-height: 1.65;
+    color: var(--text);
+  }
+  .meth-h1 {
+    font-size: 26px; font-weight: 600; letter-spacing: 0.01em;
+    color: var(--tx); margin: 0 0 8px;
+  }
+  .meth-lead {
+    font-size: 14px; color: var(--text2);
+    margin: 0 0 36px; line-height: 1.6;
+  }
+  .meth-section { margin-bottom: 48px; }
+  .meth-section:not(:first-of-type) {
+    padding-top: 28px; border-top: 1px solid var(--border2);
+  }
+  .meth-h2 {
+    font-size: 20px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--tx); margin: 0 0 16px;
+  }
+  .meth-block { margin-bottom: 28px; }
+  .meth-h3 {
+    font-size: 15px; font-weight: 600; color: var(--tx);
+    margin: 0 0 6px; letter-spacing: 0.01em;
+  }
+  .meth-h4 {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin: 18px 0 6px; letter-spacing: 0.02em;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--tx3); font-size: 11px;
+  }
+  .meth-p { margin: 6px 0 10px; color: var(--text2); }
+  .meth-tag {
+    font-size: 12px; color: var(--tx3); margin: 0 0 14px;
+    font-style: italic;
+  }
+  .meth-tag strong { color: var(--text); font-weight: 600; font-style: normal; }
+  .meth-tag-pending {
+    font-size: 13px; color: var(--tx3); font-style: italic;
+    padding: 12px 16px; background: var(--bg2);
+    border-left: 2px solid var(--border2); border-radius: 0 4px 4px 0;
+  }
+  .meth-code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: var(--bg2); border: 1px solid var(--border2);
+    color: var(--accent); padding: 10px 14px;
+    border-radius: 6px; margin: 8px 0 14px;
+    overflow-x: auto; line-height: 1.6;
+  }
+  .meth-body code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    color: var(--accent); background: rgba(20,211,169,0.06);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  .meth-list { margin: 6px 0 14px; padding-left: 22px; color: var(--text2); }
+  .meth-list li { margin-bottom: 4px; }
+  .meth-list ul { margin-top: 4px; }
+  .meth-table {
+    border-collapse: collapse; margin: 8px 0 16px;
+    font-size: 13px; min-width: 420px;
+  }
+  .meth-table th, .meth-table td {
+    padding: 7px 14px; text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .meth-table th {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--tx3);
+  }
+  .meth-table td { color: var(--text2); }
+  .meth-table td:first-child {
+    font-family: 'JetBrains Mono', monospace; color: var(--accent);
+    font-weight: 600;
+  }
+
   .hist-zone-select {
     background: var(--bg3); border: 1px solid var(--border2);
     color: var(--text2); font-size: 11px; padding: 0 8px;
@@ -2053,6 +2154,15 @@
       </div>
       </div>
     </div>
+
+    <div class="sidebar-section collapsed" id="sec-general">
+      <div class="sidebar-section-label" onclick="toggleSection('sec-general')">General <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-items" id="sec-general-items">
+      <div class="sidebar-item" onclick="showPage('methodology')" id="nav-methodology">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Methodology
+      </div>
+      </div>
+    </div>
   </nav>
 
   <!-- Sidebar collapse handle (sibling to sidebar so it can overflow visually) -->
@@ -2415,9 +2525,9 @@
               <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">SPREAD vs</span>
               <div id="cc-ref-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
             </div>
-            <div id="cc-bands-wrap" style="display:none;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
-              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">ZONE</span>
-              <div id="cc-bands-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+            <!-- Bands view header: Period · Mode (Z-score / Raw) · Zone toggles -->
+            <div id="cc-bands-wrap" style="display:none;flex:1 1 100%;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
+              <div id="cc-bands-header" style="width:100%"></div>
             </div>
           </div>
           <!-- Analyst banner (filled by JS — amber style ◈ + Market read · ABOVE the chart) -->
@@ -3774,6 +3884,147 @@
           <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
           <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
         </tbody></table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: METHODOLOGY ── -->
+    <div class="page" id="page-methodology">
+      <div class="meth-wrap">
+        <aside class="meth-nav">
+          <div class="meth-nav-title">Methodology</div>
+          <a href="#meth-prices" class="meth-nav-link">Prices</a>
+          <a href="#meth-bands" class="meth-nav-sublink">→ Cross-zone Bands</a>
+          <a href="#meth-drill" class="meth-nav-sublink">→ Drill-down envelope</a>
+          <a href="#meth-genmix" class="meth-nav-link">GenMix</a>
+          <a href="#meth-cb" class="meth-nav-link">Cross-border</a>
+          <a href="#meth-eua" class="meth-nav-link">EUA &amp; GO</a>
+          <a href="#meth-general" class="meth-nav-link">General terms</a>
+        </aside>
+        <article class="meth-body">
+          <h1 class="meth-h1">Methodology &amp; definitions</h1>
+          <p class="meth-lead">This page documents the calculations and statistical methods used across PowerKlock. Each section indicates where the term applies inside the dashboard.</p>
+
+          <section id="meth-prices" class="meth-section">
+            <h2 class="meth-h2">Prices</h2>
+
+            <div id="meth-bands" class="meth-block">
+              <h3 class="meth-h3">Cross-zone Bands · Z-score view</h3>
+              <p class="meth-tag">Used in: <strong>Prices &gt; Day-Ahead &gt; Daily &gt; Cross-zone analysis &gt; Bands view</strong>.</p>
+
+              <p class="meth-p">The Z-score view normalises every selected zone onto a common dimensionless scale so anomalies pop out regardless of price levels. A zone with prices in €10-€30 range and another in €80-€150 range become directly comparable.</p>
+
+              <h4 class="meth-h4">Per-slot baseline</h4>
+              <p class="meth-p">For each zone <code>Z</code> and each 15-min slot <code>s</code> (00:00, 00:15, … 23:45), we collect the prices of that slot across the last <code>N</code> days (7D / 1M / 3M / 6M / YTD / 1Y, default 1M):</p>
+              <pre class="meth-code">prices_s = [p₁, p₂, ..., p_N]</pre>
+
+              <p class="meth-p">We then compute the per-slot median and per-slot robust sigma:</p>
+              <pre class="meth-code">median_s = P50(prices_s)
+σ_s      = (P75(prices_s) − P25(prices_s)) / 1.349</pre>
+
+              <h4 class="meth-h4">Why a robust sigma</h4>
+              <p class="meth-p">A classical standard deviation squares each residual, so a single price spike (+500 €/MWh during a tight supply event) or a deep negative print (−50 €/MWh during solar surplus) inflates σ disproportionately. After two or three such events in a 30-day window, a "tense but normal" day looks calm (Z ≈ 0.5σ) when it shouldn't.</p>
+              <p class="meth-p">The interquartile range (IQR = P75 − P25) ignores anything outside the central 50 % of the distribution. Dividing by 1.349 makes the result numerically identical to a classical sigma when the distribution is normal — so the familiar thresholds (|Z| &gt; 2 = anomaly, |Z| &gt; 3 = extreme) still apply. It just stays stable when distributions have fat tails, which is the rule for power prices.</p>
+
+              <h4 class="meth-h4">Z-score</h4>
+              <pre class="meth-code">Z_s = (today_s − median_s) / σ_s</pre>
+              <p class="meth-p">For today's price at slot <code>s</code>, <code>Z_s</code> tells how many robust standard deviations away from the historical median this price is.</p>
+
+              <h4 class="meth-h4">Threshold conventions</h4>
+              <table class="meth-table">
+                <thead><tr><th>|Z|</th><th>Interpretation</th><th>Visual flag</th></tr></thead>
+                <tbody>
+                  <tr><td>&lt; 1</td><td>Within the typical band</td><td>—</td></tr>
+                  <tr><td>1 → 2</td><td>Above normal variability</td><td>—</td></tr>
+                  <tr><td>2 → 3</td><td>Statistical anomaly</td><td>Row highlighted</td></tr>
+                  <tr><td>&gt; 3</td><td>Extreme outlier</td><td>Row highlighted, mentioned in Market Read</td></tr>
+                </tbody>
+              </table>
+
+              <h4 class="meth-h4">Per-day Z-score (for the table column "Z")</h4>
+              <p class="meth-p">The table reports a single per-day Z aggregating the 96 per-slot Z values for that zone — taken as the mean of <code>Z_s</code> over all valid slots. This gives a one-number summary of how far the whole day deviates from its baseline.</p>
+
+              <h4 class="meth-h4">Worked example</h4>
+              <p class="meth-p">Slot 12:00, last 30 days: 28 values between €30 and €70, plus two outliers (−€20 and €180).</p>
+              <ul class="meth-list">
+                <li><code>median_s</code> = 50 €/MWh</li>
+                <li>Classical σ = 45 €/MWh (dominated by the two outliers)</li>
+                <li>Robust σ via IQR/1.349 = 12 €/MWh</li>
+                <li>If today's 12:00 print is 75 €/MWh:
+                  <ul>
+                    <li>Classical Z = (75 − 50) / 45 = 0.55 → "looks fine"</li>
+                    <li>Robust Z = (75 − 50) / 12 = 2.08 → flagged as anomaly</li>
+                  </ul>
+                </li>
+              </ul>
+              <p class="meth-p">The robust score is the one we trust here, because 75 €/MWh at midday is genuinely unusual relative to the typical solar-driven regime.</p>
+            </div>
+
+            <div id="meth-30dpos" class="meth-block">
+              <h3 class="meth-h3">Cross-zone Bands · 30D position column</h3>
+              <p class="meth-tag">Used in: <strong>Prices &gt; Day-Ahead &gt; Daily &gt; Cross-zone analysis &gt; Bands data table</strong>.</p>
+
+              <p class="meth-p">The "30D position" column shows each zone's today value placed inside the distribution of its last N days (matching the chart period selector). The visual is a compact horizontal boxplot:</p>
+              <ul class="meth-list">
+                <li>Thin whiskers extend from the minimum to the maximum observed</li>
+                <li>The blue box marks the interquartile range (P25 to P75 — the central 50 % of days)</li>
+                <li>The vertical tick inside the box is the median (P50)</li>
+                <li>The coloured bullet is today's price</li>
+              </ul>
+              <p class="meth-p">A bullet sitting inside the box is "in line"; one against a whisker tip means today is at or beyond the 30-day extreme. The companion "Pctile" column gives the same information as a percentile rank (P10 = bottom decile, P50 = median, P90 = top decile).</p>
+            </div>
+
+            <div id="meth-drill" class="meth-block">
+              <h3 class="meth-h3">Drill-down · historical envelope</h3>
+              <p class="meth-tag">Used in: <strong>Prices &gt; Day-Ahead &gt; Daily &gt; Day-Ahead board &gt; row drill-down &gt; Band selector</strong>.</p>
+              <p class="meth-p">The same per-slot distribution is computed for the single drilled-down zone, then plotted as three overlays on the intraday chart:</p>
+              <ul class="meth-list">
+                <li><strong>Range 0-100 %</strong> — light fill spanning P0 to P100 (the full historical range slot by slot)</li>
+                <li><strong>Typical 10-90 %</strong> — stronger fill spanning P10 to P90 (the typical band)</li>
+                <li><strong>Median</strong> — dashed line at P50</li>
+              </ul>
+              <p class="meth-p">Today's curve sitting outside the Typical 10-90 % band means the day deviates from its recent baseline at that slot. The "Today vs band" sentence in the Market Read banner reports the day-level percentile, the value vs median, and the slot with the largest divergence.</p>
+            </div>
+          </section>
+
+          <section id="meth-genmix" class="meth-section">
+            <h2 class="meth-h2">GenMix</h2>
+            <p class="meth-tag-pending">Documentation in progress.</p>
+          </section>
+
+          <section id="meth-cb" class="meth-section">
+            <h2 class="meth-h2">Cross-border</h2>
+            <p class="meth-tag-pending">Documentation in progress.</p>
+          </section>
+
+          <section id="meth-eua" class="meth-section">
+            <h2 class="meth-h2">EUA &amp; GO</h2>
+            <p class="meth-tag-pending">Documentation in progress.</p>
+          </section>
+
+          <section id="meth-general" class="meth-section">
+            <h2 class="meth-h2">General terms</h2>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Auction date vs delivery date</h3>
+              <p class="meth-p">Day-Ahead prices are auctioned the day <em>before</em> delivery (the EPEX/Nord Pool auction closes at 12:00 CET on day D-1 for delivery on day D). Throughout PowerKlock, dates refer to the <strong>delivery date</strong> by default. Historical CSV filenames in <code>data/history/daily/</code> use the auction date by convention.</p>
+            </div>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Peak / Off-peak</h3>
+              <p class="meth-p">European convention used here: peak = 08:00-20:00 (12 hours), off-peak = 00:00-08:00 + 20:00-24:00 (12 hours). Peak/Off-pk ratio &lt; 1 is an "inverted profile" (often driven by midday solar saturating the market). A baseline value around 1.30x means peak is roughly 30 % more expensive than off-peak.</p>
+            </div>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">J-1, J, J+1</h3>
+              <p class="meth-p">French market shorthand. J = today (the displayed delivery day). J-1 = the previous delivery day. J+1 = tomorrow. In the chart legends, J-1 appears as the day-name (e.g. "Wed 20 May") of the previous delivery day.</p>
+            </div>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Time zone</h3>
+              <p class="meth-p">All times are CET / CEST as published by ENTSO-E Transparency. Slot times in the breakdown table (00:00, 00:15, …) are local delivery-time clock readings, with daylight-saving transitions handled by the source data.</p>
+            </div>
+          </section>
+        </article>
       </div>
     </div>
 
