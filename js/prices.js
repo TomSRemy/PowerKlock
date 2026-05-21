@@ -1610,49 +1610,8 @@ function buildHourlyDetail(idx, z) {
         <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
     </div>
-    ${(() => {
-      // Build the full Market Read banner — combines: avg + J-1 delta, profile shape, negative episodes, peakRatio.
-      // Band-related stats (P50 percentile, vs median) get appended dynamically by _loadAndApplyRowBand.
-      const today = z.today != null ? z.today : null;
-      // J-1 avg from z.hourlyYday if available
-      let j1Avg = null;
-      if (z.hourlyYday && z.hourlyYday.length) {
-        const valid = z.hourlyYday.filter(v => v != null);
-        if (valid.length) j1Avg = valid.reduce((a,b)=>a+b,0)/valid.length;
-      }
-      const delta = (today != null && j1Avg != null) ? today - j1Avg : null;
-      const deltaPct = (delta != null && j1Avg && j1Avg !== 0) ? (delta / Math.abs(j1Avg)) * 100 : null;
-      const deltaCol = delta == null ? 'var(--tx2)' : delta > 0.5 ? '#ED6965' : delta < -0.5 ? '#14D3A9' : 'var(--tx2)';
-      const sign = v => v >= 0 ? '+' : '';
-
-      // Parts of the sentence
-      const parts = [];
-      if (today != null) {
-        let s = `Day printed at <strong style="color:var(--tx)">${today.toFixed(2)} €/MWh</strong>`;
-        if (delta != null) {
-          s += `, <span style="color:${deltaCol};font-weight:600">${sign(delta)}${delta.toFixed(2)} €/MWh</span> vs J-1`;
-          if (deltaPct != null) s += ` <span style="color:${deltaCol};opacity:.7">(${sign(deltaPct)}${deltaPct.toFixed(1)}%)</span>`;
-        }
-        parts.push(s);
-      }
-      // Profile shape
-      if (peakRatio != null) {
-        if (peakRatio < 1.0) {
-          parts.push(`<span style="color:#FBBF24">flat/inverted profile</span> (peak/off-pk ${peakRatio.toFixed(2)}x vs 1.30x baseline)`);
-        } else if (peakRatio < 1.20) {
-          parts.push(`<span style="color:#14D3A9">flatter than normal</span> (peak/off-pk ${peakRatio.toFixed(2)}x)`);
-        } else if (peakRatio > 1.6) {
-          parts.push(`<span style="color:#FBBF24">peakier than normal</span> (peak/off-pk ${peakRatio.toFixed(2)}x)`);
-        }
-      }
-      // Negative episode
-      if (negTotalMin > 0) {
-        parts.push(`<span style="color:#ED6965;font-weight:600">negative-price episode</span> ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} below zero, min ${negMin.toFixed(2)} €/MWh`);
-      }
-      const sentence = parts.join('. ') + (parts.length ? '.' : '');
-      if (!sentence) return '';
-      return `<div id="row-market-read-${idx}" style="font-size:11.5px;color:#FBBF24;margin-top:2px;margin-bottom:8px;padding:9px 14px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:0 4px 4px 0;line-height:1.55"><strong style="font-weight:600;letter-spacing:.04em">◈ MARKET READ ·</strong> ${sentence}<span class="row-market-read-band" id="row-market-read-band-${idx}"></span></div>`;
-    })()}
+    <!-- Market Read banner moved BELOW the chart for visual parity with Historical drill-down.
+         Populated after innerHTML by _buildAnalystBanner('dailyDrill', …). -->
     <div style="position:relative;height:260px;margin-bottom:4px">
       <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
     </div>
@@ -1660,6 +1619,8 @@ function buildHourlyDetail(idx, z) {
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
+    <!-- Market Read banner anchor · populated post-innerHTML to keep 2-line layout parity with Historical -->
+    <div id="row-analyst-banner-${idx}"></div>
     <!-- Band stats line · populated when the band selector is active -->
     <div id="row-band-stats-${idx}" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.15);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.6"></div>
     <details style="margin-top:4px">
@@ -1741,6 +1702,37 @@ function buildHourlyDetail(idx, z) {
       </div>
     </details>
   `;
+
+  // ── Populate the Market Read banner (below the chart, 2-line layout, mirrors Historical drill-down) ──
+  // Uses the shared _buildAnalystBanner('dailyDrill', …) defined in hist.js.
+  // The band-stats sentence (P50 / vs median) is later injected by _loadAndApplyRowBand
+  // into the #row-market-read-band-${idx} span that lives inside the verdict block.
+  (function _renderDrillBanner() {
+    const host = document.getElementById(`row-analyst-banner-${idx}`);
+    if (!host || typeof window._buildAnalystBanner !== 'function') return;
+    // J-1 average from z.hourlyYday if available
+    const todayVal = (z.today != null) ? z.today : null;
+    let j1Avg = null;
+    if (z.hourlyYday && z.hourlyYday.length) {
+      const valid = z.hourlyYday.filter(v => v != null);
+      if (valid.length) j1Avg = valid.reduce((a,b)=>a+b,0)/valid.length;
+    }
+    const delta = (todayVal != null && j1Avg != null) ? todayVal - j1Avg : null;
+    const deltaPct = (delta != null && j1Avg && j1Avg !== 0) ? (delta / Math.abs(j1Avg)) * 100 : null;
+    const html = window._buildAnalystBanner('dailyDrill', {
+      zone: z.code,
+      dayLabel: ccFmtDay(window._currentPriceDate),
+      today: todayVal,
+      j1Avg, delta, deltaPct,
+      peakAvg, offPkAvg, peakRatio,
+      min: minV, max: maxV,
+      minSlot: minSlotLabel, maxSlot: maxSlotLabel,
+      negHours, negMins, negMin,
+      negSlots: negSlotsRaw.length,
+      bandIdSuffix: idx,
+    });
+    host.innerHTML = html || '';
+  })();
 
   // Color — defined early so it can be used in KPI cards AND chart
   // Render chart — use full 15-min data (chartData, negFraction, col defined above)
