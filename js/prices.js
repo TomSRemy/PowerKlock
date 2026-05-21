@@ -1926,6 +1926,95 @@ function _removeBandDatasets(chart) {
   });
 }
 
+// ════════════════════════════════════════════
+// fetchHistoricalEnvelopeP — fetches per-zone historical envelope
+// (P0/P10/P50/P90/P100) over the last nDays. Resampled to nPts.
+// Extracted from the legacy globals.js (which isn't loaded as a script).
+// Cached on window._envelopePCache to avoid re-fetching the same window.
+// ════════════════════════════════════════════
+async function fetchHistoricalEnvelopeP(code, nDays, nPts) {
+  const cacheKey = `${code}|${nDays}|${nPts}`;
+  window._envelopePCache = window._envelopePCache || {};
+  if (window._envelopePCache[cacheKey]) return window._envelopePCache[cacheKey];
+
+  const today = new Date();
+  const dates = [];
+  if (nDays === -1) {
+    // YTD: every day of current year before today
+    const yr = today.getFullYear();
+    for (let i = 1; i <= 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (d.getFullYear() === yr) dates.push(d.toISOString().slice(0,10));
+    }
+  } else {
+    // Sliding window of nDays (0 → 5y cap)
+    const limit = nDays === 0 ? 5 * 365 : nDays;
+    for (let i = 1; i <= limit; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().slice(0,10));
+    }
+  }
+
+  const all = [];
+  await Promise.all(dates.map(async (dt) => {
+    try {
+      const r = await fetch(`data/history/daily/${dt}.json`);
+      if (!r.ok) return;
+      const j = await r.json();
+      let z = null;
+      if (j.zones && j.zones[code]) z = j.zones[code];
+      else if (Array.isArray(j.zones)) z = j.zones.find(x => x.code === code);
+      if (!z) return;
+      const h = z.hourly || z.h;
+      if (!Array.isArray(h) || !h.length) return;
+      // Resample to the requested nPts using bucket-mean
+      const ratio = h.length / nPts;
+      const resampled = [];
+      for (let i = 0; i < nPts; i++) {
+        const start = Math.floor(i * ratio);
+        const end = Math.max(start + 1, Math.floor((i+1) * ratio));
+        const slice = h.slice(start, end).filter(v => v != null);
+        resampled.push(slice.length ? slice.reduce((a,b)=>a+b,0) / slice.length : null);
+      }
+      all.push(resampled);
+    } catch (e) { /* silent — 404 on dates with no data is expected */ }
+  }));
+
+  if (!all.length) {
+    console.warn(`[fetchHistoricalEnvelopeP] no data found for ${code} over ${nDays}d (cache key ${cacheKey})`);
+    return null;
+  }
+  console.log(`[fetchHistoricalEnvelopeP] ${code}: aggregated ${all.length}/${dates.length} days`);
+
+  // Linear interpolation percentile
+  const _pct = (sortedArr, p) => {
+    if (!sortedArr.length) return null;
+    if (sortedArr.length === 1) return sortedArr[0];
+    const rank = p * (sortedArr.length - 1);
+    const lo = Math.floor(rank), hi = Math.ceil(rank);
+    if (lo === hi) return sortedArr[lo];
+    return sortedArr[lo] + (sortedArr[hi] - sortedArr[lo]) * (rank - lo);
+  };
+
+  const p0 = [], p10 = [], p50 = [], p90 = [], p100 = [];
+  for (let i = 0; i < nPts; i++) {
+    const vals = all.map(arr => arr[i]).filter(v => v != null).sort((a,b)=>a-b);
+    if (!vals.length) { p0.push(null); p10.push(null); p50.push(null); p90.push(null); p100.push(null); continue; }
+    p0.push(vals[0]);
+    p10.push(_pct(vals, 0.10));
+    p50.push(_pct(vals, 0.50));
+    p90.push(_pct(vals, 0.90));
+    p100.push(vals[vals.length - 1]);
+  }
+
+  const result = { p0, p10, p50, p90, p100, n: all.length };
+  window._envelopePCache[cacheKey] = result;
+  return result;
+}
+window.fetchHistoricalEnvelopeP = fetchHistoricalEnvelopeP;
+
 async function _loadAndApplyRowBand(idx, z) {
   window._drillBandWindow = window._drillBandWindow || {};
   const cur = window._drillBandWindow[idx] || 'off';
