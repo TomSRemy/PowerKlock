@@ -942,6 +942,44 @@
   .hist-section-body.open {
     display: block;
   }
+
+  /* ── Strong section variant — used to clearly separate the
+       2 distinct analytic blocks inside Daily and Historical tabs
+       (Day-Ahead board vs. Cross-zone analysis). Keeps regular
+       .hist-section behaviour everywhere else untouched. ── */
+  .hist-section-strong {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    margin-top: 32px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .hist-section-strong:first-of-type { margin-top: 18px; }
+  .hist-section-strong .hist-section-header {
+    background: linear-gradient(180deg, rgba(20,211,169,0.04) 0%, transparent 100%);
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .hist-section-strong .hist-section-title {
+    gap: 10px;
+    font-size: 12px;
+  }
+  .hist-section-strong .hist-section-body { padding: 18px; }
+  .hist-section-eyebrow {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px; height: 18px;
+    padding: 0 6px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    border: 1px solid var(--accent-dim-strong);
+  }
+
   .hist-zone-select {
     background: var(--bg3); border: 1px solid var(--border2);
     color: var(--text2); font-size: 11px; padding: 0 8px;
@@ -2199,7 +2237,7 @@
           <h2 style="font-size:18px;font-weight:600;color:var(--tx);letter-spacing:.02em;margin:0">Day-Ahead · Daily</h2>
           <span id="pr-daily-page-meta" style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;letter-spacing:.02em">--</span>
         </div>
-<div class="hist-section" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Day-Ahead prices board<span id="pr-daily-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span></div>
+<div class="hist-section hist-section-strong" id="hs-prices-main"><div class="hist-section-header open"><div class="hist-section-title"><span class="hist-section-eyebrow">01</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Day-Ahead board<span id="pr-daily-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span></div>
 <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open" id="hs-body-prices-main">
         <!-- KPI Strip -->
       <div class="kpi-strip" id="kpi-strip">
@@ -2308,9 +2346,10 @@
         </div><!-- /hist-section-body of hs-prices-main -->
         </div><!-- /hist-section #hs-prices-main -->
 
-        <div class="hist-section" id="hs-cc-main" style="margin-top:40px">
+        <div class="hist-section hist-section-strong" id="hs-cc-main">
           <div class="hist-section-header open">
             <div class="hist-section-title">
+              <span class="hist-section-eyebrow">02</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
               Cross-zone analysis
               <span id="compare-zones-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
@@ -2403,11 +2442,12 @@
 <!-- ════════════════════════════════════════════════════════
      BLOCK 1 · MULTI-ZONE OVERVIEW TABLE (style Daily DA)
      ════════════════════════════════════════════════════════ -->
-<div class="hist-section" id="hs-ho-main">
+<div class="hist-section hist-section-strong" id="hs-ho-main">
   <div class="hist-section-header open">
     <div class="hist-section-title">
+      <span class="hist-section-eyebrow">01</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-      Day-Ahead prices board over <span id="pr-hist-period-label-h">--</span>
+      Day-Ahead board over <span id="pr-hist-period-label-h">--</span>
       <span id="pr-hist-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
     </div>
     <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2497,9 +2537,10 @@
      BLOCK 3 · MULTI ZONE · Compare (insta tabs)
      Lines · Heatmap · Profile · Bands · Spread
      ════════════════════════════════════════════════════════ -->
-<div class="hist-section" id="hs-hmz-main" style="margin-top:40px">
+<div class="hist-section hist-section-strong" id="hs-hmz-main">
   <div class="hist-section-header open">
     <div class="hist-section-title">
+      <span class="hist-section-eyebrow">02</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Cross-zone analysis over <span id="pr-hmz-period-label">--</span>
       <span id="hmz-period" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
