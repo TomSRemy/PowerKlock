@@ -10,9 +10,9 @@ function pkUpdateHistPeriodLabels(w) {
     const el = document.getElementById(id);
     if (el) el.textContent = txt;
   });
-  // Update page meta with explicit period
+  // Update page meta with explicit period (mirrors Daily format: "<period> · ENTSO-E")
   const pageMeta = document.getElementById('pr-hist-page-meta');
-  if (pageMeta) pageMeta.innerHTML = 'over <span id="pr-hist-period-label">' + txt + '</span>';
+  if (pageMeta) pageMeta.innerHTML = 'over <span id="pr-hist-period-label">' + txt + '</span> · ENTSO-E';
 }
 window.pkUpdateHistPeriodLabels = pkUpdateHistPeriodLabels;
 
