@@ -1610,7 +1610,49 @@ function buildHourlyDetail(idx, z) {
         <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
     </div>
-    ${negTotalMin > 0 ? `<div style="font-size:11px;color:#FBBF24;margin-top:2px;margin-bottom:8px;padding:6px 10px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:0 4px 4px 0"><strong style="font-weight:600">◈ MARKET READ ·</strong> Negative-price episode: ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} below zero · min ${negMin.toFixed(2)} €/MWh</div>` : ''}
+    ${(() => {
+      // Build the full Market Read banner — combines: avg + J-1 delta, profile shape, negative episodes, peakRatio.
+      // Band-related stats (P50 percentile, vs median) get appended dynamically by _loadAndApplyRowBand.
+      const today = z.today != null ? z.today : null;
+      // J-1 avg from z.hourlyYday if available
+      let j1Avg = null;
+      if (z.hourlyYday && z.hourlyYday.length) {
+        const valid = z.hourlyYday.filter(v => v != null);
+        if (valid.length) j1Avg = valid.reduce((a,b)=>a+b,0)/valid.length;
+      }
+      const delta = (today != null && j1Avg != null) ? today - j1Avg : null;
+      const deltaPct = (delta != null && j1Avg && j1Avg !== 0) ? (delta / Math.abs(j1Avg)) * 100 : null;
+      const deltaCol = delta == null ? 'var(--tx2)' : delta > 0.5 ? '#ED6965' : delta < -0.5 ? '#14D3A9' : 'var(--tx2)';
+      const sign = v => v >= 0 ? '+' : '';
+
+      // Parts of the sentence
+      const parts = [];
+      if (today != null) {
+        let s = `Day printed at <strong style="color:var(--tx)">${today.toFixed(2)} €/MWh</strong>`;
+        if (delta != null) {
+          s += `, <span style="color:${deltaCol};font-weight:600">${sign(delta)}${delta.toFixed(2)} €/MWh</span> vs J-1`;
+          if (deltaPct != null) s += ` <span style="color:${deltaCol};opacity:.7">(${sign(deltaPct)}${deltaPct.toFixed(1)}%)</span>`;
+        }
+        parts.push(s);
+      }
+      // Profile shape
+      if (peakRatio != null) {
+        if (peakRatio < 1.0) {
+          parts.push(`<span style="color:#FBBF24">flat/inverted profile</span> (peak/off-pk ${peakRatio.toFixed(2)}x vs 1.30x baseline)`);
+        } else if (peakRatio < 1.20) {
+          parts.push(`<span style="color:#14D3A9">flatter than normal</span> (peak/off-pk ${peakRatio.toFixed(2)}x)`);
+        } else if (peakRatio > 1.6) {
+          parts.push(`<span style="color:#FBBF24">peakier than normal</span> (peak/off-pk ${peakRatio.toFixed(2)}x)`);
+        }
+      }
+      // Negative episode
+      if (negTotalMin > 0) {
+        parts.push(`<span style="color:#ED6965;font-weight:600">negative-price episode</span> ${negHours}h${negMins > 0 ? String(negMins).padStart(2,'0') : ''} below zero, min ${negMin.toFixed(2)} €/MWh`);
+      }
+      const sentence = parts.join('. ') + (parts.length ? '.' : '');
+      if (!sentence) return '';
+      return `<div id="row-market-read-${idx}" style="font-size:11.5px;color:#FBBF24;margin-top:2px;margin-bottom:8px;padding:9px 14px;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;border-radius:0 4px 4px 0;line-height:1.55"><strong style="font-weight:600;letter-spacing:.04em">◈ MARKET READ ·</strong> ${sentence}<span class="row-market-read-band" id="row-market-read-band-${idx}"></span></div>`;
+    })()}
     <div style="position:relative;height:260px;margin-bottom:4px">
       <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
     </div>
@@ -2048,6 +2090,20 @@ function _updateBreakdownBandStats(idx, z, env, periodLabel) {
     <span style="color:var(--tx3)"> · Max divergence </span><span style="color:${divCol};font-weight:600">${maxDiv != null ? sign(maxDiv)+maxDiv.toFixed(2) : '--'}</span>${maxDivSlot != null ? ` <span style="color:var(--tx3);font-size:9px">@${slotToHour(maxDivSlot)}</span>` : ''}
   `;
   host.style.display = 'block';
+
+  // Extend Market Read banner with a "vs band" sentence
+  const banderSpan = document.getElementById(`row-market-read-band-${idx}`);
+  if (banderSpan) {
+    if (todayPercentile != null && todayVsMedian != null) {
+      let qualifier;
+      if (todayPercentile >= 80) qualifier = `<span style="color:#ED6965;font-weight:600">expensive</span>`;
+      else if (todayPercentile <= 20) qualifier = `<span style="color:#14D3A9;font-weight:600">cheap</span>`;
+      else qualifier = `<span style="color:var(--tx)">in line</span>`;
+      banderSpan.innerHTML = ` Day sits at <span style="color:${pctCol};font-weight:600">P${todayPercentile.toFixed(0)}</span> vs ${periodLabel} history — ${qualifier} with <span style="color:${vsMedCol};font-weight:600">${sign(todayVsMedian)}${todayVsMedian.toFixed(2)} €/MWh</span> vs ${periodLabel} median.`;
+    } else {
+      banderSpan.innerHTML = '';
+    }
+  }
 }
 
 function _clearBreakdownBandStats(idx) {
@@ -2056,6 +2112,9 @@ function _clearBreakdownBandStats(idx) {
     host.innerHTML = '';
     host.style.display = 'none';
   }
+  // Also clear the "vs band" sentence in the Market Read banner
+  const banderSpan = document.getElementById(`row-market-read-band-${idx}`);
+  if (banderSpan) banderSpan.innerHTML = '';
 }
 
 // Show / update the P50 + vs P50 columns in the breakdown table for a given row idx.
