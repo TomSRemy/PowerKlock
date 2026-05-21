@@ -2589,6 +2589,9 @@ function setCCView(view) {
   const heat   = document.getElementById('cc-heatmap');
   if (canvas) canvas.style.display = view === 'heatmap' ? 'none' : 'block';
   if (heat)   heat.style.display   = view === 'heatmap' ? 'block' : 'none';
+  // Shading legend is meaningful only for intraday-profile views (Lines / Profile / Bands / Spread)
+  const shadeLegend = document.getElementById('cc-shading-legend');
+  if (shadeLegend) shadeLegend.style.display = view === 'heatmap' ? 'none' : 'flex';
   renderCompareChart();
 }
 window.setCCView = setCCView;
