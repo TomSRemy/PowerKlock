@@ -2060,9 +2060,17 @@ function renderCompareChart() {
   const selected = window._compareZones || new Set(['FR']);
   const view = window._ccView || 'lines';
 
-  // Update the date label next to the section title
+  // Update the date label next to the section title — long format to mirror DA Board meta
   const dateLbl = document.getElementById('compare-zones-date');
-  if (dateLbl) dateLbl.textContent = ccFmtDay(window._currentPriceDate);
+  if (dateLbl) {
+    const iso = window._currentPriceDate;
+    if (iso) {
+      const [y, m, d] = iso.split('-').map(Number);
+      dateLbl.textContent = new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    } else {
+      dateLbl.textContent = ccFmtDay(iso);
+    }
+  }
 
   populateSpreadRefSelect(data, selected);
 
