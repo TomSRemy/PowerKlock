@@ -790,3 +790,45 @@ function _pkDimColour(col, alpha) {
   }
   return col;
 }
+
+// ════════════════════════════════════════════════════════════════════
+// pkPill — standard rounded-pill toggle button (14px radius, teal accent)
+//
+// Used for view-mode toggles inside sub-sections (HMZ Spread mode,
+// HMZ Heatmap granularity, and any future similar control). Visually
+// aligned with the dashboard's dominant pill pattern (Window pills,
+// YoY submenu, CC Bands period, etc).
+//
+// Usage:
+//   pkPill({
+//     label: 'vs Ref',
+//     active: true,
+//     onClick: "setHmzSpreadMode('vsRef')",   // string for inline onclick=
+//     dataAttr: 'data-hmz-sm="vsRef"',         // optional extra attrs
+//   })
+//
+// Returns the raw HTML string of a <button>.
+// ════════════════════════════════════════════════════════════════════
+window.pkPill = function(opts) {
+  const label    = opts.label ?? '';
+  const active   = !!opts.active;
+  const onClick  = opts.onClick ?? '';
+  const dataAttr = opts.dataAttr ?? '';
+  const title    = opts.title ? ` title="${opts.title}"` : '';
+
+  const css = [
+    'padding:4px 11px',
+    'font-size:10px',
+    'border-radius:14px',
+    "font-family:'JetBrains Mono', monospace",
+    'font-weight:600',
+    'letter-spacing:.02em',
+    'cursor:pointer',
+    'transition:all .15s',
+    active
+      ? 'background:rgba(20,211,169,0.18);color:#14D3A9;border:1px solid rgba(20,211,169,0.45)'
+      : 'background:transparent;color:var(--tx3);border:1px solid var(--bd)',
+  ].join(';');
+
+  return `<button ${dataAttr} onclick="${onClick}"${title} style="${css}">${label}</button>`;
+};
