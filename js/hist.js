@@ -369,12 +369,12 @@ function mkHistChart(canvasId, config) {
 // reads them as literal strings and falls back to black. Always pass actual
 // hex/rgba values to Chart.js plugin options (title.color, ticks.color, …).
 var _HIST_TEXT = '#E1ECF7';  // main text (titles)
-var _HIST_TX2  = '#94A8BD';  // secondary text (subtitles, axis titles)
-var _HIST_TX3  = '#4A6280';  // tertiary text (axis ticks, faint legend)
+var _HIST_TX2  = '#B8C9D9';  // secondary text (subtitles, axis titles) · aligned with Daily C_TX2
+var _HIST_TX3  = '#4A6280';  // tertiary text (axis ticks, faint legend) — overridden by data.js to '#7A93AB' via CSS var --text3
 var _HIST_ACC  = '#14D3A9';
 var _HIST_WARN = '#EE9B00';
-var _HIST_DN   = '#ef4444';
-var _HIST_UP   = '#22c55e';
+var _HIST_DN   = '#ED6965';  // aligned with Daily C_DN (brand coral instead of generic red)
+var _HIST_UP   = '#14D3A9';  // aligned with Daily C_UP / C_ACC (brand teal instead of generic green)
 var _HIST_GRID = 'rgba(255,255,255,0.04)';
 
 function baseOptions(yLabel) {
