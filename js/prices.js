@@ -2691,6 +2691,90 @@ function ccZeroLineAnnotation() {
 // ────────────────────────────────────────────
 // Router
 // ────────────────────────────────────────────
+// ─── Cross-zone title block (eyebrow / title / subtitle) ────────────────────
+// Populates the inline title block (#cc-title-block) and, if the Cross-zone
+// fullscreen is open, also re-injects the same block at the top of the FS
+// graph zone. Called whenever the view, zone selection, or spread ref changes.
+function _ccSetTitle(view, opts) {
+  opts = opts || {};
+  const selected = window._compareZones || new Set(['FR']);
+  const zonesCount = selected.size;
+  const refCode = window._ccSpreadRef || 'FR';
+  const dateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const longDate = (function(){
+    try {
+      const [y,m,d] = dateISO.split('-').map(Number);
+      return new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+    } catch(_) { return dateISO; }
+  })();
+  const bandsPeriod = window._ccBandsPeriod || '1M';
+
+  const titles = {
+    lines: {
+      eyebrow: `Cross-zone · Lines · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title: '15-min intraday curves overlaid',
+      subtitle: `${longDate} · compare price shapes across zones · ENTSO-E`,
+    },
+    heatmap: {
+      eyebrow: `Cross-zone · Heatmap · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title: 'Price intensity by zone × slot',
+      subtitle: `${longDate} · colour scale shared across zones · ENTSO-E`,
+    },
+    profile: {
+      eyebrow: `Cross-zone · Profile · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title: 'Normalised intraday shape',
+      subtitle: `${longDate} · each curve as % of its own daily average · ENTSO-E`,
+    },
+    bands: {
+      eyebrow: `Cross-zone · Bands · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title: `Today vs ${bandsPeriod} historical distribution`,
+      subtitle: `${longDate} · P10–P90 envelope · robust Z-score (IQR/1.349) · ENTSO-E`,
+    },
+    spread: {
+      eyebrow: `Cross-zone · Spread · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} vs ${refCode}`,
+      title: `Price differential vs ${refCode}`,
+      subtitle: `${longDate} · hourly spread (zone − ${refCode}) in €/MWh · ENTSO-E`,
+    },
+  };
+  const t = titles[view] || titles.lines;
+
+  // Populate inline block
+  const ey = document.getElementById('cc-eyebrow');
+  const ti = document.getElementById('cc-title');
+  const su = document.getElementById('cc-subtitle');
+  if (ey) ey.textContent = t.eyebrow;
+  if (ti) ti.textContent = t.title;
+  if (su) su.textContent = t.subtitle;
+
+  // Mirror into the fullscreen graph zone if open
+  const fsOverlay = document.getElementById('pk-fs-overlay');
+  if (fsOverlay) {
+    let fsBlock = document.getElementById('cc-fs-title-block');
+    if (!fsBlock) {
+      // Insert before the chart wrap (after filters)
+      const graphZone = fsOverlay.querySelector('.pk-fs-graph-zone');
+      const chartWrap = fsOverlay.querySelector('.pk-fs-chart-wrap');
+      if (graphZone && chartWrap) {
+        fsBlock = document.createElement('div');
+        fsBlock.id = 'cc-fs-title-block';
+        fsBlock.style.cssText = 'margin:6px 0 10px;flex-shrink:0';
+        fsBlock.innerHTML = `
+          <div id="cc-fs-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
+          <div id="cc-fs-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
+          <div id="cc-fs-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>`;
+        graphZone.insertBefore(fsBlock, chartWrap);
+      }
+    }
+    const fsEy = document.getElementById('cc-fs-eyebrow');
+    const fsTi = document.getElementById('cc-fs-title');
+    const fsSu = document.getElementById('cc-fs-subtitle');
+    if (fsEy) fsEy.textContent = t.eyebrow;
+    if (fsTi) fsTi.textContent = t.title;
+    if (fsSu) fsSu.textContent = t.subtitle;
+  }
+}
+window._ccSetTitle = _ccSetTitle;
+
 function renderCompareChart() {
   const data = window._pricesSorted;
   if (!data || !data.length) return;
@@ -2722,6 +2806,8 @@ function renderCompareChart() {
 
   // Refresh the data table below the chart
   renderCompareKPIs(data, selected);
+  // Update the title block above the chart
+  _ccSetTitle(view);
   // Generate analysis banner for current view
   setTimeout(() => {
     // Native fullscreen replaced by the unified pkOpenFullscreen — see ccOpenFullscreen().
@@ -3140,6 +3226,11 @@ function ccOpenFullscreen() {
     },
     onCSV: () => buildCCCSV(view, data, selected),
   });
+
+  // Inject the title block (eyebrow + title + subtitle) at the top of the FS
+  // graph zone, then populate it via _ccSetTitle which also keeps the inline
+  // and FS blocks in sync.
+  setTimeout(() => _ccSetTitle(view), 30);
 }
 window.ccOpenFullscreen = ccOpenFullscreen;
 
