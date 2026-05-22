@@ -1273,6 +1273,22 @@ document.addEventListener('zones-changed', () => {
   if (typeof renderHistMulti === 'function') renderHistMulti();
   // Update zone labels
   updateZoneLabels();
+  // If Historical FS (HSZ single zone) is open, refresh so its zone dropdown
+  // reflects the new user selection.
+  if (_hoFsIsOpen()) {
+    const fsZone = window._HO_LAST_ZONE;
+    const series = window._HO_LAST_SERIES;
+    if (fsZone && series && typeof _openHoFullscreen === 'function') {
+      requestAnimationFrame(() => _openHoFullscreen(fsZone));
+    }
+  }
+  // If HMZ FS (cross-zone) is open, refresh so its Spread ref chips reflect
+  // the new user selection (in case the baseline zone was removed).
+  if (typeof _hmzFsIsOpen === 'function' && _hmzFsIsOpen()) {
+    if (typeof hmzRefreshFullscreen === 'function') {
+      requestAnimationFrame(() => hmzRefreshFullscreen());
+    }
+  }
 });
 
 function updateZoneLabels() {
@@ -3543,8 +3559,18 @@ function _openHoFullscreen(zone) {
   }).join('');
 
   // ─── Zone selector (dropdown) ──────────────────────────────────────────
-  // Lists every zone for which we have history loaded. _HO_NAMES holds all.
-  const zonesList = Object.keys(_HO_NAMES).sort();
+  // Limit to zones the user has selected on the page (matches the chart).
+  // Falls back to the full catalogue if the selection is empty (defensive,
+  // should never happen on a freshly loaded page).
+  const userSelected = (typeof getUserZones === 'function') ? getUserZones() : [];
+  const availableZones = userSelected.length
+    ? userSelected.filter(z => _HO_NAMES[z])
+    : Object.keys(_HO_NAMES);
+  // Ensure the currently-open zone is in the list (might have been added
+  // before the user pruned the selection on the page).
+  const zonesList = availableZones.includes(zone)
+    ? availableZones.slice().sort()
+    : [zone, ...availableZones].slice().sort();
   const zoneOptions = zonesList.map(z => {
     const f = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
     const n = _HO_NAMES[z] || z;
@@ -9233,8 +9259,17 @@ function hmzOpenFullscreen() {
   const viewTitle = {
     lines:'Lines', heatmap:'Heatmap', profile:'Profile', bands:'Bands', spread:'Spread'
   }[view] || 'Lines';
-  const selectedZones = (window.HIST && HIST.hmzSelectedZones) ? Array.from(HIST.hmzSelectedZones) : [];
+  // Pull zones from the actual source of truth (used by renderHistMulti)
+  const selectedZones = Array.isArray(window._hmzSelected)
+    ? window._hmzSelected
+    : (typeof getUserZones === 'function' ? getUserZones() : []);
   const zonesCount = selectedZones.length;
+
+  // ─── KPIs · clone inline strip ───
+  const inlineKpis = document.getElementById('hmz-kpi-strip');
+  const kpisHtml = inlineKpis
+    ? `<div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);width:100%">${inlineKpis.innerHTML}</div>`
+    : null;
 
   // Clone the inline data table
   const inlineTable = document.getElementById('hmz-data-table');
@@ -9261,7 +9296,7 @@ function hmzOpenFullscreen() {
 
   const tabs = (window.HMZ && HMZ.tabs) || [
     { id:'lines', label:'Lines' }, { id:'heatmap', label:'Heatmap' },
-    { id:'profile', label:'Profile' }, { id:'bands', label:'Bands' }, { id:'spread', label:'Spread' }
+    { id:'bands', label:'Bands' }, { id:'spread', label:'Spread' }
   ];
   const tabsHtml = tabs.map(t => `
     <button onclick="setHistMultiTab('${t.id}');setTimeout(()=>{hmzRefreshFullscreen();},80)" style="
@@ -9301,16 +9336,49 @@ function hmzOpenFullscreen() {
     </div>
     ${extraHtml}`;
 
+  // Detect if this view renders HTML/SVG (Heatmap, Bands) or Chart.js (Lines, Spread).
+  // HTML/SVG views go through #hmz-heatmap; Chart.js views go through #hmz-canvas.
+  const isHtmlView = (view === 'heatmap' || view === 'bands');
+
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
     title: `Historical Cross-zone · ${viewTitle}`,
     subtitle: `${periodLabel} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
     filenameStem: `powerklock_historical_crosszone_${view}_${w}`,
     storageKey: 'historical-crosszone',
+    kpis: kpisHtml ? { html: kpisHtml } : null,
     table: tableHtml ? { html: tableHtml } : null,
     analysis: { html: analysisHtml },
     filters: { html: filtersHtml, wire: null },
     chartSource: {
       rebuildInto: (canvas) => {
+        // ── HTML/SVG views (Heatmap, Bands) ───────────────────────────────
+        // These don't use a Chart.js canvas; they render HTML/SVG into
+        // #hmz-heatmap. We copy that DOM into the FS canvas container.
+        if (isHtmlView) {
+          const src = document.getElementById('hmz-heatmap');
+          if (src && canvas && canvas.parentNode) {
+            // Hide the canvas (Chart.js placeholder, not used here)
+            canvas.style.display = 'none';
+            // Insert (or refresh) an HTML mirror next to the canvas.
+            let mirror = canvas.parentNode.querySelector('.hmz-fs-html-mirror');
+            if (!mirror) {
+              mirror = document.createElement('div');
+              mirror.className = 'hmz-fs-html-mirror';
+              mirror.style.cssText = 'width:100%;height:100%;overflow:auto;background:var(--bg2);padding:8px';
+              canvas.parentNode.appendChild(mirror);
+            }
+            mirror.innerHTML = src.innerHTML;
+          }
+          return null; // No Chart instance to track
+        }
+
+        // ── Chart.js views (Lines, Spread) ────────────────────────────────
+        // Remove any leftover HTML mirror from a previous HTML view.
+        if (canvas && canvas.parentNode) {
+          const mirror = canvas.parentNode.querySelector('.hmz-fs-html-mirror');
+          if (mirror) mirror.remove();
+          canvas.style.display = '';
+        }
         const srcChart = (window.HIST && HIST.charts && HIST.charts['hmz-canvas']);
         if (!srcChart || typeof Chart === 'undefined') return null;
         const cfg = {
@@ -9354,8 +9422,18 @@ function hmzOpenFullscreen() {
     },
     onCSV: () => buildHmzCSV(),
   });
+
+  // Tag the overlay so we can detect "HMZ fullscreen is open" from elsewhere
+  // (zones-changed listener uses this to refresh the FS reactively).
+  const overlayEl = document.getElementById('pk-fs-overlay');
+  if (overlayEl) overlayEl.setAttribute('data-fs-context', 'hmz');
 }
 window.hmzOpenFullscreen = hmzOpenFullscreen;
+
+// Detect whether HMZ fullscreen is currently open.
+function _hmzFsIsOpen() {
+  return !!document.querySelector('#pk-fs-overlay[data-fs-context="hmz"]');
+}
 
 function hmzRefreshFullscreen() {
   // Hot-swap via pkOpenOrUpdate
