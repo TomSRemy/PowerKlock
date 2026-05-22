@@ -3320,52 +3320,19 @@ function ccOpenFullscreen() {
         }
       }
     },
-    chartSource: {
-      rebuildInto: (canvas) => {
-        const srcChart = (window.CHARTS && window.CHARTS['price-compare-canvas'])
-          || (window._chartInstances && window._chartInstances['price-compare-canvas']);
-        if (!srcChart || typeof Chart === 'undefined') return null;
-        const cfg = {
-          type: srcChart.config.type,
-          data: JSON.parse(JSON.stringify(srcChart.config.data)),
-          options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
-        };
-        cfg.options.maintainAspectRatio = false;
-        cfg.options.responsive = true;
-        cfg.options.scales = cfg.options.scales || {};
-        Object.keys(cfg.options.scales).forEach(k => {
-          const sc = cfg.options.scales[k];
-          sc.ticks = sc.ticks || {};
-          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
-          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
-        });
-        cfg.options.plugins = cfg.options.plugins || {};
-        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
-        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
-        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
-        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
-        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
-        cfg.options.plugins.zoom = {
-          zoom: {
-            drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
-            wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
-          },
-          pan: { enabled: false }
-        };
-        try {
-          const chart = new Chart(canvas, cfg);
-          canvas.addEventListener('dblclick', () => {
-            if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
-          });
-          return chart;
-        } catch (e) {
-          console.warn('[ccOpenFullscreen] chart build failed', e);
-          return null;
-        }
-      }
-    },
+    chartSource: window.pkBuildChartSource({
+      chartId: 'price-compare-canvas',
+      htmlContainerId: 'cc-heatmap',
+      isHtmlView: () => (view === 'heatmap'),
+      chartsRegistry: () => window.CHARTS || window._chartInstances || {},
+    }),
     onCSV: () => buildCCCSV(view, data, selected),
   });
+
+  // Tag the overlay so we can detect "CC fullscreen is open" from elsewhere
+  // (zones-changed listener uses this to refresh the FS reactively).
+  const overlayEl = document.getElementById('pk-fs-overlay');
+  if (overlayEl) overlayEl.setAttribute('data-fs-context', 'cc');
 
   // Inject the title block (eyebrow + title + subtitle) at the top of the FS
   // graph zone, then populate it via _ccSetTitle which also keeps the inline
@@ -4959,53 +4926,18 @@ function openRowFullscreen(idx) {
         }
       }
     },
-    chartSource: {
-      rebuildInto: (canvas) => {
-        const src = _rowCharts[idx];
-        if (!src || typeof Chart === 'undefined') return null;
-        const cfg = {
-          type: src.config.type,
-          data: JSON.parse(JSON.stringify(src.config.data)),
-          options: JSON.parse(JSON.stringify(src.config.options || {}))
-        };
-        cfg.options.maintainAspectRatio = false;
-        cfg.options.responsive = true;
-        // Bigger axis fonts for fullscreen readability
-        cfg.options.scales = cfg.options.scales || {};
-        Object.keys(cfg.options.scales).forEach(k => {
-          const sc = cfg.options.scales[k];
-          sc.ticks = sc.ticks || {};
-          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
-          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
-        });
-        cfg.options.plugins = cfg.options.plugins || {};
-        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
-        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
-        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
-        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
-        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
-        // Drag-select zoom (chartjs-plugin-zoom)
-        cfg.options.plugins.zoom = {
-          zoom: {
-            drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
-            wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
-          },
-          pan: { enabled: false }
-        };
-        try {
-          const chart = new Chart(canvas, cfg);
-          canvas.addEventListener('dblclick', () => {
-            if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
-          });
-          return chart;
-        } catch (e) {
-          console.warn('[openRowFullscreen] chart build failed', e);
-          return null;
-        }
-      }
-    },
+    chartSource: window.pkBuildChartSource({
+      chartId: 'row-' + idx,
+      isHtmlView: () => false,
+      chartsRegistry: () => ({ ['row-' + idx]: _rowCharts[idx] }),
+    }),
     onCSV: () => buildRowCSV(idx, code, window._currentPriceDate)
   });
+
+  // Tag the overlay so we can detect "Daily drill fullscreen is open" from
+  // elsewhere (zones-changed listener can refresh the FS if needed).
+  const overlayEl = document.getElementById('pk-fs-overlay');
+  if (overlayEl) overlayEl.setAttribute('data-fs-context', 'daily-drill');
 }
 
 // Build CSV from the inline 15-min breakdown table — used by pkOpenFullscreen
