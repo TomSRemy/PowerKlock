@@ -832,3 +832,92 @@ window.pkPill = function(opts) {
 
   return `<button ${dataAttr} onclick="${onClick}"${title} style="${css}">${label}</button>`;
 };
+
+// ════════════════════════════════════════════════════════════════════
+// pkZoneChip — zone-coloured selection chip
+//
+// For picking one zone among N (baseline reference). Visually identifies
+// the zone by its own colour. Visual standard across the dashboard.
+//
+// Usage:
+//   pkZoneChip({
+//     code: 'FR',
+//     active: true,
+//     color: '#14D3A9',                    // the zone's own colour
+//     onClick: "setHmzBaseline('FR')",
+//   })
+// ════════════════════════════════════════════════════════════════════
+window.pkZoneChip = function(opts) {
+  const code    = opts.code ?? '';
+  const active  = !!opts.active;
+  const color   = opts.color || '#4A6280';
+  const onClick = opts.onClick ?? '';
+  const title   = opts.title ? ` title="${opts.title}"` : '';
+
+  const css = active
+    ? `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:${color}22;color:${color};border:1px solid ${color}`
+    : `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
+
+  return `<button onclick="${onClick}"${title} style="${css}">${code}</button>`;
+};
+
+// ════════════════════════════════════════════════════════════════════
+// pkFilterChip — neutral filter chip (rectangle 4px, teal accent)
+//
+// For filter dimensions that aren't zones (Period, Granularity used as filter,
+// etc) but share the same compact rectangle shape as pkZoneChip so they sit
+// next to zone chips harmoniously in the tabbar right-side filter area.
+//
+// Visually: same rectangle as pkZoneChip but the active state uses the brand
+// teal (no zone colour), so it reads as a "view filter" not a "zone identity".
+//
+// Usage:
+//   pkFilterChip({
+//     label: '7D',
+//     active: true,
+//     onClick: "setCCBandsPeriod('7D')",
+//   })
+// ════════════════════════════════════════════════════════════════════
+window.pkFilterChip = function(opts) {
+  const label   = opts.label ?? '';
+  const active  = !!opts.active;
+  const onClick = opts.onClick ?? '';
+  const title   = opts.title ? ` title="${opts.title}"` : '';
+
+  const css = active
+    ? `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:rgba(20,211,169,0.13);color:#14D3A9;border:1px solid #14D3A9`
+    : `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
+
+  return `<button onclick="${onClick}"${title} style="${css}">${label}</button>`;
+};
+
+// ════════════════════════════════════════════════════════════════════
+// pkPositionSubToggle — center a sub-toggle row pixel-perfect under the
+// currently-active tab of a tabs-group.
+//
+// Usage:
+//   pkPositionSubToggle({
+//     tabsContainer: document.getElementById('hmz-tabs'),
+//     subToggle: document.getElementById('hmz-sub-toggle'),
+//     activeSelector: 'button.active',  // optional, defaults to '.active'
+//   });
+//
+// The subToggle must be position:absolute inside a position:relative parent
+// (typically the tabs-row container). The parent's top must leave room for
+// the subToggle below the tabs (margin-bottom on tabs row, or fixed height).
+// ════════════════════════════════════════════════════════════════════
+window.pkPositionSubToggle = function(opts) {
+  const tabsContainer = opts.tabsContainer;
+  const subToggle     = opts.subToggle;
+  if (!tabsContainer || !subToggle) return;
+  const sel = opts.activeSelector || '.active';
+  const activeTab = tabsContainer.querySelector(sel) || tabsContainer.querySelector('button');
+  if (!activeTab) return;
+  // Compute centre of the active tab, relative to the subToggle's positioning parent.
+  const tabRect = activeTab.getBoundingClientRect();
+  const offsetParent = subToggle.offsetParent || tabsContainer.parentElement;
+  const parentRect = offsetParent.getBoundingClientRect();
+  const centerX = tabRect.left + tabRect.width / 2 - parentRect.left;
+  subToggle.style.left = centerX + 'px';
+  subToggle.style.transform = 'translateX(-50%)';
+};
