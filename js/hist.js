@@ -7817,18 +7817,12 @@ function _hmzUpdateTabContext(tab) {
   if (subToggleHTML) {
     subToggle.innerHTML = subToggleHTML;
     subToggle.style.display = 'inline-flex';
+    // Reset any leftover positioning from previous JS-positioned versions
+    subToggle.style.left = '0';
+    subToggle.style.transform = '';
     // Reserve space below tabs for the absolute-positioned sub-toggle
     const tabbar = document.getElementById('hmz-tabbar');
     if (tabbar) tabbar.style.marginBottom = '36px';
-    // Position pixel-perfect under the centre of the active tab.
-    // Use requestAnimationFrame to ensure tabs are fully rendered first.
-    requestAnimationFrame(() => {
-      window.pkPositionSubToggle({
-        tabsContainer: tabsCont,
-        subToggle: subToggle,
-        activeSelector: 'button.active, button.pr-tab.active',
-      });
-    });
   } else {
     subToggle.style.display = 'none';
     subToggle.innerHTML = '';
@@ -7870,21 +7864,8 @@ function _hmzUpdateTabContext(tab) {
   }
 }
 
-// Reposition sub-toggle on window resize (handles responsive tab wrap).
-if (typeof window !== 'undefined' && !window._hmzResizeBound) {
-  window._hmzResizeBound = true;
-  window.addEventListener('resize', () => {
-    const subToggle = document.getElementById('hmz-sub-toggle');
-    const tabsCont  = document.getElementById('hmz-tabs');
-    if (subToggle && subToggle.style.display !== 'none' && tabsCont) {
-      window.pkPositionSubToggle({
-        tabsContainer: tabsCont,
-        subToggle: subToggle,
-        activeSelector: 'button.active, button.pr-tab.active',
-      });
-    }
-  });
-}
+// (Resize handler removed: sub-toggle is now left-aligned via static CSS,
+//  no JS positioning required.)
 
 async function renderHistMulti() {
   buildHistMultiTabs();
