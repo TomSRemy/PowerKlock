@@ -9377,7 +9377,7 @@ function hmzOpenFullscreen() {
       chartId: 'hmz-canvas',
       htmlContainerId: 'hmz-heatmap',
       isHtmlView: () => isHtmlView,
-      chartsRegistry: () => (window.HIST && window.HIST.charts) || {},
+      chartsRegistry: () => (typeof HIST !== 'undefined' && HIST.charts) || {},
     }),
     onCSV: () => buildHmzCSV(),
   });
