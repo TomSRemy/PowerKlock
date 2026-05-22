@@ -2738,20 +2738,29 @@
               <div class="kpi-meta" id="cc-kpi-frgap-meta">--</div>
             </div>
           </div>
-          <!-- View tabs (Insta-style) -->
-          <div id="cc-tabs-bar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
+          <!-- View tabs (Insta-style) — same pattern as HMZ:
+               tabs left, tab-contextual chips right, sub-toggle absolute below the active tab. -->
+          <div id="cc-tabs-bar" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:6px 0 36px;flex-wrap:wrap">
             <div id="cc-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-            <div id="cc-ref-wrap" style="display:none;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
-              <span style="font-family:'JetBrains Mono',monospace;letter-spacing:.04em">SPREAD vs</span>
-              <div id="cc-ref-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+            <!-- Right side: tab-contextual zone chips + fullscreen button -->
+            <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
+              <!-- Tab-contextual chips (Baseline ref for Spread, or zones picker for Bands) -->
+              <div id="cc-tab-chips" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
               <button onclick="ccOpenFullscreen()" title="Open in fullscreen"
                 style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
             </div>
-            <!-- Bands view header: Period · Mode (Z-score / Raw) · Zone toggles -->
+            <!-- Sub-toggle: rendered absolutely below the active tab.
+                 left/transform set in JS by pkPositionSubToggle(). -->
+            <div id="cc-sub-toggle" style="display:none;position:absolute;top:100%;margin-top:4px;left:0;white-space:nowrap;z-index:5;gap:4px"></div>
+            <!-- Legacy Bands view header (Period · Mode · Zones) — kept for now.
+                 Populated by _ccBandsRenderHeader. Visible only in Bands view. -->
             <div id="cc-bands-wrap" style="display:none;flex:1 1 100%;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
               <div id="cc-bands-header" style="width:100%"></div>
+            </div>
+            <!-- Legacy hidden ref-wrap kept so _ccPopulateRefChips() still has its host.
+                 Visibility forced 'none' (chips are now mirrored to #cc-tab-chips). -->
+            <div id="cc-ref-wrap" style="display:none">
+              <div id="cc-ref-chips"></div>
             </div>
           </div>
           <!-- Chart title block · eyebrow + title + subtitle, populated by _ccSetTitle() -->
@@ -2930,40 +2939,22 @@
     </div>
   </div>
 
-  <!-- HMZ tabs bar : tabs left, fullscreen button right -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
+  <!-- HMZ tabs bar + tab-contextual zone chips + fullscreen button.
+       The wrapper is position:relative so the sub-toggle (centered under
+       the active tab) can be position:absolute inside it. -->
+  <div id="hmz-tabbar" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:6px 0 36px;flex-wrap:wrap">
     <div id="hmz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+    <!-- Right side: zone chips (tab-contextual) + fullscreen button -->
+    <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
+      <!-- Tab-contextual chips (Baseline for Heatmap or Spread vs Ref) -->
+      <div id="hmz-tab-chips" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
       <button onclick="hmzOpenFullscreen()" title="Open in fullscreen"
         style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
     </div>
-  </div>
-
-  <!-- Sub-controls row : appears RIGHT BELOW the tabs, in the same visual block.
-       Each tab populates its own controls; only one row is visible at a time. -->
-  <div id="hmz-subcontrols" style="display:none;align-items:center;gap:14px;margin:0 0 10px;flex-wrap:wrap;font-size:11px;color:var(--text3)">
-    <!-- Spread mode toggle (visible only when Spread tab is active) -->
-    <div id="hmz-ref-wrap" style="display:none;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Mode</span>
-        <div id="hmz-spread-mode-toggle" style="display:inline-flex;gap:5px"></div>
-      </div>
-      <div id="hmz-ref-chips-wrap" style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
-        <div id="hmz-ref-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-      </div>
-    </div>
-    <!-- Heatmap controls (visible only when Heatmap tab is active) -->
-    <div id="hmz-heatmap-controls" style="display:none;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Granularity</span>
-        <div id="hmz-heatmap-mode-toggle" style="display:inline-flex;gap:5px"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
-        <div id="hmz-heatmap-baseline-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-      </div>
-    </div>
+    <!-- Sub-toggle: rendered absolutely below the active tab.
+         left/transform set in JS by pkPositionSubToggle().
+         display:none until populated by the active-tab populator. -->
+    <div id="hmz-sub-toggle" style="display:none;position:absolute;top:100%;margin-top:4px;left:0;white-space:nowrap;z-index:5;gap:4px"></div>
   </div>
 
   <!-- Analyst banner anchor (filled by JS · ABOVE the chart) -->
