@@ -1273,22 +1273,35 @@ document.addEventListener('zones-changed', () => {
   if (typeof renderHistMulti === 'function') renderHistMulti();
   // Update zone labels
   updateZoneLabels();
-  // If Historical FS (HSZ single zone) is open, refresh so its zone dropdown
-  // reflects the new user selection.
-  if (_hoFsIsOpen()) {
+
+  // ─── Refresh any open Prices fullscreen overlay whose content depends on
+  // the user zone selection. Uses the unified pkFsIsOpen(key) helper.
+  const fsOpen = (typeof window.pkFsIsOpen === 'function') ? window.pkFsIsOpen : null;
+
+  // Historical drill (HSZ): zone dropdown lists user-selected zones.
+  if ((fsOpen && fsOpen('historical')) || (!fsOpen && typeof _hoFsIsOpen === 'function' && _hoFsIsOpen())) {
     const fsZone = window._HO_LAST_ZONE;
     const series = window._HO_LAST_SERIES;
     if (fsZone && series && typeof _openHoFullscreen === 'function') {
       requestAnimationFrame(() => _openHoFullscreen(fsZone));
     }
   }
-  // If HMZ FS (cross-zone) is open, refresh so its Spread ref chips reflect
-  // the new user selection (in case the baseline zone was removed).
-  if (typeof _hmzFsIsOpen === 'function' && _hmzFsIsOpen()) {
+
+  // Historical Cross-zone (HMZ): Spread ref chips list user-selected zones.
+  if ((fsOpen && fsOpen('hmz')) || (!fsOpen && typeof _hmzFsIsOpen === 'function' && _hmzFsIsOpen())) {
     if (typeof hmzRefreshFullscreen === 'function') {
       requestAnimationFrame(() => hmzRefreshFullscreen());
     }
   }
+
+  // Daily Cross-zone (CC): Spread ref + Bands header chips list user-selected zones.
+  if (fsOpen && fsOpen('cc')) {
+    if (typeof window.ccRefreshFullscreen === 'function') {
+      requestAnimationFrame(() => window.ccRefreshFullscreen());
+    }
+  }
+
+  // Daily drill: mono-zone view, no zone-list dependency → nothing to refresh.
 });
 
 function updateZoneLabels() {
@@ -9349,77 +9362,12 @@ function hmzOpenFullscreen() {
     table: tableHtml ? { html: tableHtml } : null,
     analysis: { html: analysisHtml },
     filters: { html: filtersHtml, wire: null },
-    chartSource: {
-      rebuildInto: (canvas) => {
-        // ── HTML/SVG views (Heatmap, Bands) ───────────────────────────────
-        // These don't use a Chart.js canvas; they render HTML/SVG into
-        // #hmz-heatmap. We copy that DOM into the FS canvas container.
-        if (isHtmlView) {
-          const src = document.getElementById('hmz-heatmap');
-          if (src && canvas && canvas.parentNode) {
-            // Hide the canvas (Chart.js placeholder, not used here)
-            canvas.style.display = 'none';
-            // Insert (or refresh) an HTML mirror next to the canvas.
-            let mirror = canvas.parentNode.querySelector('.hmz-fs-html-mirror');
-            if (!mirror) {
-              mirror = document.createElement('div');
-              mirror.className = 'hmz-fs-html-mirror';
-              mirror.style.cssText = 'width:100%;height:100%;overflow:auto;background:var(--bg2);padding:8px';
-              canvas.parentNode.appendChild(mirror);
-            }
-            mirror.innerHTML = src.innerHTML;
-          }
-          return null; // No Chart instance to track
-        }
-
-        // ── Chart.js views (Lines, Spread) ────────────────────────────────
-        // Remove any leftover HTML mirror from a previous HTML view.
-        if (canvas && canvas.parentNode) {
-          const mirror = canvas.parentNode.querySelector('.hmz-fs-html-mirror');
-          if (mirror) mirror.remove();
-          canvas.style.display = '';
-        }
-        const srcChart = (window.HIST && HIST.charts && HIST.charts['hmz-canvas']);
-        if (!srcChart || typeof Chart === 'undefined') return null;
-        const cfg = {
-          type: srcChart.config.type,
-          data: JSON.parse(JSON.stringify(srcChart.config.data)),
-          options: JSON.parse(JSON.stringify(srcChart.config.options || {}))
-        };
-        cfg.options.maintainAspectRatio = false;
-        cfg.options.responsive = true;
-        cfg.options.scales = cfg.options.scales || {};
-        Object.keys(cfg.options.scales).forEach(k => {
-          const sc = cfg.options.scales[k];
-          sc.ticks = sc.ticks || {};
-          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
-          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
-        });
-        cfg.options.plugins = cfg.options.plugins || {};
-        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
-        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
-        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
-        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
-        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
-        cfg.options.plugins.zoom = {
-          zoom: {
-            drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
-            wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
-          },
-          pan: { enabled: false }
-        };
-        try {
-          const chart = new Chart(canvas, cfg);
-          canvas.addEventListener('dblclick', () => {
-            if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
-          });
-          return chart;
-        } catch (e) {
-          console.warn('[hmzOpenFullscreen] chart build failed', e);
-          return null;
-        }
-      }
-    },
+    chartSource: window.pkBuildChartSource({
+      chartId: 'hmz-canvas',
+      htmlContainerId: 'hmz-heatmap',
+      isHtmlView: () => isHtmlView,
+      chartsRegistry: () => (window.HIST && window.HIST.charts) || {},
+    }),
     onCSV: () => buildHmzCSV(),
   });
 
