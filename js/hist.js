@@ -7736,27 +7736,27 @@ function _hmzToggleRefWrap(mode) {
   const wrap = document.getElementById('hmz-ref-wrap');
   if (wrap) wrap.style.display = (mode === 'spread') ? 'flex' : 'none';
   if (mode === 'spread') _hmzPopulateSpreadModeToggle();
+  _hmzUpdateSubControlsVisibility(mode);
 }
 
 // Populate the vs Ref / vs Peers toggle for the Spread tab.
-// Style identical to the Heatmap granularity toggle (teal pill on dark bg).
+// Style: dashboard-standard rounded pill (pkPill helper) — teal accent when
+// active, faint border when inactive. Same visual pattern as Window pills.
 // Also toggles visibility of the baseline chips (only meaningful in vsRef mode).
 function _hmzPopulateSpreadModeToggle() {
   const host = document.getElementById('hmz-spread-mode-toggle');
-  if (host) {
+  if (host && typeof window.pkPill === 'function') {
     const modes = [
       { id: 'vsRef',   label: 'vs Ref' },
       { id: 'vsPeers', label: 'vs Peers' },
     ];
     const cur = HMZ.spreadMode || 'vsRef';
-    host.innerHTML = modes.map(m => {
-      const on = m.id === cur;
-      return `<button data-hmz-sm="${m.id}" onclick="setHmzSpreadMode('${m.id}')" style="
-        padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
-        background:${on ? 'rgba(20,211,169,0.15)' : 'transparent'};
-        color:${on ? '#14D3A9' : 'var(--tx3)'};
-        border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${m.label}</button>`;
-    }).join('');
+    host.innerHTML = modes.map(m => window.pkPill({
+      label:    m.label,
+      active:   m.id === cur,
+      onClick:  `setHmzSpreadMode('${m.id}')`,
+      dataAttr: `data-hmz-sm="${m.id}"`,
+    })).join('');
   }
   // Baseline chips meaningful only in vsRef mode
   const chipsWrap = document.getElementById('hmz-ref-chips-wrap');
@@ -7789,11 +7789,23 @@ function _hmzToggleHeatmapControls(mode) {
   const wrap = document.getElementById('hmz-heatmap-controls');
   if (wrap) wrap.style.display = (mode === 'heatmap') ? 'flex' : 'none';
   if (mode === 'heatmap') _hmzPopulateHeatmapControls();
+  _hmzUpdateSubControlsVisibility(mode);
 }
 
-// Populate the granularity toggle (Day/Week/Month/DoW/HoD) and the baseline
-// chips inside the Heatmap controls bar. Same visual language as the
-// Monthly/Daily breakdown toggle in Historical FS and the SPREAD chips.
+// Show/hide the parent #hmz-subcontrols block: visible only when the active
+// tab has its own controls (Spread or Heatmap). Lines and Bands have none,
+// so we hide the whole strip to keep the UI tight.
+function _hmzUpdateSubControlsVisibility(mode) {
+  const parent = document.getElementById('hmz-subcontrols');
+  if (!parent) return;
+  const hasControls = (mode === 'spread' || mode === 'heatmap');
+  parent.style.display = hasControls ? 'flex' : 'none';
+}
+
+// Populate the granularity toggle (Day/Week/Month/DoW) and the baseline
+// chips inside the Heatmap controls bar.
+// - Granularity uses pkPill (rounded teal pill, dashboard-standard).
+// - Baseline chips keep their existing zone-coloured chip style.
 function _hmzPopulateHeatmapControls() {
   // ── Granularity toggle ──
   const modes = [
@@ -7804,15 +7816,13 @@ function _hmzPopulateHeatmapControls() {
   ];
   const cur = HMZ.heatmapMode || 'day';
   const modeHost = document.getElementById('hmz-heatmap-mode-toggle');
-  if (modeHost) {
-    modeHost.innerHTML = modes.map(m => {
-      const on = m.id === cur;
-      return `<button data-hmz-hm-mode="${m.id}" onclick="setHmzHeatmapMode('${m.id}')" style="
-        padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
-        background:${on ? 'rgba(20,211,169,0.15)' : 'transparent'};
-        color:${on ? '#14D3A9' : 'var(--tx3)'};
-        border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${m.label}</button>`;
-    }).join('');
+  if (modeHost && typeof window.pkPill === 'function') {
+    modeHost.innerHTML = modes.map(m => window.pkPill({
+      label:    m.label,
+      active:   m.id === cur,
+      onClick:  `setHmzHeatmapMode('${m.id}')`,
+      dataAttr: `data-hmz-hm-mode="${m.id}"`,
+    })).join('');
   }
 
   // ── Baseline chips ──
