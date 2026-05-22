@@ -22,6 +22,22 @@
 //   - Drag a panel to the edge to collapse; double-click the handle to restore
 //   - Screenshot mode: hides header + KPI + table, shows only title + chart + small logo
 //   - Reset zoom / PNG / CSV / Auto-fit table buttons in the global header
+//
+// ════════════════════════════════════════════
+// CONVENTIONS for Prices FS handlers (HSZ, HMZ, CC, Daily drill)
+// ────────────────────────────────────────────
+// Each handler must:
+//   1. Tag overlay after open:
+//        document.getElementById('pk-fs-overlay').setAttribute('data-fs-context', '<key>');
+//      where <key> is one of: 'historical', 'hmz', 'cc', 'daily-drill'.
+//   2. Expose a detection helper: window.pkFsIsOpen('<key>') returns boolean.
+//   3. Expose a refresh function:   <handler>RefreshFullscreen() — hot-swap via pkOpenOrUpdate.
+//   4. Pass `kpis: { html: <inline strip cloned> }` (or null if no KPIs).
+//   5. Use `pkBuildChartSource({ chartId, htmlContainerId })` for views that
+//      may render either a Chart.js canvas or HTML/SVG (Heatmap, Bands).
+//
+// React to `zones-changed`: if the FS is open with a key that depends on the
+// user zone selection, call its <handler>RefreshFullscreen().
 // ════════════════════════════════════════════
 (function() {
   'use strict';
@@ -920,4 +936,118 @@ window.pkPositionSubToggle = function(opts) {
   const centerX = tabRect.left + tabRect.width / 2 - parentRect.left;
   subToggle.style.left = centerX + 'px';
   subToggle.style.transform = 'translateX(-50%)';
+};
+
+// ════════════════════════════════════════════════════════════════════
+// pkFsIsOpen(key) — detect whether the fullscreen overlay is currently open
+// for a given handler. Uses data-fs-context attribute set by the handler.
+//
+// Known keys: 'historical' (HSZ), 'hmz' (HMZ), 'cc' (DA Cross-zone),
+//             'daily-drill' (Daily Board row drill).
+//
+// Returns true if the overlay is present AND its data-fs-context matches.
+// If key is omitted, returns true if any FS overlay is open.
+// ════════════════════════════════════════════════════════════════════
+window.pkFsIsOpen = function(key) {
+  const overlay = document.getElementById('pk-fs-overlay');
+  if (!overlay) return false;
+  if (!key) return true;
+  return overlay.getAttribute('data-fs-context') === key;
+};
+
+// ════════════════════════════════════════════════════════════════════
+// pkBuildChartSource({ chartId, htmlContainerId, isHtmlView, scaleAxisFonts })
+//
+// Builds a standard chartSource handler that supports both Chart.js canvas
+// views AND HTML/SVG views (Heatmap, Bands) in the same overlay.
+//
+// Parameters:
+//   chartId          — id of the source Chart.js canvas (Charts registry key)
+//   htmlContainerId  — id of the source DOM container for HTML/SVG views
+//   isHtmlView       — function(): boolean — true when the current view
+//                      should display the HTML mirror instead of Chart.js
+//   scaleAxisFonts   — boolean (default true): upscale axis/legend fonts to
+//                      13px for fullscreen readability
+//   chartsRegistry   — function returning the charts registry (e.g. () => HIST.charts)
+//
+// Returns: { rebuildInto: (canvas) => Chart | null }
+// ════════════════════════════════════════════════════════════════════
+window.pkBuildChartSource = function(opts) {
+  const chartId         = opts.chartId;
+  const htmlContainerId = opts.htmlContainerId;
+  const isHtmlView      = opts.isHtmlView || (() => false);
+  const scaleAxisFonts  = opts.scaleAxisFonts !== false;
+  const chartsRegistry  = opts.chartsRegistry || (() => null);
+  const mirrorClass     = 'pk-fs-html-mirror';
+
+  return {
+    rebuildInto: (canvas) => {
+      // ── HTML view: copy DOM from the inline container to a mirror ──
+      if (isHtmlView()) {
+        const src = htmlContainerId ? document.getElementById(htmlContainerId) : null;
+        if (src && canvas && canvas.parentNode) {
+          canvas.style.display = 'none';
+          let mirror = canvas.parentNode.querySelector('.' + mirrorClass);
+          if (!mirror) {
+            mirror = document.createElement('div');
+            mirror.className = mirrorClass;
+            mirror.style.cssText = 'width:100%;height:100%;overflow:auto;background:var(--bg2);padding:8px';
+            canvas.parentNode.appendChild(mirror);
+          }
+          mirror.innerHTML = src.innerHTML;
+        }
+        return null;
+      }
+
+      // ── Chart.js view: clone the source chart config ──
+      if (canvas && canvas.parentNode) {
+        const mirror = canvas.parentNode.querySelector('.' + mirrorClass);
+        if (mirror) mirror.remove();
+        canvas.style.display = '';
+      }
+      const registry = chartsRegistry();
+      const srcChart = registry && chartId ? registry[chartId] : null;
+      if (!srcChart || typeof Chart === 'undefined') return null;
+      const cfg = {
+        type: srcChart.config.type,
+        data: JSON.parse(JSON.stringify(srcChart.config.data)),
+        options: JSON.parse(JSON.stringify(srcChart.config.options || {})),
+      };
+      cfg.options.maintainAspectRatio = false;
+      cfg.options.responsive = true;
+      if (scaleAxisFonts) {
+        cfg.options.scales = cfg.options.scales || {};
+        Object.keys(cfg.options.scales).forEach(k => {
+          const sc = cfg.options.scales[k];
+          sc.ticks = sc.ticks || {};
+          sc.ticks.font = Object.assign({}, sc.ticks.font || {}, { size: 13 });
+          if (sc.title) sc.title.font = Object.assign({}, sc.title.font || {}, { size: 13 });
+        });
+        cfg.options.plugins = cfg.options.plugins || {};
+        cfg.options.plugins.legend = cfg.options.plugins.legend || {};
+        cfg.options.plugins.legend.labels = Object.assign({}, cfg.options.plugins.legend.labels || {}, { font: { size: 13 } });
+        cfg.options.plugins.tooltip = cfg.options.plugins.tooltip || {};
+        cfg.options.plugins.tooltip.titleFont = Object.assign({}, cfg.options.plugins.tooltip.titleFont || {}, { size: 13 });
+        cfg.options.plugins.tooltip.bodyFont = Object.assign({}, cfg.options.plugins.tooltip.bodyFont || {}, { size: 13 });
+      }
+      cfg.options.plugins = cfg.options.plugins || {};
+      cfg.options.plugins.zoom = {
+        zoom: {
+          drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: 'rgba(20,211,169,0.6)', borderWidth: 1 },
+          wheel: { enabled: false }, pinch: { enabled: true }, mode: 'xy'
+        },
+        pan: { enabled: false }
+      };
+      try {
+        const chart = new Chart(canvas, cfg);
+        canvas.addEventListener('dblclick', () => {
+          if (chart && typeof chart.resetZoom === 'function') chart.resetZoom();
+        });
+        return chart;
+      } catch (e) {
+        console.warn('[pkBuildChartSource] chart build failed for ' + chartId, e);
+        return null;
+      }
+    }
+  };
 };
