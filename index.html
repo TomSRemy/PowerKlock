@@ -5239,6 +5239,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (dtP) dtP.value = '';
     // Update C-mode combo button label
     pkUpdateTimeComboLabel(w, null, null);
+    // Auto-tune HMZ heatmap granularity for the new window (resets any
+    // manual override the user did inside the previous window). Matches
+    // setHistWindow() behaviour.
+    if (typeof _hmzApplyAutoHeatmapMode === 'function') {
+      _hmzApplyAutoHeatmapMode();
+    }
     // Re-render the historical blocks
     if (typeof renderHistOverview === 'function') renderHistOverview();
     if (typeof renderHistMulti   === 'function') renderHistMulti();
