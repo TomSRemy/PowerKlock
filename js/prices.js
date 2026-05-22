@@ -3881,8 +3881,46 @@ function renderCompareKPIs(data, selected) {
   }
   tbody.innerHTML = html;
 
+  // After bands rendering, paint the shared X axis into the TH sub line so
+  // the user can read absolute €/MWh values aligned with the tick positions.
+  if (view === 'bands' && window._bandsAxis) {
+    _renderBandsAxisHeader();
+  }
+
   // Wire cross-highlight (B): hover row → highlight curve, click → toggle focus
   ccWireRowHighlight();
+}
+
+// ── Render the shared X axis legend inside the 30D position TH (bands view) ──
+// The SVG layout below mirrors the per-row range bars exactly (W=200, padL=padR=6),
+// so the labels at the ticks line up vertically with the per-row positions.
+function _renderBandsAxisHeader() {
+  const th = document.getElementById('pk-bands-axis-th');
+  if (!th || !window._bandsAxis) return;
+  const { lo, hi, ticks } = window._bandsAxis;
+  if (!ticks || !ticks.length) return;
+  const W = 200, padL = 6, padR = 6;
+  const span = hi - lo || 1;
+  const xOf = v => padL + ((v - lo) / span) * (W - padL - padR);
+
+  const tickMarks = ticks.map(t => {
+    const x = xOf(t).toFixed(1);
+    return `<line x1="${x}" y1="0" x2="${x}" y2="4" stroke="rgba(184,201,217,0.4)" stroke-width="0.5"/>
+            <text x="${x}" y="12" font-family="JetBrains Mono" font-size="8" fill="var(--tx3)" text-anchor="middle">${Math.round(t)}</text>`;
+  }).join('');
+
+  const subHtml = `
+    <div style="display:flex;justify-content:center;margin-top:2px">
+      <svg viewBox="0 0 ${W} 16" width="100%" height="16" preserveAspectRatio="none" style="display:block;max-width:200px">
+        <line x1="${padL}" y1="0" x2="${W-padR}" y2="0" stroke="rgba(184,201,217,0.25)" stroke-width="0.5"/>
+        ${tickMarks}
+      </svg>
+    </div>
+    <div style="color:var(--tx3);font-weight:400;font-size:9px;text-align:center;margin-top:2px">€/MWh · shared scale · today tick = coloured</div>
+  `;
+  // Replace just the sub portion of the TH (the second line after the label)
+  // by rewriting the inner HTML, preserving the label text.
+  th.innerHTML = `30D position${subHtml}`;
 }
 
 // ── Header per view
@@ -3915,7 +3953,7 @@ function ccTableHeader(view) {
       { w:'17%', label:'Zone' },
       { w:'10%', label:'Today avg', sub:'€/MWh', align:'right' },
       { w:'10%', label:'Median', sub:'€/MWh', align:'right', tip:'Per-day median over the selected lookback window' },
-      { w:'28%', label:'30D position', sub:'P10 — P25 → P50 ← P75 — P90', align:'center', tip:'Where today sits in the historical distribution (boxplot)' },
+      { w:'28%', label:'30D position', sub:'P10–P90 range · P50 tick · today tick', align:'center', id:'pk-bands-axis-th', tip:'Shared scale across zones (€/MWh). Coloured tick = today. Outside the range = "!" badge.' },
       { w:'9%',  label:'Pctile', sub:'today vs hist', align:'right', tip:'Percentile rank of today in the lookback window' },
       { w:'8%',  label:'Z', sub:'σ from median', align:'right', tip:'Robust Z-score: (today − median) / σ, with σ = IQR/1.349' },
       { w:'18%', label:'Above max / below min', sub:'hrs', align:'right', tip:'Hours today exceeded the historical max or fell below the historical min' },
@@ -3931,7 +3969,7 @@ function ccTableHeader(view) {
   };
   const c = cols[view] || cols.lines;
   return '<tr>' + c.map(col => `
-    <th style="width:${col.w};text-align:${col.align||'left'}" ${col.tip?`title="${col.tip}"`:''}>
+    <th ${col.id?`id="${col.id}"`:''} style="width:${col.w};text-align:${col.align||'left'}" ${col.tip?`title="${col.tip}"`:''}>
       ${col.label}${col.sub?`<br><span style="color:var(--tx3);font-weight:400;font-size:9px">${col.sub}</span>`:''}
     </th>`).join('') + '</tr>';
 }
@@ -4205,6 +4243,50 @@ function ccBodyProfile(rows) {
 }
 
 function ccBodyBands(rows) {
+  // ── Compute GLOBAL bounds (shared X axis across all rows) ──
+  // We use min(distP10) and max(distP90) across rows, also widened by today values
+  // so a today-outside-band shows clearly without overflowing the SVG.
+  let gLo = Infinity, gHi = -Infinity;
+  rows.forEach(r => {
+    if (r._noEnv) return;
+    if (r.distP10 != null && r.distP10 < gLo) gLo = r.distP10;
+    if (r.distP90 != null && r.distP90 > gHi) gHi = r.distP90;
+    if (r.distMin != null && r.distMin < gLo) gLo = r.distMin;
+    if (r.distMax != null && r.distMax > gHi) gHi = r.distMax;
+    if (r.avg != null) {
+      if (r.avg < gLo) gLo = r.avg;
+      if (r.avg > gHi) gHi = r.avg;
+    }
+  });
+  if (!isFinite(gLo) || !isFinite(gHi)) { gLo = 0; gHi = 100; }
+  // Small padding so the extremes don't sit on the edge.
+  const span0 = gHi - gLo || 1;
+  gLo -= span0 * 0.04;
+  gHi += span0 * 0.04;
+  const gSpan = gHi - gLo || 1;
+
+  // ── "Nice" tick generator for the in-SVG graduations ──
+  // 4 ticks across [gLo, gHi], rounded to a sensible step.
+  const niceTicks = (lo, hi, count = 4) => {
+    const raw = (hi - lo) / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    let step;
+    if (norm < 1.5) step = 1;
+    else if (norm < 3) step = 2;
+    else if (norm < 7) step = 5;
+    else step = 10;
+    step *= mag;
+    const first = Math.ceil(lo / step) * step;
+    const ticks = [];
+    for (let t = first; t <= hi + 1e-6; t += step) ticks.push(t);
+    return ticks;
+  };
+  const axisTicks = niceTicks(gLo, gHi, 4);
+
+  // Expose to header builder so it can render an axis legend in the sub line.
+  window._bandsAxis = { lo: gLo, hi: gHi, ticks: axisTicks };
+
   return rows.map(r => {
     if (r._noEnv) {
       const cells = `<td colspan="6" style="text-align:center;padding:9px 6px;color:var(--text3);font-size:11px">Loading envelope…</td>`;
@@ -4226,46 +4308,41 @@ function ccBodyBands(rows) {
                 : (z > 2 ? 'var(--down)' : (z < -2 ? 'var(--up)' : 'var(--text2)'));
     const sign = v => v >= 0 ? '+' : '';
 
-    // ── Mini-boxplot SVG (160 × 22) — see Methodology page for the layout ──
-    // Whiskers: min ↔ max | Box: P25 → P75 | Vertical tick: median | Bullet: today
+    // ── Range bar (200 × 22) on a SHARED axis ──
+    // Layout: thin segment P10→P90 (steel blue), small tick P50 (neutral),
+    // thick coloured tick = today. Graduations match the global axis ticks
+    // so the eye can read absolute €/MWh across rows.
     const W = 200, H = 22, padL = 6, padR = 6, axisY = H / 2;
     let boxSvg = `<td style="text-align:center;padding:6px;vertical-align:middle">--</td>`;
-    if (r.distMin != null && r.distMax != null && r.distP50 != null) {
-      const lo = r.distMin, hi = r.distMax;
-      const rng = hi - lo || 1;
-      const xOf = v => padL + ((v - lo) / rng) * (W - padL - padR);
-      const xMin = xOf(r.distMin);
-      const xMax = xOf(r.distMax);
-      const xP10 = xOf(r.distP10 != null ? r.distP10 : r.distMin);
-      const xP90 = xOf(r.distP90 != null ? r.distP90 : r.distMax);
-      const xP25 = xOf(r.distP25 != null ? r.distP25 : r.distMin);
-      const xP75 = xOf(r.distP75 != null ? r.distP75 : r.distMax);
+    if (r.distP10 != null && r.distP90 != null && r.distP50 != null) {
+      const xOf = v => padL + ((v - gLo) / gSpan) * (W - padL - padR);
+      const xP10 = xOf(r.distP10);
+      const xP90 = xOf(r.distP90);
       const xMed = xOf(r.distP50);
       const xToday = xOf(r.avg);
       const todayCol = (window._zoneColorMap && window._zoneColorMap[r.code]) || '#14D3A9';
-      const outOfBox = (r.avg < r.distP25 || r.avg > r.distP75);
+      const outOfBand = (r.avg < r.distP10 || r.avg > r.distP90);
+
+      // Graduations (vertical dotted lines at the global axis ticks) — very subtle
+      const grads = axisTicks.map(t => {
+        const x = xOf(t);
+        return `<line x1="${x.toFixed(1)}" y1="2" x2="${x.toFixed(1)}" y2="${H-2}" stroke="rgba(120,140,170,0.10)" stroke-width="0.5"/>`;
+      }).join('');
+
       const tipParts = [
-        `min ${r.distMin.toFixed(1)}`,
-        `P10 ${r.distP10 != null ? r.distP10.toFixed(1) : '--'}`,
-        `P25 ${r.distP25 != null ? r.distP25.toFixed(1) : '--'}`,
+        `P10 ${r.distP10.toFixed(1)}`,
         `med ${r.distP50.toFixed(1)}`,
-        `P75 ${r.distP75 != null ? r.distP75.toFixed(1) : '--'}`,
-        `P90 ${r.distP90 != null ? r.distP90.toFixed(1) : '--'}`,
-        `max ${r.distMax.toFixed(1)}`,
+        `P90 ${r.distP90.toFixed(1)}`,
         `today ${r.avg.toFixed(1)}`,
       ].join(' · ');
+
       boxSvg = `<td style="padding:6px;vertical-align:middle" title="${tipParts}">
         <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" style="display:block;max-width:200px;margin:0 auto">
-          <line x1="${xMin}" y1="${axisY}" x2="${xP10}" y2="${axisY}" stroke="rgba(120,170,230,0.4)" stroke-width="1"/>
-          <line x1="${xMin}" y1="${axisY-4}" x2="${xMin}" y2="${axisY+4}" stroke="rgba(120,170,230,0.55)"/>
-          <line x1="${xP90}" y1="${axisY}" x2="${xMax}" y2="${axisY}" stroke="rgba(120,170,230,0.4)" stroke-width="1"/>
-          <line x1="${xMax}" y1="${axisY-4}" x2="${xMax}" y2="${axisY+4}" stroke="rgba(120,170,230,0.55)"/>
-          <line x1="${xP10}" y1="${axisY-3}" x2="${xP10}" y2="${axisY+3}" stroke="rgba(120,170,230,0.55)"/>
-          <line x1="${xP90}" y1="${axisY-3}" x2="${xP90}" y2="${axisY+3}" stroke="rgba(120,170,230,0.55)"/>
-          <rect x="${xP25}" y="${axisY-7}" width="${xP75-xP25}" height="14" fill="rgba(56,116,203,0.22)" stroke="rgba(56,116,203,0.6)" stroke-width="0.5"/>
-          <line x1="${xMed}" y1="${axisY-8}" x2="${xMed}" y2="${axisY+8}" stroke="rgba(120,170,230,0.85)" stroke-width="1.2"/>
-          <circle cx="${xToday}" cy="${axisY}" r="4.5" fill="${todayCol}" stroke="#060a0f" stroke-width="1.2"/>
-          ${outOfBox ? `<text x="${xToday + (xToday > W/2 ? -10 : 10)}" y="${axisY - 8}" font-family="JetBrains Mono" font-size="7" fill="${todayCol}" font-weight="700" text-anchor="${xToday > W/2 ? 'end' : 'start'}">!</text>` : ''}
+          ${grads}
+          <line x1="${xP10.toFixed(1)}" y1="${axisY}" x2="${xP90.toFixed(1)}" y2="${axisY}" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="${xMed.toFixed(1)}" y1="${axisY-5}" x2="${xMed.toFixed(1)}" y2="${axisY+5}" stroke="rgba(184,201,217,0.85)" stroke-width="1.2"/>
+          <line x1="${xToday.toFixed(1)}" y1="${axisY-7}" x2="${xToday.toFixed(1)}" y2="${axisY+7}" stroke="${todayCol}" stroke-width="3" stroke-linecap="round"/>
+          ${outOfBand ? `<text x="${xToday + (xToday > W/2 ? -8 : 8)}" y="${axisY - 8}" font-family="JetBrains Mono" font-size="7" fill="${todayCol}" font-weight="700" text-anchor="${xToday > W/2 ? 'end' : 'start'}">!</text>` : ''}
         </svg>
       </td>`;
     }
