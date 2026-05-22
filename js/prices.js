@@ -3050,8 +3050,8 @@ function ccOpenFullscreen() {
     ${extraHtml}`;
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
-    title: `Cross-zone · ${viewTitle}`,
-    subtitle: `${longDate} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
+    title: `🌍 Cross-zone — Day-Ahead · ${longDate}`,
+    subtitle: `${longDate} · 96 × 15min slots · ENTSO-E`,
     filenameStem: `powerklock_crosszone_${view}_${currentDateISO}`,
     storageKey: 'daily-crosszone',
     kpis: kpisHtml ? { html: kpisHtml } : null,
