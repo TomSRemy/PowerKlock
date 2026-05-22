@@ -2521,6 +2521,10 @@ function toggleCompareChip(code) {
   window._zoneColorMap = null;
   buildCompareChips();
   renderCompareChart();
+  // Refresh tabbar context (chips list/highlight if Spread view)
+  if (typeof _ccUpdateTabContext === 'function') {
+    _ccUpdateTabContext(window._ccView || 'lines');
+  }
   document.dispatchEvent(new CustomEvent('zones-changed'));
 }
 
@@ -2588,12 +2592,10 @@ function renderCCTabs() {
 function setCCView(view) {
   window._ccView = view;
   renderCCTabs();
-  // Show/hide spread reference selector
-  const refWrap = document.getElementById('cc-ref-wrap');
-  if (refWrap) refWrap.style.display = view === 'spread' ? 'flex' : 'none';
-  // Show/hide bands zone selector
+  // Legacy ref-wrap + bands-wrap are now hidden — their content is rendered
+  // by _ccUpdateTabContext into the unified tabbar (sub-toggle + chips).
   const bandsWrap = document.getElementById('cc-bands-wrap');
-  if (bandsWrap) bandsWrap.style.display = view === 'bands' ? 'flex' : 'none';
+  if (bandsWrap) bandsWrap.style.display = 'none';
   // Show/hide canvas vs heatmap div
   const canvas = document.getElementById('price-compare-canvas');
   const heat   = document.getElementById('cc-heatmap');
@@ -2603,12 +2605,156 @@ function setCCView(view) {
   const shadeLegend = document.getElementById('cc-shading-legend');
   if (shadeLegend) shadeLegend.style.display = view === 'heatmap' ? 'none' : 'flex';
   renderCompareChart();
+  // Unified tabbar context: sub-toggle (Mode for Bands) + tab-contextual chips,
+  // pixel-perfect centered under the active tab.
+  _ccUpdateTabContext(view);
 }
 window.setCCView = setCCView;
+
+// ════════════════════════════════════════════════════════════════════
+// _ccUpdateTabContext(view) — DA Cross-zone equivalent of _hmzUpdateTabContext.
+// Decides sub-toggle (if any) + tab-contextual zone chips for the active view.
+//
+// Sub-toggle visibility per view:
+//   lines / heatmap / profile / bands → none (Bands uses its own header for now)
+//   spread → none (Daily Spread has no vs Ref / vs Peers split today)
+//
+// Zone chips visibility per view:
+//   spread → baseline ref chips (replicates the old SPREAD vs picker)
+//   others → none (kept off the tabbar for visual consistency)
+// ════════════════════════════════════════════════════════════════════
+function _ccUpdateTabContext(view) {
+  const subToggle  = document.getElementById('cc-sub-toggle');
+  const tabChipsEl = document.getElementById('cc-tab-chips');
+  const tabsCont   = document.getElementById('cc-tabs');
+  if (!subToggle || !tabChipsEl) return;
+
+  // ─── Sub-toggle decision ────────────────────────────────────────────
+  // bands → Mode (Z-score / Raw) pkPill, centered under Bands
+  // others → none (Spread uses chips only; Lines/Heatmap/Profile have none)
+  let subToggleHTML = '';
+  if (view === 'bands' && typeof window.pkPill === 'function') {
+    // Mode is meaningful only with >=2 zones; with 1 zone, the chart falls
+    // back to raw bands. We still show the toggle (greyed if 1 zone? — keep
+    // both clickable; the chart will adapt).
+    const cur = window._ccBandsMode || 'zscore';
+    const modes = [
+      { id: 'zscore', label: 'Z-score' },
+      { id: 'raw',    label: 'Raw' },
+    ];
+    subToggleHTML = modes.map(m => window.pkPill({
+      label:    m.label,
+      active:   m.id === cur,
+      onClick:  `setCCBandsMode('${m.id}')`,
+      dataAttr: `data-cc-bm="${m.id}"`,
+    })).join('');
+  }
+
+  if (subToggleHTML) {
+    subToggle.innerHTML = subToggleHTML;
+    subToggle.style.display = 'inline-flex';
+    const tabbar = document.getElementById('cc-tabs-bar');
+    if (tabbar) tabbar.style.marginBottom = '36px';
+    requestAnimationFrame(() => {
+      window.pkPositionSubToggle({
+        tabsContainer: tabsCont,
+        subToggle: subToggle,
+        activeSelector: 'button.active, button.pr-tab.active',
+      });
+    });
+  } else {
+    subToggle.style.display = 'none';
+    subToggle.innerHTML = '';
+    const tabbar = document.getElementById('cc-tabs-bar');
+    if (tabbar) tabbar.style.marginBottom = '10px';
+  }
+
+  // ─── Tab-contextual filter chips (right of the tabs row) ────────────
+  // bands → Period filter chips + Zone chips for series toggle
+  // spread → baseline ref Zone chips
+  // others → none
+  let chipsHTML = '';
+  if (view === 'spread') {
+    const sel = window._compareZones || new Set(['FR']);
+    const zones = Array.from(sel);
+    if (zones.length) {
+      let cur = window._ccSpreadRef;
+      if (!cur || !sel.has(cur)) {
+        cur = sel.has('FR') ? 'FR' : zones[0];
+        window._ccSpreadRef = cur;
+      }
+      chipsHTML = zones.map(z => {
+        const col = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
+        return window.pkZoneChip({
+          code: z,
+          active: z === cur,
+          color: col,
+          onClick: `setSpreadRef('${z}')`,
+        });
+      }).join('');
+    }
+  } else if (view === 'bands') {
+    // ── Period filter chips (neutral teal, pkFilterChip) ──
+    const periodCur = window._ccBandsPeriod || '1M';
+    const periodChips = _CC_BANDS_PERIODS.map(p => window.pkFilterChip({
+      label:   p.label,
+      active:  p.key === periodCur,
+      onClick: `setCCBandsPeriod('${p.key}')`,
+    })).join('');
+
+    // ── Zone chips (zone-coloured, pkZoneChip) for toggling series visibility ──
+    const sel = window._compareZones || new Set(['FR']);
+    const zones = Array.from(sel);
+    window._ccBandsHidden = window._ccBandsHidden || new Set();
+    const zoneChips = zones.map(z => {
+      const col = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
+      const visible = !window._ccBandsHidden.has(z);
+      return window.pkZoneChip({
+        code: z,
+        active: visible,
+        color: col,
+        onClick: `toggleCCBandsZone('${z}')`,
+        title: visible ? `Hide ${z} from chart` : `Show ${z} on chart`,
+      });
+    }).join('');
+
+    // Combine with a subtle vertical divider
+    chipsHTML = `${periodChips}<span style="display:inline-block;width:1px;height:18px;background:rgba(255,255,255,0.08);margin:0 4px;vertical-align:middle"></span>${zoneChips}`;
+  }
+
+  if (chipsHTML) {
+    tabChipsEl.innerHTML = chipsHTML;
+    tabChipsEl.style.display = 'flex';
+  } else {
+    tabChipsEl.style.display = 'none';
+    tabChipsEl.innerHTML = '';
+  }
+}
+window._ccUpdateTabContext = _ccUpdateTabContext;
+
+// Reposition CC sub-toggle on window resize.
+if (typeof window !== 'undefined' && !window._ccResizeBound) {
+  window._ccResizeBound = true;
+  window.addEventListener('resize', () => {
+    const subToggle = document.getElementById('cc-sub-toggle');
+    const tabsCont  = document.getElementById('cc-tabs');
+    if (subToggle && subToggle.style.display !== 'none' && tabsCont && typeof window.pkPositionSubToggle === 'function') {
+      window.pkPositionSubToggle({
+        tabsContainer: tabsCont,
+        subToggle: subToggle,
+        activeSelector: 'button.active, button.pr-tab.active',
+      });
+    }
+  });
+}
 
 function setSpreadRef(code) {
   window._ccSpreadRef = code;
   renderCompareChart();
+  // Refresh chip highlight (active zone changed)
+  if (typeof _ccUpdateTabContext === 'function') {
+    _ccUpdateTabContext(window._ccView || 'lines');
+  }
 }
 window.setSpreadRef = setSpreadRef;
 
@@ -3299,6 +3445,10 @@ window.setCCBandsPeriod = function(key) {
     renderCCBands(data, selected);
     renderCompareKPIs(data, selected);
   }
+  // Refresh tabbar so the active Period chip highlight is updated
+  if (typeof _ccUpdateTabContext === 'function') {
+    _ccUpdateTabContext(window._ccView || 'lines');
+  }
 };
 window.setCCBandsMode = function(mode) {
   window._ccBandsMode = mode; // 'zscore' | 'raw'
@@ -3306,6 +3456,10 @@ window.setCCBandsMode = function(mode) {
   const selected = window._compareZones || new Set(['FR']);
   if (data && (window._ccView || 'lines') === 'bands') {
     renderCCBands(data, selected);
+  }
+  // Refresh tabbar so the active Mode pill highlight is updated
+  if (typeof _ccUpdateTabContext === 'function') {
+    _ccUpdateTabContext(window._ccView || 'lines');
   }
 };
 // Toggle a single zone's visibility in the Z-score chart
@@ -3316,6 +3470,10 @@ window.toggleCCBandsZone = function(code) {
   const data = window._pricesSorted;
   const selected = window._compareZones || new Set(['FR']);
   if (data) renderCCBands(data, selected);
+  // Refresh the chip active/inactive state in the tabbar
+  if (typeof _ccUpdateTabContext === 'function') {
+    _ccUpdateTabContext(window._ccView || 'lines');
+  }
 };
 
 async function renderCCBands(data, selected) {
