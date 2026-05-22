@@ -2870,7 +2870,18 @@ function renderCCLines(data, selected) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode:'index', intersect:false },
       plugins: {
-        legend: { display:true, position:'bottom', labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 }},
+        legend: {
+          display:true,
+          position:'bottom',
+          labels:{ color:C_TX2, font:{size:10}, boxWidth:10, padding:10 },
+          // Shared focus-on-click behaviour: click a zone → focus (others dim),
+          // re-click → reset. Aligned with HMZ Lines.
+          onClick: (e, item, legend) => {
+            if (typeof window.pkLegendFocusClick === 'function') {
+              window.pkLegendFocusClick(e, item, legend);
+            }
+          },
+        },
         tooltip: { mode:'index', intersect:false, callbacks: {
           title: c => c[0].label,
           label: c => { const v = c.raw; if (v == null) return null; return ` ${c.dataset.label}: ${v.toFixed(1)} €/MWh`; }
