@@ -142,10 +142,16 @@ function setHistWindow(key, window, btn) {
     if (dfEl) dfEl.value = '';
     if (dtEl) dtEl.value = '';
   }
-  // Update button states
-  const btns = btn.closest('.hist-window-btns').querySelectorAll('.hw-btn');
-  btns.forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  // Update button states (only if btn was passed — local buttons pass `this`,
+  // but FS handlers and programmatic callers may omit it).
+  if (btn && typeof btn.closest === 'function') {
+    const wrap = btn.closest('.hist-window-btns');
+    if (wrap) {
+      const btns = wrap.querySelectorAll('.hw-btn');
+      btns.forEach(b => b.classList.remove('active'));
+    }
+    if (typeof btn.classList !== 'undefined') btn.classList.add('active');
+  }
   // Sync [period] labels in section titles
   if (typeof pkUpdateHistPeriodLabels === 'function') pkUpdateHistPeriodLabels(window);
   // Sync the global sticky bar period buttons
@@ -9311,7 +9317,7 @@ function hmzOpenFullscreen() {
 
   // Filters: window selector + view tabs + view-specific extras
   const windowsHtml = ['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(wk => `
-    <button onclick="setHistWindow('hmz','${wk}');setTimeout(()=>{hmzRefreshFullscreen();},120)" style="
+    <button onclick="setHistWindow('hmz','${wk}',this);setTimeout(()=>{hmzRefreshFullscreen();},120)" style="
       padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
       color:${wk === w ? '#14D3A9' : '#7A93AB'};
       background:${wk === w ? 'rgba(20,211,169,0.18)' : 'transparent'};
