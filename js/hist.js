@@ -2432,6 +2432,25 @@ function _renderHoBreakdown(zone, series, summary) {
   if (inlineEl) inlineEl.innerHTML = html;
   const fsEl = document.getElementById('ho-fs-monthly');
   if (fsEl) fsEl.innerHTML = html;
+
+  // FS side pane · show Monthly/Daily toggle only on the Lines tab.
+  // On other tabs the breakdown content is intrinsically tied to the chart,
+  // so we hide the toggle and keep the default renderer's output.
+  const toggleEl = document.getElementById('ho-fs-breakdown-toggle');
+  if (toggleEl) {
+    toggleEl.style.display = (tab === 'lines') ? 'inline-flex' : 'none';
+  }
+  // If the user had previously selected Daily and we're back on Lines, render daily
+  if (tab === 'lines' && window._HO_BREAKDOWN_MODE === 'daily' && fsEl) {
+    const dailyHtml = _bdDaily(zone, series);
+    if (dailyHtml) {
+      fsEl.innerHTML = dailyHtml;
+      if (fsLabel) fsLabel.textContent = 'Daily breakdown';
+    }
+  } else if (tab !== 'lines') {
+    // Reset toggle state for non-lines tabs (purely cosmetic, the toggle is hidden)
+    window._HO_BREAKDOWN_MODE = 'monthly';
+  }
 }
 
 // ── _bdLines / YoY Daily: Monthly breakdown (current behaviour) ────────────
@@ -2498,6 +2517,86 @@ function _bdLines(zone, series) {
     </tbody>
   </table>`;
 }
+
+// ── _bdDaily: per-day breakdown (alternative to monthly) ───────────────────
+// Used by the FS toggle Monthly ⇄ Daily on the lines tab.
+function _bdDaily(zone, series) {
+  if (!series || !series.length) return null;
+  // Apply current window filter so the table matches the chart
+  const windowed = (typeof filterByWindow === 'function')
+    ? filterByWindow(series, HIST.windows['ho'] || '3M')
+    : series;
+  // Newest first
+  const rows = [...windowed].sort((a, b) => (b.d > a.d ? 1 : -1));
+
+  const fmtDay = iso => {
+    try {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+    } catch (_) { return iso; }
+  };
+  const fmtNegH = h => {
+    if (!h) return '–';
+    if (h >= 1) return `${Math.round(h)}h`;
+    return `${Math.round(h * 60)}min`;
+  };
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Date</th>
+      <th style="${_BD_TH_STYLE}">Avg €/MWh</th>
+      <th style="${_BD_TH_STYLE}">Min</th>
+      <th style="${_BD_TH_STYLE}">Max</th>
+      <th style="${_BD_TH_STYLE}">Peak</th>
+      <th style="${_BD_TH_STYLE}">Off-pk</th>
+      <th style="${_BD_TH_STYLE}">Neg h</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${fmtDay(r.d)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.avg)}</td>
+        <td style="${_BD_TD_STYLE};color:#ED6965">${_bdFmt(r.min)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${_bdFmt(r.max)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.peakAvg)}</td>
+        <td style="${_BD_TD_STYLE}">${_bdFmt(r.offAvg)}</td>
+        <td style="${_BD_TD_STYLE};color:#FBBF24">${fmtNegH(r.negHours)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Toggle Monthly ⇄ Daily breakdown in the FS side pane (Lines tab only).
+// Persists the choice in window._HO_BREAKDOWN_MODE.
+window._HO_BREAKDOWN_MODE = window._HO_BREAKDOWN_MODE || 'monthly';
+window._hoSetBreakdown = function(mode) {
+  if (mode !== 'monthly' && mode !== 'daily') return;
+  window._HO_BREAKDOWN_MODE = mode;
+
+  // Update toggle button styles
+  document.querySelectorAll('#ho-fs-breakdown-toggle [data-ho-breakdown]').forEach(btn => {
+    const isActive = btn.dataset.hoBreakdown === mode;
+    btn.style.background = isActive ? 'rgba(20,211,169,0.15)' : 'transparent';
+    btn.style.color = isActive ? '#14D3A9' : 'var(--tx3)';
+  });
+
+  // Re-render side pane content with the chosen mode
+  const series = window._HO_LAST_SERIES;
+  const zone = window._HO_LAST_ZONE || (series && series[0] && series[0].zone);
+  if (!series || !zone) return;
+
+  // Only the lines tab supports the toggle; other tabs always use their default breakdown
+  const tab = HSZ.tab;
+  if (tab === 'lines' && mode === 'daily') {
+    const html = _bdDaily(zone, series) || '<div style="color:var(--tx3);font-size:11px;padding:8px">No data</div>';
+    const fsEl = document.getElementById('ho-fs-monthly');
+    if (fsEl) fsEl.innerHTML = html;
+    const fsLabel = document.getElementById('ho-fs-breakdown-label');
+    if (fsLabel) fsLabel.textContent = 'Daily breakdown';
+  } else {
+    // Fall back to the tab's default renderer
+    _renderHoBreakdown(zone, series, window._HO_LAST_SUMMARY);
+  }
+};
 
 // ── _bdYoYWeekly: Weekly comparison with Y-1 and Y-2 ───────────────────────
 function _bdYoYWeekly(zone, series, summary) {
@@ -3383,9 +3482,9 @@ function _openHoFullscreen(zone) {
   `;
 
   fs.innerHTML = `
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-shrink:0">
-      <div>
+    <!-- ═══ HEADER · title left, tabs + actions right ═══ -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-shrink:0;gap:12px;flex-wrap:wrap">
+      <div style="min-width:0">
         <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
           ${flag} ${zone} — ${country}
         </div>
@@ -3394,110 +3493,126 @@ function _openHoFullscreen(zone) {
           <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
         </div>
       </div>
-      <!-- Right column: window selector + tabs-bar + actions, with YoY pills below tabs-bar -->
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <!-- Top row: window selector (7D/1M/3M/...) left, tabs-bar + actions right -->
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-          <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:6px;flex-wrap:wrap">
-            ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
-              const active = (HIST.windows['ho']||'3M') === w;
-              return `
-                <button class="hw-btn${active ? ' active' : ''}"
-                  onclick="setHistWindow('ho','${w}',this)"
-                  style="padding:4px 11px;font-size:10px;cursor:pointer;border-radius:14px;background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase;transition:all .15s">${w}</button>`;
-            }).join('')}
-          </div>
-          <div id="ho-fs-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-right:6px;width:max-content"></div>
-          <button id="ho-fs-csv-btn" title="Export chart data as CSV"
-            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📊 CSV</button>
-          <button id="ho-fs-png-btn" title="Download chart as PNG"
-            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-          <button id="ho-fs-resize-btn" title="Reset side pane width"
-            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 10px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit">⇔</button>
-          <button id="ho-fs-close-btn"
-            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:8px 14px;font-size:11px;border-radius:6px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close (Esc)</button>
-        </div>
-        <!-- YoY sub-menu pills aligned to the LEFT of the right column so they sit under the tabs-bar (where the YoY tab lives) -->
-        <!-- Generic per-tab submenu slot — aligned to the LEFT of the right column so it sits under the tabs-bar -->
-        <div id="ho-fs-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;align-self:flex-start;padding-left:4px"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <!-- Sub-tabs Lines/YoY/Weekday/Volatility/Distribution -->
+        <div id="ho-fs-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:3px;width:max-content"></div>
+        <!-- Action buttons -->
+        <button id="ho-fs-csv-btn" title="Export chart data as CSV"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⤓ CSV</button>
+        <button id="ho-fs-png-btn" title="Download chart as PNG"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⤓ PNG</button>
+        <button id="ho-fs-resize-btn" title="Reset side pane width"
+          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 9px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit">⇔</button>
+        <button id="ho-fs-close-btn"
+          style="background:var(--bg2);border:1px solid rgba(237,105,101,0.3);color:var(--down,#ED6965);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ ESC</button>
       </div>
     </div>
 
-    <!-- KPI strip full width at the top -->
-    <div id="ho-fs-kpis" style="margin-bottom:14px;flex-shrink:0"></div>
-
-    <!-- Verdict bandeau full width -->
-    <div id="ho-fs-verdict" style="font-size:12px;color:var(--tx2);margin-bottom:12px;font-family:'Inter',sans-serif;flex-shrink:0">
-      ${_buildHoVerdict(st)}
-    </div>
-
-    <!-- Split: chart left, Monthly breakdown right, drag handle in between -->
+    <!-- ═══ MAIN · KPI top + chart full-width LEFT, side pane RIGHT ═══ -->
     <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
-      <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
-        <!-- Chart title block (HTML, allows hybrid eyebrow + title + subtitle styling) -->
-        <div id="ho-fs-title-block" style="margin-top:14px;margin-bottom:8px;flex-shrink:0">
-          <div id="ho-fs-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
-          <div id="ho-fs-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
-          <div id="ho-fs-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
+
+      <!-- LEFT column: KPI strip on top, then chart pane full-width below -->
+      <div id="ho-fs-left-col" style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
+
+        <!-- KPI strip full width at the top -->
+        <div id="ho-fs-kpis" style="flex-shrink:0"></div>
+
+        <!-- Chart pane -->
+        <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
+          <!-- Chart title block (eyebrow + title + subtitle) -->
+          <div id="ho-fs-title-block" style="margin-bottom:8px;flex-shrink:0">
+            <div id="ho-fs-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
+            <div id="ho-fs-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
+            <div id="ho-fs-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
+          </div>
+
+          <!-- Period pills (7D/1M/3M/...) LEFT + Y presets (Focus/Standard/All) RIGHT -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;gap:10px;flex-wrap:wrap">
+            <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:5px;flex-wrap:wrap">
+              ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
+                const active = (HIST.windows['ho']||'3M') === w;
+                return `
+                  <button class="hw-btn${active ? ' active' : ''}"
+                    onclick="setHistWindow('ho','${w}',this)"
+                    style="padding:3px 10px;font-size:10px;cursor:pointer;border-radius:14px;background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase;transition:all .15s">${w}</button>`;
+              }).join('')}
+            </div>
+            <div style="display:flex;gap:3px;align-items:center">
+              <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
+              <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
+                <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
+                  style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
+                <button data-ho-preset="standard" onclick="_hoSetYPreset('standard')" title="Default Y axis"
+                  style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
+                <button data-ho-preset="all" onclick="_hoSetYPreset('all')" title="Full Y range"
+                  style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+              </div>
+              <button onclick="window._hoResetZoom()" title="Reset zoom"
+                style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
+            </div>
+          </div>
+
+          <!-- Per-tab submenu slot (YoY pills etc.) -->
+          <div id="ho-fs-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0"></div>
+
+          <div style="flex:1;position:relative;min-height:0">
+            <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
+            <!-- Floating toggle buttons (top-right of FS chart) -->
+            <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5">
+              <button id="ho-fs-toggle-kpis" title="Toggle KPI strip (K)" aria-label="Toggle KPIs"
+                style="height:28px;padding:0 9px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="6" y1="18" x2="14" y2="18"/></svg>
+                <span>KPIs</span>
+              </button>
+              <button id="ho-fs-toggle-table" title="Toggle side table (T)" aria-label="Toggle side table"
+                style="height:28px;padding:0 9px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+                <span>Table</span>
+              </button>
+              <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)" aria-label="Chart only mode"
+                style="height:28px;width:28px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 14v6h6"/>
+                  <path d="M20 10V4h-6"/>
+                  <path d="M14 10l6-6"/>
+                  <path d="M10 14l-6 6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
+            <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
+            <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
+            <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
+            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
+            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
+          </div>
         </div>
 
-        <!-- Ypresets row below the title (Lines/YoY only) -->
-        <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px;flex-shrink:0">
-          <div style="display:flex;gap:3px;align-items:center">
-            <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
-            <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
-              <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
-                style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
-              <button data-ho-preset="standard" onclick="_hoSetYPreset('standard')" title="Default Y axis"
-                style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
-              <button data-ho-preset="all" onclick="_hoSetYPreset('all')" title="Full Y range"
-                style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
-            </div>
-            <button onclick="window._hoResetZoom()" title="Reset zoom"
-              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
-          </div>
+        <!-- Verdict bandeau (Market Read style) under the chart -->
+        <div id="ho-fs-verdict" style="font-size:12px;color:var(--tx2);font-family:'Inter',sans-serif;flex-shrink:0">
+          ${_buildHoVerdict(st)}
         </div>
-        <div style="flex:1;position:relative;min-height:0">
-          <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
-          <!-- Floating toggle buttons (top-right of FS chart): KPIs, Side panel, Chart-only (F) -->
-          <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5">
-            <button id="ho-fs-toggle-kpis" title="Toggle KPI strip (K)" aria-label="Toggle KPIs"
-              style="height:30px;padding:0 10px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="6" y1="18" x2="14" y2="18"/></svg>
-              <span>KPIs</span>
-            </button>
-            <button id="ho-fs-toggle-table" title="Toggle side table (T)" aria-label="Toggle side table"
-              style="height:30px;padding:0 10px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-              <span>Table</span>
-            </button>
-            <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)" aria-label="Chart only mode"
-              style="height:30px;width:30px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 14v6h6"/>
-                <path d="M20 10V4h-6"/>
-                <path d="M14 10l6-6"/>
-                <path d="M10 14l-6 6"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
-          <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
-          <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
-          <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
-          <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
-          <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
-        </div>
+
       </div>
 
+      <!-- Drag divider -->
       <div id="ho-fs-divider" title="Drag to resize · double-click to reset"
         style="width:8px;cursor:col-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent">
         <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
       </div>
 
-      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;overflow-y:auto;min-height:0;min-width:280px;max-width:60%;width:440px;display:flex;flex-direction:column">
-        <div style="font-size:11px;font-weight:600;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;flex-shrink:0"><span id="ho-fs-breakdown-label">Monthly breakdown</span></div>
+      <!-- RIGHT side pane: Monthly/Daily toggle + table -->
+      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px;overflow-y:auto;min-height:0;min-width:280px;max-width:60%;width:380px;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;gap:8px">
+          <span id="ho-fs-breakdown-label" style="font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--tx2);text-transform:uppercase">Breakdown</span>
+          <div id="ho-fs-breakdown-toggle" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px">
+            <button data-ho-breakdown="monthly" onclick="_hoSetBreakdown('monthly')"
+              style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:rgba(20,211,169,0.15);color:#14D3A9;border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Monthly</button>
+            <button data-ho-breakdown="daily" onclick="_hoSetBreakdown('daily')"
+              style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:transparent;color:var(--tx3);border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Daily</button>
+          </div>
+        </div>
         <div id="ho-fs-monthly" style="flex:1;overflow-y:auto;min-height:0"></div>
       </div>
     </div>
