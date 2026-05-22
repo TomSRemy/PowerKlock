@@ -2653,15 +2653,11 @@ function _ccUpdateTabContext(view) {
   if (subToggleHTML) {
     subToggle.innerHTML = subToggleHTML;
     subToggle.style.display = 'inline-flex';
+    // Reset any leftover positioning from previous JS-positioned versions
+    subToggle.style.left = '0';
+    subToggle.style.transform = '';
     const tabbar = document.getElementById('cc-tabs-bar');
     if (tabbar) tabbar.style.marginBottom = '36px';
-    requestAnimationFrame(() => {
-      window.pkPositionSubToggle({
-        tabsContainer: tabsCont,
-        subToggle: subToggle,
-        activeSelector: 'button.active, button.pr-tab.active',
-      });
-    });
   } else {
     subToggle.style.display = 'none';
     subToggle.innerHTML = '';
@@ -2732,21 +2728,8 @@ function _ccUpdateTabContext(view) {
 }
 window._ccUpdateTabContext = _ccUpdateTabContext;
 
-// Reposition CC sub-toggle on window resize.
-if (typeof window !== 'undefined' && !window._ccResizeBound) {
-  window._ccResizeBound = true;
-  window.addEventListener('resize', () => {
-    const subToggle = document.getElementById('cc-sub-toggle');
-    const tabsCont  = document.getElementById('cc-tabs');
-    if (subToggle && subToggle.style.display !== 'none' && tabsCont && typeof window.pkPositionSubToggle === 'function') {
-      window.pkPositionSubToggle({
-        tabsContainer: tabsCont,
-        subToggle: subToggle,
-        activeSelector: 'button.active, button.pr-tab.active',
-      });
-    }
-  });
-}
+// (Resize handler removed: sub-toggle is now left-aligned via static CSS,
+//  no JS positioning required.)
 
 function setSpreadRef(code) {
   window._ccSpreadRef = code;
