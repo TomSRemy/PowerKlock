@@ -7733,36 +7733,8 @@ function _hmzPopulateRefChips(selected) {
 window._hmzPopulateRefChips = _hmzPopulateRefChips;
 
 function _hmzToggleRefWrap(mode) {
-  const wrap = document.getElementById('hmz-ref-wrap');
-  if (wrap) wrap.style.display = (mode === 'spread') ? 'flex' : 'none';
-  if (mode === 'spread') _hmzPopulateSpreadModeToggle();
-  _hmzUpdateSubControlsVisibility(mode);
-}
-
-// Populate the vs Ref / vs Peers toggle for the Spread tab.
-// Style: dashboard-standard rounded pill (pkPill helper) — teal accent when
-// active, faint border when inactive. Same visual pattern as Window pills.
-// Also toggles visibility of the baseline chips (only meaningful in vsRef mode).
-function _hmzPopulateSpreadModeToggle() {
-  const host = document.getElementById('hmz-spread-mode-toggle');
-  if (host && typeof window.pkPill === 'function') {
-    const modes = [
-      { id: 'vsRef',   label: 'vs Ref' },
-      { id: 'vsPeers', label: 'vs Peers' },
-    ];
-    const cur = HMZ.spreadMode || 'vsRef';
-    host.innerHTML = modes.map(m => window.pkPill({
-      label:    m.label,
-      active:   m.id === cur,
-      onClick:  `setHmzSpreadMode('${m.id}')`,
-      dataAttr: `data-hmz-sm="${m.id}"`,
-    })).join('');
-  }
-  // Baseline chips meaningful only in vsRef mode
-  const chipsWrap = document.getElementById('hmz-ref-chips-wrap');
-  if (chipsWrap) {
-    chipsWrap.style.display = (HMZ.spreadMode === 'vsRef') ? 'flex' : 'none';
-  }
+  // Kept for back-compat. Delegates to the unified _hmzUpdateTabContext.
+  _hmzUpdateTabContext(mode);
 }
 
 // Switch Heatmap granularity. Persists the choice on HMZ.heatmapMode.
@@ -7783,69 +7755,135 @@ function setHmzSpreadMode(mode) {
 }
 window.setHmzSpreadMode = setHmzSpreadMode;
 
-// Show the Heatmap controls (granularity toggle + baseline picker) only when
-// the Heatmap tab is active. Mirrors _hmzToggleRefWrap for the Spread mode.
 function _hmzToggleHeatmapControls(mode) {
-  const wrap = document.getElementById('hmz-heatmap-controls');
-  if (wrap) wrap.style.display = (mode === 'heatmap') ? 'flex' : 'none';
-  if (mode === 'heatmap') _hmzPopulateHeatmapControls();
-  _hmzUpdateSubControlsVisibility(mode);
+  // Kept for back-compat. Delegates to the unified _hmzUpdateTabContext.
+  _hmzUpdateTabContext(mode);
 }
 
-// Show/hide the parent #hmz-subcontrols block: visible only when the active
-// tab has its own controls (Spread or Heatmap). Lines and Bands have none,
-// so we hide the whole strip to keep the UI tight.
-function _hmzUpdateSubControlsVisibility(mode) {
-  const parent = document.getElementById('hmz-subcontrols');
-  if (!parent) return;
-  const hasControls = (mode === 'spread' || mode === 'heatmap');
-  parent.style.display = hasControls ? 'flex' : 'none';
-}
+// ════════════════════════════════════════════════════════════════════
+// _hmzUpdateTabContext(tab) — single source of truth for the HMZ tabbar:
+//   - Decides which sub-toggle is shown (centered under the active tab)
+//   - Decides which zone chips are shown (right of the tabs row)
+//   - Repositions the sub-toggle pixel-perfect via pkPositionSubToggle
+//
+// Sub-toggle visibility per tab:
+//   lines   → none
+//   heatmap → granularity (Day/Week/Month/DoW)
+//   bands   → none
+//   spread  → mode (vs Ref / vs Peers)
+//
+// Zone chips visibility per tab:
+//   heatmap          → baseline chips
+//   spread + vsRef   → baseline chips
+//   spread + vsPeers → none (scatter cross-zones, no baseline)
+//   lines / bands    → none
+// ════════════════════════════════════════════════════════════════════
+function _hmzUpdateTabContext(tab) {
+  const subToggle   = document.getElementById('hmz-sub-toggle');
+  const tabChipsEl  = document.getElementById('hmz-tab-chips');
+  const tabsCont    = document.getElementById('hmz-tabs');
+  if (!subToggle || !tabChipsEl) return;
 
-// Populate the granularity toggle (Day/Week/Month/DoW) and the baseline
-// chips inside the Heatmap controls bar.
-// - Granularity uses pkPill (rounded teal pill, dashboard-standard).
-// - Baseline chips keep their existing zone-coloured chip style.
-function _hmzPopulateHeatmapControls() {
-  // ── Granularity toggle ──
-  const modes = [
-    { id: 'day',   label: 'Day' },
-    { id: 'week',  label: 'Week' },
-    { id: 'month', label: 'Month' },
-    { id: 'dow',   label: 'DoW' },
-  ];
-  const cur = HMZ.heatmapMode || 'day';
-  const modeHost = document.getElementById('hmz-heatmap-mode-toggle');
-  if (modeHost && typeof window.pkPill === 'function') {
-    modeHost.innerHTML = modes.map(m => window.pkPill({
+  // ─── Decide content of the sub-toggle ───
+  let subToggleHTML = '';
+  if (tab === 'heatmap') {
+    const modes = [
+      { id: 'day',   label: 'Day' },
+      { id: 'week',  label: 'Week' },
+      { id: 'month', label: 'Month' },
+      { id: 'dow',   label: 'DoW' },
+    ];
+    const cur = HMZ.heatmapMode || 'day';
+    subToggleHTML = modes.map(m => window.pkPill({
       label:    m.label,
       active:   m.id === cur,
       onClick:  `setHmzHeatmapMode('${m.id}')`,
       dataAttr: `data-hmz-hm-mode="${m.id}"`,
     })).join('');
+  } else if (tab === 'spread') {
+    const modes = [
+      { id: 'vsRef',   label: 'vs Ref' },
+      { id: 'vsPeers', label: 'vs Peers' },
+    ];
+    const cur = HMZ.spreadMode || 'vsRef';
+    subToggleHTML = modes.map(m => window.pkPill({
+      label:    m.label,
+      active:   m.id === cur,
+      onClick:  `setHmzSpreadMode('${m.id}')`,
+      dataAttr: `data-hmz-sm="${m.id}"`,
+    })).join('');
   }
 
-  // ── Baseline chips ──
-  // Uses the same HIST.hmzBaseline / setHmzBaseline as Spread mode for consistency.
-  const chipHost = document.getElementById('hmz-heatmap-baseline-chips');
-  if (chipHost) {
-    const sel = Array.from(window._hmzSelected || []);
-    if (!sel.length) { chipHost.innerHTML = ''; return; }
-    let baseline = HIST.hmzBaseline;
-    if (!baseline || !sel.includes(baseline)) {
-      baseline = sel.includes('FR') ? 'FR' : sel[0];
-      HIST.hmzBaseline = baseline;
-    }
-    chipHost.innerHTML = sel.map(z => {
-      const isOn = z === baseline;
-      const col  = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
-      return `<button onclick="setHmzBaseline('${z}')" style="
-        padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid ${isOn?col:'rgba(255,255,255,.12)'};
-        background:${isOn?col+'22':'transparent'};color:${isOn?col:'rgba(255,255,255,.55)'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
-      ">${z}</button>`;
-    }).join('');
+  if (subToggleHTML) {
+    subToggle.innerHTML = subToggleHTML;
+    subToggle.style.display = 'inline-flex';
+    // Reserve space below tabs for the absolute-positioned sub-toggle
+    const tabbar = document.getElementById('hmz-tabbar');
+    if (tabbar) tabbar.style.marginBottom = '36px';
+    // Position pixel-perfect under the centre of the active tab.
+    // Use requestAnimationFrame to ensure tabs are fully rendered first.
+    requestAnimationFrame(() => {
+      window.pkPositionSubToggle({
+        tabsContainer: tabsCont,
+        subToggle: subToggle,
+        activeSelector: 'button.active, button.pr-tab.active',
+      });
+    });
+  } else {
+    subToggle.style.display = 'none';
+    subToggle.innerHTML = '';
+    // No sub-toggle → no need for the extra margin, tighter layout
+    const tabbar = document.getElementById('hmz-tabbar');
+    if (tabbar) tabbar.style.marginBottom = '10px';
   }
+
+  // ─── Decide content of the zone chips (right of the tabs row) ───
+  const showChips =
+    (tab === 'heatmap') ||
+    (tab === 'spread' && HMZ.spreadMode !== 'vsPeers');
+
+  if (showChips) {
+    const sel = Array.from(window._hmzSelected || []);
+    if (sel.length) {
+      let baseline = HIST.hmzBaseline;
+      if (!baseline || !sel.includes(baseline)) {
+        baseline = sel.includes('FR') ? 'FR' : sel[0];
+        HIST.hmzBaseline = baseline;
+      }
+      tabChipsEl.innerHTML = sel.map(z => {
+        const col = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
+        return window.pkZoneChip({
+          code: z,
+          active: z === baseline,
+          color: col,
+          onClick: `setHmzBaseline('${z}')`,
+        });
+      }).join('');
+      tabChipsEl.style.display = 'flex';
+    } else {
+      tabChipsEl.style.display = 'none';
+      tabChipsEl.innerHTML = '';
+    }
+  } else {
+    tabChipsEl.style.display = 'none';
+    tabChipsEl.innerHTML = '';
+  }
+}
+
+// Reposition sub-toggle on window resize (handles responsive tab wrap).
+if (typeof window !== 'undefined' && !window._hmzResizeBound) {
+  window._hmzResizeBound = true;
+  window.addEventListener('resize', () => {
+    const subToggle = document.getElementById('hmz-sub-toggle');
+    const tabsCont  = document.getElementById('hmz-tabs');
+    if (subToggle && subToggle.style.display !== 'none' && tabsCont) {
+      window.pkPositionSubToggle({
+        tabsContainer: tabsCont,
+        subToggle: subToggle,
+        activeSelector: 'button.active, button.pr-tab.active',
+      });
+    }
+  });
 }
 
 async function renderHistMulti() {
@@ -7975,11 +8013,9 @@ async function renderHistMulti() {
   // Render HMZ data table (same template as Daily Compare zones · compact)
   renderHmzTable(HMZ.tab, stats, selected, baseline);
 
-  // Populate the SPREAD vs chips (always update so the active highlight stays correct)
-  // + show them only in Spread mode
-  _hmzPopulateRefChips(selected);
-  _hmzToggleRefWrap(HMZ.tab);
-  _hmzToggleHeatmapControls(HMZ.tab);
+  // Update the tabbar context: sub-toggle + tab-contextual zone chips,
+  // pixel-perfect centered under the active tab.
+  _hmzUpdateTabContext(HMZ.tab);
 
   // Dispatch by tab
   if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
