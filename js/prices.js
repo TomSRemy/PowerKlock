@@ -3324,7 +3324,11 @@ function ccOpenFullscreen() {
       chartId: 'price-compare-canvas',
       htmlContainerId: 'cc-heatmap',
       isHtmlView: () => (view === 'heatmap'),
-      chartsRegistry: () => window.CHARTS || window._chartInstances || {},
+      chartsRegistry: () => {
+        if (typeof CHARTS !== 'undefined' && CHARTS['price-compare-canvas']) return CHARTS;
+        if (window._chartInstances) return window._chartInstances;
+        return {};
+      },
     }),
     onCSV: () => buildCCCSV(view, data, selected),
   });
