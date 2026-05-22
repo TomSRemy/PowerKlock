@@ -2930,34 +2930,39 @@
     </div>
   </div>
 
-  <!-- Insta tabs : Multi zone modes -->
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;flex-wrap:wrap">
+  <!-- HMZ tabs bar : tabs left, fullscreen button right -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;flex-wrap:wrap">
     <div id="hmz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-    <!-- Spread reference chips (only visible in Spread mode, same UX as Daily Compare zones) -->
-    <div id="hmz-ref-wrap" style="display:none;align-items:center;gap:12px;font-size:11px;color:var(--text3);flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:5px">
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+      <button onclick="hmzOpenFullscreen()" title="Open in fullscreen"
+        style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- Sub-controls row : appears RIGHT BELOW the tabs, in the same visual block.
+       Each tab populates its own controls; only one row is visible at a time. -->
+  <div id="hmz-subcontrols" style="display:none;align-items:center;gap:14px;margin:0 0 10px;flex-wrap:wrap;font-size:11px;color:var(--text3)">
+    <!-- Spread mode toggle (visible only when Spread tab is active) -->
+    <div id="hmz-ref-wrap" style="display:none;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Mode</span>
-        <div id="hmz-spread-mode-toggle" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px"></div>
+        <div id="hmz-spread-mode-toggle" style="display:inline-flex;gap:5px"></div>
       </div>
-      <div id="hmz-ref-chips-wrap" style="display:flex;align-items:center;gap:5px">
+      <div id="hmz-ref-chips-wrap" style="display:flex;align-items:center;gap:8px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
         <div id="hmz-ref-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
       </div>
     </div>
-    <!-- Heatmap controls (only visible in Heatmap mode): granularity toggle + baseline picker -->
-    <div id="hmz-heatmap-controls" style="display:none;align-items:center;gap:12px;font-size:11px;color:var(--text3);flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:5px">
+    <!-- Heatmap controls (visible only when Heatmap tab is active) -->
+    <div id="hmz-heatmap-controls" style="display:none;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Granularity</span>
-        <div id="hmz-heatmap-mode-toggle" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px"></div>
+        <div id="hmz-heatmap-mode-toggle" style="display:inline-flex;gap:5px"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:5px">
+      <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
         <div id="hmz-heatmap-baseline-chips" style="display:flex;gap:4px;flex-wrap:wrap"></div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-      <button onclick="hmzOpenFullscreen()" title="Open in fullscreen"
-        style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
     </div>
   </div>
 
