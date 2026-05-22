@@ -7790,16 +7790,14 @@ function _hmzToggleRefWrap(mode) {
 // ════════════════════════════════════════════════════════════════════
 // Heatmap granularity auto-tuning
 // When the user changes the time window (7D/1M/3M/6M/1Y/5Y/All), the
-// heatmap granularity is automatically set to the most readable mode for
-// that window length, so the user doesn't end up with 365 Day cells.
+// heatmap granularity is automatically set so all cells fit on one screen
+// without horizontal scroll. The logic is based on cell count, not the
+// window key string, so YTD and other dynamic windows behave correctly.
 //
-// Thresholds (aggressive, prioritise readability over precision):
-//   7D       → Day    (7 cells)
-//   1M       → Week   (~4-5 cells)
-//   3M       → Week   (~13 cells)
-//   6M       → Month  (6 cells)
-//   1Y       → Month  (12 cells)
-//   5Y / All → Month  (60+ cells)
+// Cell budget (target: stay under ~60 cells horizontal):
+//   ≤ 14 days  → Day   (one cell per day, max ~14 cells)
+//   15-90 days → Week  (one cell per week, max ~13 cells)
+//   > 90 days  → Month (one cell per month, max ~60 cells)
 //
 // Manual override: if the user clicks a different granularity inside a
 // given window, that choice sticks until the window changes again. The
@@ -7807,15 +7805,28 @@ function _hmzToggleRefWrap(mode) {
 // window change brings back the auto-mode.
 // ════════════════════════════════════════════════════════════════════
 function _hmzAutoHeatmapMode(windowKey) {
+  // Approximate days-per-window mapping (avoids needing the actual filtered
+  // series length to make a decision). YTD is computed from today's date.
   const w = (windowKey || '').toUpperCase();
-  if (w === '7D')  return 'day';
-  if (w === '1M')  return 'week';
-  if (w === '3M')  return 'week';
-  if (w === '6M')  return 'month';
-  if (w === '1Y')  return 'month';
-  if (w === '5Y')  return 'month';
-  if (w === 'ALL') return 'month';
-  return 'day'; // safe fallback for any unknown window key
+  let days = 90; // safe default
+  if (w === '7D')       days = 7;
+  else if (w === '1M')  days = 30;
+  else if (w === '3M')  days = 90;
+  else if (w === '6M')  days = 180;
+  else if (w === '1Y')  days = 365;
+  else if (w === '2Y')  days = 730;
+  else if (w === '5Y')  days = 1825;
+  else if (w === 'ALL') days = 3650;
+  else if (w === 'YTD') {
+    // Days since Jan 1 of the current year
+    const today = new Date();
+    const jan1 = new Date(today.getFullYear(), 0, 1);
+    days = Math.floor((today - jan1) / 86400000) + 1;
+  }
+
+  if (days <= 14)  return 'day';
+  if (days <= 90)  return 'week';
+  return 'month';
 }
 
 // Called by setHistWindow when the HMZ window changes. Resets any manual
