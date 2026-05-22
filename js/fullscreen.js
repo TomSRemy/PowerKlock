@@ -717,3 +717,76 @@
     pkOpenFullscreen(config);
   };
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// pkLegendFocusClick — shared legend click behaviour for multi-series
+// line charts (DA Cross-zone, HMZ Lines, and any future cross-series view).
+//
+// Usage in Chart.js options:
+//   legend: { onClick: (e, item, legend) => pkLegendFocusClick(e, item, legend) }
+//
+// Behaviour:
+//   - 1st click on a dataset legend → focus that series (others dim to 25%)
+//   - Re-click on the same series   → reset (all back to 100%)
+//   - Click another series during focus → switch focus to the new one
+//   - The dataset is never hidden — focus is purely an opacity change.
+//
+// State is stored on the chart instance under chart._pkFocusedIdx so it
+// survives renders triggered by other handlers.
+// ════════════════════════════════════════════════════════════════════
+window.pkLegendFocusClick = function(e, legendItem, legend) {
+  const chart = legend.chart;
+  if (!chart || !chart.data || !Array.isArray(chart.data.datasets)) return;
+  const idx = legendItem.datasetIndex;
+  if (idx == null) return;
+
+  const current = chart._pkFocusedIdx;
+  const next = (current === idx) ? null : idx;
+  chart._pkFocusedIdx = next;
+
+  // Apply opacity rules. We modify borderColor by suffixing alpha when
+  // the colour is a 6- or 8-char hex; we fall back to the original colour
+  // when resetting (saved on first focus into dataset._pkOriginalBorder).
+  chart.data.datasets.forEach((ds, i) => {
+    if (ds._pkOriginalBorder === undefined) {
+      ds._pkOriginalBorder = ds.borderColor;
+      ds._pkOriginalBg     = ds.backgroundColor;
+      ds._pkOriginalWidth  = ds.borderWidth;
+    }
+    if (next == null) {
+      ds.borderColor     = ds._pkOriginalBorder;
+      ds.backgroundColor = ds._pkOriginalBg;
+      ds.borderWidth     = ds._pkOriginalWidth;
+    } else if (i === next) {
+      ds.borderColor     = ds._pkOriginalBorder;
+      ds.backgroundColor = ds._pkOriginalBg;
+      ds.borderWidth     = (ds._pkOriginalWidth || 2) + 0.5;
+    } else {
+      ds.borderColor     = _pkDimColour(ds._pkOriginalBorder, 0.25);
+      ds.backgroundColor = _pkDimColour(ds._pkOriginalBg, 0.10);
+      ds.borderWidth     = ds._pkOriginalWidth;
+    }
+  });
+  chart.update();
+};
+
+// Dim a colour (hex #RRGGBB, rgba, or named) to a given alpha. Falls back
+// to the original value when the input is not parseable.
+function _pkDimColour(col, alpha) {
+  if (col == null) return col;
+  if (typeof col !== 'string') return col;
+  // #RRGGBB
+  const m = col.match(/^#([0-9a-f]{6})$/i);
+  if (m) {
+    const r = parseInt(m[1].slice(0,2), 16);
+    const g = parseInt(m[1].slice(2,4), 16);
+    const b = parseInt(m[1].slice(4,6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  // rgba(r,g,b,a) — replace alpha
+  const m2 = col.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*[\d.]+\s*)?\)$/i);
+  if (m2) {
+    return `rgba(${m2[1]},${m2[2]},${m2[3]},${alpha})`;
+  }
+  return col;
+}
