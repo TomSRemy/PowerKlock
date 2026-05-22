@@ -1,7 +1,11 @@
 // ════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════
-const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
+// NOTE: ENTSOE_TOKEN is now declared in prices.js (single source of truth).
+// This file (globals.js) is a legacy reference and is NOT loaded by index.html.
+// If it ever gets re-included, the line below would cause a "already declared"
+// error, so it's commented out as a safety guard.
+// const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
 
 // Zone config
 const ZONES = [
