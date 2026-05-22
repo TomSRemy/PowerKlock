@@ -42499,7 +42499,7 @@
         "negH": 0.25,
         "peakAvg": 40.08,
         "offAvg": 101.03,
-        "renPct": 21.5,
+        "renPct": 29.6,
         "domFuel": "Nuclear"
       }
     ],
@@ -62203,8 +62203,8 @@
         "negH": 0.5,
         "peakAvg": 64.08,
         "offAvg": 152.42,
-        "renPct": 38.3,
-        "domFuel": "Gas"
+        "renPct": 64.2,
+        "domFuel": "Solar"
       }
     ],
     "ES": [
@@ -81411,14 +81411,14 @@
       },
       {
         "d": "2026-05-22",
-        "avg": 62.02,
+        "avg": 61.38,
         "min": -12.01,
-        "max": 123.51,
-        "negH": 2.0,
-        "peakAvg": 19.13,
-        "offAvg": 102.22,
-        "renPct": 61.0,
-        "domFuel": "Hydro"
+        "max": 122.9,
+        "negH": 2.5,
+        "peakAvg": 19.74,
+        "offAvg": 102.16,
+        "renPct": 72.2,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -100573,8 +100573,8 @@
         "negH": 0.0,
         "peakAvg": 68.75,
         "offAvg": 136.56,
-        "renPct": 31.6,
-        "domFuel": "Gas"
+        "renPct": 69.4,
+        "domFuel": "Solar"
       }
     ],
     "NL": [
@@ -106531,7 +106531,7 @@
         "negH": 0.0,
         "peakAvg": 72.08,
         "offAvg": 144.81,
-        "renPct": 9.7,
+        "renPct": 11.5,
         "domFuel": "Gas"
       }
     ],
@@ -106646,6 +106646,15 @@
         "negH": 0.0,
         "peakAvg": 43.22,
         "offAvg": 98.69
+      },
+      {
+        "d": "2026-05-22",
+        "avg": 82.17,
+        "min": 0.1,
+        "max": 164.0,
+        "negH": 0.0,
+        "peakAvg": 90.79,
+        "offAvg": 79.2
       }
     ],
     "IT_NORD": [
@@ -107141,12 +107150,12 @@
       },
       {
         "d": "2026-05-22",
-        "avg": 61.97,
-        "min": 8.0,
-        "max": 145.0,
+        "avg": 76.97,
+        "min": 0.0,
+        "max": 150.1,
         "negH": 0.0,
-        "peakAvg": 38.82,
-        "offAvg": 83.2
+        "peakAvg": 86.3,
+        "offAvg": 73.66
       }
     ],
     "RS": [
@@ -107478,12 +107487,12 @@
       },
       {
         "d": "2026-05-22",
-        "avg": 104.74,
-        "min": 6.0,
+        "avg": 86.89,
+        "min": -69.65,
         "max": 167.96,
-        "negH": 0.0,
-        "peakAvg": 67.1,
-        "offAvg": 142.39
+        "negH": 1.75,
+        "peakAvg": 43.41,
+        "offAvg": 108.64
       }
     ],
     "NO_1": [
@@ -109863,7 +109872,7 @@
         "negH": 0.25,
         "peakAvg": 26.33,
         "offAvg": 99.7,
-        "renPct": 80.2,
+        "renPct": 84.4,
         "domFuel": "Hydro"
       }
     ],
