@@ -2647,10 +2647,17 @@
             <span id="prices-date-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Day-Ahead prices · loading...</span>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <!-- Zone filter dropdown panel — bouton caché (déplacé dans le header du wrapper) -->
-            <div style="position:relative;display:none" id="zone-filter-wrap">
+            <!-- Zone filter dropdown panel.
+                 The wrap div was previously display:none which hid the legacy
+                 inline button (good) but also hid the position:fixed panel
+                 inside it (bad — CSS hides children of display:none parents
+                 even when they're absolutely or fixed positioned).
+                 We now keep the wrap rendered, but hide the legacy button
+                 individually so the panel can still float over the page when
+                 opened via the sticky-bar button. -->
+            <div style="position:relative" id="zone-filter-wrap">
               <button onclick="toggleZoneFilterPanel()" id="zone-filter-btn"
-                style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
+                style="display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
                 <span id="zone-filter-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
