@@ -194,13 +194,21 @@ function setHistWindow(key, window, btn) {
   // If the fullscreen overlay is open on Historical, rebuild it so the FS chart
   // and KPIs reflect the new window (the overlay snapshots the filtered series
   // at creation time, so a HIST.windows update isn't enough on its own).
-  if ((key === 'ho' || key === 'hsz' || key === 'hmz') && document.getElementById('ho-fs-overlay')) {
+  if ((key === 'ho' || key === 'hsz' || key === 'hmz') && _hoFsIsOpen()) {
     const fsZone = window._HO_OPEN_ZONE;
     if (fsZone && typeof _openHoFullscreen === 'function') {
       // Slight delay so renderHistOverview() can rebuild _HO_LAST_SERIES first.
       setTimeout(() => _openHoFullscreen(fsZone), 30);
     }
   }
+}
+
+// Returns true if a Historical fullscreen overlay is currently open.
+// Works whether the overlay is the legacy ho-fs-overlay or the unified
+// pk-fs-overlay tagged with data-fs-context="historical".
+function _hoFsIsOpen() {
+  return !!(document.getElementById('ho-fs-overlay')
+    || document.querySelector('#pk-fs-overlay[data-fs-context="historical"]'));
 }
 
 // ── Custom date range from picker ──
@@ -1466,7 +1474,7 @@ window._hoSetYPreset = function(preset) {
     const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
     _buildHoTabChart(zone, series, tab, false);
     // If fullscreen overlay is open, also re-render its chart
-    if (document.getElementById('ho-fs-overlay')) {
+    if (_hoFsIsOpen()) {
       _buildHoTabChart(zone, series, tab, true);
     }
     _hoRenderPresetButtons();
@@ -1497,7 +1505,7 @@ window._hoResetZoom = function() {
     if (zone && series && typeof _buildHoTabChart === 'function') {
       const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
       _buildHoTabChart(zone, series, tab, false);
-      if (document.getElementById('ho-fs-overlay')) {
+      if (_hoFsIsOpen()) {
         _buildHoTabChart(zone, series, tab, true);
       }
       if (typeof _hoRenderPresetButtons === 'function') _hoRenderPresetButtons();
@@ -3460,433 +3468,298 @@ function _openHoFullscreen(zone) {
   const st     = window._HO_LAST_STATS;
   if (!series || !series.length || !zone) return;
 
+  if (typeof window.pkOpenOrUpdate !== 'function' && typeof window.pkOpenFullscreen !== 'function') {
+    console.error('[_openHoFullscreen] pkOpenFullscreen is not loaded');
+    return;
+  }
+
+  window._HO_LAST_ZONE = zone;
+  if (!window._HO_TABS) window._HO_TABS = {};
+  const tab = window._HO_TAB_LAST || window._HO_TABS[zone] || 'lines';
+  window._HO_TABS[zone] = tab;
+  HSZ.tab  = tab;
+  HSZ.zone = zone;
+
   const country = _HO_NAMES[zone] || zone;
   const flag    = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
-  const color   = zoneColor(zone);
-  const fmt     = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
-
   const periodTxt = (HIST.customRange && HIST.customRange.from)
     ? `${HIST.customRange.from} → ${HIST.customRange.to}`
     : periodLabel(series);
 
-  // Remove existing overlay
-  let fs = document.getElementById('ho-fs-overlay');
-  if (fs) fs.remove();
+  // ─── Title / subtitle ──────────────────────────────────────────────────
+  const title    = `${flag} ${zone} — ${country}`;
+  const subtitle = `${periodTxt} · ${series.length} daily slots · ENTSO-E`;
 
-  fs = document.createElement('div');
-  fs.id = 'ho-fs-overlay';
-  fs.style.cssText = `
-    position: fixed; inset: 0; background: var(--bg);
-    z-index: 9999; display: flex; flex-direction: column;
-    padding: 16px 24px 24px; overflow: hidden;
-  `;
+  // ─── KPIs · 8-card strip ──────────────────────────────────────────────
+  // We clone the inline strip (it gets re-rendered async by _renderHoDetailKpis,
+  // so we re-clone after that finishes via the wire callback below).
+  const inlineKpis = document.getElementById('ho-detail-kpi-strip');
+  const kpisHtml = inlineKpis
+    ? `<div class="kpi-strip" style="grid-template-columns:repeat(8,1fr);width:100%;height:100%">${inlineKpis.innerHTML}</div>`
+    : '<div style="color:var(--tx3);font-size:11px;padding:10px">Loading KPIs…</div>';
 
-  fs.innerHTML = `
-    <!-- ═══ HEADER · title left, tabs + actions right ═══ -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-shrink:0;gap:12px;flex-wrap:wrap">
-      <div style="min-width:0">
-        <div style="font-size:20px;font-weight:700;color:var(--tx);letter-spacing:-0.01em">
-          ${flag} ${zone} — ${country}
-        </div>
-        <div style="font-size:12px;color:var(--tx2);margin-top:2px">
-          ${periodTxt}
-          <span style="color:var(--tx3);margin-left:12px">· Click-drag chart to zoom · Double-click to reset</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-        <!-- Sub-tabs Lines/YoY/Weekday/Volatility/Distribution -->
-        <div id="ho-fs-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg2);border:1px solid var(--bd);border-radius:6px;padding:3px;width:max-content"></div>
-        <!-- Action buttons -->
-        <button id="ho-fs-csv-btn" title="Export chart data as CSV"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⤓ CSV</button>
-        <button id="ho-fs-png-btn" title="Download chart as PNG"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⤓ PNG</button>
-        <button id="ho-fs-resize-btn" title="Reset side pane width"
-          style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:6px 9px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit">⇔</button>
-        <button id="ho-fs-close-btn"
-          style="background:var(--bg2);border:1px solid rgba(237,105,101,0.3);color:var(--down,#ED6965);padding:6px 11px;font-size:10px;border-radius:5px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ ESC</button>
-      </div>
+  // ─── Sub-tabs (Lines / YoY / Weekday / Volatility / Distribution) ─────
+  const subTabs = ['lines','yoy','weekday','volatility','distribution'];
+  const subTabLabels = { lines:'Lines', yoy:'YoY', weekday:'Weekday', volatility:'Volatility', distribution:'Distribution' };
+  const subTabsHtml = subTabs.map(t => `
+    <button data-ho-subtab="${t}" style="
+      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:3px;
+      color:${t === tab ? '#14D3A9' : 'var(--tx3)'};
+      background:${t === tab ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${subTabLabels[t]}</button>`).join('');
+
+  // ─── Window pills (7D / 1M / 3M / 6M / YTD / 1Y / 2Y / 5Y / All) ───────
+  const winKey = HIST.windows['ho'] || '3M';
+  const winPillsHtml = ['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
+    const active = winKey === w;
+    return `<button data-ho-win="${w}" style="
+      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:14px;
+      background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      color:${active ? '#14D3A9' : 'var(--tx3)'};
+      border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase">${w}</button>`;
+  }).join('');
+
+  // ─── Y-presets (Focus / Standard / All) + Reset zoom ──────────────────
+  const yPreset = window._HO_YPRESET || 'standard';
+  const yPresetsHtml = ['focus','standard','all'].map(p => {
+    const active = yPreset === p;
+    return `<button data-ho-ypreset="${p}" style="
+      padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
+      background:${active ? 'rgba(20,211,169,0.15)' : 'transparent'};
+      border:1px solid ${active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)'};
+      color:${active ? '#14D3A9' : 'var(--tx3)'};
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${p}</button>`;
+  }).join('');
+
+  // ─── Zone selector (dropdown) ──────────────────────────────────────────
+  // Lists every zone for which we have history loaded. _HO_NAMES holds all.
+  const zonesList = Object.keys(_HO_NAMES).sort();
+  const zoneOptions = zonesList.map(z => {
+    const f = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+    const n = _HO_NAMES[z] || z;
+    return `<option value="${z}" ${z === zone ? 'selected' : ''}>${f} ${z} — ${n}</option>`;
+  }).join('');
+
+  // ─── Filters HTML (right of the chart, identical placement to Daily) ──
+  const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
+      <select id="fs-ho-zone-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+        ${zoneOptions}
+      </select>
     </div>
-
-    <!-- ═══ MAIN · KPI top + chart full-width LEFT, side pane RIGHT ═══ -->
-    <div id="ho-fs-split" style="display:flex;gap:0;flex:1;min-height:0;position:relative">
-
-      <!-- LEFT column: KPI strip on top, then chart pane full-width below -->
-      <div id="ho-fs-left-col" style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0">
-
-        <!-- KPI strip full width at the top -->
-        <div id="ho-fs-kpis" style="flex-shrink:0"></div>
-
-        <!-- Chart pane -->
-        <div id="ho-fs-chart-pane" style="flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:16px;display:flex;flex-direction:column;min-height:0;min-width:0">
-          <!-- Chart title block (eyebrow + title + subtitle) -->
-          <div id="ho-fs-title-block" style="margin-bottom:8px;flex-shrink:0">
-            <div id="ho-fs-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
-            <div id="ho-fs-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
-            <div id="ho-fs-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
-          </div>
-
-          <!-- Period pills (7D/1M/3M/...) LEFT + Y presets (Focus/Standard/All) RIGHT -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;gap:10px;flex-wrap:wrap">
-            <div id="ho-fs-windows" class="hist-window-btns" style="display:flex;gap:5px;flex-wrap:wrap">
-              ${['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
-                const active = (HIST.windows['ho']||'3M') === w;
-                return `
-                  <button class="hw-btn${active ? ' active' : ''}"
-                    onclick="setHistWindow('ho','${w}',this)"
-                    style="padding:3px 10px;font-size:10px;cursor:pointer;border-radius:14px;background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase;transition:all .15s">${w}</button>`;
-              }).join('')}
-            </div>
-            <div style="display:flex;gap:3px;align-items:center">
-              <div id="ho-fs-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
-              <div id="ho-fs-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
-                <button data-ho-preset="focus" onclick="_hoSetYPreset('focus')" title="Tight Y axis"
-                  style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
-                <button data-ho-preset="standard" onclick="_hoSetYPreset('standard')" title="Default Y axis"
-                  style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
-                <button data-ho-preset="all" onclick="_hoSetYPreset('all')" title="Full Y range"
-                  style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
-              </div>
-              <button onclick="window._hoResetZoom()" title="Reset zoom"
-                style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 10px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
-            </div>
-          </div>
-
-          <!-- Per-tab submenu slot (YoY pills etc.) -->
-          <div id="ho-fs-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;flex-shrink:0"></div>
-
-          <div style="flex:1;position:relative;min-height:0">
-            <canvas id="ho-fs-chart" style="width:100%;height:100%"></canvas>
-            <!-- Floating toggle buttons (top-right of FS chart) -->
-            <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:5">
-              <button id="ho-fs-toggle-kpis" title="Toggle KPI strip (K)" aria-label="Toggle KPIs"
-                style="height:28px;padding:0 9px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="6" y1="18" x2="14" y2="18"/></svg>
-                <span>KPIs</span>
-              </button>
-              <button id="ho-fs-toggle-table" title="Toggle side table (T)" aria-label="Toggle side table"
-                style="height:28px;padding:0 9px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase;backdrop-filter:blur(4px)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
-                <span>Table</span>
-              </button>
-              <button id="ho-fs-chartonly-btn" title="Chart only · hide KPIs and side panel (F)" aria-label="Chart only mode"
-                style="height:28px;width:28px;background:rgba(20,26,34,0.7);border:1px solid rgba(255,255,255,0.12);border-radius:4px;color:var(--tx2);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M4 14v6h6"/>
-                  <path d="M20 10V4h-6"/>
-                  <path d="M14 10l6-6"/>
-                  <path d="M10 14l-6 6"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div id="ho-fs-legend" style="display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:10px;color:var(--tx3);margin-top:6px;font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap">
-            <span><span style="display:inline-block;width:12px;height:2px;background:${color};vertical-align:middle;margin-right:4px"></span>Daily avg</span>
-            <span><span style="display:inline-block;width:12px;height:1px;border-top:1px dashed #94a3b8;vertical-align:middle;margin-right:4px"></span>7D rolling</span>
-            <span><span style="display:inline-block;width:12px;height:2px;background:#14D3A9;vertical-align:middle;margin-right:4px"></span>30D rolling</span>
-            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(251,191,36,0.55);vertical-align:middle;margin-right:4px"></span>Daily max</span>
-            <span style="opacity:0.75"><span style="display:inline-block;width:12px;height:1px;background:rgba(237,105,101,0.5);vertical-align:middle;margin-right:4px"></span>Daily min</span>
-          </div>
-        </div>
-
-        <!-- Verdict bandeau (Market Read style) under the chart -->
-        <div id="ho-fs-verdict" style="font-size:12px;color:var(--tx2);font-family:'Inter',sans-serif;flex-shrink:0">
-          ${_buildHoVerdict(st)}
-        </div>
-
-      </div>
-
-      <!-- Drag divider -->
-      <div id="ho-fs-divider" title="Drag to resize · double-click to reset"
-        style="width:8px;cursor:col-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:transparent">
-        <div style="width:2px;height:40px;background:var(--bd);border-radius:1px;transition:background 0.15s"></div>
-      </div>
-
-      <!-- RIGHT side pane: Monthly/Daily toggle + table -->
-      <div id="ho-fs-info-pane" style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:14px;overflow-y:auto;min-height:0;min-width:280px;max-width:60%;width:380px;display:flex;flex-direction:column">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0;gap:8px">
-          <span id="ho-fs-breakdown-label" style="font-size:10px;font-weight:700;letter-spacing:.07em;color:var(--tx2);text-transform:uppercase">Breakdown</span>
-          <div id="ho-fs-breakdown-toggle" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px">
-            <button data-ho-breakdown="monthly" onclick="_hoSetBreakdown('monthly')"
-              style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:rgba(20,211,169,0.15);color:#14D3A9;border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Monthly</button>
-            <button data-ho-breakdown="daily" onclick="_hoSetBreakdown('daily')"
-              style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:transparent;color:var(--tx3);border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Daily</button>
-          </div>
-        </div>
-        <div id="ho-fs-monthly" style="flex:1;overflow-y:auto;min-height:0"></div>
-      </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+      <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
     </div>
-  `;
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+      <div id="fs-ho-windows" style="display:inline-flex;gap:3px;flex-wrap:wrap">${winPillsHtml}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Y-axis</span>
+      <div id="fs-ho-ypresets" style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${yPresetsHtml}</div>
+    </div>
+    <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:6px;flex-wrap:wrap"></div>`;
 
-  document.body.appendChild(fs);
-  document.body.style.overflow = 'hidden';
-
-  // Render the KPI strip directly in the fullscreen target (8 cards, identical to inline)
-  const kpiTarget = document.getElementById('ho-fs-kpis');
-  if (kpiTarget) {
-    // Temporarily swap the target id so _renderHoDetailKpis writes here
-    const inlineStrip = document.getElementById('ho-detail-kpi-strip');
-    let originalParent = null;
-    let originalNext = null;
-    if (inlineStrip) {
-      // Move the inline strip aside while we render into the fs target
-      originalParent = inlineStrip.parentNode;
-      originalNext = inlineStrip.nextSibling;
-    }
-    // Create a temporary div with the same id and render into it, then move into kpiTarget
-    const tmp = document.createElement('div');
-    tmp.id = 'ho-detail-kpi-strip';
-    tmp.className = 'kpi-strip';
-    tmp.style.cssText = 'grid-template-columns:repeat(8,1fr)';
-    document.body.appendChild(tmp);
-    // Hide the original temporarily if it exists (avoid id collision)
-    if (inlineStrip) inlineStrip.id = 'ho-detail-kpi-strip-bak';
-    _renderHoDetailKpis(zone, series, st).then(() => {
-      // Move rendered HTML into the fullscreen target
-      kpiTarget.innerHTML = `<div class="kpi-strip" style="grid-template-columns:repeat(8,1fr)">${tmp.innerHTML}</div>`;
-      tmp.remove();
-      if (inlineStrip) inlineStrip.id = 'ho-detail-kpi-strip';
-    });
-  }
-
-  // Render the contextual breakdown directly in the right pane
-  // (the dispatcher writes into both #ho-detail-monthly and #ho-fs-monthly)
+  // ─── Table · breakdown with Monthly/Daily toggle (Lines tab only) ─────
+  const breakdownMode = window._HO_BREAKDOWN_MODE || 'monthly';
+  let breakdownHtml = '';
   try {
-    _renderHoBreakdown(zone, series, window._HO_LAST_SUMMARY);
+    if (tab === 'lines' && breakdownMode === 'daily' && typeof _bdDaily === 'function') {
+      breakdownHtml = _bdDaily(zone, series) || '';
+    } else {
+      // Use the tab's default renderer via _renderHoBreakdown indirection.
+      // We can't call _renderHoBreakdown here (it writes to the live DOM that
+      // doesn't exist yet); instead call _bdLines for the default Monthly view.
+      if (typeof _bdLines === 'function') breakdownHtml = _bdLines(zone, series) || '';
+    }
   } catch (e) { console.warn('FS breakdown render failed:', e); }
 
-  // Build the fullscreen chart
-  window._renderHoFsChart = function(zone) {
-  const series = window._HO_LAST_SERIES;
-  if (!zone || !series) return;
-  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
-  if (typeof _buildHoTabChart === 'function') {
-    _buildHoTabChart(zone, series, tab, true);
-  }
-  // Update FS button styles
-  document.querySelectorAll('#ho-fs-chart-pane [data-ho-preset]').forEach(btn => {
-    const p = btn.dataset.hoPreset;
-    const active = window._HO_YPRESET === p || (p === 'standard' && !window._HO_YPRESET);
-    btn.style.background = active ? 'rgba(20,211,169,0.15)' : 'transparent';
-    btn.style.borderColor = active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
-    btn.style.color = active ? '#14D3A9' : 'var(--tx3)';
+  const breakdownToggleHtml = `
+    <div id="fs-ho-breakdown-toggle" style="display:${tab === 'lines' ? 'inline-flex' : 'none'};gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:2px">
+      <button data-ho-breakdown="monthly" style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:${breakdownMode === 'monthly' ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${breakdownMode === 'monthly' ? '#14D3A9' : 'var(--tx3)'};border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Monthly</button>
+      <button data-ho-breakdown="daily" style="padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;background:${breakdownMode === 'daily' ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${breakdownMode === 'daily' ? '#14D3A9' : 'var(--tx3)'};border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">Daily</button>
+    </div>`;
+
+  const tableHtml = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span id="fs-ho-breakdown-label" style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--tx2);text-transform:uppercase">${tab === 'lines' ? 'Monthly breakdown' : 'Breakdown'}</span>
+      ${breakdownToggleHtml}
+    </div>
+    <div id="fs-ho-breakdown-body">${breakdownHtml || '<div style="color:var(--tx3);font-size:11px;padding:8px">No data</div>'}</div>`;
+
+  // ─── Analysis · verdict banner ────────────────────────────────────────
+  const analysisHtml = _buildHoVerdict(st);
+
+  // ─── CSV export ────────────────────────────────────────────────────────
+  const onCSV = () => {
+    if (typeof _exportHoChartCsv === 'function') {
+      _exportHoChartCsv(zone, true);
+      return null; // _exportHoChartCsv already triggers the download itself
+    }
+    return null;
+  };
+
+  // ─── chartSource: rebuild the chart into the fullscreen canvas ─────────
+  const chartSource = {
+    rebuildInto: (canvas) => {
+      // _buildHoTabChart looks up the canvas by id 'ho-fs-chart' (legacy),
+      // so we tag the host canvas with that id before delegating.
+      if (canvas && canvas.id !== 'ho-fs-chart') canvas.id = 'ho-fs-chart';
+      try {
+        _buildHoTabChart(zone, series, HSZ.tab || 'lines', true);
+      } catch (e) { console.warn('[ho-fs] _buildHoTabChart failed', e); }
+      // The chart instance is stored in window._HO_FS_CHART by _buildHoTabChart.
+      return window._HO_FS_CHART || null;
+    }
+  };
+
+  // ─── Open / hot-swap the overlay ───────────────────────────────────────
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+    title,
+    subtitle,
+    filenameStem: `powerklock_historical_${zone}_${(HIST.windows['ho']||'3M').toLowerCase()}`,
+    storageKey: 'historical-drill',
+    kpis: { html: kpisHtml },
+    table: { html: tableHtml },
+    analysis: { html: analysisHtml },
+    onCSV,
+    chartSource,
+    filters: {
+      html: filtersHtml,
+      wire: (hostEl) => _hoWireFsFilters(hostEl, zone, series)
+    }
   });
-};
 
-setTimeout(() => {
-  const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
-  _buildHoTabChart(zone, series, tab, true);
-}, 50);
+  // Tag the overlay so legacy checks (#ho-fs-overlay) can still detect
+  // "fullscreen Historical is open" via [data-fs-context="historical"].
+  const overlayEl = document.getElementById('pk-fs-overlay');
+  if (overlayEl) overlayEl.setAttribute('data-fs-context', 'historical');
 
-  // Drag-resize handle
-  const divider  = document.getElementById('ho-fs-divider');
-  const infoPane = document.getElementById('ho-fs-info-pane');
-  const split    = document.getElementById('ho-fs-split');
-  if (divider && infoPane && split) {
-    let dragging = false;
-    divider.addEventListener('mousedown', (e) => {
-      dragging = true;
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      const rect = split.getBoundingClientRect();
-      const newWidth = Math.max(240, Math.min(rect.right - e.clientX, rect.width * 0.7));
-      infoPane.style.width = newWidth + 'px';
-      // Resize chart
-      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
-    });
-    document.addEventListener('mouseup', () => {
-      if (dragging) {
-        dragging = false;
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
+  // Re-render KPIs into the new overlay once they finish loading inline.
+  // _renderHoDetailKpis writes to #ho-detail-kpi-strip in the inline DOM.
+  // After it completes, we clone the freshly-rendered HTML into the FS panel.
+  if (typeof _renderHoDetailKpis === 'function') {
+    setTimeout(() => {
+      _renderHoDetailKpis(zone, series, st).then(() => {
+        const src = document.getElementById('ho-detail-kpi-strip');
+        const dst = document.querySelector('#pk-fs-overlay .pk-fs-kpi .kpi-strip');
+        if (src && dst) dst.innerHTML = src.innerHTML;
+      }).catch(() => {});
+    }, 60);
+  }
+
+  // Render the sub-menu (YoY pills etc.) for the current tab, into the FS host.
+  setTimeout(() => {
+    if (typeof _hszRenderYoYSubmenu === 'function') {
+      // _hszRenderYoYSubmenu writes to its own anchor; if it doesn't find one,
+      // we host it in fs-ho-tab-submenu by aliasing the id.
+      _hszRenderYoYSubmenu();
+    }
+  }, 80);
+}
+
+// ─── Wire up all filters / controls in the FS host element ────────────────
+// hostEl is the .pk-fs-filters div inside the overlay (provided by fullscreen.js).
+function _hoWireFsFilters(hostEl, zone, series) {
+  if (!hostEl) return;
+
+  // Zone switch: simulate a click on the new zone's row in the Historical
+  // overview table. That row's onclick handler will load the series, set
+  // _HO_LAST_SERIES / _HO_LAST_STATS, then we re-open the FS with the new zone.
+  const sel = hostEl.querySelector('#fs-ho-zone-select');
+  if (sel) {
+    sel.addEventListener('change', (e) => {
+      const newZone = e.target.value;
+      if (!newZone || newZone === zone) return;
+      // Find the row in the inline table — clicking it opens its drill-down
+      // and populates _HO_LAST_SERIES/_HO_LAST_STATS for the new zone.
+      const targetRow = document.querySelector(`#ho-table-tbody tr.ho-row[data-zone="${newZone}"]`);
+      if (targetRow) {
+        // If a different zone is currently open inline, close it first via the
+        // row's own toggle logic — easier: just click the new row, _toggleHoRow
+        // will close the previously open zone for us.
+        targetRow.click();
+        // Wait for the inline render to complete, then re-open the FS.
+        setTimeout(() => _openHoFullscreen(newZone), 60);
+      } else {
+        console.warn('[ho-fs] zone row not found for', newZone);
       }
     });
-    divider.addEventListener('dblclick', () => {
-      infoPane.style.width = '340px';
-      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
+  }
+
+  // Sub-tab switch (Lines / YoY / Weekday / Volatility / Distribution)
+  hostEl.querySelectorAll('[data-ho-subtab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newTab = btn.dataset.hoSubtab;
+      if (!newTab) return;
+      window._HO_TABS = window._HO_TABS || {};
+      window._HO_TABS[zone] = newTab;
+      window._HO_TAB_LAST = newTab;
+      HSZ.tab = newTab;
+      // Re-open to refresh everything (filters, table, chart)
+      _openHoFullscreen(zone);
     });
-  }
+  });
 
-  // Reset width button
-  const resetBtn = document.getElementById('ho-fs-resize-btn');
-  if (resetBtn && infoPane) {
-    resetBtn.addEventListener('click', () => {
-      infoPane.style.width = '340px';
-      if (window._HO_FS_CHART) window._HO_FS_CHART.resize();
+  // Window pills (7D / 1M / 3M / ...)
+  hostEl.querySelectorAll('[data-ho-win]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const w = btn.dataset.hoWin;
+      if (!w) return;
+      HIST.windows['ho'] = w;
+      if (typeof pkUpdateHistPeriodLabels === 'function') pkUpdateHistPeriodLabels(w);
+      _openHoFullscreen(zone);
     });
-  }
+  });
 
-  // Close button + Esc key
-  const closeBtn = document.getElementById('ho-fs-close-btn');
-  if (closeBtn) closeBtn.addEventListener('click', _closeHoFullscreen);
-  document.addEventListener('keydown', _hoFsEscHandler);
-
-  // ── Tabs bar in fullscreen header (Lines / YoY / Weekly / …) ──
-  // Use globally-tracked last tab so switching zones in FS keeps the same view.
-  if (!window._HO_TABS) window._HO_TABS = {};
-  const fsWantedTab = window._HO_TAB_LAST || window._HO_TABS[zone] || 'lines';
-  window._HO_TABS[zone] = fsWantedTab;
-  _hoRenderFsTabsBar(zone, series);
-  _hoApplyFsTabVisibility(fsWantedTab);
-  HSZ.tab = fsWantedTab;
-  HSZ.zone = zone;
-  if (typeof _hszRenderYoYSubmenu === 'function') _hszRenderYoYSubmenu();
-
-  // ── PNG button: download the current fullscreen chart ──
-  const pngBtn = document.getElementById('ho-fs-png-btn');
-  if (pngBtn) {
-    pngBtn.addEventListener('click', () => _downloadHoChart(zone, true));
-  }
-
-  // ── CSV button: export the underlying data of the *current chart* ──
-  const csvBtn = document.getElementById('ho-fs-csv-btn');
-  if (csvBtn) {
-    csvBtn.addEventListener('click', () => _exportHoChartCsv(zone, true));
-  }
-
-  // ── Independent toggles: KPIs strip, Side table, and Chart-only (combined).
-  // Each toggle has its own button. Chart-only is a shortcut that hides both.
-  // At load, if the viewport is too small, auto-hide KPIs and side table.
-  const kpisBtn  = document.getElementById('ho-fs-toggle-kpis');
-  const tableBtn = document.getElementById('ho-fs-toggle-table');
-  const chartOnlyBtn = document.getElementById('ho-fs-chartonly-btn');
-
-  // Helper to apply visual state of a toggle button (active = teal, inactive = grey)
-  const styleToggle = (btn, visible) => {
-    if (!btn) return;
-    btn.style.color = visible ? 'var(--tx2)' : '#14D3A9';
-    btn.style.background = visible ? 'rgba(20,26,34,0.7)' : 'rgba(20,211,169,0.20)';
-    btn.style.borderColor = visible ? 'rgba(255,255,255,0.12)' : 'rgba(20,211,169,0.5)';
-    if (visible) delete btn.dataset.active;
-    else btn.dataset.active = '1';
-    btn.title = visible
-      ? btn.title.replace('Show', 'Hide').replace('Toggle', 'Hide')
-      : btn.title.replace('Hide', 'Show').replace('Toggle', 'Show');
-  };
-
-  // Force chart to resize after toggle (containers change size)
-  const resizeFsChart = () => {
-    const fsCanvas = document.getElementById('ho-fs-chart');
-    if (fsCanvas && typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
-      const ch = Chart.getChart(fsCanvas);
-      if (ch) requestAnimationFrame(() => ch.resize());
-    }
-  };
-
-  const toggleKpis = (forceState) => {
-    const kpis    = document.getElementById('ho-fs-kpis');
-    const verdict = document.getElementById('ho-fs-verdict');
-    if (!kpis) return;
-    const currentlyVisible = kpis.style.display !== 'none';
-    const showNext = (forceState !== undefined) ? !!forceState : !currentlyVisible;
-    kpis.style.display = showNext ? '' : 'none';
-    if (verdict) verdict.style.display = showNext ? '' : 'none';
-    styleToggle(kpisBtn, showNext);
-    resizeFsChart();
-  };
-
-  const toggleTable = (forceState) => {
-    const info    = document.getElementById('ho-fs-info-pane');
-    const divider = document.getElementById('ho-fs-divider');
-    if (!info) return;
-    const currentlyVisible = info.style.display !== 'none';
-    const showNext = (forceState !== undefined) ? !!forceState : !currentlyVisible;
-    info.style.display = showNext ? 'flex' : 'none';
-    if (divider) divider.style.display = showNext ? 'flex' : 'none';
-    styleToggle(tableBtn, showNext);
-    resizeFsChart();
-  };
-
-  const toggleChartOnly = () => {
-    const overlay = document.getElementById('ho-fs-overlay');
-    if (!overlay) return;
-    const active = overlay.dataset.chartOnly === '1';
-    const next = !active;
-    overlay.dataset.chartOnly = next ? '1' : '0';
-    toggleKpis(!next);
-    toggleTable(!next);
-    if (chartOnlyBtn) {
-      const svgExpand = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v6h6"/><path d="M20 10V4h-6"/><path d="M14 10l6-6"/><path d="M10 14l-6 6"/></svg>';
-      const svgCompress = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v6H4"/><path d="M14 20v-6h6"/><path d="M4 10l6 0"/><path d="M20 14l-6 0"/></svg>';
-      chartOnlyBtn.innerHTML = next ? svgCompress : svgExpand;
-      chartOnlyBtn.title = next ? 'Show all (F)' : 'Chart only · hide KPIs and side panel (F)';
-      chartOnlyBtn.style.color = next ? '#14D3A9' : 'var(--tx2)';
-      chartOnlyBtn.style.background = next ? 'rgba(20,211,169,0.20)' : 'rgba(20,26,34,0.7)';
-      chartOnlyBtn.style.borderColor = next ? 'rgba(20,211,169,0.5)' : 'rgba(255,255,255,0.12)';
-      if (next) chartOnlyBtn.dataset.active = '1';
-      else delete chartOnlyBtn.dataset.active;
-    }
-  };
-
-  if (kpisBtn)  kpisBtn.addEventListener('click', () => toggleKpis());
-  if (tableBtn) tableBtn.addEventListener('click', () => toggleTable());
-  if (chartOnlyBtn) chartOnlyBtn.addEventListener('click', toggleChartOnly);
-
-  // Initialise toggle visual states (everything visible by default)
-  styleToggle(kpisBtn, true);
-  styleToggle(tableBtn, true);
-
-  // Auto-hide KPIs and/or side table if the viewport is too small
-  // Heuristic: < 1100px width = hide side table; < 700px height = also hide KPIs
-  const vpW = window.innerWidth;
-  const vpH = window.innerHeight;
-  if (vpW < 1100) {
-    toggleTable(false);
-  }
-  if (vpH < 700) {
-    toggleKpis(false);
-  }
-
-  // Keyboard shortcuts: K = KPIs, T = Table, F = Chart only
-  const keyHandler = (e) => {
-    const ae = document.activeElement;
-    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
-    if (e.key === 'f' || e.key === 'F') toggleChartOnly();
-    else if (e.key === 'k' || e.key === 'K') toggleKpis();
-    else if (e.key === 't' || e.key === 'T') toggleTable();
-  };
-  document.addEventListener('keydown', keyHandler);
-  // Cleanup the key handler when overlay closes (Close button or Esc removes the overlay)
-  const overlayEl = document.getElementById('ho-fs-overlay');
-  if (overlayEl) {
-    const obs = new MutationObserver((muts) => {
-      for (const m of muts) {
-        for (const n of m.removedNodes) {
-          if (n === overlayEl || (n.contains && n.contains(overlayEl))) {
-            document.removeEventListener('keydown', keyHandler);
-            obs.disconnect();
-            return;
-          }
-        }
+  // Y-presets (Focus / Standard / All)
+  hostEl.querySelectorAll('[data-ho-ypreset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.hoYpreset;
+      if (!p) return;
+      window._HO_YPRESET = p;
+      // Re-render chart without reopening the whole FS
+      if (typeof _buildHoTabChart === 'function') {
+        _buildHoTabChart(zone, series, HSZ.tab || 'lines', true);
       }
-    });
-    obs.observe(document.body, { childList: true });
-  }
-
-  // ── Auto-fit the right info pane to its natural content (Daily-style) ──
-  requestAnimationFrame(() => {
-    const infoEl = document.getElementById('ho-fs-info-pane');
-    const monthlyEl = document.getElementById('ho-fs-monthly');
-    if (!infoEl) return;
-    let natural = 340;
-    if (monthlyEl) {
-      // Try to read content width: largest child element bounding rect.
-      let maxW = 0;
-      monthlyEl.querySelectorAll('table, div, ul').forEach(el => {
-        const w = Math.ceil(el.getBoundingClientRect().width);
-        if (w > maxW) maxW = w;
+      // Update pill styles
+      hostEl.querySelectorAll('[data-ho-ypreset]').forEach(b => {
+        const a = b.dataset.hoYpreset === p;
+        b.style.background = a ? 'rgba(20,211,169,0.15)' : 'transparent';
+        b.style.borderColor = a ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
+        b.style.color = a ? '#14D3A9' : 'var(--tx3)';
       });
-      if (maxW > 0) natural = maxW + 36; // 32px pane padding + 4px buffer
-    }
-    const clamped = Math.min(Math.max(natural, 280), Math.floor(window.innerWidth * 0.6));
-    infoEl.style.width = clamped + 'px';
-    if (window._HO_FS_CHART) { try { window._HO_FS_CHART.resize(); } catch(_) {} }
+    });
+  });
+
+  // Breakdown toggle (Monthly / Daily) — lives in the right pane, not in hostEl.
+  // Wire via document.querySelectorAll since the pane is a sibling section.
+  document.querySelectorAll('#fs-ho-breakdown-toggle [data-ho-breakdown]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.hoBreakdown;
+      if (mode !== 'monthly' && mode !== 'daily') return;
+      window._HO_BREAKDOWN_MODE = mode;
+      const body = document.getElementById('fs-ho-breakdown-body');
+      const label = document.getElementById('fs-ho-breakdown-label');
+      if (body) {
+        const html = (mode === 'daily' && typeof _bdDaily === 'function')
+          ? _bdDaily(zone, series)
+          : (typeof _bdLines === 'function' ? _bdLines(zone, series) : '');
+        body.innerHTML = html || '<div style="color:var(--tx3);font-size:11px;padding:8px">No data</div>';
+      }
+      if (label) label.textContent = mode === 'daily' ? 'Daily breakdown' : 'Monthly breakdown';
+      document.querySelectorAll('#fs-ho-breakdown-toggle [data-ho-breakdown]').forEach(b => {
+        const a = b.dataset.hoBreakdown === mode;
+        b.style.background = a ? 'rgba(20,211,169,0.15)' : 'transparent';
+        b.style.color = a ? '#14D3A9' : 'var(--tx3)';
+      });
+    });
   });
 }
+
 window._openHoFullscreen = _openHoFullscreen;
 
 function _hoFsEscHandler(e) {
@@ -4586,7 +4459,7 @@ function _renderAnalystBanner(html) {
 // Remove every analyst banner in the active detail or fullscreen scope.
 // Called when switching tab/sub-mode so banners from the previous view don't linger.
 function _clearAllAnalystBanners() {
-  const scopes = ['ho-detail-row', 'ho-fs-overlay'];
+  const scopes = ['ho-detail-row', 'ho-fs-overlay', 'pk-fs-overlay'];
   scopes.forEach(id => {
     const root = document.getElementById(id);
     if (!root) return;
@@ -4642,7 +4515,7 @@ function _alignLegendToChartArea(legendId, attempts) {
 }
 
 function _setHoTitle({ eyebrow, title, subtitle }) {
-  const fs = !!document.getElementById('ho-fs-overlay');
+  const fs = _hoFsIsOpen();
   const prefix = fs ? 'ho-fs' : 'ho-detail';
   const ey = document.getElementById(prefix + '-eyebrow');
   const ti = document.getElementById(prefix + '-title');
