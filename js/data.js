@@ -616,11 +616,15 @@ function showPricesUnavailable(dateStr) {
 // ══════════════════════════════════════════════════════════════
 // HISTORICAL CHARTS ENGINE
 // Colour tokens (var = window-scoped, accessible across script blocks)
-var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#4a6280';
+// IMPORTANT: this block is loaded AFTER hist.js. Any var declared here that
+// shares a name with hist.js will overwrite hist.js. Keep these aligned with
+// the Daily palette (libs.js C_* family) so up/down/warn read the same way
+// across Daily and Historical charts.
+var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#7A93AB';
 var _HIST_ACC  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14D3A9';
 var _HIST_WARN = '#e8a020';
-var _HIST_DN   = '#ef4444';
-var _HIST_UP   = '#22c55e';
+var _HIST_DN   = '#ED6965';  // aligned with Daily C_DN (brand coral)
+var _HIST_UP   = '#14D3A9';  // aligned with Daily C_UP (brand teal)
 var _HIST_GRID = 'rgba(255,255,255,0.04)';
 
 // ── Fixed country colours ──
