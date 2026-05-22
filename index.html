@@ -1629,6 +1629,141 @@
     font-weight: 500;
   }
 
+  /* ─── Prices home · section labels (small upper-case headers) ─── */
+  .pr-home-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--tx3);
+    margin: 18px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bd);
+  }
+
+  /* ─── Prices home · KPI strip (5 cards in a row) ─── */
+  .pr-home-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .pr-home-kpi {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    padding: 11px 13px;
+    min-width: 0;
+  }
+  .pr-home-kpi-label {
+    font-size: 9px;
+    color: var(--tx3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .pr-home-kpi-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--tx);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.01em;
+  }
+  .pr-home-kpi-unit {
+    font-size: 10px;
+    color: var(--tx3);
+    font-weight: 400;
+  }
+  .pr-home-kpi-meta {
+    font-size: 10px;
+    color: var(--tx3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 3px;
+  }
+
+  /* ─── Prices home · intraday chart card ─── */
+  .pr-home-chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .pr-home-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .pr-home-chart-header > span:first-child {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--tx2);
+  }
+  .pr-home-chart-hint {
+    font-size: 10px;
+    color: var(--tx3);
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .pr-home-chart-hint:hover { color: var(--acc); }
+  .pr-home-chart-shading-legend {
+    font-size: 10px;
+    color: var(--tx3);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  /* ─── Prices home · anomalies table ─── */
+  .pr-home-anomalies-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .pr-home-anomalies-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .pr-home-anomalies-table thead tr {
+    border-bottom: 1px solid var(--bd);
+  }
+  .pr-home-anomalies-table th {
+    padding: 9px 14px;
+    font-size: 9px;
+    color: var(--tx3);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .pr-home-anomalies-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s ease;
+  }
+  .pr-home-anomalies-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .pr-home-anomalies-table tbody tr.row-hi {
+    background: rgba(237,105,101,0.05);
+  }
+  .pr-home-anomalies-table tbody tr.row-lo {
+    background: rgba(20,211,169,0.05);
+  }
+  .pr-home-anomalies-table td {
+    padding: 9px 14px;
+    color: var(--tx2);
+  }
+  .pr-home-anomalies-table td.code {
+    color: var(--tx);
+    font-weight: 600;
+  }
+  .pr-home-anomalies-table td.mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
   /* ─── Sidebar collapse handle · floating on the right edge of sidebar ─── */
   .layout { position: relative; }
 
@@ -2180,21 +2315,12 @@
       <div class="subdomain-panel active" data-subdomain-panel="overview">
         <div class="pr-overview-header">
           <div class="pr-overview-title">Power Prices</div>
-          <div class="pr-overview-subtitle">European power markets · spot, forward, anomalies and arbitrage opportunities</div>
+          <div class="pr-overview-subtitle" id="pr-home-subtitle">European power markets · spot, forward, anomalies and arbitrage opportunities</div>
         </div>
 
+        <!-- ── SECTION 1 · Sub-domains navigation ── -->
+        <div class="pr-home-section-label">Sub-domains</div>
         <div class="pr-overview-grid">
-
-          <div class="pr-overview-card" onclick="prSelectSubdomain('forward')">
-            <div class="pr-overview-card-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
-              Forward
-            </div>
-            <div class="pr-overview-card-desc">Power forward curves · CAL, Q, M settlement prices</div>
-            <div class="pr-overview-card-kpi">— €/MWh</div>
-            <div class="pr-overview-card-kpi-label">CAL+1 base · FR</div>
-            <div class="pr-overview-card-link">Open Forward →</div>
-          </div>
 
           <div class="pr-overview-card" onclick="prSelectSubdomain('da')">
             <div class="pr-overview-card-title">
@@ -2202,20 +2328,20 @@
               Day-Ahead
             </div>
             <div class="pr-overview-card-desc">ENTSO-E day-ahead market · 32 European bidding zones</div>
-            <div class="pr-overview-card-kpi">— €/MWh</div>
-            <div class="pr-overview-card-kpi-label">Today's average · FR</div>
+            <div class="pr-overview-card-kpi" id="pr-home-card-da-kpi">— €/MWh</div>
+            <div class="pr-overview-card-kpi-label" id="pr-home-card-da-label">Today's average · FR</div>
             <div class="pr-overview-card-link">Open Day-Ahead →</div>
           </div>
 
-          <div class="pr-overview-card" onclick="prSelectSubdomain('negative')">
+          <div class="pr-overview-card" onclick="prSelectSubdomain('forward')">
             <div class="pr-overview-card-title">
-              <svg width="16" height="16" viewBox=" 0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              Negative prices
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+              Forward
             </div>
-            <div class="pr-overview-card-desc">Episodes of negative day-ahead prices · cannibalisation indicator</div>
-            <div class="pr-overview-card-kpi">— h</div>
-            <div class="pr-overview-card-kpi-label">This month · FR</div>
-            <div class="pr-overview-card-link">Open Negative prices →</div>
+            <div class="pr-overview-card-desc">Power forward curves · CAL, Q, M settlement prices</div>
+            <div class="pr-overview-card-kpi" id="pr-home-card-fwd-kpi" style="color:var(--tx3);font-style:italic">— Coming soon</div>
+            <div class="pr-overview-card-kpi-label">EEX settlement EOD</div>
+            <div class="pr-overview-card-link">Open Forward →</div>
           </div>
 
           <div class="pr-overview-card" onclick="prSelectSubdomain('spread')">
@@ -2224,12 +2350,88 @@
               Spread
             </div>
             <div class="pr-overview-card-desc">DA daily spread (Max − Min) · intraday arbitrage</div>
-            <div class="pr-overview-card-kpi">— €/MWh</div>
-            <div class="pr-overview-card-kpi-label">Yesterday · FR · 30D avg</div>
+            <div class="pr-overview-card-kpi" id="pr-home-card-spread-kpi">— €/MWh</div>
+            <div class="pr-overview-card-kpi-label" id="pr-home-card-spread-label">FR · today</div>
             <div class="pr-overview-card-link">Open Spread →</div>
           </div>
 
+          <div class="pr-overview-card" onclick="prSelectSubdomain('negative')">
+            <div class="pr-overview-card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Negative prices
+            </div>
+            <div class="pr-overview-card-desc">Episodes of negative day-ahead prices · cannibalisation indicator</div>
+            <div class="pr-overview-card-kpi" id="pr-home-card-neg-kpi">— h</div>
+            <div class="pr-overview-card-kpi-label" id="pr-home-card-neg-label">Today · all zones</div>
+            <div class="pr-overview-card-link">Open Negative prices →</div>
+          </div>
+
         </div>
+
+        <!-- ── SECTION 2 · Snapshot KPI strip + Market Read ── -->
+        <div class="pr-home-section-label" style="margin-top:32px">Snapshot · today</div>
+        <div class="pr-home-kpi-strip" id="pr-home-kpi-strip">
+          <div class="pr-home-kpi">
+            <div class="pr-home-kpi-label">FR · today</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-fr-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-fr-meta">--</div>
+          </div>
+          <div class="pr-home-kpi">
+            <div class="pr-home-kpi-label">EU panel · today</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-eu-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-eu-meta">--</div>
+          </div>
+          <div class="pr-home-kpi">
+            <div class="pr-home-kpi-label">Cheapest</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-cheap-v" style="color:var(--up)">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-cheap-meta">--</div>
+          </div>
+          <div class="pr-home-kpi">
+            <div class="pr-home-kpi-label">Most expensive</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-pricey-v" style="color:var(--down)">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-pricey-meta">--</div>
+          </div>
+          <div class="pr-home-kpi">
+            <div class="pr-home-kpi-label">EU spread</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-spread-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-spread-meta">--</div>
+          </div>
+        </div>
+        <div id="pr-home-market-read" style="margin-top:14px"></div>
+
+        <!-- ── SECTION 3 · Today's intraday chart ── -->
+        <div class="pr-home-section-label" style="margin-top:32px">Today's intraday</div>
+        <div class="pr-home-chart-card">
+          <div class="pr-home-chart-header">
+            <span id="pr-home-chart-title">All loaded zones · today vs J-1</span>
+            <span class="pr-home-chart-hint" onclick="prSelectSubdomain('da')">Drill in Day-Ahead →</span>
+          </div>
+          <div style="position:relative;height:240px">
+            <canvas id="pr-home-intraday-canvas" style="width:100%;height:240px;cursor:pointer" onclick="prSelectSubdomain('da')"></canvas>
+          </div>
+          <div class="pr-home-chart-shading-legend">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</div>
+        </div>
+
+        <!-- ── SECTION 4 · Recent anomalies (last 7 days, auto-computed) ── -->
+        <div class="pr-home-section-label" style="margin-top:32px">Recent anomalies · last 7 days</div>
+        <div class="pr-home-anomalies-card">
+          <table class="pr-home-anomalies-table" id="pr-home-anomalies-table">
+            <thead>
+              <tr>
+                <th style="text-align:left">Date</th>
+                <th style="text-align:left">Zone</th>
+                <th style="text-align:right">Daily avg</th>
+                <th style="text-align:right">vs median</th>
+                <th style="text-align:right">Z</th>
+                <th style="text-align:left">Read</th>
+              </tr>
+            </thead>
+            <tbody id="pr-home-anomalies-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:18px;color:var(--tx3);font-style:italic">Computing 7-day baseline…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
 
       <!-- ═══ SUBDOMAIN · FORWARD · stub ═══ -->
@@ -4904,6 +5106,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     page.querySelectorAll('.subdomain-panel').forEach(p => p.classList.remove('active'));
     const panel = page.querySelector('[data-subdomain-panel="' + target + '"]');
     if (panel) panel.classList.add('active');
+
+    // Populate the overview home with live data once it becomes visible
+    if (target === 'overview' && typeof window.prRenderHome === 'function') {
+      // Defer one tick so layout settles before the chart is built
+      setTimeout(() => window.prRenderHome(), 30);
+    }
 
     // Update the green path height
     prUpdateActivePath();
