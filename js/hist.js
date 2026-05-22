@@ -171,6 +171,16 @@ function setHistWindow(key, window, btn) {
       });
     }
   }
+  // Auto-tune HMZ heatmap granularity when window changes (overrides user override
+  // by design: the previous Day mode in 7D doesn't make sense once switched to 1Y).
+  // Only HMZ uses this; HSZ/HO have their own logic.
+  if (key === 'hmz' || key === 'ho' || key === 'hsz') {
+    // ho/hsz/hmz share the window, but auto-mode only matters for HMZ heatmap
+    if (typeof _hmzApplyAutoHeatmapMode === 'function') {
+      _hmzApplyAutoHeatmapMode();
+    }
+  }
+
   // Re-render
   const renders = {
     'spot':      renderHistSpot,
@@ -7738,9 +7748,49 @@ function _hmzToggleRefWrap(mode) {
 }
 
 // Switch Heatmap granularity. Persists the choice on HMZ.heatmapMode.
+// ════════════════════════════════════════════════════════════════════
+// Heatmap granularity auto-tuning
+// When the user changes the time window (7D/1M/3M/6M/1Y/5Y/All), the
+// heatmap granularity is automatically set to the most readable mode for
+// that window length, so the user doesn't end up with 365 Day cells.
+//
+// Thresholds (aggressive, prioritise readability over precision):
+//   7D       → Day    (7 cells)
+//   1M       → Week   (~4-5 cells)
+//   3M       → Week   (~13 cells)
+//   6M       → Month  (6 cells)
+//   1Y       → Month  (12 cells)
+//   5Y / All → Month  (60+ cells)
+//
+// Manual override: if the user clicks a different granularity inside a
+// given window, that choice sticks until the window changes again. The
+// override is tracked via HMZ._heatmapModeManual flag; resetting on
+// window change brings back the auto-mode.
+// ════════════════════════════════════════════════════════════════════
+function _hmzAutoHeatmapMode(windowKey) {
+  const w = (windowKey || '').toUpperCase();
+  if (w === '7D')  return 'day';
+  if (w === '1M')  return 'week';
+  if (w === '3M')  return 'week';
+  if (w === '6M')  return 'month';
+  if (w === '1Y')  return 'month';
+  if (w === '5Y')  return 'month';
+  if (w === 'ALL') return 'month';
+  return 'day'; // safe fallback for any unknown window key
+}
+
+// Called by setHistWindow when the HMZ window changes. Resets any manual
+// override and re-applies the auto-tuned mode.
+function _hmzApplyAutoHeatmapMode() {
+  const win = HIST.windows['hmz'] || '3M';
+  HMZ.heatmapMode = _hmzAutoHeatmapMode(win);
+  HMZ._heatmapModeManual = false;
+}
+
 function setHmzHeatmapMode(mode) {
   if (!['day','week','month','dow'].includes(mode)) return;
   HMZ.heatmapMode = mode;
+  HMZ._heatmapModeManual = true; // mark as user override
   renderHistMulti();
 }
 window.setHmzHeatmapMode = setHmzHeatmapMode;
@@ -7870,6 +7920,12 @@ function _hmzUpdateTabContext(tab) {
 async function renderHistMulti() {
   buildHistMultiTabs();
   const w = HIST.windows['hmz'] || '3M';
+  // Auto-tune heatmap granularity to the window unless the user has explicitly
+  // overridden it during this window (HMZ._heatmapModeManual). At first load
+  // the flag is undefined → falsy → auto-apply.
+  if (!HMZ._heatmapModeManual) {
+    HMZ.heatmapMode = _hmzAutoHeatmapMode(w);
+  }
   const s = await fetchSummary();
   if (!s?.zones) return;
 
