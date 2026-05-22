@@ -619,6 +619,15 @@
   #hmz-data-table tbody td:first-child {
     font-size: 13px;
   }
+  /* With table-layout:fixed, long text (DE_LU, IT_NORD) can overflow into the next
+     column. Clip with ellipsis to prevent visual bleed. Applies to first two cols
+     (CODE + ZONE) where this is most likely. */
+  #prices-table tbody td:nth-child(-n+2),
+  #prices-table thead th:nth-child(-n+2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .country-flag { font-size: 14px; margin-right: 6px; }
   .country-code {
     font-size: 11px;
@@ -2660,7 +2669,7 @@
         <table id="prices-table" style="font-size:11px;table-layout:fixed">
           <thead>
             <tr>
-              <th onclick="sortPricesTable('code')" style="width:5%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('code')" style="width:8%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('today')" style="width:7%;cursor:pointer;user-select:none;text-align:right">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('peak')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Avg over 08h–20h">PEAK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
@@ -2672,7 +2681,7 @@
               <th onclick="sortPricesTable('renPct')" style="width:6%;cursor:pointer;user-select:none;text-align:right" title="Renewable share of generation mix">% REN <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('domFuel')" style="width:11%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel in generation mix">DOM. FUEL <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('spark')" style="width:7%;cursor:pointer;user-select:none;text-align:right" title="Spark spread = avg − TTF/eff − EUA × CO₂">SPARK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
-              <th style="width:9%;text-align:center">SHAPE</th>
+              <th style="width:6%;text-align:center">SHAPE</th>
             </tr>
           </thead>
           <tbody id="prices-tbody">
