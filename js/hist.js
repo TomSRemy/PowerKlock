@@ -7663,11 +7663,23 @@ const HMZ = {
   tabs: [
     { id: 'lines',   label: 'Lines' },
     { id: 'heatmap', label: 'Heatmap' },
-    { id: 'profile', label: 'Profile' },
     { id: 'bands',   label: 'Bands' },
     { id: 'spread',  label: 'Spread' },
-    { id: 'dist',    label: 'Distribution' },
   ],
+  // Heatmap granularity: 'day' | 'week' | 'month' | 'dow'
+  // - day/week/month: chronological cells, useful for short / medium / long windows
+  // - dow: zone × day-of-week (Mon..Sun), aggregated across the whole window
+  // HoD (hour of day) is not supported on daily-aggregated history; peak/off-peak
+  // is already captured in the Lines tab via the peakAvg/offAvg fields.
+  heatmapMode: 'day',
+  // Spread sub-mode: 'vsRef' (temporal series: zone − baseline) | 'vsPeers' (scatter BESS-hotspot).
+  // Persisted in localStorage under 'pk_hmz_spreadMode' to honour the user's last choice.
+  spreadMode: (() => {
+    try {
+      const v = localStorage.getItem('pk_hmz_spreadMode');
+      return (v === 'vsRef' || v === 'vsPeers') ? v : 'vsRef';
+    } catch (_) { return 'vsRef'; }
+  })(),
 };
 
 function setHistMultiTab(tabId) {
@@ -7723,6 +7735,107 @@ window._hmzPopulateRefChips = _hmzPopulateRefChips;
 function _hmzToggleRefWrap(mode) {
   const wrap = document.getElementById('hmz-ref-wrap');
   if (wrap) wrap.style.display = (mode === 'spread') ? 'flex' : 'none';
+  if (mode === 'spread') _hmzPopulateSpreadModeToggle();
+}
+
+// Populate the vs Ref / vs Peers toggle for the Spread tab.
+// Style identical to the Heatmap granularity toggle (teal pill on dark bg).
+// Also toggles visibility of the baseline chips (only meaningful in vsRef mode).
+function _hmzPopulateSpreadModeToggle() {
+  const host = document.getElementById('hmz-spread-mode-toggle');
+  if (host) {
+    const modes = [
+      { id: 'vsRef',   label: 'vs Ref' },
+      { id: 'vsPeers', label: 'vs Peers' },
+    ];
+    const cur = HMZ.spreadMode || 'vsRef';
+    host.innerHTML = modes.map(m => {
+      const on = m.id === cur;
+      return `<button data-hmz-sm="${m.id}" onclick="setHmzSpreadMode('${m.id}')" style="
+        padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
+        background:${on ? 'rgba(20,211,169,0.15)' : 'transparent'};
+        color:${on ? '#14D3A9' : 'var(--tx3)'};
+        border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${m.label}</button>`;
+    }).join('');
+  }
+  // Baseline chips meaningful only in vsRef mode
+  const chipsWrap = document.getElementById('hmz-ref-chips-wrap');
+  if (chipsWrap) {
+    chipsWrap.style.display = (HMZ.spreadMode === 'vsRef') ? 'flex' : 'none';
+  }
+}
+
+// Switch Heatmap granularity. Persists the choice on HMZ.heatmapMode.
+function setHmzHeatmapMode(mode) {
+  if (!['day','week','month','dow'].includes(mode)) return;
+  HMZ.heatmapMode = mode;
+  renderHistMulti();
+}
+window.setHmzHeatmapMode = setHmzHeatmapMode;
+
+// Switch Spread sub-mode (vsRef temporal series / vsPeers scatter).
+// Persists to localStorage so the user's last choice is restored.
+function setHmzSpreadMode(mode) {
+  if (mode !== 'vsRef' && mode !== 'vsPeers') return;
+  HMZ.spreadMode = mode;
+  try { localStorage.setItem('pk_hmz_spreadMode', mode); } catch (_) {}
+  renderHistMulti();
+}
+window.setHmzSpreadMode = setHmzSpreadMode;
+
+// Show the Heatmap controls (granularity toggle + baseline picker) only when
+// the Heatmap tab is active. Mirrors _hmzToggleRefWrap for the Spread mode.
+function _hmzToggleHeatmapControls(mode) {
+  const wrap = document.getElementById('hmz-heatmap-controls');
+  if (wrap) wrap.style.display = (mode === 'heatmap') ? 'flex' : 'none';
+  if (mode === 'heatmap') _hmzPopulateHeatmapControls();
+}
+
+// Populate the granularity toggle (Day/Week/Month/DoW/HoD) and the baseline
+// chips inside the Heatmap controls bar. Same visual language as the
+// Monthly/Daily breakdown toggle in Historical FS and the SPREAD chips.
+function _hmzPopulateHeatmapControls() {
+  // ── Granularity toggle ──
+  const modes = [
+    { id: 'day',   label: 'Day' },
+    { id: 'week',  label: 'Week' },
+    { id: 'month', label: 'Month' },
+    { id: 'dow',   label: 'DoW' },
+  ];
+  const cur = HMZ.heatmapMode || 'day';
+  const modeHost = document.getElementById('hmz-heatmap-mode-toggle');
+  if (modeHost) {
+    modeHost.innerHTML = modes.map(m => {
+      const on = m.id === cur;
+      return `<button data-hmz-hm-mode="${m.id}" onclick="setHmzHeatmapMode('${m.id}')" style="
+        padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
+        background:${on ? 'rgba(20,211,169,0.15)' : 'transparent'};
+        color:${on ? '#14D3A9' : 'var(--tx3)'};
+        border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${m.label}</button>`;
+    }).join('');
+  }
+
+  // ── Baseline chips ──
+  // Uses the same HIST.hmzBaseline / setHmzBaseline as Spread mode for consistency.
+  const chipHost = document.getElementById('hmz-heatmap-baseline-chips');
+  if (chipHost) {
+    const sel = Array.from(window._hmzSelected || []);
+    if (!sel.length) { chipHost.innerHTML = ''; return; }
+    let baseline = HIST.hmzBaseline;
+    if (!baseline || !sel.includes(baseline)) {
+      baseline = sel.includes('FR') ? 'FR' : sel[0];
+      HIST.hmzBaseline = baseline;
+    }
+    chipHost.innerHTML = sel.map(z => {
+      const isOn = z === baseline;
+      const col  = (window._zoneColorMap && window._zoneColorMap[z]) || '#4A6280';
+      return `<button onclick="setHmzBaseline('${z}')" style="
+        padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid ${isOn?col:'rgba(255,255,255,.12)'};
+        background:${isOn?col+'22':'transparent'};color:${isOn?col:'rgba(255,255,255,.55)'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;
+      ">${z}</button>`;
+    }).join('');
+  }
 }
 
 async function renderHistMulti() {
@@ -7738,6 +7851,8 @@ async function renderHistMulti() {
     _hmzPlaceholder('No zone selected');
     return;
   }
+  // Expose for the controls populator (Heatmap baseline picker)
+  window._hmzSelected = selected;
 
   // Build per-zone filtered data + stats
   const perZone = {};
@@ -7840,6 +7955,13 @@ async function renderHistMulti() {
     anchor.innerHTML = '';
   }
 
+  // Normalise legacy tab aliases BEFORE rendering the table, so the table
+  // columns match the actually-rendered chart.
+  //   'profile' → Heatmap mode DoW (folded in 2026-05)
+  //   'dist'    → Bands (folded in 2026-05; same boxplot semantic, lighter visuals)
+  if (HMZ.tab === 'profile') { HMZ.tab = 'heatmap'; HMZ.heatmapMode = 'dow'; }
+  else if (HMZ.tab === 'dist') { HMZ.tab = 'bands'; }
+
   // Render HMZ data table (same template as Daily Compare zones · compact)
   renderHmzTable(HMZ.tab, stats, selected, baseline);
 
@@ -7847,14 +7969,13 @@ async function renderHistMulti() {
   // + show them only in Spread mode
   _hmzPopulateRefChips(selected);
   _hmzToggleRefWrap(HMZ.tab);
+  _hmzToggleHeatmapControls(HMZ.tab);
 
   // Dispatch by tab
   if (HMZ.tab === 'lines')   return _hmzRenderLines(perZone, selected);
   if (HMZ.tab === 'heatmap') return _hmzRenderHeatmap(perZone, selected);
-  if (HMZ.tab === 'profile') return _hmzRenderProfile(perZone, selected);
   if (HMZ.tab === 'bands')   return _hmzRenderBands(perZone, selected, baseline);
   if (HMZ.tab === 'spread')  return _hmzRenderSpread(perZone, selected, baseline);
-  if (HMZ.tab === 'dist')    return _hmzRenderDist(perZone, selected);
   return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistMulti = renderHistMulti;
@@ -7893,6 +8014,28 @@ function renderHmzTable(view, stats, selected, baseline) {
 }
 
 function _hmzTableHeader(view) {
+  // Spread column set depends on the active sub-mode:
+  //   vsRef   → temporal series semantics (Avg spread, % vs ref, σ, min spread)
+  //   vsPeers → BESS scatter semantics  (Peak avg, Off-pk avg, P-OP spread, Intraday range, Days)
+  const spreadCols = (HMZ.spreadMode === 'vsPeers')
+    ? [
+        { w:'18%', label:'Zone' },
+        { w:'12%', label:'Avg', sub:'€/MWh', align:'right' },
+        { w:'14%', label:'Peak avg', sub:'€/MWh', align:'right' },
+        { w:'14%', label:'Off-pk avg', sub:'€/MWh', align:'right' },
+        { w:'14%', label:'P−OP spread', sub:'€/MWh', align:'right' },
+        { w:'18%', label:'Intraday range', sub:'avg max−min · €/MWh', align:'right' },
+        { w:'10%', label:'Days', sub:'count', align:'right' },
+      ]
+    : [
+        { w:'22%', label:'Zone' },
+        { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
+        { w:'30%', label:'Avg spread vs ref', sub:'€/MWh + bar', align:'right' },
+        { w:'14%', label:'% vs ref', sub:'(zone−ref)/ref', align:'right' },
+        { w:'10%', label:'σ vs σ-ref', align:'right' },
+        { w:'10%', label:'Min spread', align:'right' },
+      ];
+
   const cols = {
     lines: [
       { w:'22%', label:'Zone' },
@@ -7927,14 +8070,7 @@ function _hmzTableHeader(view) {
       { w:'14%', label:'Max', sub:'€/MWh', align:'right' },
       { w:'10%', label:'Days', sub:'count', align:'right' },
     ],
-    spread: [
-      { w:'22%', label:'Zone' },
-      { w:'14%', label:'Avg', sub:'€/MWh', align:'right' },
-      { w:'30%', label:'Avg spread vs ref', sub:'€/MWh + bar', align:'right' },
-      { w:'14%', label:'% vs ref', sub:'(zone−ref)/ref', align:'right' },
-      { w:'10%', label:'σ vs σ-ref', align:'right' },
-      { w:'10%', label:'Min spread', align:'right' },
-    ],
+    spread: spreadCols,
   };
   const c = cols[view] || cols.lines;
   return '<tr>' + c.map(col => `
@@ -8056,6 +8192,16 @@ function _hmzBodyBands(rows, baseline) {
 }
 
 function _hmzBodySpread(rows, baseline) {
+  // Sub-mode dispatch: vsRef uses the temporal-spread semantics (existing
+  // columns); vsPeers uses BESS-scatter semantics (Peak / Off-pk / P-OP / Intraday).
+  if (HMZ.spreadMode === 'vsPeers') {
+    return _hmzBodySpreadVsPeers(rows);
+  }
+  return _hmzBodySpreadVsRef(rows, baseline);
+}
+
+// vsRef: same columns as before — Avg, Avg spread vs ref + bar, % vs ref, σ-diff, min spread
+function _hmzBodySpreadVsRef(rows, baseline) {
   const ref = rows.find(r => r.code === baseline);
   // Compute max absolute spread for divergent bar
   const validSpreads = rows.filter(r => r.code !== baseline && r.avg != null && ref?.avg != null).map(r => Math.abs(r.avg - ref.avg));
@@ -8089,6 +8235,41 @@ function _hmzBodySpread(rows, baseline) {
       <td style="${_HMZ_TD_R};color:${pctCol}">${pctVsRef != null ? sign(pctVsRef)+pctVsRef.toFixed(0)+'%' : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text2)">${sigmaDiff != null ? sign(sigmaDiff)+sigmaDiff.toFixed(2) : '--'}</td>
       <td style="${_HMZ_TD_R};color:var(--text2)">${minSpread != null ? sign(minSpread)+minSpread.toFixed(2) : '--'}</td>`;
+    return _hmzTr(r, cells);
+  }).join('');
+}
+
+// vsPeers: BESS scatter semantics — Avg, Peak avg, Off-pk avg, P−OP spread, Intraday range, Days
+// Columns mirror the axes/dimensions of the scatter so the table tells the
+// same story as the chart. P−OP shaded green when high (BESS-positive),
+// Intraday range shaded teal when high (BESS-positive).
+function _hmzBodySpreadVsPeers(rows) {
+  // Compute medians for highlighting the "BESS hotspot" rows (top quadrant in
+  // the scatter) — keep the highlight subtle so the table stays readable.
+  const popVals = rows.map(r => (r.peakAvg != null && r.offAvg != null) ? (r.peakAvg - r.offAvg) : null).filter(v => v != null).sort((a,b)=>a-b);
+  const intraVals = rows.map(r => r.intradaySpread).filter(v => v != null).sort((a,b)=>a-b);
+  const popMed = popVals.length ? _percentile(popVals, 0.5) : null;
+  const intraMed = intraVals.length ? _percentile(intraVals, 0.5) : null;
+
+  return rows.map(r => {
+    const popSpread = (r.peakAvg != null && r.offAvg != null) ? (r.peakAvg - r.offAvg) : null;
+    const intra = r.intradaySpread;
+    const isHotspot = (popSpread != null && intra != null && popMed != null && intraMed != null
+                      && popSpread > popMed && intra > intraMed);
+    // Highlight numbers above median (green = above median = "BESS-positive")
+    const popCol = (popSpread != null && popMed != null && popSpread > popMed) ? '#14D3A9' : 'var(--text2)';
+    const intraCol = (intra != null && intraMed != null && intra > intraMed) ? '#14D3A9' : 'var(--text2)';
+    // Trailing badge for hotspot rows (kept very subtle)
+    const badge = isHotspot
+      ? '<span title="Above-median on both P−OP and Intraday — BESS hotspot" style="color:#14D3A9;font-size:10px;margin-left:4px">⚡</span>'
+      : '';
+    const cells = `
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.peakAvg != null ? r.peakAvg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text2)">${r.offAvg != null ? r.offAvg.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:${popCol};font-weight:${popCol === '#14D3A9' ? '600' : '400'}">${popSpread != null ? popSpread.toFixed(2) : '--'}${badge}</td>
+      <td style="${_HMZ_TD_R};color:${intraCol};font-weight:${intraCol === '#14D3A9' ? '600' : '400'}">${intra != null ? intra.toFixed(2) : '--'}</td>
+      <td style="${_HMZ_TD_R};color:var(--text3)">${r.days != null ? r.days : '--'}</td>`;
     return _hmzTr(r, cells);
   }).join('');
 }
@@ -8164,28 +8345,74 @@ function _hmzRenderLines(perZone, selected) {
       label: z,
       data: labels.map(l => map[l] ?? null),
       borderColor: zoneColor(z),
-      borderWidth: 1.4,
+      borderWidth: 2,
       pointRadius: 0,
-      tension: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: zoneColor(z),
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 2,
+      tension: 0.3,
       spanGaps: true,
       fill: false,
     };
   });
+
+  // Inject zero line annotation when any value crosses zero (rare in daily avg
+  // but possible during negative-price episodes); harmless when all positive.
+  const zeroAnn = (typeof ccZeroLineAnnotation === 'function')
+    ? { zeroLine: ccZeroLineAnnotation() }
+    : {};
 
   mkHistChart('hmz-canvas', {
     type: 'line',
     data: { labels, datasets },
     options: {
       ...baseOptions('€/MWh'),
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 2, padding: 8 } },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}` } }
-      }
-    }
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: _HIST_TX3,
+            font: { size: 10 },
+            boxWidth: 10,
+            padding: 10,
+          },
+          // Shared focus-on-click behaviour: click a zone → focus (others dim),
+          // re-click → reset. Aligned with DA Cross-zone Lines.
+          onClick: (e, item, legend) => {
+            if (typeof window.pkLegendFocusClick === 'function') {
+              window.pkLegendFocusClick(e, item, legend);
+            }
+          },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
+          },
+        },
+        annotation: { annotations: zeroAnn },
+      },
+      scales: {
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 9 }, maxTicksLimit: 12 } },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 }, callback: v => v.toFixed(0) },
+          title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 9 } },
+          grace: '12%',
+        },
+      },
+    },
   });
 }
 
-// ── HMZ · Heatmap: zone × month, color by monthly avg price ──
+// ── HMZ · Heatmap (unified) · 4 granularities: Day / Week / Month / DoW ──
+// Each cell encodes Δ vs baseline zone in colour; absolute €/MWh + Δ shown
+// inside the cell. The bucketing changes with HMZ.heatmapMode but the rendering
+// pipeline (matrix → deltas → colour → table) is shared.
 function _hmzRenderHeatmap(perZone, selected) {
   const canvas = document.getElementById('hmz-canvas');
   const heatmap = document.getElementById('hmz-heatmap');
@@ -8197,95 +8424,145 @@ function _hmzRenderHeatmap(perZone, selected) {
   let baseline = HIST.hmzBaseline || 'FR';
   if (!selected.includes(baseline)) baseline = selected[0] || 'FR';
 
-  // Collect all months across zones
-  const monthsSet = new Set();
-  selected.forEach(z => perZone[z].forEach(d => monthsSet.add(d.d.slice(0,7))));
-  const months = Array.from(monthsSet).sort();
+  const mode = HMZ.heatmapMode || 'day';
 
-  if (!months.length || !selected.length) {
+  // ─── Bucket helpers ──────────────────────────────────────────────────
+  // For each daily point d (shape: { d:'YYYY-MM-DD', avg:Number, ... })
+  // return the bucket key + a sortable rank + a label for display.
+  function bucketFor(d) {
+    const iso = d.d;
+    if (mode === 'day') {
+      // Bucket = the ISO date itself, sortable as-is
+      const [y, mo, da] = iso.split('-');
+      return { key: iso, rank: iso, label: `${da}/${mo}` };
+    }
+    if (mode === 'week') {
+      // ISO week (Mon-based). Use Thursday-of-week trick for ISO week number.
+      const dt = new Date(iso + 'T00:00:00Z');
+      const dow = (dt.getUTCDay() + 6) % 7; // 0=Mon
+      dt.setUTCDate(dt.getUTCDate() - dow + 3); // Thursday of this ISO week
+      const y = dt.getUTCFullYear();
+      const jan1 = new Date(Date.UTC(y, 0, 1));
+      const wn = Math.ceil(((dt - jan1) / 86400000 + 1) / 7);
+      const key = `${y}-W${String(wn).padStart(2,'0')}`;
+      return { key, rank: key, label: `W${String(wn).padStart(2,'0')} ’${String(y).slice(2)}` };
+    }
+    if (mode === 'month') {
+      const ym = iso.slice(0, 7);
+      const [y, mo] = ym.split('-');
+      const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return { key: ym, rank: ym, label: `${names[parseInt(mo)-1]} ${y.slice(2)}` };
+    }
+    if (mode === 'dow') {
+      // Day-of-week aggregated across the whole window. Mon..Sun.
+      const dt = new Date(iso + 'T00:00:00Z');
+      let dow = dt.getUTCDay();
+      dow = (dow + 6) % 7; // 0=Mon
+      const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      return { key: String(dow), rank: dow, label: labels[dow] };
+    }
+    return { key: iso, rank: iso, label: iso };
+  }
+
+  // Build buckets union (preserves order via rank)
+  const bucketSet = new Map(); // key → { rank, label }
+  selected.forEach(z => (perZone[z] || []).forEach(d => {
+    if (d.avg == null) return;
+    const b = bucketFor(d);
+    if (!bucketSet.has(b.key)) bucketSet.set(b.key, { rank: b.rank, label: b.label });
+  }));
+  const buckets = Array.from(bucketSet.entries())
+    .sort((a, b) => (a[1].rank < b[1].rank ? -1 : a[1].rank > b[1].rank ? 1 : 0))
+    .map(([key, meta]) => ({ key, label: meta.label }));
+
+  if (!buckets.length || !selected.length) {
     heatmap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:11px">No data</div>';
     return;
   }
 
-  // Build matrix: monthly avg per (zone, month)
+  // Build matrix: avg per (zone, bucket)
   const matrix = {};
   selected.forEach(z => {
     matrix[z] = {};
-    const byMonth = {};
-    perZone[z].forEach(d => {
-      const m = d.d.slice(0,7);
-      if (!byMonth[m]) byMonth[m] = [];
-      if (d.avg != null) byMonth[m].push(d.avg);
+    const byBucket = {};
+    (perZone[z] || []).forEach(d => {
+      if (d.avg == null) return;
+      const b = bucketFor(d);
+      if (!byBucket[b.key]) byBucket[b.key] = [];
+      byBucket[b.key].push(d.avg);
     });
-    months.forEach(m => {
-      matrix[z][m] = byMonth[m] && byMonth[m].length
-        ? byMonth[m].reduce((a,b)=>a+b,0) / byMonth[m].length
+    buckets.forEach(b => {
+      const arr = byBucket[b.key];
+      matrix[z][b.key] = (arr && arr.length)
+        ? arr.reduce((a, v) => a + v, 0) / arr.length
         : null;
     });
   });
 
-  // Compute deltas vs baseline for every cell + find max abs delta for scaling
+  // Compute deltas vs baseline + find max abs delta for colour scaling
   let maxAbsDelta = 0;
   const deltas = {};
   selected.forEach(z => {
     deltas[z] = {};
-    months.forEach(m => {
-      const v = matrix[z][m];
-      const baseV = matrix[baseline]?.[m];
+    buckets.forEach(b => {
+      const v = matrix[z][b.key];
+      const baseV = matrix[baseline]?.[b.key];
       if (v != null && baseV != null && z !== baseline) {
-        deltas[z][m] = v - baseV;
-        if (Math.abs(deltas[z][m]) > maxAbsDelta) maxAbsDelta = Math.abs(deltas[z][m]);
+        deltas[z][b.key] = v - baseV;
+        if (Math.abs(deltas[z][b.key]) > maxAbsDelta) maxAbsDelta = Math.abs(deltas[z][b.key]);
       } else {
-        deltas[z][m] = null;
+        deltas[z][b.key] = null;
       }
     });
   });
-  if (maxAbsDelta < 1) maxAbsDelta = 1; // avoid div by zero
+  if (maxAbsDelta < 1) maxAbsDelta = 1;
 
-  // Color based on delta: green (cheaper), grey (~0), red (more expensive)
+  // Colour by delta: green (cheaper than baseline) → grey (~0) → red (more expensive)
+  // Same palette as the previous Heatmap to preserve user expectations.
   const colorForDelta = (d) => {
     if (d == null) return 'rgba(255,255,255,0.05)';
     const t = Math.max(-1, Math.min(1, d / maxAbsDelta));
     if (t < 0) {
-      // Green for "cheaper than baseline"
       const intensity = Math.abs(t);
       return `rgba(20,211,169,${0.15 + intensity * 0.5})`;
-    } else if (t > 0) {
-      // Red for "more expensive than baseline"
-      return `rgba(237,105,101,${0.15 + t * 0.5})`;
-    } else {
-      return 'rgba(255,255,255,0.06)';
     }
+    if (t > 0) {
+      return `rgba(237,105,101,${0.15 + t * 0.5})`;
+    }
+    return 'rgba(255,255,255,0.06)';
   };
 
-  const monthLabels = months.map(m => {
-    const [y, mo] = m.split('-');
-    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${names[parseInt(mo)-1]} ${y.slice(2)}`;
-  });
+  // ─── Dimensions tuned per mode ────────────────────────────────────────
+  // Day with long windows = many narrow cells; Month/DoW = fewer wide cells.
+  const cellMinWidth = ({
+    day: 38, week: 52, month: 62, dow: 80,
+  })[mode] || 60;
+  const showDelta = mode !== 'dow'; // DoW has a single tile per cell; absolute is enough
+  const valuePad  = ({ day: '4px 3px', week: '4px 4px', month: '5px 6px', dow: '8px 6px' })[mode] || '5px 4px';
 
+  const modeLabel = ({ day:'Day', week:'Week', month:'Month', dow:'Day of week' })[mode] || mode;
+
+  // ─── Render table ─────────────────────────────────────────────────────
   let html = `<div style="display:inline-block;min-width:100%;padding:8px">`;
-  // Subtitle
   html += `<div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">
-    Baseline: <b style="color:var(--tx)">${baseline}</b> · Color encodes Δ vs baseline · Each cell: absolute €/MWh + Δ
+    Granularity: <b style="color:var(--tx)">${modeLabel}</b> · Baseline: <b style="color:var(--tx)">${baseline}</b> · Colour encodes Δ vs baseline
   </div>`;
   html += `<table style="border-collapse:separate;border-spacing:2px;font-size:9.5px;font-family:'JetBrains Mono',monospace">`;
   html += `<thead><tr><th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600">Zone</th>`;
-  monthLabels.forEach(ml => {
-    html += `<th style="text-align:center;padding:4px;color:var(--tx3);font-weight:600;min-width:62px">${ml}</th>`;
+  buckets.forEach(b => {
+    html += `<th style="text-align:center;padding:4px;color:var(--tx3);font-weight:600;min-width:${cellMinWidth}px">${b.label}</th>`;
   });
   html += `</tr></thead><tbody>`;
 
-  // Render baseline row first (neutral grey, no delta)
   const renderRow = (z) => {
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
     const isBaseline = (z === baseline);
     let row = `<tr>`;
     row += `<td style="padding:4px 8px;color:var(--tx);font-weight:600;white-space:nowrap${isBaseline ? ';border-left:2px solid #FBBF24' : ''}">${flag} ${z}${isBaseline ? ' <span style="color:#FBBF24;font-size:8px">★</span>' : ''}</td>`;
-    months.forEach(m => {
-      const v = matrix[z][m];
+    buckets.forEach(b => {
+      const v = matrix[z][b.key];
       if (v == null) {
-        row += `<td style="background:rgba(255,255,255,0.02);color:var(--tx3);text-align:center;padding:6px 4px;border-radius:3px;min-width:62px">--</td>`;
+        row += `<td style="background:rgba(255,255,255,0.02);color:var(--tx3);text-align:center;padding:${valuePad};border-radius:3px;min-width:${cellMinWidth}px">--</td>`;
         return;
       }
       let bg, lines;
@@ -8293,21 +8570,27 @@ function _hmzRenderHeatmap(perZone, selected) {
         bg = 'rgba(255,255,255,0.06)';
         lines = `<div style="font-weight:600;color:var(--tx)">${v.toFixed(0)}</div>`;
       } else {
-        const d = deltas[z][m];
+        const d = deltas[z][b.key];
         bg = colorForDelta(d);
-        const dStr = d != null ? (d >= 0 ? '+' : '') + d.toFixed(0) : '';
-        lines = `<div style="font-weight:600;color:#fff">${v.toFixed(0)}</div><div style="font-size:8.5px;color:rgba(255,255,255,0.7);font-weight:500">${dStr}</div>`;
+        if (showDelta && d != null) {
+          const dStr = (d >= 0 ? '+' : '') + d.toFixed(0);
+          lines = `<div style="font-weight:600;color:#fff">${v.toFixed(0)}</div><div style="font-size:8.5px;color:rgba(255,255,255,0.7);font-weight:500">${dStr}</div>`;
+        } else {
+          lines = `<div style="font-weight:600;color:#fff">${v.toFixed(0)}</div>`;
+        }
       }
-      const title = `${z} · ${m}: ${v.toFixed(2)} €/MWh${!isBaseline && deltas[z][m] != null ? ' · Δ vs ' + baseline + ': ' + deltas[z][m].toFixed(2) : ''}`;
-      row += `<td title="${title}" style="background:${bg};text-align:center;padding:4px;border-radius:3px;min-width:62px">${lines}</td>`;
+      const title = `${z} · ${b.label}: ${v.toFixed(2)} €/MWh${!isBaseline && deltas[z][b.key] != null ? ' · Δ vs ' + baseline + ': ' + deltas[z][b.key].toFixed(2) : ''}`;
+      row += `<td title="${title}" style="background:${bg};text-align:center;padding:${valuePad};border-radius:3px;min-width:${cellMinWidth}px">${lines}</td>`;
     });
     row += `</tr>`;
     return row;
   };
+  // Baseline first, then others in their existing order (stable for the user's eye)
   html += renderRow(baseline);
   selected.filter(z => z !== baseline).forEach(z => { html += renderRow(z); });
   html += `</tbody></table>`;
-  // Color scale legend
+
+  // Colour scale legend
   html += `<div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
     <span>Cheaper than ${baseline}</span>
     <div style="flex:1;max-width:280px;height:10px;background:linear-gradient(to right, rgba(20,211,169,0.7), rgba(255,255,255,0.1), rgba(237,105,101,0.7));border-radius:2px"></div>
@@ -8318,254 +8601,286 @@ function _hmzRenderHeatmap(perZone, selected) {
   heatmap.innerHTML = html;
 }
 
-// ── HMZ · Profile: heatmap zones × day-of-week (avg price) ──
-function _hmzRenderProfile(perZone, selected) {
+
+// ── HMZ · Bands · Range-bars stacked vertically on a shared €/MWh axis ──
+// One row per zone. Visual language:
+//   - P10–P90 segment: thin steel-blue line (#475569, stroke-width 2)
+//   - P25–P75 box:     coloured by zone, opacity 0.40, height 8 (the "denser" range)
+//   - P50 tick:        thick coloured vertical line (height 14, stroke-width 2.5)
+//   - Shared X axis at top: nice ticks in €/MWh
+// Aligned with DA Cross-zone Bands (same primitives, no boxplot whiskers/dots).
+function _hmzRenderBands(perZone, selected, baseline) {
+  // Render into the HTML heatmap container (SVG inside), hide the canvas.
   const canvas = document.getElementById('hmz-canvas');
   const heatmap = document.getElementById('hmz-heatmap');
   if (canvas) canvas.style.display = 'none';
   if (!heatmap) return;
   heatmap.style.display = 'block';
 
-  const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-
-  // Build matrix: zone × dow → avg
-  const matrix = {};
-  let globalMin = Infinity, globalMax = -Infinity;
-  selected.forEach(z => {
-    matrix[z] = Array(7).fill(null);
-    const byDow = Array.from({length: 7}, () => []);
-    perZone[z].forEach(e => {
-      if (e.avg == null) return;
-      const dt = new Date(e.d);
-      let dow = dt.getUTCDay();
-      dow = (dow + 6) % 7;
-      byDow[dow].push(e.avg);
-    });
-    for (let d = 0; d < 7; d++) {
-      const m = _meanIgnoreNull(byDow[d]);
-      matrix[z][d] = m;
-      if (m != null) {
-        if (m < globalMin) globalMin = m;
-        if (m > globalMax) globalMax = m;
-      }
-    }
-  });
-  if (!isFinite(globalMin) || !isFinite(globalMax)) {
+  // Compute stats per zone
+  const stats = selected.map(z => ({ zone: z, s: _boxStats((perZone[z] || []).map(d => d.avg)) }));
+  const valid = stats.filter(x => x.s);
+  if (!valid.length) {
     heatmap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:11px">No data</div>';
     return;
   }
-  if (globalMax === globalMin) globalMax = globalMin + 1;
 
-  // 3-stop gradient: green → yellow → red
-  const colorFor = (val) => {
-    if (val == null) return 'rgba(255,255,255,0.05)';
-    const t = Math.max(0, Math.min(1, (val - globalMin) / (globalMax - globalMin)));
-    if (t < 0.5) {
-      const k = t * 2;
-      const r = Math.round(20 + (251-20)*k);
-      const g = Math.round(211 + (191-211)*k);
-      const b = Math.round(169 + (36-169)*k);
-      return `rgba(${r},${g},${b},0.75)`;
-    } else {
-      const k = (t - 0.5) * 2;
-      const r = Math.round(251 + (237-251)*k);
-      const g = Math.round(191 + (105-191)*k);
-      const b = Math.round(36 + (101-36)*k);
-      return `rgba(${r},${g},${b},0.75)`;
-    }
+  // ─── Global axis bounds (shared across all rows) ────────────────────
+  // Use P10 / P90 union, widened by ~4% padding so segments don't touch edges.
+  let gLo = Infinity, gHi = -Infinity;
+  valid.forEach(({ s }) => {
+    if (s.p10 < gLo) gLo = s.p10;
+    if (s.p90 > gHi) gHi = s.p90;
+  });
+  if (!isFinite(gLo) || !isFinite(gHi)) { gLo = 0; gHi = 100; }
+  const span0 = gHi - gLo || 1;
+  gLo -= span0 * 0.04;
+  gHi += span0 * 0.04;
+  const gSpan = gHi - gLo || 1;
+
+  // ─── "Nice" tick generator (1/2/5/10 × magnitude) ────────────────────
+  const niceTicks = (lo, hi, count = 5) => {
+    const raw = (hi - lo) / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw / mag;
+    let step;
+    if (norm < 1.5) step = 1;
+    else if (norm < 3) step = 2;
+    else if (norm < 7) step = 5;
+    else step = 10;
+    step *= mag;
+    const first = Math.ceil(lo / step) * step;
+    const ticks = [];
+    for (let t = first; t <= hi + 1e-6; t += step) ticks.push(t);
+    return ticks;
   };
+  const axisTicks = niceTicks(gLo, gHi, 5);
 
-  let html = `<div style="display:inline-block;min-width:100%;padding:8px">`;
-  html += `<div style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">
-    Average price (€/MWh) per zone × day of week · Color encodes price level
-  </div>`;
-  html += `<table style="border-collapse:separate;border-spacing:2px;font-size:10px;font-family:'JetBrains Mono',monospace">`;
-  html += `<thead><tr><th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600">Zone</th>`;
-  dowLabels.forEach(d => {
-    html += `<th style="text-align:center;padding:4px;color:var(--tx3);font-weight:600;min-width:70px">${d}</th>`;
+  // ─── Dimensions ──────────────────────────────────────────────────────
+  // SVG width is responsive (100%); the viewBox uses a logical 1000px width.
+  // Per-zone row height ~36px, label gutter on the left.
+  const W = 1000;
+  const padL = 60;   // left gutter for zone labels
+  const padR = 24;   // right padding
+  const rowH = 38;   // height per zone row
+  const headerH = 30; // top axis header height
+  const baselineMark = 6;
+  const nRows = valid.length;
+  const H = headerH + nRows * rowH + 16; // +16 bottom padding
+  const xOf = v => padL + ((v - gLo) / gSpan) * (W - padL - padR);
+
+  // Sort zones by median P50 (cheapest → most expensive) — naturally creates
+  // a vertical ranking, which is one of the key benefits of the shared axis.
+  // Baseline marked with a yellow accent, kept in its sorted position.
+  const sorted = [...valid].sort((a, b) => (a.s.p50 ?? 0) - (b.s.p50 ?? 0));
+
+  // ─── Build SVG ───────────────────────────────────────────────────────
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMinYMin meet" style="display:block;font-family:'JetBrains Mono',monospace">`;
+
+  // ─── Top axis: graduations + numeric labels ─────────────────────────
+  svg += `<g>`;
+  svg += `<line x1="${padL}" y1="${headerH - 8}" x2="${W - padR}" y2="${headerH - 8}" stroke="rgba(184,201,217,0.25)" stroke-width="0.5"/>`;
+  axisTicks.forEach(t => {
+    const x = xOf(t).toFixed(1);
+    svg += `<line x1="${x}" y1="${headerH - 12}" x2="${x}" y2="${headerH - 4}" stroke="rgba(184,201,217,0.4)" stroke-width="0.5"/>`;
+    svg += `<text x="${x}" y="${headerH - 16}" font-size="10" fill="#7A93AB" text-anchor="middle">${Math.round(t)}</text>`;
   });
-  html += `</tr></thead><tbody>`;
-  selected.forEach(z => {
-    const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-    html += `<tr><td style="padding:4px 8px;color:var(--tx);font-weight:600;white-space:nowrap">${flag} ${z}</td>`;
-    for (let d = 0; d < 7; d++) {
-      const v = matrix[z][d];
-      if (v == null) {
-        html += `<td style="background:rgba(255,255,255,0.02);color:var(--tx3);text-align:center;padding:8px 4px;border-radius:3px">--</td>`;
-        continue;
-      }
-      const bg = colorFor(v);
-      const title = `${z} · ${dowLabels[d]}: ${v.toFixed(2)} €/MWh`;
-      html += `<td title="${title}" style="background:${bg};text-align:center;padding:8px 4px;border-radius:3px;font-weight:700;color:#fff">${v.toFixed(0)}</td>`;
+  svg += `</g>`;
+
+  // ─── Subtle vertical graduations spanning all rows ──────────────────
+  axisTicks.forEach(t => {
+    const x = xOf(t).toFixed(1);
+    svg += `<line x1="${x}" y1="${headerH}" x2="${x}" y2="${H - 8}" stroke="rgba(120,140,170,0.06)" stroke-width="0.5"/>`;
+  });
+
+  // ─── One row per zone ───────────────────────────────────────────────
+  sorted.forEach(({ zone, s }, i) => {
+    const y = headerH + i * rowH + rowH / 2;
+    const isBaseline = (zone === baseline);
+    const col = (typeof zoneColor === 'function') ? zoneColor(zone) : '#14D3A9';
+    const colFill = _toRgba ? _toRgba(col, 0.40) : col;
+
+    // Zone label (left gutter) + baseline marker
+    const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
+    if (isBaseline) {
+      svg += `<rect x="0" y="${y - rowH/2 + 4}" width="3" height="${rowH - 8}" fill="#FBBF24"/>`;
     }
-    html += `</tr>`;
+    svg += `<text x="${padL - 8}" y="${y + 4}" font-size="11" fill="${col}" font-weight="700" text-anchor="end">${flag} ${zone}</text>`;
+
+    // P10–P90 thin segment
+    const xP10 = xOf(s.p10);
+    const xP90 = xOf(s.p90);
+    svg += `<line x1="${xP10.toFixed(1)}" y1="${y}" x2="${xP90.toFixed(1)}" y2="${y}" stroke="#475569" stroke-width="2" stroke-linecap="round"/>`;
+
+    // P25–P75 box (coloured, opaque) — the "denser" range
+    if (s.p25 != null && s.p75 != null) {
+      const xP25 = xOf(s.p25);
+      const xP75 = xOf(s.p75);
+      const boxH = 8;
+      svg += `<rect x="${xP25.toFixed(1)}" y="${(y - boxH/2).toFixed(1)}" width="${(xP75 - xP25).toFixed(1)}" height="${boxH}" fill="${colFill}" rx="2"/>`;
+    }
+
+    // P50 tick (thick coloured vertical line)
+    const xP50 = xOf(s.p50);
+    svg += `<line x1="${xP50.toFixed(1)}" y1="${(y - 7).toFixed(1)}" x2="${xP50.toFixed(1)}" y2="${(y + 7).toFixed(1)}" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>`;
+
+    // P50 numeric label (small, to the right of the tick)
+    const labelX = (xP50 + 8 < W - padR - 30) ? xP50 + 8 : xP50 - 8;
+    const labelAnchor = (xP50 + 8 < W - padR - 30) ? 'start' : 'end';
+    svg += `<text x="${labelX.toFixed(1)}" y="${(y - 8).toFixed(1)}" font-size="9" fill="${col}" font-weight="600" text-anchor="${labelAnchor}">${s.p50.toFixed(0)}</text>`;
+
+    // Tooltip via <title> on the row group
+    const tip = `${zone} · P10 ${s.p10.toFixed(1)} · P25 ${s.p25.toFixed(1)} · P50 ${s.p50.toFixed(1)} · P75 ${s.p75.toFixed(1)} · P90 ${s.p90.toFixed(1)} €/MWh`;
+    svg += `<rect x="${padL}" y="${(y - rowH/2).toFixed(1)}" width="${W - padL - padR}" height="${rowH}" fill="transparent"><title>${tip}</title></rect>`;
   });
-  html += `</tbody></table>`;
-  html += `<div style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace">
-    <span>Cheap</span>
-    <div style="flex:1;max-width:280px;height:10px;background:linear-gradient(to right, rgba(20,211,169,0.75), rgba(251,191,36,0.75), rgba(237,105,101,0.75));border-radius:2px"></div>
-    <span>Expensive</span>
-    <span style="margin-left:12px">${globalMin.toFixed(0)} → ${globalMax.toFixed(0)} €/MWh</span>
-  </div>`;
-  html += `</div>`;
-  heatmap.innerHTML = html;
+
+  svg += `</svg>`;
+
+  // ─── Legend ──────────────────────────────────────────────────────────
+  const legendHtml = `
+    <div style="display:flex;align-items:center;gap:18px;margin-top:8px;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <svg width="20" height="6" viewBox="0 0 20 6"><line x1="0" y1="3" x2="20" y2="3" stroke="#475569" stroke-width="2" stroke-linecap="round"/></svg>
+        P10–P90 range
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <svg width="20" height="6" viewBox="0 0 20 6"><rect x="0" y="1" width="20" height="4" rx="1" fill="rgba(20,211,169,0.40)"/></svg>
+        P25–P75 (IQR)
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <svg width="6" height="14" viewBox="0 0 6 14"><line x1="3" y1="0" x2="3" y2="14" stroke="#14D3A9" stroke-width="2.5" stroke-linecap="round"/></svg>
+        P50 median
+      </span>
+      <span style="margin-left:6px">Sorted by median (cheapest → most expensive) · Axis: €/MWh shared</span>
+      ${baseline ? `<span style="margin-left:6px"><span style="display:inline-block;width:3px;height:10px;background:#FBBF24;vertical-align:middle;margin-right:4px"></span>Baseline: ${baseline}</span>` : ''}
+    </div>`;
+
+  heatmap.innerHTML = `<div style="padding:8px">${svg}${legendHtml}</div>`;
 }
 
-// ── HMZ · Bands: full box plot per zone (P10/P25/P50/P75/P90 + min/max) ──
-function _hmzRenderBands(perZone, selected, baseline) {
-  // Make sure canvas is shown, heatmap is hidden
+
+// ── HMZ · Spread · dispatch on HMZ.spreadMode ──────────────────────────
+// 'vsRef'   → temporal Δ vs baseline (zone − baseline.avg over time)
+// 'vsPeers' → scatter BESS-hotspot: x=Peak-OffPeak avg, y=Intraday spread avg
+function _hmzRenderSpread(perZone, selected, baseline) {
+  const mode = HMZ.spreadMode || 'vsRef';
+  if (mode === 'vsPeers') {
+    return _hmzRenderSpreadVsPeers(perZone, selected);
+  }
+  return _hmzRenderSpreadVsRef(perZone, selected, baseline);
+}
+
+// ── HMZ · Spread vs Ref · time-series of (zone − baseline) ─────────────
+// Aligned with DA Cross-zone Spread semantically: one line per zone showing
+// its delta vs the baseline through time. Zero line is the baseline.
+function _hmzRenderSpreadVsRef(perZone, selected, baseline) {
   const canvas = document.getElementById('hmz-canvas');
   const heatmap = document.getElementById('hmz-heatmap');
   if (canvas) canvas.style.display = '';
   if (heatmap) heatmap.style.display = 'none';
 
-  const labels = selected;
-  const stats = selected.map(z => _boxStats(perZone[z].map(d => d.avg)));
+  // Build baseline lookup: date → avg
+  const baseSeries = perZone[baseline] || [];
+  const baseMap = {};
+  baseSeries.forEach(d => { if (d.avg != null) baseMap[d.d] = d.avg; });
 
-  if (stats.every(s => s == null)) return;
+  // Union of dates across selected zones
+  const dateSet = new Set();
+  selected.forEach(z => (perZone[z] || []).forEach(d => { if (d.avg != null) dateSet.add(d.d); }));
+  const labels = Array.from(dateSet).sort();
 
-  // Compute Y range: smart capping based on outliers vs P90
-  const validStats = stats.filter(s => s);
-  const p90Max = validStats.length ? Math.max(...validStats.map(s => s.p90)) : 100;
-  const p10Min = validStats.length ? Math.min(...validStats.map(s => s.p10)) : 0;
-  const dataMax = validStats.length ? Math.max(...validStats.map(s => s.max)) : 100;
-  const dataMin = validStats.length ? Math.min(...validStats.map(s => s.min)) : 0;
-  // If outlier max is way above P90, cap; else use real max
-  const yTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
-  const yBot = (dataMin < p10Min * 0.5 || dataMin < 0) ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10 : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
+  if (!labels.length) {
+    if (canvas) canvas.style.display = 'none';
+    if (heatmap) {
+      heatmap.style.display = 'block';
+      heatmap.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:11px">No data</div>';
+    }
+    return;
+  }
 
-  // Per-zone colors for boxes
-  const zoneColors = selected.map(z => zoneColor(z));
-  const zoneIqrFills = zoneColors.map(c => _toRgba(c, 0.25));
-  const zoneWhiskers = zoneColors.map(c => _toRgba(c, 0.7));
-
-  // Custom plugin: draw box plot using chart's scales
-  const boxPlotPlugin = {
-    id: 'hmzBoxPlot',
-    afterDatasetsDraw(chart) {
-      const { ctx, scales } = chart;
-      const xScale = scales.x;
-      const yScale = scales.y;
-      const boxHalfWidth = (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) * 0.2;
-      stats.forEach((s, i) => {
-        if (!s) return;
-        const xPx = xScale.getPixelForValue(i);
-        const yP25 = yScale.getPixelForValue(s.p25);
-        const yP75 = yScale.getPixelForValue(s.p75);
-        const yP10 = yScale.getPixelForValue(s.p10);
-        const yP90 = yScale.getPixelForValue(s.p90);
-        const yP50 = yScale.getPixelForValue(s.p50);
-
-        // IQR box
-        ctx.fillStyle = zoneIqrFills[i];
-        ctx.strokeStyle = zoneColors[i];
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.rect(xPx - boxHalfWidth, yP75, boxHalfWidth * 2, yP25 - yP75);
-        ctx.fill();
-        ctx.stroke();
-
-        // Median line (thick horizontal at P50)
-        ctx.strokeStyle = zoneColors[i];
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(xPx - boxHalfWidth, yP50);
-        ctx.lineTo(xPx + boxHalfWidth, yP50);
-        ctx.stroke();
-
-        // Whiskers + caps
-        ctx.strokeStyle = zoneWhiskers[i];
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(xPx, yP25);
-        ctx.lineTo(xPx, yP10);
-        ctx.moveTo(xPx, yP75);
-        ctx.lineTo(xPx, yP90);
-        ctx.stroke();
-        const capWidth = boxHalfWidth * 0.45;
-        ctx.beginPath();
-        ctx.moveTo(xPx - capWidth, yP10);
-        ctx.lineTo(xPx + capWidth, yP10);
-        ctx.moveTo(xPx - capWidth, yP90);
-        ctx.lineTo(xPx + capWidth, yP90);
-        ctx.stroke();
-
-        // Min / Max dots (only if within Y range)
-        if (s.min >= yScale.min && s.min <= yScale.max) {
-          const yMin = yScale.getPixelForValue(s.min);
-          ctx.fillStyle = _HIST_DN;
-          ctx.beginPath();
-          ctx.arc(xPx, yMin, 3, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-        if (s.max >= yScale.min && s.max <= yScale.max) {
-          const yMax = yScale.getPixelForValue(s.max);
-          ctx.fillStyle = _HIST_WARN;
-          ctx.beginPath();
-          ctx.arc(xPx, yMax, 3, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-      });
-    },
-  };
+  // Datasets: one per non-baseline zone. The baseline itself appears as the zero line.
+  const datasets = selected
+    .filter(z => z !== baseline)
+    .map(z => {
+      const map = {};
+      (perZone[z] || []).forEach(d => { if (d.avg != null) map[d.d] = d.avg; });
+      return {
+        label: z,
+        data: labels.map(l => {
+          const v = map[l];
+          const b = baseMap[l];
+          return (v != null && b != null) ? (v - b) : null;
+        }),
+        borderColor: zoneColor(z),
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: zoneColor(z),
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+        tension: 0.3,
+        spanGaps: true,
+        fill: false,
+      };
+    });
 
   mkHistChart('hmz-canvas', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Box plot',
-          data: stats.map(s => s ? s.p50 : null),
-          backgroundColor: 'transparent',
-          borderColor: 'transparent',
-          borderWidth: 0,
-          barPercentage: 0.001,
-          categoryPercentage: 1,
-        },
-      ],
-    },
+    type: 'line',
+    data: { labels, datasets },
     options: {
-      ...baseOptions('€/MWh'),
+      ...baseOptions('Δ vs ' + baseline + ' (€/MWh)'),
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, padding: 10 },
+          // Shared focus-on-click behaviour (DA Cross-zone Lines / HMZ Lines parity)
+          onClick: (e, item, legend) => {
+            if (typeof window.pkLegendFocusClick === 'function') {
+              window.pkLegendFocusClick(e, item, legend);
+            }
+          },
+        },
         tooltip: {
-          mode: 'index', intersect: false,
+          mode: 'index',
+          intersect: false,
           callbacks: {
-            label: (ctx) => {
-              const s = stats[ctx.dataIndex];
-              const z = selected[ctx.dataIndex];
-              if (!s) return '';
-              return [
-                ` ${z}`,
-                ` Min:    ${s.min.toFixed(1)} €/MWh`,
-                ` P10:    ${s.p10.toFixed(1)} €/MWh`,
-                ` P25:    ${s.p25.toFixed(1)} €/MWh`,
-                ` Median: ${s.p50.toFixed(1)} €/MWh`,
-                ` P75:    ${s.p75.toFixed(1)} €/MWh`,
-                ` P90:    ${s.p90.toFixed(1)} €/MWh`,
-                ` Max:    ${s.max.toFixed(1)} €/MWh`,
-                ` n = ${s.n}`,
-              ];
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v == null) return ` ${ctx.dataset.label}: n/a`;
+              const sign = v >= 0 ? '+' : '';
+              return ` ${ctx.dataset.label}: ${sign}${v.toFixed(2)} €/MWh vs ${baseline}`;
             },
           },
         },
-        subtitle: { display: true, text: 'Box: P25-P75 · Whiskers: P10-P90 · Dots: min/max (when within range) · Scroll to zoom Y · drag to pan', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
-        zoom: _zoomConfig({ mode: 'y' }),
+        annotation: {
+          annotations: {
+            zero: {
+              type: 'line', yMin: 0, yMax: 0,
+              borderColor: 'rgba(251,191,36,.55)', borderWidth: 1.2, borderDash: [4, 4],
+              label: { display: true, content: baseline + ' = 0', position: 'start', color: '#FBBF24', backgroundColor: 'transparent', font: { size: 9, weight: 'bold' } },
+            },
+          },
+        },
       },
       scales: {
-        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 11 } } },
-        y: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 10 } }, min: yBot, max: yTop, title: { display: true, text: '€/MWh', color: _HIST_TX3, font: { size: 10 } } },
+        x: { grid: { color: _HIST_GRID }, ticks: { color: _HIST_TX3, font: { size: 9 }, maxTicksLimit: 12 } },
+        y: {
+          grid: { color: _HIST_GRID },
+          ticks: { color: _HIST_TX3, font: { size: 10 }, callback: v => (v >= 0 ? '+' : '') + v.toFixed(0) },
+          title: { display: true, text: 'Δ vs ' + baseline + ' (€/MWh)', color: _HIST_TX3, font: { size: 9 } },
+          grace: '12%',
+        },
       },
     },
-    plugins: [boxPlotPlugin],
   });
 }
 
-// ── HMZ · Spread: scatter 2D — P-OP avg (X) vs Intraday spread (Y) per zone ──
-// Quadrant top-right = BESS hotspot (high P-OP + high intraday volatility)
-function _hmzRenderSpread(perZone, selected, baseline) {
-  // Make sure canvas is shown, heatmap is hidden
+// ── HMZ · Spread vs Peers · scatter: P-OP avg (X) vs Intraday spread (Y) ──
+// Quadrant top-right = BESS hotspot (high peak-off-peak + high intraday volatility).
+// One dot per zone, sized for legibility; labels rendered next to each dot.
+function _hmzRenderSpreadVsPeers(perZone, selected) {
   const canvas = document.getElementById('hmz-canvas');
   const heatmap = document.getElementById('hmz-heatmap');
   if (canvas) canvas.style.display = '';
@@ -8574,10 +8889,10 @@ function _hmzRenderSpread(perZone, selected, baseline) {
   // Compute one (x,y) per zone
   const points = [];
   selected.forEach(z => {
-    const pop = perZone[z].filter(d => d.peakAvg != null && d.offAvg != null);
-    const sp = pop.length ? pop.reduce((a,d) => a + (d.peakAvg - d.offAvg), 0) / pop.length : null;
-    const intra = perZone[z].filter(d => d.max != null && d.min != null);
-    const sd = intra.length ? intra.reduce((a,d) => a + (d.max - d.min), 0) / intra.length : null;
+    const pop = (perZone[z] || []).filter(d => d.peakAvg != null && d.offAvg != null);
+    const sp = pop.length ? pop.reduce((a, d) => a + (d.peakAvg - d.offAvg), 0) / pop.length : null;
+    const intra = (perZone[z] || []).filter(d => d.max != null && d.min != null);
+    const sd = intra.length ? intra.reduce((a, d) => a + (d.max - d.min), 0) / intra.length : null;
     if (sp != null && sd != null) {
       points.push({ zone: z, x: sp, y: sd });
     }
@@ -8597,12 +8912,14 @@ function _hmzRenderSpread(perZone, selected, baseline) {
   const ys = points.map(p => p.y).sort((a, b) => a - b);
   const xMed = _percentile(xs, 0.5);
   const yMed = _percentile(ys, 0.5);
-  const xMin = Math.min(...xs) - 5;
-  const xMax = Math.max(...xs) + 5;
-  const yMin = Math.min(...ys) - 5;
-  const yMax = Math.max(...ys) + 5;
+  const xPad = (Math.max(...xs) - Math.min(...xs)) * 0.10 || 5;
+  const yPad = (Math.max(...ys) - Math.min(...ys)) * 0.10 || 5;
+  const xMin = Math.min(...xs) - xPad;
+  const xMax = Math.max(...xs) + xPad;
+  const yMin = Math.max(0, Math.min(...ys) - yPad);
+  const yMax = Math.max(...ys) + yPad;
 
-  // Build one dataset per zone for distinct colors
+  // One dataset per zone for distinct colours + legend entries
   const datasets = points.map(p => ({
     label: p.zone,
     data: [{ x: p.x, y: p.y }],
@@ -8615,40 +8932,69 @@ function _hmzRenderSpread(perZone, selected, baseline) {
     showLine: false,
   }));
 
+  // Plugin to draw zone code labels next to each dot
+  const labelsPlugin = {
+    id: 'hmzScatterLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx, scales } = chart;
+      if (!scales.x || !scales.y) return;
+      ctx.save();
+      ctx.font = "600 10px 'JetBrains Mono', monospace";
+      ctx.textBaseline = 'middle';
+      points.forEach(p => {
+        const xPx = scales.x.getPixelForValue(p.x);
+        const yPx = scales.y.getPixelForValue(p.y);
+        // Place label slightly right and up so it doesn't overlap the dot
+        ctx.fillStyle = zoneColor(p.zone);
+        ctx.textAlign = 'left';
+        ctx.fillText(p.zone, xPx + 12, yPx - 2);
+      });
+      ctx.restore();
+    },
+  };
+
   mkHistChart('hmz-canvas', {
     type: 'scatter',
     data: { datasets },
     options: {
       ...baseOptions('Intraday spread (€/MWh)'),
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 8, usePointStyle: true } },
+        legend: {
+          display: true, position: 'bottom',
+          labels: { color: _HIST_TX3, font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 10, usePointStyle: true },
+        },
         tooltip: {
           callbacks: {
-            label: (ctx) => {
-              const z = ctx.dataset.label;
-              return ` ${z} · P-OP: ${ctx.parsed.x.toFixed(1)} €/MWh · Intraday: ${ctx.parsed.y.toFixed(1)} €/MWh`;
-            },
+            label: (ctx) => ` ${ctx.dataset.label} · P-OP: ${ctx.parsed.x.toFixed(1)} €/MWh · Intraday: ${ctx.parsed.y.toFixed(1)} €/MWh`,
           },
         },
-        subtitle: { display: true, text: 'X = Peak−OffPeak spread · Y = Intraday spread (max−min) · Top-right = BESS hotspot', color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 } },
+        subtitle: {
+          display: true,
+          text: 'X = Peak−OffPeak spread · Y = Intraday range (max−min) · Top-right quadrant = BESS hotspot',
+          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
+        },
         annotation: {
           annotations: {
-            // Quadrant cutoffs (dashed lines at medians)
             xMed: { type: 'line', xMin: xMed, xMax: xMed, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4, 4] },
             yMed: { type: 'line', yMin: yMed, yMax: yMed, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4, 4] },
-            // BESS hotspot quadrant highlight (top-right)
             hotspot: {
-              type: 'box', xMin: xMed, xMax: xMax, yMin: yMed, yMax: yMax,
-              backgroundColor: 'rgba(20,211,169,0.06)', borderColor: 'rgba(20,211,169,0.2)', borderWidth: 1,
-              label: { display: true, content: '⚡ BESS hotspot', position: { x: 'end', y: 'start' }, color: '#14D3A9', backgroundColor: 'transparent', font: { size: 10, weight: 'bold' } },
+              type: 'box',
+              xMin: xMed, xMax: xMax, yMin: yMed, yMax: yMax,
+              backgroundColor: 'rgba(20,211,169,0.06)',
+              borderColor: 'rgba(20,211,169,0.25)', borderWidth: 1,
+              label: {
+                display: true, content: '⚡ BESS hotspot',
+                position: { x: 'end', y: 'start' },
+                color: '#14D3A9', backgroundColor: 'transparent',
+                font: { size: 10, weight: 'bold' },
+              },
             },
           },
         },
       },
       scales: {
         x: {
-          type: 'linear',
-          min: xMin, max: xMax,
+          type: 'linear', min: xMin, max: xMax,
           grid: { color: _HIST_GRID },
           ticks: { color: _HIST_TX3, font: { size: 10 } },
           title: { display: true, text: 'Peak − OffPeak spread (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
@@ -8661,182 +9007,12 @@ function _hmzRenderSpread(perZone, selected, baseline) {
         },
       },
     },
+    plugins: [labelsPlugin],
   });
 }
 
 
-// ── HMZ · Distribution: horizontal box plots, one row per zone ──
-function _hmzRenderDist(perZone, selected) {
-  // Make sure canvas is shown, heatmap is hidden
-  const canvas = document.getElementById('hmz-canvas');
-  const heatmap = document.getElementById('hmz-heatmap');
-  if (canvas) canvas.style.display = '';
-  if (heatmap) heatmap.style.display = 'none';
 
-  const stats = selected.map(z => _boxStats(perZone[z].map(d => d.avg)));
-  if (stats.every(s => s == null)) return _hmzPlaceholder('No data');
-
-  const validStats = stats.filter(s => s);
-  const p90Max = validStats.length ? Math.max(...validStats.map(s => s.p90)) : 100;
-  const p10Min = validStats.length ? Math.min(...validStats.map(s => s.p10)) : 0;
-  const dataMax = validStats.length ? Math.max(...validStats.map(s => s.max)) : 100;
-  const dataMin = validStats.length ? Math.min(...validStats.map(s => s.min)) : 0;
-  // Cap if outliers way above P90, leave headroom
-  const xTop = (dataMax > p90Max * 1.5) ? Math.ceil(p90Max * 1.4 / 10) * 10 : Math.ceil(dataMax * 1.05 / 10) * 10;
-  const xBot = (dataMin < p10Min * 0.5 || dataMin < 0)
-    ? Math.floor(Math.min(dataMin * 1.05, p10Min - Math.abs(p10Min) * 0.2) / 10) * 10
-    : Math.floor(Math.max(0, dataMin - Math.abs(dataMin) * 0.05) / 10) * 10;
-
-  const zoneColors = selected.map(z => zoneColor(z));
-  const zoneIqrFills = zoneColors.map(c => _toRgba(c, 0.25));
-  const zoneWhiskers = zoneColors.map(c => _toRgba(c, 0.7));
-
-  // Custom plugin: horizontal box plot. X = price, Y = zone (categorical).
-  const boxPlotPlugin = {
-    id: 'hmzBoxPlotH',
-    afterDatasetsDraw(chart) {
-      const { ctx, scales } = chart;
-      const xScale = scales.x;
-      const yScale = scales.y;
-      // Bar height per zone — derive from y scale spacing
-      const yStep = Math.abs(yScale.getPixelForValue(1) - yScale.getPixelForValue(0));
-      const boxHalfHeight = Math.max(8, yStep * 0.22);
-
-      stats.forEach((s, i) => {
-        if (!s) return;
-        const yPx = yScale.getPixelForValue(i);
-        const xP25 = xScale.getPixelForValue(s.p25);
-        const xP75 = xScale.getPixelForValue(s.p75);
-        const xP10 = xScale.getPixelForValue(s.p10);
-        const xP90 = xScale.getPixelForValue(s.p90);
-        const xP50 = xScale.getPixelForValue(s.p50);
-        const xMin = xScale.getPixelForValue(s.min);
-        const xMax = xScale.getPixelForValue(s.max);
-
-        // Whiskers: P10 → P90, with min/max ticks beyond
-        ctx.save();
-        ctx.strokeStyle = zoneWhiskers[i];
-        ctx.lineWidth = 1.5;
-        // Left whisker (P10)
-        ctx.beginPath();
-        ctx.moveTo(xP10, yPx);
-        ctx.lineTo(xP25, yPx);
-        ctx.stroke();
-        // Right whisker (P90)
-        ctx.beginPath();
-        ctx.moveTo(xP75, yPx);
-        ctx.lineTo(xP90, yPx);
-        ctx.stroke();
-        // Whisker caps
-        ctx.beginPath();
-        ctx.moveTo(xP10, yPx - boxHalfHeight * 0.5);
-        ctx.lineTo(xP10, yPx + boxHalfHeight * 0.5);
-        ctx.moveTo(xP90, yPx - boxHalfHeight * 0.5);
-        ctx.lineTo(xP90, yPx + boxHalfHeight * 0.5);
-        ctx.stroke();
-
-        // IQR box (P25 → P75)
-        ctx.fillStyle = zoneIqrFills[i];
-        ctx.strokeStyle = zoneColors[i];
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.rect(xP25, yPx - boxHalfHeight, xP75 - xP25, boxHalfHeight * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Median line (vertical thick)
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(xP50, yPx - boxHalfHeight);
-        ctx.lineTo(xP50, yPx + boxHalfHeight);
-        ctx.stroke();
-
-        // Outliers: min/max as small circles if outside P10-P90 range
-        ctx.fillStyle = zoneWhiskers[i];
-        if (s.min < s.p10) {
-          ctx.beginPath();
-          ctx.arc(xMin, yPx, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        if (s.max > s.p90) {
-          ctx.beginPath();
-          ctx.arc(xMax, yPx, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      });
-    },
-  };
-
-  mkHistChart('hmz-canvas', {
-    type: 'scatter',
-    data: {
-      datasets: [{
-        data: stats.map((_, i) => ({ x: 0, y: i })),
-        pointRadius: 0,
-      }],
-    },
-    options: {
-      ...baseOptions('€/MWh'),
-      indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          callbacks: {
-            title: () => '',
-            label: (ctx) => {
-              const i = Math.round(ctx.parsed.y);
-              const s = stats[i];
-              if (!s) return '';
-              return [
-                `${selected[i]}`,
-                `Min ${s.min.toFixed(1)} · P10 ${s.p10.toFixed(1)} · Median ${s.p50.toFixed(1)} · P90 ${s.p90.toFixed(1)} · Max ${s.max.toFixed(1)}`,
-                `IQR ${s.p25.toFixed(1)} → ${s.p75.toFixed(1)} (n=${s.n})`,
-              ];
-            },
-          },
-        },
-        subtitle: {
-          display: true,
-          text: 'Box = IQR (P25-P75) · White line = median · Whiskers = P10-P90 · Dots = outliers',
-          color: _HIST_TX3, font: { size: 10 }, padding: { bottom: 8 },
-        },
-        zoom: _zoomConfig({ mode: 'x' }),
-      },
-      scales: {
-        x: {
-          min: xBot,
-          max: xTop,
-          grid: { color: _HIST_GRID },
-          ticks: { color: _HIST_TX3, font: { size: 10 } },
-          title: { display: true, text: 'Daily avg (€/MWh)', color: _HIST_TX3, font: { size: 10 } },
-        },
-        y: {
-          type: 'linear',
-          min: -0.5,
-          max: selected.length - 0.5,
-          reverse: true,
-          grid: { display: false },
-          ticks: {
-            stepSize: 1,
-            color: '#B8C9D9',
-            font: { size: 11, weight: '600', family: "'JetBrains Mono', monospace" },
-            callback: (v) => {
-              const z = selected[v];
-              if (!z) return '';
-              const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
-              return `${flag} ${z}`;
-            },
-          },
-        },
-      },
-    },
-    plugins: [boxPlotPlugin],
-  });
-}
 
 
 // ════════════════════════════════════════════
