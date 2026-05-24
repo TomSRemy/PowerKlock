@@ -3439,18 +3439,24 @@ function ccOpenFullscreen() {
     extraHtml = `<div id="fs-cc-bands-header" style="width:100%"></div>`;
   }
 
-  // ─── Filters: Date | View | SubToggle | Period (Bands) | Baseline (Spread) ──
+  // ─── View + SubToggle groupés visuellement (option B mockup) ──
+  const viewAndSubToggleBlock = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewTabsHtml}</div>
+      </div>
+      ${subToggleBlock}
+    </div>`;
+
+  // ─── Filters: Date | View+SubToggle | Period | Baseline ──
   const filtersHtml = `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
       <input type="date" id="fs-cc-date-input" value="${currentDateISO}" max="${todayISO}"
         style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
     </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewTabsHtml}</div>
-    </div>
-    ${subToggleBlock}
+    ${viewAndSubToggleBlock}
     ${periodBlock}
     ${baselineBlock}
     ${extraHtml}`;
@@ -3552,10 +3558,10 @@ window.ccOpenFullscreen = ccOpenFullscreen;
 
 function ccRefreshFullscreen() {
   // Hot-swap via pkOpenOrUpdate — no close, no flicker.
-  // Defer one tick so the inline state setters (setCCView, setSpreadRef,
-  // setCCBandsPeriod, …) finish updating window._ccView etc. before we
-  // read them back inside ccOpenFullscreen.
-  requestAnimationFrame(() => ccOpenFullscreen());
+  // We call ccOpenFullscreen directly (no requestAnimationFrame) because the
+  // caller has already awaited the render (Promise.then), so the inline
+  // CHARTS['price-compare-canvas'] is up to date at this point.
+  ccOpenFullscreen();
 }
 window.ccRefreshFullscreen = ccRefreshFullscreen;
 
