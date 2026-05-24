@@ -3359,34 +3359,59 @@ function ccOpenFullscreen() {
   const todayISO = new Date().toISOString().slice(0,10);
 
   const viewTabsHtml = ['lines','heatmap','profile','bands','spread'].map(v => `
-    <button onclick="setCCView('${v}');setTimeout(()=>{ccRefreshFullscreen();},80)" style="
+    <button onclick="Promise.resolve(setCCView('${v}')).then(()=>ccRefreshFullscreen())" style="
       padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
       color:${v === view ? '#14D3A9' : '#7A93AB'};
       background:${v === view ? 'rgba(20,211,169,0.18)' : 'transparent'};
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:capitalize;
     ">${v}</button>`).join('');
 
-  let extraHtml = '';
+  // ─── Build sub-toggle (Mode for Bands) ───
+  let subToggleHtml = '';
+  let subToggleLabel = '';
+  if (view === 'bands') {
+    subToggleLabel = 'Mode';
+    const modes = [
+      { id: 'zscore', label: 'Z-score' },
+      { id: 'raw',    label: 'Raw' },
+    ];
+    const curMode = window._ccBandsMode || 'zscore';
+    subToggleHtml = modes.map(m => `
+      <button onclick="Promise.resolve(setCCBandsMode('${m.id}')).then(()=>ccRefreshFullscreen())" style="
+        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
+        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+      ">${m.label}</button>`).join('');
+  }
+  const subToggleBlock = subToggleHtml ? `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">${subToggleLabel}</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subToggleHtml}</div>
+    </div>` : '';
+
+  // ─── Baseline block (for Spread view only) ───
+  let baselineBlock = '';
   if (view === 'spread') {
     const refCode = window._ccSpreadRef || 'FR';
-    const refChips = data.filter(z => selected.has(z.code)).map(z => {
-      const isOn = z.code === refCode;
-      return `<button onclick="setSpreadRef('${z.code}');setTimeout(()=>{ccRefreshFullscreen();},80)" style="
-        padding:3px 8px;font-size:10px;cursor:pointer;border-radius:3px;
-        color:${isOn ? '#14D3A9' : '#7A93AB'};
-        background:${isOn ? 'rgba(20,211,169,0.18)' : 'transparent'};
-        border:1px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,0.10)'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${z.code}</button>`;
+    const refOptions = data.filter(z => selected.has(z.code)).map(z => {
+      return `<option value="${z.code}" ${z.code === refCode ? 'selected' : ''}>${z.code}</option>`;
     }).join('');
-    extraHtml = `
+    baselineBlock = `
       <div style="display:flex;align-items:center;gap:5px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Spread ref</span>
-        <div style="display:inline-flex;gap:3px;flex-wrap:wrap">${refChips}</div>
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
+        <select id="fs-cc-baseline-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+          ${refOptions}
+        </select>
       </div>`;
-  } else if (view === 'bands') {
+  }
+
+  let extraHtml = '';
+  if (view === 'bands') {
     extraHtml = `<div id="fs-cc-bands-header" style="width:100%"></div>`;
   }
 
+  // ─── Filters: Date | View | SubToggle/Baseline (Context-first order) ──
   const filtersHtml = `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
@@ -3397,6 +3422,8 @@ function ccOpenFullscreen() {
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewTabsHtml}</div>
     </div>
+    ${subToggleBlock}
+    ${baselineBlock}
     ${extraHtml}`;
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
@@ -3427,6 +3454,15 @@ function ccOpenFullscreen() {
               };
               setTimeout(() => waitAndUpdate(20), 200);
             }
+          });
+        }
+        // Baseline select (Spread view only)
+        const baselineSel = hostEl.querySelector('#fs-cc-baseline-select');
+        if (baselineSel) {
+          baselineSel.addEventListener('change', (e) => {
+            const newRef = e.target.value;
+            setSpreadRef(newRef);
+            Promise.resolve().then(() => ccRefreshFullscreen());
           });
         }
         if (view === 'bands') {
