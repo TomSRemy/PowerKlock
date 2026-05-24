@@ -7985,18 +7985,9 @@ function _hmzUpdateTabContext(tab) {
   if (subToggleHTML) {
     subToggle.innerHTML = subToggleHTML;
     subToggle.style.display = 'inline-flex';
-    // Reset any leftover positioning from previous JS-positioned versions
-    subToggle.style.left = '0';
-    subToggle.style.transform = '';
-    // Reserve space below tabs for the absolute-positioned sub-toggle
-    const tabbar = document.getElementById('hmz-tabbar');
-    if (tabbar) tabbar.style.marginBottom = '36px';
   } else {
     subToggle.style.display = 'none';
     subToggle.innerHTML = '';
-    // No sub-toggle → no need for the extra margin, tighter layout
-    const tabbar = document.getElementById('hmz-tabbar');
-    if (tabbar) tabbar.style.marginBottom = '10px';
   }
 
   // ─── Decide content of the zone chips (right of the tabs row) ───
