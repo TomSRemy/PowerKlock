@@ -3626,25 +3626,31 @@ function _openHoFullscreen(zone) {
   // changes), then Zone, Period, Y-axis. View and its sub-menu (YoY modes,
   // Volatility metric, Distribution mode) are grouped in a single flex
   // container so they form a visual block.
+  // Filters split: View+SubMenu on the LEFT (fixed, never shifts),
+  // Zone / Period / Y-axis on the RIGHT.
   const filtersHtml = `
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="display:flex;align-items:center;gap:5px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
-        <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
+    <div class="pk-fs-filters-left">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+          <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
+        </div>
+        <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
       </div>
-      <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
-      <select id="fs-ho-zone-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
-        ${zoneOptions}
-      </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
-      <div id="fs-ho-windows" style="display:inline-flex;gap:3px;flex-wrap:wrap">${winPillsHtml}</div>
-    </div>
-    ${yAxisBlock}`;
+    <div class="pk-fs-filters-right">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
+        <select id="fs-ho-zone-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+          ${zoneOptions}
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+        <div id="fs-ho-windows" style="display:inline-flex;gap:3px;flex-wrap:wrap">${winPillsHtml}</div>
+      </div>
+      ${yAxisBlock}
+    </div>`;
 
   // ─── Table · breakdown with Monthly/Daily toggle (Lines tab only) ─────
   const breakdownMode = window._HO_BREAKDOWN_MODE || 'monthly';
@@ -9494,14 +9500,18 @@ function hmzOpenFullscreen() {
       ${subToggleBlock}
     </div>`;
 
-  // Filters order: View+SubToggle FIRST (fixed left, never shifts when
-  // graph changes), then Baseline (contextual) and Period.
+  // Filters split: View+SubToggle on the LEFT (fixed, never shifts),
+  // Baseline and Period on the RIGHT.
   const filtersHtml = `
-    ${viewAndSubToggleBlock}
-    ${baselineBlock}
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
+    <div class="pk-fs-filters-left">
+      ${viewAndSubToggleBlock}
+    </div>
+    <div class="pk-fs-filters-right">
+      ${baselineBlock}
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
+      </div>
     </div>`;
 
   // Detect if this view renders HTML/SVG (Heatmap, Bands) or Chart.js (Lines, Spread).
