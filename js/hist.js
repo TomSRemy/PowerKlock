@@ -9395,35 +9395,74 @@ function hmzOpenFullscreen() {
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
     ">${t.label}</button>`).join('');
 
-  let extraHtml = '';
-  if (view === 'spread' && selectedZones.length) {
+  // ─── Build sub-toggle (Granularity for Heatmap, Mode for Spread) ──
+  let subToggleHtml = '';
+  let subToggleLabel = '';
+  if (view === 'heatmap') {
+    subToggleLabel = 'Granularity';
+    const modes = [
+      { id: 'day',   label: 'Day' },
+      { id: 'week',  label: 'Week' },
+      { id: 'month', label: 'Month' },
+      { id: 'dow',   label: 'DoW' },
+    ];
+    const curMode = (window.HMZ && HMZ.heatmapMode) || 'day';
+    subToggleHtml = modes.map(m => `
+      <button onclick="Promise.resolve(setHmzHeatmapMode('${m.id}')).then(()=>hmzRefreshFullscreen())" style="
+        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
+        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+      ">${m.label}</button>`).join('');
+  } else if (view === 'spread') {
+    subToggleLabel = 'Mode';
+    const modes = [
+      { id: 'vsRef',   label: 'vs Ref' },
+      { id: 'vsPeers', label: 'vs Peers' },
+    ];
+    const curMode = (window.HMZ && HMZ.spreadMode) || 'vsRef';
+    subToggleHtml = modes.map(m => `
+      <button onclick="Promise.resolve(setHmzSpreadMode('${m.id}')).then(()=>hmzRefreshFullscreen())" style="
+        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
+        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
+      ">${m.label}</button>`).join('');
+  }
+  const subToggleBlock = subToggleHtml ? `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">${subToggleLabel}</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subToggleHtml}</div>
+    </div>` : '';
+
+  // ─── Baseline block (always shown when zones loaded; relevant for Heatmap/Spread but visible always for consistency) ──
+  let baselineBlock = '';
+  if (selectedZones.length) {
     const refCode = (window.HIST && HIST.hmzBaseline) || (selectedZones.includes('FR') ? 'FR' : selectedZones[0]);
-    const refChips = selectedZones.map(code => {
-      const isOn = code === refCode;
-      return `<button onclick="Promise.resolve(setHmzBaseline('${code}')).then(()=>hmzRefreshFullscreen())" style="
-        padding:3px 8px;font-size:10px;cursor:pointer;border-radius:3px;
-        color:${isOn ? '#14D3A9' : '#7A93AB'};
-        background:${isOn ? 'rgba(20,211,169,0.18)' : 'transparent'};
-        border:1px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,0.10)'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${code}</button>`;
+    const refOptions = selectedZones.map(code => {
+      return `<option value="${code}" ${code === refCode ? 'selected' : ''}>${code}</option>`;
     }).join('');
-    extraHtml = `
+    baselineBlock = `
       <div style="display:flex;align-items:center;gap:5px">
-        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Spread ref</span>
-        <div style="display:inline-flex;gap:3px;flex-wrap:wrap">${refChips}</div>
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Baseline</span>
+        <select id="fs-hmz-baseline-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+          ${refOptions}
+        </select>
       </div>`;
   }
 
+  // ─── Filters: Baseline | View | SubToggle | Period (Context-first order) ──
   const filtersHtml = `
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Window</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
-    </div>
+    ${baselineBlock}
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${tabsHtml}</div>
     </div>
-    ${extraHtml}`;
+    ${subToggleBlock}
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
+    </div>`;
 
   // Detect if this view renders HTML/SVG (Heatmap, Bands) or Chart.js (Lines, Spread).
   // HTML/SVG views go through #hmz-heatmap; Chart.js views go through #hmz-canvas.
@@ -9437,7 +9476,18 @@ function hmzOpenFullscreen() {
     kpis: kpisHtml ? { html: kpisHtml } : null,
     table: tableHtml ? { html: tableHtml } : null,
     analysis: { html: analysisHtml },
-    filters: { html: filtersHtml, wire: null },
+    filters: {
+      html: filtersHtml,
+      wire: (hostEl) => {
+        const blSel = hostEl.querySelector('#fs-hmz-baseline-select');
+        if (blSel) {
+          blSel.addEventListener('change', (e) => {
+            const newBaseline = e.target.value;
+            Promise.resolve(setHmzBaseline(newBaseline)).then(() => hmzRefreshFullscreen());
+          });
+        }
+      },
+    },
     chartSource: window.pkBuildChartSource({
       chartId: 'hmz-canvas',
       htmlContainerId: 'hmz-heatmap',
