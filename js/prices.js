@@ -1501,6 +1501,20 @@ function togglePriceRow(idx, e) {
   buildHourlyDetail(idx, z);
 }
 
+// Close a Daily drill row programmatically. Symmetric with the
+// '✕ Close' button in the drill header. Identical behaviour to re-clicking
+// the parent row, kept as a dedicated function so the inline button onclick
+// is self-explanatory.
+function _dailyCloseRow(idx) {
+  const detailRow = document.getElementById(`row-detail-${idx}`);
+  if (!detailRow) return;
+  detailRow.style.display = 'none';
+  if (_rowCharts[idx]) { _rowCharts[idx].destroy(); delete _rowCharts[idx]; }
+  if (_openRow === idx) _openRow = null;
+  document.querySelectorAll('tr.zone-row.is-open').forEach(tr => tr.classList.remove('is-open'));
+}
+window._dailyCloseRow = _dailyCloseRow;
+
 function buildHourlyDetail(idx, z) {
   const inner = document.getElementById(`row-detail-inner-${idx}`);
   if (!inner) return;
@@ -1567,6 +1581,24 @@ function buildHourlyDetail(idx, z) {
   const negMins     = negTotalMin % 60;
   const negMin      = negSlotsRaw.length ? Math.min(...negSlotsRaw) : null;
 
+  // Volatility (σ) of intraday slots, and spread (max-min of the day)
+  // These complement Avg/Peak/Min/Max to match the 6-KPI template aligned with HO drill.
+  const sigma = rawValid.length > 1
+    ? Math.sqrt(rawValid.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / rawValid.length)
+    : null;
+  const spreadDay = (minV != null && maxV != null) ? (maxV - minV) : null;
+
+  // Mix info — pulled from window._GMIX if Genmix data is loaded for this zone today
+  let mixRenPct = null, mixDomFuel = null, mixDomFuelColor = '#7A93AB';
+  try {
+    const gm = window._GMIX && window._GMIX[z.code];
+    if (gm) {
+      mixRenPct = gm.renPct ?? null;
+      mixDomFuel = gm.dominant ?? null;
+      mixDomFuelColor = gm.dominantColor || '#7A93AB';
+    }
+  } catch (_) { /* mix optional */ }
+
   // Labels
   const labels = h24.map((_, i) => `${String(i).padStart(2,'0')}:00`);
 
@@ -1584,66 +1616,112 @@ function buildHourlyDetail(idx, z) {
   const col = negFraction >= 0.5 ? '#ED6965' : negFraction >= 0.2 ? '#FBBF24' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
-    <!-- ═══ Drill row header · unified template ═══
-         Eyebrow (mono teal) · Title (Inter bold 18px) · Subtitle (mono tx3)
-         FS button on the right.
-         Source-of-truth: see drill-template.html in the design references. -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px">
-      <div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          Day-Ahead <span style="color:var(--tx3);font-weight:400">·</span> ${FLAG_MAP[z.code]||''} ${z.code} <span style="color:var(--tx3);font-weight:400">·</span> Intraday detail
+    <!-- ═══ Drill row header · uses pk-section-* classes ═══ -->
+    <div class="pk-section-header">
+      <div class="pk-section-header-text">
+        <div class="pk-eyebrow">
+          Day-Ahead <span class="pk-sep">·</span> ${FLAG_MAP[z.code]||''} ${z.code} <span class="pk-sep">·</span> Intraday detail
         </div>
-        <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;margin-bottom:2px">
+        <div class="pk-section-title">
           ${z.hourly && z.hourly.length === 96 ? '15-min slots · price profile' : 'Hourly price profile'}
         </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);font-weight:400">
+        <div class="pk-section-subtitle">
           ${ccFmtDay(window._currentPriceDate)} · ${z.hourly && z.hourly.length === 96 ? '96 × 15min slots' : (h24.length+' hours')} · ENTSO-E
         </div>
       </div>
-      <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen"
-        style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+      <div class="pk-section-header-actions">
+        <button class="pk-btn-primary" onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen">⛶ Fullscreen</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();_dailyCloseRow(${idx})" title="Close detail">✕ Close</button>
+      </div>
     </div>
 
-    <!-- ═══ KPI strip ═══ -->
-    <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px" id="row-kpis-${idx}">
-      ${[
-        {k:'avg',     l:'Avg',              v:avg.toFixed(2),                            meta:'24h average',     u:'€/MWh'},
-        {k:'peak',    l:'Peak avg',         v:peakAvg!=null?peakAvg.toFixed(2):'--',     meta:'08h–20h',         u:'€/MWh'},
-        {k:'offpeak', l:'Off-peak avg',     v:offPkAvg!=null?offPkAvg.toFixed(2):'--',   meta:'00h–08h / 20h–24h', u:'€/MWh'},
-        {k:'min',     l:'Min slot',         v:minV.toFixed(2),                           meta:'@'+minSlotLabel,   u:'€/MWh'},
-        {k:'max',     l:'Max slot',         v:maxV.toFixed(2),                           meta:'@'+maxSlotLabel,   u:'€/MWh'},
-      ].map(k=>`<div class="kpi-card kpi-flat" id="row-kpi-${idx}-${k.k}">
-        <div class="kpi-label">${k.l}</div>
-        <div class="kpi-value">${k.v}<span class="kpi-unit">${k.u||''}</span></div>
-        <div class="kpi-chg row-kpi-chg" data-kpi="${k.k}">--</div>
-        <div class="kpi-meta">${k.meta}</div>
-      </div>`).join('')}
+    <!-- ═══ KPI strip · 6 cards aligned with HO drill ═══ -->
+    <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px" id="row-kpis-${idx}">
+      <!-- 1. Avg -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-avg">
+        <div class="kpi-label">Avg</div>
+        <div class="kpi-value">${avg.toFixed(2)}<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-chg row-kpi-chg" data-kpi="avg">--</div>
+        <div class="kpi-meta">24h average</div>
+      </div>
+      <!-- 2. Peak / Off-peak (merged) -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-peakoff">
+        <div class="kpi-label">Peak / Off-peak</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">
+          ▲ ${peakAvg!=null?peakAvg.toFixed(2):'--'}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">08h–20h</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">
+          ▼ ${offPkAvg!=null?offPkAvg.toFixed(2):'--'}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3)">off-peak${peakRatio!=null?' · ratio '+peakRatio.toFixed(2)+'x':''}</div>
+      </div>
+      <!-- 3. Extremes (max + min + neg meta) -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-extremes">
+        <div class="kpi-label">Extremes</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#14D3A9;line-height:1.15">
+          ▲ ${maxV.toFixed(2)}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">@ ${maxSlotLabel}</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ED6965;line-height:1.15">
+          ▼ ${minV.toFixed(2)}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3)">@ ${minSlotLabel} · ${negHours}h neg</div>
+      </div>
+      <!-- 4. Volatility σ -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-sigma" title="Volatility = standard deviation of all intraday slots. Higher σ means prices swing more across the day.">
+        <div class="kpi-label">Volatility σ</div>
+        <div class="kpi-value">${sigma!=null?sigma.toFixed(2):'--'}<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-chg row-kpi-chg" data-kpi="sigma">--</div>
+        <div class="kpi-meta">intraday stdev</div>
+      </div>
+      <!-- 5. Spread -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-spread" title="Daily spread = max - min slot. Proxy for BESS arbitrage potential.">
+        <div class="kpi-label">Spread</div>
+        <div class="kpi-value">${spreadDay!=null?spreadDay.toFixed(2):'--'}<span class="kpi-unit">€/MWh</span></div>
+        <div class="kpi-chg row-kpi-chg" data-kpi="spread">--</div>
+        <div class="kpi-meta">max − min</div>
+      </div>
+      <!-- 6. Mix (renewable + dominant fuel) -->
+      <div class="kpi-card kpi-flat" id="row-kpi-${idx}-mix">
+        <div class="kpi-label">Mix</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">
+          ${mixRenPct!=null?mixRenPct.toFixed(1):'--'}<span class="kpi-unit">%</span><span style="font-size:9px;color:var(--tx3);margin-left:5px;font-weight:400">renewable</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">(W + S + H + B)</div>
+        <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${mixDomFuelColor};line-height:1.15">${mixDomFuel||'--'}</div>
+        <div style="font-size:9px;color:var(--tx3)">dominant fuel</div>
+      </div>
     </div>
 
-    <!-- Quick text indicator (volatility / peak ratio) -->
-    <div style="font-size:11px;margin-bottom:8px">
-      <span style="color:${flatColor};font-weight:600">${flatText}</span>
-      ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
+    <!-- Verdict bandeau (unified with HO drill via _buildHoVerdict) -->
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;font-family:'Inter',sans-serif;padding:6px 0">
+      ${(typeof window._buildHoVerdict === 'function')
+        ? window._buildHoVerdict({
+            avg: avg,
+            sigma: sigma,
+            renPctAvg: mixRenPct,
+            negH: negHours,
+          })
+        : `<span style="color:${flatColor};font-weight:600">${flatText}</span>${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}`}
     </div>
 
-    <!-- ═══ Filters bar · band selector + chart controls ═══ -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;flex-wrap:wrap;gap:8px;padding:6px 0;border-bottom:1px dashed var(--bd)">
+    <!-- ═══ Filters bar · band selector + actions ═══ -->
+    <div class="pk-filters-bar">
       <div style="display:flex;align-items:center;gap:5px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
         <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="row-band-pills-${idx}">
           ${_rowBandPillsHTML(idx)}
         </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
-          style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
-        <button onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-      </div>
+      <div class="pk-filters-bar-spacer"></div>
+      <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button>
+      <button class="pk-btn-primary" onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG">📸 PNG</button>
     </div>
 
     <!-- ═══ Chart ═══ -->
-    <div style="position:relative;height:260px;margin-bottom:4px">
-      <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
+    <div style="position:relative;height:340px;margin-bottom:4px">
+      <canvas id="row-chart-${idx}" style="width:100%;height:340px"></canvas>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:16px;font-size:10px;color:var(--tx3);margin-bottom:8px">
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
