@@ -1572,14 +1572,15 @@ window._hoResetZoom = function() {
   }
 };
 
-// Update the preset button styles to reflect the active preset
+// Update the preset button styles to reflect the active preset.
+// Aligned with pkPill design: rgba(20,211,169,0.45) for active border.
 function _hoRenderPresetButtons() {
   ['focus', 'standard', 'all'].forEach(p => {
     const btns = document.querySelectorAll(`[data-ho-preset="${p}"]`);
     const active = window._HO_YPRESET === p;
     btns.forEach(b => {
-      b.style.background = active ? 'rgba(20,211,169,0.15)' : 'transparent';
-      b.style.borderColor = active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
+      b.style.background = active ? 'rgba(20,211,169,0.18)' : 'transparent';
+      b.style.borderColor = active ? 'rgba(20,211,169,0.45)' : 'var(--bd)';
       b.style.color = active ? '#14D3A9' : 'var(--tx3)';
     });
   });
@@ -3282,13 +3283,10 @@ function _openHoRow(zone, series, st) {
           <!-- Y-presets + Reset + PNG -->
           <!-- Tab-specific toggle slot (legacy, kept hidden) -->
           <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
-          <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
-            <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
-              style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
-            <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
-              style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
-            <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
-              style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
+          <div id="ho-detail-ypresets-wrap" style="display:flex;align-items:center;gap:4px;border-right:1px solid var(--bd);padding-right:10px;margin-right:6px">
+            ${window.pkPill({ label: 'Focus',    active: (window._HO_YPRESET === 'focus'), onClick: `event.stopPropagation();_hoSetYPreset('focus')`,    dataAttr: 'data-ho-preset="focus"',    title: 'Tight Y axis around rolling trend (Daily avg stays visible)' })}
+            ${window.pkPill({ label: 'Standard', active: (window._HO_YPRESET === 'standard' || !window._HO_YPRESET), onClick: `event.stopPropagation();_hoSetYPreset('standard')`, dataAttr: 'data-ho-preset="standard"', title: 'Default Y axis (balanced)' })}
+            ${window.pkPill({ label: 'All',      active: (window._HO_YPRESET === 'all'),   onClick: `event.stopPropagation();_hoSetYPreset('all')`,      dataAttr: 'data-ho-preset="all"',      title: 'Full Y range — shows all outliers' })}
           </div>
           <button class="pk-btn-ghost" id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard">↺ Reset</button>
           <button class="pk-btn-primary" onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG">📸 PNG</button>
@@ -3590,16 +3588,13 @@ function _openHoFullscreen(zone) {
   }).join('');
 
   // ─── Y-presets (Focus / Standard / All) + Reset zoom ──────────────────
+  // Uses pkPill (universal sub-toggle template).
   const yPreset = window._HO_YPRESET || 'standard';
-  const yPresetsHtml = ['focus','standard','all'].map(p => {
-    const active = yPreset === p;
-    return `<button data-ho-ypreset="${p}" style="
-      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:3px;
-      background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};
-      color:${active ? '#14D3A9' : 'var(--tx3)'};
-      border:none;
-      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:capitalize">${p}</button>`;
-  }).join('');
+  const yPresetsHtml = ['focus','standard','all'].map(p => window.pkPill({
+    label:    p.charAt(0).toUpperCase() + p.slice(1),
+    active:   yPreset === p,
+    dataAttr: `data-ho-ypreset="${p}"`,
+  })).join('');
 
   // ─── Zone selector (dropdown) ──────────────────────────────────────────
   // Limit to zones the user has selected on the page (matches the chart).
@@ -3624,25 +3619,26 @@ function _openHoFullscreen(zone) {
   const yAxisBlock = showYPresetsInFs ? `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Y-axis</span>
-      <div id="fs-ho-ypresets" style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${yPresetsHtml}</div>
+      <div id="fs-ho-ypresets" style="display:inline-flex;gap:4px">${yPresetsHtml}</div>
     </div>` : '';
 
-  // ─── Filters HTML (Zone | View+SubMenu | Period | Y-axis) ────────────
-  // View and its sub-menu (YoY modes, Volatility metric, Distribution mode)
-  // are grouped in a single flex container so they form a visual block.
+  // Filters order: View+SubMenu FIRST (fixed left, never shifts when graph
+  // changes), then Zone, Period, Y-axis. View and its sub-menu (YoY modes,
+  // Volatility metric, Distribution mode) are grouped in a single flex
+  // container so they form a visual block.
   const filtersHtml = `
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
-      <select id="fs-ho-zone-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
-        ${zoneOptions}
-      </select>
-    </div>
     <div style="display:flex;align-items:center;gap:10px">
       <div style="display:flex;align-items:center;gap:5px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
         <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
       </div>
       <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
+      <select id="fs-ho-zone-select" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+        ${zoneOptions}
+      </select>
     </div>
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
@@ -4105,14 +4101,15 @@ function _hszRenderYoYSubmenu() {
   const mode = HSZ.yoyMode;
   const hourlyMode = HSZ.hourlyMode;
 
-  // Shared pill style helpers — aligned with other FS pills (3px radius, no border)
-  const pill = (handler, id, label, active) => `
-    <button onclick="event.stopPropagation();${handler}('${id}')"
-      style="padding:3px 9px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:${active?'#14D3A9':'var(--tx3)'};background:${active?'rgba(20,211,169,0.18)':'transparent'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${label}</button>`;
+  // Universal pill template: pkPill (rounded capsules, JetBrains Mono).
+  // All sub-toggles in the app use this style for visual consistency.
+  const pill = (handler, id, label, active) =>
+    window.pkPill({
+      label,
+      active,
+      onClick: `event.stopPropagation();${handler}('${id}')`,
+    });
   const sep = `<span style="width:1px;height:14px;background:rgba(255,255,255,0.18);margin:0 4px"></span>`;
-  const modePill = (handler, id, label, active) => `
-    <button onclick="event.stopPropagation();${handler}('${id}')"
-      style="padding:3px 9px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:${active?'#14D3A9':'var(--tx3)'};background:${active?'rgba(20,211,169,0.18)':'transparent'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase">${label}</button>`;
 
   let html = '';
   let showSubmenu = false;
@@ -4122,8 +4119,8 @@ function _hszRenderYoYSubmenu() {
     HSZ.yoyModes.forEach(m => { html += pill('setHistYoyMode', m.id, m.label, mode === m.id); });
     if (mode === 'hourly') {
       html += sep
-           + modePill('setHistHourlyMode', 'yoy',     'Annual average', hourlyMode === 'yoy')
-           + modePill('setHistHourlyMode', 'quarter', 'By quarter',     hourlyMode === 'quarter');
+           + pill('setHistHourlyMode', 'yoy',     'Annual average', hourlyMode === 'yoy')
+           + pill('setHistHourlyMode', 'quarter', 'By quarter',     hourlyMode === 'quarter');
     }
   } else if (tab === 'vol' || tab === 'volatility') {
     showSubmenu = true;
@@ -9425,7 +9422,9 @@ function hmzOpenFullscreen() {
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
     ">${t.label}</button>`).join('');
 
-  // ─── Build sub-toggle (Granularity for Heatmap, Mode for Spread) ──
+  // ─── Build sub-toggle (Granularity for Heatmap, Mode for Spread).
+  // Uses window.pkPill for the same visual style as the inline Cross-zone
+  // sub-toggle (rounded capsules, JetBrains Mono, teal accent). ──
   let subToggleHtml = '';
   let subToggleLabel = '';
   if (view === 'heatmap') {
@@ -9437,13 +9436,11 @@ function hmzOpenFullscreen() {
       { id: 'dow',   label: 'DoW' },
     ];
     const curMode = (window.HMZ && HMZ.heatmapMode) || 'day';
-    subToggleHtml = modes.map(m => `
-      <button onclick="Promise.resolve(setHmzHeatmapMode('${m.id}')).then(()=>hmzRefreshFullscreen())" style="
-        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
-        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
-        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
-      ">${m.label}</button>`).join('');
+    subToggleHtml = modes.map(m => window.pkPill({
+      label:   m.label,
+      active:  m.id === curMode,
+      onClick: `Promise.resolve(setHmzHeatmapMode('${m.id}')).then(()=>hmzRefreshFullscreen())`,
+    })).join('');
   } else if (view === 'spread') {
     subToggleLabel = 'Mode';
     const modes = [
@@ -9451,18 +9448,16 @@ function hmzOpenFullscreen() {
       { id: 'vsPeers', label: 'vs Peers' },
     ];
     const curMode = (window.HMZ && HMZ.spreadMode) || 'vsRef';
-    subToggleHtml = modes.map(m => `
-      <button onclick="Promise.resolve(setHmzSpreadMode('${m.id}')).then(()=>hmzRefreshFullscreen())" style="
-        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
-        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
-        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
-      ">${m.label}</button>`).join('');
+    subToggleHtml = modes.map(m => window.pkPill({
+      label:   m.label,
+      active:  m.id === curMode,
+      onClick: `Promise.resolve(setHmzSpreadMode('${m.id}')).then(()=>hmzRefreshFullscreen())`,
+    })).join('');
   }
   const subToggleBlock = subToggleHtml ? `
-    <div style="display:flex;align-items:center;gap:5px">
+    <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">${subToggleLabel}</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subToggleHtml}</div>
+      <div style="display:inline-flex;gap:4px">${subToggleHtml}</div>
     </div>` : '';
 
   // ─── Baseline block (only for Heatmap and Spread+vsRef where it matters).
@@ -9499,9 +9494,11 @@ function hmzOpenFullscreen() {
       ${subToggleBlock}
     </div>`;
 
+  // Filters order: View+SubToggle FIRST (fixed left, never shifts when
+  // graph changes), then Baseline (contextual) and Period.
   const filtersHtml = `
-    ${baselineBlock}
     ${viewAndSubToggleBlock}
+    ${baselineBlock}
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
