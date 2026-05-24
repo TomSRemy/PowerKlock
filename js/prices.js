@@ -1333,8 +1333,8 @@ function renderPricesTableBody() {
       <td class="sparkline-cell" style="text-align:center">${sparkSvg}</td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
-      <td colspan="13" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
-        <div style="padding:12px 16px 16px" id="row-detail-inner-${i}"></div>
+      <td colspan="13" style="padding:0;background:#141a22;border-left:3px solid var(--acc);border-bottom:2px solid var(--bd2)">
+        <div style="padding:14px 16px" id="row-detail-inner-${i}"></div>
       </td>
     </tr>`;
     return {html, z, i};
@@ -1588,14 +1588,27 @@ function buildHourlyDetail(idx, z) {
     : null;
   const spreadDay = (minV != null && maxV != null) ? (maxV - minV) : null;
 
-  // Mix info — pulled from window._GMIX if Genmix data is loaded for this zone today
+  // Mix info — pulled from window._genmixData if Genmix data is loaded for this zone.
+  // _genmixData is shared across the app and populated by genmix.js when the
+  // GenMix panel renders. Each entry is the raw mix per fuel type ({wind, solar, ...}).
   let mixRenPct = null, mixDomFuel = null, mixDomFuelColor = '#7A93AB';
   try {
-    const gm = window._GMIX && window._GMIX[z.code];
-    if (gm) {
-      mixRenPct = gm.renPct ?? null;
-      mixDomFuel = gm.dominant ?? null;
-      mixDomFuelColor = gm.dominantColor || '#7A93AB';
+    const gm = window._genmixData && window._genmixData[z.code];
+    if (gm && gm.total > 0) {
+      const ren = (gm.wind || 0) + (gm.solar || 0) + (gm.hydro || 0) + (gm.biomass || 0);
+      mixRenPct = (ren / gm.total) * 100;
+      // Find dominant fuel by max share
+      let domKey = null, domVal = -Infinity;
+      for (const k of ['wind','solar','hydro','biomass','nuclear','gas','coal','oil','other']) {
+        if ((gm[k] || 0) > domVal) { domVal = gm[k] || 0; domKey = k; }
+      }
+      if (domKey) {
+        const fuelColors = { wind:'#14D3A9', solar:'#FBBF24', hydro:'#06B6D4',
+                             biomass:'#84CC16', nuclear:'#A78BFA', gas:'#F97316',
+                             coal:'#7A93AB', oil:'#ED6965', other:'#7A93AB' };
+        mixDomFuel = domKey.charAt(0).toUpperCase() + domKey.slice(1);
+        mixDomFuelColor = fuelColors[domKey] || '#7A93AB';
+      }
     }
   } catch (_) { /* mix optional */ }
 
@@ -1695,7 +1708,7 @@ function buildHourlyDetail(idx, z) {
     </div>
 
     <!-- Verdict bandeau (unified with HO drill via _buildHoVerdict) -->
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;font-family:'Inter',sans-serif;padding:6px 0">
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;font-family:'Inter',sans-serif">
       ${(typeof window._buildHoVerdict === 'function')
         ? window._buildHoVerdict({
             avg: avg,
@@ -2498,11 +2511,16 @@ async function applyExpandKPIColours(idx, z, today) {
     }
   };
 
-  apply('avg',     today.avg,     yAvg);
-  apply('peak',    today.peakAvg, yPeakAvg);
-  apply('offpeak', today.offPkAvg, yOffAvg);
-  apply('min',     today.minV,    yMin);
-  apply('max',     today.maxV,    yMax);
+  // Updated to match the 6-KPI layout (Avg / Peak-Off / Extremes+Neg / σ / Spread / Mix).
+  // For merged cards (peakoff, extremes, mix) we colour the card but skip the
+  // chg label since they use customHtml and don't have a single delta value.
+  apply('avg',      today.avg,                yAvg);
+  apply('peakoff',  today.peakAvg,            yPeakAvg);   // colour by peak delta (representative)
+  apply('extremes', today.maxV,               yMax);       // colour by max delta (representative)
+  // sigma, spread, mix: no Y-1 comparison from yesterday's single day → flat
+  apply('sigma',    null, null);
+  apply('spread',   null, null);
+  apply('mix',      null, null);
 }
 
 
