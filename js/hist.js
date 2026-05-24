@@ -3532,13 +3532,15 @@ function _openHoFullscreen(zone) {
   HSZ.zone = zone;
 
   const country = _HO_NAMES[zone] || zone;
-  const flag    = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
+  // (FLAG_MAP[zone] no longer used in the title per the no-emoji design)
   const periodTxt = (HIST.customRange && HIST.customRange.from)
     ? `${HIST.customRange.from} → ${HIST.customRange.to}`
     : periodLabel(series);
 
   // ─── Title / subtitle ──────────────────────────────────────────────────
-  const title    = `${flag} ${zone} — ${country}`;
+  // Title is dynamic with the View (sub-tab) name. No emoji per design.
+  const subTabLabel = { lines:'Lines', yoy:'YoY', weekday:'Weekday', volatility:'Volatility', distribution:'Distribution' }[tab] || 'Lines';
+  const title    = `${zone} — ${country} · ${subTabLabel}`;
   const subtitle = `${periodTxt} · ${series.length} daily slots · ENTSO-E`;
 
   // ─── KPIs · 8-card strip ──────────────────────────────────────────────
@@ -3564,10 +3566,10 @@ function _openHoFullscreen(zone) {
   const winPillsHtml = ['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(w => {
     const active = winKey === w;
     return `<button data-ho-win="${w}" style="
-      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:14px;
+      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:3px;
       background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};
       color:${active ? '#14D3A9' : 'var(--tx3)'};
-      border:1px solid ${active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};
+      border:none;
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase">${w}</button>`;
   }).join('');
 
@@ -3576,11 +3578,11 @@ function _openHoFullscreen(zone) {
   const yPresetsHtml = ['focus','standard','all'].map(p => {
     const active = yPreset === p;
     return `<button data-ho-ypreset="${p}" style="
-      padding:3px 9px;font-size:9px;cursor:pointer;border-radius:3px;
-      background:${active ? 'rgba(20,211,169,0.15)' : 'transparent'};
-      border:1px solid ${active ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)'};
+      padding:3px 9px;font-size:10px;cursor:pointer;border-radius:3px;
+      background:${active ? 'rgba(20,211,169,0.18)' : 'transparent'};
       color:${active ? '#14D3A9' : 'var(--tx3)'};
-      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${p}</button>`;
+      border:none;
+      font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:capitalize">${p}</button>`;
   }).join('');
 
   // ─── Zone selector (dropdown) ──────────────────────────────────────────
@@ -3681,7 +3683,7 @@ function _openHoFullscreen(zone) {
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
     title,
     subtitle,
-    filenameStem: `powerklock_historical_${zone}_${(HIST.windows['ho']||'3M').toLowerCase()}`,
+    filenameStem: `powerklock_historical_drill_${zone}_${(HIST.windows['ho']||'3M').toUpperCase()}`,
     storageKey: 'historical-drill',
     kpis: { html: kpisHtml },
     table: { html: tableHtml },
@@ -3789,8 +3791,7 @@ function _hoWireFsFilters(hostEl, zone, series) {
       // Update pill styles
       hostEl.querySelectorAll('[data-ho-ypreset]').forEach(b => {
         const a = b.dataset.hoYpreset === p;
-        b.style.background = a ? 'rgba(20,211,169,0.15)' : 'transparent';
-        b.style.borderColor = a ? 'rgba(20,211,169,0.4)' : 'rgba(255,255,255,0.15)';
+        b.style.background = a ? 'rgba(20,211,169,0.18)' : 'transparent';
         b.style.color = a ? '#14D3A9' : 'var(--tx3)';
       });
     });
@@ -4075,14 +4076,14 @@ function _hszRenderYoYSubmenu() {
   const mode = HSZ.yoyMode;
   const hourlyMode = HSZ.hourlyMode;
 
-  // Shared pill style helpers
+  // Shared pill style helpers — aligned with other FS pills (3px radius, no border)
   const pill = (handler, id, label, active) => `
     <button onclick="event.stopPropagation();${handler}('${id}')"
-      style="background:${active?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.12)'};color:${active?'#14D3A9':'var(--tx2)'};padding:5px 12px;border-radius:14px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:500;letter-spacing:.02em">${label}</button>`;
+      style="padding:3px 9px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:${active?'#14D3A9':'var(--tx3)'};background:${active?'rgba(20,211,169,0.18)':'transparent'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${label}</button>`;
   const sep = `<span style="width:1px;height:14px;background:rgba(255,255,255,0.18);margin:0 4px"></span>`;
   const modePill = (handler, id, label, active) => `
     <button onclick="event.stopPropagation();${handler}('${id}')"
-      style="background:${active?'rgba(20,211,169,0.10)':'transparent'};border:1px solid ${active?'rgba(20,211,169,0.3)':'rgba(255,255,255,0.10)'};color:${active?'#14D3A9':'var(--tx3)'};padding:4px 10px;border-radius:14px;font-size:9px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.04em;text-transform:uppercase">${label}</button>`;
+      style="padding:3px 9px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:${active?'#14D3A9':'var(--tx3)'};background:${active?'rgba(20,211,169,0.18)':'transparent'};font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase">${label}</button>`;
 
   let html = '';
   let showSubmenu = false;
@@ -4108,7 +4109,7 @@ function _hszRenderYoYSubmenu() {
     html += pill('_setDistMode', 'histo',      'Histogram + KDE',  cur === 'histo');
   }
 
-  ['ho-detail-tab-submenu', 'ho-fs-tab-submenu'].forEach(id => {
+  ['ho-detail-tab-submenu', 'fs-ho-tab-submenu'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (showSubmenu) {
@@ -9469,7 +9470,7 @@ function hmzOpenFullscreen() {
   const isHtmlView = (view === 'heatmap' || view === 'bands');
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
-    title: `Historical Cross-zone · ${viewTitle}`,
+    title: `Cross-zone — Historical · ${viewTitle}`,
     subtitle: `${periodLabel} · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} · ENTSO-E`,
     filenameStem: `powerklock_historical_crosszone_${view}_${w}`,
     storageKey: 'historical-crosszone',
