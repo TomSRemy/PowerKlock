@@ -5019,15 +5019,27 @@ function openRowFullscreen(idx) {
   const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
 
   // ── Filters HTML: Zone selector (dropdown) + Band pills ──
-  // The Zone selector lists every zone currently loaded in the board
-  // (window._pricesSorted) so the user can hop from FR → DE → ES etc.
-  // without leaving the fullscreen.
-  // The Band pills control the historical envelope overlay on the chart.
-  const zonesList = window._pricesSorted || [];
-  const zoneOptions = zonesList.map((zi, i) => {
-    const flagI = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zi.code]) || '';
+  // The Zone selector lists every zone currently selected in the sidebar
+  // (getUserZones) so the user can hop from FR → DE → ES etc.
+  // without leaving the fullscreen. The currently-open zone is always included
+  // (defensive — in case the user pruned the selection after opening the FS).
+  const allLoadedZones = window._pricesSorted || [];
+  const userSelectedSet = (typeof getUserZones === 'function')
+    ? new Set(getUserZones())
+    : null;
+  let zonesList = userSelectedSet
+    ? allLoadedZones.filter(zi => userSelectedSet.has(zi.code))
+    : allLoadedZones;
+  // Ensure the currently-open zone is in the list
+  if (!zonesList.find(zi => zi.code === code)) {
+    const cur = allLoadedZones.find(zi => zi.code === code);
+    if (cur) zonesList = [cur, ...zonesList];
+  }
+  const zoneOptions = zonesList.map((zi) => {
+    // Map back to the original index in _pricesSorted (idx used by row toggle / FS reopen)
+    const origIdx = allLoadedZones.indexOf(zi);
     const safeName = (zi.name || zi.code).replace(/"/g, '&quot;');
-    return `<option value="${i}" ${i === idx ? 'selected' : ''}>${flagI} ${zi.code} — ${safeName}</option>`;
+    return `<option value="${origIdx}" ${origIdx === idx ? 'selected' : ''}>${zi.code} — ${safeName}</option>`;
   }).join('');
 
   const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
@@ -5125,6 +5137,9 @@ function openRowFullscreen(idx) {
   // elsewhere (zones-changed listener can refresh the FS if needed).
   const overlayEl = document.getElementById('pk-fs-overlay');
   if (overlayEl) overlayEl.setAttribute('data-fs-context', 'daily-drill');
+  // Remember the open zone code so zones-changed can recompute idx (since
+  // _pricesSorted index may shift if zones are added/removed).
+  window._FS_DAILY_DRILL_CODE = code;
 }
 
 // Build CSV from the inline 15-min breakdown table — used by pkOpenFullscreen
