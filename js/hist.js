@@ -3615,7 +3615,15 @@ function _openHoFullscreen(zone) {
     return `<option value="${z}" ${z === zone ? 'selected' : ''}>${z} — ${n}</option>`;
   }).join('');
 
-  // ─── Filters HTML (right of the chart, identical placement to Daily) ──
+  // ─── Y-presets visible seulement sur Lines/YoY (cohérent avec inline) ──
+  const showYPresetsInFs = (tab === 'lines' || tab === 'yoy');
+  const yAxisBlock = showYPresetsInFs ? `
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Y-axis</span>
+      <div id="fs-ho-ypresets" style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${yPresetsHtml}</div>
+    </div>` : '';
+
+  // ─── Filters HTML (Zone | View | Period | Y-axis | submenu) ────────────
   const filtersHtml = `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
@@ -3631,10 +3639,7 @@ function _openHoFullscreen(zone) {
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
       <div id="fs-ho-windows" style="display:inline-flex;gap:3px;flex-wrap:wrap">${winPillsHtml}</div>
     </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Y-axis</span>
-      <div id="fs-ho-ypresets" style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${yPresetsHtml}</div>
-    </div>
+    ${yAxisBlock}
     <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:6px;flex-wrap:wrap"></div>`;
 
   // ─── Table · breakdown with Monthly/Daily toggle (Lines tab only) ─────
@@ -3778,33 +3783,38 @@ function _hoWireFsFilters(hostEl, zone, series) {
     });
   });
 
-  // Window pills (7D / 1M / 3M / ...)
+  // Window pills (7D / 1M / 3M / ...) — use setHistWindow so it propagates
+  // to hsz/hmz too (shared period across all Historical sections).
   hostEl.querySelectorAll('[data-ho-win]').forEach(btn => {
     btn.addEventListener('click', () => {
       const w = btn.dataset.hoWin;
       if (!w) return;
-      HIST.windows['ho'] = w;
+      if (typeof setHistWindow === 'function') {
+        setHistWindow('ho', w);
+      } else {
+        HIST.windows['ho'] = w;
+      }
       if (typeof pkUpdateHistPeriodLabels === 'function') pkUpdateHistPeriodLabels(w);
       _openHoFullscreen(zone);
     });
   });
 
   // Y-presets (Focus / Standard / All)
+  // We re-open the FS so the chart is re-rendered with the new preset
+  // applied (consistent with how subtab/window pills behave). The previous
+  // approach called _buildHoTabChart(..., true) which targets a canvas
+  // ('ho-fs-chart') that doesn't exist in the unified FS DOM.
   hostEl.querySelectorAll('[data-ho-ypreset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = btn.dataset.hoYpreset;
       if (!p) return;
       window._HO_YPRESET = p;
-      // Re-render chart without reopening the whole FS
+      // Update inline chart so the new preset is reflected when the user
+      // exits the FS, then re-open the FS to pick up the new chart.
       if (typeof _buildHoTabChart === 'function') {
-        _buildHoTabChart(zone, series, HSZ.tab || 'lines', true);
+        _buildHoTabChart(zone, series, HSZ.tab || 'lines', false);
       }
-      // Update pill styles
-      hostEl.querySelectorAll('[data-ho-ypreset]').forEach(b => {
-        const a = b.dataset.hoYpreset === p;
-        b.style.background = a ? 'rgba(20,211,169,0.18)' : 'transparent';
-        b.style.color = a ? '#14D3A9' : 'var(--tx3)';
-      });
+      requestAnimationFrame(() => _openHoFullscreen(zone));
     });
   });
 
@@ -7925,7 +7935,7 @@ function setHmzHeatmapMode(mode) {
   if (!['day','week','month','dow'].includes(mode)) return;
   HMZ.heatmapMode = mode;
   HMZ._heatmapModeManual = true; // mark as user override
-  renderHistMulti();
+  return renderHistMulti();
 }
 window.setHmzHeatmapMode = setHmzHeatmapMode;
 
@@ -7935,7 +7945,7 @@ function setHmzSpreadMode(mode) {
   if (mode !== 'vsRef' && mode !== 'vsPeers') return;
   HMZ.spreadMode = mode;
   try { localStorage.setItem('pk_hmz_spreadMode', mode); } catch (_) {}
-  renderHistMulti();
+  return renderHistMulti();
 }
 window.setHmzSpreadMode = setHmzSpreadMode;
 
@@ -9358,7 +9368,7 @@ function hmzOpenFullscreen() {
   };
   const periodLabel = periodMap[w] || w;
   const viewTitle = {
-    lines:'Lines', heatmap:'Heatmap', profile:'Profile', bands:'Bands', spread:'Spread'
+    lines:'Lines', heatmap:'Heatmap', bands:'Bands', spread:'Spread'
   }[view] || 'Lines';
   // Pull zones from the actual source of truth (used by renderHistMulti)
   const selectedZones = Array.isArray(window._hmzSelected)
@@ -9447,9 +9457,14 @@ function hmzOpenFullscreen() {
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subToggleHtml}</div>
     </div>` : '';
 
-  // ─── Baseline block (always shown when zones loaded; relevant for Heatmap/Spread but visible always for consistency) ──
+  // ─── Baseline block (only for Heatmap and Spread+vsRef where it matters).
+  // Lines = overlay all zones. Bands = per-zone distribution. Spread+vsPeers
+  // = scatter without single baseline. ──
   let baselineBlock = '';
-  if (selectedZones.length) {
+  const isSpreadVsPeers = (view === 'spread' && (window.HMZ && HMZ.spreadMode) === 'vsPeers');
+  const showBaseline = ((view === 'heatmap') || (view === 'spread' && !isSpreadVsPeers))
+                        && selectedZones.length;
+  if (showBaseline) {
     const refCode = (window.HIST && HIST.hmzBaseline) || (selectedZones.includes('FR') ? 'FR' : selectedZones[0]);
     const refOptions = selectedZones.map(code => {
       return `<option value="${code}" ${code === refCode ? 'selected' : ''}>${code}</option>`;
