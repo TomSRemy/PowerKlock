@@ -1309,7 +1309,19 @@ document.addEventListener('zones-changed', () => {
     }
   }
 
-  // Daily drill: mono-zone view, no zone-list dependency → nothing to refresh.
+  // Daily drill: zone dropdown now filters on user selection, so refresh
+  // the open FS to update the dropdown options when zones change.
+  if (fsOpen && fsOpen('daily-drill')) {
+    // Re-open with the same idx (zone) — the FS hot-swaps via pkOpenOrUpdate.
+    // We need to recompute idx since _pricesSorted may have shifted.
+    const openCode = window._FS_DAILY_DRILL_CODE;
+    if (openCode && typeof openRowFullscreen === 'function') {
+      const newIdx = (window._pricesSorted || []).findIndex(z => z.code === openCode);
+      if (newIdx >= 0) {
+        requestAnimationFrame(() => openRowFullscreen(newIdx));
+      }
+    }
+  }
 });
 
 function updateZoneLabels() {
@@ -3599,9 +3611,8 @@ function _openHoFullscreen(zone) {
     ? availableZones.slice().sort()
     : [zone, ...availableZones].slice().sort();
   const zoneOptions = zonesList.map(z => {
-    const f = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
     const n = _HO_NAMES[z] || z;
-    return `<option value="${z}" ${z === zone ? 'selected' : ''}>${f} ${z} — ${n}</option>`;
+    return `<option value="${z}" ${z === zone ? 'selected' : ''}>${z} — ${n}</option>`;
   }).join('');
 
   // ─── Filters HTML (right of the chart, identical placement to Daily) ──
