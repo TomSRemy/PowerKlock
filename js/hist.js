@@ -3228,14 +3228,30 @@ function _openHoRow(zone, series, st) {
     <td colspan="12" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
-        <!-- Header: zone title + close -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:14px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</span>
-            <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">${periodTxt}</span>
+        <!-- ═══ Drill row header · unified template ═══
+             Eyebrow (mono teal) · Title (Inter bold 18px) · Subtitle (mono tx3)
+             FS button + Close button on the right.
+             Source-of-truth: see drill-template.html in the design references.
+             The dynamic chart-title-block below is kept for tab-specific subtitles
+             (Lines vs YoY vs Volatility vs Distribution) — it complements this header. -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px">
+              Historical <span style="color:var(--tx3);font-weight:400">·</span> ${flag} ${zone} <span style="color:var(--tx3);font-weight:400">·</span> Single-zone detail
+            </div>
+            <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;margin-bottom:2px">
+              ${country}
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);font-weight:400">
+              ${periodTxt} · ENTSO-E
+            </div>
           </div>
-          <button onclick="event.stopPropagation();_closeHoRow()"
-            style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
+              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+            <button onclick="event.stopPropagation();_closeHoRow()"
+              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          </div>
         </div>
 
         <!-- KPI strip (8 cards) -->
@@ -3248,19 +3264,18 @@ function _openHoRow(zone, series, st) {
           ${_buildHoVerdict(st)}
         </div>
 
-        <!-- Tabs bar: Lines / YoY / Weekday / Volatility / Distribution -->
-        <div id="ho-detail-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;margin-bottom:8px;flex-wrap:wrap;align-self:flex-start;width:max-content;max-width:100%"></div>
+        <!-- ═══ Filters bar · tabs + actions ═══ -->
+        <div style="display:flex;align-items:center;gap:10px;margin:8px 0 8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--bd)">
+          <!-- Tabs bar: Lines / YoY / Weekday / Volatility / Distribution -->
+          <div id="ho-detail-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;flex-wrap:wrap;align-self:flex-start;width:max-content;max-width:100%"></div>
 
-        <!-- Combined row: YoY sub-menu pills (left) + Actions (right) on the same baseline.
-             Pills are only visible when YoY tab is active. -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
-          <!-- YoY sub-menu pills (Hourly / Daily / Weekly / Monthly + Hourly mode) — hidden unless YoY tab is active -->
-          <!-- Generic per-tab submenu slot (YoY pills, Volatility metrics, Distribution modes, etc.) — hidden unless the active tab provides pills -->
+          <!-- Generic per-tab submenu slot (YoY pills, Volatility metrics, Distribution modes, etc.) -->
           <div id="ho-detail-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-left:4px"></div>
-          <!-- Spacer so actions stay right-aligned even when pills are hidden -->
+
+          <!-- Spacer so actions stay right-aligned -->
           <div style="flex:1"></div>
 
-          <!-- Actions group: Y-presets · Reset · PNG · Fullscreen -->
+          <!-- Actions group: Y-presets · Reset · PNG -->
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <!-- Tab-specific toggle slot (legacy, kept hidden) -->
             <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
@@ -3273,19 +3288,19 @@ function _openHoRow(zone, series, st) {
                 style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
             </div>
             <button id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard"
-              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-right:2px">↺</button>
+              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺</button>
             <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
               style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
           </div>
         </div>
 
-        <!-- Chart title block (HTML, allows hybrid eyebrow + title + subtitle styling) -->
+        <!-- Tab-specific chart title block (eyebrow + title + subtitle).
+             Differs from the header above: this one changes with the active tab
+             (Lines vs YoY vs Volatility etc.), while the header above is static. -->
         <div id="ho-detail-title-block" style="margin-top:14px;margin-bottom:8px">
           <div id="ho-detail-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
-          <div id="ho-detail-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
-          <div id="ho-detail-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
+          <div id="ho-detail-title" style="font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
+          <div id="ho-detail-subtitle" style="font-family:'Inter',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
         </div>
 
         <!-- Chart container — no background, matches Daily style -->
