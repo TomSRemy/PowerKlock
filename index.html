@@ -665,6 +665,51 @@
   }
   .pk-filters-bar-spacer { flex: 1; }
 
+  /* ── Tabbar pattern (used by CC, HMZ, and any cross-zone-style section).
+       Layout: [tabs group + sub-toggle group] LEFT / [chips + FS button] RIGHT.
+       Sub-toggle is INLINE (Day/Week/Month, Z-score/Raw, vs Ref/vs Peers).
+       JS toggles display:none/inline-flex on .pk-tabbar-subtoggle as needed. ── */
+  .pk-tabbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 6px 0 14px;
+    flex-wrap: wrap;
+  }
+  .pk-tabbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pk-tabbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+  }
+  .pk-tabbar-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border: 1px solid var(--bd);
+    border-radius: 6px;
+    padding: 3px;
+  }
+  .pk-tabbar-subtoggle {
+    display: none;       /* shown via inline-flex by JS when populated */
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .pk-tabbar-chips {
+    display: none;       /* shown via JS when populated */
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
   table { width: 100%; border-collapse: collapse; }
   thead th {
     font-size: 10px;
@@ -2848,20 +2893,19 @@
               <div class="kpi-meta" id="cc-kpi-frgap-meta">--</div>
             </div>
           </div>
-          <!-- View tabs (Insta-style) — same pattern as HMZ:
-               tabs left, tab-contextual chips right, sub-toggle absolute below the active tab. -->
-          <div id="cc-tabs-bar" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:6px 0 36px;flex-wrap:wrap">
-            <div id="cc-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-            <!-- Right side: tab-contextual zone chips + fullscreen button -->
-            <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
-              <!-- Tab-contextual chips (Baseline ref for Spread, or zones picker for Bands) -->
-              <div id="cc-tab-chips" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
-              <button onclick="ccOpenFullscreen()" title="Open in fullscreen"
-                style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+          <!-- View tabs (Insta-style) — uses unified .pk-tabbar pattern.
+               Sub-toggle is inline to the right of tabs (board pattern). -->
+          <div id="cc-tabs-bar" class="pk-tabbar">
+            <div class="pk-tabbar-left">
+              <div id="cc-tabs" class="pk-tabbar-tabs"></div>
+              <!-- Sub-toggle inline (Z-score/Raw for Bands, etc) -->
+              <div id="cc-sub-toggle" class="pk-tabbar-subtoggle"></div>
             </div>
-            <!-- Sub-toggle: rendered absolutely below the active tab.
-                 left/transform set in JS by pkPositionSubToggle(). -->
-            <div id="cc-sub-toggle" style="display:none;position:absolute;top:100%;margin-top:4px;left:0;white-space:nowrap;z-index:5;gap:4px"></div>
+            <div class="pk-tabbar-right">
+              <!-- Tab-contextual chips (Baseline ref for Spread, or zones picker for Bands) -->
+              <div id="cc-tab-chips" class="pk-tabbar-chips"></div>
+              <button class="pk-btn-primary" onclick="ccOpenFullscreen()" title="Open in fullscreen">⛶ Fullscreen</button>
+            </div>
             <!-- Legacy Bands view header (Period · Mode · Zones) — kept for now.
                  Populated by _ccBandsRenderHeader. Visible only in Bands view. -->
             <div id="cc-bands-wrap" style="display:none;flex:1 1 100%;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap">
@@ -3049,22 +3093,19 @@
     </div>
   </div>
 
-  <!-- HMZ tabs bar + tab-contextual zone chips + fullscreen button.
-       The wrapper is position:relative so the sub-toggle (centered under
-       the active tab) can be position:absolute inside it. -->
-  <div id="hmz-tabbar" style="position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:6px 0 36px;flex-wrap:wrap">
-    <div id="hmz-tabs" style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px"></div>
-    <!-- Right side: zone chips (tab-contextual) + fullscreen button -->
-    <div style="display:flex;align-items:center;gap:14px;margin-left:auto">
-      <!-- Tab-contextual chips (Baseline for Heatmap or Spread vs Ref) -->
-      <div id="hmz-tab-chips" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
-      <button onclick="hmzOpenFullscreen()" title="Open in fullscreen"
-        style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+  <!-- HMZ tabs bar — uses unified .pk-tabbar pattern.
+       Sub-toggle inline to the right of tabs (board pattern). -->
+  <div id="hmz-tabbar" class="pk-tabbar">
+    <div class="pk-tabbar-left">
+      <div id="hmz-tabs" class="pk-tabbar-tabs"></div>
+      <!-- Sub-toggle inline (Day/Week/Month, vs Ref/vs Peers, etc) -->
+      <div id="hmz-sub-toggle" class="pk-tabbar-subtoggle"></div>
     </div>
-    <!-- Sub-toggle: rendered absolutely below the active tab.
-         left/transform set in JS by pkPositionSubToggle().
-         display:none until populated by the active-tab populator. -->
-    <div id="hmz-sub-toggle" style="display:none;position:absolute;top:100%;margin-top:4px;left:0;white-space:nowrap;z-index:5;gap:4px"></div>
+    <div class="pk-tabbar-right">
+      <!-- Tab-contextual chips (Baseline for Heatmap or Spread vs Ref) -->
+      <div id="hmz-tab-chips" class="pk-tabbar-chips"></div>
+      <button class="pk-btn-primary" onclick="hmzOpenFullscreen()" title="Open in fullscreen">⛶ Fullscreen</button>
+    </div>
   </div>
 
   <!-- Chart title block · eyebrow + title + subtitle, populated by _hmzSetTitle().
