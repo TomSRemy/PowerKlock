@@ -3251,7 +3251,7 @@ function _openHoRow(zone, series, st) {
         </div>
 
         <!-- Verdict bandeau ("Cheap & stable period · σ X · X% renewable · X neg days") -->
-        <div id="ho-detail-verdict" style="font-size:11px;color:var(--tx2);margin-bottom:10px;font-family:'Inter',sans-serif;padding:6px 0">
+        <div id="ho-detail-verdict" style="font-size:11px;color:var(--tx2);margin-bottom:14px;font-family:'Inter',sans-serif">
           ${_buildHoVerdict(st)}
         </div>
 
@@ -7751,9 +7751,60 @@ const HMZ = {
 function setHistMultiTab(tabId) {
   HMZ.tab = tabId;
   buildHistMultiTabs();
+  _hmzSetTitle(tabId);
   renderHistMulti();
 }
 window.setHistMultiTab = setHistMultiTab;
+
+// ── HMZ dynamic title block ──────────────────────────────────────────────
+// Mirrors _ccSetTitle (Daily Cross-zone). Populates #hmz-eyebrow / #hmz-title /
+// #hmz-subtitle based on the active HMZ tab + current window + selected zones.
+// Called by setHistMultiTab on tab change, and also by renderHistMulti() so
+// the title stays in sync when zones or window change.
+function _hmzSetTitle(tab) {
+  tab = tab || HMZ.tab || 'lines';
+  const selected = (window._compareZones || window._userZones || new Set(['FR']));
+  const zonesCount = (selected.size != null) ? selected.size : (selected.length || 0);
+  const win = (HIST.windows && HIST.windows['hmz']) || '3M';
+  const winLabel = (win === 'YTD') ? 'YTD' : (win === 'All' ? 'All-time' : win);
+  const baseline = HIST.hmzBaseline || 'FR';
+  const heatmapMode = HMZ.heatmapMode || 'day';
+  const heatmapLabel = { day:'daily', week:'weekly', month:'monthly', dow:'by day-of-week' }[heatmapMode] || heatmapMode;
+
+  const titles = {
+    lines: {
+      eyebrow:  `Historical Cross-zone · Lines · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title:    'Daily averages overlay across selected zones',
+      subtitle: `${winLabel} window · ENTSO-E`,
+    },
+    heatmap: {
+      eyebrow:  `Historical Cross-zone · Heatmap · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title:    `Price intensity — ${heatmapLabel} resolution`,
+      subtitle: `${winLabel} window · vs ${baseline} baseline · ENTSO-E`,
+    },
+    bands: {
+      eyebrow:  `Historical Cross-zone · Bands · ${zonesCount} zone${zonesCount > 1 ? 's' : ''}`,
+      title:    'Statistical envelope per zone',
+      subtitle: `${winLabel} window · P10–P90 distribution · ENTSO-E`,
+    },
+    spread: {
+      eyebrow:  `Historical Cross-zone · Spread · ${zonesCount} zone${zonesCount > 1 ? 's' : ''} vs ${baseline}`,
+      title:    `Cross-zone spread vs ${baseline}`,
+      subtitle: `${winLabel} window · zone − ${baseline} in €/MWh · ENTSO-E`,
+    },
+  };
+  const t = titles[tab] || titles.lines;
+
+  // Populate inline block
+  const ey = document.getElementById('hmz-eyebrow');
+  const ti = document.getElementById('hmz-title');
+  const su = document.getElementById('hmz-subtitle');
+  if (ey) ey.textContent = t.eyebrow;
+  if (ti) ti.textContent = t.title;
+  if (su) su.textContent = t.subtitle;
+}
+window._hmzSetTitle = _hmzSetTitle;
+
 
 function buildHistMultiTabs() {
   const wrap = document.getElementById('hmz-tabs');
@@ -7993,6 +8044,8 @@ async function renderHistMulti() {
   if (!HMZ._heatmapModeManual) {
     HMZ.heatmapMode = _hmzAutoHeatmapMode(w);
   }
+  // Refresh dynamic title (window/baseline/heatmapMode may have changed)
+  if (typeof _hmzSetTitle === 'function') _hmzSetTitle(HMZ.tab);
   const s = await fetchSummary();
   if (!s?.zones) return;
 
