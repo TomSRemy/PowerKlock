@@ -2773,16 +2773,9 @@ function _ccUpdateTabContext(view) {
   if (subToggleHTML) {
     subToggle.innerHTML = subToggleHTML;
     subToggle.style.display = 'inline-flex';
-    // Reset any leftover positioning from previous JS-positioned versions
-    subToggle.style.left = '0';
-    subToggle.style.transform = '';
-    const tabbar = document.getElementById('cc-tabs-bar');
-    if (tabbar) tabbar.style.marginBottom = '36px';
   } else {
     subToggle.style.display = 'none';
     subToggle.innerHTML = '';
-    const tabbar = document.getElementById('cc-tabs-bar');
-    if (tabbar) tabbar.style.marginBottom = '10px';
   }
 
   // ─── Tab-contextual filter chips (right of the tabs row) ────────────
