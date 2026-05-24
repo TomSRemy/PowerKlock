@@ -450,21 +450,27 @@
 
     root.querySelectorAll('.pk-fs-resizer').forEach(handle => {
       handle.addEventListener('mousedown', e => onDown(handle, e));
-      // Double-click to collapse / restore
+      // Double-click to collapse / restore.
+      // We tag the hidden panel with data-user-hidden="true" so subsequent
+      // pkUpdateContent / autofitTable calls don't silently reveal it.
       handle.addEventListener('dblclick', () => {
         if (handle.dataset.resizer === 'v' && table) {
           if (table.style.display === 'none' || table.offsetWidth < DEFAULTS.minTable) {
             table.style.display = '';
             table.style.width = DEFAULTS.tableWidth + 'px';
+            table.removeAttribute('data-user-hidden');
           } else {
             table.style.display = 'none';
+            table.setAttribute('data-user-hidden', 'true');
           }
         } else if (handle.dataset.resizer === 'h' && kpi) {
           if (kpi.style.display === 'none' || kpi.offsetHeight < DEFAULTS.minKpi) {
             kpi.style.display = '';
             kpi.style.height = DEFAULTS.kpiHeight + 'px';
+            kpi.removeAttribute('data-user-hidden');
           } else {
             kpi.style.display = 'none';
+            kpi.setAttribute('data-user-hidden', 'true');
           }
         }
         if (root._fsChart && typeof root._fsChart.resize === 'function') {
@@ -524,12 +530,14 @@
   function autofitTable(root) {
     // Auto-fit the table column to its natural content width AND
     // auto-fit the KPI strip height to fit its cards without scroll.
+    // CRITICAL: respect data-user-hidden — if the user explicitly collapsed
+    // a panel via dblclick, we must NOT reveal it again.
     const main = root.querySelector('.pk-fs-main');
 
     // ── Table column ──
     const tableZone = root.querySelector('.pk-fs-table-zone');
     const table = tableZone ? tableZone.querySelector('table') : null;
-    if (tableZone && table) {
+    if (tableZone && table && tableZone.getAttribute('data-user-hidden') !== 'true') {
       const prevWidth = tableZone.style.width;
       tableZone.style.width = 'auto';
       table.style.width = 'max-content';
@@ -542,7 +550,7 @@
 
     // ── KPI strip ──
     const kpi = root.querySelector('.pk-fs-kpi');
-    if (kpi) {
+    if (kpi && kpi.getAttribute('data-user-hidden') !== 'true') {
       // Save current style, measure natural height via temporary height:auto
       const prevH = kpi.style.height;
       kpi.style.height = 'auto';
@@ -708,10 +716,10 @@
       // Filename stem (used by CSV/PNG exports) is stored on the overlay for later use
       root._fsConfig = config;
 
-      // Re-run auto-fit so the new content settles into a tidy layout
-      setTimeout(() => {
-        if (document.getElementById(OVERLAY_ID) === root) autofitTable(root);
-      }, 200);
+      // NOTE: we deliberately do NOT call autofitTable here. The user may
+      // have resized or collapsed the KPI/table panels — running auto-fit
+      // after every toggle would silently reset their layout. The user can
+      // trigger autofit manually via the ⇆ Auto-fit button if needed.
       return true;
     } catch (e) {
       console.warn('[pk-fs] pkUpdateContent failed, falling back to close+open', e);
@@ -982,9 +990,12 @@ window.pkBuildChartSource = function(opts) {
 
   return {
     rebuildInto: (canvas) => {
+      const isHtml = isHtmlView();
+      console.log('[pkBuildChartSource] rebuildInto called', { chartId, isHtml, canvas: !!canvas });
       // ── HTML view: copy DOM from the inline container to a mirror ──
-      if (isHtmlView()) {
+      if (isHtml) {
         const src = htmlContainerId ? document.getElementById(htmlContainerId) : null;
+        console.log('[pkBuildChartSource] HTML view, src found:', !!src, 'src content len:', src ? src.innerHTML.length : 0);
         if (src && canvas && canvas.parentNode) {
           canvas.style.display = 'none';
           let mirror = canvas.parentNode.querySelector('.' + mirrorClass);
@@ -1007,6 +1018,7 @@ window.pkBuildChartSource = function(opts) {
       }
       const registry = chartsRegistry();
       const srcChart = registry && chartId ? registry[chartId] : null;
+      console.log('[pkBuildChartSource] Chart view, registry keys:', registry ? Object.keys(registry) : 'null', 'srcChart found:', !!srcChart);
       if (!srcChart || typeof Chart === 'undefined') return null;
       const cfg = {
         type: srcChart.config.type,
