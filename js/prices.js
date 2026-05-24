@@ -1584,6 +1584,27 @@ function buildHourlyDetail(idx, z) {
   const col = negFraction >= 0.5 ? '#ED6965' : negFraction >= 0.2 ? '#FBBF24' : (typeof zoneColor === 'function' ? zoneColor(z.code) : 'var(--acc)');
 
   inner.innerHTML = `
+    <!-- ═══ Drill row header · unified template ═══
+         Eyebrow (mono teal) · Title (Inter bold 18px) · Subtitle (mono tx3)
+         FS button on the right.
+         Source-of-truth: see drill-template.html in the design references. -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          Day-Ahead <span style="color:var(--tx3);font-weight:400">·</span> ${FLAG_MAP[z.code]||''} ${z.code} <span style="color:var(--tx3);font-weight:400">·</span> Intraday detail
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;margin-bottom:2px">
+          ${z.hourly && z.hourly.length === 96 ? '15-min slots · price profile' : 'Hourly price profile'}
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);font-weight:400">
+          ${ccFmtDay(window._currentPriceDate)} · ${z.hourly && z.hourly.length === 96 ? '96 × 15min slots' : (h24.length+' hours')} · ENTSO-E
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen"
+        style="flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
+    </div>
+
+    <!-- ═══ KPI strip ═══ -->
     <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px" id="row-kpis-${idx}">
       ${[
         {k:'avg',     l:'Avg',              v:avg.toFixed(2),                            meta:'24h average',     u:'€/MWh'},
@@ -1598,30 +1619,29 @@ function buildHourlyDetail(idx, z) {
         <div class="kpi-meta">${k.meta}</div>
       </div>`).join('')}
     </div>
-    <div style="font-size:11px;margin-bottom:4px">
+
+    <!-- Quick text indicator (volatility / peak ratio) -->
+    <div style="font-size:11px;margin-bottom:8px">
       <span style="color:${flatColor};font-weight:600">${flatText}</span>
       ${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;flex-wrap:wrap;gap:8px">
-      <div style="font-size:11px;color:var(--tx2);font-weight:600;letter-spacing:.05em;text-transform:uppercase">
-        ${FLAG_MAP[z.code]||''} ${z.code} — ${ccFmtDay(window._currentPriceDate)}
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <!-- Band window selector · pills inline (Off / 7D / 1M / 3M / 6M / YTD / 1Y) -->
-        <div style="display:flex;align-items:center;gap:5px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
-          <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="row-band-pills-${idx}">
-            ${_rowBandPillsHTML(idx)}
-          </div>
+
+    <!-- ═══ Filters bar · band selector + chart controls ═══ -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;flex-wrap:wrap;gap:8px;padding:6px 0;border-bottom:1px dashed var(--bd)">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="row-band-pills-${idx}">
+          ${_rowBandPillsHTML(idx)}
         </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
         <button onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view"
           style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">↺ Reset</button>
         <button onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-        <button onclick="event.stopPropagation();openRowFullscreen(${idx})" title="Open in fullscreen" style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
       </div>
     </div>
-    <!-- Market Read banner moved BELOW the chart for visual parity with Historical drill-down.
-         Populated after innerHTML by _buildAnalystBanner('dailyDrill', …). -->
+
+    <!-- ═══ Chart ═══ -->
     <div style="position:relative;height:260px;margin-bottom:4px">
       <canvas id="row-chart-${idx}" style="width:100%;height:260px"></canvas>
     </div>
@@ -1629,10 +1649,14 @@ function buildHourlyDetail(idx, z) {
       <span>— ${ccFmtDay(window._currentPriceDate)}</span><span style="opacity:.5">- - - ${ccFmtDayShift(window._currentPriceDate, -1) || 'J-1'}</span>
       <span style="margin-left:8px">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</span>
     </div>
-    <!-- Market Read banner anchor · populated post-innerHTML to keep 2-line layout parity with Historical -->
+
+    <!-- ═══ Analyst banner (amber) · populated post-innerHTML ═══ -->
     <div id="row-analyst-banner-${idx}"></div>
+
     <!-- Band stats line · populated when the band selector is active -->
     <div id="row-band-stats-${idx}" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(255,255,255,0.15);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.6"></div>
+
+    <!-- ═══ Breakdown table (collapsible) ═══ -->
     <details style="margin-top:18px">
       <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none">
         Breakdown (${z.hourly && z.hourly.length===96 ? "96 × 15min slots" : h24.length+" hours"})
@@ -2692,7 +2716,18 @@ function _ccUpdateTabContext(view) {
   } else if (view === 'bands') {
     // ── Period filter chips (neutral teal, pkFilterChip) ──
     const periodCur = window._ccBandsPeriod || '1M';
-    const periodChips = _CC_BANDS_PERIODS.map(p => window.pkFilterChip({
+    // Defensive: if _CC_BANDS_PERIODS hasn't been evaluated yet (e.g. early
+    // event firing during script load), fall back to a local mirror so we
+    // never throw a TDZ error.
+    const periods = (typeof _CC_BANDS_PERIODS !== 'undefined') ? _CC_BANDS_PERIODS : [
+      { key: '7D',  label: '7D' },
+      { key: '1M',  label: '1M' },
+      { key: '3M',  label: '3M' },
+      { key: '6M',  label: '6M' },
+      { key: 'YTD', label: 'YTD' },
+      { key: '1Y',  label: '1Y' },
+    ];
+    const periodChips = periods.map(p => window.pkFilterChip({
       label:   p.label,
       active:  p.key === periodCur,
       onClick: `setCCBandsPeriod('${p.key}')`,
