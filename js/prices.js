@@ -3449,16 +3449,22 @@ function ccOpenFullscreen() {
 
   // Filters order: View+SubToggle FIRST (fixed left, never shifts when
   // graph changes), then Date, Period, Baseline.
+  // Filters split: View+SubToggle on the LEFT (fixed, never shifts),
+  // Date / Period / Baseline / Bands header on the RIGHT.
   const filtersHtml = `
-    ${viewAndSubToggleBlock}
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
-      <input type="date" id="fs-cc-date-input" value="${currentDateISO}" max="${todayISO}"
-        style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+    <div class="pk-fs-filters-left">
+      ${viewAndSubToggleBlock}
     </div>
-    ${periodBlock}
-    ${baselineBlock}
-    ${extraHtml}`;
+    <div class="pk-fs-filters-right">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
+        <input type="date" id="fs-cc-date-input" value="${currentDateISO}" max="${todayISO}"
+          style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+      </div>
+      ${periodBlock}
+      ${baselineBlock}
+      ${extraHtml}
+    </div>`;
 
   // ─── Title : harmonised pattern "Cross-zone — Day-Ahead · <View>" ──
   const viewLabel = { lines:'Lines', heatmap:'Heatmap', profile:'Profile', bands:'Bands', spread:'Spread' }[view] || 'Lines';
@@ -5075,23 +5081,29 @@ function openRowFullscreen(idx) {
 
   const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
 
+  // Filters split: Band (the sub-toggle equivalent) on the LEFT (fixed),
+  // Date and Zone on the RIGHT.
   const filtersHtml = `
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
-      <div style="display:inline-flex;gap:4px" id="fs-row-band-pills-${idx}">
-        ${_rowBandPillsHTML(idx)}
+    <div class="pk-fs-filters-left">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
+        <div style="display:inline-flex;gap:4px" id="fs-row-band-pills-${idx}">
+          ${_rowBandPillsHTML(idx)}
+        </div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
-      <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
-        style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
-    </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
-      <select id="fs-row-zone-select-${idx}" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
-        ${zoneOptions}
-      </select>
+    <div class="pk-fs-filters-right">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
+        <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
+          style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
+        <select id="fs-row-zone-select-${idx}" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+          ${zoneOptions}
+        </select>
+      </div>
     </div>`;
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
