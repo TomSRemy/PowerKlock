@@ -2724,10 +2724,14 @@ function setCCView(view) {
   // Shading legend is meaningful only for intraday-profile views (Lines / Profile / Bands / Spread)
   const shadeLegend = document.getElementById('cc-shading-legend');
   if (shadeLegend) shadeLegend.style.display = view === 'heatmap' ? 'none' : 'flex';
-  renderCompareChart();
+  // renderCompareChart dispatches to a sync renderer for most views, but
+  // async renderCCBands for view='bands'. Capture and return so FS callers
+  // can await via .then().
+  const renderPromise = renderCompareChart();
   // Unified tabbar context: sub-toggle (Mode for Bands) + tab-contextual chips,
   // pixel-perfect centered under the active tab.
   _ccUpdateTabContext(view);
+  return renderPromise;
 }
 window.setCCView = setCCView;
 
@@ -2857,11 +2861,12 @@ window._ccUpdateTabContext = _ccUpdateTabContext;
 
 function setSpreadRef(code) {
   window._ccSpreadRef = code;
-  renderCompareChart();
+  const renderPromise = renderCompareChart();
   // Refresh chip highlight (active zone changed)
   if (typeof _ccUpdateTabContext === 'function') {
     _ccUpdateTabContext(window._ccView || 'lines');
   }
+  return renderPromise;
 }
 window.setSpreadRef = setSpreadRef;
 
@@ -3048,10 +3053,13 @@ function renderCompareChart() {
 
   populateSpreadRefSelect(data, selected);
 
+  // Most renderers are sync; renderCCBands is async. Capture so callers
+  // (setCCView returning to FS) can await before refreshing.
+  let renderPromise = null;
   switch (view) {
     case 'heatmap': renderCCHeatmap(data, selected); break;
     case 'profile': renderCCProfile(data, selected); break;
-    case 'bands':   renderCCBands(data, selected);   break;
+    case 'bands':   renderPromise = renderCCBands(data, selected);   break;
     case 'spread':  renderCCSpread(data, selected);  break;
     case 'lines':
     default:        renderCCLines(data, selected);
@@ -3068,6 +3076,7 @@ function renderCompareChart() {
     if (view !== 'heatmap') addDownload('price-compare-canvas','price-comparison');
     renderCCAnalysis(view, data, selected);
   }, 100);
+  return renderPromise;
 }
 
 // ────────────────────────────────────────────
@@ -3489,16 +3498,29 @@ function ccOpenFullscreen() {
           });
         }
         if (view === 'bands') {
+          // The full bands header (Period + Mode + Zones) is rendered for the
+          // inline view, but Period and Mode are now in the FS filters bar, so
+          // we render ONLY the Zones pills here to avoid duplicates.
           const fsHost = hostEl.querySelector('#fs-cc-bands-header');
           if (fsHost) {
-            const origHost = document.getElementById('cc-bands-header');
-            fsHost.id = 'cc-bands-header';
-            if (origHost) origHost.id = 'cc-bands-header-inline';
             const zones = ccGetSelectedZones(data, selected);
-            const mode = (zones.length >= 2) ? (window._ccBandsMode || 'zscore') : 'raw';
-            _renderCCBandsHeader(zones, mode);
-            fsHost.id = 'fs-cc-bands-header';
-            if (origHost) origHost.id = 'cc-bands-header';
+            window._ccBandsHidden = window._ccBandsHidden || new Set();
+            const zonePills = zones.map(z => {
+              const col = (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
+              const isOn = !window._ccBandsHidden.has(z.code);
+              return `<button onclick="toggleCCBandsZone('${z.code}')" style="
+                padding:3px 9px;border-radius:3px;font-size:10px;cursor:pointer;
+                border:1px solid ${isOn ? col : 'rgba(255,255,255,.10)'};
+                background:${isOn ? col + '22' : 'transparent'};
+                color:${isOn ? col : 'rgba(255,255,255,.35)'};
+                font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;
+                opacity:${isOn ? 1 : 0.55};transition:all .15s">${z.code}</button>`;
+            }).join('');
+            fsHost.innerHTML = `
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+                <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zones</span>
+                <div style="display:inline-flex;gap:3px;flex-wrap:wrap">${zonePills}</div>
+              </div>`;
           }
         }
       }
@@ -3578,26 +3600,30 @@ window.setCCBandsPeriod = function(key) {
   // Re-render chart and table
   const data = window._pricesSorted;
   const selected = window._compareZones || new Set(['FR']);
+  let renderPromise = null;
   if (data && (window._ccView || 'lines') === 'bands') {
-    renderCCBands(data, selected);
+    renderPromise = renderCCBands(data, selected);
     renderCompareKPIs(data, selected);
   }
   // Refresh tabbar so the active Period chip highlight is updated
   if (typeof _ccUpdateTabContext === 'function') {
     _ccUpdateTabContext(window._ccView || 'lines');
   }
+  return renderPromise;
 };
 window.setCCBandsMode = function(mode) {
   window._ccBandsMode = mode; // 'zscore' | 'raw'
   const data = window._pricesSorted;
   const selected = window._compareZones || new Set(['FR']);
+  let renderPromise = null;
   if (data && (window._ccView || 'lines') === 'bands') {
-    renderCCBands(data, selected);
+    renderPromise = renderCCBands(data, selected);
   }
   // Refresh tabbar so the active Mode pill highlight is updated
   if (typeof _ccUpdateTabContext === 'function') {
     _ccUpdateTabContext(window._ccView || 'lines');
   }
+  return renderPromise;
 };
 // Toggle a single zone's visibility in the Z-score chart
 window.toggleCCBandsZone = function(code) {
