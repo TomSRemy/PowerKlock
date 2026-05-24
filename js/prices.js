@@ -1721,9 +1721,9 @@ function buildHourlyDetail(idx, z) {
 
     <!-- ═══ Filters bar · band selector + actions ═══ -->
     <div class="pk-filters-bar">
-      <div style="display:flex;align-items:center;gap:5px">
+      <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
-        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="row-band-pills-${idx}">
+        <div style="display:inline-flex;gap:4px" id="row-band-pills-${idx}">
           ${_rowBandPillsHTML(idx)}
         </div>
       </div>
@@ -2030,15 +2030,13 @@ const _ROW_BAND_OPTIONS = [
 function _rowBandPillsHTML(idx) {
   window._drillBandWindow = window._drillBandWindow || {};
   const cur = window._drillBandWindow[idx] || 'off';
-  return _ROW_BAND_OPTIONS.map(opt => {
-    const isOn = opt.key === cur;
-    const isOff = opt.key === 'off';
-    return `<button onclick="event.stopPropagation();setRowBandWindow(${idx},'${opt.key}')" data-win="${opt.key}"
-      style="padding:3px 8px;font-size:10px;color:${isOn?'#14D3A9':(isOff?'#5A6B7E':'#7A93AB')};
-             background:${isOn?'rgba(20,211,169,0.18)':'transparent'};
-             border:none;border-radius:3px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;cursor:pointer;transition:all .15s"
-    >${opt.label}</button>`;
-  }).join('');
+  // Universal pill template (pkPill) for visual consistency across all sub-toggles.
+  return _ROW_BAND_OPTIONS.map(opt => window.pkPill({
+    label:    opt.label,
+    active:   opt.key === cur,
+    onClick:  `event.stopPropagation();setRowBandWindow(${idx},'${opt.key}')`,
+    dataAttr: `data-win="${opt.key}"`,
+  })).join('');
 }
 
 function setRowBandWindow(idx, key) {
@@ -3375,7 +3373,9 @@ function ccOpenFullscreen() {
       font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:capitalize;
     ">${v}</button>`).join('');
 
-  // ─── Build sub-toggle (Mode for Bands) ───
+  // ─── Build sub-toggle (Mode for Bands).
+  // Uses window.pkPill for the same visual style as the inline Cross-zone
+  // sub-toggle (rounded capsules, JetBrains Mono, teal accent). ──
   let subToggleHtml = '';
   let subToggleLabel = '';
   if (view === 'bands') {
@@ -3385,18 +3385,16 @@ function ccOpenFullscreen() {
       { id: 'raw',    label: 'Raw' },
     ];
     const curMode = window._ccBandsMode || 'zscore';
-    subToggleHtml = modes.map(m => `
-      <button onclick="Promise.resolve(setCCBandsMode('${m.id}')).then(()=>ccRefreshFullscreen())" style="
-        padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
-        color:${m.id === curMode ? '#14D3A9' : '#7A93AB'};
-        background:${m.id === curMode ? 'rgba(20,211,169,0.18)' : 'transparent'};
-        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;
-      ">${m.label}</button>`).join('');
+    subToggleHtml = modes.map(m => window.pkPill({
+      label:   m.label,
+      active:  m.id === curMode,
+      onClick: `Promise.resolve(setCCBandsMode('${m.id}')).then(()=>ccRefreshFullscreen())`,
+    })).join('');
   }
   const subToggleBlock = subToggleHtml ? `
-    <div style="display:flex;align-items:center;gap:5px">
+    <div style="display:flex;align-items:center;gap:6px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">${subToggleLabel}</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subToggleHtml}</div>
+      <div style="display:inline-flex;gap:4px">${subToggleHtml}</div>
     </div>` : '';
 
   // ─── Baseline block (for Spread view only) ───
@@ -3449,14 +3447,15 @@ function ccOpenFullscreen() {
       ${subToggleBlock}
     </div>`;
 
-  // ─── Filters: Date | View+SubToggle | Period | Baseline ──
+  // Filters order: View+SubToggle FIRST (fixed left, never shifts when
+  // graph changes), then Date, Period, Baseline.
   const filtersHtml = `
+    ${viewAndSubToggleBlock}
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
       <input type="date" id="fs-cc-date-input" value="${currentDateISO}" max="${todayISO}"
         style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
     </div>
-    ${viewAndSubToggleBlock}
     ${periodBlock}
     ${baselineBlock}
     ${extraHtml}`;
@@ -5077,6 +5076,12 @@ function openRowFullscreen(idx) {
   const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
 
   const filtersHtml = `
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
+      <div style="display:inline-flex;gap:4px" id="fs-row-band-pills-${idx}">
+        ${_rowBandPillsHTML(idx)}
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
       <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
@@ -5087,12 +5092,6 @@ function openRowFullscreen(idx) {
       <select id="fs-row-zone-select-${idx}" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
         ${zoneOptions}
       </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Band</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px" id="fs-row-band-pills-${idx}">
-        ${_rowBandPillsHTML(idx)}
-      </div>
     </div>`;
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
