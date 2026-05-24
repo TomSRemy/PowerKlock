@@ -2400,6 +2400,8 @@ function _buildHoVerdict(st) {
   const phrase = `${level}, ${vol}`;
   return `<span title="${tooltip.replace(/"/g,'&quot;')}" style="cursor:help"><span style="color:${dotColor};margin-right:6px">●</span><span style="color:var(--tx)">${phrase}</span><span style="color:var(--tx3)">${secondary}</span></span>`;
 }
+// Exposed on window so prices.js (Daily drill) can call the same verdict builder.
+if (typeof window !== 'undefined') window._buildHoVerdict = _buildHoVerdict;
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONTEXTUAL BREAKDOWN MODULE
@@ -3225,37 +3227,26 @@ function _openHoRow(zone, series, st) {
   detail.id = 'ho-detail-row';
   // Outer wrap: same style as Daily (no extra inner background)
   detail.innerHTML = `
-    <td colspan="12" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
+    <td colspan="12" style="padding:0;background:#141a22;border-left:3px solid var(--acc);border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
-        <!-- ═══ Drill row header · unified template ═══
-             Eyebrow (mono teal) · Title (Inter bold 18px) · Subtitle (mono tx3)
-             FS button + Close button on the right.
-             Source-of-truth: see drill-template.html in the design references.
-             The dynamic chart-title-block below is kept for tab-specific subtitles
-             (Lines vs YoY vs Volatility vs Distribution) — it complements this header. -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px">
-          <div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              Historical <span style="color:var(--tx3);font-weight:400">·</span> ${flag} ${zone} <span style="color:var(--tx3);font-weight:400">·</span> Single-zone detail
+        <!-- ═══ Drill row header · uses pk-section-* classes ═══ -->
+        <div class="pk-section-header">
+          <div class="pk-section-header-text">
+            <div class="pk-eyebrow">
+              Historical <span class="pk-sep">·</span> ${flag} ${zone} <span class="pk-sep">·</span> Single-zone detail
             </div>
-            <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;margin-bottom:2px">
-              ${country}
-            </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);font-weight:400">
-              ${periodTxt} · ENTSO-E
-            </div>
+            <div class="pk-section-title">${country}</div>
+            <div class="pk-section-subtitle">${periodTxt} · ENTSO-E</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-            <button onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
-            <button onclick="event.stopPropagation();_closeHoRow()"
-              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:5px 11px;font-size:10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          <div class="pk-section-header-actions">
+            <button class="pk-btn-primary" onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen">⛶ Fullscreen</button>
+            <button class="pk-btn-ghost" onclick="event.stopPropagation();_closeHoRow()" title="Close detail">✕ Close</button>
           </div>
         </div>
 
-        <!-- KPI strip (8 cards) -->
-        <div id="ho-detail-kpi-strip" class="kpi-strip" style="grid-template-columns:repeat(8,1fr);margin-bottom:14px">
+        <!-- KPI strip · 6 cards aligned with Daily drill -->
+        <div id="ho-detail-kpi-strip" class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px">
           <!-- filled by _renderHoDetailKpis -->
         </div>
 
@@ -3265,40 +3256,35 @@ function _openHoRow(zone, series, st) {
         </div>
 
         <!-- ═══ Filters bar · tabs + actions ═══ -->
-        <div style="display:flex;align-items:center;gap:10px;margin:8px 0 8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--bd)">
+        <div class="pk-filters-bar">
           <!-- Tabs bar: Lines / YoY / Weekday / Volatility / Distribution -->
           <div id="ho-detail-tabs-bar" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:3px;flex-wrap:wrap;align-self:flex-start;width:max-content;max-width:100%"></div>
 
           <!-- Generic per-tab submenu slot (YoY pills, Volatility metrics, Distribution modes, etc.) -->
           <div id="ho-detail-tab-submenu" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;padding-left:4px"></div>
 
-          <!-- Spacer so actions stay right-aligned -->
-          <div style="flex:1"></div>
+          <div class="pk-filters-bar-spacer"></div>
 
-          <!-- Actions group: Y-presets · Reset · PNG -->
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <!-- Tab-specific toggle slot (legacy, kept hidden) -->
-            <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
-            <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
-              <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
-                style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
-              <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
-                style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
-              <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
-                style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
-            </div>
-            <button id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard"
-              style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--tx3);padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">↺</button>
-            <button onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
+          <!-- Y-presets + Reset + PNG -->
+          <!-- Tab-specific toggle slot (legacy, kept hidden) -->
+          <div id="ho-detail-toggle-slot" style="display:none;gap:3px;border-right:1px solid rgba(255,255,255,0.25);padding-right:10px;margin-right:6px"></div>
+          <div id="ho-detail-ypresets-wrap" style="display:flex;gap:3px;border-right:1px solid var(--bd);padding-right:6px;margin-right:2px">
+            <button data-ho-preset="focus" onclick="event.stopPropagation();_hoSetYPreset('focus')" title="Tight Y axis around rolling trend (Daily avg stays visible)"
+              style="background:${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='focus')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='focus')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Focus</button>
+            <button data-ho-preset="standard" onclick="event.stopPropagation();_hoSetYPreset('standard')" title="Default Y axis (balanced)"
+              style="background:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='standard'||!window._HO_YPRESET)?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Standard</button>
+            <button data-ho-preset="all" onclick="event.stopPropagation();_hoSetYPreset('all')" title="Full Y range — shows all outliers"
+              style="background:${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.15)':'transparent'};border:1px solid ${(window._HO_YPRESET==='all')?'rgba(20,211,169,0.4)':'rgba(255,255,255,0.15)'};color:${(window._HO_YPRESET==='all')?'#14D3A9':'var(--tx3)'};padding:3px 8px;font-size:9px;border-radius:3px;cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;text-transform:uppercase">All</button>
           </div>
+          <button class="pk-btn-ghost" id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard">↺ Reset</button>
+          <button class="pk-btn-primary" onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG">📸 PNG</button>
         </div>
 
         <!-- Tab-specific chart title block (eyebrow + title + subtitle).
              Differs from the header above: this one changes with the active tab
              (Lines vs YoY vs Volatility etc.), while the header above is static. -->
         <div id="ho-detail-title-block" style="margin-top:14px;margin-bottom:8px">
-          <div id="ho-detail-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
+          <div id="ho-detail-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
           <div id="ho-detail-title" style="font-family:'Inter',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
           <div id="ho-detail-subtitle" style="font-family:'Inter',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
         </div>
@@ -3307,6 +3293,9 @@ function _openHoRow(zone, series, st) {
         <div style="position:relative;height:340px;margin-bottom:4px">
           <canvas id="ho-detail-chart" style="width:100%;height:340px"></canvas>
         </div>
+
+        <!-- Analyst banner anchor · unified with Daily drill (fixed div, JS fills innerHTML) -->
+        <div id="ho-detail-analyst-banner"></div>
 
         <!-- Monthly breakdown collapsible (replaces standalone Block 4) -->
         <details id="ho-detail-breakdown-details" style="margin-top:12px" open>
@@ -3431,7 +3420,12 @@ async function _renderHoDetailKpis(zone, series, st) {
     return `<span style="color:${colr}">${arrow} ${sign}${pct.toFixed(1)}% vs Y-1${badge}</span>`;
   };
 
+  // ─── 6 cards aligned with Daily drill ─────────────────────────────────
+  // 1. Avg  ·  2. Peak/Off-peak (merged)  ·  3. Extremes (+neg meta)
+  // 4. Volatility σ  ·  5. Spread intraday  ·  6. Mix
+  // Always exactly 6 cards (Mix shows "--" if data unavailable, for symmetry).
   const cards = [
+    // 1. Avg
     {
       key: 'avg',
       cls: cls(st.avg, ref?.avg, ystat),
@@ -3439,69 +3433,64 @@ async function _renderHoDetailKpis(zone, series, st) {
       value: `${fmt(st.avg)}<span class="kpi-unit">€/MWh</span>`,
       metaHtml: meta(st.avg, ref?.avg, ystat),
     },
+    // 2. Peak / Off-peak (merged 2-line card)
     {
-      key: 'peak',
-      cls: cls(st.peakAvg, ref?.peakAvg, ystat),
-      label: 'Peak avg',
-      value: `${fmt(st.peakAvg)}<span class="kpi-unit">€/MWh</span>`,
-      metaHtml: meta(st.peakAvg, ref?.peakAvg, ystat),
+      key: 'peakoff',
+      cls: 'kpi-flat',
+      label: 'Peak / Off-peak',
+      customHtml: `
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">
+          ▲ ${fmt(st.peakAvg)}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">peak avg</div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">
+          ▼ ${fmt(st.offAvg)}<span style="font-size:9px;color:var(--tx3);margin-left:3px;font-weight:400">€/MWh</span>
+        </div>
+        <div style="font-size:9px;color:var(--tx3)">off-peak avg</div>
+      `,
     },
-    {
-      key: 'off',
-      cls: cls(st.offAvg, ref?.offAvg, ystat),
-      label: 'Off-peak avg',
-      value: `${fmt(st.offAvg)}<span class="kpi-unit">€/MWh</span>`,
-      metaHtml: meta(st.offAvg, ref?.offAvg, ystat),
-    },
-    {
-      key: 'spread',
-      cls: clsSpread(st.intradaySpread, ref?.intradaySpread, ystat),
-      label: 'Spread intraday',
-      value: `${fmt(st.intradaySpread)}<span class="kpi-unit">€/MWh</span>`,
-      metaHtml: meta(st.intradaySpread, ref?.intradaySpread, ystat, true),
-      title: 'Average intraday spread (max - min per day) — proxy for BESS arbitrage potential',
-    },
-    {
-      key: 'sigma',
-      cls: cls(st.sigma, ref?.sigma, ystat),
-      label: 'Volatility (σ)',
-      value: `${fmt(st.sigma)}<span class="kpi-unit">€/MWh</span>`,
-      metaHtml: meta(st.sigma, ref?.sigma, ystat),
-      title: 'Volatility = standard deviation of daily average prices over the selected period. Higher σ means prices swing more day-to-day. Rule of thumb: <15 stable · 15-30 moderate · >30 volatile.',
-    },
+    // 3. Extremes (max ▲ + min ▼ + neg days/hours in meta)
     {
       key: 'extremes',
       cls: 'kpi-flat',
       label: 'Extremes',
-      // Custom 2-line layout instead of single value
       customHtml: `
         <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#14D3A9;line-height:1.15">▲ ${fmt(st.max)}<span style="font-size:9px;color:var(--tx3);margin-left:3px">€/MWh</span></div>
         <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">${fmtDate(st.maxDate)}</div>
         <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ED6965;line-height:1.15">▼ ${fmt(st.min)}<span style="font-size:9px;color:var(--tx3);margin-left:3px">€/MWh</span></div>
-        <div style="font-size:9px;color:var(--tx3)">${fmtDate(st.minDate)}</div>
+        <div style="font-size:9px;color:var(--tx3)">${fmtDate(st.minDate)}${st.negH != null ? ' · ' + _fmtNegH(st.negH) + ' neg' : ''}</div>
       `,
     },
+    // 4. Volatility σ
     {
-      key: 'negh',
-      cls: cls(st.negH, ref?.negH, ystat),
-      label: 'Neg hours',
-      value: _fmtNegH(st.negH),
-      metaHtml: meta(st.negH, ref?.negH, ystat),
+      key: 'sigma',
+      cls: cls(st.sigma, ref?.sigma, ystat),
+      label: 'Volatility σ',
+      value: `${fmt(st.sigma)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.sigma, ref?.sigma, ystat),
+      title: 'Volatility = standard deviation of daily average prices over the selected period. Higher σ means prices swing more day-to-day. Rule of thumb: <15 stable · 15-30 moderate · >30 volatile.',
     },
-    // MIX card: only show when at least one of renewable share or dominant fuel
-    // is available — otherwise the card is "-- / --" and adds no value.
-    ...((st.renPctAvg != null || st.domFuel) ? [{
+    // 5. Spread intraday
+    {
+      key: 'spread',
+      cls: clsSpread(st.intradaySpread, ref?.intradaySpread, ystat),
+      label: 'Spread',
+      value: `${fmt(st.intradaySpread)}<span class="kpi-unit">€/MWh</span>`,
+      metaHtml: meta(st.intradaySpread, ref?.intradaySpread, ystat, true),
+      title: 'Average intraday spread (max - min per day) — proxy for BESS arbitrage potential',
+    },
+    // 6. Mix (renewable + dominant fuel) — always shown (shows "--" if data missing)
+    {
       key: 'mix',
       cls: 'kpi-flat',
       label: 'Mix',
-      // Custom 2-line layout: each line explicitly labelled
       customHtml: `
-        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">${renHtml}<span style="font-size:9px;color:var(--tx3);margin-left:5px;font-weight:400">renewable share</span></div>
+        <div style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.15">${renHtml}<span style="font-size:9px;color:var(--tx3);margin-left:5px;font-weight:400">renewable</span></div>
         <div style="font-size:9px;color:var(--tx3);margin-bottom:4px">(W + S + H + B)</div>
         <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${fuelColor};line-height:1.15">${fuelLabel}</div>
         <div style="font-size:9px;color:var(--tx3)">dominant fuel</div>
       `,
-    }] : []),
+    },
   ];
 
   container.innerHTML = cards.map(c => {
@@ -3555,7 +3544,7 @@ function _openHoFullscreen(zone) {
   // so we re-clone after that finishes via the wire callback below).
   const inlineKpis = document.getElementById('ho-detail-kpi-strip');
   const kpisHtml = inlineKpis
-    ? `<div class="kpi-strip" style="grid-template-columns:repeat(8,1fr);width:100%;height:100%">${inlineKpis.innerHTML}</div>`
+    ? `<div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);width:100%;height:100%">${inlineKpis.innerHTML}</div>`
     : '<div style="color:var(--tx3);font-size:11px;padding:10px">Loading KPIs…</div>';
 
   // ─── Sub-tabs (Lines / YoY / Weekday / Volatility / Distribution) ─────
@@ -4517,7 +4506,14 @@ function _renderAnalystBanner(html) {
       pane.appendChild(banner);
     }
   } else {
-    // Inline: insert in the canvas wrapper's parent (the chart container)
+    // Inline: use the fixed anchor div in the drill DOM (#ho-detail-analyst-banner).
+    // Unified mechanism with Daily drill (anchor + innerHTML). Falls back to the
+    // legacy chart-parent insertion if the anchor isn't found (defensive).
+    const anchor = document.getElementById('ho-detail-analyst-banner');
+    if (anchor) {
+      anchor.innerHTML = banner.outerHTML;
+      return;
+    }
     const wrap = canvas.parentNode;
     const container = wrap ? wrap.parentNode : null;
     if (!wrap || !container) return;
