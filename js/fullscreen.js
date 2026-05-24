@@ -245,9 +245,15 @@
         padding: 10px; display: flex; flex-direction: column;
       }
       .pk-fs-filters {
-        flex-shrink: 0; display: flex; justify-content: flex-end;
+        flex-shrink: 0; display: flex; justify-content: space-between;
         align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
       }
+      /* Two halves: View+SubToggle stay LEFT (fixed), all other filters go RIGHT. */
+      .pk-fs-filters-left,
+      .pk-fs-filters-right {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      }
+      .pk-fs-filters-right { margin-left: auto; }
       .pk-fs-chart-wrap {
         flex: 1; position: relative; min-height: 0;
       }
