@@ -3406,12 +3406,31 @@ function ccOpenFullscreen() {
       </div>`;
   }
 
+  // ─── Period block (only for Bands view: history window for distribution) ──
+  let periodBlock = '';
+  if (view === 'bands') {
+    const curPeriod = window._ccBandsPeriod || '1M';
+    const periods = ['7D','1M','3M','6M','YTD','1Y'];
+    const periodPills = periods.map(p => `
+      <button onclick="Promise.resolve(setCCBandsPeriod('${p}')).then(()=>ccRefreshFullscreen())" style="
+        padding:3px 9px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
+        color:${p === curPeriod ? '#14D3A9' : '#7A93AB'};
+        background:${p === curPeriod ? 'rgba(20,211,169,0.18)' : 'transparent'};
+        font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em;text-transform:uppercase;
+      ">${p}</button>`).join('');
+    periodBlock = `
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${periodPills}</div>
+      </div>`;
+  }
+
   let extraHtml = '';
   if (view === 'bands') {
     extraHtml = `<div id="fs-cc-bands-header" style="width:100%"></div>`;
   }
 
-  // ─── Filters: Date | View | SubToggle/Baseline (Context-first order) ──
+  // ─── Filters: Date | View | SubToggle | Period (Bands) | Baseline (Spread) ──
   const filtersHtml = `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
@@ -3423,13 +3442,17 @@ function ccOpenFullscreen() {
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewTabsHtml}</div>
     </div>
     ${subToggleBlock}
+    ${periodBlock}
     ${baselineBlock}
     ${extraHtml}`;
 
+  // ─── Title : harmonised pattern "Cross-zone — Day-Ahead · <View>" ──
+  const viewLabel = { lines:'Lines', heatmap:'Heatmap', profile:'Profile', bands:'Bands', spread:'Spread' }[view] || 'Lines';
+
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
-    title: `🌍 Cross-zone — Day-Ahead · ${longDate}`,
+    title: `Cross-zone — Day-Ahead · ${viewLabel}`,
     subtitle: `${longDate} · 96 × 15min slots · ENTSO-E`,
-    filenameStem: `powerklock_crosszone_${view}_${currentDateISO}`,
+    filenameStem: `powerklock_daily_crosszone_${view}_${currentDateISO}`,
     storageKey: 'daily-crosszone',
     kpis: kpisHtml ? { html: kpisHtml } : null,
     table: tableHtml ? { html: tableHtml } : null,
@@ -4964,7 +4987,7 @@ function openRowFullscreen(idx) {
   }
 
   const code = z.code;
-  const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[code]) || '';
+  // (FLAG_MAP[code] no longer used in the title per the no-emoji design)
   const country = z.name || code;
   const dateStr = (typeof ccFmtDay === 'function') ? ccFmtDay(window._currentPriceDate) : (window._currentPriceDate || '');
   const longDate = (function(){
@@ -5029,9 +5052,9 @@ function openRowFullscreen(idx) {
     </div>`;
 
   (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
-    title: `${flag} ${code} — ${country}`,
+    title: `${code} — ${country}`,
     subtitle: `${longDate} · 96 × 15min slots · ENTSO-E`,
-    filenameStem: `powerklock_${code}_${window._currentPriceDate || 'today'}`,
+    filenameStem: `powerklock_daily_drill_${code}_${window._currentPriceDate || 'today'}`,
     storageKey: 'daily-drill',
     kpis: { html: kpisHtml },
     table: tableHtml ? { html: tableHtml } : null,
