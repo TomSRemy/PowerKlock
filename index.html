@@ -562,6 +562,105 @@
   }
   .table-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); }
 
+  /* ══════════════════════════════════════════════════════════════════════
+     POWERKLOCK · DESIGN SYSTEM
+     Unified style atoms used across all sections (Daily drill, HO drill,
+     Cross-zone Daily, HMZ, Genmix drill). Pages should compose these
+     classes instead of redefining inline styles.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Section wrapper (drill rows, panel blocks) ── */
+  .pk-section-wrap {
+    background: #141a22;
+    border-left: 3px solid var(--acc);
+    padding: 14px 16px;
+  }
+
+  /* ── Section header : eyebrow + title + subtitle + actions ── */
+  .pk-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .pk-section-header-text { min-width: 0; }
+  .pk-section-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  /* ── Typography atoms ── */
+  .pk-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--acc);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .pk-eyebrow .pk-sep { color: var(--tx3); font-weight: 400; }
+  .pk-section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tx);
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
+    line-height: 1.2;
+  }
+  .pk-section-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--tx3);
+    font-weight: 400;
+  }
+
+  /* ── Button atoms ── */
+  .pk-btn-primary,
+  .pk-btn-ghost {
+    padding: 5px 11px;
+    font-size: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .pk-btn-primary {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    color: var(--tx2);
+  }
+  .pk-btn-primary:hover { border-color: rgba(255,255,255,0.18); color: var(--tx); }
+  .pk-btn-ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--tx3);
+  }
+  .pk-btn-ghost:hover { color: var(--tx2); border-color: rgba(255,255,255,0.25); }
+
+  /* ── Filters bar (controls row with optional dashed separator) ── */
+  .pk-filters-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 12px;
+    flex-wrap: wrap;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--bd);
+  }
+  .pk-filters-bar-spacer { flex: 1; }
+
   table { width: 100%; border-collapse: collapse; }
   thead th {
     font-size: 10px;
@@ -2772,9 +2871,9 @@
           </div>
           <!-- Chart title block · eyebrow + title + subtitle, populated by _ccSetTitle() -->
           <div id="cc-title-block" style="margin:8px 0 8px">
-            <div id="cc-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#14D3A9;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"></div>
-            <div id="cc-title" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.005em;line-height:1.25"></div>
-            <div id="cc-subtitle" style="font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:11px;color:var(--tx2);margin-top:3px;line-height:1.4"></div>
+            <div id="cc-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+            <div id="cc-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
+            <div id="cc-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
           </div>
           <!-- Analyst banner (filled by JS — amber style ◈ + Market read · ABOVE the chart) -->
           <div id="cc-analyst-banner-anchor"></div>
@@ -2916,6 +3015,17 @@
     <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </div>
   <div class="hist-section-body open">
+
+  <!-- ═══ HMZ section header · uses pk-section-* classes ═══ -->
+  <div class="pk-section-header" style="margin-bottom:14px">
+    <div class="pk-section-header-text">
+      <div class="pk-eyebrow">
+        Historical Cross-zone <span class="pk-sep">·</span> Multi-zone overlay
+      </div>
+      <div class="pk-section-title">Compare price dynamics across selected zones</div>
+      <div class="pk-section-subtitle" id="hmz-section-subtitle">— · ENTSO-E</div>
+    </div>
+  </div>
 
   <!-- KPI strip · Compare zones (no redundancy with main Historical strip above) -->
   <div class="kpi-strip" id="hmz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
