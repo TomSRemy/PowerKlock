@@ -3551,7 +3551,9 @@ function _openHoFullscreen(zone) {
 
   // ─── Title / subtitle ──────────────────────────────────────────────────
   // Title is dynamic with the View (sub-tab) name. No emoji per design.
-  const subTabLabel = { lines:'Lines', yoy:'YoY', weekday:'Weekday', volatility:'Volatility', distribution:'Distribution' }[tab] || 'Lines';
+  // We resolve the label from HSZ.tabs (single source of truth for ids+labels).
+  const _hsTab = HSZ.tabs.find(t => t.id === tab);
+  const subTabLabel = (_hsTab && _hsTab.label) || 'Lines';
   const title    = `${zone} — ${country} · ${subTabLabel}`;
   const subtitle = `${periodTxt} · ${series.length} daily slots · ENTSO-E`;
 
@@ -3564,14 +3566,16 @@ function _openHoFullscreen(zone) {
     : '<div style="color:var(--tx3);font-size:11px;padding:10px">Loading KPIs…</div>';
 
   // ─── Sub-tabs (Lines / YoY / Weekday / Volatility / Distribution) ─────
-  const subTabs = ['lines','yoy','weekday','volatility','distribution'];
-  const subTabLabels = { lines:'Lines', yoy:'YoY', weekday:'Weekday', volatility:'Volatility', distribution:'Distribution' };
-  const subTabsHtml = subTabs.map(t => `
-    <button data-ho-subtab="${t}" style="
+  // Use HSZ.tabs as the single source of truth — its ids ('vol', 'dist') are
+  // what _hszRenderTab and the inline tab bar expect. Previously we used
+  // 'volatility'/'distribution' here, which broke the dispatcher (no match in
+  // _hszRenderTab → blank chart).
+  const subTabsHtml = HSZ.tabs.map(t => `
+    <button data-ho-subtab="${t.id}" style="
       padding:3px 9px;font-size:10px;cursor:pointer;border-radius:3px;
-      color:${t === tab ? '#14D3A9' : 'var(--tx3)'};
-      background:${t === tab ? 'rgba(20,211,169,0.18)' : 'transparent'};
-      border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${subTabLabels[t]}</button>`).join('');
+      color:${t.id === tab ? '#14D3A9' : 'var(--tx3)'};
+      background:${t.id === tab ? 'rgba(20,211,169,0.18)' : 'transparent'};
+      border:none;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.02em">${t.label}</button>`).join('');
 
   // ─── Window pills (7D / 1M / 3M / 6M / YTD / 1Y / 2Y / 5Y / All) ───────
   const winKey = HIST.windows['ho'] || '3M';
@@ -3623,7 +3627,9 @@ function _openHoFullscreen(zone) {
       <div id="fs-ho-ypresets" style="display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${yPresetsHtml}</div>
     </div>` : '';
 
-  // ─── Filters HTML (Zone | View | Period | Y-axis | submenu) ────────────
+  // ─── Filters HTML (Zone | View+SubMenu | Period | Y-axis) ────────────
+  // View and its sub-menu (YoY modes, Volatility metric, Distribution mode)
+  // are grouped in a single flex container so they form a visual block.
   const filtersHtml = `
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Zone</span>
@@ -3631,16 +3637,18 @@ function _openHoFullscreen(zone) {
         ${zoneOptions}
       </select>
     </div>
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
-      <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+        <div id="fs-ho-subtabs" style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${subTabsHtml}</div>
+      </div>
+      <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:4px;flex-wrap:wrap"></div>
     </div>
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
       <div id="fs-ho-windows" style="display:inline-flex;gap:3px;flex-wrap:wrap">${winPillsHtml}</div>
     </div>
-    ${yAxisBlock}
-    <div id="fs-ho-tab-submenu" style="display:none;align-items:center;gap:6px;flex-wrap:wrap"></div>`;
+    ${yAxisBlock}`;
 
   // ─── Table · breakdown with Monthly/Daily toggle (Lines tab only) ─────
   const breakdownMode = window._HO_BREAKDOWN_MODE || 'monthly';
@@ -9479,13 +9487,21 @@ function hmzOpenFullscreen() {
   }
 
   // ─── Filters: Baseline | View | SubToggle | Period (Context-first order) ──
+  // ─── View + SubToggle groupés visuellement (option B mockup) ──
+  // Les deux pills bars sont collées via un container flex gap:6px,
+  // formant un bloc "View + Granularity/Mode" cohérent.
+  const viewAndSubToggleBlock = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${tabsHtml}</div>
+      </div>
+      ${subToggleBlock}
+    </div>`;
+
   const filtersHtml = `
     ${baselineBlock}
-    <div style="display:flex;align-items:center;gap:5px">
-      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
-      <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${tabsHtml}</div>
-    </div>
-    ${subToggleBlock}
+    ${viewAndSubToggleBlock}
     <div style="display:flex;align-items:center;gap:5px">
       <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Period</span>
       <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px;flex-wrap:wrap">${windowsHtml}</div>
@@ -9537,8 +9553,9 @@ function _hmzFsIsOpen() {
 }
 
 function hmzRefreshFullscreen() {
-  // Hot-swap via pkOpenOrUpdate
-  requestAnimationFrame(() => hmzOpenFullscreen());
+  // Hot-swap via pkOpenOrUpdate. Caller has already awaited the render
+  // promise, so the inline HIST.charts['hmz-canvas'] is up to date.
+  hmzOpenFullscreen();
 }
 window.hmzRefreshFullscreen = hmzRefreshFullscreen;
 
