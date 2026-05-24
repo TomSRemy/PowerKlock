@@ -187,7 +187,8 @@ function setHistWindow(key, window, btn) {
     }
   }
 
-  // Re-render
+  // Re-render. Capture the promise (renderHistMulti is async) so callers
+  // (especially FS onclick wrappers) can wait before refreshing the FS.
   const renders = {
     'spot':      renderHistSpot,
     'spread':    renderHistSpread,
@@ -205,7 +206,7 @@ function setHistWindow(key, window, btn) {
     'hmz':       renderHistMulti,
     'hms':       renderHistMonthlyTable,
   };
-  if (renders[key]) renders[key]();
+  const renderPromise = renders[key] ? renders[key]() : null;
 
   // If the fullscreen overlay is open on Historical, rebuild it so the FS chart
   // and KPIs reflect the new window (the overlay snapshots the filtered series
@@ -217,6 +218,7 @@ function setHistWindow(key, window, btn) {
       setTimeout(() => _openHoFullscreen(fsZone), 30);
     }
   }
+  return renderPromise;
 }
 
 // Returns true if a Historical fullscreen overlay is currently open.
@@ -7752,7 +7754,9 @@ function setHistMultiTab(tabId) {
   HMZ.tab = tabId;
   buildHistMultiTabs();
   _hmzSetTitle(tabId);
-  renderHistMulti();
+  // Return the promise so callers (e.g. FS onclick) can wait for the
+  // async rebuild before refreshing the fullscreen.
+  return renderHistMulti();
 }
 window.setHistMultiTab = setHistMultiTab;
 
@@ -7822,7 +7826,7 @@ function buildHistMultiTabs() {
 
 function setHmzBaseline(zone) {
   HIST.hmzBaseline = zone;
-  renderHistMulti();
+  return renderHistMulti();
 }
 window.setHmzBaseline = setHmzBaseline;
 
@@ -9372,7 +9376,7 @@ function hmzOpenFullscreen() {
 
   // Filters: window selector + view tabs + view-specific extras
   const windowsHtml = ['7D','1M','3M','6M','YTD','1Y','2Y','5Y','All'].map(wk => `
-    <button onclick="setHistWindow('hmz','${wk}',this);setTimeout(()=>{hmzRefreshFullscreen();},120)" style="
+    <button onclick="Promise.resolve(setHistWindow('hmz','${wk}',this)).then(()=>hmzRefreshFullscreen())" style="
       padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
       color:${wk === w ? '#14D3A9' : '#7A93AB'};
       background:${wk === w ? 'rgba(20,211,169,0.18)' : 'transparent'};
@@ -9384,7 +9388,7 @@ function hmzOpenFullscreen() {
     { id:'bands', label:'Bands' }, { id:'spread', label:'Spread' }
   ];
   const tabsHtml = tabs.map(t => `
-    <button onclick="setHistMultiTab('${t.id}');setTimeout(()=>{hmzRefreshFullscreen();},80)" style="
+    <button onclick="Promise.resolve(setHistMultiTab('${t.id}')).then(()=>hmzRefreshFullscreen())" style="
       padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;
       color:${t.id === view ? '#14D3A9' : '#7A93AB'};
       background:${t.id === view ? 'rgba(20,211,169,0.18)' : 'transparent'};
@@ -9396,7 +9400,7 @@ function hmzOpenFullscreen() {
     const refCode = (window.HIST && HIST.hmzBaseline) || (selectedZones.includes('FR') ? 'FR' : selectedZones[0]);
     const refChips = selectedZones.map(code => {
       const isOn = code === refCode;
-      return `<button onclick="setHmzBaseline('${code}');setTimeout(()=>{hmzRefreshFullscreen();},80)" style="
+      return `<button onclick="Promise.resolve(setHmzBaseline('${code}')).then(()=>hmzRefreshFullscreen())" style="
         padding:3px 8px;font-size:10px;cursor:pointer;border-radius:3px;
         color:${isOn ? '#14D3A9' : '#7A93AB'};
         background:${isOn ? 'rgba(20,211,169,0.18)' : 'transparent'};
