@@ -594,6 +594,11 @@
     flex-wrap: wrap;
   }
 
+  /* Vertical rhythm: 14px between all major blocks (header, KPI strip,
+     verdict, filters bar, chart, banner). Use .pk-block-gap for explicit
+     spacers; KPI strip and verdict declare their own margin-bottom inline. */
+  .pk-block-gap { margin-bottom: 14px; }
+
   /* ── Typography atoms ── */
   .pk-eyebrow {
     font-family: 'JetBrains Mono', monospace;
@@ -649,15 +654,14 @@
   }
   .pk-btn-ghost:hover { color: var(--tx2); border-color: rgba(255,255,255,0.25); }
 
-  /* ── Filters bar (controls row with optional dashed separator) ── */
+  /* ── Filters bar (controls row) ── */
   .pk-filters-bar {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 8px 0 12px;
+    margin: 0 0 14px;
     flex-wrap: wrap;
-    padding: 6px 0;
-    border-bottom: 1px dashed var(--bd);
+    padding: 0;
   }
   .pk-filters-bar-spacer { flex: 1; }
 
@@ -3016,17 +3020,6 @@
   </div>
   <div class="hist-section-body open">
 
-  <!-- ═══ HMZ section header · uses pk-section-* classes ═══ -->
-  <div class="pk-section-header" style="margin-bottom:14px">
-    <div class="pk-section-header-text">
-      <div class="pk-eyebrow">
-        Historical Cross-zone <span class="pk-sep">·</span> Multi-zone overlay
-      </div>
-      <div class="pk-section-title">Compare price dynamics across selected zones</div>
-      <div class="pk-section-subtitle" id="hmz-section-subtitle">— · ENTSO-E</div>
-    </div>
-  </div>
-
   <!-- KPI strip · Compare zones (no redundancy with main Historical strip above) -->
   <div class="kpi-strip" id="hmz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px">
     <div class="kpi-card kpi-flat" id="hmz-kpi-zones">
@@ -3072,6 +3065,14 @@
          left/transform set in JS by pkPositionSubToggle().
          display:none until populated by the active-tab populator. -->
     <div id="hmz-sub-toggle" style="display:none;position:absolute;top:100%;margin-top:4px;left:0;white-space:nowrap;z-index:5;gap:4px"></div>
+  </div>
+
+  <!-- Chart title block · eyebrow + title + subtitle, populated by _hmzSetTitle().
+       Mirrors cc-title-block (same structure, same positioning after tabs). -->
+  <div id="hmz-title-block" style="margin:8px 0 8px">
+    <div id="hmz-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+    <div id="hmz-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
+    <div id="hmz-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
   </div>
 
   <!-- Analyst banner anchor (filled by JS · ABOVE the chart) -->
