@@ -393,12 +393,74 @@ function _gmdczDispatchRender() {
   _gmdczRenderKpis();
   const view = window._gmdczView || 'ranking';
   switch (view) {
-    case 'ranking':  return _gmdczRenderRanking();
-    case 'heatmap':  return _gmdczRenderHeatmap();
-    case 'profiles': return _gmdczRenderProfiles();
-    case 'spread':   return _gmdczRenderSpread();
-    default:         return _gmdczRenderRanking();
+    case 'ranking':  _gmdczRenderRanking(); break;
+    case 'heatmap':  _gmdczRenderHeatmap(); break;
+    case 'profiles': _gmdczRenderProfiles(); break;
+    case 'spread':   _gmdczRenderSpread(); break;
+    default:         _gmdczRenderRanking();
   }
+
+  // Market read banner · context-aware per view
+  const bannerAnchor = document.getElementById('gmdcz-analyst-banner-anchor');
+  if (bannerAnchor) bannerAnchor.innerHTML = _gmdczBuildBannerHtml(view);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MARKET READ generator · cross-zone (per view)
+// ─────────────────────────────────────────────────────────────────
+function _gmdczBuildBannerHtml(view) {
+  const data = window._genmixData || {};
+  const zones = Object.keys(data).filter(z => data[z]?.total > 0);
+  if (!zones.length || typeof window._gmBuildMarketBanner !== 'function') return '';
+
+  const metric = window._gmdczMetric || 'ren';
+  const ref    = window._gmdczRef    || 'FR';
+
+  const ranksRen = _gmdczRanking('ren');
+  const ranksCo2 = _gmdczRanking('co2');
+  const topRen   = ranksRen[0] || { zone:'--', value:0 };
+  const cleanCo2 = ranksCo2[0] || { zone:'--', value:0 };
+  const fr       = _gmdczValueFor('FR', 'ren');
+  const frCo2    = _gmdczValueFor('FR', 'co2');
+  const renAvg   = ranksRen.length ? ranksRen.reduce((s,r)=>s+r.value,0) / ranksRen.length : 0;
+  const co2Avg   = ranksCo2.length ? ranksCo2.reduce((s,r)=>s+r.value,0) / ranksCo2.length : 0;
+
+  if (view === 'ranking') {
+    const metricLbl = _gmdczMetricLabel(metric);
+    const top = _gmdczRanking(metric)[0];
+    const bottom = _gmdczRanking(metric)[_gmdczRanking(metric).length - 1];
+    const unit = _gmdczMetricUnit(metric);
+    if (!top || !bottom) return '';
+    const line1 = `Cross-zone ranking on <strong style="color:#fff">${metricLbl}</strong> · top: <strong style="color:#fff">${top.zone}</strong> ${top.value.toFixed(1)}${unit}, bottom: <strong style="color:#fff">${bottom.zone}</strong> ${bottom.value.toFixed(1)}${unit}.`;
+    const spread = Math.abs(top.value - bottom.value);
+    const verdict = `Spread max-min: ${spread.toFixed(1)} ${unit}. ${metric === 'co2' ? 'Wide carbon gap across EU today — geographic arbitrage on low-carbon offtake.' : 'REN/share dispersion drives capture-price differential across zones.'}`;
+    return window._gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (view === 'heatmap') {
+    const line1 = `EU mix structure today · top REN: <strong style="color:#fff">${topRen.zone}</strong> (${topRen.value.toFixed(0)}%). Cleanest grid: <strong style="color:#fff">${cleanCo2.zone}</strong> (${cleanCo2.value.toFixed(0)} g/kWh).`;
+    const verdict = `Heatmap intensity highlights fuel concentrations. Nuclear-heavy zones anchor low CO₂; wind/solar zones swing with weather.`;
+    return window._gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (view === 'profiles') {
+    const line1 = `24h overlay on <strong style="color:#fff">${_gmdczMetricLabel(metric)}</strong> across ${zones.length} zones · FR highlighted in bold.`;
+    const verdict = `Look for synchronicity (solar peak ~13h) and divergence (wind patterns). Cross-zone arbitrage opportunities live where curves cross.`;
+    return window._gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (view === 'spread') {
+    const refVal = _gmdczValueFor(ref, metric);
+    if (refVal == null) return '';
+    const refValFmt = (metric === 'co2') ? refVal.toFixed(0)
+                     : (metric === 'total') ? refVal.toFixed(1)
+                     : refVal.toFixed(1);
+    const line1 = `Spread vs <strong style="color:#fff">${ref}</strong> on ${_gmdczMetricLabel(metric)} · reference value ${refValFmt}${_gmdczMetricUnit(metric)}.`;
+    const verdict = `Positive spread = better than ${ref}. Use this view to size cross-border offtake opportunities relative to your home zone.`;
+    return window._gmBuildMarketBanner({ line1, verdict });
+  }
+
+  return '';
 }
 
 function renderGmdczMain() {
