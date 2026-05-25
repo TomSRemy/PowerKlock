@@ -68,6 +68,66 @@ function _gmCo2Color(g) {
   return '#ED6965';
 }
 
+// ────────────────────────────────────────────────────────────────
+// MARKET READ BANNER (amber, mirrors Prices / Historical pattern)
+// Usage: _gmBuildMarketBanner({ line1: 'observation', verdict: 'interpretation' })
+// ────────────────────────────────────────────────────────────────
+function _gmBuildMarketBanner({ line1, verdict, icon }) {
+  if (!line1) return '';
+  const ICO = icon || '◈';
+  const verdictHtml = verdict
+    ? `<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : ${verdict}</span>`
+    : '';
+  return `<div class="ho-analyst-banner" style="margin-top:14px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">
+    <span style="margin-right:8px">${ICO}</span>${line1}${verdictHtml}
+  </div>`;
+}
+window._gmBuildMarketBanner = _gmBuildMarketBanner;
+
+// ────────────────────────────────────────────────────────────────
+// MARKET READ generator · multi-zone snapshot (Genmix Daily Board)
+// ────────────────────────────────────────────────────────────────
+function _gmBuildMainBannerHtml() {
+  const data = window._genmixData || {};
+  const zones = Object.keys(data).filter(z => data[z]?.total > 0);
+  if (!zones.length) return '';
+
+  const rows = zones.map(z => {
+    const st = _gmStats(data[z]);
+    return st ? { z, ...st } : null;
+  }).filter(Boolean);
+  if (!rows.length) return '';
+
+  const topRen = [...rows].sort((a, b) => b.renPct - a.renPct)[0];
+  const cleanCo2 = [...rows].sort((a, b) => a.co2 - b.co2)[0];
+  const fr = rows.find(r => r.z === 'FR');
+
+  const renAvg = rows.reduce((s, r) => s + r.renPct, 0) / rows.length;
+  const co2Avg = rows.reduce((s, r) => s + r.co2, 0) / rows.length;
+
+  // Line 1 : facts
+  const line1 = `Cleanest grid today: <strong style="color:#fff">${cleanCo2.z}</strong> (${cleanCo2.co2.toFixed(0)} g/kWh). Top renewable: <strong style="color:#fff">${topRen.z}</strong> (${topRen.renPct.toFixed(0)}%, ${(GM_FUEL_META[topRen.dom]?.label || topRen.dom).toLowerCase()}-led). EU avg ${renAvg.toFixed(0)}% REN · ${co2Avg.toFixed(0)} g/kWh.`;
+
+  // Verdict : FR positioning vs EU
+  let verdict = '';
+  if (fr) {
+    const frVsEu = fr.renPct - renAvg;
+    const frVsCo2 = fr.co2 - co2Avg;
+    const renSign = frVsEu >= 0 ? '+' : '';
+    const co2Sign = frVsCo2 >= 0 ? '+' : '';
+    if (frVsCo2 < -50) {
+      verdict = `FR runs ${Math.abs(frVsCo2).toFixed(0)} g/kWh below the EU mean (${renSign}${frVsEu.toFixed(0)}pts REN), keeping its low-carbon edge through nuclear baseload.`;
+    } else if (frVsCo2 < 0) {
+      verdict = `FR slightly below EU mean (${co2Sign}${frVsCo2.toFixed(0)} g/kWh, ${renSign}${frVsEu.toFixed(0)}pts REN). Steady low-carbon footprint.`;
+    } else {
+      verdict = `FR runs +${frVsCo2.toFixed(0)} g/kWh above the EU mean (${renSign}${frVsEu.toFixed(0)}pts REN). Watch the fossil component today.`;
+    }
+  }
+
+  return _gmBuildMarketBanner({ line1, verdict });
+}
+window._gmBuildMainBannerHtml = _gmBuildMainBannerHtml;
+
 // ════════════════════════════════════════════════════════════════
 // BLOCK 1 · Multi-zone live snapshot table
 // ════════════════════════════════════════════════════════════════
@@ -75,7 +135,7 @@ function renderGmMain() {
   const data = window._genmixData;
   if (!data || !Object.keys(data).length) {
     const tbody = document.getElementById('gm-table-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No GenMix data loaded — check genmix.json</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No GenMix data loaded — check genmix.json</td></tr>';
     return;
   }
 
@@ -128,14 +188,12 @@ function renderGmMain() {
     const st  = _gmStats(mix);
     if (!st) return '';
     const renC  = _gmRenColor(st.renPct);
-    const lowCC = _gmRenColor(st.lowCPct);
     const co2C  = _gmCo2Color(st.co2);
     const dom   = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
     return `<tr class="gm-row" data-zone="${z}" style="cursor:pointer">
       <td style="text-align:left">${flagOf(z)} ${z}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${fmt(st.total / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${lowCC};font-weight:600">${fmt(st.lowCPct, 1)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.wind || 0) / 1000)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.solar || 0) / 1000)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.nuclear || 0) / 1000)}</td>
@@ -154,6 +212,19 @@ function renderGmMain() {
     hdrDate.textContent = new Date().toLocaleDateString('en-GB', {
       weekday:'short', day:'2-digit', month:'short', year:'numeric',
     }) + ' · ENTSO-E';
+  }
+
+  // Market read banner (amber, mirrors Prices / Historical pattern)
+  // Anchored below the table inside hs-body-gm-main.
+  const bodyHost = document.getElementById('hs-body-gm-main');
+  if (bodyHost) {
+    let bannerAnchor = document.getElementById('gm-main-banner-anchor');
+    if (!bannerAnchor) {
+      bannerAnchor = document.createElement('div');
+      bannerAnchor.id = 'gm-main-banner-anchor';
+      bodyHost.appendChild(bannerAnchor);
+    }
+    bannerAnchor.innerHTML = _gmBuildMainBannerHtml();
   }
 
   // Click handlers for expand
@@ -236,7 +307,7 @@ function _gmOpenRow(zone) {
   const detail = document.createElement('tr');
   detail.id = 'gm-detail-row';
   detail.innerHTML = `
-    <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
+    <td colspan="10" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
       <div id="gm-detail-inner" style="padding:14px 16px">
 
         <!-- Drill header (pk-section-* pattern, mirrors Day-Ahead / Historical drill) -->
@@ -307,6 +378,9 @@ function _gmOpenRow(zone) {
 
         <!-- Content (rendered per active tab) -->
         <div id="gm-drill-content" style="min-height:320px;margin-bottom:14px"></div>
+
+        <!-- Market read banner (amber, mirrors Prices / Historical · ABOVE the breakdown) -->
+        <div id="gm-drill-banner-anchor"></div>
 
         <!-- Breakdown table (adapts to active tab) -->
         <details style="margin-top:12px" open>
@@ -495,7 +569,82 @@ function _gmDrillDispatchRender(zone) {
     case 'carbon':  _gmDrillRenderCarbon(zone, mix, st);  break;
     case 'netpos':  _gmDrillRenderNetPos(zone, mix, st);  break;
   }
+
+  // Market read banner · context-aware per tab
+  const bannerAnchor = document.getElementById('gm-drill-banner-anchor');
+  if (bannerAnchor) bannerAnchor.innerHTML = _gmDrillBuildBannerHtml(tab, zone, mix, st);
 }
+
+// ─────────────────────────────────────────────────────────────────
+// MARKET READ generator · drill row (per tab)
+// ─────────────────────────────────────────────────────────────────
+function _gmDrillBuildBannerHtml(tab, zone, mix, st) {
+  const country = GM_ZONE_NAMES[zone] || zone;
+  const co2C = _gmCo2Color(st.co2);
+  const co2Verdict = (st.co2 < 50) ? 'very low-carbon' : (st.co2 < 150) ? 'low-carbon' : (st.co2 < 400) ? 'moderate' : 'carbon-intensive';
+
+  if (tab === 'profile') {
+    const synth = window._gmdSynthProfile;
+    const prof = (typeof synth === 'function') ? synth(mix) : null;
+    if (!prof) {
+      const line1 = `${country} total ${(st.total/1000).toFixed(2)} GW · ${st.renPct.toFixed(0)}% REN. Top fuel: <strong style="color:#fff">${GM_FUEL_META[st.dom]?.label || st.dom}</strong> at ${(((mix[st.dom]||0)/st.total)*100).toFixed(0)}%.`;
+      return _gmBuildMarketBanner({ line1 });
+    }
+    const solarPeak = prof.solar ? Math.max(...prof.solar) : 0;
+    const fossilPeak = prof.fossil ? Math.max(...prof.fossil) : 0;
+    const nucBase = prof.nuclear ? (prof.nuclear.reduce((a,b)=>a+b,0) / prof.nuclear.length) : 0;
+    const line1 = `${country} 24h profile · solar peak <strong style="color:#fff">${solarPeak.toFixed(1)} GW</strong>, nuclear baseload <strong style="color:#fff">${nucBase.toFixed(1)} GW</strong>, fossil peak <strong style="color:#fff">${fossilPeak.toFixed(1)} GW</strong>.`;
+    let verdict = '';
+    if (st.renPct >= 60) {
+      verdict = `Wind+solar drive the shape today. Mid-day price softening likely on solar surplus.`;
+    } else if (nucBase > st.total / 2 / 1000) {
+      verdict = `Flat nuclear baseload dominates · prices anchor around marginal fossil ramps morning/evening.`;
+    } else if (st.fosPct > 30) {
+      verdict = `Fossil-heavy day — gas/coal sets marginal price across most slots.`;
+    } else {
+      verdict = `Mixed shape: REN moderate, residual demand on flexible thermal.`;
+    }
+    return _gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (tab === 'mix') {
+    const topF = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
+    const topPct = (((mix[st.dom] || 0) / st.total) * 100).toFixed(0);
+    const line1 = `${country} mix · <strong style="color:#fff">${topF.label}</strong> dominates at ${topPct}% of generation. Renewables ${st.renPct.toFixed(0)}%. Fossil ${st.fosPct.toFixed(0)}%.`;
+    let verdict = '';
+    if (st.fosPct < 5 && st.renPct > 50) {
+      verdict = `Decarbonised mix: very low fossil share. Capture prices for variable REN typically strong on days like today.`;
+    } else if (st.fosPct > 30) {
+      verdict = `Fossil-led mix. Capture rates for wind/solar depressed when REN coincides with high fossil dispatch.`;
+    } else {
+      verdict = `Balanced mix, neither extreme. Watch shifts in dominant fuel through the day.`;
+    }
+    return _gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (tab === 'carbon') {
+    const line1 = `${country} carbon intensity · current snapshot <strong style="color:${co2C}">${Math.round(st.co2)} g/kWh</strong> (${co2Verdict}). REN ${st.renPct.toFixed(0)}%, nuclear ${(((mix.nuclear||0)/st.total)*100).toFixed(0)}%.`;
+    let verdict = '';
+    if (st.co2 < 50) {
+      verdict = `Among the cleanest grids in Europe today. Strong PPA pricing potential for low-carbon offtake here.`;
+    } else if (st.co2 < 150) {
+      verdict = `Solid low-carbon footprint. CO₂ price exposure (EUA cost in spot) limited for thermal margins.`;
+    } else if (st.co2 < 400) {
+      verdict = `Moderate carbon intensity. EUA pass-through becomes material for marginal generators.`;
+    } else {
+      verdict = `High-carbon mix today — EUA cost weighs heavily on the marginal price.`;
+    }
+    return _gmBuildMarketBanner({ line1, verdict });
+  }
+
+  if (tab === 'netpos') {
+    const line1 = `${country} cross-border net position · awaiting ENTSO-E flows endpoint integration.`;
+    return _gmBuildMarketBanner({ line1, verdict: 'Will populate in v2.1.', icon: '⏱' });
+  }
+
+  return '';
+}
+window._gmDrillBuildBannerHtml = _gmDrillBuildBannerHtml;
 
 // ─────────────────────────────────────────────────────────────────
 // VIEW · PROFILE (24h stacked area, uses _gmdSynthProfile from genmix-daily.js)
