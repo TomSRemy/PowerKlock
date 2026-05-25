@@ -3263,110 +3263,18 @@
       </div>
 
       <!-- ════════════════════════════════════════════════════════
-           GENMIX DAILY · BOARD mono-zone (template CC strict)
-           Profile · Mix snapshot · Carbon intensity · Net position
+           GENMIX DAILY · BOARD (template CC strict, mirrors Day-Ahead Board)
+           - KPI strip global (6 cards)
+           - Multi-zone snapshot table
+           - Click on a zone row → drill expand with 4 sub-tabs
+             (Profile / Mix / Carbon / Net pos) — handled in genmix.js
            ════════════════════════════════════════════════════════ -->
-      <div class="hist-section hist-section-strong" id="hs-gmd">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmd')">
+      <div class="hist-section hist-section-strong" id="hs-gm-main">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-gm-main')">
           <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M3 12h18"/></svg>
-            Genmix Daily · Board
-            <span id="gmd-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
-            <span style="font-size:9px;color:#FFFD82;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,253,130,0.10);padding:2px 6px;border-radius:3px;margin-left:8px">new</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open">
-          <!-- KPI strip · 6 cards · BEFORE tabbar (CC pattern) -->
-          <div class="kpi-strip" id="gmd-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:10px"></div>
-
-          <!-- Tabbar · unified .pk-tabbar pattern, same as CC -->
-          <div id="gmd-tabs-bar" class="pk-tabbar">
-            <div class="pk-tabbar-left">
-              <div id="gmd-tabs" class="pk-tabbar-tabs"></div>
-              <!-- Sub-toggle inline (Display, Mode, Compare per view) -->
-              <div id="gmd-sub-toggle" class="pk-tabbar-subtoggle"></div>
-            </div>
-            <div class="pk-tabbar-right">
-              <!-- Tab-contextual chips (Zone picker + Overlay for Profile) -->
-              <div id="gmd-tab-chips" class="pk-tabbar-chips"></div>
-              <button class="pk-btn-primary" onclick="alert('Fullscreen Genmix Daily Board — coming in v2.1')" title="Open in fullscreen (coming soon)">⛶ Fullscreen</button>
-            </div>
-          </div>
-
-          <!-- Chart title block · eyebrow + title + subtitle, populated by JS -->
-          <div id="gmd-title-block" style="margin:8px 0 8px">
-            <div id="gmd-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
-            <div id="gmd-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
-            <div id="gmd-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
-          </div>
-
-          <!-- Analyst banner anchor -->
-          <div id="gmd-analyst-banner-anchor"></div>
-
-          <!-- Content wrap · each view renders into this container -->
-          <div id="gmd-content" style="position:relative;min-height:380px"></div>
-        </div>
-      </div>
-
-      <!-- ════════════════════════════════════════════════════════
-           GENMIX DAILY · CROSS-ZONE · 3 views (template CC strict)
-           Ranking · Profiles · Spread vs reference
-           Map will live in its own dedicated section later.
-           ════════════════════════════════════════════════════════ -->
-      <div class="hist-section hist-section-strong" id="hs-gmdcz">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmdcz')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Cross-zone analysis
-            <span id="gmdcz-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
-            <span style="font-size:9px;color:#FFFD82;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,253,130,0.10);padding:2px 6px;border-radius:3px;margin-left:8px">new</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open">
-          <!-- KPI strip · 5 cards · before tabbar (CC pattern) -->
-          <div class="kpi-strip" id="gmdcz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px"></div>
-
-          <!-- Tabbar (Insta-style) · uses unified .pk-tabbar pattern, same as CC.
-               Sub-toggle is inline to the right of tabs (board pattern). -->
-          <div id="gmdcz-tabs-bar" class="pk-tabbar">
-            <div class="pk-tabbar-left">
-              <div id="gmdcz-tabs" class="pk-tabbar-tabs"></div>
-              <!-- Sub-toggle inline (Metric for all views) -->
-              <div id="gmdcz-sub-toggle" class="pk-tabbar-subtoggle"></div>
-            </div>
-            <div class="pk-tabbar-right">
-              <!-- Tab-contextual chips (Reference picker for Spread view) -->
-              <div id="gmdcz-tab-chips" class="pk-tabbar-chips"></div>
-              <button class="pk-btn-primary" onclick="alert('Fullscreen Genmix Daily Cross-zone — coming in v2.1')" title="Open in fullscreen (coming soon)">⛶ Fullscreen</button>
-            </div>
-          </div>
-
-          <!-- Chart title block · eyebrow + title + subtitle, populated by JS -->
-          <div id="gmdcz-title-block" style="margin:8px 0 8px">
-            <div id="gmdcz-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
-            <div id="gmdcz-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
-            <div id="gmdcz-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
-          </div>
-
-          <!-- Analyst banner anchor (filled by JS later) -->
-          <div id="gmdcz-analyst-banner-anchor"></div>
-
-          <!-- Content wrap · each view renders into this container -->
-          <div id="gmdcz-content" style="position:relative;min-height:420px"></div>
-        </div>
-      </div>
-
-      <!-- ════════════════════════════════════════════════════════
-           BLOCK 1 · MULTI-ZONE LIVE SNAPSHOT TABLE
-           Click a zone row to expand for KPI strip + 2 charts
-           ════════════════════════════════════════════════════════ -->
-      <div class="hist-section" id="hs-gm-main">
-        <div class="hist-section-header open">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22v-6"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m7 20.66 1-1.73"/></svg>
-            Generation Mix · Live snapshot
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            Genmix Daily board
+            <span id="gm-main-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -3432,10 +3340,63 @@
       </div>
 
       <!-- ════════════════════════════════════════════════════════
+           GENMIX DAILY · CROSS-ZONE · 3 views (template CC strict)
+           Ranking · Profiles · Spread vs reference
+           Map will live in its own dedicated section later.
+           ════════════════════════════════════════════════════════ -->
+      <div class="hist-section hist-section-strong" id="hs-gmdcz">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmdcz')">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Cross-zone analysis
+            <span id="gmdcz-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
+            <span style="font-size:9px;color:#FFFD82;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,253,130,0.10);padding:2px 6px;border-radius:3px;margin-left:8px">new</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open">
+          <!-- KPI strip · 5 cards · before tabbar (CC pattern) -->
+          <div class="kpi-strip" id="gmdcz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px"></div>
+
+          <!-- Tabbar (Insta-style) · uses unified .pk-tabbar pattern, same as CC.
+               Sub-toggle is inline to the right of tabs (board pattern). -->
+          <div id="gmdcz-tabs-bar" class="pk-tabbar">
+            <div class="pk-tabbar-left">
+              <div id="gmdcz-tabs" class="pk-tabbar-tabs"></div>
+              <!-- Sub-toggle inline (Metric for all views) -->
+              <div id="gmdcz-sub-toggle" class="pk-tabbar-subtoggle"></div>
+            </div>
+            <div class="pk-tabbar-right">
+              <!-- Tab-contextual chips (Reference picker for Spread view) -->
+              <div id="gmdcz-tab-chips" class="pk-tabbar-chips"></div>
+              <button class="pk-btn-primary" onclick="alert('Fullscreen Genmix Daily Cross-zone — coming in v2.1')" title="Open in fullscreen (coming soon)">⛶ Fullscreen</button>
+            </div>
+          </div>
+
+          <!-- Chart title block · eyebrow + title + subtitle, populated by JS -->
+          <div id="gmdcz-title-block" style="margin:8px 0 8px">
+            <div id="gmdcz-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+            <div id="gmdcz-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
+            <div id="gmdcz-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
+          </div>
+
+          <!-- Analyst banner anchor (filled by JS later) -->
+          <div id="gmdcz-analyst-banner-anchor"></div>
+
+          <!-- Content wrap · each view renders into this container -->
+          <div id="gmdcz-content" style="position:relative;min-height:420px"></div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           BLOCK 1 · MULTI-ZONE LIVE SNAPSHOT TABLE
+           Click a zone row to expand for KPI strip + 2 charts
+           ════════════════════════════════════════════════════════ -->
+      <!-- ════════════════════════════════════════════════════════
            BLOCK 2 · SINGLE ZONE DEEP-DIVE
            Insta tabs: Donut · Bars · Stacked · Capacity factor
            ════════════════════════════════════════════════════════ -->
-      <div class="hist-section" id="hs-gm-single">
+      <div class="hist-section" id="hs-gm-single" style="display:none">
         <div class="hist-section-header open">
           <div class="hist-section-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>
@@ -3478,7 +3439,7 @@
            BLOCK 3 · CROSS-ZONE COMPARE
            Heatmap %fuel + Sorted %REN bar + Auto insights
            ════════════════════════════════════════════════════════ -->
-      <div class="hist-section" id="hs-gm-compare">
+      <div class="hist-section" id="hs-gm-compare" style="display:none">
         <div class="hist-section-header open">
           <div class="hist-section-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -3519,7 +3480,7 @@
            BLOCK 4 · HISTORICAL TRENDS
            Wind + Solar generation time-series over selected window
            ════════════════════════════════════════════════════════ -->
-      <div class="hist-section" id="hs-gm-history">
+      <div class="hist-section" id="hs-gm-history" style="display:none">
         <div class="hist-section-header open">
           <div class="hist-section-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="3 16 9 10 13 14 21 6"/></svg>
