@@ -520,11 +520,14 @@
     padding: 14px 16px;
     transition: border-color 0.15s, border-left-color 0.2s;
   }
-  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips, plus Compare zones strips */
+  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips, plus Compare zones strips, plus Genmix board/drill/cross-zone */
   #kpi-strip .kpi-card,
   #ho-kpi-strip .kpi-card,
   #cc-kpi-strip .kpi-card,
-  #hmz-kpi-strip .kpi-card {
+  #hmz-kpi-strip .kpi-card,
+  #gm-main-kpi-strip .kpi-card,
+  #gm-drill-kpi-strip .kpi-card,
+  #gmdcz-kpi-strip .kpi-card {
     background: #1c242e;
   }
   .kpi-card:hover { border-color: var(--border2); }
@@ -3297,7 +3300,7 @@
         </div>
         <div class="hist-section-body open" id="hs-body-gm-main">
           <!-- KPI strip globale (FR-centric + loaded avg) -->
-          <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">
+          <div class="kpi-strip" id="gm-main-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">
             <div class="kpi-card kpi-flat">
               <div class="kpi-label">FR Total gen</div>
               <div class="kpi-value" id="gm-kpi-fr-total">--<span class="kpi-unit">GW</span></div>
@@ -3330,8 +3333,13 @@
             </div>
           </div>
 
-          <!-- Multi-zone table -->
-          <div class="table-wrap" style="margin-top:0;border-top:none;border-radius:0 0 7px 7px;border:none;background:transparent">
+          <!-- Multi-zone table (uses native .table-wrap + .table-header, same pattern as Prices Day-Ahead) -->
+          <div class="table-wrap" id="gm-main-table-wrap">
+            <div class="table-header" style="flex-wrap:wrap;gap:8px">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <span id="gm-table-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Live generation mix · loading...</span>
+              </div>
+            </div>
             <table id="gm-table" style="font-size:11px;table-layout:fixed">
               <thead>
                 <tr>
@@ -3401,6 +3409,29 @@
 
           <!-- Content wrap · each view renders into this container -->
           <div id="gmdcz-content" style="position:relative;min-height:420px"></div>
+
+          <!-- Cross-zone summary table (mirrors Prices Cross-zone compare-data-table) -->
+          <div class="table-wrap" id="gmdcz-summary-wrap" style="margin-top:8px;border-radius:7px">
+            <div class="table-header" style="flex-wrap:wrap;gap:8px">
+              <span id="gmdcz-summary-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Cross-zone summary · loading...</span>
+            </div>
+            <table id="gmdcz-summary-table" style="font-size:11px;table-layout:fixed">
+              <thead>
+                <tr>
+                  <th style="width:14%;text-align:left">Zone</th>
+                  <th style="width:11%;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:11%;text-align:right" title="% renewables">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                  <th style="width:13%;text-align:right" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                  <th style="width:15%;text-align:left" title="Dominant fuel">Dom. fuel</th>
+                  <th style="width:18%;text-align:right" title="Δ REN vs FR (positive = greener than FR)">Δ REN vs FR<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
+                  <th style="width:18%;text-align:right" title="Δ CO₂ vs FR (positive = dirtier than FR)">Δ CO₂ vs FR<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                </tr>
+              </thead>
+              <tbody id="gmdcz-summary-tbody">
+                <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
