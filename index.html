@@ -520,14 +520,17 @@
     padding: 14px 16px;
     transition: border-color 0.15s, border-left-color 0.2s;
   }
-  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips, plus Compare zones strips, plus Genmix board/drill/cross-zone */
+  /* Lighter background only for the main Daily (#kpi-strip) and Historical (#ho-kpi-strip) strips, plus Compare zones strips, plus Genmix board/drill/cross-zone (Daily + Historical) */
   #kpi-strip .kpi-card,
   #ho-kpi-strip .kpi-card,
   #cc-kpi-strip .kpi-card,
   #hmz-kpi-strip .kpi-card,
   #gm-main-kpi-strip .kpi-card,
   #gm-drill-kpi-strip .kpi-card,
-  #gmdcz-kpi-strip .kpi-card {
+  #gmdcz-kpi-strip .kpi-card,
+  #gmh-main-kpi-strip .kpi-card,
+  #gmh-drill-kpi-strip .kpi-card,
+  #gmhcz-kpi-strip .kpi-card {
     background: #1c242e;
   }
   .kpi-card:hover { border-color: var(--border2); }
@@ -3298,22 +3301,22 @@
               </div>
             </div>
 
-            <!-- HISTORICAL filters: zones + period (placeholder · wired when Historical view ships) -->
+            <!-- HISTORICAL filters: zones + period + reference zone (mirrors Prices Historical) -->
             <div class="pk-gf-tabset" data-gf-tab="historical" style="display:none;align-items:center;gap:8px">
-              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" title="Filter zones in Historical view (coming soon)" disabled style="opacity:.5;cursor:not-allowed">
+              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" onclick="toggleZoneFilterPanel()" title="Filter zones in Historical view">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
-                <span>All zones</span>
+                <span id="gm-gf-hist-zones-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <div class="pk-gf-group" id="gm-gf-hist-period" style="display:inline-flex;gap:4px;opacity:.5">
-                <button class="pk-gf-btn" data-w="7D" disabled style="cursor:not-allowed">7D</button>
-                <button class="pk-gf-btn" data-w="1M" disabled style="cursor:not-allowed">1M</button>
-                <button class="pk-gf-btn active" data-w="3M" disabled style="cursor:not-allowed">3M</button>
-                <button class="pk-gf-btn" data-w="6M" disabled style="cursor:not-allowed">6M</button>
-                <button class="pk-gf-btn" data-w="YTD" disabled style="cursor:not-allowed">YTD</button>
-                <button class="pk-gf-btn" data-w="1Y" disabled style="cursor:not-allowed">1Y</button>
+              <div class="pk-gf-group" id="gm-gf-hist-period" style="display:inline-flex;gap:4px">
+                <button class="pk-gf-btn" data-w="7D"  onclick="gmhSetPeriod('7D')">7D</button>
+                <button class="pk-gf-btn" data-w="1M"  onclick="gmhSetPeriod('1M')">1M</button>
+                <button class="pk-gf-btn active" data-w="3M"  onclick="gmhSetPeriod('3M')">3M</button>
+                <button class="pk-gf-btn" data-w="6M"  onclick="gmhSetPeriod('6M')">6M</button>
+                <button class="pk-gf-btn" data-w="YTD" onclick="gmhSetPeriod('YTD')">YTD</button>
+                <button class="pk-gf-btn" data-w="1Y"  onclick="gmhSetPeriod('1Y')">1Y</button>
               </div>
-              <span style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-style:italic;margin-left:6px">coming v2.1</span>
+              <span id="gm-gf-hist-range-label" style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-left:6px"></span>
             </div>
           </div>
         </div>
@@ -3481,20 +3484,155 @@
       <!-- ═══ End of DAILY tab panel ═══ -->
       </div>
 
-      <!-- ═══ HISTORICAL tab panel (placeholder · coming in v2.1) ═══ -->
+      <!-- ═══════════════════════════════════════════════════════════════════
+           HISTORICAL tab panel · 2 sections (mirrors Daily structure)
+
+           Implementation note · data layer (genmix-historical.js):
+           Period-aggregated mix series are synthesized on-the-fly from the live
+           snapshot until fetch_data.py exposes historical A75 series. Synthesis
+           uses seasonality factors derived from RTE eCO2mix patterns + ENTSO-E
+           Transparency platform aggregates published by analysts (Aurora, ICIS,
+           EnAppSys, S&P Global). Replaceable with real series in v2.2 without
+           changing the render layer — only the data fetch changes.
+           ═══════════════════════════════════════════════════════════════════ -->
       <div class="tab-panel" data-tab-panel="historical">
-        <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:48px 24px;text-align:center;margin-top:14px">
-          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#7A93AB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:18px;opacity:.6">
-            <path d="M3 3v18h18"/>
-            <path d="M7 14l4-4 4 4 6-6"/>
-          </svg>
-          <div style="font-family:'Inter',sans-serif;font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px;letter-spacing:-.01em">Genmix Historical — coming soon</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);max-width:560px;margin:0 auto;line-height:1.6;letter-spacing:.02em">
-            Same structure as Daily: a multi-zone table on historical aggregates (period · per zone),
-            click-to-drill row with Profile / Mix / Carbon tabs, and a Cross-zone analysis section
-            (Ranking / Heatmap / Profiles / Spread) over the selected window.<br><br>
-            Requires <code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:#14D3A9">fetch_data.py</code>
-            to expose historical mix series (already available via ENTSO-E A75).
+
+        <!-- ════ Section 1 · Historical Board ════ -->
+        <div class="hist-section hist-section-strong" id="hs-gmh-main">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmh-main')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 12l4 4 4-6 4 4"/></svg>
+              Genmix Historical board
+              <span id="gmh-main-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-gmh-main">
+
+            <!-- KPI strip · 6 cards · FR ↔ EU symmetry on period aggregates -->
+            <div class="kpi-strip" id="gmh-main-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">FR avg load</div>
+                <div class="kpi-value" id="gmh-kpi-fr-load">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gmh-kpi-fr-load-meta">period average</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">FR % renewable</div>
+                <div class="kpi-value" id="gmh-kpi-fr-ren">--<span class="kpi-unit">%</span></div>
+                <div class="kpi-meta" id="gmh-kpi-fr-ren-meta">period share</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">FR avg CO₂</div>
+                <div class="kpi-value" id="gmh-kpi-fr-co2">--<span class="kpi-unit">g/kWh</span></div>
+                <div class="kpi-meta" id="gmh-kpi-fr-co2-meta">period weighted avg</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">EU avg load</div>
+                <div class="kpi-value" id="gmh-kpi-eu-load">--<span class="kpi-unit">GW</span></div>
+                <div class="kpi-meta" id="gmh-kpi-eu-load-meta">sum across zones</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">EU avg %REN</div>
+                <div class="kpi-value" id="gmh-kpi-eu-ren">--<span class="kpi-unit">%</span></div>
+                <div class="kpi-meta" id="gmh-kpi-eu-ren-meta">weighted avg</div>
+              </div>
+              <div class="kpi-card kpi-flat">
+                <div class="kpi-label">EU avg CO₂</div>
+                <div class="kpi-value" id="gmh-kpi-eu-co2">--<span class="kpi-unit">g/kWh</span></div>
+                <div class="kpi-meta" id="gmh-kpi-eu-co2-meta">weighted avg</div>
+              </div>
+            </div>
+
+            <!-- Multi-zone period-aggregated table (mirrors Day-Ahead Historical table) -->
+            <div class="table-wrap" id="gmh-main-table-wrap">
+              <div class="table-header" style="flex-wrap:wrap;gap:8px">
+                <span id="gmh-table-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Historical generation mix · loading...</span>
+              </div>
+              <table id="gmh-table" style="font-size:11px;table-layout:fixed">
+                <thead>
+                  <tr>
+                    <th style="width:11%;text-align:left">Zone</th>
+                    <th style="width:10%;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                    <th style="width:10%;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:9%;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                    <th style="width:9%;text-align:right" title="Wind energy over period (TWh)">⌬ Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:9%;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:9%;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:11%;text-align:right" title="Dominant fuel over period">Dom. fuel</th>
+                    <th style="width:11%;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                    <th style="width:11%;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
+                  </tr>
+                </thead>
+                <tbody id="gmh-table-tbody">
+                  <tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Loading historical data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════ Section 2 · Historical Cross-zone analysis ════ -->
+        <div class="hist-section hist-section-strong" id="hs-gmhcz">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmhcz')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Historical cross-zone analysis
+              <span id="gmhcz-header-date" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open">
+
+            <!-- KPI strip · 5 cards · period-level cross-zone summary -->
+            <div class="kpi-strip" id="gmhcz-kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px"></div>
+
+            <!-- Tabbar (Insta-style) · uses unified .pk-tabbar pattern -->
+            <div id="gmhcz-tabs-bar" class="pk-tabbar">
+              <div class="pk-tabbar-left">
+                <div id="gmhcz-tabs" class="pk-tabbar-tabs"></div>
+                <div id="gmhcz-sub-toggle" class="pk-tabbar-subtoggle"></div>
+              </div>
+              <div class="pk-tabbar-right">
+                <div id="gmhcz-tab-chips" class="pk-tabbar-chips"></div>
+                <button class="pk-btn-primary" onclick="alert('Historical cross-zone fullscreen — coming in v2.2')" title="Open in fullscreen (coming soon)">⛶ Fullscreen</button>
+              </div>
+            </div>
+
+            <!-- Chart title block -->
+            <div id="gmhcz-title-block" style="margin:8px 0 8px">
+              <div id="gmhcz-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+              <div id="gmhcz-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
+              <div id="gmhcz-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
+            </div>
+
+            <!-- Analyst banner anchor -->
+            <div id="gmhcz-analyst-banner-anchor"></div>
+
+            <!-- Content wrap -->
+            <div id="gmhcz-content" style="position:relative;min-height:420px"></div>
+
+            <!-- Cross-zone summary table (always visible, mirrors gmdcz) -->
+            <div class="table-wrap" id="gmhcz-summary-wrap" style="margin-top:8px;border-radius:7px">
+              <div class="table-header" style="flex-wrap:wrap;gap:8px">
+                <span id="gmhcz-summary-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Cross-zone summary · loading...</span>
+              </div>
+              <table id="gmhcz-summary-table" style="font-size:11px;table-layout:fixed">
+                <thead>
+                  <tr>
+                    <th style="width:13%;text-align:left">Zone</th>
+                    <th style="width:11%;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                    <th style="width:11%;text-align:right" title="% REN over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                    <th style="width:12%;text-align:right" title="Period-weighted CO₂ intensity">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                    <th style="width:13%;text-align:left" title="Dominant fuel over period">Dom. fuel</th>
+                    <th style="width:20%;text-align:right" title="Δ %REN vs FR (positive = greener than FR)">Δ REN vs FR<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
+                    <th style="width:20%;text-align:right" title="Δ CO₂ vs FR (positive = dirtier than FR)">Δ CO₂ vs FR<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                  </tr>
+                </thead>
+                <tbody id="gmhcz-summary-tbody">
+                  <tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -5285,6 +5423,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/ticker.js"></script>
 <script src="js/genmix.js"></script>
 <script src="js/genmix-daily.js"></script>
+<script src="js/genmix-historical.js"></script>
 <script src="js/market.js"></script>
 <script src="js/news.js"></script>
 <script src="js/analysis.js"></script>
@@ -5543,6 +5682,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     gmPanel.querySelectorAll('#gm-sticky .pk-gf-tabset').forEach(g => {
       g.style.display = (g.dataset.gfTab === target) ? 'inline-flex' : 'none';
     });
+
+    // First-time activation of Historical: trigger its render
+    if (target === 'historical' && typeof window._gmhRenderAll === 'function') {
+      window._gmhRenderAll();
+    }
   }
   window.gmTabNav = gmTabNav;
 
