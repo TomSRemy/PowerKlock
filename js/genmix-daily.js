@@ -403,7 +403,70 @@ function _gmdczDispatchRender() {
   // Market read banner · context-aware per view
   const bannerAnchor = document.getElementById('gmdcz-analyst-banner-anchor');
   if (bannerAnchor) bannerAnchor.innerHTML = _gmdczBuildBannerHtml(view);
+
+  // Summary table below content (mirrors Prices Cross-zone compare-data-table)
+  _gmdczRenderSummaryTable();
 }
+
+// ─────────────────────────────────────────────────────────────────
+// SUMMARY TABLE · below the chart, fixed across views (like Prices cc)
+// ─────────────────────────────────────────────────────────────────
+function _gmdczRenderSummaryTable() {
+  const tbody = document.getElementById('gmdcz-summary-tbody');
+  const label = document.getElementById('gmdcz-summary-label');
+  if (!tbody) return;
+
+  const data = window._genmixData || {};
+  const zones = Object.keys(data).filter(z => data[z]?.total > 0);
+  if (!zones.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--tx3);padding:16px">No data</td></tr>`;
+    if (label) label.textContent = 'Cross-zone summary · 0 zones';
+    return;
+  }
+  if (label) label.textContent = `Cross-zone summary · ${zones.length} zones · ENTSO-E A75`;
+
+  const stats = (typeof _gmStats === 'function') ? _gmStats : null;
+  if (!stats) return;
+  const FUEL_META = (typeof GM_FUEL_META !== 'undefined') ? GM_FUEL_META : _GMDCZ_META;
+  const FLAGS = (typeof FLAG_MAP !== 'undefined') ? FLAG_MAP : {};
+  const renColor = (typeof _gmRenColor === 'function') ? _gmRenColor : (() => 'var(--tx)');
+  const co2Color = (typeof _gmCo2Color === 'function') ? _gmCo2Color : (() => 'var(--tx)');
+
+  // Reference (FR) baseline
+  const refStats = data.FR ? stats(data.FR) : null;
+  const frRen = refStats ? refStats.renPct : null;
+  const frCo2 = refStats ? refStats.co2    : null;
+
+  // Sort zones by Total GW desc (same ordering as Daily Board)
+  const sorted = [...zones].sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
+
+  const fmt = (v, dp=1) => (v == null || isNaN(v)) ? '--' : v.toFixed(dp);
+  const rows = sorted.map(z => {
+    const st = stats(data[z]);
+    if (!st) return '';
+    const dom = FUEL_META[st.dom] || FUEL_META.other;
+    const flag = FLAGS[z] || '';
+    const isFr = z === 'FR';
+    const dRen = (frRen != null) ? (st.renPct - frRen) : null;
+    const dCo2 = (frCo2 != null) ? (st.co2 - frCo2)    : null;
+    const dRenColor = (dRen == null || isFr) ? 'var(--tx3)' : (dRen >= 0 ? '#14D3A9' : '#ED6965');
+    const dCo2Color = (dCo2 == null || isFr) ? 'var(--tx3)' : (dCo2 <= 0 ? '#14D3A9' : '#ED6965');
+    const dRenStr = (dRen == null) ? '--' : (isFr ? '— ref —' : (dRen >= 0 ? '+' : '') + dRen.toFixed(1) + ' pts');
+    const dCo2Str = (dCo2 == null) ? '--' : (isFr ? '— ref —' : (dCo2 >= 0 ? '+' : '') + Math.round(dCo2));
+    return `<tr style="${isFr ? 'background:rgba(20,211,169,0.04);' : ''}">
+      <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>
+      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace">${fmt(st.total / 1000, 2)}</td>
+      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${renColor(st.renPct)};font-weight:600">${fmt(st.renPct, 1)}%</td>
+      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${co2Color(st.co2)};font-weight:600">${Math.round(st.co2)}</td>
+      <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji || ''} ${dom.label || st.dom}</span></td>
+      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:${isFr ? 500 : 600}">${dRenStr}</td>
+      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dCo2Color};font-weight:${isFr ? 500 : 600}">${dCo2Str}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+}
+window._gmdczRenderSummaryTable = _gmdczRenderSummaryTable;
 
 // ─────────────────────────────────────────────────────────────────
 // MARKET READ generator · cross-zone (per view)
