@@ -214,6 +214,13 @@ function renderGmMain() {
     }) + ' · ENTSO-E';
   }
 
+  // Table-header label (mirrors prices-date-label in Day-Ahead table-header)
+  const tbLabel = document.getElementById('gm-table-label');
+  if (tbLabel) {
+    const zonesCount = Object.keys(window._genmixData || {}).length;
+    tbLabel.textContent = `Live generation mix · ${zonesCount} zones · ENTSO-E A75`;
+  }
+
   // Market read banner (amber, mirrors Prices / Historical pattern)
   // Anchored below the table inside hs-body-gm-main.
   const bodyHost = document.getElementById('hs-body-gm-main');
@@ -326,7 +333,7 @@ function _gmOpenRow(zone) {
         </div>
 
         <!-- KPI strip 6 cards · zone-specific -->
-        <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;margin-top:14px">
+        <div class="kpi-strip" id="gm-drill-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;margin-top:14px">
           <div class="kpi-card kpi-flat">
             <div class="kpi-label">Total gen</div>
             <div class="kpi-value">${(st.total/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
