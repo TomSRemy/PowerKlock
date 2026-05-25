@@ -532,15 +532,6 @@
   .kpi-card.kpi-up   { border-left-color: var(--up); }
   .kpi-card.kpi-down { border-left-color: var(--down); }
   .kpi-card.kpi-flat { border-left-color: var(--kpi-flat); }
-  /* Align KPI cards inside zone-detail expanded rows to the same 3px stroke
-     used by the row's outer td border-left (var(--acc)).
-     Targets: gm-detail-row (Genmix), ho-detail-row (Historical),
-              row-detail-N (Daily DA prices). Default .kpi-card stays 4px elsewhere. */
-  #gm-detail-row .kpi-card,
-  #ho-detail-row .kpi-card,
-  [id^="row-detail-"] .kpi-card {
-    border-left-width: 3px;
-  }
   .kpi-label { font-size: 10px; color: var(--text2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
   .kpi-value { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em; }
   .kpi-unit { font-size: 12px; font-weight: 400; color: var(--text2); margin-left: 4px; }
