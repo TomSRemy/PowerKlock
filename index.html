@@ -3280,7 +3280,7 @@
           <!-- Global filters, switched by active tab (mirrors Prices Day-Ahead structure) -->
           <div class="pr-tabs-bar-filters">
 
-            <!-- DAILY filters: zones + Latest data (no date picker · live snapshot) -->
+            <!-- DAILY filters: zones + Latest data + Date picker (mirrors Prices Day-Ahead) -->
             <div class="pk-gf-tabset" data-gf-tab="daily" style="display:flex;align-items:center;gap:8px">
               <button class="pk-gf-zone-btn" onclick="toggleZoneFilterPanel()" id="gm-gf-daily-zones" title="Filter visible zones in the Genmix board">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
@@ -3288,6 +3288,14 @@
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <button onclick="gmRefreshData()" id="gm-gf-refresh" title="Pull the latest ENTSO-E snapshot" style="padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Latest data</button>
+              <!-- Date picker (UI · wire to historical snapshot fetch in v2.1) -->
+              <div class="date-picker-wrap" id="gm-date-picker-wrap" style="position:relative">
+                <button class="date-picker-btn" id="gm-date-picker-btn" onclick="alert('Genmix date picker — historical snapshots wired in v2.1')" style="font-size:10px;padding:0 10px;height:26px;cursor:pointer">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span id="gm-date-picker-label">Latest data</span>
+                  <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
             </div>
 
             <!-- HISTORICAL filters: zones + period (placeholder · wired when Historical view ships) -->
