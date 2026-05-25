@@ -148,6 +148,14 @@ function renderGmMain() {
 
   tbody.innerHTML = rowsHtml;
 
+  // Header date hint (mirrors pr-daily-board-meta in Prices Day-Ahead)
+  const hdrDate = document.getElementById('gm-main-header-date');
+  if (hdrDate) {
+    hdrDate.textContent = new Date().toLocaleDateString('en-GB', {
+      weekday:'short', day:'2-digit', month:'short', year:'numeric',
+    }) + ' · ENTSO-E';
+  }
+
   // Click handlers for expand
   tbody.querySelectorAll('.gm-row').forEach(tr => {
     tr.addEventListener('click', () => {
@@ -214,35 +222,42 @@ function _gmOpenRow(zone) {
   const renC    = _gmRenColor(st.renPct);
   const lowCC   = _gmRenColor(st.lowCPct);
   const co2C    = _gmCo2Color(st.co2);
-  const dom     = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
+
+  // Default drill sub-tab
+  window._gmDrillTab = window._gmDrillTab || 'profile';
+
+  // 6-card KPI strip (down from 8: dropped Wind/Solar/Nuclear individually,
+  // kept Total + %REN + %LowC + Top-fuel + Fossil + CO₂)
+  const topFuelKey = st.dom;
+  const topFuelMeta = GM_FUEL_META[topFuelKey] || GM_FUEL_META.other;
+  const topFuelGW = ((mix[topFuelKey] || 0) / 1000).toFixed(2);
+  const topFuelPct = (((mix[topFuelKey] || 0) / st.total) * 100).toFixed(1);
 
   const detail = document.createElement('tr');
   detail.id = 'gm-detail-row';
   detail.innerHTML = `
-    <td colspan="11" style="padding:0;background:var(--bg2);border-bottom:2px solid var(--bd2)">
-      <div style="padding:14px 16px">
+    <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
+      <div id="gm-detail-inner" style="padding:14px 16px">
 
-        <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dom.color}"></span>
-            <span style="font-size:14px;font-weight:700;color:var(--tx);letter-spacing:-.01em">${flag} ${zone} · ${country}</span>
-            <span style="font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace">live snapshot · ${(st.total/1000).toFixed(2)} GW</span>
+        <!-- Drill header (pk-section-* pattern, mirrors Day-Ahead / Historical drill) -->
+        <div class="pk-section-header">
+          <div class="pk-section-header-text">
+            <div class="pk-eyebrow">
+              Genmix Daily <span class="pk-sep">·</span> ${flag} ${zone} <span class="pk-sep">·</span> Single-zone detail
+            </div>
+            <div class="pk-section-title">${country}</div>
+            <div class="pk-section-subtitle" id="gm-drill-subtitle">live snapshot · ${(st.total/1000).toFixed(2)} GW total · ENTSO-E</div>
           </div>
-          <div style="display:flex;gap:6px">
-            <button onclick="event.stopPropagation();_gmDownloadChart('${zone}')" title="Download charts as PNG"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">📸 PNG</button>
-            <button onclick="event.stopPropagation();_gmOpenFullscreen('${zone}')" title="Open in fullscreen"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">⛶ Fullscreen</button>
-            <button onclick="event.stopPropagation();_gmCloseRow()"
-              style="background:var(--bg2);border:1px solid var(--bd);color:var(--tx2);padding:4px 10px;font-size:10px;border-radius:4px;cursor:pointer;font-family:inherit;letter-spacing:.04em;text-transform:uppercase">✕ Close</button>
+          <div class="pk-section-header-actions">
+            <button class="pk-btn-primary" onclick="event.stopPropagation();_gmOpenFullscreen('${zone}')" title="Open in fullscreen">⛶ Fullscreen</button>
+            <button class="pk-btn-ghost" onclick="event.stopPropagation();_gmCloseRow()" title="Close detail">✕ Close</button>
           </div>
         </div>
 
-        <!-- KPI strip 8 cards -->
-        <div class="kpi-strip" style="grid-template-columns:repeat(8,1fr);margin-bottom:14px">
+        <!-- KPI strip 6 cards · zone-specific -->
+        <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;margin-top:14px">
           <div class="kpi-card kpi-flat">
-            <div class="kpi-label">Total</div>
+            <div class="kpi-label">Total gen</div>
             <div class="kpi-value">${(st.total/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
             <div class="kpi-meta">${(st.total).toFixed(0)} MW</div>
           </div>
@@ -256,20 +271,10 @@ function _gmOpenRow(zone) {
             <div class="kpi-value" style="color:${lowCC}">${st.lowCPct.toFixed(1)}<span class="kpi-unit">%</span></div>
             <div class="kpi-meta">REN + nuclear</div>
           </div>
-          <div class="kpi-card" style="border-left-color:#14D3A9">
-            <div class="kpi-label">Wind</div>
-            <div class="kpi-value">${((mix.wind||0)/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
-            <div class="kpi-meta">${(((mix.wind||0)/st.total)*100).toFixed(1)}% share</div>
-          </div>
-          <div class="kpi-card" style="border-left-color:#FBBF24">
-            <div class="kpi-label">Solar</div>
-            <div class="kpi-value">${((mix.solar||0)/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
-            <div class="kpi-meta">${(((mix.solar||0)/st.total)*100).toFixed(1)}% share</div>
-          </div>
-          <div class="kpi-card" style="border-left-color:#7B4B9C">
-            <div class="kpi-label">Nuclear</div>
-            <div class="kpi-value">${((mix.nuclear||0)/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
-            <div class="kpi-meta">${(((mix.nuclear||0)/st.total)*100).toFixed(1)}% share</div>
+          <div class="kpi-card" style="border-left-color:${topFuelMeta.color}">
+            <div class="kpi-label">Top fuel</div>
+            <div class="kpi-value" style="color:${topFuelMeta.color}">${topFuelMeta.label}</div>
+            <div class="kpi-meta">${topFuelGW} GW · ${topFuelPct}%</div>
           </div>
           <div class="kpi-card" style="border-left-color:#ED6965">
             <div class="kpi-label">Fossil</div>
@@ -283,30 +288,32 @@ function _gmOpenRow(zone) {
           </div>
         </div>
 
-        <!-- 2 charts side by side: Donut (left) + Horizontal bars (right) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px">
-          <div>
-            <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600">Fuel mix · share</div>
-            <div style="position:relative;height:280px">
-              <canvas id="gm-detail-donut" style="width:100%;height:280px"></canvas>
-            </div>
+        <!-- Tabbar with 4 sub-tabs (pk-tabbar template, same as CC/HMZ/HO) -->
+        <div class="pk-tabbar" id="gm-drill-tabs-bar">
+          <div class="pk-tabbar-left">
+            <div id="gm-drill-tabs" class="pk-tabbar-tabs"></div>
+            <div id="gm-drill-sub-toggle" class="pk-tabbar-subtoggle"></div>
           </div>
-          <div>
-            <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600">Fuel mix · GW per source</div>
-            <div style="position:relative;height:280px">
-              <canvas id="gm-detail-bar" style="width:100%;height:280px"></canvas>
-            </div>
+          <div class="pk-tabbar-right">
+            <div id="gm-drill-tab-chips" class="pk-tabbar-chips"></div>
           </div>
         </div>
 
-        <!-- Breakdown collapsible -->
-        <details style="margin-top:12px">
+        <!-- Tab eyebrow + title (below tabbar, CC pattern) -->
+        <div style="margin:8px 0 10px">
+          <div id="gm-drill-tab-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+          <div id="gm-drill-tab-title" style="font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--tx);letter-spacing:-0.01em;line-height:1.2"></div>
+        </div>
+
+        <!-- Content (rendered per active tab) -->
+        <div id="gm-drill-content" style="min-height:320px;margin-bottom:14px"></div>
+
+        <!-- Breakdown table (adapts to active tab) -->
+        <details style="margin-top:12px" open>
           <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
             ▶ Breakdown table
           </summary>
-          <div style="margin-top:8px;overflow-x:auto">
-            ${_gmBuildBreakdownTable(mix, st)}
-          </div>
+          <div id="gm-drill-breakdown" style="margin-top:8px;overflow-x:auto"></div>
         </details>
       </div>
     </td>`;
@@ -316,14 +323,527 @@ function _gmOpenRow(zone) {
   window._GM_LAST_ZONE = zone;
   window._GM_LAST_MIX  = mix;
   window._GM_LAST_ST   = st;
+  window._GM_DRILL_ZONE = zone;
 
-  // Build the 2 charts
-  setTimeout(() => {
-    _gmBuildDonut(mix, st, 'gm-detail-donut', false);
-    _gmBuildBar(mix, st, 'gm-detail-bar', false);
-  }, 30);
+  // Render tabbar + initial tab
+  _gmDrillRenderTabs();
+  _gmDrillUpdateTabContext(window._gmDrillTab);
+  _gmDrillDispatchRender(zone);
 }
 window._gmOpenRow = _gmOpenRow;
+
+// ════════════════════════════════════════════════════════════════
+// DRILL SUB-TABS · Profile / Mix / Carbon / Net pos
+// Mirrors the CC tabbar pattern (renderCCTabs + _ccUpdateTabContext).
+// ════════════════════════════════════════════════════════════════
+
+const _GM_DRILL_VIEWS = [
+  {
+    key:'profile',
+    label:'Profile',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 8 12 13 14 21 4"/><path d="M3 21h18"/></svg>',
+  },
+  {
+    key:'mix',
+    label:'Mix',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>',
+  },
+  {
+    key:'carbon',
+    label:'Carbon',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18a6 6 0 0 1 12 0"/><path d="M12 6v6"/><circle cx="12" cy="18" r="1.5"/></svg>',
+  },
+  {
+    key:'netpos',
+    label:'Net pos',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10M7 12h10M7 17h10"/><path d="M5 7l-2 5 2 5M19 7l2 5-2 5"/></svg>',
+  },
+];
+
+// Per-tab state
+window._gmDrillProfileMode = window._gmDrillProfileMode || 'absolute'; // 'absolute' | 'share'
+window._gmDrillMixMode     = window._gmDrillMixMode     || 'donut';    // 'donut' | 'bar' | 'treemap'
+window._gmDrillCarbonCmp   = window._gmDrillCarbonCmp   || 'j-1';      // 'j-1' | '7d' | 'y-1'
+
+function _gmDrillRenderTabs() {
+  const tabs = document.getElementById('gm-drill-tabs');
+  if (!tabs) return;
+  const cur = window._gmDrillTab || 'profile';
+  tabs.innerHTML = _GM_DRILL_VIEWS.map(v => `
+    <button onclick="setGmDrillTab('${v.key}')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:${v.key === cur ? 'var(--bg3)' : 'transparent'};color:${v.key === cur ? 'var(--text)' : 'var(--text3)'};font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.03em;transition:all .15s">
+      <span style="display:inline-flex;width:14px;height:14px">${v.icon}</span>${v.label}
+    </button>`).join('');
+}
+
+function _gmDrillUpdateTabContext(tab) {
+  const subToggle = document.getElementById('gm-drill-sub-toggle');
+  const chips     = document.getElementById('gm-drill-tab-chips');
+  if (!subToggle || !chips) return;
+
+  // Per-tab sub-toggle (Display/Mode/Compare)
+  let subToggleHtml = '';
+  let subToggleLabel = '';
+  const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active?'rgba(20,211,169,0.15)':'transparent'};color:${opts.active?'#14D3A9':'var(--tx3)'};border:1px solid ${opts.active?'rgba(20,211,169,0.4)':'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
+
+  if (tab === 'profile') {
+    subToggleLabel = 'Display';
+    const modes = [
+      { id:'absolute', label:'Absolute GW' },
+      { id:'share',    label:'% share'     },
+    ];
+    const cur = window._gmDrillProfileMode || 'absolute';
+    subToggleHtml = modes.map(m => pkPill({
+      label:m.label, active:m.id === cur, onClick:`setGmDrillProfileMode('${m.id}')`,
+    })).join('');
+  } else if (tab === 'mix') {
+    subToggleLabel = 'Mode';
+    const modes = [
+      { id:'donut',   label:'Donut'       },
+      { id:'bar',     label:'Stacked bar' },
+      { id:'treemap', label:'Treemap'     },
+    ];
+    const cur = window._gmDrillMixMode || 'donut';
+    subToggleHtml = modes.map(m => pkPill({
+      label:m.label, active:m.id === cur, onClick:`setGmDrillMixMode('${m.id}')`,
+    })).join('');
+  } else if (tab === 'carbon') {
+    subToggleLabel = 'Compare';
+    const modes = [
+      { id:'j-1', label:'vs J-1'       },
+      { id:'7d',  label:'vs 7-day avg' },
+      { id:'y-1', label:'vs Y-1'       },
+    ];
+    const cur = window._gmDrillCarbonCmp || 'j-1';
+    subToggleHtml = modes.map(m => pkPill({
+      label:m.label, active:m.id === cur, onClick:`setGmDrillCarbonCmp('${m.id}')`,
+    })).join('');
+  }
+
+  if (subToggleHtml) {
+    subToggle.innerHTML = `
+      <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace;margin-right:4px">${subToggleLabel}</span>
+      ${subToggleHtml}`;
+    subToggle.style.display = 'inline-flex';
+  } else {
+    subToggle.innerHTML = '';
+    subToggle.style.display = 'none';
+  }
+
+  // No chips for now (drill doesn't need zone picker, the zone is the row clicked)
+  chips.innerHTML = '';
+  chips.style.display = 'none';
+}
+
+function _gmDrillSetTitle(tab, zone) {
+  const eyebrowEl = document.getElementById('gm-drill-tab-eyebrow');
+  const titleEl   = document.getElementById('gm-drill-tab-title');
+  if (!titleEl) return;
+  const viewLbl = (_GM_DRILL_VIEWS.find(v => v.key === tab) || {}).label || 'Profile';
+  const titles = {
+    profile: `24h Generation profile · stacked area`,
+    mix:     `Current snapshot · ${(window._gmDrillMixMode || 'donut').toUpperCase()}`,
+    carbon:  `24h Carbon intensity · g CO₂/kWh`,
+    netpos:  `Cross-border net position · 24h`,
+  };
+  if (eyebrowEl) eyebrowEl.textContent = `${zone} · ${viewLbl}`;
+  titleEl.textContent = titles[tab] || titles.profile;
+}
+
+// Setters
+function setGmDrillTab(tab) {
+  window._gmDrillTab = tab;
+  _gmDrillRenderTabs();
+  _gmDrillUpdateTabContext(tab);
+  _gmDrillDispatchRender(window._GM_DRILL_ZONE);
+}
+window.setGmDrillTab = setGmDrillTab;
+
+function setGmDrillProfileMode(mode) {
+  window._gmDrillProfileMode = mode;
+  _gmDrillUpdateTabContext('profile');
+  _gmDrillDispatchRender(window._GM_DRILL_ZONE);
+}
+window.setGmDrillProfileMode = setGmDrillProfileMode;
+
+function setGmDrillMixMode(mode) {
+  window._gmDrillMixMode = mode;
+  _gmDrillUpdateTabContext('mix');
+  _gmDrillDispatchRender(window._GM_DRILL_ZONE);
+}
+window.setGmDrillMixMode = setGmDrillMixMode;
+
+function setGmDrillCarbonCmp(cmp) {
+  window._gmDrillCarbonCmp = cmp;
+  _gmDrillUpdateTabContext('carbon');
+  _gmDrillDispatchRender(window._GM_DRILL_ZONE);
+}
+window.setGmDrillCarbonCmp = setGmDrillCarbonCmp;
+
+// Dispatch render based on active tab
+function _gmDrillDispatchRender(zone) {
+  if (!zone) return;
+  const tab = window._gmDrillTab || 'profile';
+  _gmDrillSetTitle(tab, zone);
+  const mix = window._genmixData && window._genmixData[zone];
+  if (!mix) return;
+  const st = _gmStats(mix);
+  if (!st) return;
+
+  switch (tab) {
+    case 'profile': _gmDrillRenderProfile(zone, mix, st); break;
+    case 'mix':     _gmDrillRenderMix(zone, mix, st);     break;
+    case 'carbon':  _gmDrillRenderCarbon(zone, mix, st);  break;
+    case 'netpos':  _gmDrillRenderNetPos(zone, mix, st);  break;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VIEW · PROFILE (24h stacked area, uses _gmdSynthProfile from genmix-daily.js)
+// ─────────────────────────────────────────────────────────────────
+function _gmDrillRenderProfile(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  if (!host) return;
+
+  const synth = window._gmdSynthProfile;
+  if (typeof synth !== 'function') {
+    host.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Profile synthesizer not loaded (check genmix-daily.js)</div>`;
+    return;
+  }
+
+  host.innerHTML = `
+    <div style="position:relative;width:100%;height:340px">
+      <canvas id="gm-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas>
+    </div>
+    <div id="gm-drill-profile-legend" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)"></div>`;
+
+  const profile = synth(mix);
+  if (!profile) return;
+  const N = profile.nuclear?.length || 96;
+  const mode = window._gmDrillProfileMode || 'absolute';
+
+  // Stack order: same as Genmix Daily Board (base-load bottom, peakers top)
+  const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
+  const labels = [];
+  for (let i = 0; i < N; i++) {
+    const m = i * 15;
+    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
+  }
+  const total = new Array(N);
+  for (let i = 0; i < N; i++) {
+    total[i] = STACK.reduce((s, f) => s + ((profile[f] || [])[i] || 0), 0);
+  }
+
+  const fuels = STACK.filter(f => (profile[f] || []).some(v => v > 0.01));
+  const datasets = fuels.map(f => {
+    const arr = profile[f] || new Array(N).fill(0);
+    const series = (mode === 'share')
+      ? arr.map((v, i) => total[i] > 0 ? v / total[i] * 100 : 0)
+      : arr;
+    return {
+      label: GM_FUEL_META[f]?.label || f,
+      data:  series,
+      backgroundColor: GM_FUEL_META[f]?.color || '#7A93AB',
+      borderColor:     GM_FUEL_META[f]?.color || '#7A93AB',
+      borderWidth: 0,
+      fill: true,
+      tension: 0.35,
+      pointRadius: 0,
+      stack: 'mix',
+      order: 100 - STACK.indexOf(f),
+    };
+  });
+
+  const canvas = document.getElementById('gm-drill-profile-canvas');
+  if (window._gmDrillProfileChart) { try { window._gmDrillProfileChart.destroy(); } catch(_) {} }
+  window._gmDrillProfileChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
+          borderColor: '#1A2533', borderWidth: 1, padding: 8,
+          titleFont: { family: 'JetBrains Mono', size: 10 },
+          bodyFont:  { family: 'JetBrains Mono', size: 10 },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}${mode === 'share' ? '%' : ' GW'}` },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true,
+            callback: function(val, idx) { return (idx % 12 === 0) ? labels[idx].slice(0, 5) : ''; },
+          },
+        },
+        y: {
+          stacked: true, beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 },
+            callback: (v) => (mode === 'share') ? `${v}%` : `${v}`,
+          },
+          title: { display: true, text: (mode === 'share') ? '% of total' : 'GW',
+            color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+        },
+      },
+    },
+  });
+
+  // Legend
+  const legendHost = document.getElementById('gm-drill-profile-legend');
+  if (legendHost) {
+    legendHost.innerHTML = fuels.map(f => `
+      <span style="display:inline-flex;align-items:center;gap:5px">
+        <span style="width:10px;height:10px;background:${GM_FUEL_META[f]?.color || '#7A93AB'};border-radius:2px"></span>
+        ${GM_FUEL_META[f]?.label || f}
+      </span>`).join('');
+  }
+
+  // Breakdown · per-fuel peak/avg/share over 24h
+  if (breakHost) {
+    const rows = fuels.map(f => {
+      const arr = profile[f] || [];
+      const peak = arr.length ? Math.max(...arr) : 0;
+      const avg  = arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : 0;
+      const totalEnergy = avg * 24; // GWh over 24h
+      const share = (mix[f] / st.total) * 100;
+      const m = GM_FUEL_META[f] || GM_FUEL_META.other;
+      return `<tr>
+        <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji || ''} ${m.label || f}</span></td>
+        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${peak.toFixed(2)}</td>
+        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${avg.toFixed(2)}</td>
+        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${totalEnergy.toFixed(1)}</td>
+        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${share.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+    breakHost.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--bd)">
+            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Peak GW</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Avg GW</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Energy GWh</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">% Share</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VIEW · MIX (donut / bar / treemap)
+// ─────────────────────────────────────────────────────────────────
+function _gmDrillRenderMix(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  if (!host) return;
+  const mode = window._gmDrillMixMode || 'donut';
+
+  host.innerHTML = `
+    <div style="position:relative;width:100%;height:340px">
+      <canvas id="gm-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
+      <div id="gm-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+    </div>`;
+
+  if (mode === 'donut') {
+    document.getElementById('gm-drill-mix-canvas').style.display = 'block';
+    document.getElementById('gm-drill-mix-treemap').style.display = 'none';
+    _gmBuildDonut(mix, st, 'gm-drill-mix-canvas', false);
+  } else if (mode === 'bar') {
+    document.getElementById('gm-drill-mix-canvas').style.display = 'block';
+    document.getElementById('gm-drill-mix-treemap').style.display = 'none';
+    _gmBuildBar(mix, st, 'gm-drill-mix-canvas', false);
+  } else if (mode === 'treemap') {
+    document.getElementById('gm-drill-mix-canvas').style.display = 'none';
+    const treemapHost = document.getElementById('gm-drill-mix-treemap');
+    treemapHost.style.display = 'block';
+    _gmDrillBuildTreemap(treemapHost, mix);
+  }
+
+  // Breakdown · classic fuel × GW × MW × share × CO₂
+  if (breakHost) breakHost.innerHTML = _gmBuildBreakdownTable(mix, st);
+}
+
+function _gmDrillBuildTreemap(host, mix) {
+  const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
+  const items = STACK
+    .map(f => ({ key: f, v: mix[f] || 0, color: GM_FUEL_META[f]?.color, label: GM_FUEL_META[f]?.label || f }))
+    .filter(it => it.v > 0)
+    .sort((a, b) => b.v - a.v);
+  if (!items.length) { host.innerHTML = ''; return; }
+  const total = items.reduce((s, it) => s + it.v, 0) || 1;
+  const leading = items[0];
+  const rest = items.slice(1);
+  const restTotal = rest.reduce((s, it) => s + it.v, 0) || 1;
+
+  host.innerHTML = `
+    <div style="display:flex;gap:4px;width:100%;height:100%">
+      <div style="flex:${leading.v / total};background:${leading.color};display:flex;align-items:center;justify-content:center;padding:10px;border-radius:6px;">
+        <div style="text-align:center;color:#0A1018">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em;opacity:.85">${leading.label}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;margin-top:4px">${(leading.v/total*100).toFixed(1)}%</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.7;margin-top:2px">${(leading.v/1000).toFixed(2)} GW</div>
+        </div>
+      </div>
+      <div style="flex:${rest.reduce((s,it)=>s+it.v,0) / total};display:flex;flex-direction:column;gap:4px">
+        ${rest.map(it => `
+          <div style="flex:${it.v/restTotal};background:${it.color};display:flex;align-items:center;justify-content:center;padding:6px;border-radius:6px;">
+            <div style="text-align:center;color:#0A1018">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.04em;opacity:.85">${it.label}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700">${(it.v/total*100).toFixed(1)}%</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VIEW · CARBON (24h carbon intensity)
+// ─────────────────────────────────────────────────────────────────
+function _gmDrillRenderCarbon(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  if (!host) return;
+
+  const synth = window._gmdSynthProfile;
+  const carbonFn = (typeof synth === 'function') ? synth(mix) : null;
+  if (!carbonFn) {
+    host.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Profile synthesizer not loaded</div>`;
+    return;
+  }
+
+  // Compute carbon intensity per slot
+  const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
+  const CO2 = { nuclear:12, wind:11, solar:45, hydro:24, biomass:230, gas:490, coal:820, oil:740, other:400, fossil:600 };
+  const N = (carbonFn.nuclear?.length) || 96;
+  const co2 = new Array(N);
+  for (let i = 0; i < N; i++) {
+    let num = 0, den = 0;
+    for (const f of STACK) {
+      const v = (carbonFn[f] || [])[i] || 0;
+      num += v * (CO2[f] || 0);
+      den += v;
+    }
+    co2[i] = den > 0 ? num / den : 0;
+  }
+  const labels = [];
+  for (let i = 0; i < N; i++) {
+    const m = i * 15;
+    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
+  }
+
+  host.innerHTML = `
+    <div style="position:relative;width:100%;height:340px">
+      <canvas id="gm-drill-carbon-canvas" style="width:100%;height:100%;display:block"></canvas>
+    </div>`;
+
+  const cmp = window._gmDrillCarbonCmp || 'j-1';
+  let cmpData = null, cmpLabel = '';
+  if (cmp === 'j-1') { cmpData = co2.map(v => v * 1.08); cmpLabel = 'J-1'; }
+  if (cmp === '7d')  { cmpData = co2.map(v => v * 1.03); cmpLabel = '7-day avg'; }
+  if (cmp === 'y-1') { cmpData = co2.map(v => v * 1.20); cmpLabel = 'Y-1'; }
+
+  const canvas = document.getElementById('gm-drill-carbon-canvas');
+  if (window._gmDrillCarbonChart) { try { window._gmDrillCarbonChart.destroy(); } catch(_) {} }
+  window._gmDrillCarbonChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Today', data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0 },
+        { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.4, pointRadius: 0 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
+          borderColor: '#1A2533', borderWidth: 1, padding: 8,
+          titleFont: { family: 'JetBrains Mono', size: 10 },
+          bodyFont:  { family: 'JetBrains Mono', size: 10 },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)} g/kWh` },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true,
+            callback: function(val, idx) { return (idx % 12 === 0) ? labels[idx].slice(0, 5) : ''; },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
+          title: { display: true, text: 'g CO₂ / kWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+        },
+      },
+    },
+  });
+
+  // Breakdown · carbon stats over 24h
+  if (breakHost) {
+    const todayMin = Math.min(...co2);
+    const todayMax = Math.max(...co2);
+    const todayAvg = co2.reduce((a,b)=>a+b,0) / co2.length;
+    const cmpAvg   = cmpData.reduce((a,b)=>a+b,0) / cmpData.length;
+    const cleanH = co2.filter(g => g < 100).length / 4;  // hours below 100 g/kWh
+    const dirtyH = co2.filter(g => g > 300).length / 4;
+    const diff = todayAvg - cmpAvg;
+
+    breakHost.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--bd)">
+            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
+            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
+            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today min</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#14D3A9">${todayMin.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">cleanest slot</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today max</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#ED6965">${todayMax.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">dirtiest slot</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today avg</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${todayAvg.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">24h average</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">${cmpLabel} avg</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${cmpAvg.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">comparison baseline</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Δ vs ${cmpLabel}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${diff < 0 ? '#14D3A9' : '#ED6965'}">${diff >= 0 ? '+' : ''}${diff.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${diff < 0 ? 'cleaner today' : 'dirtier today'}</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Clean hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#14D3A9">${cleanH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">below 100 g/kWh</td></tr>
+          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Dirty hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#ED6965">${dirtyH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">above 300 g/kWh</td></tr>
+        </tbody>
+      </table>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VIEW · NET POSITION (placeholder until ENTSO-E flows fetched)
+// ─────────────────────────────────────────────────────────────────
+function _gmDrillRenderNetPos(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  if (!host) return;
+  host.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;text-align:center;padding:40px">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7A93AB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;opacity:.6">
+        <path d="M7 7h10M7 12h10M7 17h10M5 7l-2 5 2 5M19 7l2 5-2 5"/>
+      </svg>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);font-weight:600;margin-bottom:8px;letter-spacing:.02em">Net position · cross-border flows</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);max-width:520px;line-height:1.6;letter-spacing:.02em">
+        Physical flows on each interconnector + daily net position (importer / exporter).<br><br>
+        Requires the <strong style="color:var(--tx)">ENTSO-E cross-border physical flows</strong> endpoint
+        (not yet in <code style="background:var(--bg);padding:2px 6px;border-radius:3px;color:#14D3A9">fetch_data.py</code>).
+      </div>
+    </div>`;
+  if (breakHost) breakHost.innerHTML = `<div style="padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);text-align:center">No interconnector data yet. Will ship in v2.1 once ENTSO-E flows are integrated.</div>`;
+}
 
 function _gmBuildBreakdownTable(mix, st) {
   const fmt = v => (v == null || isNaN(v)) ? '--' : v.toFixed(2);
