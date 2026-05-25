@@ -3242,7 +3242,7 @@ function _openHoRow(zone, series, st) {
   detail.id = 'ho-detail-row';
   // Outer wrap: same style as Daily (no extra inner background)
   detail.innerHTML = `
-    <td colspan="12" style="padding:0;background:#141a22;border-left:3px solid var(--acc);border-bottom:2px solid var(--bd2)">
+    <td colspan="12" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
       <div id="ho-detail-inner" style="padding:14px 16px">
 
         <!-- ═══ Drill row header · uses pk-section-* classes ═══ -->
