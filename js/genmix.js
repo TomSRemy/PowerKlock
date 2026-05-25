@@ -153,7 +153,6 @@ function renderGmMain() {
       const c = _gmRenColor(fr.renPct);
       renEl.innerHTML = `<span style="color:${c}">${fr.renPct.toFixed(1)}</span><span class="kpi-unit">%</span>`;
     }
-    _setText('gm-kpi-fr-lowc', fr.lowCPct.toFixed(1), '%');
     const co2El = document.getElementById('gm-kpi-fr-co2');
     if (co2El) {
       const c = _gmCo2Color(fr.co2);
@@ -161,16 +160,23 @@ function renderGmMain() {
     }
   }
 
-  // EU-7 aggregated stats
+  // EU-loaded aggregated stats (weighted avg)
   const allStats = zones.map(z => _gmStats(data[z])).filter(s => s);
   const euTotal = allStats.reduce((a, s) => a + s.total, 0);
   const euRen   = allStats.reduce((a, s) => a + s.ren, 0);
+  const euCo2W  = allStats.reduce((a, s) => a + (s.co2 * s.total), 0);
   const euRenPct = euTotal > 0 ? (euRen / euTotal * 100) : 0;
+  const euCo2Avg = euTotal > 0 ? (euCo2W / euTotal)       : 0;
   _setText('gm-kpi-eu-total', (euTotal / 1000).toFixed(2), 'GW');
   const euRenEl = document.getElementById('gm-kpi-eu-ren');
   if (euRenEl) {
     const c = _gmRenColor(euRenPct);
     euRenEl.innerHTML = `<span style="color:${c}">${euRenPct.toFixed(1)}</span><span class="kpi-unit">%</span>`;
+  }
+  const euCo2El = document.getElementById('gm-kpi-eu-co2');
+  if (euCo2El) {
+    const c = _gmCo2Color(euCo2Avg);
+    euCo2El.innerHTML = `<span style="color:${c}">${Math.round(euCo2Avg)}</span><span class="kpi-unit">g/kWh</span>`;
   }
   _setText('gm-kpi-eu-total-meta', `${zones.length} zones`);
   _setText('gm-kpi-eu-ren-meta', `avg across ${zones.length} zones`);
@@ -298,18 +304,10 @@ function _gmOpenRow(zone) {
   const country = GM_ZONE_NAMES[zone] || zone;
   const flag    = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone]) || '';
   const renC    = _gmRenColor(st.renPct);
-  const lowCC   = _gmRenColor(st.lowCPct);
   const co2C    = _gmCo2Color(st.co2);
 
   // Default drill sub-tab
   window._gmDrillTab = window._gmDrillTab || 'profile';
-
-  // 6-card KPI strip (down from 8: dropped Wind/Solar/Nuclear individually,
-  // kept Total + %REN + %LowC + Top-fuel + Fossil + CO₂)
-  const topFuelKey = st.dom;
-  const topFuelMeta = GM_FUEL_META[topFuelKey] || GM_FUEL_META.other;
-  const topFuelGW = ((mix[topFuelKey] || 0) / 1000).toFixed(2);
-  const topFuelPct = (((mix[topFuelKey] || 0) / st.total) * 100).toFixed(1);
 
   const detail = document.createElement('tr');
   detail.id = 'gm-detail-row';
@@ -332,27 +330,28 @@ function _gmOpenRow(zone) {
           </div>
         </div>
 
-        <!-- KPI strip 6 cards · zone-specific -->
+        <!-- KPI strip 6 cards · zone-specific · BESS / origination POV
+             (Total · %REN · Wind · Solar · Fossil · CO₂) -->
         <div class="kpi-strip" id="gm-drill-kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;margin-top:14px">
           <div class="kpi-card kpi-flat">
             <div class="kpi-label">Total gen</div>
             <div class="kpi-value">${(st.total/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
-            <div class="kpi-meta">${(st.total).toFixed(0)} MW</div>
+            <div class="kpi-meta">${(st.total).toFixed(0)} MW · instantaneous</div>
           </div>
           <div class="kpi-card" style="border-left-color:${renC}">
             <div class="kpi-label">% Renewable</div>
             <div class="kpi-value" style="color:${renC}">${st.renPct.toFixed(1)}<span class="kpi-unit">%</span></div>
-            <div class="kpi-meta">W+S+H+B</div>
+            <div class="kpi-meta">W+S+H+B share</div>
           </div>
-          <div class="kpi-card" style="border-left-color:${lowCC}">
-            <div class="kpi-label">% Low-carbon</div>
-            <div class="kpi-value" style="color:${lowCC}">${st.lowCPct.toFixed(1)}<span class="kpi-unit">%</span></div>
-            <div class="kpi-meta">REN + nuclear</div>
+          <div class="kpi-card" style="border-left-color:#14D3A9">
+            <div class="kpi-label">Wind</div>
+            <div class="kpi-value">${((mix.wind||0)/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
+            <div class="kpi-meta">${(((mix.wind||0)/st.total)*100).toFixed(1)}% share</div>
           </div>
-          <div class="kpi-card" style="border-left-color:${topFuelMeta.color}">
-            <div class="kpi-label">Top fuel</div>
-            <div class="kpi-value" style="color:${topFuelMeta.color}">${topFuelMeta.label}</div>
-            <div class="kpi-meta">${topFuelGW} GW · ${topFuelPct}%</div>
+          <div class="kpi-card" style="border-left-color:#FBBF24">
+            <div class="kpi-label">Solar</div>
+            <div class="kpi-value">${((mix.solar||0)/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
+            <div class="kpi-meta">${(((mix.solar||0)/st.total)*100).toFixed(1)}% share</div>
           </div>
           <div class="kpi-card" style="border-left-color:#ED6965">
             <div class="kpi-label">Fossil</div>
@@ -392,7 +391,7 @@ function _gmOpenRow(zone) {
         <!-- Breakdown table (adapts to active tab) -->
         <details style="margin-top:12px" open>
           <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
-            ▶ Breakdown table
+            Breakdown table
           </summary>
           <div id="gm-drill-breakdown" style="margin-top:8px;overflow-x:auto"></div>
         </details>
@@ -1011,7 +1010,6 @@ function _gmBuildBreakdownTable(mix, st) {
     return `<tr>
       <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(v / 1000)}</td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(v)}</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${pct.toFixed(2)}%</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${m.co2}</td>
     </tr>`;
@@ -1022,7 +1020,6 @@ function _gmBuildBreakdownTable(mix, st) {
         <tr style="border-bottom:1px solid var(--bd)">
           <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">GW</th>
-          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">MW</th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">% Share</th>
           <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">g CO₂/kWh</th>
         </tr>
