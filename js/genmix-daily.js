@@ -154,6 +154,11 @@ const GMDCZ_VIEWS = [
     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="9" y2="18"/></svg>',
   },
   {
+    key:'heatmap',
+    label:'Heatmap',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6"/><rect x="11" y="3" width="6" height="6"/><rect x="3" y="11" width="6" height="6"/><rect x="11" y="11" width="6" height="6"/></svg>',
+  },
+  {
     key:'profiles',
     label:'Profiles',
     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg>',
@@ -273,6 +278,15 @@ function _gmdczUpdateTabContext(view) {
 
   const metric = window._gmdczMetric || 'ren';
 
+  // Heatmap view shows zones × fuels by nature — Metric sub-toggle has no effect
+  if (view === 'heatmap') {
+    subToggle.innerHTML = '';
+    subToggle.style.display = 'none';
+    chips.innerHTML = '';
+    chips.style.display = 'none';
+    return;
+  }
+
   // Sub-toggle: Metric pkPills (Total GW removed for Spread view)
   let metrics = [
     { id:'ren',   label:'REN %'      },
@@ -327,7 +341,10 @@ function _gmdczSetTitle() {
   const longDate = _gmdLongDate();
 
   if (eyebrowEl) eyebrowEl.textContent = `Genmix Daily · Cross-zone · ${viewLbl}`;
-  titleEl.textContent = `Cross-zone — ${viewLbl} · ${metricLbl}`;
+  // Heatmap view shows all fuels by nature — title doesn't depend on Metric
+  titleEl.textContent = (view === 'heatmap')
+    ? `Cross-zone — Heatmap · Mix structure (% share per fuel)`
+    : `Cross-zone — ${viewLbl} · ${metricLbl}`;
   const zonesCount = Object.keys(window._genmixData || {}).length;
   if (subEl) subEl.textContent = `${longDate} · ${zonesCount} zones · ENTSO-E`;
 
@@ -377,6 +394,7 @@ function _gmdczDispatchRender() {
   const view = window._gmdczView || 'ranking';
   switch (view) {
     case 'ranking':  return _gmdczRenderRanking();
+    case 'heatmap':  return _gmdczRenderHeatmap();
     case 'profiles': return _gmdczRenderProfiles();
     case 'spread':   return _gmdczRenderSpread();
     default:         return _gmdczRenderRanking();
@@ -399,6 +417,73 @@ function renderGmdczMain() {
   return Promise.resolve();
 }
 window.renderGmdczMain = renderGmdczMain;
+
+// ─────────────────────────────────────────────────────────────────
+// VIEW · HEATMAP (zones × fuels · % share)
+// Recovered from legacy hs-gm-compare and embedded into Cross-zone.
+// ─────────────────────────────────────────────────────────────────
+function _gmdczRenderHeatmap() {
+  const host = document.getElementById('gmdcz-content');
+  if (!host) return;
+  const data = window._genmixData || {};
+  const zones = Object.keys(data)
+    .filter(z => data[z]?.total > 0)
+    .sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
+  if (!zones.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
+
+  // Need globals from genmix.js (already loaded before genmix-daily.js)
+  const FUEL_ORDER = (typeof GM_FUEL_ORDER !== 'undefined') ? GM_FUEL_ORDER :
+                     ['nuclear','wind','solar','hydro','biomass','fossil','other'];
+  const FUEL_META = (typeof GM_FUEL_META !== 'undefined') ? GM_FUEL_META : _GMDCZ_META;
+  const stats = (typeof _gmStats === 'function') ? _gmStats : null;
+  const hexToRgb = (typeof _hexToRgb === 'function') ? _hexToRgb : (hex => {
+    const h = hex.replace('#', '');
+    return `${parseInt(h.substr(0,2),16)},${parseInt(h.substr(2,2),16)},${parseInt(h.substr(4,2),16)}`;
+  });
+  const FLAGS = (typeof FLAG_MAP !== 'undefined') ? FLAG_MAP : {};
+
+  let html = `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed">
+        <thead>
+          <tr>
+            <th style="padding:8px;text-align:left;color:var(--tx3);font-weight:600;width:90px;border-bottom:1px solid var(--bd)">Zone</th>`;
+  FUEL_ORDER.forEach(k => {
+    const m = FUEL_META[k];
+    if (!m) return;
+    html += `<th style="padding:8px;text-align:center;color:${m.color};font-weight:600;font-size:11px;border-bottom:1px solid var(--bd)">${m.emoji || ''} ${m.label || k}</th>`;
+  });
+  html += `<th style="padding:8px;text-align:right;color:var(--tx3);font-weight:600;width:80px;border-bottom:1px solid var(--bd)">Total</th></tr></thead><tbody>`;
+
+  zones.forEach(z => {
+    const mix = data[z];
+    const st = stats ? stats(mix) : null;
+    if (!st) return;
+    const isFr = z === 'FR';
+    const flag = FLAGS[z] || '';
+    html += `<tr style="border-top:1px solid var(--bd);${isFr ? 'background:rgba(255,255,255,0.03);' : ''}">
+      <td style="padding:8px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${isFr ? '#fff' : 'var(--tx)'};letter-spacing:.04em">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>`;
+    FUEL_ORDER.forEach(k => {
+      const m = FUEL_META[k];
+      if (!m) return;
+      const pct = ((mix[k] || 0) / st.total) * 100;
+      const opacity = Math.min(0.85, pct / 50);
+      const bg = `rgba(${hexToRgb(m.color)},${opacity})`;
+      const txc = opacity > 0.4 ? '#0A1018' : 'var(--tx2)';
+      html += `<td style="padding:8px;text-align:center;background:${bg};color:${txc};font-family:'JetBrains Mono',monospace;font-weight:${opacity > 0.4 ? 700 : 500}">${pct.toFixed(1)}%</td>`;
+    });
+    html += `<td style="padding:8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${(st.total/1000).toFixed(1)} GW</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  // Legend note
+  html += `
+    <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.5">
+      Cell opacity ∝ % share. Darker cell = larger share of zone's mix. FR row highlighted.
+    </div>`;
+
+  host.innerHTML = html;
+}
 
 // ─────────────────────────────────────────────────────────────────
 // VIEW 1 · RANKING
