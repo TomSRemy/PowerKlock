@@ -379,8 +379,8 @@ function _gmdczRenderKpis() {
 
   host.innerHTML = `
     <div class="kpi-card kpi-flat"><div class="kpi-label">Zones loaded</div><div class="kpi-value">${zones.length}<span class="kpi-unit">zones</span></div><div class="kpi-meta">cross-zone today</div></div>
-    <div class="kpi-card kpi-flat"><div class="kpi-label">Top REN today</div><div class="kpi-value" style="color:#14D3A9;font-size:18px">${topRen.zone}<span class="kpi-unit"> ${topRen.value.toFixed(0)}%</span></div><div class="kpi-meta">${_GMD_ZONE_NAMES[topRen.zone] || topRen.zone}</div></div>
-    <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid</div><div class="kpi-value" style="color:#A78BFA;font-size:18px">${cleanCo2.zone}<span class="kpi-unit"> ${cleanCo2.value.toFixed(0)} g</span></div><div class="kpi-meta">lowest CO₂ intensity</div></div>
+    <div class="kpi-card kpi-flat"><div class="kpi-label">Top REN today</div><div class="kpi-value" style="color:#14D3A9;font-size:18px">${topRen.zone}</div><div class="kpi-meta">${topRen.value.toFixed(0)}% · ${_GMD_ZONE_NAMES[topRen.zone] || topRen.zone}</div></div>
+    <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid</div><div class="kpi-value" style="color:#A78BFA;font-size:18px">${cleanCo2.zone}</div><div class="kpi-meta">${cleanCo2.value.toFixed(0)} g/kWh · lowest today</div></div>
     <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs EU avg</div><div class="kpi-value" style="color:${(frVsEu != null && frVsEu >= 0) ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${frRen != null ? frRen.toFixed(0) : '--'}% vs EU ${euAvgRen.toFixed(0)}%</div></div>
     <div class="kpi-card kpi-flat"><div class="kpi-label">EU total load</div><div class="kpi-value">${totalEU.toFixed(0)}<span class="kpi-unit">GW</span></div><div class="kpi-meta">${zones.length} zones</div></div>`;
 }
