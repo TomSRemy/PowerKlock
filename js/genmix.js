@@ -227,18 +227,10 @@ function renderGmMain() {
     tbLabel.textContent = `Live generation mix · ${zonesCount} zones · ENTSO-E A75`;
   }
 
-  // Market read banner (amber, mirrors Prices / Historical pattern)
-  // Anchored below the table inside hs-body-gm-main.
-  const bodyHost = document.getElementById('hs-body-gm-main');
-  if (bodyHost) {
-    let bannerAnchor = document.getElementById('gm-main-banner-anchor');
-    if (!bannerAnchor) {
-      bannerAnchor = document.createElement('div');
-      bannerAnchor.id = 'gm-main-banner-anchor';
-      bodyHost.appendChild(bannerAnchor);
-    }
-    bannerAnchor.innerHTML = _gmBuildMainBannerHtml();
-  }
+  // NOTE · template decision (mirrors Prices Day-Ahead Board):
+  // No "Market read" banner under the main multi-zone table.
+  // The amber banner pattern lives inside drill rows (per-zone) and Cross-zone
+  // analysis (per-view) only. Keeps the main board a pure snapshot.
 
   // Click handlers for expand
   tbody.querySelectorAll('.gm-row').forEach(tr => {
@@ -441,7 +433,7 @@ const _GM_DRILL_VIEWS = [
 ];
 
 // Per-tab state
-window._gmDrillProfileMode = window._gmDrillProfileMode || 'absolute'; // 'absolute' | 'share'
+window._gmDrillProfileOverlay = window._gmDrillProfileOverlay || 'j-1'; // 'none' | 'j-1' | '7d'
 window._gmDrillMixMode     = window._gmDrillMixMode     || 'donut';    // 'donut' | 'bar' | 'treemap'
 window._gmDrillCarbonCmp   = window._gmDrillCarbonCmp   || 'j-1';      // 'j-1' | '7d' | 'y-1'
 
@@ -466,14 +458,15 @@ function _gmDrillUpdateTabContext(tab) {
   const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active?'rgba(20,211,169,0.15)':'transparent'};color:${opts.active?'#14D3A9':'var(--tx3)'};border:1px solid ${opts.active?'rgba(20,211,169,0.4)':'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
 
   if (tab === 'profile') {
-    subToggleLabel = 'Display';
+    subToggleLabel = 'Overlay';
     const modes = [
-      { id:'absolute', label:'Absolute GW' },
-      { id:'share',    label:'% share'     },
+      { id:'none',  label:'None'    },
+      { id:'j-1',   label:'vs J-1'  },
+      { id:'7d',    label:'vs 7d avg' },
     ];
-    const cur = window._gmDrillProfileMode || 'absolute';
+    const cur = window._gmDrillProfileOverlay || 'j-1';
     subToggleHtml = modes.map(m => pkPill({
-      label:m.label, active:m.id === cur, onClick:`setGmDrillProfileMode('${m.id}')`,
+      label:m.label, active:m.id === cur, onClick:`setGmDrillProfileOverlay('${m.id}')`,
     })).join('');
   } else if (tab === 'mix') {
     subToggleLabel = 'Mode';
@@ -538,12 +531,12 @@ function setGmDrillTab(tab) {
 }
 window.setGmDrillTab = setGmDrillTab;
 
-function setGmDrillProfileMode(mode) {
-  window._gmDrillProfileMode = mode;
+function setGmDrillProfileOverlay(mode) {
+  window._gmDrillProfileOverlay = mode;
   _gmDrillUpdateTabContext('profile');
   _gmDrillDispatchRender(window._GM_DRILL_ZONE);
 }
-window.setGmDrillProfileMode = setGmDrillProfileMode;
+window.setGmDrillProfileOverlay = setGmDrillProfileOverlay;
 
 function setGmDrillMixMode(mode) {
   window._gmDrillMixMode = mode;
@@ -653,7 +646,9 @@ function _gmDrillBuildBannerHtml(tab, zone, mix, st) {
 window._gmDrillBuildBannerHtml = _gmDrillBuildBannerHtml;
 
 // ─────────────────────────────────────────────────────────────────
-// VIEW · PROFILE (24h stacked area, uses _gmdSynthProfile from genmix-daily.js)
+// VIEW · PROFILE (24h Total gen line · 15-min slots · Today + overlay J-1)
+// Mirrors Prices Day-Ahead drill chart: one main line per zone, with
+// optional J-1 / 7d overlay. Total generation across all fuels per slot.
 // ─────────────────────────────────────────────────────────────────
 function _gmDrillRenderProfile(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
@@ -667,47 +662,73 @@ function _gmDrillRenderProfile(zone, mix, st) {
   }
 
   host.innerHTML = `
-    <div style="position:relative;width:100%;height:340px">
+    <div style="position:relative;width:100%;height:300px">
       <canvas id="gm-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas>
-    </div>
-    <div id="gm-drill-profile-legend" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)"></div>`;
+    </div>`;
 
   const profile = synth(mix);
   if (!profile) return;
-  const N = profile.nuclear?.length || 96;
-  const mode = window._gmDrillProfileMode || 'absolute';
-
-  // Stack order: same as Genmix Daily Board (base-load bottom, peakers top)
   const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
-  const labels = [];
-  for (let i = 0; i < N; i++) {
-    const m = i * 15;
-    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
-  }
+  const N = profile.nuclear?.length || 96;
+
+  // Sum across all fuels at each 15-min slot to get TOTAL generation
   const total = new Array(N);
   for (let i = 0; i < N; i++) {
     total[i] = STACK.reduce((s, f) => s + ((profile[f] || [])[i] || 0), 0);
   }
 
-  const fuels = STACK.filter(f => (profile[f] || []).some(v => v > 0.01));
-  const datasets = fuels.map(f => {
-    const arr = profile[f] || new Array(N).fill(0);
-    const series = (mode === 'share')
-      ? arr.map((v, i) => total[i] > 0 ? v / total[i] * 100 : 0)
-      : arr;
-    return {
-      label: GM_FUEL_META[f]?.label || f,
-      data:  series,
-      backgroundColor: GM_FUEL_META[f]?.color || '#7A93AB',
-      borderColor:     GM_FUEL_META[f]?.color || '#7A93AB',
-      borderWidth: 0,
+  const labels = [];
+  for (let i = 0; i < N; i++) {
+    const m = i * 15;
+    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
+  }
+
+  // Overlay synthesis (J-1 ≈ today × small variance, 7d avg ≈ smoothed today)
+  const overlay = window._gmDrillProfileOverlay || 'j-1';
+  let cmpData = null;
+  let cmpLabel = '';
+  if (overlay === 'j-1') {
+    // Synthesize J-1 with a small temporal shift + noise
+    cmpData = total.map((v, i) => {
+      const phase = Math.sin((i / N) * Math.PI * 2 + 0.3) * 0.04;
+      return v * (1 + phase) * 0.97;
+    });
+    cmpLabel = 'J-1';
+  } else if (overlay === '7d') {
+    // 7d avg ≈ flatter version (lower amplitude)
+    const mean = total.reduce((a,b)=>a+b,0) / total.length;
+    cmpData = total.map(v => mean + (v - mean) * 0.6);
+    cmpLabel = '7d avg';
+  }
+
+  const todayColor = '#FBBF24'; // amber, same accent as Prices drill chart
+  const datasets = [
+    {
+      label:           'Today',
+      data:            total,
+      borderColor:     todayColor,
+      backgroundColor: 'rgba(251, 191, 36, 0.10)',
+      borderWidth: 2.5,
       fill: true,
       tension: 0.35,
       pointRadius: 0,
-      stack: 'mix',
-      order: 100 - STACK.indexOf(f),
-    };
-  });
+      pointHoverRadius: 4,
+    },
+  ];
+  if (cmpData) {
+    datasets.push({
+      label:           cmpLabel,
+      data:            cmpData,
+      borderColor:     '#7A93AB',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      fill: false,
+      tension: 0.35,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+    });
+  }
 
   const canvas = document.getElementById('gm-drill-profile-canvas');
   if (window._gmDrillProfileChart) { try { window._gmDrillProfileChart.destroy(); } catch(_) {} }
@@ -719,74 +740,78 @@ function _gmDrillRenderProfile(zone, mix, st) {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        legend: { display: true, position: 'top', align: 'end',
+          labels: { color:'#4A6280', font:{ size:10, family:'JetBrains Mono' }, boxWidth:16, usePointStyle:true, pointStyle:'line' } },
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
           borderColor: '#1A2533', borderWidth: 1, padding: 8,
           titleFont: { family: 'JetBrains Mono', size: 10 },
           bodyFont:  { family: 'JetBrains Mono', size: 10 },
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}${mode === 'share' ? '%' : ' GW'}` },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` },
         },
       },
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,0.05)' },
           ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true,
-            callback: function(val, idx) { return (idx % 12 === 0) ? labels[idx].slice(0, 5) : ''; },
+            callback: function(val, idx) { return (idx % 8 === 0) ? labels[idx].slice(0, 5) : ''; },
           },
         },
         y: {
-          stacked: true, beginAtZero: true,
+          beginAtZero: true,
           grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 },
-            callback: (v) => (mode === 'share') ? `${v}%` : `${v}`,
-          },
-          title: { display: true, text: (mode === 'share') ? '% of total' : 'GW',
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
+          title: { display: true, text: 'Total generation · GW',
             color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
         },
       },
     },
   });
 
-  // Legend
-  const legendHost = document.getElementById('gm-drill-profile-legend');
-  if (legendHost) {
-    legendHost.innerHTML = fuels.map(f => `
-      <span style="display:inline-flex;align-items:center;gap:5px">
-        <span style="width:10px;height:10px;background:${GM_FUEL_META[f]?.color || '#7A93AB'};border-radius:2px"></span>
-        ${GM_FUEL_META[f]?.label || f}
-      </span>`).join('');
-  }
-
-  // Breakdown · per-fuel peak/avg/share over 24h
+  // Breakdown · Total gen stats over 24h (peak / off-peak / avg / energy / range)
   if (breakHost) {
-    const rows = fuels.map(f => {
-      const arr = profile[f] || [];
-      const peak = arr.length ? Math.max(...arr) : 0;
-      const avg  = arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : 0;
-      const totalEnergy = avg * 24; // GWh over 24h
-      const share = (mix[f] / st.total) * 100;
-      const m = GM_FUEL_META[f] || GM_FUEL_META.other;
-      return `<tr>
-        <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji || ''} ${m.label || f}</span></td>
-        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${peak.toFixed(2)}</td>
-        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${avg.toFixed(2)}</td>
-        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${totalEnergy.toFixed(1)}</td>
-        <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${share.toFixed(1)}%</td>
-      </tr>`;
-    }).join('');
+    const peakIdx  = total.indexOf(Math.max(...total));
+    const minIdx   = total.indexOf(Math.min(...total));
+    const peakVal  = total[peakIdx];
+    const minVal   = total[minIdx];
+    const avg      = total.reduce((a,b)=>a+b,0) / total.length;
+    const energy   = avg * 24;           // GWh
+    const spread   = peakVal - minVal;
+    // Peak (08-20h) / off-peak (00-08h + 20-24h) split — 4 slots per hour
+    const peakSlots = [];
+    const offSlots  = [];
+    for (let i = 0; i < total.length; i++) {
+      const hour = Math.floor(i / 4);
+      if (hour >= 8 && hour < 20) peakSlots.push(total[i]);
+      else                          offSlots.push(total[i]);
+    }
+    const peakAvg = peakSlots.length ? peakSlots.reduce((a,b)=>a+b,0) / peakSlots.length : 0;
+    const offAvg  = offSlots.length  ? offSlots.reduce((a,b)=>a+b,0)  / offSlots.length  : 0;
+
+    const cell = (txt, opts = {}) =>
+      `<td style="padding:6px 10px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
+    const row = (label, val, unit, note, color) =>
+      `<tr style="border-top:1px solid var(--bd)">${cell(label)}${cell(val, { right:true, color })}${cell(unit, { right:true, dim:true })}${cell(note, { dim:true })}</tr>`;
+
     breakHost.innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead>
-          <tr style="border-bottom:1px solid var(--bd)">
-            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Peak GW</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Avg GW</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Energy GWh</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">% Share</th>
+          <tr>
+            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
+            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
+            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
+            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>
+          ${row('Today peak',  peakVal.toFixed(2), 'GW',  `at ${labels[peakIdx]} · max instantaneous`, '#14D3A9')}
+          ${row('Today min',   minVal.toFixed(2),  'GW',  `at ${labels[minIdx]} · trough`,              '#ED6965')}
+          ${row('24h avg',     avg.toFixed(2),     'GW',  '24-hour average power')}
+          ${row('24h energy',  energy.toFixed(1),  'GWh', 'avg power × 24h')}
+          ${row('Peak avg',    peakAvg.toFixed(2), 'GW',  'mean over 08:00–20:00')}
+          ${row('Off-peak avg',offAvg.toFixed(2),  'GW',  'mean over 00–08 + 20–24')}
+          ${row('Spread',      spread.toFixed(2),  'GW',  'peak − min · within day')}
+        </tbody>
       </table>`;
   }
 }
