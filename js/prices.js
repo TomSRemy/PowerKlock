@@ -1333,7 +1333,7 @@ function renderPricesTableBody() {
       <td class="sparkline-cell" style="text-align:center">${sparkSvg}</td>
     </tr>
     <tr id="row-detail-${i}" style="display:none">
-      <td colspan="13" style="padding:0;background:#141a22;border-left:3px solid var(--acc);border-bottom:2px solid var(--bd2)">
+      <td colspan="13" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
         <div style="padding:14px 16px" id="row-detail-inner-${i}"></div>
       </td>
     </tr>`;
