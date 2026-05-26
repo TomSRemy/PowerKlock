@@ -1317,7 +1317,7 @@ function renderPricesTableBody() {
     // 2-level color hierarchy: AVG is the prime metric (white/priceColor, bold).
     // All other plain price cells use tx2 (single muted level).
     // Semantic-colored cells (VS J-1, NEG HRS, %REN, DOM FUEL, SPARK) keep their own colors.
-    const html = `<tr class="zone-row" data-row-idx="${i}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand 15-min chart">
+    const html = `<tr class="zone-row" data-row-idx="${i}" data-zone-code="${z.code}" style="cursor:pointer" onclick="togglePriceRow(${i}, event)" title="Click to expand 15-min chart">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.45;vertical-align:0;transition:transform 0.15s ease"><polyline points="9 18 15 12 9 6"/></svg>${FLAG_MAP[z.code]||''} ${z.code}</td>
       <td style="font-size:11px;color:var(--tx2);text-align:left">${meta.country||z.name||z.code}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${priceColor};text-align:right">${PK_FMT.num(z.today, 2)}</td>
@@ -1719,6 +1719,25 @@ function buildHourlyDetail(idx, z) {
         : `<span style="color:${flatColor};font-weight:600">${flatText}</span>${peakRatio!=null ? `<span style="color:var(--tx3);margin-left:8px">Peak/off-peak ratio: ${peakRatio.toFixed(2)}x (baseline 1.30x)</span>` : ''}`}
     </div>
 
+    <!-- ═══ Sub-tabs (Intraday curves · Hour-of-day shape) · pk-tabbar pattern ═══ -->
+    <div class="pk-tabbar" id="row-subtabs-bar-${idx}" style="margin-bottom:10px">
+      <div class="pk-tabbar-left">
+        <div class="pk-tabbar-tabs" id="row-subtabs-${idx}">
+          <button data-row-subtab-btn="curves"    onclick="event.stopPropagation();prDailyRowSubTab(${idx},'curves')"    style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:var(--bg3);color:var(--text);font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.03em;transition:all .15s">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 8 12 13 14 21 4"/></svg>
+            Intraday curves
+          </button>
+          <button data-row-subtab-btn="hod-shape" onclick="event.stopPropagation();prDailyRowSubTab(${idx},'hod-shape')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.03em;transition:all .15s">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l3-9 4 18 3-9h5"/></svg>
+            Hour-of-day shape <span style="font-size:9px;color:var(--tx3);font-weight:400;margin-left:4px">YoY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Sub-tab panel · Intraday curves (legacy view) ═══ -->
+    <div data-row-subtab="curves">
+
     <!-- ═══ Filters bar · band selector + actions ═══ -->
     <div class="pk-filters-bar">
       <div style="display:flex;align-items:center;gap:6px">
@@ -1826,6 +1845,13 @@ function buildHourlyDetail(idx, z) {
         </table>
       </div>
     </details>
+
+    </div><!-- /data-row-subtab=curves -->
+
+    <!-- ═══ Sub-tab panel · Hour-of-day shape (YoY) ═══ -->
+    <div data-row-subtab="hod-shape" style="display:none">
+      <div id="row-hod-shape-${idx}"></div>
+    </div>
   `;
 
   // ── Populate the Market Read banner (below the chart, 2-line layout, mirrors Historical drill-down) ──
@@ -5742,3 +5768,49 @@ function clearSlotHover(idx) {
     _maybeAutoRender();
   }
 })();
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUB-TAB ROUTER · Day-Ahead Daily drill (Intraday curves / Hour-of-day shape)
+   Added to wire the "Hour-of-day shape" YoY sub-tab without restructuring
+   the existing drill. See js/prices-hod-shape.js for the shape sub-tab module.
+   ═══════════════════════════════════════════════════════════════════ */
+window.prDailyRowSubTab = function (idx, target) {
+  // 1. Scope inside the drill row content
+  const inner = document.getElementById(`row-detail-inner-${idx}`);
+  if (!inner) return;
+
+  // 2. Toggle button visual state
+  inner.querySelectorAll(`#row-subtabs-${idx} [data-row-subtab-btn]`).forEach(btn => {
+    const isActive = btn.dataset.rowSubtabBtn === target;
+    btn.style.background = isActive ? 'var(--bg3)' : 'transparent';
+    btn.style.color      = isActive ? 'var(--text)' : 'var(--text3)';
+  });
+
+  // 3. Toggle panel visibility
+  inner.querySelectorAll('[data-row-subtab]').forEach(panel => {
+    panel.style.display = (panel.dataset.rowSubtab === target) ? '' : 'none';
+  });
+
+  // 4. Lazy-render the Hour-of-day shape sub-tab on first activation
+  if (target === 'hod-shape' && typeof window.prHodRenderShape === 'function') {
+    // Discover the zone code from the parent row (data-zone-code or read from KPI label)
+    const row = inner.closest('tr');
+    let zoneCode = null;
+    if (row && row.previousElementSibling) {
+      // The expanded row sits after the zone row; pick up the zone code from there
+      const zoneRow = row.previousElementSibling;
+      zoneCode = zoneRow?.dataset?.zoneCode || null;
+    }
+    // Fallback: parse from the drill eyebrow text
+    if (!zoneCode) {
+      const eyebrow = inner.querySelector('.pk-eyebrow');
+      if (eyebrow) {
+        const m = eyebrow.textContent.match(/·\s*([A-Z]{2,5}(?:_LU)?)\s*·/);
+        if (m) zoneCode = m[1].trim();
+      }
+    }
+    if (zoneCode) {
+      window.prHodRenderShape(idx, zoneCode);
+    }
+  }
+};
