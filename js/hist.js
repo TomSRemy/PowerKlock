@@ -5959,6 +5959,12 @@ function _hszRenderHourlyHodShape(zone) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  // Cleanup rogue artifacts from other Hourly modes (Quarter grid + legend)
+  ['ho-detail-quarter-grid', 'ho-fs-quarter-grid',
+   'ho-detail-quarter-legend', 'ho-fs-quarter-legend'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
   // Find existing host (anywhere in the DOM) or create one
   let host = document.getElementById('histhod-shape');
   if (!host) {
@@ -9894,15 +9900,36 @@ function _bdHodShape(zone, summary) {
   // PUBLIC API
   // ════════════════════════════════════════════════════════════════
   window.histHodRenderShape = function (zone) {
+    const host = document.getElementById(`histhod-shape`);
+    if (!host) return;
+
+    // ── IDEMPOTENCE ─────────────────────────────────────────────────
+    // If the module is already mounted for this same zone AND we are mid-Play,
+    // do NOT re-mount (would reset the animation). This is the critical guard
+    // that prevents the dispatcher loop (any tab re-render triggers this).
+    // We only consider re-mounting if zone changed OR the host is empty OR
+    // we are not in an active animation cycle.
+    const alreadyMounted = host.querySelector('#histhod-canvas') != null;
+    const sameZone       = (STATE.currentZone === zone);
+    const inAnimCycle    = (STATE.playing || STATE.animEnded);
+
+    if (alreadyMounted && sameZone && inAnimCycle) {
+      // Just refresh the chart without touching DOM or state
+      _hodRedraw();
+      return;
+    }
+    if (alreadyMounted && sameZone) {
+      // Same zone, no anim cycle — just refresh the chart, keep DOM/state
+      _hodRedraw();
+      return;
+    }
+
     STATE.currentZone = zone;
-    // Stop any animation that was running from a previous mount and reset
-    // state so the chart shows the full stack at first paint
+    // Stop any animation timer from a previous mount
     if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
     STATE.playing = false;
     STATE.animEnded = false;
     STATE.animVisibleCount = 0;
-    const host = document.getElementById(`histhod-shape`);
-    if (!host) return;
 
     // Detect fullscreen context via the active _HSZ_TARGET (set by hist.js)
     const isFullscreen = (typeof window._HSZ_TARGET !== 'undefined'
@@ -9915,22 +9942,28 @@ function _bdHodShape(zone, summary) {
     // Year label size: slightly bigger in fullscreen
     const lblSize = isFullscreen ? '48px' : '34px';
 
-    host.innerHTML = `
-      <!-- ═══ Title block · eyebrow + title + subtitle (template CC strict) ═══ -->
-      <div style="margin-bottom:14px">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--tx3);text-transform:uppercase;font-weight:600;margin-bottom:4px">
-          Hour-of-day shape · YoY · ${zone}
-        </div>
-        <div style="font-family:'Inter',sans-serif;font-size:${isFullscreen ? '22px' : '18px'};font-weight:700;color:var(--tx);letter-spacing:-.01em;margin-bottom:3px">
-          Normalised hourly price shape across years
-        </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);line-height:1.5">
-          Price ÷ period mean · centred on 1.00 · reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level
-        </div>
-      </div>
+    // ── TITLE BLOCK · uses the canonical _setHoTitle() helper so the eyebrow,
+    //    title and subtitle slots of the drill (and FS overlay) are populated
+    //    identically to the other YoY sub-modes (Annual average, By quarter).
+    if (typeof window._setHoTitle === 'function' || typeof _setHoTitle === 'function') {
+      const setter = (typeof _setHoTitle === 'function') ? _setHoTitle : window._setHoTitle;
+      const titleHelper = (typeof _titleWithDescription === 'function')
+        ? _titleWithDescription
+        : (t, d) => `${t} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${d}</span>`;
+      setter({
+        eyebrow: `Prices · YoY · ${zone} · Hourly · Hour-of-day shape`,
+        title:   titleHelper('Normalised hourly price shape across years',
+                             'YoY · price ÷ period mean · centred on 1.00'),
+        subtitle: 'Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level.',
+      });
+    }
 
-      <!-- ═══ Filters bar · pills + action buttons ═══ -->
-      <div class="pk-filters-bar" id="histhod-toolbar" style="flex-wrap:wrap;gap:10px">
+    // Pill helper: prefer global pkPill, fallback inline (template parity)
+    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 11px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
+
+    host.innerHTML = `
+      <!-- ═══ Filters bar · template strict (mono uppercase pills + ghost/primary buttons) ═══ -->
+      <div class="pk-filters-bar" id="histhod-toolbar">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
           <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
@@ -9941,29 +9974,29 @@ function _bdHodShape(zone, summary) {
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
-          <select id="histhod-highlight" onchange="histHodHighlightYear(this.value)" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark"></select>
+          <div id="histhod-highlight-pills" style="display:inline-flex;gap:4px"></div>
         </div>
         <div class="pk-filters-bar-spacer"></div>
         <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years one-by-one">▶ Play</button>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
-        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF" id="histhod-gif-btn">🎬 GIF</button>
+        <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
       </div>
 
       <!-- ═══ Chart container ═══ -->
-      <div style="position:relative;height:${chartHeight};margin-top:12px">
+      <div style="position:relative;height:${chartHeight};margin-top:6px">
         <canvas id="histhod-canvas" style="width:100%;height:100%"></canvas>
-        <!-- Year label · top-LEFT inside chart area (right of Y-axis ticks, overlay on plot area) -->
+        <!-- Year label · top-LEFT inside chart area (right of Y-axis ticks) -->
         <div id="histhod-year-label" style="position:absolute;left:60px;top:8px;font-family:'Inter',sans-serif;font-size:${lblSize};font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
       </div>
 
       <!-- ═══ Market read banner (amber, template parity) ═══ -->
       <div id="histhod-banner" style="margin-top:14px"></div>
 
-      <!-- ═══ Breakdown details (single canonical location) ═══ -->
+      <!-- ═══ Breakdown details (collapsable) ═══ -->
       <details style="margin-top:14px" open>
-        <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
-          Breakdown table · YoY shape characteristics
+        <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0;font-family:'JetBrains Mono',monospace">
+          ▸ Hour-of-day shape · YoY characteristics
         </summary>
         <div id="histhod-breakdown" style="margin-top:8px;overflow-x:auto"></div>
       </details>
@@ -9996,6 +10029,7 @@ function _bdHodShape(zone, summary) {
     STATE.highlightYear = y === '' || y === '__none__' ? null : parseInt(y, 10);
     // Highlight is incompatible with animEnded state · drop it
     if (STATE.animEnded && STATE.highlightYear != null) _hodStopPlay();
+    _hodPaintControls();
     _hodRedraw();
   };
 
@@ -10029,12 +10063,17 @@ function _bdHodShape(zone, summary) {
       ).join('');
     }
 
-    // Year highlight dropdown
-    const dd = document.getElementById(`histhod-highlight`);
-    if (dd) {
+    // Year highlight pills (replaces the old dropdown for template consistency).
+    // First pill is "All" (stack mode), then one pill per year.
+    const hl = document.getElementById(`histhod-highlight-pills`);
+    if (hl) {
       const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope);
-      dd.innerHTML = `<option value="__none__">All years (stack)</option>` +
-        years.map(y => `<option value="${y}" ${STATE.highlightYear === y ? 'selected' : ''}>${y}</option>`).join('');
+      const allActive = (STATE.highlightYear == null);
+      let html = pkPill({ label: 'All', active: allActive, onClick: `histHodHighlightYear('__none__')` });
+      years.forEach(y => {
+        html += pkPill({ label: String(y), active: STATE.highlightYear === y, onClick: `histHodHighlightYear('${y}')` });
+      });
+      hl.innerHTML = html;
     }
   }
 
