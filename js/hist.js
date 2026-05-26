@@ -4563,6 +4563,7 @@ function _renderAnalystBanner(html) {
     else container.appendChild(banner);
   }
 }
+if (typeof window !== 'undefined') window._renderAnalystBanner = _renderAnalystBanner;
 
 // Remove every analyst banner in the active detail or fullscreen scope.
 // Called when switching tab/sub-mode so banners from the previous view don't linger.
@@ -4641,6 +4642,10 @@ function _setHoTitle({ eyebrow, title, subtitle }) {
   if (oey) oey.textContent = eyebrow || '';
   if (oti) oti.innerHTML = title || '';
   if (osu) osu.innerHTML = subtitle || '';
+}
+if (typeof window !== 'undefined') {
+  window._setHoTitle = _setHoTitle;
+  window._titleWithDescription = _titleWithDescription;
 }
 
 async function _hszRenderTab(filtered, zone, tab, summary) {
@@ -5954,11 +5959,6 @@ function _hszRenderHourlyHodShape(zone) {
   if (!parent) return;
   // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
-  // Hide the legacy breakdown details (the HOD module ships its own breakdown)
-  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
   // Cleanup rogue artifacts from other Hourly modes (Quarter grid + legend)
   ['ho-detail-quarter-grid', 'ho-fs-quarter-grid',
    'ho-detail-quarter-legend', 'ho-fs-quarter-legend'].forEach(id => {
@@ -6017,11 +6017,6 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
-  // Restore the legacy breakdown details (was hidden in hodshape mode)
-  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = '';
-  });
 
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
@@ -6278,11 +6273,6 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
-  // Restore the legacy breakdown details (was hidden in hodshape mode)
-  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = '';
-  });
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) {
     canvas.style.display = '';
@@ -9667,7 +9657,53 @@ function buildHmzCSV() {
    so the legacy ho-breakdown slot just gets a pointer.
    ════════════════════════════════════════════════════════════════════ */
 function _bdHodShape(zone, summary) {
-  return '<div style="padding:8px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">The hour-of-day shape breakdown is rendered inline above (year-by-year peak/trough/spread).</div>';
+  // Re-uses the module's data builder to get the normalised shape per year,
+  // then renders as a 24h × N-years table. Each cell shows the normalised
+  // ratio (1.00 = period mean) so the table makes the shape evolution
+  // explicit cell by cell, complementing the chart.
+  if (typeof window.histHodBuildData !== 'function') {
+    // Module not loaded yet — fallback minimal message
+    return '<div style="padding:8px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">Hour-of-day shape data not available.</div>';
+  }
+  const data = window.histHodBuildData(zone);
+  if (!data || !data.years || !data.years.length) {
+    return '<div style="padding:8px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">No hour-of-day shape data for ' + zone + '.</div>';
+  }
+  const { years, shapes } = data;
+  const cy = years[years.length - 1];
+  const y1 = years.length >= 2 ? years[years.length - 2] : null;
+
+  const fmtR = v => (v == null) ? '—' : v.toFixed(2) + '×';
+  const fmtD = (a, b) => {
+    if (a == null || b == null) return '—';
+    const d = (a - b) * 100;
+    const color = d > 0 ? '#ED6965' : '#14D3A9';
+    const arrow = d > 0 ? '▲' : '▼';
+    return `<span style="color:${color}">${arrow} ${Math.abs(d).toFixed(1)}%</span>`;
+  };
+
+  const rows = [];
+  for (let h = 0; h < 24; h++) {
+    const vals = years.map(y => (shapes[y] && shapes[y][h] != null) ? shapes[y][h] : null);
+    const curV = shapes[cy][h];
+    const y1v  = y1 ? shapes[y1][h] : null;
+    rows.push({ hour: `${String(h).padStart(2,'0')}h`, vals, vsy1: y1v != null ? (curV - y1v) : null });
+  }
+
+  return `<table style="${_BD_TABLE_STYLE}">
+    <thead><tr>
+      <th style="${_BD_TH_STYLE};text-align:left">Hour</th>
+      ${years.map(y => `<th style="${_BD_TH_STYLE}">${y}</th>`).join('')}
+      <th style="${_BD_TH_STYLE}">vs Y-1</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td style="${_BD_TD_LABEL}">${r.hour}</td>
+        ${r.vals.map((v, idx) => `<td style="${_BD_TD_STYLE};${idx === r.vals.length - 1 ? 'color:var(--tx)' : ''}">${fmtR(v)}</td>`).join('')}
+        <td style="${_BD_TD_STYLE}">${r.vsy1 == null ? '—' : (r.vsy1 > 0 ? '<span style="color:#ED6965">▲ ' : '<span style="color:#14D3A9">▼ ') + Math.abs(r.vsy1 * 100).toFixed(1) + '%</span>'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -9903,33 +9939,15 @@ function _bdHodShape(zone, summary) {
     const host = document.getElementById(`histhod-shape`);
     if (!host) return;
 
-    // ── IDEMPOTENCE ─────────────────────────────────────────────────
-    // If the module is already mounted for this same zone AND we are mid-Play,
-    // do NOT re-mount (would reset the animation). This is the critical guard
-    // that prevents the dispatcher loop (any tab re-render triggers this).
-    // We only consider re-mounting if zone changed OR the host is empty OR
-    // we are not in an active animation cycle.
-    const alreadyMounted = host.querySelector('#histhod-canvas') != null;
-    const sameZone       = (STATE.currentZone === zone);
-    const inAnimCycle    = (STATE.playing || STATE.animEnded);
-
-    if (alreadyMounted && sameZone && inAnimCycle) {
-      // Just refresh the chart without touching DOM or state
-      _hodRedraw();
-      return;
-    }
-    if (alreadyMounted && sameZone) {
-      // Same zone, no anim cycle — just refresh the chart, keep DOM/state
-      _hodRedraw();
-      return;
-    }
-
-    STATE.currentZone = zone;
-    // Stop any animation timer from a previous mount
+    // ── HARD RESET (no idempotence) ─────────────────────────────────
+    // Always reset animation state on mount. This prevents zombie states
+    // (e.g. STATE.playing=true but setInterval dead → button stuck on PAUSE
+    // and only first year visible).
     if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
     STATE.playing = false;
     STATE.animEnded = false;
     STATE.animVisibleCount = 0;
+    STATE.currentZone = zone;
 
     // Detect fullscreen context via the active _HSZ_TARGET (set by hist.js)
     const isFullscreen = (typeof window._HSZ_TARGET !== 'undefined'
@@ -9942,69 +9960,53 @@ function _bdHodShape(zone, summary) {
     // Year label size: slightly bigger in fullscreen
     const lblSize = isFullscreen ? '48px' : '34px';
 
-    // ── TITLE BLOCK · uses the canonical _setHoTitle() helper so the eyebrow,
-    //    title and subtitle slots of the drill (and FS overlay) are populated
-    //    identically to the other YoY sub-modes (Annual average, By quarter).
-    if (typeof window._setHoTitle === 'function' || typeof _setHoTitle === 'function') {
-      const setter = (typeof _setHoTitle === 'function') ? _setHoTitle : window._setHoTitle;
+    // ── TITLE BLOCK via the canonical _setHoTitle helper ───────────
+    if (typeof _setHoTitle === 'function') {
       const titleHelper = (typeof _titleWithDescription === 'function')
         ? _titleWithDescription
         : (t, d) => `${t} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${d}</span>`;
-      setter({
+      _setHoTitle({
         eyebrow: `Prices · YoY · ${zone} · Hourly · Hour-of-day shape`,
-        title:   titleHelper('Normalised hourly price shape across years',
+        title:   titleHelper('Normalised hourly price shape',
                              'YoY · price ÷ period mean · centred on 1.00'),
-        subtitle: 'Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level.',
+        subtitle: 'Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level. Stack of all years available — click Play to animate the build-up over time.',
       });
     }
 
-    // Pill helper: prefer global pkPill, fallback inline (template parity)
-    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 11px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.18)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.45)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
-
+    // ── MINIMAL HOST: only the chart area + mini-toolbar overlay ───
+    // Template strict: no custom filters bar, no inline banner, no inline
+    // breakdown. The native drill row provides:
+    //   - title block (filled by _setHoTitle above)
+    //   - analyst banner anchor (filled by _renderAnalystBanner below)
+    //   - breakdown details (filled via _bdHodShape dispatch in hist.js)
     host.innerHTML = `
-      <!-- ═══ Filters bar · template strict (mono uppercase pills + ghost/primary buttons) ═══ -->
-      <div class="pk-filters-bar" id="histhod-toolbar">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
-          <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Years</span>
-          <div id="histhod-years-pills" style="display:inline-flex;gap:4px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
-          <div id="histhod-highlight-pills" style="display:inline-flex;gap:4px"></div>
-        </div>
-        <div class="pk-filters-bar-spacer"></div>
-        <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years one-by-one">▶ Play</button>
-        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
-        <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
-        <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
-      </div>
-
-      <!-- ═══ Chart container ═══ -->
+      <!-- Chart container with mini-toolbar overlay (Play/PNG/GIF/Reset) -->
       <div style="position:relative;height:${chartHeight};margin-top:6px">
         <canvas id="histhod-canvas" style="width:100%;height:100%"></canvas>
         <!-- Year label · top-LEFT inside chart area (right of Y-axis ticks) -->
         <div id="histhod-year-label" style="position:absolute;left:60px;top:8px;font-family:'Inter',sans-serif;font-size:${lblSize};font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
+        <!-- Mini-toolbar · top-right overlay, discrete actions specific to this viz -->
+        <div style="position:absolute;right:8px;top:8px;display:flex;gap:4px;z-index:6">
+          <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
+          <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
+          <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
+          <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺</button>
+        </div>
       </div>
-
-      <!-- ═══ Market read banner (amber, template parity) ═══ -->
-      <div id="histhod-banner" style="margin-top:14px"></div>
-
-      <!-- ═══ Breakdown details (collapsable) ═══ -->
-      <details style="margin-top:14px" open>
-        <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0;font-family:'JetBrains Mono',monospace">
-          ▸ Hour-of-day shape · YoY characteristics
-        </summary>
-        <div id="histhod-breakdown" style="margin-top:8px;overflow-x:auto"></div>
-      </details>
     `;
 
-    _hodPaintControls();
     _hodRedraw();
   };
+
+  // ── Public data builder (exposed for _bdHodShape in hist.js) ──────
+  // Returns { years, shapes } for the active zone, using the default period
+  // and full year scope. Independent of UI state — pure data accessor.
+  window.histHodBuildData = function (zone) {
+    if (!zone) zone = STATE.currentZone;
+    if (!zone) return null;
+    return _hodBuildYearData(zone, STATE.period, 'All');
+  };
+
 
   window.histHodSetPeriod = function (p) {
     if (!PERIOD_OPTIONS.includes(p)) return;
@@ -10260,9 +10262,9 @@ function _bdHodShape(zone, summary) {
       }
     }
 
-    // Banner + breakdown
-    _hodRenderBanner(idx, years, shapes);
-    _hodRenderBreakdown(idx, years, shapes);
+    // Banner only — breakdown is rendered by _bdHodShape via the native
+    // drill breakdown slot (#ho-detail-breakdown), not by this module
+    _hodRenderBanner(undefined, years, shapes);
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -10325,8 +10327,9 @@ function _bdHodShape(zone, summary) {
   // MARKET READ BANNER · contextual analyst commentary
   // ════════════════════════════════════════════════════════════════
   function _hodRenderBanner(idx, years, shapes) {
-    const host = document.getElementById(`histhod-banner`);
-    if (!host) return;
+    // No DOM host needed: we route through _renderAnalystBanner which fills
+    // the canonical anchor (#ho-detail-analyst-banner or FS equivalent).
+    if (!years || !years.length || !shapes) return;
 
     // Pick the most recent year as the "current" reference
     const curYear = years[years.length - 1];
@@ -10360,22 +10363,25 @@ function _bdHodShape(zone, summary) {
 
     let verdict = '';
     if (midDelta < -5 && eveDelta > 2) {
-      verdict = `Duck-curve pattern · solar cannibalisation visible in the midday trough, evening peak amplifying. Capture-rate compression for solar PPAs, BESS arbitrage opportunity widening.`;
+      verdict = `<b>Duck-curve pattern</b>. Solar cannibalisation visible in the midday trough, evening peak amplifying. Capture-rate compression for solar PPAs, BESS arbitrage opportunity widening.`;
     } else if (midDelta < -2) {
-      verdict = `Mid-day softening — early signal of solar penetration. Watch capture rates for solar offtake.`;
+      verdict = `<b>Mid-day softening</b>. Early signal of solar penetration. Watch capture rates for solar offtake.`;
     } else if (eveDelta > 5) {
-      verdict = `Evening peak amplification dominant — flex value rising for peakers and BESS evening discharge.`;
+      verdict = `<b>Evening peak amplification</b>. Flex value rising for peakers and BESS evening discharge.`;
     } else if (mornDelta < -3) {
-      verdict = `Morning peak fading — shift in demand timing (heating + EV charging behaviour).`;
+      verdict = `<b>Morning peak fading</b>. Shift in demand timing (heating + EV charging behaviour).`;
     } else {
-      verdict = `Shape stable across years — classical 2-peak European pattern persists.`;
+      verdict = `<b>Shape stable</b>. Classical 2-peak European pattern persists across years.`;
     }
 
-    if (typeof builder === 'function') {
-      host.innerHTML = builder({ line1, verdict });
-    } else {
-      // Fallback inline banner (template parity)
-      host.innerHTML = `<div style="padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6"><span style="margin-right:8px">◈</span>${line1}<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : ${verdict}</span></div>`;
+    // Use the canonical analyst banner renderer (same as Annual average, By
+    // quarter, etc.) — fills the #ho-detail-analyst-banner anchor in the
+    // drill, or the FS-pane equivalent. Template strict.
+    const renderFn = window._renderAnalystBanner || (typeof _renderAnalystBanner === 'function' ? _renderAnalystBanner : null);
+    if (renderFn) {
+      const ICON = `<span style="font-size:13px;margin-right:6px;vertical-align:-1px">◈</span>`;
+      const html = `<div class="hist-analyst-banner" style="padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6;margin-top:10px">${ICON}${line1}<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : ${verdict}</span></div>`;
+      renderFn(html);
     }
   }
 
