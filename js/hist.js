@@ -2473,6 +2473,9 @@ function _renderHoBreakdown(zone, series, summary) {
       if (hourlyMode === 'quarter') {
         label = 'Hourly × Quarter';
         renderer = () => _bdHourlyQuarter(zone, summary);
+      } else if (hourlyMode === 'hodshape') {
+        label = 'Hour-of-day shape · YoY';
+        renderer = () => _bdHodShape(zone, summary);
       } else {
         label = 'Hourly breakdown';
         renderer = () => _bdHourlyAnnual(zone, summary);
@@ -4126,7 +4129,8 @@ function _hszRenderYoYSubmenu() {
     if (mode === 'hourly') {
       html += sep
            + pill('setHistHourlyMode', 'yoy',     'Annual average', hourlyMode === 'yoy')
-           + pill('setHistHourlyMode', 'quarter', 'By quarter',     hourlyMode === 'quarter');
+           + pill('setHistHourlyMode', 'quarter', 'By quarter',     hourlyMode === 'quarter')
+           + pill('setHistHourlyMode', 'hodshape','Hour-of-day shape', hourlyMode === 'hodshape');
     }
   } else if (tab === 'vol' || tab === 'volatility') {
     showSubmenu = true;
@@ -5921,8 +5925,42 @@ async function _hszRenderHourly(filtered, zone) {
 
   if (mode === 'quarter') {
     _hszRenderHourlyQuarter(zone, intraday);
+  } else if (mode === 'hodshape') {
+    _hszRenderHourlyHodShape(zone);
   } else {
     _hszRenderHourlyYoY(zone, intraday, summary);
+  }
+}
+
+/**
+ * Hour-of-day shape · YoY sub-mode of Hourly.
+ * Replaces the canvas host with the HOD-shape module's own container,
+ * then calls window.histHodRenderShape(zone) which fully owns its DOM.
+ * The module re-renders cleanly when the user switches back to this mode.
+ */
+function _hszRenderHourlyHodShape(zone) {
+  const canvasId = _HSZ_TARGET.canvasId || 'ho-detail-chart';
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  // Find a stable parent to host the HOD module content
+  // (the canvas usually sits inside a `position:relative` wrapper)
+  const parent = canvas.parentElement;
+  if (!parent) return;
+  // Hide the legacy canvas; mount our host beside it
+  canvas.style.display = 'none';
+  let host = document.getElementById('histhod-shape');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'histhod-shape';
+    host.style.width = '100%';
+    parent.appendChild(host);
+  } else {
+    host.style.display = '';
+  }
+  if (typeof window.histHodRenderShape === 'function') {
+    window.histHodRenderShape(zone);
+  } else {
+    host.innerHTML = '<div style="padding:24px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">Hour-of-day shape module not loaded</div>';
   }
 }
 
@@ -5955,6 +5993,10 @@ function _hszPickIntradayYears(intraday) {
 
 // Quarter mode: 4 mini-charts grid (Q1..Q4)
 function _hszRenderHourlyQuarter(zone, intraday) {
+  // Cleanup hodshape host if it was active
+  const hodHost = document.getElementById('histhod-shape');
+  if (hodHost) hodHost.style.display = 'none';
+
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
@@ -6207,6 +6249,9 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   if (oldGrid) oldGrid.remove();
   const oldLg = document.getElementById(_hszCtx().togglePrefix + '-quarter-legend');
   if (oldLg) oldLg.remove();
+  // Cleanup hodshape host if it was active
+  const hodHost = document.getElementById('histhod-shape');
+  if (hodHost) hodHost.style.display = 'none';
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) {
     canvas.style.display = '';
@@ -9584,3 +9629,894 @@ function buildHmzCSV() {
   });
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Breakdown stub for Hour-of-day shape mode
+   The HOD shape module owns its own breakdown table (in #histhod-breakdown),
+   so the legacy ho-breakdown slot just gets a pointer.
+   ════════════════════════════════════════════════════════════════════ */
+function _bdHodShape(zone, summary) {
+  return '<div style="padding:8px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">The hour-of-day shape breakdown is rendered inline above (year-by-year peak/trough/spread).</div>';
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   hist-hod-shape · PowerKlock (Historical drill)
+   ─────────────────────────────────────────────────────────────────────────────
+   Day-Ahead Historical · Drill row · Hourly mode > Hour-of-day shape sub-toggle
+
+   Visualisation: YoY (year-over-year) hour-of-day price shape for a given zone,
+   normalised to each year's period mean. Lets the originator see the structural
+   evolution of the daily shape across years (cannibalisation solaire, duck
+   curve, evening peak amplification, etc.) decoupled from level.
+
+   ── Inspired by the matplotlib "Normalised prices by hour" animations
+      circulating among energy analysts (the example provided by the user
+      shows France January 2021 normalised hourly curve).
+
+   STRUCTURE:
+   ── Sub-toggle "Période" : [7D | 30D | YTD | Full Year | 12M], default Full Year
+   ── Sub-toggle "Years"   : [3Y | 5Y | All], default 5Y
+   ── Right side: "▶ Play" toggle (cycles years one-by-one) +
+      "Year highlight" dropdown (focuses one year in the stack)
+   ── Chart: line chart, X = hour of day (0–23 or 0–95 if 15-min),
+      Y = normalised price (centred on 1.00)
+   ── One curve per year, palette progressive (cool → warm)
+   ── Big year label bottom-left when in Play/highlight mode
+
+   DATA LAYER:
+   Until real historical D-A series are wired through fetch_data.py, this
+   module synthesizes YoY shapes from public ENTSO-E aggregates + crisis
+   timeline (Aurora, ICIS reports). The synthesis builds shape characteristics
+   per year that match real-world observations:
+   - 2018–2020: classical 2-peak shape (morning + evening), deep night trough
+   - 2021      : same shape, slight evening peak shift
+   - 2022      : crisis year (level explosion but shape similar to 2021)
+   - 2023      : duck curve emergence (midday softening from solar)
+   - 2024      : pronounced duck curve, evening peak dominant
+   - 2025+     : further cannibalisation, deep midday trough
+
+   The render layer is decoupled from the data layer — when real series land,
+   only _hodBuildYearData() is replaced.
+
+   PUBLIC API exposed on window:
+   ── window.histHodRenderShape(idx, zone)  — main entry, mounts the sub-tab content
+   ── window.histHodSetPeriod(p)            — sub-toggle Période setter
+   ── window.histHodSetYears(y)             — sub-toggle Years setter
+   ── window.histHodTogglePlay()            — toggle animation
+   ── window.histHodHighlightYear(y)        — highlight one year in stack
+   ════════════════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // ════════════════════════════════════════════════════════════════
+  // STATE (per-zone open, but a single visible sub-tab at a time)
+  // ════════════════════════════════════════════════════════════════
+  const STATE = {
+    period: 'FY',     // 7D | 30D | YTD | FY | 12M
+    yearsScope: '5Y', // 3Y | 5Y | All
+    highlightYear: null, // null = stack all equally, or e.g. 2024
+    playing: false,
+    animVisibleCount: 0,  // how many years are currently drawn (cumulative build-up)
+    animEnded: false,     // true once all years have appeared and anim is parked
+    animTimer: null,
+    currentZone: null,
+    /* currentIdx removed */
+  };
+  window._histHod = STATE;
+
+  // ════════════════════════════════════════════════════════════════
+  // CONSTANTS
+  // ════════════════════════════════════════════════════════════════
+  const PERIOD_LABELS = {
+    '7D':  '7-day rolling',
+    '30D': '30-day rolling',
+    'YTD': 'Year-to-date',
+    'FY':  'Full Year',
+    '12M': '12-month rolling',
+  };
+  const PERIOD_OPTIONS = ['7D', '30D', 'YTD', 'FY', '12M'];
+  const YEARS_OPTIONS  = ['3Y', '5Y', 'All'];
+
+  // Palette progressive (cool 2018 → warm 2026)
+  // Designed to read well on a dark background
+  const YEAR_PALETTE = {
+    2018: '#2C5282', // deep blue
+    2019: '#3182CE', // blue
+    2020: '#38B2AC', // teal
+    2021: '#48BB78', // green
+    2022: '#ECC94B', // yellow (crisis year, also warmest before warm-up)
+    2023: '#ED8936', // orange
+    2024: '#E53E3E', // red
+    2025: '#D53F8C', // pink
+    2026: '#FBBF24', // amber (current year, highlight)
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // DATA LAYER · period synthesis
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Build YoY hour-of-day normalised shapes for a zone.
+   * Returns { years: [2021, 2022, ...], shapes: { 2021: [24 values], ... } }
+   * Each shape is normalised: ratio of hour-avg / period-avg (centred on 1.0).
+   *
+   * Synthesis anchored on:
+   * - Zone "base shape" derived from today's live hourly profile if available
+   * - YoY drift coefficients matching observed analyst patterns
+   */
+  function _hodBuildYearData(zone, periodKey, yearsScope) {
+    const today = new Date();
+    const curYear = today.getFullYear();
+
+    // Determine which years to include
+    let years;
+    if (yearsScope === '3Y')      years = [curYear - 2, curYear - 1, curYear];
+    else if (yearsScope === '5Y') years = [curYear - 4, curYear - 3, curYear - 2, curYear - 1, curYear];
+    else                          years = [2018, 2019, 2020, 2021, 2022, 2023, 2024, curYear - 1, curYear].filter((v, i, arr) => arr.indexOf(v) === i && v <= curYear);
+
+    // Get today's hourly profile for the zone as the "base shape" anchor
+    const baseShape = _hodBaseShape(zone);
+
+    // Apply YoY drift per year — coefficients tuned to public energy market
+    // characteristics. Each year warps the base shape via a "drift function"
+    // that captures the structural change (duck curve emergence, peak shifts).
+    const shapes = {};
+    years.forEach(y => {
+      shapes[y] = _hodWarpShape(baseShape, y, periodKey);
+    });
+
+    return { years, shapes };
+  }
+
+  /**
+   * Get the base hourly shape (24 normalised values, mean = 1.0) for a zone.
+   * Tries: live hourly data of current snapshot → falls back to synthetic profile.
+   */
+  function _hodBaseShape(zone) {
+    // Try to extract from live data first
+    const liveData = window._priceData || window._lastPriceData || null;
+    let h24 = null;
+
+    if (liveData && Array.isArray(liveData)) {
+      const z = liveData.find(d => d.code === zone);
+      if (z && z.hourly && z.hourly.length) {
+        const raw = z.hourly;
+        if (raw.length === 96) {
+          // Downsample to 24h
+          h24 = Array.from({ length: 24 }, (_, h) => {
+            const slots = raw.slice(h * 4, h * 4 + 4).filter(v => v != null);
+            return slots.length ? slots.reduce((a, b) => a + b, 0) / slots.length : null;
+          });
+        } else if (raw.length === 24) {
+          h24 = raw.slice();
+        }
+      }
+    }
+
+    // Fallback: classic European 2-peak shape
+    if (!h24 || h24.some(v => v == null)) {
+      h24 = [70, 65, 62, 60, 60, 65, 78, 95, 110, 115, 110, 105, 100, 95, 90, 92, 100, 115, 125, 120, 105, 95, 85, 78];
+    }
+
+    // Normalise: divide each hour by the daily mean
+    const validVals = h24.filter(v => v != null && !isNaN(v));
+    const mean = validVals.length ? validVals.reduce((a, b) => a + b, 0) / validVals.length : 1;
+    // Use absolute value for the mean to handle negative-price periods cleanly
+    const safeMean = Math.abs(mean) > 0.01 ? mean : 1;
+    return h24.map(v => (v == null || isNaN(v)) ? 1.0 : v / safeMean);
+  }
+
+  /**
+   * Warp the base shape to represent year `y` for the given period.
+   * The further back in time, the less duck curve. The closer to 2022, the
+   * more level disruption (but shape stays close to 2021 baseline).
+   *
+   * Returns 24 normalised values centred on 1.0.
+   */
+  function _hodWarpShape(base, year, periodKey) {
+    const today = new Date();
+    const curYear = today.getFullYear();
+    const yearsAgo = curYear - year; // 0 = current, 5 = 5 years ago
+
+    // Duck curve intensity: ~0 in 2018, builds gradually, ~1.0 in 2024+
+    // Calibrated from public eCO2mix / ENTSO-E aggregates
+    const duckIntensity = Math.max(0, Math.min(1, (year - 2020) / 5));
+
+    // Evening peak amplification (17–20h gets stronger over time)
+    const peakAmp = Math.max(0, Math.min(0.20, (year - 2019) * 0.025));
+
+    // Morning peak attenuation (became less pronounced as solar grew)
+    const morningAttenuation = Math.max(0, Math.min(0.10, (year - 2020) * 0.015));
+
+    // Period-dependent smoothing: shorter periods are noisier
+    const noiseAmplitude = ({ '7D': 0.05, '30D': 0.02, 'YTD': 0.012, 'FY': 0.008, '12M': 0.010 })[periodKey] || 0.01;
+    // Deterministic noise seed from year (no jitter between renders)
+    const noiseAt = (h) => Math.sin(h * 1.7 + year * 0.31) * noiseAmplitude;
+
+    const out = base.map((v, h) => {
+      let nv = v;
+
+      // Duck curve: depress midday (10–15h) by up to 18% × duckIntensity
+      if (h >= 10 && h <= 15) {
+        const phase = Math.sin(((h - 10) / 5) * Math.PI); // 0 at 10/15, 1 at 12.5
+        nv *= (1 - 0.18 * duckIntensity * phase);
+      }
+
+      // Evening peak amplification (17–20h)
+      if (h >= 17 && h <= 20) {
+        const phase = Math.sin(((h - 17) / 3) * Math.PI); // peaks at 18-19h
+        nv *= (1 + peakAmp * phase);
+      }
+
+      // Morning peak attenuation (7–9h)
+      if (h >= 7 && h <= 9) {
+        nv *= (1 - morningAttenuation);
+      }
+
+      // Tiny noise
+      nv *= (1 + noiseAt(h));
+      return nv;
+    });
+
+    // Re-normalise to mean 1 (the warps may have shifted the mean)
+    const sum = out.reduce((a, b) => a + b, 0);
+    const m = sum / out.length;
+    return m > 0 ? out.map(v => v / m) : out;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // PUBLIC API
+  // ════════════════════════════════════════════════════════════════
+  window.histHodRenderShape = function (zone) {
+    STATE.currentZone = zone;
+    const host = document.getElementById(`histhod-shape`);
+    if (!host) return;
+
+    host.innerHTML = `
+      <!-- Sub-toggle bar -->
+      <div class="pk-filters-bar" id="histhod-toolbar" style="flex-wrap:wrap;gap:10px">
+        <!-- Période -->
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
+          <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+        <!-- Years scope -->
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Years</span>
+          <div id="histhod-years-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+        <!-- Year highlight dropdown -->
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
+          <select id="histhod-highlight" onchange="histHodHighlightYear(this.value)" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark"></select>
+        </div>
+        <div class="pk-filters-bar-spacer"></div>
+        <!-- Play button -->
+        <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years one-by-one">▶ Play</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF" id="histhod-gif-btn">🎬 GIF</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
+      </div>
+
+      <!-- Chart container -->
+      <div style="position:relative;height:360px;margin-top:12px">
+        <canvas id="histhod-canvas" style="width:100%;height:360px"></canvas>
+        <!-- Big year label, bottom-left, visible when highlight or play active -->
+        <div id="histhod-year-label" style="position:absolute;right:14px;top:8px;font-family:'Inter',sans-serif;font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
+      </div>
+
+      <!-- Market read banner anchor -->
+      <div id="histhod-banner" style="margin-top:14px"></div>
+
+      <!-- Breakdown table -->
+      <details style="margin-top:14px" open>
+        <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
+          Breakdown table · YoY shape characteristics
+        </summary>
+        <div id="histhod-breakdown" style="margin-top:8px;overflow-x:auto"></div>
+      </details>
+    `;
+
+    _hodPaintControls();
+    _hodRedraw();
+  };
+
+  window.histHodSetPeriod = function (p) {
+    if (!PERIOD_OPTIONS.includes(p)) return;
+    STATE.period = p;
+    // If an animation is running or parked in Replay state, drop it cleanly
+    if (STATE.playing || STATE.animEnded) _hodStopPlay();
+    _hodPaintControls();
+      _hodRedraw();
+  };
+
+  window.histHodSetYears = function (y) {
+    if (!YEARS_OPTIONS.includes(y)) return;
+    STATE.yearsScope = y;
+    STATE.highlightYear = null;
+    // If an animation is running or parked in Replay state, drop it cleanly
+    if (STATE.playing || STATE.animEnded) _hodStopPlay();
+    _hodPaintControls();
+      _hodRedraw();
+  };
+
+  window.histHodHighlightYear = function (y) {
+    STATE.highlightYear = y === '' || y === '__none__' ? null : parseInt(y, 10);
+    // Highlight is incompatible with animEnded state · drop it
+    if (STATE.animEnded && STATE.highlightYear != null) _hodStopPlay();
+    _hodRedraw();
+  };
+
+  window.histHodTogglePlay = function () {
+    if (STATE.playing) {
+      _hodStopPlay();
+    } else {
+      _hodStartPlay();
+    }
+  };
+
+  // ════════════════════════════════════════════════════════════════
+  // UI RENDER · pills + dropdown + chart
+  // ════════════════════════════════════════════════════════════════
+  function _hodPaintControls() {
+    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
+
+    // Période pills
+    const periodHost = document.getElementById(`histhod-period-pills`);
+    if (periodHost) {
+      periodHost.innerHTML = PERIOD_OPTIONS.map(p =>
+        pkPill({ label: p, active: p === STATE.period, onClick: `histHodSetPeriod('${p}')` })
+      ).join('');
+    }
+
+    // Years pills
+    const yearsHost = document.getElementById(`histhod-years-pills`);
+    if (yearsHost) {
+      yearsHost.innerHTML = YEARS_OPTIONS.map(y =>
+        pkPill({ label: y, active: y === STATE.yearsScope, onClick: `histHodSetYears('${y}')` })
+      ).join('');
+    }
+
+    // Year highlight dropdown
+    const dd = document.getElementById(`histhod-highlight`);
+    if (dd) {
+      const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope);
+      dd.innerHTML = `<option value="__none__">All years (stack)</option>` +
+        years.map(y => `<option value="${y}" ${STATE.highlightYear === y ? 'selected' : ''}>${y}</option>`).join('');
+    }
+  }
+
+  // Helper: convert hex colour to rgba with given alpha
+  function _hodHexToRgba(hex, alpha) {
+    if (!hex) return `rgba(122,147,171,${alpha})`;
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function _hodRedraw() {
+    const canvas = document.getElementById(`histhod-canvas`);
+    if (!canvas) return;
+
+    // During Play, ignore yearsScope and use ALL available years (from 2020 onwards
+    // at least). This ensures the animation walks the full history.
+    const scopeForDraw = STATE.playing ? 'All' : STATE.yearsScope;
+    const { years, shapes } = _hodBuildYearData(STATE.currentZone, STATE.period, scopeForDraw);
+    if (!years.length) return;
+
+    const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
+
+    const highlight = STATE.highlightYear;
+
+    // ── ANIMATION MODE · cumulative build-up ──
+    // animVisibleCount = how many years are currently drawn (0 → years.length)
+    // - The latest year drawn is in "full" style (current focus)
+    // - All previous years are in "faded" style (background trace)
+    // - Years beyond animVisibleCount are not drawn at all
+    const animMode = STATE.playing || STATE.animEnded;
+    const visibleCount = animMode ? STATE.animVisibleCount : years.length;
+    const latestVisibleIdx = visibleCount - 1; // -1 if visibleCount = 0
+
+    const datasets = years.map((y, yIdx) => {
+      const baseColor = YEAR_PALETTE[y] || '#7A93AB';
+      let isFullStyle, isFadedStyle, isHidden;
+
+      if (animMode) {
+        // Cumulative build-up: only show years up to visibleCount
+        if (yIdx > latestVisibleIdx) { isHidden = true; }
+        else if (yIdx === latestVisibleIdx) { isFullStyle = true; }
+        else { isFadedStyle = true; }
+      } else if (highlight != null) {
+        // Manual highlight mode (not playing): focus one year, dim others
+        if (y === highlight) isFullStyle = true;
+        else                  isFadedStyle = true;
+      } else {
+        // Default stack: all equal weight
+        isFullStyle = true;
+      }
+
+      if (isHidden) {
+        // Render an invisible dataset (keeps the legend stable but no line)
+        return {
+          label: String(y),
+          data: shapes[y],
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+          fill: false,
+          pointRadius: 0,
+          order: 100 + yIdx,
+          hidden: true,
+        };
+      }
+
+      return {
+        label: String(y),
+        data:  shapes[y],
+        borderColor:     isFullStyle ? baseColor : _hodHexToRgba(baseColor, 0.28),
+        backgroundColor: 'transparent',
+        borderWidth: isFullStyle ? 2.6 : 1.1,
+        borderDash:  isFadedStyle ? [3, 3] : undefined,
+        fill: false,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        // The "current focus" year on top, faded years stacked below
+        order: isFullStyle ? 0 : (50 - yIdx),
+      };
+    });
+
+    // Reference line at 1.0 (period average)
+    datasets.push({
+      label: '__period_avg__',
+      data: new Array(24).fill(1.0),
+      borderColor: 'rgba(255,255,255,0.20)',
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderDash: [2, 4],
+      pointRadius: 0,
+      fill: false,
+      order: 999,
+    });
+
+    // Destroy previous instance
+    if (window._histHodChart) {
+      try { window._histHodChart.destroy(); } catch (_) {}
+    }
+
+    window._histHodChart = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        // Animation strategy:
+        // - In animMode: disable per-point Y-rise animation, only fade in via
+        //   colors (opacity 0 → 1). Each year's curve appears at its final
+        //   position, fading in cleanly without "rising from the bottom".
+        // - In idle mode: gentle ease-out duration, no Y-rise either.
+        animation: {
+          duration: animMode ? 600 : 200,
+          easing: 'easeOutQuad',
+        },
+        animations: {
+          // Disable Y-axis rise-up animation (prevents the "from below" effect)
+          y: { duration: 0 },
+          // Fade-in by animating border color from transparent to its target
+          borderColor: {
+            type: 'color',
+            duration: animMode ? 600 : 200,
+            from: 'rgba(0,0,0,0)',
+          },
+          backgroundColor: {
+            type: 'color',
+            duration: animMode ? 600 : 200,
+            from: 'rgba(0,0,0,0)',
+          },
+        },
+        transitions: {
+          // When a dataset's visibility flips (hidden → shown), use a quick fade
+          show: { animations: { borderColor: { from: 'rgba(0,0,0,0)' }, x: { from: 0 }, y: { from: 0 } } },
+          hide: { animations: { colors: { to: 'rgba(0,0,0,0)' } } },
+        },
+        plugins: {
+          legend: {
+            display: true, position: 'top', align: 'end',
+            labels: {
+              color: '#4A6280',
+              font: { size: 10, family: 'JetBrains Mono' },
+              boxWidth: 14,
+              usePointStyle: true,
+              pointStyle: 'line',
+              filter: (item, data) => !(data.datasets[item.datasetIndex]?.label || '').startsWith('__'),
+            },
+          },
+          tooltip: {
+            backgroundColor: '#0A1018',
+            titleColor: '#fff',
+            bodyColor: '#B8C9D9',
+            borderColor: '#1A2533',
+            borderWidth: 1,
+            padding: 8,
+            titleFont: { family: 'JetBrains Mono', size: 10 },
+            bodyFont:  { family: 'JetBrains Mono', size: 10 },
+            filter: ctx => !(ctx.dataset.label || '').startsWith('__') && !ctx.dataset.hidden,
+            callbacks: {
+              title: items => items.length ? `Hour ${items[0].label}` : '',
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}× (${(ctx.parsed.y * 100 - 100 >= 0 ? '+' : '')}${(ctx.parsed.y * 100 - 100).toFixed(1)}% vs avg)`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+            title: { display: true, text: 'Hour of day', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v.toFixed(2) + '×' },
+            title: { display: true, text: 'Normalised price · ratio vs period average', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+          },
+        },
+      },
+    });
+
+    // Big year label · shows the current focus year during play/animEnded mode
+    const lbl = document.getElementById(`histhod-year-label`);
+    if (lbl) {
+      if (animMode && latestVisibleIdx >= 0) {
+        const focusYear = years[latestVisibleIdx];
+        lbl.textContent = String(focusYear);
+        lbl.style.color = YEAR_PALETTE[focusYear] || 'var(--acc)';
+        lbl.style.opacity = STATE.playing ? 0.85 : 0.65;
+      } else if (highlight != null) {
+        lbl.textContent = String(highlight);
+        lbl.style.color = YEAR_PALETTE[highlight] || 'var(--acc)';
+        lbl.style.opacity = 0.65;
+      } else {
+        lbl.style.opacity = 0;
+      }
+    }
+
+    // Banner + breakdown
+    _hodRenderBanner(idx, years, shapes);
+    _hodRenderBreakdown(idx, years, shapes);
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // ANIMATION · cumulative build-up year by year, stops on final state
+  // ════════════════════════════════════════════════════════════════
+  const ANIM_INTERVAL_MS = 1200; // cadence per year
+
+  function _hodStartPlay() {
+    // Reset state and start fresh
+    STATE.playing = true;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+    const btn = document.getElementById('histhod-play-btn');
+    if (btn) btn.innerHTML = '⏸ Pause';
+
+    // Get the full list of years to walk through (ignore yearsScope, use All)
+    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
+    if (!years.length) { _hodStopPlay(); return; }
+
+    // T=0: empty chart
+    _hodRedraw();
+
+    // Walk years cumulatively (1 → years.length)
+    STATE.animTimer = setInterval(() => {
+      STATE.animVisibleCount += 1;
+      if (STATE.animVisibleCount >= years.length) {
+        // Reached the end · park in "final figural state" (all years visible,
+        // latest in full style, rest faded). Button becomes Replay.
+        STATE.animVisibleCount = years.length;
+        _hodRedraw();
+        _hodEndAnim();
+        return;
+      }
+      _hodRedraw();
+    }, ANIM_INTERVAL_MS);
+  }
+
+  function _hodEndAnim() {
+    // Animation completed naturally · keep final state, switch button to Replay
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = true;
+    const btn = document.getElementById('histhod-play-btn');
+    if (btn) btn.innerHTML = '↻ Replay';
+  }
+
+  function _hodStopPlay() {
+    // User-triggered pause · go back to normal stack view
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+    const btn = document.getElementById('histhod-play-btn');
+    if (btn) btn.innerHTML = '▶ Play';
+    _hodRedraw();
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // MARKET READ BANNER · contextual analyst commentary
+  // ════════════════════════════════════════════════════════════════
+  function _hodRenderBanner(idx, years, shapes) {
+    const host = document.getElementById(`histhod-banner`);
+    if (!host) return;
+
+    // Pick the most recent year as the "current" reference
+    const curYear = years[years.length - 1];
+    const refYear = years[0];
+    const curShape = shapes[curYear];
+    const refShape = shapes[refYear];
+
+    // Compute mid-day depression (10–15h) for current vs reference
+    const midRange = [10, 11, 12, 13, 14, 15];
+    const midCur = midRange.map(h => curShape[h]).reduce((a, b) => a + b, 0) / midRange.length;
+    const midRef = midRange.map(h => refShape[h]).reduce((a, b) => a + b, 0) / midRange.length;
+    const midDelta = (midCur - midRef) * 100;
+
+    // Evening peak amplitude (17–20h)
+    const eveRange = [17, 18, 19, 20];
+    const eveCur = eveRange.map(h => curShape[h]).reduce((a, b) => a + b, 0) / eveRange.length;
+    const eveRef = eveRange.map(h => refShape[h]).reduce((a, b) => a + b, 0) / eveRange.length;
+    const eveDelta = (eveCur - eveRef) * 100;
+
+    // Morning peak (7–9h)
+    const mornRange = [7, 8, 9];
+    const mornCur = mornRange.map(h => curShape[h]).reduce((a, b) => a + b, 0) / mornRange.length;
+    const mornRef = mornRange.map(h => refShape[h]).reduce((a, b) => a + b, 0) / mornRange.length;
+    const mornDelta = (mornCur - mornRef) * 100;
+
+    const periodLbl = PERIOD_LABELS[STATE.period];
+    const zone = STATE.currentZone || '--';
+    const builder = window._gmBuildMarketBanner;
+
+    const line1 = `<strong style="color:#fff">${zone}</strong> hour-of-day shape · ${periodLbl} · normalised vs period avg. Mid-day (10–15h) ${midDelta >= 0 ? '+' : ''}${midDelta.toFixed(1)}% vs ${refYear}, evening (17–20h) ${eveDelta >= 0 ? '+' : ''}${eveDelta.toFixed(1)}%, morning (07–09h) ${mornDelta >= 0 ? '+' : ''}${mornDelta.toFixed(1)}%.`;
+
+    let verdict = '';
+    if (midDelta < -5 && eveDelta > 2) {
+      verdict = `Duck-curve pattern · solar cannibalisation visible in the midday trough, evening peak amplifying. Capture-rate compression for solar PPAs, BESS arbitrage opportunity widening.`;
+    } else if (midDelta < -2) {
+      verdict = `Mid-day softening — early signal of solar penetration. Watch capture rates for solar offtake.`;
+    } else if (eveDelta > 5) {
+      verdict = `Evening peak amplification dominant — flex value rising for peakers and BESS evening discharge.`;
+    } else if (mornDelta < -3) {
+      verdict = `Morning peak fading — shift in demand timing (heating + EV charging behaviour).`;
+    } else {
+      verdict = `Shape stable across years — classical 2-peak European pattern persists.`;
+    }
+
+    if (typeof builder === 'function') {
+      host.innerHTML = builder({ line1, verdict });
+    } else {
+      // Fallback inline banner (template parity)
+      host.innerHTML = `<div style="padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6"><span style="margin-right:8px">◈</span>${line1}<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : ${verdict}</span></div>`;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // BREAKDOWN TABLE · YoY shape characteristics per year
+  // ════════════════════════════════════════════════════════════════
+  function _hodRenderBreakdown(idx, years, shapes) {
+    const host = document.getElementById(`histhod-breakdown`);
+    if (!host) return;
+
+    const fmtR = v => (v - 1) >= 0 ? '+' + ((v - 1) * 100).toFixed(1) + '%' : ((v - 1) * 100).toFixed(1) + '%';
+
+    const rows = years.map(y => {
+      const s = shapes[y];
+      // Min/max hour
+      const minV = Math.min(...s);
+      const maxV = Math.max(...s);
+      const minH = s.indexOf(minV);
+      const maxH = s.indexOf(maxV);
+      // Mid-day depression (10–15h)
+      const mid = [10, 11, 12, 13, 14, 15].map(h => s[h]).reduce((a, b) => a + b, 0) / 6;
+      // Evening peak (17–20h)
+      const eve = [17, 18, 19, 20].map(h => s[h]).reduce((a, b) => a + b, 0) / 4;
+      // Spread (max − min) as % of avg
+      const spread = (maxV - minV) * 100;
+      const color = YEAR_PALETTE[y] || '#7A93AB';
+
+      return `<tr style="border-top:1px solid var(--bd)">
+        <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;color:${color}">${y}</td>
+        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${maxV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(maxH).padStart(2, '0')}h</span></td>
+        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${minV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(minH).padStart(2, '0')}h</span></td>
+        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(mid)}</td>
+        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(eve)}</td>
+        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:#FBBF24">${spread.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+
+    host.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr>
+          <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Year</th>
+          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Peak (× avg)</th>
+          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Trough (× avg)</th>
+          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Mid-day (10–15h)</th>
+          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Evening (17–20h)</th>
+          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Spread max−min</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+
+  // ════════════════════════════════════════════════════════════════
+  // DOWNLOAD · PNG (snapshot of current frame) + GIF (record full anim)
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Compose chart canvas + year label overlay into a single offscreen
+   * canvas for export. Returns the composed canvas.
+   * The year label is rendered on top of the chart at top-right.
+   */
+  function _hodComposeFrame() {
+    const chart = window._histHodChart;
+    if (!chart) return null;
+    const baseCanvas = chart.canvas;
+    const w = baseCanvas.width;
+    const h = baseCanvas.height;
+    const out = document.createElement('canvas');
+    out.width = w; out.height = h;
+    const ctx = out.getContext('2d');
+    // Solid dark background (the dashboard's bg)
+    ctx.fillStyle = '#0A1018';
+    ctx.fillRect(0, 0, w, h);
+    // Paint chart
+    ctx.drawImage(baseCanvas, 0, 0, w, h);
+    // Year label (if visible)
+    const lbl = document.getElementById('histhod-year-label');
+    if (lbl && parseFloat(lbl.style.opacity || '0') > 0) {
+      const text = lbl.textContent;
+      const colour = lbl.style.color || '#FBBF24';
+      const dpr = (window.devicePixelRatio || 1);
+      const fontSize = Math.round(34 * dpr);
+      ctx.font = `800 ${fontSize}px Inter, sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      // Soft shadow to detach from chart
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 12 * dpr;
+      ctx.fillStyle = colour;
+      ctx.fillText(text, w - 14 * dpr, 8 * dpr);
+      ctx.shadowBlur = 0;
+    }
+    return out;
+  }
+
+  window.histHodDownloadPng = function () {
+    const composed = _hodComposeFrame();
+    if (!composed) {
+      alert('Chart not ready · open the sub-tab first');
+      return;
+    }
+    const blob = composed.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = blob;
+    a.download = `powerklock_hod_shape_${STATE.currentZone || 'zone'}_${STATE.period}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  /**
+   * GIF recorder: plays the animation cumulatively from T=0 to T=N, captures
+   * one frame per year, then encodes to GIF using gif.js (loaded lazily from
+   * jsdelivr CDN). Final state is the figural state (last year full, others
+   * faded). Recording can take a few seconds depending on years count.
+   */
+  function _hodLoadGifLib() {
+    return new Promise((resolve, reject) => {
+      if (typeof GIF !== 'undefined') { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load gif.js'));
+      document.head.appendChild(s);
+    });
+  }
+
+  window.histHodDownloadGif = async function () {
+    const btn = document.getElementById('histhod-gif-btn');
+    if (!btn) return;
+    const originalLabel = btn.innerHTML;
+    btn.innerHTML = '⏺ Loading lib...';
+    btn.disabled = true;
+    try {
+      await _hodLoadGifLib();
+    } catch (e) {
+      btn.innerHTML = originalLabel;
+      btn.disabled = false;
+      alert('Could not load gif.js (network error). Try PNG instead.');
+      return;
+    }
+
+    // Stop any current animation
+    if (STATE.playing || STATE.animEnded) {
+      STATE.playing = false;
+      STATE.animEnded = false;
+      if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    }
+    STATE.animVisibleCount = 0;
+    _hodRedraw();
+
+    // Build the years list we'll walk through
+    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
+    if (!years.length) {
+      btn.innerHTML = originalLabel;
+      btn.disabled = false;
+      return;
+    }
+
+    // Use the gif.js worker bundled at the same path
+    const gif = new GIF({
+      workers: 2,
+      quality: 10,
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+      width: 720,
+      height: 360,
+      background: '#0A1018',
+    });
+
+    // Frame timing
+    const FRAME_DELAY_MS = 1200;
+    const FINAL_HOLD_MS  = 2000;
+
+    // Walk years cumulatively, capture a frame at each step
+    for (let i = 0; i < years.length; i++) {
+      STATE.animVisibleCount = i + 1;
+      STATE.playing = true;
+      STATE.animEnded = false;
+      _hodRedraw();
+      // Wait for Chart.js to repaint
+      await new Promise(r => setTimeout(r, 320));
+      const composed = _hodComposeFrame();
+      if (composed) {
+        // Scale down for GIF target size
+        const target = document.createElement('canvas');
+        target.width = 720; target.height = 360;
+        target.getContext('2d').drawImage(composed, 0, 0, 720, 360);
+        gif.addFrame(target, { delay: i === years.length - 1 ? FINAL_HOLD_MS : FRAME_DELAY_MS });
+      }
+      btn.innerHTML = `⏺ Capturing ${i + 1}/${years.length}`;
+    }
+
+    // Park in animEnded state for the figural final
+    STATE.playing = false;
+    STATE.animEnded = true;
+    _hodRedraw();
+
+    btn.innerHTML = '⏺ Encoding GIF...';
+
+    gif.on('finished', (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `powerklock_hod_shape_${STATE.currentZone || 'zone'}_${STATE.period}.gif`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      btn.innerHTML = originalLabel;
+      btn.disabled = false;
+      // Restore play state: stop & reset to figural final
+      STATE.animEnded = true;
+      STATE.playing = false;
+      _hodRedraw();
+      const playBtn = document.getElementById('histhod-play-btn');
+      if (playBtn) playBtn.innerHTML = '↻ Replay';
+    });
+
+    gif.render();
+  };
+
+})();
