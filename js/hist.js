@@ -5959,6 +5959,14 @@ function _hszRenderHourlyHodShape(zone) {
   if (!parent) return;
   // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
+  // Relax the parent's fixed 340px height so the HOD viz (taller — filters bar
+  // + chart + year label) doesn't overflow into the analyst banner below.
+  // We remember the original height to restore it when leaving HOD mode.
+  if (!parent.dataset.hodOriginalHeight) {
+    parent.dataset.hodOriginalHeight = parent.style.height || '340px';
+  }
+  parent.style.height = 'auto';
+  parent.style.minHeight = '340px';
   // Cleanup rogue artifacts from other Hourly modes (Quarter grid + legend)
   ['ho-detail-quarter-grid', 'ho-fs-quarter-grid',
    'ho-detail-quarter-legend', 'ho-fs-quarter-legend'].forEach(id => {
@@ -5983,6 +5991,20 @@ function _hszRenderHourlyHodShape(zone) {
   } else {
     host.innerHTML = '<div style="padding:24px;color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px">Hour-of-day shape module not loaded</div>';
   }
+}
+
+// Restore the parent's original height when leaving HOD mode (called from
+// Quarter and YoY renderers below)
+function _hszRestoreHodParentHeight() {
+  ['ho-detail-chart', 'ho-fs-chart'].forEach(canvasId => {
+    const c = document.getElementById(canvasId);
+    const p = c && c.parentElement;
+    if (p && p.dataset.hodOriginalHeight) {
+      p.style.height = p.dataset.hodOriginalHeight;
+      p.style.minHeight = '';
+      delete p.dataset.hodOriginalHeight;
+    }
+  });
 }
 
 // Legacy: previously injected a "By quarter / YoY global" toggle into the
@@ -6022,6 +6044,8 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     const s = document.getElementById(id);
     if (s) { s.innerHTML = ''; s.style.display = 'none'; }
   });
+  // Restore the parent's original height (relaxed during HOD mode)
+  _hszRestoreHodParentHeight();
 
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
@@ -6283,6 +6307,8 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
     const s = document.getElementById(id);
     if (s) { s.innerHTML = ''; s.style.display = 'none'; }
   });
+  // Restore the parent's original height (relaxed during HOD mode)
+  _hszRestoreHodParentHeight();
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) {
     canvas.style.display = '';
@@ -9771,8 +9797,8 @@ function _bdHodShape(zone, summary) {
   // ════════════════════════════════════════════════════════════════
   const STATE = {
     period: 'FY',     // 7D | 30D | YTD | FY | 12M
-    yearsScope: '5Y', // 3Y | 5Y | All
-    highlightYear: null, // null = stack all equally, or e.g. 2024
+    yearsScope: 'All', // forced to All — filter removed from UI
+    highlightYears: [], // [] = stack mode (all equal), or [2024, 2025] = focus those, dim others
     compareMode: 'aligned', // 'aligned' (same window in every year) | 'fullyear' (current period vs full years)
     playing: false,
     animVisibleCount: 0,  // how many years are currently drawn (cumulative build-up)
@@ -9990,29 +10016,26 @@ function _bdHodShape(zone, summary) {
       });
     }
 
-    // ── MINIMAL HOST: filters bar (period/years/compare) + chart area ─
-    // Template strict: title block via _setHoTitle above, banner via
-    // _renderAnalystBanner below, breakdown via _bdHodShape dispatcher.
-    // Action buttons (Play/PNG/GIF) live in the tab-bar slot (injected below).
+    // ── FORCE Years scope to 'All' (no longer a user-controlled filter) ──
+    // Period filtering is delegated to the page's sticky window filter
+    // (HIST.windows['ho']) which propagates via the dispatcher re-render.
+    STATE.yearsScope = 'All';
+
+    // ── MINIMAL HOST: filters bar (Compare + Highlight) + chart area ─
+    // Period and Years filters have been removed (Period comes from the page
+    // sticky window filter, Years is always 'All'). Action buttons live in
+    // the tab-bar slot (injected below).
     host.innerHTML = `
-      <!-- ═══ Filters bar · Période / Years / Compare ═══ -->
+      <!-- ═══ Filters bar · Compare mode + multi-select Highlight ═══ -->
       <div class="pk-filters-bar" id="histhod-toolbar">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
-          <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Years</span>
-          <div id="histhod-years-pills" style="display:inline-flex;gap:4px"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace" title="Aligned: same calendar window for every year. Full year: current period vs past full years.">Compare</span>
+        <div style="display:flex;align-items:center;gap:6px" title="How to compare past years to the current window. Same window: compare year-to-year on the same calendar dates. vs Full year: current period vs past full years.">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Compare to past years</span>
           <div id="histhod-compare-pills" style="display:inline-flex;gap:4px"></div>
         </div>
         <div class="pk-filters-bar-spacer"></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
-          <div id="histhod-highlight-pills" style="display:inline-flex;gap:4px"></div>
+        <div style="display:flex;align-items:center;gap:6px" title="Click one or more years to focus them (others dim). Click All to reset.">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight (multi)</span>
+          <div id="histhod-highlight-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap"></div>
         </div>
       </div>
 
@@ -10052,25 +10075,6 @@ function _bdHodShape(zone, summary) {
   };
 
 
-  window.histHodSetPeriod = function (p) {
-    if (!PERIOD_OPTIONS.includes(p)) return;
-    STATE.period = p;
-    // If an animation is running or parked in Replay state, drop it cleanly
-    if (STATE.playing || STATE.animEnded) _hodStopPlay();
-    _hodPaintControls();
-      _hodRedraw();
-  };
-
-  window.histHodSetYears = function (y) {
-    if (!YEARS_OPTIONS.includes(y)) return;
-    STATE.yearsScope = y;
-    STATE.highlightYear = null;
-    // If an animation is running or parked in Replay state, drop it cleanly
-    if (STATE.playing || STATE.animEnded) _hodStopPlay();
-    _hodPaintControls();
-      _hodRedraw();
-  };
-
   window.histHodSetCompare = function (mode) {
     if (mode !== 'aligned' && mode !== 'fullyear') return;
     if (STATE.compareMode === mode) return;
@@ -10097,10 +10101,25 @@ function _bdHodShape(zone, summary) {
     _hodRedraw();
   };
 
-  window.histHodHighlightYear = function (y) {
-    STATE.highlightYear = y === '' || y === '__none__' ? null : parseInt(y, 10);
-    // Highlight is incompatible with animEnded state · drop it
-    if (STATE.animEnded && STATE.highlightYear != null) _hodStopPlay();
+  // Multi-select highlight: toggle a year in/out of STATE.highlightYears.
+  // When the array is empty → stack mode (all years drawn equally).
+  // When the array has ≥ 1 year(s) → those years are full-style, others faded.
+  window.histHodToggleHighlight = function (y) {
+    y = parseInt(y, 10);
+    if (isNaN(y)) return;
+    if (!STATE.highlightYears) STATE.highlightYears = [];
+    const idx = STATE.highlightYears.indexOf(y);
+    if (idx >= 0) STATE.highlightYears.splice(idx, 1);
+    else          STATE.highlightYears.push(y);
+    // Highlight is incompatible with parked animation · drop it
+    if (STATE.animEnded && STATE.highlightYears.length > 0) _hodStopPlay();
+    _hodPaintControls();
+    _hodRedraw();
+  };
+
+  // Clear all highlights · return to stack mode (every year drawn equally)
+  window.histHodHighlightClear = function () {
+    STATE.highlightYears = [];
     _hodPaintControls();
     _hodRedraw();
   };
@@ -10114,46 +10133,31 @@ function _bdHodShape(zone, summary) {
   };
 
   // ════════════════════════════════════════════════════════════════
-  // UI RENDER · pills + dropdown + chart
+  // UI RENDER · pills + chart
   // ════════════════════════════════════════════════════════════════
   function _hodPaintControls() {
-    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}" style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
+    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}"${opts.title ? ` title="${opts.title}"` : ''} style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
 
-    // Période pills
-    const periodHost = document.getElementById(`histhod-period-pills`);
-    if (periodHost) {
-      periodHost.innerHTML = PERIOD_OPTIONS.map(p =>
-        pkPill({ label: p, active: p === STATE.period, onClick: `histHodSetPeriod('${p}')` })
-      ).join('');
-    }
-
-    // Years pills
-    const yearsHost = document.getElementById(`histhod-years-pills`);
-    if (yearsHost) {
-      yearsHost.innerHTML = YEARS_OPTIONS.map(y =>
-        pkPill({ label: y, active: y === STATE.yearsScope, onClick: `histHodSetYears('${y}')` })
-      ).join('');
-    }
-
-    // Compare mode pills · 'aligned' (default) vs 'fullyear'
-    // - aligned  : same calendar window in every year (e.g. YTD 2026 vs YTD 2025, YTD 2024, ...)
-    // - fullyear : current YTD (or selected period) vs past FULL years (2025 full, 2024 full, ...)
+    // Compare mode pills · clearer labels
+    // - 'aligned'  : Same window — same calendar dates in every year
+    // - 'fullyear' : vs Full years — current period vs past full years
     const cmp = document.getElementById(`histhod-compare-pills`);
     if (cmp) {
       cmp.innerHTML =
-        pkPill({ label: 'Aligned',   active: STATE.compareMode === 'aligned',  onClick: `histHodSetCompare('aligned')`,  title: 'Same calendar window in every year' }) +
-        pkPill({ label: 'Full year', active: STATE.compareMode === 'fullyear', onClick: `histHodSetCompare('fullyear')`, title: 'Current period vs past full years (e.g. YTD 2026 vs 2025/2024/... full years)' });
+        pkPill({ label: 'Same window', active: STATE.compareMode === 'aligned',  onClick: `histHodSetCompare('aligned')`,  title: 'Like-for-like: same calendar window in every year (e.g. YTD 2026 vs YTD 2025, YTD 2024, ...)' }) +
+        pkPill({ label: 'vs Full years', active: STATE.compareMode === 'fullyear', onClick: `histHodSetCompare('fullyear')`, title: 'Current period vs past full years (e.g. YTD 2026 vs 2025/2024/... complete years)' });
     }
 
-    // Year highlight pills (replaces the old dropdown for template consistency).
-    // First pill is "All" (stack mode), then one pill per year.
+    // Year highlight pills · multi-select. Click a year to toggle its focus.
+    // Click "All" to clear (stack mode, every year drawn equally).
     const hl = document.getElementById(`histhod-highlight-pills`);
     if (hl) {
       const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope, STATE.compareMode);
-      const allActive = (STATE.highlightYear == null);
-      let html = pkPill({ label: 'All', active: allActive, onClick: `histHodHighlightYear('__none__')` });
+      const allActive = (!STATE.highlightYears || STATE.highlightYears.length === 0);
+      let html = pkPill({ label: 'All', active: allActive, onClick: `histHodHighlightClear()`, title: 'Show all years equally (clear focus)' });
       years.forEach(y => {
-        html += pkPill({ label: String(y), active: STATE.highlightYear === y, onClick: `histHodHighlightYear('${y}')` });
+        const isFocus = STATE.highlightYears && STATE.highlightYears.includes(y);
+        html += pkPill({ label: String(y), active: isFocus, onClick: `histHodToggleHighlight(${y})`, title: 'Toggle focus on this year' });
       });
       hl.innerHTML = html;
     }
@@ -10181,7 +10185,7 @@ function _bdHodShape(zone, summary) {
 
     const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
 
-    const highlight = STATE.highlightYear;
+    const highlightYears = (STATE.highlightYears && STATE.highlightYears.length > 0) ? STATE.highlightYears : null;
 
     // ── ANIMATION MODE · cumulative build-up ──
     // animVisibleCount = how many years are currently drawn (0 → years.length)
@@ -10201,10 +10205,10 @@ function _bdHodShape(zone, summary) {
         if (yIdx > latestVisibleIdx) { isHidden = true; }
         else if (yIdx === latestVisibleIdx) { isFullStyle = true; }
         else { isFadedStyle = true; }
-      } else if (highlight != null) {
-        // Manual highlight mode (not playing): focus one year, dim others
-        if (y === highlight) isFullStyle = true;
-        else                  isFadedStyle = true;
+      } else if (highlightYears) {
+        // Manual multi-highlight mode (not playing): focus selected years, dim others
+        if (highlightYears.includes(y)) isFullStyle = true;
+        else                            isFadedStyle = true;
       } else {
         // Default stack: all equal weight
         isFullStyle = true;
@@ -10355,9 +10359,14 @@ function _bdHodShape(zone, summary) {
         lbl.textContent = String(focusYear);
         lbl.style.color = YEAR_PALETTE[focusYear] || 'var(--acc)';
         lbl.style.opacity = STATE.playing ? 0.85 : 0.65;
-      } else if (highlight != null) {
-        lbl.textContent = String(highlight);
-        lbl.style.color = YEAR_PALETTE[highlight] || 'var(--acc)';
+      } else if (highlightYears && highlightYears.length > 0) {
+        // Show all focused years joined by · (e.g. "2024 · 2025")
+        // Colour follows the most-recent highlighted year for visual coherence
+        const sortedHl = [...highlightYears].sort((a, b) => a - b);
+        const latestHl = sortedHl[sortedHl.length - 1];
+        lbl.textContent = sortedHl.join(' · ');
+        // If just one year highlighted, use its colour; otherwise neutral accent
+        lbl.style.color = sortedHl.length === 1 ? (YEAR_PALETTE[latestHl] || 'var(--acc)') : 'var(--acc)';
         lbl.style.opacity = 0.65;
       } else {
         lbl.style.opacity = 0;
