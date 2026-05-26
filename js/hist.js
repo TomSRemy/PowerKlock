@@ -4221,6 +4221,9 @@ const _HSZ_TARGET = {
   getFullSeries: () => null,
 };
 function _hszCtx() { return _HSZ_TARGET; }
+// Expose for cross-module access (e.g. histHodRenderShape needs to know
+// the active canvasId to detect fullscreen context)
+window._HSZ_TARGET = _HSZ_TARGET;
 
 // State callback: the drill-down row registers a "rerender" function so that
 // shared controls (Y presets, hourly mode toggle) can refresh the active chart
@@ -5951,6 +5954,11 @@ function _hszRenderHourlyHodShape(zone) {
   if (!parent) return;
   // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
+  // Hide the legacy breakdown details (the HOD module ships its own breakdown)
+  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   // Find existing host (anywhere in the DOM) or create one
   let host = document.getElementById('histhod-shape');
   if (!host) {
@@ -6003,6 +6011,11 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
+  // Restore the legacy breakdown details (was hidden in hodshape mode)
+  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
 
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
@@ -6259,6 +6272,11 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
+  // Restore the legacy breakdown details (was hidden in hodshape mode)
+  ['ho-detail-breakdown-details', 'ho-fs-breakdown-details'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) {
     canvas.style.display = '';
@@ -9878,8 +9896,7 @@ function _bdHodShape(zone, summary) {
   window.histHodRenderShape = function (zone) {
     STATE.currentZone = zone;
     // Stop any animation that was running from a previous mount and reset
-    // anim state so the chart shows the full stack at first paint (not an
-    // empty/half-built animation frame)
+    // state so the chart shows the full stack at first paint
     if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
     STATE.playing = false;
     STATE.animEnded = false;
@@ -9887,43 +9904,63 @@ function _bdHodShape(zone, summary) {
     const host = document.getElementById(`histhod-shape`);
     if (!host) return;
 
+    // Detect fullscreen context via the active _HSZ_TARGET (set by hist.js)
+    const isFullscreen = (typeof window._HSZ_TARGET !== 'undefined'
+                          && window._HSZ_TARGET
+                          && window._HSZ_TARGET.canvasId === 'ho-fs-chart')
+                        || (host.closest('#pk-fs-overlay') != null)
+                        || (host.closest('#ho-fs-overlay') != null);
+    // Chart height: 360px inline, ~ viewport-driven for fullscreen
+    const chartHeight = isFullscreen ? 'min(72vh, 760px)' : '360px';
+    // Year label size: slightly bigger in fullscreen
+    const lblSize = isFullscreen ? '48px' : '34px';
+
     host.innerHTML = `
-      <!-- Sub-toggle bar -->
+      <!-- ═══ Title block · eyebrow + title + subtitle (template CC strict) ═══ -->
+      <div style="margin-bottom:14px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--tx3);text-transform:uppercase;font-weight:600;margin-bottom:4px">
+          Hour-of-day shape · YoY · ${zone}
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:${isFullscreen ? '22px' : '18px'};font-weight:700;color:var(--tx);letter-spacing:-.01em;margin-bottom:3px">
+          Normalised hourly price shape across years
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);line-height:1.5">
+          Price ÷ period mean · centred on 1.00 · reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level
+        </div>
+      </div>
+
+      <!-- ═══ Filters bar · pills + action buttons ═══ -->
       <div class="pk-filters-bar" id="histhod-toolbar" style="flex-wrap:wrap;gap:10px">
-        <!-- Période -->
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
           <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
         </div>
-        <!-- Years scope -->
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Years</span>
           <div id="histhod-years-pills" style="display:inline-flex;gap:4px"></div>
         </div>
-        <!-- Year highlight dropdown -->
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
           <select id="histhod-highlight" onchange="histHodHighlightYear(this.value)" style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark"></select>
         </div>
         <div class="pk-filters-bar-spacer"></div>
-        <!-- Play button -->
         <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years one-by-one">▶ Play</button>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF" id="histhod-gif-btn">🎬 GIF</button>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
       </div>
 
-      <!-- Chart container -->
-      <div style="position:relative;height:360px;margin-top:12px">
-        <canvas id="histhod-canvas" style="width:100%;height:360px"></canvas>
-        <!-- Big year label, bottom-left, visible when highlight or play active -->
-        <div id="histhod-year-label" style="position:absolute;right:14px;top:8px;font-family:'Inter',sans-serif;font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
+      <!-- ═══ Chart container ═══ -->
+      <div style="position:relative;height:${chartHeight};margin-top:12px">
+        <canvas id="histhod-canvas" style="width:100%;height:100%"></canvas>
+        <!-- Year label · top-LEFT inside chart area (right of Y-axis ticks, overlay on plot area) -->
+        <div id="histhod-year-label" style="position:absolute;left:60px;top:8px;font-family:'Inter',sans-serif;font-size:${lblSize};font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
       </div>
 
-      <!-- Market read banner anchor -->
+      <!-- ═══ Market read banner (amber, template parity) ═══ -->
       <div id="histhod-banner" style="margin-top:14px"></div>
 
-      <!-- Breakdown table -->
+      <!-- ═══ Breakdown details (single canonical location) ═══ -->
       <details style="margin-top:14px" open>
         <summary style="font-size:11px;font-weight:600;color:var(--tx2);cursor:pointer;letter-spacing:.05em;text-transform:uppercase;user-select:none;padding:6px 0">
           Breakdown table · YoY shape characteristics
@@ -10109,34 +10146,21 @@ function _bdHodShape(zone, summary) {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         // Animation strategy:
-        // - In animMode: disable per-point Y-rise animation, only fade in via
-        //   colors (opacity 0 → 1). Each year's curve appears at its final
-        //   position, fading in cleanly without "rising from the bottom".
-        // - In idle mode: gentle ease-out duration, no Y-rise either.
-        animation: {
-          duration: animMode ? 600 : 200,
+        // - In animMode (during Play): only fade-in colors, no Y/X movement
+        // - In idle mode (mount): no animation at all (instant render)
+        // The global Chart.defaults (set in index.html) already kill X/Y axis
+        // animations dashboard-wide, so we only need to add the color fade here.
+        animation: animMode ? {
+          duration: 600,
           easing: 'easeOutQuad',
+        } : {
+          duration: 0,
         },
-        animations: {
-          // Disable Y-axis rise-up animation (prevents the "from below" effect)
-          y: { duration: 0 },
+        animations: animMode ? {
           // Fade-in by animating border color from transparent to its target
-          borderColor: {
-            type: 'color',
-            duration: animMode ? 600 : 200,
-            from: 'rgba(0,0,0,0)',
-          },
-          backgroundColor: {
-            type: 'color',
-            duration: animMode ? 600 : 200,
-            from: 'rgba(0,0,0,0)',
-          },
-        },
-        transitions: {
-          // When a dataset's visibility flips (hidden → shown), use a quick fade
-          show: { animations: { borderColor: { from: 'rgba(0,0,0,0)' }, x: { from: 0 }, y: { from: 0 } } },
-          hide: { animations: { colors: { to: 'rgba(0,0,0,0)' } } },
-        },
+          borderColor: { type: 'color', duration: 600, from: 'rgba(0,0,0,0)' },
+          backgroundColor: { type: 'color', duration: 600, from: 'rgba(0,0,0,0)' },
+        } : {},
         plugins: {
           legend: {
             display: true, position: 'top', align: 'end',
@@ -10396,13 +10420,14 @@ function _bdHodShape(zone, summary) {
       const dpr = (window.devicePixelRatio || 1);
       const fontSize = Math.round(34 * dpr);
       ctx.font = `800 ${fontSize}px Inter, sans-serif`;
-      ctx.textAlign = 'right';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       // Soft shadow to detach from chart
       ctx.shadowColor = 'rgba(0,0,0,0.6)';
       ctx.shadowBlur = 12 * dpr;
       ctx.fillStyle = colour;
-      ctx.fillText(text, w - 14 * dpr, 8 * dpr);
+      // Position at top-left, just right of Y-axis ticks (~60px in)
+      ctx.fillText(text, 60 * dpr, 8 * dpr);
       ctx.shadowBlur = 0;
     }
     return out;
