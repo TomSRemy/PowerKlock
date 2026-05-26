@@ -5827,7 +5827,8 @@ function clearSlotHover(idx) {
     yearsScope: '5Y', // 3Y | 5Y | All
     highlightYear: null, // null = stack all equally, or e.g. 2024
     playing: false,
-    animFrameYearIdx: 0,
+    animVisibleCount: 0,  // how many years are currently drawn (cumulative build-up)
+    animEnded: false,     // true once all years have appeared and anim is parked
     animTimer: null,
     currentZone: null,
     currentIdx: null,
@@ -6053,6 +6054,8 @@ function clearSlotHover(idx) {
   window.prHodSetPeriod = function (p) {
     if (!PERIOD_OPTIONS.includes(p)) return;
     STATE.period = p;
+    // If an animation is running or parked in Replay state, drop it cleanly
+    if (STATE.playing || STATE.animEnded) _hodStopPlay();
     if (STATE.currentIdx != null) {
       _hodPaintControls(STATE.currentIdx);
       _hodRedraw(STATE.currentIdx);
@@ -6063,6 +6066,8 @@ function clearSlotHover(idx) {
     if (!YEARS_OPTIONS.includes(y)) return;
     STATE.yearsScope = y;
     STATE.highlightYear = null;
+    // If an animation is running or parked in Replay state, drop it cleanly
+    if (STATE.playing || STATE.animEnded) _hodStopPlay();
     if (STATE.currentIdx != null) {
       _hodPaintControls(STATE.currentIdx);
       _hodRedraw(STATE.currentIdx);
@@ -6071,6 +6076,8 @@ function clearSlotHover(idx) {
 
   window.prHodHighlightYear = function (y) {
     STATE.highlightYear = y === '' || y === '__none__' ? null : parseInt(y, 10);
+    // Highlight is incompatible with animEnded state · drop it
+    if (STATE.animEnded && STATE.highlightYear != null) _hodStopPlay();
     if (STATE.currentIdx != null) _hodRedraw(STATE.currentIdx);
   };
 
@@ -6113,37 +6120,85 @@ function clearSlotHover(idx) {
     }
   }
 
+  // Helper: convert hex colour to rgba with given alpha
+  function _hodHexToRgba(hex, alpha) {
+    if (!hex) return `rgba(122,147,171,${alpha})`;
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
   function _hodRedraw(idx) {
     const canvas = document.getElementById(`row-hod-canvas-${idx}`);
     if (!canvas) return;
-    const { years, shapes } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope);
+
+    // During Play, ignore yearsScope and use ALL available years (from 2020 onwards
+    // at least). This ensures the animation walks the full history.
+    const scopeForDraw = STATE.playing ? 'All' : STATE.yearsScope;
+    const { years, shapes } = _hodBuildYearData(STATE.currentZone, STATE.period, scopeForDraw);
     if (!years.length) return;
 
     const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
 
-    // Determine which years to draw based on highlight / play
     const highlight = STATE.highlightYear;
-    const playingYear = STATE.playing ? years[STATE.animFrameYearIdx] : null;
+
+    // ── ANIMATION MODE · cumulative build-up ──
+    // animVisibleCount = how many years are currently drawn (0 → years.length)
+    // - The latest year drawn is in "full" style (current focus)
+    // - All previous years are in "faded" style (background trace)
+    // - Years beyond animVisibleCount are not drawn at all
+    const animMode = STATE.playing || STATE.animEnded;
+    const visibleCount = animMode ? STATE.animVisibleCount : years.length;
+    const latestVisibleIdx = visibleCount - 1; // -1 if visibleCount = 0
 
     const datasets = years.map((y, yIdx) => {
-      const isHighlighted = (highlight === y) || (playingYear === y);
-      const isDimmed = (highlight != null && highlight !== y) || (playingYear != null && playingYear !== y);
       const baseColor = YEAR_PALETTE[y] || '#7A93AB';
+      let isFullStyle, isFadedStyle, isHidden;
+
+      if (animMode) {
+        // Cumulative build-up: only show years up to visibleCount
+        if (yIdx > latestVisibleIdx) { isHidden = true; }
+        else if (yIdx === latestVisibleIdx) { isFullStyle = true; }
+        else { isFadedStyle = true; }
+      } else if (highlight != null) {
+        // Manual highlight mode (not playing): focus one year, dim others
+        if (y === highlight) isFullStyle = true;
+        else                  isFadedStyle = true;
+      } else {
+        // Default stack: all equal weight
+        isFullStyle = true;
+      }
+
+      if (isHidden) {
+        // Render an invisible dataset (keeps the legend stable but no line)
+        return {
+          label: String(y),
+          data: shapes[y],
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+          fill: false,
+          pointRadius: 0,
+          order: 100 + yIdx,
+          hidden: true,
+        };
+      }
 
       return {
         label: String(y),
-        data: shapes[y],
-        borderColor: baseColor,
+        data:  shapes[y],
+        borderColor:     isFullStyle ? baseColor : _hodHexToRgba(baseColor, 0.28),
         backgroundColor: 'transparent',
-        borderWidth: isHighlighted ? 3 : (isDimmed ? 1 : 1.8),
-        borderDash: isDimmed ? [3, 3] : undefined,
+        borderWidth: isFullStyle ? 2.6 : 1.1,
+        borderDash:  isFadedStyle ? [3, 3] : undefined,
         fill: false,
         tension: 0.35,
         pointRadius: 0,
         pointHoverRadius: 4,
-        order: isHighlighted ? 0 : (10 - yIdx),
-        // Opacity baked into the colour via canvas filter is awkward; we use
-        // transparent border on dimmed lines via rgba conversion.
+        // The "current focus" year on top, faded years stacked below
+        order: isFullStyle ? 0 : (50 - yIdx),
       };
     });
 
@@ -6172,7 +6227,7 @@ function clearSlotHover(idx) {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        animation: { duration: STATE.playing ? 400 : 200 },
+        animation: { duration: animMode ? 400 : 200 },
         plugins: {
           legend: {
             display: true, position: 'top', align: 'end',
@@ -6194,7 +6249,7 @@ function clearSlotHover(idx) {
             padding: 8,
             titleFont: { family: 'JetBrains Mono', size: 10 },
             bodyFont:  { family: 'JetBrains Mono', size: 10 },
-            filter: ctx => !(ctx.dataset.label || '').startsWith('__'),
+            filter: ctx => !(ctx.dataset.label || '').startsWith('__') && !ctx.dataset.hidden,
             callbacks: {
               title: items => items.length ? `Hour ${items[0].label}` : '',
               label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}× (${(ctx.parsed.y * 100 - 100 >= 0 ? '+' : '')}${(ctx.parsed.y * 100 - 100).toFixed(1)}% vs avg)`,
@@ -6216,13 +6271,14 @@ function clearSlotHover(idx) {
       },
     });
 
-    // Big year label
+    // Big year label · shows the current focus year during play/animEnded mode
     const lbl = document.getElementById(`row-hod-year-label-${idx}`);
     if (lbl) {
-      if (playingYear != null) {
-        lbl.textContent = String(playingYear);
-        lbl.style.color = YEAR_PALETTE[playingYear] || 'var(--acc)';
-        lbl.style.opacity = 0.85;
+      if (animMode && latestVisibleIdx >= 0) {
+        const focusYear = years[latestVisibleIdx];
+        lbl.textContent = String(focusYear);
+        lbl.style.color = YEAR_PALETTE[focusYear] || 'var(--acc)';
+        lbl.style.opacity = STATE.playing ? 0.85 : 0.65;
       } else if (highlight != null) {
         lbl.textContent = String(highlight);
         lbl.style.color = YEAR_PALETTE[highlight] || 'var(--acc)';
@@ -6238,24 +6294,55 @@ function clearSlotHover(idx) {
   }
 
   // ════════════════════════════════════════════════════════════════
-  // ANIMATION
+  // ANIMATION · cumulative build-up year by year, stops on final state
   // ════════════════════════════════════════════════════════════════
+  const ANIM_INTERVAL_MS = 1200; // cadence per year
+
   function _hodStartPlay() {
+    // Reset state and start fresh
     STATE.playing = true;
-    STATE.animFrameYearIdx = 0;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
     const btn = document.getElementById(`row-hod-play-btn-${STATE.currentIdx}`);
     if (btn) btn.innerHTML = '⏸ Pause';
+
+    // Get the full list of years to walk through (ignore yearsScope, use All)
+    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
+    if (!years.length) { _hodStopPlay(); return; }
+
+    // T=0: empty chart
     _hodRedraw(STATE.currentIdx);
+
+    // Walk years cumulatively (1 → years.length)
     STATE.animTimer = setInterval(() => {
-      const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope);
-      if (!years.length) { _hodStopPlay(); return; }
-      STATE.animFrameYearIdx = (STATE.animFrameYearIdx + 1) % years.length;
+      STATE.animVisibleCount += 1;
+      if (STATE.animVisibleCount >= years.length) {
+        // Reached the end · park in "final figural state" (all years visible,
+        // latest in full style, rest faded). Button becomes Replay.
+        STATE.animVisibleCount = years.length;
+        _hodRedraw(STATE.currentIdx);
+        _hodEndAnim();
+        return;
+      }
       _hodRedraw(STATE.currentIdx);
-    }, 1200);
+    }, ANIM_INTERVAL_MS);
   }
-  function _hodStopPlay() {
-    STATE.playing = false;
+
+  function _hodEndAnim() {
+    // Animation completed naturally · keep final state, switch button to Replay
     if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = true;
+    const btn = document.getElementById(`row-hod-play-btn-${STATE.currentIdx}`);
+    if (btn) btn.innerHTML = '↻ Replay';
+  }
+
+  function _hodStopPlay() {
+    // User-triggered pause · go back to normal stack view
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
     const btn = document.getElementById(`row-hod-play-btn-${STATE.currentIdx}`);
     if (btn) btn.innerHTML = '▶ Play';
     _hodRedraw(STATE.currentIdx);
