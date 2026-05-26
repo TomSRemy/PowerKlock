@@ -5416,6 +5416,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </style>
 
 <script src="js/libs.js"></script>
+<script>
+  /* ────────────────────────────────────────────────────────────────
+     Chart.js · global animation overrides
+     Kills the "rise from bottom" Y-axis animation on every chart in
+     the dashboard. Applies to:
+       - Initial mount (no rise-up on first render)
+       - Data updates (filter changes, drill open, refresh)
+       - Show/hide of datasets (no Y movement)
+     Other animations (hover, tooltip, color transitions, segment
+     reveals) are kept — only the Y-position animation is disabled.
+     ──────────────────────────────────────────────────────────────── */
+  if (typeof Chart !== 'undefined' && Chart.defaults) {
+    // Disable Y-axis animation for line/bar/area datasets
+    Chart.defaults.animations = Chart.defaults.animations || {};
+    Chart.defaults.animations.y = { duration: 0 };
+    // For show/hide transitions: no Y movement either
+    Chart.defaults.transitions = Chart.defaults.transitions || {};
+    Chart.defaults.transitions.show = Chart.defaults.transitions.show || {};
+    Chart.defaults.transitions.show.animations = Chart.defaults.transitions.show.animations || {};
+    Chart.defaults.transitions.show.animations.y = { duration: 0 };
+    Chart.defaults.transitions.hide = Chart.defaults.transitions.hide || {};
+    Chart.defaults.transitions.hide.animations = Chart.defaults.transitions.hide.animations || {};
+    Chart.defaults.transitions.hide.animations.y = { duration: 0 };
+  }
+</script>
 <script src="js/chartjs-plugin-annotation.min.js"></script>
 <script src="js/fullscreen.js"></script>
 <script src="js/palette.js"></script>
