@@ -6017,6 +6017,11 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
+  // Empty HOD-specific toggle slot (Play/PNG/GIF buttons)
+  ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) { s.innerHTML = ''; s.style.display = 'none'; }
+  });
 
   const color = zoneColor(zone);
   const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
@@ -6273,6 +6278,11 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
+  // Empty HOD-specific toggle slot (Play/PNG/GIF buttons)
+  ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) { s.innerHTML = ''; s.style.display = 'none'; }
+  });
   const canvas = document.getElementById(_hszCtx().canvasId);
   if (canvas) {
     canvas.style.display = '';
@@ -9763,6 +9773,7 @@ function _bdHodShape(zone, summary) {
     period: 'FY',     // 7D | 30D | YTD | FY | 12M
     yearsScope: '5Y', // 3Y | 5Y | All
     highlightYear: null, // null = stack all equally, or e.g. 2024
+    compareMode: 'aligned', // 'aligned' (same window in every year) | 'fullyear' (current period vs full years)
     playing: false,
     animVisibleCount: 0,  // how many years are currently drawn (cumulative build-up)
     animEnded: false,     // true once all years have appeared and anim is parked
@@ -9812,9 +9823,10 @@ function _bdHodShape(zone, summary) {
    * - Zone "base shape" derived from today's live hourly profile if available
    * - YoY drift coefficients matching observed analyst patterns
    */
-  function _hodBuildYearData(zone, periodKey, yearsScope) {
+  function _hodBuildYearData(zone, periodKey, yearsScope, compareMode) {
     const today = new Date();
     const curYear = today.getFullYear();
+    const cMode = compareMode || 'aligned';
 
     // Determine which years to include
     let years;
@@ -9825,12 +9837,14 @@ function _bdHodShape(zone, summary) {
     // Get today's hourly profile for the zone as the "base shape" anchor
     const baseShape = _hodBaseShape(zone);
 
-    // Apply YoY drift per year — coefficients tuned to public energy market
-    // characteristics. Each year warps the base shape via a "drift function"
-    // that captures the structural change (duck curve emergence, peak shifts).
+    // Compare mode resolves to a per-year period:
+    //   - 'aligned'  : every year uses `periodKey` (same window in every year)
+    //   - 'fullyear' : current year uses `periodKey`, past years use 'FY'
+    //     (the full year baseline — useful to compare YTD against complete past years)
     const shapes = {};
     years.forEach(y => {
-      shapes[y] = _hodWarpShape(baseShape, y, periodKey);
+      const yearPeriod = (cMode === 'fullyear' && y !== curYear) ? 'FY' : periodKey;
+      shapes[y] = _hodWarpShape(baseShape, y, yearPeriod);
     });
 
     return { years, shapes };
@@ -9965,36 +9979,66 @@ function _bdHodShape(zone, summary) {
       const titleHelper = (typeof _titleWithDescription === 'function')
         ? _titleWithDescription
         : (t, d) => `${t} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${d}</span>`;
+      const cmpLabel = STATE.compareMode === 'fullyear'
+        ? 'Current period vs past full years'
+        : 'Same calendar window across years';
       _setHoTitle({
         eyebrow: `Prices · YoY · ${zone} · Hourly · Hour-of-day shape`,
         title:   titleHelper('Normalised hourly price shape',
                              'YoY · price ÷ period mean · centred on 1.00'),
-        subtitle: 'Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level. Stack of all years available — click Play to animate the build-up over time.',
+        subtitle: `Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level. <span style="color:var(--tx2)">Compare mode: <b style="color:var(--acc)">${cmpLabel}</b></span>.`,
       });
     }
 
-    // ── MINIMAL HOST: only the chart area + mini-toolbar overlay ───
-    // Template strict: no custom filters bar, no inline banner, no inline
-    // breakdown. The native drill row provides:
-    //   - title block (filled by _setHoTitle above)
-    //   - analyst banner anchor (filled by _renderAnalystBanner below)
-    //   - breakdown details (filled via _bdHodShape dispatch in hist.js)
+    // ── MINIMAL HOST: filters bar (period/years/compare) + chart area ─
+    // Template strict: title block via _setHoTitle above, banner via
+    // _renderAnalystBanner below, breakdown via _bdHodShape dispatcher.
+    // Action buttons (Play/PNG/GIF) live in the tab-bar slot (injected below).
     host.innerHTML = `
-      <!-- Chart container with mini-toolbar overlay (Play/PNG/GIF/Reset) -->
+      <!-- ═══ Filters bar · Période / Years / Compare ═══ -->
+      <div class="pk-filters-bar" id="histhod-toolbar">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Période</span>
+          <div id="histhod-period-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Years</span>
+          <div id="histhod-years-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace" title="Aligned: same calendar window for every year. Full year: current period vs past full years.">Compare</span>
+          <div id="histhod-compare-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+        <div class="pk-filters-bar-spacer"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight</span>
+          <div id="histhod-highlight-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
+      </div>
+
+      <!-- Chart container -->
       <div style="position:relative;height:${chartHeight};margin-top:6px">
         <canvas id="histhod-canvas" style="width:100%;height:100%"></canvas>
-        <!-- Year label · top-LEFT inside chart area (right of Y-axis ticks) -->
-        <div id="histhod-year-label" style="position:absolute;left:60px;top:8px;font-family:'Inter',sans-serif;font-size:${lblSize};font-weight:800;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .25s, color .25s;text-shadow:0 0 12px rgba(0,0,0,0.45);z-index:5">2026</div>
-        <!-- Mini-toolbar · top-right overlay, discrete actions specific to this viz -->
-        <div style="position:absolute;right:8px;top:8px;display:flex;gap:4px;z-index:6">
-          <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
-          <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
-          <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
-          <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window._histHodChart;if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺</button>
-        </div>
+        <!-- Year label · top-LEFT inside chart area, in the plot zone (matplotlib style) -->
+        <div id="histhod-year-label" style="position:absolute;left:78px;top:22px;font-family:'Inter',sans-serif;font-size:${lblSize};font-weight:700;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .3s, color .3s;text-shadow:0 1px 14px rgba(0,0,0,0.55);z-index:5">2026</div>
       </div>
     `;
 
+    // ── INJECT ACTION BUTTONS in the canonical tab-bar slot ──
+    const slotId = isFullscreen ? 'ho-fs-toggle-slot' : 'ho-detail-toggle-slot';
+    const slot = document.getElementById(slotId);
+    if (slot) {
+      slot.style.display = 'flex';
+      slot.style.alignItems = 'center';
+      slot.style.gap = '6px';
+      slot.innerHTML = `
+        <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
+        <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
+      `;
+    }
+
+    _hodPaintControls();
     _hodRedraw();
   };
 
@@ -10004,7 +10048,7 @@ function _bdHodShape(zone, summary) {
   window.histHodBuildData = function (zone) {
     if (!zone) zone = STATE.currentZone;
     if (!zone) return null;
-    return _hodBuildYearData(zone, STATE.period, 'All');
+    return _hodBuildYearData(zone, STATE.period, 'All', STATE.compareMode);
   };
 
 
@@ -10025,6 +10069,32 @@ function _bdHodShape(zone, summary) {
     if (STATE.playing || STATE.animEnded) _hodStopPlay();
     _hodPaintControls();
       _hodRedraw();
+  };
+
+  window.histHodSetCompare = function (mode) {
+    if (mode !== 'aligned' && mode !== 'fullyear') return;
+    if (STATE.compareMode === mode) return;
+    STATE.compareMode = mode;
+    // Drop animation cleanly — comparison topology changed
+    if (STATE.playing || STATE.animEnded) _hodStopPlay();
+    // Refresh the title block subtitle to reflect the new compare mode
+    if (typeof _setHoTitle === 'function' && STATE.currentZone) {
+      const zone = STATE.currentZone;
+      const titleHelper = (typeof _titleWithDescription === 'function')
+        ? _titleWithDescription
+        : (t, d) => `${t} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${d}</span>`;
+      const cmpLabel = mode === 'fullyear'
+        ? 'Current period vs past full years'
+        : 'Same calendar window across years';
+      _setHoTitle({
+        eyebrow: `Prices · YoY · ${zone} · Hourly · Hour-of-day shape`,
+        title:   titleHelper('Normalised hourly price shape',
+                             'YoY · price ÷ period mean · centred on 1.00'),
+        subtitle: `Reveals structural evolution of the daily shape (cannibalisation, duck-curve, peak shift) decoupled from level. <span style="color:var(--tx2)">Compare mode: <b style="color:var(--acc)">${cmpLabel}</b></span>.`,
+      });
+    }
+    _hodPaintControls();
+    _hodRedraw();
   };
 
   window.histHodHighlightYear = function (y) {
@@ -10065,11 +10135,21 @@ function _bdHodShape(zone, summary) {
       ).join('');
     }
 
+    // Compare mode pills · 'aligned' (default) vs 'fullyear'
+    // - aligned  : same calendar window in every year (e.g. YTD 2026 vs YTD 2025, YTD 2024, ...)
+    // - fullyear : current YTD (or selected period) vs past FULL years (2025 full, 2024 full, ...)
+    const cmp = document.getElementById(`histhod-compare-pills`);
+    if (cmp) {
+      cmp.innerHTML =
+        pkPill({ label: 'Aligned',   active: STATE.compareMode === 'aligned',  onClick: `histHodSetCompare('aligned')`,  title: 'Same calendar window in every year' }) +
+        pkPill({ label: 'Full year', active: STATE.compareMode === 'fullyear', onClick: `histHodSetCompare('fullyear')`, title: 'Current period vs past full years (e.g. YTD 2026 vs 2025/2024/... full years)' });
+    }
+
     // Year highlight pills (replaces the old dropdown for template consistency).
     // First pill is "All" (stack mode), then one pill per year.
     const hl = document.getElementById(`histhod-highlight-pills`);
     if (hl) {
-      const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope);
+      const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, STATE.yearsScope, STATE.compareMode);
       const allActive = (STATE.highlightYear == null);
       let html = pkPill({ label: 'All', active: allActive, onClick: `histHodHighlightYear('__none__')` });
       years.forEach(y => {
@@ -10096,7 +10176,7 @@ function _bdHodShape(zone, summary) {
     // During Play, ignore yearsScope and use ALL available years (from 2020 onwards
     // at least). This ensures the animation walks the full history.
     const scopeForDraw = STATE.playing ? 'All' : STATE.yearsScope;
-    const { years, shapes } = _hodBuildYearData(STATE.currentZone, STATE.period, scopeForDraw);
+    const { years, shapes } = _hodBuildYearData(STATE.currentZone, STATE.period, scopeForDraw, STATE.compareMode);
     if (!years.length) return;
 
     const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
@@ -10174,6 +10254,26 @@ function _bdHodShape(zone, summary) {
       order: 999,
     });
 
+    // ── PRE-COMPUTE Y-AXIS BOUNDS on FULL dataset (all years) ──
+    // Critical for animation: Chart.js would otherwise auto-fit Y bounds to
+    // currently visible datasets, causing the axis to shift each time a year
+    // is revealed. We freeze the axis to the global min/max across all years
+    // (plus padding) so the animation stays visually anchored.
+    let yMinAll = Infinity, yMaxAll = -Infinity;
+    years.forEach(y => {
+      const s = shapes[y];
+      if (!s) return;
+      for (let h = 0; h < s.length; h++) {
+        if (s[h] < yMinAll) yMinAll = s[h];
+        if (s[h] > yMaxAll) yMaxAll = s[h];
+      }
+    });
+    // Padding: 5% of range on each side, but always include 1.00 (the reference line)
+    const yRange = (yMaxAll - yMinAll) || 0.1;
+    const yPad = yRange * 0.05;
+    const fixedYMin = Math.min(yMinAll - yPad, 1.0 - yPad);
+    const fixedYMax = Math.max(yMaxAll + yPad, 1.0 + yPad);
+
     // Destroy previous instance
     if (window._histHodChart) {
       try { window._histHodChart.destroy(); } catch (_) {}
@@ -10237,6 +10337,8 @@ function _bdHodShape(zone, summary) {
             title: { display: true, text: 'Hour of day', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
           },
           y: {
+            min: fixedYMin,
+            max: fixedYMax,
             grid: { color: 'rgba(255,255,255,0.05)' },
             ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, callback: v => v.toFixed(2) + '×' },
             title: { display: true, text: 'Normalised price · ratio vs period average', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
@@ -10282,7 +10384,7 @@ function _bdHodShape(zone, summary) {
     if (btn) btn.innerHTML = '⏸ Pause';
 
     // Get the full list of years to walk through (ignore yearsScope, use All)
-    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
+    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All', STATE.compareMode);
     if (!years.length) { _hodStopPlay(); return; }
 
     // T=0: first year already drawn (not empty chart)
@@ -10464,16 +10566,19 @@ function _bdHodShape(zone, summary) {
       const colour = lbl.style.color || '#FBBF24';
       const dpr = (window.devicePixelRatio || 1);
       const fontSize = Math.round(34 * dpr);
-      ctx.font = `800 ${fontSize}px Inter, sans-serif`;
+      ctx.font = `700 ${fontSize}px Inter, sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       // Soft shadow to detach from chart
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 12 * dpr;
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 14 * dpr;
+      ctx.shadowOffsetY = 1 * dpr;
       ctx.fillStyle = colour;
-      // Position at top-left, just right of Y-axis ticks (~60px in)
-      ctx.fillText(text, 60 * dpr, 8 * dpr);
+      // Position at top-left inside plot area: 78px right of canvas edge (past
+      // Y-axis ticks), 22px down from top — matches the on-screen position.
+      ctx.fillText(text, 78 * dpr, 22 * dpr);
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
     }
     return out;
   }
@@ -10535,7 +10640,7 @@ function _bdHodShape(zone, summary) {
     _hodRedraw();
 
     // Build the years list we'll walk through
-    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
+    const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All', STATE.compareMode);
     if (!years.length) {
       btn.innerHTML = originalLabel;
       btn.disabled = false;
