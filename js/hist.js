@@ -5937,26 +5937,33 @@ async function _hszRenderHourly(filtered, zone) {
  * Replaces the canvas host with the HOD-shape module's own container,
  * then calls window.histHodRenderShape(zone) which fully owns its DOM.
  * The module re-renders cleanly when the user switches back to this mode.
+ *
+ * Works for both inline drill (canvas = ho-detail-chart) and fullscreen
+ * (canvas = ho-fs-chart). The single #histhod-shape host is moved between
+ * the two parents on context switch — preserves state machine, no ID
+ * collision, no double-render.
  */
 function _hszRenderHourlyHodShape(zone) {
   const canvasId = _HSZ_TARGET.canvasId || 'ho-detail-chart';
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  // Find a stable parent to host the HOD module content
-  // (the canvas usually sits inside a `position:relative` wrapper)
   const parent = canvas.parentElement;
   if (!parent) return;
-  // Hide the legacy canvas; mount our host beside it
+  // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
+  // Find existing host (anywhere in the DOM) or create one
   let host = document.getElementById('histhod-shape');
   if (!host) {
     host = document.createElement('div');
     host.id = 'histhod-shape';
     host.style.width = '100%';
-    parent.appendChild(host);
-  } else {
-    host.style.display = '';
   }
+  // If host lives under a different parent (context switch between inline
+  // ↔ fullscreen), move it to the current parent
+  if (host.parentElement !== parent) {
+    parent.appendChild(host);
+  }
+  host.style.display = '';
   if (typeof window.histHodRenderShape === 'function') {
     window.histHodRenderShape(zone);
   } else {
