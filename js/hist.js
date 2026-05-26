@@ -9877,6 +9877,13 @@ function _bdHodShape(zone, summary) {
   // ════════════════════════════════════════════════════════════════
   window.histHodRenderShape = function (zone) {
     STATE.currentZone = zone;
+    // Stop any animation that was running from a previous mount and reset
+    // anim state so the chart shows the full stack at first paint (not an
+    // empty/half-built animation frame)
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
     const host = document.getElementById(`histhod-shape`);
     if (!host) return;
 
@@ -10201,10 +10208,11 @@ function _bdHodShape(zone, summary) {
   const ANIM_INTERVAL_MS = 1200; // cadence per year
 
   function _hodStartPlay() {
-    // Reset state and start fresh
+    // Reset state and start with the first year already visible
+    // (avoid empty chart for 1.2s at the start of the animation)
     STATE.playing = true;
     STATE.animEnded = false;
-    STATE.animVisibleCount = 0;
+    STATE.animVisibleCount = 1;
     const btn = document.getElementById('histhod-play-btn');
     if (btn) btn.innerHTML = '⏸ Pause';
 
@@ -10212,10 +10220,10 @@ function _bdHodShape(zone, summary) {
     const { years } = _hodBuildYearData(STATE.currentZone, STATE.period, 'All');
     if (!years.length) { _hodStopPlay(); return; }
 
-    // T=0: empty chart
+    // T=0: first year already drawn (not empty chart)
     _hodRedraw();
 
-    // Walk years cumulatively (1 → years.length)
+    // Walk years cumulatively (2 → years.length)
     STATE.animTimer = setInterval(() => {
       STATE.animVisibleCount += 1;
       if (STATE.animVisibleCount >= years.length) {
