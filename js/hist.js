@@ -5957,6 +5957,8 @@ function _hszRenderHourlyHodShape(zone) {
   if (!canvas) return;
   const parent = canvas.parentElement;
   if (!parent) return;
+  // Unmount Annual avg animation module if it was active
+  if (typeof window.histAnnualUnmount === 'function') window.histAnnualUnmount();
   // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
   // Relax the parent's fixed 340px height so the HOD viz (taller — filters bar
@@ -6036,6 +6038,8 @@ function _hszPickIntradayYears(intraday) {
 
 // Quarter mode: 4 mini-charts grid (Q1..Q4)
 function _hszRenderHourlyQuarter(zone, intraday) {
+  // Unmount Annual avg animation module if it was active
+  if (typeof window.histAnnualUnmount === 'function') window.histAnnualUnmount();
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
@@ -6289,9 +6293,11 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 }
 
 // YoY mode: single chart with 24h profile of period vs Y-1 / Y-2
+// As of the multi-year animation refactor, this delegates to histAnnualMount
+// which builds a multi-year stack (one curve per year in summary.intraday) and
+// supports Play / Compare / Highlight multi (mirrors Hour-of-day shape UX).
 function _hszRenderHourlyYoY(zone, intraday, summary) {
-  const color = zoneColor(zone);
-  const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
+  const { cur } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
 
   // Remove the quarter grid + global legend if present, show the main canvas
@@ -6302,7 +6308,8 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
-  // Empty HOD-specific toggle slot (Play/PNG/GIF buttons)
+  // Empty HOD-specific toggle slot (Play/PNG/GIF buttons) — histAnnualMount
+  // will refill it with the Annual-specific actions
   ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
     const s = document.getElementById(id);
     if (s) { s.innerHTML = ''; s.style.display = 'none'; }
@@ -6314,6 +6321,64 @@ function _hszRenderHourlyYoY(zone, intraday, summary) {
     canvas.style.display = '';
     if (canvas.parentNode) canvas.parentNode.style.display = '';
   }
+
+  // ── Delegate to the Annual animation module ──
+  // It handles: title block, filters bar (Compare + Highlight), year-label
+  // overlay, multi-year datasets, Play animation, GIF/PNG download.
+  if (typeof window.histAnnualMount === 'function') {
+    window.histAnnualMount(zone, intraday, summary, {
+      canvasId: _hszCtx().canvasId,
+      isFullscreen: (_hszCtx().canvasId === 'ho-fs-chart'),
+    });
+    // Also render the analyst banner via the canonical helper · re-uses
+    // existing logic so the "Peak at... / Market read..." amber stays.
+    _renderHourlyYoYBanner(zone, intraday, summary);
+    return;
+  }
+
+  // ── FALLBACK · legacy static rendering (if module not loaded) ──
+  return _hszRenderHourlyYoYStatic(zone, intraday, summary);
+}
+
+// Extracted: render the analyst banner for Annual avg using the existing
+// _buildAnalystBanner('yoyHourly', ...) so the message stays consistent.
+function _renderHourlyYoYBanner(zone, intraday, summary) {
+  const { cur, n1 } = _hszPickIntradayYears(intraday);
+  const curProfile = _hszSanitiseHourlyProfile(intraday[cur]?.all);
+  const n1Profile  = n1 ? _hszSanitiseHourlyProfile(intraday[n1]?.all) : null;
+  if (!curProfile) return;
+  // Compute peak / floor for the banner
+  let peakVal = -Infinity, peakHour = 0, floorVal = Infinity, floorHour = 0;
+  for (let h = 0; h < 24; h++) {
+    if (curProfile[h] == null) continue;
+    if (curProfile[h] > peakVal)  { peakVal = curProfile[h];  peakHour = h; }
+    if (curProfile[h] < floorVal) { floorVal = curProfile[h]; floorHour = h; }
+  }
+  let prevFloorVal = null, prevPeakHour = null;
+  if (n1Profile) {
+    let pv = -Infinity, fv = Infinity, ph = 0;
+    for (let h = 0; h < 24; h++) {
+      if (n1Profile[h] == null) continue;
+      if (n1Profile[h] > pv) { pv = n1Profile[h]; ph = h; }
+      if (n1Profile[h] < fv) { fv = n1Profile[h]; }
+    }
+    prevFloorVal = fv;
+    prevPeakHour = ph;
+  }
+  if (typeof window._buildAnalystBanner === 'function' && typeof window._renderAnalystBanner === 'function') {
+    window._renderAnalystBanner(window._buildAnalystBanner('yoyHourly', {
+      peakHour, peakVal, floorHour, floorVal, prevFloorVal, prevPeakHour,
+    }));
+  }
+}
+
+// Legacy static renderer · preserved as fallback in case the Annual animation
+// module fails to load. NOT called by default — only if histAnnualMount is
+// undefined. Body left as-is from the pre-refactor version.
+function _hszRenderHourlyYoYStatic(zone, intraday, summary) {
+  const color = zoneColor(zone);
+  const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
+  if (!cur) return _hszPlaceholder('No intraday data');
 
   // Sanitise sparse-data years (e.g. 2024 with 1 point every 2h → interpolated)
   const curProfile = _hszSanitiseHourlyProfile(intraday[cur]?.all);
@@ -7681,6 +7746,7 @@ function _hszSanitiseHourlyProfile(arr) {
   }
   return out;
 }
+if (typeof window !== 'undefined') window._hszSanitiseHourlyProfile = _hszSanitiseHourlyProfile;
 
 // ── Stats helpers shared across multiple chart variants ──
 function _percentile(sortedArr, p) {
@@ -10716,6 +10782,593 @@ function _bdHodShape(zone, summary) {
     });
 
     gif.render();
+  };
+
+})();
+/* ════════════════════════════════════════════════════════════════════════════
+ * HISTORICAL · YOY HOURLY · ANNUAL AVERAGE — CUMULATIVE ANIMATION
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ * Mirrors the HOD shape animation engine but uses REAL ENTSO-E intraday data
+ * (summary.intraday[zone][year].all) so the curves are actual yearly profiles
+ * — not synthesised shapes.
+ *
+ * Mounted by _hszRenderHourlyYoY (in hist.js) which delegates to histAnnualMount.
+ *
+ * Public API (exposed on window):
+ *   - histAnnualMount(zone, intraday, summary, ctx)  · setup + first render
+ *   - histAnnualTogglePlay()                          · start/stop animation
+ *   - histAnnualToggleHighlight(year)                 · multi-select highlight
+ *   - histAnnualHighlightClear()                      · reset highlight
+ *   - histAnnualSetCompare(mode)                      · 'aligned' | 'fullyear'
+ *   - histAnnualDownloadPng()                         · current frame PNG
+ *   - histAnnualDownloadGif()                         · animation GIF
+ *   - histAnnualUnmount()                             · cleanup (called by other modes)
+ *   - histAnnualBuildData(zone)                       · public data accessor (for _bdHourlyAnnual + others)
+ * ════════════════════════════════════════════════════════════════════════════ */
+
+(function () {
+  'use strict';
+
+  // Same palette as HOD module for visual consistency
+  const YEAR_PALETTE = {
+    2018: '#2C5282', 2019: '#3182CE', 2020: '#38B2AC', 2021: '#48BB78',
+    2022: '#ECC94B', 2023: '#ED8936', 2024: '#E53E3E', 2025: '#D53F8C',
+    2026: '#FBBF24',
+  };
+
+  const STATE = {
+    zone: null,
+    intraday: null,
+    summary: null,
+    ctx: null,                  // { canvasId, isFullscreen }
+    playing: false,
+    animVisibleCount: 0,
+    animEnded: false,
+    animTimer: null,
+    highlightYears: [],
+    compareMode: 'aligned',     // 'aligned' | 'fullyear'
+  };
+
+  const ANIM_INTERVAL_MS = 1200;
+
+  /* ── DATA ACCESSORS ───────────────────────────────────────────── */
+
+  // Returns { years: ['2018', ..., '2026'], profiles: { '2018': [24 vals], ... } }
+  // Uses REAL ENTSO-E intraday[year].all (€/MWh per hour) — not normalised.
+  function _buildYearData() {
+    if (!STATE.intraday) return { years: [], profiles: {} };
+    const yearsAll = Object.keys(STATE.intraday).filter(k => /^\d{4}$/.test(k)).sort();
+    const profiles = {};
+    yearsAll.forEach(y => {
+      const raw = STATE.intraday[y]?.all;
+      // Re-use the sanitiser from hist.js scope if available (sparse-data smoothing)
+      const sanitised = (typeof window._hszSanitiseHourlyProfile === 'function')
+        ? window._hszSanitiseHourlyProfile(raw)
+        : raw;
+      if (sanitised && Array.isArray(sanitised) && sanitised.length === 24) {
+        profiles[y] = sanitised;
+      }
+    });
+    const years = Object.keys(profiles).sort();
+    return { years, profiles };
+  }
+
+  window.histAnnualBuildData = function (zone) {
+    if (zone !== STATE.zone) return null;
+    return _buildYearData();
+  };
+
+  /* ── MOUNT ─────────────────────────────────────────────────────── */
+
+  window.histAnnualMount = function (zone, intraday, summary, ctx) {
+    // Hard reset animation state
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+
+    STATE.zone = zone;
+    STATE.intraday = intraday;
+    STATE.summary = summary;
+    STATE.ctx = ctx || {};
+
+    _injectFiltersBar();
+    _injectToolbar();
+    _ensureYearLabel();
+    _renderTitle();
+    _redraw();
+  };
+
+  window.histAnnualUnmount = function () {
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+    // Remove our injected DOM
+    const filters = document.getElementById('histannual-filters');
+    if (filters) filters.remove();
+    const lbl = document.getElementById('histannual-year-label');
+    if (lbl) lbl.remove();
+    // Empty toolbar slot
+    ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
+      const s = document.getElementById(id);
+      if (s) { s.innerHTML = ''; s.style.display = 'none'; }
+    });
+  };
+
+  function _injectFiltersBar() {
+    // Find canvas parent; insert filters bar before it.
+    const canvasId = (STATE.ctx && STATE.ctx.canvasId) || 'ho-detail-chart';
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const wrap = canvas.parentElement;
+    if (!wrap) return;
+
+    // Remove any previous filters bar (in case we re-mount)
+    const old = document.getElementById('histannual-filters');
+    if (old) old.remove();
+
+    const bar = document.createElement('div');
+    bar.id = 'histannual-filters';
+    bar.className = 'pk-filters-bar';
+    bar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px" title="How to compare past years to the current window.">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Compare to past years</span>
+        <div id="histannual-compare-pills" style="display:inline-flex;gap:4px"></div>
+      </div>
+      <div class="pk-filters-bar-spacer"></div>
+      <div style="display:flex;align-items:center;gap:6px" title="Click one or more years to focus them.">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Highlight (multi)</span>
+        <div id="histannual-highlight-pills" style="display:inline-flex;gap:4px;flex-wrap:wrap"></div>
+      </div>
+    `;
+    // Insert before the chart wrap
+    wrap.parentNode.insertBefore(bar, wrap);
+    _paintControls();
+  }
+
+  function _injectToolbar() {
+    const isFs = !!(STATE.ctx && STATE.ctx.isFullscreen);
+    const slotId = isFs ? 'ho-fs-toggle-slot' : 'ho-detail-toggle-slot';
+    const slot = document.getElementById(slotId);
+    if (!slot) return;
+    slot.style.display = 'flex';
+    slot.style.alignItems = 'center';
+    slot.style.gap = '6px';
+    slot.innerHTML = `
+      <button class="pk-btn-primary" id="histannual-play-btn" onclick="event.stopPropagation();histAnnualTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
+      <button class="pk-btn-ghost" onclick="event.stopPropagation();histAnnualDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
+      <button class="pk-btn-ghost" id="histannual-gif-btn" onclick="event.stopPropagation();histAnnualDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
+    `;
+  }
+
+  function _ensureYearLabel() {
+    const canvasId = (STATE.ctx && STATE.ctx.canvasId) || 'ho-detail-chart';
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const wrap = canvas.parentElement;
+    if (!wrap) return;
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    let lbl = document.getElementById('histannual-year-label');
+    if (!lbl) {
+      lbl = document.createElement('div');
+      lbl.id = 'histannual-year-label';
+      lbl.style.cssText = "position:absolute;left:78px;top:22px;font-family:'Inter',sans-serif;font-size:34px;font-weight:700;letter-spacing:-.02em;color:var(--acc);opacity:0;pointer-events:none;transition:opacity .3s, color .3s;text-shadow:0 1px 14px rgba(0,0,0,0.55);z-index:5";
+      wrap.appendChild(lbl);
+    }
+  }
+
+  function _renderTitle() {
+    if (typeof window._setHoTitle !== 'function') return;
+    const titleHelper = window._titleWithDescription || ((t, d) => `${t} <span style="color:var(--tx3);font-weight:400;font-size:0.78em;margin-left:6px">| ${d}</span>`);
+    const cmpLabel = STATE.compareMode === 'fullyear'
+      ? 'Current period vs past full years'
+      : 'Same calendar window across years';
+    window._setHoTitle({
+      eyebrow: `Prices · YoY · ${STATE.zone} · Hourly · Annual average`,
+      title:   titleHelper('Intraday 24h profile · YoY stack',
+                           'Average price by hour of day — all available years'),
+      subtitle: `Each curve = one year's average daily profile (€/MWh). Latest year highlighted, past years faded. <span style="color:var(--tx2)">Compare mode: <b style="color:var(--acc)">${cmpLabel}</b></span>. Click Play to animate the historical build-up.`,
+    });
+  }
+
+  /* ── UI CONTROLS ──────────────────────────────────────────────── */
+
+  function _paintControls() {
+    const pkPill = window.pkPill || ((opts) => `<button onclick="${opts.onClick}"${opts.title ? ` title="${opts.title}"` : ''} style="padding:4px 10px;font-size:10px;border-radius:14px;cursor:pointer;background:${opts.active ? 'rgba(20,211,169,0.15)' : 'transparent'};color:${opts.active ? '#14D3A9' : 'var(--tx3)'};border:1px solid ${opts.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};font-family:'JetBrains Mono',monospace;font-weight:600">${opts.label}</button>`);
+
+    const cmp = document.getElementById('histannual-compare-pills');
+    if (cmp) {
+      cmp.innerHTML =
+        pkPill({ label: 'Same window',    active: STATE.compareMode === 'aligned',  onClick: `histAnnualSetCompare('aligned')`,  title: 'Like-for-like: same calendar window in every year' }) +
+        pkPill({ label: 'vs Full years',  active: STATE.compareMode === 'fullyear', onClick: `histAnnualSetCompare('fullyear')`, title: 'Current period vs past full years' });
+    }
+
+    const hl = document.getElementById('histannual-highlight-pills');
+    if (hl) {
+      const { years } = _buildYearData();
+      const allActive = (!STATE.highlightYears || STATE.highlightYears.length === 0);
+      let html = pkPill({ label: 'All', active: allActive, onClick: `histAnnualHighlightClear()`, title: 'Show all years equally (clear focus)' });
+      years.forEach(y => {
+        const yNum = parseInt(y, 10);
+        const isFocus = STATE.highlightYears && STATE.highlightYears.includes(yNum);
+        html += pkPill({ label: y, active: isFocus, onClick: `histAnnualToggleHighlight(${yNum})`, title: 'Toggle focus on this year' });
+      });
+      hl.innerHTML = html;
+    }
+  }
+
+  /* ── SETTERS ──────────────────────────────────────────────────── */
+
+  window.histAnnualSetCompare = function (mode) {
+    if (mode !== 'aligned' && mode !== 'fullyear') return;
+    if (STATE.compareMode === mode) return;
+    STATE.compareMode = mode;
+    if (STATE.playing || STATE.animEnded) _stopPlay();
+    _renderTitle();
+    _paintControls();
+    _redraw();
+  };
+
+  window.histAnnualToggleHighlight = function (y) {
+    y = parseInt(y, 10);
+    if (isNaN(y)) return;
+    if (!STATE.highlightYears) STATE.highlightYears = [];
+    const idx = STATE.highlightYears.indexOf(y);
+    if (idx >= 0) STATE.highlightYears.splice(idx, 1);
+    else          STATE.highlightYears.push(y);
+    if (STATE.animEnded && STATE.highlightYears.length > 0) _stopPlay();
+    _paintControls();
+    _redraw();
+  };
+
+  window.histAnnualHighlightClear = function () {
+    STATE.highlightYears = [];
+    _paintControls();
+    _redraw();
+  };
+
+  window.histAnnualTogglePlay = function () {
+    if (STATE.playing) _stopPlay();
+    else               _startPlay();
+  };
+
+  /* ── ANIMATION ────────────────────────────────────────────────── */
+
+  function _startPlay() {
+    STATE.playing = true;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 1;
+    const btn = document.getElementById('histannual-play-btn');
+    if (btn) btn.innerHTML = '⏸ Pause';
+
+    const { years } = _buildYearData();
+    if (!years.length) { _stopPlay(); return; }
+
+    _redraw();
+
+    STATE.animTimer = setInterval(() => {
+      STATE.animVisibleCount += 1;
+      if (STATE.animVisibleCount >= years.length) {
+        STATE.animVisibleCount = years.length;
+        _redraw();
+        _endAnim();
+        return;
+      }
+      _redraw();
+    }, ANIM_INTERVAL_MS);
+  }
+
+  function _stopPlay() {
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+    const btn = document.getElementById('histannual-play-btn');
+    if (btn) btn.innerHTML = '▶ Play';
+    _redraw();
+  }
+
+  function _endAnim() {
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = true;
+    const btn = document.getElementById('histannual-play-btn');
+    if (btn) btn.innerHTML = '↻ Replay';
+  }
+
+  /* ── COLOUR HELPER ────────────────────────────────────────────── */
+  function _hexToRgba(hex, alpha) {
+    if (!hex) return `rgba(122,147,171,${alpha})`;
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  /* ── REDRAW ───────────────────────────────────────────────────── */
+
+  function _redraw() {
+    const canvasId = (STATE.ctx && STATE.ctx.canvasId) || 'ho-detail-chart';
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    if (typeof window.Chart === 'undefined') return;
+
+    const { years, profiles } = _buildYearData();
+    if (!years.length) return;
+
+    const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
+    const animMode = STATE.playing || STATE.animEnded;
+    const highlightYears = (STATE.highlightYears && STATE.highlightYears.length > 0) ? STATE.highlightYears : null;
+    const visibleCount = animMode ? STATE.animVisibleCount : years.length;
+    const latestVisibleIdx = visibleCount - 1;
+
+    // Build datasets · one per year
+    const datasets = years.map((y, yIdx) => {
+      const yNum = parseInt(y, 10);
+      const baseColor = YEAR_PALETTE[yNum] || '#7A93AB';
+      let isFull, isFaded, isHidden;
+
+      if (animMode) {
+        if (yIdx > latestVisibleIdx) isHidden = true;
+        else if (yIdx === latestVisibleIdx) isFull = true;
+        else isFaded = true;
+      } else if (highlightYears) {
+        if (highlightYears.includes(yNum)) isFull = true;
+        else                                isFaded = true;
+      } else {
+        // Default · latest year full, others faded
+        if (yIdx === years.length - 1) isFull = true;
+        else                            isFaded = true;
+      }
+
+      if (isHidden) {
+        return {
+          label: y,
+          data: profiles[y],
+          borderColor: 'transparent',
+          backgroundColor: 'transparent',
+          borderWidth: 0,
+          fill: false,
+          pointRadius: 0,
+          hidden: true,
+        };
+      }
+      return {
+        label: y,
+        data: profiles[y],
+        borderColor:     isFull ? baseColor : _hexToRgba(baseColor, 0.28),
+        backgroundColor: 'transparent',
+        borderWidth:     isFull ? 2.4 : 1.0,
+        borderDash:      isFaded ? [3, 3] : undefined,
+        fill: false,
+        tension: 0.30,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        spanGaps: true,
+        order: isFull ? 0 : (50 - yIdx),
+      };
+    });
+
+    // Pre-compute Y bounds on FULL dataset (all years) for stable animation axis
+    let yMinAll = Infinity, yMaxAll = -Infinity;
+    years.forEach(y => {
+      const p = profiles[y];
+      if (!p) return;
+      for (let h = 0; h < p.length; h++) {
+        if (p[h] != null) {
+          if (p[h] < yMinAll) yMinAll = p[h];
+          if (p[h] > yMaxAll) yMaxAll = p[h];
+        }
+      }
+    });
+    if (!isFinite(yMinAll)) yMinAll = 0;
+    if (!isFinite(yMaxAll)) yMaxAll = 100;
+    const yPad = Math.max((yMaxAll - yMinAll) * 0.05, 2);
+
+    // Destroy previous chart on this canvas
+    if (window.HIST && window.HIST.charts && window.HIST.charts[canvasId]) {
+      try { window.HIST.charts[canvasId].destroy(); } catch (_) {}
+      delete window.HIST.charts[canvasId];
+    }
+    if (window._histAnnualChart) {
+      try { window._histAnnualChart.destroy(); } catch (_) {}
+    }
+
+    window._histAnnualChart = new window.Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        animation: animMode ? { duration: 600, easing: 'easeOutQuad' } : { duration: 0 },
+        animations: animMode ? {
+          borderColor: { type: 'color', duration: 600, from: 'rgba(0,0,0,0)' },
+          backgroundColor: { type: 'color', duration: 600, from: 'rgba(0,0,0,0)' },
+        } : {},
+        plugins: {
+          legend: {
+            display: true, position: 'top', align: 'end',
+            labels: {
+              color: '#4A6280',
+              font: { size: 10, family: 'JetBrains Mono' },
+              boxWidth: 14,
+              usePointStyle: true,
+              pointStyle: 'line',
+              filter: (item, data) => !(data.datasets[item.datasetIndex]?.hidden),
+            },
+          },
+          tooltip: {
+            backgroundColor: '#0A1018',
+            titleColor: '#fff',
+            bodyColor: '#B8C9D9',
+            borderColor: '#1A2533',
+            borderWidth: 1,
+            padding: 8,
+            titleFont: { family: 'JetBrains Mono', size: 10 },
+            bodyFont:  { family: 'JetBrains Mono', size: 10 },
+            filter: ctx => !ctx.dataset.hidden,
+            callbacks: {
+              label: c => ` ${c.dataset.label}: ${c.parsed.y != null ? c.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
+            },
+          },
+          zoom: (window.Chart && window.Chart.registry && window.Chart.registry.plugins.get('zoom')) ? {
+            zoom: {
+              drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.12)', borderColor: 'rgba(20,211,169,0.5)', borderWidth: 1 },
+              wheel: { enabled: false },
+              pinch: { enabled: true },
+              mode: 'xy',
+            },
+            pan: { enabled: false },
+          } : {},
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
+            title: { display: true, text: 'Hour of day', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+          },
+          y: {
+            min: yMinAll - yPad,
+            max: yMaxAll + yPad,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
+            title: { display: true, text: '€/MWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
+          },
+        },
+      },
+    });
+    // Register in HIST.charts so the global reset-zoom button works
+    if (window.HIST && window.HIST.charts) window.HIST.charts[canvasId] = window._histAnnualChart;
+
+    // Year label · top-LEFT inside chart area
+    const lbl = document.getElementById('histannual-year-label');
+    if (lbl) {
+      if (animMode && latestVisibleIdx >= 0) {
+        const focusYear = years[latestVisibleIdx];
+        lbl.textContent = focusYear;
+        lbl.style.color = YEAR_PALETTE[parseInt(focusYear, 10)] || 'var(--acc)';
+        lbl.style.opacity = STATE.playing ? 0.85 : 0.65;
+      } else if (highlightYears && highlightYears.length > 0) {
+        const sortedHl = [...highlightYears].sort((a, b) => a - b);
+        lbl.textContent = sortedHl.join(' · ');
+        lbl.style.color = sortedHl.length === 1 ? (YEAR_PALETTE[sortedHl[0]] || 'var(--acc)') : 'var(--acc)';
+        lbl.style.opacity = 0.65;
+      } else {
+        lbl.style.opacity = 0;
+      }
+    }
+  }
+
+  /* ── DOWNLOAD PNG / GIF ───────────────────────────────────────── */
+
+  function _composeFrame() {
+    const canvasId = (STATE.ctx && STATE.ctx.canvasId) || 'ho-detail-chart';
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    const lbl = document.getElementById('histannual-year-label');
+    const dpr = (window.devicePixelRatio || 1);
+    const out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const ctx2d = out.getContext('2d');
+    ctx2d.drawImage(canvas, 0, 0);
+    if (lbl && parseFloat(lbl.style.opacity || '0') > 0.05) {
+      const text = lbl.textContent || '';
+      const colour = lbl.style.color || '#FBBF24';
+      const fontSize = Math.round(34 * dpr);
+      ctx2d.font = `700 ${fontSize}px Inter, sans-serif`;
+      ctx2d.textAlign = 'left';
+      ctx2d.textBaseline = 'top';
+      ctx2d.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx2d.shadowBlur = 14 * dpr;
+      ctx2d.shadowOffsetY = 1 * dpr;
+      ctx2d.fillStyle = colour;
+      ctx2d.fillText(text, 78 * dpr, 22 * dpr);
+      ctx2d.shadowBlur = 0;
+      ctx2d.shadowOffsetY = 0;
+    }
+    return out;
+  }
+
+  window.histAnnualDownloadPng = function () {
+    const composed = _composeFrame();
+    if (!composed) return alert('Chart not ready');
+    const a = document.createElement('a');
+    a.href = composed.toDataURL('image/png');
+    a.download = `${STATE.zone || 'annual'}-yoy-${Date.now()}.png`;
+    a.click();
+  };
+
+  window.histAnnualDownloadGif = function () {
+    if (typeof window.GIF === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+      script.onload = () => window.histAnnualDownloadGif();
+      script.onerror = () => alert('Failed to load gif.js library');
+      document.head.appendChild(script);
+      return;
+    }
+    const btn = document.getElementById('histannual-gif-btn');
+    if (btn) { btn.innerHTML = '⏳ Recording'; btn.disabled = true; }
+
+    const originalLabel = '🎬 GIF';
+
+    if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
+    STATE.playing = false;
+    STATE.animEnded = false;
+    STATE.animVisibleCount = 0;
+    _redraw();
+
+    const { years } = _buildYearData();
+    if (!years.length) {
+      if (btn) { btn.innerHTML = originalLabel; btn.disabled = false; }
+      return;
+    }
+
+    const gif = new window.GIF({
+      workers: 2,
+      quality: 10,
+      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+    });
+
+    let stepIdx = 1;
+    function captureNext() {
+      STATE.playing = true;
+      STATE.animVisibleCount = stepIdx;
+      _redraw();
+      setTimeout(() => {
+        const frame = _composeFrame();
+        if (frame) gif.addFrame(frame, { delay: 800, copy: true });
+        if (stepIdx < years.length) {
+          stepIdx += 1;
+          captureNext();
+        } else {
+          STATE.playing = false;
+          STATE.animEnded = true;
+          gif.render();
+        }
+      }, 200);
+    }
+    captureNext();
+
+    gif.on('finished', (blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${STATE.zone || 'annual'}-yoy-${Date.now()}.gif`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (btn) {
+        btn.innerHTML = originalLabel;
+        btn.disabled = false;
+      }
+      const playBtn = document.getElementById('histannual-play-btn');
+      if (playBtn) playBtn.innerHTML = '↻ Replay';
+    });
   };
 
 })();
