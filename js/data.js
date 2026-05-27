@@ -519,6 +519,15 @@ async function loadPricesForDate(dateStr) {
           });
         }
 
+        // Reject obviously corrupt/partial files (e.g. fetch_data.py crashed mid-run).
+        // Real daily data has ~25-30 zones. Anything below 10 is broken, skip and let
+        // the next fallback path try J-2 or live ENTSO-E fetch instead of showing 2 zones.
+        const MIN_VALID_ZONES = 10;
+        if (mapped.length > 0 && mapped.length < MIN_VALID_ZONES) {
+          console.warn(`Daily file for ${dateStr} has only ${mapped.length} zones — treating as corrupt, falling back.`);
+          mapped = [];
+        }
+
         if (mapped.length) {
           // Backfill vsYday SYNCHRONOUSLY before first render, so '–' never appears when J-1 data is available
           if (typeof fetchYesterdayDaily === 'function' && mapped.some(z => z.vsYday == null)) {
