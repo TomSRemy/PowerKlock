@@ -10828,6 +10828,7 @@ function _bdHodShape(zone, summary) {
     animTimer: null,
     highlightYears: [],
     compareMode: 'aligned',     // 'aligned' | 'fullyear'
+    showBands: false,           // P0-P100 + P5-P95 + median bands toggle
   };
 
   const ANIM_INTERVAL_MS = 1200;
@@ -10936,7 +10937,17 @@ function _bdHodShape(zone, summary) {
     slot.style.display = 'flex';
     slot.style.alignItems = 'center';
     slot.style.gap = '6px';
+
+    // Check whether bands are available in the summary (P0-P100, P5-P95)
+    const dist = STATE.summary && STATE.summary.intradayDist && STATE.summary.intradayDist[STATE.zone];
+    const bandsAvailable = !!(dist && Array.isArray(dist.p0) && dist.p0.length === 24);
+
+    const bandsBtn = bandsAvailable
+      ? `<button class="${STATE.showBands ? 'pk-btn-primary' : 'pk-btn-ghost'}" id="histannual-bands-btn" onclick="event.stopPropagation();histAnnualToggleBands()" title="Show/hide historical distribution bands (P0-P100, P5-P95, median)">${STATE.showBands ? '◉' : '○'} Bands</button>`
+      : '';
+
     slot.innerHTML = `
+      ${bandsBtn}
       <button class="pk-btn-primary" id="histannual-play-btn" onclick="event.stopPropagation();histAnnualTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
       <button class="pk-btn-ghost" onclick="event.stopPropagation();histAnnualDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
       <button class="pk-btn-ghost" id="histannual-gif-btn" onclick="event.stopPropagation();histAnnualDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
@@ -11029,6 +11040,12 @@ function _bdHodShape(zone, summary) {
     _redraw();
   };
 
+  window.histAnnualToggleBands = function () {
+    STATE.showBands = !STATE.showBands;
+    _injectToolbar();
+    _redraw();
+  };
+
   window.histAnnualTogglePlay = function () {
     if (STATE.playing) _stopPlay();
     else               _startPlay();
@@ -11105,8 +11122,51 @@ function _bdHodShape(zone, summary) {
     const visibleCount = animMode ? STATE.animVisibleCount : years.length;
     const latestVisibleIdx = visibleCount - 1;
 
-    // Build datasets · one per year
-    const datasets = years.map((y, yIdx) => {
+    const datasets = [];
+
+    // ── HISTORICAL DISTRIBUTION BANDS (optional, toggle via Bands button) ──
+    // Source: summary.intradayDist[zone] = {p0, p5, p50, p95, p100} (computed
+    // by enrich_summary.py on all years EXCEPT current). Order=8 puts them in
+    // the back, behind the year curves.
+    const dist = STATE.summary && STATE.summary.intradayDist && STATE.summary.intradayDist[STATE.zone];
+    const hasBands = !!(dist && Array.isArray(dist.p0) && dist.p0.length === 24);
+    if (STATE.showBands && hasBands) {
+      // Outer Min–Max (P0–P100)
+      datasets.push({
+        label: 'Min–Max range', data: dist.p100,
+        borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(122,147,171,0.04)',
+        borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+        fill: '+1', order: 10,
+      });
+      datasets.push({
+        label: '_outer_min', data: dist.p0,
+        borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
+        borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+        fill: false, order: 10, _hideFromLegend: true,
+      });
+      // Inner P5–P95
+      datasets.push({
+        label: 'Typical range (P5–P95)', data: dist.p95,
+        borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'rgba(122,147,171,0.10)',
+        borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+        fill: '+1', order: 9,
+      });
+      datasets.push({
+        label: '_inner_min', data: dist.p5,
+        borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
+        borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+        fill: false, order: 9, _hideFromLegend: true,
+      });
+      // Historical median
+      datasets.push({
+        label: 'Hist median', data: dist.p50,
+        borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
+        tension: 0.2, spanGaps: true, fill: false, borderDash: [2, 3], order: 8,
+      });
+    }
+
+    // ── YEAR CURVES · one per year ──
+    years.forEach((y, yIdx) => {
       const yNum = parseInt(y, 10);
       const baseColor = YEAR_PALETTE[yNum] || '#7A93AB';
       let isFull, isFaded, isHidden;
@@ -11125,7 +11185,7 @@ function _bdHodShape(zone, summary) {
       }
 
       if (isHidden) {
-        return {
+        datasets.push({
           label: y,
           data: profiles[y],
           borderColor: 'transparent',
@@ -11134,25 +11194,27 @@ function _bdHodShape(zone, summary) {
           fill: false,
           pointRadius: 0,
           hidden: true,
-        };
+        });
+      } else {
+        datasets.push({
+          label: y,
+          data: profiles[y],
+          borderColor:     isFull ? baseColor : _hexToRgba(baseColor, 0.28),
+          backgroundColor: 'transparent',
+          borderWidth:     isFull ? 2.4 : 1.0,
+          borderDash:      isFaded ? [3, 3] : undefined,
+          fill: false,
+          tension: 0.30,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          spanGaps: true,
+          order: isFull ? 0 : (5 - yIdx * 0.01),
+        });
       }
-      return {
-        label: y,
-        data: profiles[y],
-        borderColor:     isFull ? baseColor : _hexToRgba(baseColor, 0.28),
-        backgroundColor: 'transparent',
-        borderWidth:     isFull ? 2.4 : 1.0,
-        borderDash:      isFaded ? [3, 3] : undefined,
-        fill: false,
-        tension: 0.30,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        spanGaps: true,
-        order: isFull ? 0 : (50 - yIdx),
-      };
     });
 
-    // Pre-compute Y bounds on FULL dataset (all years) for stable animation axis
+    // Pre-compute Y bounds on FULL dataset (all years + bands if shown)
+    // for stable animation axis
     let yMinAll = Infinity, yMaxAll = -Infinity;
     years.forEach(y => {
       const p = profiles[y];
@@ -11164,6 +11226,13 @@ function _bdHodShape(zone, summary) {
         }
       }
     });
+    // Include band extents in Y bounds when bands are shown (so they fit)
+    if (STATE.showBands && hasBands) {
+      for (let h = 0; h < 24; h++) {
+        if (dist.p0[h]   != null && dist.p0[h]   < yMinAll) yMinAll = dist.p0[h];
+        if (dist.p100[h] != null && dist.p100[h] > yMaxAll) yMaxAll = dist.p100[h];
+      }
+    }
     if (!isFinite(yMinAll)) yMinAll = 0;
     if (!isFinite(yMaxAll)) yMaxAll = 100;
     const yPad = Math.max((yMaxAll - yMinAll) * 0.05, 2);
@@ -11198,7 +11267,10 @@ function _bdHodShape(zone, summary) {
               boxWidth: 14,
               usePointStyle: true,
               pointStyle: 'line',
-              filter: (item, data) => !(data.datasets[item.datasetIndex]?.hidden),
+              filter: (item, data) => {
+                const ds = data.datasets[item.datasetIndex];
+                return !(ds?.hidden) && !(ds?._hideFromLegend);
+              },
             },
           },
           tooltip: {
@@ -11210,7 +11282,10 @@ function _bdHodShape(zone, summary) {
             padding: 8,
             titleFont: { family: 'JetBrains Mono', size: 10 },
             bodyFont:  { family: 'JetBrains Mono', size: 10 },
-            filter: ctx => !ctx.dataset.hidden,
+            filter: ctx => {
+              const ds = ctx.dataset;
+              return !ds.hidden && !ds._hideFromLegend;
+            },
             callbacks: {
               label: c => ` ${c.dataset.label}: ${c.parsed.y != null ? c.parsed.y.toFixed(2) + ' €/MWh' : 'n/a'}`,
             },
