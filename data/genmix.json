@@ -1,25 +1,25 @@
 {
-  "updated": "2026-05-27T08:34:32.843089Z",
+  "updated": "2026-05-27T14:57:42.586239Z",
   "countries": {
     "FR": {
-      "nuclear": 13827,
-      "solar": 853,
-      "wind": 570,
-      "hydro": 2756,
-      "fossil": 111,
-      "biomass": 268,
-      "other": 22,
-      "total": 18407
+      "nuclear": 22854,
+      "solar": 5310,
+      "wind": 857,
+      "hydro": 4616,
+      "fossil": 196,
+      "biomass": 475,
+      "other": 57,
+      "total": 34365
     },
     "DE_LU": {
       "nuclear": 0,
-      "solar": 3233,
-      "wind": 4621,
-      "hydro": 927,
-      "fossil": 3937,
-      "biomass": 1485,
-      "other": 61,
-      "total": 14264
+      "solar": 17018,
+      "wind": 4546,
+      "hydro": 3005,
+      "fossil": 5335,
+      "biomass": 2718,
+      "other": 114,
+      "total": 32736
     },
     "ES": {
       "nuclear": 0,
@@ -33,23 +33,23 @@
     },
     "BE": {
       "nuclear": 0,
-      "solar": 346,
-      "wind": 324,
-      "hydro": 3,
-      "fossil": 341,
-      "biomass": 86,
-      "other": 136,
-      "total": 1236
+      "solar": 2174,
+      "wind": 586,
+      "hydro": 119,
+      "fossil": 404,
+      "biomass": 140,
+      "other": 256,
+      "total": 3679
     },
     "NL": {
-      "nuclear": 152,
-      "solar": 15,
-      "wind": 764,
+      "nuclear": 288,
+      "solar": 86,
+      "wind": 1257,
       "hydro": 0,
-      "fossil": 1546,
-      "biomass": 17,
-      "other": 88,
-      "total": 2582
+      "fossil": 1921,
+      "biomass": 38,
+      "other": 165,
+      "total": 3755
     },
     "GB": {
       "nuclear": 0,
@@ -63,13 +63,13 @@
     },
     "PT": {
       "nuclear": 0,
-      "solar": 88,
-      "wind": 506,
-      "hydro": 803,
-      "fossil": 210,
-      "biomass": 96,
-      "other": 9,
-      "total": 1712
+      "solar": 757,
+      "wind": 816,
+      "hydro": 1363,
+      "fossil": 373,
+      "biomass": 167,
+      "other": 16,
+      "total": 3492
     }
   }
 }
