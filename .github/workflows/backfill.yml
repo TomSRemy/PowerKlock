@@ -24,9 +24,9 @@ on:
         required: false
         default: ''
       zones:
-        description: 'Comma-separated zones to fetch'
+        description: 'Comma-separated zones (or "all" for every zone)'
         required: true
-        default: 'FR,DE_LU,ES,BE,NL,GB,PT'
+        default: 'all'
       with_genmix:
         description: 'Also fetch generation mix (5x slower, adds renPct + domFuel)'
         required: true
@@ -86,7 +86,12 @@ jobs:
             fi
             ARGS="$ARGS --from ${{ inputs.date_from }} --to ${{ inputs.date_to }}"
           fi
-          ARGS="$ARGS --zones ${{ inputs.zones }}"
+          # Expand "all" shortcut to full zone list (kept in sync with ZONES_EIC in enrich_summary.py)
+          ZONES_ARG="${{ inputs.zones }}"
+          if [ "$ZONES_ARG" = "all" ] || [ "$ZONES_ARG" = "ALL" ]; then
+            ZONES_ARG="FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE"
+          fi
+          ARGS="$ARGS --zones $ZONES_ARG"
           if [ "${{ inputs.with_genmix }}" = "true" ]; then
             ARGS="$ARGS --with-genmix"
           fi
