@@ -712,7 +712,7 @@ def daterange(start, end):
         cur += timedelta(days=1)
 
 
-def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False, dry_run=False):
+def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False, dry_run=False, repair_min_zones=0):
     token = os.environ.get('ENTSOE_TOKEN')
     if not token and not dry_run:
         print("ERROR: ENTSOE_TOKEN env var not set.", file=sys.stderr)
@@ -727,6 +727,52 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
 
     all_dates = list(daterange(date_from, date_to))
     n_days = len(all_dates)
+
+    # Repair mode: detect corrupt daily files (too few valid zones) and force-regenerate them.
+    # A file is considered corrupt if it has fewer than `repair_min_zones` zones with valid avg.
+    if repair_min_zones > 0:
+        corrupt_dates = []
+        for d in all_dates:
+            fp = os.path.join(DAILY_DIR, d.strftime('%Y-%m-%d') + '.json')
+            if not os.path.exists(fp):
+                continue
+            try:
+                with open(fp) as f:
+                    existing = json.load(f)
+                zones_field = existing.get('zones', {})
+                # Count zones with valid price data
+                if isinstance(zones_field, dict):
+                    valid_count = sum(
+                        1 for zd in zones_field.values()
+                        if zd is not None and (zd.get('avg') is not None or zd.get('today') is not None)
+                    )
+                elif isinstance(zones_field, list):
+                    valid_count = sum(
+                        1 for zd in zones_field
+                        if zd is not None and (zd.get('avg') is not None or zd.get('today') is not None)
+                    )
+                else:
+                    valid_count = 0
+                if valid_count < repair_min_zones:
+                    corrupt_dates.append((d, valid_count, fp))
+            except Exception as e:
+                print(f"  WARN: could not read {fp}: {e}")
+                corrupt_dates.append((d, 0, fp))
+
+        if corrupt_dates:
+            print(f"\n--mode repair: detected {len(corrupt_dates)} corrupt files (< {repair_min_zones} valid zones):")
+            for d, n, fp in corrupt_dates[:10]:
+                print(f"  {d}: only {n} valid zones")
+            if len(corrupt_dates) > 10:
+                print(f"  ... and {len(corrupt_dates) - 10} more")
+            # Delete the corrupt files so the fetch loop will recreate them from scratch.
+            # We still need resume to skip the GOOD files.
+            if not dry_run:
+                for _, _, fp in corrupt_dates:
+                    try:
+                        os.remove(fp)
+                    except OSError:
+                        pass
 
     if resume:
         dates_todo = []
@@ -853,6 +899,14 @@ def main():
         help='Skip dates already present in data/history/daily/'
     )
     parser.add_argument(
+        '--mode', choices=['fill', 'repair', 'rebuild'], default=None,
+        help='fill = only missing dates (= --resume) | repair = also regenerate corrupt files | rebuild = redo everything (no resume, overwrites). Overrides --resume.'
+    )
+    parser.add_argument(
+        '--min-zones', type=int, default=10,
+        help='Threshold for "corrupt" detection in --mode repair. Files with fewer valid zones get regenerated. Default: 10.'
+    )
+    parser.add_argument(
         '--dry-run', action='store_true',
         help='Print plan and exit without fetching'
     )
@@ -882,13 +936,31 @@ def main():
         date_to = today - timedelta(days=1)
 
     zones = [z.strip() for z in args.zones.split(',') if z.strip()]
+
+    # Resolve --mode into the internal flags (resume, repair_min_zones).
+    # --mode takes priority over --resume if both are given.
+    if args.mode == 'fill':
+        effective_resume = True
+        effective_repair = 0
+    elif args.mode == 'repair':
+        effective_resume = True
+        effective_repair = args.min_zones
+    elif args.mode == 'rebuild':
+        effective_resume = False
+        effective_repair = 0
+    else:
+        # Backward-compatible behaviour: use --resume directly
+        effective_resume = args.resume
+        effective_repair = 0
+
     fetch_historical(
         date_from=date_from,
         date_to=date_to,
         zones=zones,
         with_genmix=args.with_genmix,
-        resume=args.resume,
+        resume=effective_resume,
         dry_run=args.dry_run,
+        repair_min_zones=effective_repair,
     )
 
 
