@@ -5419,30 +5419,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script>
   /* ────────────────────────────────────────────────────────────────
      Chart.js · global animation overrides
-     Kills the "rise from bottom" Y-axis AND "slide from left" X-axis
-     animations on every chart in the dashboard. Applies to:
-       - Initial mount (no rise/slide on first render)
-       - Data updates (filter changes, drill open, refresh)
-       - Show/hide of datasets (no X/Y movement)
-     Other animations (hover, tooltip, color transitions, segment
-     reveals) are kept — only the X/Y position animations are disabled.
+
+     Goal: kill the "rise from bottom" + "slide from left" effects on
+     every chart, on initial mount AND data updates.
+
+     PREVIOUS PATTERN (broken — caused Prices DA Daily to show empty):
+         Chart.defaults.animations.x = { duration: 0 };
+         Chart.defaults.animations.y = { duration: 0 };
+     Why it broke: redefining the `x`/`y` keys as fresh objects strips
+     Chart.js's internal `fn`/`type` properties that map data points to
+     scales on data-update transitions. Some charts then never paint
+     points (DA Daily, etc.) because the per-frame interpolation no
+     longer knows how to compute X/Y from incoming dataset values.
+
+     SAFE PATTERN: target `animations.numbers` (documented Chart.js knob
+     for all numeric properties including x, y, radius). This kills the
+     visual movement without breaking the data-mapping pipeline.
      ──────────────────────────────────────────────────────────────── */
   if (typeof Chart !== 'undefined' && Chart.defaults) {
-    // Disable BOTH X and Y axis animations for line/bar/area datasets
-    // (kills the "rise from bottom" and the "slide from left" effects)
-    Chart.defaults.animations = Chart.defaults.animations || {};
-    Chart.defaults.animations.x = { duration: 0 };
-    Chart.defaults.animations.y = { duration: 0 };
-    // For show/hide transitions: no X/Y movement either
-    Chart.defaults.transitions = Chart.defaults.transitions || {};
-    Chart.defaults.transitions.show = Chart.defaults.transitions.show || {};
-    Chart.defaults.transitions.show.animations = Chart.defaults.transitions.show.animations || {};
-    Chart.defaults.transitions.show.animations.x = { duration: 0 };
-    Chart.defaults.transitions.show.animations.y = { duration: 0 };
-    Chart.defaults.transitions.hide = Chart.defaults.transitions.hide || {};
-    Chart.defaults.transitions.hide.animations = Chart.defaults.transitions.hide.animations || {};
-    Chart.defaults.transitions.hide.animations.x = { duration: 0 };
-    Chart.defaults.transitions.hide.animations.y = { duration: 0 };
+    try {
+      Chart.defaults.animations = Chart.defaults.animations || {};
+      // Preserve existing fn/type metadata if any; only override duration
+      Chart.defaults.animations.numbers = Object.assign(
+        {},
+        (Chart.defaults.animations.numbers || {}),
+        { duration: 0 }
+      );
+    } catch (e) {
+      console.warn('PK: failed to set Chart.defaults.animations.numbers', e);
+    }
   }
 </script>
 <script src="js/chartjs-plugin-annotation.min.js"></script>
