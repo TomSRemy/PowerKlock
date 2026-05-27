@@ -294,14 +294,33 @@ def aggregate_gen(gen_data):
     }
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""PowerKlock ENTSO-E historical backfill.
+
+Modes:
+  fill     (default) Only fetch zones that are missing from existing daily files.
+           Fast, safe, no overwrites. Use to top up after a partial run.
+
+  repair   Same as fill, PLUS: if a daily file has fewer than --min-zones valid
+           zones, treat it as corrupt and regenerate it from scratch.
+           Use to fix files left in a bad state by previous crashes.
+
+  rebuild  Retry ALL zones for every day in range, overwriting everything.
+           Use to reconstruct cleanly from scratch (expensive in API calls).
+""")
     parser.add_argument('--start', default='2015-01-01')
     parser.add_argument('--end',   default=date.today().isoformat())
-    parser.add_argument('--zones', default=','.join(ZONES.keys()))
+    parser.add_argument('--zones', default=','.join(ZONES.keys()),
+                        help='Comma-separated zone codes. Default: all zones.')
     parser.add_argument('--out',   default='data')
     parser.add_argument('--delay', type=float, default=0.3, help='Seconds between requests')
     parser.add_argument('--with-generation', action='store_true', help='Also fetch A75 generation (wind/solar)'
                         ' -- doubles request count')
+    parser.add_argument('--mode', choices=['fill', 'repair', 'rebuild'], default='fill',
+                        help='fill = complete missing zones | repair = also regenerate corrupt files | rebuild = redo everything')
+    parser.add_argument('--min-zones', type=int, default=10,
+                        help='Threshold for "corrupt" detection in --mode repair. Files with fewer valid zones get regenerated. Default: 10.')
     args = parser.parse_args()
 
     if not TOKEN:
@@ -324,6 +343,7 @@ def main():
     done = 0
 
     print(f"Backfilling {len(zones)} zones from {start} to {end} ({total_days} days)")
+    print(f"Mode: {args.mode}" + (f" (threshold: {args.min_zones} zones)" if args.mode == 'repair' else ""))
     print(f"Output: {args.out}/history/")
     print()
 
@@ -331,10 +351,25 @@ def main():
         date_str = d.isoformat()
         daily_path = os.path.join(daily_dir, f'{date_str}.json')
 
-        # Load existing if already fetched
+        # Load existing daily file, or start fresh
         if os.path.exists(daily_path):
             with open(daily_path) as f:
                 day_data = json.load(f)
+
+            # MODE: rebuild  → always wipe existing file and refetch everything
+            if args.mode == 'rebuild':
+                day_data = {'date': date_str, 'zones': {}}
+
+            # MODE: repair  → wipe ONLY if file looks corrupt (< min_zones valid zones)
+            elif args.mode == 'repair':
+                valid_zone_count = sum(
+                    1 for zd in day_data.get('zones', {}).values()
+                    if zd is not None and zd.get('avg') is not None
+                )
+                if valid_zone_count < args.min_zones and valid_zone_count > 0:
+                    print(f"  {date_str}: only {valid_zone_count} valid zones — wiping to regenerate")
+                    day_data = {'date': date_str, 'zones': {}}
+            # MODE: fill  → no wipe, just complete missing zones
         else:
             day_data = {'date': date_str, 'zones': {}}
 
@@ -342,8 +377,10 @@ def main():
         updated = False
 
         for zone in zones:
-            if zone in day_data['zones']:
-                continue  # already have it
+            # Skip if zone already has valid data (unless mode=rebuild already wiped above).
+            # If entry exists but is None (previous failure), retry it.
+            if zone in day_data['zones'] and day_data['zones'][zone] is not None:
+                continue
 
             eic = ZONES[zone]
             try:
