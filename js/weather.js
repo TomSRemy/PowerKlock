@@ -1,7 +1,8 @@
 // ════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════
-const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
+// NOTE: ENTSOE_TOKEN is declared in prices.js (single source of truth).
+// Do NOT redeclare here — would cause SyntaxError and break all subsequent scripts.
 
 // ════════════════════════════════════════════
 // PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
