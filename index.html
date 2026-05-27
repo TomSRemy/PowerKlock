@@ -5607,8 +5607,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   // ─────────────────────────────────────────────────────────────
   // Select a subdomain (called from sidebar sub-items, breadcrumb, or overview cards)
+  // Attached to window explicitly so inline onclick="prSelectSubdomain(...)" works
+  // reliably across browsers (Edge with Strict Tracking Prevention notably).
   // ─────────────────────────────────────────────────────────────
-  function prSelectSubdomain(target) {
+  window.prSelectSubdomain = function(target) {
     const page = document.getElementById('page-prices');
     if (!page) return;
 
@@ -5650,7 +5652,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // Scroll the scrollable container back to top
     const main = document.querySelector('.main');
     if (main) main.scrollTop = 0;
-  }
+  };
 
   // Run once at load to compute the initial path (if any active sub-item)
   if (document.readyState === 'loading') {
