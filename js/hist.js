@@ -5959,6 +5959,11 @@ function _hszRenderHourlyHodShape(zone) {
   if (!parent) return;
   // Unmount Annual avg animation module if it was active
   if (typeof window.histAnnualUnmount === 'function') window.histAnnualUnmount();
+  // Stop Quarter mini-chart animation if it was running
+  if (_HSZ_Q_ANIM.timer) { clearInterval(_HSZ_Q_ANIM.timer); _HSZ_Q_ANIM.timer = null; }
+  _HSZ_Q_ANIM.playing = false;
+  _HSZ_Q_ANIM.ended = false;
+  _HSZ_Q_ANIM.visibleCount = 0;
   // Hide the legacy canvas in the active context
   canvas.style.display = 'none';
   // Relax the parent's fixed 340px height so the HOD viz (taller — filters bar
@@ -6036,26 +6041,147 @@ function _hszPickIntradayYears(intraday) {
   return { cur, n1, n2 };
 }
 
+// ──────────────────────────────────────────────────────────────────
+// Quarter mode animation state — mirrors the YoY annual animation UX
+// (Play / Pause / Replay button, cumulative year-by-year reveal at
+// 1.2s cadence, but applied to the 4 mini-charts in parallel).
+// ──────────────────────────────────────────────────────────────────
+const _HSZ_Q_ANIM = {
+  zone: null,
+  intraday: null,
+  years: [],        // sorted ascending list of all years available
+  visibleCount: 0,  // how many years currently visible (cumulative)
+  playing: false,
+  ended: false,
+  timer: null,
+  ctx: null,        // {canvasId, togglePrefix, isFullscreen}
+};
+const _HSZ_Q_ANIM_INTERVAL_MS = 1200;
+
+function _hszQAnimStop() {
+  if (_HSZ_Q_ANIM.timer) { clearInterval(_HSZ_Q_ANIM.timer); _HSZ_Q_ANIM.timer = null; }
+  _HSZ_Q_ANIM.playing = false;
+  _HSZ_Q_ANIM.ended = false;
+  _HSZ_Q_ANIM.visibleCount = 0;
+  _hszQAnimRefreshButton();
+}
+
+function _hszQAnimEnd() {
+  if (_HSZ_Q_ANIM.timer) { clearInterval(_HSZ_Q_ANIM.timer); _HSZ_Q_ANIM.timer = null; }
+  _HSZ_Q_ANIM.playing = false;
+  _HSZ_Q_ANIM.ended = true;
+  _hszQAnimRefreshButton();
+}
+
+function _hszQAnimRefreshButton() {
+  const btn = document.getElementById('hsz-q-play-btn');
+  if (!btn) return;
+  if (_HSZ_Q_ANIM.playing) btn.innerHTML = '⏸ Pause';
+  else if (_HSZ_Q_ANIM.ended) btn.innerHTML = '↻ Replay';
+  else btn.innerHTML = '▶ Play';
+}
+
+function _hszQAnimTogglePlay() {
+  if (_HSZ_Q_ANIM.playing) {
+    _hszQAnimStop();
+    // Redraw with all years visible (steady state)
+    _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+    return;
+  }
+  // Start (or replay) the animation
+  _HSZ_Q_ANIM.playing = true;
+  _HSZ_Q_ANIM.ended = false;
+  _HSZ_Q_ANIM.visibleCount = 1; // first year already visible at T=0
+  _hszQAnimRefreshButton();
+  _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+
+  _HSZ_Q_ANIM.timer = setInterval(() => {
+    _HSZ_Q_ANIM.visibleCount += 1;
+    if (_HSZ_Q_ANIM.visibleCount >= _HSZ_Q_ANIM.years.length) {
+      _HSZ_Q_ANIM.visibleCount = _HSZ_Q_ANIM.years.length;
+      _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+      _hszQAnimEnd();
+      return;
+    }
+    _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+  }, _HSZ_Q_ANIM_INTERVAL_MS);
+}
+
+// Public wiring for the inline onclick handler in the Play button
+window._hszQAnimTogglePlay = _hszQAnimTogglePlay;
+
 // Quarter mode: 4 mini-charts grid (Q1..Q4)
 function _hszRenderHourlyQuarter(zone, intraday) {
+  // Update animation context (only reset visibleCount if zone/data changed,
+  // otherwise an in-flight animation is just re-rendering itself)
+  const ctx = _hszCtx();
+  const zoneChanged = (_HSZ_Q_ANIM.zone !== zone) || (_HSZ_Q_ANIM.intraday !== intraday);
+  _HSZ_Q_ANIM.zone = zone;
+  _HSZ_Q_ANIM.intraday = intraday;
+  _HSZ_Q_ANIM.ctx = ctx;
+  // Build full year list from intraday data
+  const allYears = Object.keys(intraday).filter(k => /^\d{4}$/.test(k)).sort();
+  _HSZ_Q_ANIM.years = allYears;
+  if (zoneChanged) {
+    // Switching zone: stop any in-flight anim, reset state, show all years
+    if (_HSZ_Q_ANIM.timer) { clearInterval(_HSZ_Q_ANIM.timer); _HSZ_Q_ANIM.timer = null; }
+    _HSZ_Q_ANIM.playing = false;
+    _HSZ_Q_ANIM.ended = false;
+    _HSZ_Q_ANIM.visibleCount = 0; // 0 = all years shown (steady state)
+  }
+
   // Unmount Annual avg animation module if it was active
   if (typeof window.histAnnualUnmount === 'function') window.histAnnualUnmount();
   // Cleanup hodshape host if it was active
   const hodHost = document.getElementById('histhod-shape');
   if (hodHost) hodHost.style.display = 'none';
-  // Empty HOD-specific toggle slot (Play/PNG/GIF buttons)
+  // Inject Play / Pause / Replay button in the active toggle slot — mirrors YoY UX.
+  // Use the active context slot ('ho-detail-toggle-slot' or 'ho-fs-toggle-slot').
   ['ho-detail-toggle-slot', 'ho-fs-toggle-slot'].forEach(id => {
     const s = document.getElementById(id);
-    if (s) { s.innerHTML = ''; s.style.display = 'none'; }
+    if (!s) return;
+    const isActive = (id === 'ho-detail-toggle-slot' && _hszCtx().canvasId === 'ho-detail-chart')
+                  || (id === 'ho-fs-toggle-slot' && _hszCtx().canvasId === 'ho-fs-chart');
+    if (isActive && _HSZ_Q_ANIM.years.length >= 2) {
+      // Only show Play if there are at least 2 years to walk through
+      let label;
+      if (_HSZ_Q_ANIM.playing) label = '⏸ Pause';
+      else if (_HSZ_Q_ANIM.ended) label = '↻ Replay';
+      else label = '▶ Play';
+      s.innerHTML = `<button id="hsz-q-play-btn" onclick="_hszQAnimTogglePlay()" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace">${label}</button>`;
+      s.style.display = '';
+    } else {
+      s.innerHTML = '';
+      s.style.display = 'none';
+    }
   });
   // Restore the parent's original height (relaxed during HOD mode)
   _hszRestoreHodParentHeight();
 
   const color = zoneColor(zone);
-  const { cur, n1, n2 } = _hszPickIntradayYears(intraday);
+  const yearsPick = _hszPickIntradayYears(intraday);
+  if (!yearsPick.cur) return _hszPlaceholder('No intraday data');
+
+  // Effective cur/n1/n2 — overridden when animation is running so the 4 mini-charts
+  // walk through years cumulatively (oldest → newest) instead of always showing
+  // the latest year + Y-1 + Y-2.
+  let cur, n1, n2;
+  const animActive = _HSZ_Q_ANIM.playing || (_HSZ_Q_ANIM.ended && _HSZ_Q_ANIM.visibleCount > 0);
+  if (animActive) {
+    const visible = _HSZ_Q_ANIM.years.slice(0, _HSZ_Q_ANIM.visibleCount);
+    // Latest visible year acts as the "current" (drawn solid, used for stats)
+    cur = visible[visible.length - 1] || null;
+    // The two previous visible years (if any) become Y-1 / Y-2 ghosts
+    n1 = visible.length >= 2 ? visible[visible.length - 2] : null;
+    n2 = visible.length >= 3 ? visible[visible.length - 3] : null;
+  } else {
+    cur = yearsPick.cur;
+    n1  = yearsPick.n1;
+    n2  = yearsPick.n2;
+  }
   if (!cur) return _hszPlaceholder('No intraday data');
 
-  // Destroy any existing single chart on the main canvas
+
   if (HIST.charts[_hszCtx().canvasId]) {
     HIST.charts[_hszCtx().canvasId].destroy();
     delete HIST.charts[_hszCtx().canvasId];
@@ -6299,6 +6425,12 @@ function _hszRenderHourlyQuarter(zone, intraday) {
 function _hszRenderHourlyYoY(zone, intraday, summary) {
   const { cur } = _hszPickIntradayYears(intraday);
   if (!cur) return _hszPlaceholder('No intraday data');
+
+  // Stop Quarter mini-chart animation if it was running
+  if (_HSZ_Q_ANIM.timer) { clearInterval(_HSZ_Q_ANIM.timer); _HSZ_Q_ANIM.timer = null; }
+  _HSZ_Q_ANIM.playing = false;
+  _HSZ_Q_ANIM.ended = false;
+  _HSZ_Q_ANIM.visibleCount = 0;
 
   // Remove the quarter grid + global legend if present, show the main canvas
   const oldGrid = document.getElementById(_hszCtx().togglePrefix + '-quarter-grid');
