@@ -285,7 +285,7 @@
         "negH": 2.25,
         "peakAvg": 25.37,
         "offAvg": 100.21,
-        "renPct": 19.2,
+        "renPct": 26.3,
         "domFuel": "Nuclear"
       }
     ],
@@ -573,8 +573,8 @@
         "negH": 4.0,
         "peakAvg": 36.42,
         "offAvg": 136.04,
-        "renPct": 54.8,
-        "domFuel": "Wind"
+        "renPct": 73.1,
+        "domFuel": "Solar"
       }
     ],
     "ES": [
@@ -810,13 +810,13 @@
       {
         "d": "2026-05-30",
         "avg": 67.48,
-        "min": -5.5,
+        "min": -4.54,
         "max": 126.48,
         "negH": 4.0,
-        "peakAvg": 20.59,
-        "offAvg": 112.42,
-        "renPct": 54.5,
-        "domFuel": "Gas"
+        "peakAvg": 21.15,
+        "offAvg": 112.85,
+        "renPct": 67.6,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -1103,8 +1103,8 @@
         "negH": 1.0,
         "peakAvg": 42.61,
         "offAvg": 129.73,
-        "renPct": 19.6,
-        "domFuel": "Gas"
+        "renPct": 62.2,
+        "domFuel": "Solar"
       }
     ],
     "NL": [
@@ -1391,7 +1391,7 @@
         "negH": 3.5,
         "peakAvg": 40.93,
         "offAvg": 132.16,
-        "renPct": 5.7,
+        "renPct": 7.6,
         "domFuel": "Gas"
       }
     ],
@@ -2265,12 +2265,12 @@
       },
       {
         "d": "2026-05-30",
-        "avg": 83.68,
-        "min": 2.02,
+        "avg": 87.38,
+        "min": 0.9,
         "max": 157.0,
         "negH": 0.0,
-        "peakAvg": 41.71,
-        "offAvg": 129.45
+        "peakAvg": 71.44,
+        "offAvg": 95.09
       }
     ],
     "RS": [
@@ -2737,12 +2737,12 @@
       },
       {
         "d": "2026-05-30",
-        "avg": 80.3,
+        "avg": 86.14,
         "min": -10.47,
         "max": 165.39,
-        "negH": 7.0,
-        "peakAvg": 27.95,
-        "offAvg": 132.65
+        "negH": 2.0,
+        "peakAvg": 74.32,
+        "offAvg": 92.05
       }
     ],
     "NO_1": [
@@ -6083,7 +6083,7 @@
         "negH": 1.75,
         "peakAvg": 18.33,
         "offAvg": 109.63,
-        "renPct": 75.9,
+        "renPct": 79.9,
         "domFuel": "Hydro"
       }
     ],
