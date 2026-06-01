@@ -1274,6 +1274,13 @@
     gamespot.setAttribute('aria-label', 'Launch Klock Wars');
     gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars.html', '_blank'); });
     document.body.appendChild(gamespot);
+    // Sibling dot: launches PowerKlock Volley in a new tab
+    const volleyspot = document.createElement('div');
+    volleyspot.className = 'es-volleyspot';
+    volleyspot.title = 'PowerKlock Volley';
+    volleyspot.setAttribute('aria-label', 'Launch PowerKlock Volley');
+    volleyspot.addEventListener('click', e => { e.stopPropagation(); window.open('js/powerklock-volley.html', '_blank'); });
+    document.body.appendChild(volleyspot);
     // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
     keepOnTopInterval = setInterval(() => {
       if (hotspot && hotspot.parentNode === document.body && document.body.lastElementChild !== hotspot) {
@@ -1295,6 +1302,8 @@
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
 .es-gamespot{position:fixed!important;left:226px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483646!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-gamespot:hover{background:rgba(20,211,169,.7)!important;transform:scale(1.4)!important}
+.es-volleyspot{position:fixed!important;left:242px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483645!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-volleyspot:hover{background:rgba(237,105,101,.8)!important;transform:scale(1.4)!important}
 `;
     document.head.appendChild(s);
   }
