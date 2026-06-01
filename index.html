@@ -4237,7 +4237,7 @@
 
       <!-- Data note -->
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
-        <b style="color:#FBBF24">Data status</b> — DA price + wind/solar = <b style="color:var(--acc)">real ENTSO-E</b>. TTF/EUA/temperature/nuc dispo/flows + mix nucléaire-hydro-fossile = <b style="color:#FBBF24">simulated</b> (V1). Spark spread derived from <code>Power − TTF/0.49 − EUA·0.365</code>. Real driver series + per-timestamp mix arrivent en V2 quand fetch_data.py les archivera.
+        <b style="color:#FBBF24">Data status</b> — DA price + wind/solar + mix nucléaire-hydro-fossile = <b style="color:var(--acc)">real ENTSO-E</b>. TTF gas = <b style="color:var(--acc)">real (Yahoo, daily)</b> quand archivé, sinon simulé. EUA/température/nuc dispo/flux = <b style="color:#FBBF24">simulated</b>. Demande = simulée (pas dans le flux ENTSO-E). Spark spread = <code>Power − TTF/0.49 − EUA·0.365</code>.
       </div>
     </div>
 
