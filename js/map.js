@@ -1,5 +1,11 @@
 // ── GEOJSON CHOROPLETH
 let geoLayer = null;
+// Map state — these previously lived in the (now unloaded) globals.js.
+// Declared here so map.js is self-contained and never hits ReferenceErrors.
+let mapInitialized = false;
+let leafletMap = null;
+let mapMarkers = [];
+let mapView = 'price';
 
 // Mapping from GeoJSON country names / ISO to our zone codes
 const ISO_TO_ZONE = {
