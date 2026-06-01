@@ -174,7 +174,8 @@ function step(){
   let g=GRAV_BALL;
   if(ball.fx){if(ball.fx.type==='float')g=0.12;if(ball.fx.type==='curve')ball.vx+=ball.fx.dir;if(ball.fx.type==='blast')g=ball.fx.gB||0.16;ball.fx.timer--;if(ball.fx.timer<=0)ball.fx=null;}
   ball.vy+=g;
-  ball.vx=Math.max(-MAXB,Math.min(MAXB,ball.vx));ball.vy=Math.max(-MAXB,Math.min(MAXB,ball.vy));
+  if(!(ball.fx&&ball.fx.uncapped)){ball.vx=Math.max(-MAXB,Math.min(MAXB,ball.vx));ball.vy=Math.max(-MAXB,Math.min(MAXB,ball.vy));}
+  else{const C=MAXB*3;ball.vx=Math.max(-C,Math.min(C,ball.vx));ball.vy=Math.max(-C,Math.min(C,ball.vy));}
   ball.x+=ball.vx;ball.y+=ball.vy;ball.spin+=ball.vx*0.02;ball.ring+=0.18+Math.abs(ball.vx)*0.01;
   trail.push({x:ball.x,y:ball.y,c:fxCol()});if(trail.length>16)trail.shift();
   if(ball.x<BR){ball.x=BR;ball.vx=Math.abs(ball.vx)*0.92;sWall();spark(ball.x,ball.y,CANARY,5,3);}
@@ -343,9 +344,10 @@ function cineUpdate(){
   const peakY=GROUND-160;
   p.y=GROUND+(peakY-GROUND)*Math.min(1,prog*1.8);p.vy=0;
   p.dir=toOpp;
-  ball.x=p.x+toOpp*PR*0.4;ball.y=p.y-PR*0.45-Math.sin(prog*Math.PI)*8;ball.ring+=0.32;
+  if(!cine.released){ball.x=p.x+toOpp*PR*0.4;ball.y=p.y-PR*0.45-Math.sin(prog*Math.PI)*8;}
+  ball.ring+=0.32;
   cine.charge=prog;
-  moveSlow(opp);
+  if(!cine.released)moveSlow(opp);
   if(cine.t%1===0){wisp(p.x,p.y,Math.random()<0.5?cine.col:CANARY);}
   if(!cine.released&&cine.t>=cine.dur){
     cine.released=true;
@@ -357,15 +359,18 @@ function cineUpdate(){
     let targetX=(opp.x>oppCenter)?(lo+(hi-lo)*0.16):(lo+(hi-lo)*0.84);
     targetX=Math.max(lo,Math.min(hi,targetX));
     const targetY=GROUND-BR;
-    const apexY=NET_TOP-70;                                    // sommet au-dessus du filet
-    const gB=0.34;                                            // gravité blast accrue -> chute rapide/létale
+    const apexY=NET_TOP-45;                                    // sommet juste au-dessus du filet (arc court)
+    const gB=0.34;
     const rise=Math.max(20,ball.y-apexY);
-    ball.vy=-Math.sqrt(2*gB*rise);
+    let vy0=-Math.sqrt(2*gB*rise);
     const tUp=Math.sqrt(2*rise/gB), tDown=Math.sqrt(2*Math.max(20,targetY-apexY)/gB), tot=tUp+tDown;
-    ball.vx=Math.max(-MAXB,Math.min(MAXB,(targetX-ball.x)/tot));
-    ball.fx={type:'blast',timer:Math.ceil(tot)+30,col:cine.col,gB:gB,target:targetX};
+    let vx0=(targetX-ball.x)/tot;
+    // SPIKE : même trajectoire mais traversée bien plus vite + chute plus violente (hors plafond)
+    const S=2.2;
+    ball.vx=vx0*S; ball.vy=vy0*S;
+    ball.fx={type:'blast',timer:Math.ceil(tot/S)+24,col:cine.col,gB:gB*S*S,target:targetX,uncapped:true};
     beam={x1:p.x,y1:p.y-PR,x2:targetX,y2:targetY,life:1,col:cine.col};
-    whiteFlash=1;shake=46;sBlast();shock={x:p.x,y:p.y-PR*0.5,r:10,life:1,col:cine.col};
+    whiteFlash=1;shake=60;sBlast();shock={x:p.x,y:p.y-PR*0.5,r:10,life:1,col:cine.col};
     // fissure d'écran (Tsubasa) : branches qui partent du point de tir
     const cx0=p.x,cy0=p.y-PR*0.5,branches=[];
     for(let b=0;b<7;b++){const ang=(b/7)*Math.PI*2+Math.random()*0.4;let x=cx0,y=cy0;const segs=[];for(let s=0;s<6;s++){const len=40+Math.random()*70;x+=Math.cos(ang)*len+(Math.random()-0.5)*40;y+=Math.sin(ang)*len+(Math.random()-0.5)*40;segs.push([x,y]);}branches.push(segs);}
@@ -373,7 +378,7 @@ function cineUpdate(){
     spark(ball.x,ball.y,cine.col,52,14,true);spark(ball.x,ball.y,CANARY,32,12,true);
     popup(p.x,p.y-PR-30,'KLOCK BLAST',cine.col,true);
   }
-  if(cine.t>=cine.dur+6)cine=null;
+  if(cine.t>=cine.dur+3)cine=null;
 }
 function drawGlyph(id,x,y,c){
   ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';
