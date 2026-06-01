@@ -2348,12 +2348,12 @@
     border-right: 1px solid var(--bd);
   }
   .ma-lbl {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
     color: var(--tx2); text-transform: uppercase; letter-spacing: .06em;
-    font-weight: 600; text-align: right; line-height: 1.2;
+    font-weight: 700; text-align: right; line-height: 1.2;
   }
   .ma-lbl-sub {
-    font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
     color: #4A6280; margin-top: 2px; text-align: right;
   }
   .ma-panel-svg-col {
@@ -2373,7 +2373,7 @@
     background: var(--bg); border: 1px solid rgba(20,211,169,0.5);
     border-radius: 5px; padding: 10px 12px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.6);
-    z-index: 10; min-width: 260px; max-width: 280px;
+    z-index: 10; min-width: 290px; max-width: 320px;
     pointer-events: none;
   }
   .ma-ht-time {
@@ -2389,8 +2389,8 @@
   }
   .ma-ht-section:first-of-type { margin-top: 0; }
   .ma-ht-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px;
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
   }
   .ma-ht-row { display: flex; justify-content: space-between; padding: 1px 0; }
   .ma-ht-row .k { color: var(--tx3); }
@@ -2399,6 +2399,56 @@
   .ma-ht-row .v.floor { color: #14D3A9; }
   .ma-ht-row .v.gas { color: #ED6965; }
   .ma-ht-row .v.hydro { color: #3FA6B4; }
+
+  /* === Driver KPI cards === */
+  .ma-kpi-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .ma-kpi-card {
+    flex: 1; min-width: 130px;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--bd); border-radius: 6px;
+    border-top: 2px solid var(--kpi-accent, var(--bd));
+  }
+  .ma-kpi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ma-kpi-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--tx3);
+  }
+  .ma-kpi-spark { width: 46px; height: 16px; opacity: .9; }
+  .ma-kpi-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 21px; font-weight: 700;
+    color: var(--tx); line-height: 1;
+  }
+  .ma-kpi-val .u { font-size: 11px; color: var(--tx3); font-weight: 600; margin-left: 2px; }
+  .ma-kpi-delta { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; }
+  .ma-kpi-delta.up { color: #ED6965; }
+  .ma-kpi-delta.down { color: #14D3A9; }
+  .ma-kpi-delta.flat { color: var(--tx3); }
+
+  /* === Rich hover tooltip === */
+  .ma-ht-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 9px; }
+  .ma-ht-hero-cell {
+    background: rgba(255,255,255,0.03); border-radius: 5px;
+    padding: 7px 9px; border-left: 3px solid var(--bd);
+  }
+  .ma-ht-hero-cell .lab {
+    font-family: 'JetBrains Mono', monospace; font-size: 8px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--tx3); font-weight: 600;
+  }
+  .ma-ht-hero-cell .big {
+    font-family: 'JetBrains Mono', monospace; font-size: 19px; font-weight: 700; line-height: 1.1; margin-top: 3px;
+  }
+  .ma-ht-hero-cell .big .u { font-size: 11px; color: var(--tx3); font-weight: 600; }
+  .ma-ht-marginal {
+    display: inline-flex; align-items: center; margin-bottom: 9px;
+    padding: 4px 11px; border-radius: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+  }
+  .ma-ht-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+  }
 
   .ma-episode-card {
     padding: 12px 14px; border-radius: 0 3px 3px 0;
@@ -4146,22 +4196,22 @@
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Prix DA</div><div class="ma-lbl-sub">€/MWh</div></div>
-          <div class="ma-panel-svg-col" style="height:160px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:154px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:215px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:209px"></canvas></div>
         </div>
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Spark</div><div class="ma-lbl-sub">€/MWh CCGT</div></div>
-          <div class="ma-panel-svg-col" style="height:120px"><canvas id="ma-canvas-spark" style="width:100%;height:120px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:150px"><canvas id="ma-canvas-spark" style="width:100%;height:150px"></canvas></div>
         </div>
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Demande vs Ren</div><div class="ma-lbl-sub">GW</div></div>
-          <div class="ma-panel-svg-col" style="height:150px"><canvas id="ma-canvas-loadren" style="width:100%;height:150px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-loadren" style="width:100%;height:190px"></canvas></div>
         </div>
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Mix supply</div><div class="ma-lbl-sub">GW stacked</div></div>
-          <div class="ma-panel-svg-col" style="height:170px"><canvas id="ma-canvas-mix" style="width:100%;height:170px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:210px"><canvas id="ma-canvas-mix" style="width:100%;height:210px"></canvas></div>
         </div>
       </div>
 
