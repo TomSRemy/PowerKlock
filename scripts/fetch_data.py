@@ -763,8 +763,28 @@ if __name__ == '__main__':
         dom = max(categories, key=categories.get) if max(categories.values()) > 0 else None
         return ren_pct, dom
 
+    # Dutch TTF front-month gas (EUR/MWh), daily close from Yahoo Finance (free, no key).
+    # Gas trades ~flat intraday, so one value/day is sufficient for the spark spread.
+    ttf_eur = None
+    try:
+        _ttf_r = requests.get(
+            'https://query1.finance.yahoo.com/v8/finance/chart/TTF=F',
+            params={'interval': '1d', 'range': '5d'},
+            headers={'User-Agent': 'Mozilla/5.0'}, timeout=30)
+        _ttf_r.raise_for_status()
+        _closes = _ttf_r.json()['chart']['result'][0]['indicators']['quote'][0]['close']
+        for _v in reversed(_closes):
+            if _v is not None:
+                ttf_eur = round(float(_v), 3)
+                break
+        print(f'[ttf] Dutch TTF close: {ttf_eur} EUR/MWh')
+    except Exception as _e:
+        print(f'[ttf] fetch failed: {_e}')
+
     # Build daily snapshot (prices + generation if available)
     daily_snap = {'date': today_str, 'zones': {}}
+    if ttf_eur is not None:
+        daily_snap['ttf'] = ttf_eur
     for z in prices:
         zone_entry = {
             'avg':    z['today'],
