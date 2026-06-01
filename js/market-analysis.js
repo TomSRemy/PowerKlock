@@ -436,7 +436,7 @@
     const dow = dt.toLocaleDateString('fr-FR', { weekday: 'long' });
     const time = String(dt.getHours()).padStart(2, '0') + 'h';
     const renCover = ((wind + solar) / load * 100).toFixed(0);
-    const fmt = (v, d) => v.toFixed(d == null ? 1 : d);
+    const fmt = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
     const dowCap = dow.charAt(0).toUpperCase() + dow.slice(1);
 
     let title, body;
@@ -705,6 +705,9 @@
     const nucA = f.drivers.nucAvail[idx];
     const flux = f.drivers.flux[idx];
 
+    // Null-safe formatter: ENTSO-E slots can have gaps; show '--' instead of crashing
+    const fx = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
+
     let marginal = 'Hydro / STEP', marginalClass = 'hydro';
     if (fossil > 0.5) { marginal = 'Gas CCGT'; marginalClass = 'gas'; }
 
@@ -715,27 +718,27 @@
       '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + '</div>'
       + '<div class="ma-ht-section">Prix &amp; marginal</div>'
       + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">Prix DA</span><span class="v ' + priceClass + '">' + price.toFixed(price < 1 ? 2 : 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Spark</span><span class="v ' + sparkClass + '">' + (spark >= 0 ? '+' : '') + spark.toFixed(0) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Prix DA</span><span class="v ' + priceClass + '">' + fx(price, price < 1 ? 2 : 1) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Spark</span><span class="v ' + sparkClass + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' €</span></div>'
       +   '<div class="ma-ht-row" style="grid-column:span 2"><span class="k">Marginal</span><span class="v ' + marginalClass + '">' + marginal + '</span></div>'
       + '</div>'
       + '<div class="ma-ht-section">Demande &amp; mix</div>'
       + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">Load</span><span class="v">' + load.toFixed(1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Wind</span><span class="v">' + wind.toFixed(1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Nuc</span><span class="v">' + nuc.toFixed(1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Solar</span><span class="v">' + solar.toFixed(1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Hydro</span><span class="v">' + hydro.toFixed(1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Fossil</span><span class="v ' + (fossil > 1 ? 'gas' : '') + '">' + fossil.toFixed(1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Wind</span><span class="v">' + fx(wind, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Nuc</span><span class="v">' + fx(nuc, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Solar</span><span class="v">' + fx(solar, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Hydro</span><span class="v">' + fx(hydro, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Fossil</span><span class="v ' + (fossil > 1 ? 'gas' : '') + '">' + fx(fossil, 1) + ' GW</span></div>'
       + '</div>'
       + '<div class="ma-ht-section">Drivers</div>'
       + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">TTF</span><span class="v">' + ttf.toFixed(1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">EUA</span><span class="v">' + eua.toFixed(1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Vent</span><span class="v">' + windS.toFixed(0) + ' m/s</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Temp</span><span class="v">' + temp.toFixed(0) + '°C</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Nuc dispo</span><span class="v">' + nucA.toFixed(0) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Flux</span><span class="v">' + (flux > 0 ? '+' : '') + flux.toFixed(1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">TTF</span><span class="v">' + fx(ttf, 1) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">EUA</span><span class="v">' + fx(eua, 1) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Vent</span><span class="v">' + fx(windS, 0) + ' m/s</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Temp</span><span class="v">' + fx(temp, 0) + '°C</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Nuc dispo</span><span class="v">' + fx(nucA, 0) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
       + '</div>';
 
     tip.style.display = 'block';
