@@ -1,3 +1,18 @@
+// ── gif.js worker fix ──────────────────────────────────────────────────────
+// gif.js spawns a Web Worker from workerScript. A cross-origin worker (jsdelivr)
+// throws "SecurityError: Failed to construct 'Worker'" on GitHub Pages. Fetch the
+// worker script once and serve it from a same-origin blob URL instead.
+window._pkGetGifWorkerUrl = window._pkGetGifWorkerUrl || (function () {
+  let cached = null;
+  return async function () {
+    if (cached) return cached;
+    const res = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    if (!res.ok) throw new Error('Failed to fetch gif.worker.js (' + res.status + ')');
+    cached = URL.createObjectURL(await res.blob());
+    return cached;
+  };
+})();
+
 // ── Period label sync helper · maps window codes to human-friendly labels ──
 function pkUpdateHistPeriodLabels(w) {
   const labels = {
@@ -10854,11 +10869,20 @@ function _bdHodShape(zone, summary) {
       return;
     }
 
-    // Use the gif.js worker bundled at the same path
+    // Same-origin blob worker (avoids cross-origin SecurityError)
+    let _wkUrl;
+    try {
+      _wkUrl = await window._pkGetGifWorkerUrl();
+    } catch (e) {
+      btn.innerHTML = originalLabel;
+      btn.disabled = false;
+      alert('Could not load gif.js worker (network error). Try PNG instead.');
+      return;
+    }
     const gif = new GIF({
       workers: 2,
       quality: 10,
-      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+      workerScript: _wkUrl,
       width: 720,
       height: 360,
       background: '#0A1018',
@@ -11510,7 +11534,7 @@ function _bdHodShape(zone, summary) {
     a.click();
   };
 
-  window.histAnnualDownloadGif = function () {
+  window.histAnnualDownloadGif = async function () {
     if (typeof window.GIF === 'undefined') {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
@@ -11536,10 +11560,18 @@ function _bdHodShape(zone, summary) {
       return;
     }
 
+    let _wkUrl;
+    try {
+      _wkUrl = await window._pkGetGifWorkerUrl();
+    } catch (e) {
+      if (btn) { btn.innerHTML = originalLabel; btn.disabled = false; }
+      alert('Could not load gif.js worker (network error). Try PNG instead.');
+      return;
+    }
     const gif = new window.GIF({
       workers: 2,
       quality: 10,
-      workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js',
+      workerScript: _wkUrl,
     });
 
     let stepIdx = 1;
