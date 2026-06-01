@@ -474,7 +474,7 @@ function frame(){
   if(cine&&!cine.released){
     ctx.fillStyle='#000';ctx.globalAlpha=0.66*cine.charge;ctx.fillRect(-400,-400,W+800,H+800);ctx.globalAlpha=1;
     // lignes de vitesse manga (Tsubasa) convergent vers le frappeur
-    const p=players[cine.striker];ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=p.col;
+    const p=players[cine.striker],PR=R*p.rmul;ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=p.col;
     const NL=44;for(let i=0;i<NL;i++){const ang=(i/NL)*Math.PI*2+i*0.3;const r0=W*0.7,r1=PR*1.6+ (1-cine.charge)*W*0.2;const x0=p.x+Math.cos(ang)*r0,y0=(p.y-PR*0.5)+Math.sin(ang)*r0;const x1=p.x+Math.cos(ang)*r1,y1=(p.y-PR*0.5)+Math.sin(ang)*r1;ctx.globalAlpha=0.12+0.18*cine.charge;ctx.lineWidth=1+ (i%3===0?1.5:0);ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();}
     ctx.restore();ctx.globalAlpha=1;
   }
