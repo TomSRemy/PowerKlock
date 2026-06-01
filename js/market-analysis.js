@@ -296,7 +296,10 @@
       const load = _simulateLoad(dt, slotsPerDay);
       const temp = _simulateTemp(dt, slotsPerDay);
       const windSpeed = _estimateWindSpeed(wind);
-      const ttf = _simulateTTF(dt, slotsPerDay);
+      // Real TTF (EUR/MWh, one value/day from Yahoo via fetch_data.py) if archived; else simulate.
+      // Gas is ~flat intraday, so broadcasting the daily close across slots is realistic.
+      const ttfReal = (daily && typeof daily.ttf === 'number') ? daily.ttf : null;
+      const ttf = (ttfReal != null) ? new Array(slotsPerDay).fill(ttfReal) : _simulateTTF(dt, slotsPerDay);
       const eua = _simulateEUA(dt, slotsPerDay);
       const nucAvail = _simulateNuc(dt, slotsPerDay);
       const flux = _simulateFlux(dt, slotsPerDay);
@@ -466,41 +469,42 @@
     if (!host) return;
     const f = STATE.data.flat;
     const drivers = [
-      { id: 'ttf',  label: 'TTF',  series: f.drivers.ttf,       color: DRIVER_COLOURS.ttf,  fmtVal: v => v.toFixed(1), suffix: ' €' },
-      { id: 'eua',  label: 'EUA',  series: f.drivers.eua,       color: DRIVER_COLOURS.eua,  fmtVal: v => v.toFixed(1), suffix: ' €' },
-      { id: 'wind', label: 'Vent', series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, fmtVal: v => v.toFixed(0), suffix: ' m/s' },
-      { id: 'temp', label: 'T°C',  series: f.drivers.temp,      color: DRIVER_COLOURS.temp, fmtVal: v => v.toFixed(0), suffix: '°' },
-      { id: 'nuc',  label: 'Nuc',  series: f.drivers.nucAvail,  color: DRIVER_COLOURS.nuc,  fmtVal: v => v.toFixed(0), suffix: ' GW' },
-      { id: 'flux', label: 'Flux', series: f.drivers.flux,      color: DRIVER_COLOURS.flux, fmtVal: v => (v > 0 ? '+' : '') + v.toFixed(0), suffix: ' GW' },
+      { id: 'ttf',  label: 'TTF',       series: f.drivers.ttf,       color: DRIVER_COLOURS.ttf,  dec: 1, unit: '€' },
+      { id: 'eua',  label: 'EUA',       series: f.drivers.eua,       color: DRIVER_COLOURS.eua,  dec: 1, unit: '€' },
+      { id: 'wind', label: 'Vent',      series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, dec: 0, unit: 'm/s' },
+      { id: 'temp', label: 'Temp',      series: f.drivers.temp,      color: DRIVER_COLOURS.temp, dec: 0, unit: '°C' },
+      { id: 'nuc',  label: 'Nuc dispo', series: f.drivers.nucAvail,  color: DRIVER_COLOURS.nuc,  dec: 0, unit: 'GW' },
+      { id: 'flux', label: 'Flux',      series: f.drivers.flux,      color: DRIVER_COLOURS.flux, dec: 1, unit: 'GW' },
     ];
+    const fx = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d);
 
-    let html = '<span class="ma-strip-section-label">Drivers</span>';
-    drivers.forEach((d, i) => {
+    let html = '<div class="ma-kpi-row">';
+    drivers.forEach((d) => {
       const v0 = d.series[0], vN = d.series[d.series.length - 1];
       const delta = vN - v0;
       const deltaPct = v0 !== 0 ? (delta / Math.abs(v0)) * 100 : 0;
       const isFlat = Math.abs(deltaPct) < 1;
-      const arrow = isFlat ? '·' : (delta > 0 ? '▲' : '▼');
       const cls = isFlat ? 'flat' : (delta > 0 ? 'up' : 'down');
+      const arrow = isFlat ? '·' : (delta > 0 ? '▲' : '▼');
       const deltaTxt = isFlat ? '—' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '%');
       const min = Math.min.apply(null, d.series);
       const max = Math.max.apply(null, d.series);
       const range = (max - min) || 1;
       const pts = d.series.map((v, idx) => {
         const x = (idx / (d.series.length - 1)) * 100;
-        const y = 18 - ((v - min) / range) * 16;
+        const y = 15 - ((v - min) / range) * 13;
         return (idx === 0 ? 'M' : 'L') + ' ' + x.toFixed(1) + ' ' + y.toFixed(1);
       }).join(' ');
-      if (i > 0) html += '<div class="ma-strip-sep"></div>';
-      html += '<div class="ma-spark-item">'
-        + '<span class="ma-spark-label">' + d.label + '</span>'
-        + '<svg class="ma-spark-svg" viewBox="0 0 100 22" preserveAspectRatio="none">'
-        + '<path d="' + pts + '" stroke="' + d.color + '" stroke-width="1.4" fill="none"/>'
-        + '</svg>'
-        + '<span class="ma-spark-val">' + d.fmtVal(vN) + d.suffix + '</span>'
-        + '<span class="ma-spark-delta ' + cls + '">' + deltaTxt + '</span>'
+      html += '<div class="ma-kpi-card" style="--kpi-accent:' + d.color + '">'
+        + '<div class="ma-kpi-head">'
+        +   '<span class="ma-kpi-label">' + d.label + '</span>'
+        +   '<svg class="ma-kpi-spark" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="' + pts + '" stroke="' + d.color + '" stroke-width="1.6" fill="none"/></svg>'
+        + '</div>'
+        + '<div class="ma-kpi-val">' + fx(vN, d.dec) + '<span class="u">' + d.unit + '</span></div>'
+        + '<div class="ma-kpi-delta ' + cls + '">' + deltaTxt + '</div>'
         + '</div>';
     });
+    html += '</div>';
     host.innerHTML = html;
   }
 
@@ -541,7 +545,7 @@
         x: {
           grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false },
           ticks: {
-            color: '#7A93AB', font: { family: 'JetBrains Mono', size: 8 },
+            color: '#7A93AB', font: { family: 'JetBrains Mono', size: 10 },
             autoSkip: false, maxRotation: 0,
             callback: function (val, idx) {
               const labels = _buildXLabels();
@@ -550,9 +554,9 @@
           },
         },
         y: {
-          afterFit: function (scale) { scale.width = 42; },
+          afterFit: function (scale) { scale.width = 48; },
           grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 4 },
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 11 }, maxTicksLimit: 4 },
           title: { display: false },
         },
       },
@@ -717,32 +721,35 @@
 
     const priceClass = price < 5 ? 'floor' : (price > 100 ? 'peak' : '');
     const sparkClass = spark < 0 ? 'floor' : (spark > 20 ? 'peak' : '');
+    const priceColor = priceClass === 'peak' ? '#ED6965' : (priceClass === 'floor' ? '#14D3A9' : '#E6EDF3');
+    const sparkColor = sparkClass === 'peak' ? '#ED6965' : (sparkClass === 'floor' ? '#14D3A9' : '#E6EDF3');
+    const mgColor = marginalClass === 'gas' ? '#ED6965' : '#3FA6B4';
+    const dot = (c) => '<span class="ma-ht-dot" style="background:' + c + '"></span>';
 
     tip.innerHTML =
       '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + '</div>'
-      + '<div class="ma-ht-section">Prix &amp; marginal</div>'
-      + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">Prix DA</span><span class="v ' + priceClass + '">' + fx(price, price < 1 ? 2 : 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Spark</span><span class="v ' + sparkClass + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' €</span></div>'
-      +   '<div class="ma-ht-row" style="grid-column:span 2"><span class="k">Marginal</span><span class="v ' + marginalClass + '">' + marginal + '</span></div>'
+      + '<div class="ma-ht-hero">'
+      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">Prix DA</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
+      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">Spark CCGT</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
       + '</div>'
+      + '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + 'Marginal · ' + marginal + '</div>'
       + '<div class="ma-ht-section">Demande &amp; mix</div>'
       + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Wind</span><span class="v">' + fx(wind, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Nuc</span><span class="v">' + fx(nuc, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Solar</span><span class="v">' + fx(solar, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Hydro</span><span class="v">' + fx(hydro, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Fossil</span><span class="v ' + (fossil > 1 ? 'gas' : '') + '">' + fx(fossil, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.wind) + 'Wind</span><span class="v">' + fx(wind, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.solar) + 'Solar</span><span class="v">' + fx(solar, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.nuclear) + 'Nuc</span><span class="v">' + fx(nuc, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.hydro) + 'Hydro</span><span class="v">' + fx(hydro, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.fossil) + 'Fossil</span><span class="v ' + (fossil > 1 ? 'gas' : '') + '">' + fx(fossil, 1) + ' GW</span></div>'
       + '</div>'
       + '<div class="ma-ht-section">Drivers</div>'
       + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">TTF</span><span class="v">' + fx(ttf, 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">EUA</span><span class="v">' + fx(eua, 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Vent</span><span class="v">' + fx(windS, 0) + ' m/s</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Temp</span><span class="v">' + fx(temp, 0) + '°C</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Nuc dispo</span><span class="v">' + fx(nucA, 0) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.ttf) + 'TTF</span><span class="v">' + fx(ttf, 1) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.eua) + 'EUA</span><span class="v">' + fx(eua, 1) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.wind) + 'Vent</span><span class="v">' + fx(windS, 0) + ' m/s</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.temp) + 'Temp</span><span class="v">' + fx(temp, 0) + '°C</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.nuc) + 'Nuc dispo</span><span class="v">' + fx(nucA, 0) + ' GW</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.flux) + 'Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
       + '</div>';
 
     tip.style.display = 'block';
