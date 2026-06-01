@@ -430,6 +430,11 @@ const _GM_DRILL_VIEWS = [
     label:'Net pos',
     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10M7 12h10M7 17h10"/><path d="M5 7l-2 5 2 5M19 7l2 5-2 5"/></svg>',
   },
+  {
+    key:'stack',
+    label:'Stack',
+    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 4-6"/></svg>',
+  },
 ];
 
 // Per-tab state
@@ -517,6 +522,7 @@ function _gmDrillSetTitle(tab, zone) {
     mix:     `Current snapshot · ${(window._gmDrillMixMode || 'donut').toUpperCase()}`,
     carbon:  `24h Carbon intensity · g CO₂/kWh`,
     netpos:  `Cross-border net position · 24h`,
+    stack:   `24h Production stack · par filière`,
   };
   if (eyebrowEl) eyebrowEl.textContent = `${zone} · ${viewLbl}`;
   titleEl.textContent = titles[tab] || titles.profile;
@@ -557,6 +563,16 @@ function _gmDrillDispatchRender(zone) {
   if (!zone) return;
   const tab = window._gmDrillTab || 'profile';
   _gmDrillSetTitle(tab, zone);
+
+  // Stack tab → eCO2mix-style production stack (reads the daily JSON, async)
+  if (tab === 'stack') {
+    const c = document.getElementById('gm-drill-content');
+    if (c) c.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Chargement du stack…</div>';
+    if (typeof window.renderGenMixStack === 'function') window.renderGenMixStack('gm-drill-content', zone, window._gmHistDate || null);
+    const b = document.getElementById('gm-drill-banner-anchor'); if (b) b.innerHTML = '';
+    return;
+  }
+
   const mix = window._genmixData && window._genmixData[zone];
   if (!mix) return;
   const st = _gmStats(mix);
@@ -1798,3 +1814,250 @@ window.loadGenMix = function() {
   window._genmixLoaded = true;
   if (typeof _gmInit === 'function') _gmInit();
 };
+
+
+// ════════════════════════════════════════════════════════════════
+// GenMix production stack (eCO2mix-style) — merged from genmix-stack.js
+// Rendered on demand by the drill "Stack" sub-tab (daily + historical):
+//   window.renderGenMixStack(containerId, zone, dateStr)
+// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// PowerKlock · GenMix production stack (eCO2mix-style, strict template)
+// Self-contained module. Reads the 96-slot per-fuel arrays from the
+// daily JSON (data/history/daily/<date>.json) and renders:
+//   - stacked production area (24h) with Mint "now" cursor + MIN/MAX
+//   - combined panel: per-fuel KPI list + vertical % bar on its right
+//   - full per-fuel table below (instant / part / min / max / avg / CO2)
+// Auto-wires on the GenMix page (daily + historical tabs) without
+// touching genmix.js logic. Exposes window.renderGenMixStack().
+// ════════════════════════════════════════════════════════════════
+(function () {
+  const FUEL = {
+    nuclear: { label: 'Nuclear',     color: '#7B4B9C', co2: 12 },
+    hydro:   { label: 'Hydro',       color: '#3FA6B4', co2: 24 },
+    biomass: { label: 'Bioenergies', color: '#94D2BD', co2: 230 },
+    wind:    { label: 'Wind',        color: '#14D3A9', co2: 11 },
+    solar:   { label: 'Solar',       color: '#FBBF24', co2: 45 },
+    fossil:  { label: 'Gas/Fossil',  color: '#ED6965', co2: 820 },
+    other:   { label: 'Other',       color: '#7A93AB', co2: 400 },
+  };
+  const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+
+  // ── one-time CSS (uses existing PowerKlock CSS vars) ──
+  function injectCSS() {
+    if (document.getElementById('gms-css')) return;
+    const s = document.createElement('style');
+    s.id = 'gms-css';
+    s.textContent = `
+    .gms-wrap{--mono:'JetBrains Mono',ui-monospace,monospace}
+    .gms-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+    .gms-period-lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+    .gms-period-val{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700;margin-top:3px}
+    .gms-body{display:grid;grid-template-columns:1fr 296px;gap:18px;align-items:stretch}
+    .gms-chart-wrap{position:relative}
+    .gms-rt{font-family:var(--mono);font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .gms-wrap svg{display:block;width:100%;height:auto}
+    .gms-wrap .grid-line{stroke:rgba(255,255,255,.05)}
+    .gms-wrap .axis-txt{fill:var(--tx3);font-family:var(--mono);font-size:11px}
+    .gms-wrap .band-line{stroke:var(--tx4);stroke-dasharray:3 3;stroke-width:1}
+    .gms-wrap .band-txt{fill:var(--tx3);font-family:var(--mono);font-size:10px;font-weight:600}
+    .gms-wrap .now-line{stroke:var(--accent);stroke-width:2}
+    .gms-wrap .area{stroke:none}
+    .gms-nowpill{position:absolute;transform:translateX(-50%);background:var(--accent);color:#04201a;font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap;pointer-events:none}
+    .gms-panel{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:14px;display:flex;gap:14px}
+    .gms-panel-main{flex:1;display:flex;flex-direction:column;min-width:0}
+    .gms-panel-hd{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:10px}
+    .gms-panel-hd b{color:var(--accent)}
+    .gms-list{display:flex;flex-direction:column;gap:7px;flex:1;justify-content:center}
+    .gms-li{display:grid;grid-template-columns:16px 1fr auto auto;align-items:center;gap:8px}
+    .gms-li .dot{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.08)}
+    .gms-li .nm{font-size:12px;color:var(--tx2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gms-li .vv{font-family:var(--mono);font-size:11px;color:var(--tx3);text-align:right}
+    .gms-li .pc{font-family:var(--mono);font-size:13px;color:var(--tx);font-weight:700;text-align:right;min-width:34px}
+    .gms-vbar{width:34px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column-reverse;border:1px solid var(--bd2);align-self:stretch}
+    .gms-vseg{width:100%}
+    .gms-tbl-lab{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin:18px 0 8px}
+    .gms-wrap table{width:100%;border-collapse:collapse}
+    .gms-wrap thead th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--bd2);text-align:right}
+    .gms-wrap thead th:first-child{text-align:left}
+    .gms-wrap tbody td{padding:6px 10px;font-family:var(--mono);font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
+    .gms-wrap tbody td:first-child{text-align:left}
+    .gms-wrap tbody tr.total td{border-top:1px solid var(--bd2);font-weight:700;color:var(--tx);background:rgba(20,211,169,.04)}
+    .gms-cellnm{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+    .gms-cellnm .dot{width:11px;height:11px;border-radius:3px}
+    @media(max-width:820px){.gms-body{grid-template-columns:1fr}}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function fmtDate(d) { return d.toISOString().slice(0, 10); }
+  async function fetchDaily(ds) {
+    try { const r = await fetch(`data/history/daily/${ds}.json`); if (!r.ok) return null; return await r.json(); }
+    catch (_) { return null; }
+  }
+  function hasArrays(zd) {
+    return zd && ['nuclear', 'hydro', 'fossil'].some(k => Array.isArray(zd[k]) && zd[k].some(v => v));
+  }
+  async function resolveLatest(zone) {
+    const t = new Date();
+    for (let i = 0; i < 8; i++) {
+      const dt = new Date(t); dt.setDate(dt.getDate() - i);
+      const ds = fmtDate(dt);
+      const j = await fetchDaily(ds);
+      if (j && j.zones && hasArrays(j.zones[zone])) return { ds, daily: j };
+    }
+    return null;
+  }
+  function synthDay(N) {
+    const d = {}; STACK.forEach(f => d[f] = []);
+    for (let i = 0; i < N; i++) {
+      const h = i / N * 24;
+      d.nuclear.push(40000 + 2500 * Math.sin((h - 7) / 24 * 2 * Math.PI));
+      d.hydro.push(5500 + 3500 * Math.max(0, Math.sin((h - 12) / 24 * 2 * Math.PI)));
+      d.biomass.push(690);
+      d.wind.push(Math.max(400, 2500 + 1800 * Math.sin((h - 3) / 24 * 2 * Math.PI) + 800 * Math.sin(h / 2)));
+      d.solar.push(13500 * Math.pow(Math.max(0, Math.sin((h - 6) / 12 * Math.PI)), 1.4));
+      d.fossil.push(300 + 1400 * Math.max(0, Math.sin((h - 18) / 24 * 2 * Math.PI)));
+      d.other.push(0);
+    }
+    return d;
+  }
+
+  window.renderGenMixStack = async function (containerId, zone, dateStr) {
+    injectCSS();
+    const host = document.getElementById(containerId);
+    if (!host) return;
+    zone = zone || 'FR';
+
+    let daily = null, ds = dateStr || null, isReal = true;
+    if (dateStr) daily = await fetchDaily(dateStr);
+    if (!daily || !hasArrays(daily.zones && daily.zones[zone])) {
+      const r = await resolveLatest(zone);
+      if (r) { daily = r.daily; ds = r.ds; }
+    }
+    const zd = daily && daily.zones && daily.zones[zone];
+
+    let DATA, N;
+    if (hasArrays(zd)) {
+      N = Math.max.apply(null, STACK.map(f => (Array.isArray(zd[f]) ? zd[f].length : 0)).concat([96]));
+      DATA = {};
+      STACK.forEach(f => {
+        const a = Array.isArray(zd[f]) ? zd[f] : [];
+        DATA[f] = new Array(N).fill(0).map((_, i) => (a[i] == null ? 0 : a[i]));
+      });
+    } else {
+      N = 96; DATA = synthDay(N); isReal = false;
+    }
+
+    const dateLabel = ds || (daily && daily.date) || '—';
+
+    // build DOM shell
+    host.innerHTML =
+      '<div class="gms-wrap">'
+      + '<div class="gms-head"><div><div class="gms-period-lab">Période · ' + zone + '</div><div class="gms-period-val">' + dateLabel + '</div></div></div>'
+      + '<div class="gms-body">'
+      +   '<div class="gms-chart-wrap"><div class="gms-rt">Production · stack (' + (N === 96 ? '15 min' : 'horaire') + ')</div>'
+      +     '<svg viewBox="0 0 1000 440" preserveAspectRatio="none"></svg><div class="gms-nowpill" style="display:none"></div></div>'
+      +   '<div class="gms-panel"><div class="gms-panel-main"><div class="gms-panel-hd">Mix instantané · <b class="gms-ptime">—</b></div><div class="gms-list"></div></div><div class="gms-vbar"></div></div>'
+      + '</div>'
+      + '<div class="gms-tbl-lab">Détail par filière · journée' + (isReal ? '' : ' · (données simulées — pas d\'arrays réels ce jour)') + '</div>'
+      + '<table><thead><tr><th>Filière</th><th>Instant</th><th>Part</th><th>Min j.</th><th>Max j.</th><th>Moy j.</th><th>CO2</th></tr></thead><tbody></tbody></table>'
+      + '</div>';
+
+    const wrap = host.querySelector('.gms-wrap');
+    const svg = wrap.querySelector('svg');
+    const NS = 'http://www.w3.org/2000/svg';
+    const elx = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+    const totals = []; for (let i = 0; i < N; i++) totals.push(STACK.reduce((s, f) => s + DATA[f][i], 0));
+    const maxTotal = Math.max.apply(null, totals), minTotal = Math.min.apply(null, totals);
+    const yMax = Math.max(10000, Math.ceil(maxTotal / 10000) * 10000);
+    const STAT = {}; STACK.forEach(f => { const a = DATA[f]; STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
+
+    const W = 1000, H = 440, L = 52, R = 14, T = 12, B = 30;
+    const px = i => L + i / (N - 1) * (W - L - R), py = v => T + (1 - v / yMax) * (H - T - B);
+    let nowLine;
+    (function draw() {
+      svg.innerHTML = '';
+      for (let g = 0; g <= yMax / 1000; g += 10) {
+        const y = py(g * 1000);
+        svg.appendChild(elx('line', { class: 'grid-line', x1: L, y1: y, x2: W - R, y2: y }));
+        const tx = elx('text', { class: 'axis-txt', x: L - 6, y: y + 3, 'text-anchor': 'end' }); tx.textContent = g; svg.appendChild(tx);
+      }
+      const lower = new Array(N).fill(0);
+      STACK.forEach(f => {
+        const upper = lower.map((lo, i) => lo + DATA[f][i]);
+        let d = 'M ' + px(0) + ' ' + py(lower[0]);
+        for (let i = 0; i < N; i++) d += ' L ' + px(i).toFixed(1) + ' ' + py(upper[i]).toFixed(1);
+        for (let i = N - 1; i >= 0; i--) d += ' L ' + px(i).toFixed(1) + ' ' + py(lower[i]).toFixed(1);
+        d += ' Z';
+        svg.appendChild(elx('path', { class: 'area', d: d, fill: FUEL[f].color, 'fill-opacity': .82 }));
+        for (let i = 0; i < N; i++) lower[i] = upper[i];
+      });
+      [['MAX', maxTotal], ['MIN', minTotal]].forEach(([lab, v]) => {
+        const y = py(v);
+        svg.appendChild(elx('line', { class: 'band-line', x1: L, y1: y, x2: W - R, y2: y }));
+        const tx = elx('text', { class: 'band-txt', x: W - R - 2, y: y - 4, 'text-anchor': 'end' }); tx.textContent = lab; svg.appendChild(tx);
+      });
+      for (let h = 0; h <= 24; h += 4) {
+        const i = Math.min(N - 1, Math.round(h / 24 * N));
+        const tx = elx('text', { class: 'axis-txt', x: px(i), y: H - 8, 'text-anchor': 'middle' }); tx.textContent = String(h).padStart(2, '0') + ':00'; svg.appendChild(tx);
+      }
+      nowLine = elx('line', { class: 'now-line', x1: 0, y1: T, x2: 0, y2: H - B }); svg.appendChild(nowLine);
+    })();
+
+    const fmtInst = v => v >= 1000 ? (v / 1000).toFixed(2) + ' GW' : Math.round(v) + ' MW';
+    const listEl = wrap.querySelector('.gms-list');
+    const vbarEl = wrap.querySelector('.gms-vbar');
+    const tbody = wrap.querySelector('tbody');
+    const pill = wrap.querySelector('.gms-nowpill');
+    const ptime = wrap.querySelector('.gms-ptime');
+
+    function update(idx) {
+      idx = Math.max(0, Math.min(N - 1, idx));
+      const x = px(idx); nowLine.setAttribute('x1', x); nowLine.setAttribute('x2', x);
+      const mins = Math.round(idx / N * 24 * 60), hh = String(Math.floor(mins / 60)).padStart(2, '0'), mm = String(mins % 60).padStart(2, '0');
+      pill.style.display = 'block'; pill.textContent = hh + ':' + mm;
+      const cw = svg.clientWidth || svg.getBoundingClientRect().width || W;
+      pill.style.left = (x / W * cw) + 'px';
+      pill.style.top = (wrap.querySelector('.gms-rt').offsetHeight + 2) + 'px';
+      ptime.textContent = hh + ':' + mm;
+
+      const slot = STACK.map(f => ({ f, v: DATA[f][idx] })); const tot = slot.reduce((s, o) => s + o.v, 0) || 1;
+      vbarEl.innerHTML = '';
+      STACK.forEach(f => { const v = DATA[f][idx]; if (v <= 0) return; const seg = document.createElement('div'); seg.className = 'gms-vseg'; seg.style.height = (v / tot * 100) + '%'; seg.style.background = FUEL[f].color; vbarEl.appendChild(seg); });
+      listEl.innerHTML = '';
+      slot.slice().sort((a, b) => b.v - a.v).forEach(o => {
+        const r = document.createElement('div'); r.className = 'gms-li';
+        r.innerHTML = '<span class="dot" style="background:' + FUEL[o.f].color + '"></span><span class="nm">' + FUEL[o.f].label + '</span><span class="vv">' + fmtInst(o.v) + '</span><span class="pc">' + (o.v / tot * 100).toFixed(0) + '%</span>';
+        listEl.appendChild(r);
+      });
+      tbody.innerHTML = '';
+      slot.slice().sort((a, b) => b.v - a.v).forEach(o => {
+        const f = o.f, s = STAT[f]; const tr = document.createElement('tr');
+        tr.innerHTML = '<td><span class="gms-cellnm"><span class="dot" style="background:' + FUEL[f].color + '"></span>' + FUEL[f].label + '</span></td>'
+          + '<td>' + fmtInst(o.v) + '</td><td style="color:var(--tx);font-weight:700">' + (o.v / tot * 100).toFixed(1) + '%</td>'
+          + '<td style="color:var(--tx3)">' + s.min.toFixed(2) + '</td><td style="color:var(--tx3)">' + s.max.toFixed(2) + '</td><td>' + s.avg.toFixed(2) + '</td><td style="color:var(--tx3)">' + FUEL[f].co2 + '</td>';
+        tbody.appendChild(tr);
+      });
+      const co2 = slot.reduce((s, o) => s + o.v * FUEL[o.f].co2, 0) / tot;
+      const tr = document.createElement('tr'); tr.className = 'total';
+      tr.innerHTML = '<td>Total</td><td>' + fmtInst(tot) + '</td><td>100%</td><td>' + (minTotal / 1000).toFixed(2) + '</td><td>' + (maxTotal / 1000).toFixed(2) + '</td><td>—</td><td>' + Math.round(co2) + ' g</td>';
+      tbody.appendChild(tr);
+    }
+
+    const defSlot = Math.round(15.5 / 24 * N);
+    update(defSlot);
+    svg.addEventListener('mousemove', e => { const r = svg.getBoundingClientRect(); const xrel = (e.clientX - r.left) / r.width * W; update(Math.round((xrel - L) / (W - L - R) * (N - 1))); });
+    svg.addEventListener('mouseleave', () => update(defSlot));
+    host._gmsReflow = () => update(defSlot);
+  };
+
+  // The stack is rendered on demand by the GenMix drill "Stack" sub-tab,
+  // which calls window.renderGenMixStack('gm-drill-content', zone, date).
+  // Keep the now-cursor aligned on resize.
+  window.addEventListener('resize', () => {
+    const h = document.getElementById('gm-drill-content');
+    if (h && h._gmsReflow) h._gmsReflow();
+  });
+})();
