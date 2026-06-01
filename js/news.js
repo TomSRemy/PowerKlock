@@ -193,6 +193,7 @@ const PAGE_LOADERS = {
   renewables: () => loadRenewables(),
   nuclear:    () => drawNuclear(),
   imbalance:  () => drawImbalance(),
+  analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   eua:        () => drawEUA(),
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
