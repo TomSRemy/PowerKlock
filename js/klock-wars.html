@@ -577,14 +577,14 @@
     <div class="game-controls">
       <div class="ctrl"><div class="ctrl-lbl" id="angleLbl">ANGLE</div><div class="ctrl-val" id="angle">45°</div><div class="ctrl-keys">← →</div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="powerLbl">POWER</div><div class="ctrl-val" id="power">60</div><div class="ctrl-keys">↑ ↓</div></div>
-      <div class="ctrl"><div class="ctrl-lbl" id="moveLbl">MOVE</div><div class="ctrl-val" id="moveVal">0</div><div class="ctrl-keys">A D</div></div>
+      <div class="ctrl"><div class="ctrl-lbl" id="moveLbl">MOVE</div><div style="display:flex;gap:6px;justify-content:center;margin-top:2px;"><button id="moveLeftBtn" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--deep);color:var(--aqua);font-family:var(--font-mono);font-size:18px;font-weight:700;cursor:pointer;border-radius:2px;padding:4px 0;touch-action:none;user-select:none;">◀</button><button id="moveRightBtn" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--deep);color:var(--aqua);font-family:var(--font-mono);font-size:18px;font-weight:700;cursor:pointer;border-radius:2px;padding:4px 0;touch-action:none;user-select:none;">▶</button></div><div class="ctrl-keys">A D · hold</div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="fuelLbl2">FUEL</div><div class="ctrl-val" id="fuelVal">100</div><div class="ctrl-keys">left</div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="turnLbl">TURN</div><div class="ctrl-val" id="turnNum">1</div><div class="ctrl-keys">round</div></div>
       <button class="fire-btn" id="fireBtn">▶ FIRE</button>
     </div>
     <div class="game-bar">
       <button class="quit-btn" onclick="quitGame()">◀ QUIT</button>
-      <div><kbd>← →</kbd> ANGLE · <kbd>↑ ↓</kbd> POWER · <kbd>A D</kbd> MOVE · <kbd>SPACE</kbd> FIRE · <kbd>1-5</kbd> WEAPON</div>
+      <div><kbd>← →</kbd> ANGLE · <kbd>↑ ↓</kbd> POWER · <kbd>A D</kbd> MOVE · <kbd>SPACE</kbd> FIRE · <kbd>1-4</kbd> WEAPON</div>
     </div>
   </div>
 </div>
@@ -598,12 +598,10 @@
   <div style="background: var(--ink); border: 2px solid var(--gold); border-radius: 4px; padding: 30px; max-width: 520px; width: 90%; box-shadow: 0 0 40px rgba(238,155,0,0.3);">
     <h2 style="color: var(--gold); letter-spacing: 4px; margin-bottom: 8px; font-size: 22px;">💰 PnL BANK EDITOR</h2>
     <p style="color: var(--sand); opacity: 0.7; font-size: 13px; margin-bottom: 24px;">Adjust your trading desk capital. Each preset matches a real-world role.</p>
-    
     <div style="margin-bottom: 20px;">
       <label style="display: block; color: var(--aqua); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px;">CURRENT BANK</label>
       <input type="text" id="pnlInput" style="width: 100%; padding: 12px; background: rgba(0,38,51,0.6); border: 1px solid var(--cyan); color: var(--gold); font-size: 22px; font-family: var(--font-mono); font-weight: 700; border-radius: 2px; text-align: center;" />
     </div>
-
     <div style="margin-bottom: 20px;">
       <label style="display: block; color: var(--aqua); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px;">QUICK PRESETS</label>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -633,7 +631,6 @@
         </button>
       </div>
     </div>
-
     <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
       <button onclick="closePnLEditor()" style="background: transparent; border: 1px solid var(--cyan); color: var(--aqua); padding: 10px 20px; cursor: pointer; font-family: inherit; letter-spacing: 2px; font-size: 12px; border-radius: 2px;">CANCEL</button>
       <button onclick="savePnLEditor()" style="background: var(--gold); color: var(--ink); border: none; padding: 10px 24px; cursor: pointer; font-family: inherit; letter-spacing: 2px; font-size: 12px; font-weight: 700; border-radius: 2px;">✓ APPLY</button>
@@ -645,7 +642,7 @@
 const I18N = {
   fr: {
     subtitle: 'FORWARD CURVE ARTILLERY · V4',
-    career: 'CARRIÈRE', career_desc: 'GRAVIS L\'ÉCHELLE',
+    career: 'CARRIÈRE', career_desc: "GRAVIS L'ÉCHELLE",
     events: 'ÉVÉNEMENTS HISTORIQUES', events_desc: 'VRAIES JOURNÉES DE MARCHÉ',
     gp: 'GRAND PRIX', gp_desc: '3 COURSES · PODIUM',
     quick: 'BATAILLE RAPIDE', quick_desc: 'MISSION ALÉATOIRE',
@@ -691,22 +688,17 @@ const I18N = {
     near_miss: 'PRESQUE !', glancing: 'COUP RASANT', critical: 'COUP CRITIQUE',
     nav_help: 'NAVIGUER', select_help: 'SÉLECTIONNER',
     difficulty: 'DIFFICULTÉ',
-    junior_analyst: 'JUNIOR ANALYST',
-    originator: 'ORIGINATOR',
-    senior_trader: 'SENIOR TRADER',
-    head_of_desk: 'HEAD OF DESK',
-    diff_easy_desc: '🎓 Stage d\'été · IA permissive, marché calme, vent doux. Pour apprendre.',
+    junior_analyst: 'JUNIOR ANALYST', originator: 'ORIGINATOR',
+    senior_trader: 'SENIOR TRADER', head_of_desk: 'HEAD OF DESK',
+    diff_easy_desc: "🎓 Stage d'été · IA permissive, marché calme, vent doux. Pour apprendre.",
     diff_normal_desc: '⚖️ Standard · IA équilibrée, vent normal, PnL ×1. Le défaut.',
     diff_hard_desc: '🎯 Pression du desk · IA précise (corrige en 3 tirs), vent ×1.3, PnL ×1.4',
     diff_hardcore_desc: '🔥 Crise de marché · IA expert, vent ×1.6, AUCUNE aide visuelle, PnL ×2',
     sudden_death: '⚡ SUDDEN DEATH',
-    incoming_wind: 'INCOMING : WIND SHIFT',
-    incoming_fog: 'INCOMING : FOG ROLLING IN',
+    incoming_wind: 'INCOMING : WIND SHIFT', incoming_fog: 'INCOMING : FOG ROLLING IN',
     incoming_calm: 'INCOMING : DEAD CALM',
-    next_turn: 'Prochain tour',
-    walking_shot: 'IA en réglage',
-    high_ground: 'POSITION HAUTE',
-    low_ground: 'EN VALLÉE',
+    next_turn: 'Prochain tour', walking_shot: 'IA en réglage',
+    high_ground: 'POSITION HAUTE', low_ground: 'EN VALLÉE',
   },
   en: {
     subtitle: 'FORWARD CURVE ARTILLERY · V4',
@@ -756,22 +748,17 @@ const I18N = {
     near_miss: 'NEAR MISS!', glancing: 'GLANCING HIT', critical: 'CRITICAL HIT',
     nav_help: 'NAVIGATE', select_help: 'SELECT',
     difficulty: 'DIFFICULTY',
-    junior_analyst: 'JUNIOR ANALYST',
-    originator: 'ORIGINATOR',
-    senior_trader: 'SENIOR TRADER',
-    head_of_desk: 'HEAD OF DESK',
+    junior_analyst: 'JUNIOR ANALYST', originator: 'ORIGINATOR',
+    senior_trader: 'SENIOR TRADER', head_of_desk: 'HEAD OF DESK',
     diff_easy_desc: '🎓 Summer intern · Forgiving AI, calm market, soft wind. To learn.',
     diff_normal_desc: '⚖️ Standard · Balanced AI, normal wind, PnL ×1. Default.',
     diff_hard_desc: '🎯 Desk pressure · Sharp AI (corrects in 3 shots), wind ×1.3, PnL ×1.4',
     diff_hardcore_desc: '🔥 Market crisis · Expert AI, wind ×1.6, NO visual aids, PnL ×2',
     sudden_death: '⚡ SUDDEN DEATH',
-    incoming_wind: 'INCOMING: WIND SHIFT',
-    incoming_fog: 'INCOMING: FOG ROLLING IN',
+    incoming_wind: 'INCOMING: WIND SHIFT', incoming_fog: 'INCOMING: FOG ROLLING IN',
     incoming_calm: 'INCOMING: DEAD CALM',
-    next_turn: 'Next turn',
-    walking_shot: 'AI WALKING SHOT',
-    high_ground: 'HIGH GROUND',
-    low_ground: 'IN VALLEY',
+    next_turn: 'Next turn', walking_shot: 'AI WALKING SHOT',
+    high_ground: 'HIGH GROUND', low_ground: 'IN VALLEY',
   },
 };
 function t(key) {
@@ -779,25 +766,29 @@ function t(key) {
   return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
 }
 
+// ===== WEAPONS — roster nettoyé 7 armes (Stage 1) =====
 const WEAPONS = {
-  standard: { name: 'STANDARD', icon: '◆', cost: 0, desc: { fr: 'Tir spot. Pas de prévisualisation. 8 charges.', en: 'Spot shot. No preview. 8 charges.' }, radius: 32, damage: 30, free: true },
-  spot_forecast: { name: 'SPOT FORECAST', icon: '👁', cost: 400, desc: { fr: 'Prévision floue (cône d\'incertitude). Public info.', en: 'Fuzzy forecast (uncertainty cone). Public info.' }, radius: 32, damage: 30, preview: 'fuzzy' },
-  radar_lock: { name: 'RADAR LOCK', icon: '🎯', cost: 1200, desc: { fr: 'Prévision précise (trajectoire claire). Premium.', en: 'Precise forecast (clear trajectory). Premium.' }, radius: 32, damage: 30, preview: 'precise' },
-  ppa_hedge: { name: 'PPA HEDGE', icon: '🛡', cost: 800, desc: { fr: 'Léger guidage (22% vers la cible). Couvert.', en: 'Mild homing (22% toward target). Hedged.' }, radius: 32, damage: 30, homing: 0.22 },
-  volatility: { name: 'VOLATILITY', icon: '💥', cost: 1000, desc: { fr: 'Double le rayon d\'explosion. Onde de choc.', en: 'Double blast radius. Shock wave.' }, radius: 60, damage: 35, bigBoom: true },
-  curtailment: { name: 'CURTAILMENT', icon: '✂', cost: 1000, desc: { fr: 'Tranche en V. Équilibrage forcé.', en: 'V-trench. Forced grid balancing.' }, radius: 36, damage: 30, trench: true },
-  bess_boost: { name: 'BESS BOOST', icon: '🔋', cost: 900, desc: { fr: 'Récupère 25 PV. Stockage.', en: 'Restore 25 HP. Storage.' }, selfHeal: true, instant: true },
-  curve_smoother: { name: 'CURVE SMOOTH', icon: '〰', cost: 900, desc: { fr: 'Aplatit le terrain en arc.', en: 'Flattens terrain in arc.' }, radius: 60, damage: 0, smooth: true },
-  negative_strike: { name: 'NEG STRIKE', icon: '↓', cost: 1300, desc: { fr: 'Dégâts ×2 si impact en zone négative.', en: 'Double dmg in negative zone.' }, radius: 34, damage: 30, negBonus: true },
-  dunkelflaute: { name: 'DUNKEL WIND', icon: '🌫', cost: 600, desc: { fr: 'Annule le vent ce tour.', en: 'Cancels wind this turn.' }, cancelWind: true, instant: true },
-  capture_strike: { name: 'CAPTURE STRIKE', icon: '☀↓', cost: 1100, desc: { fr: 'Cratère + cannibalise les pics (-20%).', en: 'Crater + cannibalise peaks (-20%).' }, radius: 34, damage: 30, cannibalise: true },
+  standard:     { name: 'STANDARD',     icon: '◆', cost: 0,    free: true, radius: 32, damage: 30,
+    desc: { fr: 'Tir fiable. Gratuit, illimité.', en: 'Reliable shot. Free, unlimited.' } },
+  ppa_hedge:    { name: 'PPA HEDGE',    icon: '🛡', cost: 800,  radius: 32, damage: 30, homing: 0.22,
+    desc: { fr: 'Guidage léger vers la cible. Pardonne la visée.', en: 'Mild homing toward target. Forgives aim.' } },
+  carbon_spill: { name: 'CARBON SPILL', icon: '🛢', cost: 1000, radius: 24, damage: 30, spill: true,
+    desc: { fr: 'Même raté, lâche des gouttes qui grignotent. Jamais létal.', en: 'Even on a miss, leaks chip blobs. Never lethal.' } },
+  volatility:   { name: 'VOLATILITY',   icon: '💥', cost: 1000, radius: 60, damage: 35, bigBoom: true,
+    desc: { fr: 'Gros rayon. Dégâts de zone, facile à placer.', en: 'Big blast radius. Area damage, easy to land.' } },
+  price_spike:  { name: 'PRICE SPIKE',  icon: '⚡', cost: 1200, radius: 18, damage: 50,
+    desc: { fr: 'Petit rayon, gros dégâts. Récompense la précision.', en: 'Small radius, heavy damage. Rewards precision.' } },
+  demand_shock: { name: 'DEMAND SHOCK', icon: '💢', cost: 1000, radius: 30, damage: 25, knockback: 70,
+    desc: { fr: "Dégâts modérés + repousse le tank adverse loin de l'impact.", en: 'Moderate damage + knocks enemy tank away.' } },
+  bess_boost:   { name: 'BESS BOOST',   icon: '🔋', cost: 900,  selfHeal: true, instant: true,
+    desc: { fr: 'Instantané. +25 PV. Stockage.', en: 'Instant. +25 HP. Storage.' } },
 };
 
 const TANKS = {
   aqua: { name: 'AQUA', color: '#94D2BD', trackColor: '#005F73', archetype: 'balanced', hp: 100, accuracy: 1.0, powerMax: 100, windResist: 1.0, comboMult: 1.0, timerBonus: 0, radiusMult: 1.0, fuelMax: 100,
-    trait: { fr: 'Le tank de référence. <span class="punch">Aucun bonus, aucun malus</span>. Recommandé pour débuter.', en: 'The reference tank. <span class="punch">No bonus, no malus</span>. For beginners.' } },
+    trait: { fr: 'Le tank de référence. <span class="punch">Aucun bonus, aucun malus</span>. Pour débuter.', en: 'The reference tank. <span class="punch">No bonus, no malus</span>. For beginners.' } },
   gold: { name: 'GOLD', color: '#EE9B00', trackColor: '#BB3E03', archetype: 'sniper', hp: 75, accuracy: 1.3, powerMax: 100, windResist: 1.0, comboMult: 1.0, timerBonus: 0, radiusMult: 1.0, fuelMax: 100,
-    trait: { fr: '<span class="punch">+30% précision</span>, mais <span class="punch">75 PV</span>. Risk/reward.', en: '<span class="punch">+30% accuracy</span>, but <span class="punch">75 HP</span>. Risk/reward.' } },
+    trait: { fr: '<span class="punch">+30% précision</span>, mais <span class="punch">75 PV</span>.', en: '<span class="punch">+30% accuracy</span>, but <span class="punch">75 HP</span>.' } },
   rust: { name: 'RUST', color: '#BB3E03', trackColor: '#9B2226', archetype: 'defensive', hp: 130, accuracy: 1.0, powerMax: 85, windResist: 1.0, comboMult: 1.0, timerBonus: 0, radiusMult: 1.0, fuelMax: 80,
     trait: { fr: '<span class="punch">+30 PV</span>, mais <span class="punch">-15% puissance</span> et -20% carburant.', en: '<span class="punch">+30 HP</span>, but <span class="punch">-15% power</span> and -20% fuel.' } },
   sand: { name: 'SAND', color: '#E9D8A6', trackColor: '#BB3E03', archetype: 'artillery', hp: 90, accuracy: 1.0, powerMax: 115, windResist: 0.7, comboMult: 1.0, timerBonus: 0, radiusMult: 1.0, fuelMax: 100,
@@ -813,162 +804,46 @@ const ARCHETYPES = {
     profileHourly: [42,40,38,36,35,36,38,42,45,48,50,52,51,49,47,46,48,52,55,54,51,48,45,43], variance: 0.08,
     weather: { icon: '☀', text: '28°C · CLEAR', windBase: 0.8, type: 'sunny', sky: ['#7C4D2A','#005F73','#001219'] },
     genmix: [{pct:60,color:'#EE9B00',name:'NUKE'},{pct:22,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#0A9396',name:'HYDRO'},{pct:4,color:'#94D2BD',name:'WIND'},{pct:4,color:'#BB3E03',name:'OTHER'}],
-    timerSec: 30, reward: 1000, fuelPrice: 40, title: 'BAPTÊME DU FEU',
-    storyTemplates: { fr: [
-      "Un dimanche d'août sur l'EPEX français. Le mistral fait la sieste, la Loire coule sans hâte, et le réseau ronronne dans sa torpeur estivale. <span class='punch'>La courbe forward dessine une vague à peine perceptible</span> — un spread minime, presque embarrassant.",
-      "Les 56 réacteurs nucléaires tournent à plein régime pendant que le solaire saute par-dessus son ombre à midi. La consommation industrielle est en vacances quelque part entre Biarritz et Saint-Tropez. <span class='punch'>Le marché est en mode économiseur d'écran</span>.",
-      "Carburant à €40/unit, vent quasi nul, météo clémente. C'est ton terrain d'apprentissage, ton bac à sable. <span class='punch'>Apprends à viser, à doser ta puissance, à lire la pente</span>. Les vrais combats viendront plus tard.",
-      "Une mission baptême du feu où l'ennemi est davantage ton inexpérience que le marché. Profite-en pour comprendre les fondamentaux avant que les choses deviennent intéressantes."
-    ], en: [
-      "A Sunday in August on the French EPEX. The mistral is napping, the Loire flows unhurriedly, and the grid hums in summer torpor. <span class='punch'>The forward curve traces a barely perceptible wave</span> — a spread so small it's almost embarrassing.",
-      "The 56 nuclear reactors are running flat out while solar leaps over its own shadow at noon. Industrial consumption is on holiday somewhere between Biarritz and Saint-Tropez. <span class='punch'>The market is in screensaver mode</span>.",
-      "Fuel at €40/unit, near-zero wind, gentle weather. This is your training ground, your sandbox. <span class='punch'>Learn to aim, to dose your power, to read the slope</span>. The real fights come later.",
-      "A baptism-of-fire mission where the enemy is your inexperience more than the market itself. Use this time to grasp the fundamentals before things get interesting."
-    ] },
-    warn: "Terrain doux. Carburant abordable. Apprends les contrôles.",
-    funfact: { fr: [
-      "En plein cœur de l'été, la demande française tombe à <span class='punch'>~40 GW en milieu de journée</span> — contre 80+ GW en pic d'hiver. La moitié de la population est en congés, l'autre moitié dort.",
-      "Les prix négatifs deviennent fréquents le dimanche après-midi : trop de soleil, trop peu de demande, pas assez de flexibilité côté production thermique. <span class='punch'>Le solaire mange sa propre rentabilité</span> — c'est l'effet de cannibalisation.",
-      "Pour un PPA solaire baseload signé sur cette tranche horaire, attends-toi à des captures en chute libre. Le marché te dit gentiment que ton actif produit au pire moment de la journée.",
-      "Anecdote interne : à l'été 2024, certaines centrales solaires françaises ont eu des <span class='punch'>captures inférieures à 60% du baseload</span> sur juillet-août. Les originators ont passé l'automne à réécrire leurs modèles."
-    ], en: [
-      "At the height of summer, French demand drops to <span class='punch'>~40 GW mid-day</span> — versus 80+ GW in winter peak. Half the population is on holiday, the other half is asleep.",
-      "Negative prices become common on Sunday afternoons: too much sun, too little demand, not enough flexibility on the thermal side. <span class='punch'>Solar eats its own profitability</span> — the cannibalisation effect.",
-      "For a baseload solar PPA signed on this slot, expect captures in free-fall. The market is gently reminding you that your asset produces at the worst moment of the day.",
-      "Inside story: in summer 2024, some French solar plants saw <span class='punch'>captures below 60% of baseload</span> through July-August. Originators spent the autumn rewriting their models."
-    ] },
+    timerSec: 30, reward: 1000, fuelPrice: 40, title: 'BAPTEME DU FEU',
+    storyTemplates: { fr: ["Un dimanche d'aout sur l'EPEX francais. Marche calme, spread minime, terrain d'apprentissage."], en: ["A Sunday in August on the French EPEX. Calm market, tiny spread, training ground."] },
+    warn: "Terrain doux. Carburant abordable. Apprends les controles.",
+    funfact: { fr: ["En ete, la demande francaise tombe a ~40 GW en milieu de journee, contre 80+ GW en hiver."], en: ["In summer, French demand drops to ~40 GW mid-day, versus 80+ GW in winter."] },
     unlock: 'JUNIOR LEAGUE' },
   junior_winter_fr: { type: 'career', flag: '🇫🇷', baseDate: 'FEB · WEEKDAY', zone: 'FRANCE · EPEX SPOT', diff: 'MEDIUM', stars: 2,
     profileHourly: [62,58,55,53,52,55,68,95,110,100,88,82,78,80,88,102,118,115,95,78,70,65,62,60], variance: 0.12,
     weather: { icon: '🌥', text: '-2°C · COLD', windBase: 2.5, type: 'cold', sky: ['#4A5560','#2A3F46','#001219'] },
     genmix: [{pct:65,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:8,color:'#94D2BD',name:'WIND'},{pct:8,color:'#BB3E03',name:'GAS'},{pct:4,color:'#E9D8A6',name:'SOLAR'},{pct:3,color:'#9B2226',name:'OTHER'}],
     timerSec: 25, reward: 1400, fuelPrice: 80, title: 'LE PIC DU SOIR',
-    storyTemplates: { fr: [
-      "Mardi matin de février. <span class='punch'>-2°C à Paris, vent du nord coupant</span>. Les radiateurs grimpent leur thermostat, les pompes à chaleur tirent comme jamais, et tout le tertiaire allume ses bureaux à 7h45 pétantes.",
-      "La courbe dessine son fameux <span class='punch'>profil bimodale</span> : une bosse matinale à 9h, un creux relatif en milieu de journée, puis le grand pic du soir à 18h-19h. C'est le rythme cardiaque de l'hiver européen.",
-      "Le peak du soir tape à <span class='punch'>€118/MWh</span> — pas un record, mais un classique. Le nucléaire est en tension, l'hydro pompe, et l'Allemagne nous regarde avec envie depuis ses centrales charbon en surrégime.",
-      "Carburant à €80/unit. Chaque déplacement de ton tank coûte vraiment. <span class='punch'>Optimise tes positions de tir au lieu de bouger constamment</span>. Les pros du marché ne courent pas après chaque tic-tac.",
-      "C'est la mission où tu apprends que <span class='punch'>l'intraday a un rythme</span>, que les pics du soir ne sont pas un bug mais une feature, et que ton modèle de revenue stacking doit en tenir compte."
-    ], en: [
-      "Tuesday morning in February. <span class='punch'>-2°C in Paris, cutting north wind</span>. Radiators crank up, heat pumps work overtime, and every office building flips its lights on at 7:45 sharp.",
-      "The curve traces its famous <span class='punch'>bimodal profile</span>: a morning bump at 9am, a relative trough mid-day, then the great evening peak at 6-7pm. This is the heartbeat of European winter.",
-      "The evening peak hits <span class='punch'>€118/MWh</span> — not a record, but a classic. Nuclear is stretched, hydro is pumping, and Germany is watching us enviously from its overworked coal plants.",
-      "Fuel at €80/unit. Every tank move costs real money. <span class='punch'>Optimise your firing positions instead of constantly moving</span>. Pros don't chase every tick.",
-      "This is the mission where you learn that <span class='punch'>intraday has rhythm</span>, that evening peaks aren't a bug but a feature, and that your revenue stacking model needs to account for it."
-    ] },
-    warn: "Spread €66. Heures peak = collines élevées. Carburant plus cher.",
-    funfact: { fr: [
-      "Le <span class='punch'>peak du soir hivernal français</span> est l'un des plus marqués d'Europe — conséquence directe d'un parc résidentiel chauffé à l'électricité bien au-dessus de la moyenne UE (~35% des logements).",
-      "Pour un BESS opéré en 1 cycle/jour sur ce profil, le <span class='punch'>spread day-ahead atteint €60-80/MWh</span>. Ajoute l'aFRR et la capacité, tu fais €120k-€180k/MW/an en France hivernale.",
-      "Un PPA solaire signé sur cette journée capturerait probablement <span class='punch'>30% sous baseload</span> : pas de soleil aux heures chères, beaucoup de soleil aux heures peu chères. Le profil défavorable absolu.",
-      "Anecdote : pendant l'hiver 2022-2023, le coupling FR-DE a tiré les prix peak du soir français au-dessus de €700/MWh sur certaines journées. <span class='punch'>L'Allemagne a payé son sevrage du gaz russe en partie sur la facture française</span>.",
-      "Pour mémoire : la France importe régulièrement 5-10 GW en hiver depuis l'Allemagne et la Belgique, malgré un parc nucléaire surdimensionné — preuve que c'est la flexibilité qui manque, pas la puissance installée."
-    ], en: [
-      "The <span class='punch'>French winter evening peak</span> is among Europe's most pronounced — a direct consequence of a residential stock heated by electricity well above EU average (~35% of homes).",
-      "For a BESS operated on 1 cycle/day with this profile, <span class='punch'>day-ahead spreads reach €60-80/MWh</span>. Add aFRR and capacity, you hit €120k-€180k/MW/year in French winter.",
-      "A solar PPA signed on this day would likely capture <span class='punch'>30% below baseload</span>: no sun during expensive hours, lots of sun during cheap hours. The absolute worst-case profile.",
-      "Story: during winter 2022-2023, FR-DE coupling pulled French evening peak prices above €700/MWh on some days. <span class='punch'>Germany partly paid for its Russian gas detox on the French bill</span>.",
-      "For reference: France regularly imports 5-10 GW in winter from Germany and Belgium, despite an oversized nuclear fleet — proof that what's missing is flexibility, not installed capacity."
-    ] },
+    storyTemplates: { fr: ["Mardi matin de fevrier. Profil bimodal : bosse a 9h, pic du soir a 18h-19h a ~118 EUR/MWh."], en: ["Tuesday morning in February. Bimodal profile: 9am bump, evening peak 6-7pm at ~118 EUR/MWh."] },
+    warn: "Spread 66. Heures peak = collines elevees. Carburant plus cher.",
+    funfact: { fr: ["Le pic du soir hivernal francais est l'un des plus marques d'Europe (~35% des logements chauffes a l'electricite)."], en: ["The French winter evening peak is among Europe's most pronounced (~35% of homes electrically heated)."] },
     unlock: 'SENIOR LEAGUE' },
   senior_duck_curve_es: { type: 'career', flag: '🇪🇸', baseDate: 'SPRING · WEEKDAY', zone: 'IBERIA · OMIE', diff: 'HARD', stars: 3,
     profileHourly: [45,40,36,34,36,42,65,85,75,50,25,8,-5,-8,5,28,65,110,145,135,105,80,65,55], variance: 0.13,
     weather: { icon: '☀', text: '24°C · SUNNY', windBase: 1.5, type: 'sunny', sky: ['#8C5530','#005F73','#001219'] },
     genmix: [{pct:38,color:'#E9D8A6',name:'SOLAR'},{pct:20,color:'#94D2BD',name:'WIND'},{pct:20,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:8,color:'#BB3E03',name:'GAS'},{pct:2,color:'#9B2226',name:'OTHER'}],
-    timerSec: 22, reward: 2000, freeWeapon: 'curve_smoother', fuelPrice: 25, title: 'THE DUCK CURVE',
-    storyTemplates: { fr: [
-      "Le canard est de retour 🦆 — et il est espagnol maintenant. À midi, <span class='punch'>18 GW de solaire photovoltaïque écrasent le marché ibérique</span>. Le prix s'enfonce à -€8/MWh sous l'œil incrédule des merchant developers qui pensaient avoir signé le PPA du siècle.",
-      "Le duck curve, c'est cette forme de courbe horaire qui ressemble à un canard vu de profil : le ventre rebondi au milieu de la journée (solaire), la tête qui remonte brutalement en soirée. Inventé en Californie en 2013, il a traversé l'Atlantique.",
-      "À 19h, le soleil se couche derrière la Sierra de Guadarrama. La demande explose pour la cuisine et la climatisation résiduelle. <span class='punch'>Le ramp atteint 150 GW/h sur le système ibérique</span> — un défi pour les centrales à gaz qui doivent suivre.",
-      "Solaire excédentaire en milieu de journée = carburant ultra-cheap (€25/unit). C'est ta fenêtre pour bouger ton tank vers la meilleure position de tir, profite-en avant le ramp du soir.",
-      "Le Curve Smoother t'est offert pour cette mission. <span class='punch'>Utilise-le pour aplatir une montagne du soir gênante</span>, comme un BESS bien dimensionné le ferait sur le marché réel."
-    ], en: [
-      "The duck is back 🦆 — and it's Spanish now. At noon, <span class='punch'>18 GW of solar PV crush the Iberian market</span>. Prices sink to -€8/MWh while merchant developers stare in disbelief at the PPA they thought was the deal of the century.",
-      "The duck curve is the hourly shape that resembles a duck in profile: a fat belly at midday (solar), a head rising sharply in the evening. Born in California in 2013, it crossed the Atlantic.",
-      "At 7pm, the sun sets behind the Sierra de Guadarrama. Demand explodes for cooking and residual cooling. <span class='punch'>The ramp hits 150 GW/h on the Iberian system</span> — a challenge for gas plants that must follow.",
-      "Excess midday solar = ultra-cheap fuel (€25/unit). This is your window to move your tank to a better firing position. Take advantage before the evening ramp.",
-      "Curve Smoother is gifted for this mission. <span class='punch'>Use it to flatten a problematic evening mountain</span>, just as a well-sized BESS would on the real market."
-    ] },
+    timerSec: 22, reward: 2000, freeWeapon: 'demand_shock', fuelPrice: 25, title: 'THE DUCK CURVE',
+    storyTemplates: { fr: ["Le canard est de retour. A midi, 18 GW de solaire ecrasent le marche iberique a -8 EUR/MWh. Ramp brutal vers 19h."], en: ["The duck is back. At noon, 18 GW of solar crush the Iberian market to -8 EUR/MWh. Brutal ramp to 7pm."] },
     warn: "Profil canard. Ramp brutal midi-soir. Carburant cheap.",
-    funfact: { fr: [
-      "La <span class='punch'>duck curve</span> est née en Californie en 2013 quand CAISO a publié son fameux graphique de demande nette. L'Espagne l'a rattrapée en 2024, l'Allemagne suivra vers 2027.",
-      "Solution canonique : <span class='punch'>BESS de 4h à 6h de stockage</span>, charge midi à prix négatif, décharge à 19h-21h à €150+/MWh. Spread quotidien régulier, IRR projet entre 12 et 18%.",
-      "Pour un PPA solaire classique signé sur l'Espagne en 2024, le risque de capture est devenu majeur : production max aux heures les moins valorisées, captures parfois <span class='punch'>< 40% du baseload</span>.",
-      "La réponse réglementaire espagnole : extension du mécanisme de capacité, accélération des appels d'offres BESS (CNMC), et discussion sur le redesign du marché intraday pour mieux valoriser la flexibilité.",
-      "Anecdote : Iberdrola a annoncé en 2024 un programme de <span class='punch'>5 GW de BESS d'ici 2030</span> en Espagne et Portugal — un pivot stratégique direct face à la duck curve qui détruit la rentabilité de ses propres actifs solaires."
-    ], en: [
-      "The <span class='punch'>duck curve</span> was born in California in 2013 when CAISO published its now-famous net demand chart. Spain caught up in 2024, Germany will follow around 2027.",
-      "Canonical solution: <span class='punch'>BESS with 4-6h storage</span>, charge midday at negative prices, discharge at 7-9pm at €150+/MWh. Steady daily spreads, project IRR between 12 and 18%.",
-      "For a classic solar PPA signed in Spain in 2024, capture risk has become major: peak production during least valued hours, captures sometimes <span class='punch'>< 40% of baseload</span>.",
-      "The Spanish regulatory response: extension of the capacity mechanism, acceleration of BESS auctions (CNMC), and discussions on redesigning the intraday market to better value flexibility.",
-      "Story: Iberdrola announced in 2024 a <span class='punch'>5 GW BESS programme by 2030</span> across Spain and Portugal — a direct strategic pivot facing a duck curve that destroys its own solar assets' profitability."
-    ] },
+    funfact: { fr: ["La duck curve est nee en Californie en 2013. L'Espagne l'a rattrapee en 2024. Solution : BESS 4-6h."], en: ["The duck curve was born in California in 2013. Spain caught up in 2024. Solution: 4-6h BESS."] },
     unlock: 'DUNKELFLAUTE' },
   senior_dunkelflaute_de: { type: 'career', flag: '🇩🇪', baseDate: 'JAN · WEEKDAY', zone: 'GERMANY · EPEX', diff: 'HARD', stars: 3,
     profileHourly: [88,82,78,75,78,92,125,165,180,168,145,130,125,132,148,175,210,195,160,130,110,98,92,88], variance: 0.14,
     weather: { icon: '🌫', text: '1°C · FOG', windBase: 0.4, type: 'fog', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:38,color:'#001219',name:'COAL'},{pct:32,color:'#BB3E03',name:'GAS'},{pct:20,color:'#9B2226',name:'IMPORT'},{pct:6,color:'#94D2BD',name:'WIND'},{pct:4,color:'#0A9396',name:'HYDRO'}],
     timerSec: 21, reward: 1800, freeWeapon: 'bess_boost', fuelPrice: 280, title: 'NIEDRIGER WIND',
-    storyTemplates: { fr: [
-      "Jeudi de janvier en Allemagne. <span class='punch'>4 GW d'éolien sur les 70 GW installés</span>. Brouillard épais sur la mer du Nord, soleil aux abonnés absents depuis 72h. Le mot allemand pour ce phénomène existe — Dunkelflaute — et il est devenu plus connu hors d'Allemagne qu'à l'intérieur.",
-      "Berlin a beau s'enorgueillir de ses 130 GW de renouvelables installés, quand le vent ne souffle pas et que le soleil se cache, il ne reste plus que <span class='punch'>~30 GW de gaz et charbon en runtime maximum</span>, et la facture qui va avec.",
-      "Habeck défend la transition énergétique en conférence de presse. <span class='punch'>'La situation est sous contrôle'</span> — traduction directe : on importe massivement depuis la France, la Pologne et le Danemark, et on prie pour que ça tienne.",
-      "Carburant à <span class='punch'>€280/unit</span>. Bouger ton tank te coûtera cher. C'est exactement le ressenti d'un trader qui doit ré-équilibrer son book à chaque heure — chaque ajustement de position se paie comptant.",
-      "BESS Boost t'est offert pour cette mission. <span class='punch'>Les batteries sont les seuls actifs qui font fortune en Dunkelflaute</span>, capturant des spreads à 4 chiffres par MWh. Profite-en pour comprendre pourquoi tout le monde construit du BESS allemand en 2025-2026."
-    ], en: [
-      "Thursday in January in Germany. <span class='punch'>4 GW of wind on 70 GW installed</span>. Thick fog on the North Sea, sun missing for 72 hours. The German word for this phenomenon — Dunkelflaute — is now better known outside Germany than within.",
-      "Berlin may boast 130 GW of installed renewables, but when wind doesn't blow and sun hides, only <span class='punch'>~30 GW of gas and coal at maximum runtime remain</span>, plus the bill that comes with them.",
-      "Habeck defends the energy transition at a press conference. <span class='punch'>'The situation is under control'</span> — direct translation: we're importing massively from France, Poland and Denmark, and praying it holds.",
-      "Fuel at <span class='punch'>€280/unit</span>. Moving your tank costs dearly. This is exactly what a trader feels rebalancing their book hourly — every position adjustment is paid in cash.",
-      "BESS Boost is gifted for this mission. <span class='punch'>Batteries are the only assets making fortunes in Dunkelflaute</span>, capturing four-digit per-MWh spreads. Use it to understand why everyone is building German BESS in 2025-2026."
-    ] },
-    warn: "Brouillard, terrain élevé, carburant cher. BESS Boost offert.",
-    funfact: { fr: [
-      "Sans vent ni solaire, le système allemand mobilise <span class='punch'>~30 GW de gaz et charbon</span> en runtime maximum, plus 5-12 GW d'imports européens. C'est le scénario cauchemar des modélisateurs réseau.",
-      "Le couplage FR-DE tire mécaniquement les prix peak français vers le haut : <span class='punch'>quand l'Allemagne crie famine, la France paie aussi son repas</span>. Les flux peuvent inverser plusieurs fois dans la journée.",
-      "Un BESS allemand bien dimensionné sur ce profil capture <span class='punch'>2 à 3× ses revenus moyens annuels</span> en seulement quelques jours de Dunkelflaute. Le risk/reward fait pencher les modèles vers le merchant pur sans floor.",
-      "L'hiver 2024-2025 a vu plusieurs épisodes de Dunkelflaute consécutifs, dont le record du 12 décembre 2024 (€936/MWh). Conséquence : <span class='punch'>+40% d'investissement BESS en Allemagne sur 2025</span> selon BloombergNEF.",
-      "Anecdote : Habeck a personnellement appelé Engie en novembre 2024 pour discuter d'extensions de contrats d'imports. <span class='punch'>La diplomatie énergétique est devenue un sport olympique</span>."
-    ], en: [
-      "Without wind or solar, the German system mobilises <span class='punch'>~30 GW of gas and coal</span> at maximum runtime, plus 5-12 GW of European imports. The nightmare scenario for grid modellers.",
-      "FR-DE coupling mechanically pulls French peak prices upward: <span class='punch'>when Germany cries famine, France also pays for its meal</span>. Flows can reverse several times during the day.",
-      "A well-sized German BESS on this profile captures <span class='punch'>2 to 3× its average annual revenues</span> in just a few Dunkelflaute days. The risk/reward tilts models toward pure merchant without floor.",
-      "Winter 2024-2025 saw several consecutive Dunkelflaute episodes, including the record of 12 December 2024 (€936/MWh). Consequence: <span class='punch'>+40% BESS investment in Germany over 2025</span> according to BloombergNEF.",
-      "Story: Habeck personally called Engie in November 2024 to discuss import contract extensions. <span class='punch'>Energy diplomacy has become an Olympic sport</span>."
-    ] },
+    storyTemplates: { fr: ["Jeudi de janvier en Allemagne. 4 GW d'eolien sur 70 GW installes. Dunkelflaute : pas de vent, pas de soleil."], en: ["Thursday in January in Germany. 4 GW of wind on 70 GW installed. Dunkelflaute: no wind, no sun."] },
+    warn: "Brouillard, terrain eleve, carburant cher. BESS Boost offert.",
+    funfact: { fr: ["Sans vent ni solaire, le systeme allemand mobilise ~30 GW de gaz et charbon + 5-12 GW d'imports."], en: ["Without wind or solar, the German system mobilises ~30 GW of gas and coal + 5-12 GW of imports."] },
     unlock: 'DIRECTOR LEAGUE' },
   director_negative_es: { type: 'career', flag: '🇪🇸', baseDate: 'EASTER · HOLIDAY', zone: 'SPAIN · OMIE', diff: 'EXTREME', stars: 4,
     profileHourly: [22,18,15,12,10,8,5,-2,-8,-15,-18,-20,-22,-20,-15,-5,8,25,42,38,32,28,25,22], variance: 0.15,
     weather: { icon: '☀', text: '22°C · BLINDING SUN', windBase: 2.2, type: 'sunny', sky: ['#A06030','#4A6570','#001219'] },
     genmix: [{pct:45,color:'#E9D8A6',name:'SOLAR'},{pct:18,color:'#94D2BD',name:'WIND'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:12,color:'#0A9396',name:'HYDRO'},{pct:5,color:'#BB3E03',name:'GAS'},{pct:2,color:'#9B2226',name:'OTHER'}],
-    timerSec: 18, reward: 2500, freeWeapon: 'negative_strike', fuelPrice: 15, title: 'NEGATIVE SUN',
-    storyTemplates: { fr: [
-      "Lundi férié de printemps en Espagne. Tout le monde est à la plage de Valence ou en sierra à pique-niquer. <span class='punch'>18 GW de solaire photovoltaïque produisent pour personne</span>, et personne ne dort à 14h pour les consommer.",
-      "Les prix s'effondrent. <span class='punch'>-€22/MWh en milieu de journée</span> — pas un bug d'affichage, c'est bien le marché qui paie les consommateurs pour absorber le surplus. Et encore, c'est la régulation espagnole qui empêche d'aller plus bas.",
-      "Carburant à <span class='punch'>€15/unit</span>. Quasi gratuit. Le réseau supplie qu'on consomme, qu'on stocke, qu'on exporte vers la France ou le Portugal. Bouge ton tank, profite, optimise tes tirs sur les vallées.",
-      "Ta courbe descend physiquement sous la surface de la mer dans le jeu. <span class='punch'>NEG STRIKE t'est offert</span> : exploite cette zone négative, double tes dégâts, capture la valeur que les autres laissent partir.",
-      "C'est la mission qui sépare les bons originators des excellents. <span class='punch'>Comprendre les prix négatifs, c'est comprendre pourquoi un PPA mal structuré peut détruire la valeur</span> au lieu de la créer. Les contrats avec floor à €0 et les PPA as-produced sont nés ici."
-    ], en: [
-      "Spring bank holiday in Spain. Everyone's on the beach in Valencia or picnicking in the sierra. <span class='punch'>18 GW of solar PV producing for nobody</span>, and nobody's around at 2pm to consume it.",
-      "Prices collapse. <span class='punch'>-€22/MWh mid-day</span> — not a display bug, the market is genuinely paying consumers to absorb the surplus. And that's with Spanish regulation preventing deeper negatives.",
-      "Fuel at <span class='punch'>€15/unit</span>. Almost free. The grid is begging us to consume, store, export to France or Portugal. Move your tank, take advantage, optimise shots in the valleys.",
-      "Your curve literally dips below the sea surface in the game. <span class='punch'>NEG STRIKE is gifted</span>: exploit this negative zone, double your damage, capture the value others let slip away.",
-      "This is the mission that separates good originators from great ones. <span class='punch'>Understanding negative prices means understanding why a poorly structured PPA destroys value</span> instead of creating it. Contracts with €0 floors and as-produced PPAs were born here."
-    ] },
-    warn: "Prix négatifs. Carburant ultra-cheap. Vise les vallées.",
-    funfact: { fr: [
-      "Espagne 2024 : <span class='punch'>247 heures de prix négatifs</span> sur l'année — un record absolu pour la péninsule ibérique, qui n'en avait quasi jamais connu avant 2023. La courbe d'apprentissage a été brutale pour les portfolios merchant.",
-      "Sur les heures négatives, les actifs solaires en PPA pay-as-produced perdent doublement : ils produisent à plein régime <span class='punch'>et</span> paient leur offtaker pour le faire. Le concept est devenu une étude de cas dans les masters d'économie énergétique.",
-      "Solution structurelle : passage progressif vers des <span class='punch'>PPA hybrides solaire + BESS</span> où la batterie absorbe la production aux heures négatives et la restitue en peak. IRR similaire, mais profil de risque drastiquement assaini.",
-      "Anecdote : un merchant solaire ibérique a fait faillite en juillet 2024 après avoir manqué de cash flow pour rembourser sa dette senior — son taux de capture annuel était tombé sous 55% du baseload. <span class='punch'>Le marché a appris dur</span>.",
-      "Le ministre de la transition écologique espagnole a annoncé en 2025 un mécanisme de contracts-for-difference inversé pour limiter les pertes des merchants. <span class='punch'>L'État reprend du terrain face au marché libre</span> — la fin d'un cycle."
-    ], en: [
-      "Spain 2024: <span class='punch'>247 hours of negative prices</span> for the year — an absolute record for the Iberian peninsula, which had almost never seen them before 2023. The learning curve has been brutal for merchant portfolios.",
-      "During negative hours, solar assets on pay-as-produced PPAs lose twice: they produce at full capacity <span class='punch'>and</span> pay their offtaker to do so. The concept has become a case study in energy economics masters programmes.",
-      "Structural solution: gradual shift to <span class='punch'>hybrid solar + BESS PPAs</span> where the battery absorbs production during negative hours and releases it at peak. Similar IRR, but drastically cleaner risk profile.",
-      "Story: an Iberian merchant solar player went bankrupt in July 2024 after running out of cash flow to service senior debt — its annual capture rate had fallen below 55% of baseload. <span class='punch'>The market learned hard</span>.",
-      "Spain's ecological transition minister announced in 2025 a reverse contracts-for-difference mechanism to limit merchant losses. <span class='punch'>The State takes back ground from the free market</span> — the end of a cycle."
-    ] },
+    timerSec: 18, reward: 2500, freeWeapon: 'price_spike', fuelPrice: 15, title: 'NEGATIVE SUN',
+    storyTemplates: { fr: ["Lundi ferie de printemps en Espagne. -22 EUR/MWh en milieu de journee. Le marche paie pour consommer."], en: ["Spring bank holiday in Spain. -22 EUR/MWh mid-day. The market pays you to consume."] },
+    warn: "Prix negatifs. Carburant ultra-cheap. Vise les vallees.",
+    funfact: { fr: ["Espagne 2024 : 247 heures de prix negatifs sur l'annee, un record absolu pour la peninsule."], en: ["Spain 2024: 247 hours of negative prices, an absolute record for the peninsula."] },
     unlock: 'HALL OF ORIGINATION' },
 };
 
@@ -976,298 +851,74 @@ const EVENTS = {
   event1: { type: 'event', flag: '🇫🇷', date: 'WED · 17 AUG 2022', zone: 'FRANCE · EPEX SPOT', diff: 'LEGENDARY', stars: 4,
     prices: [380,350,320,310,340,420,540,680,820,780,720,680,700,750,820,920,1080,1130,950,780,620,520,450,410],
     weather: { icon: '🔥', text: '45°C · HEATWAVE', windBase: 2.8, type: 'heat', sky: ['#9B2226','#BB3E03','#001219'] },
-    genmix: [{pct:39,color:'#9B2226',name:'NUKE↓'},{pct:22,color:'#BB3E03',name:'GAS'},{pct:14,color:'#0A9396',name:'HYDRO↓'},{pct:12,color:'#E9D8A6',name:'SOLAR'},{pct:8,color:'#94D2BD',name:'WIND'},{pct:5,color:'#001219',name:'COAL'}],
+    genmix: [{pct:39,color:'#9B2226',name:'NUKE'},{pct:22,color:'#BB3E03',name:'GAS'},{pct:14,color:'#0A9396',name:'HYDRO'},{pct:12,color:'#E9D8A6',name:'SOLAR'},{pct:8,color:'#94D2BD',name:'WIND'},{pct:5,color:'#001219',name:'COAL'}],
     timerSec: 17, reward: 3500, blockedWeapons: ['ppa_hedge'], fuelPrice: 450, title: 'THE FRENCH NUKE CRISIS',
-    story: { fr: [
-      "Mercredi 17 août 2022. Canicule sur l'Europe, le Rhône est presque à sec, et EDF compte ses réacteurs comme un dragon compte ses pièces d'or — <span class='punch'>32 sur 56 sont à l'arrêt</span>, corrosion sous contrainte, maintenance reportée, restrictions de rejet thermique.",
-      "L'origine de la crise remonte à octobre 2021 : EDF découvre des fissures de corrosion sur la tuyauterie de sûreté des circuits primaires. <span class='punch'>Le parc nucléaire français entre en hibernation forcée</span> au pire moment, juste avant le choc gazier russe.",
-      "Sur le marché forward, le Cal+1 France s'envole à <span class='punch'>€1130/MWh</span>. Vingt fois la moyenne historique. Les originators repassent leur CV en silence, les industriels font la queue chez leur banquier, et Bercy improvise un bouclier tarifaire à €40 milliards.",
-      "PPA Hedge est bloqué pour cette mission. <span class='punch'>Aucun trader ne veut prendre du risque price</span> sur ce niveau — les desks ferment les portefeuilles longs, les couvertures sont devenues impayables, et les conseils d'administration suspendent les autorisations de trading.",
-      "Carburant à <span class='punch'>€450/unit</span> — bouger ton tank devient un luxe. C'est le ressenti exact d'une équipe d'origination en août 2022 : chaque réunion client, chaque mouvement, chaque prise de position coûte une fortune. Le marché ne donne plus de seconde chance.",
-      "Cette mission est <span class='punch'>légendaire</span> non pas par sa difficulté technique mais par ce qu'elle représente : le moment où l'origination française a découvert qu'elle ne contrôlait plus rien."
-    ], en: [
-      "Wednesday 17 August 2022. Heatwave across Europe, the Rhône nearly dry, and EDF counts its reactors like a dragon counts its gold coins — <span class='punch'>32 out of 56 are offline</span>, stress corrosion cracking, deferred maintenance, thermal discharge restrictions.",
-      "The crisis originates in October 2021: EDF discovers corrosion cracks on safety piping in primary circuits. <span class='punch'>The French nuclear fleet enters forced hibernation</span> at the worst possible moment, just before the Russian gas shock.",
-      "On the forward market, French Cal+1 soars to <span class='punch'>€1130/MWh</span>. Twenty times the historical average. Originators silently update their CVs, industrials queue at their banker's, and the French Treasury improvises a €40 billion price shield.",
-      "PPA Hedge is blocked for this mission. <span class='punch'>No trader wants to take price risk</span> at this level — desks close long books, hedges have become unaffordable, and boards suspend trading authorisations.",
-      "Fuel at <span class='punch'>€450/unit</span> — moving your tank becomes a luxury. This is exactly how an origination team felt in August 2022: every client meeting, every move, every position costs a fortune. The market gives no second chances.",
-      "This mission is <span class='punch'>legendary</span> not for its technical difficulty but for what it represents: the moment French origination discovered it no longer controlled anything."
-    ] },
-    warn: "Pic €1130. PPA bloqué. Carburant prohibitif.",
-    funfact: { fr: [
-      "Le pic Cal+1 France à <span class='punch'>€1130/MWh</span> représente 20× la moyenne 2010-2020. À ce niveau, les actifs renouvelables ont des taux d'actualisation négatifs sur 10 ans — chose littéralement inédite dans l'histoire du secteur.",
-      "Un trader chez Engie a fait imprimer la courbe forward du 17 août 2022 en poster A2 et l'a accrochée dans son bureau. <span class='punch'>'Pour me rappeler que tout est possible'</span>. Le poster existe toujours.",
-      "Le ministre de l'Économie a qualifié la situation de <span class='punch'>'préoccupante mais maîtrisée'</span> en conférence de presse — formulation classique signifiant 'on n'a aucune idée de ce qui va arriver et on prie pour l'hiver'. C'est resté dans les annales.",
-      "Conséquence directe : naissance des PPA <span class='punch'>style 'corporate baseload'</span> avec floors à €60-80/MWh signés massivement fin 2022 et 2023. Les CFO de grands groupes industriels ne voulaient plus jamais revivre ça.",
-      "EDF a investi <span class='punch'>€5 milliards d'urgence</span> dans le programme de remise à niveau du parc nucléaire. Aujourd'hui, le taux de disponibilité est remonté à ~75%, mais le souvenir reste vif chez les originators.",
-      "Anecdote interne : les desks parisiens ont créé en privé un terme pour désigner août 2022 — '<span class='punch'>The Big One</span>'. Tout le monde sait de quoi on parle quand on le mentionne. Tu sais maintenant."
-    ], en: [
-      "The French Cal+1 peak at <span class='punch'>€1130/MWh</span> represents 20× the 2010-2020 average. At this level, renewable assets have negative discount rates over 10 years — literally unprecedented in the industry's history.",
-      "A trader at Engie had the 17 August 2022 forward curve printed as an A2 poster and hung it in his office. <span class='punch'>'To remind myself that anything is possible'</span>. The poster still exists.",
-      "The French Finance Minister called the situation <span class='punch'>'concerning but under control'</span> at a press conference — classic phrasing meaning 'we have no idea what's coming and we're praying for winter'. It went down in history.",
-      "Direct consequence: birth of <span class='punch'>'corporate baseload' PPAs</span> with €60-80/MWh floors signed massively in late 2022 and 2023. CFOs of major industrial groups never wanted to live through this again.",
-      "EDF invested <span class='punch'>€5 billion emergency</span> in the nuclear fleet upgrade programme. Today, availability is back to ~75%, but the memory remains vivid among originators.",
-      "Inside story: Parisian desks privately coined a term for August 2022 — '<span class='punch'>The Big One</span>'. Everyone knows what it means when you mention it. Now you do too."
-    ] },
+    story: { fr: ["Mercredi 17 aout 2022. 32 reacteurs sur 56 a l'arret. Cal+1 France a 1130 EUR/MWh, 20x la moyenne."], en: ["Wednesday 17 August 2022. 32 of 56 reactors offline. French Cal+1 at 1130 EUR/MWh, 20x the average."] },
+    warn: "Pic 1130. PPA bloque. Carburant prohibitif.",
+    funfact: { fr: ["A ce niveau, les actifs renouvelables avaient des taux d'actualisation negatifs sur 10 ans."], en: ["At this level, renewable assets had negative discount rates over 10 years."] },
     unlock: 'EVENT #02' },
   event2: { type: 'event', flag: '🇪🇺', date: 'THU · 24 FEB 2022', zone: 'EUROPE · TTF/POWER', diff: 'LEGENDARY', stars: 5,
     prices: [180,175,168,165,170,195,240,320,380,360,320,290,285,295,340,410,480,510,420,340,280,240,210,195],
     weather: { icon: '🌥', text: '4°C · OVERCAST', windBase: 1.8, type: 'cold', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:30,color:'#001219',name:'COAL'},{pct:28,color:'#BB3E03',name:'GAS'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:8,color:'#0A9396',name:'HYDRO'},{pct:6,color:'#9B2226',name:'OTHER'}],
     timerSec: 16, reward: 4500, forceCrash: true, fuelPrice: 380, title: 'THE INVASION SHOCK',
-    story: { fr: [
-      "5h00 du matin, jeudi 24 février 2022. Les premières colonnes de chars russes franchissent la frontière ukrainienne au nord de Kiev. À 6h, Vladimir Poutine prononce son discours télévisé annonçant l'<span class='punch'>'opération militaire spéciale'</span>.",
-      "À l'ouverture des marchés européens, le TTF day-ahead bondit instantanément. <span class='punch'>+85% en une seule session</span>. Les desks gaz crient au téléphone, les portefeuilles de couverture explosent, et les CFO de compagnies énergétiques convoquent des comex en urgence.",
-      "Le pouvoir mécanique se transmet immédiatement aux prix de l'électricité via le merit order : <span class='punch'>les centrales à gaz fixent le prix marginal</span>, le power suit le gaz à la trace. EPEX et Nord Pool deviennent des téléprinters de catastrophe.",
-      "RWE et Uniper rallument leurs centrales à charbon en stand-by, certaines décommissionnées depuis 18 mois. <span class='punch'>L'Allemagne brûle ses tabous environnementaux en direct</span> pour garder les lumières allumées. Habeck signe les autorisations à 4h du matin.",
-      "Market Crash garanti pour cette mission — c'est <span class='punch'>l'événement géopolitique du siècle</span> appliqué à un terrain de jeu. La volatilité dépasse 200% annualisée, les bid-ask spreads triplent, et plusieurs courtiers suspendent les transactions sur le forward.",
-      "Carburant à €380/unit. C'est le coût de la guerre, payé par chaque acteur du marché énergétique européen, des grands traders aux PME qui regardent leurs contrats indexés exploser."
-    ], en: [
-      "5:00 AM, Thursday 24 February 2022. The first Russian tank columns cross the Ukrainian border north of Kyiv. At 6 AM, Vladimir Putin delivers his televised speech announcing the <span class='punch'>'special military operation'</span>.",
-      "When European markets open, TTF day-ahead jumps instantly. <span class='punch'>+85% in a single session</span>. Gas desks shout into phones, hedge books explode, and energy company CFOs convene emergency committees.",
-      "The mechanical power transmits immediately to electricity prices through merit order: <span class='punch'>gas plants set the marginal price</span>, power follows gas step by step. EPEX and Nord Pool become disaster teleprinters.",
-      "RWE and Uniper restart their standby coal plants, some decommissioned 18 months ago. <span class='punch'>Germany burns its environmental taboos live</span> to keep the lights on. Habeck signs authorisations at 4 AM.",
-      "Market Crash guaranteed for this mission — it's <span class='punch'>the geopolitical event of the century</span> applied to a playing field. Volatility exceeds 200% annualised, bid-ask spreads triple, and several brokers suspend forward transactions.",
-      "Fuel at €380/unit. This is the cost of war, paid by every European energy market participant, from major traders to SMEs watching their indexed contracts explode."
-    ] },
-    warn: "Volatilité historique. Crash forcé.",
-    funfact: { fr: [
-      "Le 24 février 2022 : <span class='punch'>la pire crise énergétique européenne depuis 1973</span>. La crise pétrolière était une question de prix ; celle-ci est une question de souveraineté. L'Europe découvre brutalement sa dépendance.",
-      "Contrats indexés TTF : les industriels signataires d'accords d'approvisionnement variables ont vu leurs factures multipliées par 5 à 8 en quelques semaines. <span class='punch'>Plusieurs faillites en cascade</span> chez les producteurs de verre, ciment et engrais.",
-      "Conséquence directe : <span class='punch'>REPowerEU</span> en mai 2022, plan d'urgence de €300 milliards. Accélération des renouvelables, hydrogène vert, économies d'énergie, diversification gaz. Le plus gros programme énergétique européen depuis le marché intérieur.",
-      "Explosion du marché des PPA : <span class='punch'>+250% de volumes signés en 2022</span> selon Pexapark. Les corporates qui résistaient aux PPA depuis des années ont signé en panique, parfois sur des termes désavantageux qu'ils regrettent depuis.",
-      "Anecdote : le directeur de Gazprom Germania a démissionné à 9h le 24 février. Sa porte de bureau aurait été retrouvée fermée à clé avec son badge à l'intérieur. <span class='punch'>Personne ne savait quoi faire</span>.",
-      "Trois ans plus tard, l'Europe a réduit sa dépendance au gaz russe de 40% à <span class='punch'>moins de 15%</span>. Le LNG américain est devenu le nouveau roi. La géopolitique a redessiné la carte énergétique mondiale en 36 mois."
-    ], en: [
-      "24 February 2022: <span class='punch'>the worst European energy crisis since 1973</span>. The oil crisis was a price question; this one is a sovereignty question. Europe brutally discovers its dependency.",
-      "TTF-indexed contracts: industrials signed to variable supply deals saw bills multiply by 5 to 8 in weeks. <span class='punch'>Several cascading bankruptcies</span> among glass, cement and fertiliser producers.",
-      "Direct consequence: <span class='punch'>REPowerEU</span> in May 2022, €300 billion emergency plan. Accelerated renewables, green hydrogen, energy savings, gas diversification. The largest European energy programme since the internal market.",
-      "PPA market explosion: <span class='punch'>+250% in volumes signed in 2022</span> according to Pexapark. Corporates resisting PPAs for years signed in panic, sometimes on disadvantageous terms they've regretted since.",
-      "Story: the head of Gazprom Germania resigned at 9 AM on 24 February. His office door was reportedly found locked with his badge inside. <span class='punch'>Nobody knew what to do</span>.",
-      "Three years later, Europe reduced its Russian gas dependency from 40% to <span class='punch'>under 15%</span>. American LNG became the new king. Geopolitics redrew the global energy map in 36 months."
-    ] },
+    story: { fr: ["24 fevrier 2022. Invasion de l'Ukraine. TTF day-ahead +85% en une seule session. Le power suit le gaz."], en: ["24 February 2022. Invasion of Ukraine. TTF day-ahead +85% in one session. Power follows gas."] },
+    warn: "Volatilite historique. Crash force.",
+    funfact: { fr: ["La pire crise energetique europeenne depuis 1973. REPowerEU : plan d'urgence de 300 milliards EUR."], en: ["The worst European energy crisis since 1973. REPowerEU: 300 billion EUR emergency plan."] },
     unlock: 'EVENT #03' },
   event3: { type: 'event', flag: '🇪🇺', date: 'MON · 22 AUG 2022', zone: 'EUROPE · TTF PEAK', diff: 'LEGENDARY', stars: 5,
     prices: [420,410,395,385,400,460,580,720,850,920,950,980,1020,1050,1080,1100,1080,1050,980,850,720,620,520,480],
     weather: { icon: '🔥', text: '38°C · DROUGHT', windBase: 1.5, type: 'heat', sky: ['#9B2226','#A06030','#001219'] },
-    genmix: [{pct:35,color:'#BB3E03',name:'GAS'},{pct:22,color:'#001219',name:'COAL'},{pct:20,color:'#EE9B00',name:'NUKE'},{pct:10,color:'#E9D8A6',name:'SOLAR'},{pct:7,color:'#94D2BD',name:'WIND'},{pct:6,color:'#0A9396',name:'HYDRO↓'}],
+    genmix: [{pct:35,color:'#BB3E03',name:'GAS'},{pct:22,color:'#001219',name:'COAL'},{pct:20,color:'#EE9B00',name:'NUKE'},{pct:10,color:'#E9D8A6',name:'SOLAR'},{pct:7,color:'#94D2BD',name:'WIND'},{pct:6,color:'#0A9396',name:'HYDRO'}],
     timerSec: 16, reward: 4200, fuelPrice: 500, title: 'TTF ALL-TIME PEAK',
-    story: { fr: [
-      "Lundi 22 août 2022. La sécheresse paralyse l'Europe : le Rhin n'est plus navigable, le Pô est à sec, et les centrales nucléaires françaises tournent au ralenti faute d'eau de refroidissement. Tout se conjugue pour pousser le gaz au pinacle.",
-      "À 11h heure de Londres, le TTF month-ahead franchit la barre symbolique des €343/MWh. <span class='punch'>Record absolu de tous les temps</span>. Le contrat équivaut à $40/MMBtu — environ 20 fois la moyenne pré-2021. Le gaz coûte plus cher que l'or à la tonne.",
-      "ArcelorMittal annonce l'extinction de hauts fourneaux à Hambourg et Dunkerque. Yara, le géant norvégien des engrais, ferme 60% de sa capacité ammoniac européenne. <span class='punch'>La chaîne alimentaire vacille</span> : sans ammoniac, pas d'engrais ; sans engrais, pas de récolte 2023.",
-      "Les ménages européens commencent à recevoir leurs factures hivernales prévisionnelles. <span class='punch'>+200%, +400% pour les contrats variables</span>. Les politiques improvisent des boucliers tarifaires, des chèques énergie, des plafonds, dans une cacophonie de mesures nationales incohérentes.",
-      "Sur ce terrain, le carburant est à <span class='punch'>€500/unit — le record</span>. Bouger un tank coûte presque autant qu'une mauvaise position. C'est exactement la sensation d'un trader gaz en août 2022 : chaque décision pèse, chaque hedge se paie cash, chaque erreur coûte le bonus annuel.",
-      "Cette mission, c'est l'apogée de la crise gazière. Comprendre comment elle s'est nouée, c'est comprendre pourquoi l'Europe a basculé idéologiquement sur les renouvelables, l'hydrogène et le nucléaire — par nécessité, pas par conviction."
-    ], en: [
-      "Monday 22 August 2022. Drought paralyses Europe: the Rhine is no longer navigable, the Po is dry, and French nuclear plants run at reduced load for lack of cooling water. Everything conspires to push gas to its peak.",
-      "At 11 AM London time, TTF month-ahead crosses the symbolic €343/MWh threshold. <span class='punch'>All-time absolute record</span>. The contract equates to $40/MMBtu — about 20× the pre-2021 average. Gas costs more per ton than gold.",
-      "ArcelorMittal announces blast furnace shutdowns in Hamburg and Dunkirk. Yara, the Norwegian fertiliser giant, closes 60% of its European ammonia capacity. <span class='punch'>The food chain wobbles</span>: no ammonia, no fertiliser; no fertiliser, no 2023 harvest.",
-      "European households start receiving winter bill forecasts. <span class='punch'>+200%, +400% for variable contracts</span>. Politicians improvise price shields, energy cheques, caps, in a cacophony of inconsistent national measures.",
-      "On this terrain, fuel is at <span class='punch'>€500/unit — the record</span>. Moving a tank costs nearly as much as a bad position. This is exactly how a gas trader felt in August 2022: every decision weighs, every hedge is paid cash, every mistake costs the annual bonus.",
-      "This mission is the gas crisis apogee. Understanding how it knotted is understanding why Europe ideologically pivoted to renewables, hydrogen and nuclear — by necessity, not conviction."
-    ] },
+    story: { fr: ["22 aout 2022. Secheresse, Rhin non navigable. TTF month-ahead a 343 EUR/MWh, record absolu."], en: ["22 August 2022. Drought, Rhine unnavigable. TTF month-ahead at 343 EUR/MWh, all-time record."] },
     warn: "Pic gaz historique. Carburant max.",
-    funfact: { fr: [
-      "Le 22 août 2022 : <span class='punch'>TTF €343/MWh</span>, soit environ 20× la moyenne pré-crise. À l'époque, certains analystes ont sérieusement modélisé des scénarios de €500/MWh — qui ne se sont heureusement jamais réalisés.",
-      "Mathématique amusante : à €343/MWh, <span class='punch'>1 MWh de gaz valait plus qu'1 once d'or</span> en équivalent énergétique. Les bureaux de Goldman Sachs et JP Morgan ont organisé des dégustations pour célébrer cette parité inédite.",
-      "Facture import énergétique UE : <span class='punch'>€313 milliards en 2021, €693 milliards en 2022</span>. Soit +€380 milliards en un an, l'équivalent du budget annuel de la France. Le plus gros transfert de richesse extra-européen de l'histoire moderne.",
-      "Conséquence : naissance du REMIT 2.0 et renforcement de l'ACER pour surveiller les manipulations sur le TTF. <span class='punch'>Des enquêtes pour 'abus de position dominante' ont été ouvertes</span> sur certains traders gaziers — affaire toujours en cours en 2026.",
-      "Anecdote : Yara aurait pendant deux semaines acheté son gaz directement aux Norvégiens via un contrat bilatéral hors-marché, à un prix négocié <span class='punch'>40% sous le TTF</span>. La Commission européenne a discrètement validé l'arrangement pour préserver l'industrie.",
-      "L'événement a accéléré le développement de l'hydrogène vert européen : <span class='punch'>+€20 milliards d'investissements annoncés en 6 mois</span> post-pic. La promesse étant d'avoir une alternative à l'ammoniac fossile dès 2028-2030."
-    ], en: [
-      "22 August 2022: <span class='punch'>TTF €343/MWh</span>, about 20× the pre-crisis average. At the time, some analysts seriously modelled €500/MWh scenarios — which fortunately never materialised.",
-      "Fun maths: at €343/MWh, <span class='punch'>1 MWh of gas was worth more than 1 ounce of gold</span> in energy equivalent. Goldman Sachs and JP Morgan desks organised tastings to celebrate this unprecedented parity.",
-      "EU energy import bill: <span class='punch'>€313 billion in 2021, €693 billion in 2022</span>. That's +€380 billion in one year, the equivalent of France's annual budget. The largest extra-European wealth transfer in modern history.",
-      "Consequence: birth of REMIT 2.0 and reinforcement of ACER to monitor TTF manipulation. <span class='punch'>'Abuse of dominant position' investigations were opened</span> on certain gas traders — case still ongoing in 2026.",
-      "Story: Yara reportedly purchased gas directly from Norwegians via bilateral off-market contract for two weeks, at a price negotiated <span class='punch'>40% below TTF</span>. The European Commission quietly validated the arrangement to preserve industry.",
-      "The event accelerated European green hydrogen development: <span class='punch'>+€20 billion in announced investments within 6 months</span> post-peak. The promise being to have an alternative to fossil ammonia by 2028-2030."
-    ] },
+    funfact: { fr: ["A 343 EUR/MWh, 1 MWh de gaz valait plus qu'1 once d'or. Facture import UE : 693 milliards en 2022."], en: ["At 343 EUR/MWh, 1 MWh of gas was worth more than 1 ounce of gold. EU import bill: 693bn in 2022."] },
     unlock: 'EVENT #04' },
   event4: { type: 'event', flag: '🇩🇪', date: 'THU · 12 DEC 2024', zone: 'GERMANY · DUNKELFLAUTE', diff: 'LEGENDARY', stars: 4,
     prices: [180,175,170,168,172,210,285,420,580,540,450,380,360,380,440,580,780,936,720,520,380,290,240,210],
     weather: { icon: '🌫', text: '-3°C · DARK CALM', windBase: 0.3, type: 'fog', sky: ['#2A3540','#0F1A20','#001219'] },
     genmix: [{pct:42,color:'#001219',name:'COAL'},{pct:30,color:'#BB3E03',name:'GAS'},{pct:18,color:'#9B2226',name:'IMPORT'},{pct:5,color:'#94D2BD',name:'WIND'},{pct:3,color:'#0A9396',name:'HYDRO'},{pct:2,color:'#E9D8A6',name:'SOLAR'}],
     timerSec: 15, reward: 3800, freeWeapon: 'bess_boost', fuelPrice: 320, title: 'THE GREAT DUNKELFLAUTE',
-    story: { fr: [
-      "Jeudi 12 décembre 2024, 8h. L'Allemagne se réveille sous un brouillard glacial qui s'étend de la Frise à la Bavière. Anticyclone bloquant, températures négatives, et surtout : <span class='punch'>vent à 0.3 m/s</span> sur tout le territoire. Le pire scénario que les modélisateurs avaient redouté.",
-      "Les 70 GW d'éolien installé produisent <span class='punch'>5 GW</span>. Les 88 GW de photovoltaïque produisent 1 GW en pic. Le système allemand mobilise tout son charbon, son gaz, son hydraulique, et toujours il manque <span class='punch'>11 GW d'imports européens</span> pour boucler le bilan.",
-      "À 17h-18h, le prix day-ahead allemand atteint <span class='punch'>€936/MWh</span> — record absolu depuis 2006. La France est devenue l'exportatrice de dernier recours : son nucléaire et son hydro tournent à plein régime pour sauver le voisin de l'est.",
-      "Les chaînes d'information allemandes interrompent leurs programmes pour des bulletins énergie. <span class='punch'>'Stromknappheit'</span> (pénurie d'électricité) devient le mot le plus googlé du jour. Le gouvernement Habeck convoque une cellule de crise.",
-      "Sur le terrain de jeu, BESS Boost t'est offert. C'est volontaire : <span class='punch'>les batteries sont les seules à faire fortune en Dunkelflaute</span>, capturant des spreads de €500-700/MWh sur quelques heures. Les développeurs BESS allemands ont fêté Noël en avance.",
-      "Carburant à €320/unit. Bouger te coûte cher, mais parfois c'est nécessaire. Cette journée a redéfini la valorisation des actifs flexibles en Europe : <span class='punch'>la résilience est devenue le nouveau prix de référence</span>."
-    ], en: [
-      "Thursday 12 December 2024, 8 AM. Germany wakes under an icy fog stretching from Frisia to Bavaria. Blocking high pressure, sub-zero temperatures, and above all: <span class='punch'>wind at 0.3 m/s</span> across the entire country. The worst scenario grid modellers had feared.",
-      "The 70 GW of installed wind produce <span class='punch'>5 GW</span>. The 88 GW of solar produce 1 GW at peak. The German system mobilises all its coal, gas, hydro, and still <span class='punch'>11 GW of European imports</span> are needed to balance.",
-      "At 5-6 PM, German day-ahead price reaches <span class='punch'>€936/MWh</span> — absolute record since 2006. France becomes exporter of last resort: nuclear and hydro running flat out to save the eastern neighbour.",
-      "German news channels interrupt programming for energy bulletins. <span class='punch'>'Stromknappheit'</span> (electricity shortage) becomes the most googled word of the day. The Habeck government convenes a crisis unit.",
-      "On the playing field, BESS Boost is gifted. This is intentional: <span class='punch'>batteries are the only ones making fortunes in Dunkelflaute</span>, capturing €500-700/MWh spreads over a few hours. German BESS developers celebrated Christmas early.",
-      "Fuel at €320/unit. Moving costs dearly, but sometimes necessary. This day redefined flexible asset valuation in Europe: <span class='punch'>resilience became the new benchmark price</span>."
-    ] },
-    warn: "Pic €936. Mur de prix. BESS Boost offert.",
-    funfact: { fr: [
-      "12 décembre 2024, 17h-18h : <span class='punch'>€936/MWh</span> sur le day-ahead allemand. C'est le prix horaire le plus élevé depuis novembre 2006 — où le record était lié à une vague de froid russe ayant entièrement gelé le marché.",
-      "L'Allemagne a importé <span class='punch'>11 GW depuis la France</span> ce jour-là, soit environ 15% de sa consommation. Pour mémoire : la France était l'importatrice nette face à l'Allemagne sur 2022-2023 — l'inversion totale en 2024 est un signal géopolitique fort.",
-      "Pour un BESS allemand avec un profil 4h-6h optimisé, les revenus de cette seule journée représentaient <span class='punch'>2 à 3× les revenus moyens annuels</span>. Plusieurs opérateurs ont publié leurs P&L journaliers en triomphe sur LinkedIn.",
-      "Conséquence : <span class='punch'>+40% d'investissements BESS annoncés en Allemagne sur Q1 2025</span> selon BloombergNEF. Le développeur Eco Stor a levé €600M en mars 2025 sur cette dynamique.",
-      "La FfE (Forschungsstelle für Energiewirtschaft) a publié en mars 2025 une étude estimant que sans interconnexions européennes, l'Allemagne aurait eu un <span class='punch'>blackout partiel</span> ce jour-là. Le couplage européen a littéralement sauvé la mise.",
-      "Anecdote : un trader BESS chez RWE aurait gagné un bonus annuel équivalent à <span class='punch'>3 ans de salaire</span> sur cette seule journée. Le ratio risk/reward de la classe d'actifs ne s'est jamais aussi bien démontré."
-    ], en: [
-      "12 December 2024, 5-6 PM: <span class='punch'>€936/MWh</span> on German day-ahead. This is the highest hourly price since November 2006 — where the record was tied to a Russian cold wave that entirely froze the market.",
-      "Germany imported <span class='punch'>11 GW from France</span> that day, about 15% of consumption. For reference: France was the net importer facing Germany in 2022-2023 — total reversal in 2024 is a strong geopolitical signal.",
-      "For a German BESS with optimised 4-6h profile, revenues from this single day represented <span class='punch'>2-3× average annual revenues</span>. Several operators triumphantly published daily P&Ls on LinkedIn.",
-      "Consequence: <span class='punch'>+40% BESS investments announced in Germany in Q1 2025</span> per BloombergNEF. Developer Eco Stor raised €600M in March 2025 on this momentum.",
-      "FfE (Forschungsstelle für Energiewirtschaft) published in March 2025 a study estimating that without European interconnections, Germany would have had a <span class='punch'>partial blackout</span> that day. European coupling literally saved the day.",
-      "Story: a BESS trader at RWE reportedly earned an annual bonus equivalent to <span class='punch'>3 years of salary</span> on this single day. The risk/reward ratio of the asset class never demonstrated itself so well."
-    ] },
+    story: { fr: ["12 decembre 2024. Vent a 0.3 m/s sur tout le pays. Prix day-ahead allemand a 936 EUR/MWh a 18h."], en: ["12 December 2024. Wind at 0.3 m/s nationwide. German day-ahead at 936 EUR/MWh at 6pm."] },
+    warn: "Pic 936. Mur de prix. BESS Boost offert.",
+    funfact: { fr: ["936 EUR/MWh, prix horaire le plus eleve depuis 2006. L'Allemagne a importe 11 GW depuis la France."], en: ["936 EUR/MWh, highest hourly price since 2006. Germany imported 11 GW from France."] },
     unlock: 'EVENT #05' },
   event5: { type: 'event', flag: '🇪🇸', date: 'MON · 28 APR 2025 · 12:33', zone: 'IBERIA · BLACKOUT', diff: 'LEGENDARY', stars: 5,
     prices: [18,12,8,5,8,12,28,45,35,20,5,-5,-8,-12,0,0,0,0,0,0,25,48,65,55],
     weather: { icon: '☀', text: '24°C · OVERVOLTAGE', windBase: 1.8, type: 'sunny', sky: ['#A06030','#9B2226','#001219'] },
     genmix: [{pct:60,color:'#E9D8A6',name:'SOLAR'},{pct:18,color:'#94D2BD',name:'WIND'},{pct:12,color:'#EE9B00',name:'NUKE'},{pct:6,color:'#0A9396',name:'HYDRO'},{pct:3,color:'#BB3E03',name:'GAS'},{pct:1,color:'#9B2226',name:'OTHER'}],
     timerSec: 14, reward: 5000, forceCrash: true, fuelPrice: 60, title: 'THE GREAT BLACKOUT',
-    story: { fr: [
-      "Lundi 28 avril 2025, 12:33 CEST. L'Espagne brille sous un soleil de printemps. La mix électrique ibérique affiche <span class='punch'>78% de renouvelables</span> — 60% de solaire, 18% d'éolien. Le rêve de la transition énergétique, vu par satellite, en haute définition.",
-      "12:32:55 : Une oscillation de tension apparaît dans la zone Granada-Sevilla. Quatre secondes plus tard, deux centrales solaires de 200 MW se déconnectent automatiquement par protection. <span class='punch'>15 GW disparaissent du réseau en 5 secondes</span>.",
-      "La fréquence européenne chute à 48 Hz — niveau critique. Le système ibérique se sépare automatiquement du continent au-dessus des Pyrénées. <span class='punch'>47 millions de personnes basculent dans le noir</span> en Espagne, Portugal et certaines parties du sud-ouest français.",
-      "Aéroports paralysés à Madrid, Barcelone, Lisbonne. Métros bloqués entre stations. Hôpitaux sur groupes électrogènes. Stations-service incapables de pomper. <span class='punch'>L'Espagne moderne découvre sa dépendance électrique absolue</span> en 8 heures de coupure.",
-      "Sur le terrain de jeu, Market Crash est garanti — la courbe va se réorganiser violemment. <span class='punch'>Les renouvelables ne sont pas coupables</span>, l'enquête le démontrera : ce sont les protections de tension fragmentées, l'absence de masse rotative, et le sous-dimensionnement des interconnexions.",
-      "Carburant à €60/unit (les prix s'effondrent dans le chaos). Cette mission est l'épreuve ultime : <span class='punch'>maîtriser un marché en pleine recomposition</span>, c'est l'avenir des originators européens dans un système décarboné."
-    ], en: [
-      "Monday 28 April 2025, 12:33 CEST. Spain shines under a spring sun. The Iberian electricity mix displays <span class='punch'>78% renewables</span> — 60% solar, 18% wind. The energy transition dream, seen from satellite, in HD.",
-      "12:32:55: A voltage oscillation appears in the Granada-Sevilla zone. Four seconds later, two 200 MW solar plants automatically disconnect for protection. <span class='punch'>15 GW disappear from the grid in 5 seconds</span>.",
-      "European frequency drops to 48 Hz — critical level. The Iberian system automatically separates from the continent above the Pyrenees. <span class='punch'>47 million people plunge into darkness</span> across Spain, Portugal and parts of southwestern France.",
-      "Airports paralysed in Madrid, Barcelona, Lisbon. Metros stuck between stations. Hospitals on generators. Petrol stations unable to pump. <span class='punch'>Modern Spain discovers its absolute electricity dependency</span> over 8 hours of blackout.",
-      "On the playing field, Market Crash is guaranteed — the curve will violently reorganise. <span class='punch'>Renewables are not guilty</span>, the investigation will demonstrate: fragmented voltage protections, lack of rotating mass, and undersized interconnections are.",
-      "Fuel at €60/unit (prices collapse in chaos). This mission is the ultimate test: <span class='punch'>mastering a market in full recomposition</span> is the future of European originators in a decarbonised system."
-    ] },
-    warn: "Plus grand blackout EU depuis 20 ans. Crash forcé.",
-    funfact: { fr: [
-      "28 avril 2025, 12:33 : <span class='punch'>plus grand blackout européen depuis 20 ans</span>. Aucun précédent à cette échelle depuis 2003 (Italie) ou 2006 (Allemagne-France). Les manuels de gestion réseau ont été réécrits.",
-      "Cause technique (rapport ENTSO-E final, septembre 2025) : oscillations de tension dans le sud-ouest espagnol + contrôle de tension fragmenté entre opérateurs + manque de masse rotative synchrone. <span class='punch'>Ce n'est PAS la faute des renouvelables</span> — c'est la faute du système qui ne s'est pas adapté.",
-      "Taux d'interconnexion ibérique : <span class='punch'>3.4% de la capacité installée vs cible UE de 10-15%</span>. La péninsule ibérique reste une 'île électrique' malgré 20 ans de promesses européennes d'investissement dans les interconnexions transfrontalières.",
-      "Coût économique estimé : <span class='punch'>€2-4 milliards</span> pour l'Espagne et le Portugal en 8 heures. La majeure partie absorbée par les industriels via pertes de production, dégradations matérielles, et indemnisations contractuelles.",
-      "Conséquence réglementaire : la CNMC espagnole a accéléré en septembre 2025 le déploiement de <span class='punch'>compensateurs synchrones</span> et de batteries grid-forming pour reconstituer la stabilité du réseau ibérique. Plan d'investissement à €8 milliards d'ici 2030.",
-      "Anecdote : le 28 avril, certains traders énergétiques européens ont vu leurs <span class='punch'>positions intraday se figer pendant 6 heures</span> faute de marché spot fonctionnel. Plusieurs poursuites contre les courtiers sont en cours pour défaillance de plateforme."
-    ], en: [
-      "28 April 2025, 12:33: <span class='punch'>largest European blackout in 20 years</span>. No precedent at this scale since 2003 (Italy) or 2006 (Germany-France). Grid management textbooks have been rewritten.",
-      "Technical cause (ENTSO-E final report, September 2025): voltage oscillations in southwestern Spain + fragmented voltage control between operators + lack of synchronous rotating mass. <span class='punch'>It's NOT renewables' fault</span> — it's the fault of a system that didn't adapt.",
-      "Iberian interconnection rate: <span class='punch'>3.4% of installed capacity vs EU target of 10-15%</span>. The Iberian peninsula remains an 'electrical island' despite 20 years of European promises to invest in cross-border interconnections.",
-      "Estimated economic cost: <span class='punch'>€2-4 billion</span> for Spain and Portugal in 8 hours. Most absorbed by industrials via production losses, material damage, and contractual compensation.",
-      "Regulatory consequence: Spanish CNMC accelerated in September 2025 the deployment of <span class='punch'>synchronous compensators</span> and grid-forming batteries to rebuild Iberian grid stability. €8 billion investment plan through 2030.",
-      "Story: on 28 April, some European energy traders saw their <span class='punch'>intraday positions freeze for 6 hours</span> due to non-functional spot market. Several lawsuits against brokers are ongoing for platform failure."
-    ] },
+    story: { fr: ["28 avril 2025, 12:33. 15 GW disparaissent en 5 secondes. 47 millions de personnes dans le noir."], en: ["28 April 2025, 12:33. 15 GW disappear in 5 seconds. 47 million people in the dark."] },
+    warn: "Plus grand blackout EU depuis 20 ans. Crash force.",
+    funfact: { fr: ["Ce n'est PAS la faute des renouvelables : protections de tension fragmentees, manque de masse rotative."], en: ["It's NOT renewables' fault: fragmented voltage protections, lack of rotating mass."] },
     unlock: 'EVENT #06' },
   event6: { type: 'event', flag: '🇩🇪', date: 'EASTER · 30 MAR 2024 · 12:45', zone: 'GERMANY · SAHARAN DUST', diff: 'LEGENDARY', stars: 5,
     prices: [38,32,28,25,28,35,55,95,145,220,380,580,4980,1850,450,180,95,75,85,105,95,75,58,48],
     weather: { icon: '🌫', text: '15°C · SAHARAN DUST', windBase: 1.0, type: 'fog', sky: ['#A06030','#BB3E03','#005F73'] },
-    genmix: [{pct:28,color:'#E9D8A6',name:'SOLAR↓'},{pct:22,color:'#94D2BD',name:'WIND'},{pct:20,color:'#001219',name:'COAL'},{pct:18,color:'#BB3E03',name:'GAS'},{pct:8,color:'#0A9396',name:'HYDRO'},{pct:4,color:'#9B2226',name:'IMPORT'}],
-    timerSec: 13, reward: 4500, freeWeapon: 'capture_strike', fuelPrice: 220, title: 'THE SAHARAN DUST SPIKE',
-    story: { fr: [
-      "Dimanche de Pâques 2024. Berlin se réveille sous un ciel jaune-orangé surnaturel. Les voitures sont couvertes d'une fine poudre rouge, et chaque dépôt parisien fait la même constatation : <span class='punch'>les poussières du Sahara recouvrent l'Europe centrale</span>, transportées sur 3000 km par un sirocco exceptionnel.",
-      "L'événement météorologique commence vendredi 28 mars : une dépression sur le Maroc soulève des millions de tonnes de sable. Les modèles de prévision, calibrés sur des conditions normales, sous-estiment massivement l'impact sur les panneaux photovoltaïques européens.",
-      "12:45 le dimanche : la production solaire allemande s'effondre. Les panneaux, opacifiés par les poussières, perdent <span class='punch'>jusqu'à 80% de leur rendement instantané</span>. Sur le réseau, c'est l'équivalent de 2 GW qui disparaît en 15 minutes — l'équivalent de deux centrales nucléaires.",
-      "Les algorithmes de trading day-ahead, calibrés sur des forecast météo classiques, ne voient pas venir le spike. <span class='punch'>Le prix horaire bondit à ~€5000/MWh</span> entre 12h45 et 13h. Ceux qui suivaient les bulletins météorologiques sahariens en arabe se sont fait une année.",
-      "Capture Strike t'est offert pour cette mission — il cannibalise les pics renouvelables et créé un cratère sur ton terrain. <span class='punch'>C'est exactement ce que les poussières sahariennes ont fait au solaire allemand</span> : un événement de capture aigu qui détruit la rentabilité instantanée.",
-      "Carburant à €220/unit. Bouger reste possible, mais cher. Cette mission t'apprend que <span class='punch'>la météo extrême est devenue une variable financière de premier ordre</span> sur les marchés électriques européens."
-    ], en: [
-      "Easter Sunday 2024. Berlin wakes under an unnatural yellow-orange sky. Cars covered in fine red powder, every Parisian car park reporting the same observation: <span class='punch'>Saharan dust covers central Europe</span>, transported 3000 km by an exceptional sirocco.",
-      "The weather event began Friday 28 March: a depression over Morocco lifted millions of tons of sand. Forecast models, calibrated on normal conditions, massively underestimated the impact on European photovoltaic panels.",
-      "12:45 Sunday: German solar production collapses. Panels, opacified by dust, lose <span class='punch'>up to 80% of instantaneous yield</span>. On the grid, that's 2 GW disappearing in 15 minutes — equivalent to two nuclear plants.",
-      "Day-ahead trading algorithms, calibrated on classic weather forecasts, don't see the spike coming. <span class='punch'>Hourly price jumps to ~€5000/MWh</span> between 12:45 and 1 PM. Those who followed Arabic Saharan weather bulletins made their year.",
-      "Capture Strike is gifted for this mission — it cannibalises renewable peaks and creates a crater on your terrain. <span class='punch'>This is exactly what Saharan dust did to German solar</span>: an acute capture event destroying instantaneous profitability.",
-      "Fuel at €220/unit. Moving is still possible, but expensive. This mission teaches you that <span class='punch'>extreme weather has become a first-order financial variable</span> on European electricity markets."
-    ] },
-    warn: "Spike à €5000. Capture Strike offert.",
-    funfact: { fr: [
-      "30 mars 2024 : les poussières sahariennes ont réduit la production solaire allemande de <span class='punch'>~2 GW en pic instantané</span>. C'est l'événement de cannibalisation météorologique le plus violent jamais enregistré sur l'EPEX allemand.",
-      "Le prix horaire a atteint <span class='punch'>~€5000/MWh entre 12h45 et 13h</span> — soit ~50× le prix moyen. La durée a été de moins de 30 minutes, ce qui rend l'événement quasi impossible à hedger pour les actifs renouvelables. Les BESS rapides ont raflé tout le profit.",
-      "Leçon majeure pour l'industrie : il faut désormais <span class='punch'>intégrer les aérosols et les phénomènes météorologiques rares dans les forecast solaires court-terme</span>. Plusieurs sociétés (EnAppSys, Solargis) ont lancé des services dédiés post-événement.",
-      "Conséquence indirecte : développement explosif des <span class='punch'>algorithmes de prédiction météo basés sur les données satellitaires haute fréquence</span> (Sentinel-2, NASA MODIS). L'IA appliquée à la météo est devenue un produit d'origination à part entière.",
-      "Anecdote : un trader gaz de chez Vitol qui suivait par habitude les modèles météorologiques marocains a anticipé l'événement <span class='punch'>72 heures à l'avance</span>. Il a positionné un long sur le power allemand intraday — bonus annuel sécurisé en une trade.",
-      "Cet événement a été ajouté en septembre 2024 au <span class='punch'>set d'événements de stress test des modèles VaR</span> chez les principaux énergéticiens européens. Saharan dust + Dunkelflaute combinés sont devenus le scénario tail-risk de référence."
-    ], en: [
-      "30 March 2024: Saharan dust reduced German solar production by <span class='punch'>~2 GW at instant peak</span>. This is the most violent meteorological cannibalisation event ever recorded on German EPEX.",
-      "Hourly price reached <span class='punch'>~€5000/MWh between 12:45 and 1 PM</span> — about 50× average price. Duration was less than 30 minutes, making the event nearly impossible to hedge for renewable assets. Fast BESS captured all the profit.",
-      "Major industry lesson: it's now necessary to <span class='punch'>integrate aerosols and rare weather phenomena into short-term solar forecasts</span>. Several companies (EnAppSys, Solargis) launched dedicated services post-event.",
-      "Indirect consequence: explosive development of <span class='punch'>weather prediction algorithms based on high-frequency satellite data</span> (Sentinel-2, NASA MODIS). AI applied to weather has become an origination product in its own right.",
-      "Story: a Vitol gas trader who habitually followed Moroccan weather models anticipated the event <span class='punch'>72 hours in advance</span>. He positioned long German intraday power — annual bonus secured in one trade.",
-      "This event was added in September 2024 to the <span class='punch'>VaR model stress test event set</span> at major European energy companies. Saharan dust + Dunkelflaute combined became the reference tail-risk scenario."
-    ] },
+    genmix: [{pct:28,color:'#E9D8A6',name:'SOLAR'},{pct:22,color:'#94D2BD',name:'WIND'},{pct:20,color:'#001219',name:'COAL'},{pct:18,color:'#BB3E03',name:'GAS'},{pct:8,color:'#0A9396',name:'HYDRO'},{pct:4,color:'#9B2226',name:'IMPORT'}],
+    timerSec: 13, reward: 4500, freeWeapon: 'price_spike', fuelPrice: 220, title: 'THE SAHARAN DUST SPIKE',
+    story: { fr: ["Paques 2024. Poussieres du Sahara, solaire allemand -80%. Spike a ~5000 EUR/MWh entre 12h45 et 13h."], en: ["Easter 2024. Saharan dust, German solar -80%. Spike to ~5000 EUR/MWh between 12:45 and 1pm."] },
+    warn: "Spike a 5000. Price Spike offert.",
+    funfact: { fr: ["~50x le prix moyen sur moins de 30 min. Quasi impossible a hedger : les BESS rapides ont tout rafle."], en: ["~50x average price over under 30 min. Nearly unhedgeable: fast BESS captured everything."] },
     unlock: 'EVENT #07' },
   event7: { type: 'event', flag: '🇪🇺', date: 'MON · 15 JUL 2024', zone: 'EUROPE · PRICE WALL', diff: 'HARD', stars: 4,
     prices: [85,78,72,68,72,88,125,165,195,220,240,260,270,265,250,235,245,280,320,285,220,165,125,95],
     weather: { icon: '🔥', text: '38°C · EAST HEATWAVE', windBase: 2.0, type: 'heat', sky: ['#A06030','#BB3E03','#005F73'] },
     genmix: [{pct:28,color:'#001219',name:'COAL'},{pct:22,color:'#BB3E03',name:'GAS'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:15,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:7,color:'#9B2226',name:'IMPORT'}],
     timerSec: 17, reward: 3200, fuelPrice: 180, title: 'EASTERN PRICE WALL',
-    story: { fr: [
-      "Été 2024. Canicule exceptionnelle sur l'Europe de l'Est et les Balkans. Bucarest, Sofia, Budapest enregistrent des températures au-dessus de 40°C pendant 10 jours consécutifs. La demande en climatisation explose dans des pays peu équipés et mal préparés.",
-      "Le 15 juillet à 14h, le marché spot affiche une carte d'Europe presque géologique : <span class='punch'>Bulgarie à €260/MWh, Allemagne à €40/MWh</span>. Un écart de 6,5× entre deux pays distants de 800 km, sur le même réseau, dans le même marché supposément intégré.",
-      "Les interconnexions est-ouest sont saturées : <span class='punch'>les flux maximaux théoriques sont atteints et bloqués</span>. Les pays d'Europe centrale (Pologne, Roumanie, Hongrie) deviennent des goulots d'étranglement où s'accumulent les prix élevés que l'ouest ne peut plus absorber.",
-      "Ce n'est pas un événement physique catastrophique : pas de blackout, pas de coupures massives. C'est <span class='punch'>le coût exact de la non-Europe énergétique</span> — une démonstration en temps réel que l'intégration de marché ne suit pas l'intégration politique.",
-      "Sur ton terrain, la courbe affiche un plateau élevé persistant. <span class='punch'>Pas de pic violent, mais des prix soutenus pendant 18 heures</span>. C'est le genre d'événement qui crée des P&L positifs réguliers sur les BESS bien positionnés, sans nécessiter d'extreme weather.",
-      "Carburant à €180/unit. Cette mission révèle un défi structurel européen rarement médiatisé : <span class='punch'>l'asymétrie infrastructurelle entre ouest et est</span> coûte des milliards en pertes de welfare social chaque année."
-    ], en: [
-      "Summer 2024. Exceptional heatwave across Eastern Europe and the Balkans. Bucharest, Sofia, Budapest record temperatures above 40°C for 10 consecutive days. Air conditioning demand explodes in countries poorly equipped and unprepared.",
-      "15 July at 2 PM, the spot market displays an almost geological map of Europe: <span class='punch'>Bulgaria at €260/MWh, Germany at €40/MWh</span>. A 6.5× gap between two countries 800 km apart, on the same grid, in the same supposedly integrated market.",
-      "East-west interconnections are saturated: <span class='punch'>maximum theoretical flows are reached and blocked</span>. Central European countries (Poland, Romania, Hungary) become bottlenecks where high prices accumulate that the west can no longer absorb.",
-      "This is not a physical catastrophic event: no blackout, no massive cuts. It's <span class='punch'>the exact cost of non-Europe energy policy</span> — a real-time demonstration that market integration doesn't follow political integration.",
-      "On your terrain, the curve displays a persistent high plateau. <span class='punch'>No violent peak, but sustained prices for 18 hours</span>. The kind of event creating regular positive P&Ls on well-positioned BESS, without requiring extreme weather.",
-      "Fuel at €180/unit. This mission reveals a rarely publicised European structural challenge: <span class='punch'>infrastructural asymmetry between west and east</span> costs billions in social welfare losses each year."
-    ] },
+    story: { fr: ["Ete 2024. Canicule Est. Bulgarie a 260 EUR/MWh, Allemagne a 40 EUR/MWh. Interconnexions saturees."], en: ["Summer 2024. Eastern heatwave. Bulgaria at 260 EUR/MWh, Germany at 40 EUR/MWh. Saturated links."] },
     warn: "Spread est/ouest brutal. Terrain en plateau haut.",
-    funfact: { fr: [
-      "15 juillet 2024 : <span class='punch'>écart record Est/Ouest sur le marché européen day-ahead</span>. €260/MWh en Bulgarie, €40/MWh en Allemagne, pour la même heure et la même fonction sur la même grille électrique européenne.",
-      "Causes méthodologiques : à l'Est, le calcul de capacité d'échange utilise encore le <span class='punch'>NTC (Net Transfer Capacity)</span> — une méthode statique conservative. À l'Ouest, on utilise le flow-based, plus permissif. Les capacités allouées sont structurellement plus basses à l'Est.",
-      "Coût économique annuel des congestions : <span class='punch'>€8-12 milliards de welfare loss</span> selon les estimations ACER 2023. Soit l'équivalent d'une grosse autoroute énergétique européenne par an, perdue dans l'inefficacité de marché.",
-      "L'infrastructure réseau Est-européenne accuse <span class='punch'>20 à 30 ans de retard structurel</span> sur l'Ouest. Les investissements n'ont jamais été à la hauteur des promesses faites lors des élargissements UE de 2004 et 2007.",
-      "Conséquence : développement de <span class='punch'>PPA transfrontaliers via guarantees of origin (GoO) virtuels</span>. Plusieurs corporates allemands signent du PPA solaire roumain en achetant les attributs renouvelables tout en consommant physiquement en Allemagne — arbitrage réglementaire pur.",
-      "L'événement de juillet 2024 a relancé le débat sur la <span class='punch'>réforme du marché européen de l'électricité</span>. La Commission von der Leyen a annoncé en 2025 un paquet d'harmonisation des méthodes de capacité d'échange — adoption visée pour 2027."
-    ], en: [
-      "15 July 2024: <span class='punch'>record East/West gap on European day-ahead market</span>. €260/MWh in Bulgaria, €40/MWh in Germany, for the same hour and same function on the same European electricity grid.",
-      "Methodological causes: in the East, exchange capacity calculation still uses <span class='punch'>NTC (Net Transfer Capacity)</span> — a static conservative method. In the West, flow-based is used, more permissive. Allocated capacities are structurally lower in the East.",
-      "Annual economic cost of congestion: <span class='punch'>€8-12 billion welfare loss</span> per ACER 2023 estimates. The equivalent of a major European energy highway per year, lost in market inefficiency.",
-      "Eastern European grid infrastructure shows <span class='punch'>20-30 years of structural lag</span> versus the West. Investments never matched promises made during 2004 and 2007 EU enlargements.",
-      "Consequence: development of <span class='punch'>cross-border PPAs via virtual guarantees of origin (GoO)</span>. Several German corporates sign Romanian solar PPAs buying renewable attributes while physically consuming in Germany — pure regulatory arbitrage.",
-      "The July 2024 event relaunched debate on <span class='punch'>European electricity market reform</span>. The von der Leyen Commission announced in 2025 a harmonisation package for capacity calculation methods — adoption targeted for 2027."
-    ] },
+    funfact: { fr: ["Cout annuel des congestions : 8-12 milliards EUR de welfare loss selon l'ACER."], en: ["Annual congestion cost: 8-12 billion EUR welfare loss per ACER."] },
     unlock: 'EVENT #08' },
   event8: { type: 'event', flag: '🇪🇺', date: 'MAR 2026 · GAS SHOCK', zone: 'EUROPE · STORAGE CRISIS', diff: 'LEGENDARY', stars: 4,
     prices: [120,115,110,108,115,135,165,210,245,235,215,200,195,200,215,240,285,295,260,220,180,155,138,125],
     weather: { icon: '🌥', text: '6°C · LOW STORAGE', windBase: 1.5, type: 'cold', sky: ['#3A4550','#1A2530','#001219'] },
     genmix: [{pct:32,color:'#BB3E03',name:'GAS'},{pct:20,color:'#001219',name:'COAL'},{pct:18,color:'#EE9B00',name:'NUKE'},{pct:15,color:'#E9D8A6',name:'SOLAR'},{pct:10,color:'#94D2BD',name:'WIND'},{pct:5,color:'#0A9396',name:'HYDRO'}],
     timerSec: 16, reward: 4000, fuelPrice: 250, title: 'THE 2026 GAS SHOCK',
-    story: { fr: [
-      "Mars 2026. L'hiver européen aura été <span class='punch'>plus froid que prévu</span> — vagues de froid répétées sur l'Europe centrale, et un automne 2025 où l'éolien a sous-performé de 12% par rapport à la moyenne décennale. Les stocks gaz sortent de l'hiver à des niveaux historiquement bas.",
-      "Les inventaires AGSI tombent à <span class='punch'>~38% au 1er mars</span>, contre 55% moyenne historique. Pire encore : la trajectoire de remplissage estivale s'annonce difficile, car le LNG américain est mobilisé vers l'Asie (Chine en croissance, Japon post-Fukushima 2.0).",
-      "Sur les marchés forward, les pics se multiplient sur l'Allemagne, les Pays-Bas, l'Italie et la Belgique. <span class='punch'>+€2,5 milliards de coûts d'approvisionnement gaz en 10 jours</span> pour les industriels européens. Les contrats indexés explosent à nouveau.",
-      "L'Espagne et la France, peu dépendantes du gaz pour leur électricité, restent relativement épargnées. <span class='punch'>Le couplage européen tire toutefois leurs prix à la hausse</span> via les exports massifs vers leurs voisins. La diversification énergétique paie ses dividendes.",
-      "L'événement n'a pas la violence du choc de février 2022, mais sa <span class='punch'>persistance</span> est inquiétante. Les desks de trading commencent à modéliser des scénarios de pénurie gaz durable, et les CFO de chemicals européens convoquent leurs comités de risque.",
-      "Carburant à €250/unit. Cette mission représente <span class='punch'>la nouvelle normalité énergétique européenne</span> : pas de catastrophe spectaculaire, mais une volatilité structurellement plus haute, des marges fines, et des modèles à recalibrer en permanence."
-    ], en: [
-      "March 2026. The European winter was <span class='punch'>colder than expected</span> — repeated cold waves on Central Europe, and an autumn 2025 where wind underperformed by 12% vs decennial average. Gas stocks exit winter at historically low levels.",
-      "AGSI inventories fall to <span class='punch'>~38% on 1 March</span>, vs 55% historical average. Worse: summer refilling trajectory looks difficult, as American LNG is mobilised toward Asia (growing China, post-Fukushima 2.0 Japan).",
-      "On forward markets, peaks multiply on Germany, Netherlands, Italy and Belgium. <span class='punch'>+€2.5 billion in gas supply costs in 10 days</span> for European industrials. Indexed contracts explode again.",
-      "Spain and France, little dependent on gas for electricity, remain relatively spared. <span class='punch'>European coupling however pulls their prices up</span> via massive exports to neighbours. Energy diversification pays dividends.",
-      "The event lacks the violence of February 2022 shock, but its <span class='punch'>persistence</span> is worrying. Trading desks start modelling durable gas shortage scenarios, and European chemicals CFOs convene risk committees.",
-      "Fuel at €250/unit. This mission represents <span class='punch'>the new European energy normal</span>: no spectacular catastrophe, but structurally higher volatility, thin margins, and models requiring constant recalibration."
-    ] },
-    warn: "Volatilité élevée, hausse continue.",
-    funfact: { fr: [
-      "Mars 2026 : wholesale UE ~$95/MWh en moyenne, soit <span class='punch'>+10% vs 2024 et +20% vs la moyenne pré-Covid</span>. L'AIE prévoit que ce niveau pourrait devenir le nouveau plancher tant que la décarbonation gaz n'aura pas livré ses fruits.",
-      "Pays peu dépendants du gaz s'en sortent : France (nucléaire), Espagne (renouvelables + hydraulique), Pologne (charbon, hélas). <span class='punch'>La diversification énergétique = résilience</span> est devenue le mantra des stratèges énergétiques européens.",
-      "L'AIE prévoit dans son World Energy Outlook 2026 une <span class='punch'>baisse de 2% de la demande gaz UE en 2026</span>, principalement grâce à l'accélération des renouvelables et des pompes à chaleur. Les renouvelables installés en 2025 commencent à porter leurs fruits.",
-      "Le LNG américain représente désormais <span class='punch'>~45% des imports gaz UE</span>, contre 8% en 2021. Cette dépendance géopolitique nouvelle pose des questions stratégiques : qu'arrive-t-il si Washington restreint ses exports vers l'Europe ?",
-      "Les PPA gaz vert (biométhane, hydrogène vert) prennent leur envol : <span class='punch'>+180% de volumes signés en 2025</span>. Les corporates européens commencent à voir l'hydrogène comme un hedge naturel contre la volatilité gaz fossile.",
-      "Anecdote : un trader gaz chez Trafigura a publié en mars 2026 une note interne intitulée <span class='punch'>'La nouvelle ère de l'incertitude permanente'</span> — formulation reprise dans plusieurs rapports de banques. Le mot 'incertitude permanente' est devenu le concept structurant de la décennie."
-    ], en: [
-      "March 2026: EU wholesale ~$95/MWh average, that's <span class='punch'>+10% vs 2024 and +20% vs pre-Covid average</span>. IEA forecasts this level could become the new floor until gas decarbonisation delivers results.",
-      "Countries little dependent on gas fare well: France (nuclear), Spain (renewables + hydro), Poland (coal, alas). <span class='punch'>Energy diversification = resilience</span> has become the mantra of European energy strategists.",
-      "IEA forecasts in its 2026 World Energy Outlook a <span class='punch'>2% decline in EU gas demand in 2026</span>, mainly thanks to accelerated renewables and heat pumps. Renewables installed in 2025 start bearing fruit.",
-      "American LNG now represents <span class='punch'>~45% of EU gas imports</span>, vs 8% in 2021. This new geopolitical dependency poses strategic questions: what happens if Washington restricts exports to Europe?",
-      "Green gas PPAs (biomethane, green hydrogen) take off: <span class='punch'>+180% volumes signed in 2025</span>. European corporates begin to see hydrogen as a natural hedge against fossil gas volatility.",
-      "Story: a Trafigura gas trader published in March 2026 an internal note titled <span class='punch'>'The new era of permanent uncertainty'</span> — phrasing picked up in several bank reports. 'Permanent uncertainty' became the structuring concept of the decade."
-    ] },
+    story: { fr: ["Mars 2026. Hiver froid, stocks gaz bas (~38%). Volatilite persistante, marges fines."], en: ["March 2026. Cold winter, low gas stocks (~38%). Persistent volatility, thin margins."] },
+    warn: "Volatilite elevee, hausse continue.",
+    funfact: { fr: ["Wholesale UE ~95 USD/MWh, soit +20% vs la moyenne pre-Covid. Le LNG US = ~45% des imports."], en: ["EU wholesale ~95 USD/MWh, +20% vs pre-Covid. US LNG = ~45% of imports."] },
     unlock: 'ALL CLEARED' },
 };
 
@@ -1300,7 +951,7 @@ const state = {
   carouselIndex: 0, carouselList: [], carouselType: null,
   navigationOrigin: 'menu', gp: null, lang: 'fr',
   settings: { marketCrash: false, turnTimer: true },
-  difficulty: 'originator', // junior_analyst | originator | senior_trader | head_of_desk
+  difficulty: 'originator',
   progress: {
     rookie_summer_fr: 'current', junior_winter_fr: 'locked',
     senior_duck_curve_es: 'locked', senior_dunkelflaute_de: 'locked',
@@ -1316,11 +967,7 @@ function go(screen) {
   const cur = document.getElementById('screen-' + state.currentScreen);
   const next = document.getElementById('screen-' + screen);
   if (!next) return;
-  // Safety: clear 1v1 state whenever we navigate back to main menu
-  // (prevents leaking is1v1 into subsequent solo missions)
-  if (screen === 'menu') {
-    state.mp1v1 = null;
-  }
+  if (screen === 'menu') { state.mp1v1 = null; }
   cur.classList.remove('active');
   setTimeout(() => {
     next.classList.add('active');
@@ -1335,30 +982,18 @@ function go(screen) {
 }
 
 function updatePnLDisplay() { document.getElementById('pnlDisplay').textContent = '€' + state.pnl.toLocaleString(); }
-
-function openPnLEditor() {
-  document.getElementById('pnlInput').value = state.pnl;
-  document.getElementById('pnlModal').style.display = 'flex';
-}
-function closePnLEditor() {
-  document.getElementById('pnlModal').style.display = 'none';
-}
-function applyPnLPreset(amount) {
-  document.getElementById('pnlInput').value = amount;
-}
+function openPnLEditor() { document.getElementById('pnlInput').value = state.pnl; document.getElementById('pnlModal').style.display = 'flex'; }
+function closePnLEditor() { document.getElementById('pnlModal').style.display = 'none'; }
+function applyPnLPreset(amount) { document.getElementById('pnlInput').value = amount; }
 function savePnLEditor() {
   const raw = document.getElementById('pnlInput').value.replace(/[^0-9-]/g, '');
   const val = parseInt(raw, 10);
   if (isNaN(val)) return;
   state.pnl = Math.max(0, Math.min(999999999999, val));
-  updatePnLDisplay();
-  closePnLEditor();
-  pkSaveState();
+  updatePnLDisplay(); closePnLEditor(); pkSaveState();
 }
-
 function setLang(lang) { state.lang = lang; applyLang(); pkSaveState(); }
 
-// ===== DIFFICULTY =====
 const DIFF_PARAMS = {
   junior_analyst:  { aiErrorMult: 1.5,  aiPwrErrorMult: 1.4,  windMult: 0.7, pnlMult: 1.0, hideAids: false },
   originator:      { aiErrorMult: 1.0,  aiPwrErrorMult: 1.0,  windMult: 1.0, pnlMult: 1.0, hideAids: false },
@@ -1366,24 +1001,15 @@ const DIFF_PARAMS = {
   head_of_desk:    { aiErrorMult: 0.35, aiPwrErrorMult: 0.5,  windMult: 1.6, pnlMult: 2.0, hideAids: true },
 };
 function getDiff() { return DIFF_PARAMS[state.difficulty] || DIFF_PARAMS.originator; }
-
 function setDifficulty(d) {
   state.difficulty = d;
-  ['diffJA','diffOR','diffST','diffHD'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('active');
-  });
+  ['diffJA','diffOR','diffST','diffHD'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
   const map = { junior_analyst: 'diffJA', originator: 'diffOR', senior_trader: 'diffST', head_of_desk: 'diffHD' };
-  const btn = document.getElementById(map[d]);
-  if (btn) btn.classList.add('active');
-  const descMap = {
-    junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc',
-    senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc',
-  };
+  const btn = document.getElementById(map[d]); if (btn) btn.classList.add('active');
+  const descMap = { junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc', senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc' };
   setText('diffDescText', t(descMap[d]));
   pkSaveState();
 }
-
 function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 
 function applyLang() {
@@ -1400,8 +1026,7 @@ function applyLang() {
   setText('crashLbl', t('market_crash')); setText('crashDesc', t('market_crash_desc'));
   setText('timerLbl2', t('turn_timer')); setText('timerDesc', t('turn_timer_desc'));
   setText('diffLbl', t('difficulty'));
-  const descMap = { junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc',
-    senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc' };
+  const descMap = { junior_analyst: 'diff_easy_desc', originator: 'diff_normal_desc', senior_trader: 'diff_hard_desc', head_of_desk: 'diff_hardcore_desc' };
   setText('diffDescText', t(descMap[state.difficulty] || 'diff_normal_desc'));
   document.querySelectorAll('.back-btn').forEach(b => { if (b.textContent.includes('◀')) b.textContent = t('back'); });
   setText('careerTitle', '🏁 ' + t('career') + ' · ' + t('select_circuit'));
@@ -1415,10 +1040,8 @@ function applyLang() {
   setText('moveLbl', t('move')); setText('fuelLbl', t('fuel')); setText('fuelLbl2', t('fuel'));
   setText('turnLbl', t('turn')); setText('wxLbl', t('weather'));
   setText('windLblShort', t('wind')); setText('comboLbl', t('combo_label'));
-  const fb = document.getElementById('fireBtn');
-  if (fb && !fb.disabled) fb.textContent = t('fire');
-  const qb = document.querySelector('.quit-btn');
-  if (qb) qb.textContent = t('quit');
+  const fb = document.getElementById('fireBtn'); if (fb && !fb.disabled) fb.textContent = t('fire');
+  const qb = document.querySelector('.quit-btn'); if (qb) qb.textContent = t('quit');
   if (state.currentScreen === 'career' || state.currentScreen === 'events') renderCarousel(state.currentScreen);
   if (state.currentScreen === 'tankselect') renderTanks();
   if (state.currentScreen === 'armory') renderArmory();
@@ -1433,11 +1056,7 @@ function toggleSetting(key) {
   pkSaveState();
 }
 
-function goBackFromBriefing() {
-  if (state.gp) { abortGP(); return; }
-  const ms = state.currentMissionData;
-  if (ms && ms.type === 'event') go('events'); else go('career');
-}
+function goBackFromBriefing() { if (state.gp) { abortGP(); return; } const ms = state.currentMissionData; if (ms && ms.type === 'event') go('events'); else go('career'); }
 function goBackFromArmory() { go('briefing'); setTimeout(showBriefing, 50); }
 function goBackFromTank() { if (state.gp) { abortGP(); return; } go(state.navigationOrigin); }
 function abortGP() { if (confirm('Abandon Grand Prix?')) { state.gp = null; go('menu'); } }
@@ -1450,8 +1069,7 @@ function quitGame() {
 }
 
 function renderCarousel(type) {
-  state.carouselType = type;
-  state.carouselIndex = 0;
+  state.carouselType = type; state.carouselIndex = 0;
   const list = [];
   if (type === 'career') {
     const order = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es'];
@@ -1538,8 +1156,7 @@ function updateCarousel() {
 
 function carouselNav(d) {
   const newIdx = Math.max(0, Math.min(state.carouselList.length - 1, state.carouselIndex + d));
-  state.carouselIndex = newIdx;
-  updateCarousel();
+  state.carouselIndex = newIdx; updateCarousel();
 }
 
 function selectFromCarousel() {
@@ -1553,21 +1170,15 @@ function selectFromCarousel() {
 function renderTanks() {
   const grid = document.getElementById('tanksGrid');
   grid.innerHTML = '';
-  // 1v1 mode: show clearly who is currently picking
   if (state.mp1v1 && state.mp1v1.active) {
     const isP1 = state.mp1v1.phase === 'pickP1Tank';
     const name = isP1 ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
     const color = isP1 ? 'var(--aqua)' : 'var(--gold)';
-    const arrow = isP1 ? '◆' : '◆';
     const titleEl = document.getElementById('tankTitle');
-    if (titleEl) titleEl.innerHTML = `<span style="color:${color}">${arrow} ${name}</span> · ${t('select_tank')}`;
+    if (titleEl) titleEl.innerHTML = `<span style="color:${color}">◆ ${name}</span> · ${t('select_tank')}`;
     const hintEl = document.getElementById('tankHint');
-    if (hintEl) {
-      const tankPicked = isP1 ? 'P1' : 'P2';
-      hintEl.innerHTML = `<span style="color:${color}; font-weight:600">${name}</span> ${state.lang === 'fr' ? 'choisit son tank' : 'is picking their tank'}`;
-    }
+    if (hintEl) hintEl.innerHTML = `<span style="color:${color}; font-weight:600">${name}</span> ${state.lang === 'fr' ? 'choisit son tank' : 'is picking their tank'}`;
   } else {
-    // Solo mode: restore default title
     const titleEl = document.getElementById('tankTitle');
     if (titleEl) titleEl.textContent = '🎯 ' + t('select_tank');
     const hintEl = document.getElementById('tankHint');
@@ -1608,33 +1219,16 @@ function buildTankSVG(tank) {
 
 function confirmTank() {
   if (!state.currentTank) return;
-  // 1v1 multiplayer flow: sequential P1 then P2 tank pick
   if (state.mp1v1 && state.mp1v1.active) {
-    if (state.mp1v1.phase === 'pickP1Tank') {
-      state.mp1v1.p1Tank = state.currentTank;
-      state.mp1v1.phase = 'pickP1Weapons';
-      buildCurrentMissionData();
-      // Go straight to armoury for P1
-      goToArmory();
-      return;
-    }
-    if (state.mp1v1.phase === 'pickP2Tank') {
-      state.mp1v1.p2Tank = state.currentTank;
-      state.mp1v1.phase = 'pickP2Weapons';
-      // Mission data already built; go to armoury for P2
-      goToArmory();
-      return;
-    }
+    if (state.mp1v1.phase === 'pickP1Tank') { state.mp1v1.p1Tank = state.currentTank; state.mp1v1.phase = 'pickP1Weapons'; buildCurrentMissionData(); goToArmory(); return; }
+    if (state.mp1v1.phase === 'pickP2Tank') { state.mp1v1.p2Tank = state.currentTank; state.mp1v1.phase = 'pickP2Weapons'; goToArmory(); return; }
   }
-  // Solo flow (unchanged)
   buildCurrentMissionData();
-  go('briefing');
-  setTimeout(showBriefing, 50);
+  go('briefing'); setTimeout(showBriefing, 50);
 }
 
 function buildCurrentMissionData() {
   const key = state.currentMission;
-  // Custom missions are built inline by cmLaunch — don't overwrite them
   if (state.currentMissionData && state.currentMissionData.type === 'custom' && state.currentMissionData._key === key) return;
   if (EVENTS[key]) {
     state.currentMissionData = { ...EVENTS[key], _key: key };
@@ -1647,7 +1241,6 @@ function buildCurrentMissionData() {
   }
 }
 
-// Helper to get localized story/funfact (handles both old array form and new {fr,en} form)
 function localizedTexts(obj) {
   if (!obj) return [];
   if (Array.isArray(obj)) return obj;
@@ -1693,7 +1286,6 @@ function showBriefing() {
 }
 
 function startGrandPrix() { go('gp'); }
-
 function renderGPSetup() {
   const wrap = document.getElementById('gpSetup');
   wrap.innerHTML = '';
@@ -1712,7 +1304,6 @@ function renderGPSetup() {
     wrap.appendChild(div);
   });
 }
-
 function launchGP(cupKey) {
   const cup = GP_CUPS[cupKey];
   state.gp = { cup: cupKey, cupName: cup.name, races: [...cup.races], raceIdx: 0, scores: [] };
@@ -1720,16 +1311,13 @@ function launchGP(cupKey) {
   state.navigationOrigin = 'gp';
   go('tankselect');
 }
-
 function nextGPRace() {
   state.gp.raceIdx++;
   if (state.gp.raceIdx >= state.gp.races.length) { showGPPodium(); return; }
   state.currentMission = state.gp.races[state.gp.raceIdx];
   buildCurrentMissionData();
-  go('briefing');
-  setTimeout(showBriefing, 50);
+  go('briefing'); setTimeout(showBriefing, 50);
 }
-
 function showGPPodium() {
   const gp = state.gp;
   const totalScore = gp.scores.reduce((s, r) => s + r.score, 0);
@@ -1754,28 +1342,14 @@ function showGPPodium() {
   document.getElementById('victoryContent').innerHTML = html;
   go('victory');
 }
-
 function endGPNow() { state.gp = null; go('menu'); }
 
-// ===== MULTIPLAYER · 1v1 LOCAL =====
-// State machine: pickP1Tank → pickP1Weapons → pickP2Tank → pickP2Weapons → game
 function startLocal1v1() {
-  // Pick a random mission (same pool as Quick Battle)
   const choices = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es','event1'];
-  const missionKey = choices[Math.floor(Math.random() * choices.length)];
-  state.currentMission = missionKey;
+  state.currentMission = choices[Math.floor(Math.random() * choices.length)];
   state.navigationOrigin = 'multiplayer';
-  state.mp1v1 = {
-    active: true,
-    phase: 'pickP1Tank',  // pickP1Tank | pickP1Weapons | pickP2Tank | pickP2Weapons | inGame
-    p1Tank: null, p1Weapons: ['standard'],
-    p2Tank: null, p2Weapons: ['standard'],
-    p1Name: 'P1', p2Name: 'P2',
-  };
-  // Reset current selections
-  state.currentTank = null;
-  state.selectedWeapons = ['standard'];
-  // Pre-fill inputs with last known names (if any persisted via localStorage)
+  state.mp1v1 = { active: true, phase: 'pickP1Tank', p1Tank: null, p1Weapons: ['standard'], p2Tank: null, p2Weapons: ['standard'], p1Name: 'P1', p2Name: 'P2' };
+  state.currentTank = null; state.selectedWeapons = ['standard'];
   try {
     const saved = JSON.parse(localStorage.getItem('klockwars_1v1_names') || '{}');
     setTimeout(() => {
@@ -1788,135 +1362,86 @@ function startLocal1v1() {
   } catch (_) {}
   go('1v1-names');
 }
-
 function confirmNames1v1() {
   const p1 = (document.getElementById('p1NameInput').value || '').trim().slice(0, 14) || 'P1';
   const p2 = (document.getElementById('p2NameInput').value || '').trim().slice(0, 14) || 'P2';
-  state.mp1v1.p1Name = p1;
-  state.mp1v1.p2Name = p2;
-  // Persist last-used names for next time
-  try {
-    localStorage.setItem('klockwars_1v1_names', JSON.stringify({ p1, p2 }));
-  } catch (_) {}
+  state.mp1v1.p1Name = p1; state.mp1v1.p2Name = p2;
+  try { localStorage.setItem('klockwars_1v1_names', JSON.stringify({ p1, p2 })); } catch (_) {}
   go('tankselect');
 }
-
 function endLocal1v1() { state.mp1v1 = null; go('menu'); }
 
-// ─── CUSTOM MAP BUILDER ───
-// Generates a synthetic 24h power price curve from user parameters
-// and feeds it into the regular mission pipeline.
 state.cmConfig = { bias: 'evening', mode: 'solo' };
-state.cmPrices = null; // cached prices for the latest generation
-
+state.cmPrices = null;
 function cmInit() {
-  // Reset bias buttons to match state and redraw
   document.querySelectorAll('.cm-bias-btn').forEach(b => {
     const isActive = b.dataset.bias === state.cmConfig.bias;
     b.classList.toggle('active', isActive);
-    if (isActive) {
-      b.style.background = 'rgba(10,147,150,0.3)';
-      b.style.borderColor = 'var(--aqua)';
-    } else {
-      b.style.background = 'transparent';
-      b.style.borderColor = 'rgba(148,210,189,0.3)';
-    }
+    if (isActive) { b.style.background = 'rgba(10,147,150,0.3)'; b.style.borderColor = 'var(--aqua)'; }
+    else { b.style.background = 'transparent'; b.style.borderColor = 'rgba(148,210,189,0.3)'; }
   });
   cmRedraw();
 }
-
 function cmSetBias(bias, btn) {
   state.cmConfig.bias = bias;
-  document.querySelectorAll('.cm-bias-btn').forEach(b => {
-    b.classList.remove('active');
-    b.style.background = 'transparent';
-    b.style.borderColor = 'rgba(148,210,189,0.3)';
-  });
-  btn.classList.add('active');
-  btn.style.background = 'rgba(10,147,150,0.3)';
-  btn.style.borderColor = 'var(--aqua)';
+  document.querySelectorAll('.cm-bias-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.borderColor = 'rgba(148,210,189,0.3)'; });
+  btn.classList.add('active'); btn.style.background = 'rgba(10,147,150,0.3)'; btn.style.borderColor = 'var(--aqua)';
   cmRedraw();
 }
-
 function cmSetMode(mode, btn) {
   state.cmConfig.mode = mode;
-  document.querySelectorAll('.cm-mode-btn').forEach(b => {
-    b.classList.remove('active');
-    b.style.background = 'transparent';
-    b.style.borderColor = b.dataset.mode === '1v1' ? 'rgba(238,155,0,0.4)' : 'rgba(148,210,189,0.4)';
-  });
+  document.querySelectorAll('.cm-mode-btn').forEach(b => { b.classList.remove('active'); b.style.background = 'transparent'; b.style.borderColor = b.dataset.mode === '1v1' ? 'rgba(238,155,0,0.4)' : 'rgba(148,210,189,0.4)'; });
   btn.classList.add('active');
   btn.style.background = mode === '1v1' ? 'rgba(238,155,0,0.2)' : 'rgba(10,147,150,0.2)';
   btn.style.borderColor = mode === '1v1' ? 'var(--gold)' : 'var(--aqua)';
   const txt = document.getElementById('cmModeText');
-  if (txt) txt.textContent = mode === '1v1'
-    ? 'Mode: 1v1 LOCAL (2 humans) · You pick tanks/weapons next'
-    : 'Mode: SOLO (vs AI) · Standard career rules apply';
+  if (txt) txt.textContent = mode === '1v1' ? 'Mode: 1v1 LOCAL (2 humans) · You pick tanks/weapons next' : 'Mode: SOLO (vs AI) · Standard career rules apply';
 }
-
 function cmRandomize() {
-  document.getElementById('cmAvg').value     = 50 + Math.floor(Math.random() * 200);
-  document.getElementById('cmSpread').value  = 30 + Math.floor(Math.random() * 200);
-  document.getElementById('cmNeg').value     = Math.random() < 0.4 ? Math.floor(Math.random() * 8) : 0;
-  document.getElementById('cmVol').value     = Math.floor(Math.random() * 100);
+  document.getElementById('cmAvg').value = 50 + Math.floor(Math.random() * 200);
+  document.getElementById('cmSpread').value = 30 + Math.floor(Math.random() * 200);
+  document.getElementById('cmNeg').value = Math.random() < 0.4 ? Math.floor(Math.random() * 8) : 0;
+  document.getElementById('cmVol').value = Math.floor(Math.random() * 100);
   const biases = ['morning', 'midday', 'evening', 'dual'];
   const newBias = biases[Math.floor(Math.random() * biases.length)];
   const newBtn = document.querySelector(`.cm-bias-btn[data-bias="${newBias}"]`);
-  if (newBtn) cmSetBias(newBias, newBtn);
-  else cmRedraw();
+  if (newBtn) cmSetBias(newBias, newBtn); else cmRedraw();
 }
-
 function cmGeneratePrices() {
-  const avg     = parseInt(document.getElementById('cmAvg').value, 10);
-  const spread  = parseInt(document.getElementById('cmSpread').value, 10);
-  const negH    = parseInt(document.getElementById('cmNeg').value, 10);
-  const vol     = parseInt(document.getElementById('cmVol').value, 10);
-  const bias    = state.cmConfig.bias;
-  const N = 24;
-  const prices = [];
-  // Base shape by bias
+  const avg = parseInt(document.getElementById('cmAvg').value, 10);
+  const spread = parseInt(document.getElementById('cmSpread').value, 10);
+  const negH = parseInt(document.getElementById('cmNeg').value, 10);
+  const vol = parseInt(document.getElementById('cmVol').value, 10);
+  const bias = state.cmConfig.bias;
+  const N = 24; const prices = [];
   for (let h = 0; h < N; h++) {
     let v = 0;
-    if (bias === 'morning')      v = Math.exp(-Math.pow((h - 8) / 3, 2));   // peak ~8h
-    else if (bias === 'midday')  v = Math.exp(-Math.pow((h - 13) / 3, 2));  // peak ~13h
-    else if (bias === 'evening') v = Math.exp(-Math.pow((h - 19) / 3, 2));  // peak ~19h
-    else if (bias === 'dual')    v = Math.max(
-      Math.exp(-Math.pow((h - 8)  / 2.5, 2)),
-      Math.exp(-Math.pow((h - 19) / 2.5, 2))
-    );
-    prices.push(v); // 0..1
+    if (bias === 'morning') v = Math.exp(-Math.pow((h - 8) / 3, 2));
+    else if (bias === 'midday') v = Math.exp(-Math.pow((h - 13) / 3, 2));
+    else if (bias === 'evening') v = Math.exp(-Math.pow((h - 19) / 3, 2));
+    else if (bias === 'dual') v = Math.max(Math.exp(-Math.pow((h - 8) / 2.5, 2)), Math.exp(-Math.pow((h - 19) / 2.5, 2)));
+    prices.push(v);
   }
-  // Normalise so min=0, max=1
   let minV = Math.min(...prices), maxV = Math.max(...prices);
   for (let h = 0; h < N; h++) prices[h] = (prices[h] - minV) / (maxV - minV + 1e-9);
-  // Apply spread + average: result will have spread (max-min)
   for (let h = 0; h < N; h++) prices[h] = avg + (prices[h] - 0.5) * spread;
-  // Negative hours: force the N lowest hours below 0
   if (negH > 0) {
     const idxs = prices.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v).slice(0, negH).map(o => o.i);
     idxs.forEach(i => { prices[i] = -5 - Math.random() * 15; });
   }
-  // Volatility / jagged noise
   const noiseAmp = (vol / 100) * spread * 0.35;
   for (let h = 0; h < N; h++) prices[h] += (Math.random() - 0.5) * 2 * noiseAmp;
-  // Light smoothing if vol < 50 to make it look natural
-  if (vol < 50) {
-    const sm = [...prices];
-    for (let i = 1; i < N - 1; i++) prices[i] = (sm[i - 1] + sm[i] * 2 + sm[i + 1]) / 4;
-  }
+  if (vol < 50) { const sm = [...prices]; for (let i = 1; i < N - 1; i++) prices[i] = (sm[i - 1] + sm[i] * 2 + sm[i + 1]) / 4; }
   state.cmPrices = prices;
   return prices;
 }
-
 function cmRedraw() {
   const prices = cmGeneratePrices();
-  // Update slider labels
   const vol = parseInt(document.getElementById('cmVol').value, 10);
-  document.getElementById('cmAvgVal').textContent    = document.getElementById('cmAvg').value + ' €/MWh';
+  document.getElementById('cmAvgVal').textContent = document.getElementById('cmAvg').value + ' €/MWh';
   document.getElementById('cmSpreadVal').textContent = document.getElementById('cmSpread').value + ' €/MWh';
-  document.getElementById('cmNegVal').textContent    = document.getElementById('cmNeg').value + ' h';
-  document.getElementById('cmVolVal').textContent    = vol < 25 ? 'smooth' : (vol < 60 ? 'normal' : 'jagged');
-  // Compute stats
+  document.getElementById('cmNegVal').textContent = document.getElementById('cmNeg').value + ' h';
+  document.getElementById('cmVolVal').textContent = vol < 25 ? 'smooth' : (vol < 60 ? 'normal' : 'jagged');
   const minV = Math.min(...prices), maxV = Math.max(...prices);
   const avgV = prices.reduce((s, p) => s + p, 0) / prices.length;
   const std = Math.sqrt(prices.reduce((s, p) => s + Math.pow(p - avgV, 2), 0) / prices.length);
@@ -1924,122 +1449,61 @@ function cmRedraw() {
   document.getElementById('cmStatMax').textContent = Math.round(maxV) + ' €';
   document.getElementById('cmStatAvg').textContent = Math.round(avgV) + ' €';
   document.getElementById('cmStatStd').textContent = Math.round(std) + ' €';
-  // Draw preview
   cmDrawCanvas(prices);
 }
-
 function cmDrawCanvas(prices) {
   const cv = document.getElementById('cmCanvas');
   if (!cv) return;
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
-  // Background
-  ctx.fillStyle = '#001219';
-  ctx.fillRect(0, 0, W, H);
-  // Axes ref
+  ctx.fillStyle = '#001219'; ctx.fillRect(0, 0, W, H);
   const padL = 36, padR = 12, padT = 12, padB = 24;
   const minV = Math.min(0, Math.min(...prices));
   const maxV = Math.max(...prices);
   const range = maxV - minV || 1;
   const xOf = i => padL + (i / (prices.length - 1)) * (W - padL - padR);
   const yOf = v => padT + (1 - (v - minV) / range) * (H - padT - padB);
-  // Zero line if there are negative prices
   if (minV < 0) {
-    ctx.strokeStyle = 'rgba(238,155,0,0.4)';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(padL, yOf(0));
-    ctx.lineTo(W - padR, yOf(0));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(238,155,0,0.5)';
-    ctx.font = '10px JetBrains Mono';
-    ctx.fillText('0', 4, yOf(0) + 3);
+    ctx.strokeStyle = 'rgba(238,155,0,0.4)'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, yOf(0)); ctx.lineTo(W - padR, yOf(0)); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = 'rgba(238,155,0,0.5)'; ctx.font = '10px JetBrains Mono'; ctx.fillText('0', 4, yOf(0) + 3);
   }
-  // Fill under curve (terrain-style)
   ctx.fillStyle = 'rgba(10,147,150,0.18)';
-  ctx.beginPath();
-  ctx.moveTo(xOf(0), H - padB);
+  ctx.beginPath(); ctx.moveTo(xOf(0), H - padB);
   for (let i = 0; i < prices.length; i++) ctx.lineTo(xOf(i), yOf(prices[i]));
-  ctx.lineTo(xOf(prices.length - 1), H - padB);
-  ctx.closePath();
-  ctx.fill();
-  // Curve
-  ctx.strokeStyle = 'var(--aqua)';
-  ctx.strokeStyle = '#94D2BD';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let i = 0; i < prices.length; i++) {
-    const x = xOf(i), y = yOf(prices[i]);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
+  ctx.lineTo(xOf(prices.length - 1), H - padB); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#94D2BD'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i < prices.length; i++) { const x = xOf(i), y = yOf(prices[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
   ctx.stroke();
-  // Hour labels
-  ctx.fillStyle = 'rgba(148,210,189,0.5)';
-  ctx.font = '10px JetBrains Mono';
-  [0, 6, 12, 18, 23].forEach(h => {
-    const x = xOf(h);
-    ctx.fillText(String(h).padStart(2, '0') + 'h', x - 8, H - 6);
-  });
-  // Y labels
+  ctx.fillStyle = 'rgba(148,210,189,0.5)'; ctx.font = '10px JetBrains Mono';
+  [0, 6, 12, 18, 23].forEach(h => { const x = xOf(h); ctx.fillText(String(h).padStart(2, '0') + 'h', x - 8, H - 6); });
   ctx.textAlign = 'right';
   ctx.fillText(Math.round(maxV) + '', padL - 4, padT + 8);
   ctx.fillText(Math.round(minV) + '', padL - 4, H - padB);
   ctx.textAlign = 'start';
 }
-
 function cmLaunch() {
   const prices = cmGeneratePrices();
   const name = (document.getElementById('cmName').value || 'CUSTOM MARKET').trim();
   const avg = Math.round(prices.reduce((s, p) => s + p, 0) / prices.length);
   const spread = Math.round(Math.max(...prices) - Math.min(...prices));
-  // Build mission data inline (mimics ARCHETYPES output)
   const customMission = {
-    _key: 'custom_' + Date.now(),
-    type: 'custom',
-    title: name,
-    flag: '🎨',
-    date: 'CUSTOM',
-    zone: 'CUSTOM',
-    diff: 'CUSTOM',
-    stars: 2,
-    prices,
-    spread,
-    avg,
-    timerSec: 25,
-    reward: 0, // no PnL in custom
+    _key: 'custom_' + Date.now(), type: 'custom', title: name, flag: '🎨', date: 'CUSTOM', zone: 'CUSTOM', diff: 'CUSTOM', stars: 2,
+    prices, spread, avg, timerSec: 25, reward: 0,
     weather: { icon: '🌤', text: 'CUSTOM', windBase: 1.2, type: 'standard' },
-    genmix: [
-      { name: 'Nuclear', pct: 35, color: '#0A9396' },
-      { name: 'Wind',    pct: 20, color: '#94D2BD' },
-      { name: 'Solar',   pct: 15, color: '#EE9B00' },
-      { name: 'Hydro',   pct: 15, color: '#005F73' },
-      { name: 'Gas',     pct: 15, color: '#BB3E03' },
-    ],
-    fuelPrice: 50,
-    blockedWeapons: [],
-    freeWeapon: null,
+    genmix: [ { name: 'Nuclear', pct: 35, color: '#0A9396' }, { name: 'Wind', pct: 20, color: '#94D2BD' }, { name: 'Solar', pct: 15, color: '#EE9B00' }, { name: 'Hydro', pct: 15, color: '#005F73' }, { name: 'Gas', pct: 15, color: '#BB3E03' } ],
+    fuelPrice: 50, blockedWeapons: [], freeWeapon: null,
     storyTemplates: { fr: ['Marché personnalisé · vos paramètres.'], en: ['Custom market · your parameters.'] },
     funfact: { fr: ['Bien joué ! Tu as battu ton propre marché.'], en: ['Well played! You beat your own market.'] },
-    warn: 'CUSTOM PARAMETERS',
-    unlock: '',
+    warn: 'CUSTOM PARAMETERS', unlock: '',
   };
   state.currentMissionData = customMission;
   state.currentMission = customMission._key;
   state.navigationOrigin = 'custommap';
   if (state.cmConfig.mode === '1v1') {
-    // Route through the 1v1 names screen then tankselect
-    state.mp1v1 = {
-      active: true,
-      phase: 'pickP1Tank',
-      p1Tank: null, p1Weapons: ['standard'],
-      p2Tank: null, p2Weapons: ['standard'],
-      p1Name: 'P1', p2Name: 'P2',
-      customMission, // remember to reuse instead of rebuilding
-    };
-    state.currentTank = null;
-    state.selectedWeapons = ['standard'];
+    state.mp1v1 = { active: true, phase: 'pickP1Tank', p1Tank: null, p1Weapons: ['standard'], p2Tank: null, p2Weapons: ['standard'], p1Name: 'P1', p2Name: 'P2', customMission };
+    state.currentTank = null; state.selectedWeapons = ['standard'];
     try {
       const saved = JSON.parse(localStorage.getItem('klockwars_1v1_names') || '{}');
       setTimeout(() => {
@@ -2052,9 +1516,7 @@ function cmLaunch() {
     } catch (_) {}
     go('1v1-names');
   } else {
-    // Solo: go to tank select directly
-    state.currentTank = null;
-    state.selectedWeapons = ['standard'];
+    state.currentTank = null; state.selectedWeapons = ['standard'];
     go('tankselect');
   }
 }
@@ -2070,18 +1532,15 @@ function goToArmory() {
   state.selectedWeapons = ['standard'];
   const m = state.currentMissionData;
   if (m.freeWeapon) state.selectedWeapons.push(m.freeWeapon);
-  renderArmory();
-  go('armory');
+  renderArmory(); go('armory');
 }
 
 function renderArmory() {
   const m = state.currentMissionData;
   const blocked = m.blockedWeapons || [];
   const free = m.freeWeapon;
-  // In 1v1 mode, everything is free (no PnL cost)
   const is1v1 = state.mp1v1 && state.mp1v1.active;
-  const maxWeapons = is1v1 ? 3 : 3; // standard + 2 free
-  // 1v1: colored title that says clearly who is picking
+  const maxWeapons = 4; // standard + 3 picks (l'arme offerte compte comme un pick)
   const titleEl = document.getElementById('armoryTitle');
   if (titleEl) {
     if (is1v1) {
@@ -2089,13 +1548,9 @@ function renderArmory() {
       const name = isP1 ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
       const color = isP1 ? 'var(--aqua)' : 'var(--gold)';
       titleEl.innerHTML = `<span style="color:${color}">◆ ${name}</span> · ${state.lang === 'fr' ? 'CHOIX DES ARMES' : 'PICK WEAPONS'}`;
-    } else {
-      titleEl.textContent = '🎯 ' + t('armory');
-    }
+    } else { titleEl.textContent = '🎯 ' + t('armory'); }
   }
-  document.getElementById('armoryBudget').textContent = is1v1
-    ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 ' + (state.mp1v1.p1Name || 'P1') : '👤 ' + (state.mp1v1.p2Name || 'P2'))
-    : ('€' + state.pnl.toLocaleString());
+  document.getElementById('armoryBudget').textContent = is1v1 ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 ' + (state.mp1v1.p1Name || 'P1') : '👤 ' + (state.mp1v1.p2Name || 'P2')) : ('€' + state.pnl.toLocaleString());
   document.getElementById('armoryCount').textContent = state.selectedWeapons.length + '/' + maxWeapons;
   setText('budgetLbl', is1v1 ? 'PLAYER' : t('budget'));
   setText('selectedLbl', t('selected'));
@@ -2107,7 +1562,6 @@ function renderArmory() {
     const isFree = key === free;
     const isBlocked = blocked.includes(key);
     const isSelected = state.selectedWeapons.includes(key);
-    // In 1v1, cost is always 0
     const cost = is1v1 ? 0 : (isFree ? 0 : w.cost);
     const unaffordable = !is1v1 && !isSelected && cost > state.pnl && !isStandard && !isFree;
     const disabled = isBlocked || isStandard || (state.selectedWeapons.length >= maxWeapons && !isSelected);
@@ -2137,37 +1591,18 @@ function toggleWeapon(key) {
   if (key === m.freeWeapon) return;
   const idx = state.selectedWeapons.indexOf(key);
   if (idx >= 0) state.selectedWeapons.splice(idx, 1);
-  else { if (state.selectedWeapons.length >= 3) return; state.selectedWeapons.push(key); }
+  else { if (state.selectedWeapons.length >= 4) return; state.selectedWeapons.push(key); }
   renderArmory();
 }
 
 function confirmArmory() {
   const m = state.currentMissionData;
-  // 1v1 flow: store P1 then route to P2 tank pick, or store P2 then launch game
   if (state.mp1v1 && state.mp1v1.active) {
-    if (state.mp1v1.phase === 'pickP1Weapons') {
-      state.mp1v1.p1Weapons = [...state.selectedWeapons];
-      state.mp1v1.phase = 'pickP2Tank';
-      // Reset for P2 tank selection
-      state.currentTank = null;
-      state.selectedWeapons = ['standard'];
-      go('tankselect');
-      return;
-    }
-    if (state.mp1v1.phase === 'pickP2Weapons') {
-      state.mp1v1.p2Weapons = [...state.selectedWeapons];
-      state.mp1v1.phase = 'inGame';
-      // P1 tank goes back to state.currentTank for legacy init code; P2 stored separately
-      state.currentTank = state.mp1v1.p1Tank;
-      state.selectedWeapons = state.mp1v1.p1Weapons;
-      launchGame();
-      return;
-    }
+    if (state.mp1v1.phase === 'pickP1Weapons') { state.mp1v1.p1Weapons = [...state.selectedWeapons]; state.mp1v1.phase = 'pickP2Tank'; state.currentTank = null; state.selectedWeapons = ['standard']; go('tankselect'); return; }
+    if (state.mp1v1.phase === 'pickP2Weapons') { state.mp1v1.p2Weapons = [...state.selectedWeapons]; state.mp1v1.phase = 'inGame'; state.currentTank = state.mp1v1.p1Tank; state.selectedWeapons = state.mp1v1.p1Weapons; launchGame(); return; }
   }
-  // Solo flow (unchanged): pay for weapons
   state.selectedWeapons.forEach(key => { if (key === 'standard' || key === m.freeWeapon) return; state.pnl -= WEAPONS[key].cost; });
-  pkSaveState();
-  launchGame();
+  pkSaveState(); launchGame();
 }
 
 function launchGame() { go('game'); setTimeout(() => initGame(state.currentMissionData), 300); }
@@ -2179,21 +1614,14 @@ function initGame(mission) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const tank = TANKS[state.currentTank];
-  // 1v1 mode: P2 has its own tank and inventory; otherwise P2 is the AI (existing behavior)
   const is1v1 = !!(state.mp1v1 && state.mp1v1.active && state.mp1v1.phase === 'inGame');
   const p2Tank = is1v1 ? TANKS[state.mp1v1.p2Tank] : tank;
-  document.getElementById('hudP1Name').textContent = is1v1
-    ? (state.mp1v1.p1Name + ' · ' + tank.name)
-    : ('P1 ' + tank.name);
-  document.getElementById('hudP2Name').textContent = is1v1
-    ? (state.mp1v1.p2Name + ' · ' + p2Tank.name)
-    : 'GOLD AI';
+  document.getElementById('hudP1Name').textContent = is1v1 ? (state.mp1v1.p1Name + ' · ' + tank.name) : ('P1 ' + tank.name);
+  document.getElementById('hudP2Name').textContent = is1v1 ? (state.mp1v1.p2Name + ' · ' + p2Tank.name) : 'GOLD AI';
   const inventory = {};
   state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : 3; });
   const p2Inventory = {};
-  if (is1v1) {
-    state.mp1v1.p2Weapons.forEach(key => { p2Inventory[key] = key === 'standard' ? Infinity : 3; });
-  }
+  if (is1v1) { state.mp1v1.p2Weapons.forEach(key => { p2Inventory[key] = key === 'standard' ? Infinity : 3; }); }
 
   const game = state.game = {
     running: true, mission, ctx, W, H, tank,
@@ -2204,7 +1632,7 @@ function initGame(mission) {
     p2maxhp: is1v1 ? Math.round(p2Tank.hp * 0.8) : 80,
     p1fuel: tank.fuelMax, p1maxfuel: tank.fuelMax,
     p2fuel: is1v1 ? p2Tank.fuelMax : 0, p2maxfuel: is1v1 ? p2Tank.fuelMax : 0,
-    projectile: null, explosion: null, particles: [], terrain: [],
+    projectile: null, explosion: null, particles: [], droplets: [], terrain: [],
     p1: { x: 80, y: 0, hitFlash: 0 },
     p2: { x: W - 80, y: 0, hitFlash: 0 },
     turnNum: 1, gameOver: false, shotsP1: 0, hitsP1: 0, shotsP2: 0, hitsP2: 0, combo: 0,
@@ -2221,14 +1649,11 @@ function initGame(mission) {
   game.wind = (Math.random() - 0.5) * baseWind * 2 * diff.windMult;
   if (mission.stars >= 3 && Math.random() < 0.7) game.wind = -Math.abs(game.wind) - 0.5;
 
-  // Walking shot AI memory (resets when player moves significantly)
   game.aiMemory = { lastAngle: null, lastPower: null, lastImpactX: null, lastImpactY: null, lastError: null };
-  // Shot history: up to 3 trajectories per side, FIFO
   game.shotHistory = { player: [], ai: [] };
-  // Weather event queue (for stars >= 3 missions)
   game.weatherEventPending = null;
   game.suddenDeath = false;
-  game.lastPlayerX = game.p1.x; // track movement to invalidate AI memory
+  game.lastPlayerX = game.p1.x;
 
   document.getElementById('windText').textContent = (game.wind > 0 ? '+' : '') + game.wind.toFixed(1) + ' m/s';
   document.getElementById('weatherIcon').textContent = mission.weather.icon;
@@ -2260,7 +1685,6 @@ function initGame(mission) {
   updateTurnIndicator();
   startTurnTimer();
   startGameLoop();
-  // 1v1: announce P1's turn at start
   if (game.is1v1) setTimeout(showP1TurnOverlay, 250);
 }
 
@@ -2268,7 +1692,6 @@ function renderWeaponBar() {
   const g = state.game;
   const bar = document.getElementById('weaponBar');
   bar.innerHTML = '';
-  // In 1v1, show the active player's inventory (P1's during P1 turn, P2's during P2 turn)
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
   const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
   const currentWeapon = isP2HumanTurn ? g.p2CurrentWeapon : g.currentWeapon;
@@ -2279,7 +1702,7 @@ function renderWeaponBar() {
     slot.className = 'weapon-slot';
     if (key === currentWeapon) slot.classList.add('active');
     if (qty !== Infinity && qty <= 0) slot.classList.add('disabled');
-    slot.innerHTML = `<span class="icon">${w.icon}</span><span class="name">${w.name}</span><span class="qty">${qty === Infinity ? '∞' : '×' + qty}</span>`;
+    slot.innerHTML = '<span class="icon">' + w.icon + '</span><span class="name">' + w.name + '</span><span class="qty">' + (qty === Infinity ? '∞' : '×' + qty) + '</span>';
     slot.onclick = () => selectWeapon(key);
     bar.appendChild(slot);
   });
@@ -2288,7 +1711,6 @@ function renderWeaponBar() {
 function selectWeapon(key) {
   const g = state.game;
   if (!g) return;
-  // Route to the right inventory based on whose turn it is
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
   const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
   if (inv[key] !== Infinity && inv[key] <= 0) return;
@@ -2302,16 +1724,14 @@ function selectWeapon(key) {
 function useInstantWeapon(key) {
   const g = state.game;
   const w = WEAPONS[key];
-  if (w.selfHeal && g.p1hp < g.p1maxhp) {
-    g.p1hp = Math.min(g.p1maxhp, g.p1hp + 25);
-    g.inventory[key]--;
+  const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
+  const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
+  if (inv[key] !== Infinity && inv[key] <= 0) return;
+  if (w.selfHeal) {
+    if (isP2HumanTurn) { if (g.p2hp < g.p2maxhp) { g.p2hp = Math.min(g.p2maxhp, g.p2hp + 25); inv[key]--; } }
+    else { if (g.p1hp < g.p1maxhp) { g.p1hp = Math.min(g.p1maxhp, g.p1hp + 25); inv[key]--; } }
     updateHUD();
     showGameMsg('+25 HP', t('bess_recharge'));
-    renderWeaponBar();
-  } else if (w.cancelWind) {
-    g.cancelWindNextTurn = true;
-    g.inventory[key]--;
-    showGameMsg(t('wind_cancelled'), t('fundamentals'));
     renderWeaponBar();
   }
 }
@@ -2323,12 +1743,8 @@ function updateHUD() {
   document.getElementById('p2hp').textContent = g.p2hp + '/' + g.p2maxhp;
   document.getElementById('angle').textContent = Math.round(g.angle) + '°';
   document.getElementById('power').textContent = Math.round(g.power);
-  // In 1v1, fuel display follows the active human turn (P1's fuel during P1 turn, P2's during P2 turn)
-  if (g.is1v1 && g.turn === 'ai') {
-    document.getElementById('fuelVal').textContent = Math.round(g.p2fuel);
-  } else {
-    document.getElementById('fuelVal').textContent = Math.round(g.p1fuel);
-  }
+  if (g.is1v1 && g.turn === 'ai') document.getElementById('fuelVal').textContent = Math.round(g.p2fuel);
+  else document.getElementById('fuelVal').textContent = Math.round(g.p1fuel);
   document.getElementById('turnNum').textContent = g.turnNum;
   document.getElementById('comboText').textContent = '×' + g.combo;
   document.getElementById('windText').textContent = (g.wind > 0 ? '+' : '') + g.wind.toFixed(1) + ' m/s';
@@ -2341,20 +1757,14 @@ function updateTurnIndicator() {
   if (!g) { el.textContent = t('your_turn'); return; }
   if (g.gameOver) el.textContent = t('game_over');
   else if (g.turn === 'player') {
-    if (g.is1v1) {
-      const name = (state.mp1v1 && state.mp1v1.p1Name) || 'P1';
-      el.textContent = '◆ ' + name;
-    } else el.textContent = t('your_turn');
-  }
-  else {
-    if (g.is1v1) {
-      const name = (state.mp1v1 && state.mp1v1.p2Name) || 'P2';
-      el.textContent = '◆ ' + name;
-    } else el.textContent = t('ai_aiming');
+    if (g.is1v1) { const name = (state.mp1v1 && state.mp1v1.p1Name) || 'P1'; el.textContent = '◆ ' + name; }
+    else el.textContent = t('your_turn');
+  } else {
+    if (g.is1v1) { const name = (state.mp1v1 && state.mp1v1.p2Name) || 'P2'; el.textContent = '◆ ' + name; }
+    else el.textContent = t('ai_aiming');
   }
   const fb = document.getElementById('fireBtn');
   if (fb) {
-    // In 1v1, both turns are human-controlled — enable FIRE when no projectile in flight
     const humanTurn = g.is1v1 ? true : (g.turn === 'player');
     fb.disabled = !humanTurn || g.projectile;
     if (!fb.disabled) fb.textContent = t('fire');
@@ -2375,21 +1785,12 @@ function showTurnOverlay(label, color) {
   if (!ov) {
     ov = document.createElement('div');
     ov.id = 'turnOverlay';
-    ov.style.cssText = [
-      'position:fixed','inset:0','z-index:2000','display:flex',
-      'align-items:center','justify-content:center',
-      'background:rgba(0,18,25,0.75)','pointer-events:none',
-      'opacity:0','transition:opacity 0.25s'
-    ].join(';');
+    ov.style.cssText = ['position:fixed','inset:0','z-index:2000','display:flex','align-items:center','justify-content:center','background:rgba(0,18,25,0.75)','pointer-events:none','opacity:0','transition:opacity 0.25s'].join(';');
     document.body.appendChild(ov);
   }
-  ov.innerHTML = `
-    <div style="text-align:center; color:${color}; font-family:'JetBrains Mono', monospace; letter-spacing:0.25em;">
-      <div style="font-size:60px; font-weight:700; line-height:1; margin-bottom:14px; text-shadow: 0 0 24px ${color};">${label}</div>
-      <div style="font-size:14px; opacity:0.8; font-weight:500;">${state.lang === 'fr' ? "À TOI DE JOUER" : "YOUR TURN"}</div>
-    </div>
-  `;
-  // Fade in then out
+  ov.innerHTML = '<div style="text-align:center; color:' + color + "; font-family:'JetBrains Mono', monospace; letter-spacing:0.25em;\">" +
+    '<div style="font-size:60px; font-weight:700; line-height:1; margin-bottom:14px; text-shadow: 0 0 24px ' + color + ';">' + label + '</div>' +
+    '<div style="font-size:14px; opacity:0.8; font-weight:500;">' + (state.lang === 'fr' ? "À TOI DE JOUER" : "YOUR TURN") + '</div></div>';
   requestAnimationFrame(() => { ov.style.opacity = '1'; });
   setTimeout(() => { ov.style.opacity = '0'; }, 1200);
   setTimeout(() => { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 1500);
@@ -2397,7 +1798,7 @@ function showTurnOverlay(label, color) {
 
 function showGameMsg(text, sub = '', duration = 1200) {
   const el = document.getElementById('gameMsg');
-  el.innerHTML = text + (sub ? `<div class="small">${sub}</div>` : '');
+  el.innerHTML = text + (sub ? '<div class="small">' + sub + '</div>' : '');
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), duration);
 }
@@ -2409,7 +1810,6 @@ let timerInterval = null;
 function startTurnTimer() {
   const g = state.game;
   if (!g || !state.settings.turnTimer) { document.getElementById('timerFill').style.width = '100%'; return; }
-  // Timer runs for human turns: 'player' always, 'ai' only when in 1v1 mode
   const isHumanTurn = (g.turn === 'player') || (g.is1v1 && g.turn === 'ai');
   if (!isHumanTurn || g.gameOver) return;
   const baseTimer = g.is1v1 && g.turn === 'ai' ? (g.mission.timerSec + (g.p2Tank ? g.p2Tank.timerBonus : 0)) : (g.mission.timerSec + g.tank.timerBonus);
@@ -2486,16 +1886,16 @@ function drawScene() {
   ctx.fillStyle = g.wind > 0 ? '#EE9B00' : '#94D2BD';
   ctx.font = '12px JetBrains Mono';
   ctx.textAlign = 'center';
-  ctx.fillText(`${g.wind > 0 ? '──▶' : '◀──'}  WIND ${g.wind > 0 ? '+' : ''}${g.wind.toFixed(1)} m/s`, W / 2, 26);
+  ctx.fillText((g.wind > 0 ? '──▶' : '◀──') + '  WIND ' + (g.wind > 0 ? '+' : '') + g.wind.toFixed(1) + ' m/s', W / 2, 26);
 
   const prices = mission.prices;
   const minP = Math.min(...prices), maxP = Math.max(...prices);
   ctx.fillStyle = 'rgba(148,210,189,0.6)';
   ctx.font = '10px JetBrains Mono';
   ctx.textAlign = 'left';
-  ctx.fillText(`€${Math.round(maxP)}`, 6, 92);
-  ctx.fillText(`€${Math.round((maxP + minP) / 2)}`, 6, 230);
-  ctx.fillText(`€${Math.round(minP)}`, 6, 360);
+  ctx.fillText('€' + Math.round(maxP), 6, 92);
+  ctx.fillText('€' + Math.round((maxP + minP) / 2), 6, 230);
+  ctx.fillText('€' + Math.round(minP), 6, 360);
   if (minP < 0 && g.negativeZoneY) {
     ctx.strokeStyle = 'rgba(155,34,38,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.moveTo(0, g.negativeZoneY); ctx.lineTo(W, g.negativeZoneY); ctx.stroke();
@@ -2514,24 +1914,23 @@ function drawScene() {
   for (let x = 1; x < W; x++) ctx.lineTo(x, g.terrain[x]);
   ctx.stroke();
 
-  // Draw shot history (3 fading trajectories per side) - hidden in head_of_desk
   if (!getDiff().hideAids) drawShotHistory();
-  
+
   if (!g.projectile && !g.gameOver && (g.turn === 'player' || (g.is1v1 && g.turn === 'ai'))) {
     const wKey = (g.is1v1 && g.turn === 'ai') ? g.p2CurrentWeapon : g.currentWeapon;
     const w = WEAPONS[wKey];
-    if (w.preview === 'precise') drawTrajectoryPreview(false, 400);
-    else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 400);
-    else if (!getDiff().hideAids) drawAimIndicator(); // Short free aim hint, hidden in head_of_desk
+    if (w.preview === 'precise') drawTrajectoryPreview(false, 90);
+    else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 90);
+    else if (!getDiff().hideAids) drawAimIndicator();
   }
   if (g.deadTank !== 'p1') drawTank(g.p1, tank.color, tank.trackColor, true);
   if (g.deadTank !== 'p2') {
-    // In 1v1, P2 uses its own tank colors; in solo, P2 keeps the AI gold/rust default
     const p2BodyColor = (g.is1v1 && g.p2Tank) ? g.p2Tank.color : '#EE9B00';
     const p2TrackColor = (g.is1v1 && g.p2Tank) ? g.p2Tank.trackColor : '#BB3E03';
     drawTank(g.p2, p2BodyColor, p2TrackColor, false);
   }
   if (g.projectile) drawProjectile();
+  drawDroplets();
   drawParticles();
   if (g.explosion) drawExplosion();
 }
@@ -2550,7 +1949,7 @@ function drawTank(tank, body, track, facingRight) {
   ctx.fillStyle = '#001219';
   for (let i = -10; i <= 10; i += 7) { ctx.beginPath(); ctx.arc(i, 13, 1.5, 0, Math.PI * 2); ctx.fill(); }
   let displayAng = g.angle;
-  if (!facingRight && g.turn === 'ai' && g.aiAngle !== undefined) displayAng = g.aiAngle;
+  if (!facingRight && g.turn === 'ai' && !g.is1v1 && g.aiAngle !== undefined) displayAng = g.aiAngle;
   const barrelAng = facingRight ? -displayAng * Math.PI / 180 : Math.PI + displayAng * Math.PI / 180;
   const bx = Math.cos(barrelAng) * 22, by = Math.sin(barrelAng) * 22;
   ctx.strokeStyle = body; ctx.lineWidth = 3;
@@ -2566,22 +1965,17 @@ function drawShotHistory() {
     const baseColor = side === 'player' ? '238, 155, 0' : '187, 62, 3';
     const shots = g.shotHistory[side];
     shots.forEach((shot, idx) => {
-      // idx 0 = most recent (alpha 0.6), idx 1 = older (0.3), idx 2 = oldest (0.12)
       const alpha = [0.5, 0.25, 0.1][idx] || 0.05;
       if (idx === 0) {
-        // Full trajectory for the most recent shot
-        ctx.strokeStyle = `rgba(${baseColor}, ${alpha})`;
+        ctx.strokeStyle = 'rgba(' + baseColor + ', ' + alpha + ')';
         ctx.lineWidth = 1.2;
         ctx.setLineDash([4, 3]);
         ctx.beginPath();
-        shot.trail.forEach((pt, i) => {
-          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-        });
+        shot.trail.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      // Impact cross for all shots
-      ctx.strokeStyle = `rgba(${baseColor}, ${alpha + 0.15})`;
+      ctx.strokeStyle = 'rgba(' + baseColor + ', ' + (alpha + 0.15) + ')';
       ctx.lineWidth = 1.5;
       const sz = 5;
       ctx.beginPath();
@@ -2594,56 +1988,46 @@ function drawShotHistory() {
   });
 }
 
-// ─── Geometry helper: where exactly is the barrel tip (and which way does it point)? ───
-// Single source of truth for: aim indicator, trajectory preview, projectile spawn.
-// Keeps drawing and physics in sync — no more visual/projectile mismatch.
 function getBarrelTip(side) {
   const g = state.game;
   const origin = side === 'p2' ? g.p2 : g.p1;
   const dirSign = side === 'p2' ? -1 : 1;
   const angRad = g.angle * Math.PI / 180;
-  // Barrel length in drawTank is 22, base is at (origin.x, origin.y) — same translate point
   const barrelLen = 22;
   return {
     x: origin.x + dirSign * Math.cos(angRad) * barrelLen,
     y: origin.y - Math.sin(angRad) * barrelLen,
-    dirSign,
-    angRad,
+    dirSign, angRad,
   };
 }
 
 function drawAimIndicator() {
-  // Short visible aim hint at barrel exit - no physics, just a directional cue
   const g = state.game;
   const ctx = g.ctx;
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
   const side = isP2HumanTurn ? 'p2' : 'p1';
   const tip = getBarrelTip(side);
-  // Color by player: P1 = aqua, P2 = gold
   const baseRGB = isP2HumanTurn ? '238, 155, 0' : '148, 210, 189';
   const len = 35;
-  // Gradient fade starting AT the barrel tip, extending in the firing direction
   for (let i = 0; i < 4; i++) {
     const t1 = i / 4, t2 = (i + 1) / 4;
     const alpha = 0.5 * (1 - t1);
-    ctx.strokeStyle = `rgba(${baseRGB}, ${alpha})`;
+    ctx.strokeStyle = 'rgba(' + baseRGB + ', ' + alpha + ')';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(tip.x + tip.dirSign * Math.cos(tip.angRad) * len * t1, tip.y - Math.sin(tip.angRad) * len * t1);
     ctx.lineTo(tip.x + tip.dirSign * Math.cos(tip.angRad) * len * t2, tip.y - Math.sin(tip.angRad) * len * t2);
     ctx.stroke();
   }
-  // Small dot at the tip
-  ctx.fillStyle = `rgba(${baseRGB}, 0.4)`;
+  ctx.fillStyle = 'rgba(' + baseRGB + ', 0.4)';
   ctx.beginPath();
   ctx.arc(tip.x + tip.dirSign * Math.cos(tip.angRad) * len, tip.y - Math.sin(tip.angRad) * len, 2, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function drawTrajectoryPreview(fuzzy, maxSteps = 400) {
+function drawTrajectoryPreview(fuzzy, maxSteps = 90) {
   const g = state.game;
   const ctx = g.ctx;
-  // Side-aware origin via the same helper used elsewhere
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
   const side = isP2HumanTurn ? 'p2' : 'p1';
   const tip = getBarrelTip(side);
@@ -2653,7 +2037,7 @@ function drawTrajectoryPreview(fuzzy, maxSteps = 400) {
   const vy0 = -Math.sin(tip.angRad) * g.power * 0.18;
   const trials = fuzzy ? 5 : 1;
   for (let trial = 0; trial < trials; trial++) {
-    ctx.strokeStyle = fuzzy ? `rgba(${baseRGB}, 0.2)` : `rgba(${baseRGB}, 0.5)`;
+    ctx.strokeStyle = fuzzy ? 'rgba(' + baseRGB + ', 0.2)' : 'rgba(' + baseRGB + ', 0.5)';
     ctx.lineWidth = fuzzy ? 1.5 : 1.2;
     ctx.setLineDash([3, 4]);
     let px = tip.x, py = tip.y;
@@ -2685,32 +2069,66 @@ function drawProjectile() {
   ctx.fillStyle = '#EE9B00'; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
 }
 
+// ===== CARBON SPILL droplets =====
+function drawDroplets() {
+  const g = state.game;
+  if (!g || !g.droplets || !g.droplets.length) return;
+  const ctx = g.ctx;
+  g.droplets.forEach(d => {
+    ctx.fillStyle = 'rgba(20,20,20,0.85)';
+    ctx.beginPath(); ctx.arc(d.x, d.y, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(120,120,120,0.5)';
+    ctx.beginPath(); ctx.arc(d.x - 0.8, d.y - 0.8, 1.1, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+function updateDroplets() {
+  const g = state.game;
+  if (!g || !g.droplets || !g.droplets.length) return;
+  for (let i = g.droplets.length - 1; i >= 0; i--) {
+    const d = g.droplets[i];
+    d.vy += 0.18; d.y += d.vy;
+    let hit = false;
+    const tanks = [['p1', g.p1], ['p2', g.p2]];
+    for (let k = 0; k < tanks.length && !hit; k++) {
+      const side = tanks[k][0], tk = tanks[k][1];
+      if (g.deadTank === side) continue;
+      const dx = d.x - tk.x, dy = d.y - tk.y;
+      if (dx * dx + dy * dy < 18 * 18) {
+        const dmg = 2 + Math.floor(Math.random() * 3); // 2-4, jamais letal
+        if (side === 'p1') { g.p1hp = Math.max(1, g.p1hp - dmg); g.p1.hitFlash = 6; }
+        else { g.p2hp = Math.max(1, g.p2hp - dmg); g.p2.hitFlash = 6; }
+        hit = true;
+      }
+    }
+    if (!hit && d.x >= 0 && d.x < g.W && d.y >= g.terrain[Math.floor(d.x)]) hit = true;
+    if (!hit && d.y > g.H + 20) hit = true;
+    if (hit) { spawnParticles(d.x, d.y, 4); g.droplets.splice(i, 1); }
+  }
+  updateHUD();
+}
+
 function triggerTankExplosion(side) {
-  // side: 'p1' | 'p2' — large explosion + particles + dead-tank flag
   const g = state.game;
   if (!g) return;
   const pos = side === 'p1' ? g.p1 : g.p2;
-  // Big explosion (similar to bigBoom weapon)
   g.explosion = { x: pos.x, y: pos.y - 2, t: 0, big: true, deathBlast: true };
-  // Mark this tank dead so drawScene can hide it (or render a wreck)
   g.deadTank = side;
-  // Particle burst
   if (!g.particles) g.particles = [];
   for (let i = 0; i < 60; i++) {
     const ang = Math.random() * Math.PI * 2;
     const speed = 2 + Math.random() * 6;
-    const colors = ['238,155,0', '187,62,3', '155,34,38', '233,216,166'];
+    const colors = ['rgba(238,155,0,ALPHA)', 'rgba(187,62,3,ALPHA)', 'rgba(155,34,38,ALPHA)', 'rgba(233,216,166,ALPHA)'];
     g.particles.push({
       x: pos.x + (Math.random() - 0.5) * 10,
       y: pos.y - 4 + (Math.random() - 0.5) * 10,
       vx: Math.cos(ang) * speed,
       vy: Math.sin(ang) * speed - 2,
       life: 30 + Math.floor(Math.random() * 30),
-      maxLife: 60,
+      maxLife: 60, size: 1 + Math.random() * 2,
       color: colors[Math.floor(Math.random() * colors.length)],
     });
   }
-  // Screen shake / damage flash
   flashDamage();
 }
 
@@ -2720,11 +2138,11 @@ function drawExplosion() {
   const alpha = 1 - e.t / maxT;
   const scaleMult = e.deathBlast ? 2.4 : (e.big ? 1.6 : 1);
   const scale = scaleMult * g.tank.radiusMult;
-  ctx.fillStyle = `rgba(238,155,0,${alpha * 0.5})`;
+  ctx.fillStyle = 'rgba(238,155,0,' + (alpha * 0.5) + ')';
   ctx.beginPath(); ctx.arc(e.x, e.y, e.t * 2 * scale, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = `rgba(187,62,3,${alpha * 0.8})`;
+  ctx.fillStyle = 'rgba(187,62,3,' + (alpha * 0.8) + ')';
   ctx.beginPath(); ctx.arc(e.x, e.y, e.t * 1.2 * scale, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = `rgba(233,216,166,${alpha})`;
+  ctx.fillStyle = 'rgba(233,216,166,' + alpha + ')';
   ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(0, 8 - e.t * 0.3) * scale, 0, Math.PI * 2); ctx.fill();
   e.t++;
   if (e.t > maxT) g.explosion = null;
@@ -2757,7 +2175,6 @@ function deformTerrain(x, radius = 22) {
   const g = state.game;
   const r = radius * g.tank.radiusMult;
   const xi = Math.floor(x);
-  // Save pre-explosion tank Y positions for fall damage calculation
   const p1YBefore = g.p1.y;
   const p2YBefore = g.p2.y;
   for (let dx = -r; dx <= r; dx++) {
@@ -2765,12 +2182,10 @@ function deformTerrain(x, radius = 22) {
     if (i < 0 || i >= g.W) continue;
     const dist = Math.abs(dx);
     if (dist < r) {
-      // Deeper crater: 0.85 instead of 0.6 (much more visible)
       const depth = Math.sqrt(r * r - dx * dx) * 0.85;
       g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + depth);
     }
   }
-  // Light collapse: terrain just outside the crater also sags slightly (creates visual "overhang fall")
   const collapseRange = Math.round(r * 0.4);
   for (let dx = -r - collapseRange; dx <= r + collapseRange; dx++) {
     const i = xi + dx;
@@ -2781,7 +2196,6 @@ function deformTerrain(x, radius = 22) {
       g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + fade * 6);
     }
   }
-  // Update tank positions and apply fall damage
   if (g.p1.x >= 0 && g.p1.x < g.W) {
     g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
     const fall = g.p1.y - p1YBefore;
@@ -2799,41 +2213,7 @@ function deformTerrain(x, radius = 22) {
       const fallDmg = Math.min(20, Math.round(fall * 0.6));
       g.p2hp = Math.max(0, g.p2hp - fallDmg);
       g.p2.hitFlash = 10;
-      showGameMsg('AI TANK COLLAPSED', '-' + fallDmg + ' HP', 1000);
-    }
-  }
-  updateHUD();
-}
-
-function trenchTerrain(x, w = 30, d = 60) {
-  const g = state.game;
-  const xi = Math.floor(x);
-  const p1YBefore = g.p1.y;
-  const p2YBefore = g.p2.y;
-  for (let dx = -w; dx <= w; dx++) {
-    const i = xi + dx;
-    if (i < 0 || i >= g.W) continue;
-    const f = 1 - Math.abs(dx) / w;
-    g.terrain[i] = Math.min(g.H - 5, g.terrain[i] + d * f);
-  }
-  if (g.p1.x >= 0 && g.p1.x < g.W) {
-    g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
-    const fall = g.p1.y - p1YBefore;
-    if (fall > 10 && !g.gameOver) {
-      const fallDmg = Math.min(20, Math.round(fall * 0.6));
-      g.p1hp = Math.max(0, g.p1hp - fallDmg);
-      g.p1.hitFlash = 10;
-      showGameMsg('GROUND COLLAPSE', '-' + fallDmg + ' HP', 1000);
-    }
-  }
-  if (g.p2.x >= 0 && g.p2.x < g.W) {
-    g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
-    const fall = g.p2.y - p2YBefore;
-    if (fall > 10 && !g.gameOver) {
-      const fallDmg = Math.min(20, Math.round(fall * 0.6));
-      g.p2hp = Math.max(0, g.p2hp - fallDmg);
-      g.p2.hitFlash = 10;
-      showGameMsg('AI TANK COLLAPSED', '-' + fallDmg + ' HP', 1000);
+      showGameMsg('TANK COLLAPSED', '-' + fallDmg + ' HP', 1000);
     }
   }
   updateHUD();
@@ -2859,69 +2239,42 @@ function smoothTerrain(x, w = 60) {
   if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
 }
 
-function cannibaliseTerrain(x) {
-  const g = state.game;
-  deformTerrain(x, 22);
-  const baseline = g.terrain.reduce((a, b) => a + b, 0) / g.terrain.length;
-  for (let i = 0; i < g.W; i++) {
-    if (g.terrain[i] < baseline) {
-      const peakDepth = baseline - g.terrain[i];
-      g.terrain[i] += peakDepth * 0.20;
-    }
-  }
-  if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
-  if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
-}
-
 function marketCrash() {
   const g = state.game;
   flashCrash();
   showGameMsg(t('market_crash_msg'), t('volatility_shock'));
-  // 1) Bigger terrain deformation: shock wave with non-uniform amplitude
-  //    The wave has 2-3 peaks/troughs that create real obstacles or pits
   const dir = Math.random() > 0.5 ? 1 : -1;
-  const numPeaks = 2 + Math.floor(Math.random() * 2); // 2 or 3
+  const numPeaks = 2 + Math.floor(Math.random() * 2);
   const peakPositions = [];
-  for (let i = 0; i < numPeaks; i++) {
-    peakPositions.push(Math.random() * g.W);
-  }
-  const peakAmplitudes = peakPositions.map(() => 35 + Math.random() * 35); // 35-70 px
+  for (let i = 0; i < numPeaks; i++) peakPositions.push(Math.random() * g.W);
+  const peakAmplitudes = peakPositions.map(() => 35 + Math.random() * 35);
   for (let x = 0; x < g.W; x++) {
     let totalShift = 0;
     peakPositions.forEach((px, i) => {
       const dx = x - px;
-      // Gaussian-shaped peak (sigma ~ W/8)
       const sigma = g.W / 8;
       const weight = Math.exp(-(dx * dx) / (2 * sigma * sigma));
-      const localDir = (i % 2 === 0) ? dir : -dir; // alternating
+      const localDir = (i % 2 === 0) ? dir : -dir;
       totalShift += localDir * peakAmplitudes[i] * weight;
     });
-    // Add a base small ripple
     totalShift += dir * (Math.random() * 6);
     g.terrain[x] = Math.max(80, Math.min(g.H - 10, g.terrain[x] + totalShift));
   }
-  // 2) Smooth the terrain a bit to avoid pixelated edges
   for (let pass = 0; pass < 2; pass++) {
     const sm = [...g.terrain];
-    for (let i = 2; i < g.W - 2; i++) {
-      g.terrain[i] = (sm[i-2] + sm[i-1] + sm[i] + sm[i+1] + sm[i+2]) / 5;
-    }
+    for (let i = 2; i < g.W - 2; i++) g.terrain[i] = (sm[i-2] + sm[i-1] + sm[i] + sm[i+1] + sm[i+2]) / 5;
   }
-  // 3) Wind shock: large random wind shift
   const m = g.mission;
   const baseWind = m.weather.windBase;
   g.wind = (Math.random() - 0.5) * baseWind * 4;
-  // 4) Reposition tanks on new terrain
   if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
   if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
-  // 5) Light shock damage to both tanks (8-12 HP) - represents the market hit
   const shockDamage = 8 + Math.floor(Math.random() * 5);
   g.p1hp = Math.max(0, g.p1hp - shockDamage);
   g.p2hp = Math.max(0, g.p2hp - shockDamage);
   g.p1.hitFlash = 10; g.p2.hitFlash = 10;
   updateHUD();
   setTimeout(() => showGameMsg('SHOCK · -' + shockDamage + ' HP', '', 1200), 500);
-  // 6) If shock killed a tank, trigger end-game
   if (g.p1hp <= 0 || g.p2hp <= 0) {
     const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
     triggerTankExplosion(deadSide);
@@ -2931,11 +2284,11 @@ function marketCrash() {
 
 function updatePhysics() {
   const g = state.game;
+  updateDroplets();
   if (!g.projectile) return;
   const p = g.projectile;
   p.trail.push({ x: p.x, y: p.y });
   if (p.trail.length > 60) p.trail.shift();
-  // Dynamic wind during flight - varies sinusoidally
   g.windPhase += 0.05;
   const dynamicWind = g.wind + Math.sin(g.windPhase) * 0.6;
   let windAccel = (g.cancelWindNextTurn ? 0 : dynamicWind) * 0.012;
@@ -2955,6 +2308,15 @@ function updatePhysics() {
   p.vx += windAccel; p.vy += 0.25;
   p.x += p.vx; p.y += p.vy;
 
+  // CARBON SPILL : lache des gouttes en retombant (descente), max 5, jamais letal
+  if (p.weapon === 'carbon_spill' && p.vy > 0) {
+    p.spillFrame = (p.spillFrame || 0) + 1;
+    if (p.spillFrame % 6 === 0 && (p.spillCount || 0) < 5) {
+      p.spillCount = (p.spillCount || 0) + 1;
+      g.droplets.push({ x: p.x, y: p.y, vy: 1.0 + Math.random() * 0.6, fromPlayer: p.fromPlayer });
+    }
+  }
+
   if (p.x >= 0 && p.x < g.W && p.y >= g.terrain[Math.floor(p.x)]) { explodeAt(p.x, p.y); return; }
   const target = p.fromPlayer ? g.p2 : g.p1;
   const dx = p.x - target.x, dy = p.y - target.y;
@@ -2971,15 +2333,12 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
   const p = g.projectile;
   const wKey = p ? p.weapon : 'standard';
   const w = WEAPONS[wKey];
-  
-  // Store shot in history (trail for trajectory display)
+
   if (p) {
     const side = p.fromPlayer ? 'player' : 'ai';
     const fullTrail = [...p.trail, { x: p.x, y: p.y }];
     g.shotHistory[side].unshift({ trail: fullTrail, impactX: x, impactY: y, age: 0 });
     if (g.shotHistory[side].length > 3) g.shotHistory[side].pop();
-    
-    // Update AI walking shot memory
     if (!p.fromPlayer && p.initialAngle !== undefined) {
       g.aiMemory.lastAngle = p.initialAngle;
       g.aiMemory.lastPower = p.initialPower;
@@ -2988,33 +2347,24 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       g.aiMemory.lastError = hitTank ? 0 : Math.sqrt((x - g.p1.x)**2 + (y - g.p1.y)**2);
     }
   }
-  
+
   g.explosion = { x, y, t: 0, big: w.bigBoom };
   spawnParticles(x, y, hitTank ? 28 : (w.bigBoom ? 30 : 16));
   g.projectile = null;
   if (hitTank) {
     flashDamage();
-    // Base damage upped from 30 to 35
     let damage = w.damage === 30 ? 35 : (w.damage || 30);
-    // First-hit bonus
     if (hitByPlayer && g.hitsP1 === 0) damage = Math.round(damage * 1.4);
-    // Graded damage by proximity
     const proximity = Math.max(0, 1 - hitDist / 35);
     damage = Math.round(damage * (0.4 + proximity * 0.6));
     let critical = false;
     if (proximity > 0.8) { damage = Math.round(damage * 1.3); critical = true; }
-    // High ground bonus + valley protection
     const avgT = g.terrain.reduce((a, b) => a + b, 0) / g.terrain.length;
     const shooter = hitByPlayer ? g.p1 : g.p2;
     const target = hitByPlayer ? g.p2 : g.p1;
     if (shooter.y < avgT - 20) damage = Math.round(damage * 1.1);
     if (target.y > avgT + 20) damage = Math.round(damage * 0.85);
-    // Sudden Death
     if (g.suddenDeath) damage = Math.round(damage * 1.5);
-    if (w.negBonus && g.negativeZoneY && y > g.negativeZoneY) {
-      damage *= 2;
-      showGameMsg(t('neg_bonus'), t('neg_zone_hit'));
-    }
     if (hitByPlayer && g.combo > 0) {
       const comboBonus = Math.floor(damage * (g.tank.comboMult - 1) * g.combo * 0.3);
       damage += comboBonus;
@@ -3023,12 +2373,21 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       g.p2hp = Math.max(0, g.p2hp - damage);
       g.p2.hitFlash = 10; g.hitsP1++; g.combo++;
       let msg = critical ? t('critical') : (proximity > 0.5 ? t('direct_hit') : t('glancing'));
-      if (g.combo > 1) msg = `COMBO ×${g.combo}`;
+      if (g.combo > 1) msg = 'COMBO ×' + g.combo;
       showGameMsg(msg, '-' + damage + ' HP');
     } else {
       g.p1hp = Math.max(0, g.p1hp - damage);
       g.p1.hitFlash = 10; g.combo = 0;
       showGameMsg(t('you_got_hit'), '-' + damage + ' HP');
+    }
+    // DEMAND SHOCK : repousse le tank touche, loin de l'impact, clampe a sa moitie de terrain
+    if (w.knockback) {
+      const victim = hitByPlayer ? g.p2 : g.p1;
+      const dir = victim.x >= x ? 1 : -1;
+      const bounds = hitByPlayer ? [Math.floor(g.W * 0.55), g.W - 40] : [40, Math.floor(g.W * 0.45)];
+      victim.x = Math.max(bounds[0], Math.min(bounds[1], victim.x + dir * w.knockback));
+      victim.y = g.terrain[Math.floor(victim.x)] - 12;
+      showGameMsg('KNOCKBACK', '', 700);
     }
     updateHUD();
     if (g.p1hp <= 0 || g.p2hp <= 0) {
@@ -3044,12 +2403,9 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       const dx = x - target.x;
       if (Math.abs(dx) < 60 && Math.abs(y - target.y) < 80) showGameMsg(t('near_miss'), '', 800);
     }
-    if (w.trench) trenchTerrain(x, 30, 60);
-    else if (w.smooth) smoothTerrain(x, 60);
-    else if (w.cannibalise) { cannibaliseTerrain(x); showGameMsg(t('capture_drop'), t('solar_cannibalised')); }
+    if (w.smooth) smoothTerrain(x, 60);
     else deformTerrain(x, w.radius || 32);
     updateHUD();
-    // Check fall damage KO
     if (g.p1hp <= 0 || g.p2hp <= 0) {
       const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
       triggerTankExplosion(deadSide);
@@ -3067,26 +2423,23 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     const diff = getDiff();
     g.wind = (Math.random() - 0.5) * m.weather.windBase * 2 * diff.windMult;
     if (m.stars >= 3 && Math.random() < 0.6) g.wind = -Math.abs(g.wind);
-    
-    // Apply pending weather event NOW
+
     if (g.weatherEventPending) {
       const ev = g.weatherEventPending;
       if (ev === 'calm') g.wind = 0;
       else if (ev === 'wind') g.wind = (Math.random() > 0.5 ? 1 : -1) * m.weather.windBase * 2.5 * diff.windMult;
-      else if (ev === 'fog') g.wind = (Math.random() - 0.5) * 0.3; // dead calm
+      else if (ev === 'fog') g.wind = (Math.random() - 0.5) * 0.3;
       g.weatherEventPending = null;
     }
-    
+
     g.cancelWindNextTurn = false;
     g.turn = g.turn === 'player' ? 'ai' : 'player';
     if (g.turn === 'player') {
       g.turnNum++;
-      // Sudden Death at turn 10
       if (g.turnNum >= 10 && !g.suddenDeath) {
         g.suddenDeath = true;
         showGameMsg(t('sudden_death'), '+50% damage · wind ×2', 2000);
       }
-      // Announce weather event on stars >= 3 missions (15% chance per turn, max 1 per game)
       if (m.stars >= 3 && !g.weatherEventPending && !g.weatherEventDone && Math.random() < 0.15 && g.turnNum >= 3) {
         const events = ['wind', 'fog', 'calm'];
         const ev = events[Math.floor(Math.random() * events.length)];
@@ -3099,18 +2452,10 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     updateHUD(); updateTurnIndicator(); renderWeaponBar();
     if (g.turn === 'ai') {
       stopTurnTimer();
-      if (g.is1v1) {
-        // 1v1 mode: it's P2's human turn, not AI
-        showP2TurnOverlay();
-        startTurnTimer();
-      } else {
-        setTimeout(aiShoot, 1000);
-      }
-    }
-    else {
-      if (g.is1v1) {
-        showP1TurnOverlay();
-      }
+      if (g.is1v1) { showP2TurnOverlay(); startTurnTimer(); }
+      else { setTimeout(aiShoot, 1000); }
+    } else {
+      if (g.is1v1) showP1TurnOverlay();
       startTurnTimer();
     }
   }, 900);
@@ -3121,63 +2466,58 @@ function aiShoot() {
   if (g.gameOver || !g.running) return;
   const diff = getDiff();
   const stars = g.mission.stars || 2;
-  // Base error scales with stars: less stars = more error
-  const baseErrorMap = { 1: 18, 2: 14, 3: 10, 4: 7, 5: 5 };
-  const basePwrErrorMap = { 1: 20, 2: 16, 3: 12, 4: 9, 5: 7 };
-  const baseAngleErr = (baseErrorMap[stars] || 12) * diff.aiErrorMult;
-  const basePwrErr = (basePwrErrorMap[stars] || 14) * diff.aiPwrErrorMult;
+  // Maps resserrees (Stage 1) : IA plus precise
+  const baseErrorMap = { 1: 14, 2: 11, 3: 8, 4: 6, 5: 4 };
+  const basePwrErrorMap = { 1: 16, 2: 13, 3: 10, 4: 8, 5: 6 };
+  const baseAngleErr = (baseErrorMap[stars] || 10) * diff.aiErrorMult;
+  const basePwrErr = (basePwrErrorMap[stars] || 12) * diff.aiPwrErrorMult;
 
   let aiAngle, aiPower;
   const mem = g.aiMemory;
   const dist = Math.abs(g.p1.x - g.p2.x);
   const dy = g.p1.y - g.p2.y;
 
-  // Walking shot: if we have memory and it's valid, correct based on last error
   if (mem.lastAngle !== null && mem.lastError !== null) {
-    // Correction logic based on last impact relative to target
-    const impactErrorX = mem.lastImpactX - g.p1.x; // negative = too short (impact left of target from AI POV)
+    const impactErrorX = mem.lastImpactX - g.p1.x;
     const impactErrorY = mem.lastImpactY - g.p1.y;
-    
     aiAngle = mem.lastAngle;
     aiPower = mem.lastPower;
-    
-    // AI shoots leftward (negative vx). "Too short" means impact x > p1.x (didn't reach far enough left)
-    // "Too long" means impact x < p1.x (overshot)
-    if (impactErrorX > 20) {
-      // Too short: increase power
-      aiPower = Math.min(95, aiPower + 8 + Math.random() * 5);
-    } else if (impactErrorX < -20) {
-      // Too long: decrease power
-      aiPower = Math.max(35, aiPower - 8 - Math.random() * 5);
+
+    // Hill-lob : si le tir precedent a a peine avance, c'est qu'une colline bloque -> on lobe
+    const traveled = Math.abs(mem.lastImpactX - g.p2.x);
+    const blockedByHill = traveled < dist * 0.45;
+    if (blockedByHill) {
+      aiAngle = Math.min(80, aiAngle + 10 + Math.random() * 5);
+      aiPower = Math.min(95, aiPower + 10);
+      showGameMsg(t('walking_shot'), '↑ lob', 600);
     } else {
-      // Within range horizontally, but missed vertically — adjust angle slightly
-      if (impactErrorY < -15) aiAngle = Math.max(15, aiAngle - 2);
-      else if (impactErrorY > 15) aiAngle = Math.min(80, aiAngle + 2);
+      if (impactErrorX > 20) {
+        aiPower = Math.min(95, aiPower + 8 + Math.random() * 5);
+      } else if (impactErrorX < -20) {
+        aiPower = Math.max(35, aiPower - 8 - Math.random() * 5);
+      } else {
+        if (impactErrorY < -15) aiAngle = Math.max(15, aiAngle - 2);
+        else if (impactErrorY > 15) aiAngle = Math.min(80, aiAngle + 2);
+      }
+      showGameMsg(t('walking_shot'), '', 600);
     }
-    
-    // Wind compensation (better players compensate more)
+
     const windComp = g.wind * 0.4 * (1 - diff.aiErrorMult * 0.5);
     aiPower += windComp;
-    
-    // Add residual random noise (shrinks with skill)
     aiAngle += (Math.random() - 0.5) * baseAngleErr * 0.4;
     aiPower += (Math.random() - 0.5) * basePwrErr * 0.4;
-    
-    showGameMsg(t('walking_shot'), '', 600);
   } else {
-    // First shot: aim from scratch
     let power = Math.min(95, Math.max(35, 30 + dist * 0.07 + Math.abs(dy) * 0.1));
     const baseAngle = 42 + Math.random() * 14;
     aiAngle = baseAngle + (Math.random() - 0.5) * baseAngleErr;
     aiPower = power + (Math.random() - 0.5) * basePwrErr;
-    // Mild wind awareness even on first shot for higher levels
     if (diff.aiErrorMult < 1.0) aiPower += g.wind * 0.2 * (1 - diff.aiErrorMult);
   }
 
   aiAngle = Math.max(15, Math.min(80, aiAngle));
   aiPower = Math.min(95, Math.max(35, aiPower));
   g.aiAngle = aiAngle;
-  
+
   const angRad = aiAngle * Math.PI / 180;
   const vx = -Math.cos(angRad) * aiPower * 0.18;
   const vy = -Math.sin(angRad) * aiPower * 0.18;
@@ -3188,13 +2528,11 @@ function aiShoot() {
 function playerShoot() {
   const g = state.game;
   if (!g || g.projectile || g.gameOver) return;
-  // Determine who is firing: in 1v1, both 'player' and 'ai' turns are human-controlled
   const is1v1 = g.is1v1;
   const isP1Turn = g.turn === 'player';
   const isP2HumanTurn = g.turn === 'ai' && is1v1;
   if (!isP1Turn && !isP2HumanTurn) return;
 
-  // Pick inventory and weapon based on whose turn it is
   const inv = isP1Turn ? g.inventory : g.p2Inventory;
   const wKey = isP1Turn ? g.currentWeapon : g.p2CurrentWeapon;
   if (inv[wKey] !== Infinity && inv[wKey] <= 0) { showGameMsg(t('no_ammo'), t('pick_other')); return; }
@@ -3207,9 +2545,6 @@ function playerShoot() {
   if (isP1Turn) g.shotsP1++; else g.shotsP2++;
   stopTurnTimer();
 
-  // Projectile direction depends on who is firing
-  // P1 fires rightward (default angle), P2 fires leftward (mirror angle)
-  // Use getBarrelTip so spawn position matches the aim indicator exactly
   const tip = getBarrelTip(isP1Turn ? 'p1' : 'p2');
   const vx = tip.dirSign * Math.cos(tip.angRad) * g.power * 0.18;
   const vy = -Math.sin(tip.angRad) * g.power * 0.18;
@@ -3217,46 +2552,40 @@ function playerShoot() {
   updateTurnIndicator();
 }
 
-function moveTank(direction) {
+// ===== Deplacement glisse (Stage 1) : appele en continu par la boucle 30ms tant qu'on maintient =====
+function glideTank(direction, fast) {
   const g = state.game;
   if (!g || g.projectile || g.gameOver) return;
-  // In 1v1, both turns can move; in solo, only P1 can move (the AI doesn't move on demand)
   const isP1Turn = g.turn === 'player';
   const isP2HumanTurn = g.turn === 'ai' && g.is1v1;
   if (!isP1Turn && !isP2HumanTurn) return;
 
-  // Pick the right tank position, fuel and movement bounds
   const me = isP1Turn ? g.p1 : g.p2;
-  const myFuel = isP1Turn ? g.p1fuel : g.p2fuel;
-  const myMaxFuel = isP1Turn ? g.p1maxfuel : g.p2maxfuel;
-  // Bounds: P1 lives in the left half (40 → 0.45*W), P2 in the right half (0.55*W → W-40)
   const xMin = isP1Turn ? 40 : Math.floor(g.W * 0.55);
   const xMax = isP1Turn ? Math.floor(g.W * 0.45) : (g.W - 40);
 
+  const baseSpeed = fast ? 3.4 : 2.0;
   const cx = Math.floor(me.x);
-  const sampleDx = 5;
-  const yHere = g.terrain[cx] || me.y;
-  const targetX = cx + direction * sampleDx;
-  const yAhead = g.terrain[Math.max(0, Math.min(g.W - 1, targetX))] || yHere;
-  const slope = Math.abs(yAhead - yHere) / sampleDx;
-  const slopePenalty = 1 + slope * 1.8;
-  const goingUp = (direction > 0 && yAhead < yHere) || (direction < 0 && yAhead < yHere);
-  const uphillMult = goingUp ? 1.0 : 0.7;
-  const fuelUsed = Math.max(2, Math.round(4 * slopePenalty * uphillMult));
-  const stepSize = Math.max(2, Math.round(4 / slopePenalty));
-  if (myFuel < fuelUsed) { showGameMsg(t('no_fuel'), '€' + g.fuelCost + '/u'); return; }
-  const newX = Math.max(xMin, Math.min(xMax, me.x + direction * stepSize));
-  if (Math.abs(newX - me.x) < 1) return;
+  const aheadX = Math.max(0, Math.min(g.W - 1, cx + direction * 4));
+  const slope = Math.abs((g.terrain[aheadX] || me.y) - (g.terrain[cx] || me.y)) / 4;
+  const speed = baseSpeed / (1 + slope * 1.2); // la pente ralentit mais ne bloque jamais
+  const newX = Math.max(xMin, Math.min(xMax, me.x + direction * speed));
+  const dpx = Math.abs(newX - me.x);
+  if (dpx < 0.3) return;
+
+  const fuelPerPx = 0.16 * (1 + slope * 0.8);
+  const cost = dpx * fuelPerPx;
+  const fuel = isP1Turn ? g.p1fuel : g.p2fuel;
+  if (fuel < cost) { showGameMsg(t('no_fuel'), '€' + g.fuelCost + '/u', 600); return; }
+
   me.x = newX;
   me.y = g.terrain[Math.floor(newX)] - 12;
-  if (isP1Turn) g.p1fuel -= fuelUsed; else g.p2fuel -= fuelUsed;
+  if (isP1Turn) g.p1fuel -= cost; else g.p2fuel -= cost;
 
-  // Solo only: invalidate AI walking shot memory if player moved significantly
   if (isP1Turn && !g.is1v1 && g.aiMemory && Math.abs(newX - (g.lastPlayerX || newX)) > 30) {
     g.aiMemory.lastAngle = null;
     g.aiMemory.lastError = null;
     g.lastPlayerX = newX;
-    showGameMsg('AI MEMORY RESET', '', 600);
   }
   updateHUD();
 }
@@ -3284,17 +2613,16 @@ function showGPRaceResult(won) {
   const acc = g.shotsP1 > 0 ? Math.round((g.hitsP1 / g.shotsP1) * 100) : 0;
   const lastScore = gp.scores[gp.scores.length - 1];
   const isLast = gp.raceIdx === gp.races.length - 1;
-  const html = `
-    <div class="victory-title ${won ? '' : 'defeat'}">${won ? t('race_won') : t('race_lost')}</div>
-    <div class="victory-sub">RACE ${gp.raceIdx + 1} / ${gp.races.length} · ${gp.cupName}</div>
-    <div class="victory-stats">
-      <div><div class="vstat-lbl">${t('accuracy')}</div><div class="vstat-val">${acc}%</div></div>
-      <div><div class="vstat-lbl">${t('shots')}</div><div class="vstat-val">${g.shotsP1}</div></div>
-      <div><div class="vstat-lbl">SCORE</div><div class="vstat-val" style="color: var(--gold)">${lastScore.score}</div></div>
-      <div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: var(--gold)">+€${lastScore.earned}</div></div>
-    </div>
-    <div class="victory-actions"><button class="primary" onclick="nextGPRace()">${isLast ? t('podium') : t('next_race')}</button></div>
-  `;
+  const html = '' +
+    '<div class="victory-title ' + (won ? '' : 'defeat') + '">' + (won ? t('race_won') : t('race_lost')) + '</div>' +
+    '<div class="victory-sub">RACE ' + (gp.raceIdx + 1) + ' / ' + gp.races.length + ' · ' + gp.cupName + '</div>' +
+    '<div class="victory-stats">' +
+      '<div><div class="vstat-lbl">' + t('accuracy') + '</div><div class="vstat-val">' + acc + '%</div></div>' +
+      '<div><div class="vstat-lbl">' + t('shots') + '</div><div class="vstat-val">' + g.shotsP1 + '</div></div>' +
+      '<div><div class="vstat-lbl">SCORE</div><div class="vstat-val" style="color: var(--gold)">' + lastScore.score + '</div></div>' +
+      '<div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: var(--gold)">+€' + lastScore.earned + '</div></div>' +
+    '</div>' +
+    '<div class="victory-actions"><button class="primary" onclick="nextGPRace()">' + (isLast ? t('podium') : t('next_race')) + '</button></div>';
   document.getElementById('victoryContent').innerHTML = html;
   go('victory');
 }
@@ -3303,7 +2631,6 @@ function showVictoryScreen(won) {
   const g = state.game;
   const m = g.mission;
 
-  // 1v1 mode: dedicated victory screen, no PnL, no progress unlock
   if (g.is1v1) {
     const winnerName = won ? (state.mp1v1.p1Name || 'P1') : (state.mp1v1.p2Name || 'P2');
     const loserName  = won ? (state.mp1v1.p2Name || 'P2') : (state.mp1v1.p1Name || 'P1');
@@ -3312,26 +2639,24 @@ function showVictoryScreen(won) {
     const hitsW  = won ? g.hitsP1  : g.hitsP2;
     const accW = shotsW > 0 ? Math.round((hitsW / shotsW) * 100) : 0;
     const totalShots = g.shotsP1 + g.shotsP2;
-    const html = `
-      <div class="victory-title" style="color:${winnerColor}">${winnerName} ${state.lang === 'fr' ? 'GAGNE' : 'WINS'}</div>
-      <div class="victory-sub">${state.lang === 'fr' ? '1v1 LOCAL · ' + winnerName + ' bat ' + loserName : '1v1 LOCAL · ' + winnerName + ' beats ' + loserName}</div>
-      <div class="victory-stats">
-        <div><div class="vstat-lbl">${t('turns')}</div><div class="vstat-val">${g.turnNum}</div></div>
-        <div><div class="vstat-lbl">${state.lang === 'fr' ? 'TIRS TOTAL' : 'TOTAL SHOTS'}</div><div class="vstat-val">${totalShots}</div></div>
-        <div><div class="vstat-lbl">${t('accuracy')} ${winnerName}</div><div class="vstat-val" style="color:${winnerColor}">${accW}%</div></div>
-        <div><div class="vstat-lbl">HP ${winnerName}</div><div class="vstat-val" style="color:${winnerColor}">${won ? g.p1hp : g.p2hp}</div></div>
-      </div>
-      <div class="victory-actions">
-        <button onclick="startLocal1v1()">${state.lang === 'fr' ? 'NOUVEAU MATCH' : 'NEW MATCH'}</button>
-        <button class="primary" onclick="endLocal1v1()">${t('menu')}</button>
-      </div>
-    `;
+    const html = '' +
+      '<div class="victory-title" style="color:' + winnerColor + '">' + winnerName + ' ' + (state.lang === 'fr' ? 'GAGNE' : 'WINS') + '</div>' +
+      '<div class="victory-sub">' + (state.lang === 'fr' ? '1v1 LOCAL · ' + winnerName + ' bat ' + loserName : '1v1 LOCAL · ' + winnerName + ' beats ' + loserName) + '</div>' +
+      '<div class="victory-stats">' +
+        '<div><div class="vstat-lbl">' + t('turns') + '</div><div class="vstat-val">' + g.turnNum + '</div></div>' +
+        '<div><div class="vstat-lbl">' + (state.lang === 'fr' ? 'TIRS TOTAL' : 'TOTAL SHOTS') + '</div><div class="vstat-val">' + totalShots + '</div></div>' +
+        '<div><div class="vstat-lbl">' + t('accuracy') + ' ' + winnerName + '</div><div class="vstat-val" style="color:' + winnerColor + '">' + accW + '%</div></div>' +
+        '<div><div class="vstat-lbl">HP ' + winnerName + '</div><div class="vstat-val" style="color:' + winnerColor + '">' + (won ? g.p1hp : g.p2hp) + '</div></div>' +
+      '</div>' +
+      '<div class="victory-actions">' +
+        '<button onclick="startLocal1v1()">' + (state.lang === 'fr' ? 'NOUVEAU MATCH' : 'NEW MATCH') + '</button>' +
+        '<button class="primary" onclick="endLocal1v1()">' + t('menu') + '</button>' +
+      '</div>';
     document.getElementById('victoryContent').innerHTML = html;
     go('victory');
     return;
   }
 
-  // Solo flow (unchanged)
   const acc = g.shotsP1 > 0 ? Math.round((g.hitsP1 / g.shotsP1) * 100) : 0;
   let unlockHtml = '', earned = 0;
   if (won) {
@@ -3343,43 +2668,38 @@ function showVictoryScreen(won) {
     if (idx >= 0 && idx < order.length - 1) state.progress[order[idx + 1]] = 'current';
     const eventChain = { event1: 'event2', event2: 'event3', event3: 'event4', event4: 'event5', event5: 'event6', event6: 'event7', event7: 'event8' };
     if (eventChain[state.currentMission]) state.progress[eventChain[state.currentMission]] = 'unlocked';
-    unlockHtml = `<div class="unlock">🔓 UNLOCKED: ${m.unlock || ''} · €${earned} PnL</div>`;
+    unlockHtml = '<div class="unlock">🔓 UNLOCKED: ' + (m.unlock || '') + ' · €' + earned + ' PnL</div>';
   } else {
     earned = Math.floor(m.reward * 0.15);
     state.pnl += earned;
   }
   pkSaveState();
   updatePnLDisplay();
-  const html = `
-    <div class="victory-title ${won ? '' : 'defeat'}">${won ? t('victory') : t('defeat')}</div>
-    <div class="victory-sub">${won ? t('you_outraded') : t('market_won')}</div>
-    <div class="victory-stats">
-      <div><div class="vstat-lbl">${t('shots')}</div><div class="vstat-val">${g.shotsP1}</div></div>
-      <div><div class="vstat-lbl">${t('accuracy')}</div><div class="vstat-val">${acc}%</div></div>
-      <div><div class="vstat-lbl">${t('turns')}</div><div class="vstat-val">${g.turnNum}</div></div>
-      <div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: #EE9B00">+€${earned}</div></div>
-    </div>
-    ${won ? `
-      <div class="fun-fact">
-        <div class="fun-fact-hd">${t('did_you_know')}</div>
-        <div class="fun-fact-bd">${localizedTexts(m.funfact).map(p => '<p>' + p + '</p>').join('')}</div>
-      </div>
-      ${unlockHtml}
-    ` : `
-      <div class="fun-fact">
-        <div class="fun-fact-hd">${t('lesson')}</div>
-        <div class="fun-fact-bd"><p>${state.lang === 'fr' ? "Le marché t'a battu. Observe la <span class='punch'>forme de la courbe</span> avant de tirer." : "The market beat you. Watch the <span class='punch'>curve shape</span> before firing."}</p></div>
-      </div>
-    `}
-    <div class="victory-actions">
-      <button onclick="launchGame()">${t('replay')}</button>
-      <button class="primary" onclick="goBackFromBriefing()">${won ? t('continue') : t('menu')}</button>
-    </div>
-  `;
+  const lessonTxt = state.lang === 'fr'
+    ? "Le marché t'a battu. Observe la <span class='punch'>forme de la courbe</span> avant de tirer."
+    : "The market beat you. Watch the <span class='punch'>curve shape</span> before firing.";
+  const html = '' +
+    '<div class="victory-title ' + (won ? '' : 'defeat') + '">' + (won ? t('victory') : t('defeat')) + '</div>' +
+    '<div class="victory-sub">' + (won ? t('you_outraded') : t('market_won')) + '</div>' +
+    '<div class="victory-stats">' +
+      '<div><div class="vstat-lbl">' + t('shots') + '</div><div class="vstat-val">' + g.shotsP1 + '</div></div>' +
+      '<div><div class="vstat-lbl">' + t('accuracy') + '</div><div class="vstat-val">' + acc + '%</div></div>' +
+      '<div><div class="vstat-lbl">' + t('turns') + '</div><div class="vstat-val">' + g.turnNum + '</div></div>' +
+      '<div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: #EE9B00">+€' + earned + '</div></div>' +
+    '</div>' +
+    (won
+      ? ('<div class="fun-fact"><div class="fun-fact-hd">' + t('did_you_know') + '</div><div class="fun-fact-bd">' + localizedTexts(m.funfact).map(p => '<p>' + p + '</p>').join('') + '</div></div>' + unlockHtml)
+      : ('<div class="fun-fact"><div class="fun-fact-hd">' + t('lesson') + '</div><div class="fun-fact-bd"><p>' + lessonTxt + '</p></div></div>')
+    ) +
+    '<div class="victory-actions">' +
+      '<button onclick="launchGame()">' + t('replay') + '</button>' +
+      '<button class="primary" onclick="goBackFromBriefing()">' + (won ? t('continue') : t('menu')) + '</button>' +
+    '</div>';
   document.getElementById('victoryContent').innerHTML = html;
   go('victory');
 }
 
+// ===== Controles =====
 const keys = {};
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
@@ -3392,7 +2712,7 @@ window.addEventListener('keydown', (e) => {
   if (state.currentScreen !== 'game') return;
   if (e.key === ' ') { e.preventDefault(); playerShoot(); }
   if (e.key === 'Escape') quitGame();
-  if (state.game && /^[1-3]$/.test(e.key)) {
+  if (state.game && /^[1-4]$/.test(e.key)) {
     const g = state.game;
     const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
     const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
@@ -3400,15 +2720,13 @@ window.addEventListener('keydown', (e) => {
     const ks = Object.keys(inv);
     if (ks[idx]) selectWeapon(ks[idx]);
   }
-  if (e.key === 'a' || e.key === 'A') moveTank(-1);
-  if (e.key === 'd' || e.key === 'D') moveTank(1);
+  // A/D ne tirent plus moveTank ici : le deplacement glisse est gere dans la boucle 30ms
 });
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
 setInterval(() => {
   const g = state.game;
   if (!g || g.gameOver || state.currentScreen !== 'game') return;
-  // Allow keyboard control on either human turn (P1 always, P2 only in 1v1)
   const isHumanTurn = (g.turn === 'player') || (g.is1v1 && g.turn === 'ai');
   if (!isHumanTurn) return;
   const fast = keys['Shift'];
@@ -3416,14 +2734,34 @@ setInterval(() => {
   let changed = false;
   if (keys['ArrowLeft']) { g.angle = Math.max(0, g.angle - step); changed = true; }
   if (keys['ArrowRight']) { g.angle = Math.min(90, g.angle + step); changed = true; }
-  // Power max depends on the active player's tank
   const activeTank = (g.is1v1 && g.turn === 'ai') ? g.p2Tank : g.tank;
   if (keys['ArrowUp']) { g.power = Math.min(activeTank.powerMax, g.power + step); changed = true; }
   if (keys['ArrowDown']) { g.power = Math.max(10, g.power - step); changed = true; }
   if (changed) updateHUD();
+  // Deplacement glisse : A/D au clavier + boutons MOVE maintenus
+  let moveDir = 0;
+  if (keys['a'] || keys['A'] || keys['__moveLeftBtn']) moveDir = -1;
+  if (keys['d'] || keys['D'] || keys['__moveRightBtn']) moveDir = 1;
+  if (moveDir !== 0) glideTank(moveDir, fast);
 }, 30);
 
 document.getElementById('fireBtn').addEventListener('click', playerShoot);
+
+// Boutons MOVE tactiles/souris (maintien = glisse)
+function bindHold(btnId, flagKey) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const on = (e) => { if (e.cancelable) e.preventDefault(); keys[flagKey] = true; };
+  const off = (e) => { if (e && e.cancelable) e.preventDefault(); keys[flagKey] = false; };
+  btn.addEventListener('pointerdown', on);
+  btn.addEventListener('pointerup', off);
+  btn.addEventListener('pointerleave', off);
+  btn.addEventListener('pointercancel', off);
+  btn.addEventListener('touchstart', on, { passive: false });
+  btn.addEventListener('touchend', off);
+}
+bindHold('moveLeftBtn', '__moveLeftBtn');
+bindHold('moveRightBtn', '__moveRightBtn');
 
 function startGameLoop() {
   function loop() {
@@ -3436,19 +2774,14 @@ function startGameLoop() {
   loop();
 }
 
-// ─── Persistence: save/load state to localStorage ───
+// ===== Persistence =====
 const PK_SAVE_KEY = 'klockwars_save_v1';
 
 function pkSaveState() {
   try {
     const payload = {
-      pnl: state.pnl,
-      progress: state.progress,
-      difficulty: state.difficulty,
-      lang: state.lang,
-      settings: state.settings,
-      version: 1,
-      savedAt: Date.now(),
+      pnl: state.pnl, progress: state.progress, difficulty: state.difficulty,
+      lang: state.lang, settings: state.settings, version: 1, savedAt: Date.now(),
     };
     localStorage.setItem(PK_SAVE_KEY, JSON.stringify(payload));
   } catch (_) {}
@@ -3461,26 +2794,18 @@ function pkLoadState() {
     const data = JSON.parse(raw);
     if (typeof data.pnl === 'number') state.pnl = data.pnl;
     if (data.progress && typeof data.progress === 'object') {
-      // Merge: keep all default keys, override known ones from save
-      Object.keys(data.progress).forEach(k => {
-        if (k in state.progress) state.progress[k] = data.progress[k];
-      });
+      Object.keys(data.progress).forEach(k => { if (k in state.progress) state.progress[k] = data.progress[k]; });
     }
     if (data.difficulty) state.difficulty = data.difficulty;
     if (data.lang) state.lang = data.lang;
-    if (data.settings && typeof data.settings === 'object') {
-      Object.assign(state.settings, data.settings);
-    }
+    if (data.settings && typeof data.settings === 'object') Object.assign(state.settings, data.settings);
     return true;
   } catch (_) { return false; }
 }
 
 function pkResetSave() {
-  if (!confirm(state.lang === 'fr'
-    ? 'Effacer toute la progression ? Cette action est irréversible.'
-    : 'Erase all progress? This cannot be undone.')) return;
+  if (!confirm(state.lang === 'fr' ? 'Effacer toute la progression ? Cette action est irréversible.' : 'Erase all progress? This cannot be undone.')) return;
   try { localStorage.removeItem(PK_SAVE_KEY); } catch (_) {}
-  // Reset in-memory state to defaults
   state.pnl = 5000;
   state.progress = {
     rookie_summer_fr: 'current', junior_winter_fr: 'locked',
@@ -3501,8 +2826,8 @@ updatePnLDisplay();
 pkLoadState();
 applyLang();
 setDifficulty(state.difficulty);
-updatePnLDisplay(); // refresh after load
-</script>
+updatePnLDisplay();
 
+</script>
 </body>
 </html>
