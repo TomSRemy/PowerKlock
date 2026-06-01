@@ -293,6 +293,32 @@ def aggregate_gen(gen_data):
         'solar':        get(PSR_SOLAR),
     }
 
+def fetch_ttf_history(start_date, end_date):
+    """Daily Dutch TTF closes (EUR/MWh) from Yahoo Finance (TTF=F) for the date range.
+    Returns {date_str: close}. Free, no key. One value per trading day."""
+    import calendar
+    out = {}
+    try:
+        p1 = calendar.timegm(start_date.timetuple())
+        p2 = calendar.timegm((end_date + timedelta(days=2)).timetuple())
+        r = requests.get(
+            'https://query1.finance.yahoo.com/v8/finance/chart/TTF=F',
+            params={'interval': '1d', 'period1': p1, 'period2': p2},
+            headers={'User-Agent': 'Mozilla/5.0'}, timeout=30)
+        r.raise_for_status()
+        res = r.json()['chart']['result'][0]
+        ts = res.get('timestamp', []) or []
+        closes = (res.get('indicators', {}).get('quote', [{}])[0].get('close', [])) or []
+        for t, c in zip(ts, closes):
+            if c is None:
+                continue
+            ds = datetime.utcfromtimestamp(t).date().isoformat()
+            out[ds] = round(float(c), 3)
+        print(f'[ttf] fetched {len(out)} daily TTF closes from Yahoo')
+    except Exception as e:
+        print(f'[ttf] history fetch failed: {e}')
+    return out
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -346,6 +372,9 @@ Modes:
     print(f"Mode: {args.mode}" + (f" (threshold: {args.min_zones} zones)" if args.mode == 'repair' else ""))
     print(f"Output: {args.out}/history/")
     print()
+
+    # Fetch full TTF history once (one Yahoo call) → {date_str: close}
+    ttf_map = fetch_ttf_history(start, end)
 
     for d in date_range(start, end):
         date_str = d.isoformat()
@@ -432,6 +461,12 @@ Modes:
             except Exception as e:
                 print(f"  {date_str} {zone}: ERROR — {e}")
                 day_data['zones'][zone] = None
+
+        # Inject the day's TTF close (EUR/MWh) if available and not already present.
+        # Forces a rewrite even in fill mode so existing files gain the field.
+        if date_str in ttf_map and day_data.get('ttf') != ttf_map[date_str]:
+            day_data['ttf'] = ttf_map[date_str]
+            updated = True
 
         if updated or not os.path.exists(daily_path):
             with open(daily_path, 'w') as f:
