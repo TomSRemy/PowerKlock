@@ -276,12 +276,21 @@
       const zd = daily && daily.zones && daily.zones[zone];
 
       let priceSrc, windSrc, solarSrc, sourceSlots, isReal;
+      let mixSrc = null; // real per-fuel generation arrays (MW) when archived
       if (zd && Array.isArray(zd.hourly)) {
         sourceSlots = zd.hourly.length === 96 ? 96 : 24;
         priceSrc = zd.hourly;
-        windSrc = (zd.wind && zd.wind.length === 24) ? zd.wind : (zd.windOnshore || []);
+        windSrc = (Array.isArray(zd.wind) && zd.wind.length) ? zd.wind : (zd.windOnshore || []);
         solarSrc = zd.solar || [];
         isReal = true;
+        // Real generation mix (MW per slot) from ENTSO-E actuals, same resolution as hourly
+        const hasMix = ['nuclear', 'hydro', 'fossil'].some(k => Array.isArray(zd[k]) && zd[k].length);
+        if (hasMix) {
+          mixSrc = {
+            nuclear: zd.nuclear || [], hydro: zd.hydro || [], fossil: zd.fossil || [],
+            biomass: zd.biomass || [], other: zd.other || [],
+          };
+        }
       } else {
         sourceSlots = 24;
         priceSrc = _synthPrice24();
@@ -289,10 +298,12 @@
         solarSrc = _synthSolar24();
         isReal = false;
       }
+      // Generation arrays share the hourly resolution (96 or 24); synth fallback is 24.
+      const genSlots = sourceSlots;
 
       const price = _resample(priceSrc, sourceSlots, slotsPerDay);
-      const wind = _resample(windSrc, 24, slotsPerDay);
-      const solar = _resample(solarSrc, 24, slotsPerDay);
+      const wind = _resample(windSrc, genSlots, slotsPerDay);
+      const solar = _resample(solarSrc, genSlots, slotsPerDay);
       const load = _simulateLoad(dt, slotsPerDay);
       const temp = _simulateTemp(dt, slotsPerDay);
       const windSpeed = _estimateWindSpeed(wind);
@@ -303,7 +314,14 @@
       const eua = _simulateEUA(dt, slotsPerDay);
       const nucAvail = _simulateNuc(dt, slotsPerDay);
       const flux = _simulateFlux(dt, slotsPerDay);
-      const mix = _simulateMix(load, wind, solar, nucAvail, slotsPerDay);
+      // Real generation mix (MW) if archived, else simulate. Flat-builder divides by 1000 → GW.
+      const mix = mixSrc ? {
+        nuclear: _resample(mixSrc.nuclear, genSlots, slotsPerDay),
+        hydro:   _resample(mixSrc.hydro,   genSlots, slotsPerDay),
+        fossil:  _resample(mixSrc.fossil,  genSlots, slotsPerDay),
+        biomass: _resample(mixSrc.biomass, genSlots, slotsPerDay),
+        other:   _resample(mixSrc.other,   genSlots, slotsPerDay),
+      } : _simulateMix(load, wind, solar, nucAvail, slotsPerDay);
 
       const spark = price.map((p, i) => {
         const ttfCost = (ttf[i] || 46) / CCGT_EFF;
