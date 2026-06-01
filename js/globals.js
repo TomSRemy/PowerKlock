@@ -83,6 +83,7 @@ function showPage(id) {
   if (id === 'load' && !window._loadLoaded) loadLoad();
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
+  if (id === 'analysis' && typeof loadMarketAnalysis === 'function') loadMarketAnalysis();
 }
 
 function switchSection(sec) {
