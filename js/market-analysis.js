@@ -508,26 +508,9 @@
   // CROSSHAIR PLUGIN
   // ════════════════════════════════════════════════════════════════
 
-  const crosshairPlugin = {
-    id: 'maCrosshair',
-    afterDatasetsDraw: function (chart) {
-      const idx = STATE.hoverIndex;
-      if (idx < 0) return;
-      const xScale = chart.scales.x;
-      if (!xScale) return;
-      const x = xScale.getPixelForValue(idx);
-      const ctx = chart.ctx;
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(x, chart.chartArea.top);
-      ctx.lineTo(x, chart.chartArea.bottom);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.restore();
-    },
-  };
+  // Crosshair is drawn as a single continuous overlay spanning all panels
+  // (see _positionCrosshair), so the per-chart plugin is now a no-op.
+  const crosshairPlugin = { id: 'maCrosshair' };
 
   // ════════════════════════════════════════════════════════════════
   // RENDER · MAIN PANELS
@@ -567,9 +550,10 @@
           },
         },
         y: {
+          afterFit: function (scale) { scale.width = 42; },
           grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
-          title: yTitle ? { display: true, text: yTitle, color: '#7A93AB', font: { family: 'JetBrains Mono', size: 8, weight: '600' } } : undefined,
+          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxTicksLimit: 4 },
+          title: { display: false },
         },
       },
       onHover: function (event, items) {
@@ -665,19 +649,39 @@
 
   function _updateHoverIndex(idx, event) {
     STATE.hoverIndex = idx;
-    Object.keys(STATE.charts).forEach(function (k) {
-      try { STATE.charts[k].draw(); } catch (_) {}
-    });
+    _positionCrosshair(idx);
     _renderTooltip(idx, event);
   }
 
   function _clearHover() {
     STATE.hoverIndex = -1;
-    Object.keys(STATE.charts).forEach(function (k) {
-      try { STATE.charts[k].draw(); } catch (_) {}
-    });
+    const line = document.getElementById('ma-crosshair-line');
+    if (line) line.style.display = 'none';
     const tip = document.getElementById('ma-hover-tooltip');
     if (tip) tip.style.display = 'none';
+  }
+
+  // Single vertical bar across the whole panel section. Because every chart
+  // now shares the same y-axis width (afterFit), the x-pixel from any chart
+  // is valid for the full stack, so the line is perfectly aligned everywhere.
+  function _positionCrosshair(idx) {
+    const wrap = document.getElementById('ma-panels-wrap');
+    if (!wrap) return;
+    let line = document.getElementById('ma-crosshair-line');
+    if (!line) {
+      line = document.createElement('div');
+      line.id = 'ma-crosshair-line';
+      line.style.cssText = 'position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.45);pointer-events:none;z-index:4;display:none';
+      wrap.appendChild(line);
+    }
+    const chart = STATE.charts['ma-canvas-price'];
+    if (!chart || idx < 0 || !chart.scales || !chart.scales.x) { line.style.display = 'none'; return; }
+    const xPix = chart.scales.x.getPixelForValue(idx);
+    if (xPix == null || isNaN(xPix)) { line.style.display = 'none'; return; }
+    const wrapRect = wrap.getBoundingClientRect();
+    const canvasRect = chart.canvas.getBoundingClientRect();
+    line.style.left = ((canvasRect.left - wrapRect.left) + xPix) + 'px';
+    line.style.display = 'block';
   }
 
   function _renderTooltip(idx, event) {
@@ -746,12 +750,16 @@
     if (!wrap || !event || event.clientX == null) return;
     const rect = wrap.getBoundingClientRect();
     const x = event.clientX - rect.left;
-    const tipWidth = 280;
+    const y = (event.clientY != null) ? event.clientY - rect.top : 10;
+    const tipW = tip.offsetWidth || 280;
+    const tipH = tip.offsetHeight || 200;
     const margin = 12;
-    let left = (x + tipWidth + margin > rect.width) ? x - tipWidth - margin : x + margin;
-    left = Math.max(4, Math.min(rect.width - tipWidth - 4, left));
+    let left = (x + tipW + margin > rect.width) ? x - tipW - margin : x + margin;
+    left = Math.max(4, Math.min(rect.width - tipW - 4, left));
+    let top = y - tipH / 2;
+    top = Math.max(4, Math.min(rect.height - tipH - 4, top));
     tip.style.left = left + 'px';
-    tip.style.top = '10px';
+    tip.style.top = top + 'px';
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -858,8 +866,12 @@
 
     const userPrompt = 'Analyse this ' + ctx.window_days + '-day window for ' + ctx.zone + ':\n\n' + JSON.stringify(ctx, null, 2);
 
+    // AI proxy URL — your Cloudflare Worker (holds the API key server-side).
+    // Replace YOUR-SUBDOMAIN with your deployed Worker URL after setup.
+    const MA_AI_PROXY = 'https://powerklock-ai.tom-s-remy.workers.dev';
+
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(MA_AI_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
