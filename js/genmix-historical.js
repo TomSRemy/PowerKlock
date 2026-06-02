@@ -687,6 +687,7 @@
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
+          zoom: (typeof GM_ZOOM_OPTS !== 'undefined') ? GM_ZOOM_OPTS : undefined,
           tooltip: {
             backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
             borderColor: '#1A2533', borderWidth: 1, padding: 8,
@@ -708,6 +709,7 @@
         },
       },
     });
+    if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhDrillProfileChart, 'gmh-drill-profile-canvas');
 
     // Breakdown
     if (breakHost) {
@@ -722,10 +724,10 @@
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
           </tr></thead>
           <tbody>
             ${row('Period avg',  avg.toFixed(2),    'GW',  'simple mean')}
@@ -802,11 +804,11 @@
       tableHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">TWh</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Avg GW</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">% Share</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">g CO₂/kWh</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">TWh</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Avg GW</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
@@ -903,6 +905,7 @@
         plugins: {
           legend: { display: true, position: 'top', align: 'end',
             labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+          zoom: (typeof GM_ZOOM_OPTS !== 'undefined') ? GM_ZOOM_OPTS : undefined,
           tooltip: {
             backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
             borderColor: '#1A2533', borderWidth: 1, padding: 8,
@@ -918,6 +921,7 @@
         },
       },
     });
+    if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhDrillCarbonChart, 'gmh-drill-carbon-canvas');
 
     if (breakHost) {
       const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
@@ -930,10 +934,10 @@
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
           </tr></thead>
           <tbody>
             ${row('Period avg', Math.round(avg), 'g/kWh', '24h weighted average')}
@@ -946,11 +950,11 @@
         </table>
         <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
           <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
             <span style="color:var(--tx)">CI = Σ<sub>f</sub> [ génération<sub>f</sub> × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub></span><br>
             <span style="color:var(--tx3)">Moyenne attributionnelle, périmètre cycle de vie. Agrégée sur la période sélectionnée.</span>
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
             <thead><tr>
               <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
               <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
@@ -1020,11 +1024,11 @@
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Day</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Peak GW</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Off-peak GW</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Spread GW</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Spread %</th>
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Day</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Peak GW</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Off-peak GW</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread GW</th>
+            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread %</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
