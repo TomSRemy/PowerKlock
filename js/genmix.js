@@ -2463,99 +2463,84 @@ window.gmSetHistDate = function (ds) {
       }
     }
 
-    // build DOM shell
+    // build DOM shell — same sizing/typo as the other drill charts (340px), panel beside
     host.innerHTML =
       '<div class="gms-wrap">'
-      + '<div class="gms-body">'
-      +   '<div class="gms-chart-wrap"><div class="gms-rt">Production · stack (' + (N === 96 ? '15 min' : 'horaire') + ')</div>'
-      +     '<svg viewBox="0 0 1000 440" preserveAspectRatio="none"></svg><div class="gms-nowpill" style="display:none"></div></div>'
-      +   '<div class="gms-panel"><div class="gms-panel-main"><div class="gms-panel-hd">Mix instantané · <b class="gms-ptime">—</b></div><div class="gms-list"></div></div><div class="gms-vbar"></div></div>'
+      + '<div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">'
+      +   '<div style="flex:1 1 58%;min-width:300px;position:relative;height:340px"><canvas id="gms-canvas" style="width:100%;height:100%;display:block"></canvas></div>'
+      +   '<div class="gms-panel" style="flex:1 1 34%;min-width:230px"><div class="gms-panel-main"><div class="gms-panel-hd">Mix · <b class="gms-ptime">—</b></div><div class="gms-list"></div></div><div class="gms-vbar"></div></div>'
       + '</div>'
       + '<div class="gms-tbl-lab">Détail par filière · journée' + (isReal ? '' : ' · (données simulées — pas d\'arrays réels ce jour)') + '</div>'
-      + '<table><thead><tr><th>Filière</th><th>Instant</th><th>Part</th><th>Min j.</th><th>Max j.</th><th>Moy j.</th><th>CO2</th></tr></thead><tbody></tbody></table>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
+      +   '<thead><tr>'
+      +     ['Filière', 'Instant', 'Part', 'Min j.', 'Max j.', 'Moy j.', 'CO₂'].map((h, i) => '<th style="padding:4px 8px;text-align:' + (i === 0 ? 'left' : 'right') + ';color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">' + h + '</th>').join('')
+      +   '</tr></thead><tbody></tbody></table>'
       + '</div>';
 
     const wrap = host.querySelector('.gms-wrap');
-    const svg = wrap.querySelector('svg');
-    const NS = 'http://www.w3.org/2000/svg';
-    const elx = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
 
     const totals = []; for (let i = 0; i < N; i++) totals.push(STACK.reduce((s, f) => s + DATA[f][i], 0));
-    // Last populated slot (the daily archive can be a partial day captured intraday)
     let nReal = 0; for (let i = N - 1; i >= 0; i--) { if (totals[i] > 0) { nReal = i + 1; break; } }
     if (nReal < 1) nReal = N;
     const realTotals = totals.slice(0, nReal);
     const maxTotal = Math.max.apply(null, realTotals), minTotal = Math.min.apply(null, realTotals);
-    // J-1 last real slot
     let prevReal = 0; if (prevTotals) { for (let i = N - 1; i >= 0; i--) { if (prevTotals[i] > 0) { prevReal = i + 1; break; } } }
-    const prevPeak = prevReal ? Math.max.apply(null, prevTotals.slice(0, prevReal)) : 0;
-    const peakForScale = Math.max(maxTotal, prevPeak);
-    const yMax = Math.max(10000, Math.ceil(peakForScale / 10000) * 10000);
     const STAT = {}; STACK.forEach(f => { const a = DATA[f].slice(0, nReal); STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
-    // Coverage note for partial days
     if (isReal && nReal < N) {
       const cm = Math.round(nReal / N * 24 * 60);
       const note = ' · données ENTSO-E jusqu\'à ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (jour en cours)';
       const lab = wrap.querySelector('.gms-tbl-lab'); if (lab) lab.insertAdjacentHTML('beforeend', '<span style="color:var(--tx4)">' + note + '</span>');
     }
 
-    const W = 1000, H = 440, L = 52, R = 14, T = 12, B = 30;
-    const px = i => L + i / (N - 1) * (W - L - R), py = v => T + (1 - v / yMax) * (H - T - B);
-    let nowLine;
-    (function draw() {
-      svg.innerHTML = '';
-      for (let g = 0; g <= yMax / 1000; g += 10) {
-        const y = py(g * 1000);
-        svg.appendChild(elx('line', { class: 'grid-line', x1: L, y1: y, x2: W - R, y2: y }));
-        const tx = elx('text', { class: 'axis-txt', x: L - 6, y: y + 3, 'text-anchor': 'end' }); tx.textContent = g; svg.appendChild(tx);
-      }
-      const lower = new Array(N).fill(0);
-      const lastI = nReal - 1;
-      STACK.forEach(f => {
-        const upper = lower.map((lo, i) => lo + DATA[f][i]);
-        let d = 'M ' + px(0) + ' ' + py(lower[0]);
-        for (let i = 0; i <= lastI; i++) d += ' L ' + px(i).toFixed(1) + ' ' + py(upper[i]).toFixed(1);
-        for (let i = lastI; i >= 0; i--) d += ' L ' + px(i).toFixed(1) + ' ' + py(lower[i]).toFixed(1);
-        d += ' Z';
-        svg.appendChild(elx('path', { class: 'area', d: d, fill: FUEL[f].color, 'fill-opacity': .82 }));
-        for (let i = 0; i < N; i++) lower[i] = upper[i];
+    // labels HH:MM, data null beyond last real slot (clean stop, no cliff)
+    const labels = []; for (let i = 0; i < N; i++) { const m = Math.round(i / N * 24 * 60); labels.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')); }
+    const hx = v => 'rgba(' + parseInt(v.slice(1, 3), 16) + ',' + parseInt(v.slice(3, 5), 16) + ',' + parseInt(v.slice(5, 7), 16) + ',0.82)';
+    const datasets = STACK.map((f, idx) => ({
+      label: FUEL[f].label, data: labels.map((_, i) => (i < nReal ? DATA[f][i] / 1000 : null)),
+      borderColor: FUEL[f].color, backgroundColor: hx(FUEL[f].color), borderWidth: 1,
+      fill: idx === 0 ? 'origin' : '-1', tension: 0.3, pointRadius: 0, spanGaps: false,
+    }));
+    if (prevTotals && prevReal > 1) datasets.push({
+      label: 'J-1 (' + (prevDs || '') + ')', data: labels.map((_, i) => (i < prevReal ? prevTotals[i] / 1000 : null)),
+      borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 4],
+      fill: false, tension: 0.3, pointRadius: 0, stack: 'j1', spanGaps: false,
+    });
+
+    const canvas = document.getElementById('gms-canvas');
+    if (typeof Chart !== 'undefined' && canvas) {
+      if (window._gmDrillStackChart) { try { window._gmDrillStackChart.destroy(); } catch (_) {} }
+      window._gmDrillStackChart = new Chart(canvas, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          interaction: { mode: 'index', intersect: false },
+          onHover: (evt, active) => { if (active && active.length) update(active[0].index); },
+          plugins: {
+            legend: { display: false },
+            zoom: GM_ZOOM_OPTS,
+            tooltip: { enabled: false },
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
+            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } }, title: { display: true, text: 'Production · GW', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
+          },
+        },
       });
-      [['MAX', maxTotal], ['MIN', minTotal]].forEach(([lab, v]) => {
-        const y = py(v);
-        svg.appendChild(elx('line', { class: 'band-line', x1: L, y1: y, x2: W - R, y2: y }));
-        const tx = elx('text', { class: 'band-txt', x: W - R - 2, y: y - 4, 'text-anchor': 'end' }); tx.textContent = lab; svg.appendChild(tx);
-      });
-      // J-1 total curve (dashed, discreet) — up to its own last real slot
-      if (prevTotals && prevReal > 1) {
-        let pd = 'M ' + px(0) + ' ' + py(prevTotals[0]);
-        for (let i = 1; i < prevReal; i++) pd += ' L ' + px(i).toFixed(1) + ' ' + py(prevTotals[i]).toFixed(1);
-        svg.appendChild(elx('path', { class: 'j1-line', d: pd }));
-        const lg = elx('text', { class: 'j1-txt', x: L + 4, y: T + 12 }); lg.textContent = 'J-1 (' + (prevDs || '') + ')'; svg.appendChild(lg);
-      }
-      for (let h = 0; h <= 24; h += 4) {
-        const i = Math.min(N - 1, Math.round(h / 24 * N));
-        const tx = elx('text', { class: 'axis-txt', x: px(i), y: H - 8, 'text-anchor': 'middle' }); tx.textContent = String(h).padStart(2, '0') + ':00'; svg.appendChild(tx);
-      }
-      nowLine = elx('line', { class: 'now-line', x1: 0, y1: T, x2: 0, y2: H - B }); svg.appendChild(nowLine);
-    })();
+      _gmZoomify(window._gmDrillStackChart, 'gms-canvas');
+      canvas.addEventListener('mouseleave', () => update(Math.max(0, nReal - 1)));
+    }
 
     const fmtInst = v => v >= 1000 ? (v / 1000).toFixed(2) + ' GW' : Math.round(v) + ' MW';
     const listEl = wrap.querySelector('.gms-list');
     const vbarEl = wrap.querySelector('.gms-vbar');
     const tbody = wrap.querySelector('tbody');
-    const pill = wrap.querySelector('.gms-nowpill');
     const ptime = wrap.querySelector('.gms-ptime');
 
     function update(idx) {
       idx = Math.max(0, Math.min(nReal - 1, idx));
-      const x = px(idx); nowLine.setAttribute('x1', x); nowLine.setAttribute('x2', x);
       const mins = Math.round(idx / N * 24 * 60), hh = String(Math.floor(mins / 60)).padStart(2, '0'), mm = String(mins % 60).padStart(2, '0');
-      pill.style.display = 'block'; pill.textContent = hh + ':' + mm;
-      const cw = svg.clientWidth || svg.getBoundingClientRect().width || W;
-      pill.style.left = (x / W * cw) + 'px';
-      pill.style.top = (wrap.querySelector('.gms-rt').offsetHeight + 2) + 'px';
-      ptime.textContent = hh + ':' + mm;
-
+      if (ptime) ptime.textContent = hh + ':' + mm;
       const slot = STACK.map(f => ({ f, v: DATA[f][idx] })); const tot = slot.reduce((s, o) => s + o.v, 0) || 1;
       vbarEl.innerHTML = '';
       STACK.forEach(f => { const v = DATA[f][idx]; if (v <= 0) return; const seg = document.createElement('div'); seg.className = 'gms-vseg'; seg.style.height = (v / tot * 100) + '%'; seg.style.background = FUEL[f].color; vbarEl.appendChild(seg); });
@@ -2567,22 +2552,20 @@ window.gmSetHistDate = function (ds) {
       });
       tbody.innerHTML = '';
       slot.slice().sort((a, b) => b.v - a.v).forEach(o => {
-        const f = o.f, s = STAT[f]; const tr = document.createElement('tr');
-        tr.innerHTML = '<td><span class="gms-cellnm"><span class="dot" style="background:' + FUEL[f].color + '"></span>' + FUEL[f].label + '</span></td>'
-          + '<td>' + fmtInst(o.v) + '</td><td style="color:var(--tx);font-weight:700">' + (o.v / tot * 100).toFixed(1) + '%</td>'
-          + '<td style="color:var(--tx3)">' + s.min.toFixed(2) + '</td><td style="color:var(--tx3)">' + s.max.toFixed(2) + '</td><td>' + s.avg.toFixed(2) + '</td><td style="color:var(--tx3)">' + FUEL[f].co2 + '</td>';
+        const f = o.f, s = STAT[f]; const tr = document.createElement('tr'); tr.style.borderTop = '1px solid var(--bd)';
+        tr.innerHTML = '<td style="padding:6px 8px"><span class="gms-cellnm"><span class="dot" style="background:' + FUEL[f].color + '"></span>' + FUEL[f].label + '</span></td>'
+          + '<td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx)">' + fmtInst(o.v) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + (o.v / tot * 100).toFixed(1) + '%</td>'
+          + '<td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.min.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.max.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx2)">' + s.avg.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + FUEL[f].co2 + '</td>';
         tbody.appendChild(tr);
       });
       const co2 = slot.reduce((s, o) => s + o.v * FUEL[o.f].co2, 0) / tot;
-      const tr = document.createElement('tr'); tr.className = 'total';
-      tr.innerHTML = '<td>Total</td><td>' + fmtInst(tot) + '</td><td>100%</td><td>' + (minTotal / 1000).toFixed(2) + '</td><td>' + (maxTotal / 1000).toFixed(2) + '</td><td>—</td><td>' + Math.round(co2) + ' g</td>';
+      const tr = document.createElement('tr'); tr.className = 'total'; tr.style.borderTop = '1px solid var(--bd2)';
+      tr.innerHTML = '<td style="padding:6px 8px;font-weight:700">Total</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + fmtInst(tot) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">100%</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (minTotal / 1000).toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (maxTotal / 1000).toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;color:var(--tx3)">—</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + Math.round(co2) + ' g</td>';
       tbody.appendChild(tr);
     }
 
     const defSlot = Math.max(0, nReal - 1);
     update(defSlot);
-    svg.addEventListener('mousemove', e => { const r = svg.getBoundingClientRect(); const xrel = (e.clientX - r.left) / r.width * W; update(Math.round((xrel - L) / (W - L - R) * (N - 1))); });
-    svg.addEventListener('mouseleave', () => update(defSlot));
     host._gmsReflow = () => update(defSlot);
   };
 
