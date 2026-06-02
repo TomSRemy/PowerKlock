@@ -591,6 +591,23 @@
       return;
     }
     if (!p) return;
+    if (tab === 'mix' || tab === 'carbon' || tab === 'seasonal') {
+      const host = document.getElementById('gmh-drill-content');
+      if (host) host.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Agrégation des données réelles sur la période…</div>';
+      _gmhBuildRealAgg(zone, period).then(rp => {
+        const real = (rp && rp._samples > 0) ? rp : p;
+        if (tab === 'mix') _gmhDrillRenderMix(zone, real);
+        else if (tab === 'carbon') _gmhDrillRenderCarbon(zone, real);
+        else _gmhDrillRenderSeasonal(zone, real);
+        const banner = document.getElementById('gmh-drill-banner-anchor');
+        if (banner) banner.innerHTML = _gmhDrillBuildBanner(tab, zone, real);
+      }).catch(() => {
+        if (tab === 'mix') _gmhDrillRenderMix(zone, p);
+        else if (tab === 'carbon') _gmhDrillRenderCarbon(zone, p);
+        else _gmhDrillRenderSeasonal(zone, p);
+      });
+      return;
+    }
     switch (tab) {
       case 'profile':  _gmhDrillRenderProfile(zone, p);  break;
       case 'mix':      _gmhDrillRenderMix(zone, p);      break;
@@ -599,6 +616,63 @@
     }
     const banner = document.getElementById('gmh-drill-banner-anchor');
     if (banner) banner.innerHTML = _gmhDrillBuildBanner(tab, zone, p);
+  }
+
+  // Real period aggregation from the stored archive (bounded ≤60 sampled days).
+  // Returns a `p`-shaped object (per-fuel TWh, shares, co2, dailySeries, seasonalCells).
+  async function _gmhBuildRealAgg(zone, period) {
+    const D = PERIOD_DAYS[period] || 4170;
+    let stepDays = (D <= 31) ? 1 : (D <= 210 ? 7 : 30);
+    let count = Math.ceil(D / stepDays);
+    if (count > 60) { stepDays = Math.ceil(D / 60); count = Math.ceil(D / stepDays); }
+    const fuels = (typeof GM_STACK_FUELS !== 'undefined') ? GM_STACK_FUELS : ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+    const META = window.GM_FUEL_META || {};
+    const today = new Date();
+    const start = new Date(today.getTime()); start.setDate(start.getDate() - D);
+    const fmt = (typeof _gmFmtDate === 'function') ? _gmFmtDate : (d => d.toISOString().slice(0, 10));
+    const fuelTWh = {}; fuels.forEach(f => fuelTWh[f] = 0);
+    const dailySeries = { date: [], co2: [] };
+    const seas = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => ({ s: 0, n: 0 })));
+    let samples = 0, loadSumGW = 0;
+    for (let i = 0; i < count; i++) {
+      const dt = new Date(start.getTime()); dt.setDate(dt.getDate() + i * stepDays + Math.floor(stepDays / 2));
+      if (dt > today) break;
+      const ds = fmt(dt);
+      const j = (typeof _gmFetchDaily === 'function') ? await _gmFetchDaily(ds) : null;
+      const zd = j && j.zones && j.zones[zone];
+      if (!zd || (typeof _gmHasArrays === 'function' && !_gmHasArrays(zd))) continue;
+      const N = Math.max.apply(null, fuels.map(f => Array.isArray(zd[f]) ? zd[f].length : 0).concat([1]));
+      let nReal = 0; for (let s = N - 1; s >= 0; s--) { if (fuels.reduce((a, f) => a + ((zd[f] && zd[f][s]) || 0), 0) > 0) { nReal = s + 1; break; } }
+      if (nReal < 1) nReal = N;
+      let dayMeanMW = 0, num = 0, den = 0;
+      fuels.forEach(f => {
+        const arr = Array.isArray(zd[f]) ? zd[f] : []; let s = 0; for (let k = 0; k < nReal; k++) s += (arr[k] || 0);
+        const meanMW = s / nReal;
+        fuelTWh[f] += meanMW * 24 * stepDays / 1e6; // block energy (TWh)
+        dayMeanMW += meanMW; num += meanMW * (META[f] ? META[f].co2 : 0); den += meanMW;
+      });
+      dailySeries.date.push(dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: stepDays >= 28 ? '2-digit' : undefined }));
+      dailySeries.co2.push(den > 0 ? num / den : 0);
+      loadSumGW += dayMeanMW / 1000; samples++;
+      const dow = (dt.getDay() + 6) % 7; // Mon = 0
+      for (let s = 0; s < nReal; s++) { const hour = Math.floor(s / N * 24); const tot = fuels.reduce((a, f) => a + ((zd[f] && zd[f][s]) || 0), 0); seas[dow][hour].s += tot / 1000; seas[dow][hour].n++; }
+    }
+    const totalTWh = fuels.reduce((a, f) => a + fuelTWh[f], 0) || 0.001;
+    const ren = fuelTWh.wind + fuelTWh.solar + fuelTWh.hydro + fuelTWh.biomass;
+    const lowC = ren + fuelTWh.nuclear;
+    const dom = fuels.slice().sort((a, b) => fuelTWh[b] - fuelTWh[a])[0];
+    const avgCo2 = dailySeries.co2.length ? dailySeries.co2.reduce((a, b) => a + b, 0) / dailySeries.co2.length : 0;
+    const p = {};
+    fuels.forEach(f => p[f] = fuelTWh[f]);
+    p.totalTWh = totalTWh;
+    p.renPct = ren / totalTWh * 100; p.fosPct = fuelTWh.fossil / totalTWh * 100; p.lowCPct = lowC / totalTWh * 100;
+    p.co2 = avgCo2; p.dom = dom;
+    p.avgLoadGW = samples ? loadSumGW / samples : 0;
+    p.dailySeries = dailySeries;
+    p.seasonalCells = seas.map(row => row.map(c => (c.n ? c.s / c.n : 0)));
+    p.dCo2Y1 = null;
+    p._real = true; p._samples = samples;
+    return p;
   }
 
   // ──── DRILL VIEWS ────
@@ -864,11 +938,11 @@
 
     let overlayData = null;
     let overlayLabel = '';
-    if (cmp === 'y-1') {
+    if (cmp === 'y-1' && p.dCo2Y1 != null) {
       // Y-1 synthesis: today + dCo2Y1 reversed (i.e. last year was higher by -dCo2)
       overlayData = data.map(v => v - p.dCo2Y1);
       overlayLabel = 'Y-1';
-    } else if (cmp === 'lin') {
+    } else if (cmp === 'lin' || (cmp === 'y-1' && p.dCo2Y1 == null)) {
       // Linear regression
       const n = data.length;
       const xs = Array.from({ length: n }, (_, i) => i);
@@ -990,7 +1064,9 @@
       1.10, 1.14, 1.17, 1.18, 1.14, 1.08, 1.00, 0.92,
     ];
     const DAY_FACTOR = [1.04, 1.06, 1.06, 1.06, 1.02, 0.92, 0.88];
-    const cells = DAYS.map((_, d) => HOUR_FACTOR.map((hf, h) => p.avgLoadGW * hf * DAY_FACTOR[d]));
+    const cells = (p.seasonalCells && p.seasonalCells.length === 7 && p.seasonalCells.some(r => r.some(v => v > 0)))
+      ? p.seasonalCells
+      : DAYS.map((_, d) => HOUR_FACTOR.map((hf, h) => p.avgLoadGW * hf * DAY_FACTOR[d]));
     const vMin = Math.min(...cells.flat()); const vMax = Math.max(...cells.flat());
 
     const colorAt = (v) => {
