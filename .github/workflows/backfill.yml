@@ -23,12 +23,34 @@ on:
         description: 'If date_mode=range: end date YYYY-MM-DD (inclusive)'
         required: false
         default: ''
-      zones:
-        description: 'Comma-separated zones (or "all" for every zone)'
+      zones_preset:
+        description: 'Zone preset (use "custom" to type your own list in the field below)'
         required: true
         default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'FR'
+          - 'DE_LU'
+          - 'FR,DE_LU'
+          - 'core-west (FR,DE_LU,BE,NL)'
+          - 'iberia (ES,PT)'
+          - 'italy (IT_NORD,IT_SICI)'
+          - 'nordics (NO_1,DK_W,DK_E,SE,FI,EE,LV,LT)'
+          - 'central-east (AT,CH,CZ,SK,PL,HU,SI,HR,RO,BG)'
+          - 'balkans (GR,RS,MK,ME)'
+          - 'custom'
+      zones:
+        description: 'Custom zones (used only if preset = custom). Comma-separated, e.g. FR,DE_LU,ES'
+        required: false
+        default: ''
       with_genmix:
         description: 'Also fetch generation mix (5x slower, adds renPct + domFuel)'
+        required: true
+        default: false
+        type: boolean
+      genmix_only:
+        description: 'Production only: fetch generation mix only (no prices), merged into existing daily files (prices kept). Use to fill the genmix gap fast.'
         required: true
         default: false
         type: boolean
@@ -86,14 +108,35 @@ jobs:
             fi
             ARGS="$ARGS --from ${{ inputs.date_from }} --to ${{ inputs.date_to }}"
           fi
+          # Resolve zones from the preset dropdown; "custom" uses the free-text field.
+          PRESET="${{ inputs.zones_preset }}"
+          case "$PRESET" in
+            custom)        ZONES_ARG="${{ inputs.zones }}" ;;
+            "core-west "*) ZONES_ARG="FR,DE_LU,BE,NL" ;;
+            "iberia "*)    ZONES_ARG="ES,PT" ;;
+            "italy "*)     ZONES_ARG="IT_NORD,IT_SICI" ;;
+            "nordics "*)   ZONES_ARG="NO_1,DK_W,DK_E,SE,FI,EE,LV,LT" ;;
+            "central-east "*) ZONES_ARG="AT,CH,CZ,SK,PL,HU,SI,HR,RO,BG" ;;
+            "balkans "*)   ZONES_ARG="GR,RS,MK,ME" ;;
+            *)             ZONES_ARG="$PRESET" ;;
+          esac
+          # Strip any whitespace (e.g. "FR, DE_LU" → "FR,DE_LU") so word-splitting
+          # never turns a space into a stray positional arg for argparse.
+          ZONES_ARG="${ZONES_ARG// /}"
           # Expand "all" shortcut to full zone list (kept in sync with ZONES_EIC in enrich_summary.py)
-          ZONES_ARG="${{ inputs.zones }}"
           if [ "$ZONES_ARG" = "all" ] || [ "$ZONES_ARG" = "ALL" ]; then
             ZONES_ARG="FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE"
+          fi
+          if [ -z "$ZONES_ARG" ]; then
+            echo "::error::No zones resolved. Pick a preset or set preset=custom and fill the zones field."
+            exit 1
           fi
           ARGS="$ARGS --zones $ZONES_ARG"
           if [ "${{ inputs.with_genmix }}" = "true" ]; then
             ARGS="$ARGS --with-genmix"
+          fi
+          if [ "${{ inputs.genmix_only }}" = "true" ]; then
+            ARGS="$ARGS --genmix-only"
           fi
           ARGS="$ARGS --mode ${{ inputs.mode }}"
           if [ "${{ inputs.mode }}" = "repair" ]; then
@@ -125,7 +168,7 @@ jobs:
           else
             RANGE="${{ inputs.date_from }} to ${{ inputs.date_to }}"
           fi
-          MSG="backfill[${{ inputs.mode }}]: $RANGE zones=${{ inputs.zones }}"
+          MSG="backfill[${{ inputs.mode }}]: $RANGE zones=${{ inputs.zones_preset }}"
           if [ "${{ inputs.with_genmix }}" = "true" ]; then
             MSG="$MSG +genmix"
           fi
