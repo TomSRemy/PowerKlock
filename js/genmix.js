@@ -17,7 +17,7 @@ window.GM = GM;
 // Fuel meta — aligned with Daily DA and Historical
 const GM_FUEL_META = {
   nuclear: { emoji: '⚛', label: 'Nuclear',  color: '#7B4B9C', co2: 12   },
-  wind:    { emoji: '⌬', label: 'Wind',     color: '#14D3A9', co2: 11   },
+  wind:    { emoji: '🌬', label: 'Wind',     color: '#14D3A9', co2: 11   },
   solar:   { emoji: '☀', label: 'Solar',    color: '#FBBF24', co2: 45   },
   hydro:   { emoji: '💧', label: 'Hydro',    color: '#3FA6B4', co2: 24   },
   biomass: { emoji: '🌿', label: 'Biomass',  color: '#94D2BD', co2: 230  },
@@ -231,6 +231,53 @@ window._gmBuildMainBannerHtml = _gmBuildMainBannerHtml;
 // ════════════════════════════════════════════════════════════════
 // BLOCK 1 · Multi-zone live snapshot table
 // ════════════════════════════════════════════════════════════════
+
+// Average stats (total MW, %ren, co2 g/kWh) over a stored day's real slots.
+function _gmStatsFromDayArrays(zd) {
+  if (!zd) return null;
+  const fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+  const a = {}; let N = 1;
+  fuels.forEach(f => { a[f] = Array.isArray(zd[f]) ? zd[f] : []; N = Math.max(N, a[f].length); });
+  let nReal = 0; for (let i = N - 1; i >= 0; i--) { if (fuels.reduce((s, f) => s + ((a[f][i]) || 0), 0) > 0) { nReal = i + 1; break; } }
+  if (nReal < 1) return null;
+  const mean = {}; fuels.forEach(f => { let s = 0; for (let i = 0; i < nReal; i++) s += (a[f][i] || 0); mean[f] = s / nReal; });
+  const total = fuels.reduce((s, f) => s + mean[f], 0); if (total <= 0) return null;
+  const ren = mean.wind + mean.solar + mean.hydro + mean.biomass;
+  let num = 0; fuels.forEach(f => { num += mean[f] * ((GM_FUEL_META[f] && GM_FUEL_META[f].co2) || 0); });
+  return { total, renPct: ren / total * 100, co2: num / total, ren };
+}
+
+// Set FR + loaded-EU KPI deltas vs the previous stored day (colored left edge).
+async function _gmBoardJ1Deltas(frNow, euNow, zones) {
+  if (typeof _gmFetchDaily !== 'function' || typeof _gmFmtDate !== 'function') return;
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  const j = await _gmFetchDaily(_gmFmtDate(d));
+  if (!j || !j.zones) return;
+  const frY = _gmStatsFromDayArrays(j.zones['FR']);
+  let euT = 0, euCo2W = 0, euR = 0, nz = 0;
+  (zones || []).forEach(z => { const s = _gmStatsFromDayArrays(j.zones[z]); if (s) { euT += s.total; euR += s.ren; euCo2W += s.co2 * s.total; nz++; } });
+  const euY = euT > 0 ? { total: euT, renPct: euR / euT * 100, co2: euCo2W / euT } : null;
+
+  const setDelta = (metaId, valId, now, yes, kind) => {
+    const meta = document.getElementById(metaId);
+    const card = document.getElementById(valId) ? document.getElementById(valId).closest('.kpi-card') : null;
+    if (now == null || yes == null || !isFinite(yes) || yes === 0) { if (meta) meta.innerHTML = '<span style="color:var(--tx4)">— pas de réf J-1</span>'; return; }
+    const dPct = (now - yes) / yes * 100;
+    const up = dPct >= 0;
+    const good = (kind === 'co2') ? !up : up; // ren/total: hausse = vert ; co2: baisse = vert
+    const col = good ? '#14D3A9' : '#ED6965';
+    if (meta) meta.innerHTML = `<span style="color:${col};font-weight:600">${up ? '▲' : '▼'} ${up ? '+' : ''}${dPct.toFixed(1)}% vs J-1</span>`;
+    if (card) card.style.boxShadow = `inset 3px 0 0 ${col}`;
+  };
+
+  setDelta('gm-kpi-fr-total-meta', 'gm-kpi-fr-total', frNow.total, frY ? frY.total : null, 'total');
+  setDelta('gm-kpi-fr-ren-meta',   'gm-kpi-fr-ren',   frNow.renPct, frY ? frY.renPct : null, 'ren');
+  setDelta('gm-kpi-fr-co2-meta',   'gm-kpi-fr-co2',   frNow.co2,    frY ? frY.co2 : null, 'co2');
+  setDelta('gm-kpi-eu-total-meta', 'gm-kpi-eu-total', euNow.total, euY ? euY.total : null, 'total');
+  setDelta('gm-kpi-eu-ren-meta',   'gm-kpi-eu-ren',   euNow.renPct, euY ? euY.renPct : null, 'ren');
+  setDelta('gm-kpi-eu-co2-meta',   'gm-kpi-eu-co2',   euNow.co2,    euY ? euY.co2 : null, 'co2');
+}
+
 function renderGmMain() {
   const data = window._genmixData;
   if (!data || !Object.keys(data).length) {
@@ -297,20 +344,23 @@ function renderGmMain() {
     const co2C  = _gmCo2Color(st.co2);
     const dom   = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
     return `<tr class="gm-row" data-zone="${z}" style="cursor:pointer">
-      <td style="text-align:left">${flagOf(z)} ${z}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${fmt(st.total / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.wind || 0) / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.solar || 0) / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.nuclear || 0) / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt((mix.hydro || 0) / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${st.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${fmt((mix.fossil || 0) / 1000)}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color};font-size:11px">${dom.emoji} ${dom.label}</span></td>
-      <td style="text-align:center;font-family:'JetBrains Mono',monospace;color:${co2C};font-weight:600">${Math.round(st.co2)}</td>
+      <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flagOf(z)} ${z}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${fmt(st.total / 1000)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.wind || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.solar || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.nuclear || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.hydro || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${st.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${fmt((mix.fossil || 0) / 1000)}</td>
+      <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color};font-size:11px">${dom.emoji} ${dom.label}</span></td>
+      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${co2C};font-weight:600">${Math.round(st.co2)}</td>
     </tr>`;
   }).join('');
 
   tbody.innerHTML = rowsHtml;
+
+  // KPI vs J-1 (previous stored day average) — colored left edge like the daily price board
+  try { _gmBoardJ1Deltas({ total: fr ? fr.total : null, renPct: fr ? fr.renPct : null, co2: fr ? fr.co2 : null }, { total: euTotal, renPct: euRenPct, co2: euCo2Avg }, zones); } catch (_) {}
 
   // Header date hint (mirrors pr-daily-board-meta in Prices Day-Ahead)
   const hdrDate = document.getElementById('gm-main-header-date');
