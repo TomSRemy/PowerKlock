@@ -1817,7 +1817,34 @@ window.loadGenMix = function() {
 
 
 // ════════════════════════════════════════════════════════════════
-// GenMix production stack (eCO2mix-style) — merged from genmix-stack.js
+// GenMix selected-date state — drives the date-aware drill views
+// (Stack now; Profile/Mix/Carbon once migrated to the stored archive).
+// Empty/“Latest” clears the override → views resolve the latest stored day.
+// ════════════════════════════════════════════════════════════════
+window.gmSetHistDate = function (ds) {
+  ds = (ds && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? ds : null;
+  window._gmHistDate = ds;
+
+  // sync the date control
+  const input = document.getElementById('gm-date-picker-input');
+  if (input) input.value = ds || '';
+  const histInput = document.getElementById('gm-hist-date-input');
+  if (histInput) histInput.value = ds || '';
+  const latestBtn = document.getElementById('gm-date-latest-btn');
+  if (latestBtn) latestBtn.style.color = ds ? 'var(--tx3)' : 'var(--accent)';
+
+  // re-render whichever drill is open so the selected day propagates
+  if (window._GM_DRILL_ZONE && document.getElementById('gm-drill-content') &&
+      typeof _gmDrillDispatchRender === 'function') {
+    _gmDrillDispatchRender(window._GM_DRILL_ZONE);
+  }
+  if (window._gmhOpenZone && document.getElementById('gmh-drill-content') &&
+      typeof window._gmhOpenDrill === 'function') {
+    window._gmhOpenDrill(window._gmhOpenZone);
+  }
+};
+
+
 // Rendered on demand by the drill "Stack" sub-tab (daily + historical):
 //   window.renderGenMixStack(containerId, zone, dateStr)
 // ════════════════════════════════════════════════════════════════
