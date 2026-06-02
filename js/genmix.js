@@ -32,6 +32,26 @@ const GM_FUEL_ORDER = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil',
 // Shared by Stack, Profile (daily 15-min), and Historical aggregation.
 // ════════════════════════════════════════════════════════════════
 const GM_STACK_FUELS = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+
+// ── Zoom norm (drag XY rectangle + ↺ reset + dblclick reset; no wheel/pan) ──
+const GM_ZOOM_OPTS = {
+  zoom: { drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: '#14D3A9', borderWidth: 1 }, wheel: { enabled: false }, pinch: { enabled: false }, mode: 'xy' },
+};
+function _gmZoomify(chart, canvasId) {
+  const c = document.getElementById(canvasId);
+  if (!c || !chart) return;
+  c.ondblclick = () => { try { chart.resetZoom(); } catch (_) {} };
+  const wrap = c.parentElement;
+  if (wrap && !wrap.querySelector('.gm-zoom-reset')) {
+    if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.className = 'gm-zoom-reset';
+    btn.textContent = '↺'; btn.title = 'Reset zoom (double-clic)';
+    btn.style.cssText = 'position:absolute;top:4px;right:4px;z-index:5;width:24px;height:24px;border:1px solid var(--bd);background:var(--bg);color:var(--tx2);border-radius:4px;cursor:pointer;font-size:13px;line-height:1;font-family:inherit';
+    btn.onclick = () => { try { chart.resetZoom(); } catch (_) {} };
+    wrap.appendChild(btn);
+  }
+}
 function _gmFmtDate(d) { return d.toISOString().slice(0, 10); }
 async function _gmFetchDaily(ds) {
   try { const r = await fetch(`data/history/daily/${ds}.json`); if (!r.ok) return null; return await r.json(); }
@@ -507,11 +527,6 @@ const _GM_DRILL_VIEWS = [
     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18a6 6 0 0 1 12 0"/><path d="M12 6v6"/><circle cx="12" cy="18" r="1.5"/></svg>',
   },
   {
-    key:'netpos',
-    label:'Net pos',
-    icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10M7 12h10M7 17h10"/><path d="M5 7l-2 5 2 5M19 7l2 5-2 5"/></svg>',
-  },
-  {
     key:'stack',
     label:'Stack',
     icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 4-6"/></svg>',
@@ -814,6 +829,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line', filter: (item) => !(item.text || '').startsWith('__') } },
+        zoom: GM_ZOOM_OPTS,
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
           titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 10 },
@@ -827,6 +843,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
       },
     },
   });
+  _gmZoomify(window[chartKey], canvasId);
 }
 
 function _gmDrillRenderProfile_OLD(zone, mix, st) {
@@ -1000,10 +1017,7 @@ function _gmDrillRenderProfile_OLD(zone, mix, st) {
 // ─────────────────────────────────────────────────────────────────
 function _gmDrillRenderMix(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
-  const breakHost = document.getElementById('gm-drill-breakdown');
   if (!host) return;
-  const mode = window._gmDrillMixMode || 'donut';
-
   host.innerHTML = `
     <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
       <div style="flex:1 1 55%;min-width:280px;position:relative;height:340px">
@@ -1012,24 +1026,35 @@ function _gmDrillRenderMix(zone, mix, st) {
       </div>
       <div style="flex:1 1 38%;min-width:240px;align-self:center" id="gm-drill-mix-table"></div>
     </div>`;
+  _gmRenderMixReal(zone, window._gmHistDate || null, mix, st);
+}
 
-  if (mode === 'donut') {
-    document.getElementById('gm-drill-mix-canvas').style.display = 'block';
-    document.getElementById('gm-drill-mix-treemap').style.display = 'none';
-    _gmBuildDonut(mix, st, 'gm-drill-mix-canvas', false);
-  } else if (mode === 'bar') {
-    document.getElementById('gm-drill-mix-canvas').style.display = 'block';
-    document.getElementById('gm-drill-mix-treemap').style.display = 'none';
-    _gmBuildBar(mix, st, 'gm-drill-mix-canvas', false);
-  } else if (mode === 'treemap') {
-    document.getElementById('gm-drill-mix-canvas').style.display = 'none';
-    const treemapHost = document.getElementById('gm-drill-mix-treemap');
-    treemapHost.style.display = 'block';
-    _gmDrillBuildTreemap(treemapHost, mix);
+// Mix of the selected stored day (per-fuel average over real slots); fallback to instant snapshot.
+async function _gmRenderMixReal(zone, dateStr, fallbackMix, fallbackSt) {
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  const tableHost = document.getElementById('gm-drill-mix-table');
+  const mode = window._gmDrillMixMode || 'donut';
+  const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+
+  let mix, st, srcLabel = '';
+  const cur = await _gmResolveDay(zone, dateStr);
+  if (cur) {
+    const { DATA, N } = _gmDayArrays(cur.zd);
+    let nReal = 0; for (let i = N - 1; i >= 0; i--) { if (STACK.reduce((s, f) => s + DATA[f][i], 0) > 0) { nReal = i + 1; break; } }
+    if (nReal < 1) nReal = N;
+    mix = {}; STACK.forEach(f => { mix[f] = DATA[f].slice(0, nReal).reduce((s, v) => s + v, 0) / nReal; });
+    mix.total = STACK.reduce((s, f) => s + mix[f], 0);
+    const ren = mix.wind + mix.solar + mix.hydro + mix.biomass;
+    st = { total: mix.total, renPct: mix.total ? ren / mix.total * 100 : 0, fosPct: mix.total ? mix.fossil / mix.total * 100 : 0, ren, nuc: mix.nuclear, fos: mix.fossil };
+    srcLabel = 'moyenne du ' + cur.ds;
+  } else {
+    mix = fallbackMix; st = fallbackSt; srcLabel = 'instantané';
   }
 
-  // Breakdown · classic fuel × GW × share × CO₂ — now beside the chart
-  const tableHost = document.getElementById('gm-drill-mix-table');
+  if (mode === 'donut') { document.getElementById('gm-drill-mix-canvas').style.display = 'block'; document.getElementById('gm-drill-mix-treemap').style.display = 'none'; _gmBuildDonut(mix, st, 'gm-drill-mix-canvas', false); }
+  else if (mode === 'bar') { document.getElementById('gm-drill-mix-canvas').style.display = 'block'; document.getElementById('gm-drill-mix-treemap').style.display = 'none'; _gmBuildBar(mix, st, 'gm-drill-mix-canvas', false); }
+  else if (mode === 'treemap') { document.getElementById('gm-drill-mix-canvas').style.display = 'none'; const t = document.getElementById('gm-drill-mix-treemap'); t.style.display = 'block'; _gmDrillBuildTreemap(t, mix); }
+
   if (tableHost) tableHost.innerHTML = _gmBuildBreakdownTable(mix, st);
   if (breakHost) breakHost.innerHTML = '';
 }
@@ -1071,6 +1096,133 @@ function _gmDrillBuildTreemap(host, mix) {
 // VIEW · CARBON (24h carbon intensity)
 // ─────────────────────────────────────────────────────────────────
 function _gmDrillRenderCarbon(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  if (!host) return;
+  host.innerHTML = `<div style="position:relative;width:100%;height:340px"><canvas id="gm-drill-carbon-canvas" style="width:100%;height:100%;display:block"></canvas></div>`;
+  _gmRenderCarbonReal(zone, window._gmHistDate || null);
+}
+
+// Real-data 24h carbon-intensity (g CO2/kWh) from the stored archive + real J-1.
+async function _gmRenderCarbonReal(zone, dateStr) {
+  zone = zone || 'FR';
+  const breakHost = document.getElementById('gm-drill-breakdown');
+  const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+  const CO2 = {}; STACK.forEach(f => { CO2[f] = (GM_FUEL_META[f] && GM_FUEL_META[f].co2) || 0; });
+  const intensity = (DATA, n) => {
+    const out = [];
+    for (let i = 0; i < n; i++) { let num = 0, den = 0; for (const f of STACK) { const v = DATA[f][i] || 0; num += v * CO2[f]; den += v; } out.push(den > 0 ? num / den : null); }
+    return out;
+  };
+
+  const cur = await _gmResolveDay(zone, dateStr);
+  if (!cur) { const c = document.getElementById('gm-drill-carbon-canvas'); if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées pour ${zone}.</div>`; return; }
+  const { DATA, N } = _gmDayArrays(cur.zd);
+  let nReal = 0; for (let i = N - 1; i >= 0; i--) { const t = STACK.reduce((s, f) => s + DATA[f][i], 0); if (t > 0) { nReal = i + 1; break; } }
+  if (nReal < 1) nReal = N;
+  const co2 = intensity(DATA, nReal);
+  const labels = []; for (let i = 0; i < nReal; i++) { const m = Math.round(i / N * 24 * 60); labels.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`); }
+
+  // Real J-1
+  let cmpData = null; const cmpLabel = 'J-1';
+  const pd = new Date(cur.ds + 'T00:00:00'); pd.setDate(pd.getDate() - 1);
+  const pj = await _gmFetchDaily(_gmFmtDate(pd)); const pzd = pj && pj.zones && pj.zones[zone];
+  if (_gmHasArrays(pzd)) { const pa = _gmDayArrays(pzd); const pc = intensity(pa.DATA, pa.N); cmpData = co2.map((_, i) => pc[Math.min(pa.N - 1, Math.round(i / Math.max(1, nReal - 1) * (pa.N - 1)))]); }
+
+  const canvas = document.getElementById('gm-drill-carbon-canvas');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (window._gmDrillCarbonChart) { try { window._gmDrillCarbonChart.destroy(); } catch (_) {} }
+  window._gmDrillCarbonChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: cur.ds, data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0 },
+        cmpData ? { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.4, pointRadius: 0 } : null,
+      ].filter(Boolean),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+        zoom: GM_ZOOM_OPTS,
+        tooltip: {
+          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
+          titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 10 },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '--' : ctx.parsed.y.toFixed(0)} g/kWh` },
+        },
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } }, title: { display: true, text: 'g CO₂ / kWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
+      },
+    },
+  });
+  _gmZoomify(window._gmDrillCarbonChart, 'gm-drill-carbon-canvas');
+
+  _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK);
+}
+
+// Carbon breakdown: stats over real slots + calculation hypotheses + sources.
+function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
+  if (!breakHost) return;
+  const real = co2.filter(v => v != null);
+  if (!real.length) { breakHost.innerHTML = ''; return; }
+  const todayMin = Math.min.apply(null, real), todayMax = Math.max.apply(null, real);
+  const todayAvg = real.reduce((a, b) => a + b, 0) / real.length;
+  const cmpReal = (cmpData || []).filter(v => v != null);
+  const cmpAvg = cmpReal.length ? cmpReal.reduce((a, b) => a + b, 0) / cmpReal.length : null;
+  const diff = cmpAvg == null ? null : todayAvg - cmpAvg;
+  const perH = co2.length / 24;
+  const cleanH = co2.filter(v => v != null && v < 100).length / (perH || 1);
+  const dirtyH = co2.filter(v => v != null && v > 300).length / (perH || 1);
+  const cell = (txt, o = {}) => `<td style="padding:6px 8px;${o.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${o.color || 'var(--tx)'}">${txt}</td>`;
+  const row = (l, v, u, n, c) => `<tr style="border-top:1px solid var(--bd)">${cell(l, { color: 'var(--tx2)' })}${cell(v, { right: true, color: c })}${cell(u, { right: true, color: 'var(--tx3)' })}${cell(n, { color: 'var(--tx3)' })}</tr>`;
+  breakHost.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr>
+        <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+        <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+        <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+        <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
+      </tr></thead>
+      <tbody>
+        ${row('Today min', todayMin.toFixed(0), 'g/kWh', 'cleanest slot', '#14D3A9')}
+        ${row('Today max', todayMax.toFixed(0), 'g/kWh', 'dirtiest slot', '#ED6965')}
+        ${row('Today avg', todayAvg.toFixed(0), 'g/kWh', '24h average')}
+        ${cmpAvg != null ? row(cmpLabel + ' avg', cmpAvg.toFixed(0), 'g/kWh', 'baseline') : ''}
+        ${diff != null ? row('Δ vs ' + cmpLabel, (diff >= 0 ? '+' : '') + diff.toFixed(0), 'g/kWh', diff < 0 ? 'cleaner today' : 'dirtier today', diff < 0 ? '#14D3A9' : '#ED6965') : ''}
+        ${row('Clean hours', cleanH.toFixed(1), 'h', 'below 100 g/kWh')}
+        ${row('Dirty hours', dirtyH.toFixed(1), 'h', 'above 300 g/kWh')}
+      </tbody>
+    </table>
+    <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
+        <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ génération<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub>(t)</span><br>
+        <span style="color:var(--tx3)">Moyenne attributionnelle, périmètre cycle de vie. Pas de FE marginal, pas d'imports.</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
+        <thead><tr>
+          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Filière</th>
+          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">FE (g CO₂eq/kWh)</th>
+          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Données génération</th>
+        </tr></thead>
+        <tbody>
+          ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
+            <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${GM_FUEL_META[f].color}">${GM_FUEL_META[f].emoji} ${GM_FUEL_META[f].label}</span></td>
+            <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${GM_FUEL_META[f].co2}</td>
+            <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75 · 15 min</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);line-height:1.6">
+        <span style="color:var(--tx2)">Sources :</span> génération par filière = ENTSO-E Transparency (Actual Generation per Type, A75), archive PowerKlock 15 min. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon agrégée ENTSO-E.
+      </div>
+    </div>`;
+}
+
+function _gmDrillRenderCarbon_OLD(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
   const breakHost = document.getElementById('gm-drill-breakdown');
   if (!host) return;
@@ -1186,12 +1338,12 @@ function _gmDrillRenderCarbon(zone, mix, st) {
       </table>
       <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
           Intensité carbone du mix, par pas de 15 min :<br>
           <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ génération<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub>(t)</span><br>
           <span style="color:var(--tx3)">Approche moyenne (attributionnelle), périmètre cycle de vie. Pas de FE marginal, pas d'imports.</span>
         </div>
-        <table style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
           <thead><tr>
             <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
             <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
@@ -1247,11 +1399,11 @@ function _gmBuildBreakdownTable(mix, st) {
   return `
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead>
-        <tr style="border-bottom:1px solid var(--bd)">
-          <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
-          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">GW</th>
-          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">% Share</th>
-          <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">g CO₂/kWh</th>
+        <tr>
+          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
+          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">GW</th>
+          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
+          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -2058,7 +2210,7 @@ function gmDrillFullscreen(scope) {
   // ── Filters: View pills (switch sub-tab) + Date (mirrors Prices FS bar) ──
   const VIEWS = isHist
     ? [['profile', 'Profile'], ['mix', 'Mix'], ['carbon', 'Carbon'], ['seasonal', 'Seasonal'], ['stack', 'Stack']]
-    : [['profile', 'Profile'], ['mix', 'Mix'], ['carbon', 'Carbon'], ['netpos', 'Net pos'], ['stack', 'Stack']];
+    : [['profile', 'Profile'], ['mix', 'Mix'], ['carbon', 'Carbon'], ['stack', 'Stack']];
   const viewPills = VIEWS.map(([k, lbl]) =>
     `<button data-gmfs-view="${k}" style="font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;border:1px solid ${k === tab ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};background:${k === tab ? 'rgba(20,211,169,0.15)' : 'var(--bg)'};color:${k === tab ? '#14D3A9' : 'var(--tx3)'};font-family:'Inter',sans-serif;font-weight:500">${lbl}</button>`
   ).join('');
