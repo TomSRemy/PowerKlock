@@ -572,13 +572,13 @@ function _gmdczRenderHeatmap() {
       <table style="width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed">
         <thead>
           <tr>
-            <th style="padding:8px;text-align:left;color:var(--tx3);font-weight:600;width:90px;border-bottom:1px solid var(--bd)">Zone</th>`;
+            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;width:90px;border-bottom:1px solid var(--bd)">Zone</th>`;
   FUEL_ORDER.forEach(k => {
     const m = FUEL_META[k];
     if (!m) return;
-    html += `<th style="padding:8px;text-align:center;color:${m.color};font-weight:600;font-size:11px;border-bottom:1px solid var(--bd)">${m.emoji || ''} ${m.label || k}</th>`;
+    html += `<th style="padding:4px 8px;text-align:center;color:${m.color};font-weight:600;font-size:11px;border-bottom:1px solid var(--bd)">${m.emoji || ''} ${m.label || k}</th>`;
   });
-  html += `<th style="padding:8px;text-align:right;color:var(--tx3);font-weight:600;width:80px;border-bottom:1px solid var(--bd)">Total</th></tr></thead><tbody>`;
+  html += `<th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;width:80px;border-bottom:1px solid var(--bd)">Total</th></tr></thead><tbody>`;
 
   zones.forEach(z => {
     const mix = data[z];
