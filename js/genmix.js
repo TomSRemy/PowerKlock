@@ -445,6 +445,7 @@ function _gmOpenRow(zone) {
           </div>
           <div class="pk-tabbar-right">
             <div id="gm-drill-tab-chips" class="pk-tabbar-chips"></div>
+            <button onclick="gmDrillFullscreen('daily')" title="Plein écran" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
           </div>
         </div>
 
@@ -2009,6 +2010,135 @@ window.loadGenMix = function() {
 // (Stack now; Profile/Mix/Carbon once migrated to the stored archive).
 // Empty/“Latest” clears the override → views resolve the latest stored day.
 // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// GenMix drill fullscreen — reuses the Prices fullscreen overlay
+// (pkOpenFullscreen + pkBuildChartSource). Opens the active sub-tab's
+// graph for the open zone, with its table beside it.
+// scope = 'daily' | 'hist'
+// ════════════════════════════════════════════════════════════════
+function gmDrillFullscreen(scope) {
+  if (typeof window.pkOpenFullscreen !== 'function' || typeof window.pkBuildChartSource !== 'function') return;
+  const isHist = scope === 'hist';
+  const tab = (isHist ? window._gmhDrillTab : window._gmDrillTab) || 'profile';
+  const zone = (isHist ? window._gmhOpenZone : window._GM_DRILL_ZONE) || 'FR';
+  const contentId = isHist ? 'gmh-drill-content' : 'gm-drill-content';
+  const mixMode = (isHist ? window._gmhDrillMixMode : window._gmDrillMixMode) || 'donut';
+  const kpiStripId = isHist ? 'gmh-drill-kpi-strip' : 'gm-drill-kpi-strip';
+  const bannerId = isHist ? 'gmh-drill-banner-anchor' : 'gm-drill-banner-anchor';
+
+  // ── chart source (canvas clone) or HTML mirror (stack / treemap) ──
+  let chartId = null, htmlContainerId = null, isHtml = false, tableHtml = null;
+  const reg = {};
+  if (tab === 'profile') {
+    chartId = 'p'; reg.p = isHist ? window._gmhDrillProfileChart : window._gmDrillProfileChart;
+  } else if (tab === 'carbon') {
+    chartId = 'c'; reg.c = isHist ? window._gmhDrillCarbonChart : window._gmDrillCarbonChart;
+    const bh = document.getElementById(isHist ? 'gmh-drill-breakdown' : 'gm-drill-breakdown');
+    if (bh && bh.innerHTML.trim()) tableHtml = bh.innerHTML;
+  } else if (tab === 'mix') {
+    if (mixMode === 'treemap') { isHtml = true; htmlContainerId = isHist ? 'gmh-drill-mix-treemap' : 'gm-drill-mix-treemap'; }
+    else { chartId = 'm'; reg.m = (mixMode === 'bar') ? window._GM_BAR_CHART : window._GM_DONUT_CHART; }
+    const mt = document.getElementById(isHist ? 'gmh-drill-mix-table' : 'gm-drill-mix-table');
+    if (mt && mt.innerHTML.trim()) tableHtml = mt.innerHTML;
+  } else { // stack, netpos, seasonal → HTML mirror (same approach Prices uses for Heatmap/Bands)
+    isHtml = true; htmlContainerId = contentId;
+  }
+  const chartSource = window.pkBuildChartSource({
+    chartId, htmlContainerId, isHtmlView: () => isHtml, chartsRegistry: () => reg,
+  });
+
+  // ── KPIs strip (clone of the inline drill strip) ──
+  const stripEl = document.getElementById(kpiStripId);
+  const kpisHtml = stripEl ? stripEl.outerHTML : null;
+
+  // ── Analysis (the market-read banner) ──
+  const bannerEl = document.getElementById(bannerId);
+  const analysisHtml = (bannerEl && bannerEl.innerHTML.trim()) ? bannerEl.innerHTML : '';
+
+  // ── Filters: View pills (switch sub-tab) + Date (mirrors Prices FS bar) ──
+  const VIEWS = isHist
+    ? [['profile', 'Profile'], ['mix', 'Mix'], ['carbon', 'Carbon'], ['seasonal', 'Seasonal'], ['stack', 'Stack']]
+    : [['profile', 'Profile'], ['mix', 'Mix'], ['carbon', 'Carbon'], ['netpos', 'Net pos'], ['stack', 'Stack']];
+  const viewPills = VIEWS.map(([k, lbl]) =>
+    `<button data-gmfs-view="${k}" style="font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;border:1px solid ${k === tab ? 'rgba(20,211,169,0.4)' : 'var(--bd)'};background:${k === tab ? 'rgba(20,211,169,0.15)' : 'var(--bg)'};color:${k === tab ? '#14D3A9' : 'var(--tx3)'};font-family:'Inter',sans-serif;font-weight:500">${lbl}</button>`
+  ).join('');
+  const curDate = window._gmHistDate || '';
+  const filtersHtml = `
+    <div class="pk-fs-filters-left">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">View</span>
+        <div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">${viewPills}</div>
+      </div>
+    </div>
+    <div class="pk-fs-filters-right">
+      <div style="display:flex;align-items:center;gap:5px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
+        <input type="date" id="fs-gm-date-input" value="${curDate}"
+          style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
+        <button id="fs-gm-date-latest" style="border:1px solid var(--bd);background:var(--bg);color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:3px 7px;border-radius:4px">Latest</button>
+      </div>
+    </div>`;
+
+  const titles = { profile: 'Profile', mix: 'Mix', carbon: 'Carbon', netpos: 'Net position', stack: 'Production stack', seasonal: 'Seasonal' };
+  const reopen = () => { setTimeout(() => requestAnimationFrame(() => gmDrillFullscreen(scope)), 320); };
+
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+    title: `${zone} — GenMix · ${titles[tab] || tab}`,
+    subtitle: `${isHist ? (window._gmhPeriod || '3M') + ' · ' : ''}${window._gmHistDate ? window._gmHistDate : 'latest'} · ENTSO-E A75`,
+    filenameStem: `powerklock_genmix_${scope}_${zone}_${tab}`,
+    storageKey: 'genmix-drill',
+    kpis: kpisHtml ? { html: kpisHtml } : null,
+    table: tableHtml ? { html: tableHtml } : null,
+    analysis: { html: analysisHtml },
+    chartSource,
+    filters: {
+      html: filtersHtml,
+      wire: (hostEl) => {
+        hostEl.querySelectorAll('[data-gmfs-view]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const v = btn.getAttribute('data-gmfs-view');
+            if (v === tab) return;
+            if (isHist && typeof window.setGmhDrillTab === 'function') window.setGmhDrillTab(v);
+            else if (!isHist && typeof window.setGmDrillTab === 'function') window.setGmDrillTab(v);
+            reopen();
+          });
+        });
+        const dInp = hostEl.querySelector('#fs-gm-date-input');
+        if (dInp) dInp.addEventListener('change', (e) => { window.gmSetHistDate(e.target.value); reopen(); });
+        const dLatest = hostEl.querySelector('#fs-gm-date-latest');
+        if (dLatest) dLatest.addEventListener('click', () => { window.gmSetHistDate(''); reopen(); });
+      },
+    },
+  });
+}
+window.gmDrillFullscreen = gmDrillFullscreen;
+
+// Daily cross-zone board fullscreen (chart for 'profiles' view, HTML mirror otherwise)
+// Historical cross-zone board fullscreen (chart for 'trends', HTML mirror otherwise)
+window.gmhczFullscreen = function () {
+  if (typeof window.pkOpenFullscreen !== 'function' || typeof window.pkBuildChartSource !== 'function') return;
+  const view = (window._gmhcz && window._gmhcz.view) || 'ranking';
+  const isChart = view === 'trends';
+  const reg = { g: window._gmhczTrendsChart };
+  const cs = window.pkBuildChartSource({ chartId: 'g', htmlContainerId: 'gmhcz-content', isHtmlView: () => !isChart, chartsRegistry: () => reg });
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+    title: 'GenMix — Cross-zone (historical)', subtitle: `${view} · ${window._gmhPeriod || '3M'}`,
+    filenameStem: `powerklock_genmix_cz_hist_${view}`, storageKey: 'genmix-cz-hist', chartSource: cs,
+  });
+};
+
+window.gmdczFullscreen = function () {
+  if (typeof window.pkOpenFullscreen !== 'function' || typeof window.pkBuildChartSource !== 'function') return;
+  const view = window._gmdczView || 'ranking';
+  const isChart = view === 'profiles';
+  const reg = { g: window._gmdczProfilesChart };
+  const cs = window.pkBuildChartSource({ chartId: 'g', htmlContainerId: 'gmdcz-content', isHtmlView: () => !isChart, chartsRegistry: () => reg });
+  (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+    title: 'GenMix — Cross-zone', subtitle: `${view} · ENTSO-E A75`,
+    filenameStem: `powerklock_genmix_crosszone_${view}`, storageKey: 'genmix-cz', chartSource: cs,
+  });
+};
+
 window.gmSetHistDate = function (ds) {
   ds = (ds && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? ds : null;
   window._gmHistDate = ds;
