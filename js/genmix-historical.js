@@ -67,6 +67,60 @@
     return s;
   }
 
+  // Real board aggregation from the archive (per-fuel arrays). One fetch per
+  // sampled day, all zones in that day accumulated together. Mirrors the
+  // per-zone _gmhBuildRealAgg but produces the whole board in a single pass.
+  async function _gmhBuildRealBoardData(period) {
+    const fuels = (typeof GM_STACK_FUELS !== 'undefined') ? GM_STACK_FUELS : ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+    const META = window.GM_FUEL_META || {};
+    const fmt = (typeof _gmFmtDate === 'function') ? _gmFmtDate : (d => d.toISOString().slice(0, 10));
+    const end = _gmhEndDate();
+    const D = _gmhDays(period) || 4170;
+    let stepDays = (D <= 31) ? 1 : (D <= 210 ? 7 : 30);
+    let count = Math.ceil(D / stepDays);
+    if (count > 60) { stepDays = Math.ceil(D / 60); count = Math.ceil(D / stepDays); }
+    const start = new Date(end.getTime()); start.setDate(start.getDate() - D);
+    const acc = {}; // zone -> accumulators
+    for (let i = 0; i < count; i++) {
+      const dt = new Date(start.getTime()); dt.setDate(dt.getDate() + i * stepDays + Math.floor(stepDays / 2));
+      if (dt > end) break;
+      const j = (typeof _gmFetchDaily === 'function') ? await _gmFetchDaily(fmt(dt)) : null;
+      if (!j || !j.zones) continue;
+      Object.keys(j.zones).forEach(z => {
+        const zd = j.zones[z];
+        if (!zd || (typeof _gmHasArrays === 'function' && !_gmHasArrays(zd))) return;
+        const N = Math.max.apply(null, fuels.map(f => Array.isArray(zd[f]) ? zd[f].length : 0).concat([1]));
+        let nReal = 0; for (let s = N - 1; s >= 0; s--) { if (fuels.reduce((a, f) => a + ((zd[f] && zd[f][s]) || 0), 0) > 0) { nReal = s + 1; break; } }
+        if (nReal < 1) nReal = N;
+        if (!acc[z]) { acc[z] = { fuelTWh: {}, loadSumGW: 0, samples: 0, co2sum: 0, co2n: 0 }; fuels.forEach(f => acc[z].fuelTWh[f] = 0); }
+        const a = acc[z]; let dayMeanMW = 0, num = 0, den = 0;
+        fuels.forEach(f => {
+          const arr = Array.isArray(zd[f]) ? zd[f] : []; let s = 0; for (let k = 0; k < nReal; k++) s += (arr[k] || 0);
+          const meanMW = s / nReal;
+          a.fuelTWh[f] += meanMW * 24 * stepDays / 1e6; // block energy (TWh)
+          dayMeanMW += meanMW; num += meanMW * (META[f] ? META[f].co2 : 0); den += meanMW;
+        });
+        a.loadSumGW += dayMeanMW / 1000; a.samples++; if (den > 0) { a.co2sum += num / den; a.co2n++; }
+      });
+    }
+    const out = {};
+    Object.keys(acc).forEach(z => {
+      const a = acc[z]; if (!a.samples) return;
+      const totalTWh = fuels.reduce((s, f) => s + a.fuelTWh[f], 0) || 0.001;
+      const ren = a.fuelTWh.wind + a.fuelTWh.solar + a.fuelTWh.hydro + a.fuelTWh.biomass;
+      const lowC = ren + a.fuelTWh.nuclear;
+      const dom = fuels.slice().sort((x, y) => a.fuelTWh[y] - a.fuelTWh[x])[0];
+      const p = {}; fuels.forEach(f => p[f] = a.fuelTWh[f]);
+      p.totalTWh = totalTWh; p.energyTWh = totalTWh;
+      p.renPct = ren / totalTWh * 100; p.fosPct = a.fuelTWh.fossil / totalTWh * 100; p.lowCPct = lowC / totalTWh * 100;
+      p.co2 = a.co2n ? a.co2sum / a.co2n : 0; p.dom = dom;
+      p.avgLoadGW = a.loadSumGW / a.samples;
+      p.dRenY1 = 0; p.dCo2Y1 = 0; p._real = true; p._samples = a.samples;
+      out[z] = p;
+    });
+    return out;
+  }
+
   /**
    * Build period-aggregated dataset from the live genmix snapshot.
    * Returns: { zone: {
@@ -395,7 +449,22 @@
   // ════════════════════════════════════════════════════════════════
   function _gmhRenderBoard() {
     const period = window._gmhPeriod || '3M';
-    const pdata = _gmhBuildPeriodData(period);
+    const key = period === 'custom'
+      ? `custom:${window._gmhRange ? window._gmhRange.from : ''}:${window._gmhRange ? window._gmhRange.to : ''}`
+      : period;
+    // Sort/filter re-renders reuse the cached real aggregation (no refetch)
+    if (window._gmhBoardCache && window._gmhBoardCache.key === key) {
+      _gmhPaintBoard(window._gmhBoardCache.data, period);
+      return;
+    }
+    const tb = document.getElementById('gmh-table-tbody');
+    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Agrégation des données réelles d'archive…</td></tr>`;
+    _gmhBuildRealBoardData(period).then(data => {
+      window._gmhBoardCache = { key, data };
+      _gmhPaintBoard(data, period);
+    }).catch(() => { if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Erreur d'agrégation des données réelles</td></tr>`; });
+  }
+  function _gmhPaintBoard(pdata, period) {
     window._gmhAllZones = Object.keys(pdata); // full list (for the zone filter panel)
     const zoneFilter = window._gmhZoneFilter || null;
     const zones = window._gmhAllZones.filter(z => !zoneFilter || zoneFilter.has(z));
@@ -414,7 +483,7 @@
 
     if (!zones.length) {
       const tb = document.getElementById('gmh-table-tbody');
-      if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No data — waiting for genmix snapshot to be loaded</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Pas de données réelles archivées sur cette période. Lancer le backfill genmix pour la couvrir.</td></tr>`;
       return;
     }
 
@@ -516,7 +585,7 @@
   window._gmhCloseDrill = _gmhCloseDrill;
 
   function _gmhOpenDrill(zone) {
-    const pdata = _gmhBuildPeriodData(window._gmhPeriod);
+    const pdata = (window._gmhBoardCache && window._gmhBoardCache.data) || _gmhBuildPeriodData(window._gmhPeriod);
     const p = pdata[zone];
     if (!p) return;
 
@@ -705,21 +774,21 @@
     window._gmhDrillTab = tab;
     _gmhDrillRenderTabs();
     _gmhDrillUpdateTabContext(tab);
-    const pdata = _gmhBuildPeriodData(window._gmhPeriod);
+    const pdata = (window._gmhBoardCache && window._gmhBoardCache.data) || _gmhBuildPeriodData(window._gmhPeriod);
     const p = pdata[window._gmhOpenZone];
     if (p) _gmhDrillDispatchRender(window._gmhOpenZone, p);
   };
   window.setGmhDrillMixMode = function (m) {
     window._gmhDrillMixMode = m;
     _gmhDrillUpdateTabContext('mix');
-    const pdata = _gmhBuildPeriodData(window._gmhPeriod);
+    const pdata = (window._gmhBoardCache && window._gmhBoardCache.data) || _gmhBuildPeriodData(window._gmhPeriod);
     const p = pdata[window._gmhOpenZone];
     if (p) _gmhDrillDispatchRender(window._gmhOpenZone, p);
   };
   window.setGmhDrillCarbonCmp = function (c) {
     window._gmhDrillCarbonCmp = c;
     _gmhDrillUpdateTabContext('carbon');
-    const pdata = _gmhBuildPeriodData(window._gmhPeriod);
+    const pdata = (window._gmhBoardCache && window._gmhBoardCache.data) || _gmhBuildPeriodData(window._gmhPeriod);
     const p = pdata[window._gmhOpenZone];
     if (p) _gmhDrillDispatchRender(window._gmhOpenZone, p);
   };
@@ -1314,7 +1383,7 @@
   ];
 
   function _gmhRenderCrossZone() {
-    const pdata = _gmhBuildPeriodData(window._gmhPeriod);
+    const pdata = (window._gmhBoardCache && window._gmhBoardCache.data) || _gmhBuildPeriodData(window._gmhPeriod);
     const zones = Object.keys(pdata);
     if (!zones.length) return;
 
@@ -1736,7 +1805,7 @@
   // INIT · hook on data events
   // ════════════════════════════════════════════════════════════════
   function _gmhInit() {
-    const refresh = () => _gmhRenderAll();
+    const refresh = () => { window._gmhBoardCache = null; _gmhRenderAll(); };
     document.addEventListener('genmix-loaded', refresh);
     document.addEventListener('zones-changed', refresh);
     if (window._genmixData) refresh();
