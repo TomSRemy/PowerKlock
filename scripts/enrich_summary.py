@@ -394,6 +394,71 @@ def _parse_generation_xml(xml_text):
     return {k: round(v) for k, v in cats.items()}
 
 
+# Category → daily-file fuel key (matches fetch_data.py / GenMix arrays)
+_CAT_TO_FUEL = {'Nuclear': 'nuclear', 'Gas': 'fossil', 'Wind': 'wind',
+                'Solar': 'solar', 'Hydro': 'hydro', 'Biomass': 'biomass'}
+
+def _parse_generation_slots_xml(xml_text):
+    """Per-fuel 96-slot arrays from A75 (aggregated hourly then expanded ×4,
+    same approach as fetch_data.parse_generation). Returns {fuel: [96 ints]}."""
+    try:
+        root = ET.fromstring(xml_text)
+    except Exception:
+        return None
+    fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other']
+    # hourly accumulators per fuel (+ wind split)
+    hourly = {f: [0.0] * 24 for f in fuels}
+    won = [0.0] * 24
+    woff = [0.0] * 24
+    for ts in root.iter():
+        if _strip_ns(ts.tag) != 'TimeSeries':
+            continue
+        psr_type = ''
+        for c in ts.iter():
+            if _strip_ns(c.tag) == 'psrType':
+                psr_type = (c.text or '').strip()
+                break
+        if not psr_type:
+            continue
+        cat = PSR_TO_CATEGORY.get(psr_type)
+        fuel = _CAT_TO_FUEL.get(cat, 'other')
+        res = 'PT60M'
+        for c in ts.iter():
+            if _strip_ns(c.tag) == 'resolution':
+                res = c.text or 'PT60M'
+                break
+        slots_per_hour = 4 if res == 'PT15M' else 1
+        buckets = {}
+        for pt in ts.iter():
+            if _strip_ns(pt.tag) != 'Point':
+                continue
+            pos = qty = None
+            for sub in pt:
+                t = _strip_ns(sub.tag)
+                if t == 'position':
+                    try: pos = int(sub.text)
+                    except (TypeError, ValueError): pos = None
+                elif t == 'quantity':
+                    try: qty = float(sub.text)
+                    except (TypeError, ValueError): qty = None
+            if pos is not None and qty is not None:
+                hour = (pos - 1) // slots_per_hour
+                if 0 <= hour < 24:
+                    buckets.setdefault(hour, []).append(qty)
+        for hour, vals in buckets.items():
+            avg = sum(vals) / len(vals)
+            hourly[fuel][hour] += avg
+            if psr_type == 'B19':   won[hour] += avg
+            elif psr_type == 'B18': woff[hour] += avg
+    if not any(sum(hourly[f]) for f in fuels):
+        return None
+    expand = lambda arr: [round(arr[h]) for h in range(24) for _ in range(4)]
+    out = {f: expand(hourly[f]) for f in fuels}
+    out['windOnshore'] = expand(won)
+    out['windOffshore'] = expand(woff)
+    return out
+
+
 def fetch_prices_for_date(token, zone_code, date):
     eic = ZONES_EIC.get(zone_code)
     if not eic:
@@ -432,7 +497,7 @@ def fetch_genmix_for_date(token, zone_code, date):
         if not cats or sum(cats.values()) == 0:
             return None
         total = sum(cats.values())
-        return {
+        gm = {
             'nuclear': cats.get('Nuclear', 0),
             'solar':   cats.get('Solar', 0),
             'wind':    cats.get('Wind', 0),
@@ -442,6 +507,10 @@ def fetch_genmix_for_date(token, zone_code, date):
             'other':   0,
             'total':   total,
         }
+        arrays = _parse_generation_slots_xml(xml)
+        if arrays:
+            gm['_arrays'] = arrays
+        return gm
     except Exception as e:
         print(f"  [{date}] {zone_code}: genmix ERROR — {e}")
         return None
@@ -472,10 +541,14 @@ def build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone):
         if off is not None: zone_entry['offAvg']  = off
         gm = genmix_per_zone.get(code) if genmix_per_zone else None
         if gm:
+            arrays = gm.pop('_arrays', None)  # keep stored genmix scalar clean
             zone_entry['genmix'] = gm
             rp, dom = ren_pct_and_dom_fuel(gm)
             if rp is not None:  zone_entry['renPct']  = rp
             if dom is not None: zone_entry['domFuel'] = dom
+            if arrays:
+                for k, v in arrays.items():
+                    zone_entry[k] = v  # nuclear/hydro/biomass/wind/solar/fossil/other + windOn/Offshore
         snap['zones'][code] = zone_entry
     return snap
 
