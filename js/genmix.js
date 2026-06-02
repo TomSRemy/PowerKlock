@@ -248,9 +248,10 @@ function _gmStatsFromDayArrays(zd) {
 }
 
 // Set FR + loaded-EU KPI deltas vs the previous stored day (colored left edge).
-async function _gmBoardJ1Deltas(frNow, euNow, zones) {
+async function _gmBoardJ1Deltas(frNow, euNow, zones, baseDs) {
   if (typeof _gmFetchDaily !== 'function' || typeof _gmFmtDate !== 'function') return;
-  const d = new Date(); d.setDate(d.getDate() - 1);
+  const base = baseDs ? new Date(baseDs + 'T00:00:00') : new Date();
+  const d = new Date(base.getTime()); d.setDate(d.getDate() - 1);
   const j = await _gmFetchDaily(_gmFmtDate(d));
   if (!j || !j.zones) return;
   const frY = _gmStatsFromDayArrays(j.zones['FR']);
@@ -278,17 +279,43 @@ async function _gmBoardJ1Deltas(frNow, euNow, zones) {
   setDelta('gm-kpi-eu-co2-meta',   'gm-kpi-eu-co2',   euNow.co2,    euY ? euY.co2 : null, 'co2');
 }
 
+// Build a board-shaped {zone:{fuel:avgMW,total}} from a stored day (Date filter → archive).
+async function _gmLoadBoardData(ds) {
+  if (!ds) { window._gmBoardData = null; return; }
+  if (typeof _gmFetchDaily !== 'function') { window._gmBoardData = null; return; }
+  const j = await _gmFetchDaily(ds);
+  if (!j || !j.zones) { window._gmBoardData = null; return; }
+  const fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+  const out = {};
+  Object.keys(j.zones).forEach(z => {
+    const zd = j.zones[z];
+    const a = {}; let N = 0;
+    fuels.forEach(f => { a[f] = Array.isArray(zd[f]) ? zd[f] : []; if (a[f].length) N = Math.max(N, a[f].length); });
+    if (!N) return;
+    let nReal = 0; for (let i = N - 1; i >= 0; i--) { if (fuels.reduce((s, f) => s + ((a[f][i]) || 0), 0) > 0) { nReal = i + 1; break; } }
+    if (nReal < 1) return;
+    const mix = {}; fuels.forEach(f => { let s = 0; for (let i = 0; i < nReal; i++) s += (a[f][i] || 0); mix[f] = s / nReal; });
+    mix.total = fuels.reduce((s, f) => s + mix[f], 0);
+    if (mix.total > 0) out[z] = mix;
+  });
+  window._gmBoardData = Object.keys(out).length ? out : null;
+}
+window._gmLoadBoardData = _gmLoadBoardData;
+
 function renderGmMain() {
-  const data = window._genmixData;
+  // Date filter drives the board: Latest → live snapshot, past date → archive-day averages
+  const data = window._gmBoardData || window._genmixData;
   if (!data || !Object.keys(data).length) {
     const tbody = document.getElementById('gm-table-tbody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No GenMix data loaded — check genmix.json</td></tr>';
     return;
   }
 
-  // Sort zones by total generation (desc)
+  // Zones filter (null = all), mirrors the Prices Day-Ahead zone filter
+  const zoneFilter = window._gmZoneFilter || null;
+  // Sort zones by total generation (desc), then apply the zone filter
   const zones = Object.keys(data)
-    .filter(z => data[z]?.total > 0)
+    .filter(z => data[z]?.total > 0 && (!zoneFilter || zoneFilter.has(z)))
     .sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
 
   // ── KPI strip ──
@@ -360,21 +387,23 @@ function renderGmMain() {
   tbody.innerHTML = rowsHtml;
 
   // KPI vs J-1 (previous stored day average) — colored left edge like the daily price board
-  try { _gmBoardJ1Deltas({ total: fr ? fr.total : null, renPct: fr ? fr.renPct : null, co2: fr ? fr.co2 : null }, { total: euTotal, renPct: euRenPct, co2: euCo2Avg }, zones); } catch (_) {}
+  try { _gmBoardJ1Deltas({ total: fr ? fr.total : null, renPct: fr ? fr.renPct : null, co2: fr ? fr.co2 : null }, { total: euTotal, renPct: euRenPct, co2: euCo2Avg }, zones, window._gmHistDate || null); } catch (_) {}
 
   // Header date hint (mirrors pr-daily-board-meta in Prices Day-Ahead)
+  const selDate = window._gmHistDate || null;
   const hdrDate = document.getElementById('gm-main-header-date');
   if (hdrDate) {
-    hdrDate.textContent = new Date().toLocaleDateString('en-GB', {
-      weekday:'short', day:'2-digit', month:'short', year:'numeric',
-    }) + ' · ENTSO-E';
+    const d = selDate ? new Date(selDate + 'T00:00:00') : new Date();
+    hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) + ' · ENTSO-E';
   }
 
   // Table-header label (mirrors prices-date-label in Day-Ahead table-header)
   const tbLabel = document.getElementById('gm-table-label');
   if (tbLabel) {
-    const zonesCount = Object.keys(window._genmixData || {}).length;
-    tbLabel.textContent = `Live generation mix · ${zonesCount} zones · ENTSO-E A75`;
+    const zonesCount = zones.length;
+    tbLabel.textContent = selDate
+      ? `Generation mix · ${selDate} · ${zonesCount} zones · ENTSO-E A75 (moy. jour)`
+      : `Live generation mix · ${zonesCount} zones · ENTSO-E A75`;
   }
 
   // NOTE · template decision (mirrors Prices Day-Ahead Board):
@@ -2341,6 +2370,46 @@ window.gmdczFullscreen = function () {
   });
 };
 
+// ── Daily board Zones filter (mirrors the Prices Day-Ahead zone filter) ──
+window.gmApplyZoneFilter = function (set) {
+  window._gmZoneFilter = set || null;
+  const data = window._gmBoardData || window._genmixData || {};
+  const total = Object.keys(data).filter(z => data[z] && data[z].total > 0).length;
+  const lbl = document.getElementById('gm-gf-daily-zones-label');
+  if (lbl) lbl.textContent = window._gmZoneFilter ? `${window._gmZoneFilter.size} / ${total} zones` : 'All zones';
+  try { renderGmMain(); } catch (_) {}
+};
+window.gmToggleZonePanel = function () {
+  let panel = document.getElementById('gm-zone-panel');
+  if (panel) { panel.remove(); return; }
+  const data = window._gmBoardData || window._genmixData || {};
+  const zones = Object.keys(data).filter(z => data[z] && data[z].total > 0).sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
+  const active = window._gmZoneFilter;
+  const btn = document.getElementById('gm-gf-daily-zones');
+  if (!btn) return;
+  const flag = z => (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+  const r = btn.getBoundingClientRect();
+  panel = document.createElement('div'); panel.id = 'gm-zone-panel';
+  panel.style.cssText = `position:fixed;z-index:9999;top:${r.bottom + 6}px;left:${r.left}px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:200px;max-height:60vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)`;
+  panel.innerHTML = `<div style="display:flex;gap:6px;margin-bottom:8px">
+      <button id="gmz-all" style="flex:1;font-size:10px;padding:4px;border-radius:4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx2);cursor:pointer;font-family:'JetBrains Mono',monospace">All</button>
+      <button id="gmz-none" style="flex:1;font-size:10px;padding:4px;border-radius:4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx2);cursor:pointer;font-family:'JetBrains Mono',monospace">None</button>
+    </div>` + zones.map(z => {
+      const on = !active || active.has(z);
+      return `<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);cursor:pointer"><input type="checkbox" data-z="${z}" ${on ? 'checked' : ''}> ${flag(z)} ${z}</label>`;
+    }).join('');
+  document.body.appendChild(panel);
+  const collect = () => {
+    const set = new Set();
+    panel.querySelectorAll('input[data-z]').forEach(c => { if (c.checked) set.add(c.getAttribute('data-z')); });
+    window.gmApplyZoneFilter(set.size === zones.length ? null : set);
+  };
+  panel.querySelectorAll('input[data-z]').forEach(c => c.addEventListener('change', collect));
+  panel.querySelector('#gmz-all').addEventListener('click', () => { panel.querySelectorAll('input[data-z]').forEach(c => c.checked = true); collect(); });
+  panel.querySelector('#gmz-none').addEventListener('click', () => { panel.querySelectorAll('input[data-z]').forEach(c => c.checked = false); collect(); });
+  setTimeout(() => { const close = (e) => { if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { panel.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 0);
+};
+
 window.gmSetHistDate = function (ds) {
   ds = (ds && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? ds : null;
   window._gmHistDate = ds;
@@ -2352,6 +2421,11 @@ window.gmSetHistDate = function (ds) {
   if (histInput) histInput.value = ds || '';
   const latestBtn = document.getElementById('gm-date-latest-btn');
   if (latestBtn) latestBtn.style.color = ds ? 'var(--tx3)' : 'var(--accent)';
+
+  // Reload the daily board for the selected date (Latest → live, past date → archive day)
+  if (typeof _gmLoadBoardData === 'function' && typeof renderGmMain === 'function') {
+    _gmLoadBoardData(ds).then(() => { try { renderGmMain(); } catch (_) {} });
+  }
 
   // re-render whichever drill is open so the selected day propagates
   if (window._GM_DRILL_ZONE && document.getElementById('gm-drill-content') &&
