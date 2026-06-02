@@ -2211,7 +2211,11 @@
     #prices-table tbody td:first-child,
     #prices-table thead th:first-child,
     #ho-table tbody td:first-child,
-    #ho-table thead th:first-child {
+    #ho-table thead th:first-child,
+    #gm-table tbody td:first-child,
+    #gm-table thead th:first-child,
+    #gmh-table tbody td:first-child,
+    #gmh-table thead th:first-child {
       position: sticky;
       left: 0;
       background: var(--bg2);
@@ -3453,15 +3457,19 @@
                 <span id="gm-gf-daily-zones-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <button onclick="gmRefreshData()" id="gm-gf-refresh" title="Pull the latest ENTSO-E snapshot" style="padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Latest data</button>
-              <!-- Date picker (UI · wire to historical snapshot fetch in v2.1) -->
+              <!-- Date picker (styled button + calendar popup · same component as Prices DA) -->
               <div class="date-picker-wrap" id="gm-date-picker-wrap" style="position:relative">
-                <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  <input type="date" id="gm-date-picker-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
-                  <button id="gm-date-latest-btn" onclick="gmSetHistDate('')" title="Latest data" style="border:none;background:transparent;color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 4px">Latest</button>
+                <button class="date-picker-btn" id="gm-date-picker-btn" onclick="gmToggleDatePicker()" style="font-size:10px;padding:0 10px;height:26px">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span id="gm-date-picker-label">Latest data</span>
+                  <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="gm-date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="date-picker-popup" id="gm-date-picker-popup">
+                  <div class="dp-header"><button class="dp-nav" onclick="gmDpChangeMonth(-1)">‹</button><span class="dp-month-label" id="gm-dp-month-label"></span><button class="dp-nav" onclick="gmDpChangeMonth(1)">›</button></div>
+                  <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+                  <div class="dp-grid" id="gm-dp-grid"></div>
+                  <div class="dp-footer"><button class="dp-today-btn" onclick="gmDpSelectToday()">Latest</button></div>
                 </div>
-                <span id="gm-date-picker-label" style="display:none"></span>
               </div>
             </div>
 
@@ -3555,17 +3563,17 @@
             <table id="gm-table" style="font-size:11px;table-layout:fixed">
               <thead>
                 <tr>
-                  <th style="width:7%;text-align:left">Code</th>
-                  <th style="width:12%;text-align:left">Zone</th>
-                  <th style="width:9%;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:9%;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
-                  <th style="width:8%;text-align:right" title="Wind generation (onshore + offshore)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:12%;text-align:left" title="Dominant fuel">Dom. fuel</th>
-                  <th style="width:9%;text-align:right" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                  <th onclick="gmSortTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">Code <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('country')" style="width:12%;cursor:pointer;user-select:none;text-align:left">Zone <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('total')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('renPct')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('wind')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Wind generation (onshore + offshore)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('solar')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('nuclear')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('hydro')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('fossil')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('dom')" style="width:12%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel">Dom. fuel <span style="opacity:.4">↕</span></th>
+                  <th onclick="gmSortTable('co2')" style="width:9%;cursor:pointer;user-select:none;text-align:center" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span> <span style="opacity:.4">↕</span></th>
                 </tr>
               </thead>
               <tbody id="gm-table-tbody">
