@@ -553,6 +553,43 @@ def build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone):
     return snap
 
 
+def merge_genmix_into_daily(date_str, genmix_per_zone):
+    """Production-only mode: merge genmix scalars/arrays into the EXISTING daily
+    file (prices preserved), or create a genmix-only file if none exists.
+    Returns True if at least one zone was written."""
+    fp = os.path.join(DAILY_DIR, date_str + '.json')
+    if os.path.exists(fp):
+        try:
+            with open(fp) as f:
+                snap = json.load(f)
+        except Exception:
+            snap = {'date': date_str, 'zones': {}}
+    else:
+        snap = {'date': date_str, 'zones': {}}
+    snap.setdefault('date', date_str)
+    snap.setdefault('zones', {})
+    n = 0
+    for code, gm in (genmix_per_zone or {}).items():
+        if not gm:
+            continue
+        arrays = gm.pop('_arrays', None)
+        ze = snap['zones'].setdefault(code, {})
+        ze['genmix'] = gm
+        rp, dom = ren_pct_and_dom_fuel(gm)
+        if rp is not None:  ze['renPct']  = rp
+        if dom is not None: ze['domFuel'] = dom
+        if arrays:
+            for k, v in arrays.items():
+                ze[k] = v  # nuclear/hydro/biomass/wind/solar/fossil/other + windOn/Offshore
+        n += 1
+    if n == 0:
+        return False
+    os.makedirs(os.path.dirname(fp), exist_ok=True)
+    with open(fp, 'w') as f:
+        json.dump(snap, f, separators=(',', ':'))
+    return True
+
+
 # ─────────────────────────────────────────────
 # RECALC PASS
 # ─────────────────────────────────────────────
@@ -785,7 +822,7 @@ def daterange(start, end):
         cur += timedelta(days=1)
 
 
-def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False, dry_run=False, repair_min_zones=0):
+def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False, dry_run=False, repair_min_zones=0, genmix_only=False):
     token = os.environ.get('ENTSOE_TOKEN')
     if not token and not dry_run:
         print("ERROR: ENTSOE_TOKEN env var not set.", file=sys.stderr)
@@ -847,7 +884,7 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
                     except OSError:
                         pass
 
-    if resume:
+    if resume and not genmix_only:
         dates_todo = []
         for d in all_dates:
             fp = os.path.join(DAILY_DIR, d.strftime('%Y-%m-%d') + '.json')
@@ -860,7 +897,7 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
         all_dates = dates_todo
 
     n_days_active = len(all_dates)
-    calls_per_day = len(zones) * (2 if with_genmix else 1)
+    calls_per_day = len(zones) * (1 if genmix_only else (2 if with_genmix else 1))
     total_calls = n_days_active * calls_per_day
     eta_seconds = total_calls * 1.2
 
@@ -869,7 +906,10 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
     print(f"  Date range   : {date_from} to {date_to} ({n_days} days)")
     if resume:
         print(f"  Active dates : {n_days_active} (after --resume skip)")
-    print(f"  Genmix       : {'YES (renPct + domFuel)' if with_genmix else 'NO (prices only)'}")
+    if genmix_only:
+        print(f"  Mode         : PRODUCTION ONLY (genmix arrays merged into existing files, prices preserved)")
+    else:
+        print(f"  Genmix       : {'YES (renPct + domFuel)' if with_genmix else 'NO (prices only)'}")
     print(f"  API calls    : {total_calls}")
     print(f"  Est. time    : {eta_seconds/60:.0f} min ({eta_seconds/3600:.1f} h)")
     print(f"  Output       : {DAILY_DIR}/*.json")
@@ -896,25 +936,30 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
         genmix_per_zone = {}
 
         for code in zones:
-            hourly = fetch_prices_for_date(token, code, d)
-            if hourly:
-                prices_per_zone[code] = hourly
-            if with_genmix:
+            if not genmix_only:
+                hourly = fetch_prices_for_date(token, code, d)
+                if hourly:
+                    prices_per_zone[code] = hourly
+            if with_genmix or genmix_only:
                 gm = fetch_genmix_for_date(token, code, d)
                 if gm:
                     genmix_per_zone[code] = gm
             time.sleep(0.2)
 
-        if not prices_per_zone:
+        if genmix_only:
+            if merge_genmix_into_daily(date_str, genmix_per_zone):
+                n_ok += 1
+            else:
+                n_fail += 1
+        elif not prices_per_zone:
             n_fail += 1
-            continue
-
-        snap = build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone)
-        fp = os.path.join(DAILY_DIR, date_str + '.json')
-        os.makedirs(os.path.dirname(fp), exist_ok=True)
-        with open(fp, 'w') as f:
-            json.dump(snap, f, separators=(',', ':'))
-        n_ok += 1
+        else:
+            snap = build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone)
+            fp = os.path.join(DAILY_DIR, date_str + '.json')
+            os.makedirs(os.path.dirname(fp), exist_ok=True)
+            with open(fp, 'w') as f:
+                json.dump(snap, f, separators=(',', ':'))
+            n_ok += 1
 
         if (i + 1) % 10 == 0 or i == len(all_dates) - 1:
             elapsed = time.time() - t0
@@ -966,6 +1011,10 @@ def main():
     parser.add_argument(
         '--with-genmix', action='store_true',
         help='Also fetch generation mix (5x slower, adds renPct + domFuel)'
+    )
+    parser.add_argument(
+        '--genmix-only', action='store_true',
+        help='Production only: fetch generation mix only (no prices) and merge it into existing daily files (prices preserved). Processes existing files instead of skipping them.'
     )
     parser.add_argument(
         '--resume', action='store_true',
@@ -1034,6 +1083,7 @@ def main():
         resume=effective_resume,
         dry_run=args.dry_run,
         repair_min_zones=effective_repair,
+        genmix_only=args.genmix_only,
     )
 
 
