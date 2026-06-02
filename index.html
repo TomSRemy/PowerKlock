@@ -3316,10 +3316,10 @@
 
       </div>
 
-      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES (REDESIGN · DA template) ═══ -->
+      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES (REDESIGN · clone Daily template) ═══ -->
       <div class="subdomain-panel" data-subdomain-panel="negative">
 
-        <!-- Sticky bar : breadcrumb + global window filter (no tabs) -->
+        <!-- Sticky bar : breadcrumb + global filters (zone selector + window pills) -->
         <div class="pr-tabs-sticky" id="neg-sticky">
           <div class="pr-tabs-bar">
             <div class="pr-breadcrumb">
@@ -3329,6 +3329,23 @@
             </div>
             <div class="pr-tabs-separator"></div>
             <div class="pr-tabs-bar-filters">
+              <div style="position:relative" id="neg-zone-filter-wrap">
+                <button class="pk-gf-zone-btn" onclick="negToggleZonePanel()" id="neg-zone-btn">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
+                  <span id="neg-zone-btn-label">All zones</span>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="neg-zone-filter-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+                    <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
+                    <div style="display:flex;gap:4px">
+                      <button onclick="negZonesAll()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+                      <button onclick="negZonesNeg()" style="font-size:10px;color:#ED6965;background:rgba(237,105,101,0.12);border:1px solid rgba(237,105,101,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">Negative today</button>
+                    </div>
+                  </div>
+                  <div id="neg-zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>
+                </div>
+              </div>
               <div class="pk-gf-group" id="neg-window">
                 <button class="pk-gf-btn" data-w="1M" onclick="negSetWindow('1M',this)">1M</button>
                 <button class="pk-gf-btn" data-w="3M" onclick="negSetWindow('3M',this)">3M</button>
@@ -3341,67 +3358,79 @@
           </div>
         </div>
 
-        <!-- ── SECTION 1 · NEGATIVE PRICE BOARD (per-zone data + today KPIs) ── -->
-        <div class="hist-section hist-section-strong" id="neg-s-board">
-          <div class="hist-section-header open" onclick="toggleStrongSection('neg-s-board')">
-            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ED6965" stroke-width="1.8"><circle cx="12" cy="12" r="8" fill="rgba(237,105,101,0.2)"/></svg>Negative price board<span id="neg-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">today · ENTSO-E</span></div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open">
-            <div class="kpi-strip" id="neg-board-kpis" style="grid-template-columns:repeat(7,1fr)"></div>
-            <div class="table-wrap">
-              <div class="table-header">
-                <span class="table-title" id="neg-board-title">Negative-price board · loading…</span>
-              </div>
-              <table style="font-size:11px;table-layout:fixed">
-                <thead>
-                  <tr>
-                    <th style="width:12%;text-align:left">CODE</th>
-                    <th style="width:13%;text-align:left">ZONE</th>
-                    <th style="width:9%;text-align:right">NEG HRS</th>
-                    <th style="width:9%;text-align:right">DEEPEST<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-                    <th style="width:13%;text-align:right">WINDOW<br><span style="color:var(--tx3);font-weight:400;font-size:9px">first → last</span></th>
-                    <th style="width:9%;text-align:right">RUN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">consec. h</span></th>
-                    <th style="width:8%;text-align:right">SPARK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
-                    <th style="width:11%;text-align:left">PEAK HR</th>
-                    <th style="width:16%;text-align:center">INTRADAY SHAPE</th>
-                  </tr>
-                </thead>
-                <tbody id="neg-board-tbody"><tr><td colspan="9" style="padding:18px;text-align:center;color:var(--tx3)"><span class="spinner"></span> loading…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <!-- ── SECTION 1 · NEGATIVE PRICE BOARD (clone of Day-Ahead board) ── -->
+        <div class="hist-section hist-section-strong" id="neg-s-board"><div class="hist-section-header open" onclick="toggleStrongSection('neg-s-board')"><div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Negative price board<span id="neg-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">--</span></div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open">
 
-        <!-- ── SECTION 2 · CROSS-ZONE ANALYSIS ── -->
+          <!-- KPI Strip (today) -->
+          <div class="kpi-strip" id="neg-board-kpis"></div>
+
+          <!-- Board table -->
+          <div class="table-wrap" id="neg-table-wrap">
+            <div class="table-header" style="flex-wrap:wrap;gap:8px">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <span id="neg-board-title" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Negative-price board · loading...</span>
+              </div>
+            </div>
+            <table id="neg-table" style="font-size:11px;table-layout:fixed">
+              <thead>
+                <tr>
+                  <th onclick="negSort('code')" style="width:9%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('country')" style="width:13%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('negHours')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Hours below 0 €/MWh today">NEG HRS <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('min')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Deepest negative slot today">DEEPEST<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('window')" style="width:13%;cursor:pointer;user-select:none;text-align:right" title="First → last negative slot">WINDOW<br><span style="color:var(--tx3);font-weight:400;font-size:9px">first → last</span></th>
+                  <th onclick="negSort('run')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Longest consecutive negative run">RUN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">consec. h</span> <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('pct')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Share of intraday slots below zero">% NEG <span style="opacity:.4">↕</span></th>
+                  <th onclick="negSort('spark')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Spark spread">SPARK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
+                  <th style="width:23%;text-align:center">INTRADAY SHAPE</th>
+                </tr>
+              </thead>
+              <tbody id="neg-board-tbody">
+                <tr class="loading-row"><td colspan="9"><span class="spinner"></span> Loading ENTSO-E data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div></div>
+
+        <!-- ── SECTION 2 · CROSS-ZONE ANALYSIS (clone of Cross-zone analysis) ── -->
         <div class="hist-section hist-section-strong" id="neg-s-cc">
           <div class="hist-section-header open" onclick="toggleStrongSection('neg-s-cc')">
-            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Cross-zone analysis<span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">multi-zones</span></div>
+            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Cross-zone analysis
+              <span id="neg-cc-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px"></span>
+            </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open">
             <div class="kpi-strip" id="neg-cc-kpis" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px"></div>
-            <div class="pk-tabbar">
-              <div class="pk-tabbar-left"><div class="pk-tabbar-tabs" id="neg-cc-tabs"></div></div>
-              <div class="pk-tabbar-right"><button class="pk-btn-primary" onclick="negCCFullscreen()">⛶ Fullscreen</button></div>
+            <div id="neg-cc-tabs-bar" class="pk-tabbar">
+              <div class="pk-tabbar-left">
+                <div id="neg-cc-tabs" class="pk-tabbar-tabs"></div>
+              </div>
+              <div class="pk-tabbar-right">
+                <button class="pk-btn-primary" onclick="negCCFullscreen()" title="Open in fullscreen">⛶ Fullscreen</button>
+              </div>
             </div>
-            <div style="margin:8px 0 8px">
-              <div id="neg-cc-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#ED6965;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+            <div id="neg-cc-title-block" style="margin:8px 0 8px">
+              <div id="neg-cc-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#14D3A9;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
               <div id="neg-cc-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
-              <div id="neg-cc-sub" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)"></div>
+              <div id="neg-cc-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
             </div>
-            <div id="neg-cc-chart" style="position:relative;min-height:240px"></div>
-            <div class="table-wrap" style="margin-top:12px;border-radius:7px">
-              <table style="font-size:11px;table-layout:fixed">
+            <div id="neg-cc-analyst-banner-anchor"></div>
+            <div id="neg-cc-chart-wrap" style="position:relative;height:340px;overflow:hidden;margin-bottom:0">
+              <div id="neg-cc-chart" style="width:100%;height:340px;overflow:auto"></div>
+            </div>
+            <div class="table-wrap" style="margin-top:8px;border-radius:7px">
+              <table id="neg-cc-table" style="font-size:11px;table-layout:fixed">
                 <thead>
                   <tr>
                     <th style="width:9%;text-align:left">CODE</th>
                     <th style="width:17%;text-align:left">ZONE</th>
-                    <th style="width:13%;text-align:right">NEG H<br><span style="color:var(--tx3);font-weight:400;font-size:9px">last full yr</span></th>
+                    <th style="width:13%;text-align:right" title="Negative hours over last full year">NEG H<br><span style="color:var(--tx3);font-weight:400;font-size:9px">last full yr</span></th>
                     <th style="width:12%;text-align:right">DEEPEST<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
                     <th style="width:11%;text-align:right">DAYS NEG</th>
-                    <th style="width:12%;text-align:right">VS PREV Y</th>
-                    <th style="width:26%;text-align:left">TREND</th>
+                    <th style="width:12%;text-align:right" title="Change vs previous year">VS PREV Y</th>
+                    <th style="width:26%;text-align:left">2022 → now</th>
                   </tr>
                 </thead>
                 <tbody id="neg-cc-tbody"></tbody>
@@ -3412,7 +3441,8 @@
 
       </div>
 
-      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES (LEGACY — kept as sub-page, to remove later) ═══ -->
+      PANEL
+echo "panel file lines:" && wc -l /tmp/newpanel.html<!-- ═══ SUBDOMAIN · NEGATIVE PRICES (LEGACY — kept as sub-page, to remove later) ═══ -->
       <div class="subdomain-panel" data-subdomain-panel="negative-legacy">
         <div class="pr-tabs-sticky">
           <div class="pr-tabs-bar">
