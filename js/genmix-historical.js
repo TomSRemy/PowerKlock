@@ -752,9 +752,12 @@
     mixObj.total = totalTWh * 1000;
 
     host.innerHTML = `
-      <div style="position:relative;width:100%;height:340px">
-        <canvas id="gmh-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
-        <div id="gmh-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
+        <div style="flex:1 1 55%;min-width:280px;position:relative;height:340px">
+          <canvas id="gmh-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
+          <div id="gmh-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+        </div>
+        <div style="flex:1 1 38%;min-width:240px;align-self:center" id="gmh-drill-mix-table"></div>
       </div>`;
 
     // Reuse existing renderers from genmix.js (they accept the same mix/st shape)
@@ -777,22 +780,25 @@
       _gmhMixTreemap(tHost, mixObj);
     }
 
-    // Breakdown · per-fuel TWh / share / CO2 factor
-    if (breakHost) {
+    // Breakdown beside the chart · per-fuel TWh / avg GW / share / CO2
+    const tableHost = document.getElementById('gmh-drill-mix-table');
+    if (tableHost) {
+      const days = PERIOD_DAYS[window._gmhPeriod] || 91;
       const rows = STACK.map(f => {
         const twh = p[f] || 0;
         if (twh < 0.01) return '';
         const meta = FUEL_META[f] || { color: '#7A93AB', label: f, emoji: '', co2: 0 };
         const share = (twh / totalTWh) * 100;
+        const avgGW = (twh * 1000) / (days * 24);
         return `<tr style="border-top:1px solid var(--bd)">
           <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${meta.color}">${meta.emoji} ${meta.label}</span></td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${twh.toFixed(2)}</td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${(twh / window._gmhPeriod === '7D' ? 7 : (PERIOD_DAYS[window._gmhPeriod] || 91) / 365 * 8760 * 0 + 1).toFixed(2)}</td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${share.toFixed(1)}%</td>
+          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${twh.toFixed(2)}</td>
+          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${avgGW.toFixed(2)}</td>
+          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${share.toFixed(1)}%</td>
           <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${meta.co2 || '--'}</td>
         </tr>`;
       }).filter(Boolean).join('');
-      breakHost.innerHTML = `
+      tableHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
             <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Source</th>
@@ -803,27 +809,8 @@
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
-      // Patch avg GW correctly (the inline expression above is bogus on purpose)
-      // Recompute clean values
-      const days = PERIOD_DAYS[window._gmhPeriod] || 91;
-      const tbody = breakHost.querySelector('tbody');
-      if (tbody) {
-        tbody.innerHTML = STACK.map(f => {
-          const twh = p[f] || 0;
-          if (twh < 0.01) return '';
-          const meta = FUEL_META[f] || { color: '#7A93AB', label: f, emoji: '', co2: 0 };
-          const share = (twh / totalTWh) * 100;
-          const avgGW = (twh * 1000) / (days * 24); // TWh × 1000 = GWh ; ÷ hours = GW
-          return `<tr style="border-top:1px solid var(--bd)">
-            <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${meta.color}">${meta.emoji} ${meta.label}</span></td>
-            <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${twh.toFixed(2)}</td>
-            <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${avgGW.toFixed(2)}</td>
-            <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${share.toFixed(1)}%</td>
-            <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${meta.co2 || '--'}</td>
-          </tr>`;
-        }).filter(Boolean).join('');
-      }
     }
+    if (breakHost) breakHost.innerHTML = '';
   }
 
   function _gmhMixTreemap(host, mix) {
@@ -932,6 +919,8 @@
     });
 
     if (breakHost) {
+      const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+      const FUEL_META = window.GM_FUEL_META || {};
       const max = Math.max(...data); const min = Math.min(...data); const avg = data.reduce((a, b) => a + b, 0) / data.length;
       const cleanDays = data.filter(v => v < 50).length;
       const dirtyDays = data.filter(v => v > 300).length;
@@ -953,7 +942,31 @@
             ${row('Clean days', cleanDays, 'days', '<50 g/kWh in period')}
             ${row('Dirty days', dirtyDays, 'days', '>300 g/kWh in period')}
           </tbody>
-        </table>`;
+        </table>
+        <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
+            <span style="color:var(--tx)">CI = Σ<sub>f</sub> [ génération<sub>f</sub> × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub></span><br>
+            <span style="color:var(--tx3)">Moyenne attributionnelle, périmètre cycle de vie. Agrégée sur la période sélectionnée.</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px">
+            <thead><tr>
+              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
+              <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
+              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Données</th>
+            </tr></thead>
+            <tbody>
+              ${STACK.map(f => { const m = FUEL_META[f] || { color: '#7A93AB', label: f, emoji: '', co2: 0 }; return `<tr style="border-top:1px solid var(--bd)">
+                <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
+                <td style="padding:5px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${m.co2}</td>
+                <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75</td>
+              </tr>`; }).join('')}
+            </tbody>
+          </table>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.6">
+            <span style="color:var(--tx2)">Sources :</span> génération = ENTSO-E Transparency (A75), archive PowerKlock. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon ENTSO-E.
+          </div>
+        </div>`;
     }
   }
 
