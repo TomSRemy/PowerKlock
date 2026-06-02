@@ -385,6 +385,85 @@ def fetch_genmix():
     return result
 
 # ─────────────────────────────────────────────
+# FINALIZE D-1: re-fetch the now-complete previous day and overwrite its file
+# ─────────────────────────────────────────────
+def _genmix_profiles(raw_a):
+    """Per-fuel 96-slot arrays from a parsed A75 document (same mapping as fetch_renewables)."""
+    def get_profile(key):
+        acc = [0] * 96
+        for psr, vals in raw_a.items():
+            name = PSR_MAP.get(psr, '')
+            match = (key == 'wind_onshore' and psr == 'B19') or \
+                    (key == 'wind_offshore' and psr == 'B18') or \
+                    (key == 'solar' and 'Solar' in name) or \
+                    (key == 'hydro' and 'Hydro' in name) or \
+                    (key == 'nuclear' and 'Nuclear' in name) or \
+                    (key == 'fossil' and 'Fossil' in name) or \
+                    (key == 'biomass' and ('Biomass' in name or 'Waste' in name)) or \
+                    (key == 'other' and ('Geothermal' in name or 'Marine' in name or name == 'Other' or 'Other renewable' in name))
+            if match:
+                for i in range(min(96, len(vals))):
+                    acc[i] += vals[i]
+        return [round(v) for v in acc]
+    won = get_profile('wind_onshore')
+    woff = get_profile('wind_offshore')
+    return {
+        'windOnshore': won, 'windOffshore': woff,
+        'wind': [a + b for a, b in zip(won, woff)],
+        'solar': get_profile('solar'), 'nuclear': get_profile('nuclear'),
+        'hydro': get_profile('hydro'), 'fossil': get_profile('fossil'),
+        'biomass': get_profile('biomass'), 'other': get_profile('other'),
+    }
+
+def finalize_yesterday():
+    """Re-fetch the now-settled previous day (D-1) and overwrite yesterday's daily
+    file arrays, so intraday-partial snapshots finalize automatically the next run."""
+    import os, json
+    y_start = date_str(-1)   # yesterday 00:00 (ENTSO-E period)
+    y_end   = date_str(0)    # today 00:00
+    y_date  = (datetime.utcnow() + timedelta(days=-1)).strftime('%Y-%m-%d')
+    path = f'data/history/daily/{y_date}.json'
+    if not os.path.exists(path):
+        print(f'[finalize] no daily file for {y_date}, skip')
+        return
+    try:
+        with open(path) as f:
+            snap = json.load(f)
+    except Exception as e:
+        print(f'[finalize] read fail: {e}')
+        return
+    zones = snap.get('zones', {})
+    fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other']
+    for code in ['FR', 'DE_LU', 'ES', 'GB', 'BE']:
+        eic = ZONES.get(code)
+        if not eic or code not in zones:
+            continue
+        try:
+            xml = fetch({'documentType': 'A75', 'processType': 'A16', 'in_Domain': eic,
+                         'periodStart': y_start, 'periodEnd': y_end})
+            prof = _genmix_profiles(parse_generation(xml))
+            new_nonzero = sum(1 for i in range(96) if sum(prof[f][i] for f in fuels) > 0)
+            ze = zones[code]
+            old_nonzero = 0
+            if isinstance(ze.get('nuclear'), list):
+                old_nonzero = sum(1 for i in range(96)
+                                  if sum(((ze.get(f) or [])[i] if i < len(ze.get(f) or []) else 0) for f in fuels) > 0)
+            if new_nonzero < old_nonzero:
+                print(f'[finalize] {code}: refetch {new_nonzero} < existing {old_nonzero}, keep')
+                continue
+            for k in ['windOnshore', 'windOffshore', 'wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass', 'other']:
+                ze[k] = prof[k]
+            tot = sum(sum(prof[f]) for f in fuels)
+            if tot > 0:
+                ren = sum(sum(prof[f]) for f in ['wind', 'solar', 'hydro'])
+                ze['renPct'] = round(100 * ren / tot, 1)
+            print(f'[finalize] {code}: {y_date} -> {new_nonzero}/96 slots')
+        except Exception as e:
+            print(f'[finalize] {code}: ERROR {e}')
+    write_json(path, snap)
+    print(f'[finalize] {y_date} finalised')
+
+# ─────────────────────────────────────────────
 # FETCH RENEWABLES + FORECAST
 # ─────────────────────────────────────────────
 def fetch_renewables():
@@ -824,6 +903,12 @@ if __name__ == '__main__':
                 zone_entry['domFuel'] = dom
         daily_snap['zones'][z['code']] = zone_entry
     write_json(daily_path, daily_snap)
+
+    # Finalize the previous day (now fully settled) so partial intraday snapshots complete
+    try:
+        finalize_yesterday()
+    except Exception as _fe:
+        print(f'[finalize] skipped: {_fe}')
 
     # Update monthly summary (load existing if present, merge)
     import os
