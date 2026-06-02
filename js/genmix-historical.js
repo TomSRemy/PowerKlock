@@ -47,7 +47,25 @@
   // ════════════════════════════════════════════════════════════════
 
   // Number of days for each period bucket
-  const PERIOD_DAYS = { '7D': 7, '1M': 30, '3M': 91, '6M': 182, 'YTD': 145, '1Y': 365 };
+  const PERIOD_DAYS = { '7D': 7, '1M': 30, '3M': 91, '6M': 182, 'YTD': 145, '1Y': 365, '2Y': 730, '5Y': 1825, 'All': 4170 };
+  // Custom From/To range support (mirrors Prices historical date range)
+  function _gmhDays(period) {
+    if (period === 'custom' && window._gmhRange && window._gmhRange.from && window._gmhRange.to) {
+      const d = Math.round((new Date(window._gmhRange.to) - new Date(window._gmhRange.from)) / 86400000);
+      return d > 0 ? d : 1;
+    }
+    return PERIOD_DAYS[period];
+  }
+  function _gmhEndDate() {
+    if (window._gmhPeriod === 'custom' && window._gmhRange && window._gmhRange.to) return new Date(window._gmhRange.to);
+    return new Date();
+  }
+  function _gmhStartDate() {
+    if (window._gmhPeriod === 'custom' && window._gmhRange && window._gmhRange.from) return new Date(window._gmhRange.from);
+    const s = new Date(_gmhEndDate().getTime());
+    s.setDate(s.getDate() - (_gmhDays(window._gmhPeriod) || 91));
+    return s;
+  }
 
   /**
    * Build period-aggregated dataset from the live genmix snapshot.
@@ -63,7 +81,7 @@
     const zones = Object.keys(liveData).filter(z => liveData[z]?.total > 0);
     if (!zones.length) return {};
 
-    const days = PERIOD_DAYS[period] || 91;
+    const days = _gmhDays(period) || 91;
     const today = new Date();
 
     // Seasonal factors derived from RTE eCO2mix + ENTSO-E aggregates 2023-2025
@@ -249,10 +267,127 @@
   // ════════════════════════════════════════════════════════════════
   window.gmhSetPeriod = function (period) {
     window._gmhPeriod = period;
+    window._gmhRange = null; // pills and custom range are mutually exclusive (like Prices)
+    const fEl = document.getElementById('gmh-date-from'); if (fEl) fEl.value = '';
+    const tEl = document.getElementById('gmh-date-to'); if (tEl) tEl.value = '';
     document.querySelectorAll('#gm-gf-hist-period .pk-gf-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.w === period);
     });
     _gmhRenderAll();
+  };
+  // Custom From/To range (mirrors Prices historical date range)
+  window.gmhSetCustomRange = function () {
+    const from = document.getElementById('gmh-date-from')?.value;
+    const to = document.getElementById('gmh-date-to')?.value;
+    if (!from || !to) return;
+    if (from > to) return;
+    window._gmhRange = { from, to };
+    window._gmhPeriod = 'custom';
+    document.querySelectorAll('#gm-gf-hist-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
+    window._gmHistDate = to; // Stack drill day = range end
+    if (window._gmhOpenZone && typeof window._gmhOpenDrill === 'function') window._gmhOpenDrill(window._gmhOpenZone);
+    _gmhRenderAll();
+  };
+
+  // ── Sortable headers (mirrors Prices historical) ──
+  function _gmhSortVal(z, key, pdata) {
+    const p = pdata[z] || {};
+    const NAMES = window.GM_ZONE_NAMES || window._GMD_ZONE_NAMES || {};
+    switch (key) {
+      case 'code': return z;
+      case 'country': return NAMES[z] || z;
+      case 'load': return p.avgLoadGW || 0;
+      case 'energy': return p.energyTWh || 0;
+      case 'renPct': return p.renPct || 0;
+      case 'wind': return p.wind || 0;
+      case 'solar': return p.solar || 0;
+      case 'fossil': return p.fossil || 0;
+      case 'dom': return p.dom || '';
+      case 'co2': return p.co2 || 0;
+      case 'dRenY1': return p.dRenY1 || 0;
+      default: return p.avgLoadGW || 0;
+    }
+  }
+  window.gmhSortTable = function (key) {
+    const numericDefaultDesc = !(key === 'code' || key === 'country' || key === 'dom');
+    if (window._gmhSortKey === key) {
+      window._gmhSortDir = window._gmhSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      window._gmhSortKey = key;
+      window._gmhSortDir = numericDefaultDesc ? 'desc' : 'asc';
+    }
+    _gmhRenderBoard();
+  };
+
+  // ── Zones filter — same design/behaviour as the Prices zone filter,
+  //    historical-owned (state _gmhZoneFilter), no link to Prices or to the daily board. ──
+  function _gmhAllBoardZones() {
+    return (window._gmhAllZones || []).slice();
+  }
+  window.gmhApplyZoneFilter = function (set) {
+    const all = _gmhAllBoardZones();
+    if (!set) window._gmhZoneFilter = null;
+    else if (set.size >= all.length) window._gmhZoneFilter = null;
+    else window._gmhZoneFilter = set;
+    const lbl = document.getElementById('gm-gf-hist-zones-label');
+    if (lbl) lbl.textContent = window._gmhZoneFilter ? `${window._gmhZoneFilter.size} / ${all.length} zones` : 'All zones';
+    _gmhBuildZoneChips();
+    _gmhRenderAll();
+  };
+  window.gmhToggleZoneChip = function (z) {
+    const all = _gmhAllBoardZones();
+    const set = window._gmhZoneFilter ? new Set(window._gmhZoneFilter) : new Set(all);
+    if (set.has(z)) set.delete(z); else set.add(z);
+    window.gmhApplyZoneFilter(set);
+  };
+  window.gmhSelectAllZones = function () { window.gmhApplyZoneFilter(null); };
+  window.gmhClearZones = function () { window.gmhApplyZoneFilter(new Set()); };
+  window.gmhSelectNeighbours = function () {
+    const all = _gmhAllBoardZones();
+    window.gmhApplyZoneFilter(new Set(['FR', 'DE_LU', 'BE', 'NL', 'ES', 'CH', 'IT_NORD', 'GB'].filter(z => all.includes(z))));
+  };
+  function _gmhBuildZoneChips() {
+    const container = document.getElementById('gmh-zone-filter-chips');
+    if (!container) return;
+    const active = window._gmhZoneFilter;
+    const zones = _gmhAllBoardZones().sort((a, b) => a.localeCompare(b));
+    const flagOf = z => (window.FLAG_MAP && window.FLAG_MAP[z]) || '';
+    const nameOf = z => (window.GM_ZONE_NAMES && window.GM_ZONE_NAMES[z]) || z;
+    const checkSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#14D3A9" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    container.innerHTML = zones.map(z => {
+      const isOn = !active || active.has(z);
+      return `<button onclick="gmhToggleZoneChip('${z}')" style="display:flex;align-items:center;gap:5px;width:100%;padding:4px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:none;text-align:left;background:${isOn ? 'rgba(0,212,168,.06)' : 'transparent'};color:${isOn ? '#14D3A9' : 'rgba(255,255,255,.35)'}">
+          <span style="width:12px;height:12px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,.15)'};background:${isOn ? 'rgba(0,212,168,.2)' : 'transparent'}">${isOn ? checkSvg : ''}</span>
+          <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${isOn ? 'var(--acc)' : 'rgba(255,255,255,.4)'};min-width:56px">${flagOf(z)} ${z}</span>
+          <span>${nameOf(z)}</span>
+        </button>`;
+    }).join('');
+  }
+  window.gmhToggleZonePanel = function () {
+    let panel = document.getElementById('gmh-zone-filter-panel');
+    if (panel) { panel.remove(); return; }
+    const btn = document.getElementById('gm-gf-hist-zones');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    panel = document.createElement('div'); panel.id = 'gmh-zone-filter-panel';
+    panel.style.cssText = `position:fixed;z-index:9999;top:${r.bottom + 6}px;left:${Math.max(8, r.left)}px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)`;
+    panel.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
+          <div style="display:flex;gap:4px">
+            <button onclick="gmhSelectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+            <button onclick="gmhClearZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          <button onclick="gmhSelectNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+        </div>
+      </div>
+      <div id="gmh-zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>`;
+    document.body.appendChild(panel);
+    _gmhBuildZoneChips();
+    setTimeout(() => { const close = (e) => { if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { panel.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 0);
   };
 
   // ════════════════════════════════════════════════════════════════
@@ -261,19 +396,21 @@
   function _gmhRenderBoard() {
     const period = window._gmhPeriod || '3M';
     const pdata = _gmhBuildPeriodData(period);
-    const zones = Object.keys(pdata);
+    window._gmhAllZones = Object.keys(pdata); // full list (for the zone filter panel)
+    const zoneFilter = window._gmhZoneFilter || null;
+    const zones = window._gmhAllZones.filter(z => !zoneFilter || zoneFilter.has(z));
 
     // Header dates · "23 Feb 2026 → 25 May 2026"
-    const today = new Date();
-    const start = new Date(today.getTime());
-    start.setDate(start.getDate() - (PERIOD_DAYS[period] || 91));
+    const end = _gmhEndDate();
+    const start = _gmhStartDate();
     const fmtD = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const rangeText = `${fmtD(start)} → ${fmtD(today)} · ENTSO-E A75`;
+    const rangeText = `${fmtD(start)} → ${fmtD(end)} · ENTSO-E A75`;
     const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
     setText('gmh-main-header-date', rangeText);
-    setText('gmh-table-label', `Historical generation mix · period ${period} · ${zones.length} zones`);
+    const periodLbl = period === 'custom' ? 'custom' : period;
+    setText('gmh-table-label', `Historical generation mix · period ${periodLbl} · ${zones.length} zones`);
     const rangeLbl = document.getElementById('gm-gf-hist-range-label');
-    if (rangeLbl) rangeLbl.textContent = `${fmtD(start)} → ${fmtD(today)}`;
+    if (rangeLbl) rangeLbl.textContent = `${fmtD(start)} → ${fmtD(end)}`;
 
     if (!zones.length) {
       const tb = document.getElementById('gmh-table-tbody');
@@ -313,7 +450,14 @@
     setText('gmh-kpi-eu-co2-meta', `load-weighted`);
 
     // ── Table rows ──
-    const sortedZones = [...zones].sort((a, b) => pdata[b].avgLoadGW - pdata[a].avgLoadGW);
+    const _hsKey = window._gmhSortKey || 'load';
+    const _hsStr = (k) => k === 'code' || k === 'country' || k === 'dom';
+    const _hsDir = window._gmhSortDir || (_hsStr(_hsKey) ? 'asc' : 'desc');
+    const sortedZones = [...zones].sort((a, b) => {
+      const va = _gmhSortVal(a, _hsKey, pdata), vb = _gmhSortVal(b, _hsKey, pdata);
+      let c = (typeof va === 'string') ? va.localeCompare(vb) : (va - vb);
+      return _hsDir === 'asc' ? c : -c;
+    });
     const FUEL_META = window.GM_FUEL_META || {};
     const FLAGS = window.FLAG_MAP || {};
     const tbody = document.getElementById('gmh-table-tbody');
@@ -623,7 +767,7 @@
   // Real period aggregation from the stored archive (bounded ≤60 sampled days).
   // Returns a `p`-shaped object (per-fuel TWh, shares, co2, dailySeries, seasonalCells).
   async function _gmhBuildRealAgg(zone, period) {
-    const D = PERIOD_DAYS[period] || 4170;
+    const D = _gmhDays(period) || 4170;
     let stepDays = (D <= 31) ? 1 : (D <= 210 ? 7 : 30);
     let count = Math.ceil(D / stepDays);
     if (count > 60) { stepDays = Math.ceil(D / 60); count = Math.ceil(D / stepDays); }
@@ -682,7 +826,7 @@
   // Real period profile: average daily generation (GW) sampled at an adaptive
   // step across the stored archive. Bounded fetches (≤ 60 buckets).
   async function _gmhBuildRealProfile(zone, period, step) {
-    const D = PERIOD_DAYS[period] || 4170;
+    const D = _gmhDays(period) || 4170;
     let stepDays;
     if (step === 'D') stepDays = 1;
     else if (step === 'W') stepDays = 7;
@@ -862,7 +1006,7 @@
     // Breakdown beside the chart · per-fuel TWh / avg GW / share / CO2
     const tableHost = document.getElementById('gmh-drill-mix-table');
     if (tableHost) {
-      const days = PERIOD_DAYS[window._gmhPeriod] || 91;
+      const days = _gmhDays(window._gmhPeriod) || 91;
       const rows = STACK.map(f => {
         const twh = p[f] || 0;
         if (twh < 0.01) return '';
@@ -1203,7 +1347,7 @@
 
     // Header date
     const today = new Date();
-    const start = new Date(today.getTime()); start.setDate(start.getDate() - (PERIOD_DAYS[window._gmhPeriod] || 91));
+    const start = new Date(today.getTime()); start.setDate(start.getDate() - (_gmhDays(window._gmhPeriod) || 91));
     const fmtD = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const hd = document.getElementById('gmhcz-header-date');
     if (hd) hd.textContent = `${fmtD(start)} → ${fmtD(today)}`;
