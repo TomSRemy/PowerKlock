@@ -1850,18 +1850,17 @@ window.loadGenMix = function() {
     s.id = 'gms-css';
     s.textContent = `
     .gms-wrap{--mono:'JetBrains Mono',ui-monospace,monospace}
-    .gms-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
-    .gms-period-lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);font-weight:600}
-    .gms-period-val{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:700;margin-top:3px}
     .gms-body{display:grid;grid-template-columns:1fr 296px;gap:18px;align-items:stretch}
     .gms-chart-wrap{position:relative}
     .gms-rt{font-family:var(--mono);font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-    .gms-wrap svg{display:block;width:100%;height:auto}
+    .gms-wrap svg{display:block;width:100%;height:300px}
     .gms-wrap .grid-line{stroke:rgba(255,255,255,.05)}
     .gms-wrap .axis-txt{fill:var(--tx3);font-family:var(--mono);font-size:11px}
     .gms-wrap .band-line{stroke:var(--tx4);stroke-dasharray:3 3;stroke-width:1}
     .gms-wrap .band-txt{fill:var(--tx3);font-family:var(--mono);font-size:10px;font-weight:600}
     .gms-wrap .now-line{stroke:var(--accent);stroke-width:2}
+    .gms-wrap .j1-line{fill:none;stroke:var(--tx3);stroke-width:1.5;stroke-dasharray:4 4;opacity:.75}
+    .gms-wrap .j1-txt{fill:var(--tx3);font-family:var(--mono);font-size:10px;font-weight:600;opacity:.85}
     .gms-wrap .area{stroke:none}
     .gms-nowpill{position:absolute;transform:translateX(-50%);background:var(--accent);color:#04201a;font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap;pointer-events:none}
     .gms-panel{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:14px;display:flex;gap:14px}
@@ -1871,7 +1870,7 @@ window.loadGenMix = function() {
     .gms-list{display:flex;flex-direction:column;gap:7px;flex:1;justify-content:center}
     .gms-li{display:grid;grid-template-columns:16px 1fr auto auto;align-items:center;gap:8px}
     .gms-li .dot{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.08)}
-    .gms-li .nm{font-size:12px;color:var(--tx2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gms-li .nm{font-size:11px;color:var(--tx2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .gms-li .vv{font-family:var(--mono);font-size:11px;color:var(--tx3);text-align:right}
     .gms-li .pc{font-family:var(--mono);font-size:13px;color:var(--tx);font-weight:700;text-align:right;min-width:34px}
     .gms-vbar{width:34px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column-reverse;border:1px solid var(--bd2);align-self:stretch}
@@ -1880,7 +1879,7 @@ window.loadGenMix = function() {
     .gms-wrap table{width:100%;border-collapse:collapse}
     .gms-wrap thead th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--tx3);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--bd2);text-align:right}
     .gms-wrap thead th:first-child{text-align:left}
-    .gms-wrap tbody td{padding:6px 10px;font-family:var(--mono);font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
+    .gms-wrap tbody td{padding:6px 10px;font-family:var(--mono);font-size:11px;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
     .gms-wrap tbody td:first-child{text-align:left}
     .gms-wrap tbody tr.total td{border-top:1px solid var(--bd2);font-weight:700;color:var(--tx);background:rgba(20,211,169,.04)}
     .gms-cellnm{display:inline-flex;align-items:center;gap:8px;font-weight:600}
@@ -1951,10 +1950,25 @@ window.loadGenMix = function() {
 
     const dateLabel = ds || (daily && daily.date) || '—';
 
+    // ── J-1 (previous stored day) total curve, resampled to N ──
+    let prevTotals = null, prevDs = null;
+    if (isReal && ds) {
+      const pd = new Date(ds + 'T00:00:00'); pd.setDate(pd.getDate() - 1);
+      prevDs = fmtDate(pd);
+      const pj = await fetchDaily(prevDs);
+      const pzd = pj && pj.zones && pj.zones[zone];
+      if (hasArrays(pzd)) {
+        const pN = Math.max.apply(null, STACK.map(f => (Array.isArray(pzd[f]) ? pzd[f].length : 0)).concat([1]));
+        const pt = new Array(pN).fill(0);
+        STACK.forEach(f => { const a = Array.isArray(pzd[f]) ? pzd[f] : []; for (let i = 0; i < pN; i++) pt[i] += (a[i] == null ? 0 : a[i]); });
+        // resample pN → N
+        prevTotals = new Array(N).fill(0).map((_, i) => pt[Math.min(pN - 1, Math.round(i / (N - 1) * (pN - 1)))]);
+      }
+    }
+
     // build DOM shell
     host.innerHTML =
       '<div class="gms-wrap">'
-      + '<div class="gms-head"><div><div class="gms-period-lab">Période · ' + zone + '</div><div class="gms-period-val">' + dateLabel + '</div></div></div>'
       + '<div class="gms-body">'
       +   '<div class="gms-chart-wrap"><div class="gms-rt">Production · stack (' + (N === 96 ? '15 min' : 'horaire') + ')</div>'
       +     '<svg viewBox="0 0 1000 440" preserveAspectRatio="none"></svg><div class="gms-nowpill" style="display:none"></div></div>'
@@ -1971,7 +1985,8 @@ window.loadGenMix = function() {
 
     const totals = []; for (let i = 0; i < N; i++) totals.push(STACK.reduce((s, f) => s + DATA[f][i], 0));
     const maxTotal = Math.max.apply(null, totals), minTotal = Math.min.apply(null, totals);
-    const yMax = Math.max(10000, Math.ceil(maxTotal / 10000) * 10000);
+    const peakForScale = prevTotals ? Math.max(maxTotal, Math.max.apply(null, prevTotals)) : maxTotal;
+    const yMax = Math.max(10000, Math.ceil(peakForScale / 10000) * 10000);
     const STAT = {}; STACK.forEach(f => { const a = DATA[f]; STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
 
     const W = 1000, H = 440, L = 52, R = 14, T = 12, B = 30;
@@ -1999,6 +2014,13 @@ window.loadGenMix = function() {
         svg.appendChild(elx('line', { class: 'band-line', x1: L, y1: y, x2: W - R, y2: y }));
         const tx = elx('text', { class: 'band-txt', x: W - R - 2, y: y - 4, 'text-anchor': 'end' }); tx.textContent = lab; svg.appendChild(tx);
       });
+      // J-1 total curve (dashed, discreet)
+      if (prevTotals) {
+        let pd = 'M ' + px(0) + ' ' + py(prevTotals[0]);
+        for (let i = 1; i < N; i++) pd += ' L ' + px(i).toFixed(1) + ' ' + py(prevTotals[i]).toFixed(1);
+        svg.appendChild(elx('path', { class: 'j1-line', d: pd }));
+        const lg = elx('text', { class: 'j1-txt', x: L + 4, y: T + 12 }); lg.textContent = 'J-1 (' + (prevDs || '') + ')'; svg.appendChild(lg);
+      }
       for (let h = 0; h <= 24; h += 4) {
         const i = Math.min(N - 1, Math.round(h / 24 * N));
         const tx = elx('text', { class: 'axis-txt', x: px(i), y: H - 8, 'text-anchor': 'middle' }); tx.textContent = String(h).padStart(2, '0') + ':00'; svg.appendChild(tx);
