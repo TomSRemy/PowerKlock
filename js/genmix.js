@@ -303,6 +303,36 @@ async function _gmLoadBoardData(ds) {
 }
 window._gmLoadBoardData = _gmLoadBoardData;
 
+// Sort value for a zone by column key (mirrors Prices sortable headers)
+function _gmSortVal(z, key, data) {
+  const m = data[z] || {};
+  const st = (typeof _gmStats === 'function' && _gmStats(m)) || {};
+  switch (key) {
+    case 'code': return z;
+    case 'country': return (window.GM_ZONE_NAMES && window.GM_ZONE_NAMES[z]) || z;
+    case 'total': return st.total || 0;
+    case 'renPct': return st.renPct || 0;
+    case 'wind': return m.wind || 0;
+    case 'solar': return m.solar || 0;
+    case 'nuclear': return m.nuclear || 0;
+    case 'hydro': return m.hydro || 0;
+    case 'fossil': return m.fossil || 0;
+    case 'dom': return st.dom || '';
+    case 'co2': return st.co2 || 0;
+    default: return st.total || 0;
+  }
+}
+window.gmSortTable = function (key) {
+  const numericDefaultDesc = !(key === 'code' || key === 'country' || key === 'dom');
+  if (window._gmSortKey === key) {
+    window._gmSortDir = window._gmSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    window._gmSortKey = key;
+    window._gmSortDir = numericDefaultDesc ? 'desc' : 'asc';
+  }
+  try { renderGmMain(); } catch (_) {}
+};
+
 function renderGmMain() {
   // Date filter drives the board: Latest → live snapshot, past date → archive-day averages
   if (window._gmHistDate && window._gmBoardDateMiss) {
@@ -321,10 +351,17 @@ function renderGmMain() {
 
   // Zones filter (null = all), mirrors the Prices Day-Ahead zone filter
   const zoneFilter = window._gmZoneFilter || null;
-  // Sort zones by total generation (desc), then apply the zone filter
+  // Active sort (mirrors Prices sortable headers); default = total desc
+  const sortKey = window._gmSortKey || 'total';
+  const strKey = (k) => k === 'code' || k === 'country' || k === 'dom';
+  const sortDir = window._gmSortDir || (strKey(sortKey) ? 'asc' : 'desc');
   const zones = Object.keys(data)
     .filter(z => data[z]?.total > 0 && (!zoneFilter || zoneFilter.has(z)))
-    .sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
+    .sort((a, b) => {
+      const va = _gmSortVal(a, sortKey, data), vb = _gmSortVal(b, sortKey, data);
+      let c = (typeof va === 'string') ? va.localeCompare(vb) : (va - vb);
+      return sortDir === 'asc' ? c : -c;
+    });
 
   // ── KPI strip ──
   const fr  = data['FR'] ? _gmStats(data['FR']) : null;
@@ -2451,17 +2488,77 @@ window.gmToggleZonePanel = function () {
   setTimeout(() => { const close = (e) => { if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { panel.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 0);
 };
 
+// ── Styled date picker (calendar popup) — same component/classes as Prices DA, GenMix-owned ──
+const gmDP = { viewYear: new Date().getFullYear(), viewMonth: new Date().getMonth(), selectedDate: null };
+window.gmToggleDatePicker = function () {
+  const btn = document.getElementById('gm-date-picker-btn');
+  const popup = document.getElementById('gm-date-picker-popup');
+  if (!btn || !popup) return;
+  btn.classList.toggle('open');
+  popup.classList.toggle('open');
+  if (popup.classList.contains('open')) gmDpRender();
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('#gm-date-picker-wrap')) {
+    document.getElementById('gm-date-picker-btn')?.classList.remove('open');
+    document.getElementById('gm-date-picker-popup')?.classList.remove('open');
+  }
+});
+function gmDpRender() {
+  const grid = document.getElementById('gm-dp-grid');
+  if (!grid) return;
+  const today = new Date();
+  const y = gmDP.viewYear, m = gmDP.viewMonth;
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const lbl = document.getElementById('gm-dp-month-label');
+  if (lbl) lbl.textContent = months[m] + ' ' + y;
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const offset = (firstDay + 6) % 7;
+  const todayStr = _gmFmtDate(today);
+  const selStr = gmDP.selectedDate || todayStr;
+  let html = '';
+  for (let i = 0; i < offset; i++) html += '<div class="dp-day dp-empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = dateStr === todayStr, isSel = dateStr === selStr, isFuture = dateStr > todayStr;
+    let cls = 'dp-day';
+    if (isToday) cls += ' dp-today';
+    if (isSel) cls += ' dp-selected';
+    if (isFuture) cls += ' dp-future';
+    html += `<div class="${cls}" ${isFuture ? '' : `onclick="gmDpSelect('${dateStr}')"`}>${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+window.gmDpSelect = function (dateStr) {
+  const todayStr = _gmFmtDate(new Date());
+  const isToday = dateStr === todayStr;
+  gmDP.selectedDate = isToday ? null : dateStr;
+  document.getElementById('gm-date-picker-btn')?.classList.remove('open');
+  document.getElementById('gm-date-picker-popup')?.classList.remove('open');
+  gmSetHistDate(isToday ? '' : dateStr);
+};
+window.gmDpSelectToday = function () { gmDpSelect(_gmFmtDate(new Date())); };
+window.gmDpChangeMonth = function (dir) {
+  gmDP.viewMonth += dir;
+  if (gmDP.viewMonth > 11) { gmDP.viewMonth = 0; gmDP.viewYear++; }
+  if (gmDP.viewMonth < 0) { gmDP.viewMonth = 11; gmDP.viewYear--; }
+  gmDpRender();
+};
+
 window.gmSetHistDate = function (ds) {
   ds = (ds && /^\d{4}-\d{2}-\d{2}$/.test(ds)) ? ds : null;
   window._gmHistDate = ds;
 
-  // sync the date control
-  const input = document.getElementById('gm-date-picker-input');
-  if (input) input.value = ds || '';
+  // sync the styled date-picker label (Latest data ↔ DD/MM/YY) + calendar state
+  const lbl = document.getElementById('gm-date-picker-label');
+  if (lbl) {
+    if (!ds) { lbl.textContent = 'Latest data'; }
+    else { const [y, m, d] = ds.split('-'); lbl.textContent = `${d}/${m}/${y.slice(2)}`; }
+  }
+  if (typeof gmDP !== 'undefined') gmDP.selectedDate = ds || null;
   const histInput = document.getElementById('gm-hist-date-input');
   if (histInput) histInput.value = ds || '';
-  const latestBtn = document.getElementById('gm-date-latest-btn');
-  if (latestBtn) latestBtn.style.color = ds ? 'var(--tx3)' : 'var(--accent)';
 
   // Reload the daily board for the selected date (Latest → live, past date → archive day)
   if (typeof _gmLoadBoardData === 'function' && typeof renderGmMain === 'function') {
