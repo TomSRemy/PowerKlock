@@ -602,17 +602,74 @@
 
   // ──── DRILL VIEWS ────
 
-  function _gmhDrillRenderProfile(zone, p) {
+  // Real period profile: average daily generation (GW) sampled at an adaptive
+  // step across the stored archive. Bounded fetches (≤ 60 buckets).
+  async function _gmhBuildRealProfile(zone, period, step) {
+    const D = PERIOD_DAYS[period] || 4170;
+    let stepDays;
+    if (step === 'D') stepDays = 1;
+    else if (step === 'W') stepDays = 7;
+    else if (step === 'M') stepDays = 30;
+    else stepDays = (D <= 31) ? 1 : (D <= 210 ? 7 : 30); // auto
+    let count = Math.ceil(D / stepDays);
+    if (count > 60) { stepDays = Math.ceil(D / 60); count = Math.ceil(D / stepDays); }
+
+    const fuels = (typeof GM_STACK_FUELS !== 'undefined') ? GM_STACK_FUELS : ['nuclear','hydro','biomass','wind','solar','fossil','other'];
+    const today = new Date();
+    const start = new Date(today.getTime()); start.setDate(start.getDate() - D);
+    const fmt = (typeof _gmFmtDate === 'function') ? _gmFmtDate : (d => d.toISOString().slice(0, 10));
+    const monthLbl = stepDays >= 28;
+
+    const labels = [], load = [];
+    for (let i = 0; i < count; i++) {
+      const dt = new Date(start.getTime()); dt.setDate(dt.getDate() + i * stepDays + Math.floor(stepDays / 2));
+      if (dt > today) break;
+      const ds = fmt(dt);
+      const j = (typeof _gmFetchDaily === 'function') ? await _gmFetchDaily(ds) : null;
+      const zd = j && j.zones && j.zones[zone];
+      if (!zd || (typeof _gmHasArrays === 'function' && !_gmHasArrays(zd))) continue;
+      const N = Math.max.apply(null, fuels.map(f => Array.isArray(zd[f]) ? zd[f].length : 0).concat([1]));
+      let sum = 0;
+      for (let s = 0; s < N; s++) sum += fuels.reduce((a, f) => a + ((Array.isArray(zd[f]) ? zd[f][s] : 0) || 0), 0);
+      load.push(sum / N / 1000); // mean slot total → GW
+      labels.push(monthLbl ? dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }));
+    }
+    const stepLbl = stepDays === 1 ? 'jour' : (stepDays === 7 ? 'semaine' : (stepDays >= 28 ? 'mois' : stepDays + 'j'));
+    return { labels, load, stepLbl };
+  }
+
+  window.gmhSetProfileStep = function (step) {
+    window._gmhProfileStep = step;
+    const z = window._gmhOpenZone; if (!z) return;
+    const p = _gmhBuildPeriodData(window._gmhPeriod)[z];
+    _gmhDrillRenderProfile(z, p);
+  };
+
+  async function _gmhDrillRenderProfile(zone, p) {
     const host = document.getElementById('gmh-drill-content');
     const breakHost = document.getElementById('gmh-drill-breakdown');
     if (!host) return;
 
+    const step = window._gmhProfileStep || 'auto';
+    const pill = (k, lbl) => `<button onclick="gmhSetProfileStep('${k}')" style="font-size:10px;padding:3px 9px;border-radius:4px;cursor:pointer;border:1px solid ${step===k?'rgba(20,211,169,0.4)':'var(--bd)'};background:${step===k?'rgba(20,211,169,0.15)':'transparent'};color:${step===k?'#14D3A9':'var(--tx3)'};font-family:'JetBrains Mono',monospace;font-weight:600">${lbl}</button>`;
     host.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-bottom:8px">
+        <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace;margin-right:2px">Pas</span>
+        ${pill('auto','Auto')}${pill('D','Jour')}${pill('W','Semaine')}${pill('M','Mois')}
+      </div>
       <div style="position:relative;width:100%;height:300px">
         <canvas id="gmh-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas>
+        <div id="gmh-prof-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Agrégation de l'archive…</div>
       </div>`;
-    const labels = p.dailySeries.date;
-    const data = p.dailySeries.load;
+
+    const series = await _gmhBuildRealProfile(zone, window._gmhPeriod, step);
+    const loadEl = document.getElementById('gmh-prof-loading'); if (loadEl) loadEl.remove();
+    const labels = series.labels;
+    const data = series.load;
+    if (!data.length) {
+      host.querySelector('div[style*="height:300px"]').innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées sur la période pour ${zone}.</div>`;
+      return;
+    }
 
     const canvas = document.getElementById('gmh-drill-profile-canvas');
     if (window._gmhDrillProfileChart) { try { window._gmhDrillProfileChart.destroy(); } catch (_) {} }
