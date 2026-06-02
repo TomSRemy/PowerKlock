@@ -451,6 +451,7 @@
             </div>
             <div class="pk-tabbar-right">
               <div id="gmh-drill-tab-chips" class="pk-tabbar-chips"></div>
+              <button onclick="gmDrillFullscreen('hist')" title="Plein écran" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
             </div>
           </div>
 
