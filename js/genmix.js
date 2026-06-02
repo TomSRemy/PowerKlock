@@ -27,6 +27,47 @@ const GM_FUEL_META = {
 
 const GM_FUEL_ORDER = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
 
+// ════════════════════════════════════════════════════════════════
+// Stored-archive loaders (single source of truth = data/history/*)
+// Shared by Stack, Profile (daily 15-min), and Historical aggregation.
+// ════════════════════════════════════════════════════════════════
+const GM_STACK_FUELS = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
+function _gmFmtDate(d) { return d.toISOString().slice(0, 10); }
+async function _gmFetchDaily(ds) {
+  try { const r = await fetch(`data/history/daily/${ds}.json`); if (!r.ok) return null; return await r.json(); }
+  catch (_) { return null; }
+}
+function _gmHasArrays(zd) {
+  return zd && ['nuclear', 'hydro', 'fossil'].some(k => Array.isArray(zd[k]) && zd[k].some(v => v));
+}
+// Resolve a real stored day for a zone: the requested date if it has arrays,
+// else walk back up to 8 days. Returns { ds, zd } or null.
+async function _gmResolveDay(zone, dateStr) {
+  if (dateStr) {
+    const j = await _gmFetchDaily(dateStr);
+    if (j && j.zones && _gmHasArrays(j.zones[zone])) return { ds: dateStr, zd: j.zones[zone] };
+  }
+  const t = new Date();
+  for (let i = 0; i < 8; i++) {
+    const dt = new Date(t); dt.setDate(dt.getDate() - i);
+    const ds = _gmFmtDate(dt);
+    const j = await _gmFetchDaily(ds);
+    if (j && j.zones && _gmHasArrays(j.zones[zone])) return { ds, zd: j.zones[zone] };
+  }
+  return null;
+}
+// Per-fuel 96-slot arrays (0-filled) for a resolved zone-day.
+function _gmDayArrays(zd) {
+  const N = Math.max.apply(null, GM_STACK_FUELS.map(f => (Array.isArray(zd[f]) ? zd[f].length : 0)).concat([96]));
+  const DATA = {};
+  GM_STACK_FUELS.forEach(f => {
+    const a = Array.isArray(zd[f]) ? zd[f] : [];
+    DATA[f] = new Array(N).fill(0).map((_, i) => (a[i] == null ? 0 : a[i]));
+  });
+  return { DATA, N };
+}
+
+
 const GM_ZONE_NAMES = {
   FR:'France', DE_LU:'Germany', ES:'Spain', BE:'Belgium',
   NL:'Netherlands', PT:'Portugal', GB:'Great Britain', IT_NORD:'Italy North',
@@ -667,6 +708,75 @@ window._gmDrillBuildBannerHtml = _gmDrillBuildBannerHtml;
 // optional J-1 / 7d overlay. Total generation across all fuels per slot.
 // ─────────────────────────────────────────────────────────────────
 function _gmDrillRenderProfile(zone, mix, st) {
+  const host = document.getElementById('gm-drill-content');
+  if (!host) return;
+  const bh = document.getElementById('gm-drill-breakdown'); if (bh) bh.innerHTML = '';
+  host.innerHTML = `<div style="position:relative;width:100%;height:300px"><canvas id="gm-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas></div>`;
+  _gmRenderProfileReal('gm-drill-profile-canvas', zone, window._gmHistDate || null, '_gmDrillProfileChart');
+}
+
+// Shared real-data 15-min profile renderer (daily drill + historical Daily mode).
+// Reads stored arrays for the selected day + the previous stored day (J-1).
+async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
+  zone = zone || 'FR';
+  const cur = await _gmResolveDay(zone, dateStr);
+  if (!cur) {
+    const c = document.getElementById(canvasId);
+    if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées pour ${zone}.</div>`;
+    return;
+  }
+  const { DATA, N } = _gmDayArrays(cur.zd);
+  const total = new Array(N).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + DATA[f][i], 0) / 1000); // GW
+
+  // Real J-1 (previous stored day, resampled to N)
+  let prev = null;
+  const pd = new Date(cur.ds + 'T00:00:00'); pd.setDate(pd.getDate() - 1);
+  const pj = await _gmFetchDaily(_gmFmtDate(pd));
+  const pzd = pj && pj.zones && pj.zones[zone];
+  if (_gmHasArrays(pzd)) {
+    const pa = _gmDayArrays(pzd);
+    const pTot = new Array(pa.N).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + pa.DATA[f][i], 0) / 1000);
+    prev = new Array(N).fill(0).map((_, i) => pTot[Math.min(pa.N - 1, Math.round(i / (N - 1) * (pa.N - 1)))]);
+  }
+
+  const labels = [];
+  for (let i = 0; i < N; i++) { const m = Math.round(i / N * 24 * 60); labels.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`); }
+
+  const datasets = [{
+    label: cur.ds, data: total, borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.10)',
+    borderWidth: 2.5, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
+  }];
+  if (prev) datasets.push({
+    label: 'J-1', data: prev, borderColor: '#7A93AB', backgroundColor: 'transparent',
+    borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
+  });
+
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (window[chartKey]) { try { window[chartKey].destroy(); } catch (_) {} }
+  window[chartKey] = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+        tooltip: {
+          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
+          titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 10 },
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' }, maxTicksLimit: 12, autoSkip: true }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' }, callback: (v) => v + ' GW' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'Generation (GW)', color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' } } },
+      },
+    },
+  });
+}
+
+function _gmDrillRenderProfile_OLD(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
   const breakHost = document.getElementById('gm-drill-breakdown');
   if (!host) return;
