@@ -67,6 +67,45 @@ function _gmDayArrays(zd) {
   return { DATA, N };
 }
 
+// Per-slot envelope of TOTAL generation (GW) over the last nDays stored days.
+// Returns { p0, p5, p50, p95, p100, n } each length N. Cached by zone|nDays|N.
+async function _gmFetchGenEnvelope(zone, nDays, N) {
+  const key = `${zone}|${nDays}|${N}`;
+  window._gmGenEnvCache = window._gmGenEnvCache || {};
+  if (window._gmGenEnvCache[key]) return window._gmGenEnvCache[key];
+
+  const today = new Date();
+  const dates = [];
+  for (let i = 1; i <= nDays; i++) { const d = new Date(today); d.setDate(d.getDate() - i); dates.push(_gmFmtDate(d)); }
+
+  const rows = []; // each = N-length total-GW array
+  await Promise.all(dates.map(async (dt) => {
+    const j = await _gmFetchDaily(dt);
+    const zd = j && j.zones && j.zones[zone];
+    if (!zd || !_gmHasArrays(zd)) return;
+    const { DATA, N: dn } = _gmDayArrays(zd);
+    const tot = new Array(dn).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + DATA[f][i], 0) / 1000);
+    // resample dn → N
+    rows.push(new Array(N).fill(0).map((_, i) => tot[Math.min(dn - 1, Math.round(i / (N - 1) * (dn - 1)))]));
+  }));
+  if (!rows.length) return null;
+
+  const pct = (sorted, q) => {
+    if (sorted.length === 1) return sorted[0];
+    const idx = q * (sorted.length - 1), lo = Math.floor(idx), hi = Math.ceil(idx);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  };
+  const p0 = [], p5 = [], p50 = [], p95 = [], p100 = [];
+  for (let i = 0; i < N; i++) {
+    const vals = rows.map(r => r[i]).filter(v => v != null).sort((a, b) => a - b);
+    if (!vals.length) { [p0, p5, p50, p95, p100].forEach(a => a.push(null)); continue; }
+    p0.push(vals[0]); p5.push(pct(vals, 0.05)); p50.push(pct(vals, 0.5)); p95.push(pct(vals, 0.95)); p100.push(vals[vals.length - 1]);
+  }
+  const res = { p0, p5, p50, p95, p100, n: rows.length };
+  window._gmGenEnvCache[key] = res;
+  return res;
+}
+
 
 const GM_ZONE_NAMES = {
   FR:'France', DE_LU:'Germany', ES:'Spain', BE:'Belgium',
@@ -742,10 +781,22 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
   const labels = [];
   for (let i = 0; i < N; i++) { const m = Math.round(i / N * 24 * 60); labels.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`); }
 
-  const datasets = [{
+  const datasets = [];
+
+  // Percentile envelope (P0–P100 outer, P5–P95 inner, P50 median) over 30 stored days
+  const env = await _gmFetchGenEnvelope(zone, 30, N);
+  if (env) {
+    datasets.push({ label: '__p0', data: env.p0, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0.35 });
+    datasets.push({ label: 'P0–P100', data: env.p100, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.06)', pointRadius: 0, fill: '-1', tension: 0.35 });
+    datasets.push({ label: '__p5', data: env.p5, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0.35 });
+    datasets.push({ label: 'P5–P95', data: env.p95, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.14)', pointRadius: 0, fill: '-1', tension: 0.35 });
+    datasets.push({ label: 'P50 (médiane 30j)', data: env.p50, borderColor: '#7A93AB', borderWidth: 1.25, borderDash: [2, 3], pointRadius: 0, fill: false, tension: 0.35 });
+  }
+
+  datasets.push({
     label: cur.ds, data: total, borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.10)',
-    borderWidth: 2.5, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
-  }];
+    borderWidth: 2.5, fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
+  });
   if (prev) datasets.push({
     label: 'J-1', data: prev, borderColor: '#7A93AB', backgroundColor: 'transparent',
     borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
@@ -761,10 +812,11 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line', filter: (item) => !(item.text || '').startsWith('__') } },
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
           titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 10 },
+          filter: (ctx) => !(ctx.dataset.label || '').startsWith('__'),
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` },
         },
       },
