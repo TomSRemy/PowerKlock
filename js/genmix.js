@@ -307,7 +307,7 @@ function renderGmMain() {
   const data = window._gmBoardData || window._genmixData;
   if (!data || !Object.keys(data).length) {
     const tbody = document.getElementById('gm-table-tbody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No GenMix data loaded — check genmix.json</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No GenMix data loaded — check genmix.json</td></tr>';
     return;
   }
 
@@ -372,6 +372,7 @@ function renderGmMain() {
     const dom   = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
     return `<tr class="gm-row" data-zone="${z}" style="cursor:pointer">
       <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flagOf(z)} ${z}</td>
+      <td style="text-align:left;padding:9px 6px;font-size:11px;color:var(--tx3)">${nameOf(z)}</td>
       <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${fmt(st.total / 1000)}</td>
       <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
       <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.wind || 0) / 1000)}</td>
