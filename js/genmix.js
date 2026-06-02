@@ -299,11 +299,19 @@ async function _gmLoadBoardData(ds) {
     if (mix.total > 0) out[z] = mix;
   });
   window._gmBoardData = Object.keys(out).length ? out : null;
+  window._gmBoardDateMiss = !!(ds && !window._gmBoardData);
 }
 window._gmLoadBoardData = _gmLoadBoardData;
 
 function renderGmMain() {
   // Date filter drives the board: Latest → live snapshot, past date → archive-day averages
+  if (window._gmHistDate && window._gmBoardDateMiss) {
+    const tb = document.getElementById('gm-table-tbody');
+    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Pas de données GenMix archivées pour ${window._gmHistDate}. Lancer le backfill (with_genmix) pour cette date.</td></tr>`;
+    const lbl = document.getElementById('gm-table-label');
+    if (lbl) lbl.textContent = `Generation mix · ${window._gmHistDate} · aucune donnée archivée`;
+    return;
+  }
   const data = window._gmBoardData || window._genmixData;
   if (!data || !Object.keys(data).length) {
     const tbody = document.getElementById('gm-table-tbody');
@@ -2371,43 +2379,75 @@ window.gmdczFullscreen = function () {
   });
 };
 
-// ── Daily board Zones filter (mirrors the Prices Day-Ahead zone filter) ──
-window.gmApplyZoneFilter = function (set) {
-  window._gmZoneFilter = set || null;
+// ── Daily board Zones filter — same design/behaviour as the Prices Day-Ahead
+//    zone filter (faithful replica), but fully GenMix-owned (no link to Prices state). ──
+function _gmAllBoardZones() {
   const data = window._gmBoardData || window._genmixData || {};
-  const total = Object.keys(data).filter(z => data[z] && data[z].total > 0).length;
+  return Object.keys(data).filter(z => data[z] && data[z].total > 0).sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
+}
+window.gmApplyZoneFilter = function (set) {
+  const all = _gmAllBoardZones();
+  if (!set) window._gmZoneFilter = null;
+  else if (set.size >= all.length) window._gmZoneFilter = null;
+  else window._gmZoneFilter = set; // includes the empty set (= show none)
   const lbl = document.getElementById('gm-gf-daily-zones-label');
-  if (lbl) lbl.textContent = window._gmZoneFilter ? `${window._gmZoneFilter.size} / ${total} zones` : 'All zones';
+  if (lbl) lbl.textContent = window._gmZoneFilter ? `${window._gmZoneFilter.size} / ${all.length} zones` : 'All zones';
+  _gmBuildZoneChips();
   try { renderGmMain(); } catch (_) {}
 };
+window.gmToggleZoneChip = function (z) {
+  const all = _gmAllBoardZones();
+  const set = window._gmZoneFilter ? new Set(window._gmZoneFilter) : new Set(all);
+  if (set.has(z)) set.delete(z); else set.add(z);
+  window.gmApplyZoneFilter(set);
+};
+window.gmSelectAllZones = function () { window.gmApplyZoneFilter(null); };
+window.gmClearZones = function () { window.gmApplyZoneFilter(new Set()); };
+window.gmSelectNeighbours = function () {
+  const all = _gmAllBoardZones();
+  window.gmApplyZoneFilter(new Set(['FR', 'DE_LU', 'BE', 'NL', 'ES', 'CH', 'IT_NORD', 'GB'].filter(z => all.includes(z))));
+};
+function _gmBuildZoneChips() {
+  const container = document.getElementById('gm-zone-filter-chips');
+  if (!container) return;
+  const active = window._gmZoneFilter; // null = all
+  const zones = _gmAllBoardZones();
+  const flagOf = z => (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
+  const nameOf = z => (window.GM_ZONE_NAMES && window.GM_ZONE_NAMES[z]) || z;
+  const checkSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#14D3A9" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  container.innerHTML = zones.map(z => {
+    const isOn = !active || active.has(z);
+    return `<button onclick="gmToggleZoneChip('${z}')" style="display:flex;align-items:center;gap:5px;width:100%;padding:4px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:none;text-align:left;background:${isOn ? 'rgba(0,212,168,.06)' : 'transparent'};color:${isOn ? '#14D3A9' : 'rgba(255,255,255,.35)'}">
+        <span style="width:12px;height:12px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1.5px solid ${isOn ? '#14D3A9' : 'rgba(255,255,255,.15)'};background:${isOn ? 'rgba(0,212,168,.2)' : 'transparent'}">${isOn ? checkSvg : ''}</span>
+        <span style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${isOn ? 'var(--acc)' : 'rgba(255,255,255,.4)'};min-width:56px">${flagOf(z)} ${z}</span>
+        <span>${nameOf(z)}</span>
+      </button>`;
+  }).join('');
+}
 window.gmToggleZonePanel = function () {
-  let panel = document.getElementById('gm-zone-panel');
+  let panel = document.getElementById('gm-zone-filter-panel');
   if (panel) { panel.remove(); return; }
-  const data = window._gmBoardData || window._genmixData || {};
-  const zones = Object.keys(data).filter(z => data[z] && data[z].total > 0).sort((a, b) => (data[b].total || 0) - (data[a].total || 0));
-  const active = window._gmZoneFilter;
   const btn = document.getElementById('gm-gf-daily-zones');
   if (!btn) return;
-  const flag = z => (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
   const r = btn.getBoundingClientRect();
-  panel = document.createElement('div'); panel.id = 'gm-zone-panel';
-  panel.style.cssText = `position:fixed;z-index:9999;top:${r.bottom + 6}px;left:${r.left}px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:200px;max-height:60vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)`;
-  panel.innerHTML = `<div style="display:flex;gap:6px;margin-bottom:8px">
-      <button id="gmz-all" style="flex:1;font-size:10px;padding:4px;border-radius:4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx2);cursor:pointer;font-family:'JetBrains Mono',monospace">All</button>
-      <button id="gmz-none" style="flex:1;font-size:10px;padding:4px;border-radius:4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx2);cursor:pointer;font-family:'JetBrains Mono',monospace">None</button>
-    </div>` + zones.map(z => {
-      const on = !active || active.has(z);
-      return `<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);cursor:pointer"><input type="checkbox" data-z="${z}" ${on ? 'checked' : ''}> ${flag(z)} ${z}</label>`;
-    }).join('');
+  panel = document.createElement('div'); panel.id = 'gm-zone-filter-panel';
+  panel.style.cssText = `position:fixed;z-index:9999;top:${r.bottom + 6}px;left:${Math.max(8, r.left)}px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)`;
+  panel.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)">Filter zones</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="gmSelectAllZones()" style="font-size:10px;color:var(--acc);background:rgba(20,211,169,0.12);border:1px solid rgba(0,212,168,.3);border-radius:4px;cursor:pointer;padding:2px 7px;font-weight:600">All</button>
+          <button onclick="gmClearZones()" style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:4px;cursor:pointer;padding:2px 7px">None</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="gmSelectNeighbours()" style="font-size:10px;color:#C4A57B;background:rgba(196,165,123,0.15);border:1px solid rgba(196,165,123,0.3);border-radius:4px;cursor:pointer;padding:2px 8px">🇫🇷 Neighbours</button>
+      </div>
+    </div>
+    <div id="gm-zone-filter-chips" style="display:flex;flex-direction:column;gap:2px"></div>`;
   document.body.appendChild(panel);
-  const collect = () => {
-    const set = new Set();
-    panel.querySelectorAll('input[data-z]').forEach(c => { if (c.checked) set.add(c.getAttribute('data-z')); });
-    window.gmApplyZoneFilter(set.size === zones.length ? null : set);
-  };
-  panel.querySelectorAll('input[data-z]').forEach(c => c.addEventListener('change', collect));
-  panel.querySelector('#gmz-all').addEventListener('click', () => { panel.querySelectorAll('input[data-z]').forEach(c => c.checked = true); collect(); });
-  panel.querySelector('#gmz-none').addEventListener('click', () => { panel.querySelectorAll('input[data-z]').forEach(c => c.checked = false); collect(); });
+  _gmBuildZoneChips();
   setTimeout(() => { const close = (e) => { if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) { panel.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 0);
 };
 
