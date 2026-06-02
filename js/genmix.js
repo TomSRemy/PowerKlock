@@ -952,9 +952,12 @@ function _gmDrillRenderMix(zone, mix, st) {
   const mode = window._gmDrillMixMode || 'donut';
 
   host.innerHTML = `
-    <div style="position:relative;width:100%;height:340px">
-      <canvas id="gm-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
-      <div id="gm-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+    <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
+      <div style="flex:1 1 55%;min-width:280px;position:relative;height:340px">
+        <canvas id="gm-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
+        <div id="gm-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+      </div>
+      <div style="flex:1 1 38%;min-width:240px;align-self:center" id="gm-drill-mix-table"></div>
     </div>`;
 
   if (mode === 'donut') {
@@ -972,8 +975,10 @@ function _gmDrillRenderMix(zone, mix, st) {
     _gmDrillBuildTreemap(treemapHost, mix);
   }
 
-  // Breakdown · classic fuel × GW × MW × share × CO₂
-  if (breakHost) breakHost.innerHTML = _gmBuildBreakdownTable(mix, st);
+  // Breakdown · classic fuel × GW × share × CO₂ — now beside the chart
+  const tableHost = document.getElementById('gm-drill-mix-table');
+  if (tableHost) tableHost.innerHTML = _gmBuildBreakdownTable(mix, st);
+  if (breakHost) breakHost.innerHTML = '';
 }
 
 function _gmDrillBuildTreemap(host, mix) {
@@ -1026,7 +1031,7 @@ function _gmDrillRenderCarbon(zone, mix, st) {
 
   // Compute carbon intensity per slot
   const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
-  const CO2 = { nuclear:12, wind:11, solar:45, hydro:24, biomass:230, gas:490, coal:820, oil:740, other:400, fossil:600 };
+  const CO2 = {}; STACK.forEach(f => { CO2[f] = (GM_FUEL_META[f] && GM_FUEL_META[f].co2) || 0; });
   const N = (carbonFn.nuclear?.length) || 96;
   const co2 = new Array(N);
   for (let i = 0; i < N; i++) {
@@ -1125,13 +1130,34 @@ function _gmDrillRenderCarbon(zone, mix, st) {
           <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Clean hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#14D3A9">${cleanH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">below 100 g/kWh</td></tr>
           <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Dirty hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#ED6965">${dirtyH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">above 300 g/kWh</td></tr>
         </tbody>
-      </table>`;
+      </table>
+      <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
+          Intensité carbone du mix, par pas de 15 min :<br>
+          <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ génération<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub>(t)</span><br>
+          <span style="color:var(--tx3)">Approche moyenne (attributionnelle), périmètre cycle de vie. Pas de FE marginal, pas d'imports.</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:10px">
+          <thead><tr>
+            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
+            <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
+            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Données génération</th>
+          </tr></thead>
+          <tbody>
+            ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
+              <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${GM_FUEL_META[f].color}">${GM_FUEL_META[f].emoji} ${GM_FUEL_META[f].label}</span></td>
+              <td style="padding:5px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${GM_FUEL_META[f].co2}</td>
+              <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75 · 15 min</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.6">
+          <span style="color:var(--tx2)">Sources :</span> génération par filière = ENTSO-E Transparency (Actual Generation per Type, A75), archive PowerKlock 15 min. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon agrégée ENTSO-E.
+        </div>
+      </div>`;
   }
 }
-
-// ─────────────────────────────────────────────────────────────────
-// VIEW · NET POSITION (placeholder until ENTSO-E flows fetched)
-// ─────────────────────────────────────────────────────────────────
 function _gmDrillRenderNetPos(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
   const breakHost = document.getElementById('gm-drill-breakdown');
@@ -1160,8 +1186,8 @@ function _gmBuildBreakdownTable(mix, st) {
     const pct = (v / st.total) * 100;
     return `<tr>
       <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${fmt(v / 1000)}</td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${pct.toFixed(2)}%</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(v / 1000)}</td>
+      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${pct.toFixed(2)}%</td>
       <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${m.co2}</td>
     </tr>`;
   }).filter(r => r).join('');
