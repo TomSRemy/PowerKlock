@@ -2329,10 +2329,23 @@ window.gmSetHistDate = function (ds) {
     const elx = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
 
     const totals = []; for (let i = 0; i < N; i++) totals.push(STACK.reduce((s, f) => s + DATA[f][i], 0));
-    const maxTotal = Math.max.apply(null, totals), minTotal = Math.min.apply(null, totals);
-    const peakForScale = prevTotals ? Math.max(maxTotal, Math.max.apply(null, prevTotals)) : maxTotal;
+    // Last populated slot (the daily archive can be a partial day captured intraday)
+    let nReal = 0; for (let i = N - 1; i >= 0; i--) { if (totals[i] > 0) { nReal = i + 1; break; } }
+    if (nReal < 1) nReal = N;
+    const realTotals = totals.slice(0, nReal);
+    const maxTotal = Math.max.apply(null, realTotals), minTotal = Math.min.apply(null, realTotals);
+    // J-1 last real slot
+    let prevReal = 0; if (prevTotals) { for (let i = N - 1; i >= 0; i--) { if (prevTotals[i] > 0) { prevReal = i + 1; break; } } }
+    const prevPeak = prevReal ? Math.max.apply(null, prevTotals.slice(0, prevReal)) : 0;
+    const peakForScale = Math.max(maxTotal, prevPeak);
     const yMax = Math.max(10000, Math.ceil(peakForScale / 10000) * 10000);
-    const STAT = {}; STACK.forEach(f => { const a = DATA[f]; STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
+    const STAT = {}; STACK.forEach(f => { const a = DATA[f].slice(0, nReal); STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
+    // Coverage note for partial days
+    if (isReal && nReal < N) {
+      const cm = Math.round(nReal / N * 24 * 60);
+      const note = ' · données ENTSO-E jusqu\'à ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (jour en cours)';
+      const lab = wrap.querySelector('.gms-tbl-lab'); if (lab) lab.insertAdjacentHTML('beforeend', '<span style="color:var(--tx4)">' + note + '</span>');
+    }
 
     const W = 1000, H = 440, L = 52, R = 14, T = 12, B = 30;
     const px = i => L + i / (N - 1) * (W - L - R), py = v => T + (1 - v / yMax) * (H - T - B);
@@ -2345,11 +2358,12 @@ window.gmSetHistDate = function (ds) {
         const tx = elx('text', { class: 'axis-txt', x: L - 6, y: y + 3, 'text-anchor': 'end' }); tx.textContent = g; svg.appendChild(tx);
       }
       const lower = new Array(N).fill(0);
+      const lastI = nReal - 1;
       STACK.forEach(f => {
         const upper = lower.map((lo, i) => lo + DATA[f][i]);
         let d = 'M ' + px(0) + ' ' + py(lower[0]);
-        for (let i = 0; i < N; i++) d += ' L ' + px(i).toFixed(1) + ' ' + py(upper[i]).toFixed(1);
-        for (let i = N - 1; i >= 0; i--) d += ' L ' + px(i).toFixed(1) + ' ' + py(lower[i]).toFixed(1);
+        for (let i = 0; i <= lastI; i++) d += ' L ' + px(i).toFixed(1) + ' ' + py(upper[i]).toFixed(1);
+        for (let i = lastI; i >= 0; i--) d += ' L ' + px(i).toFixed(1) + ' ' + py(lower[i]).toFixed(1);
         d += ' Z';
         svg.appendChild(elx('path', { class: 'area', d: d, fill: FUEL[f].color, 'fill-opacity': .82 }));
         for (let i = 0; i < N; i++) lower[i] = upper[i];
@@ -2359,10 +2373,10 @@ window.gmSetHistDate = function (ds) {
         svg.appendChild(elx('line', { class: 'band-line', x1: L, y1: y, x2: W - R, y2: y }));
         const tx = elx('text', { class: 'band-txt', x: W - R - 2, y: y - 4, 'text-anchor': 'end' }); tx.textContent = lab; svg.appendChild(tx);
       });
-      // J-1 total curve (dashed, discreet)
-      if (prevTotals) {
+      // J-1 total curve (dashed, discreet) — up to its own last real slot
+      if (prevTotals && prevReal > 1) {
         let pd = 'M ' + px(0) + ' ' + py(prevTotals[0]);
-        for (let i = 1; i < N; i++) pd += ' L ' + px(i).toFixed(1) + ' ' + py(prevTotals[i]).toFixed(1);
+        for (let i = 1; i < prevReal; i++) pd += ' L ' + px(i).toFixed(1) + ' ' + py(prevTotals[i]).toFixed(1);
         svg.appendChild(elx('path', { class: 'j1-line', d: pd }));
         const lg = elx('text', { class: 'j1-txt', x: L + 4, y: T + 12 }); lg.textContent = 'J-1 (' + (prevDs || '') + ')'; svg.appendChild(lg);
       }
@@ -2381,7 +2395,7 @@ window.gmSetHistDate = function (ds) {
     const ptime = wrap.querySelector('.gms-ptime');
 
     function update(idx) {
-      idx = Math.max(0, Math.min(N - 1, idx));
+      idx = Math.max(0, Math.min(nReal - 1, idx));
       const x = px(idx); nowLine.setAttribute('x1', x); nowLine.setAttribute('x2', x);
       const mins = Math.round(idx / N * 24 * 60), hh = String(Math.floor(mins / 60)).padStart(2, '0'), mm = String(mins % 60).padStart(2, '0');
       pill.style.display = 'block'; pill.textContent = hh + ':' + mm;
@@ -2413,7 +2427,7 @@ window.gmSetHistDate = function (ds) {
       tbody.appendChild(tr);
     }
 
-    const defSlot = Math.round(15.5 / 24 * N);
+    const defSlot = Math.max(0, nReal - 1);
     update(defSlot);
     svg.addEventListener('mousemove', e => { const r = svg.getBoundingClientRect(); const xrel = (e.clientX - r.left) / r.width * W; update(Math.round((xrel - L) / (W - L - R) * (N - 1))); });
     svg.addEventListener('mouseleave', () => update(defSlot));
