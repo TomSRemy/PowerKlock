@@ -3475,7 +3475,7 @@
 
             <!-- HISTORICAL filters: zones + period + reference zone (mirrors Prices Historical) -->
             <div class="pk-gf-tabset" data-gf-tab="historical" style="display:none;align-items:center;gap:8px">
-              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" onclick="toggleZoneFilterPanel()" title="Filter zones in Historical view">
+              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" onclick="gmhToggleZonePanel()" title="Filter zones in Historical view">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
                 <span id="gm-gf-hist-zones-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3487,13 +3487,17 @@
                 <button class="pk-gf-btn" data-w="6M"  onclick="gmhSetPeriod('6M')">6M</button>
                 <button class="pk-gf-btn" data-w="YTD" onclick="gmhSetPeriod('YTD')">YTD</button>
                 <button class="pk-gf-btn" data-w="1Y"  onclick="gmhSetPeriod('1Y')">1Y</button>
+                <button class="pk-gf-btn" data-w="2Y"  onclick="gmhSetPeriod('2Y')">2Y</button>
+                <button class="pk-gf-btn" data-w="5Y"  onclick="gmhSetPeriod('5Y')">5Y</button>
+                <button class="pk-gf-btn" data-w="All" onclick="gmhSetPeriod('All')">All</button>
+              </div>
+              <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box;margin-left:6px">
+                <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
+                <input type="date" id="gmh-date-from" onchange="gmhSetCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
+                <input type="date" id="gmh-date-to" onchange="gmhSetCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
               </div>
               <span id="gm-gf-hist-range-label" style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-left:6px"></span>
-              <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box;margin-left:6px" title="Jour du sous-onglet Stack">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <input type="date" id="gm-hist-date-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
-                <button onclick="gmSetHistDate('')" title="Latest data" style="border:none;background:transparent;color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 4px">Latest</button>
-              </div>
             </div>
           </div>
         </div>
@@ -3729,17 +3733,17 @@
               <table id="gmh-table" style="font-size:11px;table-layout:fixed">
                 <thead>
                   <tr>
-                    <th style="width:7%;text-align:left">Code</th>
-                    <th style="width:12%;text-align:left">Zone</th>
-                    <th style="width:9%;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                    <th style="width:9%;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
-                    <th style="width:8%;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
-                    <th style="width:8%;text-align:right" title="Wind energy over period (TWh)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
-                    <th style="width:8%;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
-                    <th style="width:8%;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
-                    <th style="width:11%;text-align:left" title="Dominant fuel over period">Dom. fuel</th>
-                    <th style="width:9%;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
-                    <th style="width:11%;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
+                    <th onclick="gmhSortTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">Code <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('country')" style="width:12%;cursor:pointer;user-select:none;text-align:left">Zone <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('load')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('energy')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('renPct')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('wind')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Wind energy over period (TWh)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('solar')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('fossil')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('dom')" style="width:11%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel over period">Dom. fuel <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('co2')" style="width:9%;cursor:pointer;user-select:none;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span> <span style="opacity:.4">↕</span></th>
+                    <th onclick="gmhSortTable('dRenY1')" style="width:11%;cursor:pointer;user-select:none;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span> <span style="opacity:.4">↕</span></th>
                   </tr>
                 </thead>
                 <tbody id="gmh-table-tbody">
