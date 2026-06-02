@@ -277,7 +277,7 @@
 
     if (!zones.length) {
       const tb = document.getElementById('gmh-table-tbody');
-      if (tb) tb.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No data — waiting for genmix snapshot to be loaded</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No data — waiting for genmix snapshot to be loaded</td></tr>`;
       return;
     }
 
@@ -318,6 +318,7 @@
     const FLAGS = window.FLAG_MAP || {};
     const tbody = document.getElementById('gmh-table-tbody');
     if (!tbody) return;
+    const NAMES = window.GM_ZONE_NAMES || window._GMD_ZONE_NAMES || {};
     tbody.innerHTML = sortedZones.map(z => {
       const p = pdata[z];
       const dom = FUEL_META[p.dom] || { color: '#7A93AB', label: p.dom, emoji: '' };
@@ -326,16 +327,17 @@
       const co2Color = _gmCo2(p.co2);
       const dRenColor = p.dRenY1 >= 0 ? '#14D3A9' : '#ED6965';
       return `<tr class="gmh-row" data-zone="${z}" style="cursor:pointer">
-        <td style="text-align:left">${flag} ${z}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600">${p.avgLoadGW.toFixed(2)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${p.energyTWh.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${renColor};font-weight:600">${p.renPct.toFixed(1)}%</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${p.wind.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${p.solar.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${p.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${p.fossil.toFixed(1)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
-        <td style="text-align:center;font-family:'JetBrains Mono',monospace;color:${co2Color};font-weight:600">${Math.round(p.co2)}</td>
-        <td style="text-align:right;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 >= 0 ? '+' : ''}${p.dRenY1.toFixed(1)}</td>
+        <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+        <td style="text-align:left;padding:9px 6px;font-size:11px;color:var(--tx3)">${NAMES[z] || z}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${p.avgLoadGW.toFixed(2)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.energyTWh.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${renColor};font-weight:600">${p.renPct.toFixed(1)}%</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.wind.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.solar.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${p.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${p.fossil.toFixed(1)}</td>
+        <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
+        <td style="text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${co2Color};font-weight:600">${Math.round(p.co2)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 >= 0 ? '+' : ''}${p.dRenY1.toFixed(1)}</td>
       </tr>`;
     }).join('');
 
@@ -392,7 +394,7 @@
     const detail = document.createElement('tr');
     detail.id = 'gmh-detail-row';
     detail.innerHTML = `
-      <td colspan="10" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
+      <td colspan="11" style="padding:0;background:#141a22;border-bottom:2px solid var(--bd2)">
         <div id="gmh-detail-inner" style="padding:14px 16px">
 
           <div class="pk-section-header">
