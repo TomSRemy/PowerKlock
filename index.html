@@ -2211,11 +2211,7 @@
     #prices-table tbody td:first-child,
     #prices-table thead th:first-child,
     #ho-table tbody td:first-child,
-    #ho-table thead th:first-child,
-    #gm-table tbody td:first-child,
-    #gm-table thead th:first-child,
-    #gmh-table tbody td:first-child,
-    #gmh-table thead th:first-child {
+    #ho-table thead th:first-child {
       position: sticky;
       left: 0;
       background: var(--bg2);
@@ -2540,6 +2536,7 @@
         <div class="sidebar-subitem" data-subdomain="forward" onclick="prSelectSubdomain('forward')">Forward</div>
         <div class="sidebar-subitem" data-subdomain="da" onclick="prSelectSubdomain('da')">Day-Ahead</div>
         <div class="sidebar-subitem" data-subdomain="negative" onclick="prSelectSubdomain('negative')">Negative prices</div>
+        <div class="sidebar-subitem" data-subdomain="negative-legacy" onclick="prSelectSubdomain('negative-legacy')">Negative prices (ancien)</div>
         <div class="sidebar-subitem" data-subdomain="spread" onclick="prSelectSubdomain('spread')">Spread</div>
       </div>
       <div class="sidebar-item" onclick="showPage('genmix')" id="nav-genmix">
@@ -3319,14 +3316,110 @@
 
       </div>
 
-      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES ═══ -->
+      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES (REDESIGN · DA template) ═══ -->
       <div class="subdomain-panel" data-subdomain-panel="negative">
-        <div class="pr-tabs-sticky">
+
+        <!-- Sticky bar : breadcrumb + global window filter (no tabs) -->
+        <div class="pr-tabs-sticky" id="neg-sticky">
           <div class="pr-tabs-bar">
             <div class="pr-breadcrumb">
               <span class="pr-breadcrumb-parent" onclick="prSelectSubdomain('overview')">Prices</span>
               <span class="pr-breadcrumb-sep">›</span>
               <span class="pr-breadcrumb-current">Negative prices</span>
+            </div>
+            <div class="pr-tabs-separator"></div>
+            <div class="pr-tabs-bar-filters">
+              <div class="pk-gf-group" id="neg-window">
+                <button class="pk-gf-btn" data-w="1M" onclick="negSetWindow('1M',this)">1M</button>
+                <button class="pk-gf-btn" data-w="3M" onclick="negSetWindow('3M',this)">3M</button>
+                <button class="pk-gf-btn active" data-w="1Y" onclick="negSetWindow('1Y',this)">1Y</button>
+                <button class="pk-gf-btn" data-w="2Y" onclick="negSetWindow('2Y',this)">2Y</button>
+                <button class="pk-gf-btn" data-w="5Y" onclick="negSetWindow('5Y',this)">5Y</button>
+                <button class="pk-gf-btn" data-w="all" onclick="negSetWindow('all',this)">All</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECTION 1 · NEGATIVE PRICE BOARD (per-zone data + today KPIs) ── -->
+        <div class="hist-section hist-section-strong" id="neg-s-board">
+          <div class="hist-section-header open" onclick="toggleStrongSection('neg-s-board')">
+            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ED6965" stroke-width="1.8"><circle cx="12" cy="12" r="8" fill="rgba(237,105,101,0.2)"/></svg>Negative price board<span id="neg-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">today · ENTSO-E</span></div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open">
+            <div class="kpi-strip" id="neg-board-kpis" style="grid-template-columns:repeat(7,1fr)"></div>
+            <div class="table-wrap">
+              <div class="table-header">
+                <span class="table-title" id="neg-board-title">Negative-price board · loading…</span>
+              </div>
+              <table style="font-size:11px;table-layout:fixed">
+                <thead>
+                  <tr>
+                    <th style="width:12%;text-align:left">CODE</th>
+                    <th style="width:13%;text-align:left">ZONE</th>
+                    <th style="width:9%;text-align:right">NEG HRS</th>
+                    <th style="width:9%;text-align:right">DEEPEST<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                    <th style="width:13%;text-align:right">WINDOW<br><span style="color:var(--tx3);font-weight:400;font-size:9px">first → last</span></th>
+                    <th style="width:9%;text-align:right">RUN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">consec. h</span></th>
+                    <th style="width:8%;text-align:right">SPARK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                    <th style="width:11%;text-align:left">PEAK HR</th>
+                    <th style="width:16%;text-align:center">INTRADAY SHAPE</th>
+                  </tr>
+                </thead>
+                <tbody id="neg-board-tbody"><tr><td colspan="9" style="padding:18px;text-align:center;color:var(--tx3)"><span class="spinner"></span> loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SECTION 2 · CROSS-ZONE ANALYSIS ── -->
+        <div class="hist-section hist-section-strong" id="neg-s-cc">
+          <div class="hist-section-header open" onclick="toggleStrongSection('neg-s-cc')">
+            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Cross-zone analysis<span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">multi-zones</span></div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open">
+            <div class="kpi-strip" id="neg-cc-kpis" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px"></div>
+            <div class="pk-tabbar">
+              <div class="pk-tabbar-left"><div class="pk-tabbar-tabs" id="neg-cc-tabs"></div></div>
+              <div class="pk-tabbar-right"><button class="pk-btn-primary" onclick="negCCFullscreen()">⛶ Fullscreen</button></div>
+            </div>
+            <div style="margin:8px 0 8px">
+              <div id="neg-cc-eyebrow" style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:#ED6965;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px"></div>
+              <div id="neg-cc-title" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--tx);letter-spacing:-0.01em;line-height:1.2;margin-bottom:2px"></div>
+              <div id="neg-cc-sub" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)"></div>
+            </div>
+            <div id="neg-cc-chart" style="position:relative;min-height:240px"></div>
+            <div class="table-wrap" style="margin-top:12px;border-radius:7px">
+              <table style="font-size:11px;table-layout:fixed">
+                <thead>
+                  <tr>
+                    <th style="width:9%;text-align:left">CODE</th>
+                    <th style="width:17%;text-align:left">ZONE</th>
+                    <th style="width:13%;text-align:right">NEG H<br><span style="color:var(--tx3);font-weight:400;font-size:9px">last full yr</span></th>
+                    <th style="width:12%;text-align:right">DEEPEST<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span></th>
+                    <th style="width:11%;text-align:right">DAYS NEG</th>
+                    <th style="width:12%;text-align:right">VS PREV Y</th>
+                    <th style="width:26%;text-align:left">TREND</th>
+                  </tr>
+                </thead>
+                <tbody id="neg-cc-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ SUBDOMAIN · NEGATIVE PRICES (LEGACY — kept as sub-page, to remove later) ═══ -->
+      <div class="subdomain-panel" data-subdomain-panel="negative-legacy">
+        <div class="pr-tabs-sticky">
+          <div class="pr-tabs-bar">
+            <div class="pr-breadcrumb">
+              <span class="pr-breadcrumb-parent" onclick="prSelectSubdomain('overview')">Prices</span>
+              <span class="pr-breadcrumb-sep">›</span>
+              <span class="pr-breadcrumb-current">Negative prices (ancien)</span>
             </div>
           </div>
         </div>
@@ -3457,25 +3550,21 @@
                 <span id="gm-gf-daily-zones-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <!-- Date picker (styled button + calendar popup · same component as Prices DA) -->
+              <button onclick="gmRefreshData()" id="gm-gf-refresh" title="Pull the latest ENTSO-E snapshot" style="padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Latest data</button>
+              <!-- Date picker (UI · wire to historical snapshot fetch in v2.1) -->
               <div class="date-picker-wrap" id="gm-date-picker-wrap" style="position:relative">
-                <button class="date-picker-btn" id="gm-date-picker-btn" onclick="gmToggleDatePicker()" style="font-size:10px;padding:0 10px;height:26px">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  <span id="gm-date-picker-label">Latest data</span>
-                  <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="gm-date-picker-chevron"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                <div class="date-picker-popup" id="gm-date-picker-popup">
-                  <div class="dp-header"><button class="dp-nav" onclick="gmDpChangeMonth(-1)">‹</button><span class="dp-month-label" id="gm-dp-month-label"></span><button class="dp-nav" onclick="gmDpChangeMonth(1)">›</button></div>
-                  <div class="dp-weekdays"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
-                  <div class="dp-grid" id="gm-dp-grid"></div>
-                  <div class="dp-footer"><button class="dp-today-btn" onclick="gmDpSelectToday()">Latest</button></div>
+                <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <input type="date" id="gm-date-picker-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                  <button id="gm-date-latest-btn" onclick="gmSetHistDate('')" title="Latest data" style="border:none;background:transparent;color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 4px">Latest</button>
                 </div>
+                <span id="gm-date-picker-label" style="display:none"></span>
               </div>
             </div>
 
             <!-- HISTORICAL filters: zones + period + reference zone (mirrors Prices Historical) -->
             <div class="pk-gf-tabset" data-gf-tab="historical" style="display:none;align-items:center;gap:8px">
-              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" onclick="gmhToggleZonePanel()" title="Filter zones in Historical view">
+              <button class="pk-gf-zone-btn" id="gm-gf-hist-zones" onclick="toggleZoneFilterPanel()" title="Filter zones in Historical view">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>
                 <span id="gm-gf-hist-zones-label">All zones</span>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3487,17 +3576,13 @@
                 <button class="pk-gf-btn" data-w="6M"  onclick="gmhSetPeriod('6M')">6M</button>
                 <button class="pk-gf-btn" data-w="YTD" onclick="gmhSetPeriod('YTD')">YTD</button>
                 <button class="pk-gf-btn" data-w="1Y"  onclick="gmhSetPeriod('1Y')">1Y</button>
-                <button class="pk-gf-btn" data-w="2Y"  onclick="gmhSetPeriod('2Y')">2Y</button>
-                <button class="pk-gf-btn" data-w="5Y"  onclick="gmhSetPeriod('5Y')">5Y</button>
-                <button class="pk-gf-btn" data-w="All" onclick="gmhSetPeriod('All')">All</button>
-              </div>
-              <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box;margin-left:6px">
-                <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
-                <input type="date" id="gmh-date-from" onchange="gmhSetCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
-                <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
-                <input type="date" id="gmh-date-to" onchange="gmhSetCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
               </div>
               <span id="gm-gf-hist-range-label" style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-left:6px"></span>
+              <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box;margin-left:6px" title="Jour du sous-onglet Stack">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <input type="date" id="gm-hist-date-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                <button onclick="gmSetHistDate('')" title="Latest data" style="border:none;background:transparent;color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 4px">Latest</button>
+              </div>
             </div>
           </div>
         </div>
@@ -3567,17 +3652,17 @@
             <table id="gm-table" style="font-size:11px;table-layout:fixed">
               <thead>
                 <tr>
-                  <th onclick="gmSortTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">Code <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('country')" style="width:12%;cursor:pointer;user-select:none;text-align:left">Zone <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('total')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('renPct')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('wind')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Wind generation (onshore + offshore)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('solar')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('nuclear')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('hydro')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('fossil')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('dom')" style="width:12%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel">Dom. fuel <span style="opacity:.4">↕</span></th>
-                  <th onclick="gmSortTable('co2')" style="width:9%;cursor:pointer;user-select:none;text-align:center" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span> <span style="opacity:.4">↕</span></th>
+                  <th style="width:7%;text-align:left">Code</th>
+                  <th style="width:12%;text-align:left">Zone</th>
+                  <th style="width:9%;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:9%;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                  <th style="width:8%;text-align:right" title="Wind generation (onshore + offshore)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:12%;text-align:left" title="Dominant fuel">Dom. fuel</th>
+                  <th style="width:9%;text-align:right" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
                 </tr>
               </thead>
               <tbody id="gm-table-tbody">
@@ -3733,17 +3818,17 @@
               <table id="gmh-table" style="font-size:11px;table-layout:fixed">
                 <thead>
                   <tr>
-                    <th onclick="gmhSortTable('code')" style="width:7%;cursor:pointer;user-select:none;text-align:left">Code <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('country')" style="width:12%;cursor:pointer;user-select:none;text-align:left">Zone <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('load')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('energy')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('renPct')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('wind')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Wind energy over period (TWh)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('solar')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('fossil')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('dom')" style="width:11%;cursor:pointer;user-select:none;text-align:left" title="Dominant fuel over period">Dom. fuel <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('co2')" style="width:9%;cursor:pointer;user-select:none;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span> <span style="opacity:.4">↕</span></th>
-                    <th onclick="gmhSortTable('dRenY1')" style="width:11%;cursor:pointer;user-select:none;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span> <span style="opacity:.4">↕</span></th>
+                    <th style="width:7%;text-align:left">Code</th>
+                    <th style="width:12%;text-align:left">Zone</th>
+                    <th style="width:9%;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                    <th style="width:9%;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:8%;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
+                    <th style="width:8%;text-align:right" title="Wind energy over period (TWh)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:8%;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:8%;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:11%;text-align:left" title="Dominant fuel over period">Dom. fuel</th>
+                    <th style="width:9%;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
+                    <th style="width:11%;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
                   </tr>
                 </thead>
                 <tbody id="gmh-table-tbody">
@@ -5743,6 +5828,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/hist.js"></script>
 <script src="js/esheep.js"></script>
 <script src="js/data.js"></script>
+<script src="js/negatives.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
 <script>
@@ -5916,6 +6002,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (target === 'overview' && typeof window.prRenderHome === 'function') {
       // Defer one tick so layout settles before the chart is built
       setTimeout(() => window.prRenderHome(), 30);
+    }
+
+    // Negative prices (redesign) — render board + cross-zone on activation
+    if (target === 'negative' && typeof window.negRenderAll === 'function') {
+      setTimeout(() => window.negRenderAll(), 30);
+    }
+    // Negative prices (legacy) — keep the old renderer alive
+    if (target === 'negative-legacy' && typeof window.renderHistNeg === 'function') {
+      setTimeout(() => window.renderHistNeg(), 30);
     }
 
     // Update the green path height
