@@ -177,7 +177,7 @@
         "negH": 0.0,
         "peakAvg": 78.8,
         "offAvg": 120.44,
-        "renPct": 47.0,
+        "renPct": 49.3,
         "domFuel": "Gas"
       }
     ],
@@ -328,8 +328,8 @@
         "negH": 0.0,
         "peakAvg": 77.28,
         "offAvg": 110.59,
-        "renPct": 37.3,
-        "domFuel": "Gas"
+        "renPct": 49.7,
+        "domFuel": "Wind"
       }
     ],
     "HR": [
@@ -508,7 +508,7 @@
         "negH": 0.0,
         "peakAvg": 74.22,
         "offAvg": 107.41,
-        "renPct": 72.1,
+        "renPct": 84.7,
         "domFuel": "Wind"
       }
     ],
@@ -707,12 +707,12 @@
       },
       {
         "d": "2026-06-03",
-        "avg": 95.18,
+        "avg": 95.6,
         "min": 14.55,
         "max": 152.0,
         "negH": 0.0,
-        "peakAvg": 72.08,
-        "offAvg": 118.28
+        "peakAvg": 96.23,
+        "offAvg": 95.28
       }
     ],
     "NO_1": [
@@ -762,6 +762,15 @@
         "negH": 0.0,
         "peakAvg": 93.99,
         "offAvg": 151.19
+      },
+      {
+        "d": "2026-06-03",
+        "avg": 98.74,
+        "min": 19.03,
+        "max": 155.0,
+        "negH": 0.0,
+        "peakAvg": 83.62,
+        "offAvg": 106.3
       }
     ],
     "SE": [
@@ -824,8 +833,8 @@
         "negH": 1.25,
         "peakAvg": 12.2,
         "offAvg": 107.81,
-        "renPct": 80.9,
-        "domFuel": "Wind"
+        "renPct": 84.0,
+        "domFuel": "Hydro"
       }
     ],
     "ES": [
@@ -853,13 +862,13 @@
       },
       {
         "d": "2026-06-03",
-        "avg": 62.86,
+        "avg": 61.42,
         "min": -15.0,
-        "max": 152.94,
+        "max": 149.22,
         "negH": 3.5,
-        "peakAvg": 11.97,
-        "offAvg": 111.58,
-        "renPct": 65.5,
+        "peakAvg": 10.66,
+        "offAvg": 110.02,
+        "renPct": 73.7,
         "domFuel": "Solar"
       }
     ],
@@ -894,7 +903,7 @@
         "negH": 2.0,
         "peakAvg": 7.82,
         "offAvg": 15.66,
-        "renPct": 32.0,
+        "renPct": 35.3,
         "domFuel": "Nuclear"
       }
     ]
