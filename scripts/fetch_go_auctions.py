@@ -122,80 +122,48 @@ def _looks_region(s):
 
 
 def parse_results_tables(html):
-    """Return (by_technology, by_region). Robust to header/no-header tables
-    and month-spanned header rows."""
+    """Row-centric parser: ignore headers entirely. For every row of every
+    table, if the first cell is a known technology or region and the row
+    carries numbers, extract it. Robust to any header layout."""
     try:
         tables = pd.read_html(io.StringIO(html))
     except Exception:
         return [], []
     by_tech, by_region = [], []
+    seen_t, seen_r = set(), set()
     for df in tables:
         rows = df.astype(object).where(pd.notna(df), None).values.tolist()
-        if not rows:
-            continue
-        ncol = max(len(r) for r in rows)
-        if ncol < 4:
-            continue
-
-        # locate an in-table header row (when <th> was absent)
-        hdr_idx = -1
-        for i, r in enumerate(rows[:3]):
-            j = " ".join(str(c).lower() for c in r if c is not None)
-            if "offered" in j or "weighted" in j or ("price" in j and "volume" in j):
-                hdr_idx = i
-                break
-
-        off_i = alloc_i = price_i = None
-        if hdr_idx >= 0:
-            hdr = [str(c).lower() if c is not None else "" for c in rows[hdr_idx]]
-            for i, h in enumerate(hdr):
-                if "offered" in h:
-                    off_i = i
-                elif "allocated" in h:
-                    alloc_i = i
-                elif "price" in h or "weighted" in h:
-                    price_i = i
-            data = rows[hdr_idx + 1:]
-        else:
-            data = rows
-
-        # positional fallback (label, offered, allocated, price)
-        if price_i is None:
-            price_i = ncol - 1
-        if alloc_i is None:
-            alloc_i = ncol - 2
-        if off_i is None:
-            off_i = ncol - 3
-
-        # classify by first-column labels of the data rows
-        labels = [str(r[0]).strip().lower() for r in data if r and r[0] is not None]
-        t = sum(1 for v in labels if v in TECHS)
-        rg = sum(1 for v in labels if _looks_region(v))
-        if t >= 1 and t >= rg:
-            kind = "technology"
-        elif rg >= 1:
-            kind = "region"
-        else:
-            continue
-
-        def cell(r, i):
-            return r[i] if (i is not None and i < len(r)) else None
-
-        for r in data:
-            if not r or r[0] is None:
+        for r in rows:
+            if not r:
                 continue
-            name = str(r[0]).strip()
+            cells = [("" if c is None else str(c)).strip() for c in r]
+            if len(cells) < 4:
+                continue
+            name = re.sub(r"\s+", " ", cells[0]).strip()
             nl = name.lower()
-            if not name or nl in ("region", "technology", "nan") or "volume" in nl or "price" in nl:
+            if not name:
                 continue
-            price = parse_price(cell(r, price_i))
-            off = parse_volume(cell(r, off_i))
-            alloc = parse_volume(cell(r, alloc_i))
+            is_tech = nl in TECHS
+            is_region = _looks_region(nl)
+            if not (is_tech or is_region):
+                continue
+            # numeric cells after the label, in column order: offered, allocated, price
+            numcells = [c for c in cells[1:] if any(ch.isdigit() for ch in c)]
+            if len(numcells) < 1:
+                continue
+            price = parse_price(numcells[-1])
+            off = parse_volume(numcells[0]) if len(numcells) >= 2 else None
+            alloc = parse_volume(numcells[1]) if len(numcells) >= 3 else None
             if price is None and off is None:
                 continue
-            rec = {("technology" if kind == "technology" else "region"): name,
-                   "offered_mwh": off, "allocated_mwh": alloc, "price_eur_mwh": price}
-            (by_tech if kind == "technology" else by_region).append(rec)
+            if is_tech and nl not in seen_t:
+                seen_t.add(nl)
+                by_tech.append({"technology": name, "offered_mwh": off,
+                                "allocated_mwh": alloc, "price_eur_mwh": price})
+            elif is_region and nl not in seen_r:
+                seen_r.add(nl)
+                by_region.append({"region": name, "offered_mwh": off,
+                                  "allocated_mwh": alloc, "price_eur_mwh": price})
     return by_tech, by_region
 
 
@@ -227,6 +195,7 @@ def diagnose(html, status):
 
 
 def main():
+    print("[fetch_go_auctions] build 2026-06c · row-centric parser")
     html, status = fetch_html(URL)
 
     auction_month = extract_auction_month(html)
