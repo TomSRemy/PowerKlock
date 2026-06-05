@@ -17,6 +17,7 @@ Local test:  python scripts/fetch_go_auctions.py
 import io
 import json
 import re
+import time
 import sys
 import datetime as dt
 from pathlib import Path
@@ -26,7 +27,32 @@ import pandas as pd
 
 URL = "https://www.eex.com/en/markets/energy-certificates/french-auctions-power"
 OUT = Path(__file__).resolve().parent.parent / "data" / "go_auctions.json"
-HEADERS = {"User-Agent": "Mozilla/5.0 (PowerKlock GO auction fetcher)"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,fr;q=0.8",
+    "Accept-Encoding": "gzip, deflate",   # no brotli: requests may not decode it
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
+MARKERS = ("Weighted Average Price", "Volume Offered")
+
+
+def fetch_html(url):
+    """Session + browser headers + retry (BIG-IP sets a persistence cookie on
+    the first hit, content arrives on the retry). Returns (html, status)."""
+    sess = requests.Session()
+    sess.headers.update(HEADERS)
+    html, status = "", None
+    for attempt in range(3):
+        r = sess.get(url, timeout=60)
+        status = r.status_code
+        html = r.text
+        if any(m in html for m in MARKERS):
+            return html, status
+        time.sleep(3)
+    return html, status
 
 MONTHS = {m.lower(): i for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June",
@@ -184,20 +210,36 @@ def load_existing():
             "url": URL, "reserve_eur_mwh": None, "auctions": []}
 
 
+def diagnose(html, status):
+    print("---- DIAGNOSTIC ----")
+    print("HTTP status     :", status)
+    print("HTML length     :", len(html))
+    for m in ("Results", "Weighted Average Price", "Volume Offered", "reserve price",
+              "Just a moment", "captcha", "Access Denied", "cookie"):
+        print(f"  contains {m!r:34}: {m in html}")
+    try:
+        import pandas as _pd
+        n = len(_pd.read_html(io.StringIO(html)))
+    except Exception as e:
+        n = f"read_html error: {type(e).__name__}"
+    print("pandas tables   :", n)
+    print("--------------------")
+
+
 def main():
-    r = requests.get(URL, headers=HEADERS, timeout=60)
-    r.raise_for_status()
-    html = r.text
+    html, status = fetch_html(URL)
 
     auction_month = extract_auction_month(html)
     reserve = extract_reserve(html)
     by_tech, by_region = parse_results_tables(html)
 
-    if not auction_month:
-        print("WARN: could not determine auction month; aborting without write.")
-        return 1
     if not by_tech and not by_region:
         print("WARN: no result tables parsed; aborting without write.")
+        diagnose(html, status)
+        return 1
+    if not auction_month:
+        print("WARN: could not determine auction month; aborting without write.")
+        diagnose(html, status)
         return 1
 
     record = {
