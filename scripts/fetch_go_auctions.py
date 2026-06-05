@@ -1,0 +1,39 @@
+name: Fetch GO Auctions (EEX FR)
+
+# Scrape l'enchère mensuelle EEX France (power GO) -> data/go_auctions.json
+# Source publique, append-only (dédup par mois d'enchère). Self-healing :
+# relancer ne fait que ré-écrire le mois courant s'il a changé.
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"        # tous les lundis 08h UTC (attrape le nouveau résultat ~J+2)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-go-auctions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests pandas lxml
+
+      - name: Run scraper
+        run: python scripts/fetch_go_auctions.py
+
+      - name: Commit and push if new data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/go_auctions.json
+          git diff --cached --quiet || git commit -m "auto: update go_auctions.json [$(date +%Y-%m-%d)]"
+          git push
