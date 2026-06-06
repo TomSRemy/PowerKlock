@@ -25,7 +25,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install requests pandas lxml
+        run: pip install requests pandas lxml openpyxl
 
       - name: Run scraper
         run: python scripts/fetch_go_auctions.py
