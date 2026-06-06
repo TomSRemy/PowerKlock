@@ -1,0 +1,88 @@
+{
+  "updated": "2026-06-06",
+  "source": "EEX French Auctions for Power Guarantees of Origin",
+  "url": "https://www.eex.com/en/markets/energy-certificates/french-auctions-power",
+  "reserve_eur_mwh": 0.15,
+  "auctions": [
+    {
+      "auction_month": "2026-02",
+      "reserve_eur_mwh": 0.15,
+      "source_file": "https://www.eex.com/fileadmin/EEX/Downloads/Registry_Services/French_Auctions_for_Guarantees_of_Origin/20260520_February_2026_13_GLOBAL_Results_detailedresults.xlsx",
+      "by_technology": [],
+      "by_region": [
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "offered_mwh": 74165,
+          "allocated_mwh": 74165,
+          "price_eur_mwh": 4.0
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "offered_mwh": 212245,
+          "allocated_mwh": 212245,
+          "price_eur_mwh": 11.0
+        },
+        {
+          "region": "Bretagne",
+          "offered_mwh": 140444,
+          "allocated_mwh": 140444,
+          "price_eur_mwh": 9.0
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "offered_mwh": 257708,
+          "allocated_mwh": 257708,
+          "price_eur_mwh": 7.0
+        },
+        {
+          "region": "Grand Est",
+          "offered_mwh": 648956,
+          "allocated_mwh": 648956,
+          "price_eur_mwh": 9.0
+        },
+        {
+          "region": "Haut-de-France",
+          "offered_mwh": 1047680,
+          "allocated_mwh": 1047680,
+          "price_eur_mwh": 14.0
+        },
+        {
+          "region": "Île-de-France",
+          "offered_mwh": 28778,
+          "allocated_mwh": 28778,
+          "price_eur_mwh": 1.0
+        },
+        {
+          "region": "Normandie",
+          "offered_mwh": 151601,
+          "allocated_mwh": 151601,
+          "price_eur_mwh": 6.0
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "offered_mwh": 254878,
+          "allocated_mwh": 254878,
+          "price_eur_mwh": 8.0
+        },
+        {
+          "region": "Occitanie",
+          "offered_mwh": 157545,
+          "allocated_mwh": 157545,
+          "price_eur_mwh": 7.0
+        },
+        {
+          "region": "Pays de la Loire",
+          "offered_mwh": 208492,
+          "allocated_mwh": 208492,
+          "price_eur_mwh": 10.0
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "offered_mwh": 11232,
+          "allocated_mwh": 11232,
+          "price_eur_mwh": 2.0
+        }
+      ]
+    }
+  ]
+}
