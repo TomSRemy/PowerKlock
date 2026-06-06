@@ -121,10 +121,25 @@ def _looks_region(s):
     return any(h in s for h in REGION_HINTS)
 
 
+def _find_label(cells):
+    """Return (index, kind, clean_name) of the first cell that is a known
+    technology or French region, scanning the whole row (handles leading
+    empty/index columns)."""
+    for i, c in enumerate(cells):
+        cl = re.sub(r"\s+", " ", c).strip().lower()
+        if not cl:
+            continue
+        if cl in TECHS:
+            return i, "technology", re.sub(r"\s+", " ", c).strip()
+        if _looks_region(cl):
+            return i, "region", re.sub(r"\s+", " ", c).strip()
+    return None
+
+
 def parse_results_tables(html):
-    """Row-centric parser: ignore headers entirely. For every row of every
-    table, if the first cell is a known technology or region and the row
-    carries numbers, extract it. Robust to any header layout."""
+    """Row-centric, header-agnostic. For every row of every table, find a
+    technology/region label anywhere in the row and take the numeric cells
+    that follow it (offered, allocated, price)."""
     try:
         tables = pd.read_html(io.StringIO(html))
     except Exception:
@@ -137,30 +152,25 @@ def parse_results_tables(html):
             if not r:
                 continue
             cells = [("" if c is None else str(c)).strip() for c in r]
-            if len(cells) < 4:
+            found = _find_label(cells)
+            if not found:
                 continue
-            name = re.sub(r"\s+", " ", cells[0]).strip()
-            nl = name.lower()
-            if not name:
-                continue
-            is_tech = nl in TECHS
-            is_region = _looks_region(nl)
-            if not (is_tech or is_region):
-                continue
-            # numeric cells after the label, in column order: offered, allocated, price
-            numcells = [c for c in cells[1:] if any(ch.isdigit() for ch in c)]
-            if len(numcells) < 1:
+            li, kind, name = found
+            after = cells[li + 1:]
+            numcells = [c for c in after if any(ch.isdigit() for ch in c)]
+            if not numcells:
                 continue
             price = parse_price(numcells[-1])
             off = parse_volume(numcells[0]) if len(numcells) >= 2 else None
             alloc = parse_volume(numcells[1]) if len(numcells) >= 3 else None
             if price is None and off is None:
                 continue
-            if is_tech and nl not in seen_t:
+            nl = name.lower()
+            if kind == "technology" and nl not in seen_t:
                 seen_t.add(nl)
                 by_tech.append({"technology": name, "offered_mwh": off,
                                 "allocated_mwh": alloc, "price_eur_mwh": price})
-            elif is_region and nl not in seen_r:
+            elif kind == "region" and nl not in seen_r:
                 seen_r.add(nl)
                 by_region.append({"region": name, "offered_mwh": off,
                                   "allocated_mwh": alloc, "price_eur_mwh": price})
@@ -180,22 +190,30 @@ def load_existing():
 
 def diagnose(html, status):
     print("---- DIAGNOSTIC ----")
-    print("HTTP status     :", status)
-    print("HTML length     :", len(html))
-    for m in ("Results", "Weighted Average Price", "Volume Offered", "reserve price",
-              "Just a moment", "captcha", "Access Denied", "cookie"):
-        print(f"  contains {m!r:34}: {m in html}")
+    print("HTTP status:", status, "| HTML length:", len(html))
     try:
-        import pandas as _pd
-        n = len(_pd.read_html(io.StringIO(html)))
+        tbls = pd.read_html(io.StringIO(html))
     except Exception as e:
-        n = f"read_html error: {type(e).__name__}"
-    print("pandas tables   :", n)
+        print("read_html error:", type(e).__name__, e)
+        print("--------------------")
+        return
+    print("pandas tables:", len(tbls))
+    KW = ("Weighted", "Volume", "Wind", "Hydro", "Solar", "Thermal",
+          "Region", "Grand Est", "Aquitaine", "Auvergne", "Occitanie")
+    for i, df in enumerate(tbls):
+        rows = df.astype(object).where(pd.notna(df), None).values.tolist()
+        flat = " ".join(str(c) for r in rows[:8] for c in (r or []))
+        if not any(k in flat for k in KW):
+            print(f"[T{i}] shape={df.shape}  (skip)")
+            continue
+        print(f"[T{i}] shape={df.shape}  columns={list(df.columns)}")
+        for r in rows[:5]:
+            print("     ", [None if c is None else str(c)[:26] for c in r])
     print("--------------------")
 
 
 def main():
-    print("[fetch_go_auctions] build 2026-06c · row-centric parser")
+    print("[fetch_go_auctions] build 2026-06d · table dump")
     html, status = fetch_html(URL)
 
     auction_month = extract_auction_month(html)
