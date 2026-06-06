@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-fetch_go_auctions.py — PowerKlock  (build 2026-06e · XLSX download)
--------------------------------------------------------------------
-The EEX French GO auction RESULTS TABLES are injected by JavaScript, so the
-rendered HTML retrieved by `requests` only contains empty table shells.
-=> We instead download the official EXCEL results files (static, public) linked
-on the page and parse them with a header-agnostic row parser.
+fetch_go_auctions.py — PowerKlock  (build 2026-06f · dedicated XLSX parser)
+---------------------------------------------------------------------------
+EEX French GO auction RESULTS are JS-injected (empty in static HTML), so we
+download the official EXCEL results files (static, public) linked on the page
+and parse the Region x Technology matrix they contain.
 
-Source page : https://www.eex.com/en/markets/energy-certificates/french-auctions-power
-Output      : data/go_auctions.json  (append-only, keyed by auction month)
-CI deps     : pip install requests pandas lxml openpyxl   <-- openpyxl REQUIRED
+Model: data/go_auctions.json is APPEND-ONLY, keyed by auction month. The stored
+history (built once from the annual GLOBAL Results ZIPs) is preserved; each run
+adds/refreshes the months found in the freshly downloaded file(s). Same parser
+is used for backfill and monthly runs => identical schema.
+
+Source : https://www.eex.com/en/markets/energy-certificates/french-auctions-power
+CI deps : pip install requests pandas lxml openpyxl
 """
 
 import io
@@ -38,25 +41,31 @@ HEADERS = {
 MONTHS = {m.lower(): i for i, m in enumerate(
     ["January", "February", "March", "April", "May", "June",
      "July", "August", "September", "October", "November", "December"], start=1)}
-
-TECHS = {"wind", "hydro", "solar", "thermal", "nuclear", "biomass", "renewable",
-         "eolien", "hydraulique", "solaire", "thermique", "biomasse"}
-REGION_HINTS = ["rhône", "rhone", "grand est", "france", "loire", "aquitaine",
-                "occitanie", "bretagne", "normandie", "provence", "bourgogne",
-                "centre-val", "île", "ile-de", "hauts-de", "haut-de", "corse",
-                "azur", "franche", "alpes", "pays de la loire"]
+TECH_FR2EN = {
+    "eolien onshore": "Wind", "eolien offshore": "Wind Offshore", "eolien": "Wind",
+    "hydraulique": "Hydro", "solaire": "Solar", "thermique": "Thermal",
+    "biomasse": "Biomass", "nucleaire": "Nuclear", "nucléaire": "Nuclear",
+}
 
 
 # ── parsing helpers ──────────────────────────────────────────────────────────
-def parse_volume(v):
-    if v is None:
+def tech_en(s):
+    s = str(s).strip().lower()
+    for k, v in TECH_FR2EN.items():
+        if s.startswith(k):
+            return v
+    return s.title()
+
+
+def num(v):
+    if v is None or (isinstance(v, float) and pd.isna(v)):
         return None
     s = re.sub(r"[^\d]", "", str(v))
     return int(s) if s else None
 
 
-def parse_price(v):
-    if v is None:
+def price(v):
+    if v is None or (isinstance(v, float) and pd.isna(v)):
         return None
     s = re.sub(r"[^\d.,]", "", str(v))
     if not s:
@@ -71,66 +80,107 @@ def parse_price(v):
         return None
 
 
-def _looks_region(s):
-    s = s.lower()
-    return any(h in s for h in REGION_HINTS)
-
-
-def _find_label(cells):
-    for i, c in enumerate(cells):
-        cl = re.sub(r"\s+", " ", str(c)).strip().lower()
-        if not cl:
-            continue
-        if cl in TECHS:
-            return i, "technology", re.sub(r"\s+", " ", str(c)).strip()
-        if _looks_region(cl):
-            return i, "region", re.sub(r"\s+", " ", str(c)).strip()
+def month_from_name(fn):
+    m = re.search(r"_([A-Z][a-z]+)_(\d{4})_", fn)
+    if m and m.group(1).lower() in MONTHS:
+        return f"{m.group(2)}-{MONTHS[m.group(1).lower()]:02d}"
     return None
 
 
-def extract_from_rows(rows, by_tech, by_region, seen_t, seen_r):
-    for r in rows:
-        if not r:
+def parse_sheet(df):
+    """Parse one detailed-results sheet (Region x Technology matrix).
+    Returns (by_technology, by_region, matrix), prices volume-weighted by sold."""
+    rows = df.astype(object).where(pd.notna(df), None).values.tolist()
+    hdr = None
+    for i, r in enumerate(rows):
+        cl = " ".join(str(c).lower() for c in r if c is not None)
+        if "region" in cl and ("weighted" in cl or "price" in cl):
+            hdr = i
+            break
+    if hdr is None:
+        return [], [], []
+    H = [str(c).lower() if c is not None else "" for c in rows[hdr]]
+
+    def col(*kw, default=None):
+        for j, h in enumerate(H):
+            if all(k in h for k in kw):
+                return j
+        return default
+
+    ci_reg = col("region", default=0)
+    ci_tech = col("technolog", default=1)
+    ci_off = col("auction", default=2)
+    ci_sold = col("sold", default=3)
+    ci_pr = col("weighted") or col("price") or 4
+
+    matrix = []
+    for r in rows[hdr + 1:]:
+        if not r or ci_reg >= len(r) or r[ci_reg] is None:
             continue
-        cells = [("" if c is None else str(c)).strip() for c in r]
-        found = _find_label(cells)
-        if not found:
+        reg = str(r[ci_reg]).strip()
+        if not reg or reg.lower().startswith("total") or "region" in reg.lower():
             continue
-        li, kind, name = found
-        numcells = [c for c in cells[li + 1:] if any(ch.isdigit() for ch in c)]
-        if not numcells:
+        techfr = str(r[ci_tech]).strip() if ci_tech < len(r) and r[ci_tech] is not None else ""
+        if not techfr:
             continue
-        price = parse_price(numcells[-1])
-        off = parse_volume(numcells[0]) if len(numcells) >= 2 else None
-        alloc = parse_volume(numcells[1]) if len(numcells) >= 3 else None
-        if price is None and off is None:
+        off = num(r[ci_off]) if ci_off < len(r) else None
+        sold = num(r[ci_sold]) if ci_sold < len(r) else None
+        pr = price(r[ci_pr]) if ci_pr < len(r) else None
+        if pr is None and sold is None:
             continue
-        nl = name.lower()
-        if kind == "technology" and nl not in seen_t:
-            seen_t.add(nl)
-            by_tech.append({"technology": name, "offered_mwh": off,
-                            "allocated_mwh": alloc, "price_eur_mwh": price})
-        elif kind == "region" and nl not in seen_r:
-            seen_r.add(nl)
-            by_region.append({"region": name, "offered_mwh": off,
-                              "allocated_mwh": alloc, "price_eur_mwh": price})
+        matrix.append({"region": reg, "technology": tech_en(techfr),
+                       "offered_mwh": off, "allocated_mwh": sold, "price_eur_mwh": pr})
+
+    def agg(key):
+        out = {}
+        for m in matrix:
+            o = out.setdefault(m[key], {"off": 0, "sold": 0, "pw": 0.0, "w": 0})
+            if m["offered_mwh"]:
+                o["off"] += m["offered_mwh"]
+            if m["allocated_mwh"]:
+                o["sold"] += m["allocated_mwh"]
+            if m["price_eur_mwh"] is not None and m["allocated_mwh"]:
+                o["pw"] += m["price_eur_mwh"] * m["allocated_mwh"]
+                o["w"] += m["allocated_mwh"]
+        res = [{key: k, "offered_mwh": o["off"] or None, "allocated_mwh": o["sold"] or None,
+                "price_eur_mwh": round(o["pw"] / o["w"], 4) if o["w"] else None}
+               for k, o in out.items()]
+        res.sort(key=lambda x: -(x["allocated_mwh"] or 0))
+        return res
+
+    return agg("technology"), agg("region"), matrix
 
 
-def parse_excel_bytes(content):
-    """Read all sheets of an .xlsx and extract tech/region rows."""
-    by_tech, by_region, seen_t, seen_r = [], [], set(), set()
+def auctions_from_xlsx(content, fname):
+    """One xlsx file = one auction (one sheet). Returns list of auction dicts."""
+    out = []
     try:
-        sheets = pd.read_excel(io.BytesIO(content), sheet_name=None, header=None, engine="openpyxl")
+        xl = pd.ExcelFile(io.BytesIO(content), engine="openpyxl")
     except Exception as e:
-        print("  excel read error:", type(e).__name__, e)
-        return by_tech, by_region
-    for name, df in sheets.items():
-        extract_from_rows(df.astype(object).where(pd.notna(df), None).values.tolist(),
-                          by_tech, by_region, seen_t, seen_r)
-    return by_tech, by_region
+        print("  excel error:", type(e).__name__, e)
+        return out
+    for sh in xl.sheet_names:
+        df = pd.read_excel(io.BytesIO(content), sheet_name=sh, header=None, engine="openpyxl")
+        bt, br, matrix = parse_sheet(df)
+        if not bt and not br:
+            continue
+        out.append({"auction_month": month_from_name(fname) or month_from_name(sh),
+                    "source_file": fname, "by_technology": bt, "by_region": br, "matrix": matrix})
+    return out
 
 
-# ── fetch / links ────────────────────────────────────────────────────────────
+def auctions_from_download(content, url):
+    if url.lower().endswith(".zip"):
+        out = []
+        zf = zipfile.ZipFile(io.BytesIO(content))
+        for nm in zf.namelist():
+            if nm.lower().endswith(".xlsx"):
+                out += auctions_from_xlsx(zf.read(nm), nm)
+        return out
+    return auctions_from_xlsx(content, url.split("/")[-1])
+
+
+# ── page / links ─────────────────────────────────────────────────────────────
 def fetch_html(url, sess):
     for _ in range(3):
         r = sess.get(url, timeout=60)
@@ -152,8 +202,6 @@ def find_download_links(html):
 
 
 def rank_links(links):
-    """Prefer the latest monthly detailed results .xlsx, then any results xlsx,
-    then GLOBAL Results zip."""
     def score(u):
         ul = u.lower()
         s = 0
@@ -161,29 +209,19 @@ def rank_links(links):
         if "global_results" in ul: s += 50
         if "result" in ul: s += 20
         if ul.endswith(".xlsx"): s += 10
-        m = re.search(r"/(\d{8})_", u)         # date prefix -> recency
-        if m: s += int(m.group(1)) % 1000000 / 1e7
+        m = re.search(r"/(\d{8})_", u)
+        if m: s += int(m.group(1)) / 1e9
         return s
-    return sorted([u for u in links if "result" in u.lower() or "global" in u.lower()] or links,
-                  key=score, reverse=True)
-
-
-def month_from_url(u):
-    m = re.search(r"_([A-Z][a-z]+)_(\d{4})_", u)
-    if m and m.group(1).lower() in MONTHS:
-        return f"{m.group(2)}-{MONTHS[m.group(1).lower()]:02d}"
-    m = re.search(r"/(\d{4})(\d{2})\d{2}_", u)   # 20260520_ -> use as fallback YYYY-MM
-    if m:
-        return f"{m.group(1)}-{m.group(2)}"
-    return None
+    cand = [u for u in links if "result" in u.lower() or "global" in u.lower()] or links
+    return sorted(cand, key=score, reverse=True)
 
 
 def extract_reserve(html):
     m = re.search(r"reserve price[^:]*:\s*([\d.,]+)", html, re.I)
-    return parse_price(m.group(1)) if m else None
+    return price(m.group(1)) if m else None
 
 
-# ── main ─────────────────────────────────────────────────────────────────────
+# ── store ────────────────────────────────────────────────────────────────────
 def load_existing():
     if OUT.exists():
         try:
@@ -194,67 +232,59 @@ def load_existing():
             "url": URL, "reserve_eur_mwh": None, "auctions": []}
 
 
+def merge(data, new_auctions):
+    by_month = {a.get("auction_month"): a for a in data.get("auctions", []) if a.get("auction_month")}
+    added = 0
+    for a in new_auctions:
+        if a.get("auction_month"):
+            by_month[a["auction_month"]] = a   # add or refresh
+            added += 1
+    data["auctions"] = sorted(by_month.values(), key=lambda a: a["auction_month"])
+    return added
+
+
 def main():
-    print("[fetch_go_auctions] build 2026-06e · XLSX download")
+    print("[fetch_go_auctions] build 2026-06f · dedicated XLSX parser")
     sess = requests.Session()
     sess.headers.update(HEADERS)
     html, status = fetch_html(URL, sess)
     reserve = extract_reserve(html)
-
     links = rank_links(find_download_links(html))
-    print(f"HTTP {status} · HTML {len(html)} · {len(links)} result file link(s)")
+    print(f"HTTP {status} · HTML {len(html)} · {len(links)} result link(s)")
     for u in links[:6]:
         print("   link:", u)
     if not links:
         print("WARN: no Excel/ZIP result link found in page; aborting.")
         return 1
 
-    by_tech, by_region, used = [], [], None
+    new = []
     for u in links[:4]:
         try:
-            resp = sess.get(u, timeout=120)
+            resp = sess.get(u, timeout=180)
             if not resp.ok:
                 print(f"   download {resp.status_code}: {u}")
                 continue
-            data_bytes = resp.content
-            if u.lower().endswith(".zip"):
-                zf = zipfile.ZipFile(io.BytesIO(data_bytes))
-                for nm in zf.namelist():
-                    if nm.lower().endswith(".xlsx"):
-                        bt, br = parse_excel_bytes(zf.read(nm))
-                        by_tech += [x for x in bt if x["technology"] not in {y["technology"] for y in by_tech}]
-                        by_region += [x for x in br if x["region"] not in {y["region"] for y in by_region}]
-            else:
-                bt, br = parse_excel_bytes(data_bytes)
-                by_tech += [x for x in bt if x["technology"] not in {y["technology"] for y in by_tech}]
-                by_region += [x for x in br if x["region"] not in {y["region"] for y in by_region}]
-            if by_tech or by_region:
-                used = u
+            got = auctions_from_download(resp.content, u)
+            print(f"   parsed {len(got)} auction(s) from {u.split('/')[-1]}")
+            new += got
+            if got:
                 break
         except Exception as e:
             print(f"   error on {u}: {type(e).__name__} {e}")
 
-    if not by_tech and not by_region:
-        print("WARN: downloaded file(s) but parsed no tech/region rows; aborting.")
+    if not new:
+        print("WARN: downloaded file(s) but parsed no auctions; aborting.")
         return 1
 
-    auction_month = month_from_url(used) or month_from_url(links[0])
-    if not auction_month:
-        print("WARN: could not determine auction month from file name; aborting.")
-        return 1
-
-    record = {"auction_month": auction_month, "reserve_eur_mwh": reserve,
-              "source_file": used, "by_technology": by_tech, "by_region": by_region}
     data = load_existing()
-    data["reserve_eur_mwh"] = reserve
+    if reserve is not None:
+        data["reserve_eur_mwh"] = reserve
+    added = merge(data, new)
     data["updated"] = dt.date.today().isoformat()
-    data["auctions"] = [a for a in data.get("auctions", []) if a.get("auction_month") != auction_month]
-    data["auctions"].append(record)
-    data["auctions"].sort(key=lambda a: a.get("auction_month", ""))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"OK: {auction_month} -> {len(by_tech)} techno, {len(by_region)} region, "
-          f"reserve {reserve}. file: {used}")
+    months = ", ".join(a["auction_month"] for a in new if a.get("auction_month"))
+    print(f"OK: merged {added} auction(s) [{months}]. Total stored: {len(data['auctions'])}.")
     return 0
 
 
