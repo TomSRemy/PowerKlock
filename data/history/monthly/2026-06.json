@@ -513,7 +513,7 @@
         "negH": 0.0,
         "peakAvg": 66.23,
         "offAvg": 131.0,
-        "renPct": 61.5,
+        "renPct": 66.1,
         "domFuel": "Wind"
       }
     ],
@@ -946,8 +946,8 @@
         "negH": 0.75,
         "peakAvg": 56.65,
         "offAvg": 123.03,
-        "renPct": 39.4,
-        "domFuel": "Gas"
+        "renPct": 46.8,
+        "domFuel": "Wind"
       }
     ],
     "HR": [
@@ -1462,8 +1462,8 @@
         "negH": 0.0,
         "peakAvg": 54.4,
         "offAvg": 120.26,
-        "renPct": 58.4,
-        "domFuel": "Wind"
+        "renPct": 79.6,
+        "domFuel": "Solar"
       }
     ],
     "IT_NORD": [
@@ -1707,12 +1707,12 @@
       },
       {
         "d": "2026-06-09",
-        "avg": 103.33,
+        "avg": 110.91,
         "min": 40.0,
-        "max": 159.0,
+        "max": 181.0,
         "negH": 0.0,
-        "peakAvg": 80.89,
-        "offAvg": 125.78
+        "peakAvg": 115.59,
+        "offAvg": 108.49
       }
     ],
     "BG": [
@@ -2039,12 +2039,12 @@
       },
       {
         "d": "2026-06-09",
-        "avg": 117.35,
+        "avg": 119.79,
         "min": 95.5,
-        "max": 142.4,
+        "max": 150.01,
         "negH": 0.0,
-        "peakAvg": 109.86,
-        "offAvg": 124.83
+        "peakAvg": 122.12,
+        "offAvg": 118.62
       }
     ],
     "NO_1": [
@@ -2196,12 +2196,12 @@
       },
       {
         "d": "2026-06-09",
-        "avg": 98.98,
+        "avg": 104.04,
         "min": 2.03,
-        "max": 167.42,
+        "max": 188.0,
         "negH": 0.0,
-        "peakAvg": 66.5,
-        "offAvg": 131.45
+        "peakAvg": 100.38,
+        "offAvg": 105.86
       }
     ],
     "SE": [
@@ -2384,7 +2384,7 @@
         "negH": 0.5,
         "peakAvg": 10.24,
         "offAvg": 95.53,
-        "renPct": 79.1,
+        "renPct": 83.1,
         "domFuel": "Wind"
       }
     ],
@@ -2485,8 +2485,8 @@
         "negH": 9.0,
         "peakAvg": 3.51,
         "offAvg": 86.23,
-        "renPct": 66.4,
-        "domFuel": "Wind"
+        "renPct": 71.2,
+        "domFuel": "Solar"
       }
     ],
     "FR": [
@@ -2576,6 +2576,17 @@
         "peakAvg": 20.93,
         "offAvg": 37.34,
         "renPct": 28.3,
+        "domFuel": "Nuclear"
+      },
+      {
+        "d": "2026-06-09",
+        "avg": 43.74,
+        "min": -0.03,
+        "max": 123.01,
+        "negH": 1.75,
+        "peakAvg": 13.96,
+        "offAvg": 58.64,
+        "renPct": 28.1,
         "domFuel": "Nuclear"
       }
     ]
