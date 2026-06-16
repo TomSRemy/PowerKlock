@@ -905,8 +905,8 @@
         "negH": 0.0,
         "peakAvg": 93.16,
         "offAvg": 137.92,
-        "renPct": 53.3,
-        "domFuel": "Gas"
+        "renPct": 61.4,
+        "domFuel": "Solar"
       }
     ],
     "CZ": [
@@ -1667,7 +1667,7 @@
         "negH": 0.0,
         "peakAvg": 102.53,
         "offAvg": 134.84,
-        "renPct": 10.9,
+        "renPct": 11.5,
         "domFuel": "Gas"
       }
     ],
@@ -2575,8 +2575,8 @@
         "negH": 0.0,
         "peakAvg": 111.49,
         "offAvg": 134.61,
-        "renPct": 55.6,
-        "domFuel": "Wind"
+        "renPct": 75.2,
+        "domFuel": "Solar"
       }
     ],
     "IT_NORD": [
@@ -3593,12 +3593,12 @@
       },
       {
         "d": "2026-06-16",
-        "avg": 114.2,
-        "min": 57.55,
+        "avg": 111.11,
+        "min": 44.94,
         "max": 172.7,
         "negH": 0.0,
-        "peakAvg": 94.43,
-        "offAvg": 133.98
+        "peakAvg": 100.1,
+        "offAvg": 116.98
       }
     ],
     "NO_1": [
@@ -4195,7 +4195,7 @@
         "negH": 0.0,
         "peakAvg": 67.51,
         "offAvg": 134.51,
-        "renPct": 74.7,
+        "renPct": 81.1,
         "domFuel": "Hydro"
       }
     ],
@@ -4373,7 +4373,7 @@
         "negH": 0.0,
         "peakAvg": 74.33,
         "offAvg": 131.25,
-        "renPct": 49.8,
+        "renPct": 60.5,
         "domFuel": "Solar"
       }
     ],
@@ -4551,7 +4551,7 @@
         "negH": 0.0,
         "peakAvg": 69.95,
         "offAvg": 123.83,
-        "renPct": 21.7,
+        "renPct": 29.6,
         "domFuel": "Nuclear"
       }
     ]
