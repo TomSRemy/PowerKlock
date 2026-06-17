@@ -66279,7 +66279,7 @@
         "negH": 0.0,
         "peakAvg": 67.39,
         "offAvg": 129.19,
-        "renPct": 19.3,
+        "renPct": 26.7,
         "domFuel": "Nuclear"
       }
     ],
@@ -97647,8 +97647,8 @@
         "negH": 0.0,
         "peakAvg": 92.2,
         "offAvg": 142.35,
-        "renPct": 46.4,
-        "domFuel": "Gas"
+        "renPct": 65.2,
+        "domFuel": "Solar"
       }
     ],
     "ES": [
@@ -128459,8 +128459,8 @@
         "negH": 0.25,
         "peakAvg": 60.12,
         "offAvg": 133.95,
-        "renPct": 47.4,
-        "domFuel": "Gas"
+        "renPct": 59.7,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -159279,8 +159279,8 @@
         "negH": 0.0,
         "peakAvg": 107.74,
         "offAvg": 138.48,
-        "renPct": 43.5,
-        "domFuel": "Gas"
+        "renPct": 63.5,
+        "domFuel": "Solar"
       }
     ],
     "NL": [
@@ -168116,7 +168116,9 @@
         "max": 171.81,
         "negH": 0.0,
         "peakAvg": 100.28,
-        "offAvg": 139.71
+        "offAvg": 139.71,
+        "renPct": 60.0,
+        "domFuel": "Wind"
       }
     ],
     "PT": [
@@ -170583,7 +170585,7 @@
         "negH": 0.0,
         "peakAvg": 67.82,
         "offAvg": 131.11,
-        "renPct": 69.6,
+        "renPct": 77.8,
         "domFuel": "Hydro"
       }
     ],
@@ -182676,12 +182678,12 @@
       },
       {
         "d": "2026-06-17",
-        "avg": 97.2,
-        "min": 15.01,
-        "max": 150.0,
+        "avg": 90.0,
+        "min": 2.05,
+        "max": 160.0,
         "negH": 0.0,
-        "peakAvg": 66.72,
-        "offAvg": 127.67
+        "peakAvg": 70.7,
+        "offAvg": 99.65
       }
     ],
     "HU": [
@@ -187528,12 +187530,12 @@
       },
       {
         "d": "2026-06-17",
-        "avg": 107.73,
-        "min": 44.94,
+        "avg": 107.42,
+        "min": 40.03,
         "max": 148.74,
         "negH": 0.0,
-        "peakAvg": 85.46,
-        "offAvg": 134.45
+        "peakAvg": 98.93,
+        "offAvg": 111.95
       }
     ],
     "RO": [
