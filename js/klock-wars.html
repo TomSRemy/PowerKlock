@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23001219'/%3E%3Cpath d='M8 50 Q26 6 56 24' fill='none' stroke='%2394D2BD' stroke-width='3' stroke-dasharray='4 4' stroke-linecap='round'/%3E%3Crect x='6' y='44' width='16' height='8' rx='2' fill='%230A9396'/%3E%3Crect x='10' y='38' width='9' height='6' rx='1' fill='%230A9396'/%3E%3Cpath d='M44 18 l8 6 -8 6 -8 -6 z' fill='%23EE9B00'/%3E%3C/svg%3E">
 <title>Klock Wars — V4</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -328,6 +330,37 @@
   .podium-mission { color: var(--sand); opacity: 0.6; font-size: 10px; letter-spacing: 1px; margin-top: 4px; }
   .footer-mock { position: fixed; bottom: 10px; right: 14px; z-index: 1001; font-size: 11px; color: var(--sand); opacity: 0.5; letter-spacing: 1px; font-family: var(--font-mono); }
   .footer-mock .play { color: var(--gold); cursor: pointer; margin-left: 8px; font-weight: 700; }
+  .skills-picker { margin-bottom: 14px; }
+  .skills-row { margin-bottom: 12px; }
+  .skills-row-lbl { color: var(--gold); font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; font-family: var(--font-mono); font-weight: 700; }
+  .skills-opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .skill-card { background: rgba(0, 38, 51, 0.5); border: 1px solid var(--deep); padding: 10px; cursor: pointer; transition: all 0.15s; border-radius: 4px; text-align: center; }
+  .skill-card:hover:not(.selected) { border-color: var(--gold); }
+  .skill-card.selected { border-color: var(--gold); background: rgba(238,155,0,0.10); box-shadow: 0 0 10px rgba(238,155,0,0.25); }
+  .skill-card .sk-icon { font-size: 20px; }
+  .skill-card .sk-name { color: var(--aqua); font-size: 10px; letter-spacing: 1px; font-weight: 600; margin-top: 4px; }
+  .skill-card .sk-desc { color: var(--sand); opacity: 0.65; font-size: 9px; line-height: 1.4; margin-top: 4px; }
+  .active-skill-bar { display: flex; gap: 8px; margin-top: 8px; align-items: stretch; }
+  .active-skill-btn { flex: 1; background: rgba(0, 38, 51, 0.6); border: 1px solid var(--cyan); color: var(--aqua); padding: 8px 12px; cursor: pointer; border-radius: 2px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+  .active-skill-btn.ready { border-color: var(--gold); color: var(--gold); }
+  .active-skill-btn.ready:hover { background: var(--gold); color: var(--ink); }
+  .active-skill-btn.cooling { opacity: 0.45; cursor: not-allowed; }
+  .active-skill-btn .cd { font-size: 11px; opacity: 0.8; }
+  .passive-chip { background: rgba(10,147,150,0.12); border: 1px solid var(--cyan); color: var(--aqua); padding: 8px 12px; border-radius: 2px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .aim-btn { flex: 1; background: rgba(0,0,0,0.35); border: 1px solid var(--deep); color: var(--aqua); font-family: var(--font-mono); font-size: 18px; font-weight: 700; cursor: pointer; border-radius: 2px; padding: 5px 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .aim-btn:active { background: var(--cyan); color: var(--ink); }
+  @media (max-width: 640px) {
+    .screen { padding: 14px 10px; }
+    .title h1 { font-size: 21px; letter-spacing: 3px; }
+    .game-controls { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .fire-btn { grid-column: 1 / -1; padding: 12px 0; font-size: 16px; }
+    .skills-opts { grid-template-columns: repeat(2, 1fr); }
+    .tanks-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .game-bar { flex-direction: column; gap: 8px; align-items: stretch; }
+    .game-bar > div { display: none; }
+    .aim-btn { min-height: 40px; font-size: 20px; }
+    .brief-info-strip { grid-template-columns: 1fr 1fr 1fr !important; }
+  }
 </style>
 </head>
 <body>
@@ -550,7 +583,7 @@
 
 <div class="screen" id="screen-briefing"><div class="screen-inner"><button class="back-btn" onclick="goBackFromBriefing()">◀ BACK</button><div class="briefing" id="briefingContent"></div></div></div>
 
-<div class="screen" id="screen-armory"><div class="screen-inner armory-screen"><button class="back-btn" onclick="goBackFromArmory()">◀ BACK</button><div class="section-title" id="armoryTitle">🎯 ARMORY</div><div class="armory-info"><span id="budgetLbl">BUDGET</span>: <span class="val budget-val" id="armoryBudget">€0</span> · <span id="selectedLbl">SELECTED</span>: <span class="val count-val" id="armoryCount">0/3</span></div><div class="armory-grid" id="armoryGrid"></div><div class="deploy-wrap"><button class="deploy-btn" id="deployBtn" onclick="confirmArmory()">▶ DEPLOY</button></div></div></div>
+<div class="screen" id="screen-armory"><div class="screen-inner armory-screen"><button class="back-btn" onclick="goBackFromArmory()">◀ BACK</button><div class="section-title" id="armoryTitle">🎯 ARMORY</div><div class="armory-info"><span id="budgetLbl">BUDGET</span>: <span class="val budget-val" id="armoryBudget">€0</span> · <span id="selectedLbl">SELECTED</span>: <span class="val count-val" id="armoryCount">0/3</span></div><div class="armory-grid" id="armoryGrid"></div><div class="skills-picker" id="skillsPicker"></div><div class="deploy-wrap"><button class="deploy-btn" id="deployBtn" onclick="confirmArmory()">▶ DEPLOY</button></div></div></div>
 
 <div class="screen" id="screen-game">
   <div class="screen-inner game-wrap">
@@ -574,9 +607,10 @@
       <div class="game-msg" id="gameMsg"></div>
     </div>
     <div class="weapon-bar" id="weaponBar"></div>
+    <div class="active-skill-bar" id="activeSkillBar"></div>
     <div class="game-controls">
-      <div class="ctrl"><div class="ctrl-lbl" id="angleLbl">ANGLE</div><div class="ctrl-val" id="angle">45°</div><div class="ctrl-keys">← →</div></div>
-      <div class="ctrl"><div class="ctrl-lbl" id="powerLbl">POWER</div><div class="ctrl-val" id="power">60</div><div class="ctrl-keys">↑ ↓</div></div>
+      <div class="ctrl"><div class="ctrl-lbl" id="angleLbl">ANGLE</div><div class="ctrl-val" id="angle">45°</div><div style="display:flex;gap:6px;margin-top:2px;"><button id="angDownBtn" class="aim-btn">◀</button><button id="angUpBtn" class="aim-btn">▶</button></div></div>
+      <div class="ctrl"><div class="ctrl-lbl" id="powerLbl">POWER</div><div class="ctrl-val" id="power">60</div><div style="display:flex;gap:6px;margin-top:2px;"><button id="powDownBtn" class="aim-btn">▼</button><button id="powUpBtn" class="aim-btn">▲</button></div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="moveLbl">MOVE</div><div style="display:flex;gap:6px;justify-content:center;margin-top:2px;"><button id="moveLeftBtn" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--deep);color:var(--aqua);font-family:var(--font-mono);font-size:18px;font-weight:700;cursor:pointer;border-radius:2px;padding:4px 0;touch-action:none;user-select:none;">◀</button><button id="moveRightBtn" style="flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--deep);color:var(--aqua);font-family:var(--font-mono);font-size:18px;font-weight:700;cursor:pointer;border-radius:2px;padding:4px 0;touch-action:none;user-select:none;">▶</button></div><div class="ctrl-keys">A D · hold</div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="fuelLbl2">FUEL</div><div class="ctrl-val" id="fuelVal">100</div><div class="ctrl-keys">left</div></div>
       <div class="ctrl"><div class="ctrl-lbl" id="turnLbl">TURN</div><div class="ctrl-val" id="turnNum">1</div><div class="ctrl-keys">round</div></div>
@@ -699,6 +733,18 @@ const I18N = {
     incoming_calm: 'INCOMING : DEAD CALM',
     next_turn: 'Prochain tour', walking_shot: 'IA en réglage',
     high_ground: 'POSITION HAUTE', low_ground: 'EN VALLÉE',
+    skills: 'COMPÉTENCES', passive: 'PASSIF', active: 'ACTIF', active_ready: 'PRÊT', cooldown: 'RECHARGE',
+    sk_forecast: 'FORECAST', sk_forecast_d: 'Prévisualisation de trajectoire à chaque tir.',
+    sk_hedged: 'HEDGED BOOK', sk_hedged_d: '-15% de dégâts subis.',
+    sk_long: 'LONG POSITION', sk_long_d: '+1 charge sur chaque arme payante.',
+    sk_tailwind: 'TAILWIND', sk_tailwind_d: 'Effet du vent réduit de 70% : tes tirs sont bien plus stables.',
+    sk_margin: 'MARGIN CALL', sk_margin_d: '+60% de dégâts au prochain tir.',
+    sk_reprice: 'REPRICE', sk_reprice_d: 'Si ton tir rate, tu rejoues immédiatement.',
+    sk_arb: 'SPOT ARBITRAGE', sk_arb_d: 'Réservoir plein : repositionne-toi sans coût.',
+    sk_curtail: 'CURTAILMENT ORDER', sk_curtail_d: "Saute le tour de l'adversaire.",
+    margin_armed: 'MARGIN CALL ARMÉ', reprice_armed: 'REPRICE ARMÉ', arb_used: 'RÉSERVOIR PLEIN', curtail_armed: 'CURTAILMENT ARMÉ',
+    reprice_fire: 'REPRICE · rejoue', curtail_skip: 'Tour adverse sauté',
+    pick_passive: 'Choisis 1 passif', pick_active: 'Choisis 1 actif',
   },
   en: {
     subtitle: 'FORWARD CURVE ARTILLERY · V4',
@@ -759,11 +805,58 @@ const I18N = {
     incoming_calm: 'INCOMING: DEAD CALM',
     next_turn: 'Next turn', walking_shot: 'AI WALKING SHOT',
     high_ground: 'HIGH GROUND', low_ground: 'IN VALLEY',
+    skills: 'SKILLS', passive: 'PASSIVE', active: 'ACTIVE', active_ready: 'READY', cooldown: 'COOLDOWN',
+    sk_forecast: 'FORECAST', sk_forecast_d: 'Trajectory preview on every shot.',
+    sk_hedged: 'HEDGED BOOK', sk_hedged_d: '-15% incoming damage.',
+    sk_long: 'LONG POSITION', sk_long_d: '+1 charge on each paid weapon.',
+    sk_tailwind: 'TAILWIND', sk_tailwind_d: 'Wind effect reduced 70%: your shots are far steadier.',
+    sk_margin: 'MARGIN CALL', sk_margin_d: '+60% damage on next shot.',
+    sk_reprice: 'REPRICE', sk_reprice_d: 'If your shot misses, you fire again at once.',
+    sk_arb: 'SPOT ARBITRAGE', sk_arb_d: 'Full tank: reposition with no fuel cost.',
+    sk_curtail: 'CURTAILMENT ORDER', sk_curtail_d: "Skip the opponent's turn.",
+    margin_armed: 'MARGIN CALL ARMED', reprice_armed: 'REPRICE ARMED', arb_used: 'TANK REFILLED', curtail_armed: 'CURTAILMENT ARMED',
+    reprice_fire: 'REPRICE · replay', curtail_skip: 'Opponent turn skipped',
+    pick_passive: 'Pick 1 passive', pick_active: 'Pick 1 active',
   },
 };
 function t(key) {
   const lang = state ? state.lang : 'fr';
   return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
+}
+
+// ===== SKILLS (Stage 2) : 1 passif + 1 actif par joueur =====
+const SKILLS = {
+  passive: {
+    forecast:      { icon: '🔭', name: 'sk_forecast', desc: 'sk_forecast_d' },
+    hedged_book:   { icon: '🛡', name: 'sk_hedged',   desc: 'sk_hedged_d' },
+    long_position: { icon: '📈', name: 'sk_long',     desc: 'sk_long_d' },
+    tailwind:      { icon: '🌬', name: 'sk_tailwind', desc: 'sk_tailwind_d' },
+  },
+  active: {
+    margin_call:       { icon: '💢', name: 'sk_margin',  desc: 'sk_margin_d',  cooldown: 3 },
+    reprice:           { icon: '🔁', name: 'sk_reprice', desc: 'sk_reprice_d', cooldown: 3 },
+    spot_arbitrage:    { icon: '🛰', name: 'sk_arb',     desc: 'sk_arb_d',     cooldown: 3 },
+    curtailment_order: { icon: '✂',  name: 'sk_curtail', desc: 'sk_curtail_d', cooldown: 3 },
+  },
+};
+const PASSIVE_KEYS = Object.keys(SKILLS.passive);
+const ACTIVE_KEYS = Object.keys(SKILLS.active);
+
+// Skills imposés en mode Historique pour coller au régime de marché de chaque événement
+const EVENT_SKILLS = {
+  event1: { passive: 'hedged_book',   active: 'margin_call',       note: { fr: 'Prix extrêmes : protège ton book, capture le pic.',                en: 'Extreme prices: protect your book, capture the spike.' } },
+  event2: { passive: 'forecast',      active: 'reprice',           note: { fr: 'Volatilité brutale : anticipe et re-trade vite.',                  en: 'Brutal volatility: anticipate and re-trade fast.' } },
+  event3: { passive: 'long_position', active: 'margin_call',       note: { fr: 'Pic durable : tiens la position, maximise la capture.',            en: 'Sustained peak: hold the position, max the capture.' } },
+  event4: { passive: 'long_position', active: 'spot_arbitrage',    note: { fr: 'Dunkelflaute : les batteries font la loi (stockage + repositionnement).', en: 'Dunkelflaute: batteries rule (storage + repositioning).' } },
+  event5: { passive: 'hedged_book',   active: 'spot_arbitrage',    note: { fr: "Réseau qui s'effondre : résilience et repositionnement.",          en: 'Grid collapse: resilience and repositioning.' } },
+  event6: { passive: 'forecast',      active: 'margin_call',       note: { fr: 'Spike météo soudain : anticipe et frappe fort.',                   en: 'Sudden weather spike: anticipate and hit hard.' } },
+  event7: { passive: 'tailwind',      active: 'spot_arbitrage',    note: { fr: 'Spread Est/Ouest : arbitrage transfrontalier.',                    en: 'East/West spread: cross-border arbitrage.' } },
+  event8: { passive: 'hedged_book',   active: 'reprice',           note: { fr: 'Volatilité gaz persistante : couvre-toi.',                         en: 'Persistent gas volatility: hedge yourself.' } },
+};
+// Renvoie {passive, active, note} si la mission courante impose des skills (hors 1v1), sinon null
+function forcedSkills() {
+  if (state.mp1v1 && state.mp1v1.active) return null;
+  return EVENT_SKILLS[state.currentMission] || null;
 }
 
 // ===== WEAPONS — roster nettoyé 7 armes (Stage 1) =====
@@ -952,6 +1045,7 @@ const state = {
   navigationOrigin: 'menu', gp: null, lang: 'fr',
   settings: { marketCrash: false, turnTimer: true },
   difficulty: 'originator',
+  selPassive: 'forecast', selActive: 'margin_call',
   progress: {
     rookie_summer_fr: 'current', junior_winter_fr: 'locked',
     senior_duck_curve_es: 'locked', senior_dunkelflaute_de: 'locked',
@@ -1056,14 +1150,22 @@ function toggleSetting(key) {
   pkSaveState();
 }
 
-function goBackFromBriefing() { if (state.gp) { abortGP(); return; } const ms = state.currentMissionData; if (ms && ms.type === 'event') go('events'); else go('career'); }
+function backTarget() {
+  // Where "back"/"continue" should land, based on how the mission was entered
+  const o = state.navigationOrigin;
+  if (o === 'career' || o === 'events' || o === 'custommap' || o === 'multiplayer') return o;
+  return 'menu';
+}
+function goBackFromBriefing() { if (state.gp) { abortGP(); return; } go(backTarget()); }
 function goBackFromArmory() { go('briefing'); setTimeout(showBriefing, 50); }
-function goBackFromTank() { if (state.gp) { abortGP(); return; } go(state.navigationOrigin); }
+function goBackFromTank() { if (state.gp) { abortGP(); return; } if (state.mp1v1) { state.mp1v1 = null; } go(backTarget()); }
 function abortGP() { if (confirm('Abandon Grand Prix?')) { state.gp = null; go('menu'); } }
 function quitGame() {
-  if (confirm(state.lang === 'fr' ? 'Quitter ? Progression perdue.' : 'Quit? Progress lost.')) {
+  if (confirm(state.lang === 'fr' ? 'Abandonner la partie et revenir à l\'accueil ?' : 'Abandon the game and return to home?')) {
     if (state.game) state.game.running = false;
-    if (state.gp) state.gp = null;
+    state.gp = null;
+    state.mp1v1 = null;
+    stopTurnTimer();
     go('menu');
   }
 }
@@ -1251,6 +1353,7 @@ function showBriefing() {
   const m = state.currentMissionData;
   if (!m) return;
   const genmixHtml = m.genmix.map(g => `<div class="seg" style="width:${g.pct}%; background:${g.color};" title="${g.name} ${g.pct}%"></div>`).join('');
+  const genmixLegend = m.genmix.map(g => `<span style="display:inline-flex;align-items:center;gap:5px;margin:0 12px 4px 0;font-size:11px;"><span style="width:11px;height:11px;border-radius:2px;background:${g.color};display:inline-block;flex:0 0 auto;"></span><span style="color:var(--sand);opacity:0.85;font-family:var(--font-mono);">${g.name} ${g.pct}%</span></span>`).join('');
   const tank = TANKS[state.currentTank];
   const archText = t(tank.archetype);
   const html = `
@@ -1266,18 +1369,22 @@ function showBriefing() {
         <div class="stats">${archText} · ${tank.hp} HP · ${tank.powerMax}% PWR · ${tank.fuelMax}L</div>
       </div>
     </div>
-    <div class="brief-info-strip">
+    <div class="brief-info-strip" style="grid-template-columns: 1fr 1fr 1fr;">
       <div class="info-block"><div class="lbl">${t('weather')}</div><div class="val">${m.weather.icon} ${m.weather.text}</div></div>
       <div class="info-block"><div class="lbl">${t('wind_in_game')}</div><div class="val">~${m.weather.windBase.toFixed(1)} m/s</div></div>
       <div class="info-block"><div class="lbl">${t('fuel')}</div><div class="val">€${m.fuelPrice}/u</div></div>
-      <div class="info-block"><div class="lbl">GENMIX</div><div class="genmix-bar">${genmixHtml}</div></div>
+    </div>
+    <div style="background: rgba(0,38,51,0.5); border:1px solid var(--deep); padding:12px 16px; margin-bottom:14px; border-radius:4px;">
+      <div style="color:var(--sand);opacity:0.6;font-size:10px;letter-spacing:1px;margin-bottom:8px;font-family:var(--font-mono);">${state.lang === 'fr' ? 'MIX DE PRODUCTION (GENMIX)' : 'GENERATION MIX (GENMIX)'}</div>
+      <div class="genmix-bar" style="height:16px;">${genmixHtml}</div>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;">${genmixLegend}</div>
     </div>
     <div class="brief-story">${localizedTexts(m.story).map(p => '<p>' + p + '</p>').join('')}</div>
-    <div class="brief-stats">
+    <div class="brief-stats" style="grid-template-columns: repeat(${isCareerMode() ? 4 : 3}, 1fr);">
       <div class="brief-stat"><div class="brief-stat-lbl">${t('spread')}</div><div class="brief-stat-val ${m.spread > 100 ? 'danger' : m.spread > 50 ? 'warn' : ''}">€${m.spread}<span class="brief-stat-unit">/MWh</span></div></div>
       <div class="brief-stat"><div class="brief-stat-lbl">${t('avg')}</div><div class="brief-stat-val ${m.avg > 200 ? 'danger' : m.avg > 100 ? 'warn' : ''}">€${m.avg}<span class="brief-stat-unit">/MWh</span></div></div>
       <div class="brief-stat"><div class="brief-stat-lbl">${t('timer')}</div><div class="brief-stat-val ${m.timerSec < 18 ? 'danger' : m.timerSec < 23 ? 'warn' : ''}">${m.timerSec + tank.timerBonus}<span class="brief-stat-unit">s</span></div></div>
-      <div class="brief-stat"><div class="brief-stat-lbl">${t('reward')}</div><div class="brief-stat-val warn">€${m.reward}</div></div>
+      ${isCareerMode() ? `<div class="brief-stat"><div class="brief-stat-lbl">${t('reward')}</div><div class="brief-stat-val warn">€${m.reward}</div></div>` : ''}
     </div>
     <div class="brief-warn"><span class="ic">⚠</span> ${m.warn}</div>
     <div class="brief-go"><span class="hint">${m.title}</span><button class="go" onclick="goToArmory()">${t('engage')}</button></div>
@@ -1335,7 +1442,6 @@ function showGPPodium() {
     <div class="victory-stats">
       <div><div class="vstat-lbl">${t('total_score')}</div><div class="vstat-val" style="color: var(--gold)">${totalScore}</div></div>
       <div><div class="vstat-lbl">${t('wins')}</div><div class="vstat-val">${wins}/${gp.races.length}</div></div>
-      <div><div class="vstat-lbl">${t('pnl_earned')}</div><div class="vstat-val" style="color: var(--gold)">+€${earnedTotal}</div></div>
     </div>
     <div class="victory-actions"><button class="primary" onclick="endGPNow()">${t('menu')}</button></div>
   `;
@@ -1491,7 +1597,7 @@ function cmLaunch() {
   const customMission = {
     _key: 'custom_' + Date.now(), type: 'custom', title: name, flag: '🎨', date: 'CUSTOM', zone: 'CUSTOM', diff: 'CUSTOM', stars: 2,
     prices, spread, avg, timerSec: 25, reward: 0,
-    weather: { icon: '🌤', text: 'CUSTOM', windBase: 1.2, type: 'standard' },
+    weather: { icon: '🌤', text: 'CUSTOM', windBase: 1.2, type: 'standard', sky: ['#2A4A55','#0A2532','#001219'] },
     genmix: [ { name: 'Nuclear', pct: 35, color: '#0A9396' }, { name: 'Wind', pct: 20, color: '#94D2BD' }, { name: 'Solar', pct: 15, color: '#EE9B00' }, { name: 'Hydro', pct: 15, color: '#005F73' }, { name: 'Gas', pct: 15, color: '#BB3E03' } ],
     fuelPrice: 50, blockedWeapons: [], freeWeapon: null,
     storyTemplates: { fr: ['Marché personnalisé · vos paramètres.'], en: ['Custom market · your parameters.'] },
@@ -1528,6 +1634,11 @@ function startQuickBattle() {
   go('tankselect');
 }
 
+// PnL ne s'applique qu'en carrière (sélectionnée via le carrousel CAREER)
+function isCareerMode() {
+  return state.navigationOrigin === 'career' && !state.gp && !(state.mp1v1 && state.mp1v1.active);
+}
+
 function goToArmory() {
   state.selectedWeapons = ['standard'];
   const m = state.currentMissionData;
@@ -1540,7 +1651,9 @@ function renderArmory() {
   const blocked = m.blockedWeapons || [];
   const free = m.freeWeapon;
   const is1v1 = state.mp1v1 && state.mp1v1.active;
-  const maxWeapons = 4; // standard + 3 picks (l'arme offerte compte comme un pick)
+  const career = isCareerMode();
+  const freeMode = is1v1 || !career; // hors carrière : armes gratuites, pas de PnL
+  const maxWeapons = 4; // standard (auto) + 3 picks
   const titleEl = document.getElementById('armoryTitle');
   if (titleEl) {
     if (is1v1) {
@@ -1550,28 +1663,38 @@ function renderArmory() {
       titleEl.innerHTML = `<span style="color:${color}">◆ ${name}</span> · ${state.lang === 'fr' ? 'CHOIX DES ARMES' : 'PICK WEAPONS'}`;
     } else { titleEl.textContent = '🎯 ' + t('armory'); }
   }
-  document.getElementById('armoryBudget').textContent = is1v1 ? (state.mp1v1.phase === 'pickP1Weapons' ? '👤 ' + (state.mp1v1.p1Name || 'P1') : '👤 ' + (state.mp1v1.p2Name || 'P2')) : ('€' + state.pnl.toLocaleString());
-  document.getElementById('armoryCount').textContent = state.selectedWeapons.length + '/' + maxWeapons;
-  setText('budgetLbl', is1v1 ? 'PLAYER' : t('budget'));
+  // Budget / label selon le mode
+  if (is1v1) {
+    setText('budgetLbl', 'PLAYER');
+    document.getElementById('armoryBudget').textContent = (state.mp1v1.phase === 'pickP1Weapons' ? '👤 ' + (state.mp1v1.p1Name || 'P1') : '👤 ' + (state.mp1v1.p2Name || 'P2'));
+  } else if (career) {
+    setText('budgetLbl', t('budget'));
+    document.getElementById('armoryBudget').textContent = '€' + state.pnl.toLocaleString();
+  } else {
+    setText('budgetLbl', state.lang === 'fr' ? 'ARMES' : 'WEAPONS');
+    document.getElementById('armoryBudget').textContent = t('free_tag');
+  }
+  // Compteur : ne compte que les armes choisies (hors STANDARD)
+  const picks = state.selectedWeapons.filter(k => k !== 'standard').length;
+  document.getElementById('armoryCount').textContent = picks + '/3';
   setText('selectedLbl', t('selected'));
   setText('deployBtn', t('deploy'));
   const grid = document.getElementById('armoryGrid');
   grid.innerHTML = '';
   Object.entries(WEAPONS).forEach(([key, w]) => {
-    const isStandard = key === 'standard';
+    if (key === 'standard') return; // STANDARD retiré de la grille (toujours équipé par défaut)
     const isFree = key === free;
     const isBlocked = blocked.includes(key);
     const isSelected = state.selectedWeapons.includes(key);
-    const cost = is1v1 ? 0 : (isFree ? 0 : w.cost);
-    const unaffordable = !is1v1 && !isSelected && cost > state.pnl && !isStandard && !isFree;
-    const disabled = isBlocked || isStandard || (state.selectedWeapons.length >= maxWeapons && !isSelected);
+    const cost = freeMode ? 0 : (isFree ? 0 : w.cost);
+    const unaffordable = !freeMode && !isSelected && cost > state.pnl && !isFree;
+    const disabled = isBlocked || (picks >= 3 && !isSelected);
     const div = document.createElement('div');
     div.className = 'weapon-card';
     if (isSelected) div.classList.add('selected');
     if (disabled || unaffordable) div.classList.add('disabled');
     let tag = '';
-    if (isStandard) tag = `<span class="weapon-tag free">${t('default_tag')}</span>`;
-    else if (isFree) tag = `<span class="weapon-tag free">${t('free_tag')}</span>`;
+    if (isFree) tag = `<span class="weapon-tag free">${t('free_tag')}</span>`;
     else if (isBlocked) tag = `<span class="weapon-tag" style="color: var(--blood)">${t('blocked_tag')}</span>`;
     const descText = typeof w.desc === 'object' ? w.desc[state.lang] : w.desc;
     div.innerHTML = `
@@ -1583,6 +1706,61 @@ function renderArmory() {
     if (!disabled && !unaffordable) div.onclick = () => toggleWeapon(key);
     grid.appendChild(div);
   });
+  renderSkillsPicker();
+}
+
+// Qui choisit les skills en cours (solo = state, 1v1 = joueur courant)
+function curSkillSel() {
+  if (state.mp1v1 && state.mp1v1.active) {
+    const isP1 = state.mp1v1.phase === 'pickP1Weapons';
+    return {
+      get passive() { return isP1 ? (state.mp1v1.p1Passive || 'forecast') : (state.mp1v1.p2Passive || 'forecast'); },
+      get active() { return isP1 ? (state.mp1v1.p1Active || 'margin_call') : (state.mp1v1.p2Active || 'margin_call'); },
+      setPassive(v) { if (isP1) state.mp1v1.p1Passive = v; else state.mp1v1.p2Passive = v; },
+      setActive(v) { if (isP1) state.mp1v1.p1Active = v; else state.mp1v1.p2Active = v; },
+    };
+  }
+  return {
+    get passive() { return state.selPassive; },
+    get active() { return state.selActive; },
+    setPassive(v) { state.selPassive = v; },
+    setActive(v) { state.selActive = v; },
+  };
+}
+
+function renderSkillsPicker() {
+  const box = document.getElementById('skillsPicker');
+  if (!box) return;
+  const forced = forcedSkills();
+  const sel = curSkillSel();
+  // En mode imposé, la sélection affichée = les skills du marché (sans toucher aux préférences sauvegardées)
+  const shownPassive = forced ? forced.passive : sel.passive;
+  const shownActive = forced ? forced.active : sel.active;
+  const lock = !!forced;
+  const passiveCards = PASSIVE_KEYS.map(key => {
+    const s = SKILLS.passive[key];
+    const on = shownPassive === key;
+    if (lock) return `<div class="skill-card${on ? ' selected' : ''}" style="${on ? '' : 'opacity:0.35;'}cursor:default;"><div class="sk-icon">${s.icon}</div><div class="sk-name">${t(s.name)}</div><div class="sk-desc">${t(s.desc)}</div></div>`;
+    return `<div class="skill-card${on ? ' selected' : ''}" onclick="selectSkill('passive','${key}')"><div class="sk-icon">${s.icon}</div><div class="sk-name">${t(s.name)}</div><div class="sk-desc">${t(s.desc)}</div></div>`;
+  }).join('');
+  const activeCards = ACTIVE_KEYS.map(key => {
+    const s = SKILLS.active[key];
+    const on = shownActive === key;
+    if (lock) return `<div class="skill-card${on ? ' selected' : ''}" style="${on ? '' : 'opacity:0.35;'}cursor:default;"><div class="sk-icon">${s.icon}</div><div class="sk-name">${t(s.name)}</div><div class="sk-desc">${t(s.desc)}</div></div>`;
+    return `<div class="skill-card${on ? ' selected' : ''}" onclick="selectSkill('active','${key}')"><div class="sk-icon">${s.icon}</div><div class="sk-name">${t(s.name)}</div><div class="sk-desc">${t(s.desc)}</div></div>`;
+  }).join('');
+  const noteHtml = forced ? `<div style="background:rgba(238,155,0,0.10);border-left:3px solid var(--gold);padding:10px 14px;margin-bottom:12px;border-radius:2px;color:var(--sand);font-size:12px;"><span style="color:var(--gold);font-weight:700;letter-spacing:1px;">⚡ ${state.lang === 'fr' ? 'SKILLS IMPOSÉS PAR LE MARCHÉ' : 'SKILLS SET BY THE MARKET'} :</span> ${forced.note[state.lang] || forced.note.en}</div>` : '';
+  const passLbl = forced ? t('passive') : (t('passive') + ' · ' + t('pick_passive'));
+  const actLbl = forced ? t('active') : (t('active') + ' · ' + t('pick_active'));
+  box.innerHTML = noteHtml +
+    `<div class="skills-row"><div class="skills-row-lbl">${passLbl}</div><div class="skills-opts">${passiveCards}</div></div>` +
+    `<div class="skills-row"><div class="skills-row-lbl">${actLbl}</div><div class="skills-opts">${activeCards}</div></div>`;
+}
+
+function selectSkill(kind, key) {
+  const sel = curSkillSel();
+  if (kind === 'passive') sel.setPassive(key); else sel.setActive(key);
+  renderSkillsPicker();
 }
 
 function toggleWeapon(key) {
@@ -1601,8 +1779,11 @@ function confirmArmory() {
     if (state.mp1v1.phase === 'pickP1Weapons') { state.mp1v1.p1Weapons = [...state.selectedWeapons]; state.mp1v1.phase = 'pickP2Tank'; state.currentTank = null; state.selectedWeapons = ['standard']; go('tankselect'); return; }
     if (state.mp1v1.phase === 'pickP2Weapons') { state.mp1v1.p2Weapons = [...state.selectedWeapons]; state.mp1v1.phase = 'inGame'; state.currentTank = state.mp1v1.p1Tank; state.selectedWeapons = state.mp1v1.p1Weapons; launchGame(); return; }
   }
-  state.selectedWeapons.forEach(key => { if (key === 'standard' || key === m.freeWeapon) return; state.pnl -= WEAPONS[key].cost; });
-  pkSaveState(); launchGame();
+  if (isCareerMode()) {
+    state.selectedWeapons.forEach(key => { if (key === 'standard' || key === m.freeWeapon) return; state.pnl -= WEAPONS[key].cost; });
+    pkSaveState();
+  }
+  launchGame();
 }
 
 function launchGame() { go('game'); setTimeout(() => initGame(state.currentMissionData), 300); }
@@ -1618,10 +1799,36 @@ function initGame(mission) {
   const p2Tank = is1v1 ? TANKS[state.mp1v1.p2Tank] : tank;
   document.getElementById('hudP1Name').textContent = is1v1 ? (state.mp1v1.p1Name + ' · ' + tank.name) : ('P1 ' + tank.name);
   document.getElementById('hudP2Name').textContent = is1v1 ? (state.mp1v1.p2Name + ' · ' + p2Tank.name) : 'GOLD AI';
+  // ===== Résolution des skills (Stage 2) =====
+  const diffName = state.difficulty;
+  const forced = forcedSkills(); // events imposés (hors 1v1)
+  // P1 (joueur humain)
+  let p1Passive = is1v1 ? (state.mp1v1.p1Passive || 'forecast') : (state.selPassive || 'forecast');
+  let p1Active  = is1v1 ? (state.mp1v1.p1Active  || 'margin_call') : (state.selActive || 'margin_call');
+  // P2 : humain en 1v1, sinon IA selon difficulté
+  let p2Passive, p2Active;
+  if (is1v1) {
+    p2Passive = state.mp1v1.p2Passive || 'forecast';
+    p2Active  = state.mp1v1.p2Active  || 'margin_call';
+  } else {
+    // IA : passif aléatoire utile ; actif margin_call seulement à partir d'Originator (Junior = passif seul)
+    const aiPassives = ['hedged_book', 'tailwind', 'long_position'];
+    p2Passive = aiPassives[Math.floor(Math.random() * aiPassives.length)];
+    p2Active  = (diffName === 'junior_analyst') ? null : 'margin_call';
+  }
+  // Mode historique : le marché impose les mêmes skills aux deux camps (IA garde la règle Junior = pas d'actif)
+  if (forced) {
+    p1Passive = forced.passive; p1Active = forced.active;
+    p2Passive = forced.passive;
+    p2Active  = (diffName === 'junior_analyst') ? null : forced.active;
+  }
+
+  const longP1 = p1Passive === 'long_position';
+  const longP2 = p2Passive === 'long_position';
   const inventory = {};
-  state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : 3; });
+  state.selectedWeapons.forEach(key => { inventory[key] = key === 'standard' ? Infinity : (longP1 ? 4 : 3); });
   const p2Inventory = {};
-  if (is1v1) { state.mp1v1.p2Weapons.forEach(key => { p2Inventory[key] = key === 'standard' ? Infinity : 3; }); }
+  if (is1v1) { state.mp1v1.p2Weapons.forEach(key => { p2Inventory[key] = key === 'standard' ? Infinity : (longP2 ? 4 : 3); }); }
 
   const game = state.game = {
     running: true, mission, ctx, W, H, tank,
@@ -1641,11 +1848,25 @@ function initGame(mission) {
     is1v1,
     timerLeft: mission.timerSec + tank.timerBonus, timerActive: false,
     crashTriggered: false, sunPulse: 0, fogOffset: 0,
+    canvasEl: canvas, shake: 0,
     cancelWindNextTurn: false, fuelCost: mission.fuelPrice || 50,
+    p1Skills: { passive: p1Passive, active: p1Active },
+    p2Skills: { passive: p2Passive, active: p2Active },
+    p1ActiveCd: 0, p2ActiveCd: 0,
+    marginArmed: { p1: false, p2: false },
+    repriceArmed: { p1: false, p2: false },
+    curtailArmed: { p1: false, p2: false },
+    activeUsedThisTurn: false,
+    instantUsedThisTurn: false,
+    lastShotHit: null,
   };
 
   const baseWind = mission.weather.windBase;
   const diff = getDiff();
+  // Crash de marché : décidé UNE fois par partie (aléatoire, pas systématique). Forcé sur certains events.
+  const crashEnabled = !!(state.settings.marketCrash || mission.forceCrash);
+  game.willCrash = mission.forceCrash ? true : (crashEnabled && Math.random() < 0.4);
+  game.crashAtTurn = game.willCrash ? (4 + Math.floor(Math.random() * 5)) : -1; // tour 4 à 8
   game.wind = (Math.random() - 0.5) * baseWind * 2 * diff.windMult;
   if (mission.stars >= 3 && Math.random() < 0.7) game.wind = -Math.abs(game.wind) - 0.5;
 
@@ -1681,11 +1902,78 @@ function initGame(mission) {
   if (game.power > tank.powerMax) game.power = tank.powerMax;
 
   renderWeaponBar();
+  renderActiveSkillBar();
   updateHUD();
   updateTurnIndicator();
   startTurnTimer();
   startGameLoop();
   if (game.is1v1) setTimeout(showP1TurnOverlay, 250);
+}
+
+// Côté humain dont c'est le tour (p1 toujours, p2 seulement en 1v1)
+function humanSide() {
+  const g = state.game;
+  if (!g) return null;
+  if (g.turn === 'player') return 'p1';
+  if (g.turn === 'ai' && g.is1v1) return 'p2';
+  return null;
+}
+
+function renderActiveSkillBar() {
+  const g = state.game;
+  const bar = document.getElementById('activeSkillBar');
+  if (!bar) return;
+  const side = humanSide();
+  if (!side || g.gameOver) { bar.innerHTML = ''; return; }
+  const skills = side === 'p1' ? g.p1Skills : g.p2Skills;
+  const passive = SKILLS.passive[skills.passive];
+  const cd = side === 'p1' ? g.p1ActiveCd : g.p2ActiveCd;
+  const passiveHtml = `<div class="passive-chip" title="${t(passive.desc)}">${passive.icon} ${t(passive.name)}</div>`;
+  let activeHtml = '';
+  if (skills.active && SKILLS.active[skills.active]) {
+    const a = SKILLS.active[skills.active];
+    const ready = cd <= 0 && !g.activeUsedThisTurn && !g.projectile;
+    const cls = ready ? 'ready' : 'cooling';
+    const status = cd > 0 ? `<span class="cd">${t('cooldown')} ${cd}</span>` : (g.activeUsedThisTurn ? `<span class="cd">✓</span>` : `<span class="cd">${t('active_ready')}</span>`);
+    activeHtml = `<button class="active-skill-btn ${cls}" id="activeSkillButton">${a.icon} ${t(a.name)} ${status}</button>`;
+  }
+  bar.innerHTML = passiveHtml + activeHtml;
+  const btn = document.getElementById('activeSkillButton');
+  if (btn) btn.onclick = useActiveSkill;
+}
+
+function useActiveSkill() {
+  const g = state.game;
+  if (!g || g.gameOver || g.projectile) return;
+  const side = humanSide();
+  if (!side) return;
+  const skills = side === 'p1' ? g.p1Skills : g.p2Skills;
+  if (!skills.active) return;
+  const cd = side === 'p1' ? g.p1ActiveCd : g.p2ActiveCd;
+  if (cd > 0 || g.activeUsedThisTurn) return;
+  applyActiveSkill(side, skills.active);
+  if (side === 'p1') g.p1ActiveCd = SKILLS.active[skills.active].cooldown;
+  else g.p2ActiveCd = SKILLS.active[skills.active].cooldown;
+  g.activeUsedThisTurn = true;
+  renderActiveSkillBar();
+}
+
+function applyActiveSkill(side, key) {
+  const g = state.game;
+  if (key === 'margin_call') {
+    g.marginArmed[side] = true;
+    showGameMsg(t('margin_armed'), '+60%', 1000);
+  } else if (key === 'reprice') {
+    g.repriceArmed[side] = true;
+    showGameMsg(t('reprice_armed'), '', 1000);
+  } else if (key === 'spot_arbitrage') {
+    if (side === 'p1') g.p1fuel = g.p1maxfuel; else g.p2fuel = g.p2maxfuel;
+    showGameMsg(t('arb_used'), '', 1000);
+    updateHUD();
+  } else if (key === 'curtailment_order') {
+    g.curtailArmed[side] = true;
+    showGameMsg(t('curtail_armed'), '', 1200);
+  }
 }
 
 function renderWeaponBar() {
@@ -1727,9 +2015,14 @@ function useInstantWeapon(key) {
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
   const inv = isP2HumanTurn ? g.p2Inventory : g.inventory;
   if (inv[key] !== Infinity && inv[key] <= 0) return;
+  if (g.instantUsedThisTurn) { showGameMsg(state.lang === 'fr' ? 'UN SEUL BONUS / TOUR' : 'ONE BONUS PER TURN', '', 900); return; }
   if (w.selfHeal) {
-    if (isP2HumanTurn) { if (g.p2hp < g.p2maxhp) { g.p2hp = Math.min(g.p2maxhp, g.p2hp + 25); inv[key]--; } }
-    else { if (g.p1hp < g.p1maxhp) { g.p1hp = Math.min(g.p1maxhp, g.p1hp + 25); inv[key]--; } }
+    const atMax = isP2HumanTurn ? (g.p2hp >= g.p2maxhp) : (g.p1hp >= g.p1maxhp);
+    if (atMax) { showGameMsg(state.lang === 'fr' ? 'PV AU MAX' : 'HP FULL', '', 900); return; }
+    if (isP2HumanTurn) { g.p2hp = Math.min(g.p2maxhp, g.p2hp + 25); }
+    else { g.p1hp = Math.min(g.p1maxhp, g.p1hp + 25); }
+    inv[key]--;
+    g.instantUsedThisTurn = true;
     updateHUD();
     showGameMsg('+25 HP', t('bess_recharge'));
     renderWeaponBar();
@@ -1804,7 +2097,7 @@ function showGameMsg(text, sub = '', duration = 1200) {
 }
 
 function flashDamage() { const f = document.getElementById('damageFlash'); f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 120); }
-function flashCrash() { const f = document.getElementById('crashFlash'); f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 600); }
+function flashCrash() { const f = document.getElementById('crashFlash'); f.classList.add('show'); setTimeout(() => f.classList.remove('show'), 850); }
 
 let timerInterval = null;
 function startTurnTimer() {
@@ -1839,11 +2132,18 @@ function stopTurnTimer() { const g = state.game; if (!g) return; g.timerActive =
 function drawScene() {
   const g = state.game;
   if (!g) return;
+  if (g.shake > 0) {
+    const sx = (Math.random() - 0.5) * g.shake, sy = (Math.random() - 0.5) * g.shake;
+    if (g.canvasEl) g.canvasEl.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px)';
+    g.shake *= 0.86;
+    if (g.shake < 0.4) { g.shake = 0; if (g.canvasEl) g.canvasEl.style.transform = ''; }
+  }
   const { ctx, W, H, mission, tank } = g;
+  const sky = (mission.weather && mission.weather.sky) || ['#2A4A55','#0A2532','#001219'];
   const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-  skyGrad.addColorStop(0, mission.weather.sky[0]);
-  skyGrad.addColorStop(0.5, mission.weather.sky[1]);
-  skyGrad.addColorStop(1, mission.weather.sky[2]);
+  skyGrad.addColorStop(0, sky[0]);
+  skyGrad.addColorStop(0.5, sky[1]);
+  skyGrad.addColorStop(1, sky[2]);
   ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, W, H);
 
   if (mission.weather.type === 'sunny' || mission.weather.type === 'heat') {
@@ -1917,10 +2217,9 @@ function drawScene() {
   if (!getDiff().hideAids) drawShotHistory();
 
   if (!g.projectile && !g.gameOver && (g.turn === 'player' || (g.is1v1 && g.turn === 'ai'))) {
-    const wKey = (g.is1v1 && g.turn === 'ai') ? g.p2CurrentWeapon : g.currentWeapon;
-    const w = WEAPONS[wKey];
-    if (w.preview === 'precise') drawTrajectoryPreview(false, 90);
-    else if (w.preview === 'fuzzy') drawTrajectoryPreview(true, 90);
+    const side = (g.is1v1 && g.turn === 'ai') ? 'p2' : 'p1';
+    const skills = side === 'p1' ? g.p1Skills : g.p2Skills;
+    if (skills && skills.passive === 'forecast') drawTrajectoryPreview(false, 1 / 3);
     else if (!getDiff().hideAids) drawAimIndicator();
   }
   if (g.deadTank !== 'p1') drawTank(g.p1, tank.color, tank.trackColor, true);
@@ -2025,7 +2324,7 @@ function drawAimIndicator() {
   ctx.fill();
 }
 
-function drawTrajectoryPreview(fuzzy, maxSteps = 90) {
+function drawTrajectoryPreview(fuzzy, fraction = 1) {
   const g = state.game;
   const ctx = g.ctx;
   const isP2HumanTurn = g.is1v1 && g.turn === 'ai';
@@ -2035,28 +2334,44 @@ function drawTrajectoryPreview(fuzzy, maxSteps = 90) {
   const tankObj = isP2HumanTurn ? g.p2Tank : g.tank;
   const vx0 = tip.dirSign * Math.cos(tip.angRad) * g.power * 0.18;
   const vy0 = -Math.sin(tip.angRad) * g.power * 0.18;
+  const gr = 0.25;
+  const wa = (g.cancelWindNextTurn ? 0 : g.wind) * 0.012 * tankObj.windResist;
+  // 1) mesurer la portée totale jusqu'à l'impact
+  let total = 0;
+  { let px = tip.x, py = tip.y, vx = vx0, vy = vy0;
+    for (let s = 0; s < 800; s++) {
+      vx += wa; vy += gr; px += vx; py += vy;
+      if (px < 0 || px > g.W || py > g.H) { total = s + 1; break; }
+      if (px >= 0 && px < g.W && py >= g.terrain[Math.floor(px)]) { total = s + 1; break; }
+      total = s + 1;
+    } }
+  // 2) ne tracer que la fraction demandée (Forecast = 1/3)
+  const drawSteps = Math.max(6, Math.floor(total * fraction));
   const trials = fuzzy ? 5 : 1;
+  let endX = tip.x, endY = tip.y;
   for (let trial = 0; trial < trials; trial++) {
-    ctx.strokeStyle = fuzzy ? 'rgba(' + baseRGB + ', 0.2)' : 'rgba(' + baseRGB + ', 0.5)';
-    ctx.lineWidth = fuzzy ? 1.5 : 1.2;
+    ctx.strokeStyle = fuzzy ? 'rgba(' + baseRGB + ', 0.2)' : 'rgba(' + baseRGB + ', 0.55)';
+    ctx.lineWidth = fuzzy ? 1.5 : 1.3;
     ctx.setLineDash([3, 4]);
     let px = tip.x, py = tip.y;
     const variance = fuzzy ? 0.06 : 0;
     let vx = vx0 * (1 + (Math.random() - 0.5) * variance);
     let vy = vy0 * (1 + (Math.random() - 0.5) * variance);
-    const windOffset = fuzzy ? (Math.random() - 0.5) * 0.8 : 0;
-    const gr = 0.25;
-    const wa = (g.cancelWindNextTurn ? 0 : g.wind + windOffset) * 0.012 * tankObj.windResist;
     ctx.beginPath(); ctx.moveTo(px, py);
-    for (let s = 0; s < maxSteps; s++) {
+    for (let s = 0; s < drawSteps; s++) {
       vx += wa; vy += gr; px += vx; py += vy;
       if (px < 0 || px > g.W || py > g.H) break;
       if (px >= 0 && px < g.W && py >= g.terrain[Math.floor(px)]) break;
       if (s % 3 === 0) ctx.lineTo(px, py);
     }
-    ctx.stroke();
+    ctx.lineTo(px, py); ctx.stroke();
+    endX = px; endY = py;
   }
   ctx.setLineDash([]);
+  if (!fuzzy) {
+    ctx.fillStyle = 'rgba(' + baseRGB + ', 0.85)';
+    ctx.beginPath(); ctx.arc(endX, endY, 3, 0, Math.PI * 2); ctx.fill();
+  }
 }
 
 function drawProjectile() {
@@ -2075,10 +2390,10 @@ function drawDroplets() {
   if (!g || !g.droplets || !g.droplets.length) return;
   const ctx = g.ctx;
   g.droplets.forEach(d => {
-    ctx.fillStyle = 'rgba(20,20,20,0.85)';
+    ctx.fillStyle = 'rgba(237,105,101,0.92)';
     ctx.beginPath(); ctx.arc(d.x, d.y, 3.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(120,120,120,0.5)';
-    ctx.beginPath(); ctx.arc(d.x - 0.8, d.y - 0.8, 1.1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,200,120,0.85)';
+    ctx.beginPath(); ctx.arc(d.x - 0.8, d.y - 0.8, 1.2, 0, Math.PI * 2); ctx.fill();
   });
 }
 
@@ -2101,7 +2416,15 @@ function updateDroplets() {
         hit = true;
       }
     }
-    if (!hit && d.x >= 0 && d.x < g.W && d.y >= g.terrain[Math.floor(d.x)]) hit = true;
+    if (!hit && d.x >= 0 && d.x < g.W && d.y >= g.terrain[Math.floor(d.x)]) {
+      hit = true;
+      // petit trou : léger impact sur la courbe
+      const hx = Math.floor(d.x);
+      for (let o = -3; o <= 3; o++) {
+        const ii = hx + o;
+        if (ii >= 0 && ii < g.W) g.terrain[ii] = Math.min(g.H - 5, g.terrain[ii] + (3 - Math.abs(o)) * 0.8);
+      }
+    }
     if (!hit && d.y > g.H + 20) hit = true;
     if (hit) { spawnParticles(d.x, d.y, 4); g.droplets.splice(i, 1); }
   }
@@ -2243,36 +2566,38 @@ function marketCrash() {
   const g = state.game;
   flashCrash();
   showGameMsg(t('market_crash_msg'), t('volatility_shock'));
+  g.shake = 22; // screen shake
   const dir = Math.random() > 0.5 ? 1 : -1;
-  const numPeaks = 2 + Math.floor(Math.random() * 2);
+  const numPeaks = 3 + Math.floor(Math.random() * 2); // 3-4 pics
   const peakPositions = [];
   for (let i = 0; i < numPeaks; i++) peakPositions.push(Math.random() * g.W);
-  const peakAmplitudes = peakPositions.map(() => 35 + Math.random() * 35);
+  const peakAmplitudes = peakPositions.map(() => 70 + Math.random() * 80); // 70-150 px : très marqué
   for (let x = 0; x < g.W; x++) {
     let totalShift = 0;
     peakPositions.forEach((px, i) => {
       const dx = x - px;
-      const sigma = g.W / 8;
+      const sigma = g.W / 11; // pics plus serrés et marqués
       const weight = Math.exp(-(dx * dx) / (2 * sigma * sigma));
       const localDir = (i % 2 === 0) ? dir : -dir;
       totalShift += localDir * peakAmplitudes[i] * weight;
     });
-    totalShift += dir * (Math.random() * 6);
-    g.terrain[x] = Math.max(80, Math.min(g.H - 10, g.terrain[x] + totalShift));
+    totalShift += dir * (Math.random() * 8);
+    g.terrain[x] = Math.max(60, Math.min(g.H - 10, g.terrain[x] + totalShift));
   }
-  for (let pass = 0; pass < 2; pass++) {
-    const sm = [...g.terrain];
-    for (let i = 2; i < g.W - 2; i++) g.terrain[i] = (sm[i-2] + sm[i-1] + sm[i] + sm[i+1] + sm[i+2]) / 5;
-  }
+  // 1 seule passe de lissage : on garde un relief brutal
+  const sm = [...g.terrain];
+  for (let i = 2; i < g.W - 2; i++) g.terrain[i] = (sm[i-2] + sm[i-1] + sm[i] + sm[i+1] + sm[i+2]) / 5;
+  // Débris projetés sur tout l'écran
+  for (let i = 0; i < 10; i++) spawnParticles(Math.random() * g.W, 70 + Math.random() * (g.H - 130), 6);
   const m = g.mission;
   const baseWind = m.weather.windBase;
-  g.wind = (Math.random() - 0.5) * baseWind * 4;
+  g.wind = (Math.random() < 0.5 ? -1 : 1) * (baseWind * 2 + Math.random() * baseWind * 2.5); // vent toujours violent
   if (g.p1.x >= 0 && g.p1.x < g.W) g.p1.y = g.terrain[Math.floor(g.p1.x)] - 12;
   if (g.p2.x >= 0 && g.p2.x < g.W) g.p2.y = g.terrain[Math.floor(g.p2.x)] - 12;
-  const shockDamage = 8 + Math.floor(Math.random() * 5);
+  const shockDamage = 12 + Math.floor(Math.random() * 6); // 12-17 : plus impactant
   g.p1hp = Math.max(0, g.p1hp - shockDamage);
   g.p2hp = Math.max(0, g.p2hp - shockDamage);
-  g.p1.hitFlash = 10; g.p2.hitFlash = 10;
+  g.p1.hitFlash = 12; g.p2.hitFlash = 12;
   updateHUD();
   setTimeout(() => showGameMsg('SHOCK · -' + shockDamage + ' HP', '', 1200), 500);
   if (g.p1hp <= 0 || g.p2hp <= 0) {
@@ -2294,6 +2619,11 @@ function updatePhysics() {
   let windAccel = (g.cancelWindNextTurn ? 0 : dynamicWind) * 0.012;
   if (p.fromPlayer) windAccel *= g.tank.windResist;
   if (g.mission.weather.type === 'heat') windAccel += (Math.random() - 0.5) * 0.05;
+  // Tailwind : effet du vent réduit de 70% (vent toujours dans sa vraie direction, mais à 30%)
+  const shooterSkills = p.fromPlayer ? g.p1Skills : g.p2Skills;
+  if (shooterSkills && shooterSkills.passive === 'tailwind') {
+    windAccel *= 0.3;
+  }
 
   if (p.weapon && WEAPONS[p.weapon].homing) {
     const target = p.fromPlayer ? g.p2 : g.p1;
@@ -2308,12 +2638,12 @@ function updatePhysics() {
   p.vx += windAccel; p.vy += 0.25;
   p.x += p.vx; p.y += p.vy;
 
-  // CARBON SPILL : lache des gouttes en retombant (descente), max 5, jamais letal
+  // CARBON SPILL : pluie rouge continue sur toute la zone survolée en descente (chip, jamais létal)
   if (p.weapon === 'carbon_spill' && p.vy > 0) {
     p.spillFrame = (p.spillFrame || 0) + 1;
-    if (p.spillFrame % 6 === 0 && (p.spillCount || 0) < 5) {
+    if (p.spillFrame % 2 === 0 && (p.spillCount || 0) < 28) {
       p.spillCount = (p.spillCount || 0) + 1;
-      g.droplets.push({ x: p.x, y: p.y, vy: 1.0 + Math.random() * 0.6, fromPlayer: p.fromPlayer });
+      g.droplets.push({ x: p.x + (Math.random() - 0.5) * 14, y: p.y, vy: 1.2 + Math.random() * 0.8, fromPlayer: p.fromPlayer });
     }
   }
 
@@ -2326,6 +2656,31 @@ function updatePhysics() {
     return;
   }
   if (p.x < -50 || p.x > g.W + 50 || p.y > g.H + 50) explodeAt(p.x, p.y);
+}
+
+// DEMAND SHOCK : poussée de zone — repousse tout tank dans le rayon, force dégressive selon la distance
+function applyDemandKnockback(x, y, w) {
+  const g = state.game;
+  const range = (w.radius || 30) + 35;
+  let pushed = false;
+  [['p1', g.p1], ['p2', g.p2]].forEach(pair => {
+    const side = pair[0], tk = pair[1];
+    if (g.deadTank === side) return;
+    const dx = tk.x - x, dy = tk.y - y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > range) return;
+    const prox = 1 - dist / range;            // 0..1
+    const push = Math.round(w.knockback * prox);
+    if (push < 4) return;
+    const dir = (tk.x >= x) ? 1 : -1;
+    const bounds = side === 'p1' ? [40, Math.floor(g.W * 0.45)] : [Math.floor(g.W * 0.55), g.W - 40];
+    tk.x = Math.max(bounds[0], Math.min(bounds[1], tk.x + dir * push));
+    tk.y = g.terrain[Math.floor(tk.x)] - 12;
+    tk.hitFlash = 8;
+    pushed = true;
+  });
+  if (pushed) showGameMsg('KNOCKBACK', '', 700);
+  updateHUD();
 }
 
 function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
@@ -2348,6 +2703,7 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     }
   }
 
+  if (p) g.lastShotHit = hitTank;
   g.explosion = { x, y, t: 0, big: w.bigBoom };
   spawnParticles(x, y, hitTank ? 28 : (w.bigBoom ? 30 : 16));
   g.projectile = null;
@@ -2369,6 +2725,12 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       const comboBonus = Math.floor(damage * (g.tank.comboMult - 1) * g.combo * 0.3);
       damage += comboBonus;
     }
+    // Skills : Margin Call (tireur) puis Hedged Book (cible)
+    const shooterSide = hitByPlayer ? 'p1' : 'p2';
+    const targetSide = hitByPlayer ? 'p2' : 'p1';
+    if (g.marginArmed[shooterSide]) { damage = Math.round(damage * 1.6); g.marginArmed[shooterSide] = false; }
+    const tgtSkills = targetSide === 'p1' ? g.p1Skills : g.p2Skills;
+    if (tgtSkills && tgtSkills.passive === 'hedged_book') damage = Math.round(damage * 0.85);
     if (hitByPlayer) {
       g.p2hp = Math.max(0, g.p2hp - damage);
       g.p2.hitFlash = 10; g.hitsP1++; g.combo++;
@@ -2380,15 +2742,7 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       g.p1.hitFlash = 10; g.combo = 0;
       showGameMsg(t('you_got_hit'), '-' + damage + ' HP');
     }
-    // DEMAND SHOCK : repousse le tank touche, loin de l'impact, clampe a sa moitie de terrain
-    if (w.knockback) {
-      const victim = hitByPlayer ? g.p2 : g.p1;
-      const dir = victim.x >= x ? 1 : -1;
-      const bounds = hitByPlayer ? [Math.floor(g.W * 0.55), g.W - 40] : [40, Math.floor(g.W * 0.45)];
-      victim.x = Math.max(bounds[0], Math.min(bounds[1], victim.x + dir * w.knockback));
-      victim.y = g.terrain[Math.floor(victim.x)] - 12;
-      showGameMsg('KNOCKBACK', '', 700);
-    }
+    if (w.knockback) applyDemandKnockback(x, y, w);
     updateHUD();
     if (g.p1hp <= 0 || g.p2hp <= 0) {
       const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
@@ -2404,7 +2758,8 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
       if (Math.abs(dx) < 60 && Math.abs(y - target.y) < 80) showGameMsg(t('near_miss'), '', 800);
     }
     if (w.smooth) smoothTerrain(x, 60);
-    else deformTerrain(x, w.radius || 32);
+    else deformTerrain(x, wKey === 'carbon_spill' ? 8 : (w.radius || 32));
+    if (w.knockback) applyDemandKnockback(x, y, w);
     updateHUD();
     if (g.p1hp <= 0 || g.p2hp <= 0) {
       const deadSide = g.p1hp <= 0 ? 'p1' : 'p2';
@@ -2415,8 +2770,7 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
   }
 
   const m = g.mission;
-  const shouldCrash = (state.settings.marketCrash || m.forceCrash) && !g.crashTriggered && g.turnNum >= 4;
-  if (shouldCrash && Math.random() < 0.15) { g.crashTriggered = true; setTimeout(() => marketCrash(), 600); }
+  if (g.willCrash && !g.crashTriggered && g.turnNum >= g.crashAtTurn) { g.crashTriggered = true; setTimeout(() => marketCrash(), 600); }
 
   setTimeout(() => {
     if (g.gameOver || !g.running) return;
@@ -2433,7 +2787,21 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
     }
 
     g.cancelWindNextTurn = false;
-    g.turn = g.turn === 'player' ? 'ai' : 'player';
+    // Skills actifs : Reprice (rejoue si raté) / Curtailment (saute le tour adverse) => le même joueur rejoue
+    const shooterTurn = g.turn;
+    const shooterSide = shooterTurn === 'player' ? 'p1' : 'p2';
+    let stay = false;
+    if (g.repriceArmed[shooterSide] && g.lastShotHit === false) {
+      stay = true; g.repriceArmed[shooterSide] = false;
+      showGameMsg(t('sk_reprice'), t('reprice_fire'), 1200);
+    } else if (g.curtailArmed[shooterSide]) {
+      stay = true; g.curtailArmed[shooterSide] = false;
+      showGameMsg(t('sk_curtail'), t('curtail_skip'), 1400);
+    }
+    if (!stay) g.turn = shooterTurn === 'player' ? 'ai' : 'player';
+
+    g.activeUsedThisTurn = false;
+    g.instantUsedThisTurn = false;
     if (g.turn === 'player') {
       g.turnNum++;
       if (g.turnNum >= 10 && !g.suddenDeath) {
@@ -2449,7 +2817,11 @@ function explodeAt(x, y, hitTank = false, hitByPlayer = null, hitDist = 0) {
         showGameMsg(t(msgKey), t('next_turn'), 2200);
       }
     }
-    updateHUD(); updateTurnIndicator(); renderWeaponBar();
+    // Décrément du cooldown de l'actif pour le joueur dont c'est le tour
+    if (g.turn === 'player') { if (g.p1ActiveCd > 0) g.p1ActiveCd--; }
+    else { if (g.p2ActiveCd > 0) g.p2ActiveCd--; }
+
+    updateHUD(); updateTurnIndicator(); renderWeaponBar(); renderActiveSkillBar();
     if (g.turn === 'ai') {
       stopTurnTimer();
       if (g.is1v1) { showP2TurnOverlay(); startTurnTimer(); }
@@ -2476,6 +2848,13 @@ function aiShoot() {
   const mem = g.aiMemory;
   const dist = Math.abs(g.p1.x - g.p2.x);
   const dy = g.p1.y - g.p2.y;
+
+  // IA : Margin Call si disponible (arme +60% sur ce tir)
+  if (g.p2Skills && g.p2Skills.active === 'margin_call' && g.p2ActiveCd <= 0 && Math.random() < 0.5) {
+    g.marginArmed.p2 = true;
+    g.p2ActiveCd = SKILLS.active.margin_call.cooldown;
+    showGameMsg(t('margin_armed'), 'IA', 800);
+  }
 
   if (mem.lastAngle !== null && mem.lastError !== null) {
     const impactErrorX = mem.lastImpactX - g.p1.x;
@@ -2550,6 +2929,7 @@ function playerShoot() {
   const vy = -Math.sin(tip.angRad) * g.power * 0.18;
   g.projectile = { x: tip.x, y: tip.y, vx, vy, trail: [], fromPlayer: isP1Turn, fromP2Human: isP2HumanTurn, weapon: wKey };
   updateTurnIndicator();
+  renderActiveSkillBar();
 }
 
 // ===== Deplacement glisse (Stage 1) : appele en continu par la boucle 30ms tant qu'on maintient =====
@@ -2597,10 +2977,7 @@ function endGame(won) {
   if (state.gp) {
     const acc = g.shotsP1 > 0 ? g.hitsP1 / g.shotsP1 : 0;
     const score = won ? Math.round(1000 + acc * 500 + (g.p1hp / g.p1maxhp) * 300) : Math.round(100 + acc * 200);
-    const earned = Math.round((won ? g.mission.reward : Math.floor(g.mission.reward * 0.15)) * getDiff().pnlMult);
-    state.pnl += earned;
-    state.gp.scores.push({ mission: state.currentMission, flag: g.mission.flag, title: g.mission.title, won, score, earned, shots: g.shotsP1, hits: g.hitsP1 });
-    pkSaveState();
+    state.gp.scores.push({ mission: state.currentMission, flag: g.mission.flag, title: g.mission.title, won, score, earned: 0, shots: g.shotsP1, hits: g.hitsP1 });
     setTimeout(() => showGPRaceResult(won), 1200);
   } else {
     setTimeout(() => showVictoryScreen(won), 1200);
@@ -2620,9 +2997,8 @@ function showGPRaceResult(won) {
       '<div><div class="vstat-lbl">' + t('accuracy') + '</div><div class="vstat-val">' + acc + '%</div></div>' +
       '<div><div class="vstat-lbl">' + t('shots') + '</div><div class="vstat-val">' + g.shotsP1 + '</div></div>' +
       '<div><div class="vstat-lbl">SCORE</div><div class="vstat-val" style="color: var(--gold)">' + lastScore.score + '</div></div>' +
-      '<div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: var(--gold)">+€' + lastScore.earned + '</div></div>' +
     '</div>' +
-    '<div class="victory-actions"><button class="primary" onclick="nextGPRace()">' + (isLast ? t('podium') : t('next_race')) + '</button></div>';
+    '<div class="victory-actions"><button class="primary" onclick="nextGPRace()">' + (isLast ? t('podium') : t('next_race')) + '</button><button onclick="endGPNow()">' + t('menu') + '</button></div>';
   document.getElementById('victoryContent').innerHTML = html;
   go('victory');
 }
@@ -2658,26 +3034,31 @@ function showVictoryScreen(won) {
   }
 
   const acc = g.shotsP1 > 0 ? Math.round((g.hitsP1 / g.shotsP1) * 100) : 0;
+  const career = isCareerMode();
   let unlockHtml = '', earned = 0;
   if (won) {
-    earned = Math.round(m.reward * getDiff().pnlMult);
-    state.pnl += earned;
+    // Progression (déblocage du suivant) : carrière ET events — indépendant du PnL
     state.progress[state.currentMission] = 'completed';
     const order = ['rookie_summer_fr','junior_winter_fr','senior_duck_curve_es','senior_dunkelflaute_de','director_negative_es'];
     const idx = order.indexOf(state.currentMission);
     if (idx >= 0 && idx < order.length - 1) state.progress[order[idx + 1]] = 'current';
     const eventChain = { event1: 'event2', event2: 'event3', event3: 'event4', event4: 'event5', event5: 'event6', event6: 'event7', event7: 'event8' };
     if (eventChain[state.currentMission]) state.progress[eventChain[state.currentMission]] = 'unlocked';
-    unlockHtml = '<div class="unlock">🔓 UNLOCKED: ' + (m.unlock || '') + ' · €' + earned + ' PnL</div>';
-  } else {
-    earned = Math.floor(m.reward * 0.15);
-    state.pnl += earned;
+    // PnL : carrière uniquement
+    if (career) {
+      earned = Math.round(m.reward * getDiff().pnlMult);
+      state.pnl += earned;
+      unlockHtml = '<div class="unlock">🔓 UNLOCKED: ' + (m.unlock || '') + ' · €' + earned + ' PnL</div>';
+    } else if (m.unlock) {
+      unlockHtml = '<div class="unlock">🔓 UNLOCKED: ' + m.unlock + '</div>';
+    }
   }
   pkSaveState();
   updatePnLDisplay();
   const lessonTxt = state.lang === 'fr'
     ? "Le marché t'a battu. Observe la <span class='punch'>forme de la courbe</span> avant de tirer."
     : "The market beat you. Watch the <span class='punch'>curve shape</span> before firing.";
+  const pnlStat = career ? ('<div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: #EE9B00">+€' + earned + '</div></div>') : '';
   const html = '' +
     '<div class="victory-title ' + (won ? '' : 'defeat') + '">' + (won ? t('victory') : t('defeat')) + '</div>' +
     '<div class="victory-sub">' + (won ? t('you_outraded') : t('market_won')) + '</div>' +
@@ -2685,7 +3066,7 @@ function showVictoryScreen(won) {
       '<div><div class="vstat-lbl">' + t('shots') + '</div><div class="vstat-val">' + g.shotsP1 + '</div></div>' +
       '<div><div class="vstat-lbl">' + t('accuracy') + '</div><div class="vstat-val">' + acc + '%</div></div>' +
       '<div><div class="vstat-lbl">' + t('turns') + '</div><div class="vstat-val">' + g.turnNum + '</div></div>' +
-      '<div><div class="vstat-lbl">PnL</div><div class="vstat-val" style="color: #EE9B00">+€' + earned + '</div></div>' +
+      pnlStat +
     '</div>' +
     (won
       ? ('<div class="fun-fact"><div class="fun-fact-hd">' + t('did_you_know') + '</div><div class="fun-fact-bd">' + localizedTexts(m.funfact).map(p => '<p>' + p + '</p>').join('') + '</div></div>' + unlockHtml)
@@ -2694,10 +3075,13 @@ function showVictoryScreen(won) {
     '<div class="victory-actions">' +
       '<button onclick="launchGame()">' + t('replay') + '</button>' +
       '<button class="primary" onclick="goBackFromBriefing()">' + (won ? t('continue') : t('menu')) + '</button>' +
+      '<button onclick="goHomeFromVictory()">' + t('menu') + '</button>' +
     '</div>';
   document.getElementById('victoryContent').innerHTML = html;
   go('victory');
 }
+
+function goHomeFromVictory() { state.gp = null; state.mp1v1 = null; go('menu'); }
 
 // ===== Controles =====
 const keys = {};
@@ -2732,11 +3116,11 @@ setInterval(() => {
   const fast = keys['Shift'];
   const step = fast ? 3 : 1;
   let changed = false;
-  if (keys['ArrowLeft']) { g.angle = Math.max(0, g.angle - step); changed = true; }
-  if (keys['ArrowRight']) { g.angle = Math.min(90, g.angle + step); changed = true; }
+  if (keys['ArrowLeft'] || keys['__angDown']) { g.angle = Math.max(0, g.angle - step); changed = true; }
+  if (keys['ArrowRight'] || keys['__angUp']) { g.angle = Math.min(90, g.angle + step); changed = true; }
   const activeTank = (g.is1v1 && g.turn === 'ai') ? g.p2Tank : g.tank;
-  if (keys['ArrowUp']) { g.power = Math.min(activeTank.powerMax, g.power + step); changed = true; }
-  if (keys['ArrowDown']) { g.power = Math.max(10, g.power - step); changed = true; }
+  if (keys['ArrowUp'] || keys['__powUp']) { g.power = Math.min(activeTank.powerMax, g.power + step); changed = true; }
+  if (keys['ArrowDown'] || keys['__powDown']) { g.power = Math.max(10, g.power - step); changed = true; }
   if (changed) updateHUD();
   // Deplacement glisse : A/D au clavier + boutons MOVE maintenus
   let moveDir = 0;
@@ -2762,6 +3146,10 @@ function bindHold(btnId, flagKey) {
 }
 bindHold('moveLeftBtn', '__moveLeftBtn');
 bindHold('moveRightBtn', '__moveRightBtn');
+bindHold('angDownBtn', '__angDown');
+bindHold('angUpBtn', '__angUp');
+bindHold('powUpBtn', '__powUp');
+bindHold('powDownBtn', '__powDown');
 
 function startGameLoop() {
   function loop() {
@@ -2781,7 +3169,7 @@ function pkSaveState() {
   try {
     const payload = {
       pnl: state.pnl, progress: state.progress, difficulty: state.difficulty,
-      lang: state.lang, settings: state.settings, version: 1, savedAt: Date.now(),
+      lang: state.lang, settings: state.settings, selPassive: state.selPassive, selActive: state.selActive, version: 1, savedAt: Date.now(),
     };
     localStorage.setItem(PK_SAVE_KEY, JSON.stringify(payload));
   } catch (_) {}
@@ -2798,6 +3186,8 @@ function pkLoadState() {
     }
     if (data.difficulty) state.difficulty = data.difficulty;
     if (data.lang) state.lang = data.lang;
+    if (data.selPassive && SKILLS.passive[data.selPassive]) state.selPassive = data.selPassive;
+    if (data.selActive && SKILLS.active[data.selActive]) state.selActive = data.selActive;
     if (data.settings && typeof data.settings === 'object') Object.assign(state.settings, data.settings);
     return true;
   } catch (_) { return false; }
