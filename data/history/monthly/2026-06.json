@@ -1671,8 +1671,8 @@
         "negH": 0.0,
         "peakAvg": 149.21,
         "offAvg": 240.8,
-        "renPct": 38.3,
-        "domFuel": "Gas"
+        "renPct": 56.7,
+        "domFuel": "Solar"
       }
     ],
     "CZ": [
@@ -4754,7 +4754,7 @@
         "negH": 0.0,
         "peakAvg": 169.68,
         "offAvg": 252.24,
-        "renPct": 12.3,
+        "renPct": 32.3,
         "domFuel": "Gas"
       }
     ],
@@ -5557,12 +5557,12 @@
       },
       {
         "d": "2026-06-30",
-        "avg": 152.33,
-        "min": 125.1,
-        "max": 229.0,
+        "avg": 175.46,
+        "min": 120.0,
+        "max": 450.08,
         "negH": 0.0,
-        "peakAvg": 155.9,
-        "offAvg": 148.04
+        "peakAvg": 231.13,
+        "offAvg": 151.34
       }
     ],
     "BG": [
@@ -6645,12 +6645,12 @@
       },
       {
         "d": "2026-06-30",
-        "avg": 137.95,
+        "avg": 135.67,
         "min": 92.0,
         "max": 199.88,
         "negH": 0.0,
-        "peakAvg": 123.29,
-        "offAvg": 152.61
+        "peakAvg": 127.48,
+        "offAvg": 139.76
       }
     ],
     "NO_1": [
@@ -7126,12 +7126,12 @@
       },
       {
         "d": "2026-06-30",
-        "avg": 148.05,
+        "avg": 165.35,
         "min": 3.99,
-        "max": 362.0,
+        "max": 520.02,
         "negH": 0.0,
-        "peakAvg": 98.24,
-        "offAvg": 197.86
+        "peakAvg": 199.36,
+        "offAvg": 147.8
       }
     ],
     "SE": [
@@ -7730,7 +7730,7 @@
         "negH": 0.0,
         "peakAvg": 71.89,
         "offAvg": 122.01,
-        "renPct": 76.6,
+        "renPct": 79.9,
         "domFuel": "Hydro"
       }
     ],
@@ -8062,8 +8062,8 @@
         "negH": 0.0,
         "peakAvg": 76.39,
         "offAvg": 124.0,
-        "renPct": 51.9,
-        "domFuel": "Gas"
+        "renPct": 66.5,
+        "domFuel": "Solar"
       }
     ],
     "FR": [
@@ -8394,7 +8394,7 @@
         "negH": 0.0,
         "peakAvg": 109.24,
         "offAvg": 137.79,
-        "renPct": 20.3,
+        "renPct": 27.6,
         "domFuel": "Nuclear"
       }
     ]
