@@ -1,55 +1,45 @@
 {
-  "updated": "2026-07-02T08:07:58.637192Z",
+  "updated": "2026-07-02T13:40:47.851442Z",
   "countries": {
     "FR": {
-      "nuclear": 11446,
-      "solar": 363,
-      "wind": 1332,
-      "hydro": 1665,
-      "fossil": 93,
-      "biomass": 209,
-      "other": 30,
-      "total": 15138
-    },
-    "DE_LU": {
-      "nuclear": 0,
-      "solar": 3206,
-      "wind": 3634,
-      "hydro": 974,
-      "fossil": 4990,
-      "biomass": 1561,
-      "other": 41,
-      "total": 14406
+      "nuclear": 20252,
+      "solar": 3722,
+      "wind": 2468,
+      "hydro": 3078,
+      "fossil": 265,
+      "biomass": 385,
+      "other": 69,
+      "total": 30239
     },
     "ES": {
-      "nuclear": 2046,
-      "solar": 1332,
-      "wind": 4090,
-      "hydro": 1114,
-      "fossil": 1316,
-      "biomass": 196,
-      "other": 10,
-      "total": 10104
+      "nuclear": 3503,
+      "solar": 5558,
+      "wind": 5538,
+      "hydro": 2008,
+      "fossil": 2161,
+      "biomass": 295,
+      "other": 18,
+      "total": 19081
     },
     "BE": {
       "nuclear": 0,
-      "solar": 163,
-      "wind": 771,
-      "hydro": 0,
-      "fossil": 322,
-      "biomass": 75,
-      "other": 89,
-      "total": 1420
+      "solar": 730,
+      "wind": 1498,
+      "hydro": 80,
+      "fossil": 432,
+      "biomass": 138,
+      "other": 175,
+      "total": 3053
     },
     "NL": {
       "nuclear": 0,
-      "solar": 9,
-      "wind": 1398,
+      "solar": 26,
+      "wind": 2270,
       "hydro": 0,
-      "fossil": 1564,
-      "biomass": 15,
-      "other": 90,
-      "total": 3076
+      "fossil": 1783,
+      "biomass": 24,
+      "other": 151,
+      "total": 4254
     },
     "GB": {
       "nuclear": 0,
@@ -63,13 +53,13 @@
     },
     "PT": {
       "nuclear": 0,
-      "solar": 25,
-      "wind": 1004,
-      "hydro": 331,
-      "fossil": 187,
-      "biomass": 85,
-      "other": 6,
-      "total": 1638
+      "solar": 298,
+      "wind": 1515,
+      "hydro": 774,
+      "fossil": 359,
+      "biomass": 153,
+      "other": 12,
+      "total": 3111
     }
   }
 }
