@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-12T07:24:08.596412Z",
+  "updated": "2026-07-12T12:59:05.963255Z",
   "countries": {
     "FR": [
       {
@@ -54,30 +54,6 @@
       },
       {
         "partner": "BE \u00b7 Belgium",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "AT \u00b7 Austria",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "CH \u00b7 Switzerland",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "CZ \u00b7 Czechia",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "PL \u00b7 Poland",
         "imports": 0,
         "exports": 0,
         "net": 0
