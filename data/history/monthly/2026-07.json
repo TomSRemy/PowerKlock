@@ -406,12 +406,12 @@
       },
       {
         "d": "2026-07-12",
-        "avg": 101.5,
-        "min": 35.4,
-        "max": 150.06,
+        "avg": 98.37,
+        "min": 23.21,
+        "max": 171.18,
         "negH": 0.0,
-        "peakAvg": 80.45,
-        "offAvg": 122.56
+        "peakAvg": 86.58,
+        "offAvg": 104.27
       }
     ],
     "BG": [
@@ -1092,8 +1092,8 @@
         "negH": 5.25,
         "peakAvg": 24.21,
         "offAvg": 130.16,
-        "renPct": 55.0,
-        "domFuel": "Wind"
+        "renPct": 74.8,
+        "domFuel": "Solar"
       }
     ],
     "AT": [
@@ -1556,8 +1556,8 @@
         "negH": 3.0,
         "peakAvg": 25.9,
         "offAvg": 128.72,
-        "renPct": 62.4,
-        "domFuel": "Wind"
+        "renPct": 82.1,
+        "domFuel": "Solar"
       }
     ],
     "CH": [
@@ -1662,12 +1662,12 @@
       },
       {
         "d": "2026-07-12",
-        "avg": 83.75,
+        "avg": 107.67,
         "min": -4.0,
-        "max": 149.32,
-        "negH": 2.0,
-        "peakAvg": 35.36,
-        "offAvg": 132.14
+        "max": 190.0,
+        "negH": 0.5,
+        "peakAvg": 131.21,
+        "offAvg": 95.9
       }
     ],
     "LT": [
@@ -2020,7 +2020,7 @@
         "negH": 5.25,
         "peakAvg": 28.29,
         "offAvg": 128.16,
-        "renPct": 25.3,
+        "renPct": 30.4,
         "domFuel": "Nuclear"
       }
     ],
@@ -2374,7 +2374,7 @@
         "negH": 2.0,
         "peakAvg": 17.35,
         "offAvg": 132.41,
-        "renPct": 71.1,
+        "renPct": 78.7,
         "domFuel": "Hydro"
       }
     ],
@@ -2502,14 +2502,14 @@
       },
       {
         "d": "2026-07-12",
-        "avg": 72.99,
+        "avg": 73.42,
         "min": -5.5,
-        "max": 156.75,
-        "negH": 7.0,
-        "peakAvg": 12.87,
-        "offAvg": 131.85,
-        "renPct": 50.7,
-        "domFuel": "Gas"
+        "max": 158.42,
+        "negH": 6.5,
+        "peakAvg": 13.04,
+        "offAvg": 132.53,
+        "renPct": 67.2,
+        "domFuel": "Solar"
       }
     ],
     "FI": [
@@ -3412,7 +3412,7 @@
         "negH": 7.25,
         "peakAvg": 19.05,
         "offAvg": 128.57,
-        "renPct": 24.0,
+        "renPct": 28.9,
         "domFuel": "Gas"
       }
     ]
