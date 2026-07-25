@@ -847,12 +847,12 @@
       },
       {
         "d": "2026-07-25",
-        "avg": 69.55,
+        "avg": 78.97,
         "min": 7.0,
-        "max": 130.01,
+        "max": 166.05,
         "negH": 0.0,
-        "peakAvg": 37.42,
-        "offAvg": 105.26
+        "peakAvg": 93.28,
+        "offAvg": 71.27
       }
     ],
     "BG": [
@@ -2261,8 +2261,8 @@
         "negH": 5.75,
         "peakAvg": 28.26,
         "offAvg": 153.26,
-        "renPct": 39.6,
-        "domFuel": "Gas"
+        "renPct": 68.4,
+        "domFuel": "Solar"
       }
     ],
     "AT": [
@@ -3219,8 +3219,8 @@
         "negH": 5.75,
         "peakAvg": 29.57,
         "offAvg": 152.82,
-        "renPct": 11.5,
-        "domFuel": "Gas"
+        "renPct": 65.0,
+        "domFuel": "Solar"
       }
     ],
     "CH": [
@@ -3442,12 +3442,12 @@
       },
       {
         "d": "2026-07-25",
-        "avg": 102.3,
+        "avg": 103.54,
         "min": -5.05,
         "max": 164.3,
-        "negH": 3.0,
-        "peakAvg": 52.07,
-        "offAvg": 152.53
+        "negH": 0.75,
+        "peakAvg": 87.13,
+        "offAvg": 111.75
       }
     ],
     "LT": [
@@ -4177,7 +4177,7 @@
         "negH": 6.25,
         "peakAvg": 28.77,
         "offAvg": 144.03,
-        "renPct": 15.4,
+        "renPct": 20.3,
         "domFuel": "Nuclear"
       }
     ],
@@ -4908,7 +4908,7 @@
         "negH": 4.0,
         "peakAvg": 14.83,
         "offAvg": 154.38,
-        "renPct": 77.2,
+        "renPct": 81.2,
         "domFuel": "Hydro"
       }
     ],
@@ -5177,14 +5177,14 @@
       },
       {
         "d": "2026-07-25",
-        "avg": 82.14,
-        "min": -5.6,
-        "max": 168.29,
+        "avg": 82.11,
+        "min": -4.99,
+        "max": 167.97,
         "negH": 7.75,
-        "peakAvg": 11.5,
-        "offAvg": 149.85,
-        "renPct": 47.5,
-        "domFuel": "Nuclear"
+        "peakAvg": 12.56,
+        "offAvg": 150.21,
+        "renPct": 61.8,
+        "domFuel": "Solar"
       }
     ],
     "FI": [
@@ -7049,7 +7049,7 @@
         "negH": 6.75,
         "peakAvg": 28.18,
         "offAvg": 154.1,
-        "renPct": 8.2,
+        "renPct": 10.1,
         "domFuel": "Gas"
       }
     ]
