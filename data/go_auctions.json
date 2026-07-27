@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-20",
+  "updated": "2026-07-27",
   "source": "EEX French Auctions for Power Guarantees of Origin",
   "url": "https://www.eex.com/en/markets/energy-certificates/french-auctions-power",
   "reserve_eur_mwh": 0.15,
@@ -8845,6 +8845,448 @@
           "offered_mwh": 2915,
           "allocated_mwh": 2915,
           "price_eur_mwh": 1.37
+        }
+      ]
+    },
+    {
+      "auction_month": "2026-04",
+      "source_file": "20260722_April_2026_15_GLOBAL_Results_detailedresults.xlsx",
+      "by_technology": [
+        {
+          "technology": "Wind",
+          "offered_mwh": 1733040,
+          "allocated_mwh": 1733040,
+          "price_eur_mwh": 1.6463
+        },
+        {
+          "technology": "Solar",
+          "offered_mwh": 1662273,
+          "allocated_mwh": 1662273,
+          "price_eur_mwh": 1.5832
+        },
+        {
+          "technology": "Thermal",
+          "offered_mwh": 321505,
+          "allocated_mwh": 321505,
+          "price_eur_mwh": 1.5354
+        },
+        {
+          "technology": "Hydro",
+          "offered_mwh": 308873,
+          "allocated_mwh": 308873,
+          "price_eur_mwh": 1.6579
+        }
+      ],
+      "by_region": [
+        {
+          "region": "Haut-de-France",
+          "offered_mwh": 668675,
+          "allocated_mwh": 668675,
+          "price_eur_mwh": 1.6015
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "offered_mwh": 578634,
+          "allocated_mwh": 578634,
+          "price_eur_mwh": 1.5335
+        },
+        {
+          "region": "Occitanie",
+          "offered_mwh": 555941,
+          "allocated_mwh": 555941,
+          "price_eur_mwh": 1.5757
+        },
+        {
+          "region": "Grand Est",
+          "offered_mwh": 524585,
+          "allocated_mwh": 524585,
+          "price_eur_mwh": 1.6672
+        },
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "offered_mwh": 380758,
+          "allocated_mwh": 380758,
+          "price_eur_mwh": 1.6417
+        },
+        {
+          "region": "Pays de la Loire",
+          "offered_mwh": 272916,
+          "allocated_mwh": 272916,
+          "price_eur_mwh": 1.6115
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "offered_mwh": 243088,
+          "allocated_mwh": 243088,
+          "price_eur_mwh": 1.6186
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "offered_mwh": 210719,
+          "allocated_mwh": 210719,
+          "price_eur_mwh": 1.666
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "offered_mwh": 208718,
+          "allocated_mwh": 208718,
+          "price_eur_mwh": 1.7252
+        },
+        {
+          "region": "Bretagne",
+          "offered_mwh": 174784,
+          "allocated_mwh": 174784,
+          "price_eur_mwh": 1.6569
+        },
+        {
+          "region": "Normandie",
+          "offered_mwh": 159667,
+          "allocated_mwh": 159667,
+          "price_eur_mwh": 1.5492
+        },
+        {
+          "region": "Île-de-France",
+          "offered_mwh": 47206,
+          "allocated_mwh": 47206,
+          "price_eur_mwh": 1.5944
+        }
+      ],
+      "matrix": [
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "technology": "Wind",
+          "offered_mwh": 37440,
+          "allocated_mwh": 37440,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "technology": "Hydro",
+          "offered_mwh": 105275,
+          "allocated_mwh": 105275,
+          "price_eur_mwh": 1.69
+        },
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "technology": "Solar",
+          "offered_mwh": 206365,
+          "allocated_mwh": 206365,
+          "price_eur_mwh": 1.64
+        },
+        {
+          "region": "Auvergne-Rhône-Alpes",
+          "technology": "Thermal",
+          "offered_mwh": 31678,
+          "allocated_mwh": 31678,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "technology": "Wind",
+          "offered_mwh": 104285,
+          "allocated_mwh": 104285,
+          "price_eur_mwh": 1.72
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "technology": "Hydro",
+          "offered_mwh": 16010,
+          "allocated_mwh": 16010,
+          "price_eur_mwh": 1.83
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "technology": "Solar",
+          "offered_mwh": 78638,
+          "allocated_mwh": 78638,
+          "price_eur_mwh": 1.74
+        },
+        {
+          "region": "Bourgogne-Franche-Comté",
+          "technology": "Thermal",
+          "offered_mwh": 9785,
+          "allocated_mwh": 9785,
+          "price_eur_mwh": 1.49
+        },
+        {
+          "region": "Bretagne",
+          "technology": "Wind",
+          "offered_mwh": 92961,
+          "allocated_mwh": 92961,
+          "price_eur_mwh": 1.69
+        },
+        {
+          "region": "Bretagne",
+          "technology": "Hydro",
+          "offered_mwh": 964,
+          "allocated_mwh": 964,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Bretagne",
+          "technology": "Solar",
+          "offered_mwh": 55579,
+          "allocated_mwh": 55579,
+          "price_eur_mwh": 1.66
+        },
+        {
+          "region": "Bretagne",
+          "technology": "Thermal",
+          "offered_mwh": 25280,
+          "allocated_mwh": 25280,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "technology": "Wind",
+          "offered_mwh": 117838,
+          "allocated_mwh": 117838,
+          "price_eur_mwh": 1.68
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "technology": "Hydro",
+          "offered_mwh": 673,
+          "allocated_mwh": 673,
+          "price_eur_mwh": 1.66
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "technology": "Solar",
+          "offered_mwh": 77856,
+          "allocated_mwh": 77856,
+          "price_eur_mwh": 1.67
+        },
+        {
+          "region": "Centre-Val de Loire",
+          "technology": "Thermal",
+          "offered_mwh": 14352,
+          "allocated_mwh": 14352,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Grand Est",
+          "technology": "Wind",
+          "offered_mwh": 331452,
+          "allocated_mwh": 331452,
+          "price_eur_mwh": 1.69
+        },
+        {
+          "region": "Grand Est",
+          "technology": "Hydro",
+          "offered_mwh": 16793,
+          "allocated_mwh": 16793,
+          "price_eur_mwh": 1.6
+        },
+        {
+          "region": "Grand Est",
+          "technology": "Solar",
+          "offered_mwh": 113606,
+          "allocated_mwh": 113606,
+          "price_eur_mwh": 1.67
+        },
+        {
+          "region": "Grand Est",
+          "technology": "Thermal",
+          "offered_mwh": 62734,
+          "allocated_mwh": 62734,
+          "price_eur_mwh": 1.56
+        },
+        {
+          "region": "Haut-de-France",
+          "technology": "Wind",
+          "offered_mwh": 582057,
+          "allocated_mwh": 582057,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Haut-de-France",
+          "technology": "Hydro",
+          "offered_mwh": 1313,
+          "allocated_mwh": 1313,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Haut-de-France",
+          "technology": "Solar",
+          "offered_mwh": 50288,
+          "allocated_mwh": 50288,
+          "price_eur_mwh": 1.56
+        },
+        {
+          "region": "Haut-de-France",
+          "technology": "Thermal",
+          "offered_mwh": 35017,
+          "allocated_mwh": 35017,
+          "price_eur_mwh": 1.52
+        },
+        {
+          "region": "Île-de-France",
+          "technology": "Wind",
+          "offered_mwh": 17748,
+          "allocated_mwh": 17748,
+          "price_eur_mwh": 1.67
+        },
+        {
+          "region": "Île-de-France",
+          "technology": "Hydro",
+          "offered_mwh": 44,
+          "allocated_mwh": 44,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Île-de-France",
+          "technology": "Solar",
+          "offered_mwh": 14402,
+          "allocated_mwh": 14402,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Île-de-France",
+          "technology": "Thermal",
+          "offered_mwh": 15012,
+          "allocated_mwh": 15012,
+          "price_eur_mwh": 1.49
+        },
+        {
+          "region": "Normandie",
+          "technology": "Wind",
+          "offered_mwh": 84499,
+          "allocated_mwh": 84499,
+          "price_eur_mwh": 1.59
+        },
+        {
+          "region": "Normandie",
+          "technology": "Hydro",
+          "offered_mwh": 2113,
+          "allocated_mwh": 2113,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Normandie",
+          "technology": "Solar",
+          "offered_mwh": 31227,
+          "allocated_mwh": 31227,
+          "price_eur_mwh": 1.54
+        },
+        {
+          "region": "Normandie",
+          "technology": "Thermal",
+          "offered_mwh": 41828,
+          "allocated_mwh": 41828,
+          "price_eur_mwh": 1.47
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "technology": "Wind",
+          "offered_mwh": 105424,
+          "allocated_mwh": 105424,
+          "price_eur_mwh": 1.56
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "technology": "Hydro",
+          "offered_mwh": 39515,
+          "allocated_mwh": 39515,
+          "price_eur_mwh": 1.6
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "technology": "Solar",
+          "offered_mwh": 385846,
+          "allocated_mwh": 385846,
+          "price_eur_mwh": 1.51
+        },
+        {
+          "region": "Nouvelle-Aquitaine",
+          "technology": "Thermal",
+          "offered_mwh": 47849,
+          "allocated_mwh": 47849,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Occitanie",
+          "technology": "Wind",
+          "offered_mwh": 133043,
+          "allocated_mwh": 133043,
+          "price_eur_mwh": 1.66
+        },
+        {
+          "region": "Occitanie",
+          "technology": "Hydro",
+          "offered_mwh": 89968,
+          "allocated_mwh": 89968,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Occitanie",
+          "technology": "Solar",
+          "offered_mwh": 318604,
+          "allocated_mwh": 318604,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Occitanie",
+          "technology": "Thermal",
+          "offered_mwh": 14326,
+          "allocated_mwh": 14326,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Pays de la Loire",
+          "technology": "Wind",
+          "offered_mwh": 121528,
+          "allocated_mwh": 121528,
+          "price_eur_mwh": 1.68
+        },
+        {
+          "region": "Pays de la Loire",
+          "technology": "Hydro",
+          "offered_mwh": 1511,
+          "allocated_mwh": 1511,
+          "price_eur_mwh": 1.62
+        },
+        {
+          "region": "Pays de la Loire",
+          "technology": "Solar",
+          "offered_mwh": 129130,
+          "allocated_mwh": 129130,
+          "price_eur_mwh": 1.56
+        },
+        {
+          "region": "Pays de la Loire",
+          "technology": "Thermal",
+          "offered_mwh": 20747,
+          "allocated_mwh": 20747,
+          "price_eur_mwh": 1.53
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "technology": "Wind",
+          "offered_mwh": 4765,
+          "allocated_mwh": 4765,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "technology": "Hydro",
+          "offered_mwh": 34694,
+          "allocated_mwh": 34694,
+          "price_eur_mwh": 1.68
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "technology": "Solar",
+          "offered_mwh": 200732,
+          "allocated_mwh": 200732,
+          "price_eur_mwh": 1.61
+        },
+        {
+          "region": "Provence-Alpes-Côte d'Azur",
+          "technology": "Thermal",
+          "offered_mwh": 2897,
+          "allocated_mwh": 2897,
+          "price_eur_mwh": 1.49
         }
       ]
     }
