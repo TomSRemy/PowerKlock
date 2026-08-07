@@ -791,7 +791,7 @@
         "negH": 0.0,
         "peakAvg": 88.87,
         "offAvg": 155.1,
-        "renPct": 2.6,
+        "renPct": 4.3,
         "domFuel": "Gas"
       }
     ],
@@ -852,12 +852,12 @@
       },
       {
         "d": "2026-08-07",
-        "avg": 130.62,
-        "min": 25.33,
+        "avg": 118.8,
+        "min": -2.39,
         "max": 194.74,
-        "negH": 0.0,
-        "peakAvg": 98.66,
-        "offAvg": 162.57
+        "negH": 0.25,
+        "peakAvg": 87.93,
+        "offAvg": 134.73
       }
     ],
     "DK_E": [
@@ -1065,7 +1065,7 @@
         "negH": 0.0,
         "peakAvg": 66.94,
         "offAvg": 171.35,
-        "renPct": 69.7,
+        "renPct": 78.0,
         "domFuel": "Hydro"
       }
     ],
@@ -1126,12 +1126,12 @@
       },
       {
         "d": "2026-08-07",
-        "avg": 158.77,
-        "min": 85.22,
+        "avg": 133.93,
+        "min": 28.0,
         "max": 261.87,
         "negH": 0.0,
-        "peakAvg": 135.96,
-        "offAvg": 183.67
+        "peakAvg": 92.86,
+        "offAvg": 153.8
       }
     ],
     "BE": [
@@ -1209,8 +1209,8 @@
         "negH": 0.0,
         "peakAvg": 91.56,
         "offAvg": 152.22,
-        "renPct": 2.3,
-        "domFuel": "Gas"
+        "renPct": 56.2,
+        "domFuel": "Solar"
       }
     ],
     "RS": [
@@ -1353,8 +1353,8 @@
         "negH": 0.0,
         "peakAvg": 90.35,
         "offAvg": 157.25,
-        "renPct": 46.4,
-        "domFuel": "Gas"
+        "renPct": 68.2,
+        "domFuel": "Solar"
       }
     ],
     "FR": [
@@ -1432,7 +1432,7 @@
         "negH": 0.0,
         "peakAvg": 66.16,
         "offAvg": 145.15,
-        "renPct": 17.8,
+        "renPct": 27.5,
         "domFuel": "Nuclear"
       }
     ],
@@ -1475,12 +1475,12 @@
       },
       {
         "d": "2026-08-07",
-        "avg": 153.56,
-        "min": 90.05,
+        "avg": 137.24,
+        "min": 20.01,
         "max": 227.0,
         "negH": 0.0,
-        "peakAvg": 132.28,
-        "offAvg": 174.83
+        "peakAvg": 110.04,
+        "offAvg": 150.4
       }
     ],
     "ES": [
@@ -1552,14 +1552,14 @@
       },
       {
         "d": "2026-08-07",
-        "avg": 124.55,
-        "min": 15.45,
-        "max": 221.5,
+        "avg": 126.52,
+        "min": 23.76,
+        "max": 227.88,
         "negH": 0.0,
-        "peakAvg": 77.84,
-        "offAvg": 172.26,
-        "renPct": 28.8,
-        "domFuel": "Gas"
+        "peakAvg": 80.75,
+        "offAvg": 173.26,
+        "renPct": 56.0,
+        "domFuel": "Solar"
       }
     ],
     "BG": [
