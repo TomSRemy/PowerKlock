@@ -901,7 +901,7 @@
         "negH": 5.75,
         "peakAvg": 43.46,
         "offAvg": 153.7,
-        "renPct": 2.7,
+        "renPct": 4.5,
         "domFuel": "Gas"
       }
     ],
@@ -971,12 +971,12 @@
       },
       {
         "d": "2026-08-08",
-        "avg": 106.46,
-        "min": -2.39,
+        "avg": 102.31,
+        "min": -4.73,
         "max": 178.45,
         "negH": 1.0,
-        "peakAvg": 60.34,
-        "offAvg": 156.77
+        "peakAvg": 81.64,
+        "offAvg": 112.98
       }
     ],
     "DK_E": [
@@ -1213,7 +1213,7 @@
         "negH": 0.0,
         "peakAvg": 64.62,
         "offAvg": 175.73,
-        "renPct": 69.7,
+        "renPct": 77.0,
         "domFuel": "Hydro"
       }
     ],
@@ -1283,12 +1283,12 @@
       },
       {
         "d": "2026-08-08",
-        "avg": 109.09,
-        "min": 28.0,
+        "avg": 104.03,
+        "min": 9.03,
         "max": 194.98,
         "negH": 0.0,
-        "peakAvg": 74.42,
-        "offAvg": 146.91
+        "peakAvg": 90.27,
+        "offAvg": 111.37
       }
     ],
     "BE": [
@@ -1377,8 +1377,8 @@
         "negH": 5.75,
         "peakAvg": 43.86,
         "offAvg": 152.47,
-        "renPct": 23.7,
-        "domFuel": "Gas"
+        "renPct": 68.3,
+        "domFuel": "Solar"
       }
     ],
     "RS": [
@@ -1541,8 +1541,8 @@
         "negH": 5.25,
         "peakAvg": 46.44,
         "offAvg": 154.08,
-        "renPct": 24.7,
-        "domFuel": "Gas"
+        "renPct": 64.3,
+        "domFuel": "Solar"
       }
     ],
     "FR": [
@@ -1631,7 +1631,7 @@
         "negH": 4.5,
         "peakAvg": 45.24,
         "offAvg": 146.2,
-        "renPct": 17.9,
+        "renPct": 26.2,
         "domFuel": "Nuclear"
       }
     ],
@@ -1771,14 +1771,14 @@
       },
       {
         "d": "2026-08-08",
-        "avg": 114.11,
+        "avg": 113.83,
         "min": 0.1,
-        "max": 189.88,
+        "max": 189.6,
         "negH": 0.0,
-        "peakAvg": 48.75,
-        "offAvg": 173.9,
-        "renPct": 28.4,
-        "domFuel": "Gas"
+        "peakAvg": 48.37,
+        "offAvg": 173.73,
+        "renPct": 54.6,
+        "domFuel": "Solar"
       }
     ],
     "BG": [
