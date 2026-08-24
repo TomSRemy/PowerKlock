@@ -67027,7 +67027,7 @@
         "negH": 0.0,
         "peakAvg": 73.56,
         "offAvg": 140.36,
-        "renPct": 26.0,
+        "renPct": 31.6,
         "domFuel": "Nuclear"
       }
     ],
@@ -99141,8 +99141,8 @@
         "negH": 0.0,
         "peakAvg": 117.63,
         "offAvg": 170.48,
-        "renPct": 34.4,
-        "domFuel": "Gas"
+        "renPct": 59.8,
+        "domFuel": "Solar"
       }
     ],
     "ES": [
@@ -130693,14 +130693,14 @@
       },
       {
         "d": "2026-08-24",
-        "avg": 91.06,
-        "min": -6.75,
-        "max": 182.07,
+        "avg": 89.82,
+        "min": -4.99,
+        "max": 185.96,
         "negH": 4.25,
-        "peakAvg": 32.58,
-        "offAvg": 147.11,
-        "renPct": 46.7,
-        "domFuel": "Wind"
+        "peakAvg": 31.43,
+        "offAvg": 147.0,
+        "renPct": 63.5,
+        "domFuel": "Solar"
       }
     ],
     "BE": [
@@ -162267,8 +162267,8 @@
         "negH": 0.0,
         "peakAvg": 107.28,
         "offAvg": 170.6,
-        "renPct": 34.4,
-        "domFuel": "Gas"
+        "renPct": 70.7,
+        "domFuel": "Solar"
       }
     ],
     "NL": [
@@ -171842,7 +171842,7 @@
         "negH": 0.0,
         "peakAvg": 110.37,
         "offAvg": 173.46,
-        "renPct": 3.0,
+        "renPct": 7.5,
         "domFuel": "Gas"
       }
     ],
@@ -175054,7 +175054,7 @@
         "negH": 0.0,
         "peakAvg": 41.3,
         "offAvg": 156.26,
-        "renPct": 81.7,
+        "renPct": 86.3,
         "domFuel": "Wind"
       }
     ],
@@ -196085,12 +196085,12 @@
       },
       {
         "d": "2026-08-24",
-        "avg": 138.02,
+        "avg": 143.9,
         "min": 43.5,
-        "max": 190.96,
+        "max": 191.5,
         "negH": 0.0,
-        "peakAvg": 113.59,
-        "offAvg": 164.66
+        "peakAvg": 149.92,
+        "offAvg": 140.9
       }
     ],
     "RO": [
@@ -205190,12 +205190,12 @@
       },
       {
         "d": "2026-08-24",
-        "avg": 186.69,
+        "avg": 176.66,
         "min": 103.74,
         "max": 450.18,
         "negH": 0.0,
-        "peakAvg": 220.4,
-        "offAvg": 152.97
+        "peakAvg": 167.45,
+        "offAvg": 180.99
       }
     ],
     "HR": [
