@@ -1,4 +1,15 @@
 {
-  "updated": "2026-08-27T16:00:24.314342Z",
-  "countries": {}
+  "updated": "2026-08-27T21:28:42.160250Z",
+  "countries": {
+    "FR": {
+      "nuclear": 29326,
+      "solar": 4569,
+      "wind": 3261,
+      "hydro": 4328,
+      "fossil": 2620,
+      "biomass": 662,
+      "other": 118,
+      "total": 44884
+    }
+  }
 }
