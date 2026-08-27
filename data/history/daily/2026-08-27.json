@@ -1,17 +1,11 @@
 {
-  "updated": "2026-08-27T16:00:24.314342Z",
-  "zones": [
-    {
-      "code": "AT",
-      "name": "Austria",
-      "today": 163.95,
-      "vsYday": -13.63,
+  "date": "2026-08-27",
+  "zones": {
+    "AT": {
+      "avg": 163.95,
       "min": 82.73,
-      "minHour": "11:45",
       "max": 234.59,
-      "maxHour": "18:45",
-      "negHours": 0.0,
-      "spark": 44.78,
+      "negH": 0.0,
       "hourly": [
         189.68,
         192.19,
@@ -109,19 +103,15 @@
         176.61,
         170.03,
         156.89
-      ]
+      ],
+      "peakAvg": 147.95,
+      "offAvg": 179.96
     },
-    {
-      "code": "SK",
-      "name": "Slovakia",
-      "today": 156.41,
-      "vsYday": null,
+    "SK": {
+      "avg": 156.41,
       "min": 68.49,
-      "minHour": "16:00",
       "max": 256.29,
-      "maxHour": "18:45",
-      "negHours": 0.0,
-      "spark": 37.24,
+      "negH": 0.0,
       "hourly": [
         149.92,
         160.54,
@@ -219,19 +209,15 @@
         144.55,
         139.9,
         132.96
-      ]
+      ],
+      "peakAvg": 148.83,
+      "offAvg": 164.0
     },
-    {
-      "code": "CH",
-      "name": "Switzerland",
-      "today": 149.96,
-      "vsYday": null,
+    "CH": {
+      "avg": 149.96,
       "min": 114.29,
-      "minHour": "03:15",
       "max": 200.0,
-      "maxHour": "04:45",
-      "negHours": 0.0,
-      "spark": 30.79,
+      "negH": 0.0,
       "hourly": [
         146.75,
         141.0,
@@ -329,19 +315,15 @@
         null,
         null,
         null
-      ]
+      ],
+      "peakAvg": 150.78,
+      "offAvg": 149.56
     },
-    {
-      "code": "CZ",
-      "name": "Czechia",
-      "today": 148.79,
-      "vsYday": null,
+    "CZ": {
+      "avg": 148.79,
       "min": 61.79,
-      "minHour": "14:00",
       "max": 222.34,
-      "maxHour": "18:45",
-      "negHours": 0.0,
-      "spark": 29.62,
+      "negH": 0.0,
       "hourly": [
         166.81,
         164.53,
@@ -439,7 +421,10 @@
         164.17,
         158.62,
         146.41
-      ]
+      ],
+      "peakAvg": 133.23,
+      "offAvg": 164.35
     }
-  ]
+  },
+  "ttf": 68.8
 }
