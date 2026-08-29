@@ -1,21 +1,9 @@
 {
-  "updated": "2026-08-28T21:36:01.458570Z",
+  "updated": "2026-08-29T11:25:17.006879Z",
   "countries": {
     "FR": [
       {
         "partner": "DE_LU \u00b7 Germany",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "BE \u00b7 Belgium",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "ES \u00b7 Spain",
         "imports": 0,
         "exports": 0,
         "net": 0
