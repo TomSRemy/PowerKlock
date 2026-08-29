@@ -4822,9 +4822,7 @@
         "max": 198.63,
         "negH": 1.5,
         "peakAvg": 46.0,
-        "offAvg": 123.3,
-        "renPct": 82.1,
-        "domFuel": "Wind"
+        "offAvg": 123.3
       }
     ],
     "RS": [
