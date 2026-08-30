@@ -1,15 +1,9 @@
 {
-  "updated": "2026-08-30T10:11:32.805105Z",
+  "updated": "2026-08-30T15:45:52.369815Z",
   "countries": {
     "FR": [
       {
-        "partner": "ES \u00b7 Spain",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "IT_NORD \u00b7 Italy North",
+        "partner": "DE_LU \u00b7 Germany",
         "imports": 0,
         "exports": 0,
         "net": 0
@@ -17,19 +11,7 @@
     ],
     "DE_LU": [
       {
-        "partner": "NL \u00b7 Netherlands",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "BE \u00b7 Belgium",
-        "imports": 0,
-        "exports": 0,
-        "net": 0
-      },
-      {
-        "partner": "AT \u00b7 Austria",
+        "partner": "DK_W \u00b7 Denmark West",
         "imports": 0,
         "exports": 0,
         "net": 0
@@ -38,6 +20,18 @@
     "BE": [
       {
         "partner": "FR \u00b7 France",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "DE_LU \u00b7 Germany",
+        "imports": 0,
+        "exports": 0,
+        "net": 0
+      },
+      {
+        "partner": "GB \u00b7 Great Britain",
         "imports": 0,
         "exports": 0,
         "net": 0

@@ -1,15 +1,15 @@
 {
-  "updated": "2026-08-30T10:11:32.805105Z",
+  "updated": "2026-08-30T15:45:52.369815Z",
   "countries": {
-    "PT": {
-      "nuclear": 0,
+    "FR": {
+      "nuclear": 4432,
       "solar": 0,
-      "wind": 0,
-      "hydro": 0,
-      "fossil": 0,
-      "biomass": 0,
-      "other": 0,
-      "total": 0
+      "wind": 1052,
+      "hydro": 458,
+      "fossil": 37,
+      "biomass": 94,
+      "other": 10,
+      "total": 6083
     }
   }
 }
