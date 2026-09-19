@@ -1,55 +1,55 @@
 {
-  "updated": "2026-09-19T09:04:50.233842Z",
+  "updated": "2026-09-19T15:05:03.305875Z",
   "countries": {
     "FR": {
-      "nuclear": 11516,
-      "solar": 386,
-      "wind": 1607,
-      "hydro": 1250,
-      "fossil": 110,
-      "biomass": 221,
-      "other": 36,
-      "total": 15126
+      "nuclear": 19076,
+      "solar": 3546,
+      "wind": 2194,
+      "hydro": 2103,
+      "fossil": 194,
+      "biomass": 388,
+      "other": 72,
+      "total": 27573
     },
     "DE_LU": {
       "nuclear": 0,
-      "solar": 2390,
-      "wind": 11430,
-      "hydro": 1513,
-      "fossil": 3216,
-      "biomass": 1802,
-      "other": 21,
-      "total": 20372
+      "solar": 9926,
+      "wind": 17371,
+      "hydro": 3037,
+      "fossil": 4495,
+      "biomass": 2932,
+      "other": 43,
+      "total": 37804
     },
     "ES": {
-      "nuclear": 2035,
-      "solar": 1657,
-      "wind": 1537,
-      "hydro": 1172,
-      "fossil": 1820,
-      "biomass": 239,
-      "other": 17,
-      "total": 8477
+      "nuclear": 3489,
+      "solar": 7129,
+      "wind": 1888,
+      "hydro": 2255,
+      "fossil": 2396,
+      "biomass": 383,
+      "other": 23,
+      "total": 17563
     },
     "BE": {
       "nuclear": 0,
-      "solar": 84,
-      "wind": 1336,
-      "hydro": 15,
-      "fossil": 113,
-      "biomass": 86,
-      "other": 145,
-      "total": 1779
+      "solar": 908,
+      "wind": 2215,
+      "hydro": 165,
+      "fossil": 174,
+      "biomass": 130,
+      "other": 217,
+      "total": 3809
     },
     "NL": {
-      "nuclear": 176,
+      "nuclear": 294,
       "solar": 4,
-      "wind": 1766,
+      "wind": 3011,
       "hydro": 0,
-      "fossil": 382,
-      "biomass": 28,
-      "other": 157,
-      "total": 2513
+      "fossil": 627,
+      "biomass": 45,
+      "other": 262,
+      "total": 4243
     },
     "GB": {
       "nuclear": 0,
@@ -63,13 +63,13 @@
     },
     "PT": {
       "nuclear": 0,
-      "solar": 38,
-      "wind": 486,
-      "hydro": 529,
-      "fossil": 216,
-      "biomass": 105,
-      "other": 10,
-      "total": 1384
+      "solar": 716,
+      "wind": 656,
+      "hydro": 1222,
+      "fossil": 375,
+      "biomass": 185,
+      "other": 18,
+      "total": 3172
     }
   }
 }
