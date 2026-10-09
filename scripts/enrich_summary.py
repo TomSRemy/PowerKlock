@@ -309,30 +309,28 @@ def _parse_prices_xml(xml_text):
     native_15min = False
 
     for ts in root.findall('.//ns:TimeSeries', ns):
-        period = ts.find('.//ns:Period', ns)
-        if period is None:
-            continue
-        res = period.findtext('ns:resolution', 'PT60M', ns)
-        is_15min = (res == 'PT15M')
-        if is_15min:
-            native_15min = True
-        res_minutes = 15 if is_15min else 60
+        for period in ts.findall('ns:Period', ns):
+            res = period.findtext('ns:resolution', 'PT60M', ns)
+            is_15min = (res == 'PT15M')
+            if is_15min:
+                native_15min = True
+            res_minutes = 15 if is_15min else 60
 
-        period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
-        period_start = _parse_dt(period_start_str) if period_start_str else doc_start
-        slot_offset = 0
-        if period_start and doc_start:
-            diff_minutes = int((period_start - doc_start).total_seconds() / 60)
-            slot_offset = diff_minutes // res_minutes
+            period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
+            period_start = _parse_dt(period_start_str) if period_start_str else doc_start
+            slot_offset = 0
+            if period_start and doc_start:
+                diff_minutes = int((period_start - doc_start).total_seconds() / 60)
+                slot_offset = diff_minutes // res_minutes
 
-        for pt in period.findall('ns:Point', ns):
-            pos = int(pt.findtext('ns:position', '0', ns))
-            price = pt.findtext('ns:price.amount', None, ns)
-            if price is None:
-                continue
-            abs_slot = slot_offset + (pos - 1)
-            if 0 <= abs_slot < 96:
-                pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
+            for pt in period.findall('ns:Point', ns):
+                pos = int(pt.findtext('ns:position', '0', ns))
+                price = pt.findtext('ns:price.amount', None, ns)
+                if price is None:
+                    continue
+                abs_slot = slot_offset + (pos - 1)
+                if 0 <= abs_slot < 96:
+                    pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
 
     if not pos_buckets:
         return [None] * 96
