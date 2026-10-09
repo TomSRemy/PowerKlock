@@ -66,26 +66,25 @@ def fetch(params):
     r.raise_for_status()
     return r.text
 
-def parse_prices(xml_text):
+def parse_prices(xml_text, req_start_str=None, req_end_str=None):
     """
-    Parse DA prices. ENTSO-E may send multiple TimeSeries covering different
-    sub-intervals of the day (e.g. two 48-slot series for a 96-slot day).
-    
-    Strategy: use Period/timeInterval/start to compute ABSOLUTE slot index,
-    so positions from different TimeSeries don't collide.
+    Parse DA prices.
+
+    ENTSO-E returns one <TimeSeries><Period> per LOCAL calendar day that
+    overlaps the requested [periodStart, periodEnd) UTC window. Since a
+    zone's local midnight rarely aligns with UTC midnight, a request for
+    "day D" commonly pulls in an extra TimeSeries for an adjacent day that
+    only overlaps the window by an hour or two. We pick the Period with the
+    GREATEST overlap with the requested window instead of concatenating
+    every TimeSeries via a position offset — concatenating spliced in a few
+    hours of the wrong day and silently corrupted the back half of the day
+    (this is what caused the historical negative-price undercount).
     """
-    ns  = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
-    ns2 = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3',
-           'es': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
+    ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return []
-
-    # Get document-level date to compute midnight offset
-    doc_start_str = root.findtext(
-        './/ns:time_Period.timeInterval/ns:start', '', ns
-    ) or root.findtext('.//ns:timeInterval/ns:start', '', ns)
 
     def parse_dt(s):
         """Parse ISO datetime string → datetime (UTC)."""
@@ -101,80 +100,70 @@ def parse_prices(xml_text):
                 continue
         return None
 
-    doc_start = parse_dt(doc_start_str) if doc_start_str else None
-
-    # pos_buckets: absolute_slot → list of prices (for averaging true duplicates)
-    pos_buckets = {}
-    is_15min_global = False
+    req_start = parse_dt(req_start_str) if req_start_str else None
+    req_end = parse_dt(req_end_str) if req_end_str else None
 
     ts_list = root.findall('.//ns:TimeSeries', ns)
-    debug = os.environ.get('DEBUG_ZONE','')
+    debug = os.environ.get('DEBUG_ZONE', '')
+    candidates = []
     for ts_idx, ts in enumerate(ts_list):
-        period = ts.find('.//ns:Period', ns)
-        if period is None:
-            continue
-
-        res = period.findtext('ns:resolution', 'PT60M', ns)
-        # SPOT day-ahead is ALWAYS either hourly (PT60M) or quarter-hourly (PT15M).
-        # Anything else (PT30M, etc.) is upstream noise → reject the period and warn.
-        if res not in ('PT60M', 'PT15M'):
-            doc_date = doc_start_str[:10] if doc_start_str else '?'
-            print(f"  ⚠ parse_prices: rejecting non-spot resolution {res} (TS[{ts_idx}] day={doc_date}) — expected PT60M or PT15M")
-            continue
-        is_15min = (res == 'PT15M')
-        if is_15min:
-            is_15min_global = True
-        res_minutes = 15 if is_15min else 60
-
-        # Get period start to compute offset from midnight
-        period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
-        period_start = parse_dt(period_start_str) if period_start_str else doc_start
-
-        # Offset in slots from midnight
-        slot_offset = 0
-        if period_start and doc_start:
-            diff_minutes = int((period_start - doc_start).total_seconds() / 60)
-            slot_offset = diff_minutes // res_minutes
-
-        pts_in_ts = period.findall('ns:Point', ns)
-        if debug:
-            print(f"  TS[{ts_idx}] res={res} start={period_start_str!r} offset={slot_offset} npts={len(pts_in_ts)}")
-
-        for pt in pts_in_ts:
-            pos   = int(pt.findtext('ns:position', '0', ns))
-            price = pt.findtext('ns:price.amount', None, ns)
-            if price is None:
+        for period in ts.findall('ns:Period', ns):
+            res = period.findtext('ns:resolution', 'PT60M', ns)
+            # SPOT day-ahead is ALWAYS either hourly (PT60M) or quarter-hourly (PT15M).
+            # Anything else (PT30M, etc.) is upstream noise → reject the period and warn.
+            if res not in ('PT60M', 'PT15M'):
+                print(f"  ⚠ parse_prices: rejecting non-spot resolution {res} (TS[{ts_idx}])  — expected PT60M or PT15M")
                 continue
-            abs_slot = slot_offset + (pos - 1)
-            if abs_slot < 0 or abs_slot >= 96:
-                if debug:
-                    print(f"    SKIP slot {abs_slot} (pos={pos} offset={slot_offset})")
-                continue
-            pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
+            res_minutes = 15 if res == 'PT15M' else 60
 
-    if not pos_buckets:
+            period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
+            period_start = parse_dt(period_start_str) if period_start_str else None
+
+            points = {}
+            for pt in period.findall('ns:Point', ns):
+                pos = int(pt.findtext('ns:position', '0', ns))
+                price = pt.findtext('ns:price.amount', None, ns)
+                if price is None:
+                    continue
+                points[pos] = round(float(price), 2)
+            if not points:
+                continue
+
+            period_end = (
+                period_start + timedelta(minutes=res_minutes * max(points.keys()))
+                if period_start else None
+            )
+            if debug:
+                print(f"  TS[{ts_idx}] res={res} start={period_start_str!r} npts={len(points)}")
+            candidates.append({
+                'start': period_start, 'end': period_end,
+                'res_minutes': res_minutes, 'is_15min': (res == 'PT15M'), 'points': points,
+            })
+
+    if not candidates:
         return []
 
-    # Determine native resolution: if any slot > 23 exists, it's truly 15min data
-    max_slot = max(pos_buckets.keys()) if pos_buckets else 0
-    native_15min = (max_slot > 23)
+    def overlap_seconds(c):
+        if not (req_start and req_end and c['start'] and c['end']):
+            return 0
+        lo = max(c['start'], req_start)
+        hi = min(c['end'], req_end)
+        return max(0, (hi - lo).total_seconds())
+
+    best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
+    points = best['points']
 
     # Always output 96 slots (quarter-hourly grid).
     # If native resolution is hourly (CH, ME, RS, MK… in PT60M),
     # duplicate each hourly value ×4 to fill the four quarter-hour slots.
     result = []
-    if native_15min:
+    if best['is_15min'] or max(points.keys()) > 24:
         for slot in range(96):
-            vals = pos_buckets.get(slot)
-            if vals:
-                result.append({'hour': slot, 'price': round(sum(vals) / len(vals), 2)})
-            else:
-                result.append({'hour': slot, 'price': None})
+            price = points.get(slot + 1)
+            result.append({'hour': slot, 'price': price})
     else:
-        # Hourly native: pos_buckets keys are 0..23 → expand each to 4 quarter-slots
         for hour in range(24):
-            vals = pos_buckets.get(hour)
-            price = round(sum(vals) / len(vals), 2) if vals else None
+            price = points.get(hour + 1)
             for q in range(4):
                 result.append({'hour': hour * 4 + q, 'price': price})
     return result
@@ -297,7 +286,7 @@ def fetch_prices():
             # Today
             xml  = fetch({'documentType':'A44','in_Domain':eic,'out_Domain':eic,
                            'periodStart':today,'periodEnd':tomorrow})
-            pts  = parse_prices(xml)
+            pts  = parse_prices(xml, today, tomorrow)
             if not pts:
                 continue
             prices = [p['price'] for p in pts if p['price'] is not None]
@@ -329,7 +318,7 @@ def fetch_prices():
             try:
                 xml_y = fetch({'documentType':'A44','in_Domain':eic,'out_Domain':eic,
                                 'periodStart':yesterday,'periodEnd':today})
-                pts_y = parse_prices(xml_y)
+                pts_y = parse_prices(xml_y, yesterday, today)
                 if pts_y:
                     valid_y = [p['price'] for p in pts_y if p['price'] is not None]
                     avg_y = sum(valid_y)/len(valid_y) if valid_y else None
