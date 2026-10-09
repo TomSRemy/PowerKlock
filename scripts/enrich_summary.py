@@ -292,60 +292,72 @@ def _parse_dt(s):
     return None
 
 
-def _parse_prices_xml(xml_text):
+def _parse_prices_xml(xml_text, req_start=None, req_end=None):
+    """Parse an ENTSO-E A44 price document into a 96-slot (15-min grid) list.
+
+    ENTSO-E returns one <TimeSeries><Period> per LOCAL calendar day that
+    overlaps the requested [periodStart, periodEnd) UTC window. Because a
+    zone's local midnight rarely lines up with UTC midnight, a request for
+    "day D" commonly pulls in an extra TimeSeries for day D+1 (or D-1) that
+    only overlaps the window by an hour or two. Picking the Period with the
+    GREATEST overlap with the requested window (instead of concatenating
+    every TimeSeries via a position offset) avoids splicing in a few hours
+    of the wrong day — which previously corrupted the back half of the day.
+    """
     ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return [None] * 96
 
-    doc_start_str = (
-        root.findtext('.//ns:time_Period.timeInterval/ns:start', '', ns)
-        or root.findtext('.//ns:timeInterval/ns:start', '', ns)
-    )
-    doc_start = _parse_dt(doc_start_str) if doc_start_str else None
-
-    pos_buckets = {}
-    native_15min = False
-
+    candidates = []
     for ts in root.findall('.//ns:TimeSeries', ns):
         for period in ts.findall('ns:Period', ns):
             res = period.findtext('ns:resolution', 'PT60M', ns)
             is_15min = (res == 'PT15M')
-            if is_15min:
-                native_15min = True
             res_minutes = 15 if is_15min else 60
 
             period_start_str = period.findtext('ns:timeInterval/ns:start', '', ns)
-            period_start = _parse_dt(period_start_str) if period_start_str else doc_start
-            slot_offset = 0
-            if period_start and doc_start:
-                diff_minutes = int((period_start - doc_start).total_seconds() / 60)
-                slot_offset = diff_minutes // res_minutes
+            period_start = _parse_dt(period_start_str) if period_start_str else None
 
+            points = {}
             for pt in period.findall('ns:Point', ns):
                 pos = int(pt.findtext('ns:position', '0', ns))
                 price = pt.findtext('ns:price.amount', None, ns)
                 if price is None:
                     continue
-                abs_slot = slot_offset + (pos - 1)
-                if 0 <= abs_slot < 96:
-                    pos_buckets.setdefault(abs_slot, []).append(round(float(price), 2))
+                points[pos] = round(float(price), 2)
+            if not points:
+                continue
 
-    if not pos_buckets:
+            period_end = (
+                period_start + timedelta(minutes=res_minutes * max(points.keys()))
+                if period_start else None
+            )
+            candidates.append({
+                'start': period_start, 'end': period_end,
+                'res_minutes': res_minutes, 'is_15min': is_15min, 'points': points,
+            })
+
+    if not candidates:
         return [None] * 96
 
-    max_slot = max(pos_buckets.keys())
-    if max_slot > 23 or native_15min:
-        return [
-            round(sum(pos_buckets[s]) / len(pos_buckets[s]), 2) if s in pos_buckets else None
-            for s in range(96)
-        ]
+    def overlap_seconds(c):
+        if not (req_start and req_end and c['start'] and c['end']):
+            return 0
+        lo = max(c['start'], req_start)
+        hi = min(c['end'], req_end)
+        return max(0, (hi - lo).total_seconds())
+
+    best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
+    points = best['points']
+
+    if best['is_15min'] or max(points.keys()) > 24:
+        return [points.get(i + 1) for i in range(96)]
     else:
         out = []
         for h in range(24):
-            v = pos_buckets.get(h)
-            price = round(sum(v) / len(v), 2) if v else None
+            price = points.get(h + 1)
             for _ in range(4):
                 out.append(price)
         return out
@@ -471,7 +483,7 @@ def fetch_prices_for_date(token, zone_code, date):
             'periodStart':  start,
             'periodEnd':    end,
         })
-        return _parse_prices_xml(xml)
+        return _parse_prices_xml(xml, _parse_dt(start), _parse_dt(end))
     except Exception as e:
         print(f"  [{date}] {zone_code}: prices ERROR — {e}")
         return None

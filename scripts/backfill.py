@@ -67,23 +67,27 @@ def parse_dt(s):
             continue
     return None
 
-def parse_prices_for_date(xml_text):
-    """Returns list of 96 (or 24) prices, None for missing slots."""
+def parse_prices_for_date(xml_text, req_start_str=None, req_end_str=None):
+    """Returns list of 96 (or 24) prices, None for missing slots.
+
+    ENTSO-E returns one <TimeSeries><Period> per LOCAL calendar day that
+    overlaps the requested [periodStart, periodEnd) UTC window. Since a
+    zone's local midnight rarely lines up with UTC midnight, a request for
+    "day D" commonly pulls in an extra TimeSeries for the adjacent day that
+    only overlaps the window by an hour or two. We pick the Period with the
+    GREATEST overlap with the requested window instead of concatenating
+    every TimeSeries via a position offset — concatenating spliced in a few
+    hours of the wrong day and corrupted the back half of the day.
+    """
     try:
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return None
 
-    doc_start_str = ''
-    for el in root.iter():
-        if strip_ns(el.tag) in ('start',) and el.text and len(el.text) >= 8:
-            doc_start_str = el.text
-            break
+    req_start = parse_dt(req_start_str) if req_start_str else None
+    req_end = parse_dt(req_end_str) if req_end_str else None
 
-    doc_start = parse_dt(doc_start_str) if doc_start_str else None
-    pos_buckets = {}
-    is_15min = False
-
+    candidates = []
     for el in root.iter():
         if strip_ns(el.tag) != 'TimeSeries':
             continue
@@ -102,16 +106,10 @@ def parse_prices_for_date(xml_text):
                         if strip_ns(sub.tag) == 'start':
                             period_start_str = sub.text or ''
 
-            if res == 'PT15M':
-                is_15min = True
             res_minutes = 15 if res == 'PT15M' else 60
+            period_start = parse_dt(period_start_str) if period_start_str else None
 
-            period_start = parse_dt(period_start_str) if period_start_str else doc_start
-            slot_offset = 0
-            if period_start and doc_start:
-                diff_min = int((period_start - doc_start).total_seconds() / 60)
-                slot_offset = diff_min // res_minutes
-
+            points = {}
             for child in period:
                 if strip_ns(child.tag) != 'Point':
                     continue
@@ -124,27 +122,40 @@ def parse_prices_for_date(xml_text):
                         price = float(sub.text)
                 if pos is None or price is None:
                     continue
-                abs_slot = slot_offset + (pos - 1)
-                if 0 <= abs_slot < 96:
-                    pos_buckets.setdefault(abs_slot, []).append(round(price, 2))
+                points[pos] = round(price, 2)
+            if not points:
+                continue
 
-    if not pos_buckets:
+            period_end = (
+                period_start + timedelta(minutes=res_minutes * max(points.keys()))
+                if period_start else None
+            )
+            candidates.append({
+                'start': period_start, 'end': period_end,
+                'res_minutes': res_minutes, 'is_15min': (res == 'PT15M'), 'points': points,
+            })
+
+    if not candidates:
         return None
 
-    max_slot = max(pos_buckets.keys())
-    native_15min = (max_slot > 23)
+    def overlap_seconds(c):
+        if not (req_start and req_end and c['start'] and c['end']):
+            return 0
+        lo = max(c['start'], req_start)
+        hi = min(c['end'], req_end)
+        return max(0, (hi - lo).total_seconds())
+
+    best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
+    points = best['points']
 
     # Always return 96-slot array (quarter-hourly grid).
     # Hourly-native zones (CH, ME…) get each value duplicated ×4.
-    result = []
-    if native_15min:
-        for i in range(96):
-            vals = pos_buckets.get(i)
-            result.append(round(sum(vals)/len(vals), 2) if vals else None)
+    if best['is_15min'] or max(points.keys()) > 24:
+        result = [points.get(i + 1) for i in range(96)]
     else:
-        for hour in range(24):
-            vals = pos_buckets.get(hour)
-            v = round(sum(vals)/len(vals), 2) if vals else None
+        result = []
+        for h in range(24):
+            v = points.get(h + 1)
             for _ in range(4):
                 result.append(v)
     return result
@@ -417,7 +428,7 @@ Modes:
                 })
                 time.sleep(args.delay)
 
-                hourly = parse_prices_for_date(xml)
+                hourly = parse_prices_for_date(xml, fmt(d), fmt(d_next))
                 if hourly is None:
                     day_data['zones'][zone] = None
                 else:
