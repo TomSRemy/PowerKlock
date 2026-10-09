@@ -88,50 +88,45 @@ def parse_prices_for_date(xml_text):
         if strip_ns(el.tag) != 'TimeSeries':
             continue
         ts = el
-        period = None
-        for child in ts:
-            if strip_ns(child.tag) == 'Period':
-                period = child
-                break
-        if period is None:
-            continue
+        periods = [child for child in ts if strip_ns(child.tag) == 'Period']
+        for period in periods:
 
-        res = 'PT60M'
-        period_start_str = ''
-        for child in period:
-            t = strip_ns(child.tag)
-            if t == 'resolution':
-                res = child.text or 'PT60M'
-            elif t == 'timeInterval':
+            res = 'PT60M'
+            period_start_str = ''
+            for child in period:
+                t = strip_ns(child.tag)
+                if t == 'resolution':
+                    res = child.text or 'PT60M'
+                elif t == 'timeInterval':
+                    for sub in child:
+                        if strip_ns(sub.tag) == 'start':
+                            period_start_str = sub.text or ''
+
+            if res == 'PT15M':
+                is_15min = True
+            res_minutes = 15 if res == 'PT15M' else 60
+
+            period_start = parse_dt(period_start_str) if period_start_str else doc_start
+            slot_offset = 0
+            if period_start and doc_start:
+                diff_min = int((period_start - doc_start).total_seconds() / 60)
+                slot_offset = diff_min // res_minutes
+
+            for child in period:
+                if strip_ns(child.tag) != 'Point':
+                    continue
+                pos = price = None
                 for sub in child:
-                    if strip_ns(sub.tag) == 'start':
-                        period_start_str = sub.text or ''
-
-        if res == 'PT15M':
-            is_15min = True
-        res_minutes = 15 if res == 'PT15M' else 60
-
-        period_start = parse_dt(period_start_str) if period_start_str else doc_start
-        slot_offset = 0
-        if period_start and doc_start:
-            diff_min = int((period_start - doc_start).total_seconds() / 60)
-            slot_offset = diff_min // res_minutes
-
-        for child in period:
-            if strip_ns(child.tag) != 'Point':
-                continue
-            pos = price = None
-            for sub in child:
-                t = strip_ns(sub.tag)
-                if t == 'position':
-                    pos = int(sub.text)
-                elif t == 'price.amount':
-                    price = float(sub.text)
-            if pos is None or price is None:
-                continue
-            abs_slot = slot_offset + (pos - 1)
-            if 0 <= abs_slot < 96:
-                pos_buckets.setdefault(abs_slot, []).append(round(price, 2))
+                    t = strip_ns(sub.tag)
+                    if t == 'position':
+                        pos = int(sub.text)
+                    elif t == 'price.amount':
+                        price = float(sub.text)
+                if pos is None or price is None:
+                    continue
+                abs_slot = slot_offset + (pos - 1)
+                if 0 <= abs_slot < 96:
+                    pos_buckets.setdefault(abs_slot, []).append(round(price, 2))
 
     if not pos_buckets:
         return None
