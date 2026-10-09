@@ -258,9 +258,11 @@ PSR_MAP = {
 
 def categorize(psr_map):
     cats = {'nuclear':0,'solar':0,'wind':0,'hydro':0,'fossil':0,'biomass':0,'other':0}
+    by_code = {}                                   # granular B-codes (carbon intensity)
     for psr, vals in psr_map.items():
         # vals is now a list of hourly values
         avg = sum(vals)/len(vals) if vals else 0
+        by_code[psr] = round(avg)                  # keep each B-code separately
         name = PSR_MAP.get(psr,'')
         if 'Nuclear' in name:           cats['nuclear'] += avg
         elif 'Solar' in name:           cats['solar']   += avg
@@ -269,7 +271,9 @@ def categorize(psr_map):
         elif 'Fossil' in name:          cats['fossil']  += avg
         elif 'Biomass' in name or 'Waste' in name: cats['biomass'] += avg
         else:                           cats['other']   += avg
-    return {k: round(v) for k,v in cats.items()}
+    out = {k: round(v) for k,v in cats.items()}
+    out['byCode'] = by_code                        # granular fossil/etc for carbon.js
+    return out
 
 # ─────────────────────────────────────────────
 # FETCH PRICES
@@ -366,7 +370,7 @@ def fetch_genmix():
                           'in_Domain':eic,'periodStart':today,'periodEnd':tomorrow})
             raw = parse_generation(xml)
             cats = categorize(raw)
-            cats['total'] = sum(cats.values())
+            cats['total'] = sum(v for k, v in cats.items() if k != 'byCode')
             result[code] = cats
             print(f"  {code}: {cats['total']} MW total")
         except Exception as e:
@@ -396,12 +400,19 @@ def _genmix_profiles(raw_a):
         return [round(v) for v in acc]
     won = get_profile('wind_onshore')
     woff = get_profile('wind_offshore')
+    by_code = {}                                   # granular per-B-code 96-slot arrays
+    for psr, vals in raw_a.items():
+        acc = [0] * 96
+        for i in range(min(96, len(vals))):
+            acc[i] += vals[i]
+        by_code[psr] = [round(v) for v in acc]
     return {
         'windOnshore': won, 'windOffshore': woff,
         'wind': [a + b for a, b in zip(won, woff)],
         'solar': get_profile('solar'), 'nuclear': get_profile('nuclear'),
         'hydro': get_profile('hydro'), 'fossil': get_profile('fossil'),
         'biomass': get_profile('biomass'), 'other': get_profile('other'),
+        'byCode': by_code,
     }
 
 def finalize_yesterday():
@@ -440,7 +451,7 @@ def finalize_yesterday():
             if new_nonzero < old_nonzero:
                 print(f'[finalize] {code}: refetch {new_nonzero} < existing {old_nonzero}, keep')
                 continue
-            for k in ['windOnshore', 'windOffshore', 'wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass', 'other']:
+            for k in ['windOnshore', 'windOffshore', 'wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass', 'other', 'byCode']:
                 ze[k] = prof[k]
             tot = sum(sum(prof[f]) for f in fuels)
             if tot > 0:
@@ -509,6 +520,8 @@ def fetch_renewables():
             fossil_act        = get_profile(raw_a, 'fossil')
             biomass_act       = get_profile(raw_a, 'biomass')
             other_act         = get_profile(raw_a, 'other')
+            # NEW: granular per-B-code hourly profiles (fossil split for carbon intensity)
+            by_code_act       = { psr: get_profile_psr(raw_a, [psr]) for psr in raw_a }
 
             # Forecast — try A69 then A71
             wind_onshore_fc, wind_offshore_fc, solar_fc = [0]*96, [0]*96, [0]*96
@@ -560,6 +573,7 @@ def fetch_renewables():
                 'fossilActual':       fossil_act,
                 'biomassActual':      biomass_act,
                 'otherActual':        other_act,
+                'byCodeActual':       by_code_act,
                 'windForecast':       wind_fc,
                 'windOnshoreForecast':  wind_onshore_fc,
                 'windOffshoreForecast': wind_offshore_fc,
@@ -881,6 +895,7 @@ if __name__ == '__main__':
             zone_entry['fossil']       = r.get('fossilActual',       [])
             zone_entry['biomass']      = r.get('biomassActual',      [])
             zone_entry['other']        = r.get('otherActual',        [])
+            zone_entry['byCodeActual'] = r.get('byCodeActual',        {})
         # Attach genmix snapshot of the day for this zone (if covered)
         if genmix and ren_code in genmix:
             gm = genmix[ren_code]
