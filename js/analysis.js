@@ -95,33 +95,16 @@ function renderRenSummaryTable() {
   }).join('');
 }
 
+// This used to plot Math.random() noise dressed up as a real series — removed
+// rather than left misleading. FR already has a real capture-rate chart (GO
+// Historical page, hist-cap-solar/hist-cap-wind via renderHistCapture, backed
+// by actual daily generation files); this per-country selector doesn't have
+// an equivalent real data source yet for non-FR zones.
 function drawRenCaptureChart() {
-  const canvas = document.getElementById('ren-cap-canvas');
-  if (!canvas) return;
-  const w = HIST.windows['ren-cap'] || '365D';
-  const n = w==='30D'?30 : w==='90D'?90 : w==='YTD'?new Date().getDayOfYear?.()??120 : w==='all'?730 : 365;
-  const labels = Array.from({length:Math.min(n,365)}, (_,i) => {
-    const d = new Date(); d.setDate(d.getDate()-n+i);
-    return i%(Math.round(n/8))===0 ? d.toLocaleDateString('en-GB',{month:'short',day:'numeric'}) : '';
-  });
-  const nPts = labels.length;
-  const windM0  = Array.from({length:nPts}, (_,i) => +(80+15*Math.sin(i/nPts*Math.PI*4)+(Math.random()-.5)*8).toFixed(1));
-  const solarM0 = Array.from({length:nPts}, (_,i) => +(65+20*Math.sin(i/nPts*Math.PI*4-1)+(Math.random()-.5)*10).toFixed(1));
-  const datasets = [];
-  if (renTech==='wind'||renTech==='both') datasets.push({ label:'Wind M0/BL (%)', data:windM0, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, tension:0.2, fill:false });
-  if (renTech==='solar'||renTech==='both') datasets.push({ label:'Solar M0/BL (%)', data:solarM0, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, tension:0.2, fill:false });
-  datasets.push({ label:'Par (100%)', data:Array(nPts).fill(100), borderColor:'rgba(255,255,255,.2)', borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false });
-
-  mkHistChart('ren-cap-canvas', {
-    type:'line', data:{labels,datasets},
-    options:{
-      ...baseOptions('%'),
-      plugins:{
-        legend:{display:true,labels:{color:_HIST_TX3,font:{size:10},boxWidth:12,usePointStyle:true,pointStyle:'line'}},
-        tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}%`}},
-      }
-    }
-  });
+  if (typeof noDataMsg === 'function') {
+    noDataMsg('ren-cap-canvas', 'Capture rate history needs real per-zone generation data',
+      'See FR capture rate on the GO Historical page for the real, data-backed version');
+  }
 }
 
 

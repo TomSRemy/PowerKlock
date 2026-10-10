@@ -498,7 +498,7 @@ function setStats(id, stats) {
   if (el) el.innerHTML = statsHtml(stats);
 }
 
-function noDataMsg(canvasId, msg) {
+function noDataMsg(canvasId, msg, hint) {
   const c = document.getElementById(canvasId);
   if (!c) return;
   // Replace canvas with a message div
@@ -512,10 +512,13 @@ function noDataMsg(canvasId, msg) {
     wrap.appendChild(msgDiv);
   }
   const text = msg || 'No historical data yet';
+  // Default hint assumes an ENTSO-E source backfill.py can fill; callers with
+  // a different/external data source (EUA, Imbalance, FCR, …) pass their own.
+  const hintText = hint || 'Run backfill.py to populate · Data available on GitHub Pages after fetch';
   msgDiv.innerHTML =
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
     '<span>' + text + '</span>' +
-    '<span style="font-size:10px;opacity:0.6">Run backfill.py to populate · Data available on GitHub Pages after fetch</span>';
+    '<span style="font-size:10px;opacity:0.6">' + hintText + '</span>';
 }
 
 // ════════════════════════
@@ -1054,43 +1057,18 @@ async function renderHistRenStack() {
 
 // ── IMBALANCE HISTORICAL (stub -- needs RTE data source) ──
 async function renderHistImb() {
-  const c = document.getElementById('hist-imb-canvas');
-  if (!c) return;
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
-  ctx.fillStyle = _HIST_TX3;
-  ctx.font = '11px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('Imbalance historical data requires RTE eCO2mix API integration.', c.width/2, c.height/2 - 10);
-  ctx.fillText('Planned in next release.', c.width/2, c.height/2 + 12);
+  noDataMsg('hist-imb-canvas', 'Imbalance historical requires RTE eCO2mix API integration', 'Planned in a future release — RTE eCO2mix integration, not covered by backfill.py');
 }
 
 // ── FCR HISTORICAL (stub -- needs ENTSO-E A96/A63) ──
 async function renderHistFCR() {
-  const c = document.getElementById('hist-fcr-canvas');
-  if (!c) return;
-  const ctx = c.getContext('2d');
-  ctx.clearRect(0, 0, c.width, c.height);
-  ctx.fillStyle = _HIST_TX3;
-  ctx.font = '11px Inter';
-  ctx.textAlign = 'center';
-  ctx.fillText('FCR historical requires ENTSO-E A96 (Contracted Reserves) data.', c.width/2, c.height/2 - 10);
-  ctx.fillText('Planned in next release.', c.width/2, c.height/2 + 12);
+  noDataMsg('hist-fcr-canvas', 'FCR historical requires ENTSO-E A96 (Contracted Reserves) data', 'Planned in a future release — ENTSO-E A96 integration, not covered by backfill.py');
 }
 
 // ── EUA HISTORICAL (stub -- ICE/EEX not on ENTSO-E) ──
 async function renderHistEUA() {
-  ['hist-eua-canvas','hist-spark-canvas'].forEach(id => {
-    const c = document.getElementById(id);
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = _HIST_TX3;
-    ctx.font = '11px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText('EUA historical data source: ICE/EEX.', c.width/2, c.height/2 - 10);
-    ctx.fillText('Upload via CSV or connect GO price automation.', c.width/2, c.height/2 + 12);
-  });
+  noDataMsg('hist-eua-canvas', 'EUA historical source: ICE/EEX — not yet connected', 'Upload via CSV or connect the GO price automation, not covered by backfill.py');
+  noDataMsg('hist-spark-canvas', 'Clean Spark Spread history — upload via CSV or connect GO price automation', 'Upload via CSV or connect the GO price automation, not covered by backfill.py');
 }
 
 // ── CAPTURE RATE (rolling WAP / baseload) ──
