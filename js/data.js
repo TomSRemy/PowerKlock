@@ -692,6 +692,7 @@ function periodLabel(data) {
 const HIST = {
   summary: null,       // all-time daily summary
   monthly: {},         // 'YYYY-MM' → monthly data
+  daily: {},           // 'YYYY-MM-DD' → daily file (or null if missing), cache for fetchDailyRange
   windows: {},         // current window per chart key
   charts: {},          // Chart.js instances
   customRange: null,   // { from, to } if date picker active (overrides window for 'ho')
