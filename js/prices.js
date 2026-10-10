@@ -178,6 +178,7 @@ function showPage(id) {
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
   if (id === 'analysis' && typeof loadMarketAnalysis === 'function') loadMarketAnalysis();
+  if (id === 'carbonintensity' && typeof initCarbon === 'function' && !window._carbonLoaded) { window._carbonLoaded = true; initCarbon(); }
 }
 
 function switchSection(sec) {
@@ -227,35 +228,47 @@ const AVAILABLE_WIDGETS = [
 ];
 let myDashWidgets = JSON.parse(localStorage.getItem('pk-mydash-widgets') || '[]');
 
+// Scope de zone global. null = vue européenne (onglet All), 'FR' = cockpit France.
+// Les modules qui veulent se restreindre à une zone lisent window.PK_ZONE_SCOPE.
+window.PK_ZONE_SCOPE = null;
+
 function switchDashboard(tab, btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 
   const sidebar = document.getElementById('sidebar');
+  // Tous les accès DOM sont défensifs : les coquilles page-france / page-mydash
+  // ont déjà été absentes du HTML, ce qui bloquait l'application entière.
+  const setActive = (id, on) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', on);
+  };
 
   if (tab === 'all') {
-    sidebar.style.display = '';
-    // hide special pages, show last standard page
-    document.getElementById('page-france').classList.remove('active');
-    document.getElementById('page-mydash').classList.remove('active');
+    window.PK_ZONE_SCOPE = null;
+    if (window.FRDash) window.FRDash.close();
+    if (sidebar) sidebar.style.display = '';
+    setActive('page-france', false);
+    setActive('page-mydash', false);
     showPage('prices');
     return;
   }
 
   if (tab === 'france') {
-    sidebar.style.display = 'none';
-    // hide all standard pages
+    if (sidebar) sidebar.style.display = 'none';
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-france').classList.add('active');
-    loadFranceDashboard();
+    setActive('page-france', true);
+    if (typeof loadFranceDashboard === 'function') loadFranceDashboard();
     return;
   }
 
   if (tab === 'mydash') {
-    sidebar.style.display = 'none';
+    window.PK_ZONE_SCOPE = null;
+    if (window.FRDash) window.FRDash.close();
+    if (sidebar) sidebar.style.display = 'none';
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-mydash').classList.add('active');
-    renderMyDash();
+    setActive('page-mydash', true);
+    if (typeof renderMyDash === 'function') renderMyDash();
     return;
   }
 }
