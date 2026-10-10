@@ -122,7 +122,12 @@ def parse_prices_for_date(xml_text, req_start_str=None, req_end_str=None):
                         price = float(sub.text)
                 if pos is None or price is None:
                     continue
-                points[pos] = round(price, 2)
+                # 4dp, not 2: round(x, 2) turns a tiny negative price like
+                # -0.003 into -0.0, which then fails every `< 0` negative-hour
+                # check downstream. ENTSO-E has never published more than 2
+                # decimals in practice (verified live), so this changes
+                # nothing for real data — it's headroom, not a behavior change.
+                points[pos] = round(price, 4)
             if not points:
                 continue
 

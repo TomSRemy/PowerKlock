@@ -469,8 +469,14 @@ function parseXmlPrices(xml) {
   const prices = [];
   points.forEach(p => {
     const pos = parseInt(p.querySelector('position')?.textContent || '0');
-    const val = parseFloat(p.querySelector('price\\.amount')?.textContent || '0');
-    if (val) prices.push({ hour: pos - 1, price: val });
+    const priceText = p.querySelector('price\\.amount')?.textContent;
+    if (priceText == null || priceText === '') return;
+    const val = parseFloat(priceText);
+    // `if (val)` used to drop this point whenever the price was exactly 0
+    // (0 is falsy in JS) — a legitimate €0.00/MWh slot silently vanished
+    // from the series instead of being recorded. Only skip on a genuine
+    // parse failure (NaN), never on a real zero.
+    if (!isNaN(val)) prices.push({ hour: pos - 1, price: val });
   });
   return prices;
 }
@@ -578,7 +584,10 @@ async function loadPricesWithDates(periodStart, periodEnd) {
           const minP = Math.min(...vals), maxP = Math.max(...vals);
           const minHr = prices.find(p => p.price===minP)?.hour || 0;
           const maxHr = prices.find(p => p.price===maxP)?.hour || 0;
-          const negHrs = vals.filter(v => v < 0).length;
+          // Count of negative SLOTS isn't hours once data is 15-min resolution
+          // (4 slots = 1h) — convert using the same slot-duration logic the
+          // backend uses, instead of mislabelling a slot count as "negHrs".
+          const negHrs = Math.round(vals.filter(v => v < 0).length * getResolution(vals) / 60 * 100) / 100;
           const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
           return { ...zone, today: Math.round(avg*10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
         } catch { return null; }
@@ -664,7 +673,10 @@ async function loadPrices() {
           const maxP = Math.max(...vals);
           const minHr = prices.find(p => p.price === minP)?.hour || 0;
           const maxHr = prices.find(p => p.price === maxP)?.hour || 0;
-          const negHrs = vals.filter(v => v < 0).length;
+          // Count of negative SLOTS isn't hours once data is 15-min resolution
+          // (4 slots = 1h) — convert using the same slot-duration logic the
+          // backend uses, instead of mislabelling a slot count as "negHrs".
+          const negHrs = Math.round(vals.filter(v => v < 0).length * getResolution(vals) / 60 * 100) / 100;
           const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
           return { ...zone, today: Math.round(avg * 10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
         } catch { return null; }
