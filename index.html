@@ -6244,6 +6244,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (target === 'negative-legacy' && typeof window.renderHistNeg === 'function') {
       setTimeout(() => window.renderHistNeg(), 30);
     }
+    // Spread — same first-render gap as negative-legacy had (chart stayed
+    // empty until the user clicked a window pill button).
+    if (target === 'spread' && typeof window.renderHistSpread === 'function') {
+      setTimeout(() => window.renderHistSpread(), 30);
+    }
 
     // Update the green path height
     prUpdateActivePath();

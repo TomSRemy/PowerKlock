@@ -190,17 +190,36 @@ const PAGE_LOADERS = {
       document.getElementById('map-upd').textContent = pricesData?.length ? 'ENTSO-E · Live' : 'Demo data';
     }, 100);
   },
-  renewables: () => loadRenewables(),
+  // Several `hist.js` historical sections only re-render reactively, when the
+  // user clicks a window/zone control (setHistWindow/setHistZone) — they were
+  // never wired to render once on first page visit, so the chart stayed an
+  // empty canvas until the user happened to click a pill button. Each loader
+  // below now also fires that first render.
+  renewables: () => {
+    loadRenewables();
+    if (typeof renderHistRenTrend === 'function') renderHistRenTrend();
+    if (typeof renderHistRenStack === 'function') renderHistRenStack();
+  },
   nuclear:    () => drawNuclear(),
-  imbalance:  () => drawImbalance(),
+  imbalance:  () => {
+    drawImbalance();
+    if (typeof renderHistImb === 'function') renderHistImb();
+    if (typeof renderHistFCR === 'function') renderHistFCR();
+  },
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
-  eua:        () => drawEUA(),
+  eua:        () => {
+    drawEUA();
+    if (typeof renderHistEUA === 'function') renderHistEUA();
+  },
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
-  gohist: () => { drawGoHist(); drawGoWoW(); drawGoBox(); },
-  wxcities:   () => loadWeather(),
+  gohist: () => {
+    drawGoHist(); drawGoWoW(); drawGoBox();
+    if (typeof renderHistCapture === 'function') { renderHistCapture('solar'); renderHistCapture('wind'); }
+  },
+  wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
 

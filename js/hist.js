@@ -98,6 +98,39 @@ async function fetchDaily(dateStr) {
   } catch { return null; }
 }
 
+// ── Fetch every daily file in [start, end] (inclusive, 'YYYY-MM-DD' strings).
+// Used by the Renewables trend/stack/capture charts, which need per-day
+// solar/wind hourly arrays that only live in the daily files (summary.json
+// and the monthly aggregates only carry avg/min/max/negH). Results are
+// cached per-date in HIST.daily so switching window presets back and forth
+// doesn't re-fetch. Batched (not all at once) to stay polite to the server;
+// missing days are silently skipped. The `needGenMix` flag is accepted for
+// call-site clarity but every daily file already carries whatever fields it
+// has, so there is nothing extra to fetch.
+async function fetchDailyRange(start, end, needGenMix) {
+  const dates = [];
+  let d = new Date(start + 'T00:00:00Z');
+  const endD = new Date(end + 'T00:00:00Z');
+  while (d <= endD) {
+    dates.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getTime() + 86400000);
+  }
+  const CONCURRENCY = 24;
+  const results = [];
+  for (let i = 0; i < dates.length; i += CONCURRENCY) {
+    const batch = dates.slice(i, i + CONCURRENCY);
+    const fetched = await Promise.all(batch.map(async (ds) => {
+      if (Object.prototype.hasOwnProperty.call(HIST.daily, ds)) return HIST.daily[ds];
+      const day = await fetchDaily(ds);
+      HIST.daily[ds] = day;
+      return day;
+    }));
+    fetched.forEach((day) => { if (day) results.push(day); });
+  }
+  results.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return results;
+}
+
 // ── Section toggle: collapse is disabled (sections are always open).
 // This function is still called for ID-based renderers — we ensure body
 // stays "open" and trigger the render once.
@@ -287,6 +320,21 @@ function filterByWindow(data, windowKey) {
 // ── Filter data by custom date range (Overview only) ──
 function filterByRange(data, from, to) {
   return data.filter(d => d.d >= from && d.d <= to);
+}
+
+// ── Window code → {start, end} ISO date strings, same cutoffs as filterByWindow ──
+function windowToDates(windowKey) {
+  const now = new Date();
+  const end = now.toISOString().slice(0, 10);
+  if (windowKey === 'YTD') {
+    return { start: new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10), end };
+  }
+  const cutoffs = {
+    '7D': 7, '1M': 30, '3M': 91, '6M': 183, '1Y': 365,
+    '2Y': 730, '5Y': 1826, 'All': 99999,
+  };
+  const days = cutoffs[windowKey] || 365;
+  return { start: new Date(now - days * 86400000).toISOString().slice(0, 10), end };
 }
 
 // ── Rolling average ──
@@ -8033,22 +8081,11 @@ function _zoomConfig(opts = {}) {
   if (typeof window.Chart === 'undefined' || !window.Chart.registry || !window.Chart.registry.plugins.get('zoom')) {
     return {};
   }
-  const mode = opts.mode || 'xy';
-  return {
-    pan: { enabled: false },
-    zoom: {
-      drag: {
-        enabled: true,
-        backgroundColor: 'rgba(20,211,169,0.15)',
-        borderColor: 'rgba(20,211,169,0.6)',
-        borderWidth: 1,
-      },
-      wheel: { enabled: false },
-      pinch: { enabled: true },
-      mode,
-    },
-    limits: opts.limits || { y: { min: 'original', max: 'original' } },
-  };
+  // Same literal ZOOM_CFG (libs.js) as every other chart in the app, so the
+  // drag-rectangle colour/opacity/pinch behaviour is identical everywhere —
+  // this used to be its own slightly-different copy (0.15 vs 0.08 opacity).
+  if (!opts.mode || opts.mode === 'xy') return ZOOM_CFG;
+  return Object.assign({}, ZOOM_CFG, { zoom: Object.assign({}, ZOOM_CFG.zoom, { mode: opts.mode }) });
 }
 
 // Reusable reset zoom button HTML — pass the JS expression to call.
