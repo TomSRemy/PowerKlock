@@ -465,6 +465,55 @@ def finalize_yesterday():
             print(f'[finalize] {code}: {y_date} -> {new_nonzero}/96 slots')
         except Exception as e:
             print(f'[finalize] {code}: ERROR {e}')
+
+    # ── Finalize PRICES: fill any gaps in yesterday's hourly array ──
+    # ENTSO-E's A44 day-ahead curve can have missing quarter-hours when
+    # fetched on the delivery day itself (observed live: FR 2026-10-10
+    # fetched same-day was missing 16/96 slots, all clustered around the
+    # midday solar window where negative prices concentrate — exactly the
+    # slots a negative-hour count can least afford to lose). The original
+    # fetch never gets revisited, so a gap there is permanent. Re-fetch and
+    # patch: only fill slots that are None, never overwrite a slot that
+    # already has a value (a later ENTSO-E response isn't necessarily a
+    # correction, and we don't want to flip-flop good data).
+    for code, eic in ZONES.items():
+        if code not in zones:
+            continue
+        ze = zones[code]
+        old_hourly = ze.get('hourly') or []
+        if not old_hourly or not any(v is None for v in old_hourly):
+            continue
+        try:
+            xml = fetch({'documentType': 'A44', 'in_Domain': eic, 'out_Domain': eic,
+                         'periodStart': y_start, 'periodEnd': y_end})
+            new_pts = parse_prices(xml, y_start, y_end)
+            if not new_pts:
+                continue
+            new_hourly = [p['price'] for p in sorted(new_pts, key=lambda x: x['hour'])]
+            filled = list(old_hourly)
+            n_filled = 0
+            for i in range(min(len(filled), len(new_hourly))):
+                if filled[i] is None and new_hourly[i] is not None:
+                    filled[i] = new_hourly[i]
+                    n_filled += 1
+            if n_filled:
+                valid = [v for v in filled if v is not None]
+                n_slots = len(filled)
+                mins_per_slot = round(24 * 60 / n_slots) if n_slots else 60
+                ze['hourly'] = filled
+                ze['min'] = round(min(valid), 2)
+                ze['max'] = round(max(valid), 2)
+                ze['avg'] = round(sum(valid) / len(valid), 2)
+                ze['negH'] = round(sum(1 for v in valid if v < 0) * mins_per_slot / 60, 2)
+                pk, off = peak_offpeak_from_hourly(filled)
+                if pk is not None:
+                    ze['peakAvg'] = pk
+                if off is not None:
+                    ze['offAvg'] = off
+                print(f'[finalize-prices] {code}: {y_date} filled {n_filled}/{old_hourly.count(None)} gap slots')
+        except Exception as e:
+            print(f'[finalize-prices] {code}: ERROR {e}')
+
     write_json(path, snap)
     print(f'[finalize] {y_date} finalised')
 
