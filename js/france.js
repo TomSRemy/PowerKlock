@@ -38,16 +38,6 @@
     { key: 'other',   label: 'Autres',    colour: '#4A6280' }
   ];
 
-  // Norme graphs PowerKlock : drag rectangle XY, pas de molette, pas de pan.
-  var ZOOM_OPTS = {
-    zoom: {
-      drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: '#14D3A9', borderWidth: 1 },
-      wheel: { enabled: false },
-      pinch: { enabled: false },
-      mode: 'xy'
-    }
-  };
-
   // ══════════════════════════════════════════════════════════════════════════
   // ETAT
   // ══════════════════════════════════════════════════════════════════════════
@@ -314,13 +304,6 @@
     return '<div class="fr-loading">' + (msg || 'Chargement...') + '</div>';
   }
 
-  // Attache la norme graphs : dblclick = reset, bouton reset dans l'entete.
-  function zoomify(chart, canvasId) {
-    var c = $(canvasId);
-    if (!c || !chart) return;
-    c.ondblclick = function () { try { chart.resetZoom(); } catch (e) {} };
-  }
-
   function destroyChart(key) {
     if (S.charts[key]) {
       try { S.charts[key].destroy(); } catch (e) {}
@@ -336,10 +319,9 @@
     config.options.responsive = true;
     config.options.maintainAspectRatio = false;
     config.options.plugins = config.options.plugins || {};
-    config.options.plugins.zoom = ZOOM_OPTS;
+    config.options.plugins.zoom = ZOOM_CFG;
     var ch = new Chart(el, config);
     S.charts[key] = ch;
-    zoomify(ch, canvasId);
     return ch;
   }
 
@@ -497,7 +479,10 @@
         data: { labels: labels, datasets: ds },
         options: {
           interaction: { mode: 'index', intersect: false },
-          plugins: { legend: legendStyle() },
+          plugins: {
+            legend: legendStyle(),
+            annotation: { annotations: (function () { var nl = nowLineAnnotation({ chartDate: d0, slots: 96, label: 'NOW' }); return nl ? { nowLine: nl } : {}; })() }
+          },
           scales: {
             x: { grid: { color: 'rgba(255,255,255,0.04)' },
                  ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" },
@@ -536,7 +521,10 @@
         data: { labels: labels, datasets: mixDs },
         options: {
           interaction: { mode: 'index', intersect: false },
-          plugins: { legend: legendStyle() },
+          plugins: {
+            legend: legendStyle(),
+            annotation: { annotations: (function () { var nl = nowLineAnnotation({ chartDate: d0, slots: 96, label: 'NOW' }); return nl ? { nowLine: nl } : {}; })() }
+          },
           scales: {
             x: { stacked: true, grid: { display: false },
                  ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" },

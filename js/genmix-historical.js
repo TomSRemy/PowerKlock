@@ -1653,6 +1653,7 @@
             titleFont: { family: 'JetBrains Mono', size: 10 },
             bodyFont: { family: 'JetBrains Mono', size: 10 },
           },
+          zoom: GM_ZOOM_OPTS,
         },
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
@@ -1661,6 +1662,7 @@
         },
       },
     });
+    if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhczTrendsChart, 'gmhcz-trends-canvas');
   }
 
   function _gmhczRenderSpread(pdata) {

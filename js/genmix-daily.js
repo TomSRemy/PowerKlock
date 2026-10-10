@@ -773,6 +773,7 @@ function _gmdczRenderProfiles() {
             label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} ${yUnit}`,
           },
         },
+        zoom: GM_ZOOM_OPTS,
       },
       scales: {
         x: {
@@ -802,6 +803,7 @@ function _gmdczRenderProfiles() {
       },
     },
   });
+  _gmZoomify(window._gmdczProfilesChart, 'gmdcz-profiles-canvas');
 
   const legendHost = document.getElementById('gmdcz-profiles-legend');
   if (legendHost) {
