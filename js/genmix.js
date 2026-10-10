@@ -33,10 +33,10 @@ const GM_FUEL_ORDER = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil',
 // ════════════════════════════════════════════════════════════════
 const GM_STACK_FUELS = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
 
-// ── Zoom norm (drag XY rectangle + ↺ reset + dblclick reset; no wheel/pan) ──
-const GM_ZOOM_OPTS = {
-  zoom: { drag: { enabled: true, backgroundColor: 'rgba(20,211,169,0.15)', borderColor: '#14D3A9', borderWidth: 1 }, wheel: { enabled: false }, pinch: { enabled: false }, mode: 'xy' },
-};
+// ── Zoom norm: same ZOOM_CFG (libs.js) as every other chart in the app,
+// so the drag-rectangle color/opacity and pinch behaviour are identical
+// across pages. Kept as its own name since callers already reference it.
+const GM_ZOOM_OPTS = ZOOM_CFG;
 function _gmZoomify(chart, canvasId) {
   const c = document.getElementById(canvasId);
   if (!c || !chart) return;
@@ -1070,6 +1070,7 @@ function _gmDrillRenderProfile_OLD(zone, mix, st) {
           bodyFont:  { family: 'JetBrains Mono', size: 10 },
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` },
         },
+        zoom: GM_ZOOM_OPTS,
       },
       scales: {
         x: {
@@ -1088,6 +1089,7 @@ function _gmDrillRenderProfile_OLD(zone, mix, st) {
       },
     },
   });
+  _gmZoomify(window._gmDrillProfileChart, 'gm-drill-profile-canvas');
 
   // Breakdown · Total gen stats over 24h (peak / off-peak / avg / energy / range)
   if (breakHost) {
@@ -1413,6 +1415,7 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
           bodyFont:  { family: 'JetBrains Mono', size: 10 },
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)} g/kWh` },
         },
+        zoom: GM_ZOOM_OPTS,
       },
       scales: {
         x: {
@@ -1430,6 +1433,7 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
       },
     },
   });
+  _gmZoomify(window._gmDrillCarbonChart, 'gm-drill-carbon-canvas');
 
   // Breakdown · carbon stats over 24h
   if (breakHost) {
