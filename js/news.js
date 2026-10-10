@@ -223,6 +223,43 @@ const PAGE_LOADERS = {
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
 
+// ── WEATHER (Météo Énergie / HDD-CDD) ──────────────────────────────────
+// No weather data source is wired up yet (no API key/fetch pipeline
+// exists for Open-Meteo in this repo). Rather than leave the page either
+// crashing (loadWeather was called but never defined) or showing
+// hardcoded numbers with no indication they're fake, both loaders put
+// the page shell into an honest "not connected yet" state, consistent
+// with how the EUA/Imbalance/FCR stub sections already do it.
+function setWxVar(v, btn) {
+  window._wxVar = v;
+  document.querySelectorAll('#wx-var-btns .day-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function loadWeather() {
+  const upd = document.getElementById('wx-upd');
+  if (upd) upd.textContent = 'Open-Meteo · not connected';
+  const cards = document.getElementById('wx-cards');
+  if (cards) cards.innerHTML = '<div style="grid-column:1/-1;color:var(--text3);padding:20px;text-align:center;font-size:12px">Open-Meteo integration not wired up yet.</div>';
+  if (typeof noDataMsg === 'function') {
+    noDataMsg('wx-forecast-canvas', 'Open-Meteo forecast not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
+  }
+  const tbody = document.getElementById('wx-city-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
+}
+
+function renderHDD() {
+  ['hdd-kpi-today', 'hdd-kpi-cum', 'hdd-kpi-cdd', 'hdd-kpi-temp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.firstChild.textContent = '--';
+  });
+  if (typeof noDataMsg === 'function') {
+    noDataMsg('hdd-canvas', 'HDD/CDD history not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
+  }
+  const tbody = document.getElementById('hdd-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
+}
+
 // Patch showPage to handle new sections
 // showPage patch applied after all scripts load
 window.addEventListener("load", () => { if (typeof showPage === "undefined") return;
