@@ -18,7 +18,8 @@ function drawNuclear() {
         annotation:{annotations:{
           ref:{type:'line',yMin:75,yMax:75,borderColor:'rgba(255,255,255,.25)',borderWidth:1,borderDash:[4,4],
             label:{display:true,content:'Normal 75%',position:'end',color:'rgba(255,255,255,.4)',font:{size:9},backgroundColor:'transparent'}}
-        }}
+        }},
+        zoom: ZOOM_CFG,
       },
       scales:{
         x:{stacked:true,grid:GRID,ticks:{color:C_TX3}},
@@ -43,7 +44,8 @@ function drawNuclear() {
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:true,position:'bottom',labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10}},
-        tooltip:{mode:'index',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toFixed(1)+'%'}}
+        tooltip:{mode:'index',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toFixed(1)+'%'}},
+        zoom: ZOOM_CFG,
       },
       scales:{ x:{grid:GRID,ticks:{color:C_TX3}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v+'%'},min:0,max:80} }
     }

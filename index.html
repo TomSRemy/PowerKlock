@@ -4690,39 +4690,35 @@
 
       <!-- Nuclear KPIs -->
       <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">⚛ Nuclear</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
-        <div class="kpi-card"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#7B4B9C" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg up" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
-        <div class="kpi-card"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
-        <div class="kpi-card"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg down" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
-        <div class="kpi-card"><div class="kpi-label">Active Outages</div><div class="kpi-value down" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
-        <div class="kpi-card"><div class="kpi-label">MW Unavailable</div><div class="kpi-value down" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+        <div class="kpi-card kpi-up"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#7B4B9C" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--up)" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
+        <div class="kpi-card kpi-down"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
+        <div class="kpi-card kpi-down"><div class="kpi-label">Active Outages</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
+        <div class="kpi-card kpi-down"><div class="kpi-label">MW Unavailable</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['nuc-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
       <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:190px"></canvas></div>
 
       <!-- Hydro KPIs -->
       <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:16px 0 8px">💧 Hydro</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-        <div class="kpi-card"><div class="kpi-label">NO Reservoir Fill</div><div class="kpi-value up" id="hydro-kpi-fill">34.2<span class="kpi-unit">%</span></div><div class="kpi-chg down" id="hydro-kpi-fill-chg">↓ 2.1% vs 20yr median</div></div>
-        <div class="kpi-card"><div class="kpi-label">FR Hydro Output</div><div class="kpi-value up">4.8<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">run-of-river + storage</div></div>
-        <div class="kpi-card"><div class="kpi-label">Inflow vs Normal</div><div class="kpi-value down">-14<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--tx3)">weekly inflow index</div></div>
-        <div class="kpi-card"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
+        <div class="kpi-card kpi-up"><div class="kpi-label">NO Reservoir Fill</div><div class="kpi-value" style="color:var(--up)" id="hydro-kpi-fill">34.2<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="hydro-kpi-fill-chg">↓ 2.1% vs 20yr median</div></div>
+        <div class="kpi-card kpi-up"><div class="kpi-label">FR Hydro Output</div><div class="kpi-value" style="color:var(--up)">4.8<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">run-of-river + storage</div></div>
+        <div class="kpi-card kpi-down"><div class="kpi-label">Inflow vs Normal</div><div class="kpi-value" style="color:var(--down)">-14<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--tx3)">weekly inflow index</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['hydro-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
       <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:190px"></canvas></div>
 
-      <!-- REMIT table -->
-      <div class="table-wrap">
-        <div class="table-header">
-          <span class="table-title">Active REMIT — FR Nuclear Outages</span>
-          <span class="updated-badge" style="color:var(--warn);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">3 active UMM</span>
+      <!-- REMIT: single source of truth lives on the dedicated REMIT page now
+           (this used to duplicate the exact same 3 hardcoded rows). -->
+      <div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div class="table-title" style="margin-bottom:4px">Active REMIT — FR Nuclear Outages</div>
+          <div style="font-size:11px;color:var(--tx3)">3 active UMM · full list, all TSOs and technologies, on the REMIT page</div>
         </div>
-        <table>
-          <thead><tr><th>Asset</th><th>Capacity MW</th><th>Unavail. MW</th><th>Start</th><th>End</th><th>Type</th><th>Reason</th></tr></thead>
-          <tbody id="nuc-remit-tbody">
-            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Gravelines 4</td><td>900</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td>Nuclear</td><td style="color:var(--tx3)">Planned maint.</td></tr>
-            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Cattenom 2</td><td>1 300</td><td class="down">1 300</td><td>2026-04-22</td><td>2026-05-30</td><td>Nuclear</td><td style="color:var(--tx3)">Scheduled refuel</td></tr>
-            <tr><td><span style="font-size:10px;color:#7B4B9C;font-weight:600;margin-right:4px">FR</span>Paluel 1</td><td>1 330</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td>Nuclear</td><td style="color:var(--down)">Unplanned</td></tr>
-          </tbody>
-        </table>
+        <div class="sidebar-item" style="display:inline-flex;width:auto;padding:6px 14px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd)" onclick="showPage('remit')">Open REMIT →</div>
       </div>
     </div>
 
@@ -5152,8 +5148,16 @@
       </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">Active UMMs — France</span></div>
-        <table><thead><tr><th>TSO</th><th>Asset</th><th>Type</th><th>MW Unavail.</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
-        <tbody>
+        <table><thead><tr>
+          <th onclick="sortGenericTable('remit-tbody',0,this)" style="cursor:pointer;user-select:none">TSO <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th onclick="sortGenericTable('remit-tbody',1,this)" style="cursor:pointer;user-select:none">Asset <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th onclick="sortGenericTable('remit-tbody',2,this)" style="cursor:pointer;user-select:none">Type <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th onclick="sortGenericTable('remit-tbody',3,this)" style="cursor:pointer;user-select:none">MW Unavail. <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th onclick="sortGenericTable('remit-tbody',4,this)" style="cursor:pointer;user-select:none">Start <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th onclick="sortGenericTable('remit-tbody',5,this)" style="cursor:pointer;user-select:none">End <span class="sort-ind" style="opacity:.4">↕</span></th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="remit-tbody">
           <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Gravelines 4</td><td>Nuclear</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--warn)">Active</td></tr>
           <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
           <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
