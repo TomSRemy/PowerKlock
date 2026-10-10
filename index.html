@@ -5126,17 +5126,17 @@
         <div><div class="page-title">HDD / CDD — Degree Days</div><div class="page-subtitle">Heating &amp; Cooling · France · Open-Meteo</div></div>
         <span class="updated-badge">Open-Meteo · Demo</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-        <div class="kpi-card"><div class="kpi-label">HDD Paris Auj.</div><div class="kpi-value">3.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;0.8 vs normale</div></div>
-        <div class="kpi-card"><div class="kpi-label">HDD Cumul Saison</div><div class="kpi-value">1 842<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg down">&#9650;112 vs norm.</div></div>
-        <div class="kpi-card"><div class="kpi-label">CDD YTD</div><div class="kpi-value up">48<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)">Normale: 55</div></div>
-        <div class="kpi-card"><div class="kpi-label">Temp. France Now</div><div class="kpi-value">14.2<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg down">&#9660;1.3°C vs norm.</div></div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+        <div class="kpi-card kpi-flat"><div class="kpi-label">HDD Paris Auj.</div><div class="kpi-value" id="hdd-kpi-today">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-today-sub">vs normale</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">HDD Cumul Saison</div><div class="kpi-value" id="hdd-kpi-cum">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-cum-sub">vs norm.</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">CDD YTD</div><div class="kpi-value" id="hdd-kpi-cdd">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)" id="hdd-kpi-cdd-sub">Normale: --</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Temp. France Now</div><div class="kpi-value" id="hdd-kpi-temp">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-temp-sub">vs norm.</div></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Cumulatif Saison — Paris vs Normale 20 ans</div><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Cumulatif Saison — Paris vs Normale 20 ans</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div></div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title">HDD par ville — 7 derniers jours</span></div>
         <table><thead><tr><th>Ville</th><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th><th>Cumul</th><th>vs norm.</th></tr></thead>
-        <tbody id="hdd-tbody"></tbody></table>
+        <tbody id="hdd-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody></table>
       </div>
     </div>
 
