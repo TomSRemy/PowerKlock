@@ -4260,11 +4260,11 @@
       </div>
 
       <!-- KPI strip -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="cb-kpi-strip">
-        <div class="kpi-card"><div class="kpi-label">Total Exports</div><div class="kpi-value up" id="cb-kpi-exp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-exp-chg">--</div></div>
-        <div class="kpi-card"><div class="kpi-label">Total Imports</div><div class="kpi-value down" id="cb-kpi-imp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-imp-chg">--</div></div>
-        <div class="kpi-card"><div class="kpi-label">Net Position</div><div class="kpi-value" id="cb-kpi-net">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-net-chg">--</div></div>
-        <div class="kpi-card"><div class="kpi-label">Border Pairs</div><div class="kpi-value" id="cb-kpi-pairs">--</div><div class="kpi-chg" style="color:var(--tx3)">interconnections</div></div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="cb-kpi-strip">
+        <div class="kpi-card kpi-up"><div class="kpi-label">Total Exports</div><div class="kpi-value" style="color:var(--up)" id="cb-kpi-exp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-exp-chg">--</div></div>
+        <div class="kpi-card kpi-down"><div class="kpi-label">Total Imports</div><div class="kpi-value" style="color:var(--down)" id="cb-kpi-imp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-imp-chg">--</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Net Position</div><div class="kpi-value" id="cb-kpi-net">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-net-chg">--</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Border Pairs</div><div class="kpi-value" id="cb-kpi-pairs">--</div><div class="kpi-chg" style="color:var(--tx3)">interconnections</div></div>
       </div>
 
       <!-- Stacked bar chart: exports vs imports -->
@@ -4285,10 +4285,10 @@
         <table>
           <thead>
             <tr>
-              <th>Partner</th>
-              <th>Imports MW ↕</th>
-              <th>Exports MW ↕</th>
-              <th>Net MW ↕</th>
+              <th onclick="sortGenericTable('cb-tbody',0,this)" style="cursor:pointer;user-select:none">Partner <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('cb-tbody',1,this)" style="cursor:pointer;user-select:none">Imports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('cb-tbody',2,this)" style="cursor:pointer;user-select:none">Exports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('cb-tbody',3,this)" style="cursor:pointer;user-select:none">Net MW <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th style="min-width:120px">Flow balance</th>
               <th>Direction</th>
             </tr>
@@ -4321,29 +4321,29 @@
         </div>
       </div>
 
-      <!-- KPI strip Rivex-style -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">
-        <div class="kpi-card">
+      <!-- KPI strip -->
+      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+        <div class="kpi-card kpi-flat">
           <div class="kpi-label">Peak Actual</div>
           <div class="kpi-value" id="load-kpi-peak-actual">--<span class="kpi-unit">GW</span></div>
           <div class="kpi-chg" id="load-kpi-peak-actual-sub">--</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat">
           <div class="kpi-label">Peak Forecast</div>
           <div class="kpi-value" id="load-kpi-peak-fc">--<span class="kpi-unit">GW</span></div>
           <div class="kpi-chg" id="load-kpi-peak-fc-sub">--</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat">
           <div class="kpi-label">Avg Actual</div>
           <div class="kpi-value" id="load-kpi-avg">--<span class="kpi-unit">GW</span></div>
           <div class="kpi-chg" id="load-kpi-avg-sub">daily avg</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat">
           <div class="kpi-label">Forecast Deviation</div>
           <div class="kpi-value" id="load-kpi-dev">--<span class="kpi-unit">%</span></div>
           <div class="kpi-chg" id="load-kpi-dev-sub">fc vs actual</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card kpi-flat">
           <div class="kpi-label">YoY Demand Change</div>
           <div class="kpi-value" id="load-kpi-yoy">--<span class="kpi-unit">%</span></div>
           <div class="kpi-chg" id="load-kpi-yoy-sub">vs same day LY</div>
@@ -4375,10 +4375,10 @@
         <table>
           <thead>
             <tr>
-              <th>Hour (UTC)</th>
-              <th>Actual MW ↕</th>
-              <th>Forecast MW ↕</th>
-              <th>Deviation ↕</th>
+              <th onclick="sortGenericTable('load-hourly-tbody',0,this)" style="cursor:pointer;user-select:none">Hour (UTC) <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('load-hourly-tbody',1,this)" style="cursor:pointer;user-select:none">Actual MW <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('load-hourly-tbody',2,this)" style="cursor:pointer;user-select:none">Forecast MW <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('load-hourly-tbody',3,this)" style="cursor:pointer;user-select:none">Deviation <span class="sort-ind" style="opacity:.4">↕</span></th>
             </tr>
           </thead>
           <tbody id="load-hourly-tbody">

@@ -14665,6 +14665,47 @@ function addDownload(canvasId, filename) {
   wrap.appendChild(btn);
 }
 
+// Generic click-to-sort for any <table> whose <th> wasn't wired to a
+// bespoke sort function (unlike sortPricesTable, this reads cell text
+// directly instead of a backing data array, so it works on any table —
+// numbers are parsed by stripping everything but digits/sign/dot, text
+// columns compare alphabetically). Pass the <th>'s own `this` as `thEl`
+// so the ↕/↑/↓ indicator and sort direction toggle correctly.
+function sortGenericTable(tbodyId, colIndex, thEl) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => !r.classList.contains('loading-row'));
+  if (!rows.length) return;
+
+  const header = thEl ? thEl.closest('tr') : null;
+  if (header) {
+    header.querySelectorAll('th span.sort-ind').forEach(s => { s.textContent = '↕'; s.style.opacity = '.4'; });
+  }
+  tbody._sortDir = tbody._sortDir || {};
+  const asc = tbody._sortDir[colIndex] !== 'asc';
+  tbody._sortDir[colIndex] = asc ? 'asc' : 'desc';
+  if (thEl) {
+    const sp = thEl.querySelector('span.sort-ind');
+    if (sp) { sp.textContent = asc ? '↑' : '↓'; sp.style.opacity = '1'; }
+  }
+
+  const cellText = (row) => (row.children[colIndex] ? row.children[colIndex].textContent : '').trim();
+  const asNumber = (s) => {
+    const cleaned = s.replace(/[^\d.\-+]/g, '');
+    return cleaned === '' || cleaned === '-' || cleaned === '+' ? null : parseFloat(cleaned);
+  };
+
+  rows.sort((a, b) => {
+    const ta = cellText(a), tb = cellText(b);
+    const na = asNumber(ta), nb = asNumber(tb);
+    let cmp;
+    if (na != null && nb != null) cmp = na - nb;
+    else cmp = ta.localeCompare(tb);
+    return asc ? cmp : -cmp;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
 // Common grid config
 const GRID = { color: 'rgba(26,45,63,.5)', drawTicks: false };
 const GRID_NONE = { display: false };
