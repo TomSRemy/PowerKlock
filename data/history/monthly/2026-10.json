@@ -385,7 +385,7 @@
         "negH": 0.25,
         "peakAvg": 59.16,
         "offAvg": 63.05,
-        "renPct": 27.8,
+        "renPct": 31.6,
         "domFuel": "Nuclear"
       }
     ],
@@ -497,7 +497,7 @@
         "negH": 2.25,
         "peakAvg": 45.22,
         "offAvg": 59.03,
-        "renPct": 79.8,
+        "renPct": 83.4,
         "domFuel": "Wind"
       }
     ],
@@ -599,6 +599,17 @@
         "peakAvg": 86.83,
         "offAvg": 94.69,
         "renPct": 66.6,
+        "domFuel": "Wind"
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 124.43,
+        "min": 12.45,
+        "max": 241.59,
+        "negH": 0.0,
+        "peakAvg": 107.79,
+        "offAvg": 141.06,
+        "renPct": 73.1,
         "domFuel": "Wind"
       }
     ],
@@ -710,7 +721,7 @@
         "negH": 0.75,
         "peakAvg": 43.11,
         "offAvg": 48.28,
-        "renPct": 80.4,
+        "renPct": 80.8,
         "domFuel": "Wind"
       }
     ],
@@ -1163,6 +1174,15 @@
         "negH": 0.0,
         "peakAvg": 220.74,
         "offAvg": 225.11
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 173.71,
+        "min": 15.05,
+        "max": 244.31,
+        "negH": 0.0,
+        "peakAvg": 139.44,
+        "offAvg": 207.97
       }
     ],
     "CZ": [
@@ -1338,6 +1358,15 @@
         "negH": 0.0,
         "peakAvg": 235.52,
         "offAvg": 267.42
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 176.06,
+        "min": 15.22,
+        "max": 248.09,
+        "negH": 0.0,
+        "peakAvg": 133.0,
+        "offAvg": 219.13
       }
     ],
     "SK": [
@@ -1421,6 +1450,15 @@
         "negH": 0.0,
         "peakAvg": 207.9,
         "offAvg": 236.29
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 179.96,
+        "min": 15.5,
+        "max": 254.14,
+        "negH": 0.0,
+        "peakAvg": 137.71,
+        "offAvg": 222.21
       }
     ],
     "HU": [
@@ -1504,6 +1542,15 @@
         "negH": 0.0,
         "peakAvg": 255.14,
         "offAvg": 283.72
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 186.07,
+        "min": 15.25,
+        "max": 254.14,
+        "negH": 0.0,
+        "peakAvg": 146.47,
+        "offAvg": 225.66
       }
     ],
     "ES": [
@@ -1614,7 +1661,7 @@
         "negH": 0.25,
         "peakAvg": 90.28,
         "offAvg": 200.38,
-        "renPct": 55.4,
+        "renPct": 63.6,
         "domFuel": "Solar"
       }
     ],
@@ -1726,7 +1773,7 @@
         "negH": 0.5,
         "peakAvg": 84.87,
         "offAvg": 200.38,
-        "renPct": 68.5,
+        "renPct": 76.4,
         "domFuel": "Hydro"
       }
     ],
@@ -1903,6 +1950,15 @@
         "negH": 0.0,
         "peakAvg": 180.48,
         "offAvg": 257.94
+      },
+      {
+        "d": "2026-10-10",
+        "avg": 180.85,
+        "min": 0.0,
+        "max": 243.89,
+        "negH": 0.0,
+        "peakAvg": 131.35,
+        "offAvg": 217.97
       }
     ],
     "PL": [
