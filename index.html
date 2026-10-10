@@ -3547,15 +3547,15 @@
             </div>
           </div>
         </div>
-<div class="hist-section" id="hs-hist-neg">
-        <div class="hist-section-header">
+<div class="hist-section hist-section-strong" id="hs-hist-neg">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-hist-neg')">
           <div class="hist-section-title">
-            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="rgba(239,68,68,0.2)" stroke="#ef4444"/></svg></span>Negative DA Price Hours
-            <span class="hist-section-hint">Daily bars + calendar heatmap · Red = high count</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8" fill="rgba(239,68,68,0.2)" stroke="#ef4444"/></svg>Negative DA Price Hours
+            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Daily bars + calendar heatmap</span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-hist-neg">
+        <div class="hist-section-body open" id="hs-body-hist-neg">
           <div class="hist-controls"><select class="hist-zone-select" id="hz-neg" onchange="setHistZone('neg',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-neg">
         <button class="hw-btn active" onclick="setHistWindow('neg','1M',this)">1M</button>
         <button class="hw-btn" onclick="setHistWindow('neg','3M',this)">3M</button>
@@ -3565,25 +3565,28 @@
       </div>
 
       <!-- Neg Hours KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0" id="neg-kpi-strip">
-        <div class="kpi-card" style="padding:10px 14px">
+      <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);margin:12px 0 20px" id="neg-kpi-strip">
+        <div class="kpi-card kpi-down">
           <div class="kpi-label">This Month</div>
-          <div class="kpi-value down" id="neg-kpi-month">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-value" id="neg-kpi-month" style="color:var(--down)">--<span class="kpi-unit">h</span></div>
           <div class="kpi-chg" id="neg-kpi-month-sub">negative hours</div>
         </div>
-        <div class="kpi-card" style="padding:10px 14px">
+        <div class="kpi-card kpi-down">
           <div class="kpi-label">This Year (YTD)</div>
-          <div class="kpi-value down" id="neg-kpi-year">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-value" id="neg-kpi-year" style="color:var(--down)">--<span class="kpi-unit">h</span></div>
           <div class="kpi-chg" id="neg-kpi-year-sub">negative hours YTD</div>
         </div>
-        <div class="kpi-card" style="padding:10px 14px">
+        <div class="kpi-card kpi-down">
           <div class="kpi-label">Worst Month</div>
-          <div class="kpi-value down" id="neg-kpi-worst">--<span class="kpi-unit">h</span></div>
+          <div class="kpi-value" id="neg-kpi-worst" style="color:var(--down)">--<span class="kpi-unit">h</span></div>
           <div class="kpi-chg" id="neg-kpi-worst-sub">record month</div>
         </div>
       </div>
 
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-neg-period"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span id="hist-neg-period" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
+        <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-neg-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button>
+      </div>
       <div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-neg-canvas" style="width:100%;height:180px"></canvas></div>
 
       <!-- Calendar heatmap -->
@@ -3614,15 +3617,15 @@
             </div>
           </div>
         </div>
-<div class="hist-section" id="hs-spread-history">
-        <div class="hist-section-header">
+<div class="hist-section hist-section-strong" id="hs-spread-history">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-spread-history')">
           <div class="hist-section-title">
-            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg></span>DA Daily Spread (Max−Min)
-            <span class="hist-section-hint">Intraday arbitrage potential · 30D rolling avg</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>DA Daily Spread (Max−Min)
+            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Intraday arbitrage potential · 30D rolling avg</span>
           </div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-spread-history">
+        <div class="hist-section-body open" id="hs-body-spread-history">
           <div class="hist-controls"><select class="hist-zone-select" id="hz-spread" onchange="setHistZone('spread',this.value)"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option><option value="PT">Portugal</option><option value="IT_NORD">Italy North</option><option value="AT">Austria</option><option value="CH">Switzerland</option><option value="GR">Greece</option><option value="PL">Poland</option><option value="SE">Sweden</option></select></div><div class="hist-window-btns" id="hw-spread">
         <button class="hw-btn" onclick="setHistWindow('spread','7D',this)">7D</button>
         <button class="hw-btn active" onclick="setHistWindow('spread','1M',this)">1M</button>
@@ -3631,9 +3634,12 @@
         <button class="hw-btn" onclick="setHistWindow('spread','2Y',this)">2Y</button>
         <button class="hw-btn" onclick="setHistWindow('spread','all',this)">All</button>
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:'JetBrains Mono',monospace" id="hist-spread-period"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span id="hist-spread-period" style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace"></span>
+        <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-spread-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button>
+      </div>
       <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-spread-canvas" style="width:100%;height:200px"></canvas></div>
-      <div class="hist-stats-grid" id="hist-spread-stats"></div>
+      <div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-spread-stats"></div>
         </div>
       </div>
       </div>

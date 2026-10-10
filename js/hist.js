@@ -483,10 +483,13 @@ function baseOptions(yLabel) {
   };
 }
 
+// Emits the same .kpi-card.kpi-flat markup as the Daily reference's KPI
+// strip, so every section's summary stats look identical site-wide — the
+// old .hist-stat/-label/-val/-unit classes were this helper's own thing.
 function statsHtml(stats) {
   return stats.map(s =>
-    '<div class="hist-stat"><div class="hist-stat-label">' + s.l + '</div>' +
-    '<div class="hist-stat-val">' + s.v + '<span class="hist-stat-unit">' + (s.u||'') + '</span></div></div>'
+    '<div class="kpi-card kpi-flat"><div class="kpi-label">' + s.l + '</div>' +
+    '<div class="kpi-value">' + s.v + (s.u ? '<span class="kpi-unit">' + s.u + '</span>' : '') + '</div></div>'
   ).join('');
 }
 
