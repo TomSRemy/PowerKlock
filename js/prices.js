@@ -178,7 +178,6 @@ function showPage(id) {
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
   if (id === 'analysis' && typeof loadMarketAnalysis === 'function') loadMarketAnalysis();
-  if (id === 'carbonintensity' && typeof initCarbon === 'function' && !window._carbonLoaded) { window._carbonLoaded = true; initCarbon(); }
 }
 
 function switchSection(sec) {
