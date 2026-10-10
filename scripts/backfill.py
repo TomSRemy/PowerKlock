@@ -97,17 +97,22 @@ def parse_prices_for_date(xml_text, req_start_str=None, req_end_str=None):
 
             res = 'PT60M'
             period_start_str = ''
+            period_end_str = ''
             for child in period:
                 t = strip_ns(child.tag)
                 if t == 'resolution':
                     res = child.text or 'PT60M'
                 elif t == 'timeInterval':
                     for sub in child:
-                        if strip_ns(sub.tag) == 'start':
+                        st = strip_ns(sub.tag)
+                        if st == 'start':
                             period_start_str = sub.text or ''
+                        elif st == 'end':
+                            period_end_str = sub.text or ''
 
             res_minutes = 15 if res == 'PT15M' else 60
             period_start = parse_dt(period_start_str) if period_start_str else None
+            period_end = parse_dt(period_end_str) if period_end_str else None
 
             points = {}
             for child in period:
@@ -131,10 +136,14 @@ def parse_prices_for_date(xml_text, req_start_str=None, req_end_str=None):
             if not points:
                 continue
 
-            period_end = (
-                period_start + timedelta(minutes=res_minutes * max(points.keys()))
-                if period_start else None
-            )
+            # Only infer the end from the points when the XML has no
+            # explicit interval end. NEVER infer it from max(points) as the
+            # old code did — ENTSO-E's A44 curves use curveType A03
+            # ("variable sized block"), where only the position where the
+            # value CHANGES is sent, so the last explicit point is often
+            # nowhere near the period's real end.
+            if period_end is None and period_start is not None:
+                period_end = period_start + timedelta(minutes=res_minutes * max(points.keys()))
             candidates.append({
                 'start': period_start, 'end': period_end,
                 'res_minutes': res_minutes, 'is_15min': (res == 'PT15M'), 'points': points,
@@ -153,14 +162,26 @@ def parse_prices_for_date(xml_text, req_start_str=None, req_end_str=None):
     best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
     points = best['points']
 
+    # Carry the last explicit value forward through any gap: curveType A03
+    # means a missing position is "unchanged since the last point", not
+    # "no data". Verified live against ENTSO-E (FR, several dates): every
+    # A44 document observed declares curveType A03.
+    def carry_forward(n_slots):
+        out = []
+        last = None
+        for i in range(1, n_slots + 1):
+            if i in points:
+                last = points[i]
+            out.append(last)
+        return out
+
     # Always return 96-slot array (quarter-hourly grid).
     # Hourly-native zones (CH, ME…) get each value duplicated ×4.
-    if best['is_15min'] or max(points.keys()) > 24:
-        result = [points.get(i + 1) for i in range(96)]
+    if best['is_15min']:
+        result = carry_forward(96)
     else:
         result = []
-        for h in range(24):
-            v = points.get(h + 1)
+        for v in carry_forward(24):
             for _ in range(4):
                 result.append(v)
     return result
