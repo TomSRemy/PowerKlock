@@ -194,6 +194,7 @@ const PAGE_LOADERS = {
   nuclear:    () => drawNuclear(),
   imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
+  carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
   eua:        () => drawEUA(),
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
