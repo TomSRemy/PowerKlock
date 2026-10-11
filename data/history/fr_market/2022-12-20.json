@@ -1,0 +1,19 @@
+{
+ "date": "2022-12-20",
+ "forwardCurve": {
+  "Y+1": 120.2,
+  "Y+2": 111.7
+ },
+ "spot": 217.47,
+ "nuclearCapacity": {
+  "actualMW": 41542.92
+ },
+ "generationMix": {
+  "gas": 5.56,
+  "wind": 10.1,
+  "solar": 0.43,
+  "nuclear": 39.34,
+  "hydro": 3.81,
+  "other": 1.69
+ }
+}

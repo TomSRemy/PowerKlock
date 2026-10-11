@@ -1,0 +1,16 @@
+{
+ "date": "2025-11-08",
+ "spot": 60.37,
+ "nuclearCapacity": {
+  "actualMW": 47881.6,
+  "forecastMW": 54370
+ },
+ "generationMix": {
+  "gas": 1.69,
+  "wind": 2.02,
+  "solar": 1.9,
+  "nuclear": 46.62,
+  "hydro": 4.97,
+  "other": 2.4
+ }
+}

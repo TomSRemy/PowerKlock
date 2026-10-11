@@ -1,0 +1,24 @@
+{
+ "date": "2025-01-16",
+ "forwardCurve": {
+  "Q+1": 91.02,
+  "Q+2": 42.42,
+  "S+1": 42.42,
+  "Y+1": 65.04,
+  "Y+2": 65,
+  "Y+3": 66.71
+ },
+ "spot": 142.84,
+ "nuclearCapacity": {
+  "actualMW": 55766,
+  "forecastMW": 56006
+ },
+ "generationMix": {
+  "gas": 6.87,
+  "wind": 3.74,
+  "solar": 1.67,
+  "nuclear": 55.3,
+  "hydro": 6.33,
+  "other": 4.35
+ }
+}

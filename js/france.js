@@ -48,12 +48,16 @@
     cannibWindow: 30,      // 7 | 30 | 90
     histWindow: '1Y',      // 1Y | 3Y | 5Y | All
     neighWindow: '1Y',
+    marketTenor: 'Y+1',
+    marketWindow: '1Y',
     booted: false,
     loadedPanels: {},
     charts: {}
   };
 
-  var CACHE = { daily: {}, summary: null };
+  var CACHE = { daily: {}, summary: null, frMarket: null, frMarketSeries: null };
+
+  var FORWARD_TENORS = ['M+1', 'M+2', 'M+3', 'Q+1', 'Q+2', 'Q+3', 'S+1', 'S+2', 'Y+1', 'Y+2', 'Y+3'];
 
   // ══════════════════════════════════════════════════════════════════════════
   // UTILITAIRES
@@ -130,6 +134,22 @@
     return fetch('data/history/summary.json')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { CACHE.summary = j; return j; })
+      .catch(function () { return null; });
+  }
+
+  function loadFrMarket() {
+    if (CACHE.frMarket) return Promise.resolve(CACHE.frMarket);
+    return fetch('data/fr_market.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { CACHE.frMarket = j; return j; })
+      .catch(function () { return null; });
+  }
+
+  function loadFrMarketSeries() {
+    if (CACHE.frMarketSeries) return Promise.resolve(CACHE.frMarketSeries);
+    return fetch('data/history/fr_market_series.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { CACHE.frMarketSeries = j; return j; })
       .catch(function () { return null; });
   }
 
@@ -979,10 +999,170 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // PANEL 5 · MARCHE (courbe forward, nucleaire, analyse — source SEFE cockpit)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  function windowCutoffDates(dates, win) {
+    if (win === 'All' || !dates.length) return dates;
+    var days = { '3M': 91, '6M': 183, '1Y': 365, '3Y': 1095, '5Y': 1826 }[win] || 365;
+    var cutoff = shiftDays(dates[dates.length - 1], -days);
+    var startIdx = 0;
+    for (var i = 0; i < dates.length; i++) { if (dates[i] >= cutoff) { startIdx = i; break; } }
+    return dates.slice(startIdx);
+  }
+
+  function sliceSeries(series, startIdx) { return series.slice(startIdx); }
+
+  function renderMarket() {
+    var host = $('fr-panel-market');
+    if (!host) return;
+    host.innerHTML = loadingBlock('Chargement des donnees de marche FR...');
+
+    Promise.all([loadFrMarket(), loadFrMarketSeries()]).then(function (res) {
+      var snap = res[0], series = res[1];
+      if (!snap || !series) {
+        host.innerHTML = '<div class="fr-empty">data/fr_market.json ou fr_market_series.json indisponible. ' +
+          'Lancer scripts/fetch_fr_market.py.</div>';
+        return;
+      }
+
+      var html = '';
+
+      html += '<div class="kpi-strip fr-kpi-strip">';
+      html += kpiCard('Spot FR', num(snap.spot && snap.spot.value, 2), '€/MWh', snap.spot && snap.spot.date || '');
+      var y1 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+1'; })[0];
+      var y2 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+2'; })[0];
+      html += kpiCard('Forward ' + (y1 ? y1.contract : 'Y+1'), num(y1 && y1.value, 2), '€/MWh',
+        y1 && y1.varD1Pct !== null && y1.varD1Pct !== undefined ? (y1.varD1Pct >= 0 ? '+' : '') + num(y1.varD1Pct, 2) + '% D-1' : '',
+        y1 && y1.varD1Pct > 0 ? 'up' : (y1 && y1.varD1Pct < 0 ? 'down' : 'flat'));
+      html += kpiCard('Forward ' + (y2 ? y2.contract : 'Y+2'), num(y2 && y2.value, 2), '€/MWh',
+        y2 && y2.varD1Pct !== null && y2.varD1Pct !== undefined ? (y2.varD1Pct >= 0 ? '+' : '') + num(y2.varD1Pct, 2) + '% D-1' : '',
+        y2 && y2.varD1Pct > 0 ? 'up' : (y2 && y2.varD1Pct < 0 ? 'down' : 'flat'));
+      html += kpiCard('Nucleaire dispo', num(snap.nuclearCapacity && snap.nuclearCapacity.actualMW, 0), 'MW',
+        snap.nuclearCapacityDate || '');
+      html += kpiCard('Nucleaire previsionnel', num(snap.nuclearCapacity && snap.nuclearCapacity.forecastMW, 0), 'MW',
+        'J+1');
+      html += '</div>';
+
+      if (snap.marketInsightsHtml) {
+        html += sectionOpen('Analyse de marche', 'SEFE Energy · ' + (snap.marketInsightsDate || ''));
+        html += '<div class="fr-market-insights">' + snap.marketInsightsHtml + '</div>';
+        html += sectionClose();
+      }
+
+      html += sectionOpen('Courbe forward FR (base)',
+        'Snapshot du jour · M+1 a Y+3 · source SEFE cockpit',
+        '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'fwdcurve\')">↺ Reset</button>');
+      html += chartBox('fr-chart-fwdcurve', 280);
+      html += sectionClose();
+
+      html += '<div class="fr-toolbar">' +
+        '<span class="fr-toolbar-label">Tenor</span>' +
+        FORWARD_TENORS.map(function (t) {
+          return '<button class="pk-gf-btn' + (t === S.marketTenor ? ' active' : '') +
+            '" onclick="FRDash.setMarketTenor(\'' + t + '\')">' + t + '</button>';
+        }).join('') +
+        '<span class="fr-toolbar-label" style="margin-left:14px">Periode</span>' +
+        ['3M', '6M', '1Y', '3Y', '5Y', 'All'].map(function (w) {
+          return '<button class="pk-gf-btn' + (w === S.marketWindow ? ' active' : '') +
+            '" onclick="FRDash.setMarketWindow(\'' + w + '\')">' + w + '</button>';
+        }).join('') +
+        '</div>';
+
+      html += sectionOpen('Historique forward ' + S.marketTenor,
+        'Evolution du prix du contrat courant pour ce tenor · depuis qu\'il est cote',
+        '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'fwdhist\')">↺ Reset</button>');
+      html += chartBox('fr-chart-fwdhist', 280);
+      html += sectionClose();
+
+      html += sectionOpen('Nucleaire disponible : reel vs previsionnel',
+        'Capacite nucleaire francaise · source SEFE cockpit',
+        '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'nuc\')">↺ Reset</button>');
+      html += chartBox('fr-chart-nuc', 260);
+      html += sectionClose();
+
+      host.innerHTML = html;
+
+      // Courbe forward du jour (term structure)
+      var curveLabels = FORWARD_TENORS;
+      var curveValues = FORWARD_TENORS.map(function (t) {
+        var row = (snap.forwardCurve || []).filter(function (r) { return r.tenor === t; })[0];
+        return row ? row.value : null;
+      });
+      makeChart('fwdcurve', 'fr-chart-fwdcurve', {
+        type: 'bar',
+        data: {
+          labels: curveLabels,
+          datasets: [{ label: 'Prix forward FR base', data: curveValues, backgroundColor: '#14D3A9', borderWidth: 0 }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false },
+                 ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } } },
+            y: axisStyle('€/MWh')
+          }
+        }
+      });
+
+      // Historique du tenor selectionne
+      var allDates = series.dates || [];
+      var startIdx = allDates.indexOf(windowCutoffDates(allDates, S.marketWindow)[0]);
+      if (startIdx < 0) startIdx = 0;
+      var hDates = sliceSeries(allDates, startIdx);
+      var hValues = sliceSeries((series.forwardCurve && series.forwardCurve[S.marketTenor]) || [], startIdx);
+      makeChart('fwdhist', 'fr-chart-fwdhist', {
+        type: 'line',
+        data: {
+          labels: hDates,
+          datasets: [{ label: S.marketTenor, data: hValues, borderColor: '#14D3A9', borderWidth: 1.5,
+            pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }]
+        },
+        options: {
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' },
+                 ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" },
+                          maxTicksLimit: 12, autoSkip: true } },
+            y: axisStyle('€/MWh')
+          }
+        }
+      });
+
+      // Nucleaire reel vs previsionnel
+      var nucActual = sliceSeries((series.nuclearCapacity && series.nuclearCapacity.actual) || [], startIdx);
+      var nucForecast = sliceSeries((series.nuclearCapacity && series.nuclearCapacity.forecast) || [], startIdx);
+      makeChart('nuc', 'fr-chart-nuc', {
+        type: 'line',
+        data: {
+          labels: hDates,
+          datasets: [
+            { label: 'Reel', data: nucActual, borderColor: '#7B4B9C', borderWidth: 1.5,
+              pointRadius: 0, tension: 0.1, fill: false, spanGaps: true },
+            { label: 'Previsionnel', data: nucForecast, borderColor: '#EE9B00', borderWidth: 1.5,
+              borderDash: [4, 3], pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }
+          ]
+        },
+        options: {
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: legendStyle() },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' },
+                 ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" },
+                          maxTicksLimit: 12, autoSkip: true } },
+            y: axisStyle('MW')
+          }
+        }
+      });
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // ORCHESTRATION
   // ══════════════════════════════════════════════════════════════════════════
 
-  var RENDERERS = { today: renderToday, cannib: renderCannib, hist: renderHist, neigh: renderNeigh };
+  var RENDERERS = { today: renderToday, cannib: renderCannib, hist: renderHist, neigh: renderNeigh, market: renderMarket };
 
   function renderPanel(name, force) {
     document.querySelectorAll('#page-france .fr-panel').forEach(function (p) {
@@ -1056,6 +1236,8 @@
     setCannibWindow: function (w) { S.cannibWindow = w; renderCannib(); },
     setHistWindow: function (w) { S.histWindow = w; renderHist(); },
     setNeighWindow: function (w) { S.neighWindow = w; renderNeigh(); },
+    setMarketTenor: function (t) { S.marketTenor = t; renderMarket(); },
+    setMarketWindow: function (w) { S.marketWindow = w; renderMarket(); },
 
     resetChart: function (key) {
       if (S.charts[key] && S.charts[key].resetZoom) {

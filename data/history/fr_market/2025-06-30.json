@@ -1,0 +1,26 @@
+{
+ "date": "2025-06-30",
+ "forwardCurve": {
+  "Q+1": 88.35,
+  "Q+2": 32.45,
+  "Q+3": 42.46,
+  "S+1": 37.46,
+  "S+2": 85.25,
+  "Y+1": 60.7,
+  "Y+2": 63.7,
+  "Y+3": 68.8
+ },
+ "spot": 117.62,
+ "nuclearCapacity": {
+  "actualMW": 41157.56,
+  "forecastMW": 47150
+ },
+ "generationMix": {
+  "gas": 2.64,
+  "wind": 2.3,
+  "solar": 6.76,
+  "nuclear": 36.05,
+  "hydro": 3.4,
+  "other": 2.47
+ }
+}

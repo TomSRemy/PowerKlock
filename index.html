@@ -1555,6 +1555,11 @@
     margin-right: 7px; vertical-align: middle;
   }
   #page-france .fr-flag { margin-right: 7px; }
+  #page-france .fr-market-insights {
+    font-size: 12.5px; line-height: 1.6; color: var(--text2);
+  }
+  #page-france .fr-market-insights p { margin: 0 0 10px; }
+  #page-france .fr-market-insights p:last-child { margin-bottom: 0; }
 
   /* ════════════════════════════════════════════════════════════════════ */
   /* PRICES PAGE · subdomain pages, with section title + tabs sticky      */
@@ -5331,6 +5336,7 @@
         <button class="fr-tab"        data-fr-tab="cannib" onclick="FRDash.selectTab('cannib')">Cannibalisation</button>
         <button class="fr-tab"        data-fr-tab="hist"   onclick="FRDash.selectTab('hist')">Historique</button>
         <button class="fr-tab"        data-fr-tab="neigh"  onclick="FRDash.selectTab('neigh')">Voisins</button>
+        <button class="fr-tab"        data-fr-tab="market" onclick="FRDash.selectTab('market')">Marché &amp; Forward</button>
       </div>
 
       <div id="fr-body">
@@ -5338,6 +5344,7 @@
         <div class="fr-panel"        data-fr-panel="cannib" id="fr-panel-cannib"></div>
         <div class="fr-panel"        data-fr-panel="hist"   id="fr-panel-hist"></div>
         <div class="fr-panel"        data-fr-panel="neigh"  id="fr-panel-neigh"></div>
+        <div class="fr-panel"        data-fr-panel="market" id="fr-panel-market"></div>
       </div>
 
     </div>

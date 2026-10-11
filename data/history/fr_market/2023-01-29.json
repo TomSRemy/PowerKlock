@@ -1,0 +1,12 @@
+{
+ "date": "2023-01-29",
+ "spot": 162.13,
+ "generationMix": {
+  "gas": 8.14,
+  "wind": 2.18,
+  "solar": 1.48,
+  "nuclear": 43.56,
+  "hydro": 3.5,
+  "other": 3.08
+ }
+}

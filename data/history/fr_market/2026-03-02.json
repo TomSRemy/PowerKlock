@@ -1,0 +1,26 @@
+{
+ "date": "2026-03-02",
+ "forwardCurve": {
+  "Q+1": 82.4,
+  "Q+2": 24.75,
+  "Q+3": 34.56,
+  "S+1": 29.66,
+  "S+2": 70.67,
+  "Y+1": 52.14,
+  "Y+2": 50.47,
+  "Y+3": 52.44
+ },
+ "spot": 59.32,
+ "nuclearCapacity": {
+  "actualMW": 47695,
+  "forecastMW": 48847.5
+ },
+ "generationMix": {
+  "gas": 1.59,
+  "wind": 7.47,
+  "solar": 4.16,
+  "nuclear": 42.44,
+  "hydro": 5.99,
+  "other": 3.08
+ }
+}
