@@ -2882,8 +2882,45 @@
           </div>
         </div>
 
-        <div class="hist-window-btns" id="prfwd-country-btns" style="margin-bottom:14px"></div>
-        <div class="kpi-strip" id="prfwd-kpi-strip" style="margin-bottom:18px"></div>
+        <!-- "Forward board" · même structure que "Day-Ahead board" : filtre + KPI strip + table, dans une seule section -->
+        <div class="hist-section hist-section-strong" id="hs-prfwd-board">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-board')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward board
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-board-meta">M+1 à Y+3 · source SEFE cockpit</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-board">
+            <div class="hist-window-btns" id="prfwd-country-btns" style="margin-bottom:12px"></div>
+
+            <!-- KPI Strip -->
+            <div class="kpi-strip" id="prfwd-kpi-strip"></div>
+
+            <!-- Forward Table -->
+            <div class="table-wrap" id="prfwd-curve-table-wrap">
+              <div class="table-header" style="flex-wrap:wrap;gap:8px">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Prix forward (base) · snapshot du jour</span>
+                </div>
+              </div>
+              <table id="prfwd-curve-table" style="font-size:11px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">PRODUIT</th>
+                    <th style="text-align:left">CONTRAT</th>
+                    <th style="text-align:right">VALEUR (J-1)</th>
+                    <th style="text-align:right">VAR J-1</th>
+                    <th style="text-align:right">VAR S-1</th>
+                  </tr>
+                </thead>
+                <tbody id="prfwd-curve-tbody">
+                  <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Chargement...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
         <div class="hist-section hist-section-strong" id="hs-prfwd-insights">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-insights')">
@@ -2895,32 +2932,6 @@
           </div>
           <div class="hist-section-body open" id="hs-body-prfwd-insights">
             <div id="prfwd-insights-text" style="font-size:12.5px;line-height:1.6;color:var(--text2)"></div>
-          </div>
-        </div>
-
-        <div class="hist-section hist-section-strong" id="hs-prfwd-curve">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-curve')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Prix forward (base)
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">M+1 à Y+3 · snapshot du jour · source SEFE cockpit</span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-curve">
-            <div class="table-wrap">
-              <table id="prfwd-curve-table" style="font-size:12px">
-                <thead>
-                  <tr>
-                    <th style="text-align:left">PRODUIT</th>
-                    <th style="text-align:left">CONTRAT</th>
-                    <th style="text-align:right">VALEUR (J-1)</th>
-                    <th style="text-align:right">VAR J-1</th>
-                    <th style="text-align:right">VAR S-1</th>
-                  </tr>
-                </thead>
-                <tbody id="prfwd-curve-tbody"></tbody>
-              </table>
-            </div>
           </div>
         </div>
 
