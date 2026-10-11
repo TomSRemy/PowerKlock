@@ -2882,7 +2882,9 @@
           </div>
         </div>
 
-        <!-- "Forward board" · même structure que "Day-Ahead board" : filtre + KPI strip + table, dans une seule section -->
+        <!-- "Forward board" · même structure que "Genmix Daily board" :
+             KPI strip multi-pays + table à une ligne par pays, clic = drill-down
+             (KPIs détaillés + sous-onglets de graphs), comme le board Genmix. -->
         <div class="hist-section hist-section-strong" id="hs-prfwd-board">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-board')">
             <div class="hist-section-title">
@@ -2892,29 +2894,27 @@
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open" id="hs-body-prfwd-board">
-            <div class="hist-window-btns" id="prfwd-country-btns" style="margin-bottom:12px"></div>
+            <!-- KPI strip · 1 carte par pays (aperçu rapide, avant tout clic) -->
+            <div class="kpi-strip" id="prfwd-kpi-strip" style="grid-template-columns:repeat(4,1fr)"></div>
 
-            <!-- KPI Strip -->
-            <div class="kpi-strip" id="prfwd-kpi-strip"></div>
-
-            <!-- Forward Table -->
-            <div class="table-wrap" id="prfwd-curve-table-wrap">
+            <!-- Table pays · clic sur une ligne = drill-down -->
+            <div class="table-wrap" id="prfwd-countries-table-wrap">
               <div class="table-header" style="flex-wrap:wrap;gap:8px">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Prix forward (base) · snapshot du jour</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Marchés power · cliquer une ligne pour le détail</span>
                 </div>
               </div>
-              <table id="prfwd-curve-table" style="font-size:11px">
+              <table id="prfwd-countries-table" style="font-size:12px">
                 <thead>
                   <tr>
-                    <th style="text-align:left">PRODUIT</th>
-                    <th style="text-align:left">CONTRAT</th>
-                    <th style="text-align:right">VALEUR (J-1)</th>
+                    <th style="text-align:left">PAYS</th>
+                    <th style="text-align:right">SPOT</th>
+                    <th style="text-align:right">FORWARD Y+1</th>
                     <th style="text-align:right">VAR J-1</th>
                     <th style="text-align:right">VAR S-1</th>
                   </tr>
                 </thead>
-                <tbody id="prfwd-curve-tbody">
+                <tbody id="prfwd-countries-tbody">
                   <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Chargement...</td></tr>
                 </tbody>
               </table>
@@ -2922,6 +2922,44 @@
           </div>
         </div>
 
+        <!-- "Comparaison pays" · un produit choisi, toutes les zones sur le même graph -->
+        <div class="hist-section hist-section-strong" id="hs-prfwd-compare">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-compare')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Comparaison pays
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Un produit, les 4 zones sur le même graph</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-compare">
+            <div class="hist-window-btns" id="prfwd-cmp-tenor-btns"></div>
+            <div class="hist-window-btns" id="prfwd-cmp-window-btns" style="margin-top:6px"></div>
+            <div style="display:flex;justify-content:flex-end;margin:6px 0">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-compare'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:300px"><canvas id="prfwd-chart-compare"></canvas></div>
+
+            <div class="table-wrap" id="prfwd-cmp-table-wrap" style="margin-top:14px">
+              <div class="table-header">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase" id="prfwd-cmp-table-title">Snapshot du jour</span>
+              </div>
+              <table id="prfwd-cmp-table" style="font-size:12px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">PAYS</th>
+                    <th style="text-align:right">CONTRAT</th>
+                    <th style="text-align:right">VALEUR</th>
+                    <th style="text-align:right">VAR J-1</th>
+                    <th style="text-align:right">VAR S-1</th>
+                  </tr>
+                </thead>
+                <tbody id="prfwd-cmp-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyse de marché (texte, France) -->
         <div class="hist-section hist-section-strong" id="hs-prfwd-insights">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-insights')">
             <div class="hist-section-title">
@@ -2932,73 +2970,6 @@
           </div>
           <div class="hist-section-body open" id="hs-body-prfwd-insights">
             <div id="prfwd-insights-text" style="font-size:12.5px;line-height:1.6;color:var(--text2)"></div>
-          </div>
-        </div>
-
-        <div class="hist-section hist-section-strong" id="hs-prfwd-calall">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-calall')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Tous les contrats Cal
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-calall-sub">Un contrat Cal = une ligne, vie complète de chaque contrat</span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-calall">
-            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-calall'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
-            </div>
-            <div style="position:relative;height:280px"><canvas id="prfwd-chart-calall"></canvas></div>
-          </div>
-        </div>
-
-        <div class="hist-section hist-section-strong" id="hs-prfwd-cal1">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-cal1')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg>Cal+1 glissant · courbe continue
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Même produit (« l'année prochaine »), rebranché à chaque bascule d'année</span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-cal1">
-            <div class="hist-window-btns" id="prfwd-caloffset-btns"></div>
-            <div style="display:flex;justify-content:flex-end;margin:6px 0">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-cal1'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
-            </div>
-            <div style="position:relative;height:280px"><canvas id="prfwd-chart-cal1"></canvas></div>
-          </div>
-        </div>
-
-        <div class="hist-section hist-section-strong" id="hs-prfwd-hist">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-hist')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Graph libre
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Choisir les produits et la période</span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-hist">
-            <div class="hist-window-btns" id="prfwd-tenor-btns"></div>
-            <div class="hist-window-btns" id="prfwd-window-btns" style="margin-top:6px"></div>
-            <div style="display:flex;justify-content:flex-end;margin:6px 0">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-hist'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
-            </div>
-            <div style="position:relative;height:280px"><canvas id="prfwd-chart-hist"></canvas></div>
-          </div>
-        </div>
-
-        <div class="hist-section hist-section-strong" id="hs-prfwd-nuc">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-nuc')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Nucléaire disponible : réel vs prévisionnel
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Capacité nucléaire française · source SEFE cockpit</span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-nuc">
-            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-nuc'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
-            </div>
-            <div style="position:relative;height:260px"><canvas id="prfwd-chart-nuc"></canvas></div>
           </div>
         </div>
       </div>
