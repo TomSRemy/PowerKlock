@@ -3,5 +3,12 @@
  "nuclearCapacity": {
   "forecastMW": 49140
  },
- "marketInsightsHtml": "<p>Le Calendrier Français 2027 franchit pour la première fois la barre des 100 € en s'établissant au niveau record de 101,40 €/MWh (+2,25 €). À l'opposé, la puissance au comptant du Day-Ahead de vendredi a plongé dans tous les domaines : l'Allemagne a chuté de 62,75 € à 81,50 €/MWh, la France a chuté de 31,70 € à 85,30 €/MWh et le Royaume-Uni a chuté de 56,75 £ à 78,25 £/MWh.</p><p>Le soutien de la courbe est maintenu par les déficits nucléaire et hydroélectrique, avec la panne de Chooz de 3 GW en France prolongée jusqu'au 23 octobre et les déficits hydroélectriques italiens par rapport aux normes quinquennales se creusant à 671 GWh.</p>"
+ "marketInsightsHtml": "<p>Le Calendrier Français 2027 franchit pour la première fois la barre des 100 € en s'établissant au niveau record de 101,40 €/MWh (+2,25 €). À l'opposé, la puissance au comptant du Day-Ahead de vendredi a plongé dans tous les domaines : l'Allemagne a chuté de 62,75 € à 81,50 €/MWh, la France a chuté de 31,70 € à 85,30 €/MWh et le Royaume-Uni a chuté de 56,75 £ à 78,25 £/MWh.</p><p>Le soutien de la courbe est maintenu par les déficits nucléaire et hydroélectrique, avec la panne de Chooz de 3 GW en France prolongée jusqu'au 23 octobre et les déficits hydroélectriques italiens par rapport aux normes quinquennales se creusant à 671 GWh.</p>",
+ "countries": {
+  "FR": {
+   "nuclearCapacity": {
+    "forecastMW": 49140
+   }
+  }
+ }
 }

@@ -1,4 +1,44 @@
 {
  "date": "2026-01-01",
- "spot": 68.04
+ "spot": 68.04,
+ "countries": {
+  "FR": {
+   "spot": 68.04
+  },
+  "UK": {
+   "spot": 63.94,
+   "generationMix": {
+    "gas": 4.68,
+    "wind": 15.67,
+    "solar": 0.91,
+    "nuclear": 4.26,
+    "hydro": 0.33,
+    "biomass": 1.14,
+    "other": 0.7
+   }
+  },
+  "DE": {
+   "spot": 54.69,
+   "generationMix": {
+    "gas": 2.71,
+    "wind": 45.5,
+    "solar": 1.77,
+    "nuclear": 0,
+    "coal": 5.12,
+    "hydro": 0.14,
+    "other": 0.35
+   }
+  },
+  "NL": {
+   "spot": 63.2,
+   "generationMix": {
+    "gas": 1.09,
+    "wind": 5.54,
+    "solar": 0.25,
+    "nuclear": 0.49,
+    "coal": 0,
+    "other": 0.09
+   }
+  }
+ }
 }
