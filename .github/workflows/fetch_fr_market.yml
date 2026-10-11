@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/fr_market.json data/history/fr_market/
+          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json
           if git diff --staged --quiet; then
             echo "No data changes — skipping commit."
             exit 0
