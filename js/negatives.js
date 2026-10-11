@@ -144,7 +144,7 @@
         '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:.45;vertical-align:0"><polyline points="9 18 15 12 9 6"/></svg>' + flag(x.code) + ' ' + x.code + '</td>' +
         '<td style="font-size:11px;color:var(--tx2);text-align:left">' + zname(x.code) + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;font-weight:700;color:' + negCol + ';text-align:right">' + (isNeg ? n2(x.negHours, 2) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
-        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + (x.min < 0 ? C_NEG : 'var(--tx2)') + ';text-align:right">' + (x.min != null ? n2(x.min, 1) : '–') + '</td>' +
+        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';text-align:right">' + (x.min != null && x.min < 0 ? n2(x.min, 1) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx3);text-align:right">' + r.win + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx2);text-align:right">' + (r.run > 0 ? n2(r.run, 2) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:' + (r.pct > 0 ? C_NEG : 'var(--tx3)') + ';text-align:right">' + (r.pct > 0 ? n2(r.pct, 0) + '%' : '–') + '</td>' +
@@ -283,7 +283,7 @@
     var max = Math.max.apply(null, values.concat([1])) * 1.12, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
     var bw = (W - padL - padR) / labels.length;
     var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + '</text>'; });
+    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
     labels.forEach(function (lb, i) {
       var v = values[i] || 0, x = padL + i * bw + bw * 0.18, w = bw * 0.64, bh = (H - padB) - sy(v), partial = opt.partial && String(lb) === String(opt.partial);
       s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="2" fill="' + C_NEG + '"' + (partial ? ' opacity=".55" stroke="' + C_NEG + '" stroke-dasharray="3 2"' : '') + '/>';
@@ -301,7 +301,7 @@
     var sx = function (x) { return padL + (x / 366) * (W - padL - padR); }, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
     var grey = ['#3a434d', '#566370', '#7a8794', '#9aa7b4'];
     var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + '</text>'; });
+    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
     var leg = '';
     years.forEach(function (y, i) {
       var col = y === cy ? C_NEG : grey[Math.max(0, grey.length - (years.length - i))], pts = cum[y]; if (!pts.length) return;
@@ -367,7 +367,7 @@
     var sy = function (v) { return H - padB - (v / max) * (H - padB - padT); }, gw = (W - padL - padR) / data.length, bw = (gw * 0.8) / years.length;
     var greys = ['#3a434d', '#566370', '#7a8794'], YC = {}; years.forEach(function (y, i) { YC[y] = y === partial ? C_NEG_DEEP : (i === years.length - 2 ? C_NEG : greys[Math.min(i, greys.length - 1)]); });
     var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + '</text>'; });
+    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
     data.forEach(function (d, gi) { var gx = padL + gi * gw + gw * 0.1; d.vals.forEach(function (v, yi) { var x = gx + yi * bw, bh = (H - padB) - sy(v); s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + (bw - 1.5).toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="1.5" fill="' + YC[years[yi]] + '"' + (years[yi] === partial ? ' opacity=".75"' : '') + '/>'; }); s += '<text x="' + (gx + (years.length * bw) / 2).toFixed(1) + '" y="' + (H - 10) + '" fill="' + C_TX2 + '" font-size="12" text-anchor="middle" font-family="monospace" font-weight="700">' + flag(d.c) + ' ' + d.c + '</text>'; });
     var leg = years.map(function (y) { return '<span style="margin-right:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + YC[y] + ';vertical-align:-1px;margin-right:4px"></span>' + y + (y === partial ? ' (YTD)' : '') + '</span>'; }).join('');
     return svgOpen() + s + '</svg><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX3 + ';margin-top:6px">' + leg + '</div>';
@@ -390,7 +390,7 @@
     var sc = zones.map(function (c, i) { var ser = s.zones[c].filter(function (d) { return d.d.slice(0, 4) === cy; }), cum = 0, pts = ser.map(function (d) { cum += (d.negH || 0); return { x: doy(d.d), v: cum }; }); return { c: c, pts: pts, col: pal[i % pal.length], tot: cum }; });
     var max = Math.max.apply(null, sc.map(function (x) { return x.tot; }).concat([1])) * 1.12, sx = function (x) { return padL + (x / 366) * (W - padL - padR); }, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
     var s2 = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + (W - padR) + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s2 += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + '</text>'; });
+    niceTicks(max).forEach(function (g) { var y = sy(g); s2 += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
     sc.forEach(function (x) { if (!x.pts.length) return; s2 += '<path d="M' + x.pts.map(function (p) { return sx(p.x).toFixed(1) + ' ' + sy(p.v).toFixed(1); }).join(' L') + '" fill="none" stroke="' + x.col + '" stroke-width="1.8"/>'; var lp = x.pts[x.pts.length - 1]; s2 += '<text x="' + (sx(lp.x) + 6).toFixed(1) + '" y="' + (sy(lp.v) + 3).toFixed(1) + '" fill="' + x.col + '" font-size="11" font-family="monospace" font-weight="700">' + x.c + '</text>'; });
     return svgOpen() + s2 + '</svg>';
   }
@@ -418,7 +418,59 @@
 
   // ── Window pills ──
   window.negSetWindow = function (w, btn) { NEG.win = w; if (btn && btn.parentNode) { btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(function (b) { b.classList.remove('active'); }); btn.classList.add('active'); } try { renderCCChart(); } catch (e) {} if (NEG.openRow) { try { renderDrill(NEG.openRow); } catch (e) {} } };
-  window.negCCFullscreen = function () { /* backlog */ };
+
+  // ── Cross-zone fullscreen · same pk-fs overlay used by HMZ/DA Cross-zone.
+  // All four views here (year/rank/monthhm/cumul) render raw SVG/HTML into
+  // #neg-cc-chart rather than a Chart.js canvas, so pkBuildChartSource is
+  // used purely in its "HTML mirror" mode (isHtmlView always true) — it just
+  // clones the already-rendered markup into the overlay.
+  var CC_VIEWS = [
+    { k: 'year', l: 'By zone × year' }, { k: 'rank', l: 'Ranking' },
+    { k: 'monthhm', l: 'Heatmap zone×month' }, { k: 'cumul', l: 'Cumulative' }
+  ];
+  window.negCCFullscreen = function () {
+    if (typeof window.pkOpenFullscreen !== 'function') { console.error('[negCCFullscreen] pkOpenFullscreen is not loaded'); return; }
+
+    var inlineKpis = document.getElementById('neg-cc-kpis');
+    var kpisHtml = inlineKpis ? '<div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);width:100%">' + inlineKpis.innerHTML + '</div>' : null;
+
+    var inlineTableWrap = document.getElementById('neg-cc-table');
+    inlineTableWrap = inlineTableWrap ? inlineTableWrap.closest('.table-wrap') : null;
+    var tableHtml = inlineTableWrap ? inlineTableWrap.outerHTML : null;
+
+    var tabsHtml = CC_VIEWS.map(function (v) {
+      var on = v.k === NEG.ccView;
+      return '<button onclick="Promise.resolve(negSetCCView(\'' + v.k + '\')).then(negCCRefreshFullscreen)" style="padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:' +
+        (on ? '#14D3A9' : '#7A93AB') + ';background:' + (on ? 'rgba(20,211,169,0.18)' : 'transparent') +
+        ';font-family:\'JetBrains Mono\',monospace;font-weight:600;letter-spacing:.02em">' + v.l + '</button>';
+    }).join('');
+    var filtersHtml = '<div class="pk-fs-filters-left"><div style="display:flex;align-items:center;gap:5px">' +
+      '<span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:\'JetBrains Mono\',monospace">View</span>' +
+      '<div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">' + tabsHtml + '</div></div></div>';
+
+    var titleEl = document.getElementById('neg-cc-title');
+    var subtitleEl = document.getElementById('neg-cc-subtitle');
+
+    (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+      title: 'Negative prices — ' + (titleEl ? titleEl.textContent : 'Cross-zone analysis'),
+      subtitle: subtitleEl ? subtitleEl.textContent : '',
+      filenameStem: 'powerklock_negative_crosszone_' + NEG.ccView,
+      storageKey: 'negative-crosszone',
+      kpis: kpisHtml ? { html: kpisHtml } : null,
+      table: tableHtml ? { html: tableHtml } : null,
+      filters: { html: filtersHtml },
+      chartSource: window.pkBuildChartSource({
+        htmlContainerId: 'neg-cc-chart',
+        isHtmlView: function () { return true; },
+      }),
+    });
+
+    var overlayEl = document.getElementById('pk-fs-overlay');
+    if (overlayEl) overlayEl.setAttribute('data-fs-context', 'neg-cc');
+  };
+  window.negCCRefreshFullscreen = function () {
+    if (typeof window.pkFsIsOpen === 'function' && window.pkFsIsOpen('neg-cc')) window.negCCFullscreen();
+  };
 
   // ════════════════════════════════════════════════════════════════
   // ENTRY POINT

@@ -263,6 +263,13 @@ async function loadFromJSON(opts) {
   // Cross-border
   const cb = await fetchJSON('crossborder.json');
   if (cb?.countries) { window._cbData = cb.countries; console.log('✅ Cross-border from JSON'); }
+
+  // My Dashboard's widgets read pricesData/_genmixData/_loadData/_cbData
+  // directly — refresh it if the user has it open, same as the map refresh
+  // above.
+  if (document.getElementById('page-mydash')?.classList.contains('active') && typeof renderMyDash === 'function') {
+    renderMyDash();
+  }
 }
 
 // ════════════════════════════════════════════

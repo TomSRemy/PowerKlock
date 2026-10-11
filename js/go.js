@@ -103,6 +103,11 @@ function loadGoData(text) {
     renderGOKPIs(); drawGoIndicChart(); drawGoCalChart(); drawGoSpreadChart();
     if (typeof renderGOFwdTable === 'function') renderGOFwdTable();
     if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
+    // My Dashboard's GO widget triggers this same fetch lazily (see
+    // renderMyDash in prices.js) — refresh it once the data lands.
+    if (document.getElementById('page-mydash')?.classList.contains('active') && typeof renderMyDash === 'function') {
+      renderMyDash();
+    }
     console.log('[go] real Commerg data loaded · as-of', GO_REAL.asOf);
     return true;
   } catch (e) { console.warn('[go] loadGoData failed', e); return false; }
@@ -369,8 +374,17 @@ function drawGoWoW() {
   if (!wk || !wk.data || wk.data.length < 2) { goNoData('go-wow-canvas', 'Aucune donnée Commerg chargée'); return; }
   const n = Math.min(goHistPeriod, 52);
   const data = wk.data.slice(-n);
+  // wk.dates lines up 1:1 with wk.data — was discarded here, leaving the
+  // x-axis hidden entirely (scales.x.display:false) with synthetic "W0,W1…"
+  // labels that didn't even correspond to real calendar weeks. A bar chart
+  // with no x-axis gives no way to tell which week any given bar is.
+  const dates = (wk.dates || []).slice(-n);
+  const deltaDates = dates.slice(1);
   const deltas = data.slice(1).map((v,i) => +(v - data[i]).toFixed(4));
-  const labels = Array.from({length:deltas.length},(_,i)=>'W'+i);
+  const every = Math.max(1, Math.ceil(deltas.length / 10));
+  const labels = deltaDates.length === deltas.length
+    ? deltaDates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '')
+    : Array.from({length:deltas.length},(_,i)=>'W'+i);
 
   mkChart('go-wow-canvas', {
     type: 'bar',
@@ -382,7 +396,7 @@ function drawGoWoW() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+ctx.raw.toFixed(4)+' €/MWh'}}, zoom:ZOOM_CFG },
-      scales:{ x:{display:false}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}} }
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-wow-canvas'); },100);
@@ -394,10 +408,18 @@ function drawGoBox() {
   const wk = hist[key];
   if (!wk || !wk.data || !wk.data.length) { goNoData('go-box-canvas', 'Aucune donnée Commerg chargée'); return; }
   const data = wk.data.slice(-goHistPeriod);
+  const dates = (wk.dates || []).slice(-goHistPeriod);
   const chunks = 8, sz = Math.max(1, Math.floor(data.length/chunks));
   const col = GO_SERIES[key]?.c || C_UP;
 
-  const labels = Array.from({length:chunks},(_,i)=>'Q'+(i+1));
+  // Each bucket's label used to be "Q1".."Q8" — meaning "period 1..8" here,
+  // but the "Q1-Q3 range" dataset label means quartile-1-to-3, so with both
+  // visible (the legend was off, masking the collision) "Q1" reads as two
+  // different things. Label buckets by their real start date instead.
+  const labels = Array.from({length:chunks}, (_,i) => {
+    const d = dates[i*sz];
+    return d ? fmtGoDate(d) : 'P' + (i+1);
+  });
   const q = (arr,p) => { const ch=arr.slice().sort((a,b)=>a-b); return ch.length?+ch[Math.floor(ch.length*p)].toFixed(4):null; };
   const medians = Array.from({length:chunks}, (_,i) => q(data.slice(i*sz,(i+1)*sz),.5));
   const q1s = Array.from({length:chunks}, (_,i) => q(data.slice(i*sz,(i+1)*sz),.25));
@@ -406,13 +428,18 @@ function drawGoBox() {
   mkChart('go-box-canvas', {
     type: 'bar',
     data: { labels, datasets:[
-      { label:'Q1-Q3 range', data:q3s.map((v,i)=>(v==null||q1s[i]==null)?null:v-q1s[i]), backgroundColor:rgba(col,.25), borderWidth:1, borderColor:col, borderRadius:2 },
-      { label:'Median', data:medians, backgroundColor:col, borderWidth:0, borderRadius:2, barThickness:4 },
+      // Chart.js floating-bar syntax ([min, max] per point) — previously this
+      // passed a single scalar (q3-q1), which draws a bar of that HEIGHT
+      // starting from the axis minimum, not actually positioned between q1
+      // and q3. Height alone (the IQR width) was shown; where it sat on the
+      // price axis was meaningless and could visually contradict the median bar.
+      { label:'Q1–Q3 range', data:q3s.map((v,i)=>(v==null||q1s[i]==null)?null:[q1s[i], v]), backgroundColor:rgba(col,.25), borderWidth:1, borderColor:col, borderRadius:2 },
+      { label:'Médiane', data:medians, backgroundColor:col, borderWidth:0, borderRadius:2, barThickness:4 },
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh')}} },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}, beginAtZero:false} }
+      plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(4)+'–'+ctx.raw[1].toFixed(4):ctx.raw.toFixed(4))+' €/MWh')}} },
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}, beginAtZero:false} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);

@@ -649,6 +649,11 @@
         },
       ],
     }, _commonChartOpts('GW'));
+    _renderPanelLegend('ma-legend-loadren', [
+      { label: 'Solar', color: FUEL_COLORS.solar },
+      { label: 'Wind', color: FUEL_COLORS.wind },
+      { label: 'Load', color: '#fff' },
+    ]);
 
     const stackDatasets = FUEL_STACK.map(function (fuel) {
       const data = (fuel === 'wind' || fuel === 'solar') ? f[fuel] : f.mix[fuel];
@@ -663,6 +668,21 @@
     mixOpts.scales.y.stacked = true;
     mixOpts.scales.y.beginAtZero = true;
     _mkChart('ma-canvas-mix', 'line', { labels: labels, datasets: stackDatasets }, mixOpts);
+    _renderPanelLegend('ma-legend-mix', FUEL_STACK.map(function (fuel) {
+      return { label: FUEL_LABELS[fuel], color: FUEL_COLORS[fuel] };
+    }));
+  }
+
+  // Static colour-key for the two multi-series panels (Demande vs Ren, Mix
+  // supply) — their Chart.js legend is off (plugins.legend.display:false,
+  // the shared crosshair tooltip handles per-value labelling on hover), but
+  // with the mouse away there was previously no way to tell the series apart.
+  function _renderPanelLegend(hostId, items) {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    host.innerHTML = items.map(function (it) {
+      return '<span><span class="dot" style="background:' + it.color + '"></span>' + it.label + '</span>';
+    }).join('');
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -957,6 +977,25 @@
   window.maSetWindow = function (days) { STATE.windowDays = days; _reload(); };
   window.maSetGranularity = function (g) { STATE.granularity = g; _reload(); };
   window.maSetZone = function (zone) { STATE.zone = zone; _reload(); };
+
+  // Native fullscreen on the whole 4-panel group, not the usual per-chart
+  // addFullscreen() — these panels share one crosshair/hover tooltip across
+  // all 4, so isolating a single canvas would break the sync they're built
+  // around. Chart.js canvases need an explicit resize() nudge once the
+  // container's real size settles post-transition.
+  window.maFullscreenPanels = function () {
+    const wrap = document.getElementById('ma-panels-wrap');
+    if (!wrap) return;
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    wrap.requestFullscreen().then(function () {
+      setTimeout(function () {
+        Object.keys(STATE.charts).forEach(function (id) {
+          const c = STATE.charts[id];
+          if (c && typeof c.resize === 'function') c.resize();
+        });
+      }, 120);
+    }).catch(function (e) { console.warn('[market-analysis] fullscreen failed', e); });
+  };
 
   window.loadMarketAnalysis = async function () {
     if (window._maLoaded && STATE.data) return;

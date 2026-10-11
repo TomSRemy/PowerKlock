@@ -999,6 +999,7 @@
       },
     });
     if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhDrillProfileChart, 'gmh-drill-profile-canvas');
+    if (typeof addFullscreen === 'function') addFullscreen('gmh-drill-profile-canvas');
 
     // Breakdown
     if (breakHost) {
@@ -1211,6 +1212,7 @@
       },
     });
     if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhDrillCarbonChart, 'gmh-drill-carbon-canvas');
+    if (typeof addFullscreen === 'function') addFullscreen('gmh-drill-carbon-canvas');
 
     if (breakHost) {
       const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
@@ -1663,6 +1665,7 @@
       },
     });
     if (typeof _gmZoomify === 'function') _gmZoomify(window._gmhczTrendsChart, 'gmhcz-trends-canvas');
+    if (typeof addFullscreen === 'function') addFullscreen('gmhcz-trends-canvas');
   }
 
   function _gmhczRenderSpread(pdata) {

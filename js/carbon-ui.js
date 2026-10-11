@@ -213,6 +213,7 @@
         },
       },
     });
+    if (typeof addFullscreen === 'function') addFullscreen(`carb-chart-${idx}`);
   }
 
   // ── petits builders (table norm respectée) ───────────────────────
