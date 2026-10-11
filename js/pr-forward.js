@@ -323,6 +323,12 @@
   function renderAll() {
     if (!PRFWD.snap || !PRFWD.series) return;
     var countrySnap = PRFWD.snap.countries[PRFWD.country];
+    var meta = countryMeta(PRFWD.country);
+    var boardMeta = document.getElementById('prfwd-board-meta');
+    if (boardMeta) {
+      var fwdDate = countrySnap.forwardCurveDate || '';
+      boardMeta.textContent = meta.label + ' · M+1 à Y+3 · ' + fwdDate;
+    }
     renderCountryButtons();
     renderKpiStrip(countrySnap);
     renderInsights(PRFWD.snap);
