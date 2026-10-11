@@ -140,35 +140,37 @@
     }).join('');
   }
 
-  // Exact same chart type/options for every country — only data, colour and unit change.
-  function renderCurveChart(countrySnap, meta) {
-    var labels = FORWARD_TENORS;
-    var values = FORWARD_TENORS.map(function (t) {
+  // Signed delta cell: ▲/▼/● coloured like the rest of the site (priceContext:
+  // a rising forward price is "bad" for a buyer, so up = red, down = green).
+  function deltaCell(pct) {
+    if (pct === null || pct === undefined || isNaN(pct)) {
+      return '<span style="color:var(--text3)">–</span>';
+    }
+    var arrow = pct > 0 ? '▲' : (pct < 0 ? '▼' : '●');
+    var colour = pct > 0 ? 'var(--down)' : (pct < 0 ? 'var(--up)' : 'var(--text3)');
+    var sign = pct > 0 ? '+' : '';
+    return '<span style="color:' + colour + '">' + arrow + ' ' + sign + num(pct, 2) + '%</span>';
+  }
+
+  // Same table for every country — mirrors the SEFE report's own forward table
+  // (product / contract / D-1 value / D-1 var% / W-1 var%).
+  function renderCurveTable(countrySnap) {
+    var host = document.getElementById('prfwd-curve-tbody');
+    if (!host) return;
+    var unit = countrySnap.currency + '/MWh';
+    host.innerHTML = FORWARD_TENORS.map(function (t) {
       var row = (countrySnap.forwardCurve || []).filter(function (r) { return r.tenor === t; })[0];
-      return row ? row.value : null;
-    });
-    window.mkHistChart('prfwd-chart-curve', {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Prix forward ' + meta.label + ' base', data: values,
-          borderColor: meta.colour, backgroundColor: meta.colour + '1F',
-          borderWidth: 2, pointRadius: 3, pointBackgroundColor: meta.colour, tension: 0.1, fill: true
-        }]
-      },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' },
-               ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' },
-               ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: countrySnap.currency + '/MWh', color: '#7A93AB', font: { size: 10 } } }
-        }
+      if (!row) {
+        return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
       }
-    });
+      return '<tr>' +
+        '<td>' + t + '</td>' +
+        '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
+        '<td>' + num(row.value, 2) + ' ' + unit + '</td>' +
+        '<td>' + deltaCell(row.varD1Pct) + '</td>' +
+        '<td>' + deltaCell(row.varW1Pct) + '</td>' +
+        '</tr>';
+    }).join('');
   }
 
   // ── Chart A : tous les contrats Cal, une ligne par année, vie complète de chaque contrat ──
@@ -321,14 +323,13 @@
   function renderAll() {
     if (!PRFWD.snap || !PRFWD.series) return;
     var countrySnap = PRFWD.snap.countries[PRFWD.country];
-    var meta = countryMeta(PRFWD.country);
     renderCountryButtons();
     renderKpiStrip(countrySnap);
     renderInsights(PRFWD.snap);
     renderTenorButtons();
     renderWindowButtons();
     renderCalOffsetButtons();
-    renderCurveChart(countrySnap, meta);
+    renderCurveTable(countrySnap);
     renderWindowed();
     renderCalCharts();
   }

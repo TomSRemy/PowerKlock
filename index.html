@@ -2901,16 +2901,26 @@
         <div class="hist-section hist-section-strong" id="hs-prfwd-curve">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-curve')">
             <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg>Courbe forward FR (base)
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">M+1 à Y+3 · source SEFE cockpit</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Prix forward (base)
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">M+1 à Y+3 · snapshot du jour · source SEFE cockpit</span>
             </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open" id="hs-body-prfwd-curve">
-            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-curve'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            <div class="table-wrap">
+              <table id="prfwd-curve-table" style="font-size:12px">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">PRODUIT</th>
+                    <th style="text-align:left">CONTRAT</th>
+                    <th style="text-align:right">VALEUR (J-1)</th>
+                    <th style="text-align:right">VAR J-1</th>
+                    <th style="text-align:right">VAR S-1</th>
+                  </tr>
+                </thead>
+                <tbody id="prfwd-curve-tbody"></tbody>
+              </table>
             </div>
-            <div style="position:relative;height:280px"><canvas id="prfwd-chart-curve"></canvas></div>
           </div>
         </div>
 
