@@ -1,0 +1,22 @@
+{
+ "date": "2024-06-07",
+ "forwardCurve": {
+  "Q+1": 78.21,
+  "Y+1": 58.25,
+  "Y+2": 57.21,
+  "Y+3": 62.22
+ },
+ "spot": 20.22,
+ "nuclearCapacity": {
+  "actualMW": 42702.77,
+  "forecastMW": 52375
+ },
+ "generationMix": {
+  "gas": 0.52,
+  "wind": 1.61,
+  "solar": 4.14,
+  "nuclear": 39.7,
+  "hydro": 6.42,
+  "other": 2.94
+ }
+}

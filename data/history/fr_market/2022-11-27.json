@@ -1,0 +1,15 @@
+{
+ "date": "2022-11-27",
+ "spot": 318.85,
+ "nuclearCapacity": {
+  "actualMW": 31609.17
+ },
+ "generationMix": {
+  "gas": 3.65,
+  "wind": 6.5,
+  "solar": 0.9,
+  "nuclear": 29.76,
+  "hydro": 4.09,
+  "other": 0.79
+ }
+}

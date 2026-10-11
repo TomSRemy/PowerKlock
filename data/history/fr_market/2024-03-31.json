@@ -1,0 +1,8 @@
+{
+ "date": "2024-03-31",
+ "spot": 17.41,
+ "nuclearCapacity": {
+  "actualMW": 40985.98,
+  "forecastMW": 47955.42
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "date": "2024-07-14",
+ "spot": 50.01,
+ "nuclearCapacity": {
+  "actualMW": 41707.65,
+  "forecastMW": 40797.13
+ },
+ "generationMix": {
+  "gas": 0.49,
+  "wind": 0.8,
+  "solar": 3.46,
+  "nuclear": 34.19,
+  "hydro": 5.47,
+  "other": 2.77
+ }
+}

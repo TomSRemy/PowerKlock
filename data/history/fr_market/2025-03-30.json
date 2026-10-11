@@ -1,0 +1,8 @@
+{
+ "date": "2025-03-30",
+ "spot": 60.25,
+ "nuclearCapacity": {
+  "actualMW": 44725.83,
+  "forecastMW": 42376.91
+ }
+}

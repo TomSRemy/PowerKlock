@@ -1,0 +1,15 @@
+{
+ "date": "2023-04-01",
+ "spot": 70.88,
+ "nuclearCapacity": {
+  "actualMW": 36915
+ },
+ "generationMix": {
+  "gas": 0.91,
+  "wind": 11.5,
+  "solar": 2.09,
+  "nuclear": 34.19,
+  "hydro": 4.54,
+  "other": 1.64
+ }
+}

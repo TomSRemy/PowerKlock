@@ -1,0 +1,19 @@
+{
+ "date": "2023-07-13",
+ "forwardCurve": {
+  "Y+1": 91.42,
+  "Y+2": 78.59
+ },
+ "spot": 80.69,
+ "nuclearCapacity": {
+  "actualMW": 35003.75
+ },
+ "generationMix": {
+  "gas": 4.06,
+  "wind": 2.6,
+  "solar": 3.88,
+  "nuclear": 32.22,
+  "hydro": 3.81,
+  "other": 2.08
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "date": "2024-05-13",
+ "forwardCurve": {
+  "Q+1": 75.77,
+  "Y+1": 58.46,
+  "Y+2": 57.78,
+  "Y+3": 57.88
+ },
+ "spot": 6.89,
+ "nuclearCapacity": {
+  "actualMW": 42048.96,
+  "forecastMW": 51465
+ },
+ "generationMix": {
+  "gas": 0.4,
+  "wind": 3.5,
+  "solar": 3.3,
+  "nuclear": 37.3,
+  "hydro": 6.85,
+  "other": 2.57
+ }
+}
