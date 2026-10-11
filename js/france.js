@@ -342,6 +342,10 @@
     config.options.plugins.zoom = ZOOM_CFG;
     var ch = new Chart(el, config);
     S.charts[key] = ch;
+    // Every France cockpit chart funnels through here, so wiring the ⛶
+    // button once covers all of them (none had it before — addFullscreen
+    // no-ops on repeat calls for the same canvas via its dataset.fsAdded guard).
+    if (typeof addFullscreen === 'function') addFullscreen(canvasId);
     return ch;
   }
 

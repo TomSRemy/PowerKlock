@@ -265,21 +265,14 @@ function renderHDD() {
 window.addEventListener("load", () => { if (typeof showPage === "undefined") return;
 const _origShowPage = showPage;
 window.showPage = function(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-  const pg = document.getElementById('page-' + id);
-  if (pg) pg.classList.add('active');
-  const nav = document.getElementById('nav-' + id);
-  if (nav) nav.classList.add('active');
+  // Was a full copy-paste of the original page/nav toggling (which had gone
+  // stale — e.g. it never got the dashboard-switcher reset added to prices.js'
+  // showPage, since this duplicate silently shadowed it). Delegate to the
+  // original and only add what this patch actually needs on top: the new
+  // section loaders below.
+  _origShowPage(id);
   const ldr = PAGE_LOADERS[id];
   if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
-  // original loaders
-  if (id === 'genmix' && !window._genmixLoaded) loadGenMix();
-  if (id === 'news' && !window._newsLoaded) loadNews();
-  if (id === 'crossborder' && !window._cbLoaded) loadCrossBorder();
-  if (id === 'load' && !window._loadLoaded) loadLoad();
-  if (id === 'overview') loadOverview();
-  if (id === 'converter') { updateConverter(); updateCapacity(); }
 };
 });  // end load listener
 

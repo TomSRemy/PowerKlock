@@ -4044,7 +4044,21 @@ function _buildHoChart(zone, series, fullscreen) {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        // 5 datasets (Daily max/min ribbon + Daily avg + 7D rolling + 30D
+        // rolling) with no legend at all — the ribbon is meant to stay
+        // "ultra-discreet" per the comment above, so the filter here keeps
+        // it out of the legend while still surfacing the 3 lines that
+        // actually need identifying (colour alone wasn't enough: 7D is grey
+        // dashed, 30D is solid teal, and that distinction isn't obvious
+        // without a key, especially in a screenshot or on a quick glance).
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: {
+            color: 'rgba(184,201,217,.6)', font: { size: fontSize, family: "'JetBrains Mono', monospace" },
+            boxWidth: 14, usePointStyle: true, pointStyle: 'line',
+            filter: (item) => item.text === 'Daily avg' || item.text === '7D rolling' || item.text === '30D rolling',
+          },
+        },
         tooltip: {
           backgroundColor: '#0f1419',
           borderColor: 'rgba(255,255,255,.08)',

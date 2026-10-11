@@ -804,6 +804,7 @@ function _gmdczRenderProfiles() {
     },
   });
   _gmZoomify(window._gmdczProfilesChart, 'gmdcz-profiles-canvas');
+  if (typeof addFullscreen === 'function') addFullscreen('gmdcz-profiles-canvas');
 
   const legendHost = document.getElementById('gmdcz-profiles-legend');
   if (legendHost) {

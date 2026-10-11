@@ -29,7 +29,7 @@
 
   var PF = {
     openCountry: null,
-    drillTab: 'forward',       // forward | calall | cal1 | free | nuc
+    drillTab: 'calall',        // calall | cal1 | free | nuc
     drillTenor: 'Y+1',         // for the "Graph libre" drill tab
     drillWindow: '1Y',
     drillCalOffset: 1,
@@ -146,8 +146,10 @@
   // DRILL-DOWN · row expand, mirrors Genmix Daily board's _gmOpenRow
   // ══════════════════════════════════════════════════════════════════════
 
+  // "Forward" used to be a tab here (table only, chart hidden). The table is
+  // now always shown below the chart instead — see renderDrillForwardTable —
+  // mirroring the DA drill-down (chart, then its breakdown table underneath).
   var DRILL_TABS = [
-    { key: 'forward', label: 'Forward' },
     { key: 'calall', label: 'Tous les Cal' },
     { key: 'cal1', label: 'Cal+N glissant' },
     { key: 'free', label: 'Graph libre' },
@@ -195,12 +197,14 @@
       '<div class="pk-tabbar-left"><div id="pf-drill-tabs" class="pk-tabbar-tabs"></div></div>' +
       '</div>' +
       '<div id="pf-drill-content" style="min-height:300px;margin-top:10px"></div>' +
+      '<div id="pf-drill-forward-table" style="margin-top:18px"></div>' +
       '</div></td>';
     row.after(detail);
 
     renderDrillKpis(cc);
     renderDrillTabs(cc);
     renderDrillContent(cc);
+    renderDrillForwardTable(cc);
   }
 
   function renderDrillKpis(cc) {
@@ -225,7 +229,7 @@
     if (!host) return;
     var cs = PF.snap.countries[cc];
     var tabs = DRILL_TABS.filter(function (t) { return t.key !== 'nuc' || cs.nuclearCapacity; });
-    if (tabs.indexOf(PF.drillTab) === -1 && !tabs.some(function (t) { return t.key === PF.drillTab; })) PF.drillTab = 'forward';
+    if (tabs.indexOf(PF.drillTab) === -1 && !tabs.some(function (t) { return t.key === PF.drillTab; })) PF.drillTab = 'calall';
     host.innerHTML = tabs.map(function (t) {
       var active = t.key === PF.drillTab;
       return '<button onclick="window._pfSetDrillTab(\'' + t.key + '\')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:' +
@@ -242,26 +246,6 @@
     var host = document.getElementById('pf-drill-content');
     if (!host) return;
     var cs = PF.snap.countries[cc];
-
-    if (PF.drillTab === 'forward') {
-      var unit = cs.currency + '/MWh';
-      var rows = FORWARD_TENORS.map(function (t) {
-        var row = tenorRow(cs, t);
-        if (!row) return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
-        return '<tr>' +
-          '<td>' + t + '</td>' +
-          '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
-          '<td>' + num(row.value, 2) + ' ' + unit + '</td>' +
-          '<td>' + deltaCell(row.varD1Pct) + '</td>' +
-          '<td>' + deltaCell(row.varW1Pct) + '</td>' +
-          '</tr>';
-      }).join('');
-      host.innerHTML = '<div class="table-wrap"><table style="font-size:11px">' +
-        '<thead><tr><th style="text-align:left">PRODUIT</th><th style="text-align:left">CONTRAT</th>' +
-        '<th style="text-align:right">VALEUR (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR S-1</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody></table></div>';
-      return;
-    }
 
     if (PF.drillTab === 'calall') {
       host.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:6px">' +
@@ -300,6 +284,34 @@
       renderNucChart(cc);
       return;
     }
+  }
+
+  // Forward tenor table — always shown below the chart tabs, regardless of
+  // which one is active (same layout as the DA drill-down: chart, then its
+  // breakdown table underneath). Rendered once on open since it doesn't
+  // depend on PF.drillTab.
+  function renderDrillForwardTable(cc) {
+    var host = document.getElementById('pf-drill-forward-table');
+    if (!host) return;
+    var cs = PF.snap.countries[cc];
+    var unit = cs.currency + '/MWh';
+    var rows = FORWARD_TENORS.map(function (t) {
+      var row = tenorRow(cs, t);
+      if (!row) return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
+      return '<tr>' +
+        '<td>' + t + '</td>' +
+        '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
+        '<td>' + num(row.value, 2) + ' ' + unit + '</td>' +
+        '<td>' + deltaCell(row.varD1Pct) + '</td>' +
+        '<td>' + deltaCell(row.varW1Pct) + '</td>' +
+        '</tr>';
+    }).join('');
+    host.innerHTML = '<div class="table-wrap">' +
+      '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Tableau forward · tous les tenors</span></div>' +
+      '<table style="font-size:11px">' +
+      '<thead><tr><th style="text-align:left">PRODUIT</th><th style="text-align:left">CONTRAT</th>' +
+      '<th style="text-align:right">VALEUR (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR S-1</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
   }
 
   function renderDrillCalOffsetButtons() {
@@ -358,6 +370,7 @@
         }
       }
     });
+    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-calall');
   }
 
   // Chart B (drill) : Cal+N glissant, courbe continue.
@@ -380,6 +393,7 @@
         }
       }
     });
+    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-cal1');
   }
 
   // Chart C (drill) : graph libre, produits choisis sur la période choisie.
@@ -406,6 +420,7 @@
         }
       }
     });
+    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-free');
   }
 
   // Chart D (drill) : nucléaire réel vs prévisionnel (FR seulement).
@@ -438,6 +453,7 @@
         }
       }
     });
+    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-nuc');
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -486,6 +502,7 @@
         }
       }
     });
+    if (typeof addFullscreen === 'function') addFullscreen('prfwd-chart-compare');
   }
 
   function renderCompareTable() {

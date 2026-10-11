@@ -19,11 +19,66 @@ const ISO_TO_ZONE = {
   'XK':'RS', // Kosovo → Serbia proxy
 };
 
+// Approximate [lat, lon] centroid for each bidding zone in ZONES (prices.js)
+// — used to place the price labels drawn on top of the choropleth. Was
+// referenced here but never defined anywhere in the codebase, which threw
+// a ReferenceError every time the map labels needed a (re)draw.
+const ZONE_COORDS = {
+  FR: [46.6, 2.5], DE_LU: [51.0, 10.0], BE: [50.6, 4.5], NL: [52.2, 5.3],
+  ES: [40.0, -3.7], PT: [39.5, -8.0], GB: [54.0, -2.5], CH: [46.8, 8.2],
+  AT: [47.5, 14.5], CZ: [49.8, 15.5], SK: [48.7, 19.5], HU: [47.1, 19.5],
+  IT_NORD: [45.46, 9.19], IT_SOUTH: [40.85, 14.3], RO: [45.9, 24.97],
+  HR: [45.3, 16.0], SI: [46.05, 14.5], RS: [44.0, 20.9], BG: [42.7, 25.3],
+  GR: [39.0, 22.0], MK: [41.6, 21.7], ME: [42.7, 19.3],
+  DK_W: [56.0, 9.0], DK_E: [55.5, 12.0], SE_3: [59.3, 17.5],
+  NO_1: [60.1, 11.0], NO_2: [59.5, 8.0], NO_3: [63.4, 10.4],
+  FI: [63.0, 26.0], EE: [58.9, 25.0], LV: [56.9, 24.6], LT: [55.2, 23.9],
+};
+
 function getZoneForISO(iso) {
   const code = ISO_TO_ZONE[iso];
   if (!code) return null;
   const data = getZoneData();
   return data.find(z => z.code === code || z.code === code.replace('_LU','') || z.code === code.split('_')[0]);
+}
+
+// ── Colour scales for the choropleth + legend ──
+// These were referenced throughout this file (geoStyle, renderMapLegend) but
+// never defined anywhere in the codebase — every call threw a ReferenceError,
+// which aborted the GeoJSON style callback and broke the whole map.
+function _lerpRGB(c0, c1, t) {
+  const r = Math.round(c0[0] + (c1[0] - c0[0]) * t);
+  const g = Math.round(c0[1] + (c1[1] - c0[1]) * t);
+  const b = Math.round(c0[2] + (c1[2] - c0[2]) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Low price → green, mid → amber, high price → red (same palette as the
+// rest of the app: #14D3A9 up/good, #FBBF24 warn, #ED6965 down/bad).
+function priceToColor(value, min, max) {
+  if (value === null || value === undefined || isNaN(value)) return '#1e2d3d';
+  const range = max - min;
+  let t = range > 0 ? (value - min) / range : 0.5;
+  t = Math.max(0, Math.min(1, t));
+  return t <= 0.5
+    ? _lerpRGB([20, 211, 169], [251, 191, 36], t / 0.5)
+    : _lerpRGB([251, 191, 36], [237, 105, 101], (t - 0.5) / 0.5);
+}
+
+// Negative-price hours → neutral at 0h, ramping to amber as hours climb.
+function negToColor(hours) {
+  const t = Math.max(0, Math.min(1, (Number(hours) || 0) / 12));
+  return _lerpRGB([30, 45, 61], [238, 155, 2], t);
+}
+
+// vs. yesterday delta → neutral at 0, red for rising prices, green for falling.
+function deltaToColor(delta) {
+  const d = Number(delta);
+  if (delta === null || delta === undefined || isNaN(d)) return '#1e2d3d';
+  const t = Math.max(-1, Math.min(1, d / 30));
+  return t >= 0
+    ? _lerpRGB([30, 45, 61], [237, 105, 101], t)
+    : _lerpRGB([30, 45, 61], [20, 211, 169], -t);
 }
 
 function geoStyle(feature) {
@@ -40,7 +95,7 @@ function geoStyle(feature) {
   if (zone) {
     fillOpacity = 0.82;
     if (mapView === 'price') fillColor = priceToColor(zone.today, mn, mx);
-    else if (mapView === 'spark') fillColor = (zone.spark||0) >= 0 ? '#22c55e' : '#ef4444';
+    else if (mapView === 'spark') fillColor = zone.spark == null ? '#1e2d3d' : (zone.spark >= 0 ? '#22c55e' : '#ef4444');
     else if (mapView === 'neg') fillColor = negToColor(zone.negHrs || zone.neg || 0);
     else fillColor = deltaToColor(zone.vsYday || zone.vsY);
   }
@@ -136,7 +191,7 @@ function addMapPriceLabels() {
 
     let val, unit;
     if (mapView === 'price') { val = zone.today?.toFixed(1); unit = '€'; }
-    else if (mapView === 'spark') { val = (zone.spark||0)>=0?'+'+zone.spark?.toFixed(1):zone.spark?.toFixed(1); unit='€'; }
+    else if (mapView === 'spark') { val = zone.spark == null ? '–' : (zone.spark>=0?'+'+zone.spark.toFixed(1):zone.spark.toFixed(1)); unit = zone.spark == null ? '' : '€'; }
     else if (mapView === 'neg') { val = (zone.negHrs||0)+'h'; unit=''; }
     else { val = (zone.vsYday||0)>=0?'+'+zone.vsYday?.toFixed(1):zone.vsYday?.toFixed(1); unit='€'; }
 
@@ -177,7 +232,7 @@ function initLeafletMap() {
   if (mapInitialized) return;
   mapInitialized = true;
 
-  // Dark tile layer — CartoDB Dark Matter (free, no key)
+  // Dark tile layer.
   leafletMap = L.map('leaflet-map', {
     center: [50, 10],
     zoom: 4,
@@ -187,11 +242,15 @@ function initLeafletMap() {
     maxZoom: 8,
   });
 
-  // Base dark tile (no labels — we draw our own)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
+  // Base dark tile — CARTO's basemaps.cartocdn.com now requires an API key
+  // for every layer (it used to be free/anonymous), so every tile came back
+  // as a grey "API KEY REQUIRED" placeholder. Switched to Esri's dark grey
+  // canvas basemap, which is still free and keyless; it has its own light
+  // country labels baked in (no separate "_nolabels" variant like CARTO had),
+  // but that's a cosmetic tradeoff against the map being blank.
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+    maxZoom: 16,
   }).addTo(leafletMap);
 
   // Load EU GeoJSON for choropleth + borders

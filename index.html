@@ -437,6 +437,21 @@
     border-left-color: var(--accent);
   }
   .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* Dashboard switcher injected into the drawer — desktop already has
+     .topbar-tabs for this, so hide it there; the mobile media query below
+     turns it back on. */
+  .sidebar-dash-switch { display: none; }
+
+  /* switchDashboard() used to hide the sidebar via sidebar.style.display,
+     which also broke the off-canvas mobile drawer (it couldn't be reopened
+     once hidden). Scope the hide to desktop only — on mobile the sidebar is
+     already off-canvas by default (transform: translateX(-100%)) so there is
+     nothing to hide. */
+  @media (min-width: 769px) {
+    .sidebar.sidebar-special-hidden { display: none; }
+  }
+
   .sidebar-badge {
     margin-left: auto;
     font-size: 10px;
@@ -1440,7 +1455,6 @@
     min-height: 200px;
   }
   .mydash-empty {
-    grid-column: 1/-1;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 300px; text-align: center;
   }
@@ -1448,6 +1462,8 @@
     background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
     padding: 16px; position: relative;
   }
+  .mydash-widget-chart { grid-column: span 2; min-width: 0; }
+  @media (max-width: 620px) { .mydash-widget-chart { grid-column: span 1; } }
   .mydash-widget-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
   .mdash-remove {
     position: absolute; top: 10px; right: 10px;
@@ -2231,6 +2247,33 @@
     }
     .sidebar.open { transform: translateX(0); }
 
+    /* Dashboard switcher (All / France / My Dashboard) — only reachable
+       control for these views on mobile, since .topbar-tabs is hidden
+       above. */
+    .sidebar-dash-switch {
+      display: flex;
+      gap: 6px;
+      padding: 0 14px 14px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .mobile-dash-tab {
+      height: auto;
+      padding: 7px 12px !important;
+      font-size: 12px;
+      border-radius: 6px;
+      background: var(--bg3);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .mobile-dash-tab::after { display: none; }
+    .mobile-dash-tab.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
     /* Backdrop when drawer is open */
     .mobile-backdrop {
       display: none;
@@ -2370,6 +2413,23 @@
     /* ── Sub-section spacing tighter ── */
     .hist-section-header { padding: 10px 12px; font-size: 11px; }
     .hist-two-col { grid-template-columns: 1fr !important; }
+
+    /* ── France cockpit tab bar: scroll horizontally instead of wrapping
+       to a second line (it has 5 tabs — Aujourd'hui/Cannibalisation/
+       Historique/Voisins/Marché & Forward — too many to fit one row on a
+       phone). Matches the .pr-tabs / .hw-ho scroll pattern used elsewhere. */
+    #page-france .fr-tabbar {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #page-france .fr-tabbar::-webkit-scrollbar { display: none; }
+    #page-france .fr-tab {
+      flex-shrink: 0;
+      white-space: nowrap;
+      padding: 9px 12px;
+    }
   }
 
   /* Very narrow phones (iPhone SE etc.) */
@@ -2457,6 +2517,20 @@
     position: relative; background: var(--bg);
     border-radius: 3px;
   }
+  /* Native Fullscreen API renders the element on its own top-layer, outside
+     normal document flow — it does not inherit the body's dark background,
+     so without this it would show through to the browser's default (white
+     or black depending on OS/browser) around the panels. */
+  #ma-panels-wrap:fullscreen {
+    background: var(--bg); padding: 24px; overflow-y: auto;
+  }
+  .ma-panel-legend {
+    position: absolute; top: 4px; right: 8px; z-index: 3;
+    display: flex; gap: 10px; pointer-events: none;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--tx3);
+  }
+  .ma-panel-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .ma-panel-legend .dot { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
 
   .ma-cursor-badge {
     display: inline-flex; align-items: center; gap: 5px;
@@ -2606,11 +2680,11 @@
     <img src="assets/favicon-64.png" alt="PowerKlock" class="logo-img-icon">
   </div>
   <div class="topbar-tabs">
-    <button class="nav-tab active" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
+    <button class="nav-tab active" data-dash="all" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
     <div class="nav-tab-sep"></div>
-    <button class="nav-tab" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
+    <button class="nav-tab" data-dash="france" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
     <div class="nav-tab-sep"></div>
-    <button class="nav-tab" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
+    <button class="nav-tab" data-dash="mydash" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
   </div>
   <div class="topbar-right">
     <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
@@ -2623,6 +2697,15 @@
 
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
+    <!-- Dashboard switcher (All / France / My Dashboard) — mirrors .topbar-tabs.
+         Hidden on desktop (topbar-tabs already covers it); shown only inside
+         the mobile drawer, since .topbar-tabs is display:none under 768px and
+         this was otherwise the only way to reach those views on mobile. -->
+    <div class="sidebar-dash-switch" id="sidebar-dash-switch">
+      <button class="nav-tab mobile-dash-tab active" data-dash="all" onclick="switchDashboard('all', this)"><span class="tab-icon">◈</span>All</button>
+      <button class="nav-tab mobile-dash-tab" data-dash="france" onclick="switchDashboard('france', this)"><span class="tab-icon">◉</span>France</button>
+      <button class="nav-tab mobile-dash-tab" data-dash="mydash" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
+    </div>
     <div class="sidebar-section section-active" id="sec-power">
       <div class="sidebar-section-label" onclick="toggleSection('sec-power')">Power <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-power-items">
@@ -3604,8 +3687,16 @@
               <div id="neg-cc-subtitle" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-top:0;line-height:1.4;font-weight:400"></div>
             </div>
             <div id="neg-cc-analyst-banner-anchor"></div>
-            <div id="neg-cc-chart-wrap" style="position:relative;height:340px;overflow:hidden;margin-bottom:0">
-              <div id="neg-cc-chart" style="width:100%;height:340px;overflow:auto"></div>
+            <!-- Unlike the Chart.js canvas used elsewhere (e.g. #cc-chart-wrap), this
+                 renders raw SVG with a fixed 1000×320 viewBox (see svgOpen() in
+                 negatives.js) at width:100% / height:auto — so its rendered pixel
+                 height depends on the container's actual width, not a fixed 340px.
+                 On wide viewports that pushed the x-axis labels and the year legend
+                 (both drawn near/after the bottom of the SVG) past a hard 340px clip,
+                 making them invisible without scrolling inside a tiny box. Let the
+                 wrap grow to fit instead of clipping it. -->
+            <div id="neg-cc-chart-wrap" style="position:relative;min-height:340px;margin-bottom:0">
+              <div id="neg-cc-chart" style="width:100%"></div>
             </div>
             <div class="table-wrap" style="margin-top:8px;border-radius:7px">
               <table id="neg-cc-table" style="font-size:11px;table-layout:fixed">
@@ -4509,6 +4600,11 @@
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Pas</span>
           <div id="ma-granularity-pills" style="display:inline-flex;gap:4px"></div>
         </div>
+        <div class="pk-filters-bar-spacer"></div>
+        <!-- The 4 panels below share one crosshair/tooltip, so fullscreen
+             opens the whole group (not addFullscreen() per-canvas, which
+             would isolate one panel and break the sync). -->
+        <button class="pk-btn-ghost" onclick="maFullscreenPanels()" title="Plein écran (les 4 graphs synchronisés)">⛶ Plein écran</button>
       </div>
 
       <!-- Cursor badges -->
@@ -4533,12 +4629,22 @@
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Demande vs Ren</div><div class="ma-lbl-sub">GW</div></div>
-          <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-loadren" style="width:100%;height:190px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:190px">
+            <canvas id="ma-canvas-loadren" style="width:100%;height:190px"></canvas>
+            <!-- Series colours only appeared in the hover tooltip — with the
+                 mouse away (default view, screenshots, touch) there was no
+                 way to tell Solar/Wind/Load apart. Static legend, built from
+                 the same FUEL_COLORS the chart itself uses (see _renderPanels). -->
+            <div id="ma-legend-loadren" class="ma-panel-legend"></div>
+          </div>
         </div>
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Mix supply</div><div class="ma-lbl-sub">GW stacked</div></div>
-          <div class="ma-panel-svg-col" style="height:210px"><canvas id="ma-canvas-mix" style="width:100%;height:210px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:210px">
+            <canvas id="ma-canvas-mix" style="width:100%;height:210px"></canvas>
+            <div id="ma-legend-mix" class="ma-panel-legend"></div>
+          </div>
         </div>
       </div>
 
@@ -5447,15 +5553,39 @@
           <div class="page-title">My Dashboard</div>
           <div class="page-subtitle">Widgets personnalisés</div>
         </div>
-      </div>
-      <div class="mydash-grid" id="mydash-grid">
-        <div class="mydash-empty" id="mydash-empty">
-          <div style="font-size:12px;color:var(--text3)">Aucun widget. Les valeurs de My Dashboard sont encore codées en dur dans getWidgetValue().</div>
+        <div style="display:flex;gap:8px">
+          <button class="pk-btn-ghost" onclick="exportDashConfig()" title="Exporter la config en JSON">⬇ Export</button>
+          <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Ajouter un widget</button>
         </div>
+      </div>
+      <div class="mydash-grid" id="mydash-grid"></div>
+      <!-- Sibling of #mydash-grid, not a child: renderMyDash() replaces
+           #mydash-grid's innerHTML wholesale on every render, which would
+           destroy this node (and break every render after the first) if it
+           lived inside the grid. -->
+      <div class="mydash-empty" id="mydash-empty">
+        <div style="font-size:32px;margin-bottom:10px;opacity:.5">◎</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Aucun widget pour l'instant</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Choisissez les indicateurs à suivre en un coup d'œil.</div>
+        <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Ajouter un widget</button>
       </div>
     </div>
 
   </main>
+
+  <!-- My Dashboard · widget picker modal -->
+  <div id="widget-picker" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(5,8,12,0.6);backdrop-filter:blur(2px)" onclick="if(event.target===this)closeWidgetPicker()">
+    <div style="width:min(640px,92vw);max-height:80vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Ajouter des widgets</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Cliquez pour ajouter ou retirer un indicateur de My Dashboard</div>
+        </div>
+        <button class="pk-btn-ghost" onclick="closeWidgetPicker()" title="Fermer">✕</button>
+      </div>
+      <div id="widget-picker-list" style="padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+    </div>
+  </div>
   <!-- Global zone selector panel · shared across all sections, placed outside all pages so it remains accessible regardless of which tab is active -->
   <div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
@@ -6770,7 +6900,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       // Only auto-close if we're in mobile drawer mode (open class active)
       if (!sidebar.classList.contains('open')) return;
       // Close only when clicking a navigable item (not section labels)
-      const clickedNav = e.target.closest('.sidebar-item, .sidebar-subitem');
+      const clickedNav = e.target.closest('.sidebar-item, .sidebar-subitem, .mobile-dash-tab');
       if (clickedNav) {
         // Small delay so the navigation has time to register first
         setTimeout(() => toggleMobileSidebar(), 120);

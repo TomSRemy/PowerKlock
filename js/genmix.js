@@ -1407,7 +1407,11 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        // "Today" (solid) vs a comparison line (dashed — J-1 / 7-day avg /
+        // Y-1 depending on the toggle) is only distinguishable by line style,
+        // and the dashed line's meaning changes with the toggle — with no
+        // legend there was no way to tell which is which without hovering.
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
           borderColor: '#1A2533', borderWidth: 1, padding: 8,
@@ -2224,7 +2228,11 @@ async function renderGmHistory() {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: false },
+        // Up to 6 differently-coloured series (Wind/Solar/Nuclear/Hydro/
+        // Fossil/Wind 7D rolling, the last 3 only added conditionally) with
+        // no legend — the only way to tell them apart was hovering one
+        // point at a time. The KPI cards above only cover Wind/Solar.
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
         tooltip: { backgroundColor: '#0f1419', borderColor: 'rgba(255,255,255,.08)', borderWidth: 1, padding: 10,
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '--' : ctx.parsed.y.toFixed(2)} GW` } },
       },
