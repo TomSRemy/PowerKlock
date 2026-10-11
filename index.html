@@ -2774,9 +2774,9 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
               Forward
             </div>
-            <div class="pr-overview-card-desc">Power forward curves · CAL, Q, M settlement prices</div>
-            <div class="pr-overview-card-kpi" id="pr-home-card-fwd-kpi" style="color:var(--tx3);font-style:italic">— Coming soon</div>
-            <div class="pr-overview-card-kpi-label">EEX settlement EOD</div>
+            <div class="pr-overview-card-desc">FR power forward curve · M, Q, S, Cal · SEFE cockpit</div>
+            <div class="pr-overview-card-kpi" id="pr-home-card-fwd-kpi">— €/MWh</div>
+            <div class="pr-overview-card-kpi-label" id="pr-home-card-fwd-label">FR Cal+1 base</div>
             <div class="pr-overview-card-link">Open Forward →</div>
           </div>
 
@@ -2870,7 +2870,7 @@
 
       </div>
 
-      <!-- ═══ SUBDOMAIN · FORWARD · stub ═══ -->
+      <!-- ═══ SUBDOMAIN · FORWARD ═══ -->
       <div class="subdomain-panel" data-subdomain-panel="forward">
         <div class="pr-tabs-sticky">
           <div class="pr-tabs-bar">
@@ -2881,9 +2881,104 @@
             </div>
           </div>
         </div>
-        <div class="subdomain-stub">
-          <strong>Forward curve power</strong>
-          À implémenter · sources EEX settlement EOD · ICE Endex
+
+        <div class="hist-window-btns" id="prfwd-country-btns" style="margin-bottom:14px"></div>
+        <div class="kpi-strip" id="prfwd-kpi-strip" style="margin-bottom:18px"></div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-insights">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-insights')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Analyse de marché
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-insights-date"></span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-insights">
+            <div id="prfwd-insights-text" style="font-size:12.5px;line-height:1.6;color:var(--text2)"></div>
+          </div>
+        </div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-curve">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-curve')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg>Courbe forward FR (base)
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">M+1 à Y+3 · source SEFE cockpit</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-curve">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-curve'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:280px"><canvas id="prfwd-chart-curve"></canvas></div>
+          </div>
+        </div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-calall">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-calall')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Tous les contrats Cal
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-calall-sub">Un contrat Cal = une ligne, vie complète de chaque contrat</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-calall">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-calall'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:280px"><canvas id="prfwd-chart-calall"></canvas></div>
+          </div>
+        </div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-cal1">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-cal1')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/></svg>Cal+1 glissant · courbe continue
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Même produit (« l'année prochaine »), rebranché à chaque bascule d'année</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-cal1">
+            <div class="hist-window-btns" id="prfwd-caloffset-btns"></div>
+            <div style="display:flex;justify-content:flex-end;margin:6px 0">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-cal1'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:280px"><canvas id="prfwd-chart-cal1"></canvas></div>
+          </div>
+        </div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-hist">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-hist')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Graph libre
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Choisir les produits et la période</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-hist">
+            <div class="hist-window-btns" id="prfwd-tenor-btns"></div>
+            <div class="hist-window-btns" id="prfwd-window-btns" style="margin-top:6px"></div>
+            <div style="display:flex;justify-content:flex-end;margin:6px 0">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-hist'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:280px"><canvas id="prfwd-chart-hist"></canvas></div>
+          </div>
+        </div>
+
+        <div class="hist-section hist-section-strong" id="hs-prfwd-nuc">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-nuc')">
+            <div class="hist-section-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>Nucléaire disponible : réel vs prévisionnel
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Capacité nucléaire française · source SEFE cockpit</span>
+            </div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-prfwd-nuc">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-nuc'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            </div>
+            <div style="position:relative;height:260px"><canvas id="prfwd-chart-nuc"></canvas></div>
+          </div>
         </div>
       </div>
 
@@ -6110,6 +6205,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/data.js"></script>
 <script src="js/carbon-ui.js"></script>
 <script src="js/negatives.js"></script>
+<script src="js/pr-forward.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
 <script>
@@ -6297,6 +6393,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // empty until the user clicked a window pill button).
     if (target === 'spread' && typeof window.renderHistSpread === 'function') {
       setTimeout(() => window.renderHistSpread(), 30);
+    }
+    // Forward curve power — FR forward curve, nuclear, market insights (SEFE cockpit)
+    if (target === 'forward' && typeof window.renderPrFwd === 'function') {
+      setTimeout(() => window.renderPrFwd(), 30);
     }
 
     // Update the green path height

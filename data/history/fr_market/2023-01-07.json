@@ -11,5 +11,56 @@
   "nuclear": 39.89,
   "hydro": 4.27,
   "other": 1.4
+ },
+ "countries": {
+  "FR": {
+   "spot": 68.2,
+   "nuclearCapacity": {
+    "actualMW": 44098.29
+   },
+   "generationMix": {
+    "gas": 2.57,
+    "wind": 11.33,
+    "solar": 0.82,
+    "nuclear": 39.89,
+    "hydro": 4.27,
+    "other": 1.4
+   }
+  },
+  "UK": {
+   "spot": 82.42,
+   "generationMix": {
+    "gas": 2.58,
+    "wind": 13.42,
+    "solar": 0.85,
+    "nuclear": 5.21,
+    "hydro": 0.86,
+    "biomass": 0.17,
+    "other": 0.25
+   }
+  },
+  "DE": {
+   "spot": 68.94,
+   "generationMix": {
+    "gas": 1.64,
+    "wind": 24.05,
+    "solar": 1.95,
+    "nuclear": 2.4,
+    "coal": 8.93,
+    "hydro": 0.46,
+    "other": 0
+   }
+  },
+  "NL": {
+   "spot": 68.71,
+   "generationMix": {
+    "gas": 1.13,
+    "wind": 3.04,
+    "solar": 0.02,
+    "nuclear": 0.48,
+    "coal": 1.24,
+    "other": 0.32
+   }
+  }
  }
 }

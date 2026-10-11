@@ -16,5 +16,89 @@
   "nuclear": 30.19,
   "hydro": 3.27,
   "other": 1.93
+ },
+ "countries": {
+  "FR": {
+   "forwardCurve": {
+    "Y+1": 100.03,
+    "Y+2": 85.04
+   },
+   "spot": 75.83,
+   "nuclearCapacity": {
+    "actualMW": 33163.92,
+    "forecastMW": 39213.33
+   },
+   "generationMix": {
+    "gas": 2.28,
+    "wind": 3.64,
+    "solar": 3.14,
+    "nuclear": 30.19,
+    "hydro": 3.27,
+    "other": 1.93
+   }
+  },
+  "UK": {
+   "forwardCurve": {
+    "M+1": 100.35,
+    "M+2": 102.21,
+    "M+3": 102.87,
+    "Q+1": 102.8,
+    "Q+2": 71.82,
+    "Q+3": 70.73,
+    "S+1": 71.27,
+    "S+2": 83.93,
+    "Y+1": 82.22,
+    "Y+2": 72.48
+   },
+   "spot": 74.17,
+   "generationMix": {
+    "gas": 11.87,
+    "wind": 3.79,
+    "solar": 0.9,
+    "nuclear": 2.92,
+    "hydro": 0.43,
+    "biomass": 1.45,
+    "other": 0.26
+   }
+  },
+  "DE": {
+   "forwardCurve": {
+    "Y+1": 89.88,
+    "Y+2": 83.83,
+    "Y+3": 82.3
+   },
+   "spot": 90.31,
+   "generationMix": {
+    "gas": 3.24,
+    "wind": 8.35,
+    "solar": 7.88,
+    "nuclear": 0,
+    "coal": 6.64,
+    "hydro": 0.86,
+    "other": 0.59
+   }
+  },
+  "NL": {
+   "forwardCurve": {
+    "M+1": 107.64,
+    "M+2": 111.39,
+    "M+3": 102.23,
+    "Q+1": 96.7,
+    "Q+2": 69.66,
+    "Q+3": 76.8,
+    "S+1": 73.25,
+    "S+2": 96.45,
+    "Y+1": 86.89
+   },
+   "spot": 88.53,
+   "generationMix": {
+    "gas": 4.33,
+    "wind": 0.83,
+    "solar": 3.45,
+    "nuclear": 0.47,
+    "coal": 0,
+    "other": 0.12
+   }
+  }
  }
 }
