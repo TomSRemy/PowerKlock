@@ -1090,15 +1090,18 @@
         return row ? row.value : null;
       });
       makeChart('fwdcurve', 'fr-chart-fwdcurve', {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: curveLabels,
-          datasets: [{ label: 'Prix forward FR base', data: curveValues, backgroundColor: '#14D3A9', borderWidth: 0 }]
+          datasets: [{ label: 'Prix forward FR base', data: curveValues, borderColor: '#14D3A9',
+            backgroundColor: 'rgba(20,211,169,0.12)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#14D3A9',
+            tension: 0.1, fill: true }]
         },
         options: {
+          interaction: { mode: 'index', intersect: false },
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { display: false },
+            x: { grid: { color: 'rgba(255,255,255,0.04)' },
                  ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } } },
             y: axisStyle('€/MWh')
           }

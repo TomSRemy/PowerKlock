@@ -10,6 +10,8 @@ Usage:
   python scripts/fetch_fr_market.py --backfill  # one-time: seed history from each series' own lookback
 """
 import sys
+import re
+import html
 import json
 from datetime import datetime, timezone, date
 from pathlib import Path
@@ -183,6 +185,47 @@ def fetch_market_insights_text(h):
     return None
 
 
+FRANCE_KEYWORDS = re.compile(r"\bFrance\b|\bFrench\b", re.IGNORECASE)
+SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
+
+
+def translate_to_fr(text):
+    if not text.strip():
+        return text
+    r = requests.get(
+        "https://translate.googleapis.com/translate_a/single",
+        params={"client": "gtx", "sl": "en", "tl": "fr", "dt": "t", "q": text},
+        timeout=20,
+    )
+    r.raise_for_status()
+    data = r.json()
+    return "".join(seg[0] for seg in data[0] if seg[0])
+
+
+def france_focus_french(raw_html):
+    """Keep only France-related sentences from the (English, multi-country) narrative,
+    translate them to French. Falls back to the France-filtered English text if
+    translation is unavailable."""
+    if not raw_html:
+        return None
+    paragraphs = re.findall(r"<p>(.*?)</p>", raw_html, re.DOTALL)
+    kept_paragraphs = []
+    for p in paragraphs:
+        plain = html.unescape(re.sub(r"<[^>]+>", "", p)).strip()
+        sentences = SENTENCE_SPLIT.split(plain)
+        france_sentences = [s for s in sentences if FRANCE_KEYWORDS.search(s)]
+        if france_sentences:
+            kept_paragraphs.append(" ".join(france_sentences))
+    if not kept_paragraphs:
+        return None
+    try:
+        fr_paragraphs = [translate_to_fr(p) for p in kept_paragraphs]
+    except Exception as e:
+        print(f"  [warn] translation failed ({e}), keeping English France-focused text")
+        fr_paragraphs = kept_paragraphs
+    return "".join(f"<p>{p}</p>" for p in fr_paragraphs)
+
+
 def ms_to_date(ms):
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).date().isoformat()
 
@@ -307,7 +350,8 @@ def daily_run():
     print(f"  [{mix_date}] {genmix}")
 
     print("Fetching market insights narrative...")
-    insights_html = fetch_market_insights_text(h)
+    raw_insights_html = fetch_market_insights_text(h)
+    insights_html = france_focus_french(raw_insights_html)
 
     snapshot = {
         "lastUpdate": datetime.now(timezone.utc).isoformat(),
