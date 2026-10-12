@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-12",
+ "countries": {
+  "FR": {
+   "spot": 169.44
+  },
+  "UK": {
+   "spot": 126.5
+  },
+  "DE": {
+   "spot": 160.23
+  },
+  "NL": {
+   "spot": 164.05
+  }
+ },
+ "marketInsightsHtml": "<p>Dans toute l’Europe, l’impact d’un été et d’un mois de septembre secs et inhabituellement chauds continue de susciter des inquiétudes quant à l’approvisionnement en électricité, le faible niveau des rivières contribuant aux pannes nucléaires en cours en France.</p>"
+}
