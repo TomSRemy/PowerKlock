@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-10-11T08:10:43.174628+00:00",
+ "lastUpdate": "2026-10-12T12:54:45.060788+00:00",
  "spot": {
-  "value": 127.38,
+  "value": 169.44,
   "unit": "EUR/MWh",
-  "date": "2026-10-10"
+  "date": "2026-10-12"
  },
  "forwardCurve": [
   {
@@ -124,24 +124,24 @@
  },
  "nuclearCapacityDate": "2026-10-10",
  "generationMix": {
-  "gas": 1.13,
-  "wind": 10.17,
-  "solar": 3.33,
-  "nuclear": 36.44,
-  "hydro": 2.14,
-  "other": 2.15
+  "gas": null,
+  "wind": null,
+  "solar": null,
+  "nuclear": null,
+  "hydro": null,
+  "other": null
  },
- "generationMixDate": "2026-10-08",
- "marketInsightsHtml": "<p>Le Calendrier Français 2027 franchit pour la première fois la barre des 100 € en s'établissant au niveau record de 101,40 €/MWh (+2,25 €). À l'opposé, la puissance au comptant du Day-Ahead de vendredi a plongé dans tous les domaines : l'Allemagne a chuté de 62,75 € à 81,50 €/MWh, la France a chuté de 31,70 € à 85,30 €/MWh et le Royaume-Uni a chuté de 56,75 £ à 78,25 £/MWh.</p><p>Le soutien de la courbe est maintenu par les déficits nucléaire et hydroélectrique, avec la panne de Chooz de 3 GW en France prolongée jusqu'au 23 octobre et les déficits hydroélectriques italiens par rapport aux normes quinquennales se creusant à 671 GWh.</p>",
- "marketInsightsDate": "2026-10-11",
+ "generationMixDate": null,
+ "marketInsightsHtml": "<p>Dans toute l’Europe, l’impact d’un été et d’un mois de septembre secs et inhabituellement chauds continue de susciter des inquiétudes quant à l’approvisionnement en électricité, le faible niveau des rivières contribuant aux pannes nucléaires en cours en France.</p>",
+ "marketInsightsDate": "2026-10-12",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 127.38,
+    "value": 169.44,
     "unit": "EUR/MWh",
-    "date": "2026-10-10"
+    "date": "2026-10-12"
    },
    "forwardCurve": [
     {
@@ -262,22 +262,22 @@
    },
    "nuclearCapacityDate": "2026-10-10",
    "generationMix": {
-    "gas": 1.13,
-    "wind": 10.17,
-    "solar": 3.33,
-    "nuclear": 36.44,
-    "hydro": 2.14,
-    "other": 2.15
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-08"
+   "generationMixDate": null
   },
   "UK": {
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 143,
+    "value": 126.5,
     "unit": "GBP/MWh",
-    "date": "2026-10-10"
+    "date": "2026-10-12"
    },
    "forwardCurve": [
     {
@@ -377,7 +377,7 @@
      "unit": "GBP/MWh",
      "value": 89.52,
      "date": "2026-10-09",
-     "varD1Pct": 0.05,
+     "varD1Pct": 0.06,
      "varW1Pct": 4.38
     },
     {
@@ -395,23 +395,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 2.6,
-    "wind": 10,
-    "solar": 5.25,
-    "nuclear": 4.01,
-    "hydro": 0.74,
-    "biomass": 2.61,
-    "other": 1.07
+    "gas": 5.98,
+    "wind": 3.65,
+    "solar": 4.18,
+    "nuclear": 4.02,
+    "hydro": 0.91,
+    "biomass": 2.85,
+    "other": 1.02
    },
-   "generationMixDate": "2026-10-08"
+   "generationMixDate": "2026-10-11"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 122.31,
+    "value": 160.23,
     "unit": "EUR/MWh",
-    "date": "2026-10-10"
+    "date": "2026-10-12"
    },
    "forwardCurve": [
     {
@@ -529,23 +529,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 3.45,
-    "wind": 28.25,
-    "solar": 4.13,
-    "nuclear": 0,
-    "coal": 12.52,
-    "hydro": 0.12,
-    "other": 0.28
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-08"
+   "generationMixDate": null
   },
   "NL": {
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 124.43,
+    "value": 164.05,
     "unit": "EUR/MWh",
-    "date": "2026-10-10"
+    "date": "2026-10-12"
    },
    "forwardCurve": [
     {
@@ -663,14 +663,14 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 1.4,
-    "wind": 4.49,
-    "solar": 1,
-    "nuclear": 0.47,
-    "coal": 2.8,
-    "other": 0.16
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-08"
+   "generationMixDate": null
   }
  }
 }

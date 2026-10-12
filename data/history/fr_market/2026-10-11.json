@@ -9,6 +9,17 @@
    "nuclearCapacity": {
     "forecastMW": 49140
    }
+  },
+  "UK": {
+   "generationMix": {
+    "gas": 5.98,
+    "wind": 3.65,
+    "solar": 4.18,
+    "nuclear": 4.02,
+    "hydro": 0.91,
+    "biomass": 2.85,
+    "other": 1.02
+   }
   }
  }
 }
