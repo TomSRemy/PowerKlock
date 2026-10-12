@@ -27,13 +27,28 @@ const ZONE_COORDS = {
   FR: [46.6, 2.5], DE_LU: [51.0, 10.0], BE: [50.6, 4.5], NL: [52.2, 5.3],
   ES: [40.0, -3.7], PT: [39.5, -8.0], GB: [54.0, -2.5], CH: [46.8, 8.2],
   AT: [47.5, 14.5], CZ: [49.8, 15.5], SK: [48.7, 19.5], HU: [47.1, 19.5],
-  IT_NORD: [45.46, 9.19], IT_SOUTH: [40.85, 14.3], RO: [45.9, 24.97],
+  IT_NORD: [45.46, 9.19], IT_SOUTH: [40.85, 14.3], IT_SICI: [37.6, 14.0], RO: [45.9, 24.97],
   HR: [45.3, 16.0], SI: [46.05, 14.5], RS: [44.0, 20.9], BG: [42.7, 25.3],
   GR: [39.0, 22.0], MK: [41.6, 21.7], ME: [42.7, 19.3],
   DK_W: [56.0, 9.0], DK_E: [55.5, 12.0], SE_3: [59.3, 17.5],
   NO_1: [60.1, 11.0], NO_2: [59.5, 8.0], NO_3: [63.4, 10.4],
   FI: [63.0, 26.0], EE: [58.9, 25.0], LV: [56.9, 24.6], LT: [55.2, 23.9],
 };
+
+// The Natural Earth GeoJSON used here sets `ISO_A2` to the literal string
+// "-99" for a handful of countries — France, Norway and Kosovo among them —
+// a long-standing upstream quirk (those countries have dependencies/status
+// complications that break the plain ISO_A2 field). `ISO_A2_EH` ("Expanded
+// Hierarchy") is Natural Earth's own fix for this and has the real code.
+// Without this fallback, every lookup for those countries' features failed:
+// France rendered as an uncolored "no data" shape and had no click handler
+// at all, despite its price data being loaded correctly.
+function isoFromFeature(feature) {
+  const p = feature.properties || {};
+  const iso = p.iso_a2 || p.ISO_A2;
+  if (iso && iso !== '-99') return iso;
+  return p.ISO_A2_EH || iso || null;
+}
 
 function getZoneForISO(iso) {
   const code = ISO_TO_ZONE[iso];
@@ -82,7 +97,7 @@ function deltaToColor(delta) {
 }
 
 function geoStyle(feature) {
-  const iso = feature.properties.iso_a2 || feature.properties.ISO_A2;
+  const iso = isoFromFeature(feature);
   const zone = getZoneForISO(iso);
   const data = getZoneData();
   const prices = data.map(z => z.today).filter(v => v !== null);
@@ -103,20 +118,39 @@ function geoStyle(feature) {
   return {
     fillColor,
     fillOpacity,
-    color: 'rgba(220,232,245,0.15)',  // subtle white borders
-    weight: 1,
+    color: 'rgba(230,238,248,0.45)',  // was 0.15 — too faint to read as a border between two similarly-priced zones
+    weight: 1.1,
     opacity: 1,
   };
 }
 
+// Zoom in on a clicked zone. Some Natural Earth polygons bundle overseas
+// territories into the same feature — France's geometry includes French
+// Guiana (South America, ~7000km from mainland France) — so fitBounds() on
+// the raw polygon computed a bounding box spanning the Atlantic and zoomed
+// the map OUT to a world view instead of in on the country just clicked.
+// Center on our own curated mainland centroid at a fixed country-level zoom
+// instead; only fall back to the (capped) raw bounds when a zone has none.
+function focusZoneOnMap(zone, layer) {
+  const coords = ZONE_COORDS[zone.code];
+  if (coords) {
+    leafletMap.setView(coords, Math.max(leafletMap.getZoom(), 6), { animate: true });
+    return;
+  }
+  const bounds = layer.getBounds();
+  if (bounds.isValid()) {
+    leafletMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
+  }
+}
+
 function onEachFeature(feature, layer) {
-  const iso = feature.properties.iso_a2 || feature.properties.ISO_A2;
+  const iso = isoFromFeature(feature);
   const zone = getZoneForISO(iso);
   if (!zone) return;
 
   layer.on({
     mouseover: (e) => {
-      e.target.setStyle({ weight: 2, color: 'rgba(220,232,245,0.5)', fillOpacity: 0.9 });
+      e.target.setStyle({ weight: 2.2, color: 'rgba(255,255,255,0.85)', fillOpacity: 0.9 });
       e.target.bringToFront();
     },
     mouseout: (e) => {
@@ -124,7 +158,7 @@ function onEachFeature(feature, layer) {
     },
     click: (e) => {
       showMapDetail(zone);
-      leafletMap.fitBounds(e.target.getBounds(), { padding: [40, 40] });
+      focusZoneOnMap(zone, e.target);
     }
   });
 
@@ -141,15 +175,20 @@ function onEachFeature(feature, layer) {
 
 async function loadEUGeoJSON() {
   try {
-    // Use Natural Earth 110m countries (lightweight, ~200KB)
-    const url = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson';
+    // 50m countries (~3MB, fetched once) instead of 110m (~200KB) — the 110m
+    // set only gave France's whole outline 74 vertices total, which made
+    // every border render as a handful of straight diagonal segments (very
+    // visible on mountainous borders like the France/Spain Pyrenees). 50m
+    // gives the same shape ~800 points, close enough to the real coastline/
+    // border shape to read as smooth at this map's zoom range (3–8).
+    const url = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson';
     const r = await fetch(url);
     const geo = await r.json();
 
     // Filter to Europe only -- use geometry centroid, more reliable than LABEL_X
     const euFeatures = geo.features.filter(f => {
       const p = f.properties;
-      const iso = p.iso_a2 || p.ISO_A2 || '';
+      const iso = isoFromFeature(f) || '';
       // Explicit include list for EU bidding zones + neighbors
       const euISOs = new Set(['FR','DE','BE','NL','ES','PT','IT','CH','AT','CZ','SK','HU',
         'PL','RO','HR','SI','RS','BG','GR','MK','ME','DK','SE','NO','FI','EE','LV','LT',
@@ -167,6 +206,7 @@ async function loadEUGeoJSON() {
     geoLayer = L.geoJSON(euGeo, {
       style: geoStyle,
       onEachFeature,
+      smoothFactor: 0.6, // default 1.0 simplifies further than needed now that the source data itself has enough detail
     }).addTo(leafletMap);
 
     // Add price labels on top of each country
@@ -199,14 +239,18 @@ function addMapPriceLabels() {
       ? (zone.today<20?'#14D3A9':zone.today>100?'#fca5a5':'#fff')
       : '#fff';
 
+    // A pill badge (translucent dark backing + thin border) reads cleanly
+    // regardless of the choropleth colour underneath it — the old version
+    // relied only on a text-shadow, which washed out on the brighter mid-tones
+    // of the price gradient.
     const label = L.divIcon({
       className: '',
-      html: `<div style="text-align:center;pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${textColor};text-shadow:0 1px 3px rgba(0,0,0,.8)">${val}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.6);text-shadow:0 1px 2px rgba(0,0,0,.8)">${zone.code}</div>
+      html: `<div style="text-align:center;pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap;background:rgba(8,12,18,.62);border:1px solid rgba(255,255,255,.10);border-radius:6px;padding:2px 7px;backdrop-filter:blur(1px);box-shadow:0 2px 6px rgba(0,0,0,.35)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:${textColor};line-height:1.25">${val}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.55);letter-spacing:.03em">${zone.code}</div>
       </div>`,
-      iconSize: [50, 24],
-      iconAnchor: [25, 12],
+      iconSize: [56, 28],
+      iconAnchor: [28, 14],
     });
     const m = L.marker(coords, { icon: label, interactive: false, zIndexOffset: 1000 }).addTo(leafletMap);
     mapMarkers.push(m);
@@ -251,7 +295,15 @@ function initLeafletMap() {
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
     maxZoom: 16,
+    className: 'pk-map-tiles',
   }).addTo(leafletMap);
+
+  // The Esri basemap on its own is plain neutral grey — darken/desaturate it
+  // a touch via CSS (below) and lay a faint teal radial tint on top so it
+  // reads as part of this app's palette instead of a generic drop-in map.
+  const tint = document.createElement('div');
+  tint.style.cssText = 'position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%, rgba(20,211,169,.07), rgba(10,14,20,.22) 72%);mix-blend-mode:overlay;pointer-events:none;z-index:250;';
+  document.getElementById('leaflet-map').appendChild(tint);
 
   // Load EU GeoJSON for choropleth + borders
   loadEUGeoJSON();
@@ -353,45 +405,49 @@ function updateMapMarkers() {
   });
 }
 
+// Continuous vertical gradient bar (thermometer-style) — reads much more
+// like a real map legend than a stack of discrete swatches, and actually
+// shows the colour scale continuously instead of implying 6 hard bands.
+function _mapGradientLegendHTML(colorFn, mn, mx, fmt) {
+  const stops = 10;
+  const grad = Array.from({ length: stops + 1 }, (_, i) => {
+    const t = i / stops;
+    return colorFn(mn + t * (mx - mn)) + ' ' + Math.round(t * 100) + '%';
+  }).join(', ');
+  return `
+    <div style="display:flex;gap:10px;align-items:stretch;height:130px">
+      <div style="width:10px;border-radius:5px;background:linear-gradient(to top, ${grad});flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)"></div>
+      <div style="display:flex;flex-direction:column;justify-content:space-between;font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">
+        <span>${fmt(mx)}</span>
+        <span style="color:#7A93AB">${fmt((mn + mx) / 2)}</span>
+        <span>${fmt(mn)}</span>
+      </div>
+    </div>`;
+}
+
 function renderMapLegend() {
   const el = document.getElementById('map-legend');
+  const titleEl = document.getElementById('map-legend-title');
   if (!el) return;
   if (mapView === 'price') {
+    if (titleEl) titleEl.textContent = 'Scale (€/MWh)';
     const data2 = getZoneData();
     const prices2 = data2.map(z=>z.today).filter(v=>v!==null);
     const mn2 = Math.floor(Math.min(...prices2)/10)*10;
     const mx2 = Math.ceil(Math.max(...prices2)/10)*10;
-    const step = Math.round((mx2-mn2)/5/10)*10 || 10;
-    const steps = Array.from({length:6}, (_,i) => mn2 + i*step);
-    el.innerHTML = steps.map((v,i) => {
-      const col = priceToColor(v, mn2, mx2);
-      return `<div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:8px;border-radius:2px;background:${col}"></div>
-        <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${v} €</span>
-      </div>`;
-    }).join('');
+    el.innerHTML = _mapGradientLegendHTML((v) => priceToColor(v, mn2, mx2), mn2, mx2, (v) => Math.round(v) + '€');
   } else if (mapView === 'neg') {
-    el.innerHTML = [0,2,4,6,8,12].map((v,i,a) => {
-      const col = negToColor(v);
-      return `<div style="display:flex;align-items:center;gap:6px">
-        <div style="width:14px;height:8px;border-radius:2px;background:${col}"></div>
-        <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${v}h</span>
-      </div>`;
-    }).join('');
+    if (titleEl) titleEl.textContent = 'Scale (hours)';
+    el.innerHTML = _mapGradientLegendHTML(negToColor, 0, 12, (v) => Math.round(v) + 'h');
   } else if (mapView === 'delta') {
-    el.innerHTML = [
-      {l:'▲ +30€',c:'rgba(240,80,96,.9)'},{l:'▲ +15€',c:'rgba(240,80,96,.5)'},
-      {l:'≈ 0',c:'#1e2d3d'},
-      {l:'▼ -15€',c:'rgba(16,185,129,.5)'},{l:'▼ -30€',c:'rgba(16,185,129,.9)'},
-    ].map(s=>`<div style="display:flex;align-items:center;gap:6px">
-      <div style="width:14px;height:8px;border-radius:2px;background:${s.c}"></div>
-      <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${s.l}</span>
-    </div>`).join('');
+    if (titleEl) titleEl.textContent = 'Scale (Δ vs yday)';
+    el.innerHTML = _mapGradientLegendHTML(deltaToColor, -30, 30, (v) => (v > 0 ? '+' : '') + Math.round(v) + '€');
   } else {
+    if (titleEl) titleEl.textContent = 'Spark spread';
     el.innerHTML = [
       {l:'CSS > 0',c:'rgba(16,185,129,.8)'},{l:'CSS < 0',c:'rgba(240,80,96,.8)'},
-    ].map(s=>`<div style="display:flex;align-items:center;gap:6px">
-      <div style="width:14px;height:8px;border-radius:2px;background:${s.c}"></div>
+    ].map(s=>`<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
+      <div style="width:14px;height:14px;border-radius:4px;background:${s.c}"></div>
       <span style="font-size:10px;color:#B8C9D9;font-family:'IBM Plex Mono',monospace">${s.l}</span>
     </div>`).join('');
   }
@@ -490,6 +546,7 @@ mapStyle.textContent = `
   .leaflet-attribution-flag { display:none!important; }
   .geo-tooltip { background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important; }
   .geo-tooltip .leaflet-tooltip-content { padding:0; }
+  .pk-map-tiles { filter: grayscale(.25) brightness(.74) contrast(1.08) saturate(.9); }
 `;
 document.head.appendChild(mapStyle);
 
