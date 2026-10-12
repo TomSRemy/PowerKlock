@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T12:36:17.082202Z",
+  "updated": "2026-10-12T20:38:04.993304Z",
   "zones": [
     {
       "code": "BG",
@@ -2095,7 +2095,7 @@
       "code": "DK_E",
       "name": "Denmark East",
       "today": 195.76,
-      "vsYday": null,
+      "vsYday": 69.17,
       "min": 136.71,
       "minHour": "14:00",
       "max": 291.56,
