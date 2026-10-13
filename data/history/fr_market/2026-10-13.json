@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-13",
+ "countries": {
+  "FR": {
+   "spot": 191.12
+  },
+  "UK": {
+   "spot": 152.57
+  },
+  "DE": {
+   "spot": 179
+  },
+  "NL": {
+   "spot": 193.1
+  }
+ },
+ "marketInsightsHtml": null
+}

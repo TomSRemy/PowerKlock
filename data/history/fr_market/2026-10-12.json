@@ -2,16 +2,77 @@
  "date": "2026-10-12",
  "countries": {
   "FR": {
-   "spot": 169.44
+   "spot": 169.44,
+   "forwardCurve": {
+    "M+1": 173.91,
+    "M+2": 169.3,
+    "M+3": 181.32,
+    "Q+1": 162.95,
+    "Q+2": 65.04,
+    "Q+3": 82.38,
+    "S+1": 73.71,
+    "S+2": 106.78,
+    "Y+1": 104.03,
+    "Y+2": 63.79,
+    "Y+3": 59.17
+   }
   },
   "UK": {
-   "spot": 126.5
+   "spot": 126.5,
+   "forwardCurve": {
+    "M+1": 168.27,
+    "M+2": 166.81,
+    "M+3": 179.49,
+    "Q+1": 171.2,
+    "Q+2": 124.69,
+    "Q+3": 115.62,
+    "S+1": 120.13,
+    "S+2": 119.41,
+    "Y+1": 132.11,
+    "Y+2": 90.96,
+    "Y+3": 76.79
+   },
+   "generationMix": {
+    "gas": 8.5,
+    "wind": 13.17,
+    "solar": 1.62,
+    "nuclear": 4.01,
+    "hydro": 0.61,
+    "biomass": 3.02,
+    "other": 0.94
+   }
   },
   "DE": {
-   "spot": 160.23
+   "spot": 160.23,
+   "forwardCurve": {
+    "M+1": 192.85,
+    "M+2": 186.1,
+    "M+3": 198.55,
+    "Q+1": 184.93,
+    "Q+2": 118.67,
+    "Q+3": 126.21,
+    "S+1": 122.44,
+    "S+2": 139.01,
+    "Y+1": 142.71,
+    "Y+2": 105.89,
+    "Y+3": 91.76
+   }
   },
   "NL": {
-   "spot": 164.05
+   "spot": 164.05,
+   "forwardCurve": {
+    "M+1": 194.74,
+    "M+2": 187.92,
+    "M+3": 200.17,
+    "Q+1": 184.4,
+    "Q+2": 119.39,
+    "Q+3": 126.12,
+    "S+1": 122.77,
+    "S+2": 137.06,
+    "Y+1": 141.61,
+    "Y+2": 104.64,
+    "Y+3": 90.75
+   }
   }
  },
  "marketInsightsHtml": "<p>Dans toute l’Europe, l’impact d’un été et d’un mois de septembre secs et inhabituellement chauds continue de susciter des inquiétudes quant à l’approvisionnement en électricité, le faible niveau des rivières contribuant aux pannes nucléaires en cours en France.</p>"
