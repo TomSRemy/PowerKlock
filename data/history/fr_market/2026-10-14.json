@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-14",
+ "countries": {
+  "FR": {
+   "spot": 189.02
+  },
+  "UK": {
+   "spot": 149.21
+  },
+  "DE": {
+   "spot": 187.3
+  },
+  "NL": {
+   "spot": 186.66
+  }
+ },
+ "marketInsightsHtml": "<p>Cette vigueur a trouvé un écho en France, où le contrat de novembre a augmenté mardi de 7,05 €/MWh à 180,05 €/MWh.</p>"
+}
