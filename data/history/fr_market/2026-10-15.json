@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-15",
+ "countries": {
+  "FR": {
+   "spot": 212,
+   "nuclearCapacity": {
+    "actualMW": 43716.33,
+    "forecastMW": 49140
+   }
+  },
+  "UK": {
+   "spot": 174.7
+  },
+  "DE": {
+   "spot": 210.67
+  },
+  "NL": {
+   "spot": 212.76
+  }
+ },
+ "marketInsightsHtml": "<p>The premium to the second quarter of 2027 narrowed to £47/MWh from £49.05/MWh on Tuesday, as a January recovery in French nuclear availability is set to offset the UK’s heaviest month of reactor maintenance.</p><p>In France, the front-month premium to December dropped to a four-session low, as Grenoble rainfall and Paris minimum temperature forecasts for next month were revised up.</p>"
+}
