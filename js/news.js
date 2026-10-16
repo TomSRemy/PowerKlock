@@ -332,7 +332,7 @@ function drawLineSimple(ctx, w, h, data, color, mn, mx) {
       labels: data.map((_,i)=>i),
       datasets: [{ data, borderColor:color, borderWidth:2, pointRadius:0, fill:true,
         backgroundColor:(c2)=>{const g=c2.chart.ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,rgba(color,.2));g.addColorStop(1,rgba(color,0));return g;},
-        tension:0.3 }]
+        tension: 0 }]
     },
     options: {
       responsive:true, maintainAspectRatio:false,

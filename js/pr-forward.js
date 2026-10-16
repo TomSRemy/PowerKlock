@@ -355,7 +355,7 @@
       var arr = new Array(allDates.length).fill(null);
       years[yr].dates.forEach(function (d, j) { arr[dateIdx[d]] = years[yr].values[j]; });
       return { label: 'Cal' + yr, data: arr, borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5,
-        pointRadius: 0, tension: 0.1, fill: false, spanGaps: true };
+        pointRadius: 0, tension: 0, fill: false, spanGaps: true };
     });
     window.mkHistChart('pf-drill-chart-calall', {
       type: 'line',
@@ -382,7 +382,7 @@
     window.mkHistChart('pf-drill-chart-cal1', {
       type: 'line',
       data: { labels: rolling.dates, datasets: [{ label: label, data: rolling.values, borderColor: meta.colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0.1, fill: false, spanGaps: false }] },
+        pointRadius: 0, tension: 0, fill: false, spanGaps: false }] },
       options: {
         interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false } },
@@ -409,7 +409,7 @@
     window.mkHistChart('pf-drill-chart-free', {
       type: 'line',
       data: { labels: dates, datasets: [{ label: PF.drillTenor, data: vals, borderColor: countryMeta(cc).colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }] },
+        pointRadius: 0, tension: 0, fill: false, spanGaps: true }] },
       options: {
         interaction: { mode: 'index', intersect: false },
         plugins: { legend: { display: false } },
@@ -439,8 +439,8 @@
       data: {
         labels: dates,
         datasets: [
-          { label: 'Réel', data: actual, borderColor: '#7B4B9C', borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false, spanGaps: true },
-          { label: 'Prévisionnel', data: forecast, borderColor: '#EE9B00', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }
+          { label: 'Réel', data: actual, borderColor: '#7B4B9C', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
+          { label: 'Prévisionnel', data: forecast, borderColor: '#EE9B00', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
         ]
       },
       options: {
@@ -487,7 +487,7 @@
       var cs = (PF.series.countries && PF.series.countries[c.code]) || {};
       var vals = ((cs.forwardCurve && cs.forwardCurve[PF.cmpTenor]) || []).slice(startIdx);
       return { label: c.flag + ' ' + c.label, data: vals, borderColor: c.colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0.1, fill: false, spanGaps: true };
+        pointRadius: 0, tension: 0, fill: false, spanGaps: true };
     });
     window.mkHistChart('prfwd-chart-compare', {
       type: 'line',

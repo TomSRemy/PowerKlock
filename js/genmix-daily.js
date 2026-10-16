@@ -739,7 +739,7 @@ function _gmdczRenderProfiles() {
       backgroundColor: 'transparent',
       borderWidth: z === 'FR' ? 2.5 : 1.3,
       fill: false,
-      tension: 0.4,
+      tension: 0,
       pointRadius: 0,
       pointHoverRadius: 4,
     };

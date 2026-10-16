@@ -193,8 +193,8 @@
     _carbCharts[idx] = new Chart(ctx, {
       type:'line',
       data:{ labels, datasets:[
-        { label:'Intensité conso', data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension:.25 },
-        { label:'Intensité prod', data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension:.25 },
+        { label:'Intensité conso', data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
+        { label:'Intensité prod', data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
       ]},
       options:{
         responsive:true, maintainAspectRatio:false, animation:{duration:100},
