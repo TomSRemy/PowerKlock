@@ -1,13 +1,20 @@
 // ── GO DATA · product metadata only (label + colour). NO synthetic price fallback.
-// Only products Commerg's weekly mail actually quotes — see scripts/fetch_go_prices.py.
+// Products actually present in data/go_prices.csv: the 2020-2025 backlog
+// (Commerg's "Data Brokers" workbook) quotes Renewable/Wind/Solar/Hydro
+// individually; the live weekly mail since 2026 quotes Renewable + the
+// combined HWS bucket — see scripts/fetch_go_prices.py.
 const GO_SERIES = {
   renewable: {l:'GO AIB Renewable', c:'#A87DC4'},
-  hws:       {l:'GO AIB HWS',       c:'#14D3A9'},
+  wind:      {l:'GO AIB Wind',      c:'#3FA6B4'},
+  solar:     {l:'GO AIB Solar',     c:'#FBBF24'},
+  hydro:     {l:'GO AIB Hydro',     c:'#14D3A9'},
+  hws:       {l:'GO AIB HWS',       c:'#ED6965'},
+  ireland:   {l:'GO Ireland Wind',  c:'#f472b6'},
 };
 // Palette for the "one line per vintage year" chart (chart5 in the Commerg
 // reference workbook — GOs Price Indications).
-const GO_YEAR_COLORS = ['#7A93AB', '#3FA6B4', '#14D3A9', '#A87DC4', '#FBBF24', '#ED6965', '#f472b6'];
-let goHistPeriod = 130;
+const GO_YEAR_COLORS = ['#5B7A99', '#3FA6B4', '#14D3A9', '#7FD858', '#FBBF24', '#F08A3C', '#ED6965', '#A87DC4', '#f472b6'];
+let goHistPeriod = 9999;
 let goHistFilter = 'all';
 let goProd = 'GO AIB Renewable';
 
@@ -242,8 +249,9 @@ function drawGoIndicChart() {
   // Union of all dates across vintage years → shared x-axis
   const allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
   const dates = allDates.map(t => new Date(t));
-  const every = Math.max(1, Math.ceil(dates.length / 12));
-  const labels = dates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+  // Full real labels on every point — Chart.js's own autoSkip (maxTicksLimit
+  // below) decides which to actually draw, and reliably keeps first/last.
+  const labels = dates.map(d => fmtGoDate(d));
 
   const datasets = real.years.map((y, i) => {
     const byT = new Map(real.byYear[y].map(w => [+w.t, w.mid]));
@@ -271,7 +279,18 @@ function drawGoIndicChart() {
       }
     }
   });
-  setTimeout(()=>{ addFullscreen('go-indic-canvas'); addDownload('go-indic-canvas','go-prices'); },100);
+  setTimeout(()=>{ addFullscreen('go-indic-canvas', _goFsContent); addDownload('go-indic-canvas','go-prices'); },100);
+}
+
+// Shared fullscreen content (KPI strip) for the main GO price charts — clones
+// the already-rendered inline KPI strip so the overlay shows the same figures.
+function _goFsContent() {
+  const kpiEl = document.getElementById('go-kpi-strip');
+  return {
+    title: goProd + ' — Prix indicatifs (€/MWh)',
+    subtitle: 'Commerg weekly assessment',
+    kpis: kpiEl ? { html: '<div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);width:100%">' + kpiEl.innerHTML + '</div>' } : null,
+  };
 }
 
 // chart_go_cal1 (reference workbook): single rolling "Y+1" line — the
@@ -286,8 +305,7 @@ function drawGoCal1Chart() {
   const len = wk.data.length, take = Math.min(n, len), from = len - take;
   const mids = wk.data.slice(from);
   const dates = wk.dates.slice(from);
-  const every = Math.max(1, Math.ceil(take / 10));
-  const labels = dates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+  const labels = dates.map(d => fmtGoDate(d));
 
   mkChart('go-cal1-canvas', {
     type: 'line',
@@ -308,7 +326,7 @@ function drawGoCal1Chart() {
       }
     }
   });
-  setTimeout(()=>{ addFullscreen('go-cal1-canvas'); addDownload('go-cal1-canvas','go-cal1'); },100);
+  setTimeout(()=>{ addFullscreen('go-cal1-canvas', _goFsContent); addDownload('go-cal1-canvas','go-cal1'); },100);
 }
 
 // chart_go_cal1 : grouped bar forward curve (every vintage year Commerg quotes)
@@ -317,7 +335,10 @@ function drawGoCalChart() {
   const real = GO_REAL && GO_REAL.byKey[key];
   const fwd = real && real.fwd;
   if (!fwd || !Object.keys(fwd).length) { goNoData('go-cal-canvas', 'Aucune donnée Commerg chargée'); return; }
-  const years = real.years;
+  // Live curve only (current year onward) — past vintages are expired/settled,
+  // not part of a "forward curve" even though their last quote is still on file.
+  const curYear = GO_REAL.asOf ? GO_REAL.asOf.getFullYear() : new Date().getFullYear();
+  const years = real.years.filter(y => y >= curYear);
   const cals = years.map(y => 'Cal-' + String(y).slice(-2));
   const bids = years.map(y => fwd[y] ? fwd[y].bid : null);
   const asks = years.map(y => fwd[y] ? fwd[y].ask : null);
@@ -357,8 +378,7 @@ function drawGoSpreadChart() {
   const len = wk.spreadArr.length, take = Math.min(n, len), from = len - take;
   const spreads = wk.spreadArr.slice(from);
   const dates = wk.dates.slice(from);
-  const every = Math.max(1, Math.ceil(take / 8));
-  const labels = dates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+  const labels = dates.map(d => fmtGoDate(d));
 
   mkChart('go-spread-canvas', {
     type: 'line',
@@ -412,8 +432,7 @@ function autoloadGoAuctions() {
     .catch(() => {});
 }
 function _goAuctionLabels(auctions) {
-  const every = Math.max(1, Math.ceil(auctions.length / 14));
-  return auctions.map((a,i) => i % every === 0 ? a.auction_month : '');
+  return auctions.map(a => a.auction_month);
 }
 function drawGoAuctionTechChart() {
   if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-tech-canvas', 'Aucune donnée EEX chargée'); return; }
@@ -509,8 +528,7 @@ function drawGoHist() {
   if (sample && sample.dates) {
     const len = sample.dates.length, take = Math.min(n, len), from = len - take;
     const dts = sample.dates.slice(from);
-    const every = Math.max(1, Math.ceil(take / 12));
-    labels = dts.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+    labels = dts.map(d => fmtGoDate(d));
   } else { labels = []; }
 
   const datasets = active.map(([k, s]) => ({
@@ -553,9 +571,8 @@ function drawGoWoW() {
   const dates = (wk.dates || []).slice(-n);
   const deltaDates = dates.slice(1);
   const deltas = data.slice(1).map((v,i) => +(v - data[i]).toFixed(4));
-  const every = Math.max(1, Math.ceil(deltas.length / 10));
   const labels = deltaDates.length === deltas.length
-    ? deltaDates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '')
+    ? deltaDates.map(d => fmtGoDate(d))
     : Array.from({length:deltas.length},(_,i)=>'W'+i);
 
   mkChart('go-wow-canvas', {
