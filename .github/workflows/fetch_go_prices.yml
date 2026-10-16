@@ -1,8 +1,15 @@
 name: Fetch GO Prices (Commerg)
 
-# Lit automatiquement les mails Commerg via l'API Gmail et met à jour data/go_prices.csv
-# Réutilise les MÊMES secrets que le PPA Dashboard : GO_TOKEN_JSON + GO_CREDENTIALS_JSON
-# (même boîte Gmail, même expéditeur Commerg → pas besoin de régénérer le token OAuth).
+# Lit les mails Commerg via IMAP (mot de passe d'application Gmail, pas OAuth)
+# et met à jour data/go_prices.csv.
+#
+# Secrets requis (Settings > Secrets and variables > Actions) :
+#   GO_GMAIL_USER          — l'adresse Gmail qui reçoit les mails Commerg
+#   GO_GMAIL_APP_PASSWORD  — mot de passe d'application (16 caractères),
+#                             généré sur https://myaccount.google.com/apppasswords
+#                             (nécessite la validation en 2 étapes activée sur
+#                             le compte). N'expire pas tant qu'il n'est pas
+#                             révoqué — pas de refresh token à gérer.
 
 on:
   schedule:
@@ -24,23 +31,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: |
-          pip install \
-            google-auth \
-            google-auth-oauthlib \
-            google-auth-httplib2 \
-            google-api-python-client
-
-      - name: Write token files
-        env:
-          GO_TOKEN_JSON: ${{ secrets.GO_TOKEN_JSON }}
-          GO_CREDENTIALS_JSON: ${{ secrets.GO_CREDENTIALS_JSON }}
-        run: |
-          echo "$GO_TOKEN_JSON" > token.json
-          echo "$GO_CREDENTIALS_JSON" > credentials.json
-
       - name: Run parser
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
         run: python scripts/fetch_go_prices.py
 
       - name: Commit and push if new data

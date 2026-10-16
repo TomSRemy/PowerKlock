@@ -1,26 +1,28 @@
 """
 fetch_go_prices.py — Parse les mails Commerg Market Week et appende dans go_prices.csv
 Usage : python fetch_go_prices.py
+
+Auth : IMAP + mot de passe d'application Gmail (pas OAuth). Nécessite la
+validation en 2 étapes activée sur le compte, puis un mot de passe généré sur
+https://myaccount.google.com/apppasswords — ce mot de passe ne expire pas tant
+qu'il n'est pas révoqué, pas de refresh token/credentials.json à gérer.
 """
 import os
 import re
-import json
-import base64
 import csv
-from datetime import datetime, date
+import imaplib
+import email as email_lib
+from email.utils import parsedate_to_datetime
+from datetime import date
 from pathlib import Path
 
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-
 # ── Config ────────────────────────────────────────────────────────────────────
-SCOPES          = ["https://www.googleapis.com/auth/gmail.readonly"]
+IMAP_HOST       = "imap.gmail.com"
 SENDER_FILTER   = "trading@commerg.com"
 SUBJECT_FILTER  = "Commerg Market Week"
 OUTPUT_CSV      = Path("data/go_prices.csv")
-TOKEN_ENV       = "GO_TOKEN_JSON"
-CREDS_ENV       = "GO_CREDENTIALS_JSON"
+GMAIL_USER_ENV  = "GO_GMAIL_USER"
+GMAIL_PASS_ENV  = "GO_GMAIL_APP_PASSWORD"
 
 CSV_HEADERS = [
     "parsed_date", "mail_date", "week_num", "source",
@@ -28,58 +30,59 @@ CSV_HEADERS = [
 ]
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
-def get_service():
-    token_json = os.environ.get(TOKEN_ENV)
-    creds_json = os.environ.get(CREDS_ENV)
-
-    if not token_json:
-        # Local fallback
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    else:
-        creds = Credentials.from_authorized_user_info(json.loads(token_json), SCOPES)
-
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-
-    return build("gmail", "v1", credentials=creds)
+def get_imap():
+    user = os.environ.get(GMAIL_USER_ENV)
+    app_password = os.environ.get(GMAIL_PASS_ENV)
+    if not user or not app_password:
+        raise RuntimeError(
+            f"Missing {GMAIL_USER_ENV} / {GMAIL_PASS_ENV} env vars — "
+            "set them as repo secrets (an IMAP app password, not the account password)."
+        )
+    imap = imaplib.IMAP4_SSL(IMAP_HOST)
+    imap.login(user, app_password)
+    imap.select("INBOX")
+    return imap
 
 
 # ── Mail fetching ─────────────────────────────────────────────────────────────
-def get_commerg_emails(service, max_results=10):
-    query = f"from:{SENDER_FILTER} subject:{SUBJECT_FILTER!r}"
-    result = service.users().messages().list(
-        userId="me", q=query, maxResults=max_results
-    ).execute()
-    return result.get("messages", [])
+def get_commerg_emails(imap, max_results=10):
+    status, data = imap.search(
+        None, f'(FROM "{SENDER_FILTER}" SUBJECT "{SUBJECT_FILTER}")'
+    )
+    if status != "OK" or not data or not data[0]:
+        return []
+    # IMAP SEARCH returns ids oldest→newest; keep the most recent N.
+    return data[0].split()[-max_results:]
 
 
-def get_email_body(service, msg_id):
-    msg = service.users().messages().get(
-        userId="me", id=msg_id, format="full"
-    ).execute()
+def get_email_body(imap, msg_id):
+    status, data = imap.fetch(msg_id, "(RFC822)")
+    if status != "OK" or not data or not data[0]:
+        return date.today(), ""
+    msg = email_lib.message_from_bytes(data[0][1])
 
-    # Extract date from headers
-    headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
-    mail_date_str = headers.get("Date", "")
+    mail_date_str = msg.get("Date", "")
     try:
-        from email.utils import parsedate_to_datetime
         mail_date = parsedate_to_datetime(mail_date_str).date()
     except Exception:
         mail_date = date.today()
 
-    # Extract text/plain body
-    def extract_body(payload):
-        if payload.get("mimeType") == "text/plain":
-            data = payload.get("body", {}).get("data", "")
-            if data:
-                return base64.urlsafe_b64decode(data + "==").decode("utf-8", errors="replace")
-        for part in payload.get("parts", []):
-            result = extract_body(part)
-            if result:
-                return result
-        return ""
+    # Extract text/plain body (skip attachments)
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain" and not part.get_filename():
+                charset = part.get_content_charset() or "utf-8"
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body = payload.decode(charset, errors="replace")
+                    break
+    else:
+        charset = msg.get_content_charset() or "utf-8"
+        payload = msg.get_payload(decode=True)
+        if payload:
+            body = payload.decode(charset, errors="replace")
 
-    body = extract_body(msg["payload"])
     return mail_date, body
 
 
@@ -188,19 +191,20 @@ def append_rows(csv_path, rows):
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     print("=== fetch_go_prices.py ===")
-    service  = get_service()
+    imap     = get_imap()
     existing = load_existing(OUTPUT_CSV)
-    messages = get_commerg_emails(service, max_results=20)
+    messages = get_commerg_emails(imap, max_results=20)
 
     if not messages:
         print("Aucun mail Commerg trouvé.")
+        imap.logout()
         return
 
     print(f"{len(messages)} mail(s) trouvé(s).")
     new_rows = []
 
-    for msg_meta in messages:
-        mail_date, body = get_email_body(service, msg_meta["id"])
+    for msg_id in messages:
+        mail_date, body = get_email_body(imap, msg_id)
         week_num, parsed = parse_email_body(body)
 
         if not parsed:
@@ -232,6 +236,7 @@ def main():
     else:
         print("Aucune nouvelle ligne à ajouter.")
 
+    imap.logout()
     print("Done.")
 
 
