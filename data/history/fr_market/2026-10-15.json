@@ -6,16 +6,77 @@
    "nuclearCapacity": {
     "actualMW": 43716.33,
     "forecastMW": 49140
+   },
+   "forwardCurve": {
+    "M+1": 172.67,
+    "M+2": 169.94,
+    "M+3": 184.28,
+    "Q+1": 166.42,
+    "Q+2": 69.21,
+    "Q+3": 85.5,
+    "S+1": 77.35,
+    "S+2": 109.6,
+    "Y+1": 107.77,
+    "Y+2": 66.03,
+    "Y+3": 59.88
    }
   },
   "UK": {
-   "spot": 174.7
+   "spot": 174.7,
+   "forwardCurve": {
+    "M+1": 168.25,
+    "M+2": 168.86,
+    "M+3": 183.07,
+    "Q+1": 174.43,
+    "Q+2": 130.03,
+    "Q+3": 120.99,
+    "S+1": 125.48,
+    "S+2": 125.24,
+    "Y+1": 137.13,
+    "Y+2": 93.29,
+    "Y+3": 77.23
+   },
+   "generationMix": {
+    "gas": 6.44,
+    "wind": 11.4,
+    "solar": 2.49,
+    "nuclear": 4.4,
+    "hydro": 0.66,
+    "biomass": 1.89,
+    "other": 1.38
+   }
   },
   "DE": {
-   "spot": 210.67
+   "spot": 210.67,
+   "forwardCurve": {
+    "M+1": 193.22,
+    "M+2": 188.36,
+    "M+3": 200.58,
+    "Q+1": 186.61,
+    "Q+2": 119.58,
+    "Q+3": 128.58,
+    "S+1": 124.08,
+    "S+2": 143.56,
+    "Y+1": 145.22,
+    "Y+2": 107.52,
+    "Y+3": 92.69
+   }
   },
   "NL": {
-   "spot": 212.76
+   "spot": 212.76,
+   "forwardCurve": {
+    "M+1": 195.06,
+    "M+2": 190.41,
+    "M+3": 203,
+    "Q+1": 189.05,
+    "Q+2": 118.85,
+    "Q+3": 127.16,
+    "S+1": 123.03,
+    "S+2": 142.33,
+    "Y+1": 144.66,
+    "Y+2": 105.85,
+    "Y+3": 91.6
+   }
   }
  },
  "marketInsightsHtml": "<p>The premium to the second quarter of 2027 narrowed to £47/MWh from £49.05/MWh on Tuesday, as a January recovery in French nuclear availability is set to offset the UK’s heaviest month of reactor maintenance.</p><p>In France, the front-month premium to December dropped to a four-session low, as Grenoble rainfall and Paris minimum temperature forecasts for next month were revised up.</p>"
