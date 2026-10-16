@@ -4624,7 +4624,7 @@
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">Spark</div><div class="ma-lbl-sub">€/MWh CCGT</div></div>
-          <div class="ma-panel-svg-col" style="height:150px"><canvas id="ma-canvas-spark" style="width:100%;height:150px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-spark" style="width:100%;height:190px"></canvas></div>
         </div>
 
         <div class="ma-panel-row">
@@ -4896,7 +4896,7 @@
         <div class="kpi-card kpi-down"><div class="kpi-label">MW Unavailable</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['nuc-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:190px"></canvas></div>
+      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:220px"></canvas></div>
 
       <!-- Hydro KPIs -->
       <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:16px 0 8px">💧 Hydro</div>
@@ -4907,7 +4907,7 @@
         <div class="kpi-card kpi-flat"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
       </div>
       <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['hydro-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:190px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:190px"></canvas></div>
+      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:220px"></canvas></div>
 
       <!-- REMIT: single source of truth lives on the dedicated REMIT page now
            (this used to duplicate the exact same 3 hardcoded rows). -->
@@ -5025,7 +5025,7 @@
         <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div></div>
         <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:160px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:160px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:200px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
       <div class="hist-section hist-section-strong" id="hs-eua-history">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-history')">
           <div class="hist-section-title">
@@ -5056,7 +5056,7 @@
           <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
         </tbody></table>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><canvas id="eua-fwd-canvas" style="width:100%;height:160px"></canvas></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><div style="position:relative;height:220px;overflow:hidden"><canvas id="eua-fwd-canvas" style="width:100%;height:220px"></canvas></div></div>
     </div>
 
     <!-- SPARK SPREAD -->
@@ -5154,7 +5154,7 @@
           <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs (€/MWh)</span>
           <span class="source-badge">Commerg weekly</span>
         </div>
-        <canvas id="go-indic-canvas" style="width:100%;height:240px"></canvas>
+        <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-indic-canvas" style="width:100%;height:260px"></canvas></div>
       </div>
 
       <!-- Chart 2 : CAL+1 rolling front-year price -->
@@ -5163,7 +5163,7 @@
           <span class="table-title" id="go-cal1-title">GO AIB Renewable — CAL+1 EU price indications (€/MWh)</span>
           <span class="source-badge">Commerg weekly</span>
         </div>
-        <canvas id="go-cal1-canvas" style="width:100%;height:180px"></canvas>
+        <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-cal1-canvas" style="width:100%;height:220px"></canvas></div>
       </div>
 
       <!-- Chart 3 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
@@ -5176,7 +5176,7 @@
               <span style="font-size:11px;color:var(--dn)">&#9632; Ask</span>
             </div>
           </div>
-          <canvas id="go-cal-canvas" style="width:100%;height:200px"></canvas>
+          <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:220px"></canvas></div>
         </div>
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -5212,14 +5212,14 @@
           <span class="table-title">Volume vendu &amp; prix moyen pondéré — Wind vs Solar</span>
           <span class="source-badge">EEX monthly auctions</span>
         </div>
-        <canvas id="go-auct-tech-canvas" style="width:100%;height:240px"></canvas>
+        <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-auct-tech-canvas" style="width:100%;height:260px"></canvas></div>
       </div>
       <div class="chart-container">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span class="table-title">Volume total — offert vs alloué (MWh)</span>
           <span class="source-badge">EEX monthly auctions</span>
         </div>
-        <canvas id="go-auct-vol-canvas" style="width:100%;height:200px"></canvas>
+        <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-auct-vol-canvas" style="width:100%;height:220px"></canvas></div>
       </div>
     </div>
 
@@ -5254,18 +5254,18 @@
           <span class="table-title">Prix indicatifs hebdomadaires — Mid price (€/MWh)</span>
           <span class="source-badge">Commerg weekly assessment</span>
         </div>
-        <canvas id="go-hist-canvas" style="width:100%;height:240px"></canvas>
+        <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-hist-canvas" style="width:100%;height:260px"></canvas></div>
       </div>
 
       <!-- Chart YoY delta -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="chart-container">
           <div class="table-title" style="margin-bottom:10px">Delta semaine sur semaine (€/MWh)</div>
-          <canvas id="go-wow-canvas" style="width:100%;height:180px"></canvas>
+          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-wow-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
         <div class="chart-container">
           <div class="table-title" style="margin-bottom:10px">Distribution des prix — boites (€/MWh)</div>
-          <canvas id="go-box-canvas" style="width:100%;height:180px"></canvas>
+          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
       </div>
     </div>
