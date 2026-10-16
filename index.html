@@ -5135,32 +5135,34 @@
       <!-- KPI strip : dernier prix, delta WoW, spread (= Streamlit go_kpi) -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-kpi-strip"></div>
 
-      <!-- Produit selector -->
+      <!-- Produit selector · only products Commerg actually quotes -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
         <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Produit</span>
         <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
           <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
-          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB HWS',this)">Hydro/Wind/Solar</button>
         </div>
       </div>
 
-      <!-- Chart 1 : Historique bid/ask = chart_go_price_indications -->
+      <!-- Chart 1 : GOs Price Indications — one line per vintage year (Cal-25…28) -->
       <div class="chart-container" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs hebdo (€/MWh)</span>
-          <div style="display:flex;gap:10px">
-            <span style="font-size:11px;color:var(--up)">&#9472; Bid</span>
-            <span style="font-size:11px;color:var(--dn)">&#9472; Ask</span>
-            <span style="font-size:11px;color:var(--text3)">&#9474; Mid</span>
-          </div>
+          <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs (€/MWh)</span>
+          <span class="source-badge">Commerg weekly</span>
         </div>
-        <canvas id="go-indic-canvas" style="width:100%;height:220px"></canvas>
+        <canvas id="go-indic-canvas" style="width:100%;height:240px"></canvas>
       </div>
 
-      <!-- Chart 2 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
+      <!-- Chart 2 : CAL+1 rolling front-year price -->
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title" id="go-cal1-title">GO AIB Renewable — CAL+1 EU price indications (€/MWh)</span>
+          <span class="source-badge">Commerg weekly</span>
+        </div>
+        <canvas id="go-cal1-canvas" style="width:100%;height:180px"></canvas>
+      </div>
+
+      <!-- Chart 3 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -5181,10 +5183,10 @@
       </div>
 
       <!-- Table forward = Streamlit dataframe -->
-      <div class="table-wrap">
+      <div class="table-wrap" style="margin-bottom:20px">
         <div class="table-header">
           <span class="table-title">GO by Calendar Year — Bid / Ask (€/MWh)</span>
-          <span class="source-badge">Commerg · EEX</span>
+          <span class="source-badge">Commerg</span>
         </div>
         <table><thead><tr>
           <th>Produit</th>
@@ -5196,23 +5198,39 @@
         </tr></thead>
         <tbody id="go-fwd-tbody"></tbody></table>
       </div>
+
+      <!-- ═══ Enchères France (EEX) — données publiques mensuelles ═══ -->
+      <div class="page-header" style="margin-bottom:14px">
+        <div><div class="page-title" style="font-size:16px">Enchères France — EEX</div><div class="page-subtitle">Résultats mensuels publics · par technologie · depuis 2019</div></div>
+      </div>
+      <div class="chart-container" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title">Volume vendu &amp; prix moyen pondéré — Wind vs Solar</span>
+          <span class="source-badge">EEX monthly auctions</span>
+        </div>
+        <canvas id="go-auct-tech-canvas" style="width:100%;height:240px"></canvas>
+      </div>
+      <div class="chart-container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="table-title">Volume total — offert vs alloué (MWh)</span>
+          <span class="source-badge">EEX monthly auctions</span>
+        </div>
+        <canvas id="go-auct-vol-canvas" style="width:100%;height:200px"></canvas>
+      </div>
     </div>
 
     <!-- GO HISTORY -->
     <div class="page" id="page-gohist">
       <div class="page-header">
-        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price 2022–2026 · Commerg + EEX · toutes technologies</div></div>
+        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price · Commerg</div></div>
       </div>
 
       <!-- Filtres produit + période -->
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <div style="display:flex;gap:5px" id="go-hist-filter">
           <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
-          <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
-          <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
-          <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
           <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
-          <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
+          <button class="day-tab" onclick="filterGoH('hws',this)">Hydro/Wind/Solar</button>
         </div>
         <div style="display:flex;gap:5px;margin-left:auto" id="go-hist-period">
           <button class="day-tab" onclick="setGoHistPeriod(52,this)">1 an</button>
@@ -5240,30 +5258,6 @@
           <div class="table-title" style="margin-bottom:10px">Distribution des prix — boites (€/MWh)</div>
           <canvas id="go-box-canvas" style="width:100%;height:180px"></canvas>
         </div>
-      </div>
-      <div class="hist-section hist-section-strong" id="hs-capture-solar">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capture-solar')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Rolling Capture Rate — Solar
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">WAP / Baseload (%) · 30D/90D/365D</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-capture-solar"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('cap-solar','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('cap-solar','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('cap-solar','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('cap-solar','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('cap-solar','All',this)">All</button></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-cap-solar'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-        <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-cap-solar" style="width:100%;height:220px"></canvas></div></div>
-      </div>
-      <div class="hist-section hist-section-strong" id="hs-capture-wind">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capture-wind')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>Rolling Capture Rate — Wind
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">WAP / Baseload (%) · 30D/90D/365D</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-capture-wind"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('cap-wind','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('cap-wind','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('cap-wind','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('cap-wind','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('cap-wind','All',this)">All</button></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-cap-wind'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-        <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-cap-wind" style="width:100%;height:220px"></canvas></div></div>
       </div>
     </div>
 
