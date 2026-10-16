@@ -3015,12 +3015,20 @@
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open" id="hs-body-prfwd-compare">
-            <div class="hist-window-btns" id="prfwd-cmp-tenor-btns"></div>
-            <div class="hist-window-btns" id="prfwd-cmp-window-btns" style="margin-top:6px"></div>
-            <div style="display:flex;justify-content:flex-end;margin:6px 0">
-              <button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['prfwd-chart-compare'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Zone</span>
+              <div style="display:flex;gap:5px;flex-wrap:wrap" id="prfwd-cmp-zone-chips"></div>
             </div>
-            <div style="position:relative;height:300px"><canvas id="prfwd-chart-compare"></canvas></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Contrat</span>
+              <div class="hist-window-btns" id="prfwd-cmp-tenor-btns"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Période</span>
+              <div class="hist-window-btns" id="prfwd-cmp-window-btns"></div>
+              <button class="pk-btn-ghost" style="margin-left:auto" onclick="(function(){var c=HIST.charts['prfwd-chart-compare'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset zoom</button>
+            </div>
+            <div style="position:relative;height:300px;margin-top:8px"><canvas id="prfwd-chart-compare"></canvas></div>
 
             <div class="table-wrap" id="prfwd-cmp-table-wrap" style="margin-top:14px">
               <div class="table-header">
