@@ -37,7 +37,7 @@ function drawNuclear() {
   });
   mkChart('hydro-canvas', {
     type:'line', data:{ labels:hLabels, datasets:[
-      { label:'Fill level (%)',  data:hData,   borderColor:C_HYD, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_HYD,.1), tension:0.3 },
+      { label:'Fill level (%)',  data:hData,   borderColor:C_HYD, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_HYD,.1), tension: 0 },
       { label:'20yr median (%)',data:hMedian, borderColor:rgba(C_WARN,.6), borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false },
     ]},
     options:{ responsive:true, maintainAspectRatio:false,

@@ -486,14 +486,14 @@
         data: prices,
         borderColor: '#14D3A9',
         backgroundColor: 'rgba(20,211,169,0.08)',
-        borderWidth: 2, tension: 0.25, pointRadius: 0, fill: true, spanGaps: false
+        borderWidth: 2, tension: 0, pointRadius: 0, fill: true, spanGaps: false
       }];
       if (frPrev && frPrev.hourly) {
         ds.push({
           label: 'J-1',
           data: frPrev.hourly,
           borderColor: '#4A6280',
-          borderWidth: 1.5, tension: 0.25, pointRadius: 0, fill: false,
+          borderWidth: 1.5, tension: 0, pointRadius: 0, fill: false,
           borderDash: [4, 3], spanGaps: false
         });
       }
@@ -538,7 +538,7 @@
         pointRadius: 0,
         fill: false,
         yAxisID: 'y1',
-        tension: 0.25
+        tension: 0
       });
 
       makeChart('mix', 'fr-chart-mix', {
@@ -688,9 +688,9 @@
           labels: rows.map(function (r) { return r.date.slice(5); }),
           datasets: [
             { label: 'Solaire', data: rows.map(function (r) { return r.solar ? r.solar.captureRate : null; }),
-              borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0.25, fill: false, spanGaps: true },
+              borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
             { label: 'Eolien', data: rows.map(function (r) { return r.wind ? r.wind.captureRate : null; }),
-              borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0.25, fill: false, spanGaps: true }
+              borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0, fill: false, spanGaps: true }
           ]
         },
         options: {
@@ -723,7 +723,7 @@
           labels: plabels,
           datasets: [
             { type: 'line', label: 'Prix DA moyen', data: avgP, borderColor: '#FFFFFF',
-              borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false, yAxisID: 'y1' },
+              borderWidth: 2, pointRadius: 0, tension: 0, fill: false, yAxisID: 'y1' },
             { type: 'bar', label: 'Solaire moyen', data: avgS, backgroundColor: 'rgba(251,191,36,0.55)',
               borderWidth: 0, yAxisID: 'y', stack: 'g', barPercentage: 1, categoryPercentage: 1 },
             { type: 'bar', label: 'Eolien moyen', data: avgW, backgroundColor: 'rgba(20,211,169,0.55)',
@@ -840,11 +840,11 @@
           labels: series.map(function (r) { return r.d; }),
           datasets: [
             { label: 'Base journaliere', data: series.map(function (r) { return r.avg; }),
-              borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, pointRadius: 0, tension: 0.1, fill: false },
+              borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false },
             { label: 'Moyenne 30j', data: series.map(function (r) { return r.roll30; }),
-              borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0.2, fill: false },
+              borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0, fill: false },
             { label: 'Moyenne 365j', data: series.map(function (r) { return r.roll365; }),
-              borderColor: '#EE9B00', borderWidth: 2, pointRadius: 0, tension: 0.2, fill: false }
+              borderColor: '#EE9B00', borderWidth: 2, pointRadius: 0, tension: 0, fill: false }
           ]
         },
         options: {
@@ -984,7 +984,7 @@
               label: 'FR-' + sp.nb.label,
               data: sp.data,
               borderColor: sp.nb.colour,
-              borderWidth: 1.5, pointRadius: 0, tension: 0.15, fill: false, spanGaps: true
+              borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true
             };
           })
         },
@@ -1099,7 +1099,7 @@
           labels: curveLabels,
           datasets: [{ label: 'Prix forward FR base', data: curveValues, borderColor: '#14D3A9',
             backgroundColor: 'rgba(20,211,169,0.12)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#14D3A9',
-            tension: 0.1, fill: true }]
+            tension: 0, fill: true }]
         },
         options: {
           interaction: { mode: 'index', intersect: false },
@@ -1123,7 +1123,7 @@
         data: {
           labels: hDates,
           datasets: [{ label: S.marketTenor, data: hValues, borderColor: '#14D3A9', borderWidth: 1.5,
-            pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }]
+            pointRadius: 0, tension: 0, fill: false, spanGaps: true }]
         },
         options: {
           interaction: { mode: 'index', intersect: false },
@@ -1146,9 +1146,9 @@
           labels: hDates,
           datasets: [
             { label: 'Reel', data: nucActual, borderColor: '#7B4B9C', borderWidth: 1.5,
-              pointRadius: 0, tension: 0.1, fill: false, spanGaps: true },
+              pointRadius: 0, tension: 0, fill: false, spanGaps: true },
             { label: 'Previsionnel', data: nucForecast, borderColor: '#EE9B00', borderWidth: 1.5,
-              borderDash: [4, 3], pointRadius: 0, tension: 0.1, fill: false, spanGaps: true }
+              borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
           ]
         },
         options: {

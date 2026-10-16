@@ -152,18 +152,18 @@ function drawRenChart() {
 
   if (renTab === 'today') {
     datasets = [
-      { label:'Wind Onshore', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND,.12), tension:0.3 },
-      { label:'Wind Offshore', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND_OFF,.1), tension:0.3 },
-      { label:'Solar', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_SOLAR,.1), tension:0.3 },
+      { label:'Wind Onshore', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND,.12), tension: 0 },
+      { label:'Wind Offshore', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND_OFF,.1), tension: 0 },
+      { label:'Solar', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_SOLAR,.1), tension: 0 },
     ];
   } else if (renTab === 'forecast') {
     datasets = [
-      { label:'Wind Onshore actual', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
-      { label:'Wind Onshore fc.', data:wOnF, borderColor:C_WIND, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
-      { label:'Wind Offshore actual', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
-      { label:'Wind Offshore fc.', data:wOffF, borderColor:C_WIND_OFF, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
-      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
-      { label:'Solar fc.', data:sF, borderColor:C_SOLAR, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
+      { label:'Wind Onshore actual', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
+      { label:'Wind Onshore fc.', data:wOnF, borderColor:C_WIND, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
+      { label:'Wind Offshore actual', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
+      { label:'Wind Offshore fc.', data:wOffF, borderColor:C_WIND_OFF, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar fc.', data:sF, borderColor:C_SOLAR, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
     ];
   } else if (renTab === 'error') {
     type = 'bar';
@@ -175,9 +175,9 @@ function drawRenChart() {
   } else {
     labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);return i%24===0?['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]:'';});
     datasets = [
-      { label:'Wind Onshore', data:histWOn, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
-      { label:'Wind Offshore', data:histWOff, borderColor:C_WIND_OFF, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
-      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Wind Onshore', data:histWOn, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
+      { label:'Wind Offshore', data:histWOff, borderColor:C_WIND_OFF, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
     ];
   }
 
@@ -247,16 +247,16 @@ function drawRenChart() {
   if (renTab === 'today') {
     datasets = [
       { label:'Wind actual', data:wA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true,
-        backgroundColor:rgba(C_WIND,.1), tension:0.3 },
+        backgroundColor:rgba(C_WIND,.1), tension: 0 },
       { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true,
-        backgroundColor:rgba(C_SOLAR,.1), tension:0.3 },
+        backgroundColor:rgba(C_SOLAR,.1), tension: 0 },
     ];
   } else if (renTab === 'forecast') {
     datasets = [
-      { label:'Wind actual', data:wA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
-      { label:'Wind forecast', data:wF, borderColor:C_WIND, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
-      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension:0.3 },
-      { label:'Solar forecast', data:sF, borderColor:C_SOLAR, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension:0.3 },
+      { label:'Wind actual', data:wA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
+      { label:'Wind forecast', data:wF, borderColor:C_WIND, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar forecast', data:sF, borderColor:C_SOLAR, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
     ];
   } else if (renTab === 'error') {
     type = 'bar';
@@ -267,8 +267,8 @@ function drawRenChart() {
   } else { // history
     labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);const h=i%24;return ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]+(h===0?' 0h':'');});
     datasets = [
-      { label:'Wind', data:histW, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
-      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension:0.2 },
+      { label:'Wind', data:histW, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
+      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
     ];
   }
 

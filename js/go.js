@@ -228,10 +228,10 @@ function drawGoIndicChart() {
     data: {
       labels,
       datasets: [
-        { label:'Ask', data:asks, borderColor:C_DN, borderWidth:1.5, pointRadius:0, fill:false, tension:0.3 },
-        { label:'Mid', data:mids, borderColor:rgba(C_TX2,.5), borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, tension:0.3 },
+        { label:'Ask', data:asks, borderColor:C_DN, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
+        { label:'Mid', data:mids, borderColor:rgba(C_TX2,.5), borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, tension: 0 },
         { label:'Bid', data:bids, borderColor:C_UP, borderWidth:1.5, pointRadius:0,
-          fill: { target:'+2', above:rgba(C_WIND,.08), below:rgba(C_WIND,.08) }, tension:0.3 },
+          fill: { target:'+2', above:rgba(C_WIND,.08), below:rgba(C_WIND,.08) }, tension: 0 },
       ]
     },
     options: {
@@ -300,7 +300,7 @@ function drawGoSpreadChart() {
   mkChart('go-spread-canvas', {
     type: 'line',
     data: { labels, datasets:[{ label:'Spread Bid/Ask', data:spreads, borderColor:C_WARN, borderWidth:1.5,
-      pointRadius:0, fill:true, backgroundColor:rgba(C_WARN,.1), tension:0.3 }] },
+      pointRadius:0, fill:true, backgroundColor:rgba(C_WARN,.1), tension: 0 }] },
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh')}}, zoom:ZOOM_CFG },
@@ -345,7 +345,7 @@ function drawGoHist() {
     label: GO_SERIES[k]?.l.replace('GO AIB ','').replace('GO ','') || k,
     data: s.data.slice(-n),
     borderColor: GO_SERIES[k]?.c || '#888',
-    borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0.3,
+    borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0,
   }));
 
   mkChart('go-hist-canvas', {

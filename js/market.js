@@ -155,11 +155,11 @@ async function loadLoad() {
       datasets: [
         { label:'Actual (GW)', data:actual, borderColor:C_UP, borderWidth:2,
           backgroundColor: (ctx2) => { const g=ctx2.chart.ctx.createLinearGradient(0,0,0,200); g.addColorStop(0,rgba(C_UP,.15)); g.addColorStop(1,rgba(C_UP,0)); return g; },
-          fill:true, pointRadius:0, tension:0.3 },
+          fill:true, pointRadius:0, tension: 0 },
         { label:'DA Forecast (GW)', data:forecast, borderColor:C_WIND, borderWidth:1.5,
           borderDash:[5,4], pointRadius:0, tension:0, fill:false },
         { label:'Last Year Actual', data:lastYear, borderColor:'rgba(255,255,255,.2)', borderWidth:1,
-          borderDash:[2,3], pointRadius:0, tension:0.3, fill:false },
+          borderDash:[2,3], pointRadius:0, tension: 0, fill:false },
       ]
     },
     options: {

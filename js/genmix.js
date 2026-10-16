@@ -927,20 +927,20 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
   // Percentile envelope (P0–P100 outer, P5–P95 inner, P50 median) over 30 stored days
   const env = await _gmFetchGenEnvelope(zone, 30, N);
   if (env) {
-    datasets.push({ label: '__p0', data: env.p0, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0.35 });
-    datasets.push({ label: 'P0–P100', data: env.p100, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.06)', pointRadius: 0, fill: '-1', tension: 0.35 });
-    datasets.push({ label: '__p5', data: env.p5, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0.35 });
-    datasets.push({ label: 'P5–P95', data: env.p95, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.14)', pointRadius: 0, fill: '-1', tension: 0.35 });
-    datasets.push({ label: 'P50 (médiane 30j)', data: env.p50, borderColor: '#7A93AB', borderWidth: 1.25, borderDash: [2, 3], pointRadius: 0, fill: false, tension: 0.35 });
+    datasets.push({ label: '__p0', data: env.p0, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0 });
+    datasets.push({ label: 'P0–P100', data: env.p100, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.06)', pointRadius: 0, fill: '-1', tension: 0 });
+    datasets.push({ label: '__p5', data: env.p5, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0 });
+    datasets.push({ label: 'P5–P95', data: env.p95, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.14)', pointRadius: 0, fill: '-1', tension: 0 });
+    datasets.push({ label: 'P50 (médiane 30j)', data: env.p50, borderColor: '#7A93AB', borderWidth: 1.25, borderDash: [2, 3], pointRadius: 0, fill: false, tension: 0 });
   }
 
   datasets.push({
     label: cur.ds, data: total, borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.10)',
-    borderWidth: 2.5, fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
+    borderWidth: 2.5, fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 4,
   });
   if (prev) datasets.push({
     label: 'J-1', data: prev, borderColor: '#7A93AB', backgroundColor: 'transparent',
-    borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4,
+    borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 4,
   });
 
   const canvas = document.getElementById(canvasId);
@@ -1031,7 +1031,7 @@ function _gmDrillRenderProfile_OLD(zone, mix, st) {
       backgroundColor: 'rgba(251, 191, 36, 0.10)',
       borderWidth: 2.5,
       fill: true,
-      tension: 0.35,
+      tension: 0,
       pointRadius: 0,
       pointHoverRadius: 4,
     },
@@ -1045,7 +1045,7 @@ function _gmDrillRenderProfile_OLD(zone, mix, st) {
       borderWidth: 1.5,
       borderDash: [4, 3],
       fill: false,
-      tension: 0.35,
+      tension: 0,
       pointRadius: 0,
       pointHoverRadius: 4,
     });
@@ -1263,8 +1263,8 @@ async function _gmRenderCarbonReal(zone, dateStr) {
     data: {
       labels,
       datasets: [
-        { label: cur.ds, data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0 },
-        cmpData ? { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.4, pointRadius: 0 } : null,
+        { label: cur.ds, data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0, pointRadius: 0 },
+        cmpData ? { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0 } : null,
       ].filter(Boolean),
     },
     options: {
@@ -1399,8 +1399,8 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
     data: {
       labels,
       datasets: [
-        { label: 'Today', data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 0 },
-        { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.4, pointRadius: 0 },
+        { label: 'Today', data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0, pointRadius: 0 },
+        { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0 },
       ],
     },
     options: {
@@ -2219,7 +2219,7 @@ async function renderGmHistory() {
   if (nuclearData.some(v => v != null && v > 0)) datasets.push({ label: 'Nuclear', data: nuclearData, borderColor: '#7B4B9C', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
   if (hydroData.some(v => v != null && v > 0))   datasets.push({ label: 'Hydro',   data: hydroData,   borderColor: '#3FA6B4', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
   if (fossilData.some(v => v != null && v > 0))  datasets.push({ label: 'Fossil',  data: fossilData,  borderColor: '#ED6965', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
-  datasets.push({ label: 'Wind 7D rolling', data: windR7, borderColor: '#94a3b8', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0.2, fill: false, spanGaps: true });
+  datasets.push({ label: 'Wind 7D rolling', data: windR7, borderColor: '#94a3b8', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, tension: 0, fill: false, spanGaps: true });
 
   window._GM_HIST_CHART = new Chart(canvas, {
     type: 'line',
@@ -2772,12 +2772,12 @@ window.gmSetHistDate = function (ds) {
     const datasets = STACK.map((f, idx) => ({
       label: FUEL[f].label, data: labels.map((_, i) => (i < nReal ? DATA[f][i] / 1000 : null)),
       borderColor: FUEL[f].color, backgroundColor: hx(FUEL[f].color), borderWidth: 1,
-      fill: idx === 0 ? 'origin' : '-1', tension: 0.3, pointRadius: 0, spanGaps: false,
+      fill: idx === 0 ? 'origin' : '-1', tension: 0, pointRadius: 0, spanGaps: false,
     }));
     if (prevTotals && prevReal > 1) datasets.push({
       label: 'J-1 (' + (prevDs || '') + ')', data: labels.map((_, i) => (i < prevReal ? prevTotals[i] / 1000 : null)),
       borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 4],
-      fill: false, tension: 0.3, pointRadius: 0, stack: 'j1', spanGaps: false,
+      fill: false, tension: 0, pointRadius: 0, stack: 'j1', spanGaps: false,
     });
 
     const canvas = document.getElementById('gms-canvas');

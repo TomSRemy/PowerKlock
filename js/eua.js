@@ -8,7 +8,7 @@ function drawEUA() {
   mkChart('eua-spot-canvas', {
     type:'line', data:{ labels, datasets:[{ label:'EUA spot (€/t)', data:eua90,
       borderColor:C_NUC, borderWidth:2, pointRadius:0, fill:true,
-      backgroundColor:rgba(C_NUC,.1), tension:0.3 }]},
+      backgroundColor:rgba(C_NUC,.1), tension: 0 }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.raw+' €/t'}}, zoom:ZOOM_CFG },
       scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v+' €'},min:55,max:100} }
@@ -33,7 +33,7 @@ function drawEUA() {
   mkChart('eua-spark-canvas', {
     type:'line', data:{ labels, datasets:[{ label:'Clean Spark Spread (€/MWh)', data:sparkData,
       borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true,
-      backgroundColor:rgba(C_SOLAR,.1), tension:0.3 }]},
+      backgroundColor:rgba(C_SOLAR,.1), tension: 0 }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.raw+' €/MWh'}}, zoom:ZOOM_CFG },
       scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v+' €'}} }

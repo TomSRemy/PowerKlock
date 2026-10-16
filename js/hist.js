@@ -4022,7 +4022,7 @@ function _buildHoChart(zone, series, fullscreen) {
           borderWidth: fullscreen ? 2 : 1.5,
           borderDash: [4, 3],
           pointRadius: 0,
-          tension: 0.2,
+          tension: 0,
           fill: false,
           order: 2,
         },
@@ -4033,7 +4033,7 @@ function _buildHoChart(zone, series, fullscreen) {
           backgroundColor: 'transparent',
           borderWidth: fullscreen ? 2.5 : 2,
           pointRadius: 0,
-          tension: 0.3,
+          tension: 0,
           fill: false,
           order: 1,
         },
@@ -5022,9 +5022,9 @@ function _hszRenderLines(filtered, zone) {
           hidden: !showRibbon,
         },
         // Main 3 lines (order matters for stacking)
-        { label: 'Daily avg', data: avgs,   borderColor: dailyCol,  borderWidth: 2.2, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false, order: 3 },
-        { label: '7D rolling', data: roll7, borderColor: roll7Col,  borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false, borderDash: [4,3], order: 2 },
-        { label: '30D rolling', data: roll30, borderColor: roll30Col, borderWidth: 2.4, pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1 },
+        { label: 'Daily avg', data: avgs,   borderColor: dailyCol,  borderWidth: 2.2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 3 },
+        { label: '7D rolling', data: roll7, borderColor: roll7Col,  borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 2 },
+        { label: '30D rolling', data: roll30, borderColor: roll30Col, borderWidth: 2.4, pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 1 },
       ],
     },
     options: {
@@ -5266,19 +5266,19 @@ function _hszRenderYoY(filtered, zone, summary) {
         {
           label: 'Y-2', data: prev2,
           borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4, pointRadius: 0,
-          tension: 0.2, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+          tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
         },
         // ── Y-1 — fine, dashed, subordinate ──
         {
           label: 'Y-1', data: prev1,
           borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4, pointRadius: 0,
-          tension: 0.2, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+          tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
         },
         // ── Current — the star ──
         {
           label: 'Current period', data: cur,
           borderColor: color, borderWidth: 2.4, pointRadius: 0,
-          tension: 0.2, spanGaps: true, fill: false, order: 1,
+          tension: 0, spanGaps: true, fill: false, order: 1,
         },
       ],
     },
@@ -5418,7 +5418,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
       borderWidth: isCurrent ? 3 : 1.5,
       pointRadius: isCurrent ? 4 : 3,
       pointBackgroundColor: isCurrent ? color : yearColors[i % yearColors.length],
-      tension: 0.25,
+      tension: 0,
       spanGaps: true,
       fill: false,
     };
@@ -5577,33 +5577,33 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
     {
       label: 'Min–Max range', data: p100Line,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 8, _bandPair: 'outer', hidden: hideBands,
     },
     {
       label: '_outer_min', data: p0Line,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 8, _bandPair: 'outer', _hideFromLegend: true, hidden: hideBands,
     },
     // Inner P5–P95
     {
       label: 'Typical range (P5–P95)', data: p95Line,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 7, _bandPair: 'inner', hidden: hideBands,
     },
     {
       label: '_inner_min', data: p5Line,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true, hidden: hideBands,
     },
     // Historical median
     {
       label: 'Hist median', data: medianLine,
       borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
-      tension: 0.2, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
+      tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
     },
   ];
   if (yMinus2) {
@@ -5611,7 +5611,7 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
       label: yMinus2, data: y2Arr,
       borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
       pointRadius: 0,
-      tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+      tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
   if (yMinus1) {
@@ -5619,14 +5619,14 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
       label: yMinus1, data: y1Arr,
       borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
       pointRadius: 0,
-      tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+      tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
   datasets.push({
     label: currentYear + ' (current)', data: curArr,
     borderColor: color, borderWidth: 2.4,
     pointRadius: 0,
-    tension: 0.25, spanGaps: true, fill: false, order: 1,
+    tension: 0, spanGaps: true, fill: false, order: 1,
   });
 
   mkHistChart(_hszCtx().canvasId, {
@@ -5826,33 +5826,33 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     {
       label: 'Min–Max range', data: p100Line,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 8, _bandPair: 'outer', hidden: hideBands,
     },
     {
       label: '_outer_min', data: p0Line,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 8, _bandPair: 'outer', _hideFromLegend: true, hidden: hideBands,
     },
     // ── Inner band: typical regime (P5–P95) ──
     {
       label: 'Typical range (P5–P95)', data: p95Line,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 7, _bandPair: 'inner', hidden: hideBands,
     },
     {
       label: '_inner_min', data: p5Line,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true, hidden: hideBands,
     },
     // ── Historical median ──
     {
       label: 'Hist median', data: medianLine,
       borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
-      tension: 0.2, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
+      tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
     },
   ];
 
@@ -5863,7 +5863,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
       data: byYear[yMinus2],
       borderColor: 'rgba(168,125,196,0.60)',
       borderWidth: 1.4, pointRadius: 0,
-      tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+      tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
   // ── Y-1 — fine, dashed, subordinate ──
@@ -5873,7 +5873,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
       data: byYear[yMinus1],
       borderColor: 'rgba(255,255,255,0.55)',
       borderWidth: 1.4, pointRadius: 0,
-      tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+      tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
   // ── Current — the star: thick + saturated zone colour ──
@@ -5882,7 +5882,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     data: byYear[currentYear],
     borderColor: color,
     borderWidth: 2.4, pointRadius: 0,
-    tension: 0.25, spanGaps: true, fill: false, order: 1,
+    tension: 0, spanGaps: true, fill: false, order: 1,
   });
 
   mkHistChart(_hszCtx().canvasId, {
@@ -6368,21 +6368,21 @@ function _hszRenderHourlyQuarter(zone, intraday) {
       datasets.push({
         label: n2 + ' (Y-2)', data: n2Profile,
         borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
-        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+        pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
       });
     }
     if (n1Profile) {
       datasets.push({
         label: n1 + ' (Y-1)', data: n1Profile,
         borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
-        pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+        pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
       });
     }
     if (curProfile && curProfile.some(v => v != null)) {
       datasets.push({
         label: cur + ' (current)', data: curProfile,
         borderColor: q.color, borderWidth: 2.4,
-        pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
+        pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 1,
       });
     }
 
@@ -6600,33 +6600,33 @@ function _hszRenderHourlyYoYStatic(zone, intraday, summary) {
     datasets.push({
       label: 'Min–Max range', data: dist.p100,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: outerFill,
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 8, _bandPair: 'outer', hidden: hideBands,
     });
     datasets.push({
       label: '_outer_min', data: dist.p0,
       borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 8, _bandPair: 'outer', _hideFromLegend: true, hidden: hideBands,
     });
     // Inner P5–P95
     datasets.push({
       label: 'Typical range (P5–P95)', data: dist.p95,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: innerFill,
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 7, _bandPair: 'inner', hidden: hideBands,
     });
     datasets.push({
       label: '_inner_min', data: dist.p5,
       borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 7, _bandPair: 'inner', _hideFromLegend: true, hidden: hideBands,
     });
     // Historical median
     datasets.push({
       label: 'Hist median', data: dist.p50,
       borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
-      tension: 0.2, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
+      tension: 0, spanGaps: true, fill: false, borderDash: [2,3], order: 6,
     });
   }
 
@@ -6634,20 +6634,20 @@ function _hszRenderHourlyYoYStatic(zone, intraday, summary) {
     datasets.push({
       label: n2 + ' (Y-2)', data: n2Profile,
       borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
-      pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
+      pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
   if (n1Profile) {
     datasets.push({
       label: n1 + ' (Y-1)', data: n1Profile,
       borderColor: 'rgba(255,255,255,0.55)', borderWidth: 1.4,
-      pointRadius: 0, tension: 0.25, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
+      pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order: 3,
     });
   }
   datasets.push({
     label: cur + ' (current)', data: curProfile,
     borderColor: color, borderWidth: 2.4,
-    pointRadius: 0, tension: 0.3, spanGaps: true, fill: false, order: 1,
+    pointRadius: 0, tension: 0, spanGaps: true, fill: false, order: 1,
   });
 
   // Stats for analyst banner: peak hour, floor hour, peak val, floor val for current and prev year
@@ -7374,9 +7374,9 @@ function _hszRenderVolatility(filtered, zone) {
       labels,
       datasets: [
         // 7D — thin orange (reactive line, holds the spikes)
-        { label: '7D rolling', data: s7,  borderColor: _HIST_WARN, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.2, spanGaps: true, fill: false },
+        { label: '7D rolling', data: s7,  borderColor: _HIST_WARN, backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false },
         // 30D — thicker zone color (trend line)
-        { label: '30D rolling', data: s30, borderColor: color,    backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0, tension: 0.3, spanGaps: true, fill: false },
+        { label: '30D rolling', data: s30, borderColor: color,    backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 0, tension: 0, spanGaps: true, fill: false },
       ],
     },
     options: {
@@ -7815,7 +7815,7 @@ function _hszRenderDist(filtered, zone, summary) {
           backgroundColor: 'transparent',
           borderWidth: 2,
           pointRadius: 0,
-          tension: 0.4,
+          tension: 0,
           fill: false,
           order: 1,
         },
@@ -8929,7 +8929,7 @@ function _hmzRenderLines(perZone, selected) {
       pointHoverBackgroundColor: zoneColor(z),
       pointHoverBorderColor: '#fff',
       pointHoverBorderWidth: 2,
-      tension: 0.3,
+      tension: 0,
       spanGaps: true,
       fill: false,
     };
@@ -9396,7 +9396,7 @@ function _hmzRenderSpreadVsRef(perZone, selected, baseline) {
         pointHoverBackgroundColor: zoneColor(z),
         pointHoverBorderColor: '#fff',
         pointHoverBorderWidth: 2,
-        tension: 0.3,
+        tension: 0,
         spanGaps: true,
         fill: false,
       };
@@ -10482,7 +10482,7 @@ function _bdHodShape(zone, summary) {
         borderWidth: isFullStyle ? 2.6 : 1.1,
         borderDash:  isFadedStyle ? [3, 3] : undefined,
         fill: false,
-        tension: 0.35,
+        tension: 0,
         pointRadius: 0,
         pointHoverRadius: 4,
         // The "current focus" year on top, faded years stacked below
@@ -11323,33 +11323,33 @@ function _bdHodShape(zone, summary) {
       datasets.push({
         label: 'Min–Max range', data: dist.p100,
         borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(122,147,171,0.04)',
-        borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+        borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
         fill: '+1', order: 10,
       });
       datasets.push({
         label: '_outer_min', data: dist.p0,
         borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'transparent',
-        borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+        borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
         fill: false, order: 10, _hideFromLegend: true,
       });
       // Inner P5–P95
       datasets.push({
         label: 'Typical range (P5–P95)', data: dist.p95,
         borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'rgba(122,147,171,0.10)',
-        borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+        borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
         fill: '+1', order: 9,
       });
       datasets.push({
         label: '_inner_min', data: dist.p5,
         borderColor: 'rgba(255,255,255,0.20)', backgroundColor: 'transparent',
-        borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+        borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
         fill: false, order: 9, _hideFromLegend: true,
       });
       // Historical median
       datasets.push({
         label: 'Hist median', data: dist.p50,
         borderColor: 'rgba(255,255,255,0.30)', borderWidth: 1, pointRadius: 0,
-        tension: 0.2, spanGaps: true, fill: false, borderDash: [2, 3], order: 8,
+        tension: 0, spanGaps: true, fill: false, borderDash: [2, 3], order: 8,
       });
     }
 
@@ -11392,7 +11392,7 @@ function _bdHodShape(zone, summary) {
           borderWidth:     isFull ? 2.4 : 1.0,
           borderDash:      isFaded ? [3, 3] : undefined,
           fill: false,
-          tension: 0.30,
+          tension: 0,
           pointRadius: 0,
           pointHoverRadius: 4,
           spanGaps: true,

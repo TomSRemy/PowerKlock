@@ -605,7 +605,7 @@
       datasets: [{
         label: 'Prix DA', data: f.price,
         borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0,
-        tension: 0.15, spanGaps: true,
+        tension: 0, spanGaps: true,
       }],
     }, _commonChartOpts('€/MWh'));
 
@@ -614,7 +614,7 @@
       datasets: [{
         label: 'Spark', data: f.spark,
         borderColor: '#ED6965', borderWidth: 1.4, pointRadius: 0,
-        tension: 0.15, spanGaps: true,
+        tension: 0, spanGaps: true,
         backgroundColor: function (ctx) {
           if (!ctx.chart || !ctx.chart.ctx) return 'rgba(237,105,101,0.10)';
           const c = ctx.chart.ctx;
@@ -634,18 +634,18 @@
           label: 'Solar', data: f.solar,
           backgroundColor: _hexA(FUEL_COLORS.solar, 0.45),
           borderColor: 'transparent', borderWidth: 0,
-          fill: 'origin', pointRadius: 0, tension: 0.15, stack: 'ren',
+          fill: 'origin', pointRadius: 0, tension: 0, stack: 'ren',
         },
         {
           label: 'Wind', data: f.wind,
           backgroundColor: _hexA(FUEL_COLORS.wind, 0.55),
           borderColor: 'transparent', borderWidth: 0,
-          fill: 'origin', pointRadius: 0, tension: 0.15, stack: 'ren',
+          fill: 'origin', pointRadius: 0, tension: 0, stack: 'ren',
         },
         {
           label: 'Load', data: f.load,
           borderColor: '#fff', borderWidth: 1.5, borderDash: [3, 2],
-          pointRadius: 0, tension: 0.15, fill: false,
+          pointRadius: 0, tension: 0, fill: false,
         },
       ],
     }, _commonChartOpts('GW'));
@@ -661,7 +661,7 @@
         label: FUEL_LABELS[fuel], data: data,
         backgroundColor: _hexA(FUEL_COLORS[fuel], 0.78),
         borderColor: FUEL_COLORS[fuel], borderWidth: 0,
-        fill: true, pointRadius: 0, tension: 0.1, stack: 'mix',
+        fill: true, pointRadius: 0, tension: 0, stack: 'mix',
       };
     });
     const mixOpts = _commonChartOpts('GW');

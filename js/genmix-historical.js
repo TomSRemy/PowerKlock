@@ -969,7 +969,7 @@
         label: 'Daily avg load',
         data,
         borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.10)',
-        borderWidth: 2, fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 4,
+        borderWidth: 2, fill: true, tension: 0, pointRadius: 0, pointHoverRadius: 4,
       }] },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -1175,13 +1175,13 @@
     const datasets = [{
       label: 'Daily avg', data,
       borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.10)',
-      borderWidth: 2, fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 4,
+      borderWidth: 2, fill: true, tension: 0, pointRadius: 0, pointHoverRadius: 4,
     }];
     if (overlayData) {
       datasets.push({
         label: overlayLabel, data: overlayData,
         borderColor: '#7A93AB', backgroundColor: 'transparent',
-        borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0.3, pointRadius: 0,
+        borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0,
       });
     }
 
@@ -1635,7 +1635,7 @@
         borderColor: isFr ? '#fff' : PALETTE[i % PALETTE.length],
         backgroundColor: 'transparent',
         borderWidth: isFr ? 2.5 : 1.2,
-        fill: false, tension: 0.3, pointRadius: 0, pointHoverRadius: 4,
+        fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 4,
       };
     });
 

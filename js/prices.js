@@ -330,7 +330,7 @@ function loadFranceDashboard() {
             borderColor: '#14D3A9',
             backgroundColor: 'rgba(0,212,168,0.08)',
             borderWidth: 2,
-            tension: 0.3,
+            tension: 0,
             fill: true,
             pointRadius: 3,
             pointBackgroundColor: '#14D3A9'
@@ -460,7 +460,7 @@ function _mdashDrawPriceChart(canvasId, code) {
     type: 'line',
     data: { labels: makeTimeLabels(z.hourly.length), datasets: [{
       data: z.hourly, borderColor: C_UP, borderWidth: 1.5, pointRadius: 0,
-      fill: true, backgroundColor: rgba(C_UP, .08), tension: 0.2, spanGaps: true,
+      fill: true, backgroundColor: rgba(C_UP, .08), tension: 0, spanGaps: true,
     }] },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -500,7 +500,7 @@ function _mdashDrawLoadChart(canvasId) {
     type: 'line',
     data: { labels: makeTimeLabels(load.actual.length), datasets: [{
       data: load.actual.map(v => v == null ? null : v / 1000), borderColor: '#A87DC4', borderWidth: 1.5,
-      pointRadius: 0, fill: true, backgroundColor: rgba('#A87DC4', .08), tension: 0.2, spanGaps: false,
+      pointRadius: 0, fill: true, backgroundColor: rgba('#A87DC4', .08), tension: 0, spanGaps: false,
     }] },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -544,8 +544,8 @@ function _mdashDrawGoChart(canvasId) {
   mkChart(canvasId, {
     type: 'line',
     data: { labels: wk.map(w => fmtGoDate(w.t)), datasets: [
-      { label: 'Ask', data: wk.map(w => w.ask), borderColor: C_DN, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.2 },
-      { label: 'Bid', data: wk.map(w => w.bid), borderColor: C_UP, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.2 },
+      { label: 'Ask', data: wk.map(w => w.ask), borderColor: C_DN, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
+      { label: 'Bid', data: wk.map(w => w.bid), borderColor: C_UP, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -564,8 +564,8 @@ function _mdashDrawRenChart(canvasId) {
   mkChart(canvasId, {
     type: 'line',
     data: { labels: makeTimeLabels(ren.windActual.length), datasets: [
-      { label: 'Eolien', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.2, spanGaps: false },
-      { label: 'Solaire', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.2, spanGaps: false },
+      { label: 'Eolien', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
+      { label: 'Solaire', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -2146,7 +2146,7 @@ function buildHourlyDetail(idx, z) {
     borderWidth: 2,
     pointRadius: 0,
     pointHoverRadius: 4,
-    tension: 0.3,
+    tension: 0,
     spanGaps: true,
     fill: true,
     backgroundColor: (ctx2) => {
@@ -2161,7 +2161,7 @@ function buildHourlyDetail(idx, z) {
       label: ccFmtDayShift(window._currentPriceDate, -1) || 'J-1',
       data: z.hourlyYday,
       borderColor: 'rgba(195,210,225,0.70)',
-      borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0.3, fill: false, spanGaps: true,
+      borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: true,
       _isJ1: true,
     });
   }
@@ -2486,31 +2486,31 @@ async function _loadAndApplyRowBand(idx, z) {
     {
       label: `Range 0-100% (${opt.label})`, data: env.p100,
       borderColor: 'rgba(56,116,203,0.20)', backgroundColor: 'rgba(56,116,203,0.10)',
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 8,
     },
     {
       label: '__band_outer_min', data: env.p0,
       borderColor: 'rgba(56,116,203,0.20)', backgroundColor: 'transparent',
-      borderWidth: 0.8, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 0.8, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 8,
     },
     {
       label: `Typical 10-90% (${opt.label})`, data: env.p90,
       borderColor: 'rgba(56,116,203,0.40)', backgroundColor: 'rgba(56,116,203,0.22)',
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: '+1', order: 7,
     },
     {
       label: '__band_inner_min', data: env.p10,
       borderColor: 'rgba(56,116,203,0.40)', backgroundColor: 'transparent',
-      borderWidth: 1, pointRadius: 0, tension: 0.2, spanGaps: true,
+      borderWidth: 1, pointRadius: 0, tension: 0, spanGaps: true,
       fill: false, order: 7,
     },
     {
       label: `Median ${opt.label}`, data: env.p50,
       borderColor: 'rgba(120,170,230,0.95)', borderWidth: 1.4, pointRadius: 0,
-      tension: 0.2, spanGaps: true, fill: false, borderDash: [3, 3], order: 6,
+      tension: 0, spanGaps: true, fill: false, borderDash: [3, 3], order: 6,
     }
   );
   // Auto-hide J-1 once a band is active — the historical envelope already
@@ -3387,7 +3387,7 @@ function renderCCLines(data, selected) {
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
       pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
       fill: false,
-      tension: 0.3,
+      tension: 0,
       spanGaps: true,
     });
   });
@@ -3524,7 +3524,7 @@ function renderCCProfile(data, selected) {
     datasets.push({
       label: `${z.code}`, data: norm, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-      fill: false, tension: 0.3, spanGaps: true,
+      fill: false, tension: 0, spanGaps: true,
     });
   });
 
@@ -3973,7 +3973,7 @@ async function renderCCBands(data, selected) {
         label: `${z.code}`, data: z2.zSlots,
         borderColor: col, borderWidth: 2.2,
         pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-        fill: false, tension: 0.3, spanGaps: true, order: 1,
+        fill: false, tension: 0, spanGaps: true, order: 1,
       });
     });
   } else {
@@ -3988,24 +3988,24 @@ async function renderCCBands(data, selected) {
         datasets.push({
           label: `__band_${z.code}_max`, data: env.p90,
           borderColor: 'transparent', backgroundColor: fillColor,
-          fill: '+1', pointRadius: 0, borderWidth: 0, tension: 0.3, spanGaps: true, order: 5,
+          fill: '+1', pointRadius: 0, borderWidth: 0, tension: 0, spanGaps: true, order: 5,
         });
         datasets.push({
           label: `__band_${z.code}_min`, data: env.p10,
           borderColor: 'transparent', backgroundColor: 'transparent',
-          fill: false, pointRadius: 0, borderWidth: 0, tension: 0.3, spanGaps: true, order: 5,
+          fill: false, pointRadius: 0, borderWidth: 0, tension: 0, spanGaps: true, order: 5,
         });
         datasets.push({
           label: `${z.code} median`, data: env.median,
           borderColor: _hexToRgba(col, 0.50), borderWidth: 1, borderDash: [3,3],
-          pointRadius: 0, fill: false, tension: 0.3, spanGaps: true, order: 3,
+          pointRadius: 0, fill: false, tension: 0, spanGaps: true, order: 3,
         });
       }
       datasets.push({
         label: `${z.code} today`, data: today,
         borderColor: col, borderWidth: 2.2,
         pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-        fill: false, tension: 0.3, spanGaps: true, order: 1,
+        fill: false, tension: 0, spanGaps: true, order: 1,
       });
     });
   }
@@ -4273,7 +4273,7 @@ function renderCCSpread(data, selected) {
     datasets.push({
       label: `${z.code} − ${refCode}`, data: spread, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
-      fill: false, tension: 0.3, spanGaps: true,
+      fill: false, tension: 0, spanGaps: true,
     });
   });
 
@@ -5244,7 +5244,7 @@ function drawSparkline(canvas, data, avg) {
         backgroundColor: (ctx2) => {
           const g = ctx2.chart.ctx.createLinearGradient(0,0,0,28);
           g.addColorStop(0, rgba(col,.25)); g.addColorStop(1, rgba(col,0)); return g;
-        }, tension: 0.3 }]
+        }, tension: 0 }]
     },
     options: {
       animation: false, responsive: false,
@@ -5801,7 +5801,7 @@ function clearSlotHover(idx) {
         pointHoverRadius: 5,
         pointHoverBackgroundColor: col,
         fill: false,
-        tension: 0.3,
+        tension: 0,
         spanGaps: true,
       };
     });
