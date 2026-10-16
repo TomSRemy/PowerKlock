@@ -154,6 +154,11 @@ function computeKPIs(zonesDict) {
 
 async function loadLastAvailable() {
   if (!DATA_BASE) return;
+  // Same completeness bar as loadPricesForDate's MIN_VALID_ZONES — a file with
+  // a handful of zones (e.g. a missed-cron day that still wrote a partial
+  // snapshot) must not be accepted as "the last available day" just because
+  // it's non-empty; keep walking back to a genuinely complete one.
+  const MIN_VALID_ZONES = 20;
   for (let i = 1; i <= 14; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const auctionStr = d.toISOString().slice(0,10);
@@ -161,8 +166,9 @@ async function loadLastAvailable() {
       const r = await fetch(DATA_BASE + 'history/daily/' + auctionStr + '.json?t=' + Date.now());
       if (r.ok) {
         const data = await r.json();
-        const hasData = Array.isArray(data.zones) ? data.zones.length > 0
-          : (data.zones && Object.keys(data.zones).length > 0);
+        const zoneCount = Array.isArray(data.zones) ? data.zones.length
+          : (data.zones ? Object.keys(data.zones).length : 0);
+        const hasData = zoneCount >= MIN_VALID_ZONES;
         if (hasData) {
           // Auction date in filename → delivery date = auction + 1
           const deliveryDt = new Date(auctionStr); deliveryDt.setDate(deliveryDt.getDate() + 1);
@@ -526,10 +532,13 @@ async function loadPricesForDate(dateStr) {
           });
         }
 
-        // Reject obviously corrupt/partial files (e.g. fetch_data.py crashed mid-run).
-        // Real daily data has ~25-30 zones. Anything below 10 is broken, skip and let
-        // the next fallback path try J-2 or live ENTSO-E fetch instead of showing 2 zones.
-        const MIN_VALID_ZONES = 10;
+        // Reject obviously corrupt/partial files (e.g. fetch_data.py crashed mid-run,
+        // or a scheduled run was missed and this file is a stale partial from a prior
+        // failure). Real daily data has ~27-30 zones out of 30 possible. 10 let through
+        // a real 13-zone incident (2026-10-15: most of Western Europe, including France,
+        // silently missing) that still rendered a "complete-looking" table/map — so the
+        // threshold needs to sit above what a genuine partial outage ever produces.
+        const MIN_VALID_ZONES = 20;
         if (mapped.length > 0 && mapped.length < MIN_VALID_ZONES) {
           console.warn(`Daily file for ${dateStr} has only ${mapped.length} zones — treating as corrupt, falling back.`);
           mapped = [];

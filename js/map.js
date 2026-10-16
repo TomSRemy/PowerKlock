@@ -476,13 +476,16 @@ function renderMapKPIs() {
 }
 
 function showMapDetail(zone) {
-  const el = document.getElementById('map-detail');
+  const placeholder = document.getElementById('map-detail-placeholder');
+  const content = document.getElementById('map-detail-content');
   const title = document.getElementById('map-detail-title');
   const kpis = document.getElementById('map-detail-kpis');
-  if (!el || !title || !kpis) return;
+  if (!content || !title || !kpis) return;
 
-  el.style.display = 'block';
-  title.textContent = `${zone.name} (${zone.code}) — Day-Ahead Detail`;
+  if (placeholder) placeholder.style.display = 'none';
+  content.style.display = 'block';
+  const flagEmoji = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[zone.code]) || '';
+  title.innerHTML = `${flagEmoji} ${zone.name}<div style="font-size:10px;font-weight:500;color:var(--tx3);margin-top:2px">${zone.code} · Day-Ahead</div>`;
 
   kpis.innerHTML = [
     {l:'DA Price', v:(zone.today||0).toFixed(2)+' €/MWh', cls:(zone.today||0)<30?'up':(zone.today||0)>100?'down':''},
@@ -492,7 +495,7 @@ function showMapDetail(zone) {
     {l:'Neg Hours', v:(zone.negHrs||zone.neg||0)+'h', cls:(zone.negHrs||zone.neg||0)>0?'warn':''},
   ].map(k=>`<div class="kpi-card">
     <div class="kl">${k.l}</div>
-    <div class="kv ${k.cls}" style="font-size:15px">${k.v}</div>
+    <div class="kv ${k.cls}" style="font-size:14px">${k.v}</div>
     ${k.sub?`<div class="kd" style="color:var(--tx3)">${k.sub}</div>`:''}
   </div>`).join('');
 
@@ -530,6 +533,15 @@ function showMapDetail(zone) {
   });
   setTimeout(()=>{ addFullscreen('map-detail-chart'); addDownload('map-detail-chart','hourly-'+zone.code); },100);
 }
+
+function closeMapDetail() {
+  const placeholder = document.getElementById('map-detail-placeholder');
+  const content = document.getElementById('map-detail-content');
+  if (content) content.style.display = 'none';
+  if (placeholder) placeholder.style.display = 'flex';
+  if (geoLayer) geoLayer.resetStyle();
+}
+window.closeMapDetail = closeMapDetail;
 
 // Leaflet popup styling (injected once)
 const mapStyle = document.createElement('style');
