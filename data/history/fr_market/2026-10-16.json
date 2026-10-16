@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-16",
+ "countries": {
+  "FR": {
+   "spot": 139.3
+  },
+  "UK": {
+   "spot": 148.89
+  },
+  "DE": {
+   "spot": 168.27
+  },
+  "NL": {
+   "spot": 166.72
+  }
+ },
+ "marketInsightsHtml": "<p>En France, le débit des rivières à proximité du site nucléaire de Chooz est tombé au cours de cette semaine à un peu moins de 18 m³/s, contre environ 21,5 m³/s lundi, selon les dernières données accessibles au public.</p>"
+}
