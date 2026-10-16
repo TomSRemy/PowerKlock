@@ -14625,8 +14625,18 @@ if (typeof window !== 'undefined' && !window._klockDblclickResetWired) {
   }, true);
 }
 
-// Fullscreen button helper
-function addFullscreen(canvasId) {
+// Fullscreen button helper — opens the shared rich overlay (pkOpenFullscreen:
+// KPI strip + resizable data table + chart), the same layout used by Day-Ahead
+// Cross-zone/Historical, instead of a bare native-fullscreen div. Works for
+// ANY Chart.js canvas regardless of which wrapper (mkChart, mkHistChart, a
+// page's own builder…) created it, via Chart.getChart(canvas).
+//
+// `content` is optional: { title, subtitle, kpis:{html}, table:{html} }. Pass
+// a function for live values, since the button may be clicked long after the
+// chart was first built. Without it, falls back to a generic data table
+// auto-built from the chart's own labels/datasets (still gets the full
+// resizable overlay — just without bespoke KPI cards).
+function addFullscreen(canvasId, content) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || canvas.dataset.fsAdded) return;
   canvas.dataset.fsAdded = '1';
@@ -14635,13 +14645,68 @@ function addFullscreen(canvasId) {
   btn.title = 'Plein écran';
   btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
-    const wrap = canvas.closest('.chart-container') || canvas.parentElement;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else wrap.requestFullscreen();
+    const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
+    const titleEl = canvas.closest('.chart-container')?.querySelector('.table-title');
+    window.pkOpenOrUpdate({
+      title: cfg.title || (titleEl ? titleEl.textContent.trim() : canvasId),
+      subtitle: cfg.subtitle || '',
+      filenameStem: canvasId,
+      storageKey: 'fs:' + canvasId,
+      kpis: cfg.kpis || null,
+      table: cfg.table || { html: pkAutoTable(Chart.getChart(canvas)) },
+      chartSource: { rebuildInto: (dstCanvas) => pkCloneCanvasChart(canvas, dstCanvas) },
+    });
   };
   const wrap = canvas.closest('.chart-container') || canvas.parentElement;
   wrap.style.position = 'relative';
   wrap.appendChild(btn);
+}
+
+// Clone whatever Chart.js instance is currently attached to `srcCanvas` into
+// `dstCanvas` (the fullscreen overlay's canvas), bumping fonts for readability.
+function pkCloneCanvasChart(srcCanvas, dstCanvas) {
+  const src = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(srcCanvas) : null;
+  if (!src) return null;
+  try {
+    const cfg = {
+      type: src.config.type,
+      data: JSON.parse(JSON.stringify(src.config.data)),
+      options: JSON.parse(JSON.stringify(src.config.options || {})),
+    };
+    cfg.options.maintainAspectRatio = false;
+    cfg.options.responsive = true;
+    cfg.options.scales = cfg.options.scales || {};
+    Object.keys(cfg.options.scales).forEach(k => {
+      const sc = cfg.options.scales[k];
+      sc.ticks = Object.assign({}, sc.ticks, { font: Object.assign({}, sc.ticks?.font, { size: 13 }) });
+    });
+    cfg.options.plugins = cfg.options.plugins || {};
+    if (cfg.options.plugins.legend?.labels) {
+      cfg.options.plugins.legend.labels.font = Object.assign({}, cfg.options.plugins.legend.labels.font, { size: 13 });
+    }
+    return new Chart(dstCanvas, cfg);
+  } catch (e) { console.warn('[addFullscreen] clone failed', e); return null; }
+}
+
+// Generic data table built straight from a Chart.js instance's labels/datasets
+// — the fallback used when a chart hasn't been given bespoke `table` content.
+function pkAutoTable(chart) {
+  if (!chart || !chart.data) return '<div style="color:var(--text3);padding:8px">Aucune donnée</div>';
+  const labels = chart.data.labels || [];
+  const datasets = (chart.data.datasets || []).filter(d => d.label);
+  if (!labels.length || !datasets.length) return '<div style="color:var(--text3);padding:8px">Aucune donnée</div>';
+  const fmt = v => {
+    if (v == null) return '–';
+    if (Array.isArray(v)) return v.map(x => (typeof x === 'number' ? x.toFixed(2) : x)).join(' – ');
+    if (typeof v === 'object') return v.y != null ? fmt(v.y) : JSON.stringify(v);
+    return typeof v === 'number' ? v.toFixed(2) : String(v);
+  };
+  const head = '<th style="text-align:left">—</th>' + datasets.map(d => `<th style="text-align:right">${d.label}</th>`).join('');
+  const rows = labels.map((lbl, i) => {
+    const cells = datasets.map(d => `<td style="text-align:right">${fmt(d.data[i])}</td>`).join('');
+    return `<tr><td style="text-align:left;color:var(--text3)">${lbl}</td>${cells}</tr>`;
+  }).join('');
+  return `<table style="width:100%;font-size:11px;border-collapse:collapse"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // Download PNG helper

@@ -5140,7 +5140,11 @@
         <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Produit</span>
         <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
           <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
           <button class="day-tab" onclick="setGoProd('GO AIB HWS',this)">Hydro/Wind/Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
         </div>
       </div>
 
@@ -5222,20 +5226,25 @@
     <!-- GO HISTORY -->
     <div class="page" id="page-gohist">
       <div class="page-header">
-        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price · Commerg</div></div>
+        <div><div class="page-title">GO — Historical Prices</div><div class="page-subtitle">Weekly mid-price · 2020–2026 · Commerg</div></div>
       </div>
 
       <!-- Filtres produit + période -->
       <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <div style="display:flex;gap:5px" id="go-hist-filter">
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-hist-filter">
           <button class="day-tab active" onclick="filterGoH('all',this)">All</button>
           <button class="day-tab" onclick="filterGoH('renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="filterGoH('wind',this)">Wind</button>
+          <button class="day-tab" onclick="filterGoH('solar',this)">Solar</button>
+          <button class="day-tab" onclick="filterGoH('hydro',this)">Hydro</button>
           <button class="day-tab" onclick="filterGoH('hws',this)">Hydro/Wind/Solar</button>
+          <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
         </div>
         <div style="display:flex;gap:5px;margin-left:auto" id="go-hist-period">
           <button class="day-tab" onclick="setGoHistPeriod(52,this)">1 an</button>
-          <button class="day-tab active" onclick="setGoHistPeriod(130,this)">2.5 ans</button>
-          <button class="day-tab" onclick="setGoHistPeriod(208,this)">4 ans</button>
+          <button class="day-tab" onclick="setGoHistPeriod(130,this)">2.5 ans</button>
+          <button class="day-tab" onclick="setGoHistPeriod(260,this)">5 ans</button>
+          <button class="day-tab active" onclick="setGoHistPeriod(9999,this)">Tout</button>
         </div>
       </div>
 

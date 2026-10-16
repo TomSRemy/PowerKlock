@@ -216,8 +216,10 @@ const PAGE_LOADERS = {
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
   gohist: () => {
+    // GO data may not have been fetched yet if this page is opened directly
+    // (not via GO Prices first) — trigger the same guarded autoload.
+    if (!_goAutoTried) { _goAutoTried = true; autoloadGo(); }
     drawGoHist(); drawGoWoW(); drawGoBox();
-    if (typeof renderHistCapture === 'function') { renderHistCapture('solar'); renderHistCapture('wind'); }
   },
   wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
