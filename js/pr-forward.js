@@ -35,6 +35,7 @@
     drillCalOffset: 1,
     cmpTenor: 'Y+1',
     cmpWindow: '1Y',
+    cmpZones: null,            // Set of active country codes, null = all
     loaded: false,
     snap: null,
     series: null,
@@ -460,6 +461,37 @@
   // COMPARAISON PAYS · un produit, les 4 zones sur le même graph + table
   // ══════════════════════════════════════════════════════════════════════
 
+  function renderCompareZoneChips() {
+    var host = document.getElementById('prfwd-cmp-zone-chips');
+    if (!host) return;
+    var active = PF.cmpZones; // null = all active
+    host.innerHTML = COUNTRIES.map(function (c) {
+      var isOn = !active || active.has(c.code);
+      return window.pkZoneChip({
+        code: c.flag + ' ' + c.label,
+        active: isOn,
+        color: c.colour,
+        onClick: "window._pfToggleCmpZone('" + c.code + "')",
+        title: isOn ? 'Masquer ' + c.label : 'Afficher ' + c.label,
+      });
+    }).join('');
+  }
+  window._pfToggleCmpZone = function (code) {
+    if (!PF.cmpZones) PF.cmpZones = new Set(COUNTRIES.map(function (c) { return c.code; }));
+    if (PF.cmpZones.has(code)) {
+      if (PF.cmpZones.size === 1) return; // never allow zero zones selected
+      PF.cmpZones.delete(code);
+    } else {
+      PF.cmpZones.add(code);
+    }
+    // Collapse back to "all" (null) once every zone is active again, so the
+    // chips read as a clean default state rather than "4/4 explicitly picked".
+    if (PF.cmpZones.size === COUNTRIES.length) PF.cmpZones = null;
+    renderCompareZoneChips();
+    renderCompareChart();
+    renderCompareTable();
+  };
+
   function renderCompareTenorButtons() {
     var host = document.getElementById('prfwd-cmp-tenor-btns');
     if (!host) return;
@@ -483,7 +515,8 @@
     var startIdx = cut.length ? allDates.indexOf(cut[0]) : 0;
     if (startIdx < 0) startIdx = 0;
     var dates = allDates.slice(startIdx);
-    var datasets = COUNTRIES.map(function (c) {
+    var visibleCountries = PF.cmpZones ? COUNTRIES.filter(function (c) { return PF.cmpZones.has(c.code); }) : COUNTRIES;
+    var datasets = visibleCountries.map(function (c) {
       var cs = (PF.series.countries && PF.series.countries[c.code]) || {};
       var vals = ((cs.forwardCurve && cs.forwardCurve[PF.cmpTenor]) || []).slice(startIdx);
       return { label: c.flag + ' ' + c.label, data: vals, borderColor: c.colour, borderWidth: 1.5,
@@ -510,7 +543,8 @@
     if (titleEl) titleEl.textContent = 'Snapshot du jour · ' + PF.cmpTenor;
     var tbody = document.getElementById('prfwd-cmp-tbody');
     if (!tbody) return;
-    tbody.innerHTML = COUNTRIES.map(function (c) {
+    var visibleCountries = PF.cmpZones ? COUNTRIES.filter(function (c) { return PF.cmpZones.has(c.code); }) : COUNTRIES;
+    tbody.innerHTML = visibleCountries.map(function (c) {
       var cs = PF.snap.countries[c.code];
       var row = tenorRow(cs, PF.cmpTenor);
       if (!row) return '<tr><td style="text-align:left">' + c.flag + ' ' + c.label + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
@@ -542,6 +576,7 @@
     if (boardMeta) boardMeta.textContent = 'M+1 à Y+3 · ' + (PF.snap.forwardCurveDate || '') + ' · source SEFE cockpit';
     renderTopKpis();
     renderCountriesTable();
+    renderCompareZoneChips();
     renderCompareTenorButtons();
     renderCompareWindowButtons();
     renderCompareChart();
