@@ -93,39 +93,38 @@ def parse_week_number(subject_or_body):
     return int(m.group(1)) if m else None
 
 
+ROW_RE = re.compile(
+    r"^(20\d{2})\s+([\d.,]+)\s+([\d.,]+)\s+([+-]?[\d.,]+)$"
+)
+
+
 def parse_go_block(block_text, product_name):
     """
-    Parse a GO price block like:
-    2025
-    0.1800
-    0.2200
-    -0.0500
-    2026
-    0.5000
+    Parse a GO price block — each product/year is one line:
+    2025         1.7500 1.8000 +0.0650
+    2026         1.8300 1.8600 +0.1350
     ...
     Returns list of dicts with year/bid/ask/delta
     """
     rows = []
     lines = [l.strip() for l in block_text.strip().splitlines() if l.strip()]
 
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        # Year line
-        if re.match(r"^20\d{2}$", line):
-            year = int(line)
-            try:
-                bid   = float(lines[i+1].replace(",", "."))
-                ask   = float(lines[i+2].replace(",", "."))
-                delta = float(lines[i+3].replace(",", "."))
-                rows.append({"product": product_name, "year": year,
-                             "bid": bid, "ask": ask, "delta": delta,
-                             "term": None})  # calculé après
-                i += 4
-            except (IndexError, ValueError):
-                i += 1
-        else:
-            i += 1
+    for line in lines:
+        m = ROW_RE.match(line)
+        if not m:
+            continue
+        year_s, bid_s, ask_s, delta_s = m.groups()
+        try:
+            rows.append({
+                "product": product_name,
+                "year": int(year_s),
+                "bid": float(bid_s.replace(",", ".")),
+                "ask": float(ask_s.replace(",", ".")),
+                "delta": float(delta_s.replace(",", ".")),
+                "term": None,  # calculé après
+            })
+        except ValueError:
+            continue
     return rows
 
 
