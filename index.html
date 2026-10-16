@@ -4407,17 +4407,30 @@
         </div>
       </div>
 
-      <!-- Map container -->
-      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:9px;overflow:hidden;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)">
-        <div id="leaflet-map" style="height:560px;width:100%;background:#0a0f14"></div>
-      </div>
+      <!-- Map + side detail panel, side by side (electricitymaps-style: click a
+           country, everything appears next to the map — no scrolling away). -->
+      <div style="display:flex;gap:14px;align-items:stretch">
+        <div style="flex:1;min-width:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)">
+          <div id="leaflet-map" style="height:620px;width:100%;background:#0a0f14"></div>
+        </div>
 
-      <!-- Selected country detail -->
-      <div id="map-detail" style="display:none;background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:16px;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:12px" id="map-detail-title">--</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px" id="map-detail-kpis"></div>
-        <div style="margin-top:14px">
-          <canvas id="map-detail-chart" style="width:100%;height:160px"></canvas>
+        <!-- Selected country detail — always visible, placeholder until a click -->
+        <div id="map-detail" style="width:340px;flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:16px;height:620px;overflow-y:auto">
+          <div id="map-detail-placeholder" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--tx3);gap:10px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
+            <div style="font-size:12px">Clique un pays sur la carte<br>pour voir le détail complet</div>
+          </div>
+          <div id="map-detail-content" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+              <div style="font-size:14px;font-weight:700" id="map-detail-title">--</div>
+              <button onclick="closeMapDetail()" title="Fermer" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="map-detail-kpis"></div>
+            <div style="margin-top:14px">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Hourly (today)</div>
+              <div style="position:relative;height:200px;overflow:hidden"><canvas id="map-detail-chart" style="width:100%;height:200px"></canvas></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
