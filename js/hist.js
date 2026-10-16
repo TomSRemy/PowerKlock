@@ -156,8 +156,6 @@ function toggleHistSection(id) {
     'imb-history':      renderHistImb,
     'fcr-history':      renderHistFCR,
     'eua-history':      renderHistEUA,
-    'capture-solar':    () => renderHistCapture('solar'),
-    'capture-wind':     () => renderHistCapture('wind'),
     'multicc':          renderCompareChart,
     'prices-main':      () => {},
   };
@@ -248,8 +246,6 @@ function setHistWindow(key, window, btn) {
     'imb-hist':  renderHistImb,
     'fcr-hist':  renderHistFCR,
     'eua-hist':  renderHistEUA,
-    'cap-solar': () => renderHistCapture('solar'),
-    'cap-wind':  () => renderHistCapture('wind'),
     'ho':        renderHistOverview,
     'hmz':       renderHistMulti,
     'hms':       renderHistMonthlyTable,
@@ -1069,190 +1065,6 @@ async function renderHistFCR() {
 async function renderHistEUA() {
   noDataMsg('hist-eua-canvas', 'EUA historical source: ICE/EEX — not yet connected', 'Upload via CSV or connect the GO price automation, not covered by backfill.py');
   noDataMsg('hist-spark-canvas', 'Clean Spark Spread history — upload via CSV or connect GO price automation', 'Upload via CSV or connect the GO price automation, not covered by backfill.py');
-}
-
-// ── CAPTURE RATE (rolling WAP / baseload) ──
-async function renderHistCapture(tech) {
-  const canvasId = 'hist-cap-' + tech;
-  const w = HIST.windows['cap-' + tech] || '2Y';
-  const { start, end } = windowToDates(w);
-
-  // Fetch 90 days earlier so the 30D and 90D rolling lines have full context
-  // at the start of the visible window. (365D context is too expensive to
-  // pre-fetch; it remains a window-bounded estimate.)
-  const startIso = start instanceof Date ? start.toISOString().slice(0, 10) : start;
-  const extStart = new Date(startIso);
-  extStart.setDate(extStart.getDate() - 90);
-  const extStartIso = extStart.toISOString().slice(0, 10);
-
-  // Fetch daily files -- we need both prices and generation
-  const dailies = await fetchDailyRange(extStartIso, end, true);
-  if (!dailies.length) return noDataMsg(canvasId);
-
-  // Check at least some days have generation data
-  const hasSomeGen = dailies.some(day => {
-    const fr = day.zones?.FR;
-    return fr && fr[tech === 'solar' ? 'solar' : 'wind'] && fr[tech === 'solar' ? 'solar' : 'wind'].some(v => v > 0);
-  });
-
-  if (!hasSomeGen) {
-    const c = document.getElementById(canvasId);
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = _HIST_TX3;
-    ctx.font = '11px Inter';
-    ctx.textAlign = 'center';
-    ctx.fillText('No generation data yet.', c.width/2, c.height/2 - 12);
-    ctx.fillText('Run: ENTSOE_TOKEN=xxx python3 backfill.py --with-generation', c.width/2, c.height/2 + 10);
-    return;
-  }
-
-  const genKey = tech === 'solar' ? 'solar' : 'wind';
-  // Compute capture for the EXTENDED range first (used as rolling context)
-  const fullLabels = [], fullCapture = [];
-
-  dailies.forEach(day => {
-    const fr = day.zones?.FR;
-    if (!fr?.hourly || !fr?.[genKey]) return;
-
-    const prices = fr.hourly;
-    const gen    = fr[genKey];  // 24h MW
-    const n = Math.min(prices.length, gen.length);
-
-    // If prices are 96-slot, downsample to 24h for matching
-    let prices24;
-    if (prices.length === 96) {
-      prices24 = Array.from({length:24}, (_,h) => {
-        const slots = prices.slice(h*4, h*4+4).filter(v => v != null);
-        return slots.length ? slots.reduce((a,b)=>a+b,0)/slots.length : null;
-      });
-    } else {
-      prices24 = prices.slice(0, 24);
-    }
-
-    // WAP = Σ(price[h] × gen[h]) / Σ(gen[h])
-    let wap_num = 0, wap_den = 0, base_sum = 0, base_n = 0;
-    for (let h = 0; h < 24; h++) {
-      const p = prices24[h], g = gen[h] || 0;
-      if (p != null && g > 0) { wap_num += p * g; wap_den += g; }
-      if (p != null) { base_sum += p; base_n++; }
-    }
-    if (wap_den === 0 || base_n === 0) return;
-
-    const wap      = wap_num / wap_den;
-    const baseload = base_sum / base_n;
-    const capture  = baseload !== 0 ? round2((wap / baseload) * 100) : null;
-
-    fullLabels.push(day.date);
-    fullCapture.push(capture);
-  });
-
-  // Slice off the 90-day prefix → visible window
-  const visStartIdx = fullLabels.findIndex(d => d >= startIso);
-  const labels     = visStartIdx >= 0 ? fullLabels.slice(visStartIdx)  : fullLabels;
-  const captureRaw = visStartIdx >= 0 ? fullCapture.slice(visStartIdx) : fullCapture;
-
-  if (!labels.length) return noDataMsg(canvasId);
-
-  // Rolling 30D and 90D have full context thanks to the 90-day prefix.
-  // 365D rolling is still window-bounded (would need a 1-year prefix fetch).
-  const fullEntries = fullLabels.map((d, i) => ({ d, v: fullCapture[i] }));
-  const visEntries  = labels.map(d => ({ d }));
-  const roll30  = _rollingWithContext(visEntries, fullEntries, 30, 'v');
-  const roll90  = _rollingWithContext(visEntries, fullEntries, 90, 'v');
-  const roll365 = _rollingWithContext(visEntries, fullEntries, 365, 'v');
-
-  // Annual averages (dots like Rivex)
-  const annualDots = {};
-  labels.forEach((d, i) => {
-    const yr = d.slice(0,4);
-    if (!annualDots[yr]) annualDots[yr] = [];
-    if (captureRaw[i] != null) annualDots[yr].push(captureRaw[i]);
-  });
-  const annualData = labels.map(d => {
-    const yr = d.slice(0,4);
-    // Only show dot on last day of year in range
-    const isLast = !labels.find((l, i) => l.slice(0,4) === yr && i > labels.indexOf(d));
-    if (!isLast) return null;
-    const vals = annualDots[yr];
-    return vals.length ? round2(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
-  });
-
-  // YTD
-  const currentYear = new Date().getFullYear().toString();
-  const ytdVals = captureRaw.filter((_, i) => labels[i].startsWith(currentYear) && captureRaw[i] != null);
-  const ytd = ytdVals.length ? round2(ytdVals.reduce((a,b)=>a+b,0)/ytdVals.length) : null;
-
-  const color = tech === 'solar' ? '#fbbf24' : _HIST_ACC;
-
-  mkHistChart(canvasId, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label:'365d rolling', data: roll365, borderColor:'#FBBF24', borderWidth:2.5, pointRadius:0, tension:0, spanGaps:true, order:1 },
-        { label:'90d rolling',  data: roll90,  borderColor: color,    borderWidth:1.5, pointRadius:0, tension:0, spanGaps:true, borderDash:[6,3], order:2 },
-        { label:'30d rolling',  data: roll30,  borderColor:'rgba(255,255,255,0.3)', borderWidth:1, pointRadius:0, tension:0, spanGaps:true, borderDash:[2,2], order:3 },
-        {
-          label:'Annual',
-          data: annualData,
-          borderColor: 'transparent',
-          backgroundColor: '#c0392b',
-          pointRadius: 5,
-          pointStyle: 'rectRot',
-          pointHoverRadius: 7,
-          showLine: false,
-          order: 0,
-        },
-      ],
-    },
-    options: {
-      ...baseOptions('WAP / Baseload (%)'),
-      plugins: {
-        legend: { display:true, labels:{ color:_HIST_TX3, font:{size:10}, boxWidth:12 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : 'n/a'),
-          },
-        },
-      },
-      scales: {
-        x: { grid:{color:_HIST_GRID}, ticks:{color:_HIST_TX3, font:{size:10}, maxTicksLimit:10} },
-        y: {
-          grid: { color: _HIST_GRID },
-          ticks: { color:_HIST_TX3, font:{size:10}, callback: v => v + '%' },
-          title: { display:true, text:'Capture Rate (%)', color:_HIST_TX3, font:{size:10} },
-        },
-      },
-    },
-  });
-
-  // Add YTD annotation below chart
-  const statsEl = document.getElementById('hist-cap-' + tech + '-stats');
-  if (!statsEl && ytd != null) {
-    // Create stats row below canvas
-    const canvas = document.getElementById(canvasId);
-    if (canvas?.parentNode) {
-      let statsDiv = canvas.parentNode.querySelector('.cap-stats');
-      if (!statsDiv) {
-        statsDiv = document.createElement('div');
-        statsDiv.className = 'hist-stats-grid cap-stats';
-        statsDiv.style.marginTop = '10px';
-        canvas.parentNode.appendChild(statsDiv);
-      }
-      const currentYearVals = captureRaw.filter((_, i) => labels[i].startsWith(currentYear) && captureRaw[i] != null);
-      const lastVal = captureRaw.filter(v => v != null).slice(-1)[0];
-      statsDiv.innerHTML = statsHtml([
-        { l: 'YTD ' + currentYear,  v: ytd?.toFixed(1), u: '%' },
-        { l: 'Last 30D',  v: roll30.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '%' },
-        { l: 'Last 90D',  v: roll90.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '%' },
-        { l: 'Last 365D', v: roll365.filter(v=>v!=null).slice(-1)[0]?.toFixed(1), u: '%' },
-        { l: 'Min (30D)', v: Math.min(...roll30.filter(v=>v!=null))?.toFixed(1), u: '%' },
-        { l: 'Max (30D)', v: Math.max(...roll30.filter(v=>v!=null))?.toFixed(1), u: '%' },
-      ]);
-    }
-  }
 }
 
 

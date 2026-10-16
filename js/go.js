@@ -1,11 +1,12 @@
 // ── GO DATA · product metadata only (label + colour). NO synthetic price fallback.
+// Only products Commerg's weekly mail actually quotes — see scripts/fetch_go_prices.py.
 const GO_SERIES = {
   renewable: {l:'GO AIB Renewable', c:'#A87DC4'},
-  wind:      {l:'GO AIB Wind',      c:'#C4A57B'},
-  solar:     {l:'GO AIB Solar',     c:'#FBBF24'},
-  hydro:     {l:'GO AIB Hydro',     c:'#94D2BD'},
-  ireland:   {l:'GO Ireland Wind',  c:'#f472b6'},
+  hws:       {l:'GO AIB HWS',       c:'#14D3A9'},
 };
+// Palette for the "one line per vintage year" chart (chart5 in the Commerg
+// reference workbook — GOs Price Indications).
+const GO_YEAR_COLORS = ['#7A93AB', '#3FA6B4', '#14D3A9', '#A87DC4', '#FBBF24', '#ED6965', '#f472b6'];
 let goHistPeriod = 130;
 let goHistFilter = 'all';
 let goProd = 'GO AIB Renewable';
@@ -72,12 +73,28 @@ function buildGoReal(rows) {
   });
   const byKey = {};
   Object.entries(byProd).forEach(([key, all]) => {
+    const years = [...new Set(all.map(r => r.year).filter(y => y != null))].sort();
+
     const fwd = {};
-    [2025,2026,2027,2028].forEach(y => {
+    years.forEach(y => {
       const cand = all.filter(r => r.year === y && r.bid != null)
                       .sort((a,b) => b.mailDate - a.mailDate)[0];
       if (cand) fwd[y] = { bid: cand.bid, ask: cand.ask };
     });
+
+    // One weekly bid/ask/mid series PER VINTAGE YEAR — mirrors the Commerg
+    // reference workbook's "GOs Price Indications" pivot (years as columns,
+    // weeks as rows), rather than collapsing to a single rolling product.
+    const byYear = {};
+    years.forEach(y => {
+      byYear[y] = all.filter(r => r.year === y && r.bid != null)
+                     .sort((a,b) => a.mailDate - b.mailDate)
+                     .map(r => ({
+                       t: r.mailDate, bid: r.bid, ask: r.ask,
+                       mid: (r.bid + (r.ask != null ? r.ask : r.bid)) / 2,
+                     }));
+    });
+
     const y1 = all.filter(r => (r.term && r.term.replace(/\s/g,'') === 'Y+1')
                             || (r.year === r.mailDate.getFullYear() + 1))
                   .filter(r => r.bid != null)
@@ -91,7 +108,7 @@ function buildGoReal(rows) {
     const L = weekly.length;
     if (L >= 2 && weekly[L-1].bid != null && weekly[L-2].bid != null)
       d = +(weekly[L-1].bid - weekly[L-2].bid).toFixed(4);
-    byKey[key] = { fwd, weekly, d };
+    byKey[key] = { fwd, byYear, years, weekly, d };
   });
   return { byKey, asOf };
 }
@@ -100,8 +117,8 @@ function loadGoData(text) {
     const rows = parseGoCSV(text);
     if (!rows.length) { console.warn('[go] CSV parsed but no rows'); return false; }
     GO_REAL = buildGoReal(rows);
-    renderGOKPIs(); drawGoIndicChart(); drawGoCalChart(); drawGoSpreadChart();
-    if (typeof renderGOFwdTable === 'function') renderGOFwdTable();
+    renderGOKPIs(); drawGoIndicChart(); drawGoCal1Chart(); drawGoCalChart(); drawGoSpreadChart();
+    renderGOFwdTable();
     if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
     // My Dashboard's GO widget triggers this same fetch lazily (see
     // renderMyDash in prices.js) — refresh it once the data lands.
@@ -160,10 +177,11 @@ function goNoData(canvasId, msg) {
 
 // ── GO PRICES PAGE (= chart_go_price_indications + chart_go_cal1 + go_kpi)
 function renderGO() {
-  if (!_goAutoTried) { _goAutoTried = true; autoloadGo(); }
+  if (!_goAutoTried) { _goAutoTried = true; autoloadGo(); autoloadGoAuctions(); }
   renderGOKPIs();
-  if (typeof renderGOFwdTable === 'function') renderGOFwdTable();
+  renderGOFwdTable();
   drawGoIndicChart();
+  drawGoCal1Chart();
   drawGoCalChart();
   drawGoSpreadChart();
 }
@@ -172,9 +190,11 @@ function setGoProd(prod, btn) {
   goProd = prod;
   document.querySelectorAll('#go-prod-tabs .day-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('go-indic-title').textContent = prod + ' — Prix indicatifs hebdo · CAL+1 (€/MWh)';
+  const t1 = document.getElementById('go-indic-title'); if (t1) t1.textContent = prod + ' — Prix indicatifs (€/MWh)';
+  const t2 = document.getElementById('go-cal1-title');  if (t2) t2.textContent = prod + ' — CAL+1 EU price indications (€/MWh)';
   renderGOKPIs();
   drawGoIndicChart();
+  drawGoCal1Chart();
   drawGoCalChart();
   drawGoSpreadChart();
 }
@@ -209,31 +229,35 @@ function renderGOKPIs() {
   </div>`).join('');
 }
 
-// chart_go_price_indications : bid/ask/mid hebdo (CAL+1)
+// chart_go_price_indications (reference workbook, "GoOs Brokers" pivot):
+// ONE LINE PER VINTAGE YEAR (Cal-25, Cal-26…), x = weekly quote date, y = mid
+// price for that vintage as quoted that week. This is the "forward curve
+// evolution" view — how far the market moves each contract year over time —
+// not a single rolling product's bid/ask band.
 function drawGoIndicChart() {
-  const hist = getGOHistory();
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
-  const wk = hist[key];
-  if (!wk || !wk.bidArr) { goNoData('go-indic-canvas', 'Aucune donnée Commerg chargée'); return; }
+  const real = GO_REAL && GO_REAL.byKey[key];
+  if (!real || !real.years || !real.years.length) { goNoData('go-indic-canvas', 'Aucune donnée Commerg chargée'); return; }
 
-  const n = goHistPeriod;
-  const len = wk.data.length, take = Math.min(n, len), from = len - take;
-  const bids = wk.bidArr.slice(from), asks = wk.askArr.slice(from), mids = wk.data.slice(from);
-  const dates = wk.dates.slice(from);
-  const every = Math.max(1, Math.ceil(take / 12));
+  // Union of all dates across vintage years → shared x-axis
+  const allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
+  const dates = allDates.map(t => new Date(t));
+  const every = Math.max(1, Math.ceil(dates.length / 12));
   const labels = dates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+
+  const datasets = real.years.map((y, i) => {
+    const byT = new Map(real.byYear[y].map(w => [+w.t, w.mid]));
+    return {
+      label: 'Cal-' + String(y).slice(-2),
+      data: allDates.map(t => byT.has(t) ? byT.get(t) : null),
+      borderColor: GO_YEAR_COLORS[i % GO_YEAR_COLORS.length],
+      borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, spanGaps: true,
+    };
+  });
 
   mkChart('go-indic-canvas', {
     type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label:'Ask', data:asks, borderColor:C_DN, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-        { label:'Mid', data:mids, borderColor:rgba(C_TX2,.5), borderWidth:1, borderDash:[3,3], pointRadius:0, fill:false, tension: 0 },
-        { label:'Bid', data:bids, borderColor:C_UP, borderWidth:1.5, pointRadius:0,
-          fill: { target:'+2', above:rgba(C_WIND,.08), below:rgba(C_WIND,.08) }, tension: 0 },
-      ]
-    },
+    data: { labels, datasets },
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
@@ -250,14 +274,53 @@ function drawGoIndicChart() {
   setTimeout(()=>{ addFullscreen('go-indic-canvas'); addDownload('go-indic-canvas','go-prices'); },100);
 }
 
-// chart_go_cal1 : grouped bar forward curve (Cal-25 → Cal-28)
+// chart_go_cal1 (reference workbook): single rolling "Y+1" line — the
+// front calendar-year product, stitched continuously across weeks.
+function drawGoCal1Chart() {
+  const hist = getGOHistory();
+  const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
+  const wk = hist[key];
+  if (!wk || !wk.data) { goNoData('go-cal1-canvas', 'Aucune donnée Commerg chargée'); return; }
+
+  const n = goHistPeriod;
+  const len = wk.data.length, take = Math.min(n, len), from = len - take;
+  const mids = wk.data.slice(from);
+  const dates = wk.dates.slice(from);
+  const every = Math.max(1, Math.ceil(take / 10));
+  const labels = dates.map((d,i) => i % every === 0 ? fmtGoDate(d) : '');
+
+  mkChart('go-cal1-canvas', {
+    type: 'line',
+    data: { labels, datasets:[
+      { label:'Y + 1', data:mids, borderColor:'#14D3A9', borderWidth:2,
+        pointRadius:0, fill:true, backgroundColor:rgba(C_WIND,.08), tension:0 },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks:{ label: ctx => 'Y+1: '+(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh') } },
+        zoom: ZOOM_CFG,
+      },
+      scales: {
+        x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:10} },
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(3)+'€'} }
+      }
+    }
+  });
+  setTimeout(()=>{ addFullscreen('go-cal1-canvas'); addDownload('go-cal1-canvas','go-cal1'); },100);
+}
+
+// chart_go_cal1 : grouped bar forward curve (every vintage year Commerg quotes)
 function drawGoCalChart() {
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
-  const fwd = GO_REAL && GO_REAL.byKey[key] && GO_REAL.byKey[key].fwd;
+  const real = GO_REAL && GO_REAL.byKey[key];
+  const fwd = real && real.fwd;
   if (!fwd || !Object.keys(fwd).length) { goNoData('go-cal-canvas', 'Aucune donnée Commerg chargée'); return; }
-  const cals = ['Cal-25','Cal-26','Cal-27','Cal-28'];
-  const bids = [2025,2026,2027,2028].map(y => fwd[y] ? fwd[y].bid : null);
-  const asks = [2025,2026,2027,2028].map(y => fwd[y] ? fwd[y].ask : null);
+  const years = real.years;
+  const cals = years.map(y => 'Cal-' + String(y).slice(-2));
+  const bids = years.map(y => fwd[y] ? fwd[y].bid : null);
+  const asks = years.map(y => fwd[y] ? fwd[y].ask : null);
 
   mkChart('go-cal-canvas', {
     type: 'bar',
@@ -308,6 +371,115 @@ function drawGoSpreadChart() {
     }
   });
   setTimeout(()=>{ addFullscreen('go-spread-canvas'); addDownload('go-spread-canvas','go-spread'); },100);
+}
+
+// "GO by Calendar Year" table — one row per product Commerg quotes.
+function renderGOFwdTable() {
+  const tbody = document.getElementById('go-fwd-tbody');
+  if (!tbody) return;
+  if (!GO_REAL) { tbody.innerHTML = ''; return; }
+  const years = [2025, 2026, 2027, 2028];
+  const fmt = v => (v == null ? '–' : v.toFixed(4));
+  const rows = Object.keys(GO_SERIES).map(key => {
+    const real = GO_REAL.byKey[key];
+    if (!real || !real.fwd) return '';
+    const label = GO_SERIES[key].l;
+    const cells = years.map(y => {
+      const f = real.fwd[y];
+      return `<td>${f ? fmt(f.bid) : '–'}</td><td>${f ? fmt(f.ask) : '–'}</td>`;
+    }).join('');
+    const last = real.weekly[real.weekly.length - 1];
+    const spread = last && last.spread != null ? fmt(last.spread) : '–';
+    const d = real.d;
+    const wow = d == null ? '–' : (d >= 0 ? '+' : '') + d.toFixed(4);
+    return `<tr><td>${label}</td>${cells}<td>${spread}</td><td style="color:${d==null?'var(--text3)':(d>=0?'var(--up)':'var(--dn)')}">${wow}</td></tr>`;
+  }).join('');
+  tbody.innerHTML = rows || '<tr><td colspan="11" style="color:var(--text3)">En attente de données Commerg</td></tr>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// FRENCH AUCTIONS (EEX) — data/go_auctions.json, monthly, by technology.
+// Mirrors the reference workbook's "Enchères FR" sheet (chart2/chart3):
+// Wind/Solar volume sold + weighted avg price, and total volume auctioned
+// (offered) vs sold (allocated).
+// ════════════════════════════════════════════════════════════════════
+let GO_AUCTIONS = null;
+function autoloadGoAuctions() {
+  const base = (typeof DATA_BASE !== 'undefined' && DATA_BASE) ? DATA_BASE : './data/';
+  fetch(base + 'go_auctions.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.auctions) { GO_AUCTIONS = d; drawGoAuctionTechChart(); drawGoAuctionVolChart(); } })
+    .catch(() => {});
+}
+function _goAuctionLabels(auctions) {
+  const every = Math.max(1, Math.ceil(auctions.length / 14));
+  return auctions.map((a,i) => i % every === 0 ? a.auction_month : '');
+}
+function drawGoAuctionTechChart() {
+  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-tech-canvas', 'Aucune donnée EEX chargée'); return; }
+  const auctions = GO_AUCTIONS.auctions;
+  const byTech = tech => auctions.map(a => (a.by_technology || []).find(t => t.technology === tech) || null);
+  const wind = byTech('Wind'), solar = byTech('Solar');
+  const labels = _goAuctionLabels(auctions);
+
+  mkChart('go-auct-tech-canvas', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba(C_WIND,.5), yAxisID:'vol', order:3 },
+        { type:'bar',  label:'Solar — Volume (MWh)', data: solar.map(t => t ? t.allocated_mwh : null), backgroundColor: rgba('#FBBF24',.5), yAxisID:'vol', order:4 },
+        { type:'line', label:'Wind — Prix pondéré (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: C_WIND, borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
+        { type:'line', label:'Solar — Prix pondéré (€/GO)', data: solar.map(t => t ? t.price_eur_mwh : null), borderColor: '#FBBF24', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:2 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
+        tooltip: { mode:'index', callbacks:{ label: ctx => {
+          const v = ctx.raw;
+          return v == null ? ctx.dataset.label+': –' :
+            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(4)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('fr-FR')+' MWh';
+        } } },
+      },
+      scales: {
+        x: { grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:14, font:{size:9}} },
+        vol:   { position:'left',  grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(0)+'k'}, title:{display:true,text:'MWh',color:C_TX3,font:{size:10}} },
+        price: { position:'right', grid:GRID_NONE, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, title:{display:true,text:'€/GO',color:C_TX3,font:{size:10}} },
+      }
+    }
+  });
+  setTimeout(()=>{ addFullscreen('go-auct-tech-canvas'); addDownload('go-auct-tech-canvas','go-auctions-tech'); },100);
+}
+function drawGoAuctionVolChart() {
+  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-vol-canvas', 'Aucune donnée EEX chargée'); return; }
+  const auctions = GO_AUCTIONS.auctions;
+  const sum = (a, field) => (a.by_technology || []).reduce((s,t) => s + (t[field] || 0), 0);
+  const offered  = auctions.map(a => sum(a, 'offered_mwh'));
+  const allocated = auctions.map(a => sum(a, 'allocated_mwh'));
+  const labels = _goAuctionLabels(auctions);
+
+  mkChart('go-auct-vol-canvas', {
+    type: 'line',
+    data: { labels, datasets:[
+      { label:'Volume offert (MWh)', data:offered, borderColor:C_TX2, borderWidth:1.5, pointRadius:0, fill:false, tension:0, borderDash:[4,3] },
+      { label:'Volume alloué (MWh)', data:allocated, borderColor:C_UP, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_UP,.08), tension:0 },
+    ]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':Math.round(ctx.raw).toLocaleString('fr-FR')+' MWh') } },
+        zoom: ZOOM_CFG,
+      },
+      scales: {
+        x: { grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:14, font:{size:9}} },
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(0)+'k'} }
+      }
+    }
+  });
+  setTimeout(()=>{ addFullscreen('go-auct-vol-canvas'); addDownload('go-auct-vol-canvas','go-auctions-volume'); },100);
 }
 
 // ── GO HISTORY PAGE
