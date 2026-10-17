@@ -5153,25 +5153,11 @@
         </div>
       </div>
 
-      <!-- KPI strip : dernier prix, delta WoW, spread (= Streamlit go_kpi) -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-kpi-strip"></div>
-
-      <!-- Produit selector · only products Commerg actually quotes -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Product</span>
-        <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
-          <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
-          <button class="day-tab" onclick="setGoProd('GO AIB HWS',this)">Hydro/Wind/Solar</button>
-          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
-        </div>
-      </div>
-
-      <!-- Duration filter · same pk-gf pattern as Day-Ahead Historical, same
-           shared goHistPeriod/goCustomRange backing state as the GO
-           Historical page below. -->
+      <!-- Duration filter · governs every Commerg chart below (Indic/CAL+1/
+           Spread), same pk-gf pattern as Day-Ahead Historical, same shared
+           goHistPeriod/goCustomRange backing state as the GO Historical
+           page. Placed right under the header — not buried below the KPIs —
+           since it's the top-level "when" control for the whole section. -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Period</span>
         <div class="pk-gf-group" id="go-prices-period">
@@ -5189,6 +5175,22 @@
           <input type="date" id="go-date-from" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
           <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
           <input type="date" id="go-date-to" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+        </div>
+      </div>
+
+      <!-- KPI strip : dernier prix, delta WoW, spread (= Streamlit go_kpi) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="go-kpi-strip"></div>
+
+      <!-- Produit selector · only products Commerg actually quotes -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Product</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
+          <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Solar',this)">Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB Hydro',this)">Hydro</button>
+          <button class="day-tab" onclick="setGoProd('GO AIB HWS',this)">Hydro/Wind/Solar</button>
+          <button class="day-tab" onclick="setGoProd('GO Ireland Wind',this)">Ireland Wind</button>
         </div>
       </div>
 
