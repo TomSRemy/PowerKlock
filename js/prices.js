@@ -155,7 +155,13 @@ function updateClock() {
   const h = String(cet.getHours()).padStart(2,'0');
   const m = String(cet.getMinutes()).padStart(2,'0');
   const s = String(cet.getSeconds()).padStart(2,'0');
-  document.getElementById('clock').textContent = `${h}:${m}:${s} CET`;
+  // Paris is UTC+1 (CET) in winter, UTC+2 (CEST) in summer — a hardcoded
+  // "CET" label was wrong half the year. Derive the live offset instead of
+  // assuming one, so it's always correct through the DST transitions.
+  const utcNow = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetH = Math.round((cet - utcNow) / 3600000);
+  const tzLabel = offsetH === 1 ? 'CET' : offsetH === 2 ? 'CEST' : `UTC${offsetH >= 0 ? '+' : ''}${offsetH}`;
+  document.getElementById('clock').textContent = `${h}:${m}:${s} ${tzLabel} (UTC${offsetH >= 0 ? '+' : ''}${offsetH})`;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -966,8 +972,12 @@ async function loadPrices() {
 
     buildTicker(pricesData);
     dpRecordNegHours(pricesData);
-    const now = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit' });
-    document.getElementById('prices-updated').textContent = `Updated ${now} CET`;
+    const nowDate = new Date();
+    const now = nowDate.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit' });
+    const parisNow = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const utcNowB = new Date(nowDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const offH = Math.round((parisNow - utcNowB) / 3600000);
+    document.getElementById('prices-updated').textContent = `Updated ${now} ${offH === 1 ? 'CET' : offH === 2 ? 'CEST' : 'UTC' + (offH >= 0 ? '+' : '') + offH}`;
 
     // Backfill hourlyYday for the single-zone chart overlay (J-1 delivery = today-1, file = today-2)
     if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
