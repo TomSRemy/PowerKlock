@@ -5,7 +5,7 @@
    "spot": 212,
    "nuclearCapacity": {
     "actualMW": 43716.33,
-    "forecastMW": 49140
+    "forecastMW": 48225
    },
    "forwardCurve": {
     "M+1": 172.67,
