@@ -38,13 +38,12 @@ function _goPeriodSlice(dates) {
   return { start: len - take, end: len };
 }
 
-// Preset period buttons (1M/3M/6M/YTD/1Y/2Y/5Y/All) — shared by the GO
-// Prices and GO Historical pages' pill groups (kept in sync by data-w).
+// Preset period buttons (1M/3M/6M/YTD/1Y/2Y/5Y/All) — one filter governs
+// every Commerg chart on the GO Prices page's EU tab.
 function setGoPreset(code, btn) {
   goCustomRange = null;
-  ['go-date-from', 'go-date-to', 'go-hist-date-from', 'go-hist-date-to'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  const ff = document.getElementById('go-date-from'); if (ff) ff.value = '';
+  const ft = document.getElementById('go-date-to'); if (ft) ft.value = '';
   let weeks;
   if (code === 'YTD') {
     const now = new Date();
@@ -54,28 +53,17 @@ function setGoPreset(code, btn) {
     weeks = { '1M': 4, '3M': 13, '6M': 26, '1Y': 52, '2Y': 104, '5Y': 260, 'All': 9999 }[code] || 9999;
   }
   goHistPeriod = weeks;
-  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll(`#go-hist-period .pk-gf-btn[data-w="${code}"], #go-prices-period .pk-gf-btn[data-w="${code}"]`).forEach(b => b.classList.add('active'));
+  document.querySelectorAll('#go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`#go-prices-period .pk-gf-btn[data-w="${code}"]`).forEach(b => b.classList.add('active'));
   _goRedrawPeriodCharts();
 }
 
-// Custom date range — mirrors Day-Ahead Historical's From/To inputs. Reads
-// whichever of the two input pairs (GO Prices page / GO Historical page)
-// is currently fully filled, then syncs both so switching page never shows
-// a stale range.
+// Custom date range — mirrors Day-Ahead Historical's From/To inputs.
 function setGoCustomRange() {
-  const pairs = [
-    [document.getElementById('go-date-from'), document.getElementById('go-date-to')],
-    [document.getElementById('go-hist-date-from'), document.getElementById('go-hist-date-to')],
-  ];
-  let from, to;
-  for (const [f, t] of pairs) {
-    if (f && t && f.value && t.value) { from = f.value; to = t.value; break; }
-  }
-  if (!from || !to || from > to) return;
-  goCustomRange = { from, to };
-  pairs.forEach(([f, t]) => { if (f) f.value = from; if (t) t.value = to; });
-  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
+  const f = document.getElementById('go-date-from'), t = document.getElementById('go-date-to');
+  if (!f || !t || !f.value || !t.value || f.value > t.value) return;
+  goCustomRange = { from: f.value, to: t.value };
+  document.querySelectorAll('#go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
   _goRedrawPeriodCharts();
 }
 
@@ -257,6 +245,7 @@ function renderGO() {
   drawGoCal1Chart();
   drawGoCalChart();
   drawGoSpreadChart();
+  drawGoHist(); drawGoWoW(); drawGoBox();
 }
 
 function setGoProd(prod, btn) {

@@ -181,7 +181,7 @@ function setLF(val, btn) {
 
 
 // ── NEW SECTION LOADER ──
-const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','gohist','wxcities','wxhdd','remit'];
+const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','wxcities','wxhdd','remit'];
 const PAGE_LOADERS = {
   map: () => {
     setTimeout(() => {
@@ -215,12 +215,6 @@ const PAGE_LOADERS = {
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
-  gohist: () => {
-    // GO data may not have been fetched yet if this page is opened directly
-    // (not via GO Prices first) — trigger the same guarded autoload.
-    if (!_goAutoTried) { _goAutoTried = true; autoloadGo(); }
-    drawGoHist(); drawGoWoW(); drawGoBox();
-  },
   wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
