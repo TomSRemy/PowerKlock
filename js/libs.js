@@ -14666,38 +14666,23 @@ Chart.defaults.animation.duration = 400;
       ctx.stroke();
       ctx.restore();
 
-      // Opaque band behind the readout row — without this the text sits
-      // directly over the plot's top gridline/axis label and the two
-      // blend together (reported: "hard to read"). The band spans the
-      // full reserved top-padding area so it never overlaps the plot.
-      ctx.save();
-      ctx.fillStyle = BAND_BG;
-      ctx.fillRect(0, 0, chart.width, chartArea.top);
-      ctx.beginPath();
-      ctx.moveTo(0, chartArea.top - 0.5);
-      ctx.lineTo(chart.width, chartArea.top - 0.5);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = BAND_BORDER;
-      ctx.stroke();
-      ctx.restore();
-
+      // Readout box anchored to the crosshair — sits just to its LEFT by
+      // default (flips to the right near the left edge) so it's next to
+      // whatever the reader is actually pointing at, instead of always
+      // parked at the chart's left edge regardless of cursor position.
       ctx.save();
       ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.textBaseline = 'middle';
-      const y = chartArea.top - PAD_TOP / 2;
-      let x = chartArea.left;
       const rightEdge = chartArea.left + chartArea.width;
-      const GAP = 18;
+      const GAP = 16, BOX_PAD = 10, CURSOR_GAP = 10;
+      const maxContentWidth = Math.max(120, chartArea.width * 0.7 - BOX_PAD * 2);
 
+      const entries = [];
       const label = chart.data.labels ? chart.data.labels[idx] : null;
-      if (label != null && label !== '') {
-        ctx.fillStyle = TX3;
-        const t = String(label);
-        ctx.fillText(t, x, y);
-        x += ctx.measureText(t).width + GAP;
-      }
+      if (label != null && label !== '') entries.push({ text: String(label), color: TX3 });
 
-      let shown = 0, hidden = 0;
+      let hidden = 0;
+      let contentWidth = 0;
       for (let di = 0; di < chart.data.datasets.length; di++) {
         const meta = chart.getDatasetMeta(di);
         if (meta.hidden) continue;
@@ -14705,20 +14690,51 @@ Chart.defaults.animation.duration = 400;
         const txt = seriesText(chart, ds, di, idx);
         if (!txt) continue;
         const w = ctx.measureText(txt).width;
-        // Reserve room for a "+N more" marker so a truncated row still
-        // tells the reader values are missing, instead of just stopping.
-        if (x + w > rightEdge - 50 && di < chart.data.datasets.length - 1) { hidden++; continue; }
-        ctx.fillStyle = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
+        if (contentWidth + w > maxContentWidth && entries.length > 0) { hidden++; continue; }
+        const color = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
           ? ds.borderColor
           : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : TX2);
-        ctx.fillText(txt, x, y);
-        x += w + GAP;
-        shown++;
+        entries.push({ text: txt, color, w });
+        contentWidth += w + GAP;
       }
-      if (hidden > 0) {
-        ctx.fillStyle = TX3;
-        ctx.fillText('+' + hidden + ' more', x, y);
-      }
+      if (hidden > 0) entries.push({ text: '+' + hidden + ' more', color: TX3 });
+
+      // Measure total box width from the final entry list (widths not
+      // already computed — label/+more — need measuring too).
+      let totalWidth = 0;
+      entries.forEach((en, i) => {
+        if (en.w == null) en.w = ctx.measureText(en.text).width;
+        totalWidth += en.w + (i < entries.length - 1 ? GAP : 0);
+      });
+      const boxW = totalWidth + BOX_PAD * 2;
+      const boxH = PAD_TOP - 10;
+      const boxY = chartArea.top - PAD_TOP + 5;
+
+      let boxX = xPos - CURSOR_GAP - boxW; // default: box to the left of the crosshair
+      if (boxX < chartArea.left) boxX = xPos + CURSOR_GAP; // flip right near the left edge
+      boxX = Math.min(Math.max(boxX, chartArea.left), Math.max(chartArea.left, rightEdge - boxW));
+
+      ctx.fillStyle = BAND_BG;
+      ctx.strokeStyle = BAND_BORDER;
+      ctx.lineWidth = 1;
+      const r = 5;
+      ctx.beginPath();
+      ctx.moveTo(boxX + r, boxY);
+      ctx.arcTo(boxX + boxW, boxY, boxX + boxW, boxY + boxH, r);
+      ctx.arcTo(boxX + boxW, boxY + boxH, boxX, boxY + boxH, r);
+      ctx.arcTo(boxX, boxY + boxH, boxX, boxY, r);
+      ctx.arcTo(boxX, boxY, boxX + boxW, boxY, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      let x = boxX + BOX_PAD;
+      const y = boxY + boxH / 2;
+      entries.forEach(en => {
+        ctx.fillStyle = en.color;
+        ctx.fillText(en.text, x, y);
+        x += en.w + GAP;
+      });
       ctx.restore();
     },
   };
