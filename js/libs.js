@@ -14570,6 +14570,161 @@ Chart.defaults.plugins.tooltip.bodyColor = '#B8C9D9';
 Chart.defaults.plugins.tooltip.cornerRadius = 6;
 Chart.defaults.animation.duration = 400;
 
+// ════════════════════════════════════════════════════════════════════
+// pkHoverReadout — site-wide hover redesign (concept "B" from the hover
+// mockup): a vertical crosshair follows the cursor, and the values at that
+// point are drawn in a reserved strip ABOVE the plot — never as a floating
+// tooltip box that sits on top of the lines.
+//
+// Exposed as window.pkHoverReadoutPlugin and injected into each chart's own
+// `plugins: [...]` array by mkChart()/mkHistChart() below, rather than
+// registered globally via Chart.register() — a global registration was
+// silently dropped from Chart.registry.plugins.items within one tick of
+// being added (reproducible: present immediately after Chart.register(),
+// gone by the next setTimeout(0)), for reasons that didn't trace to
+// anything in this file. Per-chart injection sidesteps that registry
+// entirely and is unaffected by it.
+//
+// Re-uses each chart's own tooltip.callbacks.label formatter (if it defined
+// one) so unit suffixes ("€/MWh", "%", etc.) stay exactly as before — only
+// the DEFAULT tooltip's floating box is turned off (tooltip.enabled:false
+// below); the callbacks themselves are still read directly, just no longer
+// through Chart.js's own tooltip pipeline.
+//
+// Opt out per-chart with `options.plugins.pkHoverReadout = false`.
+// ════════════════════════════════════════════════════════════════════
+(function () {
+  const PAD_TOP = 26;
+  const SKIP_TYPES = new Set(['pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble']);
+  const TX2 = '#B8C9D9', TX3 = '#7A93AB', LINE = 'rgba(184,201,217,.4)';
+
+  function isActive(chart) {
+    if (SKIP_TYPES.has(chart.config.type)) return false;
+    const o = chart.options.plugins && chart.options.plugins.pkHoverReadout;
+    return o !== false;
+  }
+
+  function seriesText(chart, ds, di, idx) {
+    const raw = Array.isArray(ds.data) ? ds.data[idx] : undefined;
+    if (raw == null) return null;
+    const parsedY = (raw && typeof raw === 'object') ? raw.y : raw;
+    if (parsedY == null) return null;
+    const formatted = typeof parsedY === 'number'
+      ? parsedY.toLocaleString('en-GB', { maximumFractionDigits: 2 })
+      : String(parsedY);
+    const tt = chart.options.plugins && chart.options.plugins.tooltip;
+    if (tt && tt.callbacks && typeof tt.callbacks.label === 'function') {
+      try {
+        const ctx = {
+          chart, label: chart.data.labels ? chart.data.labels[idx] : '',
+          parsed: { x: idx, y: parsedY }, raw, dataset: ds,
+          datasetIndex: di, dataIndex: idx, formattedValue: formatted,
+        };
+        const out = tt.callbacks.label(ctx);
+        if (out) return Array.isArray(out) ? out.join(' ') : out;
+      } catch (e) { /* fall through to generic formatter below */ }
+    }
+    return (ds.label ? ds.label + ': ' : '') + formatted;
+  }
+
+  const plugin = {
+    id: 'pkHoverReadout',
+
+    beforeInit(chart) {
+      chart._pkHover = { index: null };
+    },
+
+    afterEvent(chart, args) {
+      if (!isActive(chart)) return;
+      const e = args.event;
+      if (e.type === 'mousemove' || e.type === 'touchmove' || e.type === 'click') {
+        const pts = chart.getElementsAtEventForMode(e.native || e, 'index', { intersect: false }, false);
+        const idx = pts.length ? pts[0].index : null;
+        if (chart._pkHover.index !== idx) { chart._pkHover.index = idx; args.changed = true; }
+      } else if (e.type === 'mouseout') {
+        if (chart._pkHover.index !== null) { chart._pkHover.index = null; args.changed = true; }
+      }
+    },
+
+    afterDraw(chart) {
+      if (!isActive(chart)) return;
+      const idx = chart._pkHover.index;
+      if (idx == null) return;
+      const { ctx, chartArea, scales } = chart;
+      const xScale = scales.x;
+      if (!xScale || !chartArea) return;
+      const xPos = Math.min(Math.max(xScale.getPixelForValue(idx), chartArea.left), chartArea.right);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(xPos, chartArea.top);
+      ctx.lineTo(xPos, chartArea.bottom);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = LINE;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.textBaseline = 'middle';
+      const y = Math.max(10, chartArea.top - PAD_TOP / 2 + 3);
+      let x = chartArea.left;
+      const rightEdge = chartArea.left + chartArea.width;
+
+      const label = chart.data.labels ? chart.data.labels[idx] : null;
+      if (label != null && label !== '') {
+        ctx.fillStyle = TX3;
+        const t = String(label);
+        ctx.fillText(t, x, y);
+        x += ctx.measureText(t).width + 14;
+      }
+
+      for (let di = 0; di < chart.data.datasets.length; di++) {
+        if (x >= rightEdge) break; // stop once we'd overflow the plot width
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) continue;
+        const ds = chart.data.datasets[di];
+        const txt = seriesText(chart, ds, di, idx);
+        if (!txt) continue;
+        ctx.fillStyle = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
+          ? ds.borderColor
+          : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : TX2);
+        ctx.fillText(txt, x, y);
+        x += ctx.measureText(txt).width + 14;
+      }
+      ctx.restore();
+    },
+  };
+
+  window.pkHoverReadoutPlugin = plugin;
+
+  // Mutates a plain (pre-construction) Chart.js config: reserves top padding
+  // for the readout strip and disables the default floating tooltip. Must
+  // run on the config BEFORE `new Chart(...)`, never on `chart.options`
+  // afterwards — Chart.js v4 wraps `chart.options` in a reactive resolver,
+  // and re-assigning into it from inside a layout-cycle plugin hook (this
+  // used to be a beforeLayout hook) re-triggers that same layout cycle on
+  // every pass, which is an infinite loop (confirmed: "Maximum call stack
+  // size exceeded" in Object.set, i.e. the resolver's own setter, the
+  // moment a chart using it needed a second layout pass — resize, legend
+  // click, zoom, anything). Plain-object mutation here has none of that.
+  window.pkPrepHoverReadout = function (config) {
+    if (!config || SKIP_TYPES.has(config.type)) return config;
+    config.options = config.options || {};
+    const opts = config.options;
+    if (opts.plugins && opts.plugins.pkHoverReadout === false) return config;
+    opts.layout = opts.layout || {};
+    const p = opts.layout.padding;
+    if (p == null) opts.layout.padding = { top: PAD_TOP };
+    else if (typeof p === 'number') opts.layout.padding = { top: Math.max(p, PAD_TOP), left: p, right: p, bottom: p };
+    else p.top = Math.max(p.top || 0, PAD_TOP);
+    opts.plugins = opts.plugins || {};
+    opts.plugins.tooltip = Object.assign({}, opts.plugins.tooltip, { enabled: false });
+    return config;
+  };
+})();
+
 // Registry of all Chart instances (for destroy/resize)
 const CHARTS = {};
 
@@ -14587,6 +14742,11 @@ function mkChart(id, config) {
   canvas.style.width = '100%';
   canvas.style.height = h;
   canvas.style.display = 'block';
+  if (window.pkHoverReadoutPlugin) {
+    window.pkPrepHoverReadout(config);
+    config.plugins = config.plugins || [];
+    if (!config.plugins.includes(window.pkHoverReadoutPlugin)) config.plugins.push(window.pkHoverReadoutPlugin);
+  }
   const chart = new Chart(canvas, config);
   CHARTS[id] = chart;
   return chart;

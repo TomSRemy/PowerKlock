@@ -438,6 +438,12 @@ function mkHistChart(canvasId, config) {
     };
   }
 
+  if (window.pkHoverReadoutPlugin) {
+    window.pkPrepHoverReadout(config);
+    config.plugins = config.plugins || [];
+    if (!config.plugins.includes(window.pkHoverReadoutPlugin)) config.plugins.push(window.pkHoverReadoutPlugin);
+  }
+
   HIST.charts[canvasId] = new Chart(canvas, config);
 }
 

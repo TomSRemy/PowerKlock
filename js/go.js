@@ -212,7 +212,7 @@ function renderGOKPIs() {
   if (!strip) return;
   const real = GO_REAL && GO_REAL.byKey[key];
   if (!(real && real.weekly.length)) {
-    strip.innerHTML = ['Dernier Bid','Dernier Ask','Mid Price','Delta WoW'].map(l =>
+    strip.innerHTML = ['Last Bid','Last Ask','Mid Price','Delta WoW'].map(l =>
       `<div class="kpi-card"><div class="kpi-label">${l}</div>
        <div class="kpi-value" style="font-size:17px">–</div>
        <div class="kpi-chg" style="color:var(--text3)">en attente Commerg</div></div>`).join('');
@@ -225,8 +225,8 @@ function renderGOKPIs() {
   const d = real.d;
   const fmt = v => (v == null ? '–' : v.toFixed(4) + ' €');
   strip.innerHTML = [
-    {l:'Dernier Bid', v:fmt(last.bid), sub, cls:'up'},
-    {l:'Dernier Ask', v:fmt(last.ask), sub, cls:'down'},
+    {l:'Last Bid', v:fmt(last.bid), sub, cls:'up'},
+    {l:'Last Ask', v:fmt(last.ask), sub, cls:'down'},
     {l:'Mid Price',   v:fmt(last.mid), sub, cls:''},
     {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(4)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs prev. week', cls:(d==null?'':(d>=0?'up':'down'))},
   ].map(k => `<div class="kpi-card">
