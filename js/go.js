@@ -14,9 +14,75 @@ const GO_SERIES = {
 // Palette for the "one line per vintage year" chart (chart5 in the Commerg
 // reference workbook — GOs Price Indications).
 const GO_YEAR_COLORS = ['#5B7A99', '#3FA6B4', '#14D3A9', '#7FD858', '#FBBF24', '#F08A3C', '#ED6965', '#A87DC4', '#f472b6'];
-let goHistPeriod = 9999;
+let goHistPeriod = 9999;    // week count from the end — used when goCustomRange is null
+let goCustomRange = null;   // { from:'YYYY-MM-DD', to:'YYYY-MM-DD' } — overrides goHistPeriod when set
 let goHistFilter = 'all';
 let goProd = 'GO AIB Renewable';
+
+// Returns the [start, end) slice bounds to show from a chronological
+// (ascending) array of Date objects — shared by every period-aware GO
+// chart so goHistPeriod and goCustomRange only need to be interpreted once.
+function _goPeriodSlice(dates) {
+  const len = dates.length;
+  if (goCustomRange) {
+    const from = goCustomRange.from, to = goCustomRange.to;
+    let start = len, end = 0;
+    for (let i = 0; i < len; i++) {
+      const iso = dates[i].toISOString().slice(0, 10);
+      if (iso >= from && iso <= to) { if (i < start) start = i; if (i + 1 > end) end = i + 1; }
+    }
+    if (start > end) return { start: len, end: len }; // nothing in range
+    return { start, end };
+  }
+  const take = Math.min(goHistPeriod, len);
+  return { start: len - take, end: len };
+}
+
+// Preset period buttons (1M/3M/6M/YTD/1Y/2Y/5Y/All) — shared by the GO
+// Prices and GO Historical pages' pill groups (kept in sync by data-w).
+function setGoPreset(code, btn) {
+  goCustomRange = null;
+  ['go-date-from', 'go-date-to', 'go-hist-date-from', 'go-hist-date-to'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  let weeks;
+  if (code === 'YTD') {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    weeks = Math.max(1, Math.ceil((now - startOfYear) / (7 * 86400000)));
+  } else {
+    weeks = { '1M': 4, '3M': 13, '6M': 26, '1Y': 52, '2Y': 104, '5Y': 260, 'All': 9999 }[code] || 9999;
+  }
+  goHistPeriod = weeks;
+  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`#go-hist-period .pk-gf-btn[data-w="${code}"], #go-prices-period .pk-gf-btn[data-w="${code}"]`).forEach(b => b.classList.add('active'));
+  _goRedrawPeriodCharts();
+}
+
+// Custom date range — mirrors Day-Ahead Historical's From/To inputs. Reads
+// whichever of the two input pairs (GO Prices page / GO Historical page)
+// is currently fully filled, then syncs both so switching page never shows
+// a stale range.
+function setGoCustomRange() {
+  const pairs = [
+    [document.getElementById('go-date-from'), document.getElementById('go-date-to')],
+    [document.getElementById('go-hist-date-from'), document.getElementById('go-hist-date-to')],
+  ];
+  let from, to;
+  for (const [f, t] of pairs) {
+    if (f && t && f.value && t.value) { from = f.value; to = t.value; break; }
+  }
+  if (!from || !to || from > to) return;
+  goCustomRange = { from, to };
+  pairs.forEach(([f, t]) => { if (f) f.value = from; if (t) t.value = to; });
+  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
+  _goRedrawPeriodCharts();
+}
+
+function _goRedrawPeriodCharts() {
+  drawGoIndicChart(); drawGoCal1Chart(); drawGoSpreadChart();
+  if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
+}
 
 // ════════════════════════════════════════════════════════════════════
 // REAL COMMERG DATA LAYER  (no fallback — page is empty until data loads)
@@ -248,8 +314,10 @@ function drawGoIndicChart() {
 
   // Union of all dates across vintage years → shared x-axis
   let allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
-  if (goHistPeriod < allDates.length) allDates = allDates.slice(-goHistPeriod);
-  const dates = allDates.map(t => new Date(t));
+  const datesAll = allDates.map(t => new Date(t));
+  const slice = _goPeriodSlice(datesAll);
+  allDates = allDates.slice(slice.start, slice.end);
+  const dates = datesAll.slice(slice.start, slice.end);
   // Full real labels on every point — Chart.js's own autoSkip (maxTicksLimit
   // below) decides which to actually draw, and reliably keeps first/last.
   const labels = dates.map(d => fmtGoDate(d));
@@ -302,10 +370,9 @@ function drawGoCal1Chart() {
   const wk = hist[key];
   if (!wk || !wk.data) { goNoData('go-cal1-canvas', 'No Commerg data loaded'); return; }
 
-  const n = goHistPeriod;
-  const len = wk.data.length, take = Math.min(n, len), from = len - take;
-  const mids = wk.data.slice(from);
-  const dates = wk.dates.slice(from);
+  const { start, end } = _goPeriodSlice(wk.dates);
+  const mids = wk.data.slice(start, end);
+  const dates = wk.dates.slice(start, end);
   const labels = dates.map(d => fmtGoDate(d));
 
   mkChart('go-cal1-canvas', {
@@ -375,10 +442,9 @@ function drawGoSpreadChart() {
   const wk = hist[key];
   if (!wk || !wk.spreadArr || !wk.spreadArr.some(v => v != null)) { goNoData('go-spread-canvas', 'No Commerg data loaded'); return; }
 
-  const n = goHistPeriod;
-  const len = wk.spreadArr.length, take = Math.min(n, len), from = len - take;
-  const spreads = wk.spreadArr.slice(from);
-  const dates = wk.dates.slice(from);
+  const { start, end } = _goPeriodSlice(wk.dates);
+  const spreads = wk.spreadArr.slice(start, end);
+  const dates = wk.dates.slice(start, end);
   const labels = dates.map(d => fmtGoDate(d));
 
   mkChart('go-spread-canvas', {
@@ -509,20 +575,8 @@ function filterGoH(f, btn) {
   btn.classList.add('active');
   drawGoHist(); drawGoWoW(); drawGoBox();
 }
-function setGoHistPeriod(n, btn) {
-  goHistPeriod = n;
-  // Shared state across two independent button groups (GO Prices page +
-  // GO Historical page) — keep both in sync regardless of which one
-  // triggered the change, so neither shows a stale active pill.
-  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b=>b.classList.remove('active'));
-  const w = btn.dataset.w;
-  document.querySelectorAll(`#go-hist-period .pk-gf-btn[data-w="${w}"], #go-prices-period .pk-gf-btn[data-w="${w}"]`).forEach(b=>b.classList.add('active'));
-  drawGoIndicChart(); drawGoCal1Chart();
-  if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
-}
 function drawGoHist() {
   const hist = getGOHistory();
-  const n = goHistPeriod;
   const filter = goHistFilter;
   const active = filter === 'all'
     ? Object.entries(hist)
@@ -530,16 +584,15 @@ function drawGoHist() {
   if (!active.length) { goNoData('go-hist-canvas', 'No Commerg data loaded'); return; }
 
   const sample = active[0][1];
-  let labels;
+  let labels, start = 0, end = 0;
   if (sample && sample.dates) {
-    const len = sample.dates.length, take = Math.min(n, len), from = len - take;
-    const dts = sample.dates.slice(from);
-    labels = dts.map(d => fmtGoDate(d));
+    ({ start, end } = _goPeriodSlice(sample.dates));
+    labels = sample.dates.slice(start, end).map(d => fmtGoDate(d));
   } else { labels = []; }
 
   const datasets = active.map(([k, s]) => ({
     label: GO_SERIES[k]?.l.replace('GO AIB ','').replace('GO ','') || k,
-    data: s.data.slice(-n),
+    data: s.data.slice(start, end),
     borderColor: GO_SERIES[k]?.c || '#888',
     borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0,
   }));
@@ -568,13 +621,13 @@ function drawGoWoW() {
   const key = goHistFilter === 'all' ? 'renewable' : goHistFilter;
   const wk = hist[key];
   if (!wk || !wk.data || wk.data.length < 2) { goNoData('go-wow-canvas', 'No Commerg data loaded'); return; }
-  const n = Math.min(goHistPeriod, 52);
-  const data = wk.data.slice(-n);
+  const { start, end } = _goPeriodSlice(wk.dates);
+  const data = wk.data.slice(start, end);
   // wk.dates lines up 1:1 with wk.data — was discarded here, leaving the
   // x-axis hidden entirely (scales.x.display:false) with synthetic "W0,W1…"
   // labels that didn't even correspond to real calendar weeks. A bar chart
   // with no x-axis gives no way to tell which week any given bar is.
-  const dates = (wk.dates || []).slice(-n);
+  const dates = (wk.dates || []).slice(start, end);
   const deltaDates = dates.slice(1);
   const deltas = data.slice(1).map((v,i) => +(v - data[i]).toFixed(2));
   const labels = deltaDates.length === deltas.length
@@ -602,8 +655,9 @@ function drawGoBox() {
   const key = goHistFilter === 'all' ? 'renewable' : goHistFilter;
   const wk = hist[key];
   if (!wk || !wk.data || !wk.data.length) { goNoData('go-box-canvas', 'No Commerg data loaded'); return; }
-  const data = wk.data.slice(-goHistPeriod);
-  const dates = (wk.dates || []).slice(-goHistPeriod);
+  const { start, end } = _goPeriodSlice(wk.dates);
+  const data = wk.data.slice(start, end);
+  const dates = (wk.dates || []).slice(start, end);
   const chunks = 8, sz = Math.max(1, Math.floor(data.length/chunks));
   const col = GO_SERIES[key]?.c || C_UP;
 

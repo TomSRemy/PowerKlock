@@ -5170,16 +5170,25 @@
       </div>
 
       <!-- Duration filter · same pk-gf pattern as Day-Ahead Historical, same
-           shared goHistPeriod backing state as the GO Historical page below. -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+           shared goHistPeriod/goCustomRange backing state as the GO
+           Historical page below. -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
         <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Period</span>
         <div class="pk-gf-group" id="go-prices-period">
-          <button class="pk-gf-btn" data-w="3M" onclick="setGoHistPeriod(13,this)">3M</button>
-          <button class="pk-gf-btn" data-w="6M" onclick="setGoHistPeriod(26,this)">6M</button>
-          <button class="pk-gf-btn" data-w="1Y" onclick="setGoHistPeriod(52,this)">1Y</button>
-          <button class="pk-gf-btn" data-w="2Y" onclick="setGoHistPeriod(104,this)">2Y</button>
-          <button class="pk-gf-btn" data-w="5Y" onclick="setGoHistPeriod(260,this)">5Y</button>
-          <button class="pk-gf-btn active" data-w="All" onclick="setGoHistPeriod(9999,this)">All</button>
+          <button class="pk-gf-btn" data-w="1M"  onclick="setGoPreset('1M',this)">1M</button>
+          <button class="pk-gf-btn" data-w="3M"  onclick="setGoPreset('3M',this)">3M</button>
+          <button class="pk-gf-btn" data-w="6M"  onclick="setGoPreset('6M',this)">6M</button>
+          <button class="pk-gf-btn" data-w="YTD" onclick="setGoPreset('YTD',this)">YTD</button>
+          <button class="pk-gf-btn" data-w="1Y"  onclick="setGoPreset('1Y',this)">1Y</button>
+          <button class="pk-gf-btn" data-w="2Y"  onclick="setGoPreset('2Y',this)">2Y</button>
+          <button class="pk-gf-btn" data-w="5Y"  onclick="setGoPreset('5Y',this)">5Y</button>
+          <button class="pk-gf-btn active" data-w="All" onclick="setGoPreset('All',this)">All</button>
+        </div>
+        <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
+          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
+          <input type="date" id="go-date-from" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
+          <input type="date" id="go-date-to" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
         </div>
       </div>
 
@@ -5276,12 +5285,20 @@
           <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
         </div>
         <div class="pk-gf-group" id="go-hist-period" style="margin-left:auto">
-          <button class="pk-gf-btn" data-w="3M" onclick="setGoHistPeriod(13,this)">3M</button>
-          <button class="pk-gf-btn" data-w="6M" onclick="setGoHistPeriod(26,this)">6M</button>
-          <button class="pk-gf-btn" data-w="1Y" onclick="setGoHistPeriod(52,this)">1Y</button>
-          <button class="pk-gf-btn" data-w="2Y" onclick="setGoHistPeriod(104,this)">2Y</button>
-          <button class="pk-gf-btn" data-w="5Y" onclick="setGoHistPeriod(260,this)">5Y</button>
-          <button class="pk-gf-btn active" data-w="All" onclick="setGoHistPeriod(9999,this)">All</button>
+          <button class="pk-gf-btn" data-w="1M"  onclick="setGoPreset('1M',this)">1M</button>
+          <button class="pk-gf-btn" data-w="3M"  onclick="setGoPreset('3M',this)">3M</button>
+          <button class="pk-gf-btn" data-w="6M"  onclick="setGoPreset('6M',this)">6M</button>
+          <button class="pk-gf-btn" data-w="YTD" onclick="setGoPreset('YTD',this)">YTD</button>
+          <button class="pk-gf-btn" data-w="1Y"  onclick="setGoPreset('1Y',this)">1Y</button>
+          <button class="pk-gf-btn" data-w="2Y"  onclick="setGoPreset('2Y',this)">2Y</button>
+          <button class="pk-gf-btn" data-w="5Y"  onclick="setGoPreset('5Y',this)">5Y</button>
+          <button class="pk-gf-btn active" data-w="All" onclick="setGoPreset('All',this)">All</button>
+        </div>
+        <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
+          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
+          <input type="date" id="go-hist-date-from" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+          <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
+          <input type="date" id="go-hist-date-to" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
         </div>
       </div>
 
