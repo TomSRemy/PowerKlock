@@ -29,13 +29,13 @@
   ];
 
   var FUELS = [
-    { key: 'nuclear', label: 'Nucleaire', colour: '#7B4B9C' },
+    { key: 'nuclear', label: 'Nuclear', colour: '#7B4B9C' },
     { key: 'hydro',   label: 'Hydro',     colour: '#3FA6B4' },
-    { key: 'wind',    label: 'Eolien',    colour: '#14D3A9' },
-    { key: 'solar',   label: 'Solaire',   colour: '#FBBF24' },
-    { key: 'biomass', label: 'Biomasse',  colour: '#94D2BD' },
-    { key: 'fossil',  label: 'Fossile',   colour: '#ED6965' },
-    { key: 'other',   label: 'Autres',    colour: '#4A6280' }
+    { key: 'wind',    label: 'Wind',    colour: '#14D3A9' },
+    { key: 'solar',   label: 'Solar',   colour: '#FBBF24' },
+    { key: 'biomass', label: 'Biomass',  colour: '#94D2BD' },
+    { key: 'fossil',  label: 'Fossil',   colour: '#ED6965' },
+    { key: 'other',   label: 'Other',    colour: '#4A6280' }
   ];
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@
 
   function fmtDateLong(isoStr) {
     var p = isoStr.split('-');
-    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('fr-FR', {
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-GB', {
       weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
     });
   }
@@ -321,7 +321,7 @@
   }
 
   function loadingBlock(msg) {
-    return '<div class="fr-loading">' + (msg || 'Chargement...') + '</div>';
+    return '<div class="fr-loading">' + (msg || 'Loading...') + '</div>';
   }
 
   function destroyChart(key) {
@@ -372,7 +372,7 @@
   function renderToday() {
     var host = $('fr-panel-today');
     if (!host) return;
-    host.innerHTML = loadingBlock('Chargement de la journee FR...');
+    host.innerHTML = loadingBlock('Loading FR day...');
 
     var d0 = S.date;
     var d1 = shiftDays(d0, -1);
@@ -381,7 +381,7 @@
       var day = res[0], prev = res[1], summary = res[2];
       var fr = day && day.zones ? day.zones[ZONE] : null;
       if (!fr) {
-        host.innerHTML = '<div class="fr-empty">Aucune donnee FR pour le ' + fmtDateLong(d0) + '.</div>';
+        host.innerHTML = '<div class="fr-empty">No FR data for ' + fmtDateLong(d0) + '.</div>';
         return;
       }
       var frPrev = prev && prev.zones ? prev.zones[ZONE] : null;
@@ -411,44 +411,44 @@
       // ── KPI strip
       html += '<div class="kpi-strip fr-kpi-strip">';
       html += kpiCard('Base FR', num(base, 2), '\u20AC/MWh',
-        delta !== null ? (delta >= 0 ? '\u25B2' : '\u25BC') + num(Math.abs(delta), 2) + ' vs J-1' : 'vs J-1 indisponible',
+        delta !== null ? (delta >= 0 ? '\u25B2' : '\u25BC') + num(Math.abs(delta), 2) + ' vs J-1' : 'vs J-1 unavailable',
         delta === null ? 'flat' : (delta >= 0 ? 'up' : 'down'));
       html += kpiCard('Peak', num(po.peak, 2), '\u20AC/MWh', '08h-20h');
       html += kpiCard('Off-peak', num(po.off, 2), '\u20AC/MWh', '00h-08h / 20h-24h');
       html += kpiCard('Ratio peak/base', ratio !== null ? num(ratio, 2) : '--', 'x',
-        ratio !== null && ratio < 1 ? 'Peak sous la base' : 'Reference 1,15x',
+        ratio !== null && ratio < 1 ? 'Peak below base' : 'Reference 1,15x',
         ratio !== null && ratio < 1 ? 'down' : 'flat');
-      html += kpiCard('Min', num(mn, 2), '\u20AC/MWh', 'slot le plus bas');
-      html += kpiCard('Max', num(mx, 2), '\u20AC/MWh', 'slot le plus haut');
-      html += kpiCard('Heures negatives', num(nh, 2), 'h', nh > 0 ? 'cannibalisation active' : 'aucune',
+      html += kpiCard('Min', num(mn, 2), '\u20AC/MWh', 'lowest slot');
+      html += kpiCard('Max', num(mx, 2), '\u20AC/MWh', 'highest slot');
+      html += kpiCard('Negative hours', num(nh, 2), 'h', nh > 0 ? 'cannibalisation active' : 'none',
         nh > 0 ? 'down' : 'flat');
-      html += kpiCard('Part renouvelable', num(fr.renPct, 1), '%', 'eolien + solaire + hydro + bio');
+      html += kpiCard('Renewable share', num(fr.renPct, 1), '%', 'wind + solar + hydro + bio');
       html += '</div>';
 
       if (missing > 0) {
-        html += '<div class="fr-warn">' + missing + ' slot(s) de prix manquant(s) sur 96 : ' +
-          'les moyennes peak / off-peak sont calculees sur les slots disponibles uniquement.</div>';
+        html += '<div class="fr-warn">' + missing + ' price slot(s) missing out of 96: ' +
+          'peak/off-peak averages are computed on available slots only.</div>';
       }
 
       // ── Courbe DA
-      html += sectionOpen('Courbe day-ahead FR',
-        fmtDateLong(d0) + ' \u00B7 96 pas de 15 min \u00B7 ENTSO-E',
+      html += sectionOpen('FR day-ahead curve',
+        fmtDateLong(d0) + ' \u00B7 96 \u00D7 15min slots \u00B7 ENTSO-E',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'da\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-da', 300);
       html += sectionClose();
 
       // ── Mix de generation
-      html += sectionOpen('Mix de generation FR',
-        'Puissance par filiere \u00B7 prix DA en axe secondaire',
+      html += sectionOpen('FR generation mix',
+        'Power by fuel \u00B7 DA price on secondary axis',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'mix\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-mix', 320);
       html += sectionClose();
 
       // ── Table mix + capture du jour
-      html += sectionOpen('Synthese filieres', 'Puissance moyenne, part du mix et valeur captee sur la journee');
+      html += sectionOpen('Fuel summary', 'Average power, mix share and captured value over the day');
       html += '<div class="table-wrap"><table class="fr-table"><thead><tr>' +
-        '<th style="text-align:left">Filiere</th>' +
-        '<th>MW moyen</th><th>Part mix</th><th>Prix capte</th><th>Capture rate</th>' +
+        '<th style="text-align:left">Fuel</th>' +
+        '<th>Avg MW</th><th>Mix share</th><th>Captured price</th><th>Capture rate</th>' +
         '</tr></thead><tbody>';
 
       var totals = [];
@@ -530,7 +530,7 @@
         };
       });
       mixDs.push({
-        label: 'Prix DA',
+        label: 'DA Price',
         data: prices,
         type: 'line',
         borderColor: '#FFFFFF',
@@ -575,11 +575,11 @@
     if (!host) return;
 
     var n = S.cannibWindow;
-    host.innerHTML = loadingBlock('Chargement de ' + n + ' journees FR (0/' + n + ')...');
+    host.innerHTML = loadingBlock('Loading ' + n + ' journees FR (0/' + n + ')...');
 
     loadDailyRange(S.date, n, function (done, total) {
       var el = host.querySelector('.fr-loading');
-      if (el) el.textContent = 'Chargement de ' + total + ' journees FR (' + done + '/' + total + ')...';
+      if (el) el.textContent = 'Loading ' + total + ' journees FR (' + done + '/' + total + ')...';
     }).then(function (days) {
       var rows = [];
       for (var i = 0; i < days.length; i++) {
@@ -599,7 +599,7 @@
       }
 
       if (!rows.length) {
-        host.innerHTML = '<div class="fr-empty">Aucune journee exploitable sur la fenetre.</div>';
+        host.innerHTML = '<div class="fr-empty">No usable day in this window.</div>';
         return;
       }
 
@@ -620,7 +620,7 @@
       var html = '';
 
       html += '<div class="fr-toolbar">' +
-        '<span class="fr-toolbar-label">Fenetre</span>' +
+        '<span class="fr-toolbar-label">Window</span>' +
         [7, 30, 90].map(function (w) {
           return '<button class="pk-gf-btn' + (w === n ? ' active' : '') +
             '" onclick="FRDash.setCannibWindow(' + w + ')">' + w + 'J</button>';
@@ -629,38 +629,38 @@
         '</div>';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
-      html += kpiCard('Base FR', num(aggBase, 2), '\u20AC/MWh', 'moyenne simple sur la fenetre');
-      html += kpiCard('Prix capte solaire', aggS && aggS.capturePrice !== null ? num(aggS.capturePrice, 2) : '--',
-        '\u20AC/MWh', 'pondere par la production');
-      html += kpiCard('Capture rate solaire', aggS && aggS.captureRate !== null ? num(aggS.captureRate, 1) : '--',
-        '%', aggS && aggS.captureRate !== null ? (aggS.captureRate < 100 ? 'decote vs base' : 'prime vs base') : '',
+      html += kpiCard('Base FR', num(aggBase, 2), '\u20AC/MWh', 'simple average over the window');
+      html += kpiCard('Solar captured price', aggS && aggS.capturePrice !== null ? num(aggS.capturePrice, 2) : '--',
+        '\u20AC/MWh', 'weighted by production');
+      html += kpiCard('Solar capture rate', aggS && aggS.captureRate !== null ? num(aggS.captureRate, 1) : '--',
+        '%', aggS && aggS.captureRate !== null ? (aggS.captureRate < 100 ? 'discount vs base' : 'prime vs base') : '',
         aggS && aggS.captureRate !== null ? (aggS.captureRate < 100 ? 'down' : 'up') : 'flat');
-      html += kpiCard('Prix capte eolien', aggW && aggW.capturePrice !== null ? num(aggW.capturePrice, 2) : '--',
-        '\u20AC/MWh', 'pondere par la production');
-      html += kpiCard('Capture rate eolien', aggW && aggW.captureRate !== null ? num(aggW.captureRate, 1) : '--',
-        '%', aggW && aggW.captureRate !== null ? (aggW.captureRate < 100 ? 'decote vs base' : 'prime vs base') : '',
+      html += kpiCard('Wind captured price', aggW && aggW.capturePrice !== null ? num(aggW.capturePrice, 2) : '--',
+        '\u20AC/MWh', 'weighted by production');
+      html += kpiCard('Wind capture rate', aggW && aggW.captureRate !== null ? num(aggW.captureRate, 1) : '--',
+        '%', aggW && aggW.captureRate !== null ? (aggW.captureRate < 100 ? 'discount vs base' : 'prime vs base') : '',
         aggW && aggW.captureRate !== null ? (aggW.captureRate < 100 ? 'down' : 'up') : 'flat');
-      html += kpiCard('Heures negatives', num(totalNeg, 1), 'h', 'cumul sur la fenetre',
+      html += kpiCard('Negative hours', num(totalNeg, 1), 'h', 'cumulative over the window',
         totalNeg > 0 ? 'down' : 'flat');
       html += '</div>';
 
-      html += sectionOpen('Capture rate journalier',
-        'Prix capte / base FR \u00B7 100% = pas de decote \u00B7 fenetre ' + n + 'J',
+      html += sectionOpen('Daily capture rate',
+        'Captured price / FR base \u00B7 100% = no discount \u00B7 window ' + n + 'J',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'cap\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-capture', 300);
       html += sectionClose();
 
       html += sectionOpen('Profil horaire moyen',
-        'Prix DA moyen et production solaire / eolienne moyenne par slot sur la fenetre',
+        'Average DA price and average solar/wind production per slot over the window',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'prof\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-profile', 300);
       html += sectionClose();
 
-      html += sectionOpen('Detail journalier', 'Base, capture et heures negatives, jour par jour');
+      html += sectionOpen('Daily detail', 'Base, capture and negative hours, day by day');
       html += '<div class="table-wrap"><table class="fr-table"><thead><tr>' +
         '<th style="text-align:left">Date</th><th>Base</th>' +
-        '<th>Capt. solaire</th><th>CR solaire</th>' +
-        '<th>Capt. eolien</th><th>CR eolien</th><th>H. neg.</th>' +
+        '<th>Solar capt.</th><th>Solar CR</th>' +
+        '<th>Wind capt.</th><th>Wind CR</th><th>Neg. h</th>' +
         '</tr></thead><tbody>';
       for (var t = rows.length - 1; t >= 0; t--) {
         var row = rows[t];
@@ -687,9 +687,9 @@
         data: {
           labels: rows.map(function (r) { return r.date.slice(5); }),
           datasets: [
-            { label: 'Solaire', data: rows.map(function (r) { return r.solar ? r.solar.captureRate : null; }),
+            { label: 'Solar', data: rows.map(function (r) { return r.solar ? r.solar.captureRate : null; }),
               borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
-            { label: 'Eolien', data: rows.map(function (r) { return r.wind ? r.wind.captureRate : null; }),
+            { label: 'Wind', data: rows.map(function (r) { return r.wind ? r.wind.captureRate : null; }),
               borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0, fill: false, spanGaps: true }
           ]
         },
@@ -699,7 +699,7 @@
           scales: {
             x: { grid: { color: 'rgba(255,255,255,0.04)' },
                  ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 14 } },
-            y: axisStyle('% de la base')
+            y: axisStyle('% of base')
           }
         }
       });
@@ -722,11 +722,11 @@
         data: {
           labels: plabels,
           datasets: [
-            { type: 'line', label: 'Prix DA moyen', data: avgP, borderColor: '#FFFFFF',
+            { type: 'line', label: 'Average DA price', data: avgP, borderColor: '#FFFFFF',
               borderWidth: 2, pointRadius: 0, tension: 0, fill: false, yAxisID: 'y1' },
-            { type: 'bar', label: 'Solaire moyen', data: avgS, backgroundColor: 'rgba(251,191,36,0.55)',
+            { type: 'bar', label: 'Average solar', data: avgS, backgroundColor: 'rgba(251,191,36,0.55)',
               borderWidth: 0, yAxisID: 'y', stack: 'g', barPercentage: 1, categoryPercentage: 1 },
-            { type: 'bar', label: 'Eolien moyen', data: avgW, backgroundColor: 'rgba(20,211,169,0.55)',
+            { type: 'bar', label: 'Average wind', data: avgW, backgroundColor: 'rgba(20,211,169,0.55)',
               borderWidth: 0, yAxisID: 'y', stack: 'g', barPercentage: 1, categoryPercentage: 1 }
           ]
         },
@@ -755,12 +755,12 @@
   function renderHist() {
     var host = $('fr-panel-hist');
     if (!host) return;
-    host.innerHTML = loadingBlock('Chargement de l\'historique FR...');
+    host.innerHTML = loadingBlock('Loading FR history...');
 
     loadSummary().then(function (summary) {
       var all = withRolling(frSeries(summary));
       if (!all.length) {
-        host.innerHTML = '<div class="fr-empty">summary.json indisponible ou sans serie FR.</div>';
+        host.innerHTML = '<div class="fr-empty">summary.json unavailable or no FR series.</div>';
         return;
       }
       var cut = windowCutoff(S.histWindow);
@@ -785,39 +785,39 @@
       var html = '';
 
       html += '<div class="fr-toolbar">' +
-        '<span class="fr-toolbar-label">Periode</span>' +
+        '<span class="fr-toolbar-label">Period</span>' +
         ['1Y', '3Y', '5Y', 'All'].map(function (w) {
           return '<button class="pk-gf-btn' + (w === S.histWindow ? ' active' : '') +
             '" onclick="FRDash.setHistWindow(\'' + w + '\')">' + w + '</button>';
         }).join('') +
-        '<span class="fr-toolbar-note">' + series.length + ' jours \u00B7 depuis ' +
+        '<span class="fr-toolbar-note">' + series.length + ' days \u00B7 since ' +
         (series[0] ? series[0].d : '--') + '</span>' +
         '</div>';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
-      html += kpiCard('Base moyenne', num(avgWin, 2), '\u20AC/MWh', 'sur la periode');
-      html += kpiCard('Dernier jour', num(last.avg, 2), '\u20AC/MWh', last.d || '');
-      html += kpiCard('Moyenne 30j', num(last.roll30, 2), '\u20AC/MWh', 'glissante');
-      html += kpiCard('Moyenne 365j', num(last.roll365, 2), '\u20AC/MWh', 'glissante');
-      html += kpiCard('Heures negatives', num(negWin, 0), 'h', 'cumul periode', negWin > 0 ? 'down' : 'flat');
+      html += kpiCard('Average base', num(avgWin, 2), '\u20AC/MWh', 'over the period');
+      html += kpiCard('Latest day', num(last.avg, 2), '\u20AC/MWh', last.d || '');
+      html += kpiCard('Avg 30d', num(last.roll30, 2), '\u20AC/MWh', 'rolling');
+      html += kpiCard('Avg 365d', num(last.roll365, 2), '\u20AC/MWh', 'rolling');
+      html += kpiCard('Negative hours', num(negWin, 0), 'h', 'period cumulative', negWin > 0 ? 'down' : 'flat');
       html += kpiCard('Amplitude', num(minWin, 0) + ' / ' + num(maxWin, 0), '\u20AC/MWh', 'min / max slot');
       html += '</div>';
 
-      html += sectionOpen('Prix de base FR',
-        'Journalier et moyennes glissantes \u00B7 source summary.json',
+      html += sectionOpen('FR base price',
+        'Daily and rolling averages \u00B7 source summary.json',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'histbase\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-histbase', 320);
       html += sectionClose();
 
-      html += sectionOpen('Heures a prix negatif par mois',
-        'Serie complete depuis ' + (all[0] ? all[0].d.slice(0, 4) : '--') + ' \u00B7 indicateur de cannibalisation',
+      html += sectionOpen('Negative price hours per month',
+        'Full series since ' + (all[0] ? all[0].d.slice(0, 4) : '--') + ' \u00B7 cannibalisation indicator',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'histneg\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-histneg', 280);
       html += sectionClose();
 
-      html += sectionOpen('Synthese mensuelle', '12 derniers mois');
+      html += sectionOpen('Synthese mensuelle', 'last 12 months');
       html += '<div class="table-wrap"><table class="fr-table"><thead><tr>' +
-        '<th style="text-align:left">Mois</th><th>Base</th><th>Heures negatives</th><th>Jours</th>' +
+        '<th style="text-align:left">Month</th><th>Base</th><th>Negative hours</th><th>Days</th>' +
         '</tr></thead><tbody>';
       var lastMonths = months.slice(-12).reverse();
       for (var k = 0; k < lastMonths.length; k++) {
@@ -839,11 +839,11 @@
         data: {
           labels: series.map(function (r) { return r.d; }),
           datasets: [
-            { label: 'Base journaliere', data: series.map(function (r) { return r.avg; }),
+            { label: 'Daily base', data: series.map(function (r) { return r.avg; }),
               borderColor: 'rgba(20,211,169,0.35)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false },
-            { label: 'Moyenne 30j', data: series.map(function (r) { return r.roll30; }),
+            { label: 'Avg 30d', data: series.map(function (r) { return r.roll30; }),
               borderColor: '#14D3A9', borderWidth: 2, pointRadius: 0, tension: 0, fill: false },
-            { label: 'Moyenne 365j', data: series.map(function (r) { return r.roll365; }),
+            { label: 'Avg 365d', data: series.map(function (r) { return r.roll365; }),
               borderColor: '#EE9B00', borderWidth: 2, pointRadius: 0, tension: 0, fill: false }
           ]
         },
@@ -864,7 +864,7 @@
         data: {
           labels: months,
           datasets: [{
-            label: 'Heures negatives',
+            label: 'Negative hours',
             data: months.map(function (m) { return byMonth[m].negH; }),
             backgroundColor: '#ED6965', borderWidth: 0
           }]
@@ -875,7 +875,7 @@
             x: { grid: { display: false },
                  ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" },
                           maxTicksLimit: 16, autoSkip: true } },
-            y: axisStyle('heures / mois')
+            y: axisStyle('hours / month')
           }
         }
       });
@@ -889,16 +889,16 @@
   function renderNeigh() {
     var host = $('fr-panel-neigh');
     if (!host) return;
-    host.innerHTML = loadingBlock('Chargement des spreads FR...');
+    host.innerHTML = loadingBlock('Loading FR spreads...');
 
     loadSummary().then(function (summary) {
       if (!summary || !summary.zones) {
-        host.innerHTML = '<div class="fr-empty">summary.json indisponible.</div>';
+        host.innerHTML = '<div class="fr-empty">summary.json unavailable.</div>';
         return;
       }
       var frAll = withRolling(frSeries(summary));
       if (!frAll.length) {
-        host.innerHTML = '<div class="fr-empty">Serie FR absente de summary.json.</div>';
+        host.innerHTML = '<div class="fr-empty">FR series missing from summary.json.</div>';
         return;
       }
       var cut = windowCutoff(S.neighWindow);
@@ -928,17 +928,17 @@
       var html = '';
 
       html += '<div class="fr-toolbar">' +
-        '<span class="fr-toolbar-label">Periode</span>' +
+        '<span class="fr-toolbar-label">Period</span>' +
         ['1Y', '3Y', '5Y', 'All'].map(function (w) {
           return '<button class="pk-gf-btn' + (w === S.neighWindow ? ' active' : '') +
             '" onclick="FRDash.setNeighWindow(\'' + w + '\')">' + w + '</button>';
         }).join('') +
-        '<span class="fr-toolbar-note">spread = base FR moins base zone \u00B7 valeur positive = FR plus cher</span>' +
+        '<span class="fr-toolbar-note">spread = FR base minus zone base \u00B7 positive value = FR more expensive</span>' +
         '</div>';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
       var frAvg = mean(fr.map(function (r) { return r.avg; }));
-      html += kpiCard('Base FR', num(frAvg, 2), '\u20AC/MWh', 'moyenne periode');
+      html += kpiCard('Base FR', num(frAvg, 2), '\u20AC/MWh', 'period average');
       spreadSeries.forEach(function (sp) {
         var m = mean(sp.data);
         html += kpiCard('Spread FR-' + sp.nb.label, num(m, 2), '\u20AC/MWh',
@@ -948,14 +948,14 @@
       html += '</div>';
 
       html += sectionOpen('Spread FR vs zones adjacentes',
-        'Base journaliere FR moins base journaliere de la zone \u00B7 summary.json',
+        'FR daily base minus zone daily base \u00B7 summary.json',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'spread\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-spread', 320);
       html += sectionClose();
 
-      html += sectionOpen('Positionnement FR', 'Base moyenne et ecart, sur la periode selectionnee');
+      html += sectionOpen('Positionnement FR', 'Average base and spread, over the selected period');
       html += '<div class="table-wrap"><table class="fr-table"><thead><tr>' +
-        '<th style="text-align:left">Zone</th><th>Base</th><th>Spread vs FR</th><th>Jours communs</th>' +
+        '<th style="text-align:left">Zone</th><th>Base</th><th>Spread vs FR</th><th>Common days</th>' +
         '</tr></thead><tbody>';
       html += '<tr><td class="fr-td-label"><span class="fr-flag">\uD83C\uDDEB\uD83C\uDDF7</span>FR</td>' +
         '<td class="fr-td-num">' + num(frAvg, 2) + '</td><td class="fr-td-num">--</td>' +
@@ -1020,13 +1020,13 @@
   function renderMarket() {
     var host = $('fr-panel-market');
     if (!host) return;
-    host.innerHTML = loadingBlock('Chargement des donnees de marche FR...');
+    host.innerHTML = loadingBlock('Loading FR market data...');
 
     Promise.all([loadFrMarket(), loadFrMarketSeries()]).then(function (res) {
       var snap = res[0], series = res[1];
       if (!snap || !series) {
-        host.innerHTML = '<div class="fr-empty">data/fr_market.json ou fr_market_series.json indisponible. ' +
-          'Lancer scripts/fetch_fr_market.py.</div>';
+        host.innerHTML = '<div class="fr-empty">data/fr_market.json or fr_market_series.json unavailable. ' +
+          'Run scripts/fetch_fr_market.py.</div>';
         return;
       }
 
@@ -1042,20 +1042,20 @@
       html += kpiCard('Forward ' + (y2 ? y2.contract : 'Y+2'), num(y2 && y2.value, 2), '€/MWh',
         y2 && y2.varD1Pct !== null && y2.varD1Pct !== undefined ? (y2.varD1Pct >= 0 ? '+' : '') + num(y2.varD1Pct, 2) + '% D-1' : '',
         y2 && y2.varD1Pct > 0 ? 'up' : (y2 && y2.varD1Pct < 0 ? 'down' : 'flat'));
-      html += kpiCard('Nucleaire dispo', num(snap.nuclearCapacity && snap.nuclearCapacity.actualMW, 0), 'MW',
+      html += kpiCard('Nuclear avail.', num(snap.nuclearCapacity && snap.nuclearCapacity.actualMW, 0), 'MW',
         snap.nuclearCapacityDate || '');
-      html += kpiCard('Nucleaire previsionnel', num(snap.nuclearCapacity && snap.nuclearCapacity.forecastMW, 0), 'MW',
+      html += kpiCard('Nuclear forecast', num(snap.nuclearCapacity && snap.nuclearCapacity.forecastMW, 0), 'MW',
         'J+1');
       html += '</div>';
 
       if (snap.marketInsightsHtml) {
-        html += sectionOpen('Analyse de marche', 'SEFE Energy · ' + (snap.marketInsightsDate || ''));
+        html += sectionOpen('Market analysis', 'SEFE Energy · ' + (snap.marketInsightsDate || ''));
         html += '<div class="fr-market-insights">' + snap.marketInsightsHtml + '</div>';
         html += sectionClose();
       }
 
-      html += sectionOpen('Courbe forward FR (base)',
-        'Snapshot du jour · M+1 a Y+3 · source SEFE cockpit',
+      html += sectionOpen('FR forward curve (base)',
+        'Today\'s snapshot · M+1 to Y+3 · source SEFE cockpit',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'fwdcurve\')">↺ Reset</button>');
       html += chartBox('fr-chart-fwdcurve', 280);
       html += sectionClose();
@@ -1066,21 +1066,21 @@
           return '<button class="pk-gf-btn' + (t === S.marketTenor ? ' active' : '') +
             '" onclick="FRDash.setMarketTenor(\'' + t + '\')">' + t + '</button>';
         }).join('') +
-        '<span class="fr-toolbar-label" style="margin-left:14px">Periode</span>' +
+        '<span class="fr-toolbar-label" style="margin-left:14px">Period</span>' +
         ['3M', '6M', '1Y', '3Y', '5Y', 'All'].map(function (w) {
           return '<button class="pk-gf-btn' + (w === S.marketWindow ? ' active' : '') +
             '" onclick="FRDash.setMarketWindow(\'' + w + '\')">' + w + '</button>';
         }).join('') +
         '</div>';
 
-      html += sectionOpen('Historique forward ' + S.marketTenor,
-        'Evolution du prix du contrat courant pour ce tenor · depuis qu\'il est cote',
+      html += sectionOpen('Forward history ' + S.marketTenor,
+        'Price trend of the current contract for this tenor · since it started trading',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'fwdhist\')">↺ Reset</button>');
       html += chartBox('fr-chart-fwdhist', 280);
       html += sectionClose();
 
-      html += sectionOpen('Nucleaire disponible : reel vs previsionnel',
-        'Capacite nucleaire francaise · source SEFE cockpit',
+      html += sectionOpen('Available nuclear: actual vs forecast',
+        'French nuclear capacity · source SEFE cockpit',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'nuc\')">↺ Reset</button>');
       html += chartBox('fr-chart-nuc', 260);
       html += sectionClose();
@@ -1097,7 +1097,7 @@
         type: 'line',
         data: {
           labels: curveLabels,
-          datasets: [{ label: 'Prix forward FR base', data: curveValues, borderColor: '#14D3A9',
+          datasets: [{ label: 'FR base forward price', data: curveValues, borderColor: '#14D3A9',
             backgroundColor: 'rgba(20,211,169,0.12)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#14D3A9',
             tension: 0, fill: true }]
         },
@@ -1145,9 +1145,9 @@
         data: {
           labels: hDates,
           datasets: [
-            { label: 'Reel', data: nucActual, borderColor: '#7B4B9C', borderWidth: 1.5,
+            { label: 'Actual', data: nucActual, borderColor: '#7B4B9C', borderWidth: 1.5,
               pointRadius: 0, tension: 0, fill: false, spanGaps: true },
-            { label: 'Previsionnel', data: nucForecast, borderColor: '#EE9B00', borderWidth: 1.5,
+            { label: 'Forecast', data: nucForecast, borderColor: '#EE9B00', borderWidth: 1.5,
               borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
           ]
         },
@@ -1198,7 +1198,7 @@
     start.then(function (d) {
       if (!d) {
         var body = $('fr-body');
-        if (body) body.innerHTML = '<div class="fr-empty">Aucune journee FR trouvee dans data/history/daily/ sur les 10 derniers jours.</div>';
+        if (body) body.innerHTML = '<div class="fr-empty">No FR day found in data/history/daily/ over the last 10 days.</div>';
         return;
       }
       S.date = d;

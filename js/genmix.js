@@ -262,7 +262,7 @@ async function _gmBoardJ1Deltas(frNow, euNow, zones, baseDs) {
   const setDelta = (metaId, valId, now, yes, kind) => {
     const meta = document.getElementById(metaId);
     const card = document.getElementById(valId) ? document.getElementById(valId).closest('.kpi-card') : null;
-    if (now == null || yes == null || !isFinite(yes) || yes === 0) { if (meta) meta.innerHTML = '<span style="color:var(--tx4)">— pas de réf J-1</span>'; return; }
+    if (now == null || yes == null || !isFinite(yes) || yes === 0) { if (meta) meta.innerHTML = '<span style="color:var(--tx4)">— no J-1 reference</span>'; return; }
     const dPct = (now - yes) / yes * 100;
     const up = dPct >= 0;
     const good = (kind === 'co2') ? !up : up; // ren/total: hausse = vert ; co2: baisse = vert
@@ -339,7 +339,7 @@ function renderGmMain() {
     const tb = document.getElementById('gm-table-tbody');
     if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Pas de données GenMix archivées pour ${window._gmHistDate}. Lancer le backfill (with_genmix) pour cette date.</td></tr>`;
     const lbl = document.getElementById('gm-table-label');
-    if (lbl) lbl.textContent = `Generation mix · ${window._gmHistDate} · aucune donnée archivée`;
+    if (lbl) lbl.textContent = `Generation mix · ${window._gmHistDate} · no archived data`;
     return;
   }
   const data = window._gmBoardData || window._genmixData;
@@ -590,7 +590,7 @@ function _gmOpenRow(zone) {
           </div>
           <div class="pk-tabbar-right">
             <div id="gm-drill-tab-chips" class="pk-tabbar-chips"></div>
-            <button onclick="gmDrillFullscreen('daily')" title="Plein écran" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
+            <button onclick="gmDrillFullscreen('daily')" title="Fullscreen" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
           </div>
         </div>
 
@@ -788,7 +788,7 @@ function _gmDrillDispatchRender(zone) {
   // Stack tab → eCO2mix-style production stack (reads the daily JSON, async)
   if (tab === 'stack') {
     const c = document.getElementById('gm-drill-content');
-    if (c) c.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Chargement du stack…</div>';
+    if (c) c.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Loading stack…</div>';
     if (typeof window.renderGenMixStack === 'function') window.renderGenMixStack('gm-drill-content', zone, window._gmHistDate || null);
     const b = document.getElementById('gm-drill-banner-anchor'); if (b) b.innerHTML = '';
     return;
@@ -931,7 +931,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
     datasets.push({ label: 'P0–P100', data: env.p100, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.06)', pointRadius: 0, fill: '-1', tension: 0 });
     datasets.push({ label: '__p5', data: env.p5, borderColor: 'transparent', pointRadius: 0, fill: false, tension: 0 });
     datasets.push({ label: 'P5–P95', data: env.p95, borderColor: 'transparent', backgroundColor: 'rgba(20,211,169,0.14)', pointRadius: 0, fill: '-1', tension: 0 });
-    datasets.push({ label: 'P50 (médiane 30j)', data: env.p50, borderColor: '#7A93AB', borderWidth: 1.25, borderDash: [2, 3], pointRadius: 0, fill: false, tension: 0 });
+    datasets.push({ label: 'P50 (30d median)', data: env.p50, borderColor: '#7A93AB', borderWidth: 1.25, borderDash: [2, 3], pointRadius: 0, fill: false, tension: 0 });
   }
 
   datasets.push({
@@ -1173,9 +1173,9 @@ async function _gmRenderMixReal(zone, dateStr, fallbackMix, fallbackSt) {
     mix.total = STACK.reduce((s, f) => s + mix[f], 0);
     const ren = mix.wind + mix.solar + mix.hydro + mix.biomass;
     st = { total: mix.total, renPct: mix.total ? ren / mix.total * 100 : 0, fosPct: mix.total ? mix.fossil / mix.total * 100 : 0, ren, nuc: mix.nuclear, fos: mix.fossil };
-    srcLabel = 'moyenne du ' + cur.ds;
+    srcLabel = 'average of ' + cur.ds;
   } else {
-    mix = fallbackMix; st = fallbackSt; srcLabel = 'instantané';
+    mix = fallbackMix; st = fallbackSt; srcLabel = 'snapshot';
   }
 
   if (mode === 'donut') { document.getElementById('gm-drill-mix-canvas').style.display = 'block'; document.getElementById('gm-drill-mix-treemap').style.display = 'none'; _gmBuildDonut(mix, st, 'gm-drill-mix-canvas', false); }
@@ -2744,10 +2744,10 @@ window.gmSetHistDate = function (ds) {
       +   '<div style="flex:1 1 58%;min-width:300px;position:relative;height:340px"><canvas id="gms-canvas" style="width:100%;height:100%;display:block"></canvas></div>'
       +   '<div class="gms-panel" style="flex:1 1 34%;min-width:230px"><div class="gms-panel-main"><div class="gms-panel-hd">Mix · <b class="gms-ptime">—</b></div><div class="gms-list"></div></div><div class="gms-vbar"></div></div>'
       + '</div>'
-      + '<div class="gms-tbl-lab">Détail par filière · journée' + (isReal ? '' : ' · (données simulées — pas d\'arrays réels ce jour)') + '</div>'
+      + '<div class="gms-tbl-lab">Breakdown by fuel · day' + (isReal ? '' : ' · (simulated data — no real arrays for this day)') + '</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
       +   '<thead><tr>'
-      +     ['Filière', 'Instant', 'Part', 'Min j.', 'Max j.', 'Moy j.', 'CO₂'].map((h, i) => '<th style="padding:4px 8px;text-align:' + (i === 0 ? 'left' : 'right') + ';color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">' + h + '</th>').join('')
+      +     ['Fuel', 'Now', 'Share', 'Day min', 'Day max', 'Day avg', 'CO₂'].map((h, i) => '<th style="padding:4px 8px;text-align:' + (i === 0 ? 'left' : 'right') + ';color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">' + h + '</th>').join('')
       +   '</tr></thead><tbody></tbody></table>'
       + '</div>';
 
@@ -2762,7 +2762,7 @@ window.gmSetHistDate = function (ds) {
     const STAT = {}; STACK.forEach(f => { const a = DATA[f].slice(0, nReal); STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
     if (isReal && nReal < N) {
       const cm = Math.round(nReal / N * 24 * 60);
-      const note = ' · données ENTSO-E jusqu\'à ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (jour en cours)';
+      const note = ' · ENTSO-E data up to ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (day in progress)';
       const lab = wrap.querySelector('.gms-tbl-lab'); if (lab) lab.insertAdjacentHTML('beforeend', '<span style="color:var(--tx4)">' + note + '</span>');
     }
 

@@ -41,7 +41,7 @@ function parseGoDate(str) {
 }
 function fmtGoDate(d) {
   if (!(d instanceof Date) || isNaN(d)) return '';
-  return d.toLocaleDateString('fr-FR', { month:'short', year:'2-digit' });
+  return d.toLocaleDateString('en-GB', { month:'short', year:'2-digit' });
 }
 function parseGoCSV(text) {
   const lines = String(text).replace(/\r/g,'').split('\n').filter(l => l.trim().length);
@@ -178,7 +178,7 @@ function goNoData(canvasId, msg) {
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.save();
   ctx.fillStyle = '#7A93AB'; ctx.font = "12px 'JetBrains Mono', monospace"; ctx.textAlign = 'center';
-  ctx.fillText(msg || 'En attente de données Commerg', cv.width/2, (cv.height||120)/2);
+  ctx.fillText(msg || 'Waiting on Commerg data', cv.width/2, (cv.height||120)/2);
   ctx.restore();
 }
 
@@ -197,7 +197,7 @@ function setGoProd(prod, btn) {
   goProd = prod;
   document.querySelectorAll('#go-prod-tabs .day-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const t1 = document.getElementById('go-indic-title'); if (t1) t1.textContent = prod + ' — Prix indicatifs (€/MWh)';
+  const t1 = document.getElementById('go-indic-title'); if (t1) t1.textContent = prod + ' — Price indications (€/MWh)';
   const t2 = document.getElementById('go-cal1-title');  if (t2) t2.textContent = prod + ' — CAL+1 EU price indications (€/MWh)';
   renderGOKPIs();
   drawGoIndicChart();
@@ -228,7 +228,7 @@ function renderGOKPIs() {
     {l:'Dernier Bid', v:fmt(last.bid), sub, cls:'up'},
     {l:'Dernier Ask', v:fmt(last.ask), sub, cls:'down'},
     {l:'Mid Price',   v:fmt(last.mid), sub, cls:''},
-    {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(4)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs sem. préc.', cls:(d==null?'':(d>=0?'up':'down'))},
+    {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(4)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs prev. week', cls:(d==null?'':(d>=0?'up':'down'))},
   ].map(k => `<div class="kpi-card">
     <div class="kpi-label">${k.l}</div>
     <div class="kpi-value ${k.cls}" style="font-size:17px">${k.v}</div>
@@ -244,7 +244,7 @@ function renderGOKPIs() {
 function drawGoIndicChart() {
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
   const real = GO_REAL && GO_REAL.byKey[key];
-  if (!real || !real.years || !real.years.length) { goNoData('go-indic-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!real || !real.years || !real.years.length) { goNoData('go-indic-canvas', 'No Commerg data loaded'); return; }
 
   // Union of all dates across vintage years → shared x-axis
   const allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
@@ -287,7 +287,7 @@ function drawGoIndicChart() {
 function _goFsContent() {
   const kpiEl = document.getElementById('go-kpi-strip');
   return {
-    title: goProd + ' — Prix indicatifs (€/MWh)',
+    title: goProd + ' — Price indications (€/MWh)',
     subtitle: 'Commerg weekly assessment',
     kpis: kpiEl ? { html: '<div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);width:100%">' + kpiEl.innerHTML + '</div>' } : null,
   };
@@ -299,7 +299,7 @@ function drawGoCal1Chart() {
   const hist = getGOHistory();
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
   const wk = hist[key];
-  if (!wk || !wk.data) { goNoData('go-cal1-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!wk || !wk.data) { goNoData('go-cal1-canvas', 'No Commerg data loaded'); return; }
 
   const n = goHistPeriod;
   const len = wk.data.length, take = Math.min(n, len), from = len - take;
@@ -334,7 +334,7 @@ function drawGoCalChart() {
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
   const real = GO_REAL && GO_REAL.byKey[key];
   const fwd = real && real.fwd;
-  if (!fwd || !Object.keys(fwd).length) { goNoData('go-cal-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!fwd || !Object.keys(fwd).length) { goNoData('go-cal-canvas', 'No Commerg data loaded'); return; }
   // Live curve only (current year onward) — past vintages are expired/settled,
   // not part of a "forward curve" even though their last quote is still on file.
   const curYear = GO_REAL.asOf ? GO_REAL.asOf.getFullYear() : new Date().getFullYear();
@@ -372,7 +372,7 @@ function drawGoSpreadChart() {
   const hist = getGOHistory();
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
   const wk = hist[key];
-  if (!wk || !wk.spreadArr || !wk.spreadArr.some(v => v != null)) { goNoData('go-spread-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!wk || !wk.spreadArr || !wk.spreadArr.some(v => v != null)) { goNoData('go-spread-canvas', 'No Commerg data loaded'); return; }
 
   const n = goHistPeriod;
   const len = wk.spreadArr.length, take = Math.min(n, len), from = len - take;
@@ -414,12 +414,12 @@ function renderGOFwdTable() {
     const wow = d == null ? '–' : (d >= 0 ? '+' : '') + d.toFixed(4);
     return `<tr><td>${label}</td>${cells}<td>${spread}</td><td style="color:${d==null?'var(--text3)':(d>=0?'var(--up)':'var(--dn)')}">${wow}</td></tr>`;
   }).join('');
-  tbody.innerHTML = rows || '<tr><td colspan="11" style="color:var(--text3)">En attente de données Commerg</td></tr>';
+  tbody.innerHTML = rows || '<tr><td colspan="11" style="color:var(--text3)">Waiting on Commerg data</td></tr>';
 }
 
 // ════════════════════════════════════════════════════════════════════
 // FRENCH AUCTIONS (EEX) — data/go_auctions.json, monthly, by technology.
-// Mirrors the reference workbook's "Enchères FR" sheet (chart2/chart3):
+// Mirrors the reference workbook's "FR Auctions" sheet (chart2/chart3):
 // Wind/Solar volume sold + weighted avg price, and total volume auctioned
 // (offered) vs sold (allocated).
 // ════════════════════════════════════════════════════════════════════
@@ -435,7 +435,7 @@ function _goAuctionLabels(auctions) {
   return auctions.map(a => a.auction_month);
 }
 function drawGoAuctionTechChart() {
-  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-tech-canvas', 'Aucune donnée EEX chargée'); return; }
+  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-tech-canvas', 'No EEX data loaded'); return; }
   const auctions = GO_AUCTIONS.auctions;
   const byTech = tech => auctions.map(a => (a.by_technology || []).find(t => t.technology === tech) || null);
   const wind = byTech('Wind'), solar = byTech('Solar');
@@ -448,8 +448,8 @@ function drawGoAuctionTechChart() {
       datasets: [
         { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba(C_WIND,.5), yAxisID:'vol', order:3 },
         { type:'bar',  label:'Solar — Volume (MWh)', data: solar.map(t => t ? t.allocated_mwh : null), backgroundColor: rgba('#FBBF24',.5), yAxisID:'vol', order:4 },
-        { type:'line', label:'Wind — Prix pondéré (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: C_WIND, borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
-        { type:'line', label:'Solar — Prix pondéré (€/GO)', data: solar.map(t => t ? t.price_eur_mwh : null), borderColor: '#FBBF24', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:2 },
+        { type:'line', label:'Wind — Weighted price (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: C_WIND, borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
+        { type:'line', label:'Solar — Weighted price (€/GO)', data: solar.map(t => t ? t.price_eur_mwh : null), borderColor: '#FBBF24', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:2 },
       ]
     },
     options: {
@@ -459,7 +459,7 @@ function drawGoAuctionTechChart() {
         tooltip: { mode:'index', callbacks:{ label: ctx => {
           const v = ctx.raw;
           return v == null ? ctx.dataset.label+': –' :
-            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(4)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('fr-FR')+' MWh';
+            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(4)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('en-GB')+' MWh';
         } } },
       },
       scales: {
@@ -472,7 +472,7 @@ function drawGoAuctionTechChart() {
   setTimeout(()=>{ addFullscreen('go-auct-tech-canvas'); addDownload('go-auct-tech-canvas','go-auctions-tech'); },100);
 }
 function drawGoAuctionVolChart() {
-  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-vol-canvas', 'Aucune donnée EEX chargée'); return; }
+  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) { goNoData('go-auct-vol-canvas', 'No EEX data loaded'); return; }
   const auctions = GO_AUCTIONS.auctions;
   const sum = (a, field) => (a.by_technology || []).reduce((s,t) => s + (t[field] || 0), 0);
   const offered  = auctions.map(a => sum(a, 'offered_mwh'));
@@ -482,14 +482,14 @@ function drawGoAuctionVolChart() {
   mkChart('go-auct-vol-canvas', {
     type: 'line',
     data: { labels, datasets:[
-      { label:'Volume offert (MWh)', data:offered, borderColor:C_TX2, borderWidth:1.5, pointRadius:0, fill:false, tension:0, borderDash:[4,3] },
-      { label:'Volume alloué (MWh)', data:allocated, borderColor:C_UP, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_UP,.08), tension:0 },
+      { label:'Offered volume (MWh)', data:offered, borderColor:C_TX2, borderWidth:1.5, pointRadius:0, fill:false, tension:0, borderDash:[4,3] },
+      { label:'Allocated volume (MWh)', data:allocated, borderColor:C_UP, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_UP,.08), tension:0 },
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':Math.round(ctx.raw).toLocaleString('fr-FR')+' MWh') } },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':Math.round(ctx.raw).toLocaleString('en-GB')+' MWh') } },
         zoom: ZOOM_CFG,
       },
       scales: {
@@ -521,7 +521,7 @@ function drawGoHist() {
   const active = filter === 'all'
     ? Object.entries(hist)
     : Object.entries(hist).filter(([k]) => k === filter);
-  if (!active.length) { goNoData('go-hist-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!active.length) { goNoData('go-hist-canvas', 'No Commerg data loaded'); return; }
 
   const sample = active[0][1];
   let labels;
@@ -561,7 +561,7 @@ function drawGoWoW() {
   const hist = getGOHistory();
   const key = goHistFilter === 'all' ? 'renewable' : goHistFilter;
   const wk = hist[key];
-  if (!wk || !wk.data || wk.data.length < 2) { goNoData('go-wow-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!wk || !wk.data || wk.data.length < 2) { goNoData('go-wow-canvas', 'No Commerg data loaded'); return; }
   const n = Math.min(goHistPeriod, 52);
   const data = wk.data.slice(-n);
   // wk.dates lines up 1:1 with wk.data — was discarded here, leaving the
@@ -595,7 +595,7 @@ function drawGoBox() {
   const hist = getGOHistory();
   const key = goHistFilter === 'all' ? 'renewable' : goHistFilter;
   const wk = hist[key];
-  if (!wk || !wk.data || !wk.data.length) { goNoData('go-box-canvas', 'Aucune donnée Commerg chargée'); return; }
+  if (!wk || !wk.data || !wk.data.length) { goNoData('go-box-canvas', 'No Commerg data loaded'); return; }
   const data = wk.data.slice(-goHistPeriod);
   const dates = (wk.dates || []).slice(-goHistPeriod);
   const chunks = 8, sz = Math.max(1, Math.floor(data.length/chunks));
@@ -623,7 +623,7 @@ function drawGoBox() {
       // and q3. Height alone (the IQR width) was shown; where it sat on the
       // price axis was meaningless and could visually contradict the median bar.
       { label:'Q1–Q3 range', data:q3s.map((v,i)=>(v==null||q1s[i]==null)?null:[q1s[i], v]), backgroundColor:rgba(col,.25), borderWidth:1, borderColor:col, borderRadius:2 },
-      { label:'Médiane', data:medians, backgroundColor:col, borderWidth:0, borderRadius:2, barThickness:4 },
+      { label:'Median', data:medians, backgroundColor:col, borderWidth:0, borderRadius:2, barThickness:4 },
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,

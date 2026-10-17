@@ -93,7 +93,7 @@
     tbody.innerHTML = rows.map((r,i) => {
       const fr = r.code === 'FR';
       const flag = (window.FLAG_MAP && FLAG_MAP[r.code]) || '';
-      return `<tr class="zone-row" data-row-idx="${i}" data-zone="${r.code}" style="cursor:pointer" onclick="toggleCarbonRow(${i},event)" title="Cliquer pour détailler l'heure">
+      return `<tr class="zone-row" data-row-idx="${i}" data-zone="${r.code}" style="cursor:pointer" onclick="toggleCarbonRow(${i},event)" title="Click to drill into the hour">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${fr?'var(--accent)':'var(--tx2)'};text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.45;vertical-align:0;transition:transform 0.15s ease"><polyline points="9 18 15 12 9 6"/></svg>${flag} ${r.code}</td>
       <td style="font-size:11px;color:var(--tx2);text-align:left">${r.name}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${cColor(r.ci)};text-align:right">${r.ci.toFixed(0)}</td>
@@ -160,11 +160,11 @@
         <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window.__carbCharts&&__carbCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
-        ${_kpi('Intensité conso', r.ci.toFixed(0)+' g', cColor(r.ci))}
-        ${_kpi('Intensité prod', r.pi.toFixed(0)+' g', cColor(r.pi))}
-        ${_kpi('Bas-carbone', r.cov.lowCPct.toFixed(0)+' %', 'var(--up)')}
-        ${_kpi('Résiduel est.', res.est!=null?res.est+' g':'n/a', 'var(--warn)')}
-        ${_kpi('Résiduel AIB', res.off!=null?res.off+' g':'n/a', 'var(--up)')}
+        ${_kpi('Cons. intensity', r.ci.toFixed(0)+' g', cColor(r.ci))}
+        ${_kpi('Prod. intensity', r.pi.toFixed(0)+' g', cColor(r.pi))}
+        ${_kpi('Low-carbon', r.cov.lowCPct.toFixed(0)+' %', 'var(--up)')}
+        ${_kpi('Residual est.', res.est!=null?res.est+' g':'n/a', 'var(--warn)')}
+        ${_kpi('Residual AIB', res.off!=null?res.off+' g':'n/a', 'var(--up)')}
       </div>
       <div style="position:relative;height:230px;margin-bottom:14px"><canvas id="carb-chart-${idx}"></canvas></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -193,8 +193,8 @@
     _carbCharts[idx] = new Chart(ctx, {
       type:'line',
       data:{ labels, datasets:[
-        { label:'Intensité conso', data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
-        { label:'Intensité prod', data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
+        { label:'Cons. intensity', data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
+        { label:'Prod. intensity', data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
       ]},
       options:{
         responsive:true, maintainAspectRatio:false, animation:{duration:100},
@@ -226,8 +226,8 @@
     const mix = r.mixByCode, tot = Object.values(mix).reduce((a,b)=>a+(b||0),0)||1;
     const F = window.CARBON_FACTORS || {};
     const rows = Object.keys(mix).filter(k=>mix[k]>0).sort((a,b)=>mix[b]-mix[a]).map(k=>{
-      const f = F[k] || { fr:k, color:'#7A93AB', co2:'?' };
-      return `<tr><td style="padding:3px 8px;color:var(--tx2)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.color};margin-right:6px"></span>${f.fr}</td>
+      const f = F[k] || { label:k, color:'#7A93AB', co2:'?' };
+      return `<tr><td style="padding:3px 8px;color:var(--tx2)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.color};margin-right:6px"></span>${f.label}</td>
         <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${(mix[k]/tot*100).toFixed(0)}%</td>
         <td style="padding:3px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${f.co2}</td></tr>`;
     }).join('');

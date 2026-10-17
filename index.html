@@ -2965,14 +2965,14 @@
           </div>
         </div>
 
-        <!-- "Forward board" · même structure que "Genmix Daily board" :
+        <!-- "Forward board" · same structure as "Genmix Daily board" :
              KPI strip multi-pays + table à une ligne par pays, clic = drill-down
              (KPIs détaillés + sous-onglets de graphs), comme le board Genmix. -->
         <div class="hist-section hist-section-strong" id="hs-prfwd-board">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-board')">
             <div class="hist-section-title">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward board
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-board-meta">M+1 à Y+3 · source SEFE cockpit</span>
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-board-meta">M+1 to Y+3 · source SEFE cockpit</span>
             </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -2984,7 +2984,7 @@
             <div class="table-wrap" id="prfwd-countries-table-wrap">
               <div class="table-header" style="flex-wrap:wrap;gap:8px">
                 <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Marchés power · cliquer une ligne pour le détail</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Power markets · click a row for detail</span>
                 </div>
               </div>
               <table id="prfwd-countries-table" style="font-size:12px">
@@ -2998,19 +2998,19 @@
                   </tr>
                 </thead>
                 <tbody id="prfwd-countries-tbody">
-                  <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Chargement...</td></tr>
+                  <tr class="loading-row"><td colspan="5"><span class="spinner"></span> Loading...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- "Comparaison pays" · un produit choisi, toutes les zones sur le même graph -->
+        <!-- "Country comparison" · one chosen product, all zones on the same chart -->
         <div class="hist-section hist-section-strong" id="hs-prfwd-compare">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-compare')">
             <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Comparaison pays
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Un produit, les 4 zones sur le même graph</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Country comparison
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">One product, all 4 zones on the same chart</span>
             </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -3020,11 +3020,11 @@
               <div style="display:flex;gap:5px;flex-wrap:wrap" id="prfwd-cmp-zone-chips"></div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Contrat</span>
+              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Contract</span>
               <div class="hist-window-btns" id="prfwd-cmp-tenor-btns"></div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Période</span>
+              <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0">Period</span>
               <div class="hist-window-btns" id="prfwd-cmp-window-btns"></div>
               <button class="pk-btn-ghost" style="margin-left:auto" onclick="(function(){var c=HIST.charts['prfwd-chart-compare'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset zoom</button>
             </div>
@@ -3032,7 +3032,7 @@
 
             <div class="table-wrap" id="prfwd-cmp-table-wrap" style="margin-top:14px">
               <div class="table-header">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase" id="prfwd-cmp-table-title">Snapshot du jour</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase" id="prfwd-cmp-table-title">Today's snapshot</span>
               </div>
               <table id="prfwd-cmp-table" style="font-size:12px">
                 <thead>
@@ -3050,11 +3050,11 @@
           </div>
         </div>
 
-        <!-- Analyse de marché (texte, France) -->
+        <!-- Market analysis (text, France) -->
         <div class="hist-section hist-section-strong" id="hs-prfwd-insights">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-insights')">
             <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Analyse de marché
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Market analysis
               <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-insights-date"></span>
             </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -4023,7 +4023,7 @@
             <div class="pk-tabbar-right">
               <!-- Tab-contextual chips (Reference picker for Spread view) -->
               <div id="gmdcz-tab-chips" class="pk-tabbar-chips"></div>
-              <button class="pk-btn-primary" onclick="gmdczFullscreen()" title="Plein écran">⛶ Fullscreen</button>
+              <button class="pk-btn-primary" onclick="gmdczFullscreen()" title="Fullscreen">⛶ Fullscreen</button>
             </div>
           </div>
 
@@ -4183,7 +4183,7 @@
               </div>
               <div class="pk-tabbar-right">
                 <div id="gmhcz-tab-chips" class="pk-tabbar-chips"></div>
-                <button class="pk-btn-primary" onclick="gmhczFullscreen()" title="Plein écran">⛶ Fullscreen</button>
+                <button class="pk-btn-primary" onclick="gmhczFullscreen()" title="Fullscreen">⛶ Fullscreen</button>
               </div>
             </div>
 
@@ -4426,12 +4426,12 @@
         <div id="map-detail" style="width:340px;flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:16px;height:620px;overflow-y:auto">
           <div id="map-detail-placeholder" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--tx3);gap:10px">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
-            <div style="font-size:12px">Clique un pays sur la carte<br>pour voir le détail complet</div>
+            <div style="font-size:12px">Click a country on the map<br>to see the full detail</div>
           </div>
           <div id="map-detail-content" style="display:none">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
               <div style="font-size:14px;font-weight:700" id="map-detail-title">--</div>
-              <button onclick="closeMapDetail()" title="Fermer" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
+              <button onclick="closeMapDetail()" title="Close" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="map-detail-kpis"></div>
             <div style="margin-top:14px">
@@ -4625,7 +4625,7 @@
         <!-- The 4 panels below share one crosshair/tooltip, so fullscreen
              opens the whole group (not addFullscreen() per-canvas, which
              would isolate one panel and break the sync). -->
-        <button class="pk-btn-ghost" onclick="maFullscreenPanels()" title="Plein écran (les 4 graphs synchronisés)">⛶ Plein écran</button>
+        <button class="pk-btn-ghost" onclick="maFullscreenPanels()" title="Fullscreen (all 4 synced panels)">⛶ Fullscreen</button>
       </div>
 
       <!-- Cursor badges -->
@@ -4639,7 +4639,7 @@
         <div id="ma-hover-tooltip" class="ma-hover-tooltip" style="display:none"></div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Prix DA</div><div class="ma-lbl-sub">€/MWh</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">DA Price</div><div class="ma-lbl-sub">€/MWh</div></div>
           <div class="ma-panel-svg-col" style="height:215px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:209px"></canvas></div>
         </div>
 
@@ -4671,7 +4671,7 @@
 
       <!-- Episode cards (auto-detected key moments) -->
       <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">↓ Moments-clés détectés (clic = positionne le crosshair)</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">↓ Key moments detected (click = position the crosshair)</div>
         <div id="ma-episodes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
       </div>
 
@@ -4680,18 +4680,18 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--acc);text-transform:uppercase;font-weight:700">✦ Causal market read</span>
-            <span style="font-size:10px;color:var(--tx3)">— Claude lit la chaîne météo → mix → marginal → prix</span>
+            <span style="font-size:10px;color:var(--tx3)">— Claude reads the chain weather → mix → marginal → price</span>
           </div>
           <button class="pk-btn-primary" id="ma-ai-btn" onclick="maGenerateAI()">✦ Generate causal market read</button>
         </div>
         <div id="ma-ai-content">
-          <div style="color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px">Click pour générer une synthèse causale style note de desk.</div>
+          <div style="color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px">Click to generate a causal synthesis, desk-note style.</div>
         </div>
       </div>
 
       <!-- Data note -->
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
-        <b style="color:#FBBF24">Data status</b> — DA price + wind/solar + mix nucléaire-hydro-fossile = <b style="color:var(--acc)">real ENTSO-E</b>. TTF gas = <b style="color:var(--acc)">real (Yahoo, daily)</b> quand archivé, sinon simulé. EUA/température/nuc dispo/flux = <b style="color:#FBBF24">simulated</b>. Demande = simulée (pas dans le flux ENTSO-E). Spark spread = <code>Power − TTF/0.49 − EUA·0.365</code>.
+        <b style="color:#FBBF24">Data status</b> — DA price + wind/solar + nuclear-hydro-fossil mix = <b style="color:var(--acc)">real ENTSO-E</b>. TTF gas = <b style="color:var(--acc)">real (Yahoo, daily)</b> when archived, simulated otherwise. EUA/temperature/nuclear availability/flows = <b style="color:#FBBF24">simulated</b>. Demand = simulated (not in the ENTSO-E feed). Spark spread = <code>Power − TTF/0.49 − EUA·0.365</code>.
       </div>
     </div>
 
@@ -5100,42 +5100,42 @@
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="page" id="page-carbonintensity">
       <div class="page-header">
-        <div><div class="page-title">Carbon Intensity</div><div class="page-subtitle">Intensité carbone de la production et de la consommation · gCO2eq/kWh · ENTSO-E</div></div>
+        <div><div class="page-title">Carbon Intensity</div><div class="page-subtitle">Carbon intensity of production and consumption · gCO2eq/kWh · ENTSO-E</div></div>
       </div>
 
       <div class="hist-section hist-section-strong" id="carb-board-section">
         <div class="hist-section-header open">
           <div class="hist-section-title">
             <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
-            Board carbone · intensité &amp; couverture
+            Carbon board · intensity &amp; coverage
             <span id="carb-board-meta" style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">snapshot live</span>
           </div>
           <!-- contrôles : période (miroir gmh) + zones (filtre global existant) -->
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em">Période</span>
+            <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em">Period</span>
             <input type="date" id="carb-date-from" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
             <span style="color:var(--tx4)">→</span>
             <input type="date" id="carb-date-to" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
-            <button id="carb-date-clear" class="pk-btn-ghost" title="Revenir au snapshot live">✕</button>
-            <button id="carb-zone-btn" class="pk-btn-ghost" onclick="if(window.toggleZoneFilterPanel)toggleZoneFilterPanel()" title="Filtrer les zones (filtre global partagé)">Zones</button>
+            <button id="carb-date-clear" class="pk-btn-ghost" title="Back to live snapshot">✕</button>
+            <button id="carb-zone-btn" class="pk-btn-ghost" onclick="if(window.toggleZoneFilterPanel)toggleZoneFilterPanel()" title="Filter zones (shared global filter)">Zones</button>
           </div>
         </div>
         <div class="hist-section-body open">
           <table style="width:100%;font-size:11px;border-collapse:collapse">
             <thead><tr>
               <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Zone</th>
-              <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Pays</th>
-              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Intensité de consommation (après imports/exports)">Conso g</th>
-              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Intensité du mix produit dans la zone">Prod g</th>
-              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Nucléaire + renouvelables">Bas-C</th>
-              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">EnR</th>
-              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Fossile</th>
+              <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Country</th>
+              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Consumption intensity (after imports/exports)">Cons gCO2</th>
+              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Intensity of the mix produced in the zone">Prod gCO2</th>
+              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)" title="Nuclear + renewables">Low-C</th>
+              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">RES</th>
+              <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Fossil</th>
             </tr></thead>
             <tbody id="carb-board-body">
-              <tr class="loading-row"><td colspan="7" style="padding:14px;text-align:center;color:var(--tx3)">Chargement…</td></tr>
+              <tr class="loading-row"><td colspan="7" style="padding:14px;text-align:center;color:var(--tx3)">Loading...</td></tr>
             </tbody>
           </table>
-          <div style="font-size:10px;color:var(--tx4);margin-top:8px">Clique une ligne pour la drill : profil horaire (intensité conso/prod, lignes moy période &amp; N-1, NOW), mix par filière, flux, et mix résiduel estimé vs AIB. Zones = filtre global. Période vide = snapshot live.</div>
+          <div style="font-size:10px;color:var(--tx4);margin-top:8px">Click a row to drill in: hourly profile (cons/prod intensity, period avg &amp; N-1 lines, NOW), mix by fuel, flows, and estimated residual mix vs AIB. Zones = global filter. Empty period = live snapshot.</div>
         </div>
       </div>
     </div>
@@ -5158,7 +5158,7 @@
 
       <!-- Produit selector · only products Commerg actually quotes -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Produit</span>
+        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Product</span>
         <div style="display:flex;gap:5px;flex-wrap:wrap" id="go-prod-tabs">
           <button class="day-tab active" onclick="setGoProd('GO AIB Renewable',this)">Renewable</button>
           <button class="day-tab" onclick="setGoProd('GO AIB Wind',this)">Wind</button>
@@ -5172,7 +5172,7 @@
       <!-- Chart 1 : GOs Price Indications — one line per vintage year (Cal-25…28) -->
       <div class="chart-container" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="table-title" id="go-indic-title">GO AIB Renewable — Prix indicatifs (€/MWh)</span>
+          <span class="table-title" id="go-indic-title">GO AIB Renewable — Price indications (€/MWh)</span>
           <span class="source-badge">Commerg weekly</span>
         </div>
         <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-indic-canvas" style="width:100%;height:260px"></canvas></div>
@@ -5201,7 +5201,7 @@
         </div>
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="table-title">Spread Bid/Ask — évolution (€/MWh)</span>
+            <span class="table-title">Spread Bid/Ask — trend (€/MWh)</span>
           </div>
           <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
@@ -5226,18 +5226,18 @@
 
       <!-- ═══ Enchères France (EEX) — données publiques mensuelles ═══ -->
       <div class="page-header" style="margin-bottom:14px">
-        <div><div class="page-title" style="font-size:16px">Enchères France — EEX</div><div class="page-subtitle">Résultats mensuels publics · par technologie · depuis 2019</div></div>
+        <div><div class="page-title" style="font-size:16px">France Auctions — EEX</div><div class="page-subtitle">Public monthly results · by technology · since 2019</div></div>
       </div>
       <div class="chart-container" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="table-title">Volume vendu &amp; prix moyen pondéré — Wind vs Solar</span>
+          <span class="table-title">Volume sold &amp; weighted average price — Wind vs Solar</span>
           <span class="source-badge">EEX monthly auctions</span>
         </div>
         <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-auct-tech-canvas" style="width:100%;height:260px"></canvas></div>
       </div>
       <div class="chart-container">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="table-title">Volume total — offert vs alloué (MWh)</span>
+          <span class="table-title">Total volume — offered vs allocated (MWh)</span>
           <span class="source-badge">EEX monthly auctions</span>
         </div>
         <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-auct-vol-canvas" style="width:100%;height:220px"></canvas></div>
@@ -5272,7 +5272,7 @@
       <!-- Chart historique principal = chart_go_price_indications multi-produit -->
       <div class="chart-container" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="table-title">Prix indicatifs hebdomadaires — Mid price (€/MWh)</span>
+          <span class="table-title">Weekly price indications — Mid price (€/MWh)</span>
           <span class="source-badge">Commerg weekly assessment</span>
         </div>
         <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-hist-canvas" style="width:100%;height:260px"></canvas></div>
@@ -5281,11 +5281,11 @@
       <!-- Chart YoY delta -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="chart-container">
-          <div class="table-title" style="margin-bottom:10px">Delta semaine sur semaine (€/MWh)</div>
+          <div class="table-title" style="margin-bottom:10px">Week-on-week delta (€/MWh)</div>
           <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-wow-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
         <div class="chart-container">
-          <div class="table-title" style="margin-bottom:10px">Distribution des prix — boites (€/MWh)</div>
+          <div class="table-title" style="margin-bottom:10px">Price distribution — box plot (€/MWh)</div>
           <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
       </div>
@@ -5294,7 +5294,7 @@
     <!-- WEATHER CITIES -->
     <div class="page" id="page-wxcities">
       <div class="page-header">
-        <div><div class="page-title">Météo Énergie</div><div class="page-subtitle">Température · Vent · Précip · Rayonnement · Open-Meteo API</div></div>
+        <div><div class="page-title">Energy Weather</div><div class="page-subtitle">Temperature · Wind · Precip · Radiation · Open-Meteo API</div></div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="country-select" id="wx-country" onchange="loadWeather()">
             <option value="FR">France</option>
@@ -5354,10 +5354,10 @@
         <div class="kpi-card kpi-flat"><div class="kpi-label">CDD YTD</div><div class="kpi-value" id="hdd-kpi-cdd">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)" id="hdd-kpi-cdd-sub">Normale: --</div></div>
         <div class="kpi-card kpi-flat"><div class="kpi-label">Temp. France Now</div><div class="kpi-value" id="hdd-kpi-temp">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-temp-sub">vs norm.</div></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Cumulatif Saison — Paris vs Normale 20 ans</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div></div>
+      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Season Cumulative — Paris vs 20Y Normal</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div></div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">HDD par ville — 7 derniers jours</span></div>
-        <table><thead><tr><th>Ville</th><th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th><th>Cumul</th><th>vs norm.</th></tr></thead>
+        <div class="table-header"><span class="table-title">HDD by city — last 7 days</span></div>
+        <table><thead><tr><th>City</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Total</th><th>vs norm.</th></tr></thead>
         <tbody id="hdd-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody></table>
       </div>
     </div>
@@ -5538,22 +5538,22 @@
       <div class="fr-topline">
         <div class="fr-topline-text">
           <div class="page-title">🇫🇷 France</div>
-          <div class="page-subtitle">Marché français day-ahead · production, cannibalisation et positionnement · ENTSO-E</div>
+          <div class="page-subtitle">French day-ahead market · production, cannibalisation and positioning · ENTSO-E</div>
         </div>
         <div class="fr-topline-actions">
-          <button class="pk-btn-ghost" onclick="FRDash.shiftDate(-1)" title="Jour précédent">‹</button>
+          <button class="pk-btn-ghost" onclick="FRDash.shiftDate(-1)" title="Previous day">‹</button>
           <span class="fr-date-label" id="fr-date-label">--</span>
-          <button class="pk-btn-ghost" onclick="FRDash.shiftDate(1)" title="Jour suivant">›</button>
-          <button class="pk-btn-ghost" onclick="FRDash.gotoLatest()" title="Dernière journée disponible">Dernier jour</button>
+          <button class="pk-btn-ghost" onclick="FRDash.shiftDate(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="FRDash.gotoLatest()" title="Latest available day">Latest day</button>
         </div>
       </div>
 
       <div class="fr-tabbar">
-        <button class="fr-tab active" data-fr-tab="today"  onclick="FRDash.selectTab('today')">Aujourd'hui</button>
+        <button class="fr-tab active" data-fr-tab="today"  onclick="FRDash.selectTab('today')">Today</button>
         <button class="fr-tab"        data-fr-tab="cannib" onclick="FRDash.selectTab('cannib')">Cannibalisation</button>
-        <button class="fr-tab"        data-fr-tab="hist"   onclick="FRDash.selectTab('hist')">Historique</button>
-        <button class="fr-tab"        data-fr-tab="neigh"  onclick="FRDash.selectTab('neigh')">Voisins</button>
-        <button class="fr-tab"        data-fr-tab="market" onclick="FRDash.selectTab('market')">Marché &amp; Forward</button>
+        <button class="fr-tab"        data-fr-tab="hist"   onclick="FRDash.selectTab('hist')">History</button>
+        <button class="fr-tab"        data-fr-tab="neigh"  onclick="FRDash.selectTab('neigh')">Neighbours</button>
+        <button class="fr-tab"        data-fr-tab="market" onclick="FRDash.selectTab('market')">Market &amp; Forward</button>
       </div>
 
       <div id="fr-body">
@@ -5575,11 +5575,11 @@
       <div class="page-header">
         <div>
           <div class="page-title">My Dashboard</div>
-          <div class="page-subtitle">Widgets personnalisés</div>
+          <div class="page-subtitle">Custom widgets</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="pk-btn-ghost" onclick="exportDashConfig()" title="Exporter la config en JSON">⬇ Export</button>
-          <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Ajouter un widget</button>
+          <button class="pk-btn-ghost" onclick="exportDashConfig()" title="Export config as JSON">⬇ Export</button>
+          <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
         </div>
       </div>
       <div class="mydash-grid" id="mydash-grid"></div>
@@ -5589,9 +5589,9 @@
            lived inside the grid. -->
       <div class="mydash-empty" id="mydash-empty">
         <div style="font-size:32px;margin-bottom:10px;opacity:.5">◎</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Aucun widget pour l'instant</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Choisissez les indicateurs à suivre en un coup d'œil.</div>
-        <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Ajouter un widget</button>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">No widgets yet</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Pick the indicators you want to track at a glance.</div>
+        <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
       </div>
     </div>
 
@@ -5602,10 +5602,10 @@
     <div style="width:min(640px,92vw);max-height:80vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">Ajouter des widgets</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Cliquez pour ajouter ou retirer un indicateur de My Dashboard</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Add widgets</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Click to add or remove an indicator from My Dashboard</div>
         </div>
-        <button class="pk-btn-ghost" onclick="closeWidgetPicker()" title="Fermer">✕</button>
+        <button class="pk-btn-ghost" onclick="closeWidgetPicker()" title="Close">✕</button>
       </div>
       <div id="widget-picker-list" style="padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
     </div>

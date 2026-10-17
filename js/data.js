@@ -227,7 +227,7 @@ async function loadFromJSON(opts) {
     updateKPIs(pricesData, jsonDate);
     buildTicker(pricesData);
     const upd = prices.updated
-      ? new Date(prices.updated).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' UTC'
+      ? new Date(prices.updated).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) + ' UTC'
       : 'JSON';
     const badge = document.getElementById('prices-updated');
     if (badge) { badge.textContent = 'ENTSO-E · ' + upd; badge.style.color = 'var(--accent)'; }

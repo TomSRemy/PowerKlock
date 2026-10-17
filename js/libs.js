@@ -14642,7 +14642,7 @@ function addFullscreen(canvasId, content) {
   canvas.dataset.fsAdded = '1';
   const btn = document.createElement('button');
   btn.innerHTML = '⛶';
-  btn.title = 'Plein écran';
+  btn.title = 'Fullscreen';
   btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
@@ -14691,10 +14691,10 @@ function pkCloneCanvasChart(srcCanvas, dstCanvas) {
 // Generic data table built straight from a Chart.js instance's labels/datasets
 // — the fallback used when a chart hasn't been given bespoke `table` content.
 function pkAutoTable(chart) {
-  if (!chart || !chart.data) return '<div style="color:var(--text3);padding:8px">Aucune donnée</div>';
+  if (!chart || !chart.data) return '<div style="color:var(--text3);padding:8px">No data</div>';
   const labels = chart.data.labels || [];
   const datasets = (chart.data.datasets || []).filter(d => d.label);
-  if (!labels.length || !datasets.length) return '<div style="color:var(--text3);padding:8px">Aucune donnée</div>';
+  if (!labels.length || !datasets.length) return '<div style="color:var(--text3);padding:8px">No data</div>';
   const fmt = v => {
     if (v == null) return '–';
     if (Array.isArray(v)) return v.map(x => (typeof x === 'number' ? x.toFixed(2) : x)).join(' – ');
@@ -14716,7 +14716,7 @@ function addDownload(canvasId, filename) {
   canvas.dataset.dlAdded = '1';
   const btn = document.createElement('button');
   btn.innerHTML = '↓';
-  btn.title = 'Télécharger PNG';
+  btn.title = 'Download PNG';
   btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
     if (!CHARTS[canvasId]) return;

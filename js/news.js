@@ -39,15 +39,15 @@ function getDemoNews() {
   const ago = (h) => new Date(now - h * 3600000);
   return [
     { source:'ENTSO-E', cls:'entsoe', title:'ENTSO-E publishes Winter Outlook 2026: European power system remains resilient', snippet:'The Winter Outlook 2026 confirms European adequacy margins remain above threshold in all scenarios, with interconnection capacity playing a key role.', link:'https://www.entsoe.eu/news', date:ago(1), tags:['power','regulation'] },
-    { source:'RTE', cls:'rte', title:'Écrêtement solaire record en France : 2,1 TWh perdus au T1 2026', snippet:'RTE publie son bilan du premier trimestre 2026. La surproduction photovoltaïque aux heures creuses a conduit à des prix négatifs sur 312 heures.', link:'https://www.rte-france.com', date:ago(2), tags:['power','markets'] },
+    { source:'RTE', cls:'rte', title:'Record solar curtailment in France: 2.1 TWh lost in Q1 2026', snippet:'RTE publishes its Q1 2026 report. PV overproduction during off-peak hours drove negative prices over 312 hours.', link:'https://www.rte-france.com', date:ago(2), tags:['power','markets'] },
     { source:'ACER', cls:'acer', title:'ACER recommends reform of capacity mechanism design across EU member states', snippet:'In its latest market monitoring report, ACER identifies design inconsistencies in national capacity mechanisms that distort cross-border competition.', link:'https://www.acer.europa.eu', date:ago(4), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'CRE ouvre une consultation sur les tarifs de réseau pour la période 2025-2028', snippet:'Le régulateur français lance une consultation publique sur la révision des TURPE applicable aux gestionnaires de réseau de distribution.', link:'https://www.cre.fr', date:ago(6), tags:['regulation','fr'] },
+    { source:'CRE', cls:'cre', title:'CRE opens consultation on network tariffs for the 2025-2028 period', snippet:'The French regulator launches a public consultation on the revision of TURPE tariffs applicable to distribution network operators.', link:'https://www.cre.fr', date:ago(6), tags:['regulation','fr'] },
     { source:'ENTSO-E', cls:'entsoe', title:'Cross-border capacity allocation reaches record levels in Q1 2026', snippet:'The Cross-Border Capacity Allocation report shows that available interconnection capacity increased by 12% year-on-year in the first quarter.', link:'https://www.entsoe.eu/news', date:ago(8), tags:['power','markets'] },
-    { source:'RTE', cls:'rte', title:'Nucléaire : EPR2 programme update — six new units confirmed in Normandy', snippet:'Following the government review, RTE confirms the grid connection timeline for the first EPR2 unit is maintained at 2037 for the Penly site.', link:'https://www.rte-france.com', date:ago(10), tags:['power','fr'] },
+    { source:'RTE', cls:'rte', title:'Nuclear: EPR2 programme update — six new units confirmed in Normandy', snippet:'Following the government review, RTE confirms the grid connection timeline for the first EPR2 unit is maintained at 2037 for the Penly site.', link:'https://www.rte-france.com', date:ago(10), tags:['power','fr'] },
     { source:'ACER', cls:'acer', title:'European gas storage reaches 58% ahead of summer injection season', snippet:'GIE data shows EU aggregate storage at 58.3%, slightly below the 5-year average of 61.2% for this time of year, ACER notes in weekly brief.', link:'https://www.acer.europa.eu', date:ago(14), tags:['gas','markets'] },
     { source:'ENTSO-E', cls:'entsoe', title:'REMIT: 47 new urgent market messages published this week across EU TSOs', snippet:'TSOs across Germany, France, Italy and Poland filed 47 UMMs this week, predominantly affecting gas-fired generation assets.', link:'https://www.entsoe.eu/news', date:ago(18), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'Agrégation : publication du cadre réglementaire pour les BESS en marché de capacité', snippet:'La CRE précise les conditions d\'éligibilité des systèmes de stockage par batterie au mécanisme de capacité français à partir de 2027.', link:'https://www.cre.fr', date:ago(22), tags:['regulation','fr','power'] },
-    { source:'RTE', cls:'rte', title:'Bilan mensuel : solde exportateur de la France en baisse de 18% sur avril 2026', snippet:'RTE publie le bilan mensuel. Le solde exportateur s\'établit à 3,2 TWh sur avril 2026, en recul face au même mois de l\'an dernier.', link:'https://www.rte-france.com', date:ago(26), tags:['power','markets','fr'] },
+    { source:'CRE', cls:'cre', title:'Aggregation: publication of the regulatory framework for BESS in the capacity market', snippet:'CRE clarifies the eligibility conditions for battery storage systems in the French capacity mechanism starting 2027.', link:'https://www.cre.fr', date:ago(22), tags:['regulation','fr','power'] },
+    { source:'RTE', cls:'rte', title:'Monthly report: France\'s export balance down 18% in April 2026', snippet:'RTE publishes its monthly report. The export balance stands at 3.2 TWh for April 2026, down from the same month last year.', link:'https://www.rte-france.com', date:ago(26), tags:['power','markets','fr'] },
   ];
 }
 
@@ -147,7 +147,7 @@ function updateConverter() {
   };
   document.getElementById('conv-results').innerHTML = units.map(u => {
     const result = val * (factors[u] || 1);
-    const disp = result >= 1e6 ? result.toExponential(2) : result >= 1000 ? result.toLocaleString('fr-FR', {maximumFractionDigits:1}) : result.toFixed(result < 0.01 ? 6 : 3);
+    const disp = result >= 1e6 ? result.toExponential(2) : result >= 1000 ? result.toLocaleString('en-GB', {maximumFractionDigits:1}) : result.toFixed(result < 0.01 ? 6 : 3);
     const active = u === convUnit ? 'border-color:var(--accent)' : '';
     return `<div class="conv-result" style="${active}" onclick="setConvUnit('${u}', document.querySelectorAll('.conv-tab')[${units.indexOf(u)}])">
       <div class="conv-result-label">${u}</div>

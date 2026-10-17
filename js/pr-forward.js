@@ -151,10 +151,10 @@
   // now always shown below the chart instead — see renderDrillForwardTable —
   // mirroring the DA drill-down (chart, then its breakdown table underneath).
   var DRILL_TABS = [
-    { key: 'calall', label: 'Tous les Cal' },
-    { key: 'cal1', label: 'Cal+N glissant' },
-    { key: 'free', label: 'Graph libre' },
-    { key: 'nuc', label: 'Nucléaire' }
+    { key: 'calall', label: 'All Cals' },
+    { key: 'cal1', label: 'Cal+N rolling' },
+    { key: 'free', label: 'Free chart' },
+    { key: 'nuc', label: 'Nuclear' }
   ];
 
   function closeCountryRow() {
@@ -187,11 +187,11 @@
       '<div style="padding:14px 16px">' +
       '<div class="pk-section-header">' +
       '<div class="pk-section-header-text">' +
-      '<div class="pk-eyebrow">Forward <span class="pk-sep">·</span> ' + meta.flag + ' ' + meta.label + ' <span class="pk-sep">·</span> Détail</div>' +
+      '<div class="pk-eyebrow">Forward <span class="pk-sep">·</span> ' + meta.flag + ' ' + meta.label + ' <span class="pk-sep">·</span> Detail</div>' +
       '<div class="pk-section-title">' + meta.label + '</div>' +
       '<div class="pk-section-subtitle">snapshot ' + (cs.spot && cs.spot.date || '') + ' · source SEFE cockpit</div>' +
       '</div>' +
-      '<div class="pk-section-header-actions"><button class="pk-btn-ghost" onclick="event.stopPropagation();window._pfCloseRow()">✕ Fermer</button></div>' +
+      '<div class="pk-section-header-actions"><button class="pk-btn-ghost" onclick="event.stopPropagation();window._pfCloseRow()">✕ Close</button></div>' +
       '</div>' +
       '<div class="kpi-strip" id="pf-drill-kpi-strip" style="margin:14px 0"></div>' +
       '<div class="pk-tabbar" id="pf-drill-tabs-bar">' +
@@ -219,8 +219,8 @@
       { l: 'Forward ' + (y2 ? y2.contract : 'Y+2'), v: num(y2 && y2.value, 2), u: unit }
     ];
     if (cs.nuclearCapacity) {
-      stats.push({ l: 'Nucléaire dispo', v: num(cs.nuclearCapacity.actualMW, 0), u: 'MW' });
-      stats.push({ l: 'Nucléaire prévisionnel', v: num(cs.nuclearCapacity.forecastMW, 0), u: 'MW' });
+      stats.push({ l: 'Nuclear avail.', v: num(cs.nuclearCapacity.actualMW, 0), u: 'MW' });
+      stats.push({ l: 'Nuclear forecast', v: num(cs.nuclearCapacity.forecastMW, 0), u: 'MW' });
     }
     if (typeof window.setStats === 'function') window.setStats('pf-drill-kpi-strip', stats);
   }
@@ -298,7 +298,7 @@
     var unit = cs.currency + '/MWh';
     var rows = FORWARD_TENORS.map(function (t) {
       var row = tenorRow(cs, t);
-      if (!row) return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
+      if (!row) return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">unavailable</td></tr>';
       return '<tr>' +
         '<td>' + t + '</td>' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
@@ -440,8 +440,8 @@
       data: {
         labels: dates,
         datasets: [
-          { label: 'Réel', data: actual, borderColor: '#7B4B9C', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
-          { label: 'Prévisionnel', data: forecast, borderColor: '#EE9B00', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
+          { label: 'Actual', data: actual, borderColor: '#7B4B9C', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
+          { label: 'Forecast', data: forecast, borderColor: '#EE9B00', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
         ]
       },
       options: {
@@ -540,14 +540,14 @@
 
   function renderCompareTable() {
     var titleEl = document.getElementById('prfwd-cmp-table-title');
-    if (titleEl) titleEl.textContent = 'Snapshot du jour · ' + PF.cmpTenor;
+    if (titleEl) titleEl.textContent = "Today's snapshot · " + PF.cmpTenor;
     var tbody = document.getElementById('prfwd-cmp-tbody');
     if (!tbody) return;
     var visibleCountries = PF.cmpZones ? COUNTRIES.filter(function (c) { return PF.cmpZones.has(c.code); }) : COUNTRIES;
     tbody.innerHTML = visibleCountries.map(function (c) {
       var cs = PF.snap.countries[c.code];
       var row = tenorRow(cs, PF.cmpTenor);
-      if (!row) return '<tr><td style="text-align:left">' + c.flag + ' ' + c.label + '</td><td colspan="4" style="text-align:left;color:var(--text3)">indisponible</td></tr>';
+      if (!row) return '<tr><td style="text-align:left">' + c.flag + ' ' + c.label + '</td><td colspan="4" style="text-align:left;color:var(--text3)">unavailable</td></tr>';
       return '<tr>' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + c.flag + ' ' + c.label + '</td>' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
@@ -563,7 +563,7 @@
     var dateEl = document.getElementById('prfwd-insights-date');
     var textEl = document.getElementById('prfwd-insights-text');
     if (dateEl) dateEl.textContent = 'SEFE Energy · ' + (snap.marketInsightsDate || '');
-    if (textEl) textEl.innerHTML = snap.marketInsightsHtml || '<em style="color:var(--text3)">Analyse indisponible pour le moment.</em>';
+    if (textEl) textEl.innerHTML = snap.marketInsightsHtml || '<em style="color:var(--text3)">Analysis unavailable right now.</em>';
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -573,7 +573,7 @@
   function renderAll() {
     if (!PF.snap || !PF.series) return;
     var boardMeta = document.getElementById('prfwd-board-meta');
-    if (boardMeta) boardMeta.textContent = 'M+1 à Y+3 · ' + (PF.snap.forwardCurveDate || '') + ' · source SEFE cockpit';
+    if (boardMeta) boardMeta.textContent = 'M+1 to Y+3 · ' + (PF.snap.forwardCurveDate || '') + ' · source SEFE cockpit';
     renderTopKpis();
     renderCountriesTable();
     renderCompareZoneChips();
@@ -592,7 +592,7 @@
       PF.calchain = res[2];
       if (!PF.snap || !PF.series) {
         var host = document.getElementById('prfwd-insights-text');
-        if (host) host.innerHTML = '<em style="color:var(--text3)">data/fr_market.json indisponible.</em>';
+        if (host) host.innerHTML = '<em style="color:var(--text3)">data/fr_market.json unavailable.</em>';
         return;
       }
       PF.loaded = true;

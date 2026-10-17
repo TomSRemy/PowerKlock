@@ -127,15 +127,15 @@ function consumptionIntensity(zone, genTotalByZone, prodIntByZone, crossborder) 
 
 // ── 4. Sources (à exposer dans l'UI = ton edge "transparence" vs eMaps)
 const CARBON_SOURCES = [
-  { id: 'ipcc',   label: 'IPCC AR5 (2014) WG3 Annex III — médianes cycle de vie',
+  { id: 'ipcc',   label: 'IPCC AR5 (2014) WG3 Annex III — life-cycle medians',
     url: 'https://www.ipcc.ch/report/ar5/wg3/' },
   { id: 'emaps',  label: 'electricityMaps-contrib — EU emission factors (open source)',
     url: 'https://github.com/electricitymaps/electricitymaps-contrib/wiki/EU-emission-factors' },
-  { id: 'iea',    label: 'IEA Life Cycle Upstream Emission Factors 2024 (par pays)',
+  { id: 'iea',    label: 'IEA Life Cycle Upstream Emission Factors 2024 (by country)',
     url: 'https://www.iea.org/data-and-statistics/data-product/emissions-factors-2024' },
-  { id: 'unece',  label: 'UNECE 2022 — Integrated LCA of Electricity Sources (éolien on/offshore)',
+  { id: 'unece',  label: 'UNECE 2022 — Integrated LCA of Electricity Sources (onshore/offshore wind)',
     url: 'https://unece.org/sed/documents/2021/10/reports/life-cycle-assessment-electricity-generation-options' },
-  { id: 'ademe',  label: 'ADEME Base Empreinte — référence nationale FR',
+  { id: 'ademe',  label: 'ADEME Base Empreinte — FR national reference',
     url: 'https://base-empreinte.ademe.fr/' },
 ];
 
