@@ -14594,10 +14594,9 @@ Chart.defaults.animation.duration = 400;
 // Opt out per-chart with `options.plugins.pkHoverReadout = false`.
 // ════════════════════════════════════════════════════════════════════
 (function () {
-  const PAD_TOP = 34;
   const SKIP_TYPES = new Set(['pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble']);
   const TX2 = '#B8C9D9', TX3 = '#7A93AB', LINE = 'rgba(184,201,217,.4)';
-  const BAND_BG = 'rgba(10,14,22,.94)', BAND_BORDER = 'rgba(184,201,217,.14)';
+  const BAND_BG = 'rgba(10,14,22,.96)', BAND_BORDER = 'rgba(184,201,217,.18)';
 
   function isActive(chart) {
     if (SKIP_TYPES.has(chart.config.type)) return false;
@@ -14666,15 +14665,16 @@ Chart.defaults.animation.duration = 400;
       ctx.stroke();
       ctx.restore();
 
-      // Readout box anchored to the crosshair — sits just to its LEFT by
-      // default (flips to the right near the left edge) so it's next to
-      // whatever the reader is actually pointing at, instead of always
-      // parked at the chart's left edge regardless of cursor position.
+      // Readout box anchored at the hovered point's own height, sitting
+      // just to the LEFT of the crosshair with a clear gap (flips to the
+      // right when there isn't room on the left) — stays next to whatever
+      // the reader is actually pointing at instead of living in a strip
+      // pinned to the top of the chart.
       ctx.save();
       ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.textBaseline = 'middle';
       const rightEdge = chartArea.left + chartArea.width;
-      const GAP = 16, BOX_PAD = 10, CURSOR_GAP = 10;
+      const GAP = 16, BOX_PAD = 10, CURSOR_GAP = 20;
       const maxContentWidth = Math.max(120, chartArea.width * 0.7 - BOX_PAD * 2);
 
       const entries = [];
@@ -14683,12 +14683,15 @@ Chart.defaults.animation.duration = 400;
 
       let hidden = 0;
       let contentWidth = 0;
+      const ys = [];
       for (let di = 0; di < chart.data.datasets.length; di++) {
         const meta = chart.getDatasetMeta(di);
         if (meta.hidden) continue;
         const ds = chart.data.datasets[di];
         const txt = seriesText(chart, ds, di, idx);
         if (!txt) continue;
+        const pt = meta.data && meta.data[idx];
+        if (pt && typeof pt.y === 'number') ys.push(pt.y);
         const w = ctx.measureText(txt).width;
         if (contentWidth + w > maxContentWidth && entries.length > 0) { hidden++; continue; }
         const color = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
@@ -14707,11 +14710,12 @@ Chart.defaults.animation.duration = 400;
         totalWidth += en.w + (i < entries.length - 1 ? GAP : 0);
       });
       const boxW = totalWidth + BOX_PAD * 2;
-      const boxH = PAD_TOP - 10;
-      const boxY = chartArea.top - PAD_TOP + 5;
+      const boxH = 26;
+      const avgY = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : (chartArea.top + chartArea.bottom) / 2;
+      const boxY = Math.min(Math.max(avgY - boxH / 2, chartArea.top + 2), chartArea.bottom - boxH - 2);
 
       let boxX = xPos - CURSOR_GAP - boxW; // default: box to the left of the crosshair
-      if (boxX < chartArea.left) boxX = xPos + CURSOR_GAP; // flip right near the left edge
+      if (boxX < chartArea.left) boxX = xPos + CURSOR_GAP; // flip right when there's no room on the left
       boxX = Math.min(Math.max(boxX, chartArea.left), Math.max(chartArea.left, rightEdge - boxW));
 
       ctx.fillStyle = BAND_BG;
@@ -14741,26 +14745,23 @@ Chart.defaults.animation.duration = 400;
 
   window.pkHoverReadoutPlugin = plugin;
 
-  // Mutates a plain (pre-construction) Chart.js config: reserves top padding
-  // for the readout strip and disables the default floating tooltip. Must
-  // run on the config BEFORE `new Chart(...)`, never on `chart.options`
-  // afterwards — Chart.js v4 wraps `chart.options` in a reactive resolver,
-  // and re-assigning into it from inside a layout-cycle plugin hook (this
-  // used to be a beforeLayout hook) re-triggers that same layout cycle on
-  // every pass, which is an infinite loop (confirmed: "Maximum call stack
-  // size exceeded" in Object.set, i.e. the resolver's own setter, the
-  // moment a chart using it needed a second layout pass — resize, legend
-  // click, zoom, anything). Plain-object mutation here has none of that.
+  // Mutates a plain (pre-construction) Chart.js config: disables the
+  // default floating tooltip (the readout box draws itself in afterDraw
+  // instead, anchored to the hovered point — no reserved layout padding
+  // needed since it lives inside the plot area, not a strip above it).
+  // Must run on the config BEFORE `new Chart(...)`, never on
+  // `chart.options` afterwards — Chart.js v4 wraps `chart.options` in a
+  // reactive resolver, and re-assigning into it from inside a
+  // layout-cycle plugin hook re-triggers that same layout cycle on every
+  // pass, which is an infinite loop (confirmed: "Maximum call stack size
+  // exceeded" in Object.set, i.e. the resolver's own setter, the moment a
+  // chart using it needed a second layout pass — resize, legend click,
+  // zoom, anything). Plain-object mutation here has none of that.
   window.pkPrepHoverReadout = function (config) {
     if (!config || SKIP_TYPES.has(config.type)) return config;
     config.options = config.options || {};
     const opts = config.options;
     if (opts.plugins && opts.plugins.pkHoverReadout === false) return config;
-    opts.layout = opts.layout || {};
-    const p = opts.layout.padding;
-    if (p == null) opts.layout.padding = { top: PAD_TOP };
-    else if (typeof p === 'number') opts.layout.padding = { top: Math.max(p, PAD_TOP), left: p, right: p, bottom: p };
-    else p.top = Math.max(p.top || 0, PAD_TOP);
     opts.plugins = opts.plugins || {};
     opts.plugins.tooltip = Object.assign({}, opts.plugins.tooltip, { enabled: false });
     return config;
