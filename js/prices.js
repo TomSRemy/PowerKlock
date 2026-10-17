@@ -227,23 +227,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // inserted (the canvas has to exist in the DOM before Chart.js can bind to
 // it).
 const AVAILABLE_WIDGETS = [
-  { id:'fr-da',      name:'FR Prix DA',         desc:"Prix day-ahead France temps réel" },
-  { id:'de-da',      name:'DE Prix DA',          desc:"Prix day-ahead Allemagne" },
-  { id:'eua',        name:'EUA Spot',            desc:"Prix carbone EU ETS · non connecté" },
-  { id:'ttf',        name:'TTF D+1',             desc:"Gaz naturel TTF Day-Ahead · non connecté" },
-  { id:'go-renew',   name:'GO Renouvelables',    desc:"Garanties d'Origine · prix mid Commerg" },
-  { id:'fr-mix',     name:'Mix FR',              desc:"Part nucléaire + renouvelable dans le mix" },
-  { id:'fr-nuclear', name:'Nucléaire FR',        desc:"Puissance nucléaire disponible" },
-  { id:'fr-export',  name:'Solde Export FR',     desc:"Flux nets cross-border France" },
-  { id:'fr-load',    name:'Consommation FR',     desc:"Charge réseau actuelle" },
-  { id:'hdd-paris',  name:'HDD Paris',           desc:"Degrés-jours de chauffage · non connecté" },
-  { id:'fr-da-chart',   name:'FR — Prix DA',          desc:"Courbe horaire day-ahead", kind:'chart' },
-  { id:'de-da-chart',   name:'DE — Prix DA',          desc:"Courbe horaire day-ahead", kind:'chart' },
-  { id:'fr-mix-chart',  name:'FR — Mix de génération', desc:"Répartition par filière, aujourd'hui", kind:'chart' },
-  { id:'fr-load-chart', name:'FR — Consommation',     desc:"Courbe horaire de charge", kind:'chart' },
-  { id:'fr-cb-chart',   name:'FR — Cross-Border',     desc:"Import/export par frontière", kind:'chart' },
-  { id:'go-chart',      name:'GO Renouvelables — historique', desc:"Bid/Ask/Mid hebdo · Commerg", kind:'chart' },
-  { id:'fr-ren-chart',  name:'FR — Eolien vs Solaire',    desc:"Production horaire, aujourd'hui", kind:'chart' },
+  { id:'fr-da',      name:'FR DA Price',         desc:"France day-ahead price, real time" },
+  { id:'de-da',      name:'DE DA Price',         desc:"Germany day-ahead price" },
+  { id:'eua',        name:'EUA Spot',            desc:"EU ETS carbon price · not connected" },
+  { id:'ttf',        name:'TTF D+1',             desc:"TTF natural gas day-ahead · not connected" },
+  { id:'go-renew',   name:'GO Renewables',       desc:"Guarantees of Origin · Commerg mid price" },
+  { id:'fr-mix',     name:'FR Mix',              desc:"Nuclear + renewable share of the mix" },
+  { id:'fr-nuclear', name:'FR Nuclear',          desc:"Available nuclear capacity" },
+  { id:'fr-export',  name:'FR Export Balance',   desc:"Net cross-border flows, France" },
+  { id:'fr-load',    name:'FR Consumption',      desc:"Current grid load" },
+  { id:'hdd-paris',  name:'HDD Paris',           desc:"Heating degree days · not connected" },
+  { id:'fr-da-chart',   name:'FR — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
+  { id:'de-da-chart',   name:'DE — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
+  { id:'fr-mix-chart',  name:'FR — Generation Mix',   desc:"Breakdown by fuel, today", kind:'chart' },
+  { id:'fr-load-chart', name:'FR — Consumption',      desc:"Hourly load curve", kind:'chart' },
+  { id:'fr-cb-chart',   name:'FR — Cross-Border',     desc:"Import/export by border", kind:'chart' },
+  { id:'go-chart',      name:'GO Renewables — history', desc:"Weekly Bid/Ask/Mid · Commerg", kind:'chart' },
+  { id:'fr-ren-chart',  name:'FR — Wind vs Solar',    desc:"Hourly production, today", kind:'chart' },
 ];
 let myDashWidgets = JSON.parse(localStorage.getItem('pk-mydash-widgets') || '[]');
 
@@ -354,7 +354,7 @@ function loadFranceDashboard() {
     mctx._chart = new Chart(mctx, {
       type: 'doughnut',
       data: {
-        labels: ['Nucléaire', 'Eolien', 'Solaire', 'Hydro', 'Gaz', 'Autres'],
+        labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Gas', 'Other'],
         datasets: [{
           data: [42.3, 9.2, 5.1, 8.8, 3.4, 2.2],
           backgroundColor: ['#14D3A9','#C4A57B','#fbbf24','#94D2BD','#A87DC4','#4A6280'],
@@ -455,7 +455,7 @@ function renderMyDashCharts() {
 
 function _mdashDrawPriceChart(canvasId, code) {
   const z = (typeof pricesData !== 'undefined' ? pricesData : []).find(x => x.code === code);
-  if (!z || !z.hourly || !z.hourly.length) { noDataMsg(canvasId, 'Pas encore de prix aujourd\'hui', 'Arrive avec prices.json'); return; }
+  if (!z || !z.hourly || !z.hourly.length) { noDataMsg(canvasId, 'No price yet today', 'Arrives with prices.json'); return; }
   mkChart(canvasId, {
     type: 'line',
     data: { labels: makeTimeLabels(z.hourly.length), datasets: [{
@@ -475,11 +475,11 @@ function _mdashDrawPriceChart(canvasId, code) {
 
 function _mdashDrawMixChart(canvasId) {
   const mix = window._genmixData && window._genmixData.FR;
-  if (!mix || !mix.total) { noDataMsg(canvasId, 'Mix FR non chargé', 'Arrive avec genmix.json'); return; }
+  if (!mix || !mix.total) { noDataMsg(canvasId, 'FR mix not loaded', 'Arrives with genmix.json'); return; }
   mkChart(canvasId, {
     type: 'doughnut',
     data: {
-      labels: ['Nucléaire', 'Eolien', 'Solaire', 'Hydro', 'Fossile', 'Autres'],
+      labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Fossil', 'Other'],
       datasets: [{
         data: [mix.nuclear, mix.wind, mix.solar, mix.hydro, mix.fossil, (mix.biomass || 0) + (mix.other || 0)],
         backgroundColor: [C_NUC, C_WIND, C_SOLAR, '#94D2BD', C_DN, C_TX3],
@@ -495,7 +495,7 @@ function _mdashDrawMixChart(canvasId) {
 
 function _mdashDrawLoadChart(canvasId) {
   const load = window._loadData && window._loadData.FR;
-  if (!load || !load.actual || !load.actual.length) { noDataMsg(canvasId, 'Charge FR non chargée', 'Arrive avec load.json'); return; }
+  if (!load || !load.actual || !load.actual.length) { noDataMsg(canvasId, 'FR load not loaded', 'Arrives with load.json'); return; }
   mkChart(canvasId, {
     type: 'line',
     data: { labels: makeTimeLabels(load.actual.length), datasets: [{
@@ -515,7 +515,7 @@ function _mdashDrawLoadChart(canvasId) {
 
 function _mdashDrawCbChart(canvasId) {
   const flows = window._cbData && window._cbData.FR;
-  if (!flows || !flows.length) { noDataMsg(canvasId, 'Flux FR non chargés', 'Arrive avec crossborder.json'); return; }
+  if (!flows || !flows.length) { noDataMsg(canvasId, 'FR flows not loaded', 'Arrives with crossborder.json'); return; }
   const labels = flows.map(f => (f.partner || '').split(' ').slice(-1)[0] || f.partner);
   mkChart(canvasId, {
     type: 'bar',
@@ -539,7 +539,7 @@ function _mdashDrawCbChart(canvasId) {
 
 function _mdashDrawGoChart(canvasId) {
   const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-  if (!real || !real.weekly.length) { noDataMsg(canvasId, 'Aucune donnée Commerg chargée', 'en attente du fetch GO'); return; }
+  if (!real || !real.weekly.length) { noDataMsg(canvasId, 'No Commerg data loaded', 'waiting on GO fetch'); return; }
   const wk = real.weekly;
   mkChart(canvasId, {
     type: 'line',
@@ -560,12 +560,12 @@ function _mdashDrawGoChart(canvasId) {
 
 function _mdashDrawRenChart(canvasId) {
   const ren = window._renData && window._renData.FR;
-  if (!ren || !ren.windActual || !ren.windActual.length) { noDataMsg(canvasId, 'Renouvelables FR non chargées', 'Arrive avec renewables.json'); return; }
+  if (!ren || !ren.windActual || !ren.windActual.length) { noDataMsg(canvasId, 'FR renewables not loaded', 'Arrives with renewables.json'); return; }
   mkChart(canvasId, {
     type: 'line',
     data: { labels: makeTimeLabels(ren.windActual.length), datasets: [
-      { label: 'Eolien', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
-      { label: 'Solaire', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
+      { label: 'Wind', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
+      { label: 'Solar', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -590,7 +590,7 @@ function _mdashLastValid(arr) {
 }
 
 function getWidgetValue(id) {
-  const notConnected = { val:'–', unit:'non connecté', chg:'', up:null, notConnected:true };
+  const notConnected = { val:'–', unit:'not connected', chg:'', up:null, notConnected:true };
 
   if (id === 'fr-da' || id === 'de-da') {
     const code = id === 'fr-da' ? 'FR' : 'DE_LU';
@@ -622,7 +622,7 @@ function getWidgetValue(id) {
   if (id === 'fr-nuclear') {
     const mix = window._genmixData && window._genmixData.FR;
     if (!mix || mix.nuclear == null) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (mix.nuclear / 1000).toFixed(1), unit:'GW disponible', chg:'', up:null };
+    return { val: (mix.nuclear / 1000).toFixed(1), unit:'GW available', chg:'', up:null };
   }
 
   if (id === 'fr-export') {

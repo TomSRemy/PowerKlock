@@ -666,7 +666,7 @@
             </div>
             <div class="pk-tabbar-right">
               <div id="gmh-drill-tab-chips" class="pk-tabbar-chips"></div>
-              <button onclick="gmDrillFullscreen('hist')" title="Plein écran" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
+              <button onclick="gmDrillFullscreen('hist')" title="Fullscreen" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
             </div>
           </div>
 
@@ -800,7 +800,7 @@
     // Stack tab → eCO2mix-style production stack for the selected historical day
     if (tab === 'stack') {
       const c = document.getElementById('gmh-drill-content');
-      if (c) c.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Chargement du stack…</div>';
+      if (c) c.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Loading stack…</div>';
       if (typeof window.renderGenMixStack === 'function') window.renderGenMixStack('gmh-drill-content', zone, window._gmHistDate || null);
       const b = document.getElementById('gmh-drill-banner-anchor'); if (b) b.innerHTML = '';
       return;
@@ -808,7 +808,7 @@
     if (!p) return;
     if (tab === 'mix' || tab === 'carbon' || tab === 'seasonal') {
       const host = document.getElementById('gmh-drill-content');
-      if (host) host.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Agrégation des données réelles sur la période…</div>';
+      if (host) host.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:14px">Aggregating real data for the period…</div>';
       _gmhBuildRealAgg(zone, period).then(rp => {
         const real = (rp && rp._samples > 0) ? rp : p;
         if (tab === 'mix') _gmhDrillRenderMix(zone, real);
@@ -924,7 +924,7 @@
       load.push(sum / N / 1000); // mean slot total → GW
       labels.push(monthLbl ? dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }));
     }
-    const stepLbl = stepDays === 1 ? 'jour' : (stepDays === 7 ? 'semaine' : (stepDays >= 28 ? 'mois' : stepDays + 'j'));
+    const stepLbl = stepDays === 1 ? 'day' : (stepDays === 7 ? 'week' : (stepDays >= 28 ? 'month' : stepDays + 'd'));
     return { labels, load, stepLbl };
   }
 
@@ -945,11 +945,11 @@
     host.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-bottom:8px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace;margin-right:2px">Pas</span>
-        ${pill('auto','Auto')}${pill('D','Jour')}${pill('W','Semaine')}${pill('M','Mois')}
+        ${pill('auto','Auto')}${pill('D','Day')}${pill('W','Week')}${pill('M','Month')}
       </div>
       <div style="position:relative;width:100%;height:300px">
         <canvas id="gmh-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas>
-        <div id="gmh-prof-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Agrégation de l'archive…</div>
+        <div id="gmh-prof-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Aggregating the archive…</div>
       </div>`;
 
     const series = await _gmhBuildRealProfile(zone, window._gmhPeriod, step);

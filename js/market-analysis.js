@@ -89,7 +89,7 @@
 
   function _fmtDate(d) { return d.toISOString().slice(0, 10); }
   function _dayLabel(d) {
-    return d.toLocaleDateString('fr-FR', { weekday: 'short' }) + ' ' + d.toISOString().slice(8, 10) + '/' + d.toISOString().slice(5, 7);
+    return d.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + d.toISOString().slice(8, 10) + '/' + d.toISOString().slice(5, 7);
   }
   function _hexA(hex, a) {
     const h = hex.replace('#', '');
@@ -345,7 +345,7 @@
       }
 
       days.push({
-        date: dateStr, jsDate: dt, dow: dt.toLocaleDateString('fr-FR', { weekday: 'long' }),
+        date: dateStr, jsDate: dt, dow: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
         isReal: isReal, price: price, spark: spark, wind: wind, solar: solar, load: load,
         mix: mix, carbon: carbon,
         drivers: { ttf: ttf, eua: eua, windSpeed: windSpeed, temp: temp, nucAvail: nucAvail, flux: flux },
@@ -454,7 +454,7 @@
     const windSpeed = f.drivers.windSpeed[i];
     const fossil = f.mix.fossil[i];
     const dt = f.slotDates[i];
-    const dow = dt.toLocaleDateString('fr-FR', { weekday: 'long' });
+    const dow = dt.toLocaleDateString('en-GB', { weekday: 'long' });
     const time = String(dt.getHours()).padStart(2, '0') + 'h';
     const renCover = ((wind + solar) / load * 100).toFixed(0);
     const fmt = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
@@ -462,18 +462,18 @@
 
     let title, body;
     if (moment.kind === 'floor') {
-      title = dowCap + ' ' + time + ' · le vent fait le prix';
-      body = 'Vent à ' + fmt(windSpeed) + ' m/s donc <b style="color:#fff">' + fmt(wind) + ' GW d\'éolien</b> qui couvre <b style="color:#fff">' + renCover + '%</b> de la conso, donc fossile sort du merit order (' + fmt(fossil) + ' GW), donc spark plonge à <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>, donc prix touche <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>.';
+      title = dowCap + ' ' + time + ' · wind sets the price';
+      body = 'Wind at ' + fmt(windSpeed) + ' m/s so <b style="color:#fff">' + fmt(wind) + ' GW of wind</b> covers <b style="color:#fff">' + renCover + '%</b> of demand, so fossil drops out of the merit order (' + fmt(fossil) + ' GW), so spark plunges to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>, so price touches <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>.';
     } else if (moment.kind === 'peak') {
       title = dowCap + ' ' + time + ' · spike';
-      body = 'Vent tombé à ' + fmt(windSpeed) + ' m/s donc <b style="color:#ED6965">' + fmt(wind) + ' GW</b> seulement, demande à ' + fmt(load) + ' GW, donc gas CCGT marginal à <b style="color:#fff">' + fmt(fossil) + ' GW</b>, spark explose à <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) + '.';
+      body = 'Wind dropped to ' + fmt(windSpeed) + ' m/s so only <b style="color:#ED6965">' + fmt(wind) + ' GW</b>, demand at ' + fmt(load) + ' GW, so gas CCGT sets the margin at <b style="color:#fff">' + fmt(fossil) + ' GW</b>, spark explodes to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) + '.';
     } else if (moment.kind === 'cannibalisation') {
       const solarCover = (solar / load * 100).toFixed(0);
       title = dowCap + ' ' + time + ' · duck curve';
-      body = 'Solar à <b style="color:#fff">' + fmt(solar) + ' GW</b> couvre ' + solarCover + '% de la conso au milieu d\'une demande faible, donc cannibalisation classique. Prix midi à <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Capture rate solaire impacté.';
+      body = 'Solar at <b style="color:#fff">' + fmt(solar) + ' GW</b> covers ' + solarCover + '% of demand in the middle of low demand, so classic cannibalisation. Midday price at <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
     } else {
-      title = dowCap + ' · respiration weekend';
-      body = 'Industrie au repos donc load <b style="color:#fff">' + fmt(load) + ' GW</b>, nucléaire module, hydro en mode stockage. Aucun stress sur le système, prix moyen ' + fmt(price, 0) + ' €.';
+      title = dowCap + ' · weekend lull';
+      body = 'Industry idle so load <b style="color:#fff">' + fmt(load) + ' GW</b>, nuclear modulating, hydro in storage mode. No system stress, average price ' + fmt(price, 0) + ' €.';
     }
     return { title: title, body: body, price: fmt(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
   }
@@ -544,7 +544,7 @@
     return f.slotDates.map((dt, i) => {
       const slotInDay = i % slotsPerDay;
       if (slotInDay === 0) {
-        return dt.toLocaleDateString('fr-FR', { weekday: 'short' }) + ' ' + String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
+        return dt.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
       }
       return '';
     });
@@ -603,7 +603,7 @@
     _mkChart('ma-canvas-price', 'line', {
       labels: labels,
       datasets: [{
-        label: 'Prix DA', data: f.price,
+        label: 'DA Price', data: f.price,
         borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0,
         tension: 0, spanGaps: true,
       }],
@@ -733,7 +733,7 @@
     if (idx < 0 || idx >= f.price.length) { tip.style.display = 'none'; return; }
 
     const dt = f.slotDates[idx];
-    const dateLbl = dt.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const dateLbl = dt.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: '2-digit' });
     const timeLbl = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
 
     const price = f.price[idx];
@@ -767,7 +767,7 @@
     tip.innerHTML =
       '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + '</div>'
       + '<div class="ma-ht-hero">'
-      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">Prix DA</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
+      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">DA Price</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
       +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">Spark CCGT</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
       + '</div>'
       + '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + 'Marginal · ' + marginal + '</div>'
@@ -816,7 +816,7 @@
     if (!host) return;
     const moments = STATE.cursors;
     if (!moments.length) {
-      host.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">Aucun moment-clé détecté. Marché plat ou données insuffisantes.</div>';
+      host.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">No key moment detected. Flat market or insufficient data.</div>';
       return;
     }
     host.innerHTML = moments.map(function (m, i) {
@@ -848,7 +848,7 @@
     host.innerHTML = moments.map(function (m, i) {
       const colour = EPISODE_KIND_COLOURS[m.kind] || '#7A93AB';
       const dt = STATE.data.flat.slotDates[m.idx];
-      const day = dt.toLocaleDateString('fr-FR', { weekday: 'short' });
+      const day = dt.toLocaleDateString('en-GB', { weekday: 'short' });
       const time = String(dt.getHours()).padStart(2, '0') + 'h';
       const price = STATE.data.flat.price[m.idx];
       return '<span class="ma-cursor-badge" style="color:' + colour + ';border-color:' + _hexA(colour, 0.4) + ';background:' + _hexA(colour, 0.12) + '">'

@@ -76,7 +76,7 @@ function estimateResidual(prodMix, attrsRemoved, factors, opts) {
     residualMix: residual,
     trackedShare: totalProd > 0 ? (totalRemoved + deficit) / (totalProd + deficit) * 100 : 0,
     deficitFilled: deficit,
-    method: '1er ordre (EAM simplifié, sans timing shifted)',
+    method: '1st order (simplified EAM, no shifted timing)',
   };
 }
 
@@ -95,7 +95,7 @@ function confirmResidual(zone, year, officialCo2, source) {
 // Lecture : renvoie le résiduel le plus pertinent (officiel > estimé).
 function residualFactor(zone, year) {
   if (FULL_DISCLOSURE.includes(zone)) {
-    return { co2: null, status: 'n/a', note: 'full disclosure — pas de résiduel' };
+    return { co2: null, status: 'n/a', note: 'full disclosure — no residual' };
   }
   const z = RESIDUAL_MIX[zone];
   if (!z) return { co2: null, status: 'missing' };
@@ -178,7 +178,7 @@ function residualMixEndogenous(zone, flows, factors, eam) {
     deficitFilledByEAM: Math.round(gap),
     domesticShare: residualVolume > 0 ? +Math.min(100, domVol / residualVolume * 100).toFixed(1) : 0,
     eamCo2: +eam.co2.toFixed(1),
-    method: 'EAM endogène (2 passes)',
+    method: 'Endogenous EAM (2 passes)',
   };
 }
 
@@ -228,9 +228,9 @@ function marketBasedFactor(coveredFrac, instrumentCo2, residualCo2) {
 
 // ── 6. Étiquetage GHG Protocol pour l'UI (ton edge transparence)
 const GHG_LABELS = {
-  location: 'Location-based (facteur réseau · GHG Protocol Scope 2)',
-  market:   'Market-based (instruments + mix résiduel · GHG Protocol Scope 2)',
-  residual: 'Mix résiduel (part non tracée par GO · base AIB)',
+  location: 'Location-based (grid factor · GHG Protocol Scope 2)',
+  market:   'Market-based (instruments + residual mix · GHG Protocol Scope 2)',
+  residual: 'Residual mix (share not tracked by GO · AIB basis)',
 };
 
 const GHG_SOURCES = [
