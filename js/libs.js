@@ -14723,6 +14723,21 @@ Chart.defaults.animation.duration = 400;
     opts.plugins.tooltip = Object.assign({}, opts.plugins.tooltip, { enabled: false });
     return config;
   };
+
+  // Universal drop-in replacement for `new Chart(target, config)` — applies
+  // the prep above and injects the plugin, then constructs normally. Used at
+  // every chart-construction site that doesn't already go through
+  // mkChart()/mkHistChart() (GenMix, Carbon Intensity, France cockpit,
+  // Prices row-drill charts, …), so the hover readout covers the whole site
+  // rather than just the two main wrappers.
+  window.pkNewChart = function (target, config) {
+    window.pkPrepHoverReadout(config);
+    if (config) {
+      config.plugins = config.plugins || [];
+      if (!config.plugins.includes(plugin)) config.plugins.push(plugin);
+    }
+    return new Chart(target, config);
+  };
 })();
 
 // Registry of all Chart instances (for destroy/resize)
