@@ -5169,6 +5169,20 @@
         </div>
       </div>
 
+      <!-- Duration filter · same pk-gf pattern as Day-Ahead Historical, same
+           shared goHistPeriod backing state as the GO Historical page below. -->
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+        <span style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase">Period</span>
+        <div class="pk-gf-group" id="go-prices-period">
+          <button class="pk-gf-btn" data-w="3M" onclick="setGoHistPeriod(13,this)">3M</button>
+          <button class="pk-gf-btn" data-w="6M" onclick="setGoHistPeriod(26,this)">6M</button>
+          <button class="pk-gf-btn" data-w="1Y" onclick="setGoHistPeriod(52,this)">1Y</button>
+          <button class="pk-gf-btn" data-w="2Y" onclick="setGoHistPeriod(104,this)">2Y</button>
+          <button class="pk-gf-btn" data-w="5Y" onclick="setGoHistPeriod(260,this)">5Y</button>
+          <button class="pk-gf-btn active" data-w="All" onclick="setGoHistPeriod(9999,this)">All</button>
+        </div>
+      </div>
+
       <!-- Chart 1 : GOs Price Indications — one line per vintage year (Cal-25…28) -->
       <div class="chart-container" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -5261,11 +5275,13 @@
           <button class="day-tab" onclick="filterGoH('hws',this)">Hydro/Wind/Solar</button>
           <button class="day-tab" onclick="filterGoH('ireland',this)">Ireland Wind</button>
         </div>
-        <div style="display:flex;gap:5px;margin-left:auto" id="go-hist-period">
-          <button class="day-tab" onclick="setGoHistPeriod(52,this)">1Y</button>
-          <button class="day-tab" onclick="setGoHistPeriod(130,this)">2.5Y</button>
-          <button class="day-tab" onclick="setGoHistPeriod(260,this)">5Y</button>
-          <button class="day-tab active" onclick="setGoHistPeriod(9999,this)">All</button>
+        <div class="pk-gf-group" id="go-hist-period" style="margin-left:auto">
+          <button class="pk-gf-btn" data-w="3M" onclick="setGoHistPeriod(13,this)">3M</button>
+          <button class="pk-gf-btn" data-w="6M" onclick="setGoHistPeriod(26,this)">6M</button>
+          <button class="pk-gf-btn" data-w="1Y" onclick="setGoHistPeriod(52,this)">1Y</button>
+          <button class="pk-gf-btn" data-w="2Y" onclick="setGoHistPeriod(104,this)">2Y</button>
+          <button class="pk-gf-btn" data-w="5Y" onclick="setGoHistPeriod(260,this)">5Y</button>
+          <button class="pk-gf-btn active" data-w="All" onclick="setGoHistPeriod(9999,this)">All</button>
         </div>
       </div>
 

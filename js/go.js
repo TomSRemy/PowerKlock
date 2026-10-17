@@ -109,12 +109,12 @@ function buildGoReal(rows) {
     const weekly = y1.map(r => ({
       t: r.mailDate, bid: r.bid, ask: r.ask,
       mid: (r.bid + (r.ask != null ? r.ask : r.bid)) / 2,
-      spread: (r.ask != null ? +(r.ask - r.bid).toFixed(4) : null),
+      spread: (r.ask != null ? +(r.ask - r.bid).toFixed(2) : null),
     }));
     let d = null;
     const L = weekly.length;
     if (L >= 2 && weekly[L-1].bid != null && weekly[L-2].bid != null)
-      d = +(weekly[L-1].bid - weekly[L-2].bid).toFixed(4);
+      d = +(weekly[L-1].bid - weekly[L-2].bid).toFixed(2);
     byKey[key] = { fwd, byYear, years, weekly, d };
   });
   return { byKey, asOf };
@@ -223,12 +223,12 @@ function renderGOKPIs() {
   const sub = 'Cal-' + String(y1).slice(-2);
   const asOfTxt = GO_REAL.asOf ? fmtGoDate(GO_REAL.asOf) : '';
   const d = real.d;
-  const fmt = v => (v == null ? '–' : v.toFixed(4) + ' €');
+  const fmt = v => (v == null ? '–' : v.toFixed(2) + ' €');
   strip.innerHTML = [
     {l:'Last Bid', v:fmt(last.bid), sub, cls:'up'},
     {l:'Last Ask', v:fmt(last.ask), sub, cls:'down'},
     {l:'Mid Price',   v:fmt(last.mid), sub, cls:''},
-    {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(4)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs prev. week', cls:(d==null?'':(d>=0?'up':'down'))},
+    {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(2)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs prev. week', cls:(d==null?'':(d>=0?'up':'down'))},
   ].map(k => `<div class="kpi-card">
     <div class="kpi-label">${k.l}</div>
     <div class="kpi-value ${k.cls}" style="font-size:17px">${k.v}</div>
@@ -247,7 +247,8 @@ function drawGoIndicChart() {
   if (!real || !real.years || !real.years.length) { goNoData('go-indic-canvas', 'No Commerg data loaded'); return; }
 
   // Union of all dates across vintage years → shared x-axis
-  const allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
+  let allDates = [...new Set(real.years.flatMap(y => real.byYear[y].map(w => +w.t)))].sort((a,b)=>a-b);
+  if (goHistPeriod < allDates.length) allDates = allDates.slice(-goHistPeriod);
   const dates = allDates.map(t => new Date(t));
   // Full real labels on every point — Chart.js's own autoSkip (maxTicksLimit
   // below) decides which to actually draw, and reliably keeps first/last.
@@ -270,12 +271,12 @@ function drawGoIndicChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh') } },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
         zoom: ZOOM_CFG,
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(3)+'€'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
       }
     }
   });
@@ -317,12 +318,12 @@ function drawGoCal1Chart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend: { display:false },
-        tooltip: { callbacks:{ label: ctx => 'Y+1: '+(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh') } },
+        tooltip: { callbacks:{ label: ctx => 'Y+1: '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
         zoom: ZOOM_CFG,
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:10} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(3)+'€'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
       }
     }
   });
@@ -356,11 +357,11 @@ function drawGoCalChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh') } },
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
       },
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(3)+'€'}, beginAtZero:false }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, beginAtZero:false }
       }
     }
   });
@@ -386,8 +387,8 @@ function drawGoSpreadChart() {
       pointRadius:0, fill:true, backgroundColor:rgba(C_WARN,.1), tension: 0 }] },
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh')}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v.toFixed(4)+'€'},beginAtZero:true} }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh')}}, zoom:ZOOM_CFG },
+      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'},beginAtZero:true} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-spread-canvas'); addDownload('go-spread-canvas','go-spread'); },100);
@@ -399,7 +400,7 @@ function renderGOFwdTable() {
   if (!tbody) return;
   if (!GO_REAL) { tbody.innerHTML = ''; return; }
   const years = [2025, 2026, 2027, 2028];
-  const fmt = v => (v == null ? '–' : v.toFixed(4));
+  const fmt = v => (v == null ? '–' : v.toFixed(2));
   const rows = Object.keys(GO_SERIES).map(key => {
     const real = GO_REAL.byKey[key];
     if (!real || !real.fwd) return '';
@@ -411,7 +412,7 @@ function renderGOFwdTable() {
     const last = real.weekly[real.weekly.length - 1];
     const spread = last && last.spread != null ? fmt(last.spread) : '–';
     const d = real.d;
-    const wow = d == null ? '–' : (d >= 0 ? '+' : '') + d.toFixed(4);
+    const wow = d == null ? '–' : (d >= 0 ? '+' : '') + d.toFixed(2);
     return `<tr><td>${label}</td>${cells}<td>${spread}</td><td style="color:${d==null?'var(--text3)':(d>=0?'var(--up)':'var(--dn)')}">${wow}</td></tr>`;
   }).join('');
   tbody.innerHTML = rows || '<tr><td colspan="11" style="color:var(--text3)">Waiting on Commerg data</td></tr>';
@@ -459,7 +460,7 @@ function drawGoAuctionTechChart() {
         tooltip: { mode:'index', callbacks:{ label: ctx => {
           const v = ctx.raw;
           return v == null ? ctx.dataset.label+': –' :
-            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(4)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('en-GB')+' MWh';
+            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(2)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('en-GB')+' MWh';
         } } },
       },
       scales: {
@@ -510,9 +511,14 @@ function filterGoH(f, btn) {
 }
 function setGoHistPeriod(n, btn) {
   goHistPeriod = n;
-  document.querySelectorAll('#go-hist-period .day-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  drawGoHist(); drawGoWoW(); drawGoBox();
+  // Shared state across two independent button groups (GO Prices page +
+  // GO Historical page) — keep both in sync regardless of which one
+  // triggered the change, so neither shows a stale active pill.
+  document.querySelectorAll('#go-hist-period .pk-gf-btn, #go-prices-period .pk-gf-btn').forEach(b=>b.classList.remove('active'));
+  const w = btn.dataset.w;
+  document.querySelectorAll(`#go-hist-period .pk-gf-btn[data-w="${w}"], #go-prices-period .pk-gf-btn[data-w="${w}"]`).forEach(b=>b.classList.add('active'));
+  drawGoIndicChart(); drawGoCal1Chart();
+  if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
 }
 function drawGoHist() {
   const hist = getGOHistory();
@@ -545,12 +551,12 @@ function drawGoHist() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip:{ mode:'index', callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(4)+' €/MWh')} },
+        tooltip:{ mode:'index', callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh')} },
         zoom: ZOOM_CFG,
       },
       scales: {
         x:{ grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y:{ grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(3)+'€'} }
+        y:{ grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
       }
     }
   });
@@ -570,7 +576,7 @@ function drawGoWoW() {
   // with no x-axis gives no way to tell which week any given bar is.
   const dates = (wk.dates || []).slice(-n);
   const deltaDates = dates.slice(1);
-  const deltas = data.slice(1).map((v,i) => +(v - data[i]).toFixed(4));
+  const deltas = data.slice(1).map((v,i) => +(v - data[i]).toFixed(2));
   const labels = deltaDates.length === deltas.length
     ? deltaDates.map(d => fmtGoDate(d))
     : Array.from({length:deltas.length},(_,i)=>'W'+i);
@@ -584,8 +590,8 @@ function drawGoWoW() {
     }]},
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+ctx.raw.toFixed(4)+' €/MWh'}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}} }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+ctx.raw.toFixed(2)+' €/MWh'}}, zoom:ZOOM_CFG },
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'}} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-wow-canvas'); },100);
@@ -609,7 +615,7 @@ function drawGoBox() {
     const d = dates[i*sz];
     return d ? fmtGoDate(d) : 'P' + (i+1);
   });
-  const q = (arr,p) => { const ch=arr.slice().sort((a,b)=>a-b); return ch.length?+ch[Math.floor(ch.length*p)].toFixed(4):null; };
+  const q = (arr,p) => { const ch=arr.slice().sort((a,b)=>a-b); return ch.length?+ch[Math.floor(ch.length*p)].toFixed(2):null; };
   const medians = Array.from({length:chunks}, (_,i) => q(data.slice(i*sz,(i+1)*sz),.5));
   const q1s = Array.from({length:chunks}, (_,i) => q(data.slice(i*sz,(i+1)*sz),.25));
   const q3s = Array.from({length:chunks}, (_,i) => q(data.slice(i*sz,(i+1)*sz),.75));
@@ -627,8 +633,8 @@ function drawGoBox() {
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(4)+'–'+ctx.raw[1].toFixed(4):ctx.raw.toFixed(4))+' €/MWh')}} },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(3)+'€'}, beginAtZero:false} }
+      plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(2)+'–'+ctx.raw[1].toFixed(2):ctx.raw.toFixed(2))+' €/MWh')}} },
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'}, beginAtZero:false} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);
