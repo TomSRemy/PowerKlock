@@ -14594,9 +14594,10 @@ Chart.defaults.animation.duration = 400;
 // Opt out per-chart with `options.plugins.pkHoverReadout = false`.
 // ════════════════════════════════════════════════════════════════════
 (function () {
-  const PAD_TOP = 26;
+  const PAD_TOP = 34;
   const SKIP_TYPES = new Set(['pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble']);
   const TX2 = '#B8C9D9', TX3 = '#7A93AB', LINE = 'rgba(184,201,217,.4)';
+  const BAND_BG = 'rgba(10,14,22,.94)', BAND_BORDER = 'rgba(184,201,217,.14)';
 
   function isActive(chart) {
     if (SKIP_TYPES.has(chart.config.type)) return false;
@@ -14665,33 +14666,58 @@ Chart.defaults.animation.duration = 400;
       ctx.stroke();
       ctx.restore();
 
+      // Opaque band behind the readout row — without this the text sits
+      // directly over the plot's top gridline/axis label and the two
+      // blend together (reported: "hard to read"). The band spans the
+      // full reserved top-padding area so it never overlaps the plot.
       ctx.save();
-      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.fillStyle = BAND_BG;
+      ctx.fillRect(0, 0, chart.width, chartArea.top);
+      ctx.beginPath();
+      ctx.moveTo(0, chartArea.top - 0.5);
+      ctx.lineTo(chart.width, chartArea.top - 0.5);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = BAND_BORDER;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.textBaseline = 'middle';
-      const y = Math.max(10, chartArea.top - PAD_TOP / 2 + 3);
+      const y = chartArea.top - PAD_TOP / 2;
       let x = chartArea.left;
       const rightEdge = chartArea.left + chartArea.width;
+      const GAP = 18;
 
       const label = chart.data.labels ? chart.data.labels[idx] : null;
       if (label != null && label !== '') {
         ctx.fillStyle = TX3;
         const t = String(label);
         ctx.fillText(t, x, y);
-        x += ctx.measureText(t).width + 14;
+        x += ctx.measureText(t).width + GAP;
       }
 
+      let shown = 0, hidden = 0;
       for (let di = 0; di < chart.data.datasets.length; di++) {
-        if (x >= rightEdge) break; // stop once we'd overflow the plot width
         const meta = chart.getDatasetMeta(di);
         if (meta.hidden) continue;
         const ds = chart.data.datasets[di];
         const txt = seriesText(chart, ds, di, idx);
         if (!txt) continue;
+        const w = ctx.measureText(txt).width;
+        // Reserve room for a "+N more" marker so a truncated row still
+        // tells the reader values are missing, instead of just stopping.
+        if (x + w > rightEdge - 50 && di < chart.data.datasets.length - 1) { hidden++; continue; }
         ctx.fillStyle = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
           ? ds.borderColor
           : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : TX2);
         ctx.fillText(txt, x, y);
-        x += ctx.measureText(txt).width + 14;
+        x += w + GAP;
+        shown++;
+      }
+      if (hidden > 0) {
+        ctx.fillStyle = TX3;
+        ctx.fillText('+' + hidden + ' more', x, y);
       }
       ctx.restore();
     },
