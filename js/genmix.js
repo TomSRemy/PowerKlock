@@ -25,6 +25,9 @@ const GM_FUEL_META = {
   other:   { emoji: '◇', label: 'Other',    color: '#7A93AB', co2: 400  },
 };
 
+// Exposed on window: genmix-historical.js reads window.GM_FUEL_META (a top-
+// level const is not a window property, so every emission factor read as 0).
+window.GM_FUEL_META = GM_FUEL_META;
 const GM_FUEL_ORDER = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
 
 // ════════════════════════════════════════════════════════════════
