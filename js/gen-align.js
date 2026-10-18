@@ -44,13 +44,16 @@
   }
 
   // out[i] = arr[i - k]; the first k slots come from the previous UTC day.
+  // A previous-day tail that is all zeros was not published when that file
+  // was written (zero-filled by the fetcher): those slots become null.
   function shift(arr, prevArr, offH) {
     if (!Array.isArray(arr) || !arr.length) return arr;
     const n = arr.length, k = Math.round(offH * n / 24);
+    const prevOk = Array.isArray(prevArr) && prevArr.length === n && prevArr.slice(n - k).some(v => v != null && v !== 0);
     const out = new Array(n);
     for (let i = 0; i < n; i++) {
       if (i >= k) out[i] = arr[i - k];
-      else out[i] = (Array.isArray(prevArr) && prevArr.length === n) ? prevArr[n - k + i] : null;
+      else out[i] = prevOk ? prevArr[n - k + i] : null;
     }
     return out;
   }
