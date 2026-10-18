@@ -5402,9 +5402,9 @@
           <a href="#meth-prices" class="meth-nav-link">Prices</a>
           <a href="#meth-bands" class="meth-nav-sublink">→ Cross-zone Bands</a>
           <a href="#meth-drill" class="meth-nav-sublink">→ Drill-down envelope</a>
-          <a href="#meth-genmix" class="meth-nav-link">GenMix</a>
-          <a href="#meth-cb" class="meth-nav-link">Cross-border</a>
-          <a href="#meth-eua" class="meth-nav-link">EUA &amp; GO</a>
+          <a href="#meth-genmix" class="meth-nav-link">Generation &amp; renewables</a>
+          <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
+          <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
         <article class="meth-body">
@@ -5494,13 +5494,26 @@
           </section>
 
           <section id="meth-genmix" class="meth-section">
-            <h2 class="meth-h2">GenMix</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Generation, load &amp; renewables</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">Actual generation per technology (ENTSO-E A75), wind/solar day-ahead forecasts (A69) and load (A65 actual and day-ahead forecast) are fetched by the daily job and stored in <code>data/history/daily/</code>. France also uses RTE éCO2mix (real-time and consolidated, via ODRÉ open data) for consumption, forecasts and exchanges.</p>
+            <h3 class="meth-h3">Time alignment</h3>
+            <p class="meth-p">Generation and load series are requested on a UTC day and are realigned client-side to CET/CEST delivery slots (slot 0 = 00:00 Paris), so they line up with day-ahead prices. Slots not yet published by ENTSO-E are shown as empty, never as zero.</p>
+            <h3 class="meth-h3">Capture prices</h3>
+            <p class="meth-p">Capture price = Σ(output × price) ÷ Σ(output) over the delivery day's slots; capture rate = capture price ÷ baseload (simple average price of the same days). Multi-day figures are output-weighted and only use days carrying generation data; the number of days is always shown.</p>
+            <h3 class="meth-h3">Carbon intensity</h3>
+            <p class="meth-p">Average (attributional) life-cycle intensity: Σ(output × emission factor) ÷ Σ(output), with IPCC / ADEME median factors per technology. Imports are not included.</p>
           </section>
 
           <section id="meth-cb" class="meth-section">
-            <h2 class="meth-h2">Cross-border</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Cross-border flows, imbalance &amp; outages</h2>
+            <p class="meth-p"><strong>France:</strong> commercial exchanges per border from RTE éCO2mix (15-min; RTE sign convention, negative = export). <strong>Other zones:</strong> ENTSO-E A11 physical flows, daily average per partner.</p>
+            <p class="meth-p"><strong>Imbalance:</strong> Belgian single imbalance price and system imbalance from Elia open data (today near real time, earlier days validated). Other TSOs are not ingested yet.</p>
+            <p class="meth-p"><strong>Nuclear availability &amp; outages:</strong> French available nuclear capacity (actual and operator forecast) from the SEFE cockpit; unavailability = 63.0 GW installed (57 reactors incl. Flamanville 3) − available. Unit-level UMMs are linked to the official inside-information platforms.</p>
+            <h3 class="meth-h3">Weather &amp; degree days</h3>
+            <p class="meth-p">Open-Meteo forecast and ERA5 archive, population-weighted over each country's main load centres. HDD = max(0, 18 °C − daily mean), CDD = max(0, daily mean − 21 °C); normal = mean of the same calendar day 2016–2025.</p>
+            <h3 class="meth-h3">History coverage</h3>
+            <p class="meth-p">France has day-ahead history since 2015; most other zones are fully covered only since October 2026 (backfill pending). Cross-zone comparisons are computed on the days all selected zones share, and partial years are excluded from yearly totals.</p>
           </section>
 
           <section id="meth-eua" class="meth-section">
