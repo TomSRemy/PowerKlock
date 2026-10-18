@@ -680,3 +680,25 @@ function drawGoBox() {
   });
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);
 }
+
+// ── Dashboard catalogue (mirrors of this page's charts, js/widgets.js) ──
+(function () {
+  if (!window.PKW) return;
+  const ensure = () => { if (!document.getElementById('go-indic-canvas') || !Chart.getChart(document.getElementById('go-indic-canvas'))) renderGO(); };
+  const ensureAuct = () => { if (typeof autoloadGoAuctions === 'function' && !window._pkGoAuctTried) { window._pkGoAuctTried = true; autoloadGoAuctions(); } };
+  const asOf = () => (typeof GO_REAL !== 'undefined' && GO_REAL && GO_REAL.asOf) ? 'as of ' + new Date(GO_REAL.asOf).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  [
+    ['go-indic', 'go-indic-canvas', 'GO price indications by vintage', 'Weekly broker indications per production year (€/MWh), selected product.', { w: 12, h: 5 }],
+    ['go-cal1', 'go-cal1-canvas', 'GO Cal+1 price', 'Rolling front-year GO price indication (€/MWh).', { w: 6, h: 5 }],
+    ['go-cal', 'go-cal-canvas', 'GO forward curve by calendar year', 'Bid / ask by production year (€/MWh).', { w: 6, h: 5 }],
+    ['go-spread', 'go-spread-canvas', 'GO bid/ask spread', 'Bid/ask spread over time (€/MWh).', { w: 6, h: 5 }],
+    ['go-hist', 'go-hist-canvas', 'GO weekly mid prices, all products', 'Weekly mid price per GO product (€/MWh).', { w: 12, h: 5 }],
+    ['go-wow', 'go-wow-canvas', 'GO week-on-week change', 'Weekly change of the mid price (€/MWh).', { w: 6, h: 4 }],
+    ['go-box', 'go-box-canvas', 'GO price distribution by half-year', 'Interquartile range and median of the weekly mid price.', { w: 6, h: 4 }],
+  ].forEach(([id, canvas, title, desc, size]) => PKW.mirror({ id, pageCanvas: canvas, title, desc, size, category: 'go', page: 'goprices', source: 'Commerg', ensure, subFn: asOf }));
+  [
+    ['go-auct-tech', 'go-auct-tech-canvas', 'French GO auctions · wind vs solar', 'Volume sold and weighted average price per technology, French state auctions.'],
+    ['go-auct-vol', 'go-auct-vol-canvas', 'French GO auctions · volumes', 'Volume offered vs allocated per auction (MWh).'],
+  ].forEach(([id, canvas, title, desc]) => PKW.mirror({ id, pageCanvas: canvas, title, desc, size: { w: 6, h: 5 }, category: 'go', page: 'goprices', source: 'EEX',
+    ensure: () => { ensureAuct(); ensure(); } }));
+})();
