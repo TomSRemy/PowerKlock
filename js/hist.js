@@ -544,7 +544,7 @@ async function renderHistSpot() {
   const roll30 = _rollingWithContext(data, s.zones[zone], 30);
 
   // "Now" marker -- index of today
-  const today = new Date().toISOString().slice(0,10);
+  const today = pkTodayISO();
   const nowIdx = labels.indexOf(today);
 
   // Period label
@@ -2043,7 +2043,7 @@ function _downloadHoChart(zone, fullscreen) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
   // High-res PNG with theme bg color
   const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0a0d12';
@@ -2119,7 +2119,7 @@ function _exportHoChartCsv(zone, fullscreen) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2161,7 +2161,7 @@ function _exportHoQuarterGridCsv(zone, grid) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
