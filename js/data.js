@@ -55,6 +55,42 @@ function pkSanitizeZones(list, dateISO) {
   return out;
 }
 window.pkSanitizeZones = pkSanitizeZones;
+
+// Generation mix of one delivery day from its daily file (realigned to Paris
+// by gen-align.js): per zone, MW averaged over the slots where something was
+// published. → { zones: {FR: {nuclear, solar, …, total, byCode}}, asOf, slots }
+const PK_GEN_AGG = { nuclear: 'nuclear', solar: 'solar', wind: 'wind', hydro: 'hydro', fossil: 'fossil', biomass: 'biomass', other: 'other' };
+async function pkGenmixFromDaily(dateISO) {
+  const r = await fetch(DATA_BASE + 'history/daily/' + dateISO + '.json?t=' + Date.now());
+  if (!r.ok) return null;
+  const j = await r.json();
+  const out = {}; let lastSlot = -1, n = 96;
+  Object.entries(j.zones || {}).forEach(([code, z]) => {
+    if (!z || !Array.isArray(z.nuclear) && !Array.isArray(z.solar)) return;
+    const keys = Object.keys(PK_GEN_AGG).filter(k => Array.isArray(z[k]));
+    n = z[keys[0]].length;
+    const pub = []; for (let i = 0; i < n; i++) if (keys.some(k => z[k][i] != null)) pub.push(i);
+    if (!pub.length) return;
+    lastSlot = Math.max(lastSlot, pub[pub.length - 1]);
+    // Each series over its own published slots (the first hours come from
+    // the previous day's file, which may lack the per-type breakdown).
+    const avg = a => { if (!Array.isArray(a)) return 0; const v = pub.map(i => a[i]).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : 0; };
+    const m = {};
+    keys.forEach(k => { m[PK_GEN_AGG[k]] = Math.round(avg(z[k])); });
+    Object.values(PK_GEN_AGG).forEach(k => { if (m[k] == null) m[k] = 0; });
+    m.total = Object.values(PK_GEN_AGG).reduce((s, k) => s + m[k], 0);
+    const bc = z.byCodeActual || z.byCode;
+    if (bc && typeof bc === 'object') { m.byCode = {}; Object.entries(bc).forEach(([c, a]) => { m.byCode[c] = Math.round(avg(a)); }); }
+    m.publishedSlots = pub.length;
+    if (m.total > 0) out[code] = m;
+  });
+  if (!Object.keys(out).length) return null;
+  // asOf = end of the last published slot, Paris clock, as an ISO instant.
+  const off = window.pkGenAlign ? pkGenAlign.parisOffset(dateISO) : 2;
+  const asOf = new Date(Date.parse(dateISO + 'T00:00:00Z') - off * 3600e3 + (lastSlot + 1) * 86400e3 / n).toISOString();
+  return { zones: out, asOf, slots: n };
+}
+window.pkGenmixFromDaily = pkGenmixFromDaily;
 window.PK_DEFAULT_PRICE_ZONES = PK_DEFAULT_PRICE_ZONES;
 
 function applyDefaultGenMixZones() {
@@ -291,6 +327,17 @@ async function loadFromJSON(opts) {
     // after Brexit) so counts/KPIs match the table.
     window._genmixData = Object.fromEntries(Object.entries(genmix.countries).filter(([, m]) => m && m.total > 0));
     window._genmixUpdated = genmix.updated || null;
+    // Same day's 15-min arrays (Paris-aligned): averages over the published
+    // slots, consistent with the profile charts. Replaces the fetch-time
+    // snapshot, which could be built from a partly published last slot.
+    try {
+      const day = await pkGenmixFromDaily(pkTodayISO());
+      if (day) {
+        Object.assign(window._genmixData, day.zones);
+        window._genmixUpdated = day.asOf;
+        window._genmixSlots = day.slots;
+      }
+    } catch (e) { console.warn('genmix from daily file failed', e); }
     console.log('✅ Genmix from JSON');
     // Re-apply default zone filters now that we know which zones have genmix data
     if (typeof applyDefaultGenMixZones === 'function') applyDefaultGenMixZones();
