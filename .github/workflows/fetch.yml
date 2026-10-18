@@ -27,6 +27,11 @@ jobs:
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: python scripts/fetch_data.py
+      # News also refreshed here: GitHub's scheduler can skip or delay the
+      # dedicated 3-hourly workflow for hours, this one runs twice a day.
+      - name: Fetch news feeds
+        continue-on-error: true
+        run: python scripts/fetch_news.py
       - name: Commit and push data files
         run: |
           git config user.name "PowerDesk Bot"
