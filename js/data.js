@@ -283,9 +283,7 @@ async function loadFromJSON(opts) {
   // My Dashboard's widgets read pricesData/_genmixData/_loadData/_cbData
   // directly — refresh it if the user has it open, same as the map refresh
   // above.
-  if (document.getElementById('page-mydash')?.classList.contains('active') && typeof renderMyDash === 'function') {
-    renderMyDash();
-  }
+  if (window.PKDash) PKDash.refresh();
 }
 
 // ════════════════════════════════════════════

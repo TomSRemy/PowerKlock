@@ -240,33 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── DASHBOARD TABS ──
-// kind:'kpi' (default) = a single number tile. kind:'chart' = a wider card
-// with its own canvas, drawn by renderMyDashCharts() after the grid HTML is
-// inserted (the canvas has to exist in the DOM before Chart.js can bind to
-// it).
-const AVAILABLE_WIDGETS = [
-  { id:'fr-da',      name:'FR DA Price',         desc:"France day-ahead price, real time" },
-  { id:'de-da',      name:'DE DA Price',         desc:"Germany day-ahead price" },
-  { id:'eua',        name:'EUA',                 desc:"EU ETS carbon, front-December contract (SEFE)" },
-  { id:'ttf',        name:'TTF DA',              desc:"TTF natural gas day-ahead (SEFE)" },
-  { id:'go-renew',   name:'GO Renewables',       desc:"Guarantees of Origin · Commerg mid price" },
-  { id:'fr-mix',     name:'FR Mix',              desc:"Nuclear + renewable share of the mix" },
-  { id:'fr-nuclear', name:'FR Nuclear',          desc:"Available nuclear capacity (SEFE)" },
-  { id:'fr-export',  name:'FR Export Balance',   desc:"Net commercial exchanges, France (RTE éCO2mix)" },
-  { id:'fr-load',    name:'FR Consumption',      desc:"Latest grid load (RTE éCO2mix)" },
-  { id:'hdd-paris',  name:'HDD France',          desc:"Heating degree days today, population-weighted (Open-Meteo)" },
-  { id:'fr-da-chart',   name:'FR — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
-  { id:'de-da-chart',   name:'DE — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
-  { id:'fr-mix-chart',  name:'FR — Generation Mix',   desc:"Breakdown by fuel, today", kind:'chart' },
-  { id:'fr-load-chart', name:'FR — Consumption',      desc:"Hourly load curve", kind:'chart' },
-  { id:'fr-cb-chart',   name:'FR — Cross-Border',     desc:"Import/export by border", kind:'chart' },
-  { id:'go-chart',      name:'GO Renewables — history', desc:"Weekly Bid/Ask/Mid · Commerg", kind:'chart' },
-  { id:'fr-ren-chart',  name:'FR — Wind vs Solar',    desc:"Hourly production, today", kind:'chart' },
-];
-// First visit: a starter layout instead of an empty page (user edits persist).
-const MYDASH_DEFAULT = ['fr-da', 'de-da', 'ttf', 'eua', 'fr-nuclear', 'fr-load', 'fr-export', 'hdd-paris', 'fr-da-chart', 'fr-mix-chart', 'fr-cb-chart', 'go-chart'];
-let myDashWidgets = (() => { try { const v = localStorage.getItem('pk-mydash-widgets'); return v == null ? MYDASH_DEFAULT.slice() : JSON.parse(v); } catch (_) { return MYDASH_DEFAULT.slice(); } })();
-
 // Scope de zone global. null = vue européenne (onglet All), 'FR' = cockpit France.
 // Les modules qui veulent se restreindre à une zone lisent window.PK_ZONE_SCOPE.
 window.PK_ZONE_SCOPE = null;
@@ -310,417 +283,10 @@ function switchDashboard(tab, btn) {
     if (sidebar) sidebar.classList.add('sidebar-special-hidden');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     setActive('page-mydash', true);
-    if (typeof renderMyDash === 'function') renderMyDash();
+    if (window.PKDash) PKDash.open();
     return;
   }
 }
-
-// ── FRANCE DASHBOARD ──
-function loadFranceDashboard() {
-  // KPIs - pull from pricesData if available
-  if (typeof pricesData !== 'undefined' && pricesData.length) {
-    const fr = pricesData.find(z => z.code === 'FR');
-    if (fr) {
-      document.getElementById('fr-da-price').textContent = fr.today != null ? fr.today.toFixed(1) : '--';
-      const delta = fr.vsYday;
-      const deltaEl = document.getElementById('fr-da-delta');
-      if (delta != null) {
-        deltaEl.textContent = (delta >= 0 ? '▲' : '▼') + Math.abs(delta).toFixed(1);
-        deltaEl.className = 'kpi-delta ' + (delta >= 0 ? 'up' : 'down');
-      }
-    }
-  }
-  // Static placeholders for nuclear/renew/export
-  document.getElementById('fr-nuclear').textContent = '42.3';
-  document.getElementById('fr-renew').textContent = '18.7';
-  document.getElementById('fr-export').textContent = '+8.4';
-
-  // FR price chart (7 days) - use dummy data if real not loaded
-  const ctx = document.getElementById('fr-price-chart');
-  if (ctx) {
-    const labels = ['J-6','J-5','J-4','J-3','J-2','J-1','Auj'];
-    const vals = [58.2, 61.4, 45.8, 32.1, 12.4, 5.2, 1.2];
-    if (window.Chart && !ctx._chart) {
-      ctx._chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            data: vals,
-            borderColor: '#14D3A9',
-            backgroundColor: 'rgba(0,212,168,0.08)',
-            borderWidth: 2,
-            tension: 0,
-            fill: true,
-            pointRadius: 3,
-            pointBackgroundColor: '#14D3A9'
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } }, title: { display: true, text: '€/MWh', color: '#4A6280', font: { size: 10 } } }
-          }
-        }
-      });
-    }
-  }
-
-  // Mix chart
-  const mctx = document.getElementById('fr-mix-chart');
-  if (mctx && window.Chart && !mctx._chart) {
-    mctx._chart = new Chart(mctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Gas', 'Other'],
-        datasets: [{
-          data: [42.3, 9.2, 5.1, 8.8, 3.4, 2.2],
-          backgroundColor: ['#14D3A9','#C4A57B','#fbbf24','#94D2BD','#A87DC4','#4A6280'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: '#B8C9D9', font: { size: 11 }, padding: 10, boxWidth: 10 } }
-        }
-      }
-    });
-  }
-
-}
-
-// ── MY DASHBOARD ──
-function renderMyDash() {
-  const grid = document.getElementById('mydash-grid');
-  const empty = document.getElementById('mydash-empty');
-  if (!grid) return;
-  if (!myDashWidgets.length) {
-    if (empty) empty.style.display = 'flex';
-    grid.innerHTML = '';
-    return;
-  }
-  // GO price lives in a lazily-fetched CSV (only auto-loaded when the GO
-  // Prices page itself is opened) — trigger that fetch here too so the
-  // widget doesn't sit on '–' forever just because the user never visited
-  // that page. loadGoData() (called once the fetch resolves) re-renders
-  // My Dashboard itself if it's still the active page — see go.js.
-  if ((myDashWidgets.includes('go-renew') || myDashWidgets.includes('go-chart')) && typeof GO_REAL !== 'undefined' && !GO_REAL
-      && !window._mydashGoTried && typeof autoloadGo === 'function') {
-    window._mydashGoTried = true;
-    autoloadGo();
-  }
-  if (empty) empty.style.display = 'none';
-  grid.innerHTML = myDashWidgets.map(id => {
-    const w = AVAILABLE_WIDGETS.find(x => x.id === id);
-    if (!w) return '';
-    if (w.kind === 'chart') {
-      return `<div class="mydash-widget mydash-widget-chart">
-        <button class="mdash-remove" onclick="removeWidget('${id}')" title="Remove">×</button>
-        <div class="mydash-widget-title">${w.name}</div>
-        <div style="position:relative;height:200px"><canvas id="mdash-canvas-${id}"></canvas></div>
-      </div>`;
-    }
-    const val = getWidgetValue(id);
-    const valColor = val.notConnected ? 'var(--text3)' : 'var(--text)';
-    const valStyle = val.notConnected ? 'font-style:italic' : '';
-    return `<div class="mydash-widget">
-      <button class="mdash-remove" onclick="removeWidget('${id}')" title="Remove">×</button>
-      <div class="mydash-widget-title">${w.name}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:${valColor};${valStyle}">${val.val}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px">${val.unit}</div>
-      ${val.chg ? `<div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${val.up ? 'var(--up)' : 'var(--down)'};margin-top:4px">${val.chg}</div>` : ''}
-    </div>`;
-  }).join('');
-  // Canvases only exist in the DOM from this point on (innerHTML above just
-  // created them), so the actual Chart.js draws have to happen after.
-  renderMyDashCharts();
-}
-
-// ── MY DASHBOARD · chart widgets ──
-// Each of these reuses data already loaded live elsewhere in the app
-// (pricesData, _genmixData, _loadData, _cbData, GO_REAL) — no new fetches,
-// no demo numbers.
-function renderMyDashCharts() {
-  // The canvas element itself is id="mdash-canvas-<widget id>" (see the
-  // 'chart' branch in renderMyDash's innerHTML template) — draw functions
-  // below take that already-prefixed canvas id, not the bare widget id.
-  const cid = id => 'mdash-canvas-' + id;
-  if (myDashWidgets.includes('fr-da-chart')) _mdashDrawPriceChart(cid('fr-da-chart'), 'FR');
-  if (myDashWidgets.includes('de-da-chart')) _mdashDrawPriceChart(cid('de-da-chart'), 'DE_LU');
-  if (myDashWidgets.includes('fr-mix-chart')) _mdashDrawMixChart(cid('fr-mix-chart'));
-  if (myDashWidgets.includes('fr-load-chart')) _mdashDrawLoadChart(cid('fr-load-chart'));
-  if (myDashWidgets.includes('fr-cb-chart')) _mdashDrawCbChart(cid('fr-cb-chart'));
-  if (myDashWidgets.includes('go-chart')) _mdashDrawGoChart(cid('go-chart'));
-  if (myDashWidgets.includes('fr-ren-chart')) _mdashDrawRenChart(cid('fr-ren-chart'));
-}
-
-function _mdashDrawPriceChart(canvasId, code) {
-  const z = (typeof pricesData !== 'undefined' ? pricesData : []).find(x => x.code === code);
-  if (!z || !z.hourly || !z.hourly.length) { noDataMsg(canvasId, 'No price yet today', 'Arrives with prices.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(z.hourly.length), datasets: [{
-      data: z.hourly, borderColor: C_UP, borderWidth: 1.5, pointRadius: 0,
-      fill: true, backgroundColor: rgba(C_UP, .08), tension: 0, spanGaps: true,
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' €/MWh' } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + '€' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawMixChart(canvasId) {
-  const mix = window._genmixData && window._genmixData.FR;
-  if (!mix || !mix.total) { noDataMsg(canvasId, 'FR mix not loaded', 'Arrives with genmix.json'); return; }
-  mkChart(canvasId, {
-    type: 'doughnut',
-    data: {
-      labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Fossil', 'Other'],
-      datasets: [{
-        data: [mix.nuclear, mix.wind, mix.solar, mix.hydro, mix.fossil, (mix.biomass || 0) + (mix.other || 0)],
-        backgroundColor: [C_NUC, C_WIND, C_SOLAR, '#94D2BD', C_DN, C_TX3],
-        borderWidth: 0,
-      }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } } },
-    },
-  });
-}
-
-function _mdashDrawLoadChart(canvasId) {
-  const load = window._loadData && window._loadData.FR;
-  if (!load || !load.actual || !load.actual.length) { noDataMsg(canvasId, 'FR load not loaded', 'Arrives with load.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(load.actual.length), datasets: [{
-      data: load.actual.map(v => v == null ? null : v / 1000), borderColor: '#A87DC4', borderWidth: 1.5,
-      pointRadius: 0, fill: true, backgroundColor: rgba('#A87DC4', .08), tension: 0, spanGaps: false,
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' GW' } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
-      },
-    },
-  });
-}
-
-// FR exchanges per border today (RTE éCO2mix, commercial, average GW).
-async function _mdashDrawCbChart(canvasId) {
-  const d = window.PK_E2M ? await PK_E2M.day(pkTodayISO()) : null;
-  if (!d) { noDataMsg(canvasId, 'FR exchanges not available', 'RTE éCO2mix'); return; }
-  const B = PK_E2M.BORDERS;
-  const avg = B.map(b => { const v = d[b.key].filter(x => x != null); return v.length ? v.reduce((a, x) => a + x, 0) / v.length / 1000 : 0; });
-  mkChart(canvasId, {
-    type: 'bar',
-    data: { labels: B.map(b => b.label), datasets: [
-      { label: 'Average exchange today (GW, + import / − export)', data: avg.map(v => +v.toFixed(2)), backgroundColor: avg.map(v => v < 0 ? rgba(C_UP, .65) : rgba(C_DN, .55)), borderWidth: 0, borderRadius: 3 },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawGoChart(canvasId) {
-  const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-  if (!real || !real.weekly.length) { noDataMsg(canvasId, 'No Commerg data loaded', 'waiting on GO fetch'); return; }
-  const wk = real.weekly;
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: wk.map(w => fmtGoDate(w.t)), datasets: [
-      { label: 'Ask', data: wk.map(w => w.ask), borderColor: C_DN, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
-      { label: 'Bid', data: wk.map(w => w.bid), borderColor: C_UP, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 6, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v.toFixed(2) + '€' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawRenChart(canvasId) {
-  const ren = window._renData && window._renData.FR;
-  if (!ren || !ren.windActual || !ren.windActual.length) { noDataMsg(canvasId, 'FR renewables not loaded', 'Arrives with renewables.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(ren.windActual.length), datasets: [
-      { label: 'Wind', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
-      { label: 'Solar', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' GW'}` } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
-      },
-    },
-  });
-}
-
-// Last non-null value in a slot array (e.g. today's 96×15min series, where
-// future slots that haven't happened yet are null).
-function _mdashLastValid(arr) {
-  if (!Array.isArray(arr)) return null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (arr[i] != null) return arr[i];
-  }
-  return null;
-}
-
-function getWidgetValue(id) {
-  const notConnected = { val:'–', unit:'not connected', chg:'', up:null, notConnected:true };
-
-  if (id === 'fr-da' || id === 'de-da') {
-    const code = id === 'fr-da' ? 'FR' : 'DE_LU';
-    const z = (typeof pricesData !== 'undefined' ? pricesData : []).find(x => x.code === code);
-    if (!z || z.today == null) return { val:'–', unit:'€/MWh', chg:'', up:null };
-    // Rising power price is bad (red) / falling is good (green) — same
-    // convention as the Prices table and the France cockpit.
-    const chg = z.vsYday != null ? (z.vsYday >= 0 ? '▲' : '▼') + Math.abs(z.vsYday).toFixed(1) : '';
-    return { val: z.today.toFixed(1), unit:'€/MWh', chg, up: z.vsYday != null ? z.vsYday < 0 : null };
-  }
-
-  if (id === 'go-renew') {
-    const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-    if (!real || !real.weekly.length) return { val:'–', unit:'loading Commerg data', chg:'', up:null };
-    const last = real.weekly[real.weekly.length - 1];
-    const d = real.d;
-    // Same convention as the GO Prices page itself: rising GO price = 'up'.
-    const chg = d == null ? '' : (d >= 0 ? '▲+' : '▼') + Math.abs(d).toFixed(4);
-    return { val: last.mid != null ? last.mid.toFixed(4) : '–', unit:'€/MWh (mid)', chg, up: d != null ? d >= 0 : null };
-  }
-
-  if (id === 'fr-mix') {
-    const mix = window._genmixData && window._genmixData.FR;
-    if (!mix || !mix.total) return { val:'–', unit:'', chg:'', up:null };
-    const pct = (mix.nuclear + mix.wind + mix.solar + mix.hydro + mix.biomass) / mix.total * 100;
-    return { val: pct.toFixed(0) + '%', unit:'Nuc + ENR', chg:'', up:null };
-  }
-
-  if (id === 'fr-nuclear') {
-    const l = window.PKC && PKC.last('fr_nuc_avail');
-    if (!l) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (l.v / 1000).toFixed(1), unit:'GW available · ' + l.d, chg: l.chg == null ? '' : (l.chg >= 0 ? '▲' : '▼') + Math.abs(l.chg / 1000).toFixed(2) + ' GW', up: l.chg != null ? l.chg >= 0 : null };
-  }
-
-  if (id === 'ttf' || id === 'eua') {
-    const l = window.PKC && PKC.last(id);
-    if (!l) return { val:'–', unit: id === 'ttf' ? '€/MWh' : '€/t', chg:'', up:null };
-    // Rising fuel cost = red, like power prices.
-    return { val: l.v.toFixed(2), unit: (id === 'ttf' ? '€/MWh · ' : '€/t · ' + PKC.contractLabel('eua') + ' · ') + l.d,
-      chg: l.pct == null ? '' : (l.pct >= 0 ? '▲' : '▼') + Math.abs(l.pct).toFixed(2) + '%', up: l.pct != null ? l.pct < 0 : null };
-  }
-
-  // Live éCO2mix / Open-Meteo values are fetched once, then the dashboard re-renders.
-  const live = window._mdashLive || {};
-  if (id === 'fr-export' || id === 'fr-load') {
-    _mdashFetchLive();
-    const r = live.e2m;
-    if (!r) return { val:'–', unit:'GW', chg:'', up:null };
-    if (id === 'fr-load') return { val: (r.load / 1000).toFixed(1), unit: 'GW · consumption at ' + r.t, chg:'', up:null };
-    return { val: (r.net >= 0 ? '+' : '') + (r.net / 1000).toFixed(1), unit: (r.net >= 0 ? 'GW · net exporter at ' : 'GW · net importer at ') + r.t, chg:'', up: r.net >= 0 };
-  }
-  if (id === 'hdd-paris') {
-    _mdashFetchLive();
-    if (live.hdd == null) return { val:'–', unit:'HDD', chg:'', up:null };
-    return { val: live.hdd.toFixed(1), unit: 'HDD today · mean ' + live.tmean.toFixed(1) + ' °C (base 18)', chg:'', up:null };
-  }
-
-  return { val:'–', unit:'', chg:'', up:null };
-}
-
-function _mdashFetchLive() {
-  if (window._mdashLiveTried) return;
-  window._mdashLiveTried = true;
-  window._mdashLive = window._mdashLive || {};
-  const done = () => { if (document.getElementById('page-mydash')?.classList.contains('active')) renderMyDash(); };
-  if (window.PK_E2M) PK_E2M.day(pkTodayISO()).then(d => {
-    if (!d) return;
-    let i = -1; d.consommation.forEach((v, k) => { if (v != null) i = k; });
-    if (i < 0) return;
-    const net = -PK_E2M.BORDERS.reduce((a, b) => a + (d[b.key][i] || 0), 0);   // RTE: negative = export
-    const t = makeTimeLabels(96)[i];
-    window._mdashLive.e2m = { load: d.consommation[i], net, t };
-    done();
-  });
-  if (typeof _wxForecast === 'function') _wxForecast('FR', 7).then(res => {
-    if (!res) return;
-    const di = res[0].daily.time.indexOf(pkTodayISO());
-    const m = _wxWeighted(res, 'FR', r => r.daily.temperature_2m_mean)[di];
-    if (m == null) return;
-    window._mdashLive.tmean = m; window._mdashLive.hdd = Math.max(0, 18 - m);
-    done();
-  });
-}
-
-function removeWidget(id) {
-  myDashWidgets = myDashWidgets.filter(x => x !== id);
-  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
-  renderMyDash();
-}
-
-function openWidgetPicker() {
-  const list = document.getElementById('widget-picker-list');
-  list.innerHTML = AVAILABLE_WIDGETS.map(w => `
-    <div class="picker-item ${myDashWidgets.includes(w.id) ? 'added' : ''}" onclick="toggleWidget('${w.id}', this)">
-      <div class="picker-item-name">${myDashWidgets.includes(w.id) ? '✓ ' : ''}${w.name}</div>
-      <div class="picker-item-desc">${w.desc}</div>
-    </div>`).join('');
-  document.getElementById('widget-picker').style.display = 'flex';
-}
-
-function closeWidgetPicker() {
-  document.getElementById('widget-picker').style.display = 'none';
-  renderMyDash();
-}
-
-function toggleWidget(id, el) {
-  if (myDashWidgets.includes(id)) {
-    myDashWidgets = myDashWidgets.filter(x => x !== id);
-    el.classList.remove('added');
-    el.querySelector('.picker-item-name').textContent = AVAILABLE_WIDGETS.find(w=>w.id===id).name;
-  } else {
-    myDashWidgets.push(id);
-    el.classList.add('added');
-    el.querySelector('.picker-item-name').textContent = '✓ ' + AVAILABLE_WIDGETS.find(w=>w.id===id).name;
-  }
-  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
-}
-
-function exportDashConfig() {
-  const cfg = { widgets: myDashWidgets, exported: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'powerklock-dashboard.json';
-  a.click();
-}
-
-
 
 // ════════════════════════════════════════════
 // ENTSOE API HELPER
@@ -5801,12 +5367,6 @@ function clearSlotHover(idx) {
     const canvas = document.getElementById('pr-home-intraday-canvas');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    // Tear down any previous instance
-    if (window._prHomeIntradayChart) {
-      try { window._prHomeIntradayChart.destroy(); } catch (_) {}
-      window._prHomeIntradayChart = null;
-    }
-
     // Zone filter chips (default: the 7 home zones)
     if (!window._prHomeZones) window._prHomeZones = new Set(HOME_ZONES);
     const chipHost = document.getElementById('pr-home-zone-chips');
@@ -5818,73 +5378,13 @@ function clearSlotHover(idx) {
         return `<button class="pk-gf-btn${on ? ' active' : ''}" style="padding:2px 8px;font-size:10px" onclick="prHomeToggleZone('${c}')">${c}</button>`;
       }).join('');
     }
-    // Pick the selected zones that actually have data today
-    const zones = [...window._prHomeZones]
-      .map(code => data.find(z => z.code === code))
-      .filter(z => z && z.hourly && z.hourly.length);
-    if (!zones.length) return;
-
-    const nPts = zones[0].hourly.length;
-    const labels = (typeof makeTimeLabels === 'function') ? makeTimeLabels(nPts) : Array.from({length:nPts}, (_, i) => `${String(Math.floor(i*24/nPts)).padStart(2,'0')}h`);
-
-    // Build datasets · each zone gets its colour from the zone colour map
-    const datasets = zones.map((z, i) => {
-      const col = (typeof ccZoneColor === 'function') ? ccZoneColor(z.code, data, data.indexOf(z))
-                : (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
-      return {
-        label: z.code,
-        data: z.hourly,
-        borderColor: col,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: col,
-        fill: false,
-        tension: 0,
-        spanGaps: true,
-      };
-    });
-
     // Update card title with zone count
+    const zonesOn = [...window._prHomeZones].filter(c => data.some(z => z.code === c && z.hourly && z.hourly.length));
     const title = document.getElementById('pr-home-chart-title');
-    if (title) title.textContent = `${zones.length} zone${zones.length > 1 ? 's' : ''} · 15-min day-ahead profile`;
-
-    const cfg = {
-      type: 'line',
-      data: { labels, datasets },
-      plugins: (typeof ccBuildCommonShading === 'function') ? [ccBuildCommonShading(nPts)] : [],
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            display: true, position: 'bottom',
-            labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, padding: 10 }
-          },
-          tooltip: {
-            mode: 'index', intersect: false,
-            callbacks: {
-              title: c => c[0].label,
-              label: c => c.raw != null ? ` ${c.dataset.label}: ${c.raw.toFixed(1)} €/MWh` : null,
-            }
-          }
-        },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 12 } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', callback: v => v.toFixed(0) }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } }, grace: '12%' }
-        }
-      }
-    };
-
-    cfg.options.plugins.zoom = ZOOM_CFG;
-    cfg.options.plugins.annotation = { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, labels, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() };
-    try {
-      window._prHomeIntradayChart = mkChart('pr-home-intraday-canvas', cfg);
+    if (title) title.textContent = `${zonesOn.length} zone${zonesOn.length > 1 ? 's' : ''} · 15-min day-ahead profile`;
+    PKW.draw('da-intraday', 'pr-home-intraday-canvas', { codes: [...window._prHomeZones] }).then(() => {
       setTimeout(() => { addFullscreen('pr-home-intraday-canvas'); addDownload('pr-home-intraday-canvas', 'intraday-' + (window._currentPriceDate || '')); }, 60);
-    } catch (e) {
-      console.warn('[prRenderHome] intraday chart build failed', e);
-    }
+    });
   }
 
   // ── 5 · Recent anomalies table (last 7 days · |Z| > 2 vs 30D baseline) ──
@@ -6038,6 +5538,64 @@ function clearSlotHover(idx) {
     // Anomalies table runs async (fetches 7 days of JSON)
     _renderAnomaliesTable(data).catch(e => console.warn('[prRenderHome] anomalies failed', e));
   }
+
+  // ── Day-ahead intraday profile (page + dashboard) ──
+  const DA_GROUPS = {
+    core: ['FR', 'DE_LU', 'ES', 'BE', 'NL', 'IT_NORD', 'PT'],
+    FR: ['FR'], 'FR-DE': ['FR', 'DE_LU'],
+    CWE: ['FR', 'DE_LU', 'BE', 'NL', 'AT'],
+    iberia: ['FR', 'ES', 'PT'],
+    south: ['FR', 'IT_NORD', 'CH', 'ES'],
+    nordic: ['DK_W', 'DK_E', 'NO_1', 'SE', 'FI'],
+    cee: ['DE_LU', 'PL', 'CZ', 'SK', 'HU', 'RO'],
+  };
+  PKW.register({
+    id: 'da-intraday', title: 'Day-ahead intraday profile', category: 'prices', source: 'ENTSO-E',
+    page: 'prices', pageCanvas: 'pr-home-intraday-canvas', size: { w: 8, h: 5 },
+    desc: '15-minute day-ahead prices of a group of zones for the current delivery day.',
+    params: [{ key: 'group', label: 'Zones', inTitle: true, options: [
+      ['core', 'Main zones'], ['FR', 'France'], ['FR-DE', 'France · Germany'], ['CWE', 'CWE'], ['iberia', 'France · Iberia'],
+      ['south', 'France · Italy · Switzerland · Spain'], ['nordic', 'Nordics'], ['cee', 'Central-East Europe']] }],
+    defaults: { group: 'core' },
+    async draw(cid, p) {
+      const data = await PKW.waitFor(() => { const d = window._pricesSorted || (typeof pricesData !== 'undefined' ? pricesData : null); return d && d.length ? d : null; });
+      if (!data) { noDataMsg(cid, 'Day-ahead prices not loaded', 'ENTSO-E'); return null; }
+      const codes = p.codes || DA_GROUPS[p.group] || DA_GROUPS.core;
+      const zones = codes.map(code => data.find(z => z.code === code)).filter(z => z && z.hourly && z.hourly.length);
+      if (!zones.length) { noDataMsg(cid, 'No prices for these zones today', 'ENTSO-E'); return null; }
+      const nPts = zones[0].hourly.length;
+      const labels = makeTimeLabels(nPts);
+      const datasets = zones.map(z => {
+        const col = ccZoneColor(z.code, data, data.indexOf(z));
+        return { label: z.code, data: z.hourly, borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
+          pointHoverBackgroundColor: col, fill: false, tension: 0, spanGaps: true };
+      });
+      const a = nowLineAnnotation({ slots: nPts, labels, chartDate: window._currentPriceDate });
+      mkChart(cid, {
+        type: 'line',
+        data: { labels, datasets },
+        plugins: [ccBuildCommonShading(nPts)],
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, padding: 10 } },
+            tooltip: { mode: 'index', intersect: false, callbacks: {
+              title: c => c[0].label,
+              label: c => c.raw != null ? ` ${c.dataset.label}: ${c.raw.toFixed(1)} €/MWh` : null,
+            } },
+            zoom: ZOOM_CFG,
+            annotation: { annotations: a ? { nowLine: a } : {} },
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 12 } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', callback: v => v.toFixed(0) }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } }, grace: '12%' },
+          },
+        },
+      });
+      return { sub: 'delivery ' + (window._currentPriceDate || '') };
+    },
+  });
 
   window.prRenderHome = prRenderHome;
   window.prHomeToggleZone = function (code) {

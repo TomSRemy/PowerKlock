@@ -36,17 +36,19 @@ function _fuelChg(l, dp, suffix) {
   const col = l.chg > 0 ? 'var(--down)' : l.chg < 0 ? 'var(--up)' : 'var(--text3)';
   return `<span style="color:${col}">${l.chg >= 0 ? '▲' : '▼'} ${_fuelSigned(l.chg, dp)} (${_fuelSigned(l.pct, 1)}%)</span> ${suffix || 'd/d'}`;
 }
-function _fuelWindowStart(key) {
-  const st = FUEL_STATE[key];
-  if (st.from) return st.from;
+// Window from a period key ('1M'…'5Y', 'YTD', 'All') or an explicit from/to.
+function _fuelStart(w, from) {
+  if (from) return from;
   const t = new Date();
-  const back = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366, '2Y': 731, '5Y': 1827 }[st.w];
-  if (st.w === 'YTD') return t.getFullYear() + '-01-01';
+  const back = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366, '2Y': 731, '5Y': 1827 }[w];
+  if (w === 'YTD') return t.getFullYear() + '-01-01';
   if (!back) return '0000-00-00';
   t.setDate(t.getDate() - back);
   return t.toISOString().slice(0, 10);
 }
-function _fuelWindowEnd(key) { return FUEL_STATE[key].to || '9999-12-31'; }
+function _fuelRange(p) { return [_fuelStart(p.period, p.from), p.to || '9999-12-31']; }
+// Page state → widget params.
+function _fuelPageP(key, extra) { const st = FUEL_STATE[key]; return Object.assign({ period: st.w, from: st.from, to: st.to }, extra || {}); }
 function _fuelLineDs(label, data, color, extra) {
   return Object.assign({ label, data, borderColor: color, backgroundColor: rgba(color, .08), borderWidth: 1.6,
     pointRadius: 0, pointHoverRadius: 3, tension: 0, spanGaps: true, fill: false }, extra || {});
@@ -67,9 +69,17 @@ function _fuelOpts(extra) {
   }, extra || {});
 }
 function _fuelChart(id, cfg, file) {
+  _fuelRestoreCanvas(id);
   const ch = mkChart(id, cfg);
   setTimeout(() => { addFullscreen(id); addDownload(id, file || id); }, 60);
   return ch;
+}
+const FUEL_PERIODS = [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['YTD', 'YTD'], ['1Y', '1Y'], ['2Y', '2Y'], ['5Y', '5Y'], ['All', 'All']];
+const FUEL_PERIOD_PARAM = { key: 'period', label: 'Period', options: FUEL_PERIODS };
+// Registers a chart in the dashboard catalogue (js/widgets.js).
+function _fuelReg(def) {
+  if (!window.PKW) return;
+  PKW.register(Object.assign({ size: { w: 6, h: 5 }, source: 'SEFE' }, def));
 }
 // Join several date-keyed maps on the union of their dates within a window.
 function _fuelJoin(maps, from, to) {
@@ -101,8 +111,6 @@ async function drawEUA() {
   if (!PKC.data) { document.getElementById('fuel-kpis').innerHTML = '<div class="fuel-note">Market data unavailable (data/commodities.json).</div>'; return; }
   // Full history: the storage seasonality needs 5+ years whatever the period.
   await PKC.loadFull();
-  const full = true;
-  const from = _fuelWindowStart('fuel'), to = _fuelWindowEnd('fuel');
 
   // KPIs
   const eua = PKC.last('eua'), ttf = PKC.last('ttf'), coal = PKC.last('coal'), brent = PKC.last('brent'), agsi = PKC.last('agsi');
@@ -122,17 +130,46 @@ async function drawEUA() {
       sw != null && eua ? (eua.v > sw ? 'EUA above → gas in merit' : 'EUA below → coal in merit') : '',
       sw != null && eua ? (eua.v > sw ? 'up' : 'down') : null);
 
-  // 1 · EUA & TTF (dual axis)
-  {
-    const j = _fuelJoin([PKC.asMap('eua', full), PKC.asMap('ttf', full)], from, to);
-    _fuelChart('fuel-eua-ttf', { type: 'line', data: { labels: j.labels, datasets: [
+  const P = _fuelPageP('fuel');
+  ['fuel-eua-ttf', 'fuel-switch', 'fuel-hubs', 'fuel-storage', 'fuel-coal-oil', 'fuel-lng'].forEach(id => PKW.draw(id, id, P));
+
+  document.getElementById('fuel-note').innerHTML =
+    `Switch price = (gas cost − coal cost) ÷ (coal − gas CO₂ intensity), with CCGT ${(PKC.FUEL.gasEff * 100).toFixed(1)}% / ` +
+    `${PKC.FUEL.gasCO2.toFixed(3)} tCO₂/MWh and coal ${(PKC.FUEL.coalEff * 100).toFixed(0)}% / ${PKC.FUEL.coalCO2.toFixed(3)} tCO₂/MWh, ` +
+    `API2 converted at the EUR/USD close. EUA and coal are single benchmark contracts (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), ` +
+    `not rolled continuous series. Source: SEFE Energy market cockpit (public daily link).`;
+}
+
+// ── Carbon & Fuels charts (page + dashboard) ────────────────────────
+async function _fuelData() {
+  await PKC.ready;
+  if (!PKC.data) throw new Error('Market data unavailable');
+  await PKC.loadFull();
+}
+
+_fuelReg({
+  id: 'fuel-eua-ttf', title: 'EUA & TTF', category: 'fuels', page: 'eua', pageCanvas: 'fuel-eua-ttf',
+  desc: 'EUA front-December (€/t) and TTF day-ahead (€/MWh), daily closes.',
+  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  async draw(cid, p) {
+    await _fuelData();
+    const [from, to] = _fuelRange(p);
+    const j = _fuelJoin([PKC.asMap('eua', true), PKC.asMap('ttf', true)], from, to);
+    _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('EUA ' + PKC.contractLabel('eua') + ' (€/t)', j.cols[0], C_EUA, { yAxisID: 'y' }),
       _fuelLineDs('TTF DA (€/MWh)', j.cols[1], C_TTF, { yAxisID: 'y1' }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/t', { position: 'left' }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'eua-ttf');
-  }
-  // 2 · Switching price vs EUA
-  {
-    const ttfM = PKC.asMap('ttf', full), coalM = PKC.asMap('coal', full), fxM = PKC.asMap('eurusd', full), euaM = PKC.asMap('eua', full);
+  },
+});
+
+_fuelReg({
+  id: 'fuel-switch', title: 'Coal-to-gas switch price', category: 'fuels', page: 'eua', pageCanvas: 'fuel-switch',
+  desc: 'EUA price at which a CCGT matches a coal unit, against the EUA.',
+  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  async draw(cid, p) {
+    await _fuelData();
+    const [from, to] = _fuelRange(p);
+    const ttfM = PKC.asMap('ttf', true), coalM = PKC.asMap('coal', true), fxM = PKC.asMap('eurusd', true), euaM = PKC.asMap('eua', true);
     const swM = new Map();
     let lastFx = null, lastCoal = null;
     [...ttfM.keys()].sort().forEach(d => {
@@ -142,53 +179,75 @@ async function drawEUA() {
       if (v != null) swM.set(d, Math.round(v * 100) / 100);
     });
     const j = _fuelJoin([swM, euaM], from, to);
-    _fuelChart('fuel-switch', { type: 'line', data: { labels: j.labels, datasets: [
+    _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('Switch price (€/t)', j.cols[0], C_THE),
       _fuelLineDs('EUA (€/t)', j.cols[1], C_EUA),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/t') } }) }, 'coal-gas-switch');
-  }
-  // 3 · Gas hubs (NBP p/th → €/MWh: ×0.01 £/p ÷ 0.0293071 MWh/th × EUR per GBP)
-  {
-    const nbp = PKC.asMap('nbp', full), gbp = PKC.asMap('gbpusd', full), eur = PKC.asMap('eurusd', full);
+  },
+});
+
+// NBP p/th → €/MWh: ×0.01 £/p ÷ 0.0293071 MWh/th × EUR per GBP.
+_fuelReg({
+  id: 'fuel-hubs', title: 'European gas hubs', category: 'fuels', page: 'eua', pageCanvas: 'fuel-hubs',
+  desc: 'TTF, PEG, THE and NBP day-ahead in €/MWh.',
+  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  async draw(cid, p) {
+    await _fuelData();
+    const [from, to] = _fuelRange(p);
+    const nbp = PKC.asMap('nbp', true), gbp = PKC.asMap('gbpusd', true), eur = PKC.asMap('eurusd', true);
     const nbpE = new Map(); let g = null, e = null;
     [...nbp.keys()].sort().forEach(d => {
       if (gbp.has(d)) g = gbp.get(d); if (eur.has(d)) e = eur.get(d);
       if (g && e) nbpE.set(d, Math.round(nbp.get(d) * 0.01 / 0.0293071 * (g / e) * 100) / 100);
     });
-    const j = _fuelJoin([PKC.asMap('ttf', full), PKC.asMap('peg', full), PKC.asMap('the', full), nbpE], from, to);
-    _fuelChart('fuel-hubs', { type: 'line', data: { labels: j.labels, datasets: [
+    const j = _fuelJoin([PKC.asMap('ttf', true), PKC.asMap('peg', true), PKC.asMap('the', true), nbpE], from, to);
+    _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('TTF', j.cols[0], C_TTF), _fuelLineDs('PEG', j.cols[1], C_PEG),
       _fuelLineDs('THE', j.cols[2], C_THE), _fuelLineDs('NBP (€/MWh)', j.cols[3], C_NBP),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'gas-hubs');
-  }
-  // 4 · Storage seasonality (not period-bound: always the calendar year)
-  _fuelStorageChart();
-  // 5 · Coal & oil
-  {
-    const j = _fuelJoin([PKC.asMap('coal', full), PKC.asMap('brent', full)], from, to);
-    _fuelChart('fuel-coal-oil', { type: 'line', data: { labels: j.labels, datasets: [
+  },
+});
+
+// Not period-bound: always the calendar year against the previous five.
+_fuelReg({
+  id: 'fuel-storage', title: 'EU gas storage', category: 'fuels', page: 'eua', pageCanvas: 'fuel-storage', source: 'SEFE · AGSI+',
+  desc: 'Current year fill level against the 5-year range and average.',
+  async draw(cid) { await _fuelData(); _fuelStorageChart(cid); },
+});
+
+_fuelReg({
+  id: 'fuel-coal-oil', title: 'Coal & oil', category: 'fuels', page: 'eua', pageCanvas: 'fuel-coal-oil',
+  desc: 'API2 coal ($/t) and Brent M+1 ($/bbl).',
+  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  async draw(cid, p) {
+    await _fuelData();
+    const [from, to] = _fuelRange(p);
+    const j = _fuelJoin([PKC.asMap('coal', true), PKC.asMap('brent', true)], from, to);
+    _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('API2 ' + PKC.contractLabel('coal') + ' ($/t)', j.cols[0], C_COAL, { yAxisID: 'y' }),
       _fuelLineDs('Brent M+1 ($/bbl)', j.cols[1], C_BRENT, { yAxisID: 'y1' }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('$/t', { position: 'left' }), y1: _fuelAxis('$/bbl', { position: 'right', grid: { display: false } }) } }) }, 'coal-oil');
-  }
-  // 6 · LNG: TTF converted to $/MMBtu (€/MWh × USD per EUR ÷ 3.412 MMBtu/MWh)
-  {
-    const ttfM = PKC.asMap('ttf', full), fxM = PKC.asMap('eurusd', full), ttfU = new Map(); let fx = null;
+  },
+});
+
+// TTF in $/MMBtu = €/MWh × USD per EUR ÷ 3.412 MMBtu/MWh.
+_fuelReg({
+  id: 'fuel-lng', title: 'LNG arbitrage · JKM vs TTF', category: 'fuels', page: 'eua', pageCanvas: 'fuel-lng',
+  desc: 'JKM M+1 against TTF in $/MMBtu, and the spread that steers LNG cargoes.',
+  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  async draw(cid, p) {
+    await _fuelData();
+    const [from, to] = _fuelRange(p);
+    const ttfM = PKC.asMap('ttf', true), fxM = PKC.asMap('eurusd', true), ttfU = new Map(); let fx = null;
     [...ttfM.keys()].sort().forEach(d => { if (fxM.has(d)) fx = fxM.get(d); if (fx) ttfU.set(d, Math.round(ttfM.get(d) * fx / 3.412 * 100) / 100); });
-    const j = _fuelJoin([PKC.asMap('jkm', full), ttfU], from, to);
+    const j = _fuelJoin([PKC.asMap('jkm', true), ttfU], from, to);
     const spread = j.labels.map((_, i) => j.cols[0][i] != null && j.cols[1][i] != null ? Math.round((j.cols[0][i] - j.cols[1][i]) * 100) / 100 : null);
-    _fuelChart('fuel-lng', { type: 'line', data: { labels: j.labels, datasets: [
+    _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('JKM M+1', j.cols[0], C_JKM), _fuelLineDs('TTF DA', j.cols[1], C_TTF),
       _fuelLineDs('JKM − TTF', spread, C_TX3, { borderDash: [4, 3], borderWidth: 1.2 }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('$/MMBtu') } }) }, 'lng-arb');
-  }
-
-  document.getElementById('fuel-note').innerHTML =
-    `Switch price = (gas cost − coal cost) ÷ (coal − gas CO₂ intensity), with CCGT ${(PKC.FUEL.gasEff * 100).toFixed(1)}% / ` +
-    `${PKC.FUEL.gasCO2.toFixed(3)} tCO₂/MWh and coal ${(PKC.FUEL.coalEff * 100).toFixed(0)}% / ${PKC.FUEL.coalCO2.toFixed(3)} tCO₂/MWh, ` +
-    `API2 converted at the EUR/USD close. EUA and coal are single benchmark contracts (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), ` +
-    `not rolled continuous series. Source: SEFE Energy market cockpit (public daily link).`;
-}
+  },
+});
 
 function _fuelStorageByYear() {
   const by = {};
@@ -206,10 +265,10 @@ function _fuelStorageAvg(dateISO) {
   for (let k = y - 5; k < y; k++) { const a = by[k]; if (!a) continue; for (let o = 0; o <= 3; o++) { if (a[doy - o] != null) { vals.push(a[doy - o]); break; } } }
   return vals.length >= 3 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
 }
-function _fuelStorageChart() {
+function _fuelStorageChart(cid) {
   const by = _fuelStorageByYear(), cy = new Date().getFullYear();
   const prev = []; for (let y = cy - 5; y < cy; y++) if (by[y]) prev.push(by[y]);
-  if (!by[cy] || !prev.length) { if (typeof noDataMsg === 'function') noDataMsg('fuel-storage', 'No storage history', ''); return; }
+  if (!by[cy] || !prev.length) { if (typeof noDataMsg === 'function') noDataMsg(cid, 'No storage history', ''); return; }
   const N = 366, labels = [], mn = [], mx = [], av = [], cur = [];
   const fill = (a, i) => { for (let o = 0; o <= 3; o++) if (a[i - o] != null) return a[i - o]; return null; };
   for (let i = 0; i < N; i++) {
@@ -220,7 +279,7 @@ function _fuelStorageChart() {
     av.push(v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : null);
     cur.push(by[cy][i] != null ? by[cy][i] : null);
   }
-  _fuelChart('fuel-storage', { type: 'line', data: { labels, datasets: [
+  _fuelChart(cid, { type: 'line', data: { labels, datasets: [
     _fuelLineDs(`${cy - 5}–${cy - 1} range`, mx, C_TX3, { borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.14)' }),
     _fuelLineDs(`${cy - 5}–${cy - 1} min`, mn, C_TX3, { borderWidth: 0, pointRadius: 0 }),
     _fuelLineDs('5-year average', av, C_TX2, { borderDash: [4, 3], borderWidth: 1.2 }),
@@ -258,20 +317,8 @@ async function drawEUAFwd() {
     _fuelKpi('EUA ' + (eua0 ? eua0.label : ''), _fuelFmt(eua0 && eua0.value), '€/t', kpiChg(eua0)) +
     _fuelKpi('EUA carry', eua0 && eua1 ? _fuelSigned((eua1.value / eua0.value - 1) * 100, 2) : '–', '%', eua0 && eua1 ? `${eua1.label} vs ${eua0.label}` : '');
 
-  // TTF curve: day-ahead + strip
-  {
-    const labels = ['DA'].concat(ttfC.map(r => r.label || r.tenor));
-    const vals = [ttfDA ? ttfDA.v : null].concat(ttfC.map(r => r.value));
-    _fuelChart('fwdc-ttf', { type: 'line', data: { labels, datasets: [
-      _fuelLineDs('TTF (€/MWh)', vals, C_TTF, { pointRadius: 4, pointBackgroundColor: C_TTF, borderWidth: 2 }),
-    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, zoom: ZOOM_CFG }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh') } }) }, 'ttf-curve');
-  }
-  // EUA strip
-  {
-    _fuelChart('fwdc-eua', { type: 'bar', data: { labels: euaC.map(r => r.label), datasets: [
-      { label: 'EUA (€/t)', data: euaC.map(r => r.value), backgroundColor: rgba(C_EUA, .55), borderColor: C_EUA, borderWidth: 1, borderRadius: 3, maxBarThickness: 60 },
-    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, zoom: ZOOM_CFG }, scales: { x: _fuelXAxis(), y: _fuelAxis('€/t', { beginAtZero: true }) } }) }, 'eua-strip');
-  }
+  PKW.draw('fwdc-ttf', 'fwdc-ttf');
+  PKW.draw('fwdc-eua', 'fwdc-eua');
   // Table
   const row = (prod, r, unit) => `<tr><td>${prod}</td><td class="l">${r.contract}</td><td><b>${_fuelFmt(r.value)}</b></td><td>${unit}</td>` +
     `<td style="color:${r.varD1Pct > 0 ? 'var(--down)' : 'var(--up)'}">${_fuelSigned(r.varD1Pct)}%</td>` +
@@ -309,6 +356,37 @@ async function drawEUAFwd() {
     `CSS = power − TTF ÷ ${PKC.FUEL.gasEff} − EUA × ${PKC.FUEL.gasCO2.toFixed(3)} t/MWh, power and TTF on the same tenor, EUA from the December contract of that year (* = beyond the quoted strip, last December used). ` +
     `CDS only for Cal+1: API2 ${PKC.contractLabel('coal')} is the only coal contract in the feed. Power curve: ${_fuelDate(_fwdcMarket && _fwdcMarket.forwardCurveDate)}.`;
 }
+
+// ── Forward curve charts (page + dashboard) ─────────────────────────
+_fuelReg({
+  id: 'fwdc-ttf', title: 'TTF forward curve', category: 'forwards', page: 'euafwd', pageCanvas: 'fwdc-ttf',
+  desc: 'TTF day-ahead and the quoted strip (months, quarters, seasons, years).',
+  async draw(cid) {
+    await PKC.ready;
+    const ttfC = ((PKC.data && PKC.data.curves) || {}).ttf || [], ttfDA = PKC.last('ttf');
+    if (!ttfC.length) throw new Error('No TTF curve in the feed');
+    const labels = ['DA'].concat(ttfC.map(r => r.label || r.tenor));
+    const vals = [ttfDA ? ttfDA.v : null].concat(ttfC.map(r => r.value));
+    _fuelChart(cid, { type: 'line', data: { labels, datasets: [
+      _fuelLineDs('TTF (€/MWh)', vals, C_TTF, { pointRadius: 4, pointBackgroundColor: C_TTF, borderWidth: 2 }),
+    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, zoom: ZOOM_CFG }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh') } }) }, 'ttf-curve');
+    return { sub: 'settlement ' + _fuelDate(ttfC[0].date) };
+  },
+});
+
+_fuelReg({
+  id: 'fwdc-eua', title: 'EUA December strip', category: 'forwards', page: 'euafwd', pageCanvas: 'fwdc-eua',
+  desc: 'EUA December contracts quoted in the feed (€/t).',
+  async draw(cid) {
+    await PKC.ready;
+    const euaC = ((PKC.data && PKC.data.curves) || {}).eua || [];
+    if (!euaC.length) throw new Error('No EUA strip in the feed');
+    _fuelChart(cid, { type: 'bar', data: { labels: euaC.map(r => r.label), datasets: [
+      { label: 'EUA (€/t)', data: euaC.map(r => r.value), backgroundColor: rgba(C_EUA, .55), borderColor: C_EUA, borderWidth: 1, borderRadius: 3, maxBarThickness: 60 },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, zoom: ZOOM_CFG }, scales: { x: _fuelXAxis(), y: _fuelAxis('€/t', { beginAtZero: true }) } }) }, 'eua-strip');
+    return { sub: 'settlement ' + _fuelDate(euaC[0].date) };
+  },
+});
 
 // ════════════════════════════════════════════════════════════════════
 // PAGE 3 · CLEAN SPARK & DARK SPREADS
@@ -377,49 +455,74 @@ async function renderSpark() {
 }
 
 async function renderSparkHistory() {
-  await PKC.ready;
   const zone = (document.getElementById('sprh-zone') || {}).value || 'FR';
+  const P = _fuelPageP('sprh', { zone });
+  const [h] = await Promise.all([PKW.draw('spark-daily', 'sprh-daily', P), PKW.draw('spark-monthly', 'sprh-monthly', P)]);
+  const info = h && h.info;
+  if (!info) { document.getElementById('sprh-note').textContent = ''; return; }
+  const firstFuel = (PKC.pts('eua', true)[0] || [])[0];
+  document.getElementById('sprh-note').innerHTML =
+    `${zone}: ${info.n} delivery days from ${_fuelDate(info.first)} to ${_fuelDate(info.last)}. ` +
+    `Gas = TTF day-ahead traded the day before delivery; carbon = EUA ${PKC.contractLabel('eua')} close; coal = API2 ${PKC.contractLabel('coal')} at the EUR/USD close. ` +
+    `Peak = 08:00–20:00. Fuel history starts ${_fuelDate(firstFuel)}; zones other than FR only have day-ahead history since the backfill coverage date.`;
+}
+
+// Daily clean spark / dark spreads of one zone from the day-ahead summary.
+async function _sparkSeries(p) {
+  await PKC.ready;
   const [summary] = await Promise.all([typeof fetchSummary === 'function' ? fetchSummary() : null, PKC.loadFull()]);
-  const ser = summary && summary.zones && summary.zones[zone] || [];
-  const from = _fuelWindowStart('sprh'), to = _fuelWindowEnd('sprh');
+  const ser = summary && summary.zones && summary.zones[p.zone] || [];
+  const [from, to] = _fuelRange(p);
   const labels = [], css = [], cssP = [], cds = [];
   ser.forEach(e => {
     if (e.d < from || e.d > to || e.avg == null) return;
-    const r = (() => { // PKC.refsFor but on the full history
-      const [y, m, d] = e.d.split('-').map(Number); const prev = new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
-      return { ttf: PKC.valueOn('ttf', prev, true) ?? PKC.valueOn('ttf', e.d, true), eua: PKC.valueOn('eua', e.d, true),
-        coal: PKC.valueOn('coal', e.d, true), eurusd: PKC.valueOn('eurusd', e.d, true) };
-    })();
+    const [y, m, d] = e.d.split('-').map(Number);
+    const prev = new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+    const r = { ttf: PKC.valueOn('ttf', prev, true) ?? PKC.valueOn('ttf', e.d, true), eua: PKC.valueOn('eua', e.d, true),
+      coal: PKC.valueOn('coal', e.d, true), eurusd: PKC.valueOn('eurusd', e.d, true) };
     labels.push(e.d);
     css.push(_r2(PKC.cleanSpark(e.avg, r.ttf, r.eua)));
     cssP.push(_r2(PKC.cleanSpark(e.peakAvg, r.ttf, r.eua)));
     cds.push(_r2(PKC.cleanDark(e.avg, r.coal, r.eurusd, r.eua)));
   });
-  if (!labels.length) { if (typeof noDataMsg === 'function') { noDataMsg('sprh-daily', 'No day-ahead history for ' + zone + ' in this window', ''); noDataMsg('sprh-monthly', '', ''); } return; }
-  _fuelRestoreCanvas('sprh-daily'); _fuelRestoreCanvas('sprh-monthly');
-  _fuelChart('sprh-daily', { type: 'line', data: { labels, datasets: [
-    _fuelLineDs('CSS base', css, C_TTF), _fuelLineDs('CDS base', cds, C_COAL),
-  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') },
-    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
-      annotation: { annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'spreads-' + zone);
-
-  // Monthly averages
-  const byM = {};
-  labels.forEach((d, i) => { const k = d.slice(0, 7); (byM[k] = byM[k] || { a: [], p: [], c: [] }); if (css[i] != null) byM[k].a.push(css[i]); if (cssP[i] != null) byM[k].p.push(cssP[i]); if (cds[i] != null) byM[k].c.push(cds[i]); });
-  const mk = Object.keys(byM).sort(), avg = a => a.length ? _r2(a.reduce((x, y) => x + y, 0) / a.length) : null;
-  const mLabels = mk.map(k => new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7) - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' }));
-  _fuelChart('sprh-monthly', { type: 'bar', data: { labels: mLabels, datasets: [
-    { label: 'CSS base', data: mk.map(k => avg(byM[k].a)), backgroundColor: rgba(C_TTF, .7), borderRadius: 2 },
-    { label: 'CSS peak', data: mk.map(k => avg(byM[k].p)), backgroundColor: rgba(C_PEG, .6), borderRadius: 2 },
-    { label: 'CDS base', data: mk.map(k => avg(byM[k].c)), backgroundColor: rgba(C_COAL, .6), borderRadius: 2 },
-  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'spreads-monthly-' + zone);
-
-  const firstFuel = (PKC.pts('eua', true)[0] || [])[0];
-  document.getElementById('sprh-note').innerHTML =
-    `${zone}: ${labels.length} delivery days from ${_fuelDate(labels[0])} to ${_fuelDate(labels[labels.length - 1])}. ` +
-    `Gas = TTF day-ahead traded the day before delivery; carbon = EUA ${PKC.contractLabel('eua')} close; coal = API2 ${PKC.contractLabel('coal')} at the EUR/USD close. ` +
-    `Peak = 08:00–20:00. Fuel history starts ${_fuelDate(firstFuel)}; zones other than FR only have day-ahead history since the backfill coverage date.`;
+  return { labels, css, cssP, cds };
 }
+const SPARK_ZONE_PARAM = { key: 'zone', label: 'Zone', inTitle: true, options: SPARK_ZONES.map(c => [c, c]) };
+
+_fuelReg({
+  id: 'spark-daily', title: 'Clean spark & dark spreads', category: 'spreads', page: 'spark', pageCanvas: 'sprh-daily', source: 'SEFE · ENTSO-E',
+  desc: 'Daily baseload CSS and CDS of one zone, from day-ahead prices and fuel closes.',
+  params: [SPARK_ZONE_PARAM, FUEL_PERIOD_PARAM], defaults: { zone: 'FR', period: '1Y' },
+  async draw(cid, p) {
+    const s = await _sparkSeries(p);
+    if (!s.labels.length) { noDataMsg(cid, 'No day-ahead history for ' + p.zone + ' in this window', ''); return null; }
+    _fuelChart(cid, { type: 'line', data: { labels: s.labels, datasets: [
+      _fuelLineDs('CSS base', s.css, C_TTF), _fuelLineDs('CDS base', s.cds, C_COAL),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+        annotation: { annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'spreads-' + p.zone);
+    return { info: { n: s.labels.length, first: s.labels[0], last: s.labels[s.labels.length - 1] } };
+  },
+});
+
+_fuelReg({
+  id: 'spark-monthly', title: 'Spreads · monthly averages', category: 'spreads', page: 'spark', pageCanvas: 'sprh-monthly', source: 'SEFE · ENTSO-E',
+  desc: 'Monthly average CSS base, CSS peak and CDS base of one zone.',
+  params: [SPARK_ZONE_PARAM, FUEL_PERIOD_PARAM], defaults: { zone: 'FR', period: '1Y' },
+  async draw(cid, p) {
+    const s = await _sparkSeries(p);
+    if (!s.labels.length) { noDataMsg(cid, 'No day-ahead history for ' + p.zone + ' in this window', ''); return null; }
+    const byM = {};
+    s.labels.forEach((d, i) => { const k = d.slice(0, 7); (byM[k] = byM[k] || { a: [], p: [], c: [] }); if (s.css[i] != null) byM[k].a.push(s.css[i]); if (s.cssP[i] != null) byM[k].p.push(s.cssP[i]); if (s.cds[i] != null) byM[k].c.push(s.cds[i]); });
+    const mk = Object.keys(byM).sort(), avg = a => a.length ? _r2(a.reduce((x, y) => x + y, 0) / a.length) : null;
+    const mLabels = mk.map(k => new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7) - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' }));
+    _fuelChart(cid, { type: 'bar', data: { labels: mLabels, datasets: [
+      { label: 'CSS base', data: mk.map(k => avg(byM[k].a)), backgroundColor: rgba(C_TTF, .7), borderRadius: 2 },
+      { label: 'CSS peak', data: mk.map(k => avg(byM[k].p)), backgroundColor: rgba(C_PEG, .6), borderRadius: 2 },
+      { label: 'CDS base', data: mk.map(k => avg(byM[k].c)), backgroundColor: rgba(C_COAL, .6), borderRadius: 2 },
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'spreads-monthly-' + p.zone);
+  },
+});
 function _r2(v) { return v == null || isNaN(v) ? null : Math.round(v * 100) / 100; }
 function _fuelRestoreCanvas(id) {
   const c = document.getElementById(id); if (!c) return;
