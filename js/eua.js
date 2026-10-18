@@ -55,7 +55,7 @@ function _fuelAxis(title, extra) {
   return Object.assign({ grid: GRID, ticks: { color: C_TX3, font: { size: 10 } },
     title: { display: !!title, text: title, color: C_TX3, font: { size: 10 } } }, extra || {});
 }
-function _fuelXAxis() { return { grid: GRID, ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 } }; }
+function _fuelXAxis() { const small = window.innerWidth < 700; return { grid: GRID, ticks: { color: C_TX3, font: { size: small ? 9 : 10 }, maxTicksLimit: small ? 4 : 8, maxRotation: 0 } }; }
 function _fuelOpts(extra) {
   return Object.assign({
     responsive: true, maintainAspectRatio: false, animation: false,
