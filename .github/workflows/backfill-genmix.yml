@@ -3,14 +3,13 @@ name: Backfill generation (after prices)
 # Fills the per-fuel generation arrays (ENTSO-E A75) of FR, DE_LU, ES, BE,
 # NL and PT into the existing daily files, prices untouched
 # (enrich_summary.py --genmix-only), half a year at a time, newest first.
-# Order: price backfill chain → single-day repair → this workflow. It starts
-# when the repair run completes (that run itself waits for the chain): run
-# earlier, the chain would undo it by regenerating FR-only files. Can also
-# be started by hand once the chain is done.
+# Starts when the monthly price backfill chain (and its final repair job)
+# completes: run earlier, the chain would undo it by regenerating FR-only
+# files. Can also be started by hand once the chain is done.
 
 on:
   workflow_run:
-    workflows: ['Backfill repair (2026-10-11 stale copy, 2026-10-15 missing FR)']
+    workflows: ['Backfill chain (monthly, newest first)']
     types: [completed]
   workflow_dispatch:
 
