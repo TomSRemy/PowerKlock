@@ -1546,6 +1546,9 @@
   .pkw-star.on { color: #FBBF24; }
   .pkw-star-float { position: absolute; top: 6px; right: 40px; z-index: 11; height: 26px; width: 28px; margin: 0; }
   :has(> .pk-tool-dl) > .pkw-star-float { right: 74px; }
+  /* Card headers make room for the floating tools (star, PNG, fullscreen) */
+  .chart-container:has(> .pk-tool-float) > :first-child:not(canvas):not(.pk-tool) { padding-right: 112px !important; }
+  .source-badge { white-space: nowrap; }
   /* Dialogs */
   #pkd-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5,8,12,.62); backdrop-filter: blur(2px); }
   .pkd-modal { width: min(460px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; }
