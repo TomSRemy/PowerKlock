@@ -44,12 +44,11 @@
   }
 
   // out[i] = arr[i - k]; the first k slots come from the previous UTC day.
-  // A previous-day tail that is all zeros was not published when that file
-  // was written (zero-filled by the fetcher): those slots become null.
-  function shift(arr, prevArr, offH) {
+  // prevOk = false when the caller knows that tail was not published.
+  function shift(arr, prevArr, offH, prevOk) {
     if (!Array.isArray(arr) || !arr.length) return arr;
     const n = arr.length, k = Math.round(offH * n / 24);
-    const prevOk = Array.isArray(prevArr) && prevArr.length === n && prevArr.slice(n - k).some(v => v != null && v !== 0);
+    prevOk = prevOk !== false && Array.isArray(prevArr) && prevArr.length === n;
     const out = new Array(n);
     for (let i = 0; i < n; i++) {
       if (i >= k) out[i] = arr[i - k];
@@ -78,8 +77,16 @@
     GEN_KEYS.forEach(k => { if (Array.isArray(z[k])) z[k] = shift(z[k], pz && pz[k], offH); });
     GEN_MAPS.forEach(m => {
       if (z[m] && typeof z[m] === 'object' && !Array.isArray(z[m])) {
+        // The previous file may carry the per-type breakdown only up to the
+        // fetch time, zero-filled after: when every type's tail is 0 that
+        // tail was unpublished (a single type at 0, e.g. solar at night, is real).
+        const pm = pz && pz[m];
+        const mapOk = !!pm && Object.values(pm).some(a => Array.isArray(a) && a.length && (() => {
+          const n = a.length, k = Math.round(offH * n / 24);
+          return a.slice(n - k).some(v => v != null && v !== 0);
+        })());
         Object.keys(z[m]).forEach(code => {
-          if (Array.isArray(z[m][code])) z[m][code] = shift(z[m][code], pz && pz[m] && pz[m][code], offH);
+          if (Array.isArray(z[m][code])) z[m][code] = shift(z[m][code], pm && pm[code], offH, mapOk);
         });
       }
     });
