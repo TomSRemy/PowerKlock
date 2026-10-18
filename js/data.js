@@ -22,11 +22,18 @@ function getGenMixDefaultZones() {
 
 // Apply GenMix default zones to all zone filters (called once when genmix.json
 // finishes loading, to set the default filter state across the app).
+// Default zones for the price views. Same 7 zones as the Prices overview
+// (HOME_ZONES) — the GenMix list includes GB, which has no ENTSO-E
+// day-ahead price since Brexit, so using it here showed "7 zones" over a
+// 6-row table.
+const PK_DEFAULT_PRICE_ZONES = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'PT', 'IT_NORD'];
+window.PK_DEFAULT_PRICE_ZONES = PK_DEFAULT_PRICE_ZONES;
+
 function applyDefaultGenMixZones() {
   const zones = getGenMixDefaultZones();
   const set = new Set(zones);
   // Daily Prices table filter
-  window._pricesZoneFilter = new Set(set);
+  window._pricesZoneFilter = new Set(PK_DEFAULT_PRICE_ZONES);
   // Daily Compare + Historical shared user zones (via setUserZones if available,
   // else direct mutation)
   if (typeof setUserZones === 'function') {
@@ -41,8 +48,8 @@ function applyDefaultGenMixZones() {
   if (typeof renderCompareChart === 'function')   renderCompareChart();
   if (typeof buildCompareChips === 'function')    buildCompareChips();
   // Update button labels
-  const n = zones.length;
-  const labelText = `${n} / ${n} zones`;
+  const n = PK_DEFAULT_PRICE_ZONES.length;
+  const labelText = `${n} zones`;
   ['zone-filter-label', 'zone-filter-label-hdr'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = labelText;
@@ -158,24 +165,20 @@ async function loadLastAvailable() {
   // a handful of zones (e.g. a missed-cron day that still wrote a partial
   // snapshot) must not be accepted as "the last available day" just because
   // it's non-empty; keep walking back to a genuinely complete one.
+  // Files are named by DELIVERY date (see loadPricesForDate).
   const MIN_VALID_ZONES = 20;
-  for (let i = 1; i <= 14; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const auctionStr = d.toISOString().slice(0,10);
+  let dateISO = pkTodayISO();
+  for (let i = 0; i <= 14; i++, dateISO = _prevDateISO(dateISO)) {
     try {
-      const r = await fetch(DATA_BASE + 'history/daily/' + auctionStr + '.json?t=' + Date.now());
+      const r = await fetch(DATA_BASE + 'history/daily/' + dateISO + '.json?t=' + Date.now());
       if (r.ok) {
         const data = await r.json();
         const zoneCount = Array.isArray(data.zones) ? data.zones.length
           : (data.zones ? Object.keys(data.zones).length : 0);
-        const hasData = zoneCount >= MIN_VALID_ZONES;
-        if (hasData) {
-          // Auction date in filename → delivery date = auction + 1
-          const deliveryDt = new Date(auctionStr); deliveryDt.setDate(deliveryDt.getDate() + 1);
-          const deliveryStr = deliveryDt.toISOString().slice(0,10);
-          console.log('Last available delivery:', deliveryStr, '(auction:', auctionStr + ')');
-          if (typeof dpSelect === 'function') dpSelect(deliveryStr);
-          else loadPricesForDate(auctionStr);
+        if (zoneCount >= MIN_VALID_ZONES) {
+          console.log('Last available delivery day:', dateISO);
+          if (typeof dpSelect === 'function') dpSelect(dateISO);
+          else loadPricesForDate(dateISO);
           return;
         }
       }
@@ -284,25 +287,20 @@ async function loadFromJSON(opts) {
 updateConverter();
 updateCapacity();
 // Load data strategy:
-//   ENTSO-E publishes DA prices in the afternoon (~14h CET) for next-day delivery.
-//   Convention used by the fetcher: filename = AUCTION date (the day the prices
-//   were published), NOT the delivery date.
-//   So `yesterday.json` contains prices for delivery TODAY (auction yesterday).
-//      `today.json`     contains prices for delivery TOMORROW (auction today,
-//                       only available after ~14h CET).
-//   Default view = delivery today => load yesterday.json.
+//   data/history/daily/<D>.json holds the day-ahead prices for DELIVERY day D
+//   (fetch_data.py requests [D 00:00, D+1 00:00) and keeps the CET/CEST
+//   delivery day with the largest overlap). Default view = delivery today
+//   (Europe/Paris calendar day). If today's file isn't written yet (the
+//   first fetch of the day runs at 05:00 UTC), fall back to the most recent
+//   complete day — labelled with ITS date, never relabelled as today.
 (async () => {
-  // Load auxiliary JSON (genmix, renewables, load, crossborder) but skip prices
-  // — we want the daily history file, not the live snapshot which is one day
-  // ahead of what the user expects to see by default.
+  // Load auxiliary JSON (genmix, renewables, load, crossborder) but skip
+  // prices.json — the daily history file is the single source for prices so
+  // every page shows the same numbers.
   await loadFromJSON({ skipPrices: true });
 
-  // Load DA prices for "delivery today" = auction yesterday's history file
-  const today = new Date();
-  const ySrc  = new Date(today); ySrc.setDate(ySrc.getDate() - 1);
-  const auctionDate = ySrc.toISOString().slice(0, 10);
   if (typeof loadPricesForDate === 'function') {
-    await loadPricesForDate(auctionDate);
+    await loadPricesForDate(pkTodayISO());
   } else if (!pricesData || pricesData.length === 0) {
     await loadLastAvailable();
   }
@@ -323,7 +321,7 @@ const DP = {
 // Record today's neg hours when prices load
 function dpRecordNegHours(zonesData) {
   const today = new Date();
-  const key = today.toISOString().slice(0,10);
+  const key = pkTodayISO();
   const maxNeg = Math.max(...zonesData.map(z => z.negHours || 0));
   if (maxNeg > 0) {
     DP.negDays[key] = maxNeg;
@@ -381,7 +379,7 @@ function dpRender() {
   // Convert to Mon-first: 0=Mon ... 6=Sun
   const offset = (firstDay + 6) % 7;
 
-  const todayStr = today.toISOString().slice(0,10);
+  const todayStr = pkTodayISO();
   const selStr = DP.selectedDate || todayStr;
 
   let html = '';
@@ -407,16 +405,11 @@ function dpRender() {
 }
 
 function dpSelect(dateStr) {
-  // dateStr = the DELIVERY date the user clicked in the calendar.
-  // The fetcher's history files are named by AUCTION date = delivery - 1 day.
-  const todayStr = new Date().toISOString().slice(0,10);
+  // dateStr = the DELIVERY date the user clicked in the calendar, which is
+  // also the history file name (files are named by delivery date).
+  const todayStr = pkTodayISO();
   const isToday  = dateStr === todayStr;
   DP.selectedDate = isToday ? null : dateStr;
-
-  // Compute auction date = delivery - 1 (used to find the right history file)
-  const _dt = new Date(dateStr);
-  _dt.setDate(_dt.getDate() - 1);
-  const auctionDate = _dt.toISOString().slice(0, 10);
 
   // Update picker button label — European format DD/MM/YY (delivery date)
   const lbl = document.getElementById('date-picker-label');
@@ -435,12 +428,12 @@ function dpSelect(dateStr) {
   if (dateLabel) dateLabel.textContent = 'Day-Ahead prices · ' + fmtLong2(dateStr) + ' · ENTSO-E';
 
   dpRender();
-  loadPricesForDate(auctionDate);
+  loadPricesForDate(dateStr);
   document.getElementById('date-picker-btn')?.classList.remove('open');
   document.getElementById('date-picker-popup')?.classList.remove('open');
 }
 function dpSelectToday() {
-  dpSelect(new Date().toISOString().slice(0,10));
+  dpSelect(pkTodayISO());
 }
 
 function dpChangeMonth(dir) {
@@ -451,16 +444,12 @@ function dpChangeMonth(dir) {
 }
 
 // ── Load prices for a specific date ──
-// `dateStr` is the AUCTION date (= filename in data/history/daily/),
-// per the fetcher's naming convention. The DELIVERY date is auction + 1 day.
+// `dateStr` is the DELIVERY date, which is also the file name in
+// data/history/daily/ (fetch_data.py writes delivery day D to D.json).
 async function loadPricesForDate(dateStr) {
   if (!dateStr) { loadPrices(); return; }
-  const todayStr = new Date().toISOString().slice(0,10);
-
-  // Compute delivery date (= auction + 1 day)
-  const _auctionDt = new Date(dateStr);
-  _auctionDt.setDate(_auctionDt.getDate() + 1);
-  const deliveryStr = _auctionDt.toISOString().slice(0, 10);
+  const todayStr = pkTodayISO();
+  const deliveryStr = dateStr;
 
   const updEl = document.getElementById('prices-updated');
   if (updEl) updEl.textContent = 'Loading ' + deliveryStr + '...';
@@ -519,11 +508,14 @@ async function loadPricesForDate(dateStr) {
               code,
               name:   meta.country || code,
               flag:   flagOf(code),
-              today:  Math.round(avg * 10) / 10,
+              // Keep 2 decimals (the source precision): rounding to 1dp
+              // here made KPIs disagree with values recomputed from the
+              // 15-min slots elsewhere (e.g. 191.60 vs 191.64).
+              today:  Math.round(avg * 100) / 100,
               vsYday: null,
-              min:    Math.round(mn * 10) / 10,
+              min:    Math.round(mn * 100) / 100,
               minHr:  minIdx >= 0 ? Math.floor(minIdx/nph) : 0,
-              max:    Math.round(mx * 10) / 10,
+              max:    Math.round(mx * 100) / 100,
               maxHr:  maxIdx >= 0 ? Math.floor(maxIdx/nph) : 0,
               negHrs: z.negH ?? z.negHours ?? 0,
               spark:  null,

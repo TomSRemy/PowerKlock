@@ -3,6 +3,13 @@
 // ════════════════════════════════════════════
 const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
 
+// Calendar date in Europe/Paris (YYYY-MM-DD). Day-ahead delivery days are
+// CET/CEST days, so "today" must not be derived from the UTC date (which
+// lags by 1-2h around midnight).
+window.pkTodayISO = function() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+};
+
 // ════════════════════════════════════════════
 // PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
 // Single source of truth for number/delta/neg-hours formatting and
@@ -855,12 +862,12 @@ async function loadPricesWithDates(periodStart, periodEnd) {
       updateKPIs(pricesData, histDateISO);
     }
 
-    // Backfill vsYday from J-1 daily file (J-1 delivery = histDateISO − 1, file = histDateISO − 2)
+    // Backfill vsYday from J-1 daily file (files are named by delivery date: J-1 = histDateISO − 1)
     if (typeof fetchHistoricalDaily === 'function' && histDateISO) {
       try {
         const [y,m,d] = histDateISO.split('-').map(Number);
         const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
         const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
         if (yData && yData.zones) {
           let touched = false;
@@ -945,12 +952,12 @@ async function loadPrices() {
       updateKPIs(pricesData, liveDateISO);
     }
 
-    // Backfill vsYday for live data: J-1 delivery = liveDateISO − 1, file = liveDateISO − 2
+    // Backfill vsYday for live data: files are named by delivery date: J-1 = liveDateISO − 1
     if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
       try {
         const [y,m,d] = liveDateISO.split('-').map(Number);
         const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
         const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
         if (yData && yData.zones) {
           let touched = false;
@@ -979,11 +986,11 @@ async function loadPrices() {
     const offH = Math.round((parisNow - utcNowB) / 3600000);
     document.getElementById('prices-updated').textContent = `Updated ${now} ${offH === 1 ? 'CET' : offH === 2 ? 'CEST' : 'UTC' + (offH >= 0 ? '+' : '') + offH}`;
 
-    // Backfill hourlyYday for the single-zone chart overlay (J-1 delivery = today-1, file = today-2)
+    // Backfill hourlyYday for the single-zone chart overlay (J-1 = today − 1; files are named by delivery date)
     if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
       const [y,m,d] = liveDateISO.split('-').map(Number);
       const j1Auc = new Date(Date.UTC(y, m-1, d));
-      j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+      j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
       const j1FileISO = j1Auc.toISOString().slice(0,10);
       fetchHistoricalDaily(j1FileISO).then(j1 => {
         if (!j1 || !j1.zones) return;
@@ -1013,7 +1020,7 @@ function updateKPIs(data, dataDateStr) {
   const minZ = data[data.length - 1];
 
   // Resolve display date for MAX/MIN labels
-  const todayISO = new Date().toISOString().slice(0,10);
+  const todayISO = pkTodayISO();
   const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
   const fmtShort = s => {
     const [y,m,d] = s.split('-');
@@ -1086,13 +1093,13 @@ function updateKPIs(data, dataDateStr) {
 // Line 4 (kpi-meta) = static context (zones count for AVG, country for MAX/MIN, hours for peak/off-peak).
 async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (typeof fetchHistoricalDaily !== 'function' && typeof fetchYesterdayDaily !== 'function') return;
-  // Files are named by AUCTION date. Today's delivery file = auction (displayDate - 1).
-  // So J-1's delivery file = auction (displayDate - 2). We pass that filename directly.
+  // Files in data/history/daily/ are named by DELIVERY date, so J-1's file
+  // is simply displayDate - 1.
   let yData = null;
   if (displayDate && typeof fetchHistoricalDaily === 'function') {
     const [y,m,d] = displayDate.split('-').map(Number);
     const j1Auction = new Date(Date.UTC(y, m-1, d));
-    j1Auction.setUTCDate(j1Auction.getUTCDate() - 2);
+    j1Auction.setUTCDate(j1Auction.getUTCDate() - 1);
     const j1FileISO = j1Auction.toISOString().slice(0,10);
     yData = await fetchHistoricalDaily(j1FileISO);
   } else if (typeof fetchYesterdayDaily === 'function') {
@@ -1224,7 +1231,7 @@ function filterPricesTable(text) {
 function renderPricesTable(data, dataDateStr) {
   // dataDateStr: the date the data actually comes from (may differ from DP.selectedDate)
   const fmtLong = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
-  const todayISO = new Date().toISOString().slice(0,10);
+  const todayISO = pkTodayISO();
   const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
   // Store globally so chart helpers (e.g. nowLineAnnotation) can determine
   // whether the current price data is for today or another day (DA settled or fwd).
@@ -1251,7 +1258,7 @@ function renderPricesTable(data, dataDateStr) {
   window._compareZones = window._userZones;
   // Default Daily prices table filter: same GenMix zones (data-driven, "With GenMix")
   if (window._pricesZoneFilter === undefined) {
-    window._pricesZoneFilter = new Set(getGenMixDefaultZones());
+    window._pricesZoneFilter = new Set(window.PK_DEFAULT_PRICE_ZONES || getGenMixDefaultZones());
   }
   renderPricesTableBody();
   buildZoneFilterDropdown();
@@ -2066,7 +2073,7 @@ function buildHourlyDetail(idx, z) {
             }
             const nph = tblData.length > 24 ? Math.round(tblData.length/24) : 1; // pts per hour
             const nowSlot = new Date().getHours() * nph + Math.floor(new Date().getMinutes()/(60/nph));
-            const isToday = !DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10);
+            const isToday = !DP.selectedDate || DP.selectedDate === pkTodayISO();
             return tblData.map((v,i) => {
               const hr  = Math.floor(i / nph);
               const min = (i % nph) * (60 / nph);
@@ -2146,7 +2153,7 @@ function buildHourlyDetail(idx, z) {
   if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
 
   const chartLabels = makeTimeLabels(chartData.length);
-  const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== new Date().toISOString().slice(0,10))
+  const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== pkTodayISO())
     ? -1 : new Date().getHours() * (chartData.length / 24);
 
   const datasets = [{
@@ -2278,10 +2285,10 @@ function buildHourlyDetail(idx, z) {
   // Lazy-fetch J-1 hourly if missing (e.g. user clicked before backfill completed,
   // or J-1 file is dated differently from current view)
   if ((!z.hourlyYday || !z.hourlyYday.length) && typeof fetchHistoricalDaily === 'function') {
-    const displayDate = window._currentPriceDate || new Date().toISOString().slice(0,10);
+    const displayDate = window._currentPriceDate || pkTodayISO();
     const [yy,mm,dd] = displayDate.split('-').map(Number);
     const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
-    j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+    j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
     const j1FileISO = j1Auc.toISOString().slice(0,10);
     fetchHistoricalDaily(j1FileISO).then(j1 => {
       if (!j1 || !j1.zones || !j1.zones[z.code] || !Array.isArray(j1.zones[z.code].hourly) || !j1.zones[z.code].hourly.length) return;
@@ -2730,12 +2737,12 @@ function _clearBreakdownTableP50(idx) {
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
 // matching border-left colour + sub-text tint based on direction (±1 €/MWh)
 async function applyExpandKPIColours(idx, z, today) {
-  const displayDate = window._currentPriceDate || window.DP?.selectedDate || new Date().toISOString().slice(0,10);
+  const displayDate = window._currentPriceDate || window.DP?.selectedDate || pkTodayISO();
   if (typeof fetchHistoricalDaily !== 'function') return;
-  // Files are named by AUCTION date. J-1 delivery file = displayDate − 2 (auction).
+  // Files are named by DELIVERY date: J-1's file = displayDate − 1.
   const [yy,mm,dd] = displayDate.split('-').map(Number);
   const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
-  j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+  j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
   const j1FileISO = j1Auc.toISOString().slice(0,10);
   const yData = await fetchHistoricalDaily(j1FileISO);
   if (!yData) return;
@@ -3236,7 +3243,7 @@ function _ccSetTitle(view, opts) {
   const selected = window._compareZones || new Set(['FR']);
   const zonesCount = selected.size;
   const refCode = window._ccSpreadRef || 'FR';
-  const dateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const dateISO = window._currentPriceDate || pkTodayISO();
   const longDate = (function(){
     try {
       const [y,m,d] = dateISO.split('-').map(Number);
@@ -3642,8 +3649,8 @@ function ccOpenFullscreen() {
   const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
 
   // ── Filters: View tabs + view-specific controls ──
-  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
-  const todayISO = new Date().toISOString().slice(0,10);
+  const currentDateISO = window._currentPriceDate || pkTodayISO();
+  const todayISO = pkTodayISO();
 
   const viewTabsHtml = ['lines','heatmap','profile','bands','spread'].map(v => `
     <button onclick="Promise.resolve(setCCView('${v}')).then(()=>ccRefreshFullscreen())" style="
@@ -4357,7 +4364,7 @@ function renderCCAnalysis(view, data, selected) {
 
   if (view === 'lines') {
     const inverted = stats.filter(s => s.spread < -5).length;
-    const dateLabel = (window._currentPriceDate && window._currentPriceDate !== new Date().toISOString().slice(0,10)) ? 'On this day' : "Today";
+    const dateLabel = (window._currentPriceDate && window._currentPriceDate !== pkTodayISO()) ? 'On this day' : "Today";
 
     if (stats.length === 1) {
       // Single zone: report intra-day shape, not cross-zone comparison
@@ -4516,7 +4523,9 @@ function renderCompareKpiStrip(data, selected) {
   // KPI 1 · Zones loaded (value = count, meta = loaded avg)
   const zonesVEl = document.getElementById('cc-kpi-zones-v');
   const zonesMetaEl = document.getElementById('cc-kpi-zones-meta');
-  if (zonesVEl) zonesVEl.innerHTML = selected.size + '<span class="kpi-unit">zones</span>';
+  // Count zones that actually have a price (a selected zone may have none,
+  // e.g. GB has no ENTSO-E day-ahead price) so this matches the chart/table.
+  if (zonesVEl) zonesVEl.innerHTML = validStats.length + '<span class="kpi-unit">zones</span>';
   if (zonesMetaEl) {
     if (validStats.length) {
       const loadedAvg = validStats.reduce((s, x) => s + x.avg, 0) / validStats.length;
@@ -5278,7 +5287,7 @@ function downloadRowChart(idx) {
   }
   const z = window._pricesSorted?.[idx];
   const code = z?.code || `zone-${idx}`;
-  const dateStr = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const dateStr = window._currentPriceDate || pkTodayISO();
   // High-res PNG with theme bg color
   const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
   const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
@@ -5359,7 +5368,7 @@ function openRowFullscreen(idx) {
     return `<option value="${origIdx}" ${origIdx === idx ? 'selected' : ''}>${zi.code} — ${safeName}</option>`;
   }).join('');
 
-  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const currentDateISO = window._currentPriceDate || pkTodayISO();
 
   // Filters split: Band (the sub-toggle equivalent) on the LEFT (fixed),
   // Date and Zone on the RIGHT.
@@ -5375,7 +5384,7 @@ function openRowFullscreen(idx) {
     <div class="pk-fs-filters-right">
       <div style="display:flex;align-items:center;gap:5px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
-        <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
+        <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${pkTodayISO()}"
           style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
       </div>
       <div style="display:flex;align-items:center;gap:5px">
@@ -5628,6 +5637,9 @@ function clearSlotHover(idx) {
     const fr = data.find(z => z.code === 'FR');
     const daKpi = document.getElementById('pr-home-card-da-kpi');
     const daLbl = document.getElementById('pr-home-card-da-label');
+    const daDesc = document.getElementById('pr-home-card-da-desc');
+    const nLoaded = data.filter(z => z.today != null).length;
+    if (daDesc && nLoaded) daDesc.textContent = `ENTSO-E day-ahead market · ${nLoaded} European bidding zones`;
     if (fr && fr.today != null) {
       if (daKpi) daKpi.textContent = `${fr.today.toFixed(2)} €/MWh`;
       if (daLbl) daLbl.textContent = `FR · today's average`;
@@ -5652,31 +5664,32 @@ function clearSlotHover(idx) {
     // Negative-prices card · total neg hours today across all loaded zones
     const negKpi = document.getElementById('pr-home-card-neg-kpi');
     const negLbl = document.getElementById('pr-home-card-neg-label');
-    let totalNeg = 0;
-    let zonesWithNeg = 0;
+    // KPI = negative hours in the most-affected zone (a sum across zones
+    // mixes zone-hours with clock hours and isn't readable).
+    let zonesWithNeg = 0, topZone = null, topH = 0;
     data.forEach(z => {
       if (!z.hourly || !z.hourly.length) return;
       const n = z.hourly.filter(v => v != null && v < 0).length;
-      if (n > 0) zonesWithNeg++;
-      totalNeg += n;
+      if (!n) return;
+      zonesWithNeg++;
+      const h = n * 24 / z.hourly.length;
+      if (h > topH) { topH = h; topZone = z.code; }
     });
-    // Convert slot count to hours (z.nph slots per hour)
-    const nph = (data[0] && data[0].nph) || 4;
-    const negHours = totalNeg / nph;
     if (negKpi) {
-      if (negHours === 0) {
-        negKpi.textContent = '0 h';
-        negKpi.style.color = 'var(--up)';
-      } else {
-        negKpi.textContent = `${negHours.toFixed(negHours % 1 === 0 ? 0 : 1)} h`;
-        negKpi.style.color = 'var(--down)';
-      }
+      negKpi.textContent = `${topH.toFixed(topH % 1 === 0 ? 0 : 2)} h`;
+      negKpi.style.color = topH === 0 ? 'var(--up)' : 'var(--down)';
     }
     if (negLbl) {
       negLbl.textContent = zonesWithNeg > 0
-        ? `Today · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`
+        ? `Today · max ${topZone} · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`
         : `Today · no negative prices`;
     }
+  }
+
+  // J-1 daily average: rows carry vsYday (= today − J-1), not J-1 itself.
+  function _yday(z) {
+    if (z.yesterday != null) return z.yesterday;
+    return (z.vsYday != null && z.today != null) ? z.today - z.vsYday : null;
   }
 
   // ── 2 · Snapshot KPI strip (5 cards) ──
@@ -5692,8 +5705,8 @@ function clearSlotHover(idx) {
     const fr = loaded.find(z => z.code === 'FR');
     if (fr) {
       setV('pr-home-kpi-fr-v', `${fr.today.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
-      if (fr.yesterday != null) {
-        const diff = fr.today - fr.yesterday;
+      if (_yday(fr) != null) {
+        const diff = fr.today - _yday(fr);
         const sign = diff >= 0 ? '▲ +' : '▼ ';
         const col = diff >= 0 ? 'var(--down)' : 'var(--up)';
         const meta = document.getElementById('pr-home-kpi-fr-meta');
@@ -5726,7 +5739,7 @@ function clearSlotHover(idx) {
     const sp = pricey.today - cheap.today;
     const spPct = cheap.today > 0 ? (sp / cheap.today) * 100 : 0;
     setV('pr-home-kpi-spread-v', `${sp.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
-    setT('pr-home-kpi-spread-meta', `${spPct.toFixed(0)}% of cheapest`);
+    setT('pr-home-kpi-spread-meta', `${pricey.code} − ${cheap.code} · ${loaded.length} zones`);
   }
 
   // ── 3 · Market Read banner ──
@@ -5744,10 +5757,12 @@ function clearSlotHover(idx) {
 
     // J-1 movement of the panel average (if available)
     let panelMove = '';
-    const withYday = loaded.filter(z => z.yesterday != null);
+    const withYday = loaded.filter(z => _yday(z) != null);
     if (withYday.length >= 3) {
-      const yAvg = withYday.reduce((s, z) => s + z.yesterday, 0) / withYday.length;
-      const dAvg = avg - yAvg;
+      // Same-zone comparison: avg of today vs avg of J-1 over the zones that have both
+      const tAvg = withYday.reduce((s, z) => s + z.today, 0) / withYday.length;
+      const yAvg = withYday.reduce((s, z) => s + _yday(z), 0) / withYday.length;
+      const dAvg = tAvg - yAvg;
       const sign = dAvg >= 0 ? '+' : '';
       const col = dAvg >= 0 ? '#ED6965' : '#14D3A9';
       panelMove = ` EU panel <span style="color:${col};font-weight:600">${sign}${dAvg.toFixed(2)} €/MWh vs J-1</span>.`;
@@ -5764,11 +5779,15 @@ function clearSlotHover(idx) {
     }
 
     const spread = pricey.today - cheap.today;
-    const spreadPct = cheap.today > 0 ? (spread / cheap.today) * 100 : 0;
+    // Regime from the dispersion of the whole panel (coefficient of
+    // variation), not max/min: one near-zero outlier (SE, NO) made the old
+    // "% of cheapest" ratio explode and every day read "highly fragmented".
+    const sd = Math.sqrt(loaded.reduce((s, z) => s + (z.today - avg) ** 2, 0) / loaded.length);
+    const cv = Math.abs(avg) > 1 ? sd / Math.abs(avg) : 0;
     let regime;
-    if (spreadPct > 100) regime = `<b>Highly fragmented European zones</b>`;
-    else if (spreadPct > 40) regime = `<b>Pronounced cross-zone divergence</b>`;
-    else if (spreadPct > 15) regime = `<b>Moderate cross-zone gap</b>`;
+    if (cv > 0.5) regime = `<b>Highly fragmented European zones</b>`;
+    else if (cv > 0.3) regime = `<b>Pronounced cross-zone divergence</b>`;
+    else if (cv > 0.15) regime = `<b>Moderate cross-zone gap</b>`;
     else regime = `<b>Tightly aligned zones</b>`;
 
     host.innerHTML = `
@@ -5818,7 +5837,7 @@ function clearSlotHover(idx) {
 
     // Update card title with zone count
     const title = document.getElementById('pr-home-chart-title');
-    if (title) title.textContent = `${zones.length} zone${zones.length > 1 ? 's' : ''} · today vs intraday baseline`;
+    if (title) title.textContent = `${zones.length} zone${zones.length > 1 ? 's' : ''} · 15-min day-ahead profile`;
 
     const cfg = {
       type: 'line',
@@ -5990,7 +6009,7 @@ function clearSlotHover(idx) {
     // Update subtitle date
     const subtitle = document.getElementById('pr-home-subtitle');
     if (subtitle) {
-      const dateStr = _fmtLongDate(window._currentPriceDate || new Date().toISOString().slice(0,10));
+      const dateStr = _fmtLongDate(window._currentPriceDate || pkTodayISO());
       subtitle.textContent = `European power markets · ${dateStr}`;
     }
     if (!Array.isArray(data) || !data.length) {
