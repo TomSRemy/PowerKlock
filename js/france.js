@@ -202,20 +202,23 @@
   // CALCULS METIER
   // ══════════════════════════════════════════════════════════════════════════
 
-  // Capture rate = (prix moyen pondere par la production) / (prix moyen simple).
-  // Retourne null si la production totale est nulle (ex : solaire en hiver la nuit).
+  // Capture rate = generation-weighted price / simple average price of the
+  // SAME slots (those where the technology is published), as on the
+  // Renewables page: a partial day is not compared with a full-day base.
+  // Null when there is no generation (e.g. solar at night).
   function captureStats(prices, gen) {
-    var sumPG = 0, sumG = 0, sumP = 0, nP = 0;
+    var sumPG = 0, sumG = 0, sumP = 0, nP = 0, sumAll = 0, nAll = 0;
     for (var i = 0; i < prices.length; i++) {
       var p = prices[i], g = gen ? gen[i] : null;
       if (p === null || p === undefined || isNaN(p)) continue;
-      sumP += p; nP++;
+      sumAll += p; nAll++;
       if (g === null || g === undefined || isNaN(g)) continue;
+      sumP += p; nP++;
       sumPG += p * g;
       sumG += g;
     }
-    if (!nP) return null;
-    var base = sumP / nP;
+    if (!nAll) return null;
+    var base = nP ? sumP / nP : sumAll / nAll;
     if (sumG <= 0) return { base: base, capturePrice: null, captureRate: null, volume: 0 };
     var cp = sumPG / sumG;
     return {
@@ -422,7 +425,14 @@
       html += kpiCard('Max', num(mx, 2), '\u20AC/MWh', 'highest slot');
       html += kpiCard('Negative hours', num(nh, 2), 'h', nh > 0 ? 'cannibalisation active' : 'none',
         nh > 0 ? 'down' : 'flat');
-      html += kpiCard('Renewable share', num(fr.renPct, 1), '%', 'wind + solar + hydro + bio');
+      // Same arrays and definition as GenMix: averages over published slots.
+      var renShare = (function () {
+        var avg = function (a) { if (!a) return 0; var v = a.filter(function (x) { return x !== null && x !== undefined && !isNaN(x); }); return v.length ? v.reduce(function (s, x) { return s + x; }, 0) / v.length : 0; };
+        var ren = ['wind', 'solar', 'hydro', 'biomass'].reduce(function (s, k) { return s + avg(fr[k]); }, 0);
+        var tot = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'].reduce(function (s, k) { return s + avg(fr[k]); }, 0);
+        return tot > 0 ? ren / tot * 100 : fr.renPct;
+      })();
+      html += kpiCard('Renewable share', num(renShare, 1), '%', 'wind + solar + hydro + bio');
       html += '</div>';
 
       if (missing > 0) {
