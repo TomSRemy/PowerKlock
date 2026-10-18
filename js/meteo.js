@@ -156,6 +156,8 @@ _wxReg({
   },
 });
 
+const HDD_BACK_PARAM = { key: 'back', label: 'History', options: [['30', '30 days'], ['60', '60 days'], ['90', '90 days'], ['180', '180 days'], ['365', '1 year']] };
+
 // Daily weighted mean temperatures, normals and heating-season cumulatives of one country.
 const _wxSeriesCache = new Map();
 function _wxSeries(cc) {
@@ -182,19 +184,20 @@ function _wxSeries(cc) {
     const prevStart = (+sStart.slice(0, 4) - 1) + '-09-01';
     const prevCum = cum(prevStart, _renAdd(prevStart, curCum.length - 1), d => _hdd(T.get(d)));
     const normCum = cum(sStart, seasonEnd, d => _hdd(normal(d.slice(5))));
-    return { today, T, normal, day, series, sStart, curCum, prevCum, normCum };
+    return { today, T, normal, day, series, lastFc, sStart, curCum, prevCum, normCum };
   })());
   return _wxSeriesCache.get(cc);
 }
 
 _wxReg({
   id: 'hdd', title: 'Heating degree days', page: 'wxhdd', pageCanvas: 'hdd-canvas',
-  desc: 'Daily HDD, last 60 days and 14-day forecast, against the 2016–2025 normal.',
-  params: [WX_CC_PARAM], defaults: { cc: 'FR' },
+  desc: 'Daily HDD of the past days and the 14-day forecast, against the 2016–2025 normal.',
+  params: [WX_CC_PARAM, HDD_BACK_PARAM], defaults: { cc: 'FR', back: '60' },
   async draw(cid, p) {
     const S = await _wxSeries(p.cc);
     if (!S) { noDataMsg(cid, 'Open-Meteo did not respond', 'Rate limit or network; retry later.'); return null; }
-    const { series, today } = S;
+    const today = S.today, series = [];
+    for (let d = _renAdd(today, -(+p.back || 60)); d <= S.lastFc; d = _renAdd(d, 1)) series.push(S.day(d));
     const nowIdx = series.findIndex(x => x.d === today);
     _fuelChart(cid, { type: 'bar', data: { labels: series.map(x => x.d.slice(8, 10) + '/' + x.d.slice(5, 7)), datasets: [
       { label: 'HDD (actual / forecast)', data: series.map(x => x.t == null ? null : +_hdd(x.t).toFixed(2)), backgroundColor: series.map(x => x.d > today ? rgba('#7FC8F8', .45) : rgba('#7FC8F8', .85)), borderRadius: 2 },
@@ -252,7 +255,9 @@ async function renderHDD() {
     _fuelKpi('Next 14 days', nH.toFixed(0), 'HDD', nN ? `${_fuelSigned(pct(nH, nN), 0)}% vs normal (${nN.toFixed(0)})` : '', tone(pct(nH, nN))) +
     _fuelKpi('Cooling YTD', yCDD.toFixed(0), 'CDD', 'base 21 °C, since 1 Jan');
 
-  PKW.draw('hdd', 'hdd-canvas', { cc });
+  const hb = window._hddBack || '60';
+  PKW.draw('hdd', 'hdd-canvas', { cc, back: hb });
+  PKW.periodButtons('hdd-canvas', HDD_BACK_PARAM.options.map(o => [o[0], o[0] === '365' ? '1Y' : o[0] + 'D']), hb, v => { window._hddBack = v; PKW.draw('hdd', 'hdd-canvas', { cc, back: v }); });
   PKW.draw('hdd-cum', 'hdd-cum', { cc });
 
   // Weekly table (ISO weeks, last 8 + forecast)
