@@ -17,7 +17,7 @@ on:
       - Fetch GO Auctions (EEX FR)
       - Fetch Energy-Charts (capacity, cross-border flows)
       - Backfill Historical Data
-      - Backfill chain (monthly, newest first)
+      - Backfill chain v3 (monthly, parallel)
       - Backfill generation (after prices)
     types: [completed]
   schedule:
