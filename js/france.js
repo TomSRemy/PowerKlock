@@ -538,7 +538,8 @@
         pointRadius: 0,
         fill: false,
         yAxisID: 'y1',
-        tension: 0
+        tension: 0,
+        order: -1          // draw the price on top of the generation stack
       });
 
       makeChart('mix', 'fr-chart-mix', {

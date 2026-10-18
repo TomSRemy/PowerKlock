@@ -792,7 +792,7 @@ def fetch_load():
     print("Fetching load...")
     today, tomorrow = date_str(0), date_str(1)
     result = {}
-    for code in ['FR','DE_LU','ES','BE']:
+    for code in ['FR','DE_LU','ES','BE','NL','IT_NORD','PT','AT','PL']:
         eic = ZONES.get(code)
         if not eic:
             continue
@@ -801,15 +801,27 @@ def fetch_load():
                           'outBiddingZone_Domain':eic,
                           'periodStart':today,'periodEnd':tomorrow})
             pts = _parse_quantity_series(xml)
-            valid = [v for v in pts if v is not None]
+            valid = [v for v in pts if v is not None and v > 0]
+            # Day-ahead load forecast (A65 / A01) — the page compared actuals
+            # with a Math.random() "forecast" because none was fetched.
+            fc = None
+            try:
+                xml_f = fetch({'documentType':'A65','processType':'A01',
+                               'outBiddingZone_Domain':eic,
+                               'periodStart':today,'periodEnd':tomorrow})
+                fc = _parse_quantity_series(xml_f)
+                if not any(v for v in fc if v):
+                    fc = None
+            except Exception as fe:
+                print(f"  {code}: load forecast ERROR — {fe}")
             if valid:
-                now = datetime.utcnow()
-                cur_slot = min(95, now.hour*4 + now.minute//15)
-                cur_val = pts[cur_slot] if pts[cur_slot] is not None else valid[-1]
+                # Last published slot, not the current UTC slot (always empty).
+                cur_val = valid[-1]
                 result[code] = {
-                    'actual':  pts,
-                    'peak':    max(valid),
-                    'current': cur_val,
+                    'actual':   pts,
+                    'forecast': fc,
+                    'peak':     max(valid),
+                    'current':  cur_val,
                 }
                 print(f"  {code}: current {result[code]['current']} MW")
         except Exception as e:
@@ -1005,6 +1017,11 @@ if __name__ == '__main__':
                 zone_entry['renPct'] = rp
             if dom is not None:
                 zone_entry['domFuel'] = dom
+        # Load (actual + day-ahead forecast) so the Load page can show past days
+        if load and ren_code in load:
+            zone_entry['load'] = load[ren_code].get('actual')
+            if load[ren_code].get('forecast'):
+                zone_entry['loadForecast'] = load[ren_code]['forecast']
         daily_snap['zones'][z['code']] = zone_entry
     write_json(daily_path, daily_snap)
 

@@ -92,8 +92,10 @@ async function loadCrossBorder() {
 // LOAD
 // ════════════════════════════════════════════
 window._loadDayOffset = 0;
+window._loadUserPicked = false;
 function setLoadDay(offset, btn) {
   window._loadDayOffset = offset;
+  window._loadUserPicked = true;
   document.querySelectorAll('#load-day-btns .day-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   loadLoad();
@@ -103,97 +105,106 @@ async function loadLoad() {
   window._loadLoaded = true;
   const country = (document.getElementById('load-country') || {}).value || 'FR';
   const offset  = window._loadDayOffset || 0;
-  const jsonLoad = window._loadData?.[country];
-
-  // Demo profiles (GW)
-  const demoActual   = [35.2,33.8,32.5,31.4,30.8,31.5,34.2,39.5,44.8,47.1,48.3,49.0,48.8,48.2,48.5,49.8,52.2,55.0,54.1,51.8,49.2,46.8,43.2,39.1];
-  const demoForecast = demoActual.map(v => v * (1.01 + (Math.random()-.5)*.04));
-  const demoLastYear = demoActual.map(v => v * (1 + (Math.random()-.5)*.08));
-
-  const actual   = jsonLoad?.actual?.map(v => v/1000)   || demoActual;
-  const forecast = jsonLoad?.forecast?.map(v => v/1000) || demoForecast;
-  const lastYear = jsonLoad?.lastYear?.map(v => v/1000) || demoLastYear;
-  const curHr    = offset === 0 ? new Date().getHours() : 24;
-
-  // KPIs
-  const peakActual  = Math.max(...actual.filter(v=>v!=null));
-  const peakFC      = Math.max(...forecast.filter(v=>v!=null));
-  const avgActual   = actual.filter(v=>v!=null).reduce((a,b)=>a+b,0) / actual.filter(v=>v!=null).length;
-  const actualSoFar = actual.slice(0, curHr).filter(v=>v!=null);
-  const fcSoFar     = forecast.slice(0, curHr).filter(v=>v!=null);
-  const dev = actualSoFar.length && fcSoFar.length
-    ? ((actualSoFar.reduce((a,b)=>a+b,0)/actualSoFar.length - fcSoFar.reduce((a,b)=>a+b,0)/fcSoFar.length) /
-       (fcSoFar.reduce((a,b)=>a+b,0)/fcSoFar.length) * 100) : 0;
-  const lyAvg = lastYear.filter(v=>v!=null).reduce((a,b)=>a+b,0)/lastYear.filter(v=>v!=null).length;
-  const yoy = lyAvg ? (avgActual - lyAvg) / lyAvg * 100 : 0;
-
   const countryNames = { FR:'France', DE_LU:'Germany', BE:'Belgium', NL:'Netherlands', ES:'Spain', GB:'Great Britain', IT_NORD:'Italy North' };
   const cname = countryNames[country] || country;
+  const today = pkTodayISO();
+  const dayISO = (() => { const [y,m,d] = today.split('-').map(Number); return new Date(Date.UTC(y, m-1, d + offset)).toISOString().slice(0,10); })();
+  const lyISO  = (() => { const [y,m,d] = dayISO.split('-').map(Number); return new Date(Date.UTC(y, m-1, d - 364)).toISOString().slice(0,10); })();
+  const fetchDay = async iso => { try { const r = await fetch(DATA_BASE + 'history/daily/' + iso + '.json'); return r.ok ? await r.json() : null; } catch (_) { return null; } };
 
-  const setKPI = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
-  setKPI('load-kpi-peak-actual', `${peakActual.toFixed(1)}<span class="kpi-unit">GW</span>`);
-  setKPI('load-kpi-peak-actual-sub', `<span style="color:var(--tx3)">at ${actual.indexOf(peakActual)}h</span>`);
-  setKPI('load-kpi-peak-fc', `${peakFC.toFixed(1)}<span class="kpi-unit">GW</span>`);
-  setKPI('load-kpi-peak-fc-sub', `<span style="color:var(--tx3)">at ${forecast.indexOf(peakFC)}h</span>`);
-  setKPI('load-kpi-avg', `${avgActual.toFixed(1)}<span class="kpi-unit">GW</span>`);
-  setKPI('load-kpi-dev', `<span class="${dev>=0?'up':'down'}">${dev>=0?'+':''}${dev.toFixed(1)}<span class="kpi-unit">%</span></span>`);
-  setKPI('load-kpi-dev-sub', dev>=0 ? 'over-forecast' : 'under-forecast');
-  setKPI('load-kpi-yoy', `<span class="${yoy>=0?'up':'down'}">${yoy>=0?'+':''}${yoy.toFixed(1)}<span class="kpi-unit">%</span></span>`);
-  setKPI('load-kpi-yoy-sub', `vs ${new Date().getFullYear()-1} same day`);
+  // Day data: the live snapshot for today, the daily history file otherwise.
+  let actual = null, forecast = null, src = '';
+  const live = window._loadData && window._loadData[country];
+  const liveDate = window._loadDataUpdated ? new Date(window._loadDataUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
+  if (live && liveDate === dayISO) { actual = live.actual; forecast = live.forecast || null; src = 'live snapshot'; }
+  if (!actual) {
+    const day = await fetchDay(dayISO);
+    const z = day && day.zones && day.zones[country];
+    if (z && Array.isArray(z.load)) { actual = z.load; forecast = z.loadForecast || null; src = 'daily history'; }
+  }
+  const lyDay = await fetchDay(lyISO);
+  const lyZ = lyDay && lyDay.zones && lyDay.zones[country];
+  const lastYear = lyZ && Array.isArray(lyZ.load) ? lyZ.load : null;
 
+  const setKPI = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  const fmtDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric', timeZone:'UTC' });
   const el_title = document.getElementById('load-chart-title');
-  if (el_title) el_title.textContent = `${cname} — Hourly Load (GW)${offset!==0?' ('+offset+'d)':''}`;
-  document.getElementById('load-updated').textContent = jsonLoad ? `ENTSO-E A65 · ${cname}` : `Demo data · ${cname}`;
+  if (el_title) el_title.textContent = `${cname} — load (GW) · ${fmtDay(dayISO)}`;
+  document.getElementById('load-updated').textContent = actual ? `ENTSO-E A65 · ${src}` : 'No data for this day';
 
-  const labels = Array.from({length:24}, (_,i) => i+'h');
-  const curHr2 = offset === 0 ? new Date().getHours() : 24;
+  // First visit before today's data exists: show the latest available day
+  // instead of an empty "Today".
+  if ((!actual || !actual.some(v => v != null)) && !window._loadUserPicked && offset === 0 && liveDate && liveDate < dayISO) {
+    const back = Math.round((Date.parse(liveDate) - Date.parse(dayISO)) / 864e5);
+    window._loadDayOffset = back;
+    document.querySelectorAll('#load-day-btns .day-tab').forEach(b => b.classList.toggle('active', (b.getAttribute('onclick') || '').includes('(' + back + ',')));
+    return loadLoad();
+  }
+  if (!actual || !actual.some(v => v != null)) {
+    ['load-kpi-peak-actual','load-kpi-peak-fc','load-kpi-avg','load-kpi-dev','load-kpi-yoy'].forEach(id => setKPI(id, '–'));
+    ['load-kpi-peak-actual-sub','load-kpi-peak-fc-sub','load-kpi-dev-sub','load-kpi-yoy-sub'].forEach(id => setKPI(id, ''));
+    if (typeof noDataMsg === 'function') noDataMsg('load-canvas', `No load data stored for ${cname} on ${fmtDay(dayISO)}`, 'Load history is kept from the daily fetch onwards (actual + day-ahead forecast).');
+    const tb = document.getElementById('load-hourly-tbody'); if (tb) tb.innerHTML = '';
+    return;
+  }
+  const c = document.getElementById('load-canvas'); if (c) { const m = c.parentNode.querySelector('.no-data-msg'); if (m) m.remove(); c.style.display = 'block'; }
 
+  const n = actual.length, per = n / 24;
+  const GW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
+  const A = GW(actual), F = GW(forecast), L = GW(lastYear && lastYear.length === n ? lastYear : null);
+  const labels = (typeof makeTimeLabels === 'function') ? makeTimeLabels(n) : Array.from({ length: n }, (_, i) => String(Math.floor(i / per)).padStart(2, '0') + ':' + String((i % per) * (60 / per)).padStart(2, '0'));
+  const valid = a => a ? a.filter(v => v != null) : [];
+  const argmax = a => { let mi = -1; (a || []).forEach((v, i) => { if (v != null && (mi < 0 || v > a[mi])) mi = i; }); return mi; };
+  const iA = argmax(A), iF = argmax(F);
+  const avgA = valid(A).reduce((x, y) => x + y, 0) / valid(A).length;
+  // Forecast error (MAPE) over slots where both are published
+  const pairs = A.map((v, i) => (v != null && F && F[i] != null) ? [v, F[i]] : null).filter(Boolean);
+  const bias = pairs.length ? pairs.reduce((s, [a, f]) => s + (a - f), 0) / pairs.reduce((s, [, f]) => s + f, 0) * 100 : null;
+  const mape = pairs.length ? pairs.reduce((s, [a, f]) => s + Math.abs(a - f), 0) / pairs.reduce((s, [, f]) => s + f, 0) * 100 : null;
+  const lyPairs = L ? A.map((v, i) => (v != null && L[i] != null) ? [v, L[i]] : null).filter(Boolean) : [];
+  const yoy = lyPairs.length ? (lyPairs.reduce((s, [a]) => s + a, 0) / lyPairs.reduce((s, [, l]) => s + l, 0) - 1) * 100 : null;
+
+  setKPI('load-kpi-peak-actual', `${A[iA].toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-peak-actual-sub', `<span style="color:var(--tx3)">at ${labels[iA]} · ${valid(A).length}/${n} slots published</span>`);
+  setKPI('load-kpi-peak-fc', iF >= 0 ? `${F[iF].toFixed(1)}<span class="kpi-unit">GW</span>` : '–');
+  setKPI('load-kpi-peak-fc-sub', iF >= 0 ? `<span style="color:var(--tx3)">at ${labels[iF]}</span>` : '<span style="color:var(--tx3)">forecast not available</span>');
+  setKPI('load-kpi-avg', `${avgA.toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-dev', bias == null ? '–' : `<span class="${bias >= 0 ? 'up' : 'down'}">${bias >= 0 ? '+' : ''}${bias.toFixed(1)}<span class="kpi-unit">%</span></span>`);
+  setKPI('load-kpi-dev-sub', bias == null ? '' : `${bias >= 0 ? 'above' : 'below'} forecast · MAPE ${mape.toFixed(1)}%`);
+  setKPI('load-kpi-yoy', yoy == null ? '–' : `<span class="${yoy >= 0 ? 'up' : 'down'}">${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}<span class="kpi-unit">%</span></span>`);
+  setKPI('load-kpi-yoy-sub', yoy == null ? `no data for ${fmtDay(lyISO)}` : `vs ${fmtDay(lyISO)} (same weekday)`);
+
+  const ds = [{ label: 'Actual', data: A, borderColor: C_UP, borderWidth: 2, backgroundColor: rgba(C_UP, .08), fill: true, pointRadius: 0, tension: 0, spanGaps: false }];
+  if (F) ds.push({ label: 'Day-ahead forecast', data: F, borderColor: C_WIND, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false });
+  if (L) ds.push({ label: 'Same weekday last year', data: L, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
   mkChart('load-canvas', {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label:'Actual (GW)', data:actual, borderColor:C_UP, borderWidth:2,
-          backgroundColor: (ctx2) => { const g=ctx2.chart.ctx.createLinearGradient(0,0,0,200); g.addColorStop(0,rgba(C_UP,.15)); g.addColorStop(1,rgba(C_UP,0)); return g; },
-          fill:true, pointRadius:0, tension: 0 },
-        { label:'DA Forecast (GW)', data:forecast, borderColor:C_WIND, borderWidth:1.5,
-          borderDash:[5,4], pointRadius:0, tension:0, fill:false },
-        { label:'Last Year Actual', data:lastYear, borderColor:'rgba(255,255,255,.2)', borderWidth:1,
-          borderDash:[2,3], pointRadius:0, tension: 0, fill:false },
-      ]
-    },
+    type: 'line', data: { labels, datasets: ds },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      interaction:{ mode:'index', intersect:false },
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip: { mode:'index', callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(1)} GW` } },
+        legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 12 } },
+        tooltip: { mode: 'index', callbacks: { label: ctx => ctx.raw == null ? null : ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)} GW` } },
         zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation(); return a ? { nowLine: a } : {}; })() }
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: n, labels, chartDate: dayISO }); return a ? { nowLine: a } : {}; })() }
       },
-      scales: {
-        x: { grid:GRID, ticks:{color:C_TX3} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback: v=>v.toFixed(0)+' GW'} }
-      }
+      scales: { x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 13, maxRotation: 0 } },
+                y: { grid: GRID, ticks: { color: C_TX3, callback: v => v.toFixed(0) + ' GW' } } }
     }
   });
-  setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas','load-demand'); }, 100);
+  setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas', 'load-' + country + '-' + dayISO); }, 100);
 
-  // Hourly table
+  // Hourly table (mean of the hour's slots), Paris time
+  const hourAvg = (a, h) => { if (!a) return null; const v = a.slice(h * per, (h + 1) * per).filter(x => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
   const tbody = document.getElementById('load-hourly-tbody');
   if (tbody) {
-    tbody.innerHTML = labels.map((h, i) => {
-      const act = actual[i];
-      const fc  = forecast[i];
-      const dev2 = (act != null && fc != null && fc !== 0) ? ((act - fc) / fc * 100) : null;
-      const isPast = i <= curHr2;
-      return `<tr style="opacity:${isPast||offset!==0?1:.45}">
-        <td style="font-family:'JetBrains Mono',monospace">${h}</td>
-        <td style="font-family:'JetBrains Mono',monospace">${act != null ? (act*1000).toLocaleString() : '–'}</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)">${fc != null ? (fc*1000).toLocaleString() : '–'}</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:${dev2==null?'var(--tx3)':dev2>=0?'var(--up)':'var(--down)'}">
-          ${dev2 != null ? (dev2>=0?'+':'')+dev2.toFixed(1)+'%' : '–'}
-        </td>
+    tbody.innerHTML = Array.from({ length: 24 }, (_, h) => {
+      const act = hourAvg(A, h), fc = hourAvg(F, h);
+      const dev2 = (act != null && fc) ? (act - fc) / fc * 100 : null;
+      return `<tr style="opacity:${act == null ? .45 : 1}">
+        <td style="font-family:'JetBrains Mono',monospace">${String(h).padStart(2, '0')}:00</td>
+        <td style="font-family:'JetBrains Mono',monospace">${act != null ? Math.round(act * 1000).toLocaleString('en-GB') : '–'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)">${fc != null ? Math.round(fc * 1000).toLocaleString('en-GB') : '–'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:${dev2 == null ? 'var(--tx3)' : dev2 >= 0 ? 'var(--up)' : 'var(--down)'}">${dev2 != null ? (dev2 >= 0 ? '+' : '') + dev2.toFixed(1) + '%' : '–'}</td>
       </tr>`;
     }).join('');
   }

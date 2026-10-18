@@ -262,6 +262,7 @@ async function loadFromJSON(opts) {
 
   // Renewables
   const ren = await fetchJSON('renewables.json');
+  if (ren?.countries && window.pkGenAlign) await pkGenAlign.alignSnapshot(ren, 'ren');
   if (ren?.countries) {
     window._renData = ren.countries;
     console.log('✅ Renewables from JSON');
@@ -270,7 +271,8 @@ async function loadFromJSON(opts) {
 
   // Load
   const load = await fetchJSON('load.json');
-  if (load?.countries) { window._loadData = load.countries; console.log('✅ Load from JSON'); }
+  if (load?.countries && window.pkGenAlign) await pkGenAlign.alignSnapshot(load, 'load');
+  if (load?.countries) { window._loadData = load.countries; window._loadDataUpdated = load.updated || null; console.log('✅ Load from JSON'); }
 
   // Cross-border
   const cb = await fetchJSON('crossborder.json');

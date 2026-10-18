@@ -4546,8 +4546,10 @@
             <option value="BE">Belgium (BE)</option>
             <option value="NL">Netherlands (NL)</option>
             <option value="ES">Spain (ES)</option>
-            <option value="GB">Great Britain (GB)</option>
+            <option value="PT">Portugal (PT)</option>
             <option value="IT_NORD">Italy North (IT)</option>
+            <option value="AT">Austria (AT)</option>
+            <option value="PL">Poland (PL)</option>
           </select>
           <span class="updated-badge" id="load-updated">Loading...</span>
         </div>
@@ -4607,7 +4609,7 @@
         <table>
           <thead>
             <tr>
-              <th onclick="sortGenericTable('load-hourly-tbody',0,this)" style="cursor:pointer;user-select:none">Hour (UTC) <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('load-hourly-tbody',0,this)" style="cursor:pointer;user-select:none">Hour (CET/CEST) <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',1,this)" style="cursor:pointer;user-select:none">Actual MW <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',2,this)" style="cursor:pointer;user-select:none">Forecast MW <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',3,this)" style="cursor:pointer;user-select:none">Deviation <span class="sort-ind" style="opacity:.4">↕</span></th>
@@ -6405,6 +6407,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </style>
 
 <script src="js/libs.js"></script>
+<script src="js/gen-align.js"></script>
 <script>
   /* ────────────────────────────────────────────────────────────────
      Chart.js · global animation overrides
