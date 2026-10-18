@@ -654,7 +654,8 @@ async function renderHistSpread() {
       datasets: [
         {
           label: 'Daily spread', data: spreads,
-          backgroundColor: spreads.map(v => v != null && v > 100 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
+          // Intensity, not good/bad: a wide spread is an opportunity, not an alarm.
+          backgroundColor: spreads.map(v => v != null && v > 200 ? 'rgba(20,211,169,0.85)' : v != null && v > 100 ? 'rgba(20,211,169,0.6)' : 'rgba(20,211,169,0.3)'),
           borderWidth: 0,
         },
         { label: '30D avg', data: roll30, type: 'line', borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order:0 },
@@ -669,6 +670,7 @@ async function renderHistSpread() {
     },
   });
 
+  if (typeof renderBess === 'function') renderBess();
   const valid = spreads.filter(v => v != null);
   setStats('hist-spread-stats', [
     { l: 'Avg spread',  v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },

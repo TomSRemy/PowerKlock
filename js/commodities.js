@@ -38,7 +38,11 @@
     const p = pts(key);
     if (!p.length) return null;
     const [d, v] = p[p.length - 1];
-    const prev = p.length > 1 ? p[p.length - 2] : null;
+    // The cockpit repeats the last settlement over weekends / holidays:
+    // compare with the last *different* close (within 7 points).
+    let prev = null;
+    for (let k = p.length - 2; k >= Math.max(0, p.length - 8); k--) { if (p[k][1] !== v) { prev = p[k]; break; } }
+    if (!prev && p.length > 1) prev = p[p.length - 2];
     return {
       d, v,
       prevD: prev ? prev[0] : null,
