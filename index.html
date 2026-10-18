@@ -2757,7 +2757,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>Renewables
       </div>
       <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear &amp; Hydro
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear
       </div>
       <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
@@ -2823,7 +2823,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
       </div>
       <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Outages &amp; REMIT
       </div>
       </div>
     </div>
@@ -4474,62 +4474,37 @@
     <!-- ── PAGE: CROSS-BORDER ── -->
     <div class="page" id="page-crossborder">
       <div class="page-header">
-        <div>
-          <div class="page-title">Cross-Border Flows</div>
-          <div class="page-subtitle">Physical flows between bidding zones · ENTSO-E A11</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div><div class="page-title">Cross-Border Flows</div><div class="page-subtitle">France: commercial exchanges per border, 15-min (RTE éCO2mix) · other zones: ENTSO-E physical flows</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
             <option value="FR">France (FR)</option>
             <option value="DE_LU">Germany (DE)</option>
             <option value="BE">Belgium (BE)</option>
             <option value="ES">Spain (ES)</option>
-            <option value="NL">Netherlands (NL)</option>
-            <option value="GB">Great Britain (GB)</option>
           </select>
-          <span class="updated-badge" id="cb-updated">Loading...</span>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(-1)" title="Previous day">‹</button>
+          <span class="updated-badge" id="cb-day" style="min-width:120px;text-align:center">–</span>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(0)">Today</button>
         </div>
       </div>
-
-      <!-- KPI strip -->
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="cb-kpi-strip">
-        <div class="kpi-card kpi-up"><div class="kpi-label">Total Exports</div><div class="kpi-value" style="color:var(--up)" id="cb-kpi-exp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-exp-chg">--</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Total Imports</div><div class="kpi-value" style="color:var(--down)" id="cb-kpi-imp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-imp-chg">--</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Net Position</div><div class="kpi-value" id="cb-kpi-net">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-net-chg">--</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Border Pairs</div><div class="kpi-value" id="cb-kpi-pairs">--</div><div class="kpi-chg" style="color:var(--tx3)">interconnections</div></div>
-      </div>
-
-      <!-- Stacked bar chart: exports vs imports -->
-      <div class="chart-container" style="margin-bottom:16px">
-        <div class="table-header" style="padding:0 0 10px;border:none">
-          <span class="table-title" id="cb-title">France — Cross-Border Flows (avg MW)</span>
-          <span class="source-badge">ENTSO-E A11</span>
+      <div class="kpi-strip fuel-kpis" id="cb-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="cb-intraday-title">Intraday exchanges by border</div><div class="fuel-card-sub" id="cb-intraday-sub">GW · positive = import into France, negative = export</div></div><span class="source-badge" id="cb-intraday-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:280px"><canvas id="cb-intraday" style="width:100%;height:280px"></canvas></div>
         </div>
-        <div style="position:relative;height:240px;overflow:hidden"><canvas id="cb-chart-canvas" style="width:100%;height:240px"></canvas></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="cb-days-title">Last 14 days</div><div class="fuel-card-sub" id="cb-days-sub">Daily average net exchange by border (GW)</div></div><span class="source-badge" id="cb-days-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:280px"><canvas id="cb-days" style="width:100%;height:280px"></canvas></div>
+        </div>
       </div>
-
-      <!-- Partner breakdown table -->
       <div class="table-wrap">
-        <div class="table-header">
-          <span class="table-title">Partner Breakdown</span>
-          <span class="source-badge">Physical NTC · avg MW</span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortGenericTable('cb-tbody',0,this)" style="cursor:pointer;user-select:none">Partner <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',1,this)" style="cursor:pointer;user-select:none">Imports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',2,this)" style="cursor:pointer;user-select:none">Exports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',3,this)" style="cursor:pointer;user-select:none">Net MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th style="min-width:120px">Flow balance</th>
-              <th>Direction</th>
-            </tr>
-          </thead>
-          <tbody id="cb-tbody">
-            <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Fetching flows...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-header"><span class="table-title" id="cb-table-title">Borders</span><span class="source-badge" id="cb-updated">–</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Border</th><th>Avg net</th><th>Max export</th><th>Max import</th><th>Hours exporting</th><th>Energy</th><th style="text-align:left">Direction</th></tr></thead>
+        <tbody id="cb-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
       </div>
+      <div class="fuel-note" id="cb-note"></div>
     </div>
 
     <!-- ── PAGE: LOAD ── -->
@@ -4884,42 +4859,40 @@
     <!-- NUCLEAR & HYDRO -->
     <div class="page" id="page-nuclear">
       <div class="page-header">
-        <div><div class="page-title">Nuclear &amp; Hydro</div><div class="page-subtitle">Availability · Output · Reservoir levels · ENTSO-E A73/NVE</div></div>
-        <span class="updated-badge" id="nuc-upd">ENTSO-E · Demo</span>
+        <div><div class="page-title">Nuclear — France</div><div class="page-subtitle">Available capacity · operator forecast · seasonality · modulation vs output</div></div>
+        <span class="updated-badge" id="nuc-upd">SEFE market cockpit</span>
       </div>
-
-      <!-- Nuclear KPIs -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">⚛ Nuclear</div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-up"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#7B4B9C" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--up)" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Active Outages</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">MW Unavailable</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
+      <div class="kpi-strip fuel-kpis" id="nuc-kpis"></div>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="nuc-period"><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('nuc','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('nuc','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('nuc','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('nuc','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('nuc','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('nuc','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('nuc','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="nuc-from" onchange="fuelSetRange('nuc')">
+          <span>To</span><input type="date" id="nuc-to" onchange="fuelSetRange('nuc')">
+        </div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['nuc-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:220px"></canvas></div>
-
-      <!-- Hydro KPIs -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:16px 0 8px">💧 Hydro</div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
-        <div class="kpi-card kpi-up"><div class="kpi-label">NO Reservoir Fill</div><div class="kpi-value" style="color:var(--up)" id="hydro-kpi-fill">34.2<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="hydro-kpi-fill-chg">↓ 2.1% vs 20yr median</div></div>
-        <div class="kpi-card kpi-up"><div class="kpi-label">FR Hydro Output</div><div class="kpi-value" style="color:var(--up)">4.8<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">run-of-river + storage</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Inflow vs Normal</div><div class="kpi-value" style="color:var(--down)">-14<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--tx3)">weekly inflow index</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
+      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">SEFE</span></div>
+        <div style="position:relative;height:300px"><canvas id="nuc-hist" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['hydro-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:220px"></canvas></div>
-
-      <!-- REMIT: single source of truth lives on the dedicated REMIT page now
-           (this used to duplicate the exact same 3 hardcoded rows). -->
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="nuc-season" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-mod-title">Output vs availability</div><div class="fuel-card-sub" id="nuc-mod-sub">Daily average nuclear output (ENTSO-E) vs available capacity (GW)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="nuc-mod" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
       <div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div class="table-title" style="margin-bottom:4px">Active REMIT — FR Nuclear Outages</div>
-          <div style="font-size:11px;color:var(--tx3)">3 active UMM · full list, all TSOs and technologies, on the REMIT page</div>
+          <div class="table-title" style="margin-bottom:4px">Unit-level outages</div>
+          <div style="font-size:11px;color:var(--tx3)">Reactor-by-reactor unavailability (REMIT) is published on the operators' and exchanges' transparency platforms — see the REMIT page.</div>
         </div>
         <div class="sidebar-item" style="display:inline-flex;width:auto;padding:6px 14px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd)" onclick="showPage('remit')">Open REMIT →</div>
       </div>
+      <div class="fuel-note" id="nuc-note"></div>
     </div>
 
     <!-- IMBALANCE -->
@@ -5425,26 +5398,19 @@
     <!-- REMIT -->
     <div class="page" id="page-remit">
       <div class="page-header">
-        <div><div class="page-title">REMIT — Urgent Market Messages</div><div class="page-subtitle">Generation and infrastructure outages · TSO publications</div></div>
-        <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">3 active UMM · FR</span>
+        <div><div class="page-title">Outages &amp; REMIT</div><div class="page-subtitle">French nuclear unavailability · official urgent-market-message platforms</div></div>
+        <span class="updated-badge" id="remit-upd">SEFE market cockpit</span>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
+      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW), last 180 days · operator forecast dashed</div></div><span class="source-badge">SEFE</span></div>
+        <div style="position:relative;height:280px"><canvas id="remit-unavail" style="width:100%;height:280px"></canvas></div>
       </div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Active UMMs — France</span></div>
-        <table><thead><tr>
-          <th onclick="sortGenericTable('remit-tbody',0,this)" style="cursor:pointer;user-select:none">TSO <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',1,this)" style="cursor:pointer;user-select:none">Asset <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',2,this)" style="cursor:pointer;user-select:none">Type <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',3,this)" style="cursor:pointer;user-select:none">MW Unavail. <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',4,this)" style="cursor:pointer;user-select:none">Start <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',5,this)" style="cursor:pointer;user-select:none">End <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th>Status</th>
-        </tr></thead>
-        <tbody id="remit-tbody">
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Gravelines 4</td><td>Nuclear</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--warn)">Active</td></tr>
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
-        </tbody></table>
+        <div class="table-header"><span class="table-title">Unit-level UMMs — official platforms</span><span class="source-badge">REMIT Art. 4</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Platform</th><th style="text-align:left">Coverage</th><th>Link</th></tr></thead><tbody><tr><td class="l" style="text-align:left;font-weight:600">ENTSO-E Transparency Platform</td><td class="l" style="text-align:left;color:var(--text2)">Unavailability of production and generation units (all EU TSOs)</td><td><a href="https://transparency.entsoe.eu/outage-domain/r2/unavailabilityOfProductionAndGenerationUnits/show" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">EEX Transparency</td><td class="l" style="text-align:left;color:var(--text2)">Inside information / UMMs published by market participants (DE, FR, AT, ...)</td><td><a href="https://www.eex-transparency.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">Nord Pool UMM</td><td class="l" style="text-align:left;color:var(--text2)">Urgent market messages, Nordic and Baltic areas</td><td><a href="https://umm.nordpoolgroup.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">ACER — REMIT</td><td class="l" style="text-align:left;color:var(--text2)">Regulation, inside-information platforms list (IIPs)</td><td><a href="https://www.acer.europa.eu/remit" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr></tbody></table>
       </div>
+      <div class="fuel-note">PowerKlock does not yet ingest unit-level UMMs; the aggregate French nuclear unavailability above is derived from the operator's declared available capacity.</div>
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
@@ -6357,6 +6323,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <script src="js/libs.js"></script>
 <script src="js/gen-align.js"></script>
+<script src="js/eco2mix.js"></script>
 <script>
   /* ────────────────────────────────────────────────────────────────
      Chart.js · global animation overrides

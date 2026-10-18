@@ -1,59 +1,85 @@
-// ── NUCLEAR
-function drawNuclear() {
-  // Nuclear availability — 12 weeks (% of installed 61.4 GW)
-  const nData  = [72,68,65,62,64,63,61,62,63,64,65,66];
-  const labels = ['W-12','W-11','W-10','W-9','W-8','W-7','W-6','W-5','W-4','W-3','W-2','W-1'];
-  const outage = [28,32,35,38,36,37,39,38,37,36,35,34]; // unavailability
-  mkChart('nuc-canvas', {
-    type:'bar',
-    data:{ labels, datasets:[
-      { label:'Available (%)', data:nData, backgroundColor:'rgba(59,130,246,.6)', borderWidth:0, borderRadius:2, stack:'s' },
-      { label:'Outage (%)',    data:outage, backgroundColor:'rgba(240,80,96,.4)', borderWidth:0, borderRadius:2, stack:'s' },
-    ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'bottom',labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10}},
-        tooltip:{mode:'index',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw+'%'}},
-        annotation:{annotations:{
-          ref:{type:'line',yMin:75,yMax:75,borderColor:'rgba(255,255,255,.25)',borderWidth:1,borderDash:[4,4],
-            label:{display:true,content:'Normal 75%',position:'end',color:'rgba(255,255,255,.4)',font:{size:9},backgroundColor:'transparent'}}
-        }},
-        zoom: ZOOM_CFG,
-      },
-      scales:{
-        x:{stacked:true,grid:GRID,ticks:{color:C_TX3}},
-        y:{stacked:true,grid:GRID,ticks:{color:C_TX3,callback:v=>v+'%'},min:0,max:100}
-      }
-    }
-  });
+// ── NUCLEAR (France) ──────────────────────────────────────────────────
+// Available capacity (actual + operator forecast) from SEFE's cockpit via
+// window.PKC; output from the daily ENTSO-E generation files.
+// Installed capacity: 57 reactors incl. Flamanville 3 (RTE, 2025).
+const FR_NUC_INSTALLED_MW = 63000;
 
-  // Hydro reservoir — 52 weeks
-  const hData   = Array.from({length:52},(_,i)=>+(20+40*Math.sin(i/52*Math.PI)+(Math.random()-.5)*5).toFixed(1));
-  const hMedian = Array.from({length:52},(_,i)=>+(25+30*Math.sin(i/52*Math.PI)).toFixed(1));
-  const hLabels = Array.from({length:52},(_,i)=>{
-    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return i%4===0 ? months[Math.floor(i*12/52)] : '';
-  });
-  mkChart('hydro-canvas', {
-    type:'line', data:{ labels:hLabels, datasets:[
-      { label:'Fill level (%)',  data:hData,   borderColor:C_HYD, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_HYD,.1), tension: 0 },
-      { label:'20yr median (%)',data:hMedian, borderColor:rgba(C_WARN,.6), borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false },
-    ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'bottom',labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10}},
-        tooltip:{mode:'index',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toFixed(1)+'%'}},
-        zoom: ZOOM_CFG,
-      },
-      scales:{ x:{grid:GRID,ticks:{color:C_TX3}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v+'%'},min:0,max:80} }
-    }
-  });
-  setTimeout(()=>{ addFullscreen('nuc-canvas'); addFullscreen('hydro-canvas'); },100);
-  document.getElementById('nuc-upd').textContent = 'ENTSO-E A73 · Demo';
+async function drawNuclear() {
+  await PKC.ready; await PKC.loadFull();
+  const av = PKC.pts('fr_nuc_avail', true), fc = PKC.pts('fr_nuc_avail_fc', true);
+  if (!av.length) { document.getElementById('nuc-kpis').innerHTML = '<div class="fuel-note">No availability data.</div>'; return; }
+  const last = av[av.length - 1], prev = av[av.length - 2];
+  const lyISO = _renAdd(last[0], -364);
+  const ly = PKC.valueOn('fr_nuc_avail', lyISO, true);
+  const ytd = av.filter(p => p[0] >= last[0].slice(0, 4) + '-01-01'), ytdAvg = ytd.reduce((s, p) => s + p[1], 0) / ytd.length;
+  const fcLast = fc[fc.length - 1];
+  const GW = v => v == null ? '–' : (v / 1000).toFixed(1);
+  const chg = prev ? last[1] - prev[1] : null;
+  document.getElementById('nuc-upd').textContent = 'SEFE · ' + _fuelDate(last[0]);
+  document.getElementById('nuc-kpis').innerHTML =
+    _fuelKpi('Available', GW(last[1]), 'GW', chg == null ? '' : `<span style="color:${chg >= 0 ? 'var(--up)' : 'var(--down)'}">${chg >= 0 ? '▲' : '▼'} ${(Math.abs(chg) / 1000).toFixed(2)} GW</span> d/d`) +
+    _fuelKpi('Unavailable', GW(FR_NUC_INSTALLED_MW - last[1]), 'GW', `of ${GW(FR_NUC_INSTALLED_MW)} GW installed`, 'down') +
+    _fuelKpi('Availability factor', (last[1] / FR_NUC_INSTALLED_MW * 100).toFixed(1), '%', _fuelDate(last[0])) +
+    _fuelKpi('vs last year', ly == null ? '–' : _fuelSigned((last[1] - ly) / 1000, 1), 'GW', ly == null ? '' : `same weekday ${_fuelDate(lyISO)}: ${GW(ly)} GW`, ly == null ? null : (last[1] >= ly ? 'up' : 'down')) +
+    _fuelKpi('YTD average', GW(ytdAvg), 'GW', (ytdAvg / FR_NUC_INSTALLED_MW * 100).toFixed(1) + '% availability') +
+    _fuelKpi('Operator forecast', GW(fcLast && fcLast[1]), 'GW', fcLast ? 'as published ' + _fuelDate(fcLast[0]) : '');
+
+  // 1 · History with forecast and installed capacity
+  const from = _fuelWindowStart('nuc'), to = _fuelWindowEnd('nuc');
+  const j = _fuelJoin([PKC.asMap('fr_nuc_avail', true), PKC.asMap('fr_nuc_avail_fc', true)], from, to);
+  const g = a => a.map(v => v == null ? null : Math.round(v / 10) / 100);
+  _fuelChart('nuc-hist', { type: 'line', data: { labels: j.labels, datasets: [
+    _fuelLineDs('Available (actual)', g(j.cols[0]), C_NUC, { borderWidth: 2, fill: true, backgroundColor: rgba('#7B4B9C', .12) }),
+    _fuelLineDs('Operator forecast', g(j.cols[1]), '#C4A7E7', { borderDash: [5, 4], borderWidth: 1.3 }),
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { min: 0, suggestedMax: 66 }) },
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+      annotation: { annotations: { inst: { type: 'line', yMin: FR_NUC_INSTALLED_MW / 1000, yMax: FR_NUC_INSTALLED_MW / 1000, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [4, 4],
+        label: { display: true, content: 'Installed ' + GW(FR_NUC_INSTALLED_MW) + ' GW', position: 'start', color: C_TX2, backgroundColor: 'rgba(10,14,22,.8)', font: { size: 9 } } } } } } }) }, 'fr-nuclear-availability');
+
+  // 2 · Seasonal: current year vs previous 5 years (day of year)
+  const by = {};
+  av.forEach(([d, v]) => { const y = d.slice(0, 4); const doy = Math.floor((Date.parse(d) - Date.parse(y + '-01-01')) / 864e5); (by[y] = by[y] || [])[doy] = v; });
+  const cy = +last[0].slice(0, 4), prevY = []; for (let y = cy - 5; y < cy; y++) if (by[y]) prevY.push(by[y]);
+  const labels = [], mn = [], mx = [], avg = [], cur = [];
+  for (let i = 0; i < 366; i++) {
+    labels.push(new Date(Date.UTC(2024, 0, 1 + i)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' }));
+    const v = prevY.map(a => a[i]).filter(x => x != null);
+    mn.push(v.length ? Math.min(...v) / 1000 : null); mx.push(v.length ? Math.max(...v) / 1000 : null);
+    avg.push(v.length ? v.reduce((a, b) => a + b, 0) / v.length / 1000 : null);
+    cur.push(by[cy] && by[cy][i] != null ? by[cy][i] / 1000 : null);
+  }
+  _fuelChart('nuc-season', { type: 'line', data: { labels, datasets: [
+    _fuelLineDs(`${cy - 5}–${cy - 1} range`, mx, C_TX3, { borderWidth: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.14)' }),
+    _fuelLineDs('min', mn, C_TX3, { borderWidth: 0 }),
+    _fuelLineDs('5-year average', avg, C_TX2, { borderDash: [4, 3], borderWidth: 1.2 }),
+    _fuelLineDs(String(cy), cur, C_NUC, { borderWidth: 2 }),
+  ] }, options: _fuelOpts({
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => it.text !== 'min' } }, zoom: ZOOM_CFG },
+    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 12, maxRotation: 0 } }), y: _fuelAxis('GW', { suggestedMin: 25 }) } }) }, 'fr-nuclear-seasonal');
+
+  // 3 · Output vs availability over days with generation data
+  const days = (await _renDaysWithGen('FR')).filter(d => d >= from && d <= to);
+  const files = await Promise.all(days.map(_renDaily));
+  const rows = days.map((d, i) => {
+    const z = files[i] && files[i].zones && files[i].zones.FR;
+    const out = z && _renMean(z.nuclear);
+    return out ? { d, out: out / 1000, avail: (PKC.valueOn('fr_nuc_avail', d, true) || 0) / 1000 } : null;
+  }).filter(Boolean);
+  if (rows.length) {
+    _renRestore('nuc-mod');
+    _fuelChart('nuc-mod', { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
+      _fuelLineDs('Available', rows.map(r => +r.avail.toFixed(2)), '#C4A7E7', { borderWidth: 1.5, pointRadius: 2 }),
+      _fuelLineDs('Output', rows.map(r => +r.out.toFixed(2)), C_NUC, { borderWidth: 2, pointRadius: 2, fill: true, backgroundColor: rgba('#7B4B9C', .14) }),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { suggestedMin: 25 }) } }) }, 'fr-nuclear-modulation');
+    const mod = rows.map(r => r.avail - r.out).filter(v => v > 0);
+    document.getElementById('nuc-mod-sub').textContent = `Daily average output vs available capacity (GW) · mean modulation ${(mod.reduce((a, b) => a + b, 0) / (mod.length || 1)).toFixed(1)} GW over ${rows.length} days`;
+  } else if (typeof noDataMsg === 'function') {
+    noDataMsg('nuc-mod', 'No ENTSO-E nuclear output archived in this period', 'Output history exists for the days with generation data (see Renewables coverage).');
+  }
+  document.getElementById('nuc-note').textContent =
+    `Available capacity = daily average of the capacity declared available by the operator (SEFE cockpit, from ${_fuelDate(av[0][0])}); the forecast series is the operator's day-ahead view as published each day. ` +
+    `Installed capacity ${GW(FR_NUC_INSTALLED_MW)} GW (57 reactors, incl. Flamanville 3). Output − availability gap = modulation / load-following.`;
 }
-
 
 // ── IMBALANCE
 window._imbDay = 0;
@@ -146,3 +172,31 @@ function drawImbalance() {
 }
 
 
+
+
+// ── OUTAGES & REMIT ───────────────────────────────────────────────────
+async function renderRemit() {
+  await PKC.ready; await PKC.loadFull();
+  const av = PKC.pts('fr_nuc_avail', true), fc = PKC.pts('fr_nuc_avail_fc', true);
+  if (!av.length) return;
+  const I = FR_NUC_INSTALLED_MW, last = av[av.length - 1];
+  const un = v => v == null ? null : (I - v) / 1000;
+  // Same calendar day, previous 5 years
+  const prevYears = [1, 2, 3, 4, 5].map(k => PKC.valueOn('fr_nuc_avail', (+last[0].slice(0, 4) - k) + last[0].slice(4), true)).filter(v => v != null);
+  const avg5 = prevYears.length ? prevYears.reduce((a, b) => a + b, 0) / prevYears.length : null;
+  const fcLast = fc[fc.length - 1];
+  document.getElementById('remit-upd').textContent = 'SEFE · ' + _fuelDate(last[0]);
+  document.getElementById('remit-kpis').innerHTML =
+    _fuelKpi('FR nuclear unavailable', un(last[1]).toFixed(1), 'GW', _fuelDate(last[0]), 'down') +
+    _fuelKpi('Share of fleet', ((I - last[1]) / I * 100).toFixed(1), '%', 'of 63.0 GW installed') +
+    _fuelKpi('vs 5-year same date', avg5 == null ? '–' : _fuelSigned(un(last[1]) - un(avg5), 1), 'GW', avg5 == null ? '' : `5y avg ${un(avg5).toFixed(1)} GW unavailable`, avg5 == null ? null : (last[1] >= avg5 ? 'up' : 'down')) +
+    _fuelKpi('Operator forecast', fcLast ? un(fcLast[1]).toFixed(1) : '–', 'GW', fcLast ? 'unavailable, as of ' + _fuelDate(fcLast[0]) : '') +
+    _fuelKpi('180-day max', Math.max(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable') +
+    _fuelKpi('180-day min', Math.min(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable');
+  const from = _renAdd(last[0], -180);
+  const j = _fuelJoin([PKC.asMap('fr_nuc_avail', true), PKC.asMap('fr_nuc_avail_fc', true)], from, '9999');
+  _fuelChart('remit-unavail', { type: 'line', data: { labels: j.labels, datasets: [
+    _fuelLineDs('Unavailable (actual)', j.cols[0].map(v => v == null ? null : +un(v).toFixed(2)), C_DN, { borderWidth: 2, fill: true, backgroundColor: rgba(C_DN, .12) }),
+    _fuelLineDs('Unavailable (operator forecast)', j.cols[1].map(v => v == null ? null : +un(v).toFixed(2)), '#F4A3A0', { borderDash: [5, 4], borderWidth: 1.3 }),
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'fr-nuclear-unavailability');
+}

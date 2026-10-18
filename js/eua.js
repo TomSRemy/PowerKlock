@@ -10,7 +10,9 @@
 const FUEL_STATE = {
   fuel: { w: '1Y', from: null, to: null },
   sprh: { w: '1Y', from: null, to: null },
+  nuc:  { w: '1Y', from: null, to: null },
 };
+const FUEL_RENDER = { fuel: () => drawEUA(), sprh: () => renderSparkHistory(), nuc: () => drawNuclear() };
 const C_EUA = '#A87DC4', C_TTF = '#14D3A9', C_PEG = '#7FC8F8', C_THE = '#FBBF24', C_NBP = '#ED6965',
       C_COAL = '#8D99AE', C_BRENT = '#D6A77A', C_JKM = '#F472B6';
 
@@ -82,13 +84,13 @@ window.fuelSetPeriod = function (key, w, btn) {
   const f = document.getElementById(key + '-from'), t = document.getElementById(key + '-to');
   if (f) f.value = ''; if (t) t.value = '';
   if (btn) { btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
-  key === 'fuel' ? drawEUA() : renderSparkHistory();
+  FUEL_RENDER[key]();
 };
 window.fuelSetRange = function (key) {
   const f = document.getElementById(key + '-from').value, t = document.getElementById(key + '-to').value;
   FUEL_STATE[key].from = f || null; FUEL_STATE[key].to = t || null;
   document.querySelectorAll('#' + key + '-period .pk-gf-btn').forEach(b => b.classList.remove('active'));
-  key === 'fuel' ? drawEUA() : renderSparkHistory();
+  FUEL_RENDER[key]();
 };
 
 // ════════════════════════════════════════════════════════════════════

@@ -278,7 +278,7 @@ async function loadFromJSON(opts) {
 
   // Cross-border
   const cb = await fetchJSON('crossborder.json');
-  if (cb?.countries) { window._cbData = cb.countries; console.log('✅ Cross-border from JSON'); }
+  if (cb?.countries) { window._cbData = cb.countries; window._cbUpdated = cb.updated || null; console.log('✅ Cross-border from JSON'); }
 
   // My Dashboard's widgets read pricesData/_genmixData/_loadData/_cbData
   // directly — refresh it if the user has it open, same as the map refresh
