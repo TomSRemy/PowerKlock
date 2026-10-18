@@ -360,9 +360,24 @@ def fetch_prices(offset=0):
             except:
                 pass
 
-            # Clean spark spread (TTF D+1 ~45.14, EUA ~74.09)
-            TTF, EUA, EFF, CO2 = 45.14, 74.09, 0.49, 0.365
-            spark = round(avg - TTF/EFF - EUA*CO2, 2)
+            # Clean spark spread from the latest TTF / EUA closes (commodities
+            # feed); left empty when they are unavailable — never a fixed guess.
+            spark = None
+            try:
+                with open('data/commodities.json') as fh:
+                    cm = json.load(fh)
+                def _last(key):
+                    s_ = (cm.get('series') or {}).get(key) or cm.get(key)
+                    if isinstance(s_, dict): s_ = s_.get('pts') or s_.get('points')
+                    if isinstance(s_, list) and s_:
+                        v = s_[-1][1] if isinstance(s_[-1], (list, tuple)) else s_[-1].get('v')
+                        return float(v) if v is not None else None
+                    return None
+                ttf, eua = _last('ttf'), _last('eua')
+                if ttf and eua:
+                    spark = round(avg - ttf / 0.4913 - eua * 0.202 / 0.4913, 2)
+            except Exception:
+                spark = None
 
             results.append({
                 'code': code,
@@ -381,6 +396,20 @@ def fetch_prices(offset=0):
         except Exception as e:
             print(f"  {code}: ERROR — {e}")
 
+    # Feed sanity: a whole day at exactly 0.00 while every coupled neighbour
+    # averages above 20 EUR/MWh is a broken series (seen for EE), not a price.
+    coupled = {'EE': ['FI', 'LV'], 'LV': ['EE', 'LT'], 'LT': ['LV', 'PL'], 'FI': ['EE', 'SE'],
+               'SE': ['FI', 'NO_1'], 'ES': ['PT'], 'PT': ['ES']}
+    by_code = {r['code']: r for r in results}
+    kept = []
+    for r in results:
+        vals = [v for v in r['hourly'] if v is not None]
+        nb = [by_code[c]['today'] for c in coupled.get(r['code'], []) if c in by_code]
+        if vals and all(v == 0 for v in vals) and nb and all(v > 20 for v in nb):
+            print(f"  {r['code']}: DROPPED — flat 0.00 series while coupled zones average {nb}")
+            continue
+        kept.append(r)
+    results = kept
     results.sort(key=lambda x: x['today'], reverse=True)
     return results
 

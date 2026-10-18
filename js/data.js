@@ -27,6 +27,34 @@ function getGenMixDefaultZones() {
 // day-ahead price since Brexit, so using it here showed "7 zones" over a
 // 6-row table.
 const PK_DEFAULT_PRICE_ZONES = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'PT', 'IT_NORD'];
+
+// Feed sanity. A whole delivery day at exactly 0.00 while every coupled
+// neighbour averages above 20 €/MWh is a broken ENTSO-E series (seen for
+// EE), not a price: such zones are dropped and listed in PK_FEED_ISSUES.
+const PK_COUPLED = {
+  EE: ['FI', 'LV'], LV: ['EE', 'LT'], LT: ['LV', 'PL'], FI: ['EE', 'SE'], SE: ['FI', 'NO_1'],
+  ES: ['PT'], PT: ['ES'], DE_LU: ['NL', 'AT'], NL: ['BE', 'DE_LU'], BE: ['NL', 'FR'], FR: ['BE', 'DE_LU'],
+  AT: ['DE_LU', 'CZ'], CZ: ['SK', 'AT'], SK: ['CZ', 'HU'], HU: ['SK', 'RO'], RO: ['HU', 'BG'], BG: ['RO', 'GR'],
+  HR: ['SI', 'HU'], SI: ['HR', 'AT'], PL: ['CZ', 'SK'], DK_W: ['DE_LU', 'DK_E'], DK_E: ['DK_W', 'SE'],
+};
+window.PK_FEED_ISSUES = [];
+function pkSanitizeZones(list, dateISO) {
+  const avg = c => { const z = list.find(x => x.code === c); return z ? z.today : null; };
+  const out = [];
+  list.forEach(z => {
+    const h = (z.hourly || []).filter(v => v != null);
+    const allZero = h.length > 0 && h.every(v => v === 0);
+    const nb = (PK_COUPLED[z.code] || []).map(avg).filter(v => v != null);
+    if (allZero && nb.length && nb.every(v => v > 20)) {
+      window.PK_FEED_ISSUES.push({ code: z.code, date: dateISO, issue: 'all slots 0.00 while coupled zones average ' + nb.map(v => v.toFixed(0)).join(' / ') + ' €/MWh' });
+      console.warn('[prices] ' + z.code + ' dropped for ' + dateISO + ': flat 0.00 feed');
+      return;
+    }
+    out.push(z);
+  });
+  return out;
+}
+window.pkSanitizeZones = pkSanitizeZones;
 window.PK_DEFAULT_PRICE_ZONES = PK_DEFAULT_PRICE_ZONES;
 
 function applyDefaultGenMixZones() {
@@ -210,6 +238,13 @@ async function loadFromJSON(opts) {
     }));
     // Extract date from JSON updated field
     const jsonDate = prices.updated ? prices.updated.slice(0,10) : null;
+    pricesData = pkSanitizeZones(pricesData, jsonDate);
+    // Clean spark from the real TTF / EUA closes (prices.json carries a fixed-fuel placeholder)
+    if (window.PKC) {
+      await PKC.ready;
+      const refs = PKC.refsFor(jsonDate || pkTodayISO());
+      pricesData.forEach(z => { const v = PKC.cleanSpark(z.today, refs.ttf, refs.eua); z.spark = v == null ? null : Math.round(v * 100) / 100; });
+    }
 
     // Backfill vsYday synchronously if missing (so the table never shows '–' when J-1 is available)
     if (jsonDate && typeof fetchYesterdayDaily === 'function' && pricesData.some(z => z.vsYday == null)) {
@@ -585,7 +620,7 @@ async function loadPricesForDate(dateStr) {
             const refs = PKC.refsFor(deliveryStr);
             mapped.forEach(z => { const v = PKC.cleanSpark(z.today, refs.ttf, refs.eua); z.spark = v == null ? null : Math.round(v * 100) / 100; });
           }
-          pricesData = mapped.sort((a,b) => b.today - a.today);
+          pricesData = pkSanitizeZones(mapped, deliveryStr).sort((a,b) => b.today - a.today);
           renderPricesTable(pricesData, deliveryStr);
           updateKPIs(pricesData, deliveryStr);
           buildTicker(pricesData);
