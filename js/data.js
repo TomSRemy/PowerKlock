@@ -397,7 +397,8 @@ function dpRender() {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday  = dateStr === todayStr;
     const isSel    = dateStr === selStr;
-    const isFuture = dateStr > todayStr;
+    // Tomorrow is selectable once its auction file exists (see PK_TOMORROW).
+    const isFuture = dateStr > todayStr && !(window.PK_TOMORROW && dateStr === window.PK_TOMORROW);
     const negH     = DP.negDays[dateStr];
 
     let cls = 'dp-day';
@@ -439,6 +440,23 @@ function dpSelect(dateStr) {
   document.getElementById('date-picker-btn')?.classList.remove('open');
   document.getElementById('date-picker-popup')?.classList.remove('open');
 }
+function dpSelectTomorrow() {
+  if (window.PK_TOMORROW) dpSelect(window.PK_TOMORROW);
+}
+// Probe the next delivery day's file (written after the day-ahead auction).
+(function probeTomorrow() {
+  const tomorrow = (() => { const [y, m, d] = pkTodayISO().split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10); })();
+  setTimeout(() => {
+    fetch(DATA_BASE + 'history/daily/' + tomorrow + '.json?t=' + Date.now(), { method: 'GET' }).then(r => {
+      if (!r.ok) return;
+      window.PK_TOMORROW = tomorrow;
+      const b = document.getElementById('btn-tomorrow-hdr');
+      if (b) { b.style.display = 'inline-flex'; b.textContent = 'Tomorrow · ' + tomorrow.slice(8, 10) + '/' + tomorrow.slice(5, 7); }
+      if (typeof dpRender === 'function') dpRender();
+    }).catch(() => {});
+  }, 3000);
+})();
+
 function dpSelectToday() {
   dpSelect(pkTodayISO());
 }
