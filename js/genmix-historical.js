@@ -1540,6 +1540,7 @@
   function _gmhczRenderRanking(pdata) {
     const host = document.getElementById('gmhcz-content');
     if (!host) return;
+    host.style.minHeight = '0';
     const metric = window._gmhcz.metric;
     const zones = Object.keys(pdata);
     // Sort: REN/load/energy desc · CO2 asc (clean first)
@@ -1575,6 +1576,7 @@
   function _gmhczRenderHeatmap(pdata) {
     const host = document.getElementById('gmhcz-content');
     if (!host) return;
+    host.style.minHeight = '420px';
     const STACK = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
     const FUEL_META = window.GM_FUEL_META || {};
     const FLAGS = window.FLAG_MAP || {};
@@ -1615,6 +1617,7 @@
   function _gmhczRenderTrends(pdata) {
     const host = document.getElementById('gmhcz-content');
     if (!host) return;
+    host.style.minHeight = '420px';
     const metric = window._gmhcz.metric;
     const zones = Object.keys(pdata);
 
@@ -1677,6 +1680,7 @@
   function _gmhczRenderSpread(pdata) {
     const host = document.getElementById('gmhcz-content');
     if (!host) return;
+    host.style.minHeight = '420px';
     const metric = window._gmhcz.metric;
     const ref = window._gmhcz.ref;
     const refVal = pdata[ref] ? _gmhczMetricValue(pdata[ref], metric) : null;
