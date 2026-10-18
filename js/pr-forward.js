@@ -202,7 +202,7 @@
       '<div class="pk-section-header-text">' +
       '<div class="pk-eyebrow">Forward <span class="pk-sep">·</span> ' + meta.flag + ' ' + meta.label + ' <span class="pk-sep">·</span> Detail</div>' +
       '<div class="pk-section-title">' + meta.label + '</div>' +
-      '<div class="pk-section-subtitle">snapshot ' + (cs.spot && cs.spot.date || '') + ' · source SEFE cockpit</div>' +
+      '<div class="pk-section-subtitle">snapshot ' + (cs.spot && cs.spot.date || '') + '</div>' +
       '</div>' +
       '<div class="pk-section-header-actions"><button class="pk-btn-ghost" onclick="event.stopPropagation();window._pfCloseRow()">✕ Close</button></div>' +
       '</div>' +
@@ -364,7 +364,7 @@
   var TENOR_PARAM = { key: 'tenor', label: 'Product', inTitle: true, options: FORWARD_TENORS.map(function (t) { return [t, t]; }) };
   function reg(def) {
     if (!window.PKW) return;
-    PKW.register(Object.assign({ category: 'forwards', page: 'prices', source: 'SEFE', size: { w: 6, h: 5 } }, def));
+    PKW.register(Object.assign({ category: 'forwards', page: 'prices', source: 'Market data', size: { w: 6, h: 5 } }, def));
   }
   // Value of one tenor on the last series date ≤ iso.
   // (walks back over weekends / holidays to the last quoted day)
@@ -433,7 +433,7 @@
           years[yr].dates.forEach(function (d, j) { if (d in idx) arr[idx[d]] = years[yr].values[j]; });
           return { label: 'Cal' + yr, data: arr, borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true };
         }).filter(function (d) { return d.data.some(function (v) { return v != null; }); });
-        if (!ds.length) { noDataMsg(cid, 'No calendar contracts quoted for ' + countryMeta(p.country).label + ' in this window', 'SEFE'); return null; }
+        if (!ds.length) { noDataMsg(cid, 'No calendar contracts quoted for ' + countryMeta(p.country).label + ' in this window', ''); return null; }
         var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
         var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
@@ -545,13 +545,7 @@
     }).join('');
   }
 
-  function renderInsights() {
-    var snap = PF.snap;
-    var dateEl = document.getElementById('prfwd-insights-date');
-    var textEl = document.getElementById('prfwd-insights-text');
-    if (dateEl) dateEl.textContent = 'SEFE Energy · ' + (snap.marketInsightsDate || '');
-    if (textEl) textEl.innerHTML = snap.marketInsightsHtml || '<em style="color:var(--text3)">Analysis unavailable right now.</em>';
-  }
+
 
   // ══════════════════════════════════════════════════════════════════════
   // ORCHESTRATION
@@ -560,7 +554,7 @@
   function renderAll() {
     if (!PF.snap || !PF.series) return;
     var boardMeta = document.getElementById('prfwd-board-meta');
-    if (boardMeta) boardMeta.textContent = 'M+1 to Y+3 · ' + (PF.snap.forwardCurveDate || '') + ' · source SEFE cockpit';
+    if (boardMeta) boardMeta.textContent = 'M+1 to Y+3 · ' + (PF.snap.forwardCurveDate || '');
     renderTopKpis();
     renderCountriesTable();
     renderCompareZoneChips();
@@ -568,13 +562,12 @@
     renderCompareWindowButtons();
     renderCompareChart();
     renderCompareTable();
-    renderInsights();
   }
 
   function renderPrFwd() {
     pfData().then(renderAll).catch(function () {
-      var host = document.getElementById('prfwd-insights-text');
-      if (host) host.innerHTML = '<em style="color:var(--text3)">data/fr_market.json unavailable.</em>';
+      var host = document.getElementById('prfwd-board-meta');
+      if (host) host.textContent = 'data/fr_market.json unavailable';
     });
   }
 

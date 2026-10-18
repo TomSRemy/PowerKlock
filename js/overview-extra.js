@@ -40,7 +40,7 @@
     return fwdData;
   }
   if (window.PKW) PKW.register({
-    id: 'fwd-power', title: 'Power forward curves', category: 'forwards', page: 'prices', pageCanvas: 'pr-home-fwd-canvas', source: 'SEFE', size: { w: 6, h: 5 },
+    id: 'fwd-power', title: 'Power forward curves', category: 'forwards', page: 'prices', pageCanvas: 'pr-home-fwd-canvas', source: 'Market data', size: { w: 6, h: 5 },
     desc: 'Baseload forward settlements FR, DE, NL and GB (converted to €), months to calendar years.',
     async draw(cid) {
       const F = await loadFwd();
@@ -61,7 +61,7 @@
       _fuelChart(cid, { type: 'line', data: { labels, datasets: series }, options: _fuelOpts({
         scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh') } }) }, 'power-forward-curves');
       const sub = `Baseload settlements ${F.forwardCurveDate || ''}${gbpEur ? ` · GB at ${gbpEur.toFixed(4)} EUR/GBP` : ''}`;
-      return { sub, pageSub: sub + ' · SEFE' };
+      return { sub, pageSub: sub };
     },
   });
 

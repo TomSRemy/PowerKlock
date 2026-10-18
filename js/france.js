@@ -1070,14 +1070,8 @@
         'operator forecast, D+1');
       html += '</div>';
 
-      if (snap.marketInsightsHtml) {
-        html += sectionOpen('Market analysis', 'SEFE Energy · ' + (snap.marketInsightsDate || ''));
-        html += '<div class="fr-market-insights">' + snap.marketInsightsHtml + '</div>';
-        html += sectionClose();
-      }
-
       html += sectionOpen('FR forward curve (base)',
-        'Today\'s snapshot · M+1 to Y+3 · source SEFE cockpit',
+        'Today\'s snapshot · M+1 to Y+3',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'fwdcurve\')">↺ Reset</button>');
       html += chartBox('fr-chart-fwdcurve', 280);
       html += sectionClose();
@@ -1102,7 +1096,7 @@
       html += sectionClose();
 
       html += sectionOpen('Available nuclear: actual vs forecast',
-        'French nuclear capacity · source SEFE cockpit',
+        'French nuclear capacity · operator data',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'nuc\')">↺ Reset</button>');
       html += chartBox('fr-chart-nuc', 260);
       html += sectionClose();

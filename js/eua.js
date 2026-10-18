@@ -78,7 +78,7 @@ const FUEL_PERIOD_PARAM = PKW.PERIOD_PARAM;
 // Registers a chart in the dashboard catalogue (js/widgets.js).
 function _fuelReg(def) {
   if (!window.PKW) return;
-  PKW.register(Object.assign({ size: { w: 6, h: 5 }, source: 'SEFE' }, def));
+  PKW.register(Object.assign({ size: { w: 6, h: 5 }, source: 'Market data' }, def));
 }
 // Join several date-keyed maps on the union of their dates within a window.
 function _fuelJoin(maps, from, to) {
@@ -116,7 +116,7 @@ async function drawEUA() {
   const fx = PKC.last('eurusd');
   const sw = (ttf && coal && fx) ? PKC.switchPrice(ttf.v, coal.v, fx.v) : null;
   const stoAvg = _fuelStorageAvg(agsi && agsi.d);
-  document.getElementById('fuel-upd').textContent = 'SEFE · close ' + _fuelDate(eua && eua.d);
+  document.getElementById('fuel-upd').textContent = 'Close ' + _fuelDate(eua && eua.d);
   document.getElementById('fuel-kpis').innerHTML =
     _fuelKpi('EUA ' + PKC.contractLabel('eua'), _fuelFmt(eua && eua.v), '€/t', _fuelChg(eua)) +
     _fuelKpi('TTF day-ahead', _fuelFmt(ttf && ttf.v), '€/MWh', _fuelChg(ttf)) +
@@ -136,7 +136,7 @@ async function drawEUA() {
     `Switch price = (gas cost − coal cost) ÷ (coal − gas CO₂ intensity), with CCGT ${(PKC.FUEL.gasEff * 100).toFixed(1)}% / ` +
     `${PKC.FUEL.gasCO2.toFixed(3)} tCO₂/MWh and coal ${(PKC.FUEL.coalEff * 100).toFixed(0)}% / ${PKC.FUEL.coalCO2.toFixed(3)} tCO₂/MWh, ` +
     `API2 converted at the EUR/USD close. EUA and coal are single benchmark contracts (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), ` +
-    `not rolled continuous series. Source: SEFE Energy market cockpit (public daily link).`;
+    `not rolled continuous series.`;
 }
 
 // ── Carbon & Fuels charts (page + dashboard) ────────────────────────
@@ -209,7 +209,7 @@ _fuelReg({
 
 // Not period-bound: always the calendar year against the previous five.
 _fuelReg({
-  id: 'fuel-storage', title: 'EU gas storage', category: 'fuels', page: 'eua', pageCanvas: 'fuel-storage', source: 'SEFE · AGSI+',
+  id: 'fuel-storage', title: 'EU gas storage', category: 'fuels', page: 'eua', pageCanvas: 'fuel-storage', source: 'GIE AGSI+',
   desc: 'Current year fill level against the 5-year range and average.',
   async draw(cid) { await _fuelData(); _fuelStorageChart(cid); },
 });
@@ -302,7 +302,7 @@ async function drawEUAFwd() {
   const ttfC = curves.ttf || [], euaC = curves.eua || [];
   const ttfDA = PKC.last('ttf');
   const d = (ttfC[0] && ttfC[0].date) || (euaC[0] && euaC[0].date);
-  document.getElementById('fwdc-upd').textContent = 'SEFE · settlement ' + _fuelDate(d);
+  document.getElementById('fwdc-upd').textContent = 'Settlement ' + _fuelDate(d);
 
   const cal1 = ttfC.find(r => r.tenor === 'Y+1'), m1 = ttfC.find(r => r.tenor === 'M+1'), s1 = ttfC.find(r => r.tenor === 'S+1');
   const eua0 = euaC[0], eua1 = euaC[1];
@@ -489,7 +489,7 @@ async function _sparkSeries(p) {
 const SPARK_ZONE_PARAM = { key: 'zone', label: 'Zone', inTitle: true, options: SPARK_ZONES.map(c => [c, c]) };
 
 _fuelReg({
-  id: 'spark-daily', title: 'Clean spark & dark spreads', category: 'spreads', page: 'spark', pageCanvas: 'sprh-daily', source: 'SEFE · ENTSO-E',
+  id: 'spark-daily', title: 'Clean spark & dark spreads', category: 'spreads', page: 'spark', pageCanvas: 'sprh-daily', source: 'Market data · ENTSO-E',
   desc: 'Daily baseload CSS and CDS of one zone, from day-ahead prices and fuel closes.',
   params: [SPARK_ZONE_PARAM, FUEL_PERIOD_PARAM], defaults: { zone: 'FR', period: '1Y' },
   async draw(cid, p) {
@@ -505,7 +505,7 @@ _fuelReg({
 });
 
 _fuelReg({
-  id: 'spark-monthly', title: 'Spreads · monthly averages', category: 'spreads', page: 'spark', pageCanvas: 'sprh-monthly', source: 'SEFE · ENTSO-E',
+  id: 'spark-monthly', title: 'Spreads · monthly averages', category: 'spreads', page: 'spark', pageCanvas: 'sprh-monthly', source: 'Market data · ENTSO-E',
   desc: 'Monthly average CSS base, CSS peak and CDS base of one zone.',
   params: [SPARK_ZONE_PARAM, FUEL_PERIOD_PARAM], defaults: { zone: 'FR', period: '1Y' },
   async draw(cid, p) {

@@ -2986,7 +2986,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
               Forward
             </div>
-            <div class="pr-overview-card-desc">FR power forward curve · M, Q, S, Cal · SEFE cockpit</div>
+            <div class="pr-overview-card-desc">FR power forward curve · M, Q, S, Cal</div>
             <div class="pr-overview-card-kpi" id="pr-home-card-fwd-kpi">— €/MWh</div>
             <div class="pr-overview-card-kpi-label" id="pr-home-card-fwd-label">FR Cal+1 base</div>
             <div class="pr-overview-card-link">Open Forward →</div>
@@ -3070,7 +3070,7 @@
           <div>
             <div class="pr-home-section-label">Power forward curves</div>
             <div class="chart-container fuel-card">
-              <div class="fuel-card-head"><div><div class="table-title">FR · DE · NL · GB baseload</div><div class="fuel-card-sub" id="pr-home-fwd-sub">Baseload settlements · SEFE</div></div><span class="source-badge">SEFE</span></div>
+              <div class="fuel-card-head"><div><div class="table-title">FR · DE · NL · GB baseload</div><div class="fuel-card-sub" id="pr-home-fwd-sub">Baseload settlements</div></div><span class="source-badge">Market data</span></div>
               <div style="position:relative;height:280px"><canvas id="pr-home-fwd-canvas" style="width:100%;height:280px"></canvas></div>
             </div>
           </div>
@@ -3124,7 +3124,7 @@
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-board')">
             <div class="hist-section-title">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward board
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-board-meta">M+1 to Y+3 · source SEFE cockpit</span>
+              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-board-meta">M+1 to Y+3</span>
             </div>
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -3203,18 +3203,6 @@
         </div>
 
         <!-- Market analysis (text, France) -->
-        <div class="hist-section hist-section-strong" id="hs-prfwd-insights">
-          <div class="hist-section-header open" onclick="toggleStrongSection('hs-prfwd-insights')">
-            <div class="hist-section-title">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Market analysis
-              <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px" id="prfwd-insights-date"></span>
-            </div>
-            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="hist-section-body open" id="hs-body-prfwd-insights">
-            <div id="prfwd-insights-text" style="font-size:12.5px;line-height:1.6;color:var(--text2)"></div>
-          </div>
-        </div>
       </div>
 
       <!-- ═══ SUBDOMAIN · DAY-AHEAD · 3 onglets ═══ -->
@@ -4752,7 +4740,7 @@
             <option value="BE">Belgium</option>
             <option value="NL">Netherlands</option>
           </select>
-          <span class="updated-badge">ENTSO-E · SEFE · Open-Meteo</span>
+          <span class="updated-badge">ENTSO-E · market data · Open-Meteo</span>
         </div>
       </div>
 
@@ -4838,7 +4826,7 @@
 
       <!-- Data note -->
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
-        <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">SEFE market cockpit</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (SEFE); other zones = actual nuclear output. Demand / net import shown only for days with stored ENTSO-E load. Spark = clean spark spread, CCGT 49.1% (see Methodology). Days without archived data are left empty.
+        <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">daily market closes</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (operator data); other zones = actual nuclear output. Demand / net import shown only for days with stored ENTSO-E load. Spark = clean spark spread, CCGT 49.1% (see Methodology). Days without archived data are left empty.
       </div>
     </div>
 
@@ -5002,7 +4990,7 @@
     <div class="page" id="page-nuclear">
       <div class="page-header">
         <div><div class="page-title">Nuclear — France</div><div class="page-subtitle">Available capacity · operator forecast · seasonality · modulation vs output</div></div>
-        <span class="updated-badge" id="nuc-upd">SEFE market cockpit</span>
+        <span class="updated-badge" id="nuc-upd">Operator data</span>
       </div>
       <div class="kpi-strip fuel-kpis" id="nuc-kpis"></div>
       <div class="fuel-toolbar">
@@ -5014,16 +5002,16 @@
         </div>
       </div>
       <div class="chart-container fuel-card" style="margin-bottom:14px">
-        <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">SEFE</span></div>
+        <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:300px"><canvas id="nuc-hist" style="width:100%;height:300px"></canvas></div>
       </div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:280px"><canvas id="nuc-season" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title" id="nuc-mod-title">Output vs availability</div><div class="fuel-card-sub" id="nuc-mod-sub">Daily average nuclear output (ENTSO-E) vs available capacity (GW)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-mod-title">Output vs availability</div><div class="fuel-card-sub" id="nuc-mod-sub">Daily average nuclear output (ENTSO-E) vs available capacity (GW)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
           <div style="position:relative;height:280px"><canvas id="nuc-mod" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
@@ -5080,7 +5068,7 @@
     <div class="page" id="page-eua">
       <div class="page-header">
         <div><div class="page-title">Carbon &amp; Fuels</div><div class="page-subtitle">EUA · gas hubs · coal · oil · EU gas storage · fuel switching</div></div>
-        <span class="updated-badge" id="fuel-upd">SEFE market cockpit</span>
+        <span class="updated-badge" id="fuel-upd">Market closes</span>
       </div>
       <div class="fuel-toolbar">
         <span class="fuel-toolbar-lbl">Period</span>
@@ -5093,17 +5081,17 @@
       <div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-eua-ttf" style="width:100%;height:260px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">Coal-to-gas switching</div><div class="fuel-card-sub" id="fuel-switch-sub">EUA price at which a CCGT matches a coal unit · vs EUA (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">Coal-to-gas switching</div><div class="fuel-card-sub" id="fuel-switch-sub">EUA price at which a CCGT matches a coal unit · vs EUA (€/t)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-switch" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-hubs" style="width:100%;height:260px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
@@ -5113,11 +5101,11 @@
       </div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-coal-oil" style="width:100%;height:260px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">LNG arbitrage</div><div class="fuel-card-sub" id="fuel-lng-sub">JKM front-month vs TTF day-ahead ($/MMBtu)</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">LNG arbitrage</div><div class="fuel-card-sub" id="fuel-lng-sub">JKM front-month vs TTF day-ahead ($/MMBtu)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-lng" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
@@ -5128,25 +5116,25 @@
     <div class="page" id="page-euafwd">
       <div class="page-header">
         <div><div class="page-title">Forward Curves</div><div class="page-subtitle">TTF strip · EUA December strip · implied forward clean spreads</div></div>
-        <span class="updated-badge" id="fwdc-upd">SEFE market cockpit</span>
+        <span class="updated-badge" id="fwdc-upd">Settlements</span>
       </div>
       <div class="kpi-strip fuel-kpis" id="fwdc-kpis"></div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">TTF forward curve</div><div class="fuel-card-sub" id="fwdc-ttf-sub">Settlement D-1 (€/MWh) · day-ahead first</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">TTF forward curve</div><div class="fuel-card-sub" id="fwdc-ttf-sub">Settlement D-1 (€/MWh) · day-ahead first</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:280px"><canvas id="fwdc-ttf" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">EUA December strip</div><div class="fuel-card-sub" id="fwdc-eua-sub">Settlement D-1 (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">EUA December strip</div><div class="fuel-card-sub" id="fwdc-eua-sub">Settlement D-1 (€/t)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:280px"><canvas id="fwdc-eua" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
       <div class="table-wrap" style="margin-bottom:14px">
-        <div class="table-header"><span class="table-title">TTF &amp; EUA — settlement D-1</span><span class="source-badge">SEFE</span></div>
+        <div class="table-header"><span class="table-title">TTF &amp; EUA — settlement D-1</span><span class="source-badge">Market data</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th style="text-align:left">Contract</th><th>Settle</th><th>Unit</th><th>Δ D-1</th><th>Δ W-1</th></tr></thead><tbody id="fwdc-tbody"></tbody></table>
       </div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Implied forward clean spreads — baseload (€/MWh)</span><span class="source-badge" id="fwdc-css-badge">Power: SEFE · fuel: same tenor</span></div>
+        <div class="table-header"><span class="table-title">Implied forward clean spreads — baseload (€/MWh)</span><span class="source-badge" id="fwdc-css-badge">Power and fuel: same tenor</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Tenor</th><th style="text-align:left">Power contract</th><th>TTF</th><th>EUA</th><th>FR base</th><th>FR CSS</th><th>DE base</th><th>DE CSS</th><th>DE CDS</th><th>NL base</th><th>NL CSS</th></tr></thead><tbody id="fwdc-css-tbody"></tbody></table>
         <div class="fuel-note" id="fwdc-css-note" style="padding:10px 14px 4px"></div>
       </div>
@@ -5156,7 +5144,7 @@
     <div class="page" id="page-spark">
       <div class="page-header">
         <div><div class="page-title">Clean Spark &amp; Dark Spreads</div><div class="page-subtitle" id="spark-subtitle">Day-ahead power − fuel − carbon · CCGT 49.1% · coal 36%</div></div>
-        <span class="updated-badge" id="spark-upd">ENTSO-E · SEFE</span>
+        <span class="updated-badge" id="spark-upd">ENTSO-E · market closes</span>
       </div>
       <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
       <div class="table-wrap" style="margin-bottom:14px">
@@ -5175,11 +5163,11 @@
       </div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
           <div style="position:relative;height:280px"><canvas id="sprh-daily" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">Monthly average</div><div class="fuel-card-sub" id="sprh-monthly-sub">CSS base / CSS peak / CDS base (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div class="fuel-card-head"><div><div class="table-title">Monthly average</div><div class="fuel-card-sub" id="sprh-monthly-sub">CSS base / CSS peak / CDS base (€/MWh)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
           <div style="position:relative;height:280px"><canvas id="sprh-monthly" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
@@ -5479,11 +5467,11 @@
     <div class="page" id="page-remit">
       <div class="page-header">
         <div><div class="page-title">Outages &amp; REMIT</div><div class="page-subtitle">French nuclear unavailability · official urgent-market-message platforms</div></div>
-        <span class="updated-badge" id="remit-upd">SEFE market cockpit</span>
+        <span class="updated-badge" id="remit-upd">Operator data</span>
       </div>
       <div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
       <div class="chart-container fuel-card" style="margin-bottom:14px">
-        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">SEFE</span></div>
+        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:280px"><canvas id="remit-unavail" style="width:100%;height:280px"></canvas></div>
       </div>
       <div class="table-wrap">
@@ -5608,7 +5596,7 @@
             <h2 class="meth-h2">Cross-border flows, imbalance &amp; outages</h2>
             <p class="meth-p"><strong>France:</strong> commercial exchanges per border from RTE éCO2mix (15-min; RTE sign convention, negative = export). <strong>Other zones:</strong> ENTSO-E A11 physical flows, daily average per partner.</p>
             <p class="meth-p"><strong>Imbalance:</strong> Belgian single imbalance price and system imbalance from Elia open data (today near real time, earlier days validated). Other TSOs are not ingested yet.</p>
-            <p class="meth-p"><strong>Nuclear availability &amp; outages:</strong> French available nuclear capacity (actual and operator forecast) from the SEFE cockpit; unavailability = 63.0 GW installed (57 reactors incl. Flamanville 3) − available. Unit-level UMMs are linked to the official inside-information platforms.</p>
+            <p class="meth-p"><strong>Nuclear availability &amp; outages:</strong> French available nuclear capacity (actual and operator forecast) as published daily by the operator; unavailability = 63.0 GW installed (57 reactors incl. Flamanville 3) − available. Unit-level UMMs are linked to the official inside-information platforms.</p>
             <h3 class="meth-h3">Weather &amp; degree days</h3>
             <p class="meth-p">Open-Meteo forecast and ERA5 archive, population-weighted over each country's main load centres. HDD = max(0, 18 °C − daily mean), CDD = max(0, daily mean − 21 °C); normal = mean of the same calendar day 2016–2025.</p>
             <h3 class="meth-h3">History coverage</h3>
@@ -5618,7 +5606,7 @@
           <section id="meth-eua" class="meth-section">
             <h2 class="meth-h2">Carbon, fuels &amp; spreads</h2>
             <h3 class="meth-h3">Sources</h3>
-            <p class="meth-p">Gas (TTF, PEG, THE, NBP day-ahead; JKM front-month), EUA December contracts, API2 coal (ARA CIF, front calendar year), Brent front-month, EUR/USD and GBP/USD, EU gas storage (GIE AGSI) and French nuclear available capacity come from SEFE Energy's public market cockpit, refreshed daily (<code>data/commodities.json</code>). Values are daily settlements/closes; the date shown is the trading date.</p>
+            <p class="meth-p">Gas (TTF, PEG, THE, NBP day-ahead; JKM front-month), EUA December contracts, API2 coal (ARA CIF, front calendar year), Brent front-month, EUR/USD and GBP/USD, EU gas storage (GIE AGSI) and French nuclear available capacity are daily closes refreshed every trading day (<code>data/commodities.json</code>). Values are daily settlements/closes; the date shown is the trading date.</p>
             <p class="meth-p">EUA and coal histories are those of a single benchmark contract (e.g. EUA Dec-26, API2 Cal-27), not a rolled continuous series: earlier points include the contract's carry.</p>
             <h3 class="meth-h3">Clean spark &amp; clean dark spreads</h3>
             <p class="meth-p"><strong>CSS</strong> = power − TTF ÷ 49.13% − EUA × 0.411 tCO₂/MWh (CCGT, 0.202 tCO₂/MWh<sub>th</sub>). <strong>CDS</strong> = power − API2 (converted at the EUR/USD close) ÷ (6.978 MWh/t × 36%) − EUA × 0.947 tCO₂/MWh (coal, 0.341 tCO₂/MWh<sub>th</sub>). Day-ahead spreads use TTF day-ahead traded the day before delivery; forward spreads use power and TTF on the same tenor and the EUA December contract of the delivery year. Peak = 08:00–20:00.</p>

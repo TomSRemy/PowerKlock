@@ -56,7 +56,7 @@
     agsi: { label: 'EU gas storage', unit: ' %', dp: 1, level: true },
   };
   PKW.register({
-    id: 'kpi-fuel', kind: 'html', title: 'Fuel & carbon close', category: 'kpi', source: 'SEFE', page: 'eua', size: { w: 2, h: 2 },
+    id: 'kpi-fuel', kind: 'html', title: 'Fuel & carbon close', category: 'kpi', source: 'Market data', page: 'eua', size: { w: 2, h: 2 },
     desc: 'Last close of a fuel or carbon benchmark and its daily change.',
     params: [{ key: 'c', label: 'Product', options: Object.keys(FUELS).map(k => [k, FUELS[k].label]) }], defaults: { c: 'eua' },
     titleFn: p => (FUELS[p.c] || FUELS.eua).label + (FUELS[p.c] && FUELS[p.c].contract && window.PKC && PKC.data ? ' ' + PKC.contractLabel(p.c) : ''),
@@ -79,7 +79,7 @@
   });
 
   PKW.register({
-    id: 'kpi-fr-nuclear', kind: 'html', title: 'FR nuclear available', category: 'kpi', source: 'SEFE', page: 'nuclear', size: { w: 2, h: 2 },
+    id: 'kpi-fr-nuclear', kind: 'html', title: 'FR nuclear available', category: 'kpi', source: 'Market data', page: 'nuclear', size: { w: 2, h: 2 },
     desc: 'Available French nuclear capacity, share of the 63 GW installed fleet.',
     async html(host) {
       if (!window.PKC) return empty(host, 'Market data unavailable');

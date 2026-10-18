@@ -15,7 +15,7 @@ async function drawNuclear() {
   const fcLast = fc[fc.length - 1];
   const GW = v => v == null ? '–' : (v / 1000).toFixed(1);
   const chg = prev ? last[1] - prev[1] : null;
-  document.getElementById('nuc-upd').textContent = 'SEFE · ' + _fuelDate(last[0]);
+  document.getElementById('nuc-upd').textContent = 'Operator data · ' + _fuelDate(last[0]);
   document.getElementById('nuc-kpis').innerHTML =
     _fuelKpi('Available', GW(last[1]), 'GW', chg == null ? '' : `<span style="color:${chg >= 0 ? 'var(--up)' : 'var(--down)'}">${chg >= 0 ? '▲' : '▼'} ${(Math.abs(chg) / 1000).toFixed(2)} GW</span> d/d`) +
     _fuelKpi('Unavailable', GW(FR_NUC_INSTALLED_MW - last[1]), 'GW', `of ${GW(FR_NUC_INSTALLED_MW)} GW installed`, 'down') +
@@ -31,7 +31,7 @@ async function drawNuclear() {
     document.getElementById('nuc-mod-sub').textContent = r && r.modSub ? r.modSub : 'Daily average output vs available capacity (GW)';
   });
   document.getElementById('nuc-note').textContent =
-    `Available capacity = daily average of the capacity declared available by the operator (SEFE cockpit, from ${_fuelDate(av[0][0])}); the forecast series is the operator's day-ahead view as published each day. ` +
+    `Available capacity = daily average of the capacity declared available by the operator (from ${_fuelDate(av[0][0])}); the forecast series is the operator's day-ahead view as published each day. ` +
     `Installed capacity ${GW(FR_NUC_INSTALLED_MW)} GW (57 reactors, incl. Flamanville 3). Output − availability gap = modulation / load-following.`;
 }
 
@@ -45,7 +45,7 @@ async function _nucData() {
 const _nucGW = v => v == null ? '–' : (v / 1000).toFixed(1);
 function _nucReg(def) {
   if (!window.PKW) return;
-  PKW.register(Object.assign({ category: 'france', page: 'nuclear', source: 'SEFE', size: { w: 6, h: 5 } }, def));
+  PKW.register(Object.assign({ category: 'france', page: 'nuclear', source: 'Market data', size: { w: 6, h: 5 } }, def));
 }
 
 _nucReg({
@@ -98,7 +98,7 @@ _nucReg({
 
 // Output vs availability over the days with ENTSO-E generation data.
 _nucReg({
-  id: 'nuc-mod', title: 'France · nuclear output vs availability', pageCanvas: 'nuc-mod', source: 'SEFE · ENTSO-E',
+  id: 'nuc-mod', title: 'France · nuclear output vs availability', pageCanvas: 'nuc-mod', source: 'Market data · ENTSO-E',
   desc: 'Daily nuclear output against available capacity: the gap is modulation.',
   params: [PKW.PERIOD_PARAM], defaults: { period: '1Y' },
   async draw(cid, p) {
@@ -320,7 +320,7 @@ async function renderRemit() {
   const prevYears = [1, 2, 3, 4, 5].map(k => PKC.valueOn('fr_nuc_avail', (+last[0].slice(0, 4) - k) + last[0].slice(4), true)).filter(v => v != null);
   const avg5 = prevYears.length ? prevYears.reduce((a, b) => a + b, 0) / prevYears.length : null;
   const fcLast = fc[fc.length - 1];
-  document.getElementById('remit-upd').textContent = 'SEFE · ' + _fuelDate(last[0]);
+  document.getElementById('remit-upd').textContent = 'Operator data · ' + _fuelDate(last[0]);
   document.getElementById('remit-kpis').innerHTML =
     _fuelKpi('FR nuclear unavailable', un(last[1]).toFixed(1), 'GW', _fuelDate(last[0]), 'down') +
     _fuelKpi('Share of fleet', ((I - last[1]) / I * 100).toFixed(1), '%', 'of 63.0 GW installed') +
