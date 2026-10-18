@@ -308,7 +308,7 @@
         '</tr>';
     }).join('');
     host.innerHTML = '<div class="table-wrap">' +
-      '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Tableau forward · tous les tenors</span></div>' +
+      '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Forward table · all tenors</span></div>' +
       '<table style="font-size:11px">' +
       '<thead><tr><th style="text-align:left">PRODUCT</th><th style="text-align:left">CONTRACT</th>' +
       '<th style="text-align:right">VALUE (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR 1W</th></tr></thead>' +
