@@ -392,7 +392,7 @@
     CC_ZONES.forEach(function (c) { var ser = s && s.zones && s.zones[c]; if (!ser) return; var ys = yearSum(ser); Object.keys(ys).forEach(function (y) { if (yearComplete(ser, y) && ys[y] > most.h) most = { h: ys[y], z: c, y: y }; }); if (yearComplete(ser, String(+cy - 1))) { euTot += ys[String(+cy - 1)] || 0; euN++; } var dp = deepest(ser); if (dp.v < deep.v) deep = { v: dp.v, z: c }; });
     function kc(lbl, val, unit, sub, dn, zm) { return '<div class="kpi-card ' + (dn ? 'kpi-down' : 'kpi-flat') + '"><div class="kpi-label">' + lbl + '</div><div class="kpi-value"' + (dn ? ' style="color:' + C_NEG + '"' : '') + '>' + val + (unit ? '<span class="kpi-unit">' + unit + '</span>' : '') + '</div>' + (zm ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-meta">' + (sub || '') + '</div>') + '</div>'; }
     el.innerHTML =
-      kc('Zones tracked', zk.length || '–', '', CC_ZONES.length + ' featured', false) +
+      kc('Zones with history', zk.length || '–', '', CC_ZONES.length + ' featured below', false) +
       kc('Most neg h', n2(most.h, 0), 'h', most.z ? flag(most.z) + ' ' + most.z + ' · ' + most.y : '', most.z, true) +
       kc('Deepest print', deep.z ? n2(deep.v, 0) : '–', '€/MWh', deep.z ? flag(deep.z) + ' ' + deep.z : '', deep.z, true) +
       kc('EU total ' + (+cy - 1), n2(euTot, 0), 'h', euN + ' zone' + (euN > 1 ? 's' : '') + ' with full history', euTot > 0) +
