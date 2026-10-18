@@ -117,6 +117,7 @@
     el.classList.toggle('pk-status-warn', issues.length > 0 && !err);
     el.classList.toggle('pk-status-err', err);
     el.querySelector('.pk-status-txt').textContent = issues.length ? issues.length + (issues.length > 1 ? ' sources need attention' : ' source needs attention') : 'Data up to date';
+    el.dataset.short = issues.length ? issues.length + ' ⚠' : 'OK';   // phones (index.html CSS)
     el.title = issues.length ? issues.map(r => r.source.label + ': ' + r.state).join('\n') + '\nClick for details' : 'All sources up to date · click for details';
   }
 
