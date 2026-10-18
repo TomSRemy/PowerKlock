@@ -83,11 +83,18 @@ async function _gmResolveDay(zone, dateStr) {
 function _gmDayArrays(zd) {
   const N = Math.max.apply(null, GM_STACK_FUELS.map(f => (Array.isArray(zd[f]) ? zd[f].length : 0)).concat([96]));
   const DATA = {};
+  // pub[i]: at least one fuel published for slot i. Unpublished slots (end
+  // of today, slots realigned from a missing previous day) are gaps, never 0.
+  const pub = new Array(N).fill(false);
   GM_STACK_FUELS.forEach(f => {
     const a = Array.isArray(zd[f]) ? zd[f] : [];
-    DATA[f] = new Array(N).fill(0).map((_, i) => (a[i] == null ? 0 : a[i]));
+    DATA[f] = new Array(N).fill(0).map((_, i) => { if (a[i] == null) return 0; pub[i] = true; return a[i]; });
   });
-  return { DATA, N };
+  return { DATA, N, pub };
+}
+// Total generation per slot in GW, null where nothing is published.
+function _gmTotalGW(A) {
+  return new Array(A.N).fill(0).map((_, i) => A.pub[i] ? GM_STACK_FUELS.reduce((s, f) => s + A.DATA[f][i], 0) / 1000 : null);
 }
 
 // Per-slot envelope of TOTAL generation (GW) over the last nDays stored days.
@@ -106,8 +113,8 @@ async function _gmFetchGenEnvelope(zone, nDays, N) {
     const j = await _gmFetchDaily(dt);
     const zd = j && j.zones && j.zones[zone];
     if (!zd || !_gmHasArrays(zd)) return;
-    const { DATA, N: dn } = _gmDayArrays(zd);
-    const tot = new Array(dn).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + DATA[f][i], 0) / 1000);
+    const A = _gmDayArrays(zd), dn = A.N;
+    const tot = _gmTotalGW(A);
     // resample dn → N
     rows.push(new Array(N).fill(0).map((_, i) => tot[Math.min(dn - 1, Math.round(i / (N - 1) * (dn - 1)))]));
   }));
@@ -548,7 +555,7 @@ function _gmOpenRow(zone) {
             <div class="pk-section-subtitle" id="gm-drill-subtitle">live snapshot · ${(st.total/1000).toFixed(2)} GW total · ENTSO-E</div>
           </div>
           <div class="pk-section-header-actions">
-            <button class="pk-btn-primary" onclick="event.stopPropagation();_gmOpenFullscreen('${zone}')" title="Open in fullscreen">⛶ Fullscreen</button>
+            <button class="pk-btn-primary" onclick="event.stopPropagation();gmDrillFullscreen('daily')" title="Fullscreen">⛶ Fullscreen</button>
             <button class="pk-btn-ghost" onclick="event.stopPropagation();_gmCloseRow()" title="Close detail">✕ Close</button>
           </div>
         </div>
@@ -596,7 +603,6 @@ function _gmOpenRow(zone) {
           </div>
           <div class="pk-tabbar-right">
             <div id="gm-drill-tab-chips" class="pk-tabbar-chips"></div>
-            <button onclick="gmDrillFullscreen('daily')" title="Fullscreen" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
           </div>
         </div>
 
@@ -826,20 +832,18 @@ function _gmDrillBuildBannerHtml(tab, zone, mix, st) {
   const co2Verdict = (st.co2 < 50) ? 'very low-carbon' : (st.co2 < 150) ? 'low-carbon' : (st.co2 < 400) ? 'moderate' : 'carbon-intensive';
 
   if (tab === 'profile') {
-    const synth = window._gmdSynthProfile;
-    const prof = (typeof synth === 'function') ? synth(mix) : null;
-    if (!prof) {
+    // Real 15-min arrays of the drill day (set by _gmRenderProfileReal).
+    const ps = window._gmProfileStats;
+    if (!ps || ps.zone !== zone) {
       const line1 = `${country} total ${(st.total/1000).toFixed(2)} GW · ${st.renPct.toFixed(0)}% REN. Top fuel: <strong style="color:#fff">${GM_FUEL_META[st.dom]?.label || st.dom}</strong> at ${(((mix[st.dom]||0)/st.total)*100).toFixed(0)}%.`;
       return _gmBuildMarketBanner({ line1 });
     }
-    const solarPeak = prof.solar ? Math.max(...prof.solar) : 0;
-    const fossilPeak = prof.fossil ? Math.max(...prof.fossil) : 0;
-    const nucBase = prof.nuclear ? (prof.nuclear.reduce((a,b)=>a+b,0) / prof.nuclear.length) : 0;
-    const line1 = `${country} 24h profile · solar peak <strong style="color:#fff">${solarPeak.toFixed(1)} GW</strong>, nuclear baseload <strong style="color:#fff">${nucBase.toFixed(1)} GW</strong>, fossil peak <strong style="color:#fff">${fossilPeak.toFixed(1)} GW</strong>.`;
+    const { solarPeak, solarAt, nucBase, fossilPeak, fossilAt, slots, nSlots, day } = ps;
+    const line1 = `${country} · ${day} · solar peak <strong style="color:#fff">${solarPeak.toFixed(2)} GW</strong>${solarAt ? ' at ' + solarAt : ''}, nuclear average <strong style="color:#fff">${nucBase.toFixed(2)} GW</strong>, fossil peak <strong style="color:#fff">${fossilPeak.toFixed(2)} GW</strong>${fossilAt ? ' at ' + fossilAt : ''}${slots < nSlots ? ` · ${slots}/${nSlots} slots published` : ''}.`;
     let verdict = '';
     if (st.renPct >= 60) {
       verdict = `Wind+solar drive the shape today. Mid-day price softening likely on solar surplus.`;
-    } else if (nucBase > st.total / 2 / 1000) {
+    } else if (nucBase * 1000 > st.total / 2) {
       verdict = `Flat nuclear baseload dominates · prices anchor around marginal fossil ramps morning/evening.`;
     } else if (st.fosPct > 30) {
       verdict = `Fossil-heavy day — gas/coal sets marginal price across most slots.`;
@@ -911,8 +915,23 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
     if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone}.</div>`;
     return;
   }
-  const { DATA, N } = _gmDayArrays(cur.zd);
-  const total = new Array(N).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + DATA[f][i], 0) / 1000); // GW
+  const CUR = _gmDayArrays(cur.zd), N = CUR.N;
+  const total = _gmTotalGW(CUR); // GW, null = not published
+  if (canvasId === 'gm-drill-profile-canvas') {
+    const idx = []; for (let i = 0; i < N; i++) if (CUR.pub[i]) idx.push(i);
+    const lab = i => { const m = Math.round(i / N * 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+    const peak = f => idx.reduce((b, i) => (CUR.DATA[f][i] > (b < 0 ? -1 : CUR.DATA[f][b]) ? i : b), -1);
+    const sp = peak('solar'), fp = peak('fossil');
+    window._gmProfileStats = {
+      zone, day: cur.ds, slots: idx.length, nSlots: N,
+      solarPeak: sp < 0 ? 0 : CUR.DATA.solar[sp] / 1000, solarAt: sp < 0 ? '' : lab(sp),
+      fossilPeak: fp < 0 ? 0 : CUR.DATA.fossil[fp] / 1000, fossilAt: fp < 0 ? '' : lab(fp),
+      nucBase: idx.length ? idx.reduce((a, i) => a + CUR.DATA.nuclear[i], 0) / idx.length / 1000 : 0,
+    };
+    const ba = document.getElementById('gm-drill-banner-anchor');
+    if (ba && (window._gmDrillTab || 'profile') === 'profile' && window._GM_LAST_MIX && window._GM_LAST_ST)
+      ba.innerHTML = _gmDrillBuildBannerHtml('profile', zone, window._GM_LAST_MIX, window._GM_LAST_ST);
+  }
 
   // Real J-1 (previous stored day, resampled to N)
   let prev = null;
@@ -921,7 +940,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
   const pzd = pj && pj.zones && pj.zones[zone];
   if (_gmHasArrays(pzd)) {
     const pa = _gmDayArrays(pzd);
-    const pTot = new Array(pa.N).fill(0).map((_, i) => GM_STACK_FUELS.reduce((s, f) => s + pa.DATA[f][i], 0) / 1000);
+    const pTot = _gmTotalGW(pa);
     prev = new Array(N).fill(0).map((_, i) => pTot[Math.min(pa.N - 1, Math.round(i / (N - 1) * (pa.N - 1)))]);
   }
 
@@ -977,173 +996,6 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
   _gmZoomify(window[chartKey], canvasId);
 }
 
-function _gmDrillRenderProfile_OLD(zone, mix, st) {
-  const host = document.getElementById('gm-drill-content');
-  const breakHost = document.getElementById('gm-drill-breakdown');
-  if (!host) return;
-
-  const synth = window._gmdSynthProfile;
-  if (typeof synth !== 'function') {
-    host.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Profile synthesizer not loaded (check genmix-daily.js)</div>`;
-    return;
-  }
-
-  host.innerHTML = `
-    <div style="position:relative;width:100%;height:300px">
-      <canvas id="gm-drill-profile-canvas" style="width:100%;height:100%;display:block"></canvas>
-    </div>`;
-
-  const profile = synth(mix);
-  if (!profile) return;
-  const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
-  const N = profile.nuclear?.length || 96;
-
-  // Sum across all fuels at each 15-min slot to get TOTAL generation
-  const total = new Array(N);
-  for (let i = 0; i < N; i++) {
-    total[i] = STACK.reduce((s, f) => s + ((profile[f] || [])[i] || 0), 0);
-  }
-
-  const labels = [];
-  for (let i = 0; i < N; i++) {
-    const m = i * 15;
-    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
-  }
-
-  // Overlay synthesis (J-1 ≈ today × small variance, 7d avg ≈ smoothed today)
-  const overlay = window._gmDrillProfileOverlay || 'j-1';
-  let cmpData = null;
-  let cmpLabel = '';
-  if (overlay === 'j-1') {
-    // Synthesize J-1 with a small temporal shift + noise
-    cmpData = total.map((v, i) => {
-      const phase = Math.sin((i / N) * Math.PI * 2 + 0.3) * 0.04;
-      return v * (1 + phase) * 0.97;
-    });
-    cmpLabel = 'J-1';
-  } else if (overlay === '7d') {
-    // 7d avg ≈ flatter version (lower amplitude)
-    const mean = total.reduce((a,b)=>a+b,0) / total.length;
-    cmpData = total.map(v => mean + (v - mean) * 0.6);
-    cmpLabel = '7d avg';
-  }
-
-  const todayColor = '#FBBF24'; // amber, same accent as Prices drill chart
-  const datasets = [
-    {
-      label:           'Today',
-      data:            total,
-      borderColor:     todayColor,
-      backgroundColor: 'rgba(251, 191, 36, 0.10)',
-      borderWidth: 2.5,
-      fill: true,
-      tension: 0,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-    },
-  ];
-  if (cmpData) {
-    datasets.push({
-      label:           cmpLabel,
-      data:            cmpData,
-      borderColor:     '#7A93AB',
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderDash: [4, 3],
-      fill: false,
-      tension: 0,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-    });
-  }
-
-  const canvas = document.getElementById('gm-drill-profile-canvas');
-  if (window._gmDrillProfileChart) { try { window._gmDrillProfileChart.destroy(); } catch(_) {} }
-  window._gmDrillProfileChart = new Chart(canvas, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: true, position: 'top', align: 'end',
-          labels: { color:'#4A6280', font:{ size:10, family:'JetBrains Mono' }, boxWidth:16, usePointStyle:true, pointStyle:'line' } },
-        tooltip: {
-          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
-          borderColor: '#1A2533', borderWidth: 1, padding: 8,
-          titleFont: { family: 'JetBrains Mono', size: 10 },
-          bodyFont:  { family: 'JetBrains Mono', size: 10 },
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} GW` },
-        },
-        zoom: GM_ZOOM_OPTS,
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true,
-            callback: function(val, idx) { return (idx % 8 === 0) ? labels[idx].slice(0, 5) : ''; },
-          },
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
-          title: { display: true, text: 'Total generation · GW',
-            color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
-        },
-      },
-    },
-  });
-  _gmZoomify(window._gmDrillProfileChart, 'gm-drill-profile-canvas');
-
-  // Breakdown · Total gen stats over 24h (peak / off-peak / avg / energy / range)
-  if (breakHost) {
-    const peakIdx  = total.indexOf(Math.max(...total));
-    const minIdx   = total.indexOf(Math.min(...total));
-    const peakVal  = total[peakIdx];
-    const minVal   = total[minIdx];
-    const avg      = total.reduce((a,b)=>a+b,0) / total.length;
-    const energy   = avg * 24;           // GWh
-    const spread   = peakVal - minVal;
-    // Peak (08-20h) / off-peak (00-08h + 20-24h) split — 4 slots per hour
-    const peakSlots = [];
-    const offSlots  = [];
-    for (let i = 0; i < total.length; i++) {
-      const hour = Math.floor(i / 4);
-      if (hour >= 8 && hour < 20) peakSlots.push(total[i]);
-      else                          offSlots.push(total[i]);
-    }
-    const peakAvg = peakSlots.length ? peakSlots.reduce((a,b)=>a+b,0) / peakSlots.length : 0;
-    const offAvg  = offSlots.length  ? offSlots.reduce((a,b)=>a+b,0)  / offSlots.length  : 0;
-
-    const cell = (txt, opts = {}) =>
-      `<td style="padding:6px 10px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
-    const row = (label, val, unit, note, color) =>
-      `<tr style="border-top:1px solid var(--bd)">${cell(label)}${cell(val, { right:true, color })}${cell(unit, { right:true, dim:true })}${cell(note, { dim:true })}</tr>`;
-
-    breakHost.innerHTML = `
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead>
-          <tr>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
-            <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
-            <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${row('Today peak',  peakVal.toFixed(2), 'GW',  `at ${labels[peakIdx]} · max instantaneous`, '#14D3A9')}
-          ${row('Today min',   minVal.toFixed(2),  'GW',  `at ${labels[minIdx]} · trough`,              '#ED6965')}
-          ${row('24h avg',     avg.toFixed(2),     'GW',  '24-hour average power')}
-          ${row('24h energy',  energy.toFixed(1),  'GWh', 'avg power × 24h')}
-          ${row('Peak avg',    peakAvg.toFixed(2), 'GW',  'mean over 08:00–20:00')}
-          ${row('Off-peak avg',offAvg.toFixed(2),  'GW',  'mean over 00–08 + 20–24')}
-          ${row('Spread',      spread.toFixed(2),  'GW',  'peak − min · within day')}
-        </tbody>
-      </table>`;
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────
 // VIEW · MIX (donut / bar / treemap)
@@ -1355,153 +1207,6 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
     </div>`;
 }
 
-function _gmDrillRenderCarbon_OLD(zone, mix, st) {
-  const host = document.getElementById('gm-drill-content');
-  const breakHost = document.getElementById('gm-drill-breakdown');
-  if (!host) return;
-
-  const synth = window._gmdSynthProfile;
-  const carbonFn = (typeof synth === 'function') ? synth(mix) : null;
-  if (!carbonFn) {
-    host.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Profile synthesizer not loaded</div>`;
-    return;
-  }
-
-  // Compute carbon intensity per slot
-  const STACK = ['nuclear','hydro','biomass','wind','solar','fossil','other'];
-  const CO2 = {}; STACK.forEach(f => { CO2[f] = (GM_FUEL_META[f] && GM_FUEL_META[f].co2) || 0; });
-  const N = (carbonFn.nuclear?.length) || 96;
-  const co2 = new Array(N);
-  for (let i = 0; i < N; i++) {
-    let num = 0, den = 0;
-    for (const f of STACK) {
-      const v = (carbonFn[f] || [])[i] || 0;
-      num += v * (CO2[f] || 0);
-      den += v;
-    }
-    co2[i] = den > 0 ? num / den : 0;
-  }
-  const labels = [];
-  for (let i = 0; i < N; i++) {
-    const m = i * 15;
-    labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
-  }
-
-  host.innerHTML = `
-    <div style="position:relative;width:100%;height:340px">
-      <canvas id="gm-drill-carbon-canvas" style="width:100%;height:100%;display:block"></canvas>
-    </div>`;
-
-  const cmp = window._gmDrillCarbonCmp || 'j-1';
-  let cmpData = null, cmpLabel = '';
-  if (cmp === 'j-1') { cmpData = co2.map(v => v * 1.08); cmpLabel = 'J-1'; }
-  if (cmp === '7d')  { cmpData = co2.map(v => v * 1.03); cmpLabel = '7-day avg'; }
-  if (cmp === 'y-1') { cmpData = co2.map(v => v * 1.20); cmpLabel = 'Y-1'; }
-
-  const canvas = document.getElementById('gm-drill-carbon-canvas');
-  if (window._gmDrillCarbonChart) { try { window._gmDrillCarbonChart.destroy(); } catch(_) {} }
-  window._gmDrillCarbonChart = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Today', data: co2, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,0.10)', borderWidth: 2.5, fill: true, tension: 0, pointRadius: 0 },
-        { label: cmpLabel, data: cmpData, borderColor: '#7A93AB', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0 },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        // "Today" (solid) vs a comparison line (dashed — J-1 / 7-day avg /
-        // Y-1 depending on the toggle) is only distinguishable by line style,
-        // and the dashed line's meaning changes with the toggle — with no
-        // legend there was no way to tell which is which without hovering.
-        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
-        tooltip: {
-          backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9',
-          borderColor: '#1A2533', borderWidth: 1, padding: 8,
-          titleFont: { family: 'JetBrains Mono', size: 10 },
-          bodyFont:  { family: 'JetBrains Mono', size: 10 },
-          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)} g/kWh` },
-        },
-        zoom: GM_ZOOM_OPTS,
-      },
-      scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true,
-            callback: function(val, idx) { return (idx % 12 === 0) ? labels[idx].slice(0, 5) : ''; },
-          },
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } },
-          title: { display: true, text: 'g CO₂ / kWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } },
-        },
-      },
-    },
-  });
-  _gmZoomify(window._gmDrillCarbonChart, 'gm-drill-carbon-canvas');
-
-  // Breakdown · carbon stats over 24h
-  if (breakHost) {
-    const todayMin = Math.min(...co2);
-    const todayMax = Math.max(...co2);
-    const todayAvg = co2.reduce((a,b)=>a+b,0) / co2.length;
-    const cmpAvg   = cmpData.reduce((a,b)=>a+b,0) / cmpData.length;
-    const cleanH = co2.filter(g => g < 100).length / 4;  // hours below 100 g/kWh
-    const dirtyH = co2.filter(g => g > 300).length / 4;
-    const diff = todayAvg - cmpAvg;
-
-    breakHost.innerHTML = `
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead>
-          <tr style="border-bottom:1px solid var(--bd)">
-            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Metric</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Value</th>
-            <th style="padding:6px 8px;text-align:right;color:var(--tx3);font-weight:600">Unit</th>
-            <th style="padding:6px 8px;text-align:left;color:var(--tx3);font-weight:600">Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today min</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#14D3A9">${todayMin.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">cleanest slot</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today max</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#ED6965">${todayMax.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">dirtiest slot</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Today avg</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace">${todayAvg.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">24h average</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">${cmpLabel} avg</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${cmpAvg.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">comparison baseline</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Δ vs ${cmpLabel}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:${diff < 0 ? '#14D3A9' : '#ED6965'}">${diff >= 0 ? '+' : ''}${diff.toFixed(0)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">g/kWh</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${diff < 0 ? 'cleaner today' : 'dirtier today'}</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Clean hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#14D3A9">${cleanH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">below 100 g/kWh</td></tr>
-          <tr><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace">Dirty hours</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:#ED6965">${dirtyH.toFixed(1)}</td><td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">h / 24</td><td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">above 300 g/kWh</td></tr>
-        </tbody>
-      </table>
-      <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Calculation assumptions</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
-          Carbon intensity of the mix, per 15-min slot:<br>
-          <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ generation<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> generation<sub>f</sub>(t)</span><br>
-          <span style="color:var(--tx3)">Average (attributional) approach, life-cycle scope. No marginal emission factors, imports excluded.</span>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
-          <thead><tr>
-            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Technology</th>
-            <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
-            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Generation data</th>
-          </tr></thead>
-          <tbody>
-            ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
-              <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${GM_FUEL_META[f].color}">${GM_FUEL_META[f].emoji} ${GM_FUEL_META[f].label}</span></td>
-              <td style="padding:5px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${GM_FUEL_META[f].co2}</td>
-              <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75 · 15 min</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.6">
-          <span style="color:var(--tx2)">Sources:</span> generation by technology = ENTSO-E Transparency (Actual Generation per Type, A75), PowerKlock 15-min archive. Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = aggregated gas/coal average, ENTSO-E.
-        </div>
-      </div>`;
-  }
-}
 function _gmDrillRenderNetPos(zone, mix, st) {
   const host = document.getElementById('gm-drill-content');
   const breakHost = document.getElementById('gm-drill-breakdown');

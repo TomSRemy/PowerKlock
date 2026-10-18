@@ -14596,7 +14596,7 @@
 // Opt out per-chart with `options.plugins.pkHoverReadout = false`.
 // ════════════════════════════════════════════════════════════════════
 (function () {
-  const SKIP_TYPES = new Set(['pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble']);
+  const SKIP_TYPES = new Set(['pie', 'doughnut', 'polarArea', 'radar', 'scatter', 'bubble', 'matrix', 'treemap', 'boxplot', 'violin']);
   const TX2 = '#B8C9D9', TX3 = '#7A93AB', LINE = 'rgba(184,201,217,.4)';
   const BAND_BG = 'rgba(10,14,22,.96)', BAND_BORDER = 'rgba(184,201,217,.18)';
 
@@ -14626,7 +14626,10 @@
         if (out) return Array.isArray(out) ? out.join(' ') : out;
       } catch (e) { /* fall through to generic formatter below */ }
     }
-    return (ds.label ? ds.label + ': ' : '') + formatted;
+    // No formatter: borrow the unit from the series' axis title (GW, €/MWh…).
+    const sc = chart.options.scales && chart.options.scales[ds.yAxisID || 'y'];
+    const unit = sc && sc.title && sc.title.display !== false && typeof sc.title.text === 'string' && sc.title.text.length <= 12 ? ' ' + sc.title.text : '';
+    return (ds.label ? ds.label + ': ' : '') + formatted + unit;
   }
 
   const plugin = {
@@ -14667,58 +14670,62 @@
       ctx.stroke();
       ctx.restore();
 
-      // Readout box anchored at the hovered point's own height, sitting
-      // just to the LEFT of the crosshair with a clear gap (flips to the
-      // right when there isn't room on the left) — stays next to whatever
-      // the reader is actually pointing at instead of living in a strip
-      // pinned to the top of the chart.
+      // Readout box: the hovered label on top, then one row per series
+      // (colour swatch, name, value right-aligned), stacked vertically. It
+      // sits left of the crosshair (flips right when there is no room) at
+      // the height of the hovered points.
       ctx.save();
-      ctx.font = "11px 'JetBrains Mono', monospace";
+      const FONT = "11px 'JetBrains Mono', monospace", FONT_B = "600 11px 'JetBrains Mono', monospace";
       ctx.textBaseline = 'middle';
-      const rightEdge = chartArea.left + chartArea.width;
-      const GAP = 16, BOX_PAD = 10, CURSOR_GAP = 20;
-      const maxContentWidth = Math.max(120, chartArea.width * 0.7 - BOX_PAD * 2);
+      const PAD = 9, ROW = 17, SW = 8, SW_GAP = 7, COL_GAP = 16, CURSOR_GAP = 18;
+      const maxRows = Math.max(2, Math.floor((chartArea.height - PAD * 2) / ROW) - 1);
 
-      const entries = [];
       const label = chart.data.labels ? chart.data.labels[idx] : null;
-      if (label != null && label !== '') entries.push({ text: String(label), color: TX3 });
-
-      let hidden = 0;
-      let contentWidth = 0;
+      const head = label != null && label !== '' ? String(label) : null;
+      const rows = [];
       const ys = [];
       for (let di = 0; di < chart.data.datasets.length; di++) {
         const meta = chart.getDatasetMeta(di);
         if (meta.hidden) continue;
         const ds = chart.data.datasets[di];
-        const txt = seriesText(chart, ds, di, idx);
+        let txt = seriesText(chart, ds, di, idx);
         if (!txt) continue;
+        txt = String(txt).trim();
         const pt = meta.data && meta.data[idx];
         if (pt && typeof pt.y === 'number') ys.push(pt.y);
-        const w = ctx.measureText(txt).width;
-        if (contentWidth + w > maxContentWidth && entries.length > 0) { hidden++; continue; }
-        const color = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent')
+        // "Name: value" → two columns; anything else is a value alone.
+        const k = txt.lastIndexOf(': ');
+        const name = k > 0 ? txt.slice(0, k) : (ds.label || '');
+        const value = k > 0 ? txt.slice(k + 2) : txt;
+        const c = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent' && ds.borderWidth !== 0)
           ? ds.borderColor
-          : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : TX2);
-        entries.push({ text: txt, color, w });
-        contentWidth += w + GAP;
+          : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : (typeof ds.borderColor === 'string' ? ds.borderColor : TX2));
+        rows.push({ name, value, color: c });
       }
-      if (hidden > 0) entries.push({ text: '+' + hidden + ' more', color: TX3 });
+      if (!rows.length) { ctx.restore(); return; }
+      const hidden = rows.length > maxRows ? rows.length - (maxRows - 1) : 0;
+      const shown = hidden ? rows.slice(0, maxRows - 1) : rows;
 
-      // Measure total box width from the final entry list (widths not
-      // already computed — label/+more — need measuring too).
-      let totalWidth = 0;
-      entries.forEach((en, i) => {
-        if (en.w == null) en.w = ctx.measureText(en.text).width;
-        totalWidth += en.w + (i < entries.length - 1 ? GAP : 0);
-      });
-      const boxW = totalWidth + BOX_PAD * 2;
-      const boxH = 26;
+      ctx.font = FONT;
+      let nameW = 0, valW = 0;
+      shown.forEach(r => { r.nw = ctx.measureText(r.name).width; nameW = Math.max(nameW, r.nw); });
+      ctx.font = FONT_B;
+      shown.forEach(r => { r.vw = ctx.measureText(r.value).width; valW = Math.max(valW, r.vw); });
+      ctx.font = FONT_B;
+      const headW = head ? ctx.measureText(head).width : 0;
+      ctx.font = FONT;
+      const moreTxt = hidden ? '+' + hidden + ' more' : null;
+      const moreW = moreTxt ? ctx.measureText(moreTxt).width : 0;
+      const rowW = SW + SW_GAP + nameW + (nameW ? COL_GAP : 0) + valW;
+      const boxW = Math.ceil(Math.max(rowW, headW, moreW) + PAD * 2);
+      const nLines = shown.length + (head ? 1 : 0) + (moreTxt ? 1 : 0);
+      const boxH = nLines * ROW + PAD * 2 - 4 + (head ? 3 : 0);
+
       const avgY = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : (chartArea.top + chartArea.bottom) / 2;
-      const boxY = Math.min(Math.max(avgY - boxH / 2, chartArea.top + 2), chartArea.bottom - boxH - 2);
-
-      let boxX = xPos - CURSOR_GAP - boxW; // default: box to the left of the crosshair
-      if (boxX < chartArea.left) boxX = xPos + CURSOR_GAP; // flip right when there's no room on the left
-      boxX = Math.min(Math.max(boxX, chartArea.left), Math.max(chartArea.left, rightEdge - boxW));
+      const boxY = Math.min(Math.max(avgY - boxH / 2, chartArea.top + 2), Math.max(chartArea.top + 2, chartArea.bottom - boxH - 2));
+      let boxX = xPos - CURSOR_GAP - boxW;
+      if (boxX < chartArea.left) boxX = xPos + CURSOR_GAP;
+      boxX = Math.min(Math.max(boxX, chartArea.left), Math.max(chartArea.left, chartArea.right - boxW));
 
       ctx.fillStyle = BAND_BG;
       ctx.strokeStyle = BAND_BORDER;
@@ -14734,13 +14741,24 @@
       ctx.fill();
       ctx.stroke();
 
-      let x = boxX + BOX_PAD;
-      const y = boxY + boxH / 2;
-      entries.forEach(en => {
-        ctx.fillStyle = en.color;
-        ctx.fillText(en.text, x, y);
-        x += en.w + GAP;
+      let y = boxY + PAD + ROW / 2 - 2;
+      if (head) {
+        ctx.font = FONT_B; ctx.fillStyle = TX2; ctx.textAlign = 'left';
+        ctx.fillText(head, boxX + PAD, y);
+        ctx.beginPath(); ctx.moveTo(boxX + PAD, y + ROW / 2 + 1); ctx.lineTo(boxX + boxW - PAD, y + ROW / 2 + 1);
+        ctx.strokeStyle = BAND_BORDER; ctx.stroke();
+        y += ROW + 3;
+      }
+      shown.forEach(rw => {
+        ctx.fillStyle = rw.color;
+        ctx.fillRect(boxX + PAD, y - SW / 2, SW, SW);
+        ctx.font = FONT; ctx.fillStyle = TX3; ctx.textAlign = 'left';
+        ctx.fillText(rw.name, boxX + PAD + SW + SW_GAP, y);
+        ctx.font = FONT_B; ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'right';
+        ctx.fillText(rw.value, boxX + boxW - PAD, y);
+        y += ROW;
       });
+      if (moreTxt) { ctx.font = FONT; ctx.fillStyle = TX3; ctx.textAlign = 'left'; ctx.fillText(moreTxt, boxX + PAD, y); }
       ctx.restore();
     },
   };
@@ -14775,6 +14793,25 @@
   // mkChart()/mkHistChart() (GenMix, Carbon Intensity, France cockpit,
   // Prices row-drill charts, …), so the hover readout covers the whole site
   // rather than just the two main wrappers.
+  // Every chart on the site, whatever builds it, gets the same readout:
+  // window.Chart becomes a subclass that preps the config first (statics
+  // such as Chart.getChart / Chart.register / Chart.defaults are inherited).
+  if (window.Chart && !window.Chart._pkReadoutWrapped) {
+    const Base = window.Chart;
+    const Wrapped = class extends Base {
+      constructor(item, config) {
+        if (config && !SKIP_TYPES.has(config.type)) {
+          window.pkPrepHoverReadout(config);
+          config.plugins = config.plugins || [];
+          if (!config.plugins.includes(plugin)) config.plugins.push(plugin);
+        }
+        super(item, config);
+      }
+    };
+    Wrapped._pkReadoutWrapped = true;
+    window.Chart = Wrapped;
+  }
+
   window.pkNewChart = function (target, config) {
     window.pkPrepHoverReadout(config);
     if (config) {
@@ -14856,15 +14893,47 @@ if (typeof window !== 'undefined' && !window._klockDblclickResetWired) {
 // chart was first built. Without it, falls back to a generic data table
 // auto-built from the chart's own labels/datasets (still gets the full
 // resizable overlay — just without bespoke KPI cards).
+// ── One look for chart tools everywhere ─────────────────────────────
+// Fullscreen and PNG buttons share the .pk-tool style (index.html) and these
+// icons. Buttons written elsewhere as "⛶ Fullscreen" / "⛶" / "↓" are
+// normalised to the same component when they enter the page.
+const PK_ICON_FS = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+const PK_ICON_DL = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>';
+function pkToolify(btn) {
+  if (btn.dataset.pkTool) return;
+  const t = (btn.textContent || '').trim();
+  const isFs = /^⛶/.test(t);
+  const isDl = t === '↓' && /download/i.test(btn.title || '');
+  if (!isFs && !isDl) return;
+  btn.dataset.pkTool = '1';
+  btn.classList.remove('pk-btn-primary', 'pk-btn-ghost');
+  btn.classList.add('pk-tool', isFs ? 'pk-tool-fs' : 'pk-tool-dl');
+  btn.removeAttribute('style');
+  if (btn.classList.contains('pk-tool-float') || btn.parentElement && getComputedStyle(btn.parentElement).position !== 'static' && !btn.closest('.pk-section-header-actions, .pkd-actions, .pk-tabbar-right, .page-header'))
+    btn.classList.add('pk-tool-float');
+  btn.innerHTML = isFs ? PK_ICON_FS : PK_ICON_DL;
+  if (isFs) { btn.title = 'Fullscreen'; btn.setAttribute('aria-label', 'Fullscreen'); }
+  else btn.setAttribute('aria-label', btn.title || 'Download PNG');
+}
+if (typeof window !== 'undefined' && typeof MutationObserver !== 'undefined') {
+  const scan = root => { if (root.querySelectorAll) root.querySelectorAll('button').forEach(pkToolify); if (root.tagName === 'BUTTON') pkToolify(root); };
+  const start = () => {
+    scan(document.body);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) scan(n); }))).observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+}
+
 function addFullscreen(canvasId, content) {
   const canvas = document.getElementById(canvasId);
   // Dashboard widgets carry their own fullscreen button in the header.
   if (!canvas || canvas.dataset.fsAdded || canvas.closest('.pkd-item')) return;
   canvas.dataset.fsAdded = '1';
   const btn = document.createElement('button');
-  btn.innerHTML = '⛶';
+  btn.type = 'button';
+  btn.className = 'pk-tool pk-tool-float pk-tool-fs';
   btn.title = 'Fullscreen';
-  btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
+  btn.innerHTML = PK_ICON_FS;
   btn.onclick = (ev) => {
     if (ev) ev.stopPropagation();
     try {
@@ -14962,13 +15031,15 @@ function addDownload(canvasId, filename) {
   if (!canvas || canvas.dataset.dlAdded || canvas.closest('.pkd-item')) return;
   canvas.dataset.dlAdded = '1';
   const btn = document.createElement('button');
-  btn.innerHTML = '↓';
+  btn.type = 'button';
+  btn.className = 'pk-tool pk-tool-float pk-tool-dl';
+  btn.innerHTML = PK_ICON_DL;
   btn.title = 'Download PNG';
-  btn.style.cssText = 'position:absolute;top:6px;right:32px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
   btn.onclick = () => {
-    if (!CHARTS[canvasId]) return;
+    const ch = Chart.getChart(document.getElementById(canvasId) || canvas);
+    if (!ch) return;
     const a = document.createElement('a');
-    a.href = CHARTS[canvasId].toBase64Image();
+    a.href = ch.toBase64Image();
     a.download = (filename||canvasId) + '.png';
     a.click();
   };

@@ -278,7 +278,7 @@
           <div class="pkd-titles"><span class="pkd-title">${esc(title)}</span><span class="pkd-sub">${esc(w ? w.source : '')}</span></div>
           <span class="pkd-actions">
             ${w && w.params.length ? '<button class="pkd-ic pkd-cfg" title="Settings" type="button">⚙</button>' : '<button class="pkd-ic pkd-cfg" title="Rename" type="button">⚙</button>'}
-            ${w && w.kind === 'chart' ? '<button class="pkd-ic pkd-fs" title="Fullscreen" type="button">⛶</button>' : ''}
+            ${w && w.kind === 'chart' ? '<button class="pkd-ic pkd-fs pk-tool" data-pk-tool="1" title="Fullscreen" aria-label="Fullscreen" type="button">' + PK_ICON_FS + '</button>' : ''}
             ${w && w.page ? '<button class="pkd-ic pkd-go" title="Open source page" type="button">↗</button>' : ''}
             <button class="pkd-ic pkd-del" title="Remove from dashboard" type="button">✕</button>
           </span>
