@@ -1,5 +1,5 @@
 // ── TICKER FILTER STATE ──
-const tickerFilters = { power: true, gas: true, carbon: true, go: true };
+const tickerFilters = { power: true, gas: true, carbon: true, fuels: true, go: true };
 let tickerZoneFilter = null; // null = all zones; Set of codes = filtered
 let tickerAllItems = [];
 
@@ -21,7 +21,7 @@ function updateTickerLabel() {
   const on = Object.entries(tickerFilters).filter(([,v])=>v).map(([k])=>k.toUpperCase());
   const lbl = document.getElementById('dd-label');
   if (!lbl) return;
-  let label = on.length === 4 ? 'ALL' : on.join(' · ');
+  let label = on.length === Object.keys(tickerFilters).length ? 'ALL' : on.join(' · ');
   if (tickerZoneFilter) {
     label += ` · ${tickerZoneFilter.size}Z`;
   }
@@ -72,13 +72,9 @@ function buildTicker(data) {
       chg: z.vsYday != null ? (z.vsYday >= 0 ? `▲${z.vsYday.toFixed(1)}` : `▼${Math.abs(z.vsYday).toFixed(1)}`) : '',
       up: z.vsYday == null ? null : z.vsYday >= 0
     })),
-    { cat:'gas', catLabel:'GAS', name:'TTF D+1', val:'45.14', unit:'€/MWh', chg:'▲2.35%', up:true },
-    { cat:'gas', catLabel:'GAS', name:'PEG D+1', val:'42.80', unit:'€/MWh', chg:'▲1.80%', up:true },
-    { cat:'gas', catLabel:'GAS', name:'NBP D+1', val:'43.50', unit:'p/th', chg:'▲1.20%', up:true },
-    { cat:'carbon', catLabel:'CARBON', name:'EUA Spot', val:'74.09', unit:'€/t', chg:'▼0.09%', up:false },
-    { cat:'carbon', catLabel:'CARBON', name:'EUA Dec-26', val:'76.40', unit:'€/t', chg:'▲0.32%', up:true },
-    { cat:'go', catLabel:'GO', name:'GO Renew Cal-26', val:'0.42', unit:'€/MWh', chg:'', up:null },
-    { cat:'go', catLabel:'GO', name:'GO Wind Cal-26', val:'0.55', unit:'€/MWh', chg:'', up:null },
+    // Gas / carbon / coal / oil: real closes from data/commodities.json
+    // (empty until it has loaded; commodities.js rebuilds the ticker then).
+    ...((window.PKC && PKC.tickerItems) ? PKC.tickerItems() : []),
   ];
   renderTicker();
   buildTickerZoneList(data);

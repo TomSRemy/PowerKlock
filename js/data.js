@@ -251,7 +251,10 @@ async function loadFromJSON(opts) {
   // Genmix
   const genmix = await fetchJSON('genmix.json');
   if (genmix?.countries) {
-    window._genmixData = genmix.countries;
+    // Drop zones with no generation reported (GB: ENTSO-E stopped publishing
+    // after Brexit) so counts/KPIs match the table.
+    window._genmixData = Object.fromEntries(Object.entries(genmix.countries).filter(([, m]) => m && m.total > 0));
+    window._genmixUpdated = genmix.updated || null;
     console.log('✅ Genmix from JSON');
     // Re-apply default zone filters now that we know which zones have genmix data
     if (typeof applyDefaultGenMixZones === 'function') applyDefaultGenMixZones();
@@ -553,6 +556,12 @@ async function loadPricesForDate(dateStr) {
             } catch (e) { console.warn('vsYday backfill failed:', e); }
           }
 
+          // Clean spark spread per zone from the day's TTF / EUA (commodities.js)
+          if (window.PKC) {
+            await PKC.ready;
+            const refs = PKC.refsFor(deliveryStr);
+            mapped.forEach(z => { const v = PKC.cleanSpark(z.today, refs.ttf, refs.eua); z.spark = v == null ? null : Math.round(v * 100) / 100; });
+          }
           pricesData = mapped.sort((a,b) => b.today - a.today);
           renderPricesTable(pricesData, deliveryStr);
           updateKPIs(pricesData, deliveryStr);

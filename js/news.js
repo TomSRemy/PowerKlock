@@ -208,10 +208,7 @@ const PAGE_LOADERS = {
   },
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
-  eua:        () => {
-    drawEUA();
-    if (typeof renderHistEUA === 'function') renderHistEUA();
-  },
+  eua:        () => drawEUA(),
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
