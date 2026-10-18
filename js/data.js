@@ -80,7 +80,13 @@ async function pkGenmixFromDaily(dateISO) {
     Object.values(PK_GEN_AGG).forEach(k => { if (m[k] == null) m[k] = 0; });
     m.total = Object.values(PK_GEN_AGG).reduce((s, k) => s + m[k], 0);
     const bc = z.byCodeActual || z.byCode;
-    if (bc && typeof bc === 'object') { m.byCode = {}; Object.entries(bc).forEach(([c, a]) => { m.byCode[c] = Math.round(avg(a)); }); }
+    if (bc && typeof bc === 'object') {
+      // The breakdown can lag the aggregates: slots where every type is 0 are unpublished for it.
+      const ser = Object.values(bc).filter(a => Array.isArray(a) && a.length === n);
+      const bpub = pub.filter(i => ser.some(a => a[i]));
+      const bavg = a => { const v = bpub.map(i => a[i]).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : 0; };
+      m.byCode = {}; Object.entries(bc).forEach(([c, a]) => { m.byCode[c] = Array.isArray(a) ? Math.round(bavg(a)) : 0; });
+    }
     m.publishedSlots = pub.length;
     if (m.total > 0) out[code] = m;
   });
