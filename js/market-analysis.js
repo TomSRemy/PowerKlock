@@ -191,19 +191,23 @@
 
   async function _assemble() {
     const zone = STATE.zone;
-    const end = STATE.endDate ? new Date(STATE.endDate) : new Date();
     const gran = _granularitySpec();
     const slotsPerDay = gran.slotsPerDay;
     const days = [];
     if (window.PKC) await PKC.ready;
-    const firstDay = (() => { const t = new Date(end); t.setDate(t.getDate() - (STATE.windowDays - 1)); return _fmtDate(t); })();
-    const wx = await _fetchWeather(zone, firstDay, _fmtDate(end));
+    const lastDay = STATE.endDate ? String(STATE.endDate).slice(0, 10) : pkTodayISO();
+    const firstDay = _renAdd(lastDay, -(STATE.windowDays - 1));
+    const wx = await _fetchWeather(zone, firstDay, lastDay);
     const nulls = () => new Array(slotsPerDay).fill(null);
 
+    // Delivery days are Paris calendar days; each day's slots start at local
+    // midnight (the old code kept the current time of day, so slot labels
+    // and key-moment times were shifted by the hour the page was opened).
+    const endISO = STATE.endDate ? String(STATE.endDate).slice(0, 10) : pkTodayISO();
     for (let d = STATE.windowDays - 1; d >= 0; d--) {
-      const dt = new Date(end);
-      dt.setDate(dt.getDate() - d);
-      const dateStr = _fmtDate(dt);
+      const dateStr = _renAdd(endISO, -d);
+      const [yy, mm, dd] = dateStr.split('-').map(Number);
+      const dt = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
       const daily = await _fetchDaily(dateStr);
       const zd = daily && daily.zones && daily.zones[zone];
 
@@ -247,7 +251,13 @@
         return parts.every(v => v == null) ? null : parts.reduce((a, v) => a + (v || 0), 0);
       });
       // Demand: ENTSO-E load when stored for the day; net import = load − generation.
-      const loadReal = zd && Array.isArray(zd.load) && zd.load.some(v => v) ? _resample(zd.load, zd.load.length === 96 ? 96 : 24, slotsPerDay) : null;
+      let loadReal = zd && Array.isArray(zd.load) && zd.load.some(v => v) ? _resample(zd.load, zd.load.length === 96 ? 96 : 24, slotsPerDay) : null;
+      // France: RTE éCO2mix consumption (real time / consolidated) when the
+      // daily file has no ENTSO-E load.
+      if (!loadReal && zone === 'FR' && window.PK_E2M) {
+        const e = await PK_E2M.day(dateStr);
+        if (e && e.consommation.some(v => v != null)) loadReal = _resample(typeof _e2mFill === 'function' ? _e2mFill(e.consommation) : e.consommation, 96, slotsPerDay);
+      }
       const load = loadReal || nulls();
       const flux = loadReal ? loadReal.map((v, i) => v == null || totalGen[i] == null ? null : (v - totalGen[i]) / 1000) : nulls();
       // Weather (hourly → slots)
@@ -948,12 +958,13 @@
   window.loadMarketAnalysis = async function () {
     if (window._maLoaded && STATE.data) return;
     window._maLoaded = true;
+    // STATE.endDate is a Paris calendar day 'YYYY-MM-DD' (latest day with data).
     if (!STATE.endDate) {
-      const today = new Date();
+      const today = pkTodayISO();
       for (let i = 0; i < 8; i++) {
-        const dt = new Date(today); dt.setDate(dt.getDate() - i);
-        const d = await _fetchDaily(_fmtDate(dt));
-        if (d && d.zones && d.zones[STATE.zone]) { STATE.endDate = dt; break; }
+        const ds = _renAdd(today, -i);
+        const d = await _fetchDaily(ds);
+        if (d && d.zones && d.zones[STATE.zone]) { STATE.endDate = ds; break; }
       }
       if (!STATE.endDate) STATE.endDate = today;
     }
