@@ -677,8 +677,21 @@
     }
     PKW.refreshStars();
     if (window.PKAccount && PKAccount.configured) {
+      // Coming back from the e-mail link: open My Dashboard once signed in.
+      const fromLink = /access_token=|[?&]code=|error_description=/.test(location.hash + location.search);
+      const linkError = (location.hash.match(/error_description=([^&]+)/) || [])[1];
       PKAccount.onChange(u => { renderAccount(); if (u) syncFromCloud(); });
-      PKAccount.ready().then(u => { renderAccount(); if (u) syncFromCloud(); });
+      PKAccount.ready().then(u => {
+        renderAccount();
+        if (u) syncFromCloud();
+        if (fromLink) {
+          const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
+          if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
+          if (linkError) toast('Sign-in link failed: ' + decodeURIComponent(linkError.replace(/\+/g, ' ')));
+          else if (u) toast('Signed in as ' + (u.email || ''));
+          try { history.replaceState(null, '', location.pathname); } catch (_) {}
+        }
+      });
     }
   }
 
