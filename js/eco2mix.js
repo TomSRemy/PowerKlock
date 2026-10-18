@@ -9,7 +9,10 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const API = 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-national-tr/exports/json';
+  // Real-time dataset (last ~7 weeks) and consolidated history (2012 →
+  // ~2 months ago, half-hourly consumption).
+  const API = ds => 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/' + ds + '/exports/json';
+  const DS_TR = 'eco2mix-national-tr', DS_DEF = 'eco2mix-national-cons-def';
   const FIELDS = ['date_heure', 'consommation', 'prevision_j1', 'prevision_j', 'ech_physiques',
     'ech_comm_angleterre', 'ech_comm_espagne', 'ech_comm_italie', 'ech_comm_suisse', 'ech_comm_allemagne_belgique',
     'taux_co2', 'nucleaire', 'eolien', 'solaire', 'hydraulique', 'gaz', 'charbon', 'fioul', 'bioenergies', 'pompage'];
@@ -30,11 +33,12 @@
     return [start.toISOString().slice(0, 19), end.toISOString().slice(0, 19)];
   }
 
-  async function fetchRange(fromUTC, toUTC) {
-    const key = fromUTC + '|' + toUTC;
+  async function fetchRange(fromUTC, toUTC, ds) {
+    ds = ds || DS_TR;
+    const key = ds + '|' + fromUTC + '|' + toUTC;
     if (!cache.has(key)) {
       const where = `date_heure>="${fromUTC}" and date_heure<"${toUTC}"`;
-      const url = API + '?select=' + FIELDS.join(',') + '&where=' + encodeURIComponent(where) + '&order_by=date_heure';
+      const url = API(ds) + '?select=' + FIELDS.join(',') + '&where=' + encodeURIComponent(where) + '&order_by=date_heure';
       cache.set(key, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
     }
     return cache.get(key);
@@ -43,7 +47,9 @@
   // 96 quarter-hour slots for a Paris delivery day; each field an array (null when missing).
   async function day(dateISO) {
     const [a, b] = dayBoundsUTC(dateISO);
-    const rows = await fetchRange(a, b);
+    let rows = await fetchRange(a, b, DS_TR);
+    let ds = DS_TR;
+    if (!rows || !rows.some(r => r.consommation != null)) { rows = await fetchRange(a, b, DS_DEF); ds = DS_DEF; }
     if (!rows || !rows.length) return null;
     const t0 = Date.parse(a + 'Z');
     const out = {};
@@ -54,6 +60,7 @@
       FIELDS.slice(1).forEach(f => { if (r[f] != null) out[f][i] = r[f]; });
     });
     out.date = dateISO;
+    out.dataset = ds === DS_TR ? 'real-time' : 'consolidated';
     out.published = out.consommation.filter(v => v != null).length;
     return out;
   }

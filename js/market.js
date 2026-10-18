@@ -137,6 +137,15 @@ function setLoadDay(offset, btn) {
   loadLoad();
 }
 
+// éCO2mix history is half-hourly: fill isolated 15-min gaps by interpolation
+// (never extrapolates past the last published value).
+function _e2mFill(a) {
+  if (!a) return a;
+  const o = a.slice();
+  for (let i = 1; i < o.length - 1; i++) if (o[i] == null && o[i - 1] != null && o[i + 1] != null) o[i] = (o[i - 1] + o[i + 1]) / 2;
+  return o;
+}
+
 async function loadLoad() {
   window._loadLoaded = true;
   const country = (document.getElementById('load-country') || {}).value || 'FR';
@@ -148,25 +157,41 @@ async function loadLoad() {
   const lyISO  = (() => { const [y,m,d] = dayISO.split('-').map(Number); return new Date(Date.UTC(y, m-1, d - 364)).toISOString().slice(0,10); })();
   const fetchDay = async iso => { try { const r = await fetch(DATA_BASE + 'history/daily/' + iso + '.json'); return r.ok ? await r.json() : null; } catch (_) { return null; } };
 
-  // Day data: the live snapshot for today, the daily history file otherwise.
-  let actual = null, forecast = null, src = '';
+  // Day data. France: RTE éCO2mix (consumption, D-1 and intraday forecasts;
+  // real-time then consolidated history). Other zones: ENTSO-E live
+  // snapshot for its day, daily history file otherwise.
+  let actual = null, forecast = null, forecastJ = null, src = '';
+  if (country === 'FR' && window.PK_E2M) {
+    const e = await PK_E2M.day(dayISO);
+    if (e && e.consommation.some(v => v != null)) {
+      actual = _e2mFill(e.consommation); forecast = _e2mFill(e.prevision_j1); forecastJ = _e2mFill(e.prevision_j);
+      src = 'RTE éCO2mix · ' + e.dataset;
+    }
+  }
   const live = window._loadData && window._loadData[country];
   const liveDate = window._loadDataUpdated ? new Date(window._loadDataUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
-  if (live && liveDate === dayISO) { actual = live.actual; forecast = live.forecast || null; src = 'live snapshot'; }
+  if (!actual && live && liveDate === dayISO) { actual = live.actual; forecast = live.forecast || null; src = 'ENTSO-E A65 · live snapshot'; }
   if (!actual) {
     const day = await fetchDay(dayISO);
     const z = day && day.zones && day.zones[country];
-    if (z && Array.isArray(z.load)) { actual = z.load; forecast = z.loadForecast || null; src = 'daily history'; }
+    if (z && Array.isArray(z.load)) { actual = z.load; forecast = z.loadForecast || null; src = 'ENTSO-E A65 · daily history'; }
   }
-  const lyDay = await fetchDay(lyISO);
-  const lyZ = lyDay && lyDay.zones && lyDay.zones[country];
-  const lastYear = lyZ && Array.isArray(lyZ.load) ? lyZ.load : null;
+  let lastYear = null;
+  if (country === 'FR' && window.PK_E2M) {
+    const e = await PK_E2M.day(lyISO);
+    if (e && e.consommation.some(v => v != null)) lastYear = _e2mFill(e.consommation);
+  }
+  if (!lastYear) {
+    const lyDay = await fetchDay(lyISO);
+    const lyZ = lyDay && lyDay.zones && lyDay.zones[country];
+    lastYear = lyZ && Array.isArray(lyZ.load) ? lyZ.load : null;
+  }
 
   const setKPI = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   const fmtDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric', timeZone:'UTC' });
   const el_title = document.getElementById('load-chart-title');
   if (el_title) el_title.textContent = `${cname} — load (GW) · ${fmtDay(dayISO)}`;
-  document.getElementById('load-updated').textContent = actual ? `ENTSO-E A65 · ${src}` : 'No data for this day';
+  document.getElementById('load-updated').textContent = actual ? src : 'No data for this day';
 
   // First visit before today's data exists: show the latest available day
   // instead of an empty "Today".
@@ -205,6 +230,8 @@ async function loadLoad() {
   setKPI('load-kpi-peak-fc', iF >= 0 ? `${F[iF].toFixed(1)}<span class="kpi-unit">GW</span>` : '–');
   setKPI('load-kpi-peak-fc-sub', iF >= 0 ? `<span style="color:var(--tx3)">at ${labels[iF]}</span>` : '<span style="color:var(--tx3)">forecast not available</span>');
   setKPI('load-kpi-avg', `${avgA.toFixed(1)}<span class="kpi-unit">GW</span>`);
+  setKPI('load-kpi-avg-sub', valid(A).length < n ? 'average so far' : 'daily average');
+  setKPI('load-chart-src', src.split(' · ')[0]);
   setKPI('load-kpi-dev', bias == null ? '–' : `<span class="${bias >= 0 ? 'up' : 'down'}">${bias >= 0 ? '+' : ''}${bias.toFixed(1)}<span class="kpi-unit">%</span></span>`);
   setKPI('load-kpi-dev-sub', bias == null ? '' : `${bias >= 0 ? 'above' : 'below'} forecast · MAPE ${mape.toFixed(1)}%`);
   setKPI('load-kpi-yoy', yoy == null ? '–' : `<span class="${yoy >= 0 ? 'up' : 'down'}">${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}<span class="kpi-unit">%</span></span>`);
@@ -212,6 +239,8 @@ async function loadLoad() {
 
   const ds = [{ label: 'Actual', data: A, borderColor: C_UP, borderWidth: 2, backgroundColor: rgba(C_UP, .08), fill: true, pointRadius: 0, tension: 0, spanGaps: false }];
   if (F) ds.push({ label: 'Day-ahead forecast', data: F, borderColor: C_WIND, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false });
+  const FJ = GW(forecastJ);
+  if (FJ && FJ.some(v => v != null)) ds.push({ label: 'Intraday forecast', data: FJ, borderColor: '#7FC8F8', borderWidth: 1.2, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
   if (L) ds.push({ label: 'Same weekday last year', data: L, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
   mkChart('load-canvas', {
     type: 'line', data: { labels, datasets: ds },
