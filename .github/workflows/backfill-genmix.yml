@@ -1,0 +1,85 @@
+name: Backfill generation (after prices)
+
+# Fills the per-fuel generation arrays (ENTSO-E A75) of FR, DE_LU, ES, BE,
+# NL and PT into the existing daily files, prices untouched
+# (enrich_summary.py --genmix-only), half a year at a time, newest first.
+# Order: price backfill chain → single-day repair → this workflow. It starts
+# when the repair run completes (that run itself waits for the chain): run
+# earlier, the chain would undo it by regenerating FR-only files. Can also
+# be started by hand once the chain is done.
+
+on:
+  workflow_run:
+    workflows: ['Backfill repair (2026-10-11 stale copy, 2026-10-15 missing FR)']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: backfill-historical
+  cancel-in-progress: false
+
+jobs:
+  genmix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    permissions:
+      contents: write
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        range:
+          - '2026-07-01 2026-12-31'
+          - '2026-01-01 2026-06-30'
+          - '2025-07-01 2025-12-31'
+          - '2025-01-01 2025-06-30'
+          - '2024-07-01 2024-12-31'
+          - '2024-01-01 2024-06-30'
+          - '2023-07-01 2023-12-31'
+          - '2023-01-01 2023-06-30'
+          - '2022-07-01 2022-12-31'
+          - '2022-01-01 2022-06-30'
+          - '2021-07-01 2021-12-31'
+          - '2021-01-01 2021-06-30'
+          - '2020-07-01 2020-12-31'
+          - '2020-01-01 2020-06-30'
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests==2.33.1
+
+      - name: Fetch generation
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: |
+          set -- ${{ matrix.range }}
+          python scripts/enrich_summary.py --fetch-historical --from "$1" --to "$2" \
+            --zones FR,DE_LU,ES,BE,NL,PT --genmix-only
+
+      - name: Commit and push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/history/daily
+          if git diff --cached --quiet; then echo "No daily file changed"; exit 0; fi
+          git commit -q -m "backfill[genmix]: ${{ matrix.range }} FR,DE_LU,ES,BE,NL,PT"
+          git checkout -- data/history
+          for i in 1 2 3 4 5 6; do
+            git pull -q --rebase -X theirs origin main || { git rebase --abort; sleep 10; continue; }
+            python scripts/enrich_summary.py > /dev/null
+            git add data/history/summary.json
+            git diff --cached --quiet || git commit -q -m "recalc: summary.json after genmix backfill ${{ matrix.range }}"
+            git push origin HEAD:main && exit 0
+            echo "Push attempt $i failed, retrying…"
+            sleep 15
+          done
+          exit 1
