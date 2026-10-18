@@ -1515,6 +1515,15 @@
   .grid-stack-item > .ui-resizable-se { width: 14px; height: 14px; right: 4px; bottom: 4px; opacity: 0; transition: opacity .12s; }
   .grid-stack-item:hover > .ui-resizable-se { opacity: .7; }
   .grid-stack-placeholder > .placeholder-content { background: var(--accent-dim) !important; border: 1px dashed var(--accent); border-radius: 8px; }
+  /* Chart tools (fullscreen, PNG): one component everywhere — js/libs.js pkToolify */
+  .pk-tool { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 26px; padding: 0; flex: none;
+    background: rgba(15,20,25,.85); border: 1px solid var(--border2); border-radius: 5px; color: var(--text2); cursor: pointer; line-height: 1; }
+  .pk-tool:hover { color: var(--text); border-color: var(--accent); background: var(--bg3); }
+  .pk-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pk-tool-float { position: absolute; top: 6px; right: 6px; z-index: 10; }
+  .pk-tool-float.pk-tool-dl { right: 40px; }
+  .pkd-actions .pk-tool { width: 24px; height: 24px; background: none; border-color: transparent; }
+  .pkd-actions .pk-tool:hover { border-color: var(--border2); }
   /* ☆ on site charts */
   .pkw-star { background: none; border: 1px solid transparent; color: var(--text4); font-size: 15px; line-height: 1; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; flex: none; margin-left: 6px; }
   .pkw-star:hover { color: var(--highlight); border-color: var(--border2); }

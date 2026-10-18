@@ -625,7 +625,7 @@
               <div class="pk-section-subtitle">period ${period} · ${p.energyTWh.toFixed(1)} TWh total · ENTSO-E</div>
             </div>
             <div class="pk-section-header-actions">
-              <button class="pk-btn-primary" onclick="event.stopPropagation();alert('Genmix Historical fullscreen — v2.2')" title="Open in fullscreen">⛶ Fullscreen</button>
+              <button class="pk-btn-primary" onclick="event.stopPropagation();gmDrillFullscreen('hist')" title="Fullscreen">⛶ Fullscreen</button>
               <button class="pk-btn-ghost" onclick="event.stopPropagation();_gmhCloseDrill()" title="Close detail">✕ Close</button>
             </div>
           </div>
@@ -672,7 +672,6 @@
             </div>
             <div class="pk-tabbar-right">
               <div id="gmh-drill-tab-chips" class="pk-tabbar-chips"></div>
-              <button onclick="gmDrillFullscreen('hist')" title="Fullscreen" style="display:inline-flex;align-items:center;gap:5px;margin-left:8px;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:11px;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit">⛶ Fullscreen</button>
             </div>
           </div>
 

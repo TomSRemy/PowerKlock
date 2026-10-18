@@ -48,60 +48,6 @@ const _GMD_ZONE_NAMES = (typeof GM_ZONE_NAMES !== 'undefined') ? GM_ZONE_NAMES :
 // SHARED HELPERS
 // ─────────────────────────────────────────────────────────────────
 
-// Synthetic 96-slot 15-min profile from a snapshot (placeholder until
-// fetch_data.py provides real 15-min mix series).
-function _gmdSynthProfile(snapshot) {
-  if (!snapshot || !snapshot.total) return null;
-  const profile = {};
-  const N = 96;
-  for (const fuel of _GMD_STACK_ORDER) {
-    const meanGW = snapshot[fuel] || 0;
-    if (!meanGW) { profile[fuel] = new Array(N).fill(0); continue; }
-    const arr = new Array(N);
-    for (let i = 0; i < N; i++) {
-      const h = i / 4;
-      let factor = 1.0;
-      if (fuel === 'solar') {
-        const noon = 13, sigma = 3.0;
-        const x = (h - noon) / sigma;
-        factor = Math.max(0, Math.exp(-0.5 * x * x) * 2.5);
-      } else if (fuel === 'wind') {
-        factor = 0.7 + 0.3 * Math.sin((h / 24) * 2 * Math.PI + 1.5);
-      } else if (fuel === 'fossil') {
-        const peak = 20;
-        factor = 0.4 + 1.2 * Math.exp(-Math.pow((h - peak) / 3, 2));
-      } else if (fuel === 'hydro') {
-        factor = 0.85 + 0.15 * Math.sin((h / 24) * 2 * Math.PI - 0.3);
-      }
-      arr[i] = meanGW * factor;
-    }
-    const mean = arr.reduce((a, b) => a + b, 0) / N;
-    if (mean > 0) {
-      const k = meanGW / mean;
-      for (let i = 0; i < N; i++) arr[i] *= k;
-    }
-    profile[fuel] = arr;
-  }
-  return profile;
-}
-window._gmdSynthProfile = _gmdSynthProfile;
-
-// Carbon intensity at each slot (g CO2 / kWh)
-function _gmdCarbonProfile(profile) {
-  if (!profile) return null;
-  const N = profile.nuclear?.length || 96;
-  const co2 = new Array(N);
-  for (let i = 0; i < N; i++) {
-    let num = 0, den = 0;
-    for (const fuel of _GMD_STACK_ORDER) {
-      const v = (profile[fuel] || [])[i] || 0;
-      num += v * (_GMD_CO2[fuel] || 0);
-      den += v;
-    }
-    co2[i] = den > 0 ? num / den : 0;
-  }
-  return co2;
-}
 
 // P10-P90 envelope (synthetic placeholder for now)
 function _gmdSynthBand(profile) {
@@ -668,7 +614,7 @@ function _gmdczRenderRanking() {
 // ─────────────────────────────────────────────────────────────────
 // VIEW 2 · PROFILES (overlay 24h per zone)
 // ─────────────────────────────────────────────────────────────────
-function _gmdczRenderProfiles() {
+async function _gmdczRenderProfiles() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
   host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
@@ -691,64 +637,41 @@ function _gmdczRenderProfiles() {
     labels.push(`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);
   }
 
-  const datasets = zones.map(z => {
-    const mix = data[z];
-    if (!mix || !mix.total) return null;
-
-    let series;
-    const prof = _gmdSynthProfile(mix);
-    if (prof) {
-      const fuels = Object.keys(prof);
-      const totals = new Array(N);
-      for (let i = 0; i < N; i++) {
-        totals[i] = fuels.reduce((s, f) => s + ((prof[f] || [])[i] || 0), 0);
-      }
-      if (metric === 'ren') {
-        const ren = ['wind','solar','hydro','biomass'];
-        series = new Array(N);
-        for (let i = 0; i < N; i++) {
-          const r = ren.reduce((s, f) => s + ((prof[f] || [])[i] || 0), 0);
-          series[i] = totals[i] > 0 ? (r / totals[i] * 100) : 0;
-        }
-      } else if (metric === 'lowc') {
-        const lc = ['wind','solar','hydro','biomass','nuclear'];
-        series = new Array(N);
-        for (let i = 0; i < N; i++) {
-          const r = lc.reduce((s, f) => s + ((prof[f] || [])[i] || 0), 0);
-          series[i] = totals[i] > 0 ? (r / totals[i] * 100) : 0;
-        }
-      } else if (metric === 'co2') {
-        series = new Array(N);
-        for (let i = 0; i < N; i++) {
-          let num = 0, den = 0;
-          for (const f of fuels) {
-            const v = (prof[f] || [])[i] || 0;
-            num += v * (_GMD_CO2[f] || 0);
-            den += v;
-          }
-          series[i] = den > 0 ? num / den : 0;
-        }
-      } else if (metric === 'total') {
-        series = totals;
-      }
-    }
-    if (!series) {
-      const v = _gmdczValueFor(z, metric) || 0;
-      series = new Array(N).fill(v);
-    }
-
+  // Real 15-min generation of each zone's latest stored day (ENTSO-E A75,
+  // daily files); slots not yet published stay empty.
+  const days = await Promise.all(zones.map(z => (typeof _gmResolveDay === 'function' ? _gmResolveDay(z, null) : null)));
+  if (!document.getElementById('gmdcz-profiles-canvas')) return;   // view changed meanwhile
+  const REN = ['wind', 'solar', 'hydro', 'biomass'], LOWC = REN.concat(['nuclear']);
+  const dayShown = new Set();
+  const datasets = zones.map((z, k) => {
+    const cur = days[k];
+    if (!cur) return null;
+    dayShown.add(cur.ds);
+    const A = _gmDayArrays(cur.zd), D = A.DATA;
+    const fuels = Object.keys(D);
+    const series = new Array(A.N).fill(null).map((_, i) => {
+      if (!A.pub[i]) return null;
+      const tot = fuels.reduce((s, f) => s + D[f][i], 0);
+      if (!(tot > 0)) return null;
+      if (metric === 'ren') return +(REN.reduce((s, f) => s + (D[f] ? D[f][i] : 0), 0) / tot * 100).toFixed(2);
+      if (metric === 'lowc') return +(LOWC.reduce((s, f) => s + (D[f] ? D[f][i] : 0), 0) / tot * 100).toFixed(2);
+      if (metric === 'co2') return +(fuels.reduce((s, f) => s + D[f][i] * (_GMD_CO2[f] || 0), 0) / tot).toFixed(1);
+      return +(tot / 1000).toFixed(3);   // total, GW
+    });
     return {
       label: z,
-      data: series,
+      data: A.N === N ? series : new Array(N).fill(null).map((_, i) => series[Math.min(A.N - 1, Math.round(i / (N - 1) * (A.N - 1)))]),
       borderColor: zoneColor(z),
       backgroundColor: 'transparent',
       borderWidth: z === 'FR' ? 2.5 : 1.3,
       fill: false,
       tension: 0,
+      spanGaps: false,
       pointRadius: 0,
       pointHoverRadius: 4,
     };
   }).filter(d => d != null);
+  if (!datasets.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No stored 15-min generation for these zones.</div>`; return; }
 
   const canvas = document.getElementById('gmdcz-profiles-canvas');
   if (window._gmdczProfilesChart) { try { window._gmdczProfilesChart.destroy(); } catch(_) {} }
