@@ -552,6 +552,7 @@ window.renderGmdczMain = renderGmdczMain;
 function _gmdczRenderHeatmap() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const data = window._genmixData || {};
   const zones = Object.keys(data)
     .filter(z => data[z]?.total > 0)
@@ -618,6 +619,7 @@ function _gmdczRenderHeatmap() {
 function _gmdczRenderRanking() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '0';   // the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const rows = _gmdczRanking(metric);
   if (!rows.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
@@ -669,6 +671,7 @@ function _gmdczRenderRanking() {
 function _gmdczRenderProfiles() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const data = window._genmixData || {};
   const zones = Object.keys(data);
@@ -824,6 +827,7 @@ function _gmdczRenderProfiles() {
 function _gmdczRenderSpread() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const ref    = window._gmdczRef    || 'FR';
   const data   = window._genmixData || {};
