@@ -29,12 +29,11 @@
 
   var PF = {
     openCountry: null,
-    drillTab: 'calall',        // calall | cal1 | free | nuc
+    drillTab: 'curve',         // curve | free | calall
     drillTenor: 'Y+1',         // for the "Graph libre" drill tab
     drillWindow: '1Y',         // period for every drill chart
     drillFrom: '',             // custom range (overrides drillWindow when set)
     drillTo: '',
-    drillCalOffset: 1,
     cmpTenor: 'Y+1',
     cmpWindow: '1Y',
     cmpZones: null,            // Set of active country codes, null = all
@@ -163,11 +162,12 @@
   // "Forward" used to be a tab here (table only, chart hidden). The table is
   // now always shown below the chart instead — see renderDrillForwardTable —
   // mirroring the DA drill-down (chart, then its breakdown table underneath).
+  // Curve = term structure today vs 1 week / 1 month ago; History = one
+  // tenor over time (Y+1 is the rolling Cal+1); Contracts = each Cal contract.
   var DRILL_TABS = [
-    { key: 'calall', label: 'All Cals' },
-    { key: 'cal1', label: 'Cal+N rolling' },
-    { key: 'free', label: 'Free chart' },
-    { key: 'nuc', label: 'Nuclear' }
+    { key: 'curve', label: 'Curve' },
+    { key: 'free', label: 'History' },
+    { key: 'calall', label: 'Contracts' }
   ];
 
   function closeCountryRow() {
@@ -231,10 +231,9 @@
       { l: 'Forward ' + (y1 ? y1.contract : 'Y+1'), v: num(y1 && y1.value, 2), u: unit },
       { l: 'Forward ' + (y2 ? y2.contract : 'Y+2'), v: num(y2 && y2.value, 2), u: unit }
     ];
-    if (cs.nuclearCapacity) {
-      stats.push({ l: 'Nuclear avail.', v: num(cs.nuclearCapacity.actualMW, 0), u: 'MW' });
-      stats.push({ l: 'Nuclear forecast', v: num(cs.nuclearCapacity.forecastMW, 0), u: 'MW' });
-    }
+    var y3 = tenorRow(cs, 'Y+3'), m1 = tenorRow(cs, 'M+1');
+    if (y1 && y3 && y1.value != null && y3.value != null) stats.push({ l: 'Curve slope Y+3 − Y+1', v: (y3.value - y1.value >= 0 ? '+' : '') + num(y3.value - y1.value, 2), u: unit });
+    if (m1 && y1 && m1.value != null && y1.value != null) stats.push({ l: 'M+1 − Y+1', v: (m1.value - y1.value >= 0 ? '+' : '') + num(m1.value - y1.value, 2), u: unit });
     if (typeof window.setStats === 'function') window.setStats('pf-drill-kpi-strip', stats);
   }
 
@@ -242,8 +241,8 @@
     var host = document.getElementById('pf-drill-tabs');
     if (!host) return;
     var cs = PF.snap.countries[cc];
-    var tabs = DRILL_TABS.filter(function (t) { return t.key !== 'nuc' || cs.nuclearCapacity; });
-    if (tabs.indexOf(PF.drillTab) === -1 && !tabs.some(function (t) { return t.key === PF.drillTab; })) PF.drillTab = 'calall';
+    var tabs = DRILL_TABS;
+    if (!tabs.some(function (t) { return t.key === PF.drillTab; })) PF.drillTab = 'curve';
     host.innerHTML = tabs.map(function (t) {
       var active = t.key === PF.drillTab;
       return '<button onclick="window._pfSetDrillTab(\'' + t.key + '\')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:' +
@@ -265,45 +264,28 @@
           '<input type="date" id="pf-drill-from" value="' + PF.drillFrom + '" onchange="window._pfSetDrillRange()" style="background:var(--bg);border:1px solid var(--bd);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;color-scheme:dark">' +
           'To<input type="date" id="pf-drill-to" value="' + PF.drillTo + '" onchange="window._pfSetDrillRange()" style="background:var(--bg);border:1px solid var(--bd);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;color-scheme:dark"></span>' +
       '</div>' +
-      '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-' + tab + '\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>';
+      '<button class="pk-btn-ghost" onclick="(function(){var c=Chart.getChart(document.getElementById(\'pf-drill-chart-' + tab + '\'));if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>';
   }
 
   function renderDrillContent(cc) {
     var host = document.getElementById('pf-drill-content');
     if (!host) return;
-    var cs = PF.snap.countries[cc];
-
+    if (PF.drillTab === 'curve') {
+      host.innerHTML = drillChartBox('pf-drill-chart-curve');
+      PKW.draw('pf-curve', 'pf-drill-chart-curve', { country: cc }).then(function () { addFullscreen('pf-drill-chart-curve'); addDownload('pf-drill-chart-curve', 'pf-drill-chart-curve'); });
+      return;
+    }
     if (PF.drillTab === 'calall') {
       host.innerHTML = windowBar('calall') + drillChartBox('pf-drill-chart-calall');
       renderDrillWindowButtons();
-      renderCalAllChart(cc);
+      PKW.draw('pf-cals', 'pf-drill-chart-calall', { country: cc, win: PF.drillWindow, from: PF.drillFrom, to: PF.drillTo }).then(function () { addFullscreen('pf-drill-chart-calall'); addDownload('pf-drill-chart-calall', 'pf-drill-chart-calall'); });
       return;
     }
-
-    if (PF.drillTab === 'cal1') {
-      host.innerHTML = '<div class="hist-window-btns" id="pf-drill-caloffset-btns"></div>' +
-        windowBar('cal1') + drillChartBox('pf-drill-chart-cal1');
-      renderDrillCalOffsetButtons();
-      renderDrillWindowButtons();
-      renderCalRollingChart(cc);
-      return;
-    }
-
-    if (PF.drillTab === 'free') {
-      host.innerHTML = '<div class="hist-window-btns" id="pf-drill-tenor-btns"></div>' +
-        windowBar('free') + drillChartBox('pf-drill-chart-free');
-      renderDrillTenorButtons();
-      renderDrillWindowButtons();
-      renderFreeChart(cc);
-      return;
-    }
-
-    if (PF.drillTab === 'nuc') {
-      host.innerHTML = windowBar('nuc') + drillChartBox('pf-drill-chart-nuc', 260);
-      renderDrillWindowButtons();
-      renderNucChart(cc);
-      return;
-    }
+    host.innerHTML = '<div class="hist-window-btns" id="pf-drill-tenor-btns"></div>' +
+      windowBar('free') + drillChartBox('pf-drill-chart-free');
+    renderDrillTenorButtons();
+    renderDrillWindowButtons();
+    PKW.draw('pf-history', 'pf-drill-chart-free', { country: cc, tenor: PF.drillTenor, win: PF.drillWindow, from: PF.drillFrom, to: PF.drillTo }).then(function () { addFullscreen('pf-drill-chart-free'); addDownload('pf-drill-chart-free', 'pf-drill-chart-free'); });
   }
 
   // Forward tenor table — always shown below the chart tabs, regardless of
@@ -334,14 +316,6 @@
       '<tbody>' + rows + '</tbody></table></div>';
   }
 
-  function renderDrillCalOffsetButtons() {
-    var host = document.getElementById('pf-drill-caloffset-btns');
-    if (!host) return;
-    host.innerHTML = [1, 2, 3].map(function (o) {
-      return '<button class="hw-btn' + (o === PF.drillCalOffset ? ' active' : '') + '" onclick="window._pfSetDrillCalOffset(' + o + ')">Cal+' + o + '</button>';
-    }).join('');
-  }
-
   function renderDrillTenorButtons() {
     var host = document.getElementById('pf-drill-tenor-btns');
     if (!host) return;
@@ -359,122 +333,114 @@
     }).join('');
   }
 
-  // Chart A (drill) : tous les contrats Cal, une ligne par année.
-  function renderCalAllChart(cc) {
-    var meta = countryMeta(cc);
-    var cs = PF.snap.countries[cc];
-    var chain = PF.calchain && PF.calchain[cc];
-    var years = (chain && chain.years) || {};
-    var yearKeys = Object.keys(years).sort();
-    var allDatesSet = {};
-    yearKeys.forEach(function (yr) { years[yr].dates.forEach(function (d) { allDatesSet[d] = true; }); });
-    var allDates = Object.keys(allDatesSet).sort();
-    var rg = drillRange(allDates);
-    allDates = allDates.slice(rg[0], rg[1]);
-    var dateIdx = {};
-    allDates.forEach(function (d, i) { dateIdx[d] = i; });
-    // Contracts with no quote in the window are left out of the legend.
-    var datasets = yearKeys.map(function (yr, i) {
-      var arr = new Array(allDates.length).fill(null);
-      years[yr].dates.forEach(function (d, j) { if (d in dateIdx) arr[dateIdx[d]] = years[yr].values[j]; });
-      return { label: 'Cal' + yr, data: arr, borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5,
-        pointRadius: 0, tension: 0, fill: false, spanGaps: true };
-    }).filter(function (ds) { return ds.data.some(function (v) { return v != null; }); });
-    window.mkHistChart('pf-drill-chart-calall', {
-      type: 'line',
-      data: { labels: allDates, datasets: datasets },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12 } } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: cs.currency + '/MWh', color: '#7A93AB', font: { size: 10 } } }
-        }
-      }
+  // ── Charts (pages + My Dashboard) ─────────────────────────────────
+  var pfLoad = null;
+  function pfData() {
+    if (PF.loaded) return Promise.resolve(PF);
+    if (!pfLoad) pfLoad = Promise.all([loadFrMarket(), loadFrMarketSeries(), loadCalChain()]).then(function (res) {
+      PF.snap = res[0]; PF.series = res[1]; PF.calchain = res[2];
+      if (!PF.snap || !PF.series) { pfLoad = null; throw new Error('data/fr_market.json unavailable'); }
+      PF.loaded = true;
+      return PF;
     });
-    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-calall');
+    return pfLoad;
+  }
+  // Same windowing for pages and widgets: p.win ('3M'…'all') or p.from/p.to.
+  function rangeOf(dates, p) {
+    var keep = { w: PF.drillWindow, f: PF.drillFrom, t: PF.drillTo };
+    PF.drillWindow = p.win || '1Y'; PF.drillFrom = p.from || ''; PF.drillTo = p.to || '';
+    var r = drillRange(dates);
+    PF.drillWindow = keep.w; PF.drillFrom = keep.f; PF.drillTo = keep.t;
+    return r;
+  }
+  var AX = { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } };
+  function yAx(t) { return { grid: AX.grid, ticks: AX.ticks, title: { display: true, text: t, color: '#7A93AB', font: { size: 10 } } }; }
+  function lineOpts(legend) {
+    return { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: legend, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12 } }, zoom: ZOOM_CFG } };
+  }
+  var COUNTRY_PARAM = { key: 'country', label: 'Market', inTitle: true, options: COUNTRIES.map(function (c) { return [c.code, c.label]; }) };
+  var WIN_PARAM = { key: 'win', label: 'Period', options: [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['5Y', '5Y'], ['all', 'All']] };
+  var TENOR_PARAM = { key: 'tenor', label: 'Product', inTitle: true, options: FORWARD_TENORS.map(function (t) { return [t, t]; }) };
+  function reg(def) {
+    if (!window.PKW) return;
+    PKW.register(Object.assign({ category: 'forwards', page: 'prices', source: 'SEFE', size: { w: 6, h: 5 } }, def));
+  }
+  // Value of one tenor on the last series date ≤ iso.
+  // (walks back over weekends / holidays to the last quoted day)
+  function valueAt(fc, dates, iso) {
+    for (var i = dates.length - 1; i >= 0; i--) { if (dates[i] <= iso && fc[i] != null) return { v: fc[i], d: dates[i] }; }
+    return null;
   }
 
-  // Chart B (drill) : Cal+N glissant, courbe continue.
-  function renderCalRollingChart(cc) {
-    var meta = countryMeta(cc);
-    var chain = PF.calchain && PF.calchain[cc];
-    var label = 'Cal+' + PF.drillCalOffset;
-    var rolling = (chain && chain.rolling && chain.rolling[label]) || { dates: [], values: [] };
-    var rg = drillRange(rolling.dates);
-    window.mkHistChart('pf-drill-chart-cal1', {
-      type: 'line',
-      data: { labels: rolling.dates.slice(rg[0], rg[1]), datasets: [{ label: label, data: rolling.values.slice(rg[0], rg[1]), borderColor: meta.colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0, fill: false, spanGaps: false }] },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 10 } } }
-        }
-      }
-    });
-    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-cal1');
-  }
+  reg({
+    id: 'pf-curve', title: 'Power forward curve vs 1W / 1M ago', pageCanvas: 'pf-drill-chart-curve',
+    desc: 'Baseload forward curve of one market at the latest settlement, a week and a month earlier, tenor by tenor.',
+    params: [COUNTRY_PARAM], defaults: { country: 'FR' },
+    draw: function (cid, p) {
+      return pfData().then(function () {
+        var cs = (PF.series.countries && PF.series.countries[p.country]) || {}, fc = cs.forwardCurve || {}, dates = PF.series.dates || [];
+        var snap = PF.snap.countries[p.country] || {}, cur = snap.currency || 'EUR';
+        var last = dates[dates.length - 1];
+        var back = function (n) { var d = new Date(last + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+        // Compared tenor by tenor (rolling products): today's contract in brackets.
+        var labels = FORWARD_TENORS.map(function (t) { var r = tenorRow(snap, t); return r ? t + ' · ' + r.contract.replace(/^[A-Z]{2}\s+/, '').replace(/\s+base$/i, '') : t; });
+        var series = [[0, 'Latest', countryMeta(p.country).colour, 2.4, []], [7, '1 week ago', '#B8C9D9', 1.4, [5, 4]], [30, '1 month ago', '#7A93AB', 1.2, [2, 3]]];
+        var asOf = [];
+        var ds = series.map(function (s) {
+          var iso = s[0] ? back(s[0]) : last;
+          var vals = FORWARD_TENORS.map(function (t) { var r = valueAt(fc[t] || [], dates, iso); if (r && !asOf[s[0]]) asOf[s[0]] = r.d; return r ? r.v : null; });
+          return { label: s[1] + (asOf[s[0]] ? ' (' + asOf[s[0]] + ')' : ''), data: vals, borderColor: s[2], backgroundColor: s[2], borderWidth: s[3], borderDash: s[4], pointRadius: s[0] ? 0 : 3, tension: 0, fill: false, spanGaps: true };
+        });
+        var o = lineOpts(true);
+        o.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(cur + '/MWh') };
+        mkChart(cid, { type: 'line', data: { labels: labels, datasets: ds }, options: o });
+        return { sub: countryMeta(p.country).label + ' · settlement ' + (asOf[0] || last) + ' · tenor by tenor' };
+      });
+    },
+  });
 
-  // Chart C (drill) : graph libre, produits choisis sur la période choisie.
-  function renderFreeChart(cc) {
-    var countrySeries = (PF.series.countries && PF.series.countries[cc]) || {};
-    var allDates = PF.series.dates || [];
-    var rg = drillRange(allDates);
-    var dates = allDates.slice(rg[0], rg[1]);
-    var fwd = countrySeries.forwardCurve || {};
-    var vals = (fwd[PF.drillTenor] || []).slice(rg[0], rg[1]);
-    window.mkHistChart('pf-drill-chart-free', {
-      type: 'line',
-      data: { labels: dates, datasets: [{ label: PF.drillTenor, data: vals, borderColor: countryMeta(cc).colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0, fill: false, spanGaps: true }] },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 10 } } }
-        }
-      }
-    });
-    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-free');
-  }
+  reg({
+    id: 'pf-history', title: 'Power forward history', pageCanvas: 'pf-drill-chart-free',
+    desc: 'Daily settlement of one forward product (M+1 … Y+3) of one market; Y+1 is the rolling Cal+1.',
+    params: [COUNTRY_PARAM, TENOR_PARAM, WIN_PARAM], defaults: { country: 'FR', tenor: 'Y+1', win: '1Y' },
+    draw: function (cid, p) {
+      return pfData().then(function () {
+        var cs = (PF.series.countries && PF.series.countries[p.country]) || {}, all = PF.series.dates || [];
+        var rg = rangeOf(all, p);
+        var vals = ((cs.forwardCurve || {})[p.tenor] || []).slice(rg[0], rg[1]);
+        var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
+        var o = lineOpts(false); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        mkChart(cid, { type: 'line', data: { labels: all.slice(rg[0], rg[1]), datasets: [{ label: p.tenor, data: vals, borderColor: countryMeta(p.country).colour, borderWidth: 1.6, pointRadius: 0, tension: 0, fill: false, spanGaps: true }] }, options: o });
+        return { sub: countryMeta(p.country).label + ' · ' + p.tenor };
+      });
+    },
+  });
 
-  // Chart D (drill) : nucléaire réel vs prévisionnel (FR seulement).
-  function renderNucChart(cc) {
-    var countrySeries = (PF.series.countries && PF.series.countries[cc]) || {};
-    var allDates = PF.series.dates || [];
-    var rg = drillRange(allDates);
-    var dates = allDates.slice(rg[0], rg[1]);
-    var nuc = countrySeries.nuclearCapacity || {};
-    var actual = (nuc.actual || []).slice(rg[0], rg[1]);
-    var forecast = (nuc.forecast || []).slice(rg[0], rg[1]);
-    window.mkHistChart('pf-drill-chart-nuc', {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: [
-          { label: 'Actual', data: actual, borderColor: '#7B4B9C', borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true },
-          { label: 'Forecast', data: forecast, borderColor: '#EE9B00', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: true }
-        ]
-      },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12 } } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: 'MW', color: '#7A93AB', font: { size: 10 } } }
-        }
-      }
-    });
-    if (typeof addFullscreen === 'function') addFullscreen('pf-drill-chart-nuc');
-  }
+  reg({
+    id: 'pf-cals', title: 'Power forward · calendar contracts', pageCanvas: 'pf-drill-chart-calall',
+    desc: 'Price history of each calendar-year baseload contract of one market, one line per contract.',
+    params: [COUNTRY_PARAM, WIN_PARAM], defaults: { country: 'FR', win: '1Y' },
+    draw: function (cid, p) {
+      return pfData().then(function () {
+        var chain = PF.calchain && PF.calchain[p.country], years = (chain && chain.years) || {};
+        var yk = Object.keys(years).sort(), set = {};
+        yk.forEach(function (yr) { years[yr].dates.forEach(function (d) { set[d] = true; }); });
+        var all = Object.keys(set).sort(), rg = rangeOf(all, p), dates = all.slice(rg[0], rg[1]), idx = {};
+        dates.forEach(function (d, i) { idx[d] = i; });
+        var ds = yk.map(function (yr, i) {
+          var arr = new Array(dates.length).fill(null);
+          years[yr].dates.forEach(function (d, j) { if (d in idx) arr[idx[d]] = years[yr].values[j]; });
+          return { label: 'Cal' + yr, data: arr, borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true };
+        }).filter(function (d) { return d.data.some(function (v) { return v != null; }); });
+        if (!ds.length) { noDataMsg(cid, 'No calendar contracts quoted for ' + countryMeta(p.country).label + ' in this window', 'SEFE'); return null; }
+        var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
+        var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
+        return { sub: countryMeta(p.country).label };
+      });
+    },
+  });
 
   // ══════════════════════════════════════════════════════════════════════
   // COMPARAISON PAYS · un produit, les 4 zones sur le même graph + table
@@ -528,45 +494,35 @@
     }).join('');
   }
 
+  reg({
+    id: 'pf-compare', title: 'Power forwards · market comparison', pageCanvas: 'prfwd-chart-compare',
+    desc: 'One forward product across FR, DE, NL and GB (converted to € at each day’s close).',
+    params: [TENOR_PARAM, WIN_PARAM], defaults: { tenor: 'Y+1', win: '1Y' },
+    draw: function (cid, p) {
+      return pfData().then(function () {
+        var PKCo = window.PKC;
+        return (PKCo && PKCo.loadFull ? PKCo.loadFull() : Promise.resolve()).then(function () {
+          var all = PF.series.dates || [], rg = rangeOf(all, p), dates = all.slice(rg[0], rg[1]);
+          var codes = p.codes || COUNTRIES.map(function (c) { return c.code; });
+          var gbpEur = function (d) { if (!PKCo) return null; var g = PKCo.valueOn('gbpusd', d, true), e = PKCo.valueOn('eurusd', d, true); return g && e ? g / e : null; };
+          var ds = COUNTRIES.filter(function (c) { return codes.indexOf(c.code) >= 0; }).map(function (c) {
+            var cs = (PF.series.countries && PF.series.countries[c.code]) || {};
+            var vals = ((cs.forwardCurve && cs.forwardCurve[p.tenor]) || []).slice(rg[0], rg[1]);
+            if ((cs.currency || (c.code === 'UK' ? 'GBP' : 'EUR')) === 'GBP') vals = vals.map(function (v, i) { var r = gbpEur(dates[i]); return v == null || r == null ? null : Math.round(v * r * 100) / 100; });
+            return { label: c.label + (c.code === 'UK' ? ' (£→€)' : ''), data: vals, borderColor: c.colour, borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true };
+          });
+          var o = lineOpts(true); o.scales = { x: AX, y: yAx('€/MWh') };
+          mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
+          return { sub: p.tenor };
+        });
+      });
+    },
+  });
+
   function renderCompareChart() {
-    var allDates = PF.series.dates || [];
-    var cut = windowCutoffDates(allDates, PF.cmpWindow);
-    var startIdx = cut.length ? allDates.indexOf(cut[0]) : 0;
-    if (startIdx < 0) startIdx = 0;
-    var dates = allDates.slice(startIdx);
-    var visibleCountries = PF.cmpZones ? COUNTRIES.filter(function (c) { return PF.cmpZones.has(c.code); }) : COUNTRIES;
-    // GBP contracts are converted to EUR at each day's GBP/EUR close (SEFE FX),
-    // so every curve shares one axis. Full FX history loads on demand.
-    var PKC = window.PKC, fullFx = PKC && PKC.loadFull && !PF._fxFull;
-    if (fullFx) { PF._fxFull = true; PKC.loadFull().then(function () { renderCompareChart(); }); }
-    var gbpEur = function (d) {
-      if (!PKC) return null;
-      var g = PKC.valueOn('gbpusd', d, true), e = PKC.valueOn('eurusd', d, true);
-      return g && e ? g / e : null;
-    };
-    var datasets = visibleCountries.map(function (c) {
-      var cs = (PF.series.countries && PF.series.countries[c.code]) || {};
-      var vals = ((cs.forwardCurve && cs.forwardCurve[PF.cmpTenor]) || []).slice(startIdx);
-      if ((cs.currency || (c.code === 'UK' ? 'GBP' : 'EUR')) === 'GBP') {
-        vals = vals.map(function (v, i) { var r = gbpEur(dates[i]); return v == null || r == null ? null : Math.round(v * r * 100) / 100; });
-      }
-      return { label: c.flag + ' ' + c.label, data: vals, borderColor: c.colour, borderWidth: 1.5,
-        pointRadius: 0, tension: 0, fill: false, spanGaps: true };
+    PKW.draw('pf-compare', 'prfwd-chart-compare', { tenor: PF.cmpTenor, win: PF.cmpWindow, codes: PF.cmpZones ? Array.from(PF.cmpZones) : null }).then(function () {
+      if (typeof addFullscreen === 'function') addFullscreen('prfwd-chart-compare');
     });
-    window.mkHistChart('prfwd-chart-compare', {
-      type: 'line',
-      data: { labels: dates, datasets: datasets },
-      options: {
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, boxHeight: 10, padding: 12 } } },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: '€/MWh (GB converted from £)', color: '#7A93AB', font: { size: 10 } } }
-        }
-      }
-    });
-    if (typeof addFullscreen === 'function') addFullscreen('prfwd-chart-compare');
   }
 
   function renderCompareTable() {
@@ -616,18 +572,9 @@
   }
 
   function renderPrFwd() {
-    if (PF.loaded) { renderAll(); return; }
-    Promise.all([loadFrMarket(), loadFrMarketSeries(), loadCalChain()]).then(function (res) {
-      PF.snap = res[0];
-      PF.series = res[1];
-      PF.calchain = res[2];
-      if (!PF.snap || !PF.series) {
-        var host = document.getElementById('prfwd-insights-text');
-        if (host) host.innerHTML = '<em style="color:var(--text3)">data/fr_market.json unavailable.</em>';
-        return;
-      }
-      PF.loaded = true;
-      renderAll();
+    pfData().then(renderAll).catch(function () {
+      var host = document.getElementById('prfwd-insights-text');
+      if (host) host.innerHTML = '<em style="color:var(--text3)">data/fr_market.json unavailable.</em>';
     });
   }
 
@@ -635,8 +582,7 @@
   window._pfToggleRow = toggleCountryRow;
   window._pfCloseRow = closeCountryRow;
   window._pfSetDrillTab = function (tab) { PF.drillTab = tab; renderDrillTabs(PF.openCountry); renderDrillContent(PF.openCountry); };
-  window._pfSetDrillCalOffset = function (o) { PF.drillCalOffset = o; renderDrillCalOffsetButtons(); renderCalRollingChart(PF.openCountry); };
-  window._pfSetDrillTenor = function (t) { PF.drillTenor = t; renderDrillTenorButtons(); renderFreeChart(PF.openCountry); };
+  window._pfSetDrillTenor = function (t) { PF.drillTenor = t; renderDrillContent(PF.openCountry); };
   window._pfSetDrillWindow = function (w) { PF.drillWindow = w; PF.drillFrom = PF.drillTo = ''; renderDrillContent(PF.openCountry); };
   window._pfSetDrillRange = function () {
     PF.drillFrom = (document.getElementById('pf-drill-from') || {}).value || '';
