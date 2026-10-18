@@ -2664,6 +2664,9 @@
     border: 1px solid;
   }
 
+  .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+  .ma-hover-tooltip.ma-side { position: sticky; top: 12px; margin-top: 12px; min-width: 0; max-width: none; box-shadow: none; display: block !important; }
+  @media (max-width: 1100px) { .ma-layout { grid-template-columns: minmax(0, 1fr); } .ma-hover-tooltip.ma-side { position: static; } }
   .ma-hover-tooltip {
     position: absolute;
     background: var(--bg); border: 1px solid rgba(20,211,169,0.5);
@@ -4796,8 +4799,8 @@
       <div id="ma-drivers-strip" class="ma-drivers-strip"></div>
 
       <!-- 4 main panels with crosshair + hover tooltip -->
-      <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px">
-        <div id="ma-hover-tooltip" class="ma-hover-tooltip" style="display:none"></div>
+      <div class="ma-layout">
+      <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px;min-width:0">
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">DA Price</div><div class="ma-lbl-sub">€/MWh</div></div>
@@ -4828,6 +4831,8 @@
             <div id="ma-legend-mix" class="ma-panel-legend"></div>
           </div>
         </div>
+      </div>
+      <aside id="ma-hover-tooltip" class="ma-hover-tooltip ma-side" aria-live="polite"><div class="ma-ht-time">Hover the charts to read a time slot</div></aside>
       </div>
 
       <!-- Episode cards (auto-detected key moments) -->

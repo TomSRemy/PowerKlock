@@ -547,6 +547,8 @@
     if (!canvas || !window.Chart) return;
     if (STATE.charts[canvasId]) { try { STATE.charts[canvasId].destroy(); } catch (_) {} }
     options.plugins = options.plugins || {};
+    // The side panel (ma-hover-tooltip) is the readout here: no second box on the charts.
+    options.plugins.pkHoverReadout = false;
     STATE.charts[canvasId] = new window.Chart(canvas, {
       type: type, data: data, options: options, plugins: [crosshairPlugin],
     });
@@ -655,8 +657,8 @@
     STATE.hoverIndex = -1;
     const line = document.getElementById('ma-crosshair-line');
     if (line) line.style.display = 'none';
-    const tip = document.getElementById('ma-hover-tooltip');
-    if (tip) tip.style.display = 'none';
+    const i = _lastIndex();
+    if (i >= 0) _renderTooltip(i, null);
   }
 
   // Single vertical bar across the whole panel section. Because every chart
@@ -746,21 +748,16 @@
       +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.flux) + 'Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
       + '</div>';
 
+    // Docked in its own column beside the charts (never over them).
     tip.style.display = 'block';
-    const wrap = document.getElementById('ma-panels-wrap');
-    if (!wrap || !event || event.clientX == null) return;
-    const rect = wrap.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = (event.clientY != null) ? event.clientY - rect.top : 10;
-    const tipW = tip.offsetWidth || 280;
-    const tipH = tip.offsetHeight || 200;
-    const margin = 12;
-    let left = (x + tipW + margin > rect.width) ? x - tipW - margin : x + margin;
-    left = Math.max(4, Math.min(rect.width - tipW - 4, left));
-    let top = y - tipH / 2;
-    top = Math.max(4, Math.min(rect.height - tipH - 4, top));
-    tip.style.left = left + 'px';
-    tip.style.top = top + 'px';
+  }
+
+  // Default readout: the last slot with a price, shown until the mouse
+  // moves over the charts and again when it leaves them.
+  function _lastIndex() {
+    const p = (STATE.data && STATE.data.flat && STATE.data.flat.price) || [];
+    for (let i = p.length - 1; i >= 0; i--) if (p[i] != null) return i;
+    return -1;
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -930,6 +927,7 @@
     _renderPanels();
     _renderEpisodes();
     _renderCursorBadges();
+    _clearHover();   // side panel starts on the latest slot
   }
 
   window.maSetWindow = function (days) { STATE.windowDays = days; _reload(); };
