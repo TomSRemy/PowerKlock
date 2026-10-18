@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-10-17T11:00:38.340493+00:00",
+ "lastUpdate": "2026-10-18T11:26:50.650906+00:00",
  "spot": {
-  "value": 139.3,
+  "value": 221.77,
   "unit": "EUR/MWh",
-  "date": "2026-10-16"
+  "date": "2026-10-18"
  },
  "forwardCurve": [
   {
@@ -124,24 +124,24 @@
  },
  "nuclearCapacityDate": "2026-10-15",
  "generationMix": {
-  "gas": 2.52,
-  "wind": 1.57,
-  "solar": 4.21,
-  "nuclear": 37.45,
-  "hydro": 1.71,
-  "other": 2.41
+  "gas": null,
+  "wind": null,
+  "solar": null,
+  "nuclear": null,
+  "hydro": null,
+  "other": null
  },
- "generationMixDate": "2026-10-14",
- "marketInsightsHtml": "<p>In France, river flows near the Chooz nuclear site have fallen over the course of this week to just below 18m³/s, down from around 21.5m³/s on Monday, according to the latest publicly available data.</p>",
- "marketInsightsDate": "2026-10-17",
+ "generationMixDate": null,
+ "marketInsightsHtml": "<p>En France, le débit des rivières à proximité du site nucléaire de Chooz est tombé au cours de cette semaine à un peu moins de 18 m³/s, contre environ 21,5 m³/s lundi, selon les dernières données accessibles au public.</p>",
+ "marketInsightsDate": "2026-10-18",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 139.3,
+    "value": 221.77,
     "unit": "EUR/MWh",
-    "date": "2026-10-16"
+    "date": "2026-10-18"
    },
    "forwardCurve": [
     {
@@ -262,22 +262,22 @@
    },
    "nuclearCapacityDate": "2026-10-15",
    "generationMix": {
-    "gas": 2.52,
-    "wind": 1.57,
-    "solar": 4.21,
-    "nuclear": 37.45,
-    "hydro": 1.71,
-    "other": 2.41
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-14"
+   "generationMixDate": null
   },
   "UK": {
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 165.84,
+    "value": 185.28,
     "unit": "GBP/MWh",
-    "date": "2026-10-17"
+    "date": "2026-10-18"
    },
    "forwardCurve": [
     {
@@ -409,9 +409,9 @@
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 168.27,
+    "value": 208.44,
     "unit": "EUR/MWh",
-    "date": "2026-10-16"
+    "date": "2026-10-18"
    },
    "forwardCurve": [
     {
@@ -529,23 +529,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 4.75,
-    "wind": 19.75,
-    "solar": 9.27,
-    "nuclear": 0,
-    "coal": 14.8,
-    "hydro": 0.14,
-    "other": 0.36
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-14"
+   "generationMixDate": null
   },
   "NL": {
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 166.72,
+    "value": 207.25,
     "unit": "EUR/MWh",
-    "date": "2026-10-16"
+    "date": "2026-10-18"
    },
    "forwardCurve": [
     {
@@ -663,14 +663,14 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 3.13,
-    "wind": 1.71,
-    "solar": 0.86,
-    "nuclear": 0.48,
-    "coal": 3.18,
-    "other": 0.11
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-14"
+   "generationMixDate": null
   }
  }
 }
