@@ -5,18 +5,18 @@
 // public.user_dashboards (schema: supabase/schema.sql), protected by
 // row-level security, so a user only ever reads and writes their own row.
 //
-// The project URL and anon key below are public by design: Supabase's
-// anon key only grants what the RLS policies allow. Leave them empty and
+// The project URL and publishable key below are public by design: the key
+// only grants what the RLS policies allow. Leave them empty and
 // the site keeps working with browser-only storage.
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
 
   const CONFIG = {
-    url: '',        // https://<project>.supabase.co
-    anonKey: '',    // Project Settings → API → anon public
+    url: 'https://xtqeslyjtjrbjpffpixn.supabase.co',
+    anonKey: 'sb_publishable_mfgTs1zA6ZT69hU0DhXpnA_YmjpkRQ1',   // publishable key: RLS decides access
   };
-  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js';
   const TABLE = 'user_dashboards';
 
   const configured = !!(CONFIG.url && CONFIG.anonKey);
