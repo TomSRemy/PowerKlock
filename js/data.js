@@ -36,11 +36,12 @@ function applyDefaultGenMixZones() {
   window._pricesZoneFilter = new Set(PK_DEFAULT_PRICE_ZONES);
   // Daily Compare + Historical shared user zones (via setUserZones if available,
   // else direct mutation)
+  // Shared price-view zones (Compare / Historical): same 7 as the board.
   if (typeof setUserZones === 'function') {
-    setUserZones(zones);  // also dispatches 'zones-changed'
+    setUserZones(PK_DEFAULT_PRICE_ZONES);  // also dispatches 'zones-changed'
   } else {
-    window._userZones = new Set(set);
-    window._compareZones = new Set(set);
+    window._userZones = new Set(PK_DEFAULT_PRICE_ZONES);
+    window._compareZones = window._userZones;
   }
   // Re-render daily tables and chips if those renderers exist
   if (typeof renderPricesTableBody === 'function') renderPricesTableBody();
@@ -265,6 +266,7 @@ async function loadFromJSON(opts) {
   if (ren?.countries && window.pkGenAlign) await pkGenAlign.alignSnapshot(ren, 'ren');
   if (ren?.countries) {
     window._renData = ren.countries;
+    window._renUpdated = ren.updated || null;
     console.log('✅ Renewables from JSON');
     if (document.getElementById('page-renewables')?.classList.contains('active')) drawRenChart();
   }
@@ -524,6 +526,9 @@ async function loadPricesForDate(dateStr) {
               maxHr:  maxIdx >= 0 ? Math.floor(maxIdx/nph) : 0,
               negHrs: z.negH ?? z.negHours ?? 0,
               spark:  null,
+              // Generation-based fields of the day (zones covered by the GenMix fetch)
+              renPct: z.renPct ?? null,
+              domFuel: z.domFuel ?? null,
               hourly,
             };
           });

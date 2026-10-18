@@ -13,9 +13,13 @@
  * Data status:
  *   - DA price hourly   · REAL (data/history/daily/*.json)
  *   - Wind / Solar      · REAL (same)
- *   - TTF / EUA / Wind speed / Temp / Nuc dispo / Flux · SIMULATED (V1)
- *   - Mix (nuc/hydro/fossil/biomass) · SIMULATED (anchored on live genmix)
- *   - Spark spread      · DERIVED from Power - TTF/η - EUA·EF
+ *   - TTF / EUA         · REAL (data/commodities.json via window.PKC)
+ *   - Temp / wind 100 m · REAL (Open-Meteo, hourly, zone reference point)
+ *   - Nuclear           · FR: available capacity (SEFE); others: actual output
+ *   - Load / net import · REAL when the day carries ENTSO-E load (A65);
+ *                         net import = load − total generation
+ *   - Mix               · REAL (ENTSO-E A75); days without data stay empty
+ *   - Spark spread      · DERIVED (PKC.cleanSpark, site-wide convention)
  * ════════════════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -40,9 +44,6 @@
     biomass: 'Biomass', fossil: 'Fossil', other: 'Other',
   };
 
-  // CCGT cost formula (mirrors js/eua.js)
-  const CCGT_EFF = 0.49;
-  const CCGT_EF = 0.365;
 
   const EPISODE_KIND_COLOURS = {
     floor: '#14D3A9', weekend: '#FBBF24', cannibalisation: '#A78BFA', peak: '#ED6965',
@@ -115,9 +116,9 @@
   }
 
   function _resample(arr, sourceSlotsPerDay, targetSlotsPerDay) {
-    if (!arr || !arr.length) return new Array(targetSlotsPerDay).fill(0);
+    if (!arr || !arr.length) return new Array(targetSlotsPerDay).fill(null);
     if (sourceSlotsPerDay === targetSlotsPerDay) return arr.slice(0, targetSlotsPerDay);
-    const out = new Array(targetSlotsPerDay).fill(0);
+    const out = new Array(targetSlotsPerDay).fill(null);
     if (sourceSlotsPerDay > targetSlotsPerDay) {
       const ratio = sourceSlotsPerDay / targetSlotsPerDay;
       for (let i = 0; i < targetSlotsPerDay; i++) {
@@ -126,14 +127,14 @@
           const idx = Math.floor(i * ratio) + j;
           if (idx < arr.length && arr[idx] != null) { sum += arr[idx]; n++; }
         }
-        out[i] = n > 0 ? sum / n : 0;
+        out[i] = n > 0 ? sum / n : null;
       }
     } else {
       for (let i = 0; i < targetSlotsPerDay; i++) {
         const src = (i / targetSlotsPerDay) * sourceSlotsPerDay;
         const lo = Math.floor(src), hi = Math.min(lo + 1, sourceSlotsPerDay - 1);
         const t = src - lo;
-        const a = arr[lo] != null ? arr[lo] : 0;
+        const a = arr[lo];
         const b = arr[hi] != null ? arr[hi] : a;
         out[i] = a * (1 - t) + b * t;
       }
@@ -145,121 +146,48 @@
   // SIMULATIONS
   // ════════════════════════════════════════════════════════════════
 
-  const LOAD_SHAPE_24 = [
-    0.62, 0.58, 0.55, 0.53, 0.52, 0.54, 0.60, 0.70,
-    0.80, 0.85, 0.87, 0.88, 0.86, 0.84, 0.82, 0.81,
-    0.83, 0.88, 0.95, 1.00, 0.97, 0.90, 0.80, 0.70,
-  ];
 
-  function _simulateLoad(date, slotsPerDay) {
-    const month = date.getMonth();
-    const peakLoad = (month <= 1 || month >= 10) ? 78000 :
-                     (month >= 5 && month <= 7) ? 48000 : 60000;
-    const dow = date.getDay();
-    const wkCorr = (dow === 0 || dow === 6) ? 0.85 : 1.0;
-    const shape24 = LOAD_SHAPE_24.map(v => v * peakLoad * wkCorr);
-    return _resample(shape24, 24, slotsPerDay);
-  }
 
-  function _simulateTemp(date, slotsPerDay) {
-    const month = date.getMonth();
-    const monthlyMean = [5, 6, 9, 12, 15, 19, 22, 22, 18, 13, 8, 5];
-    const mean = monthlyMean[month];
-    const out = [];
-    for (let i = 0; i < slotsPerDay; i++) {
-      const h = (i / slotsPerDay) * 24;
-      const cyc = Math.sin((h - 9) * Math.PI / 12);
-      out.push(mean + cyc * 3 + (Math.random() - 0.5) * 1);
-    }
-    return out;
-  }
 
-  function _estimateWindSpeed(windPowerMW) {
-    const cap = 22000;
-    const out = [];
-    for (let i = 0; i < windPowerMW.length; i++) {
-      const cf = Math.max(0, Math.min(1, windPowerMW[i] / cap));
-      out.push(Math.pow(cf, 1 / 3) * 14);
-    }
-    return out;
-  }
 
-  function _simulateTTF(date, slotsPerDay) {
-    const base = 46;
-    const dayOffset = (date.getTime() / 86400000) % 100;
-    const slow = Math.sin(dayOffset / 30) * 4;
-    return new Array(slotsPerDay).fill(0).map((_, i) => base + slow + (i / slotsPerDay) * 0.3);
-  }
-  function _simulateEUA(date, slotsPerDay) {
-    const base = 75;
-    const dayOffset = (date.getTime() / 86400000) % 100;
-    const slow = Math.sin(dayOffset / 25) * 3;
-    return new Array(slotsPerDay).fill(0).map(() => base + slow);
-  }
 
-  function _simulateNuc(date, slotsPerDay) {
-    const month = date.getMonth();
-    const seasonal = (month >= 5 && month <= 8) ? 38 : 48;
-    return new Array(slotsPerDay).fill(seasonal + (Math.random() - 0.5) * 2);
-  }
 
-  function _simulateFlux(date, slotsPerDay) {
-    const out = [];
-    for (let i = 0; i < slotsPerDay; i++) {
-      const h = (i / slotsPerDay) * 24;
-      const cyc = Math.sin((h - 13) * Math.PI / 12) * 3;
-      out.push(cyc + (Math.random() - 0.5) * 2);
-    }
-    return out;
-  }
 
-  function _simulateMix(loadMW, wind, solar, nucAvail, slotsPerDay) {
-    const snap = (window._genmixData && window._genmixData[STATE.zone])
-              || (window.GM_DEMO && window.GM_DEMO[STATE.zone])
-              || { nuclear: 45000, hydro: 6000, fossil: 4000, biomass: 800, other: 400 };
-    const hydroBase = snap.hydro || 6000;
-    const bioBase = snap.biomass || 800;
-    const otherBase = snap.other || 400;
 
-    const nuclear = [], hydro = [], fossil = [], biomass = [], other = [];
-    const maxLoad = Math.max.apply(null, loadMW);
-    for (let i = 0; i < slotsPerDay; i++) {
-      const load = loadMW[i];
-      const ren = (wind[i] || 0) + (solar[i] || 0);
-      const loadNorm = load / maxLoad;
-      const nucCap = (nucAvail[i] || 45) * 1000;
-      nuclear.push(Math.min(nucCap, nucCap * (0.85 + 0.10 * loadNorm)));
-      biomass.push(bioBase * (0.95 + 0.05 * Math.random()));
-      other.push(otherBase);
-      const supplied = nuclear[i] + biomass[i] + other[i] + ren;
-      const residual = load - supplied;
-      hydro.push(Math.max(0, Math.min(hydroBase * 1.6, residual * 0.45)));
-      const stillNeeded = load - (nuclear[i] + biomass[i] + other[i] + ren + hydro[i]);
-      fossil.push(Math.max(0, stillNeeded));
-    }
-    return { nuclear: nuclear, hydro: hydro, fossil: fossil, biomass: biomass, other: other };
-  }
-
-  function _synthPrice24() {
-    return Array.from({ length: 24 }, (_, h) => {
-      const morning = 25 * Math.exp(-Math.pow(h - 8, 2) / 6);
-      const evening = 45 * Math.exp(-Math.pow(h - 19, 2) / 5);
-      const midday = -15 * Math.exp(-Math.pow(h - 13, 2) / 8);
-      return Math.max(-5, 55 + morning + evening + midday + (Math.random() - 0.5) * 6);
-    });
-  }
-  function _synthWind24() {
-    const lvl = 3000 + Math.random() * 6000;
-    return Array.from({ length: 24 }, () => Math.max(0, lvl * (0.7 + Math.random() * 0.6)));
-  }
-  function _synthSolar24() {
-    const cap = 6000 + Math.random() * 4000;
-    return Array.from({ length: 24 }, (_, h) => Math.max(0, cap * Math.exp(-Math.pow(h - 13, 2) / 9)));
-  }
 
   // ════════════════════════════════════════════════════════════════
   // ASSEMBLE WINDOW DATA
   // ════════════════════════════════════════════════════════════════
+
+  // Reference points for weather drivers (one per zone, roughly central).
+  const WX_POINTS = {
+    FR: [47.0, 2.4], DE_LU: [51.0, 10.0], BE: [50.6, 4.6], NL: [52.2, 5.4],
+    ES: [40.3, -3.7], PT: [39.6, -8.0], IT_NORD: [45.5, 9.6], AT: [47.6, 14.1],
+  };
+  const _wxCache = new Map();
+  // Hourly temperature (°C) and 100 m wind speed (m/s), Europe/Paris clock.
+  async function _fetchWeather(zone, startISO, endISO) {
+    const pt = WX_POINTS[zone]; if (!pt) return null;
+    const key = zone + startISO + endISO;
+    if (!_wxCache.has(key)) {
+      const today = pkTodayISO();
+      const old = (Date.parse(today) - Date.parse(startISO)) / 864e5 > 85;
+      const host = old ? 'https://archive-api.open-meteo.com/v1/archive' : 'https://api.open-meteo.com/v1/forecast';
+      const url = host + '?latitude=' + pt[0] + '&longitude=' + pt[1] + '&hourly=temperature_2m,wind_speed_100m'
+        + '&wind_speed_unit=ms&timezone=Europe%2FParis&start_date=' + startISO + '&end_date=' + endISO;
+      _wxCache.set(key, fetch(url).then(r => r.ok ? r.json() : null).then(j => {
+        if (!j || !j.hourly) return null;
+        const byDay = {};
+        j.hourly.time.forEach((t, i) => {
+          const d = t.slice(0, 10), h = +t.slice(11, 13);
+          (byDay[d] = byDay[d] || { temp: new Array(24).fill(null), wind: new Array(24).fill(null) });
+          byDay[d].temp[h] = j.hourly.temperature_2m[i]; byDay[d].wind[h] = j.hourly.wind_speed_100m[i];
+        });
+        return byDay;
+      }).catch(() => null));
+    }
+    return _wxCache.get(key);
+  }
 
   async function _assemble() {
     const zone = STATE.zone;
@@ -267,6 +195,10 @@
     const gran = _granularitySpec();
     const slotsPerDay = gran.slotsPerDay;
     const days = [];
+    if (window.PKC) await PKC.ready;
+    const firstDay = (() => { const t = new Date(end); t.setDate(t.getDate() - (STATE.windowDays - 1)); return _fmtDate(t); })();
+    const wx = await _fetchWeather(zone, firstDay, _fmtDate(end));
+    const nulls = () => new Array(slotsPerDay).fill(null);
 
     for (let d = STATE.windowDays - 1; d >= 0; d--) {
       const dt = new Date(end);
@@ -292,10 +224,9 @@
           };
         }
       } else {
+        // No archived day: leave it empty rather than inventing a curve.
         sourceSlots = 24;
-        priceSrc = _synthPrice24();
-        windSrc = _synthWind24();
-        solarSrc = _synthSolar24();
+        priceSrc = []; windSrc = []; solarSrc = [];
         isReal = false;
       }
       // Generation arrays share the hourly resolution (96 or 24); synth fallback is 24.
@@ -304,30 +235,35 @@
       const price = _resample(priceSrc, sourceSlots, slotsPerDay);
       const wind = _resample(windSrc, genSlots, slotsPerDay);
       const solar = _resample(solarSrc, genSlots, slotsPerDay);
-      const load = _simulateLoad(dt, slotsPerDay);
-      const temp = _simulateTemp(dt, slotsPerDay);
-      const windSpeed = _estimateWindSpeed(wind);
-      // Real TTF (EUR/MWh, one value/day from Yahoo via fetch_data.py) if archived; else simulate.
-      // Gas is ~flat intraday, so broadcasting the daily close across slots is realistic.
-      const ttfReal = (daily && typeof daily.ttf === 'number') ? daily.ttf : null;
-      const ttf = (ttfReal != null) ? new Array(slotsPerDay).fill(ttfReal) : _simulateTTF(dt, slotsPerDay);
-      const eua = _simulateEUA(dt, slotsPerDay);
-      const nucAvail = _simulateNuc(dt, slotsPerDay);
-      const flux = _simulateFlux(dt, slotsPerDay);
-      // Real generation mix (MW) if archived, else simulate. Flat-builder divides by 1000 → GW.
       const mix = mixSrc ? {
         nuclear: _resample(mixSrc.nuclear, genSlots, slotsPerDay),
         hydro:   _resample(mixSrc.hydro,   genSlots, slotsPerDay),
         fossil:  _resample(mixSrc.fossil,  genSlots, slotsPerDay),
         biomass: _resample(mixSrc.biomass, genSlots, slotsPerDay),
         other:   _resample(mixSrc.other,   genSlots, slotsPerDay),
-      } : _simulateMix(load, wind, solar, nucAvail, slotsPerDay);
-
-      const spark = price.map((p, i) => {
-        const ttfCost = (ttf[i] || 46) / CCGT_EFF;
-        const co2Cost = (eua[i] || 75) * CCGT_EF;
-        return p - ttfCost - co2Cost;
+      } : { nuclear: nulls(), hydro: nulls(), fossil: nulls(), biomass: nulls(), other: nulls() };
+      const totalGen = Array.from({ length: slotsPerDay }, (_, i) => {
+        const parts = [mix.nuclear[i], mix.hydro[i], mix.fossil[i], mix.biomass[i], mix.other[i], wind[i], solar[i]];
+        return parts.every(v => v == null) ? null : parts.reduce((a, v) => a + (v || 0), 0);
       });
+      // Demand: ENTSO-E load when stored for the day; net import = load − generation.
+      const loadReal = zd && Array.isArray(zd.load) && zd.load.some(v => v) ? _resample(zd.load, zd.load.length === 96 ? 96 : 24, slotsPerDay) : null;
+      const load = loadReal || nulls();
+      const flux = loadReal ? loadReal.map((v, i) => v == null || totalGen[i] == null ? null : (v - totalGen[i]) / 1000) : nulls();
+      // Weather (hourly → slots)
+      const wd = wx && wx[dateStr];
+      const temp = wd ? _resample(wd.temp, 24, slotsPerDay) : nulls();
+      const windSpeed = wd ? _resample(wd.wind, 24, slotsPerDay) : nulls();
+      // Gas & carbon: day-ahead TTF traded the day before, EUA close (flat intraday)
+      const refs = window.PKC ? PKC.refsFor(dateStr) : {};
+      const ttfV = refs.ttf != null ? refs.ttf : ((daily && typeof daily.ttf === 'number') ? daily.ttf : null);
+      const ttf = new Array(slotsPerDay).fill(ttfV);
+      const eua = new Array(slotsPerDay).fill(refs.eua != null ? refs.eua : null);
+      // Nuclear: FR available capacity (SEFE, daily); other zones actual output
+      const frAvail = (zone === 'FR' && window.PKC) ? PKC.valueOn('fr_nuc_avail', dateStr) : null;
+      const nucAvail = frAvail != null ? new Array(slotsPerDay).fill(frAvail / 1000) : mix.nuclear.map(v => v == null ? null : v / 1000);
+
+      const spark = price.map((p, i) => (window.PKC ? PKC.cleanSpark(p, ttf[i], eua[i]) : null));
 
       const carbon = [];
       for (let i = 0; i < slotsPerDay; i++) {
@@ -338,10 +274,10 @@
         };
         let totGen = 0, totCO2 = 0;
         for (const f in gens) {
-          totGen += gens[f];
-          totCO2 += gens[f] * (CO2_FACTORS[f] || 0);
+          totGen += gens[f] || 0;
+          totCO2 += (gens[f] || 0) * (CO2_FACTORS[f] || 0);
         }
-        carbon.push(totGen > 0 ? totCO2 / totGen : 0);
+        carbon.push(totGen > 0 ? totCO2 / totGen : null);
       }
 
       days.push({
@@ -366,12 +302,13 @@
         flat.labels.push(_slotShortLabel(dt, gran));
         flat.price.push(day.price[i]);
         flat.spark.push(day.spark[i]);
-        flat.wind.push(day.wind[i] / 1000);
-        flat.solar.push(day.solar[i] / 1000);
-        flat.load.push(day.load[i] / 1000);
+        const gw = v => v == null ? null : v / 1000;
+        flat.wind.push(gw(day.wind[i]));
+        flat.solar.push(gw(day.solar[i]));
+        flat.load.push(gw(day.load[i]));
         flat.carbon.push(day.carbon[i]);
         ['nuclear', 'hydro', 'fossil', 'biomass', 'other'].forEach(f => {
-          flat.mix[f].push(day.mix[f][i] / 1000);
+          flat.mix[f].push(gw(day.mix[f][i]));
         });
         flat.drivers.ttf.push(day.drivers.ttf[i]);
         flat.drivers.eua.push(day.drivers.eua[i]);
@@ -401,18 +338,21 @@
     const moments = [];
     if (!f.price.length) return moments;
 
-    let floorIdx = 0;
-    for (let i = 1; i < f.price.length; i++) if (f.price[i] < f.price[floorIdx]) floorIdx = i;
+    // Only slots with a price (days without archived data are empty).
+    let floorIdx = -1, peakIdx = -1;
+    for (let i = 0; i < f.price.length; i++) {
+      const p = f.price[i]; if (p == null) continue;
+      if (floorIdx < 0 || p < f.price[floorIdx]) floorIdx = i;
+      if (peakIdx < 0 || p > f.price[peakIdx]) peakIdx = i;
+    }
+    if (floorIdx < 0) return moments;
     moments.push({ idx: floorIdx, kind: 'floor' });
-
-    let peakIdx = 0;
-    for (let i = 1; i < f.price.length; i++) if (f.price[i] > f.price[peakIdx]) peakIdx = i;
     moments.push({ idx: peakIdx, kind: 'peak' });
 
     let cannibalIdx = -1, cannibalScore = -Infinity;
     f.solar.forEach((s, i) => {
       const score = s - f.price[i] * 0.02;
-      if (s > 4 && f.price[i] < 30 && score > cannibalScore) {
+      if (s != null && f.price[i] != null && s > 4 && f.price[i] < 30 && score > cannibalScore) {
         cannibalScore = score; cannibalIdx = i;
       }
     });
@@ -456,24 +396,27 @@
     const dt = f.slotDates[i];
     const dow = dt.toLocaleDateString('en-GB', { weekday: 'long' });
     const time = String(dt.getHours()).padStart(2, '0') + 'h';
-    const renCover = ((wind + solar) / load * 100).toFixed(0);
+    // Demand: ENTSO-E load when stored, otherwise total generation.
+    const totGen = ['nuclear', 'hydro', 'fossil', 'biomass', 'other'].reduce((t, k) => t + (f.mix[k][i] || 0), 0) + (wind || 0) + (solar || 0);
+    const demand = load != null ? load : totGen;
+    const renCover = demand ? (((wind || 0) + (solar || 0)) / demand * 100).toFixed(0) : '--';
     const fmt = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
     const dowCap = dow.charAt(0).toUpperCase() + dow.slice(1);
 
     let title, body;
     if (moment.kind === 'floor') {
       title = dowCap + ' ' + time + ' · wind sets the price';
-      body = 'Wind at ' + fmt(windSpeed) + ' m/s so <b style="color:#fff">' + fmt(wind) + ' GW of wind</b> covers <b style="color:#fff">' + renCover + '%</b> of demand, so fossil drops out of the merit order (' + fmt(fossil) + ' GW), so spark plunges to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>, so price touches <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>.';
+      body = 'Wind at ' + fmt(windSpeed) + ' m/s (100 m) so <b style="color:#fff">' + fmt(wind) + ' GW of wind</b> covers <b style="color:#fff">' + renCover + '%</b> of demand, so fossil drops out of the merit order (' + fmt(fossil) + ' GW), so spark plunges to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>, so price touches <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>.';
     } else if (moment.kind === 'peak') {
       title = dowCap + ' ' + time + ' · spike';
-      body = 'Wind dropped to ' + fmt(windSpeed) + ' m/s so only <b style="color:#ED6965">' + fmt(wind) + ' GW</b>, demand at ' + fmt(load) + ' GW, so gas CCGT sets the margin at <b style="color:#fff">' + fmt(fossil) + ' GW</b>, spark explodes to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) + '.';
+      body = 'Wind dropped to ' + fmt(windSpeed) + ' m/s so only <b style="color:#ED6965">' + fmt(wind) + ' GW</b>, demand at ' + fmt(demand) + ' GW, so gas CCGT sets the margin at <b style="color:#fff">' + fmt(fossil) + ' GW</b>, spark explodes to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) + '.';
     } else if (moment.kind === 'cannibalisation') {
-      const solarCover = (solar / load * 100).toFixed(0);
+      const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : '--';
       title = dowCap + ' ' + time + ' · duck curve';
       body = 'Solar at <b style="color:#fff">' + fmt(solar) + ' GW</b> covers ' + solarCover + '% of demand in the middle of low demand, so classic cannibalisation. Midday price at <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
     } else {
       title = dowCap + ' · weekend lull';
-      body = 'Industry idle so load <b style="color:#fff">' + fmt(load) + ' GW</b>, nuclear modulating, hydro in storage mode. No system stress, average price ' + fmt(price, 0) + ' €.';
+      body = 'Industry idle so load <b style="color:#fff">' + fmt(demand) + ' GW</b>, nuclear modulating, hydro in storage mode. No system stress, average price ' + fmt(price, 0) + ' €.';
     }
     return { title: title, body: body, price: fmt(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
   }
@@ -489,29 +432,32 @@
     const drivers = [
       { id: 'ttf',  label: 'TTF',       series: f.drivers.ttf,       color: DRIVER_COLOURS.ttf,  dec: 1, unit: '€' },
       { id: 'eua',  label: 'EUA',       series: f.drivers.eua,       color: DRIVER_COLOURS.eua,  dec: 1, unit: '€' },
-      { id: 'wind', label: 'Vent',      series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, dec: 0, unit: 'm/s' },
-      { id: 'temp', label: 'Temp',      series: f.drivers.temp,      color: DRIVER_COLOURS.temp, dec: 0, unit: '°C' },
-      { id: 'nuc',  label: 'Nuc dispo', series: f.drivers.nucAvail,  color: DRIVER_COLOURS.nuc,  dec: 0, unit: 'GW' },
-      { id: 'flux', label: 'Flux',      series: f.drivers.flux,      color: DRIVER_COLOURS.flux, dec: 1, unit: 'GW' },
+      { id: 'wind', label: 'Wind 100 m', series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, dec: 1, unit: 'm/s' },
+      { id: 'temp', label: 'Temp',       series: f.drivers.temp,      color: DRIVER_COLOURS.temp, dec: 1, unit: '°C' },
+      { id: 'nuc',  label: STATE.zone === 'FR' ? 'Nuc avail.' : 'Nuc output', series: f.drivers.nucAvail, color: DRIVER_COLOURS.nuc, dec: 1, unit: 'GW' },
+      { id: 'flux', label: 'Net import', series: f.drivers.flux,      color: DRIVER_COLOURS.flux, dec: 1, unit: 'GW' },
     ];
     const fx = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d);
 
     let html = '<div class="ma-kpi-row">';
     drivers.forEach((d) => {
-      const v0 = d.series[0], vN = d.series[d.series.length - 1];
-      const delta = vN - v0;
-      const deltaPct = v0 !== 0 ? (delta / Math.abs(v0)) * 100 : 0;
-      const isFlat = Math.abs(deltaPct) < 1;
+      const valid = d.series.filter(v => v != null && !isNaN(v));
+      const v0 = valid.length ? valid[0] : null, vN = valid.length ? valid[valid.length - 1] : null;
+      const delta = (v0 != null && vN != null) ? vN - v0 : 0;
+      const deltaPct = v0 ? (delta / Math.abs(v0)) * 100 : 0;
+      const isFlat = !valid.length || Math.abs(deltaPct) < 1;
       const cls = isFlat ? 'flat' : (delta > 0 ? 'up' : 'down');
       const arrow = isFlat ? '·' : (delta > 0 ? '▲' : '▼');
-      const deltaTxt = isFlat ? '—' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '%');
-      const min = Math.min.apply(null, d.series);
-      const max = Math.max.apply(null, d.series);
+      const deltaTxt = !valid.length ? 'no data' : isFlat ? '—' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '%');
+      const min = valid.length ? Math.min.apply(null, valid) : 0;
+      const max = valid.length ? Math.max.apply(null, valid) : 1;
       const range = (max - min) || 1;
+      let pen = 'M';
       const pts = d.series.map((v, idx) => {
+        if (v == null || isNaN(v)) { pen = 'M'; return ''; }
         const x = (idx / (d.series.length - 1)) * 100;
         const y = 15 - ((v - min) / range) * 13;
-        return (idx === 0 ? 'M' : 'L') + ' ' + x.toFixed(1) + ' ' + y.toFixed(1);
+        const seg = pen + ' ' + x.toFixed(1) + ' ' + y.toFixed(1); pen = 'L'; return seg;
       }).join(' ');
       html += '<div class="ma-kpi-card" style="--kpi-accent:' + d.color + '">'
         + '<div class="ma-kpi-head">'
@@ -605,7 +551,7 @@
       datasets: [{
         label: 'DA Price', data: f.price,
         borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0,
-        tension: 0, spanGaps: true,
+        tension: 0, spanGaps: false,
       }],
     }, _commonChartOpts('€/MWh'));
 
@@ -614,7 +560,7 @@
       datasets: [{
         label: 'Spark', data: f.spark,
         borderColor: '#ED6965', borderWidth: 1.4, pointRadius: 0,
-        tension: 0, spanGaps: true,
+        tension: 0, spanGaps: false,
         backgroundColor: function (ctx) {
           if (!ctx.chart || !ctx.chart.ctx) return 'rgba(237,105,101,0.10)';
           const c = ctx.chart.ctx;
@@ -771,7 +717,7 @@
       +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">Spark CCGT</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
       + '</div>'
       + '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + 'Marginal · ' + marginal + '</div>'
-      + '<div class="ma-ht-section">Demande &amp; mix</div>'
+      + '<div class="ma-ht-section">Demand &amp; mix</div>'
       + '<div class="ma-ht-grid">'
       +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'
       +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.wind) + 'Wind</span><span class="v">' + fx(wind, 1) + ' GW</span></div>'
@@ -852,7 +798,7 @@
       const time = String(dt.getHours()).padStart(2, '0') + 'h';
       const price = STATE.data.flat.price[m.idx];
       return '<span class="ma-cursor-badge" style="color:' + colour + ';border-color:' + _hexA(colour, 0.4) + ';background:' + _hexA(colour, 0.12) + '">'
-        + '<b>' + (i + 1) + ' · ' + (labels[m.kind] || m.kind) + '</b>&nbsp; ' + day + ' ' + time + ' · ' + price.toFixed(price < 1 ? 2 : 1) + ' €'
+        + '<b>' + (i + 1) + ' · ' + (labels[m.kind] || m.kind) + '</b>&nbsp; ' + day + ' ' + time + ' · ' + (price == null ? '--' : price.toFixed(price < 1 ? 2 : 1)) + ' €'
         + '</span>';
     }).join('');
   }
@@ -861,6 +807,8 @@
   // AI SYNTHESIS
   // ════════════════════════════════════════════════════════════════
 
+  function _r(v, d) { return v == null || isNaN(v) || !isFinite(v) ? null : +(+v).toFixed(d); }
+  function _avg(a) { const v = (a || []).filter(x => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; }
   function _buildAIContext() {
     const f = STATE.data.flat;
     const moments = STATE.cursors.map(function (m) {
@@ -868,15 +816,15 @@
       return {
         kind: m.kind,
         date: dt.toISOString().slice(0, 16),
-        price: +f.price[m.idx].toFixed(1),
-        spark: +f.spark[m.idx].toFixed(0),
-        wind_GW: +f.wind[m.idx].toFixed(1),
-        solar_GW: +f.solar[m.idx].toFixed(1),
-        load_GW: +f.load[m.idx].toFixed(1),
-        fossil_GW: +f.mix.fossil[m.idx].toFixed(1),
-        wind_speed: +f.drivers.windSpeed[m.idx].toFixed(0),
-        ttf: +f.drivers.ttf[m.idx].toFixed(1),
-        eua: +f.drivers.eua[m.idx].toFixed(1),
+        price: _r(f.price[m.idx], 1),
+        spark: _r(f.spark[m.idx], 0),
+        wind_GW: _r(f.wind[m.idx], 1),
+        solar_GW: _r(f.solar[m.idx], 1),
+        load_GW: _r(f.load[m.idx], 1),
+        fossil_GW: _r(f.mix.fossil[m.idx], 1),
+        wind_speed: _r(f.drivers.windSpeed[m.idx], 0),
+        ttf: _r(f.drivers.ttf[m.idx], 1),
+        eua: _r(f.drivers.eua[m.idx], 1),
       };
     });
     const prices = f.price.filter(function (p) { return p != null; });
@@ -885,13 +833,13 @@
       zone: STATE.zone,
       window_days: STATE.windowDays,
       granularity: STATE.granularity,
-      price_min: +Math.min.apply(null, prices).toFixed(1),
-      price_max: +Math.max.apply(null, prices).toFixed(1),
-      price_avg: +(prices.reduce(function (a, b) { return a + b; }, 0) / prices.length).toFixed(1),
-      spark_min: +Math.min.apply(null, sparks).toFixed(0),
-      spark_max: +Math.max.apply(null, sparks).toFixed(0),
-      ttf_avg: +(f.drivers.ttf.reduce(function (a, b) { return a + b; }, 0) / f.drivers.ttf.length).toFixed(1),
-      eua_avg: +(f.drivers.eua.reduce(function (a, b) { return a + b; }, 0) / f.drivers.eua.length).toFixed(1),
+      price_min: _r(Math.min.apply(null, prices), 1),
+      price_max: _r(Math.max.apply(null, prices), 1),
+      price_avg: _r(_avg(prices), 1),
+      spark_min: _r(Math.min.apply(null, sparks), 0),
+      spark_max: _r(Math.max.apply(null, sparks), 0),
+      ttf_avg: _r(_avg(f.drivers.ttf), 1),
+      eua_avg: _r(_avg(f.drivers.eua), 1),
       negative_hours: prices.filter(function (p) { return p < 0; }).length,
       moments: moments,
     };

@@ -173,11 +173,7 @@ const PAGE_LOADERS = {
   // never wired to render once on first page visit, so the chart stayed an
   // empty canvas until the user happened to click a pill button. Each loader
   // below now also fires that first render.
-  renewables: () => {
-    loadRenewables();
-    if (typeof renderHistRenTrend === 'function') renderHistRenTrend();
-    if (typeof renderHistRenStack === 'function') renderHistRenStack();
-  },
+  renewables: () => loadRenewables(),
   nuclear:    () => drawNuclear(),
   imbalance:  () => {
     drawImbalance();

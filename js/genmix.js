@@ -337,7 +337,7 @@ function renderGmMain() {
   // Date filter drives the board: Latest → live snapshot, past date → archive-day averages
   if (window._gmHistDate && window._gmBoardDateMiss) {
     const tb = document.getElementById('gm-table-tbody');
-    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Pas de données GenMix archivées pour ${window._gmHistDate}. Lancer le backfill (with_genmix) pour cette date.</td></tr>`;
+    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No archived GenMix data for ${window._gmHistDate}. Run the backfill (with_genmix) for this date.</td></tr>`;
     const lbl = document.getElementById('gm-table-label');
     if (lbl) lbl.textContent = `Generation mix · ${window._gmHistDate} · no archived data`;
     return;
@@ -746,7 +746,7 @@ function _gmDrillSetTitle(tab, zone) {
     mix:     `Current snapshot · ${(window._gmDrillMixMode || 'donut').toUpperCase()}`,
     carbon:  `24h Carbon intensity · g CO₂/kWh`,
     netpos:  `Cross-border net position · 24h`,
-    stack:   `24h Production stack · par filière`,
+    stack:   `24h production stack · by technology`,
   };
   if (eyebrowEl) eyebrowEl.textContent = `${zone} · ${viewLbl}`;
   titleEl.textContent = titles[tab] || titles.profile;
@@ -905,7 +905,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
   const cur = await _gmResolveDay(zone, dateStr);
   if (!cur) {
     const c = document.getElementById(canvasId);
-    if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées pour ${zone}.</div>`;
+    if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone}.</div>`;
     return;
   }
   const { DATA, N } = _gmDayArrays(cur.zd);
@@ -1245,7 +1245,7 @@ async function _gmRenderCarbonReal(zone, dateStr) {
   };
 
   const cur = await _gmResolveDay(zone, dateStr);
-  if (!cur) { const c = document.getElementById('gm-drill-carbon-canvas'); if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées pour ${zone}.</div>`; return; }
+  if (!cur) { const c = document.getElementById('gm-drill-carbon-canvas'); if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone}.</div>`; return; }
   const { DATA, N } = _gmDayArrays(cur.zd);
   let nReal = 0; for (let i = N - 1; i >= 0; i--) { const t = STACK.reduce((s, f) => s + DATA[f][i], 0); if (t > 0) { nReal = i + 1; break; } }
   if (nReal < 1) nReal = N;
@@ -1327,16 +1327,16 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
       </tbody>
     </table>
     <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Calculation assumptions</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
-        <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ génération<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub>(t)</span><br>
-        <span style="color:var(--tx3)">Moyenne attributionnelle, périmètre cycle de vie. Pas de FE marginal, pas d'imports.</span>
+        <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ generation<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> generation<sub>f</sub>(t)</span><br>
+        <span style="color:var(--tx3)">Attributional average, life-cycle scope. No marginal emission factors, imports excluded.</span>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
         <thead><tr>
-          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Filière</th>
+          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
           <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">FE (g CO₂eq/kWh)</th>
-          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Données génération</th>
+          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Generation data</th>
         </tr></thead>
         <tbody>
           ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
@@ -1347,7 +1347,7 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
         </tbody>
       </table>
       <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);line-height:1.6">
-        <span style="color:var(--tx2)">Sources :</span> génération par filière = ENTSO-E Transparency (Actual Generation per Type, A75), archive PowerKlock 15 min. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon agrégée ENTSO-E.
+        <span style="color:var(--tx2)">Sources:</span> generation by technology = ENTSO-E Transparency (Actual Generation per Type, A75), PowerKlock 15-min archive. Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = aggregated gas/coal average, ENTSO-E.
       </div>
     </div>`;
 }
@@ -1473,17 +1473,17 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
         </tbody>
       </table>
       <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Calculation assumptions</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
-          Intensité carbone du mix, par pas de 15 min :<br>
-          <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ génération<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub>(t)</span><br>
-          <span style="color:var(--tx3)">Approche moyenne (attributionnelle), périmètre cycle de vie. Pas de FE marginal, pas d'imports.</span>
+          Carbon intensity of the mix, per 15-min slot:<br>
+          <span style="color:var(--tx)">CI(t) = Σ<sub>f</sub> [ generation<sub>f</sub>(t) × FE<sub>f</sub> ] / Σ<sub>f</sub> generation<sub>f</sub>(t)</span><br>
+          <span style="color:var(--tx3)">Average (attributional) approach, life-cycle scope. No marginal emission factors, imports excluded.</span>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
           <thead><tr>
-            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
+            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Technology</th>
             <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
-            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Données génération</th>
+            <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Generation data</th>
           </tr></thead>
           <tbody>
             ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
@@ -1494,7 +1494,7 @@ function _gmDrillRenderCarbon_OLD(zone, mix, st) {
           </tbody>
         </table>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.6">
-          <span style="color:var(--tx2)">Sources :</span> génération par filière = ENTSO-E Transparency (Actual Generation per Type, A75), archive PowerKlock 15 min. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon agrégée ENTSO-E.
+          <span style="color:var(--tx2)">Sources:</span> generation by technology = ENTSO-E Transparency (Actual Generation per Type, A75), PowerKlock 15-min archive. Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = aggregated gas/coal average, ENTSO-E.
         </div>
       </div>`;
   }

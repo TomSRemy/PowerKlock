@@ -1,323 +1,238 @@
-// ── RENEWABLES
-let renTab = 'today';
-let renTech = 'both';
+// ════════════════════════════════════════════════════════════════════
+// RENEWABLES — wind & solar output, forecast accuracy, capture prices
+//
+// Real data only:
+//   - daily history files (generation arrays + day-ahead prices, realigned
+//     to Paris time by gen-align.js) for any past day and for history;
+//   - renewables.json for the day-ahead wind/solar forecast of its own day;
+//   - summary.json to find which days carry generation data.
+// Capture price = Σ(MW × price) ÷ Σ(MW) over the day's slots; capture rate =
+// capture price ÷ baseload (simple average price of the same day).
+// ════════════════════════════════════════════════════════════════════
 
-function setRenTab(t, btn) {
-  renTab = t;
-  document.querySelectorAll('#page-renewables .day-tabs .day-tab').forEach(b=>b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  drawRenChart();
+const REN = { day: null, window: 'All', cache: new Map() };
+const C_WON = '#C4A57B', C_WOFF = '#7FC8F8', C_SOL = '#FBBF24';
+
+function _renISO(d) { return d.toISOString().slice(0, 10); }
+function _renAdd(iso, n) { const [y, m, d] = iso.split('-').map(Number); return _renISO(new Date(Date.UTC(y, m - 1, d + n))); }
+function _renFmtDay(iso) { return new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
+function _renMean(a) { const v = (a || []).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; }
+
+async function _renDaily(iso) {
+  if (!REN.cache.has(iso)) {
+    REN.cache.set(iso, fetch(DATA_BASE + 'history/daily/' + iso + '.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  }
+  return REN.cache.get(iso);
 }
 
-function setRenTech(tech, btn) {
-  renTech = tech;
-  document.querySelectorAll('#page-renewables .page-header .day-tab').forEach(b=>b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  drawRenChart();
-  drawRenCaptureChart();
-  renderRenSummaryTable();
+// Generation-weighted average price over slots where both exist.
+function _renCapture(gen, price) {
+  if (!gen || !price) return null;
+  const n = Math.min(gen.length, price.length);
+  const per = price.length / gen.length;            // prices may be 96 vs gen 96/24
+  let sw = 0, swp = 0;
+  for (let i = 0; i < gen.length; i++) {
+    const g = gen[i], p = per === 1 ? price[i] : _renMean(price.slice(i * per, (i + 1) * per));
+    if (g == null || p == null || g <= 0) continue;
+    sw += g; swp += g * p;
+  }
+  return sw > 0 ? swp / sw : null;
 }
 
-function loadRenewables() {
-  const country = document.getElementById('ren-country').value;
-  const mix = (window._genmixData && window._genmixData[country]) || GM_DEMO[country] || GM_DEMO.FR;
-  const renData = window._renData && window._renData[country];
-  const curHr = new Date().getHours();
-
-  const windOn  = renData?.windOnshoreNow  || mix.wind * 0.7;
-  const solar   = renData?.solarNow        || mix.solar;
-  const feW     = renData?.windErrorPct    || 5.2;
-  const feS     = renData?.solarErrorPct   || -8.1;
-
-  // Demo spot prices for M0 calculation
-  const spotPrices = window._pricesSorted?.find(z=>z.code===country)?.hourly || gen96(45, -10, 120, 2);
-  // Demo hourly wind/solar generation
-  const wOnP  = [.3,.26,.24,.22,.22,.28,.35,.40,.42,.44,.45,.46,.47,.45,.44,.42,.40,.38,.37,.36,.34,.32,.31,.30];
-  const sP    = [0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
-  const windHourly  = wOnP.map(p=>Math.round((mix.wind||5500)*p*(0.9+Math.random()*.2)));
-  const solarHourly = sP.map(p=>Math.round((mix.solar||11000)*p*(0.9+Math.random()*.15)));
-
-  // M0 capture rate: WAP = Σ(MW×Spot) / Σ(MW)
-  const calcM0 = (genH, spotH) => {
-    const n = Math.min(genH.length, spotH.length);
-    const sumGen = genH.slice(0,n).reduce((a,b)=>a+b,0);
-    const sumWAP = genH.slice(0,n).reduce((a,v,i)=>a+v*spotH[i],0);
-    return sumGen > 0 ? sumWAP/sumGen : 0;
+function _renDayStats(z) {
+  if (!z) return null;
+  const price = z.hourly || [];
+  const base = _renMean(price);
+  const wind = z.wind || (z.windOnshore && z.windOffshore ? z.windOnshore.map((v, i) => v == null ? null : v + (z.windOffshore[i] || 0)) : z.windOnshore);
+  const solar = z.solar;
+  const wCap = _renCapture(wind, price), sCap = _renCapture(solar, price);
+  const ok = b => b != null && b > 1;
+  return {
+    base, wind, solar,
+    windAvg: _renMean(wind), solarAvg: _renMean(solar),
+    wCap, sCap,
+    wCR: ok(base) && wCap != null ? wCap / base * 100 : null,
+    sCR: ok(base) && sCap != null ? sCap / base * 100 : null,
   };
-  const baseload = spotPrices.slice(0, Math.min(24,spotPrices.length)).reduce((a,b)=>a+b,0) / Math.min(24,spotPrices.length);
-  const m0Wind  = calcM0(windHourly,  spotPrices.slice(0,24));
-  const m0Solar = calcM0(solarHourly, spotPrices.slice(0,24));
-  const m0WPct  = baseload ? m0Wind/baseload*100  : 0;
-  const m0SPct  = baseload ? m0Solar/baseload*100 : 0;
-
-  const kv = v => `${(v/1000).toFixed(1)}<span class="kpi-unit">GW</span>`;
-  const setEl = (id,html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
-  setEl('ren-wind-on',    kv(windOn));
-  setEl('ren-solar-now',  kv(solar));
-  setEl('ren-wind-on-sub', `<span style="color:var(--tx3)">onshore · ${(windOn*0.3/1000).toFixed(1)} GW offshore</span>`);
-  setEl('ren-solar-sub',  `<span style="color:var(--tx3)">peak @${sP.indexOf(Math.max(...sP))}h</span>`);
-  setEl('ren-m0-wind',    `${m0WPct.toFixed(0)}<span class="kpi-unit">%</span>`);
-  setEl('ren-m0-solar',   `${m0SPct.toFixed(0)}<span class="kpi-unit">%</span>`);
-  setEl('ren-m0-wind-sub',  `<span class="${m0WPct>=100?'up':'down'}">WAP ${m0Wind.toFixed(1)} €/MWh vs BL ${baseload.toFixed(1)}</span>`);
-  setEl('ren-m0-solar-sub', `<span class="${m0SPct>=100?'up':'down'}">WAP ${m0Solar.toFixed(1)} €/MWh</span>`);
-  setEl('ren-fe-wind',    `<span style="color:${feW>0?'var(--down)':'var(--up)'}">${feW>0?'+':''}${feW.toFixed(1)}%</span>`);
-  setEl('ren-fe-solar',   `<span style="color:${feS<0?'var(--up)':'var(--down)'}">${feS.toFixed(1)}%</span>`);
-  document.getElementById('ren-upd').textContent = renData ? 'ENTSO-E A69/A71 · JSON' : 'Demo · ENTSO-E A69/A71';
-
-  drawRenChart();
-  renderRenSummaryTable();
-  drawRenCaptureChart();
 }
 
-function renderRenSummaryTable() {
-  const tbody = document.getElementById('ren-summary-tbody');
-  if (!tbody) return;
-  const country = document.getElementById('ren-country')?.value || 'FR';
-  const mix = GM_DEMO[country] || GM_DEMO.FR;
-  // Demo periods — in real implementation would use historical JSON
-  const periods = [
-    { label:'Last 30D',  windGW: (mix.wind*0.65/1000).toFixed(1), windM0:+(45+Math.random()*15).toFixed(1), windBL:+(90+Math.random()*10).toFixed(0), solarGW:(mix.solar*0.30/1000).toFixed(1), solarM0:+(30+Math.random()*20).toFixed(1), solarBL:+(65+Math.random()*15).toFixed(0) },
-    { label:'Last 90D',  windGW: (mix.wind*0.60/1000).toFixed(1), windM0:+(48+Math.random()*12).toFixed(1), windBL:+(92+Math.random()*8).toFixed(0),  solarGW:(mix.solar*0.28/1000).toFixed(1), solarM0:+(35+Math.random()*18).toFixed(1), solarBL:+(70+Math.random()*12).toFixed(0) },
-    { label:'Last 365D', windGW: (mix.wind*0.58/1000).toFixed(1), windM0:+(50+Math.random()*10).toFixed(1), windBL:+(88+Math.random()*8).toFixed(0),  solarGW:(mix.solar*0.20/1000).toFixed(1), solarM0:+(38+Math.random()*15).toFixed(1), solarBL:+(72+Math.random()*10).toFixed(0) },
-    { label:'YTD',       windGW: (mix.wind*0.62/1000).toFixed(1), windM0:+(47+Math.random()*13).toFixed(1), windBL:+(91+Math.random()*9).toFixed(0),  solarGW:(mix.solar*0.25/1000).toFixed(1), solarM0:+(33+Math.random()*17).toFixed(1), solarBL:+(68+Math.random()*13).toFixed(0) },
-  ];
-  tbody.innerHTML = periods.map(p => {
-    const wc = p.windBL>=100?'up':'down', sc = p.solarBL>=100?'up':'down';
-    return `<tr>
-      <td style="font-weight:600">${p.label}</td>
-      <td style="font-family:'JetBrains Mono',monospace">${p.windGW}</td>
-      <td style="font-family:'JetBrains Mono',monospace">${p.windM0}</td>
-      <td><span class="${wc}" style="font-family:'JetBrains Mono',monospace">${p.windBL}%</span></td>
-      <td style="font-family:'JetBrains Mono',monospace">${p.solarGW}</td>
-      <td style="font-family:'JetBrains Mono',monospace">${p.solarM0}</td>
-      <td><span class="${sc}" style="font-family:'JetBrains Mono',monospace">${p.solarBL}%</span></td>
-    </tr>`;
+async function _renDaysWithGen(zone) {
+  const s = typeof fetchSummary === 'function' ? await fetchSummary() : null;
+  const ser = s && s.zones && s.zones[zone] || [];
+  const set = new Set(ser.filter(e => e.windAvg != null || e.solarAvg != null).map(e => e.d));
+  // summary.json isn't refreshed by the daily fetch: probe the last 14 days.
+  const t = pkTodayISO();
+  const recent = Array.from({ length: 14 }, (_, i) => _renAdd(t, -i));
+  const files = await Promise.all(recent.map(_renDaily));
+  recent.forEach((d, i) => { const z = files[i] && files[i].zones && files[i].zones[zone]; if (z && ((z.solar || []).some(v => v) || (z.wind || []).some(v => v))) set.add(d); });
+  return [...set].sort();
+}
+
+function renShiftDay(n) {
+  if (n === 0) REN.day = null; else if (REN.day) REN.day = _renAdd(REN.day, n);
+  loadRenewables();
+}
+function renSetWindow(w, btn) {
+  REN.window = w;
+  if (btn) { btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  _renHistory();
+}
+// Kept for old call sites (header buttons were removed with the redesign).
+function setRenTab() { loadRenewables(); }
+function setRenTech() { loadRenewables(); }
+function drawRenChart() { loadRenewables(); }
+
+async function loadRenewables() {
+  const zone = (document.getElementById('ren-country') || {}).value || 'FR';
+  const days = await _renDaysWithGen(zone);
+  // Today's file may exist before the summary lists it; probe today/yesterday too.
+  const latestCandidates = [pkTodayISO(), _renAdd(pkTodayISO(), -1)].concat(days.slice().reverse());
+  if (!REN.day) {
+    for (const d of latestCandidates) {
+      const j = await _renDaily(d);
+      const z = j && j.zones && j.zones[zone];
+      if (z && Array.isArray(z.solar) && z.solar.some(v => v)) { REN.day = d; break; }
+    }
+  }
+  const day = REN.day || pkTodayISO();
+  document.getElementById('ren-day').textContent = _renFmtDay(day);
+
+  const j = await _renDaily(day);
+  const z = j && j.zones && j.zones[zone];
+  const st = _renDayStats(z);
+  const kpis = document.getElementById('ren-kpis');
+  if (!st || (!st.wind && !st.solar)) {
+    kpis.innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No wind/solar data for ${zone} on ${_renFmtDay(day)}.</div>`;
+    ['ren-intraday', 'ren-fc'].forEach(id => { if (typeof noDataMsg === 'function') noDataMsg(id, 'No generation data for this day', ''); });
+    _renHistory();
+    return;
+  }
+  ['ren-intraday', 'ren-fc'].forEach(_renRestore);
+
+  // Day-ahead forecast: only renewables.json has it, for its own day.
+  const live = window._renData && window._renData[zone];
+  const liveDay = window._renUpdated ? new Date(window._renUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
+  const fc = (live && liveDay === day) ? live : null;
+  const wape = (act, f) => {
+    if (!act || !f) return null; let e = 0, s = 0;
+    act.forEach((v, i) => { if (v != null && f[i] != null) { e += Math.abs(v - f[i]); s += f[i]; } });
+    return s > 0 ? e / s * 100 : null;
+  };
+  const wErr = fc ? wape(st.wind, fc.windForecast) : null, sErr = fc ? wape(st.solar, fc.solarForecast) : null;
+  const total = ['nuclear', 'hydro', 'fossil', 'biomass', 'other', 'wind', 'solar'].map(k => _renMean(z[k]) || 0).reduce((a, b) => a + b, 0);
+  const vrePct = total > 0 ? ((st.windAvg || 0) + (st.solarAvg || 0)) / total * 100 : null;
+  const peakOf = a => { let mi = -1; (a || []).forEach((v, i) => { if (v != null && (mi < 0 || v > a[mi])) mi = i; }); return mi; };
+  const n = (st.solar || st.wind).length, lbls = typeof makeTimeLabels === 'function' ? makeTimeLabels(n) : [];
+  const sp = peakOf(st.solar), wp = peakOf(st.wind);
+  const crTone = v => v == null ? null : v >= 100 ? 'up' : 'down';
+  const g = v => v == null ? '–' : (v / 1000).toFixed(2);
+  const pub = (st.solar || st.wind).filter(v => v != null).length;
+  const partial = pub < n ? ` · partial day ${pub}/${n} slots` : '';
+  kpis.innerHTML =
+    _fuelKpi('Wind avg', g(st.windAvg), 'GW', wp >= 0 ? `peak ${g(st.wind[wp])} GW at ${lbls[wp]}` : '') +
+    _fuelKpi('Solar avg', g(st.solarAvg), 'GW', sp >= 0 ? `peak ${g(st.solar[sp])} GW at ${lbls[sp]}` : '') +
+    _fuelKpi('Wind + solar share', vrePct == null ? '–' : vrePct.toFixed(1), '%', 'of published generation' + partial) +
+    _fuelKpi('Wind capture', st.wCap == null ? '–' : st.wCap.toFixed(2), '€/MWh', st.wCR == null ? '' : `${st.wCR.toFixed(0)}% of baseload ${st.base.toFixed(2)}`, crTone(st.wCR)) +
+    _fuelKpi('Solar capture', st.sCap == null ? '–' : st.sCap.toFixed(2), '€/MWh', st.sCR == null ? '' : `${st.sCR.toFixed(0)}% of baseload ${st.base.toFixed(2)}`, crTone(st.sCR)) +
+    _fuelKpi('DA forecast error', wErr == null && sErr == null ? '–' : `${wErr == null ? '–' : wErr.toFixed(1)} / ${sErr == null ? '–' : sErr.toFixed(1)}`, '%',
+      fc ? 'wind / solar · WAPE on published slots' : 'forecast kept for the latest day only');
+
+  // Intraday stacked output + price
+  const GW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
+  const ds = [];
+  if (z.windOnshore) ds.push({ label: 'Wind onshore', data: GW(z.windOnshore), backgroundColor: rgba(C_WON, .55), borderColor: C_WON, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
+  if (z.windOffshore && z.windOffshore.some(v => v)) ds.push({ label: 'Wind offshore', data: GW(z.windOffshore), backgroundColor: rgba(C_WOFF, .55), borderColor: C_WOFF, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
+  if (!z.windOnshore && st.wind) ds.push({ label: 'Wind', data: GW(st.wind), backgroundColor: rgba(C_WON, .55), borderColor: C_WON, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
+  if (st.solar) ds.push({ label: 'Solar', data: GW(st.solar), backgroundColor: rgba(C_SOL, .55), borderColor: C_SOL, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
+  if (z.hourly && z.hourly.length === n) ds.push({ label: 'Day-ahead price', data: z.hourly, type: 'line', borderColor: '#FFFFFF', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y1', tension: 0, order: -1, stack: 'p' });
+  _fuelChart('ren-intraday', { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
+    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }),
+      y: _fuelAxis('GW', { stacked: true, beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+      annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day }); return a ? { nowLine: a } : {}; })() } } }) }, 'renewables-' + zone + '-' + day);
+  document.getElementById('ren-intraday-title').textContent = `Intraday output vs price · ${zone} · ${_renFmtDay(day)}`;
+
+  // Forecast vs actual
+  if (fc && (fc.windForecast || fc.solarForecast)) {
+    const fds = [];
+    if (st.wind) fds.push(_fuelLineDs('Wind actual', GW(st.wind), C_WON, { borderWidth: 2 }));
+    if (fc.windForecast) fds.push(_fuelLineDs('Wind forecast', GW(fc.windForecast), C_WON, { borderDash: [5, 4], borderWidth: 1.3 }));
+    if (st.solar) fds.push(_fuelLineDs('Solar actual', GW(st.solar), C_SOL, { borderWidth: 2 }));
+    if (fc.solarForecast) fds.push(_fuelLineDs('Solar forecast', GW(fc.solarForecast), C_SOL, { borderDash: [5, 4], borderWidth: 1.3 }));
+    _fuelChart('ren-fc', { type: 'line', data: { labels: lbls, datasets: fds }, options: _fuelOpts({
+      scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-forecast-' + zone + '-' + day);
+  } else if (typeof noDataMsg === 'function') {
+    noDataMsg('ren-fc', 'Day-ahead forecast not stored for this day', `The forecast is kept for the latest fetched day${liveDay ? ' (' + _renFmtDay(liveDay) + ')' : ''} — use "Latest".`);
+  }
+  _renHistory();
+}
+
+async function _renHistory() {
+  const zone = (document.getElementById('ren-country') || {}).value || 'FR';
+  let days = await _renDaysWithGen(zone);
+  const today = pkTodayISO();
+  const from = REN.window === 'All' ? '0000' : REN.window === 'YTD' ? today.slice(0, 4) + '-01-01'
+    : _renAdd(today, -({ '30D': 30, '90D': 90, '1Y': 365 }[REN.window] || 3650));
+  days = days.filter(d => d >= from);
+  const files = await Promise.all(days.map(d => _renDaily(d)));
+  const rows = days.map((d, i) => ({ d, st: _renDayStats(files[i] && files[i].zones && files[i].zones[zone]) })).filter(r => r.st && r.st.base != null);
+  document.getElementById('ren-coverage').textContent = rows.length
+    ? `${rows.length} days with generation data for ${zone} (${_renFmtDay(rows[0].d)} → ${_renFmtDay(rows[rows.length - 1].d)})`
+    : `No generation history for ${zone} in this window`;
+  if (!rows.length) {
+    ['ren-cr', 'ren-daily'].forEach(id => { if (typeof noDataMsg === 'function') noDataMsg(id, 'No history', ''); });
+    document.getElementById('ren-summary-tbody').innerHTML = '';
+    return;
+  }
+  ['ren-cr', 'ren-daily'].forEach(_renRestore);
+  const labels = rows.map(r => r.d);
+  const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+  _fuelChart('ren-cr', { type: 'line', data: { labels, datasets: [
+    _fuelLineDs('Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
+    _fuelLineDs('Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload') },
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+      annotation: { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'capture-rates-' + zone);
+
+  const roll = (a, k) => a.map((_, i) => { const w = a.slice(Math.max(0, i - k + 1), i + 1).filter(v => v != null); return w.length ? Math.round(w.reduce((s, v) => s + v, 0) / w.length) / 1000 : null; });
+  const wA = rows.map(r => r.st.windAvg), sA = rows.map(r => r.st.solarAvg);
+  _fuelChart('ren-daily', { type: 'line', data: { labels, datasets: [
+    _fuelLineDs('Wind', wA.map(v => v == null ? null : v / 1000), rgba(C_WON, .55), { borderWidth: 1 }),
+    _fuelLineDs('Wind 7D', roll(wA, 7), C_WON, { borderWidth: 2 }),
+    _fuelLineDs('Solar', sA.map(v => v == null ? null : v / 1000), rgba(C_SOL, .55), { borderWidth: 1 }),
+    _fuelLineDs('Solar 7D', roll(sA, 7), C_SOL, { borderWidth: 2 }),
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-daily-' + zone);
+
+  // Period table
+  const periods = [['Last 7 days', 7], ['Last 30 days', 30], ['Last 90 days', 90], ['Year to date', 'YTD'], ['Window', 'ALL']];
+  const agg = sel => {
+    let wsw = 0, wswp = 0, ssw = 0, sswp = 0, bs = 0, bn = 0, wsum = 0, ssum = 0, n = 0;
+    sel.forEach(r => {
+      const p = r.st; n++;
+      if (p.base != null) { bs += p.base; bn++; }
+      if (p.windAvg != null && p.wCap != null) { wsw += p.windAvg; wswp += p.windAvg * p.wCap; }
+      if (p.solarAvg != null && p.sCap != null) { ssw += p.solarAvg; sswp += p.solarAvg * p.sCap; }
+      wsum += p.windAvg || 0; ssum += p.solarAvg || 0;
+    });
+    const base = bn ? bs / bn : null, wc = wsw ? wswp / wsw : null, sc = ssw ? sswp / ssw : null;
+    return { n, base, wAvg: n ? wsum / n : null, sAvg: n ? ssum / n : null, wc, sc, wcr: base > 1 && wc != null ? wc / base * 100 : null, scr: base > 1 && sc != null ? sc / base * 100 : null };
+  };
+  const last = rows[rows.length - 1].d;
+  const crCell = v => `<td style="color:${v == null ? 'var(--text3)' : v >= 100 ? 'var(--up)' : 'var(--down)'};font-weight:600">${v == null ? '–' : v.toFixed(0) + '%'}</td>`;
+  document.getElementById('ren-summary-tbody').innerHTML = periods.map(([lbl, k]) => {
+    const sel = k === 'ALL' ? rows : k === 'YTD' ? rows.filter(r => r.d >= last.slice(0, 4) + '-01-01') : rows.filter(r => r.d > _renAdd(last, -k));
+    if (!sel.length) return '';
+    const a = agg(sel);
+    return `<tr><td>${lbl}</td><td>${a.n}</td><td>${_fuelFmt(a.base)}</td><td>${_fuelFmt(a.wAvg / 1000)} GW</td><td>${_fuelFmt(a.wc)}</td>${crCell(a.wcr)}` +
+      `<td>${_fuelFmt(a.sAvg / 1000)} GW</td><td>${_fuelFmt(a.sc)}</td>${crCell(a.scr)}</tr>`;
   }).join('');
+  document.getElementById('ren-note').textContent =
+    'Period capture prices are output-weighted across days (Σ daily avg MW × daily capture ÷ Σ daily avg MW); baseload = mean of daily averages. ' +
+    'Only days with generation data are counted (see coverage above). Generation slots realigned to CET/CEST.';
 }
 
-// This used to plot Math.random() noise dressed up as a real series — removed
-// rather than left misleading. FR already has a real capture-rate chart (GO
-// Historical page, hist-cap-solar/hist-cap-wind via renderHistCapture, backed
-// by actual daily generation files); this per-country selector doesn't have
-// an equivalent real data source yet for non-FR zones.
-function drawRenCaptureChart() {
-  if (typeof noDataMsg === 'function') {
-    noDataMsg('ren-cap-canvas', 'Capture rate history needs real per-zone generation data',
-      'See FR capture rate on the GO Historical page for the real, data-backed version');
-  }
-}
-
-
-function drawRenChart() {
-  const countryEl = document.getElementById('ren-country');
-  const country = countryEl ? countryEl.value : 'FR';
-  const mix = (window._genmixData && window._genmixData[country]) || GM_DEMO[country] || GM_DEMO.FR;
-  const renData = window._renData && window._renData[country];
-
-  const wOnP=[.3,.26,.24,.22,.22,.28,.35,.40,.42,.44,.45,.46,.47,.45,.44,.42,.40,.38,.37,.36,.34,.32,.31,.30];
-  const wOffP=[.5,.45,.43,.42,.42,.46,.55,.62,.65,.68,.70,.72,.74,.71,.70,.68,.65,.62,.60,.58,.56,.54,.52,.51];
-  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
-  const hours = Array.from({length:24},(_,i)=>i+'h');
-
-  // Data sources -- JSON if available, demo otherwise
-  let wOnA, wOffA, sA, wOnF, wOffF, sF, wE, sE;
-
-  if (renData && renData.windActual && renData.windActual.some(v=>v>0)) {
-    wOnA  = renData.windOnshoreActual  || renData.windActual.map(v=>Math.round(v*0.7));
-    wOffA = renData.windOffshoreActual || renData.windActual.map(v=>Math.round(v*0.3));
-    sA    = renData.solarActual || sP.map(v=>Math.round((mix.solar||10000)*v));
-    wOnF  = renData.windOnshoreForecast  || wOnA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
-    wOffF = renData.windOffshoreForecast || wOffA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
-    sF    = renData.solarForecast || sA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
-    wE    = renData.windError || wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
-    sE    = renData.solarError || sA.map((v,i)=>v-sF[i]);
-  } else {
-    wOnA  = wOnP.map(v=>Math.round((mix.wind||5500)*0.7*v*(0.9+Math.random()*.2)));
-    wOffA = wOffP.map(v=>Math.round((mix.wind||5500)*0.3*v*(0.9+Math.random()*.15)));
-    sA    = sP.map(v=>Math.round((mix.solar||11000)*v*(0.9+Math.random()*.15)));
-    wOnF  = wOnA.map(v=>Math.round(v*(1+(Math.random()-.5)*.12)));
-    wOffF = wOffA.map(v=>Math.round(v*(1+(Math.random()-.5)*.1)));
-    sF    = sA.map(v=>Math.round(v*(1+(Math.random()-.5)*.12)));
-    wE    = wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
-    sE    = sA.map((v,i)=>v-sF[i]);
-  }
-
-  // History: 7 days
-  const histWOn  = Array.from({length:168},(_,i)=>Math.round(wOnA[i%24]*(0.85+Math.random()*.3)));
-  const histWOff = Array.from({length:168},(_,i)=>Math.round(wOffA[i%24]*(0.85+Math.random()*.25)));
-  const histS    = Array.from({length:168},(_,i)=>Math.round(sA[i%24]*(0.85+Math.random()*.2)));
-
-  let datasets = [], labels = hours, type = 'line';
-  const C_WIND_OFF = '#93c5fd'; // lighter blue for offshore
-
-  if (renTab === 'today') {
-    datasets = [
-      { label:'Wind Onshore', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND,.12), tension: 0 },
-      { label:'Wind Offshore', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_WIND_OFF,.1), tension: 0 },
-      { label:'Solar', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true, backgroundColor:rgba(C_SOLAR,.1), tension: 0 },
-    ];
-  } else if (renTab === 'forecast') {
-    datasets = [
-      { label:'Wind Onshore actual', data:wOnA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
-      { label:'Wind Onshore fc.', data:wOnF, borderColor:C_WIND, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
-      { label:'Wind Offshore actual', data:wOffA, borderColor:C_WIND_OFF, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
-      { label:'Wind Offshore fc.', data:wOffF, borderColor:C_WIND_OFF, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar fc.', data:sF, borderColor:C_SOLAR, borderWidth:1, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
-    ];
-  } else if (renTab === 'error') {
-    type = 'bar';
-    const wE_total = wOnA.map((v,i)=>v+wOffA[i]-wOnF[i]-wOffF[i]);
-    datasets = [
-      { label:'Wind error (MW)', data:wE_total, backgroundColor:wE_total.map(v=>v>=0?rgba(C_WIND,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
-      { label:'Solar error (MW)', data:sE, backgroundColor:sE.map(v=>v>=0?rgba(C_SOLAR,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
-    ];
-  } else {
-    labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);return i%24===0?['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]:'';});
-    datasets = [
-      { label:'Wind Onshore', data:histWOn, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-      { label:'Wind Offshore', data:histWOff, borderColor:C_WIND_OFF, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-    ];
-  }
-
-  mkChart('ren-canvas', {
-    type, data:{ labels, datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10} },
-        tooltip:{ mode:'index', callbacks:{ label:ctx=>ctx.dataset.label+': '+(ctx.raw/1000).toFixed(2)+' GW' } },
-        zoom:ZOOM_CFG,
-      },
-      scales:{
-        x:{ grid:GRID, ticks:{color:C_TX3, maxTicksLimit:8} },
-        y:{ grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(1)+'GW'}, beginAtZero:true }
-      }
-    }
-  });
-  setTimeout(()=>{ addFullscreen('ren-canvas'); addDownload('ren-canvas','renewables'); },100);
-}
-function drawRenChart() {
-  const countryEl = document.getElementById('ren-country');
-  const country = countryEl ? countryEl.value : 'FR';
-  const mix = (window._genmixData && window._genmixData[country]) || GM_DEMO[country] || GM_DEMO.FR;
-  const renData = window._renData && window._renData[country];
-
-  const wP=[.4,.35,.33,.32,.32,.38,.45,.52,.55,.58,.6,.62,.63,.61,.6,.58,.55,.52,.5,.48,.47,.45,.43,.41];
-  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
-  const hours = Array.from({length:24},(_,i)=>i+'h');
-
-  let wA, sA, wF, sF, wE, sE, histW, histS;
-
-  if (renData && renData.windActual && renData.windActual.length > 0) {
-    // Real JSON data
-    wA = renData.windActual;
-    sA = renData.solarActual || sP.map(v=>(mix.solar||10000)*v);
-    wF = renData.windForecast || wA.map(v=>v*(1+(Math.random()-.5)*.1));
-    sF = renData.solarForecast || sA.map(v=>v*(1+(Math.random()-.5)*.1));
-    wE = renData.windError || wA.map((v,i)=>v-(wF[i]||v));
-    sE = renData.solarError || sA.map((v,i)=>v-(sF[i]||v));
-    // History: repeat actual 7 times with noise
-    histW = Array.from({length:168},(_,i)=>wA[i%24]*(0.85+Math.random()*.3));
-    histS = Array.from({length:168},(_,i)=>sA[i%24]*(0.85+Math.random()*.2));
-  } else {
-    // Demo data
-    wA = wP.map(v=>(mix.wind||5000)*v*(0.9+Math.random()*.2));
-    sA = sP.map(v=>(mix.solar||10000)*v*(0.9+Math.random()*.15));
-    wF = wA.map(v=>v*(1+(Math.random()-.5)*.15));
-    sF = sA.map(v=>v*(1+(Math.random()-.5)*.15));
-    wE = wA.map((v,i)=>v-wF[i]);
-    sE = sA.map((v,i)=>v-sF[i]);
-    histW = Array.from({length:168},(_,i)=>(mix.wind||5000)*wP[i%24]*(0.85+Math.random()*.3));
-    histS = Array.from({length:168},(_,i)=>(mix.solar||10000)*sP[i%24]*(0.85+Math.random()*.2));
-  }
-
-  // Validate data is non-zero
-  const hasData = wA.some(v => v > 0) || sA.some(v => v > 0);
-  if (!hasData) {
-    wA = wP.map(v=>(mix.wind||5500)*v);
-    sA = sP.map(v=>(mix.solar||11000)*v);
-  }
-
-  let datasets = [];
-  let labels = hours;
-  let type = 'line';
-
-  if (renTab === 'today') {
-    datasets = [
-      { label:'Wind actual', data:wA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:true,
-        backgroundColor:rgba(C_WIND,.1), tension: 0 },
-      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:true,
-        backgroundColor:rgba(C_SOLAR,.1), tension: 0 },
-    ];
-  } else if (renTab === 'forecast') {
-    datasets = [
-      { label:'Wind actual', data:wA, borderColor:C_WIND, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
-      { label:'Wind forecast', data:wF, borderColor:C_WIND, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar actual', data:sA, borderColor:C_SOLAR, borderWidth:2, pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar forecast', data:sF, borderColor:C_SOLAR, borderWidth:1.5, borderDash:[4,4], pointRadius:0, fill:false, tension: 0 },
-    ];
-  } else if (renTab === 'error') {
-    type = 'bar';
-    datasets = [
-      { label:'Wind error (MW)', data:wE, backgroundColor: wE.map(v=>v>=0?rgba(C_WIND,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
-      { label:'Solar error (MW)', data:sE, backgroundColor: sE.map(v=>v>=0?rgba(C_SOLAR,.7):rgba(C_DN,.7)), borderWidth:0, borderRadius:2 },
-    ];
-  } else { // history
-    labels = Array.from({length:168},(_,i)=>{const d=Math.floor(i/24);const h=i%24;return ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]+(h===0?' 0h':'');});
-    datasets = [
-      { label:'Wind', data:histW, borderColor:C_WIND, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-      { label:'Solar', data:histS, borderColor:C_SOLAR, borderWidth:1.5, pointRadius:0, fill:false, tension: 0 },
-    ];
-  }
-
-  mkChart('ren-canvas', {
-    type,
-    data: { labels, datasets },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw/1000).toFixed(2)+' GW' } },
-        zoom: ZOOM_CFG,
-        annotation:{ annotations: (() => { const a = nowLineAnnotation(); return a ? { nowLine: a } : {}; })() },
-      },
-      scales: {
-        x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:8} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(1)+'GW'}, beginAtZero:true }
-      }
-    }
-  });
-  setTimeout(()=>{ addFullscreen('ren-canvas'); addDownload('ren-canvas','renewables'); },100);
-}
-
-
-function renderRenErrorTable(mix) {
-  const wP=[.4,.35,.33,.32,.32,.38,.45,.52,.55,.58,.6,.62,.63,.61,.6,.58,.55,.52,.5,.48,.47,.45,.43,.41];
-  const sP=[0,0,0,0,0,.02,.08,.2,.35,.5,.65,.78,.88,.92,.9,.82,.65,.45,.25,.1,.02,0,0,0];
-  const rows=Array.from({length:24},(_,hr)=>{
-    const wA=Math.round((mix.wind||5000)*wP[hr]*(0.9+Math.random()*.2));
-    const wF=Math.round(wA*(1+(Math.random()-.5)*.15));
-    const sA=Math.round((mix.solar||10000)*sP[hr]*(0.9+Math.random()*.15));
-    const sF=Math.round(sA*(1+(Math.random()-.5)*.15));
-    const wE=wA-wF, sE=sA-sF;
-    const wPct=wF?((wE/wF)*100).toFixed(1):'-';
-    const sPct=sF?((sE/sF)*100).toFixed(1):'-';
-    const ec=v=>Math.abs(+v)>10?'color:var(--warn)':'color:var(--text3)';
-    const wCol = wE > 200 ? 'var(--down)' : wE < -200 ? 'var(--up)' : 'var(--text3)';
-    const sCol = sE > 500 ? 'var(--down)' : sE < -500 ? 'var(--up)' : 'var(--text3)';
-    return '<tr>' +
-      '<td style="color:var(--text2)">' + hr + ':00</td>' +
-      '<td>' + wA.toLocaleString() + '</td>' +
-      '<td style="color:var(--text3)">' + wF.toLocaleString() + '</td>' +
-      '<td style="color:' + wCol + '">' + (wE > 0 ? '+' : '') + wE.toLocaleString() + '</td>' +
-      '<td style="' + ec(wPct) + '">' + wPct + '%</td>' +
-      '<td>' + sA.toLocaleString() + '</td>' +
-      '<td style="color:var(--text3)">' + sF.toLocaleString() + '</td>' +
-      '<td style="color:' + sCol + '">' + (sE > 0 ? '+' : '') + sE.toLocaleString() + '</td>' +
-      '<td style="' + ec(sPct) + '">' + sPct + '%</td>' +
-      '</tr>';
-  });
-  document.getElementById('ren-err-tbody').innerHTML = rows.join('');
+function _renRestore(id) {
+  const c = document.getElementById(id); if (!c) return;
+  const m = c.parentNode.querySelector('.no-data-msg'); if (m) m.remove();
+  c.style.display = 'block';
 }
