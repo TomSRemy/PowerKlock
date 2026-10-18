@@ -42,6 +42,17 @@
       S('Forwards'),
       W('fwd-power', 6, 5), W('fwdc-ttf', 6, 5),
     ] },
+    { id: 'orig', name: 'Origination · France', desc: 'PPA and GO pricing: forwards, capture rates, regional load factors, capacity, guarantees of origin.', items: [
+      S('Prices & forwards'),
+      W('kpi-da', 3, 2, { zone: 'FR' }), W('kpi-fuel', 3, 2, { c: 'eua' }), W('kpi-go', 3, 2), W('kpi-fr-nuclear', 3, 2),
+      W('pf-curve', 6, 5, { country: 'FR' }), W('pf-history', 6, 5, { country: 'FR', tenor: 'Y+1', win: '3Y' }),
+      S('Value of renewables'),
+      W('ren-cr', 6, 5, { zone: 'FR', window: '1Y' }), W('ren-daily', 6, 5, { zone: 'FR', window: '1Y' }),
+      S('Regions & capacity'),
+      W('fr-reg-lf', 6, 5), W('cap-history', 6, 5, { country: 'FR' }),
+      S('Guarantees of origin'),
+      W('go-cal1', 6, 5), W('go-cal', 6, 5),
+    ] },
     { id: 'flex', name: 'Flexibility / BESS', desc: 'Intraday shape, battery spreads, negative prices, imbalance.', items: [
       S('Price shape'),
       W('da-intraday', 12, 5),
