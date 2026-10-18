@@ -5807,8 +5807,19 @@ function clearSlotHover(idx) {
       window._prHomeIntradayChart = null;
     }
 
-    // Pick zones from HOME_ZONES that actually have data today
-    const zones = HOME_ZONES
+    // Zone filter chips (default: the 7 home zones)
+    if (!window._prHomeZones) window._prHomeZones = new Set(HOME_ZONES);
+    const chipHost = document.getElementById('pr-home-zone-chips');
+    if (chipHost) {
+      const avail = data.filter(z => z.hourly && z.hourly.length).map(z => z.code);
+      const order = HOME_ZONES.filter(c => avail.includes(c)).concat(avail.filter(c => !HOME_ZONES.includes(c)).sort());
+      chipHost.innerHTML = order.map(c => {
+        const on = window._prHomeZones.has(c);
+        return `<button class="pk-gf-btn${on ? ' active' : ''}" style="padding:2px 8px;font-size:10px" onclick="prHomeToggleZone('${c}')">${c}</button>`;
+      }).join('');
+    }
+    // Pick the selected zones that actually have data today
+    const zones = [...window._prHomeZones]
       .map(code => data.find(z => z.code === code))
       .filter(z => z && z.hourly && z.hourly.length);
     if (!zones.length) return;
@@ -5866,8 +5877,11 @@ function clearSlotHover(idx) {
       }
     };
 
+    cfg.options.plugins.zoom = ZOOM_CFG;
+    cfg.options.plugins.annotation = { annotations: (() => { const a = nowLineAnnotation({ slots: nPts, labels, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() };
     try {
-      window._prHomeIntradayChart = new Chart(canvas, cfg);
+      window._prHomeIntradayChart = mkChart('pr-home-intraday-canvas', cfg);
+      setTimeout(() => { addFullscreen('pr-home-intraday-canvas'); addDownload('pr-home-intraday-canvas', 'intraday-' + (window._currentPriceDate || '')); }, 60);
     } catch (e) {
       console.warn('[prRenderHome] intraday chart build failed', e);
     }
@@ -6020,11 +6034,18 @@ function clearSlotHover(idx) {
     _renderKpiStrip(data);
     _renderMarketRead(data);
     _renderIntradayChart(data);
+    if (typeof window.prRenderHomeExtra === 'function') window.prRenderHomeExtra(data);
     // Anomalies table runs async (fetches 7 days of JSON)
     _renderAnomaliesTable(data).catch(e => console.warn('[prRenderHome] anomalies failed', e));
   }
 
   window.prRenderHome = prRenderHome;
+  window.prHomeToggleZone = function (code) {
+    const s = window._prHomeZones || new Set(HOME_ZONES);
+    if (s.has(code)) { if (s.size > 1) s.delete(code); } else s.add(code);
+    window._prHomeZones = s;
+    _renderIntradayChart(window._pricesSorted || []);
+  };
 
   // Auto-render when the overview panel is initially active (page load)
   function _maybeAutoRender() {
