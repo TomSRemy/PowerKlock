@@ -60,6 +60,15 @@
       } },
     { id: 'goauct', label: 'Guarantees of origin (state auctions)', provider: 'EEX', kind: 'repo', cadence: 'monthly',
       async check() { const j = await getJSON('go_auctions.json'); const d = j && j.updated ? new Date(j.updated + (j.updated.length === 10 ? 'T12:00:00Z' : '')) : null; return { at: d, late: d && Date.now() - d > 40 * 24 * H }; } },
+    { id: 'ecflows', label: 'Cross-border physical flows (11 countries)', provider: 'Energy-Charts', kind: 'repo', cadence: '05:40 and 15:40 UTC',
+      async check() {
+        const ym = pkTodayISO().slice(0, 7);
+        const j = await getJSON('history/flows/' + ym + '.json');
+        const d = j && j.updated ? new Date(j.updated) : null;
+        return { at: d, late: !d || Date.now() - d > 30 * H, detail: j ? Object.keys(j.days || {}).length + ' days this month' : 'no file this month' };
+      } },
+    { id: 'eccap', label: 'Installed capacity', provider: 'Energy-Charts', kind: 'repo', cadence: 'daily (yearly figures)',
+      async check() { const j = await getJSON('history/capacity.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && Date.now() - d > 8 * 24 * H, detail: j ? Object.keys(j.countries || {}).length + ' countries' : '' }; } },
     { id: 'e2m', label: 'France load & exchanges (real time)', provider: 'RTE éCO2mix', kind: 'live', cadence: 'every 15 min',
       async check() {
         if (!window.PK_E2M) return { error: true, detail: 'module not loaded' };

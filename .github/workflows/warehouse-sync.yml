@@ -15,6 +15,7 @@ on:
       - Fetch FR Market Data (SEFE)
       - Fetch GO Prices (Commerg)
       - Fetch GO Auctions (EEX FR)
+      - Fetch Energy-Charts (capacity, cross-border flows)
       - Backfill Historical Data
       - Backfill chain (monthly, newest first)
       - Backfill generation (after prices)
