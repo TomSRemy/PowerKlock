@@ -1,4 +1,4 @@
-name: Backfill chain (half-years, newest first)
+name: Backfill repair (single day)
 
 # Runs the multi-zone price backfill one half-year at a time, newest first,
 # each half-year committed to main as soon as it is done. Started by a push
@@ -26,20 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         range:
-          - '2026-07-01 2026-12-31'
-          - '2026-01-01 2026-06-30'
-          - '2025-07-01 2025-12-31'
-          - '2025-01-01 2025-06-30'
-          - '2024-07-01 2024-12-31'
-          - '2024-01-01 2024-06-30'
-          - '2023-07-01 2023-12-31'
-          - '2023-01-01 2023-06-30'
-          - '2022-07-01 2022-12-31'
-          - '2022-01-01 2022-06-30'
-          - '2021-07-01 2021-12-31'
-          - '2021-01-01 2021-06-30'
-          - '2020-07-01 2020-12-31'
-          - '2020-01-01 2020-06-30'
+          - '2026-10-15 2026-10-15'
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -61,7 +48,7 @@ jobs:
           set -- ${{ matrix.range }}
           python scripts/enrich_summary.py --fetch-historical --from "$1" --to "$2" \
             --zones FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
-            --mode repair --min-zones 2
+            --mode repair --min-zones 30
 
       # Daily files first (no overlap with the scheduled fetch, which writes
       # other dates), then summary.json rebuilt on top of the latest main.
