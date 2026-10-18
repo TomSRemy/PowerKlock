@@ -199,6 +199,14 @@ def generation_rows(code, d, z, pz, aligned):
                 for s in series.values():
                     if len(s) == n:
                         s[i] = None
+        # The per-type breakdown can lag behind the aggregates (zero-filled
+        # tail never refreshed): every type at 0 while aggregates produce
+        # means unpublished for the types.
+        psr = [s for f, s in series.items() if f.startswith('psr:') and len(s) == n]
+        for i in range(n):
+            if psr and all(not s[i] for s in psr) and any((s[i] or 0) > 0 for s in agg if len(s) == n):
+                for s in psr:
+                    s[i] = None
     rows = []
     for fuel, s in series.items():
         if len(s) not in (24, 96) or all(v is None for v in s):
@@ -232,6 +240,10 @@ UPSERT_PRICE = """insert into market.da_price_day
     offpeak_avg = excluded.offpeak_avg, neg_hours = excluded.neg_hours, flag = excluded.flag, loaded_at = now()"""
 UPSERT_GEN = """insert into market.generation_day (zone, delivery_date, fuel, slots, mw) values (%s,%s,%s,%s,%s)
   on conflict (zone, delivery_date, fuel) do update set slots = excluded.slots, mw = excluded.mw, loaded_at = now()"""
+UPSERT_GEN_TYPE = """insert into market.generation_type_daily (zone, delivery_date, production_type, avg_mw, max_mw, published_slots, slots)
+  values (%s,%s,%s,%s,%s,%s,%s)
+  on conflict (zone, delivery_date, production_type) do update set avg_mw = excluded.avg_mw, max_mw = excluded.max_mw,
+    published_slots = excluded.published_slots, slots = excluded.slots"""
 UPSERT_LOAD = """insert into market.load_day (zone, delivery_date, slots, actual_mw, forecast_mw) values (%s,%s,%s,%s,%s)
   on conflict (zone, delivery_date) do update set slots = excluded.slots, actual_mw = excluded.actual_mw,
     forecast_mw = excluded.forecast_mw, loaded_at = now()"""
@@ -280,13 +292,23 @@ def load_daily(conn, paths):
 def flush_daily(conn, bp, bg, bl):
     if not (bp or bg or bl):
         return 0
+    # ENTSO-E production types (psr:*) are stored as daily statistics (migration 008).
+    agg = [r for r in bg if not r[2].startswith('psr:')]
+    typ = []
+    for z, d, f, n, arr in bg:
+        if f.startswith('psr:'):
+            v = [x for x in arr if x is not None]
+            if v:
+                typ.append((z, d, f, sum(v) / len(v), max(v), len(v), n))
     with conn.cursor() as cur:
         ensure_zones(cur, {r[0] for r in bp} | {r[0] for r in bg} | {r[0] for r in bl})
         ensure_fuels(cur, {r[2] for r in bg})
         if bp:
             cur.executemany(UPSERT_PRICE, bp)
-        if bg:
-            cur.executemany(UPSERT_GEN, bg)
+        if agg:
+            cur.executemany(UPSERT_GEN, agg)
+        if typ:
+            cur.executemany(UPSERT_GEN_TYPE, typ)
         if bl:
             cur.executemany(UPSERT_LOAD, bl)
     conn.commit()
