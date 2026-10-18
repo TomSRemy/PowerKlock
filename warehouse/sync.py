@@ -102,15 +102,14 @@ def paris_offset_hours(d):
     return int(noon.astimezone(PARIS).utcoffset().total_seconds() // 3600)
 
 
-def shift(arr, prev, off_h):
-    """out[i] = arr[i - k]; the first k slots come from the previous UTC day (gen-align.js)."""
+def shift(arr, prev, off_h, prev_ok=True):
+    """out[i] = arr[i - k]; the first k slots come from the previous UTC day (gen-align.js).
+    prev_ok=False when the caller knows that tail was not published."""
     if not isinstance(arr, list) or not arr:
         return arr
     n = len(arr)
     k = round(off_h * n / 24)
-    # A previous-day tail that is all zeros was not published when that file
-    # was written (zero-filled by the fetcher): those slots become null.
-    prev_ok = isinstance(prev, list) and len(prev) == n and any(v not in (None, 0) for v in prev[n - k:])
+    prev_ok = prev_ok and isinstance(prev, list) and len(prev) == n
     out = []
     for i in range(n):
         if i >= k:
@@ -178,10 +177,16 @@ def generation_rows(code, d, z, pz, aligned):
     m = next((z.get(k) for k in GEN_MAPS if isinstance(z.get(k), dict) and z.get(k)), None)
     mk = next((k for k in GEN_MAPS if isinstance(z.get(k), dict) and z.get(k)), None)
     if m:
+        # Per-type breakdown of the previous file: unpublished tail when every
+        # type is 0 there (one type at 0, e.g. solar at night, is real).
+        pm = ((pz or {}).get(mk) or {}) if pz else {}
+        def tail_nonzero(a):
+            n_ = len(a); k_ = round(off * n_ / 24)
+            return any(v not in (None, 0) for v in a[n_ - k_:])
+        map_ok = any(isinstance(a, list) and a and tail_nonzero(a) for a in pm.values())
         for psr, a in m.items():
             if isinstance(a, list) and a:
-                prev = ((pz or {}).get(mk) or {}).get(psr) if pz else None
-                series['psr:' + psr] = [num(v) for v in (a if aligned else shift(a, prev, off))]
+                series['psr:' + psr] = [num(v) for v in (a if aligned else shift(a, pm.get(psr), off, map_ok))]
     if not series:
         return []
     # A slot where no aggregate fuel reported anything above 0 is unpublished.
