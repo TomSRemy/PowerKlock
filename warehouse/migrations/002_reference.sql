@@ -51,7 +51,7 @@ insert into meta.fuel (fuel, label, family, co2_g_kwh, description) values
   ('wind_offshore', 'Wind offshore', 'renewable', 12, 'PowerKlock aggregate'),
   ('solar', 'Solar', 'renewable', 45, 'PowerKlock aggregate'),
   ('biomass', 'Biomass', 'renewable', 230, 'PowerKlock aggregate'),
-  ('fossil', 'Fossil (gas + coal + oil)', 'fossil', 820, 'PowerKlock aggregate'),
+  ('fossil', 'Fossil (gas + coal + oil)', 'fossil', 650, 'PowerKlock aggregate'),
   ('other', 'Other', 'other', 400, 'PowerKlock aggregate'),
   ('psr:B01', 'Biomass', 'renewable', 230, 'ENTSO-E production type B01'),
   ('psr:B02', 'Lignite', 'fossil', 1050, 'ENTSO-E production type B02'),
