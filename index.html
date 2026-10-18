@@ -68,6 +68,8 @@
     --cat-carbon-dim: rgba(168,125,196,0.12);
     --cat-go: #94D2BD;
     --cat-go-dim: rgba(148,210,189,0.15);
+    --cat-fuels: #D6A77A;
+    --cat-fuels-dim: rgba(214,167,122,0.15);
 
     /* ── Layout (unchanged) */
     --sidebar-w: 220px;
@@ -144,6 +146,7 @@
   .dd-dot.gas { background:var(--cat-gas); }
   .dd-dot.carbon { background:var(--cat-carbon); }
   .dd-dot.go { background:var(--cat-go); }
+  .dd-dot.fuels { background:var(--cat-fuels); }
 
   .ticker-label {
     padding: 0 14px;
@@ -187,6 +190,7 @@
   .ticker-cat.gas { color: var(--cat-gas); border-color: var(--cat-gas-dim); }
   .ticker-cat.carbon { color: var(--cat-carbon); border-color: var(--cat-carbon-dim); }
   .ticker-cat.go { color: var(--cat-go); border-color: var(--cat-go-dim); }
+  .ticker-cat.fuels { color: var(--cat-fuels); border-color: var(--cat-fuels-dim); }
   /* News source badges */
   .news-source.recharge { background: rgba(148,210,189,0.15); color: #94D2BD; }
   .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
@@ -2633,6 +2637,24 @@
     font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
   }
 
+
+  /* ── Carbon & Fuels / Forward curves / Spreads ── */
+  .fuel-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .fuel-toolbar-lbl { font-size:10px; color:var(--text3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  .fuel-range { display:inline-flex; align-items:center; gap:4px; padding:0 8px; background:var(--bg3); border:1px solid var(--bd); border-radius:5px; height:26px; box-sizing:border-box; }
+  .fuel-range span { font-size:10px; color:var(--tx3); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .fuel-range input { background:transparent; border:none; color:var(--tx); font-size:11px; font-family:'JetBrains Mono',monospace; padding:0 2px; cursor:pointer; color-scheme:dark; height:22px; }
+  .fuel-select { background:var(--bg3); border:1px solid var(--bd); color:var(--tx); border-radius:5px; height:26px; padding:0 8px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+  .fuel-kpis { grid-template-columns:repeat(6,1fr); margin-bottom:14px; }
+  .fuel-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .fuel-card { margin-bottom:0; }
+  .fuel-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; padding-right:64px; }
+  .fuel-card-sub { font-size:10.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; margin-top:3px; }
+  .fuel-note { font-size:10.5px; color:var(--text3); line-height:1.6; margin:4px 2px 14px; font-family:'JetBrains Mono',monospace; }
+  .fuel-table td, .fuel-table th { text-align:right; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .fuel-table td:first-child, .fuel-table td.l { text-align:left; }
+  @media (max-width: 1100px) { .fuel-grid-2 { grid-template-columns:1fr; } .fuel-kpis { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width: 640px) { .fuel-kpis { grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
 <body>
@@ -2653,6 +2675,7 @@
       <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
       <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
       <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
+      <div class="dd-row on" data-cat="fuels" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot fuels"></span>Coal &amp; Oil</div>
       <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
       <div style="border-top:1px solid var(--border);margin:4px 0"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 14px">
@@ -2743,16 +2766,16 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section" id="sec-carbon">
-      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon &amp; Fuels <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-carbon-items">
       <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Fuel &amp; EUA Prices
       </div>
       <div class="sidebar-item" onclick="showPage('euafwd')" id="nav-euafwd">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curve
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curves
       </div>
       <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Spark &amp; Dark Spreads
       </div>
       <div class="sidebar-item" onclick="showPage('carbonintensity')" id="nav-carbonintensity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Carbon Intensity
@@ -5029,64 +5052,111 @@
     <!-- EUA SPOT -->
     <div class="page" id="page-eua">
       <div class="page-header">
-        <div><div class="page-title">EUA Carbon Allowances</div><div class="page-subtitle">EU ETS spot · ICE/EEX</div></div>
-        <span class="updated-badge">ICE · EEX · Demo</span>
+        <div><div class="page-title">Carbon &amp; Fuels</div><div class="page-subtitle">EUA · gas hubs · coal · oil · EU gas storage · fuel switching</div></div>
+        <span class="updated-badge" id="fuel-upd">SEFE market cockpit</span>
       </div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-flat"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#A87DC4">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--down)">&#9660;0.09% vs close</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#A87DC4">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--up)">&#9650;0.32%</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">YTD Change</div><div class="kpi-value" style="color:var(--down)">-8.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--down)">from 82.5 Jan 1</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div></div>
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div></div>
-      </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:200px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
-      <div class="hist-section hist-section-strong" id="hs-eua-history">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-history')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.25 2.5-2.5 3.5-5 1-2.5 1.5-5.5 3.5-7.5 2-2 4.75-3 7.5-3 2 0 4 .5 5.5 2-1.5 1.5-3.5 2-5.5 2-1.5 0-3-.25-4.5-1-1 2-1.5 4-1.5 6 0 2.5.75 5 2 7"/><path d="M20 6c-2 2-3 4-3 6 0 1.5.25 3 1 4.5"/></svg>EUA — Long-term Historical
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Spot daily · clean spark spread</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="fuel-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('fuel','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('fuel','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('fuel','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('fuel','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('fuel','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('fuel','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('fuel','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('fuel','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="fuel-from" onchange="fuelSetRange('fuel')">
+          <span>To</span><input type="date" id="fuel-to" onchange="fuelSetRange('fuel')">
         </div>
-        <div class="hist-section-body open" id="hs-body-eua-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('eua-hist','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('eua-hist','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('eua-hist','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','All',this)">All</button></div><div class="hist-two-col"><div><canvas id="hist-eua-canvas" style="width:100%;height:200px"></canvas></div><div><canvas id="hist-spark-canvas" style="width:100%;height:200px"></canvas></div></div><div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-eua-stats"></div></div>
       </div>
+      <div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-eua-ttf" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Coal-to-gas switching</div><div class="fuel-card-sub" id="fuel-switch-sub">EUA price at which a CCGT matches a coal unit · vs EUA (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-switch" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-hubs" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EU gas storage</div><div class="fuel-card-sub" id="fuel-storage-sub">Fill level (%) · current year vs previous 5-year range</div></div><span class="source-badge">GIE AGSI</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-storage" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-coal-oil" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">LNG arbitrage</div><div class="fuel-card-sub" id="fuel-lng-sub">JKM front-month vs TTF day-ahead ($/MMBtu)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-lng" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-note" id="fuel-note"></div>
     </div>
 
-    <!-- EUA FORWARD -->
+    <!-- FORWARD CURVES -->
     <div class="page" id="page-euafwd">
       <div class="page-header">
-        <div><div class="page-title">EUA Forward Curve</div><div class="page-subtitle">December contracts · ICE</div></div>
-        <span class="updated-badge">ICE · Demo</span>
+        <div><div class="page-title">Forward Curves</div><div class="page-subtitle">TTF strip · EUA December strip · implied forward clean spreads</div></div>
+        <span class="updated-badge" id="fwdc-upd">SEFE market cockpit</span>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="fwdc-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">TTF forward curve</div><div class="fuel-card-sub" id="fwdc-ttf-sub">Settlement D-1 (€/MWh) · day-ahead first</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="fwdc-ttf" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EUA December strip</div><div class="fuel-card-sub" id="fwdc-eua-sub">Settlement D-1 (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="fwdc-eua" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title">TTF &amp; EUA — settlement D-1</span><span class="source-badge">SEFE</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th style="text-align:left">Contract</th><th>Settle</th><th>Unit</th><th>Δ D-1</th><th>Δ W-1</th></tr></thead><tbody id="fwdc-tbody"></tbody></table>
       </div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">EUA Futures — December contracts</span></div>
-        <table><thead><tr><th>Contract</th><th>Last (€/t)</th><th>Bid</th><th>Ask</th><th>Change</th><th>Chg %</th><th>Volume</th><th>OI</th></tr></thead>
-        <tbody>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
-        </tbody></table>
+        <div class="table-header"><span class="table-title">Implied forward clean spreads — baseload (€/MWh)</span><span class="source-badge" id="fwdc-css-badge">Power: SEFE · fuel: same tenor</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Tenor</th><th style="text-align:left">Power contract</th><th>TTF</th><th>EUA</th><th>FR base</th><th>FR CSS</th><th>DE base</th><th>DE CSS</th><th>DE CDS</th><th>NL base</th><th>NL CSS</th></tr></thead><tbody id="fwdc-css-tbody"></tbody></table>
+        <div class="fuel-note" id="fwdc-css-note" style="padding:10px 14px 4px"></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><div style="position:relative;height:220px;overflow:hidden"><canvas id="eua-fwd-canvas" style="width:100%;height:220px"></canvas></div></div>
     </div>
 
-    <!-- SPARK SPREAD -->
+    <!-- CLEAN SPARK / DARK SPREADS -->
     <div class="page" id="page-spark">
       <div class="page-header">
-        <div><div class="page-title">Clean Spark Spread</div><div class="page-subtitle">DA price − gas cost − carbon cost · 49% CCGT efficiency</div></div>
-        <span class="updated-badge">ENTSO-E · TTF · EUA</span>
+        <div><div class="page-title">Clean Spark &amp; Dark Spreads</div><div class="page-subtitle" id="spark-subtitle">Day-ahead power − fuel − carbon · CCGT 49.1% · coal 36%</div></div>
+        <span class="updated-badge" id="spark-upd">ENTSO-E · SEFE</span>
       </div>
-      <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Clean Spark Spread — All Zones (€/MWh)</span><span class="source-badge">TTF D+1: 45.14 · EUA: 74.09 · Efficiency: 49%</span></div>
-        <table><thead><tr><th>Zone</th><th>DA Price</th><th>Gas Cost</th><th>Carbon Cost</th><th>CSS</th><th>vs Yday</th></tr></thead>
-        <tbody id="spark-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr></tbody></table>
+      <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title" id="spark-table-title">Spreads by zone</span><span class="source-badge" id="spark-refs"></span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th>Gas cost</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
       </div>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="sprh-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('sprh','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('sprh','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('sprh','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('sprh','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('sprh','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('sprh','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('sprh','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('sprh','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="sprh-from" onchange="fuelSetRange('sprh')">
+          <span>To</span><input type="date" id="sprh-to" onchange="fuelSetRange('sprh')">
+        </div>
+        <span class="fuel-toolbar-lbl" style="margin-left:8px">Zone</span>
+        <select id="sprh-zone" class="fuel-select" onchange="renderSparkHistory()"></select>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="sprh-daily" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Monthly average</div><div class="fuel-card-sub" id="sprh-monthly-sub">CSS base / CSS peak / CDS base (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="sprh-monthly" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-note" id="sprh-note"></div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════
@@ -5525,8 +5595,16 @@
           </section>
 
           <section id="meth-eua" class="meth-section">
-            <h2 class="meth-h2">EUA &amp; GO</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Carbon, fuels &amp; spreads</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">Gas (TTF, PEG, THE, NBP day-ahead; JKM front-month), EUA December contracts, API2 coal (ARA CIF, front calendar year), Brent front-month, EUR/USD and GBP/USD, EU gas storage (GIE AGSI) and French nuclear available capacity come from SEFE Energy's public market cockpit, refreshed daily (<code>data/commodities.json</code>). Values are daily settlements/closes; the date shown is the trading date.</p>
+            <p class="meth-p">EUA and coal histories are those of a single benchmark contract (e.g. EUA Dec-26, API2 Cal-27), not a rolled continuous series: earlier points include the contract's carry.</p>
+            <h3 class="meth-h3">Clean spark &amp; clean dark spreads</h3>
+            <p class="meth-p"><strong>CSS</strong> = power − TTF ÷ 49.13% − EUA × 0.411 tCO₂/MWh (CCGT, 0.202 tCO₂/MWh<sub>th</sub>). <strong>CDS</strong> = power − API2 (converted at the EUR/USD close) ÷ (6.978 MWh/t × 36%) − EUA × 0.947 tCO₂/MWh (coal, 0.341 tCO₂/MWh<sub>th</sub>). Day-ahead spreads use TTF day-ahead traded the day before delivery; forward spreads use power and TTF on the same tenor and the EUA December contract of the delivery year. Peak = 08:00–20:00.</p>
+            <h3 class="meth-h3">Coal-to-gas switching price</h3>
+            <p class="meth-p">The EUA price at which a CCGT and a coal unit have the same short-run cost: (gas fuel cost − coal fuel cost) ÷ (0.947 − 0.411). Above it, gas plants are cheaper than coal in the merit order.</p>
+            <h3 class="meth-h3">Guarantees of Origin</h3>
+            <p class="meth-p">Weekly AIB price indications (bid/ask per vintage year) from Commerg, and monthly French auction results published by EEX.</p>
           </section>
 
           <section id="meth-general" class="meth-section">
@@ -6353,6 +6431,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/chartjs-plugin-annotation.min.js"></script>
 <script src="js/fullscreen.js"></script>
 <script src="js/palette.js"></script>
+<script src="js/commodities.js"></script>
 <script src="js/carbon.js"></script>
 <script src="js/carbon-ghg.js"></script>
 <script src="js/prices.js"></script>

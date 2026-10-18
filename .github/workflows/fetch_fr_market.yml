@@ -1,7 +1,8 @@
 name: Fetch FR Market Data (SEFE)
 
-# Fetch France power forward curve, spot, nuclear capacity, generation mix and
-# the daily market-insights narrative from SEFE Energy's public "daily" cockpit
+# Fetch France power forward curve, spot, nuclear capacity, generation mix,
+# the daily market-insights narrative, and gas/carbon/coal/oil series
+# (data/commodities.json) from SEFE Energy's public "daily" cockpit
 # (cockpit.energymarketprice.com). No credentials needed — publicly authorized link.
 
 on:
@@ -29,11 +30,15 @@ jobs:
         run: pip install requests==2.33.1
       - name: Fetch FR market data
         run: python scripts/fetch_fr_market.py
+      - name: Fetch gas / carbon / coal / oil + FR nuclear availability
+        # Same SEFE public cockpit; failure must not block the FR market commit.
+        continue-on-error: true
+        run: PYTHONPATH=scripts python scripts/fetch_commodities.py
       - name: Commit and push data files
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json
+          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json data/commodities.json
           if git diff --staged --quiet; then
             echo "No data changes — skipping commit."
             exit 0
