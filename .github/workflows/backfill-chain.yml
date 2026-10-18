@@ -1,8 +1,9 @@
-name: Backfill chain (monthly, newest first)
+name: Backfill chain v3 (monthly, parallel)
 
-# Runs the multi-zone price backfill one month at a time (about an hour per
-# job, well under the 6 h job limit: a job killed at the limit commits
-# nothing), newest first, each month committed to main as soon as it is done.
+# Runs the multi-zone price backfill one month per job (well under the 6 h
+# job limit: a job killed at the limit commits nothing), four months in
+# parallel (far below ENTSO-E's rate limit), newest first, each month
+# committed to main as soon as it is done.
 # A final job re-fetches known bad days (prices + generation). Started by a push
 # to a backfill-run/* branch (or by hand). Files holding fewer than
 # `min_zones` zones (FR-only history) are regenerated with all zones; days
@@ -24,7 +25,7 @@ jobs:
     permissions:
       contents: write
     strategy:
-      max-parallel: 1
+      max-parallel: 4
       fail-fast: false
       matrix:
         range:
