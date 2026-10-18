@@ -184,7 +184,7 @@
 
   // Dernier jour disponible : on remonte jusqu'a 10 jours en arriere.
   function findLatestDate() {
-    var today = iso(new Date());
+    var today = (typeof pkTodayISO === "function") ? pkTodayISO() : iso(new Date());
     var tries = [];
     for (var i = 0; i < 10; i++) tries.push(shiftDays(today, -i));
 
@@ -576,11 +576,11 @@
     if (!host) return;
 
     var n = S.cannibWindow;
-    host.innerHTML = loadingBlock('Loading ' + n + ' journees FR (0/' + n + ')...');
+    host.innerHTML = loadingBlock('Loading ' + n + ' FR days (0/' + n + ')…');
 
     loadDailyRange(S.date, n, function (done, total) {
       var el = host.querySelector('.fr-loading');
-      if (el) el.textContent = 'Loading ' + total + ' journees FR (' + done + '/' + total + ')...';
+      if (el) el.textContent = 'Loading ' + total + ' FR days (' + done + '/' + total + ')…';
     }).then(function (days) {
       var rows = [];
       for (var i = 0; i < days.length; i++) {
@@ -606,17 +606,27 @@
 
       // Agregats fenetre : capture ponderee sur toute la periode, pas moyenne
       // des capture rates journaliers (qui surponderait les jours peu productifs).
-      var allP = [], allS = [], allW = [];
+      // Only days carrying generation arrays of the same length as the prices
+      // enter the capture aggregates, and the base used for the capture rate
+      // is computed over those same days. (Concatenating every day's prices
+      // with the generation of fewer days paired slots of different days.)
+      var allP = [], genP = [], allS = [], allW = [], genDays = 0;
       var totalNeg = 0;
       for (var r = 0; r < rows.length; r++) {
         allP = allP.concat(rows[r].prices);
-        allS = allS.concat(rows[r].solarGen);
-        allW = allW.concat(rows[r].windGen);
         totalNeg += rows[r].negH;
+        var L = rows[r].prices.length;
+        if (rows[r].solarGen.length === L && rows[r].windGen.length === L) {
+          genP = genP.concat(rows[r].prices);
+          allS = allS.concat(rows[r].solarGen);
+          allW = allW.concat(rows[r].windGen);
+          genDays++;
+        }
       }
-      var aggS = captureStats(allP, allS);
-      var aggW = captureStats(allP, allW);
+      var aggS = genDays ? captureStats(genP, allS) : null;
+      var aggW = genDays ? captureStats(genP, allW) : null;
       var aggBase = mean(allP);
+      var genBase = genDays ? mean(genP) : null;
 
       var html = '';
 
@@ -624,15 +634,15 @@
         '<span class="fr-toolbar-label">Window</span>' +
         [7, 30, 90].map(function (w) {
           return '<button class="pk-gf-btn' + (w === n ? ' active' : '') +
-            '" onclick="FRDash.setCannibWindow(' + w + ')">' + w + 'J</button>';
+            '" onclick="FRDash.setCannibWindow(' + w + ')">' + w + 'D</button>';
         }).join('') +
-        '<span class="fr-toolbar-note">' + rows.length + ' journees chargees \u00B7 fin ' + fmtDateLong(S.date) + '</span>' +
+        '<span class="fr-toolbar-note">' + rows.length + ' days loaded \u00B7 ' + genDays + ' with generation data \u00B7 ending ' + fmtDateLong(S.date) + '</span>' +
         '</div>';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
       html += kpiCard('Base FR', num(aggBase, 2), '\u20AC/MWh', 'simple average over the window');
       html += kpiCard('Solar captured price', aggS && aggS.capturePrice !== null ? num(aggS.capturePrice, 2) : '--',
-        '\u20AC/MWh', 'weighted by production');
+        '\u20AC/MWh', 'weighted by production · base ' + (genBase == null ? '--' : num(genBase, 2)) + ' on the same ' + genDays + ' days');
       html += kpiCard('Solar capture rate', aggS && aggS.captureRate !== null ? num(aggS.captureRate, 1) : '--',
         '%', aggS && aggS.captureRate !== null ? (aggS.captureRate < 100 ? 'discount vs base' : 'prime vs base') : '',
         aggS && aggS.captureRate !== null ? (aggS.captureRate < 100 ? 'down' : 'up') : 'flat');
@@ -646,12 +656,12 @@
       html += '</div>';
 
       html += sectionOpen('Daily capture rate',
-        'Captured price / FR base \u00B7 100% = no discount \u00B7 window ' + n + 'J',
+        'Captured price / FR base \u00B7 100% = no discount \u00B7 window ' + n + 'D',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'cap\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-capture', 300);
       html += sectionClose();
 
-      html += sectionOpen('Profil horaire moyen',
+      html += sectionOpen('Average intraday profile',
         'Average DA price and average solar/wind production per slot over the window',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'prof\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-profile', 300);
@@ -943,18 +953,18 @@
       spreadSeries.forEach(function (sp) {
         var m = mean(sp.data);
         html += kpiCard('Spread FR-' + sp.nb.label, num(m, 2), '\u20AC/MWh',
-          m !== null ? (m >= 0 ? 'FR au-dessus' : 'FR en dessous') : '',
+          m !== null ? (m >= 0 ? 'FR above' : 'FR below') : '',
           m === null ? 'flat' : (m >= 0 ? 'up' : 'down'));
       });
       html += '</div>';
 
-      html += sectionOpen('Spread FR vs zones adjacentes',
+      html += sectionOpen('Spread FR vs neighbouring zones',
         'FR daily base minus zone daily base \u00B7 summary.json',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'spread\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-spread', 320);
       html += sectionClose();
 
-      html += sectionOpen('Positionnement FR', 'Average base and spread, over the selected period');
+      html += sectionOpen('FR positioning', 'Average base and spread over the days both zones have data');
       html += '<div class="table-wrap"><table class="fr-table"><thead><tr>' +
         '<th style="text-align:left">Zone</th><th>Base</th><th>Spread vs FR</th><th>Common days</th>' +
         '</tr></thead><tbody>';
@@ -985,7 +995,7 @@
               label: 'FR-' + sp.nb.label,
               data: sp.data,
               borderColor: sp.nb.colour,
-              borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true
+              borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: false
             };
           })
         },
@@ -1034,19 +1044,20 @@
       var html = '';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
-      html += kpiCard('Spot FR', num(snap.spot && snap.spot.value, 2), '€/MWh', snap.spot && snap.spot.date || '');
+      // SEFE dates the day-ahead spot by its auction (trading) day.
+      html += kpiCard('Spot FR', num(snap.spot && snap.spot.value, 2), '€/MWh', snap.spot && snap.spot.date ? 'delivery ' + shiftDays(snap.spot.date, 1) : '');
       var y1 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+1'; })[0];
       var y2 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+2'; })[0];
       html += kpiCard('Forward ' + (y1 ? y1.contract : 'Y+1'), num(y1 && y1.value, 2), '€/MWh',
         y1 && y1.varD1Pct !== null && y1.varD1Pct !== undefined ? (y1.varD1Pct >= 0 ? '+' : '') + num(y1.varD1Pct, 2) + '% D-1' : '',
-        y1 && y1.varD1Pct > 0 ? 'up' : (y1 && y1.varD1Pct < 0 ? 'down' : 'flat'));
+        y1 && y1.varD1Pct > 0 ? 'down' : (y1 && y1.varD1Pct < 0 ? 'up' : 'flat'));
       html += kpiCard('Forward ' + (y2 ? y2.contract : 'Y+2'), num(y2 && y2.value, 2), '€/MWh',
         y2 && y2.varD1Pct !== null && y2.varD1Pct !== undefined ? (y2.varD1Pct >= 0 ? '+' : '') + num(y2.varD1Pct, 2) + '% D-1' : '',
-        y2 && y2.varD1Pct > 0 ? 'up' : (y2 && y2.varD1Pct < 0 ? 'down' : 'flat'));
-      html += kpiCard('Nuclear avail.', num(snap.nuclearCapacity && snap.nuclearCapacity.actualMW, 0), 'MW',
+        y2 && y2.varD1Pct > 0 ? 'down' : (y2 && y2.varD1Pct < 0 ? 'up' : 'flat'));
+      html += kpiCard('Nuclear available', num(snap.nuclearCapacity && snap.nuclearCapacity.actualMW / 1000, 1), 'GW',
         snap.nuclearCapacityDate || '');
-      html += kpiCard('Nuclear forecast', num(snap.nuclearCapacity && snap.nuclearCapacity.forecastMW, 0), 'MW',
-        'J+1');
+      html += kpiCard('Nuclear forecast', num(snap.nuclearCapacity && snap.nuclearCapacity.forecastMW / 1000, 1), 'GW',
+        'operator forecast, D+1');
       html += '</div>';
 
       if (snap.marketInsightsHtml) {
@@ -1180,6 +1191,9 @@
       t.classList.toggle('active', t.getAttribute('data-fr-tab') === name);
     });
     S.panel = name;
+    // Before boot() has resolved the day, just remember the tab: boot()
+    // renders S.panel once the date is known.
+    if (!S.date) return;
     if (force || !S.loadedPanels[name]) {
       S.loadedPanels[name] = true;
       if (RENDERERS[name]) RENDERERS[name]();
