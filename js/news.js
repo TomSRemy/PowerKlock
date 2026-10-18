@@ -191,42 +191,7 @@ const PAGE_LOADERS = {
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
 
-// ── WEATHER (Météo Énergie / HDD-CDD) ──────────────────────────────────
-// No weather data source is wired up yet (no API key/fetch pipeline
-// exists for Open-Meteo in this repo). Rather than leave the page either
-// crashing (loadWeather was called but never defined) or showing
-// hardcoded numbers with no indication they're fake, both loaders put
-// the page shell into an honest "not connected yet" state, consistent
-// with how the EUA/Imbalance/FCR stub sections already do it.
-function setWxVar(v, btn) {
-  window._wxVar = v;
-  document.querySelectorAll('#wx-var-btns .day-tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-}
-
-function loadWeather() {
-  const upd = document.getElementById('wx-upd');
-  if (upd) upd.textContent = 'Open-Meteo · not connected';
-  const cards = document.getElementById('wx-cards');
-  if (cards) cards.innerHTML = '<div style="grid-column:1/-1;color:var(--text3);padding:20px;text-align:center;font-size:12px">Open-Meteo integration not wired up yet.</div>';
-  if (typeof noDataMsg === 'function') {
-    noDataMsg('wx-forecast-canvas', 'Open-Meteo forecast not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
-  }
-  const tbody = document.getElementById('wx-city-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
-}
-
-function renderHDD() {
-  ['hdd-kpi-today', 'hdd-kpi-cum', 'hdd-kpi-cdd', 'hdd-kpi-temp'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.firstChild.textContent = '--';
-  });
-  if (typeof noDataMsg === 'function') {
-    noDataMsg('hdd-canvas', 'HDD/CDD history not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
-  }
-  const tbody = document.getElementById('hdd-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
-}
+// Weather pages: see js/meteo.js
 
 // Patch showPage to handle new sections
 // showPage patch applied after all scripts load
@@ -259,16 +224,6 @@ const FUELS = [
   {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},
   {k:'solar',l:'Solar',c:'#FBBF24'},{k:'hydro',l:'Hydro',c:'#94D2BD'},
   {k:'fossil',l:'Fossil',c:'#ED6965'},{k:'biomass',l:'Biomass',c:'#94D2BD'},
-];
-const WX_CITIES = [
-  {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},
-  {name:'Lyon',region:'Auvergne-Rhone-Alpes',lat:45.74,lon:4.83,norm:12.5},
-  {name:'Marseille',region:'PACA',lat:43.30,lon:5.37,norm:16.0},
-  {name:'Bordeaux',region:'Nouvelle-Aquitaine',lat:44.84,lon:-0.58,norm:13.2},
-  {name:'Strasbourg',region:'Grand Est',lat:48.57,lon:7.75,norm:10.5},
-  {name:'Lille',region:'Hauts-de-France',lat:50.63,lon:3.07,norm:10.0},
-  {name:'Nantes',region:'Pays de la Loire',lat:47.22,lon:-1.55,norm:12.8},
-  {name:'Grenoble',region:'Auvergne-Rhone-Alpes',lat:45.18,lon:5.72,norm:11.2},
 ];
 const GO_CURRENT = [
   {tech:'Wind',cal:'Cal-26',bid:.51,ask:.55,delta:-.02},
