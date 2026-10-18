@@ -22,8 +22,8 @@
   var COUNTRIES = [
     { code: 'FR', label: 'France', flag: '🇫🇷', colour: '#14D3A9' },
     { code: 'UK', label: 'UK', flag: '🇬🇧', colour: '#3FA6B4' },
-    { code: 'DE', label: 'Allemagne', flag: '🇩🇪', colour: '#EE9B00' },
-    { code: 'NL', label: 'Pays-Bas', flag: '🇳🇱', colour: '#A87DC4' }
+    { code: 'DE', label: 'Germany', flag: '🇩🇪', colour: '#EE9B00' },
+    { code: 'NL', label: 'Netherlands', flag: '🇳🇱', colour: '#A87DC4' }
   ];
   var PALETTE = ['#14D3A9', '#EE9B00', '#3FA6B4', '#A87DC4', '#ED6965', '#FBBF24', '#7B4B9C', '#94D2BD'];
 
@@ -311,7 +311,7 @@
       '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Tableau forward · tous les tenors</span></div>' +
       '<table style="font-size:11px">' +
       '<thead><tr><th style="text-align:left">PRODUIT</th><th style="text-align:left">CONTRAT</th>' +
-      '<th style="text-align:right">VALEUR (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR S-1</th></tr></thead>' +
+      '<th style="text-align:right">VALUE (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR 1W</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }
 
