@@ -16,7 +16,8 @@ on:
       - Fetch GO Prices (Commerg)
       - Fetch GO Auctions (EEX FR)
       - Backfill Historical Data
-      - Backfill chain (half-years, newest first)
+      - Backfill chain (monthly, newest first)
+      - Backfill generation (after prices)
     types: [completed]
   schedule:
     - cron: '17 */6 * * *'
