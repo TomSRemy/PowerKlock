@@ -1,7 +1,9 @@
-name: Backfill chain (half-years, newest first)
+name: Backfill chain (monthly, newest first)
 
-# Runs the multi-zone price backfill one half-year at a time, newest first,
-# each half-year committed to main as soon as it is done. Started by a push
+# Runs the multi-zone price backfill one month at a time (about an hour per
+# job, well under the 6 h job limit: a job killed at the limit commits
+# nothing), newest first, each month committed to main as soon as it is done.
+# A final job re-fetches known bad days (prices + generation). Started by a push
 # to a backfill-run/* branch (or by hand). Files holding fewer than
 # `min_zones` zones (FR-only history) are regenerated with all zones; days
 # that already carry several zones (and generation arrays) are kept.
@@ -18,7 +20,7 @@ concurrency:
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 300
     permissions:
       contents: write
     strategy:
@@ -26,20 +28,88 @@ jobs:
       fail-fast: false
       matrix:
         range:
-          - '2026-07-01 2026-12-31'
-          - '2026-01-01 2026-06-30'
-          - '2025-07-01 2025-12-31'
-          - '2025-01-01 2025-06-30'
-          - '2024-07-01 2024-12-31'
-          - '2024-01-01 2024-06-30'
-          - '2023-07-01 2023-12-31'
-          - '2023-01-01 2023-06-30'
-          - '2022-07-01 2022-12-31'
-          - '2022-01-01 2022-06-30'
-          - '2021-07-01 2021-12-31'
-          - '2021-01-01 2021-06-30'
-          - '2020-07-01 2020-12-31'
-          - '2020-01-01 2020-06-30'
+          - '2026-10-01 2026-10-31'
+          - '2026-09-01 2026-09-30'
+          - '2026-08-01 2026-08-31'
+          - '2026-07-01 2026-07-31'
+          - '2026-06-01 2026-06-30'
+          - '2026-05-01 2026-05-31'
+          - '2026-04-01 2026-04-30'
+          - '2026-03-01 2026-03-31'
+          - '2026-02-01 2026-02-28'
+          - '2026-01-01 2026-01-31'
+          - '2025-12-01 2025-12-31'
+          - '2025-11-01 2025-11-30'
+          - '2025-10-01 2025-10-31'
+          - '2025-09-01 2025-09-30'
+          - '2025-08-01 2025-08-31'
+          - '2025-07-01 2025-07-31'
+          - '2025-06-01 2025-06-30'
+          - '2025-05-01 2025-05-31'
+          - '2025-04-01 2025-04-30'
+          - '2025-03-01 2025-03-31'
+          - '2025-02-01 2025-02-28'
+          - '2025-01-01 2025-01-31'
+          - '2024-12-01 2024-12-31'
+          - '2024-11-01 2024-11-30'
+          - '2024-10-01 2024-10-31'
+          - '2024-09-01 2024-09-30'
+          - '2024-08-01 2024-08-31'
+          - '2024-07-01 2024-07-31'
+          - '2024-06-01 2024-06-30'
+          - '2024-05-01 2024-05-31'
+          - '2024-04-01 2024-04-30'
+          - '2024-03-01 2024-03-31'
+          - '2024-02-01 2024-02-29'
+          - '2024-01-01 2024-01-31'
+          - '2023-12-01 2023-12-31'
+          - '2023-11-01 2023-11-30'
+          - '2023-10-01 2023-10-31'
+          - '2023-09-01 2023-09-30'
+          - '2023-08-01 2023-08-31'
+          - '2023-07-01 2023-07-31'
+          - '2023-06-01 2023-06-30'
+          - '2023-05-01 2023-05-31'
+          - '2023-04-01 2023-04-30'
+          - '2023-03-01 2023-03-31'
+          - '2023-02-01 2023-02-28'
+          - '2023-01-01 2023-01-31'
+          - '2022-12-01 2022-12-31'
+          - '2022-11-01 2022-11-30'
+          - '2022-10-01 2022-10-31'
+          - '2022-09-01 2022-09-30'
+          - '2022-08-01 2022-08-31'
+          - '2022-07-01 2022-07-31'
+          - '2022-06-01 2022-06-30'
+          - '2022-05-01 2022-05-31'
+          - '2022-04-01 2022-04-30'
+          - '2022-03-01 2022-03-31'
+          - '2022-02-01 2022-02-28'
+          - '2022-01-01 2022-01-31'
+          - '2021-12-01 2021-12-31'
+          - '2021-11-01 2021-11-30'
+          - '2021-10-01 2021-10-31'
+          - '2021-09-01 2021-09-30'
+          - '2021-08-01 2021-08-31'
+          - '2021-07-01 2021-07-31'
+          - '2021-06-01 2021-06-30'
+          - '2021-05-01 2021-05-31'
+          - '2021-04-01 2021-04-30'
+          - '2021-03-01 2021-03-31'
+          - '2021-02-01 2021-02-28'
+          - '2021-01-01 2021-01-31'
+          - '2020-12-01 2020-12-31'
+          - '2020-11-01 2020-11-30'
+          - '2020-10-01 2020-10-31'
+          - '2020-09-01 2020-09-30'
+          - '2020-08-01 2020-08-31'
+          - '2020-07-01 2020-07-31'
+          - '2020-06-01 2020-06-30'
+          - '2020-05-01 2020-05-31'
+          - '2020-04-01 2020-04-30'
+          - '2020-03-01 2020-03-31'
+          - '2020-02-01 2020-02-29'
+          - '2020-01-01 2020-01-31'
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -60,7 +130,7 @@ jobs:
         run: |
           set -- ${{ matrix.range }}
           python scripts/enrich_summary.py --fetch-historical --from "$1" --to "$2" \
-            --zones FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
+            --zones FR,DE_LU,ES,BE,NL,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
             --mode repair --min-zones 2
 
       # Daily files first (no overlap with the scheduled fetch, which writes
@@ -87,6 +157,51 @@ jobs:
             git diff --cached --quiet || git commit -q -m "recalc: summary.json after backfill ${{ matrix.range }}"
             git push origin HEAD:main && exit 0
             echo "Push attempt $i failed, retrying…"
+            sleep 15
+          done
+          exit 1
+
+  # Days whose files exist but are wrong: 2026-10-11 (stale copy of 10-10 for
+  # six zones) and 2026-10-15 (France missing). Re-fetched in full, prices
+  # and generation, after the monthly jobs.
+  repair:
+    needs: backfill
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests==2.33.1
+      - name: Re-fetch bad days
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: |
+          for d in 2026-10-11 2026-10-15; do
+            python scripts/enrich_summary.py --fetch-historical --from $d --to $d \
+              --zones FR,DE_LU,ES,BE,NL,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
+              --mode rebuild --with-genmix
+          done
+      - name: Commit and push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add data/history/daily
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "backfill[repair]: 2026-10-11 and 2026-10-15 re-fetched (prices + generation)"
+          git checkout -- data/history
+          for i in 1 2 3 4 5 6; do
+            git pull -q --rebase -X theirs origin main || { git rebase --abort; sleep 10; continue; }
+            python scripts/enrich_summary.py > /dev/null
+            git add data/history/summary.json
+            git diff --cached --quiet || git commit -q -m "recalc: summary.json after repair"
+            git push origin HEAD:main && exit 0
             sleep 15
           done
           exit 1
