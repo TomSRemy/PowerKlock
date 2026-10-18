@@ -34,10 +34,29 @@
   var NEG = { win: '1Y', ccView: 'year', sortKey: 'negHours', sortDir: -1, zoneFilter: null, openRow: null, drillView: {}, summary: null, _retries: 0 };
 
   // ── Live data access ──────────────────────────────────────────────
-  function getZones() {
+  function rawZones() {
     try { if (typeof pricesData !== 'undefined' && Array.isArray(pricesData) && pricesData.length) return pricesData; } catch (e) {}
     try { if (Array.isArray(window.pricesData) && window.pricesData.length) return window.pricesData; } catch (e) {}
     return [];
+  }
+  // Price rows come from several loaders with different field names
+  // (negHrs/minHr from the daily-history loader, negHours/minHour from
+  // prices.json). Normalise once, deriving neg hours, min and its slot
+  // from the 15-min curve itself so the board can never disagree with the
+  // window / run / %neg columns, which also read the curve.
+  function getZones() {
+    return rawZones().map(function (z) {
+      var h = z.hourly || [], len = h.length, o = Object.assign({}, z);
+      if (len) {
+        var neg = 0, mn = Infinity, mi = -1;
+        for (var i = 0; i < len; i++) { var v = h[i]; if (v == null) continue; if (v < 0) neg++; if (v < mn) { mn = v; mi = i; } }
+        o.negHours = neg * 24 / len;
+        if (mi >= 0) { o.min = mn; o.minHour = slotTime(mi, len); }
+      } else {
+        o.negHours = z.negHours != null ? z.negHours : (z.negHrs || 0);
+      }
+      return o;
+    });
   }
   function loadSummary() {
     if (NEG.summary) return Promise.resolve(NEG.summary);
@@ -54,6 +73,11 @@
   function negPct(h) { if (!h || !h.length) return 0; var v = h.filter(function (x) { return x != null; }); if (!v.length) return 0; return v.filter(function (x) { return x < 0; }).length / v.length * 100; }
   function inFilter(code) { return !NEG.zoneFilter || NEG.zoneFilter.has(code); }
 
+  // History coverage: many zones only have a few months of daily files, so a
+  // yearly total over a partial year must not be shown as if it were complete.
+  function yearDays(s) { var o = {}; if (s) s.forEach(function (d) { var y = d.d.slice(0, 4); o[y] = (o[y] || 0) + 1; }); return o; }
+  function expectedDays(y) { if (y === curYear()) return doy(pkTodayISO()); var n = +y; return (n % 4 === 0 && (n % 100 !== 0 || n % 400 === 0)) ? 366 : 365; }
+  function yearComplete(s, y) { return (yearDays(s)[y] || 0) >= 0.95 * expectedDays(y); }
   function yearSum(s) { var o = {}; if (s) s.forEach(function (d) { var y = d.d.slice(0, 4); o[y] = (o[y] || 0) + (d.negH || 0); }); return o; }
   function monthSum(s, yf) { var o = new Array(12).fill(0); if (s) s.forEach(function (d) { if (yf && d.d.slice(0, 4) !== yf) return; o[+d.d.slice(5, 7) - 1] += (d.negH || 0); }); return o; }
   function deepest(s) { var mn = 0, dt = null; if (s) s.forEach(function (d) { if (d.min != null && d.min < mn) { mn = d.min; dt = d.d; } }); return { v: mn, d: dt }; }
@@ -81,13 +105,13 @@
         (zoneMeta ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-chg">' + (sub || '') + '</div>') + '</div>';
     }
     el.innerHTML =
-      card('FR neg hours', fr ? n2(fr.negHours, 2) : '–', 'h', fr && fr.min != null && fr.negHours > 0 ? 'min ' + n2(fr.min, 1) + ' · ' + (fr.minHour || '') : 'none today', fr && fr.negHours > 0) +
-      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 1) + ' · ' + (de.minHour || '') : 'none today', de && de.negHours > 0) +
+      card('FR neg hours', fr ? n2(fr.negHours, 2) : '–', 'h', fr && fr.min != null && fr.negHours > 0 ? 'min ' + n2(fr.min, 2) + ' · ' + (fr.minHour || '') : 'none today', fr && fr.negHours > 0) +
+      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 2) + ' · ' + (de.minHour || '') : 'none today', de && de.negHours > 0) +
       card('Zones in negative', inNeg.length, '/' + z.length, 'loaded today', false) +
       card('Total neg hours', n2(total, 2), 'h', 'across all zones', total > 0) +
-      card('Deepest print', dp.z ? n2(dp.v, 1) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true) +
-      card('Longest run', lr.z ? n2(lr.h, 2) : '–', 'h', lr.z ? flag(lr.z) + ' ' + lr.z : 'none', false, true) +
-      card('Most negative', most ? n2(most.negHours, 2) : '–', 'h', most ? flag(most.code) + ' ' + most.code : 'none', most, true);
+      card('Deepest print', dp.z ? n2(dp.v, 2) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true) +
+      card('Longest run', lr.z ? n2(lr.h, 2) : '–', 'h', lr.z ? flag(lr.z) + ' ' + lr.z : 'none', lr.h > 0, true) +
+      card('Most neg hours', most ? n2(most.negHours, 2) : '–', 'h', most ? flag(most.code) + ' ' + most.code : 'none', most, true);
   }
 
   function spark(hourly) {
@@ -144,7 +168,7 @@
         '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:var(--tx2);text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:.45;vertical-align:0"><polyline points="9 18 15 12 9 6"/></svg>' + flag(x.code) + ' ' + x.code + '</td>' +
         '<td style="font-size:11px;color:var(--tx2);text-align:left">' + zname(x.code) + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;font-weight:700;color:' + negCol + ';text-align:right">' + (isNeg ? n2(x.negHours, 2) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
-        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';text-align:right">' + (x.min != null && x.min < 0 ? n2(x.min, 1) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
+        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';text-align:right">' + (x.min != null && x.min < 0 ? n2(x.min, 2) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx3);text-align:right">' + r.win + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx2);text-align:right">' + (r.run > 0 ? n2(r.run, 2) : '<span style="color:var(--tx3)">–</span>') + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:' + (r.pct > 0 ? C_NEG : 'var(--tx3)') + ';text-align:right">' + (r.pct > 0 ? n2(r.pct, 0) + '%' : '–') + '</td>' +
@@ -254,7 +278,36 @@
     renderDrillChart(code, view, series);
   }
   window.negSetDrillView = function (code, v) { NEG.drillView[code] = v; renderDrill(code); };
-  window.negDrillFullscreen = function () { /* backlog */ };
+  // Fullscreen of a country drill: same KPIs, view tabs and chart (SVG/HTML views).
+  window.negDrillFullscreen = function (code) {
+    if (typeof window.pkOpenFullscreen !== 'function') return;
+    var host = document.getElementById('neg-detail-inner-' + code); if (!host) return;
+    var kpis = host.querySelector('.kpi-strip');
+    var view = NEG.drillView[code] || 'month';
+    var TABS = [['month', 'By month'], ['year', 'Per year'], ['cumul', 'Cumulative'], ['cal', 'Calendar'], ['daily', 'Daily bars'], ['mh', 'Month×hour'], ['driver', 'Driver']];
+    var tabsHtml = TABS.map(function (t) {
+      var on = t[0] === view;
+      return '<button onclick="negSetDrillView(\'' + code + '\',\'' + t[0] + '\');negDrillRefreshFullscreen(\'' + code + '\')" style="padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:' +
+        (on ? '#14D3A9' : '#7A93AB') + ';background:' + (on ? 'rgba(20,211,169,0.18)' : 'transparent') +
+        ';font-family:\'JetBrains Mono\',monospace;font-weight:600;letter-spacing:.02em">' + t[1] + '</button>';
+    }).join('');
+    var titleEl = document.getElementById('neg-drill-title-' + code);
+    (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+      title: 'Negative prices — ' + zname(code),
+      subtitle: titleEl && titleEl.firstChild ? [].map.call(titleEl.firstChild.children, function (e) { return e.textContent.trim(); }).filter(Boolean).join(' · ') : '',
+      filenameStem: 'powerklock_negative_' + code + '_' + view,
+      storageKey: 'negative-drill',
+      kpis: kpis ? { html: '<div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);width:100%">' + kpis.innerHTML + '</div>' } : null,
+      filters: { html: '<div class="pk-fs-filters-left"><div style="display:flex;align-items:center;gap:5px"><span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:\'JetBrains Mono\',monospace">View</span>' +
+        '<div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">' + tabsHtml + '</div></div></div>' },
+      chartSource: window.pkBuildChartSource({ htmlContainerId: 'neg-drill-chart-' + code, isHtmlView: function () { return true; } }),
+    });
+    var o = document.getElementById('pk-fs-overlay');
+    if (o) o.setAttribute('data-fs-context', 'neg-drill');
+  };
+  window.negDrillRefreshFullscreen = function (code) {
+    if (typeof window.pkFsIsOpen === 'function' && window.pkFsIsOpen('neg-drill')) window.negDrillFullscreen(code);
+  };
 
   function dTitle(code, eyebrow, title, sub) {
     var el = document.getElementById('neg-drill-title-' + code); if (!el) return;
@@ -335,14 +388,14 @@
   function renderCCKpis() {
     var el = document.getElementById('neg-cc-kpis'); if (!el) return;
     var s = NEG.summary, zk = (s && s.zones) ? Object.keys(s.zones) : [], cy = curYear();
-    var most = { h: 0, z: '', y: '' }, deep = { v: 0, z: '' }, euTot = 0;
-    CC_ZONES.forEach(function (c) { var ser = s && s.zones && s.zones[c]; if (!ser) return; var ys = yearSum(ser); Object.keys(ys).forEach(function (y) { if (ys[y] > most.h) most = { h: ys[y], z: c, y: y }; }); euTot += ys[String(+cy - 1)] || 0; var dp = deepest(ser); if (dp.v < deep.v) deep = { v: dp.v, z: c }; });
+    var most = { h: 0, z: '', y: '' }, deep = { v: 0, z: '' }, euTot = 0, euN = 0;
+    CC_ZONES.forEach(function (c) { var ser = s && s.zones && s.zones[c]; if (!ser) return; var ys = yearSum(ser); Object.keys(ys).forEach(function (y) { if (yearComplete(ser, y) && ys[y] > most.h) most = { h: ys[y], z: c, y: y }; }); if (yearComplete(ser, String(+cy - 1))) { euTot += ys[String(+cy - 1)] || 0; euN++; } var dp = deepest(ser); if (dp.v < deep.v) deep = { v: dp.v, z: c }; });
     function kc(lbl, val, unit, sub, dn, zm) { return '<div class="kpi-card ' + (dn ? 'kpi-down' : 'kpi-flat') + '"><div class="kpi-label">' + lbl + '</div><div class="kpi-value"' + (dn ? ' style="color:' + C_NEG + '"' : '') + '>' + val + (unit ? '<span class="kpi-unit">' + unit + '</span>' : '') + '</div>' + (zm ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-meta">' + (sub || '') + '</div>') + '</div>'; }
     el.innerHTML =
       kc('Zones tracked', zk.length || '–', '', CC_ZONES.length + ' featured', false) +
       kc('Most neg h', n2(most.h, 0), 'h', most.z ? flag(most.z) + ' ' + most.z + ' · ' + most.y : '', most.z, true) +
       kc('Deepest print', deep.z ? n2(deep.v, 0) : '–', '€/MWh', deep.z ? flag(deep.z) + ' ' + deep.z : '', deep.z, true) +
-      kc('EU total ' + (+cy - 1), n2(euTot, 0), 'h', CC_ZONES.length + ' zones', euTot > 0) +
+      kc('EU total ' + (+cy - 1), n2(euTot, 0), 'h', euN + ' zone' + (euN > 1 ? 's' : '') + ' with full history', euTot > 0) +
       kc('Reference', cy, '', 'current year', false);
   }
   function renderCCTabs() {
@@ -356,19 +409,24 @@
     var host = document.getElementById('neg-cc-chart'); if (!host) return;
     var s = NEG.summary; if (!s || !s.zones) { host.innerHTML = backlog('No history loaded.'); return; }
     var view = NEG.ccView, cy = curYear(), zones = CC_ZONES.filter(function (c) { return s.zones[c]; });
-    if (view === 'year') { ccTitle('Cross-zone — negative hours', 'Negative hours by zone and year', '2022 → ' + cy + ' · featured zones'); var years = []; for (var y = 2022; y <= +cy; y++) years.push(String(y)); host.innerHTML = svgGrouped(zones.map(function (c) { var ys = yearSum(s.zones[c]); return { c: c, vals: years.map(function (yy) { return ys[yy] || 0; }) }; }), years, cy); }
+    if (view === 'year') { ccTitle('Cross-zone — negative hours', 'Negative hours by zone and year', '2022 → ' + cy + ' · featured zones'); var years = []; for (var y = 2022; y <= +cy; y++) years.push(String(y)); host.innerHTML = svgGrouped(zones.map(function (c) { var ys = yearSum(s.zones[c]); return { c: c, vals: years.map(function (yy) { return yearComplete(s.zones[c], yy) ? (ys[yy] || 0) : null; }) }; }), years, cy) + coverageNote(zones, s, years); }
     else if (view === 'rank') { ccTitle('Cross-zone — ranking', 'Negative hours over window', NEG.win + ' · sorted'); host.innerHTML = svgHBars(zones.map(function (c) { return { c: c, v: trailing(s.zones[c], NEG.win).reduce(function (a, d) { return a + (d.negH || 0); }, 0) }; }).sort(function (a, b) { return b.v - a.v; })); }
     else if (view === 'monthhm') { ccTitle('Cross-zone — seasonality', 'Negative hours · zone × month', 'cumulative all years'); host.innerHTML = svgZoneMonth(zones, s); }
     else if (view === 'cumul') { ccTitle('Cross-zone — pace', 'Cumulative negative hours · ' + cy, 'featured zones, current year'); host.innerHTML = svgCCcumul(zones, s, cy); }
   }
+  function coverageNote(zones, s, years) {
+    var gaps = zones.filter(function (c) { return years.some(function (y) { return !yearComplete(s.zones[c], y); }); });
+    if (!gaps.length) return '';
+    return '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:' + C_TX3 + ';margin-top:6px">Years with incomplete daily history are not drawn · ' + gaps.join(', ') + '</div>';
+  }
   function svgGrouped(data, years, partial) {
     var W = 1000, H = 320, padL = 44, padB = 30, padT = 16, padR = 12, max = 1;
-    data.forEach(function (d) { d.vals.forEach(function (v) { if (v > max) max = v; }); }); max *= 1.12;
+    data.forEach(function (d) { d.vals.forEach(function (v) { if (v != null && v > max) max = v; }); }); max *= 1.12;
     var sy = function (v) { return H - padB - (v / max) * (H - padB - padT); }, gw = (W - padL - padR) / data.length, bw = (gw * 0.8) / years.length;
     var greys = ['#3a434d', '#566370', '#7a8794'], YC = {}; years.forEach(function (y, i) { YC[y] = y === partial ? C_NEG_DEEP : (i === years.length - 2 ? C_NEG : greys[Math.min(i, greys.length - 1)]); });
     var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
     niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
-    data.forEach(function (d, gi) { var gx = padL + gi * gw + gw * 0.1; d.vals.forEach(function (v, yi) { var x = gx + yi * bw, bh = (H - padB) - sy(v); s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + (bw - 1.5).toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="1.5" fill="' + YC[years[yi]] + '"' + (years[yi] === partial ? ' opacity=".75"' : '') + '/>'; }); s += '<text x="' + (gx + (years.length * bw) / 2).toFixed(1) + '" y="' + (H - 10) + '" fill="' + C_TX2 + '" font-size="12" text-anchor="middle" font-family="monospace" font-weight="700">' + flag(d.c) + ' ' + d.c + '</text>'; });
+    data.forEach(function (d, gi) { var gx = padL + gi * gw + gw * 0.1; d.vals.forEach(function (v, yi) { if (v == null) return; var x = gx + yi * bw, bh = (H - padB) - sy(v); s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + (bw - 1.5).toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="1.5" fill="' + YC[years[yi]] + '"' + (years[yi] === partial ? ' opacity=".75"' : '') + '/>'; }); s += '<text x="' + (gx + (years.length * bw) / 2).toFixed(1) + '" y="' + (H - 10) + '" fill="' + C_TX2 + '" font-size="12" text-anchor="middle" font-family="monospace" font-weight="700">' + flag(d.c) + ' ' + d.c + '</text>'; });
     var leg = years.map(function (y) { return '<span style="margin-right:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + YC[y] + ';vertical-align:-1px;margin-right:4px"></span>' + y + (y === partial ? ' (YTD)' : '') + '</span>'; }).join('');
     return svgOpen() + s + '</svg><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX3 + ';margin-top:6px">' + leg + '</div>';
   }
@@ -402,14 +460,17 @@
       var ser = s.zones[c], ys = yearSum(ser), dp = deepest(ser), prevY = ys[ly] || 0;
       var daysNeg = ser.filter(function (d) { return d.d.slice(0, 4) === ly && (d.negH || 0) > 0; }).length;
       var py2 = ys[String(+ly - 1)] || 0, pct = py2 ? Math.round((prevY - py2) / py2 * 100) : null;
-      return { c: c, h: Math.round(prevY), deep: dp.v, days: daysNeg, vy: pct, spark: yearsSpark(ys) };
-    }).sort(function (a, b) { return b.h - a.h; });
+      var full = yearComplete(ser, ly), full2 = yearComplete(ser, String(+ly - 1));
+      if (!full2) pct = null;
+      return { c: c, h: full ? Math.round(prevY) : null, deep: dp.v, days: full ? daysNeg : null, vy: full ? pct : null, spark: yearsSpark(ys), cov: (yearDays(ser)[ly] || 0) };
+    }).sort(function (a, b) { return (b.h == null ? -1 : b.h) - (a.h == null ? -1 : a.h); });
+    var na = function (r) { return '<span style="color:var(--tx3)" title="Incomplete history for ' + ly + ': ' + r.cov + ' days">n/a</span>'; };
     tb.innerHTML = rows.map(function (r) {
       return '<tr><td style="font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--tx2);text-align:left">' + flag(r.c) + ' ' + r.c + '</td>' +
         '<td style="text-align:left;color:var(--tx3)">' + zname(r.c) + '</td>' +
-        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';font-weight:600;text-align:right">' + r.h + '</td>' +
+        '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';font-weight:600;text-align:right">' + (r.h == null ? na(r) : r.h) + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;color:' + C_NEG + ';text-align:right">' + (r.deep ? Math.round(r.deep) : '–') + '</td>' +
-        '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx2);text-align:right">' + r.days + '</td>' +
+        '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--tx2);text-align:right">' + (r.days == null ? na(r) : r.days) + '</td>' +
         '<td style="font-family:\'JetBrains Mono\',monospace;text-align:right;color:' + (r.vy > 0 ? C_NEG : C_ACC) + '">' + (r.vy == null ? '–' : (r.vy > 0 ? '+' : '') + r.vy + '%') + '</td>' +
         '<td style="text-align:left;color:var(--tx3);letter-spacing:2px">' + r.spark + '</td></tr>';
     }).join('');

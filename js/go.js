@@ -181,11 +181,8 @@ function loadGoData(text) {
     renderGOKPIs(); drawGoIndicChart(); drawGoCal1Chart(); drawGoCalChart(); drawGoSpreadChart();
     renderGOFwdTable();
     if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
-    // My Dashboard's GO widget triggers this same fetch lazily (see
-    // renderMyDash in prices.js) — refresh it once the data lands.
-    if (document.getElementById('page-mydash')?.classList.contains('active') && typeof renderMyDash === 'function') {
-      renderMyDash();
-    }
+    // GO widgets on My Dashboard trigger this fetch lazily — redraw them once the data lands.
+    if (window.PKDash) PKDash.refresh();
     console.log('[go] real Commerg data loaded · as-of', GO_REAL.asOf);
     return true;
   } catch (e) { console.warn('[go] loadGoData failed', e); return false; }
@@ -417,7 +414,8 @@ function drawGoCalChart() {
       },
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, beginAtZero:false }
+        // Bars start at zero: a truncated axis made a 0.05 € gap look like 3x.
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, beginAtZero:true }
       }
     }
   });
@@ -502,9 +500,9 @@ function drawGoAuctionTechChart() {
     data: {
       labels,
       datasets: [
-        { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba(C_WIND,.5), yAxisID:'vol', order:3 },
+        { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba('#7FC8F8',.45), yAxisID:'vol', order:3 },
         { type:'bar',  label:'Solar — Volume (MWh)', data: solar.map(t => t ? t.allocated_mwh : null), backgroundColor: rgba('#FBBF24',.5), yAxisID:'vol', order:4 },
-        { type:'line', label:'Wind — Weighted price (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: C_WIND, borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
+        { type:'line', label:'Wind — Weighted price (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: '#7FC8F8', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
         { type:'line', label:'Solar — Weighted price (€/GO)', data: solar.map(t => t ? t.price_eur_mwh : null), borderColor: '#FBBF24', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:2 },
       ]
     },

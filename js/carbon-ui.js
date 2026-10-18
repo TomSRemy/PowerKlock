@@ -95,7 +95,7 @@
       const flag = (window.FLAG_MAP && FLAG_MAP[r.code]) || '';
       return `<tr class="zone-row" data-row-idx="${i}" data-zone="${r.code}" style="cursor:pointer" onclick="toggleCarbonRow(${i},event)" title="Click to drill into the hour">
       <td style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${fr?'var(--accent)':'var(--tx2)'};text-align:left"><svg class="row-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;opacity:0.45;vertical-align:0;transition:transform 0.15s ease"><polyline points="9 18 15 12 9 6"/></svg>${flag} ${r.code}</td>
-      <td style="font-size:11px;color:var(--tx2);text-align:left">${r.name}</td>
+      <td style="font-size:11px;color:var(--tx2);text-align:left">${(typeof ZONE_META !== "undefined" && ZONE_META[r.code] && ZONE_META[r.code].country) || r.name}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${cColor(r.ci)};text-align:right">${r.ci.toFixed(0)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--tx2);text-align:right">${r.pi.toFixed(0)}</td>
       <td style="font-family:'JetBrains Mono',monospace;color:var(--up);text-align:right">${r.cov.lowCPct.toFixed(0)}%</td>
@@ -156,7 +156,7 @@
 
     inner.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:700;color:var(--tx2)">${flag} ${r.name} · intensité horaire</div>
+        <div style="font-size:12px;font-weight:700;color:var(--tx2)">${flag} ${r.name} · hourly intensity</div>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window.__carbCharts&&__carbCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
@@ -233,14 +233,14 @@
     }).join('');
     return `<table style="width:100%;font-size:11px;border-collapse:collapse">
       <thead><tr>
-        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Filière</th>
+        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
         <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Part</th>
         <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">gCO2/kWh</th>
       </tr></thead><tbody>${rows}</tbody></table>`;
   }
   function _flowsTable(r){
     const flows = (r.flows||[]).slice().sort((a,b)=>Math.abs(b.net||0)-Math.abs(a.net||0));
-    if (!flows.length) return `<div style="font-size:10px;color:var(--tx4);margin-bottom:10px">Flux transfrontaliers indisponibles.</div>`;
+    if (!flows.length || flows.every(f => !(f.imports || f.exports || f.net))) return `<div style="font-size:10px;color:var(--tx3);margin-bottom:10px">Cross-border flows not available from the ENTSO-E feed for this snapshot — consumption intensity equals production intensity.</div>`;
     const rows = flows.map(f=>{
       const imp = f.imports||0, exp = f.exports||0, dir = (f.net||0)>0?'Import':'Export';
       const col = (f.net||0)>0?'var(--down)':'var(--up)';
@@ -250,18 +250,18 @@
     }).join('');
     return `<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px">
       <thead><tr>
-        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Frontière</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Sens</th>
+        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Border</th>
+        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Direction</th>
         <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Net MW</th>
       </tr></thead><tbody>${rows}</tbody></table>`;
   }
   function _residualBlock(r, res){
     const delta = (res.off!=null && res.est!=null) ? (res.est-res.off) : null;
     return `<div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:7px;padding:10px">
-      <div style="font-size:10px;color:var(--cat-carbon,#A87DC4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Mix résiduel · GHG Scope 2 market-based</div>
+      <div style="font-size:10px;color:var(--cat-carbon,#A87DC4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Residual mix · GHG Scope 2 market-based</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Officiel AIB</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${res.off!=null?res.off+' g':'n/a'}</span></div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Estimation live</span><span style="font-family:'JetBrains Mono',monospace;color:var(--warn)">${res.est!=null?res.est+' g':'n/a'}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Écart (±MAE)</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${delta!=null?(delta>=0?'+':'')+delta+' g (±'+res.mae+')':'–'}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Gap (±MAE)</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${delta!=null?(delta>=0?'+':'')+delta+' g (±'+res.mae+')':'–'}</span></div>
     </div>`;
   }
 

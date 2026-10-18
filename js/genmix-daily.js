@@ -133,8 +133,10 @@ function _gmdSynthJ1(profile) {
 // Build short ISO date string ("Sun 24 May 2026")
 // ─────────────────────────────────────────────────────────────────
 function _gmdLongDate() {
-  return new Date().toLocaleDateString('en-GB', {
-    weekday:'short', day:'2-digit', month:'short', year:'numeric',
+  // Date of the genmix snapshot (Paris), not the viewer's current date.
+  const d = window._genmixUpdated ? new Date(window._genmixUpdated) : new Date();
+  return d.toLocaleDateString('en-GB', {
+    weekday:'short', day:'2-digit', month:'short', year:'numeric', timeZone:'Europe/Paris',
   });
 }
 
@@ -381,8 +383,8 @@ function _gmdczRenderKpis() {
     <div class="kpi-card kpi-flat"><div class="kpi-label">Zones loaded</div><div class="kpi-value">${zones.length}<span class="kpi-unit">zones</span></div><div class="kpi-meta">cross-zone today</div></div>
     <div class="kpi-card kpi-flat"><div class="kpi-label">Top REN today</div><div class="kpi-value" style="color:#14D3A9;font-size:18px">${topRen.zone}</div><div class="kpi-meta">${topRen.value.toFixed(0)}% · ${_GMD_ZONE_NAMES[topRen.zone] || topRen.zone}</div></div>
     <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid</div><div class="kpi-value" style="color:#A78BFA;font-size:18px">${cleanCo2.zone}</div><div class="kpi-meta">${cleanCo2.value.toFixed(0)} g/kWh · lowest today</div></div>
-    <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs EU avg</div><div class="kpi-value" style="color:${(frVsEu != null && frVsEu >= 0) ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${frRen != null ? frRen.toFixed(0) : '--'}% vs EU ${euAvgRen.toFixed(0)}%</div></div>
-    <div class="kpi-card kpi-flat"><div class="kpi-label">EU total load</div><div class="kpi-value">${totalEU.toFixed(0)}<span class="kpi-unit">GW</span></div><div class="kpi-meta">${zones.length} zones</div></div>`;
+    <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs panel avg</div><div class="kpi-value" style="color:${(frVsEu != null && frVsEu >= 0) ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${frRen != null ? frRen.toFixed(0) : '--'}% vs panel ${euAvgRen.toFixed(0)}%</div></div>
+    <div class="kpi-card kpi-flat"><div class="kpi-label">Panel generation</div><div class="kpi-value">${(totalEU / 1000).toFixed(1)}<span class="kpi-unit">GW</span></div><div class="kpi-meta">${zones.length} zones · avg</div></div>`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -550,6 +552,7 @@ window.renderGmdczMain = renderGmdczMain;
 function _gmdczRenderHeatmap() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const data = window._genmixData || {};
   const zones = Object.keys(data)
     .filter(z => data[z]?.total > 0)
@@ -616,6 +619,7 @@ function _gmdczRenderHeatmap() {
 function _gmdczRenderRanking() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '0';   // the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const rows = _gmdczRanking(metric);
   if (!rows.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
@@ -667,6 +671,7 @@ function _gmdczRenderRanking() {
 function _gmdczRenderProfiles() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const data = window._genmixData || {};
   const zones = Object.keys(data);
@@ -822,6 +827,7 @@ function _gmdczRenderProfiles() {
 function _gmdczRenderSpread() {
   const host = document.getElementById('gmdcz-content');
   if (!host) return;
+  host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const metric = window._gmdczMetric || 'ren';
   const ref    = window._gmdczRef    || 'FR';
   const data   = window._genmixData || {};

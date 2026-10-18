@@ -313,7 +313,7 @@ function initLeafletMap() {
 }
 
 function getZoneData() {
-  const data = pricesData && pricesData.length ? pricesData : getDemoData();
+  const data = (pricesData && pricesData.length) ? pricesData : [];   // no demo fallback: empty until prices load
   return data;
 }
 
@@ -457,22 +457,30 @@ function renderMapKPIs() {
   const el = document.getElementById('map-kpis');
   if (!el) return;
   const data = getZoneData();
+  if (!data.length) { el.innerHTML = '<div class="fuel-note" style="grid-column:1/-1"><span class="spinner"></span> Loading day-ahead prices…</div>'; return; }
   const sorted = [...data].sort((a,b)=>b.today-a.today);
   const avg = data.reduce((s,z)=>s+z.today,0)/data.length;
   const negZones = data.filter(z=>(z.negHrs||z.neg||0)>0).length;
   const fr = data.find(z=>z.code==='FR');
   const de = data.find(z=>z.code==='DE'||z.code==='DE_LU');
 
-  el.innerHTML = [
-    {l:'EU Average', v:avg.toFixed(1)+'€', sub:'€/MWh', cls:''},
-    {l:'Highest', v:(sorted[0]?.today?.toFixed(1)||'--')+'€', sub:sorted[0]?.code||'--', cls:'down'},
-    {l:'Lowest', v:(sorted[sorted.length-1]?.today?.toFixed(1)||'--')+'€', sub:sorted[sorted.length-1]?.code||'--', cls:'up'},
-    {l:'Zones neg. prices', v:negZones, sub:'zones', cls:'warn'},
-  ].map(k=>`<div class="kpi-card">
-    <div class="kl">${k.l}</div>
-    <div class="kv ${k.cls}" style="font-size:17px">${k.v}</div>
-    <div class="kd" style="color:var(--tx3)">${k.sub}</div>
-  </div>`).join('');
+  const valid = data.filter(z => z.today != null);
+  const hi = sorted[0], lo = sorted[sorted.length - 1];
+  const day = window._currentPriceDate ? new Date(window._currentPriceDate + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' }) : '';
+  const card = (l, v, u, m, tone) => `<div class="kpi-card ${tone ? 'kpi-' + tone : 'kpi-flat'}"><div class="kpi-label">${l}</div><div class="kpi-value">${v}<span class="kpi-unit">${u}</span></div><div class="kpi-meta">${m}</div></div>`;
+  el.innerHTML =
+    card('Panel average', avg.toFixed(2), '€/MWh', `${valid.length} zones · ${day}`) +
+    card('Highest', hi ? hi.today.toFixed(2) : '--', '€/MWh', hi ? hi.code : '', 'down') +
+    card('Lowest', lo ? lo.today.toFixed(2) : '--', '€/MWh', lo ? lo.code : '', 'up') +
+    card('Spread', hi && lo ? (hi.today - lo.today).toFixed(2) : '--', '€/MWh', 'highest − lowest zone') +
+    card('France', fr ? fr.today.toFixed(2) : '--', '€/MWh', fr && fr.vsYday != null ? `${fr.vsYday >= 0 ? '▲ +' : '▼ '}${fr.vsYday.toFixed(2)} vs J-1` : '') +
+    card('Negative prices', negZones, negZones === 1 ? 'zone' : 'zones', 'at least one negative slot', negZones ? 'down' : null);
+  // Default the side panel to France instead of leaving it empty.
+  const content = document.getElementById('map-detail-content');
+  if (fr && content && content.style.display === 'none' && !window._mapDetailAuto) {
+    window._mapDetailAuto = true;
+    try { showMapDetail(fr); } catch (_) {}
+  }
 }
 
 function showMapDetail(zone) {
@@ -493,15 +501,14 @@ function showMapDetail(zone) {
     {l:'Min', v:(zone.min||0).toFixed(2)+' €', cls:'up', sub:'@'+(zone.minHr||zone.minH||0)+'h'},
     {l:'Max', v:(zone.max||0).toFixed(2)+' €', cls:'down', sub:'@'+(zone.maxHr||zone.maxH||0)+'h'},
     {l:'Neg Hours', v:(zone.negHrs||zone.neg||0)+'h', cls:(zone.negHrs||zone.neg||0)>0?'warn':''},
-  ].map(k=>`<div class="kpi-card">
-    <div class="kl">${k.l}</div>
-    <div class="kv ${k.cls}" style="font-size:14px">${k.v}</div>
-    ${k.sub?`<div class="kd" style="color:var(--tx3)">${k.sub}</div>`:''}
+  ].map(k=>`<div class="kpi-card ${k.cls === 'down' ? 'kpi-down' : k.cls === 'up' ? 'kpi-up' : 'kpi-flat'}" style="padding:10px 12px">
+    <div class="kpi-label">${k.l}</div>
+    <div class="kpi-value" style="font-size:16px">${k.v}</div>
+    ${k.sub?`<div class="kpi-meta">${k.sub}</div>`:''}
   </div>`).join('');
 
   // Hourly chart for selected zone
-  const hourly = zone.hourly && zone.hourly.length ? zone.hourly
-    : genHourly24(zone.today||50, zone.min||0, zone.max||100);
+  const hourly = zone.hourly && zone.hourly.length ? zone.hourly : [];
   const labels = makeTimeLabels(hourly.length);
   const col = (zone.today||0) >= 0 ? C_UP : C_DN;
 
@@ -523,10 +530,10 @@ function showMapDetail(zone) {
         legend:{display:false},
         tooltip:{callbacks:{label:ctx=>ctx.raw.toFixed(2)+' €/MWh'}},
         zoom:ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: hourly.length }); return a ? { nowLine: a } : {}; })() }
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: hourly.length, labels, chartDate: window._currentPriceDate }); return a ? { nowLine: a } : {}; })() }
       },
       scales:{
-        x:{grid:GRID, ticks:{color:C_TX3}},
+        x:{grid:GRID, ticks:{color:C_TX3, maxTicksLimit:7, maxRotation:0}},
         y:{grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(0)+'€'}}
       }
     }

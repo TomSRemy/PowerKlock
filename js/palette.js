@@ -116,38 +116,27 @@ function getSeriesColor(index) {
 //                    provided, the annotation uses the exact label at the
 //                    rounded index — required for category axes.
 //   opts.label     — annotation label text (default 'NOW')
-//   opts.chartDate — YYYY-MM-DD of the data shown. If != today, returns null.
+//   opts.chartDate — YYYY-MM-DD delivery day shown. If != today (Paris), returns null.
+//   opts.mode      — kept for call-site compatibility; no longer changes visibility.
 function nowLineAnnotation(opts) {
   opts = opts || {};
-  var today = new Date().toISOString().slice(0, 10);
-  var chartDate = opts.chartDate || (window.DP && window.DP.selectedDate);
-
-  // Visibility logic depends on the calling context:
-  // - mode 'single' (default): show NOW when chart represents today's or
-  //   yesterday's delivery. The single-zone chart in the price table tracks
-  //   live evolution and prior-day context until new prices arrive.
-  // - mode 'compare': show NOW only on J-1 delivery. Today's prices are fully
-  //   cleared (auction at 12:00 CET J-1) so NOW would be misleading; forward
-  //   and older historical dates are too far from current time to be useful.
-  var mode = opts.mode || 'single';
-  if (chartDate) {
-    var dt1 = new Date(chartDate + 'T00:00:00Z');
-    var dt2 = new Date(today + 'T00:00:00Z');
-    var diffDays = Math.round((dt1 - dt2) / 86400000);
-    if (mode === 'compare') {
-      if (diffDays !== -1) return null;
-    } else {
-      if (diffDays !== 0 && diffDays !== -1) return null;
-    }
-  }
+  // Delivery days and slot times are Europe/Paris wall-clock, so both the
+  // "is this today?" test and the marker position use Paris time (the
+  // browser's own zone / UTC put the line at the wrong slot).
+  var parts = {};
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).forEach(function (p) { parts[p.type] = p.value; });
+  var today = parts.year + '-' + parts.month + '-' + parts.day;
+  var chartDate = opts.chartDate || (window.DP && window.DP.selectedDate) || today;
+  // Only the delivery day that is currently running has a "now".
+  if (chartDate !== today) return null;
 
   var slots = opts.slots || 24;
-  var now = new Date();
-  // Fractional position
+  var hh = +parts.hour, mm = +parts.minute;
   var xFrac;
-  if (slots === 96) xFrac = now.getHours() * 4 + now.getMinutes() / 15;
-  else if (slots === 48) xFrac = now.getHours() * 2 + now.getMinutes() / 30;
-  else xFrac = now.getHours() + now.getMinutes() / 60;
+  if (slots === 96) xFrac = hh * 4 + mm / 15;
+  else if (slots === 48) xFrac = hh * 2 + mm / 30;
+  else xFrac = hh + mm / 60;
 
   // Round to nearest integer index
   var xIdx = Math.round(xFrac);
