@@ -108,12 +108,15 @@ def shift(arr, prev, off_h):
         return arr
     n = len(arr)
     k = round(off_h * n / 24)
+    # A previous-day tail that is all zeros was not published when that file
+    # was written (zero-filled by the fetcher): those slots become null.
+    prev_ok = isinstance(prev, list) and len(prev) == n and any(v not in (None, 0) for v in prev[n - k:])
     out = []
     for i in range(n):
         if i >= k:
             out.append(arr[i - k])
         else:
-            out.append(prev[n - k + i] if isinstance(prev, list) and len(prev) == n else None)
+            out.append(prev[n - k + i] if prev_ok else None)
     return out
 
 
