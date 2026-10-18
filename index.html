@@ -2876,6 +2876,9 @@
       <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear
       </div>
+      <div class="sidebar-item" onclick="showPage('capacity')" id="nav-capacity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>Installed Capacity
+      </div>
       <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
       </div>
@@ -4625,9 +4628,17 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
             <option value="FR">France (FR)</option>
-            <option value="DE_LU">Germany (DE)</option>
+            <option value="DE">Germany (DE)</option>
             <option value="BE">Belgium (BE)</option>
+            <option value="NL">Netherlands (NL)</option>
             <option value="ES">Spain (ES)</option>
+            <option value="IT">Italy (IT)</option>
+            <option value="CH">Switzerland (CH)</option>
+            <option value="AT">Austria (AT)</option>
+            <option value="PL">Poland (PL)</option>
+            <option value="CZ">Czechia (CZ)</option>
+            <option value="DK">Denmark (DK)</option>
+            <option value="PT">Portugal (PT)</option>
           </select>
           <button class="pk-btn-ghost" onclick="cbShiftDay(-1)" title="Previous day">‹</button>
           <span class="updated-badge" id="cb-day" style="min-width:120px;text-align:center">–</span>
@@ -4642,7 +4653,7 @@
           <div style="position:relative;height:280px"><canvas id="cb-intraday" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title" id="cb-days-title">Last 14 days</div><div class="fuel-card-sub" id="cb-days-sub">Daily average net exchange by border (GW)</div></div><span class="source-badge" id="cb-days-badge">RTE éCO2mix</span></div>
+          <div class="fuel-card-head"><div><div class="table-title" id="cb-days-title">Daily exchanges</div><div class="fuel-card-sub" id="cb-days-sub">Daily average net exchange by border (GW)</div></div><span class="source-badge" id="cb-days-badge">RTE éCO2mix</span></div>
           <div style="position:relative;height:280px"><canvas id="cb-days" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
@@ -5501,6 +5512,36 @@
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
+    <div class="page" id="page-capacity">
+      <div class="page-header">
+        <div><div class="page-title">Installed Capacity</div><div class="page-subtitle">Installed net generating capacity by technology and year · 12 European countries</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="cap-country" onchange="renderCapacity()">
+            <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option><option value="IT">Italy</option>
+            <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="PT">Portugal</option><option value="CH">Switzerland</option>
+            <option value="AT">Austria</option><option value="PL">Poland</option><option value="CZ">Czechia</option><option value="DK">Denmark</option>
+          </select>
+          <span class="updated-badge" id="cap-upd">–</span>
+        </div>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="cap-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="cap-history-title">Installed capacity by year</div><div class="fuel-card-sub">GW by technology · planning targets, storage energy and the DC duplicate of solar excluded</div></div><span class="source-badge">Energy-Charts</span></div>
+          <div style="position:relative;height:320px"><canvas id="cap-history" style="width:100%;height:320px"></canvas></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><span class="table-title" id="cap-table-title">By technology</span><span class="source-badge">GW · vs 5 years earlier</span></div>
+          <table><thead><tr><th class="l">Technology</th><th>GW</th><th>Share</th><th>5 years earlier</th><th>Change</th></tr></thead><tbody id="cap-tbody"></tbody></table>
+        </div>
+      </div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">Country comparison</div><div class="fuel-card-sub">Latest reported year per country · GW by technology</div></div><span class="source-badge">Energy-Charts</span></div>
+        <div style="position:relative;height:380px"><canvas id="cap-compare" style="width:100%;height:380px"></canvas></div>
+      </div>
+      <div class="fuel-note">Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0, refreshed daily. Figures are national statistics or ENTSO-E capacity declarations depending on the country: distributed solar is understated for some (Italy's ENTSO-E figure is far below its national registry). Batteries are counted at their power rating; their storage energy (GWh) is not added.</div>
+    </div>
+
     <div class="page" id="page-status">
       <div class="page-header">
         <div><div class="page-title">Data status</div><div class="page-subtitle">Freshness of every source shown on PowerKlock · <span id="status-checked">–</span></div></div>
@@ -6503,6 +6544,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/pr-forward.js"></script>
 <script src="js/widgets-kpi.js"></script>
 <script src="js/status.js"></script>
+<script src="js/capacity.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
 

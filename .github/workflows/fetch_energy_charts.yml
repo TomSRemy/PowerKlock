@@ -1,0 +1,53 @@
+name: Fetch Energy-Charts (capacity, cross-border flows)
+
+# Installed capacity and physical cross-border flows from Energy-Charts.info
+# (Fraunhofer ISE, CC BY 4.0) → data/history/capacity.json and
+# data/history/flows/YYYY-MM.json (scripts/fetch_energy_charts.py).
+
+on:
+  schedule:
+    - cron: '40 5 * * *'     # 05:40 UTC, complete previous day
+    - cron: '40 15 * * *'    # 15:40 UTC, today so far
+  workflow_dispatch:
+    inputs:
+      date_from:
+        description: 'Flow history from (YYYY-MM-DD, empty = last 3 days)'
+        required: false
+        default: ''
+      date_to:
+        description: 'Flow history to (YYYY-MM-DD, empty = today)'
+        required: false
+        default: ''
+
+concurrency:
+  group: fetch-energy-charts
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date_from }}" ]; then ARGS="--from ${{ inputs.date_from }} --to ${{ inputs.date_to || inputs.date_from }}"; fi
+          python scripts/fetch_energy_charts.py $ARGS
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/capacity.json data/history/flows
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: Energy-Charts capacity and flows $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1
