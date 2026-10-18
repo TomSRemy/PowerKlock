@@ -278,7 +278,36 @@
     renderDrillChart(code, view, series);
   }
   window.negSetDrillView = function (code, v) { NEG.drillView[code] = v; renderDrill(code); };
-  window.negDrillFullscreen = function () { /* backlog */ };
+  // Fullscreen of a country drill: same KPIs, view tabs and chart (SVG/HTML views).
+  window.negDrillFullscreen = function (code) {
+    if (typeof window.pkOpenFullscreen !== 'function') return;
+    var host = document.getElementById('neg-detail-inner-' + code); if (!host) return;
+    var kpis = host.querySelector('.kpi-strip');
+    var view = NEG.drillView[code] || 'month';
+    var TABS = [['month', 'By month'], ['year', 'Per year'], ['cumul', 'Cumulative'], ['cal', 'Calendar'], ['daily', 'Daily bars'], ['mh', 'Month×hour'], ['driver', 'Driver']];
+    var tabsHtml = TABS.map(function (t) {
+      var on = t[0] === view;
+      return '<button onclick="negSetDrillView(\'' + code + '\',\'' + t[0] + '\');negDrillRefreshFullscreen(\'' + code + '\')" style="padding:3px 8px;font-size:10px;border:none;cursor:pointer;border-radius:3px;color:' +
+        (on ? '#14D3A9' : '#7A93AB') + ';background:' + (on ? 'rgba(20,211,169,0.18)' : 'transparent') +
+        ';font-family:\'JetBrains Mono\',monospace;font-weight:600;letter-spacing:.02em">' + t[1] + '</button>';
+    }).join('');
+    var titleEl = document.getElementById('neg-drill-title-' + code);
+    (window.pkOpenOrUpdate || window.pkOpenFullscreen)({
+      title: 'Negative prices — ' + zname(code),
+      subtitle: titleEl && titleEl.firstChild ? [].map.call(titleEl.firstChild.children, function (e) { return e.textContent.trim(); }).filter(Boolean).join(' · ') : '',
+      filenameStem: 'powerklock_negative_' + code + '_' + view,
+      storageKey: 'negative-drill',
+      kpis: kpis ? { html: '<div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);width:100%">' + kpis.innerHTML + '</div>' } : null,
+      filters: { html: '<div class="pk-fs-filters-left"><div style="display:flex;align-items:center;gap:5px"><span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:\'JetBrains Mono\',monospace">View</span>' +
+        '<div style="display:inline-flex;gap:2px;background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:2px">' + tabsHtml + '</div></div></div>' },
+      chartSource: window.pkBuildChartSource({ htmlContainerId: 'neg-drill-chart-' + code, isHtmlView: function () { return true; } }),
+    });
+    var o = document.getElementById('pk-fs-overlay');
+    if (o) o.setAttribute('data-fs-context', 'neg-drill');
+  };
+  window.negDrillRefreshFullscreen = function (code) {
+    if (typeof window.pkFsIsOpen === 'function' && window.pkFsIsOpen('neg-drill')) window.negDrillFullscreen(code);
+  };
 
   function dTitle(code, eyebrow, title, sub) {
     var el = document.getElementById('neg-drill-title-' + code); if (!el) return;

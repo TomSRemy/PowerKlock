@@ -74,8 +74,7 @@ function _fuelChart(id, cfg, file) {
   setTimeout(() => { addFullscreen(id); addDownload(id, file || id); }, 60);
   return ch;
 }
-const FUEL_PERIODS = [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['YTD', 'YTD'], ['1Y', '1Y'], ['2Y', '2Y'], ['5Y', '5Y'], ['All', 'All']];
-const FUEL_PERIOD_PARAM = { key: 'period', label: 'Period', options: FUEL_PERIODS };
+const FUEL_PERIOD_PARAM = PKW.PERIOD_PARAM;
 // Registers a chart in the dashboard catalogue (js/widgets.js).
 function _fuelReg(def) {
   if (!window.PKW) return;

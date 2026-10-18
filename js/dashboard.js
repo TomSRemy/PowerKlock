@@ -29,7 +29,7 @@
       W('kpi-da', 2, 2, { zone: 'FR' }), W('kpi-da', 2, 2, { zone: 'DE_LU' }), W('kpi-fr-load', 2, 2), W('kpi-fr-net', 2, 2), W('kpi-fr-nuclear', 2, 2), W('kpi-hdd', 2, 2),
       W('da-intraday', 8, 5), W('cb-fr-avg', 4, 5),
       S('France fundamentals'),
-      W('load-fr', 6, 5), W('ren-intraday', 6, 5),
+      W('load-day', 6, 5, { zone: 'FR' }), W('ren-intraday', 6, 5),
       W('cb-intraday', 12, 5),
     ] },
     { id: 'fund', name: 'Fundamentals', desc: 'Fuels, carbon, spreads, nuclear and weather.', items: [
@@ -72,7 +72,7 @@
     'ttf': W('kpi-fuel', 2, 2, { c: 'ttf' }), 'eua': W('kpi-fuel', 2, 2, { c: 'eua' }),
     'fr-nuclear': W('kpi-fr-nuclear', 2, 2), 'fr-load': W('kpi-fr-load', 2, 2), 'fr-export': W('kpi-fr-net', 2, 2), 'hdd-paris': W('kpi-hdd', 2, 2),
     'fr-da-chart': W('da-intraday', 6, 5, { zone: 'FR' }), 'de-da-chart': W('da-intraday', 6, 5, { zone: 'DE_LU' }),
-    'fr-load-chart': W('load-fr', 6, 5), 'fr-cb-chart': W('cb-fr-avg', 6, 5), 'fr-ren-chart': W('ren-intraday', 6, 5),
+    'fr-load-chart': W('load-day', 6, 5, { zone: 'FR' }), 'fr-cb-chart': W('cb-fr-avg', 6, 5), 'fr-ren-chart': W('ren-intraday', 6, 5),
   };
 
   function readLocal() {
