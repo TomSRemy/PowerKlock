@@ -33,8 +33,8 @@ dashboard accounts.
 
 | Schema | Content |
 |---|---|
-| `market` | Facts. `da_price_day`, `generation_day`, `load_day`, `commodity` / `commodity_close`, `forward_settlement`, `forward_contract_close`, `spot_reference`, `go_quote`, `go_auction`, `installed_capacity`, `crossborder_flow_day` |
-| `analytics` | Views. `da_price_15min`, `da_price_hourly`, `da_price_daily`, `negative_hours_monthly`, `bess_spread_daily`, `generation_slot`, `generation_daily`, `capture_price_daily`, `commodity_daily`, `clean_spread_daily`, `forward_curve`, `forward_curve_latest`, `coverage`, `installed_capacity` (+`_latest`), `crossborder_flow_hourly`, `net_position_daily` |
+| `market` | Facts. `da_price_day`, `generation_day`, `load_day`, `commodity` / `commodity_close`, `forward_settlement`, `forward_contract_close`, `spot_reference`, `go_quote`, `go_auction`, `installed_capacity`, `crossborder_flow_day`, `fr_region_day` |
+| `analytics` | Views. `da_price_15min`, `da_price_hourly`, `da_price_daily`, `negative_hours_monthly`, `bess_spread_daily`, `generation_slot`, `generation_daily`, `capture_price_daily`, `commodity_daily`, `clean_spread_daily`, `forward_curve`, `forward_curve_latest`, `coverage`, `installed_capacity` (+`_latest`), `crossborder_flow_hourly`, `net_position_daily`, `fr_region_daily`, `fr_region_load_factor_monthly` |
 | `meta` | `zone`, `fuel` (with CO2 factors), `convention`, and `dictionary` (every table / view / column with its description) |
 | `ops` | `sync_run`, `file_state`, `quality_issue`, `schema_migrations` |
 
@@ -98,5 +98,9 @@ From then on the sync runs after every data fetch and every 6 hours.
   there are countries (DE, IT), not bidding zones (DE_LU, IT_NORD).
   Capacity rows with `counts_in_total = false` (planning targets, storage
   GWh, solar DC duplicate) must never be summed.
+- French regions (`market.fr_region_day`) are read straight from ODRÉ by the
+  sync (not from repository files): consolidated éCO2mix régional since 2013,
+  the last weeks from the real-time dataset until consolidated data replace
+  them (`dataset` column). A full load downloads ~800 MB and takes ~10 min.
 - Weather is not stored: Open-Meteo's free API is for non-commercial use
   only.
