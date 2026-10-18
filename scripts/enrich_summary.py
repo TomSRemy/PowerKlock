@@ -1071,11 +1071,12 @@ def main():
     )
     args = parser.parse_args()
 
-    # The half-year backfill chain (2026-10-18) was replaced by monthly jobs:
-    # its half-year jobs could exceed the 6 h job limit and lose their work.
-    # Its remaining queued jobs stop here so the monthly chain can run.
-    if os.environ.get('GITHUB_WORKFLOW') == 'Backfill chain (half-years, newest first)':
-        print('Superseded by "Backfill chain (monthly, newest first)" — nothing to do.')
+    # Superseded backfill chains (2026-10-18/19): half-year jobs could exceed
+    # the 6 h job limit, sequential monthly jobs would take five days. Their
+    # remaining queued jobs stop here; 'Backfill chain v3' (monthly, four in
+    # parallel) does the work.
+    if os.environ.get('GITHUB_WORKFLOW') in ('Backfill chain (half-years, newest first)', 'Backfill chain (monthly, newest first)'):
+        print('Superseded by "Backfill chain v3 (monthly, parallel)" — nothing to do.')
         return
 
     if not args.fetch_historical:
