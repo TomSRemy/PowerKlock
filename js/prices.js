@@ -9,6 +9,11 @@ const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entso
 window.pkTodayISO = function() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
 };
+// Current Europe/Paris wall-clock hour as a fraction (e.g. 14.25 = 14:15).
+window.pkParisHour = function() {
+  const [h, m] = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
+  return h + m / 60;
+};
 
 // ════════════════════════════════════════════
 // PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
@@ -2072,8 +2077,9 @@ function buildHourlyDetail(idx, z) {
               }
             }
             const nph = tblData.length > 24 ? Math.round(tblData.length/24) : 1; // pts per hour
-            const nowSlot = new Date().getHours() * nph + Math.floor(new Date().getMinutes()/(60/nph));
-            const isToday = !DP.selectedDate || DP.selectedDate === pkTodayISO();
+            const _parisHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
+            const nowSlot = _parisHM[0] * nph + Math.floor(_parisHM[1]/(60/nph));
+            const isToday = (window._currentPriceDate || pkTodayISO()) === pkTodayISO();
             return tblData.map((v,i) => {
               const hr  = Math.floor(i / nph);
               const min = (i % nph) * (60 / nph);
@@ -2153,8 +2159,8 @@ function buildHourlyDetail(idx, z) {
   if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
 
   const chartLabels = makeTimeLabels(chartData.length);
-  const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== pkTodayISO())
-    ? -1 : new Date().getHours() * (chartData.length / 24);
+  const curSlot = ((window._currentPriceDate || pkTodayISO()) !== pkTodayISO())
+    ? -1 : Math.floor(pkParisHour()) * (chartData.length / 24);
 
   const datasets = [{
     label: `${z.code} ${ccFmtDay(window._currentPriceDate)}`,
@@ -3391,8 +3397,7 @@ function renderCCLines(data, selected) {
   const firstZone = data.find(z => selected.has(z.code));
   const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
   const hours = makeTimeLabels(nPts);
-  const curHr = new Date().getHours();
-  const curIdx = Math.min(curHr, nPts - 1);
+  const curIdx = Math.min(Math.floor(pkParisHour() * nPts / 24), nPts - 1);
 
   const datasets = [];
   data.forEach((z, i) => {
