@@ -175,11 +175,7 @@ const PAGE_LOADERS = {
   // below now also fires that first render.
   renewables: () => loadRenewables(),
   nuclear:    () => drawNuclear(),
-  imbalance:  () => {
-    drawImbalance();
-    if (typeof renderHistImb === 'function') renderHistImb();
-    if (typeof renderHistFCR === 'function') renderHistFCR();
-  },
+  imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
   eua:        () => drawEUA(),

@@ -81,98 +81,121 @@ async function drawNuclear() {
     `Installed capacity ${GW(FR_NUC_INSTALLED_MW)} GW (57 reactors, incl. Flamanville 3). Output − availability gap = modulation / load-following.`;
 }
 
-// ── IMBALANCE
-window._imbDay = 0;
-function setImbDay(offset, btn) {
-  window._imbDay = offset;
-  document.querySelectorAll('#page-imbalance .day-tab').forEach(b=>b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+// ── IMBALANCE PRICES ──────────────────────────────────────────────────
+// Belgium: Elia open data (Opendatasoft, CORS-enabled, no key) —
+// ods162 = today near real time, ods134 = validated history; 15-min
+// single imbalance price and system imbalance (MW, negative = short).
+// Day-ahead reference: BE daily history files (ENTSO-E).
+const ELIA = 'https://opendata.elia.be/api/explore/v2.1/catalog/datasets/';
+const IMB = { day: null, cache: new Map() };
+function imbShiftDay(n) {
+  const t = pkTodayISO();
+  IMB.day = n === 0 ? t : _renAdd(IMB.day || t, n);
+  if (IMB.day > t) IMB.day = t;
   drawImbalance();
 }
-
-function drawImbalance() {
-  const n = 96; // 15-min slots
-  const daPrice = 45; // demo DA ref
-
-  // Synthetic: imbalance spikes during wind ramp events
-  const data = Array.from({length:n}, (_,i) => {
-    const hr = i/4;
-    const base = daPrice * (0.8 + 0.4*Math.sin(hr/24*Math.PI*2));
-    const spike = (i>28&&i<36)||(i>52&&i<60) ? (Math.random()<.5?1:-1)*150*Math.random() : 0;
-    return +(base + spike + (Math.random()-.5)*30).toFixed(1);
-  });
-  const longData  = data.map(v => v > 0 ? v : null);
-  const shortData = data.map(v => v < 0 ? v : null);
-  const labels = Array.from({length:n}, (_,i) => i%4===0 ? Math.floor(i/4)+'h' : '');
-  const curIdx = (window._imbDay === 0) ? new Date().getHours()*4 : n;
-
-  // KPIs
-  const longVals  = data.filter(v=>v>0);
-  const shortVals = data.filter(v=>v<0);
-  const lastPrice = data[Math.max(0, curIdx-1)] || data[data.length-1];
-  const longAvg   = longVals.length  ? longVals.reduce((a,b)=>a+b,0)/longVals.length   : 0;
-  const shortAvg  = shortVals.length ? shortVals.reduce((a,b)=>a+b,0)/shortVals.length : 0;
-  const netPos    = +(Math.random()*2000 - 1000).toFixed(0);
-  const spread    = longAvg - shortAvg;
-
-  const setKPI = (id, html) => { const el=document.getElementById(id); if(el) el.innerHTML=html; };
-  setKPI('imb-kpi-last', `<span class="${lastPrice>=0?'up':'down'}">${lastPrice>=0?'+':''}${lastPrice.toFixed(1)}</span><span class="kpi-unit">€/MWh</span>`);
-  setKPI('imb-kpi-last-chg', lastPrice>=0 ? 'System long' : 'System short');
-  setKPI('imb-kpi-long', `+${longAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`);
-  setKPI('imb-kpi-long-chg', `${longVals.length} long periods`);
-  setKPI('imb-kpi-short', `${shortAvg.toFixed(1)}<span class="kpi-unit">€/MWh</span>`);
-  setKPI('imb-kpi-short-chg', `${shortVals.length} short periods`);
-  setKPI('imb-kpi-pos', `<span class="${netPos>=0?'up':'down'}">${netPos>=0?'+':''}${netPos.toLocaleString()}</span><span class="kpi-unit">MW</span>`);
-  setKPI('imb-kpi-spread', `+${spread.toFixed(1)}<span class="kpi-unit">€/MWh</span>`);
-
-  mkChart('imb-canvas', {
-    type:'bar',
-    data:{ labels, datasets:[
-      { label:'Long price (€/MWh)', data:longData,  backgroundColor:'rgba(16,185,129,.65)',  borderWidth:0, borderRadius:1 },
-      { label:'Short price (€/MWh)',data:shortData, backgroundColor:'rgba(240,80,96,.65)',   borderWidth:0, borderRadius:1 },
-    ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'bottom',labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:10}},
-        tooltip:{mode:'index',callbacks:{label:ctx=>(ctx.raw!=null?(ctx.raw>=0?'+':'')+ctx.raw.toFixed(1)+' €/MWh':null)}},
-        zoom:ZOOM_CFG,
-        annotation:{annotations:{
-          nowLine:{type:'line',xMin:curIdx,xMax:curIdx,borderColor:'rgba(255,220,100,.6)',borderWidth:1.5,borderDash:[4,3]},
-          daRef:{type:'line',yMin:daPrice,yMax:daPrice,borderColor:'rgba(255,255,255,.15)',borderWidth:1,borderDash:[4,4],
-            label:{display:true,content:'DA '+daPrice+'€',position:'start',color:'rgba(255,255,255,.4)',font:{size:9},backgroundColor:'transparent'}}
-        }}
-      },
-      scales:{
-        x:{grid:GRID_NONE,ticks:{color:C_TX3,maxTicksLimit:12}},
-        y:{grid:GRID,ticks:{color:C_TX3,callback:v=>(v>=0?'+':'')+v+' €'},title:{display:true,text:'€/MWh',color:C_TX3,font:{size:10}}}
-      }
-    }
-  });
-  setTimeout(()=>{ addFullscreen('imb-canvas'); addDownload('imb-canvas','imbalance'); },100);
-
-  // Periods table — show top 10 most extreme
-  const tbody = document.getElementById('imb-periods-tbody');
-  if (tbody) {
-    const extremes = data.map((v,i)=>({i,v,label:Math.floor(i/4)+'h'+(i%4*15).toString().padStart(2,'0')}))
-      .sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).slice(0,12);
-    tbody.innerHTML = extremes.map(({i,v,label}) => {
-      const pos = v >= 0;
-      const vs = (v - daPrice);
-      return `<tr>
-        <td style="font-family:'JetBrains Mono',monospace">${label}</td>
-        <td style="color:${pos?'var(--up)':'var(--down)'}">${pos?'LONG':'SHORT'}</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:${pos?'var(--up)':'var(--down)'};font-weight:600">${v>=0?'+':''}${v.toFixed(1)}</td>
-        <td style="font-family:'JetBrains Mono',monospace;color:${vs>=0?'var(--up)':'var(--down)'}">${vs>=0?'+':''}${vs.toFixed(1)}</td>
-        <td style="color:${pos?'var(--up)':'var(--down)'};font-size:11px">${pos?'▶ net long':'◀ net short'}</td>
-      </tr>`;
-    }).join('');
+function _eliaRange(ds, fromUTC, toUTC) {
+  const k = ds + fromUTC + toUTC;
+  if (!IMB.cache.has(k)) {
+    const where = `datetime>="${fromUTC}" and datetime<"${toUTC}"`;
+    const url = ELIA + ds + '/exports/json?select=datetime,imbalanceprice,systemimbalance&where=' + encodeURIComponent(where) + '&order_by=datetime';
+    IMB.cache.set(k, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
   }
-  document.getElementById('imb-upd').textContent = 'Demo data · RTE';
+  return IMB.cache.get(k);
+}
+async function _imbDay(dateISO) {
+  const [a, b] = PK_E2M.dayBoundsUTC(dateISO);
+  let rows = await _eliaRange('ods134', a, b);
+  if (!rows || !rows.length) rows = await _eliaRange('ods162', a, b);
+  if (!rows || !rows.length) return null;
+  const t0 = Date.parse(a + 'Z'), price = new Array(96).fill(null), sys = new Array(96).fill(null);
+  rows.forEach(r => { const i = Math.round((Date.parse(r.datetime) - t0) / 900e3); if (i >= 0 && i < 96) { price[i] = r.imbalanceprice; sys[i] = r.systemimbalance; } });
+  return { price, sys };
+}
+async function _daDay(zone, dateISO) {
+  const j = await _renDaily(dateISO);
+  const z = j && j.zones && j.zones[zone];
+  if (!z || !z.hourly) return null;
+  const h = z.hourly; return h.length === 96 ? h : (typeof upsampleHourly === 'function' ? upsampleHourly(h) : null);
 }
 
+async function drawImbalance() {
+  const zone = 'BE';
+  const day = IMB.day || pkTodayISO();
+  document.getElementById('imb-day').textContent = _renFmtDay(day);
+  ['imb-intraday', 'imb-days', 'imb-dist'].forEach(_renRestore);
+  const [im, da] = await Promise.all([_imbDay(day), _daDay(zone, day)]);
+  if (!im) {
+    document.getElementById('imb-kpis').innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No Elia imbalance data for ${_renFmtDay(day)}.</div>`;
+    noDataMsg('imb-intraday', 'No data for this day', '');
+  } else {
+    const lbl = makeTimeLabels(96), ip = im.price, vI = ip.filter(v => v != null);
+    const lastI = ip.map((v, i) => v != null ? i : -1).filter(i => i >= 0).pop();
+    const avgI = vI.reduce((a, b) => a + b, 0) / vI.length;
+    const pairs = ip.map((v, i) => v != null && da && da[i] != null ? v - da[i] : null);
+    const vp = pairs.filter(v => v != null);
+    const avgDA = da ? _renMean(da.slice(0, lastI + 1)) : null;
+    const short = im.sys.filter(v => v != null && v < 0).length, nS = im.sys.filter(v => v != null).length;
+    const sd = Math.sqrt(vI.reduce((s, v) => s + (v - avgI) ** 2, 0) / vI.length);
+    document.getElementById('imb-kpis').innerHTML =
+      _fuelKpi('Latest imbalance price', _fuelFmt(ip[lastI]), '€/MWh', `${lbl[lastI]} · system ${im.sys[lastI] < 0 ? 'short' : 'long'} ${Math.abs(im.sys[lastI]).toFixed(0)} MW`) +
+      _fuelKpi('Average', _fuelFmt(avgI), '€/MWh', `${vI.length}/96 quarter-hours`) +
+      _fuelKpi('Day-ahead (same slots)', _fuelFmt(avgDA), '€/MWh', 'BE, ENTSO-E') +
+      _fuelKpi('Imbalance − DA', vp.length ? _fuelSigned(vp.reduce((a, b) => a + b, 0) / vp.length) : '–', '€/MWh', vp.length ? `max |spread| ${Math.max(...vp.map(Math.abs)).toFixed(0)} €/MWh` : '', vp.length ? (vp.reduce((a, b) => a + b, 0) > 0 ? 'down' : 'up') : null) +
+      _fuelKpi('Volatility', sd.toFixed(1), '€/MWh', 'std dev of quarter-hour prices') +
+      _fuelKpi('System short', nS ? (short / nS * 100).toFixed(0) : '–', '%', `${short} of ${nS} quarter-hours`);
+    _fuelChart('imb-intraday', { type: 'bar', data: { labels: lbl, datasets: [
+      { type: 'line', label: 'Imbalance price', data: ip, borderColor: '#ED6965', borderWidth: 1.6, pointRadius: 0, tension: 0, yAxisID: 'y', order: -2 },
+      { type: 'line', label: 'Day-ahead', data: da || [], borderColor: '#FFFFFF', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, tension: 0, yAxisID: 'y', order: -1 },
+      { label: 'System imbalance (MW)', data: im.sys, backgroundColor: im.sys.map(v => v == null ? 'transparent' : v < 0 ? 'rgba(237,105,101,.28)' : 'rgba(20,211,169,.28)'), yAxisID: 'y1', barPercentage: 1, categoryPercentage: 1 },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }),
+      y: _fuelAxis('€/MWh', { position: 'left' }), y1: _fuelAxis('MW', { position: 'right', grid: { display: false } }) },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: 96, labels: lbl, chartDate: day }); return a ? { nowLine: a } : {}; })() } } }) }, 'be-imbalance-' + day);
+    document.getElementById('imb-intraday-title').textContent = 'Imbalance price vs day-ahead · Belgium · ' + _renFmtDay(day);
+    const top = ip.map((v, i) => ({ i, v, d: da && da[i], s: pairs[i] })).filter(x => x.s != null).sort((a, b) => Math.abs(b.s) - Math.abs(a.s)).slice(0, 10);
+    document.getElementById('imb-tbody').innerHTML = top.map(x =>
+      `<tr><td>${lbl[x.i]}</td><td>${_fuelFmt(x.v)}</td><td>${_fuelFmt(x.d)}</td><td style="color:${x.s > 0 ? 'var(--down)' : 'var(--up)'};font-weight:600">${_fuelSigned(x.s)}</td>` +
+      `<td>${im.sys[x.i] == null ? '–' : im.sys[x.i].toFixed(0) + ' MW'}</td><td class="l" style="text-align:left">${im.sys[x.i] < 0 ? '<span style="color:var(--down)">System short</span>' : '<span style="color:var(--up)">System long</span>'}</td></tr>`).join('');
+  }
 
-
+  // 30-day history (validated dataset) + DA from daily files
+  const from = PK_E2M.dayBoundsUTC(_renAdd(day, -30))[0], to = PK_E2M.dayBoundsUTC(_renAdd(day, -1))[1];
+  const rows = await _eliaRange('ods134', from, to) || [];
+  const byDay = {};
+  rows.forEach(r => { const d = new Date(r.datetime).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); (byDay[d] = byDay[d] || []).push(r.imbalanceprice); });
+  const days = Object.keys(byDay).sort();
+  const das = await Promise.all(days.map(d => _daDay(zone, d)));
+  const avgs = days.map(d => { const v = byDay[d].filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+  const sds = days.map((d, k) => { const v = byDay[d].filter(x => x != null); const m = avgs[k]; return v.length ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) : null; });
+  const r2 = v => v == null ? null : Math.round(v * 100) / 100;
+  if (days.length) {
+    _fuelChart('imb-days', { type: 'line', data: { labels: days.map(d => d.slice(8, 10) + '/' + d.slice(5, 7)), datasets: [
+      _fuelLineDs('Imbalance avg', avgs.map(r2), '#ED6965', { borderWidth: 2, pointRadius: 2 }),
+      _fuelLineDs('Day-ahead avg', das.map(a => r2(a ? _renMean(a) : null)), '#FFFFFF', { borderDash: [4, 3], pointRadius: 2 }),
+      _fuelLineDs('Imbalance std dev', sds.map(r2), '#FBBF24', { borderWidth: 1.2, pointRadius: 0 }),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'be-imbalance-30d');
+    // Distribution of quarter-hour spreads
+    const spreads = [];
+    days.forEach((d, k) => {
+      const da = das[k]; if (!da) return;
+      const [a] = PK_E2M.dayBoundsUTC(d), t0 = Date.parse(a + 'Z');
+      rows.forEach(r => { const dd = new Date(r.datetime).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); if (dd !== d || r.imbalanceprice == null) return;
+        const i = Math.round((Date.parse(r.datetime) - t0) / 900e3); if (da[i] != null) spreads.push(r.imbalanceprice - da[i]); });
+    });
+    const edges = [-300, -150, -100, -50, -25, 0, 25, 50, 100, 150, 300];
+    const bins = new Array(edges.length + 1).fill(0);
+    spreads.forEach(v => { let k = 0; while (k < edges.length && v >= edges[k]) k++; bins[k]++; });
+    const blabels = ['< -300'].concat(edges.slice(0, -1).map((e, k) => `${e} … ${edges[k + 1]}`)).concat(['> 300']);
+    _fuelChart('imb-dist', { type: 'bar', data: { labels: blabels, datasets: [{ label: 'Quarter-hours', data: bins,
+      backgroundColor: blabels.map((_, k) => k <= 5 ? rgba('#14D3A9', .6) : rgba('#ED6965', .6)), borderRadius: 2 }] },
+      options: _fuelOpts({ plugins: { legend: { display: false }, zoom: ZOOM_CFG }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 9 }, autoSkip: false, maxRotation: 45 } }), y: _fuelAxis('quarter-hours', { beginAtZero: true }) } }) }, 'be-imbalance-spread-dist');
+    const med = spreads.slice().sort((a, b) => a - b)[Math.floor(spreads.length / 2)];
+    document.getElementById('imb-dist-sub').textContent = `Imbalance − day-ahead, ${spreads.length} quarter-hours over ${days.length} days · median ${med == null ? '–' : med.toFixed(1)} €/MWh`;
+  }
+  document.getElementById('imb-note').textContent = 'Elia single imbalance price (incl. alpha component) per quarter-hour; today from the near-real-time dataset (not validated), earlier days from the validated history. ' +
+    'Day-ahead = BE ENTSO-E price for the same quarter-hour. France (RTE), Germany (reBAP) and the Netherlands (TenneT) require API access that is not wired up yet.';
+}
 
 // ── OUTAGES & REMIT ───────────────────────────────────────────────────
 async function renderRemit() {
