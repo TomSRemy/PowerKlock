@@ -100,13 +100,10 @@ function loadOverview() {
 // ════════════════════════════════════════════
 // CONVERTER
 // ════════════════════════════════════════════
-const CONV_FACTORS = {
-  'MW':  { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
-  'GW':  { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
-  'MWh': { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
-  'GWh': { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
-  'TWh': { MW:1000000, GW:1000, MWh:1000000, GWh:1000, TWh:1 },
-};
+// Power and energy are converted within their own family only: MW → MWh
+// needs a duration, so those results are labelled with the assumption.
+const CONV_POWER = { MW: 1, GW: 1e3 };                     // in MW
+const CONV_ENERGY = { MWh: 1, GWh: 1e3, TWh: 1e6 };        // in MWh
 
 function setConvUnit(unit, btn) {
   convUnit = unit;
@@ -115,22 +112,32 @@ function setConvUnit(unit, btn) {
   updateConverter();
 }
 
+function _convFmt(v) {
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  if (a >= 1e6) return v.toExponential(3);
+  return v.toLocaleString('en-GB', { maximumFractionDigits: a >= 100 ? 1 : a >= 1 ? 3 : 6 });
+}
+
 function updateConverter() {
   const val = parseFloat(document.getElementById('conv-input').value) || 0;
-  const factors = CONV_FACTORS[convUnit] || CONV_FACTORS['MW'];
-  const units = ['MW','GW','MWh','GWh','TWh'];
-  const descs = {
-    'MW':'Megawatt (capacity)','GW':'Gigawatt = 1,000 MW',
-    'MWh':'Megawatt-hour (energy)','GWh':'Gigawatt-hour = 1,000 MWh','TWh':'Terawatt-hour = 1,000 GWh'
-  };
-  document.getElementById('conv-results').innerHTML = units.map(u => {
-    const result = val * (factors[u] || 1);
-    const disp = result >= 1e6 ? result.toExponential(2) : result >= 1000 ? result.toLocaleString('en-GB', {maximumFractionDigits:1}) : result.toFixed(result < 0.01 ? 6 : 3);
-    const active = u === convUnit ? 'border-color:var(--accent)' : '';
-    return `<div class="conv-result" style="${active}" onclick="setConvUnit('${u}', document.querySelectorAll('.conv-tab')[${units.indexOf(u)}])">
-      <div class="conv-result-label">${u}</div>
-      <div class="conv-result-value">${disp}</div>
-      <div class="conv-result-desc">${descs[u]}</div>
+  const isPower = convUnit in CONV_POWER;
+  const base = val * (isPower ? CONV_POWER[convUnit] : CONV_ENERGY[convUnit]);   // MW or MWh
+  const cards = [];
+  if (isPower) {
+    Object.keys(CONV_POWER).forEach(u => cards.push({ u, v: base / CONV_POWER[u], d: u === 'MW' ? 'Megawatt (power)' : 'Gigawatt = 1,000 MW' }));
+    cards.push({ u: 'MWh / hour', v: base, d: 'energy delivered in one hour at full output' });
+    cards.push({ u: 'TWh / year', v: base * 8760 / 1e6, d: 'at 100% load factor (8,760 h)' });
+  } else {
+    Object.keys(CONV_ENERGY).forEach(u => cards.push({ u, v: base / CONV_ENERGY[u], d: { MWh: 'Megawatt-hour (energy)', GWh: 'Gigawatt-hour = 1,000 MWh', TWh: 'Terawatt-hour = 1,000 GWh' }[u] }));
+    cards.push({ u: 'MW average', v: base / 8760, d: 'if spread evenly over one year' });
+  }
+  document.getElementById('conv-results').innerHTML = cards.map(c => {
+    const active = c.u === convUnit ? 'border-color:var(--accent)' : '';
+    return `<div class="conv-result" style="${active}">
+      <div class="conv-result-label">${c.u}</div>
+      <div class="conv-result-value">${_convFmt(c.v)}</div>
+      <div class="conv-result-desc">${c.d}</div>
     </div>`;
   }).join('');
 }
@@ -144,7 +151,7 @@ function updateCapacity() {
   const fLH = (lf/100) * 8760;
 
   document.getElementById('cap-results').innerHTML = `
-    <div class="conv-result"><div class="conv-result-label">Annual Production</div><div class="conv-result-value">${(annualTWh).toFixed(3)} TWh</div><div class="conv-result-desc">= ${annualGWh.toFixed(1)} GWh</div></div>
+    <div class="conv-result"><div class="conv-result-label">Annual Production</div><div class="conv-result-value">${annualTWh.toLocaleString('en-GB', { maximumFractionDigits: 3 })} TWh</div><div class="conv-result-desc">= ${annualGWh.toLocaleString('en-GB', { maximumFractionDigits: 1 })} GWh</div></div>
     <div class="conv-result"><div class="conv-result-label">Full-Load Hours</div><div class="conv-result-value">${Math.round(fLH).toLocaleString()}</div><div class="conv-result-desc">hours/year</div></div>
     <div class="conv-result" style="grid-column:1/-1"><div class="conv-result-label">Formula</div><div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:JetBrains Mono">${mw} MW × ${lf}% × 8,760 h = ${Math.round(annualMWh).toLocaleString()} MWh/year</div></div>
   `;
@@ -152,7 +159,8 @@ function updateCapacity() {
 
 function setLF(val, btn) {
   document.getElementById('cap-lf').value = val;
-  document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+  // Only this button group (the selector used to clear every .day-tab on the site).
+  btn.parentNode.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   updateCapacity();
 }
