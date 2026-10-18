@@ -17,7 +17,7 @@
 //    cat  : 'ren' (renouvelable) | 'nuc' | 'fos' (fossile) | 'sto' (stockage) | 'unk'
 //    src  : référence (IPCC = solide ; * = estimation littérature/eMaps, incertitude large)
 const CARBON_FACTORS = {
-  B01: { label: 'Biomasse',            fr: 'Biomasse',           co2: 230,  cat: 'ren', color: '#94D2BD', src: 'IPCC AR5' },
+  B01: { label: 'Biomass',             fr: 'Biomasse',           co2: 230,  cat: 'ren', color: '#94D2BD', src: 'IPCC AR5' },
   B02: { label: 'Lignite',             fr: 'Lignite',            co2: 1050, cat: 'fos', color: '#8B5A2B', src: 'eMaps/lit *' },
   B03: { label: 'Coal-derived gas',    fr: 'Gaz de houille',     co2: 820,  cat: 'fos', color: '#A0522D', src: 'eMaps *' },
   B04: { label: 'Fossil Gas',          fr: 'Gaz',                co2: 490,  cat: 'fos', color: '#ED6965', src: 'IPCC AR5 (CCGT)' },
@@ -37,6 +37,8 @@ const CARBON_FACTORS = {
   B18: { label: 'Wind Offshore',       fr: 'Éolien offshore',    co2: 12,   cat: 'ren', color: '#14D3A9', src: 'UNECE 2022' },
   B19: { label: 'Wind Onshore',        fr: 'Éolien onshore',     co2: 11,   cat: 'ren', color: '#14D3A9', src: 'UNECE 2022 / IPCC' },
   B20: { label: 'Other',               fr: 'Autre',              co2: 700,  cat: 'unk', color: '#7A93AB', src: 'fallback unknown *' },
+  // Energy storage (batteries): a shift of energy, not primary generation — counted at 0.
+  B25: { label: 'Energy storage',      fr: 'Stockage',           co2: 0,    cat: 'sto', color: '#2C7DA0', src: 'storage (shifted energy)' },
 };
 
 // ── 2. Catégories de couverture

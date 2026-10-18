@@ -240,7 +240,7 @@
   }
   function _flowsTable(r){
     const flows = (r.flows||[]).slice().sort((a,b)=>Math.abs(b.net||0)-Math.abs(a.net||0));
-    if (!flows.length) return `<div style="font-size:10px;color:var(--tx4);margin-bottom:10px">Flux transfrontaliers indisponibles.</div>`;
+    if (!flows.length || flows.every(f => !(f.imports || f.exports || f.net))) return `<div style="font-size:10px;color:var(--tx3);margin-bottom:10px">Cross-border flows not available from the ENTSO-E feed for this snapshot — consumption intensity equals production intensity.</div>`;
     const rows = flows.map(f=>{
       const imp = f.imports||0, exp = f.exports||0, dir = (f.net||0)>0?'Import':'Export';
       const col = (f.net||0)>0?'var(--down)':'var(--up)';
@@ -251,7 +251,7 @@
     return `<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px">
       <thead><tr>
         <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Border</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Sens</th>
+        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Direction</th>
         <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Net MW</th>
       </tr></thead><tbody>${rows}</tbody></table>`;
   }
