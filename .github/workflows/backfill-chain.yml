@@ -1,4 +1,4 @@
-name: Backfill repair (single day)
+name: Backfill repair (2026-10-11 stale copy, 2026-10-15 missing FR)
 
 # Runs the multi-zone price backfill one half-year at a time, newest first,
 # each half-year committed to main as soon as it is done. Started by a push
@@ -26,6 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         range:
+          - '2026-10-11 2026-10-11'
           - '2026-10-15 2026-10-15'
     steps:
       - name: Checkout main
@@ -48,7 +49,7 @@ jobs:
           set -- ${{ matrix.range }}
           python scripts/enrich_summary.py --fetch-historical --from "$1" --to "$2" \
             --zones FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
-            --mode repair --min-zones 30
+            --mode rebuild --with-genmix
 
       # Daily files first (no overlap with the scheduled fetch, which writes
       # other dates), then summary.json rebuilt on top of the latest main.
