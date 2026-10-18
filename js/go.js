@@ -181,11 +181,8 @@ function loadGoData(text) {
     renderGOKPIs(); drawGoIndicChart(); drawGoCal1Chart(); drawGoCalChart(); drawGoSpreadChart();
     renderGOFwdTable();
     if (document.getElementById('go-hist-canvas')) { drawGoHist(); drawGoWoW(); drawGoBox(); }
-    // My Dashboard's GO widget triggers this same fetch lazily (see
-    // renderMyDash in prices.js) — refresh it once the data lands.
-    if (document.getElementById('page-mydash')?.classList.contains('active') && typeof renderMyDash === 'function') {
-      renderMyDash();
-    }
+    // GO widgets on My Dashboard trigger this fetch lazily — redraw them once the data lands.
+    if (window.PKDash) PKDash.refresh();
     console.log('[go] real Commerg data loaded · as-of', GO_REAL.asOf);
     return true;
   } catch (e) { console.warn('[go] loadGoData failed', e); return false; }

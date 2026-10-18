@@ -14858,7 +14858,8 @@ if (typeof window !== 'undefined' && !window._klockDblclickResetWired) {
 // resizable overlay — just without bespoke KPI cards).
 function addFullscreen(canvasId, content) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || canvas.dataset.fsAdded) return;
+  // Dashboard widgets carry their own fullscreen button in the header.
+  if (!canvas || canvas.dataset.fsAdded || canvas.closest('.pkd-item')) return;
   canvas.dataset.fsAdded = '1';
   const btn = document.createElement('button');
   btn.innerHTML = '⛶';
@@ -14932,7 +14933,7 @@ function pkAutoTable(chart) {
 // Download PNG helper
 function addDownload(canvasId, filename) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || canvas.dataset.dlAdded) return;
+  if (!canvas || canvas.dataset.dlAdded || canvas.closest('.pkd-item')) return;
   canvas.dataset.dlAdded = '1';
   const btn = document.createElement('button');
   btn.innerHTML = '↓';

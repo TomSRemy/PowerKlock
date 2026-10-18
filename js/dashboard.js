@@ -1,0 +1,688 @@
+// ════════════════════════════════════════════════════════════════════
+// dashboard.js · window.PKDash — My Dashboard
+// ────────────────────────────────────────────────────────────────────
+// Several named dashboards per user. Each one is a 12-column grid
+// (GridStack) holding three kinds of items:
+//   widget  — a chart or key figure from the PKW catalogue, with its own
+//             title and parameters (zone, period…)
+//   section — a full-width heading
+//   note    — free text
+// Layouts are saved in the browser, and in the user's account when signed
+// in (PKAccount). Charts draw lazily when they scroll into view.
+// ════════════════════════════════════════════════════════════════════
+(function () {
+  'use strict';
+
+  const LS_KEY = 'pk-dash-v2';
+  const LS_OLD = 'pk-mydash-widgets';
+  const COLS = 12, CELL_H = 64;
+  const GS_JS = 'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack-all.min.js';
+  const GS_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack.min.css';
+
+  // ── Templates ────────────────────────────────────────────────────
+  // Items reference catalogue ids; ids not (yet) registered are skipped.
+  const S = (title) => ({ t: 's', title, w: 12, h: 1 });
+  const W = (wid, w, h, p) => ({ t: 'w', wid, w, h, p });
+  const TEMPLATES = [
+    { id: 'spot', name: 'Spot trader · France', desc: 'Prices today and tomorrow, FR fundamentals and flows.', items: [
+      S('Today'),
+      W('kpi-da', 2, 2, { zone: 'FR' }), W('kpi-da', 2, 2, { zone: 'DE_LU' }), W('kpi-fr-load', 2, 2), W('kpi-fr-net', 2, 2), W('kpi-fr-nuclear', 2, 2), W('kpi-hdd', 2, 2),
+      W('da-intraday', 8, 5), W('cb-fr-avg', 4, 5),
+      S('France fundamentals'),
+      W('load-fr', 6, 5), W('ren-intraday', 6, 5),
+      W('cb-intraday', 12, 5),
+    ] },
+    { id: 'fund', name: 'Fundamentals', desc: 'Fuels, carbon, spreads, nuclear and weather.', items: [
+      S('Fuels & carbon'),
+      W('kpi-fuel', 3, 2, { c: 'eua' }), W('kpi-fuel', 3, 2, { c: 'ttf' }), W('kpi-fuel', 3, 2, { c: 'coal' }), W('kpi-fuel', 3, 2, { c: 'brent' }),
+      W('fuel-eua-ttf', 6, 5), W('fuel-switch', 6, 5),
+      W('fuel-storage', 6, 5), W('spark-daily', 6, 5),
+      S('Supply & weather'),
+      W('nuc-hist', 6, 5), W('hdd', 6, 5),
+      S('Forwards'),
+      W('fwd-power', 6, 5), W('fwdc-ttf', 6, 5),
+    ] },
+    { id: 'flex', name: 'Flexibility / BESS', desc: 'Intraday shape, battery spreads, negative prices, imbalance.', items: [
+      S('Price shape'),
+      W('da-intraday', 12, 5),
+      W('bess-spreads', 6, 5), W('ren-cr', 6, 5),
+      S('Balancing'),
+      W('imb-intraday', 12, 5),
+    ] },
+  ];
+
+  // ── State ────────────────────────────────────────────────────────
+  let state = null;            // { v, active, boards: [{ id, name, items }] }
+  let grid = null, gsReady = null, observer = null;
+  let saveTimer = null, cloudTimer = null, syncing = false;
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  function board() { return state.boards.find(b => b.id === state.active) || state.boards[0]; }
+
+  function fromTemplate(tid) {
+    const t = TEMPLATES.find(x => x.id === tid) || TEMPLATES[0];
+    return t.items
+      .filter(it => it.t !== 'w' || PKW.get(it.wid))
+      .map(it => Object.assign({ i: uid() }, JSON.parse(JSON.stringify(it))));
+  }
+
+  // Old "pk-mydash-widgets" ids → catalogue items.
+  const OLD_MAP = {
+    'fr-da': W('kpi-da', 2, 2, { zone: 'FR' }), 'de-da': W('kpi-da', 2, 2, { zone: 'DE_LU' }),
+    'ttf': W('kpi-fuel', 2, 2, { c: 'ttf' }), 'eua': W('kpi-fuel', 2, 2, { c: 'eua' }),
+    'fr-nuclear': W('kpi-fr-nuclear', 2, 2), 'fr-load': W('kpi-fr-load', 2, 2), 'fr-export': W('kpi-fr-net', 2, 2), 'hdd-paris': W('kpi-hdd', 2, 2),
+    'fr-da-chart': W('da-intraday', 6, 5, { zone: 'FR' }), 'de-da-chart': W('da-intraday', 6, 5, { zone: 'DE_LU' }),
+    'fr-load-chart': W('load-fr', 6, 5), 'fr-cb-chart': W('cb-fr-avg', 6, 5), 'fr-ren-chart': W('ren-intraday', 6, 5),
+  };
+
+  function readLocal() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) { const s = JSON.parse(raw); if (s && Array.isArray(s.boards) && s.boards.length) return s; }
+    } catch (_) {}
+    let items = null;
+    try {
+      const old = JSON.parse(localStorage.getItem(LS_OLD) || 'null');
+      if (Array.isArray(old) && old.length) {
+        items = old.map(id => OLD_MAP[id]).filter(Boolean).filter(it => PKW.get(it.wid))
+          .map(it => Object.assign({ i: uid() }, JSON.parse(JSON.stringify(it))));
+      }
+    } catch (_) {}
+    const id = uid();
+    return { v: 2, active: id, boards: [{ id, name: 'My Dashboard', items: items && items.length ? items : fromTemplate('spot') }] };
+  }
+
+  function writeLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+  }
+
+  function save() {
+    state.updated = new Date().toISOString();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(writeLocal, 200);
+    if (window.PKAccount && PKAccount.user) {
+      clearTimeout(cloudTimer);
+      setSync('saving');
+      cloudTimer = setTimeout(() => {
+        PKAccount.save(state).then(() => setSync('saved')).catch(e => { console.warn(e); setSync('error'); });
+      }, 900);
+    }
+    PKW.refreshStars();
+  }
+
+  // ── Account sync ─────────────────────────────────────────────────
+  async function syncFromCloud() {
+    if (!window.PKAccount || !PKAccount.user || syncing) return;
+    syncing = true; setSync('loading');
+    try {
+      const row = await PKAccount.load();
+      if (row && row.data && Array.isArray(row.data.boards) && row.data.boards.length) {
+        state = row.data;
+        writeLocal();
+        if (isOpen()) render();
+        setSync('saved');
+      } else {
+        // First sign-in: the dashboards built in this browser become the account's.
+        await PKAccount.save(state);
+        setSync('saved');
+      }
+    } catch (e) { console.warn('[PKDash] sync', e); setSync('error'); }
+    syncing = false;
+    PKW.refreshStars();
+    renderAccount();
+  }
+
+  function setSync(s) {
+    const el = document.getElementById('pkd-sync');
+    if (!el) return;
+    const txt = { loading: 'Loading…', saving: 'Saving…', saved: 'Saved to your account', error: 'Not saved · check connection' }[s] || '';
+    el.textContent = txt;
+    el.dataset.state = s;
+  }
+
+  // ── Public helpers for ☆ buttons ─────────────────────────────────
+  function has(wid) { return !!(state && board().items.some(it => it.t === 'w' && it.wid === wid)); }
+
+  function toggleWidget(wid) {
+    const b = board();
+    if (has(wid)) {
+      b.items = b.items.filter(it => !(it.t === 'w' && it.wid === wid));
+      toast('Removed from “' + b.name + '”');
+    } else {
+      const w = PKW.get(wid);
+      if (!w) return;
+      b.items.push({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h });
+      toast('Added to “' + b.name + '”');
+    }
+    save();
+    if (isOpen()) render();
+  }
+
+  function toast(msg) {
+    let el = document.getElementById('pkd-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'pkd-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ── GridStack ────────────────────────────────────────────────────
+  function loadGridStack() {
+    if (window.GridStack) return Promise.resolve();
+    if (gsReady) return gsReady;
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = GS_CSS;
+    document.head.appendChild(css);
+    gsReady = new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = GS_JS; s.onload = res; s.onerror = () => rej(new Error('GridStack failed to load'));
+      document.head.appendChild(s);
+    });
+    return gsReady;
+  }
+
+  function isOpen() { const p = document.getElementById('page-mydash'); return !!(p && p.classList.contains('active')); }
+
+  async function open() {
+    if (!state) init();
+    renderTabs();
+    renderAccount();
+    try { await loadGridStack(); } catch (e) {
+      document.getElementById('pkd-grid').innerHTML = '<div class="pkd-empty">The layout engine could not load. Check your connection and reload the page.</div>';
+      return;
+    }
+    render();
+  }
+
+  function render() {
+    const host = document.getElementById('pkd-grid');
+    if (!host || !window.GridStack) return;
+    renderTabs();
+    if (grid) { grid.destroy(false); grid = null; }
+    if (observer) observer.disconnect();
+    destroyCharts(host);
+    host.innerHTML = '';
+    const b = board();
+    document.getElementById('pkd-empty').hidden = b.items.length > 0;
+    grid = GridStack.init({
+      column: COLS, cellHeight: CELL_H, margin: 6, float: false, animate: true,
+      handle: '.pkd-drag', resizable: { handles: 'se' },
+      columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
+    }, host);
+    observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
+    grid.batchUpdate();
+    b.items.forEach(it => {
+      const el = itemEl(it);
+      host.appendChild(el);
+      grid.makeWidget(el);
+    });
+    grid.batchUpdate(false);
+    host.querySelectorAll('.pkd-item[data-kind="w"]').forEach(el => observer.observe(el));
+    grid.on('change', (_e, nodes) => {
+      if (grid.getColumn() !== COLS) return;   // phone layout is derived, never saved
+      nodes.forEach(n => {
+        const it = b.items.find(x => x.i === n.el.dataset.i);
+        if (it) Object.assign(it, { x: n.x, y: n.y, w: n.w, h: n.h });
+      });
+      save();
+    });
+    grid.on('resizestop', (_e, el) => {
+      const c = el.querySelector('canvas');
+      const ch = c && window.Chart && Chart.getChart(c);
+      if (ch) ch.resize();
+    });
+  }
+
+  function destroyCharts(root) {
+    root.querySelectorAll('canvas').forEach(c => {
+      const ch = window.Chart && Chart.getChart(c);
+      if (ch) ch.destroy();
+      if (typeof CHARTS !== 'undefined' && CHARTS[c.id]) delete CHARTS[c.id];
+    });
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function itemEl(it) {
+    const el = document.createElement('div');
+    el.className = 'grid-stack-item';
+    el.dataset.i = it.i;
+    const pos = { x: it.x, y: it.y, w: it.w || 6, h: it.h || 4 };
+    Object.keys(pos).forEach(k => { if (pos[k] != null) el.setAttribute('gs-' + k, pos[k]); });
+    if (it.t === 's') { el.setAttribute('gs-w', COLS); el.setAttribute('gs-h', 1); el.setAttribute('gs-no-resize', 'true'); }
+    const inner = document.createElement('div');
+    inner.className = 'grid-stack-item-content pkd-item';
+    inner.dataset.kind = it.t;
+    el.appendChild(inner);
+
+    if (it.t === 's') {
+      inner.innerHTML = `<div class="pkd-section pkd-drag">
+          <h2 class="pkd-section-title" contenteditable="plaintext-only" spellcheck="false" data-ph="Section title">${esc(it.title)}</h2>
+          <button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
+        </div>`;
+      const h = inner.querySelector('.pkd-section-title');
+      h.addEventListener('blur', () => { it.title = h.textContent.trim(); save(); });
+      h.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); h.blur(); } });
+    } else if (it.t === 'n') {
+      inner.innerHTML = `<div class="pkd-head pkd-drag"><span class="pkd-title">${esc(it.title || 'Note')}</span>
+          <span class="pkd-actions"><button class="pkd-ic pkd-cfg" title="Rename" type="button">⚙</button><button class="pkd-ic pkd-del" title="Remove note" type="button">✕</button></span></div>
+        <div class="pkd-note" contenteditable="plaintext-only" spellcheck="true" data-ph="Write your market view…"></div>`;
+      const n = inner.querySelector('.pkd-note');
+      n.textContent = it.text || '';
+      n.addEventListener('blur', () => { it.text = n.textContent; save(); });
+    } else {
+      const w = PKW.get(it.wid);
+      const title = it.title || (w ? autoTitle(w, it) : 'Unavailable widget');
+      inner.innerHTML = `<div class="pkd-head pkd-drag">
+          <div class="pkd-titles"><span class="pkd-title">${esc(title)}</span><span class="pkd-sub">${esc(w ? w.source : '')}</span></div>
+          <span class="pkd-actions">
+            ${w && w.params.length ? '<button class="pkd-ic pkd-cfg" title="Settings" type="button">⚙</button>' : '<button class="pkd-ic pkd-cfg" title="Rename" type="button">⚙</button>'}
+            ${w && w.kind === 'chart' ? '<button class="pkd-ic pkd-fs" title="Fullscreen" type="button">⛶</button>' : ''}
+            ${w && w.page ? '<button class="pkd-ic pkd-go" title="Open source page" type="button">↗</button>' : ''}
+            <button class="pkd-ic pkd-del" title="Remove from dashboard" type="button">✕</button>
+          </span>
+        </div>
+        <div class="pkd-body">${w ? '<div class="pkd-loading">Loading…</div>' : '<div class="pkd-empty-w">This chart is no longer in the catalogue.</div>'}</div>`;
+      inner._item = it;
+      if (w && w.kind === 'html') inner.classList.add('pkd-html');
+    }
+
+    inner.querySelector('.pkd-del')?.addEventListener('click', () => removeItem(it.i));
+    inner.querySelector('.pkd-cfg')?.addEventListener('click', () => openSettings(it.i));
+    inner.querySelector('.pkd-fs')?.addEventListener('click', () => fullscreen(inner, it));
+    inner.querySelector('.pkd-go')?.addEventListener('click', () => {
+      const w = PKW.get(it.wid);
+      if (w && typeof showPage === 'function') showPage(w.page);
+    });
+    return el;
+  }
+
+  // Default title: catalogue title, plus the zone/fuel picked when the
+  // widget has such a parameter.
+  function autoTitle(w, it) {
+    const p = PKW.params(w.id, it.p);
+    const tag = w.params.filter(d => d.inTitle).map(d => {
+      const o = d.options.find(x => x[0] === p[d.key]);
+      return o ? o[1] : p[d.key];
+    }).filter(Boolean).join(' · ');
+    return tag ? (w.titleFn ? w.titleFn(p) : w.title + ' · ' + tag) : (w.titleFn ? w.titleFn(p) : w.title);
+  }
+
+  function onVisible(entries) {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      observer.unobserve(e.target);
+      drawItem(e.target);
+    });
+  }
+
+  async function drawItem(inner) {
+    const it = inner._item;
+    const w = it && PKW.get(it.wid);
+    const body = inner.querySelector('.pkd-body');
+    if (!w || !body) return;
+    const p = PKW.params(w.id, it.p);
+    if (w.kind === 'html') {
+      try { await w.html(body, p); } catch (e) { body.innerHTML = '<div class="pkd-empty-w">Unavailable</div>'; console.warn(e); }
+      return;
+    }
+    const cid = 'pkd-c-' + it.i;
+    body.innerHTML = `<div class="pkd-canvas"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
+    const res = await PKW.draw(w.id, cid, p);
+    if (res && res.sub) inner.querySelector('.pkd-sub').textContent = w.source + ' · ' + res.sub;
+  }
+
+  function redrawItem(i) {
+    const inner = document.querySelector('.grid-stack-item[data-i="' + i + '"] .pkd-item');
+    if (!inner) return;
+    destroyCharts(inner);
+    const it = board().items.find(x => x.i === i);
+    const w = it && PKW.get(it.wid);
+    if (w) inner.querySelector('.pkd-title').textContent = it.title || autoTitle(w, it);
+    drawItem(inner);
+  }
+
+  function fullscreen(inner, it) {
+    const c = inner.querySelector('canvas');
+    if (!c || !window.pkOpenOrUpdate) return;
+    window.pkOpenOrUpdate({
+      title: inner.querySelector('.pkd-title').textContent,
+      subtitle: inner.querySelector('.pkd-sub').textContent,
+      filenameStem: it.wid,
+      storageKey: 'fs:pkd:' + it.wid,
+      table: { html: typeof pkAutoTable === 'function' ? pkAutoTable(Chart.getChart(c)) : '' },
+      chartSource: { rebuildInto: dst => pkCloneCanvasChart(c, dst) },
+    });
+  }
+
+  // Data arrived elsewhere (prices, GO…): redraw widgets already drawn.
+  function refresh() {
+    if (!isOpen()) return;
+    document.querySelectorAll('#pkd-grid .pkd-item[data-kind="w"]').forEach(inner => {
+      if (!inner.querySelector('.pkd-loading')) { destroyCharts(inner); drawItem(inner); }
+    });
+  }
+
+  // ── Item operations ──────────────────────────────────────────────
+  function addItem(it) {
+    const b = board();
+    it.i = uid();
+    b.items.push(it);
+    save();
+    render();
+    const el = document.querySelector('.grid-stack-item[data-i="' + it.i + '"]');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (it.t === 's') setTimeout(() => el.querySelector('.pkd-section-title')?.focus(), 350);
+      if (it.t === 'n') setTimeout(() => el.querySelector('.pkd-note')?.focus(), 350);
+    }
+  }
+  function addWidget(wid) {
+    const w = PKW.get(wid);
+    if (!w) return;
+    addItem({ t: 'w', wid, w: w.size.w, h: w.size.h });
+  }
+  function addSection() { addItem({ t: 's', title: '', w: COLS, h: 1 }); }
+  function addNote() { addItem({ t: 'n', title: 'Note', text: '', w: 4, h: 3 }); }
+
+  function removeItem(i) {
+    const b = board();
+    b.items = b.items.filter(x => x.i !== i);
+    save();
+    const el = document.querySelector('.grid-stack-item[data-i="' + i + '"]');
+    if (el && grid) { destroyCharts(el); grid.removeWidget(el); }
+    document.getElementById('pkd-empty').hidden = b.items.length > 0;
+  }
+
+  // ── Settings dialog (title + parameters) ─────────────────────────
+  function openSettings(i) {
+    const it = board().items.find(x => x.i === i);
+    if (!it) return;
+    const w = it.t === 'w' ? PKW.get(it.wid) : null;
+    const p = w ? PKW.params(w.id, it.p) : {};
+    const fields = (w ? w.params : []).map(d => `
+      <label class="pkd-field"><span>${esc(d.label)}</span>
+        <select id="pkd-set-${esc(d.key)}">${d.options.map(o => `<option value="${esc(o[0])}"${String(p[d.key]) === String(o[0]) ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select>
+      </label>`).join('');
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">${w ? 'Widget settings' : 'Rename'}</div>
+        ${w ? `<div class="pkd-modal-sub">${esc(w.title)} · ${esc(w.source)}</div>` : ''}</div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <form class="pkd-form" id="pkd-set-form">
+        <label class="pkd-field"><span>Title</span>
+          <input id="pkd-set-title" type="text" maxlength="80" value="${esc(it.title || '')}" placeholder="${esc(w ? autoTitle(w, Object.assign({}, it, { title: '' })) : 'Note')}"></label>
+        ${fields}
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary">Apply</button></div>
+      </form>`, root => {
+      root.querySelector('#pkd-set-form').addEventListener('submit', ev => {
+        ev.preventDefault();
+        it.title = root.querySelector('#pkd-set-title').value.trim();
+        if (w) {
+          it.p = {};
+          w.params.forEach(d => { it.p[d.key] = root.querySelector('#pkd-set-' + d.key).value; });
+        }
+        save();
+        closeModal();
+        if (w) redrawItem(i);
+        else { const el = document.querySelector('.grid-stack-item[data-i="' + i + '"] .pkd-title'); if (el) el.textContent = it.title || 'Note'; }
+      });
+    });
+  }
+
+  // ── Catalogue ────────────────────────────────────────────────────
+  let catCat = 'all', catQuery = '';
+  function openCatalog() {
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">Add to “${esc(board().name)}”</div>
+        <div class="pkd-modal-sub">Every chart of the site, by theme. You can also use ☆ on any chart.</div></div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <div class="pkd-cat">
+        <nav class="pkd-cat-nav" id="pkd-cat-nav"></nav>
+        <div class="pkd-cat-main">
+          <input id="pkd-cat-q" class="pkd-cat-q" type="search" placeholder="Search charts, sources, zones…" value="${esc(catQuery)}">
+          <div class="pkd-cat-extra">
+            <button type="button" class="pkd-chip" id="pkd-cat-sec">+ Section title</button>
+            <button type="button" class="pkd-chip" id="pkd-cat-note">+ Text note</button>
+          </div>
+          <div class="pkd-cat-list" id="pkd-cat-list"></div>
+        </div>
+      </div>`, root => {
+      root.classList.add('pkd-modal-wide');
+      root.querySelector('#pkd-cat-q').addEventListener('input', e => { catQuery = e.target.value; drawCatalog(root); });
+      root.querySelector('#pkd-cat-sec').addEventListener('click', () => { closeModal(); addSection(); });
+      root.querySelector('#pkd-cat-note').addEventListener('click', () => { closeModal(); addNote(); });
+      drawCatalog(root);
+      setTimeout(() => root.querySelector('#pkd-cat-q').focus(), 30);
+    });
+  }
+
+  function drawCatalog(root) {
+    const all = PKW.list();
+    const counts = {};
+    all.forEach(w => { counts[w.category] = (counts[w.category] || 0) + 1; });
+    root.querySelector('#pkd-cat-nav').innerHTML =
+      `<button type="button" class="pkd-cat-tab${catCat === 'all' ? ' on' : ''}" data-c="all">All <span>${all.length}</span></button>` +
+      PKW.CATEGORIES.filter(c => counts[c[0]]).map(c =>
+        `<button type="button" class="pkd-cat-tab${catCat === c[0] ? ' on' : ''}" data-c="${c[0]}">${esc(c[1])} <span>${counts[c[0]]}</span></button>`).join('');
+    root.querySelectorAll('.pkd-cat-tab').forEach(b => b.addEventListener('click', () => { catCat = b.dataset.c; drawCatalog(root); }));
+    const q = catQuery.trim().toLowerCase();
+    const rows = all.filter(w => (catCat === 'all' || w.category === catCat)
+      && (!q || (w.title + ' ' + w.desc + ' ' + w.source).toLowerCase().includes(q)));
+    const catName = id => (PKW.CATEGORIES.find(c => c[0] === id) || [, ''])[1];
+    root.querySelector('#pkd-cat-list').innerHTML = rows.length ? rows.map(w => {
+      const n = board().items.filter(it => it.t === 'w' && it.wid === w.id).length;
+      return `<div class="pkd-cat-item">
+        <div class="pkd-cat-txt"><div class="pkd-cat-name">${esc(w.title)}</div>
+          <div class="pkd-cat-desc">${esc(w.desc)}</div>
+          <div class="pkd-cat-meta">${esc(catName(w.category))} · ${esc(w.source)}${w.params.length ? ' · ' + w.params.map(d => esc(d.label)).join(', ') : ''}</div></div>
+        <button type="button" class="pkd-add${n ? ' on' : ''}" data-w="${w.id}">${n ? '✓ Added' + (n > 1 ? ' ×' + n : '') : '+ Add'}</button>
+      </div>`;
+    }).join('') : '<div class="pkd-empty-w">No chart matches “' + esc(catQuery) + '”.</div>';
+    root.querySelectorAll('.pkd-add').forEach(b => b.addEventListener('click', () => {
+      const w = PKW.get(b.dataset.w);
+      board().items.push({ i: uid(), t: 'w', wid: w.id, w: w.size.w, h: w.size.h });
+      save();
+      drawCatalog(root);
+      toast('Added “' + w.title + '”');
+    }));
+  }
+
+  // ── Dashboards (tabs) ────────────────────────────────────────────
+  function renderTabs() {
+    const el = document.getElementById('pkd-tabs');
+    if (!el || !state) return;
+    el.innerHTML = state.boards.map(b =>
+      `<button type="button" class="pkd-tab${b.id === state.active ? ' on' : ''}" data-b="${b.id}">${esc(b.name)}</button>`).join('') +
+      '<button type="button" class="pkd-tab pkd-tab-new" id="pkd-new" title="New dashboard">+ New</button>';
+    el.querySelectorAll('.pkd-tab[data-b]').forEach(t => t.addEventListener('click', () => {
+      if (state.active === t.dataset.b) return;
+      state.active = t.dataset.b; save(); render();
+    }));
+    el.querySelector('#pkd-new').addEventListener('click', openNewBoard);
+  }
+
+  function openNewBoard() {
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">New dashboard</div>
+        <div class="pkd-modal-sub">Start from a template or from an empty page.</div></div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <form class="pkd-form" id="pkd-new-form">
+        <label class="pkd-field"><span>Name</span><input id="pkd-new-name" type="text" maxlength="40" required value="Dashboard ${state.boards.length + 1}"></label>
+        <div class="pkd-tpls">
+          ${TEMPLATES.map((t, k) => `<label class="pkd-tpl"><input type="radio" name="tpl" value="${t.id}"${k === 0 ? ' checked' : ''}><span><b>${esc(t.name)}</b><em>${esc(t.desc)}</em></span></label>`).join('')}
+          <label class="pkd-tpl"><input type="radio" name="tpl" value=""><span><b>Empty</b><em>Add charts yourself from the catalogue or with ☆.</em></span></label>
+        </div>
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary">Create</button></div>
+      </form>`, root => {
+      root.querySelector('#pkd-new-form').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const tpl = root.querySelector('input[name=tpl]:checked').value;
+        const id = uid();
+        state.boards.push({ id, name: root.querySelector('#pkd-new-name').value.trim() || 'Dashboard', items: tpl ? fromTemplate(tpl) : [] });
+        state.active = id;
+        save(); closeModal(); render();
+      });
+    });
+  }
+
+  function openBoardMenu() {
+    const b = board();
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">Dashboard “${esc(b.name)}”</div></div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <form class="pkd-form" id="pkd-board-form">
+        <label class="pkd-field"><span>Name</span><input id="pkd-board-name" type="text" maxlength="40" required value="${esc(b.name)}"></label>
+        <label class="pkd-field"><span>Replace content with a template</span>
+          <select id="pkd-board-tpl"><option value="">Keep current content</option>${TEMPLATES.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
+        <div class="pkd-form-row">
+          <button type="button" class="pk-btn-ghost" id="pkd-board-dup">Duplicate</button>
+          <button type="button" class="pk-btn-ghost" id="pkd-board-export">Export layout</button>
+          <button type="button" class="pk-btn-ghost" id="pkd-board-import">Import layout</button>
+          <button type="button" class="pk-btn-ghost pkd-danger" id="pkd-board-del"${state.boards.length < 2 ? ' disabled title="Your only dashboard cannot be deleted"' : ''}>Delete</button>
+        </div>
+        <div class="pkd-confirm" id="pkd-board-confirm" hidden>Delete “${esc(b.name)}” and its ${b.items.length} items? <button type="button" class="pk-btn-ghost pkd-danger" id="pkd-board-del2">Delete</button></div>
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary">Save</button></div>
+      </form>`, root => {
+      root.querySelector('#pkd-board-form').addEventListener('submit', ev => {
+        ev.preventDefault();
+        b.name = root.querySelector('#pkd-board-name').value.trim() || b.name;
+        const tpl = root.querySelector('#pkd-board-tpl').value;
+        if (tpl) b.items = fromTemplate(tpl);
+        save(); closeModal(); render();
+      });
+      root.querySelector('#pkd-board-dup').addEventListener('click', () => {
+        const id = uid();
+        state.boards.push({ id, name: b.name + ' (copy)', items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
+        state.active = id; save(); closeModal(); render();
+      });
+      root.querySelector('#pkd-board-export').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify({ powerklock: 'dashboard', v: 2, name: b.name, items: b.items }, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'powerklock-' + b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+      root.querySelector('#pkd-board-import').addEventListener('click', () => {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'application/json,.json';
+        inp.onchange = () => {
+          const f = inp.files[0]; if (!f) return;
+          f.text().then(txt => {
+            const j = JSON.parse(txt);
+            if (!j || !Array.isArray(j.items)) throw new Error('Not a PowerKlock layout file');
+            const id = uid();
+            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), items: j.items.filter(it => it && ['w', 's', 'n'].includes(it.t)).map(it => Object.assign({}, it, { i: uid() })) });
+            state.active = id; save(); closeModal(); render();
+            toast('Layout imported');
+          }).catch(e => toast('Import failed: ' + e.message));
+        };
+        inp.click();
+      });
+      root.querySelector('#pkd-board-del').addEventListener('click', () => { root.querySelector('#pkd-board-confirm').hidden = false; });
+      root.querySelector('#pkd-board-del2').addEventListener('click', () => {
+        state.boards = state.boards.filter(x => x.id !== b.id);
+        state.active = state.boards[0].id;
+        save(); closeModal(); render();
+      });
+    });
+  }
+
+  // ── Account UI ───────────────────────────────────────────────────
+  function renderAccount() {
+    const el = document.getElementById('pkd-account');
+    if (!el) return;
+    const A = window.PKAccount;
+    if (!A || !A.configured) {
+      el.innerHTML = '<span class="pkd-acc-note" title="Layouts are kept in this browser until accounts are enabled">Saved in this browser</span>';
+      return;
+    }
+    if (A.user) {
+      el.innerHTML = `<span class="pkd-sync" id="pkd-sync"></span><button type="button" class="pk-btn-ghost pkd-acc" id="pkd-acc-btn" title="Signed in · click to sign out">${esc(A.user.email || 'Account')}</button>`;
+      el.querySelector('#pkd-acc-btn').addEventListener('click', openAccount);
+    } else {
+      el.innerHTML = '<span class="pkd-acc-note">Saved in this browser</span><button type="button" class="pk-btn-ghost pkd-acc" id="pkd-acc-btn">Sign in</button>';
+      el.querySelector('#pkd-acc-btn').addEventListener('click', openAccount);
+    }
+  }
+
+  function openAccount() {
+    const A = window.PKAccount;
+    if (A.user) {
+      modal(`
+        <div class="pkd-modal-head"><div><div class="pkd-modal-title">Account</div><div class="pkd-modal-sub">${esc(A.user.email || '')}</div></div>
+          <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+        <div class="pkd-form"><p class="pkd-p">Your dashboards are saved to this account and follow you on every device.</p>
+          <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
+        root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
+      });
+      return;
+    }
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">Sign in</div>
+        <div class="pkd-modal-sub">Keep your dashboards on every device. No password: we e-mail you a sign-in link.</div></div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <form class="pkd-form" id="pkd-in-form">
+        <label class="pkd-field"><span>E-mail</span><input id="pkd-in-email" type="email" required autocomplete="email" placeholder="you@company.com"></label>
+        <div class="pkd-msg" id="pkd-in-msg" role="status"></div>
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Send link</button></div>
+      </form>`, root => {
+      root.querySelector('#pkd-in-form').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const email = root.querySelector('#pkd-in-email').value.trim();
+        const msg = root.querySelector('#pkd-in-msg');
+        const go = root.querySelector('#pkd-in-go');
+        go.disabled = true; msg.textContent = 'Sending…';
+        A.signIn(email).then(() => {
+          msg.textContent = 'Link sent to ' + email + '. Open it on this device to finish signing in. The dashboards in this browser will be copied to your account.';
+        }).catch(e => { msg.textContent = 'Could not send the link: ' + (e.message || e); go.disabled = false; });
+      });
+      setTimeout(() => root.querySelector('#pkd-in-email').focus(), 30);
+    });
+  }
+
+  // ── Modal shell ──────────────────────────────────────────────────
+  function modal(html, wire) {
+    closeModal();
+    const bg = document.createElement('div');
+    bg.id = 'pkd-modal';
+    bg.innerHTML = `<div class="pkd-modal" role="dialog" aria-modal="true">${html}</div>`;
+    bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) closeModal(); });
+    document.body.appendChild(bg);
+    document.addEventListener('keydown', escClose);
+    if (wire) wire(bg.querySelector('.pkd-modal'));
+  }
+  function escClose(e) { if (e.key === 'Escape') closeModal(); }
+  function closeModal() {
+    const m = document.getElementById('pkd-modal');
+    if (m) m.remove();
+    document.removeEventListener('keydown', escClose);
+    // Catalogue adds are batched: redraw the grid once when it closes.
+    if (isOpen() && grid && grid.engine.nodes.length !== board().items.length) render();
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────────
+  function init() {
+    if (state) return;
+    state = readLocal();
+    writeLocal();
+    const page = document.getElementById('page-mydash');
+    if (page) {
+      document.getElementById('pkd-add')?.addEventListener('click', openCatalog);
+      document.getElementById('pkd-add-empty')?.addEventListener('click', openCatalog);
+      document.getElementById('pkd-add-sec')?.addEventListener('click', addSection);
+      document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
+      document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
+    }
+    PKW.refreshStars();
+    if (window.PKAccount && PKAccount.configured) {
+      PKAccount.onChange(u => { renderAccount(); if (u) syncFromCloud(); });
+      PKAccount.ready().then(u => { renderAccount(); if (u) syncFromCloud(); });
+    }
+  }
+
+  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addSection, addNote, TEMPLATES };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();

@@ -1461,37 +1461,119 @@
     color: var(--text2); font-size: 12px; cursor: pointer; font-family: inherit;
   }
   .btn-secondary:hover { background: var(--bg3); }
-  .mydash-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
-    min-height: 200px;
+  /* ── MY DASHBOARD (js/dashboard.js) ─────────────────────────────── */
+  .pkd-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .pkd-tabs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .pkd-tab { font: 500 13px 'Outfit', 'Inter', sans-serif; color: var(--text3); background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  .pkd-tab:hover { color: var(--text); background: var(--bg3); }
+  .pkd-tab.on { color: var(--text); background: var(--bg2); border-color: var(--border2); }
+  .pkd-tab-new { color: var(--accent); }
+  .pkd-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pkd-account { display: inline-flex; align-items: center; gap: 8px; margin-right: 4px; }
+  .pkd-acc-note, .pkd-sync { font-size: 11px; color: var(--text3); }
+  .pkd-sync[data-state="error"] { color: var(--down); }
+  .pkd-acc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pkd-hint { font-size: 11px; color: var(--text4); margin-bottom: 10px; }
+  @media (max-width: 760px) { .pkd-hint { display: none; } }
+  .pkd-grid { margin: 0 -6px; min-height: 120px; }
+  .pkd-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 16px; text-align: center; border: 1px dashed var(--border2); border-radius: 10px; }
+  .pkd-empty[hidden] { display: none; }
+  .pkd-empty-title { font: 600 15px 'Outfit', sans-serif; color: var(--text); }
+  .pkd-empty-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .pkd-item { display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden !important; }
+  .pkd-item[data-kind="s"] { background: none; border: none; border-radius: 0; }
+  .pkd-head { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px 6px; cursor: grab; flex: none; }
+  .pkd-head:active { cursor: grabbing; }
+  .pkd-titles { display: flex; flex-direction: column; min-width: 0; }
+  .pkd-title { font: 600 12.5px 'Outfit', 'Inter', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkd-sub { font-size: 10.5px; color: var(--text4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkd-actions { position: absolute; top: 5px; right: 6px; display: flex; gap: 2px; padding-left: 16px; background: linear-gradient(90deg, transparent, var(--bg2) 16px); opacity: 0; transition: opacity .12s; }
+  .pkd-item:hover .pkd-actions, .pkd-item:focus-within .pkd-actions { opacity: 1; }
+  @media (hover: none) { .pkd-actions { opacity: 1; } }
+  .pkd-ic { background: none; border: 1px solid transparent; color: var(--text3); border-radius: 4px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; line-height: 1; }
+  .pkd-ic:hover { color: var(--text); background: var(--bg3); border-color: var(--border2); }
+  .pkd-ic:focus-visible, .pkd-tab:focus-visible, .pkd-add:focus-visible, .pkw-star:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pkd-del:hover { color: var(--down); }
+  .pkd-body { flex: 1; min-height: 0; padding: 0 10px 10px; position: relative; }
+  .pkd-canvas { position: relative; height: 100%; }
+  .pkd-loading, .pkd-empty-w { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text4); font-size: 12px; text-align: center; padding: 8px; }
+  .pkd-section { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 100%; padding: 0 4px 6px; border-bottom: 1px solid var(--border2); cursor: grab; }
+  .pkd-section-title { font: 600 17px 'Outfit', sans-serif; color: var(--text); letter-spacing: .01em; outline: none; min-width: 120px; cursor: text; }
+  .pkd-section .pkd-del { opacity: 0; }
+  .pkd-item:hover .pkd-section .pkd-del { opacity: 1; }
+  [data-ph]:empty::before { content: attr(data-ph); color: var(--text4); }
+  .pkd-note { flex: 1; overflow: auto; padding: 0 12px 12px; font-size: 13px; line-height: 1.55; color: var(--text2); white-space: pre-wrap; outline: none; cursor: text; }
+  .pkd-item[data-kind="w"].pkd-html .pkd-sub { display: none; }
+  .pkd-item.pkd-html .pkd-head { padding-bottom: 2px; }
+  .pkd-kpi { display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 2px; padding: 0 2px; }
+  .pkd-kpi-v { font: 600 24px 'JetBrains Mono', monospace; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pkd-kpi-na { color: var(--text4); }
+  .pkd-kpi-u { font-size: 12px; font-weight: 400; color: var(--text3); }
+  .pkd-kpi-c { font: 500 11px 'JetBrains Mono', monospace; color: var(--text3); }
+  .pkd-kpi-c.up { color: var(--up); } .pkd-kpi-c.down { color: var(--down); }
+  .pkd-kpi-m { font-size: 10.5px; color: var(--text4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid-stack-item > .ui-resizable-se { width: 14px; height: 14px; right: 4px; bottom: 4px; opacity: 0; transition: opacity .12s; }
+  .grid-stack-item:hover > .ui-resizable-se { opacity: .7; }
+  .grid-stack-placeholder > .placeholder-content { background: var(--accent-dim) !important; border: 1px dashed var(--accent); border-radius: 8px; }
+  /* ☆ on site charts */
+  .pkw-star { background: none; border: 1px solid transparent; color: var(--text4); font-size: 15px; line-height: 1; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; flex: none; margin-left: 6px; }
+  .pkw-star:hover { color: var(--highlight); border-color: var(--border2); }
+  .pkw-star.on { color: #FBBF24; }
+  .pkw-star-float { position: absolute; top: 8px; right: 40px; z-index: 11; }
+  /* Dialogs */
+  #pkd-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5,8,12,.62); backdrop-filter: blur(2px); }
+  .pkd-modal { width: min(460px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; }
+  .pkd-modal.pkd-modal-wide { width: min(880px, 100%); height: min(640px, calc(100vh - 32px)); }
+  .pkd-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex: none; }
+  .pkd-modal-title { font: 600 15px 'Outfit', sans-serif; color: var(--text); }
+  .pkd-modal-sub { font-size: 11.5px; color: var(--text3); margin-top: 3px; }
+  .pkd-form { display: flex; flex-direction: column; gap: 12px; padding: 16px; overflow-y: auto; }
+  .pkd-field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+  .pkd-field input, .pkd-field select { text-transform: none; letter-spacing: 0; font: 13px 'Inter', sans-serif; color: var(--text); background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 10px; }
+  .pkd-field input:focus, .pkd-field select:focus, .pkd-cat-q:focus { outline: none; border-color: var(--accent); }
+  .pkd-form-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+  .pkd-form-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pkd-danger { color: var(--down) !important; }
+  .pkd-danger:disabled { opacity: .4; cursor: not-allowed; }
+  .pkd-confirm { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pkd-msg { font-size: 12px; color: var(--text2); min-height: 1em; }
+  .pkd-p { font-size: 13px; color: var(--text2); }
+  .pkd-tpls { display: flex; flex-direction: column; gap: 6px; }
+  .pkd-tpl { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; }
+  .pkd-tpl:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); }
+  .pkd-tpl input { margin-top: 3px; accent-color: var(--accent); }
+  .pkd-tpl span { display: flex; flex-direction: column; gap: 2px; }
+  .pkd-tpl b { font-size: 13px; color: var(--text); font-weight: 600; }
+  .pkd-tpl em { font-style: normal; font-size: 11.5px; color: var(--text3); }
+  /* Catalogue */
+  .pkd-cat { display: grid; grid-template-columns: 200px minmax(0, 1fr); flex: 1; min-height: 0; }
+  .pkd-cat-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .pkd-cat-tab { display: flex; justify-content: space-between; gap: 8px; text-align: left; font: 500 12.5px 'Inter', sans-serif; color: var(--text2); background: none; border: none; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+  .pkd-cat-tab span { color: var(--text4); font-variant-numeric: tabular-nums; }
+  .pkd-cat-tab:hover { background: var(--bg3); }
+  .pkd-cat-tab.on { background: var(--accent-dim); color: var(--text); }
+  .pkd-cat-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px 14px; gap: 10px; }
+  .pkd-cat-q { font: 13px 'Inter', sans-serif; color: var(--text); background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 10px; }
+  .pkd-cat-extra { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pkd-chip { font-size: 11.5px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border2); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+  .pkd-chip:hover { border-color: var(--accent); color: var(--text); }
+  .pkd-cat-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+  .pkd-cat-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+  .pkd-cat-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .pkd-cat-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .pkd-cat-desc { font-size: 12px; color: var(--text2); }
+  .pkd-cat-meta { font-size: 10.5px; color: var(--text4); }
+  .pkd-add { flex: none; font: 500 12px 'Inter', sans-serif; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .pkd-add:hover { background: var(--accent-dim); }
+  .pkd-add.on { color: var(--text3); border-color: var(--border2); }
+  @media (max-width: 640px) {
+    .pkd-cat { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .pkd-cat-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .pkd-cat-tab { white-space: nowrap; }
   }
-  .mydash-empty {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 300px; text-align: center;
-  }
-  .mydash-widget {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; position: relative;
-  }
-  .mydash-widget-chart { grid-column: span 2; min-width: 0; }
-  @media (max-width: 620px) { .mydash-widget-chart { grid-column: span 1; } }
-  .mydash-widget-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
-  .mdash-remove {
-    position: absolute; top: 10px; right: 10px;
-    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1;
-  }
-  .mdash-remove:hover { color: var(--down); }
-  .picker-item {
-    background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
-    padding: 12px; cursor: pointer; transition: border-color 0.15s;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .picker-item:hover { border-color: var(--accent); }
-  .picker-item.added { border-color: var(--accent); background: var(--accent-dim); }
-  .picker-item-name { font-size: 12px; font-weight: 600; color: var(--text); }
-  .picker-item-desc { font-size: 11px; color: var(--text3); }
+  #pkd-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 10001; background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.5); transition: opacity .18s, transform .18s; }
+  #pkd-toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { #pkd-toast, .pkd-actions { transition: none; } }
 
   /* ══════════════════════════════════════════════════════════════════════
      FRANCE COCKPIT · tout est scopé sous #page-france pour ne pas
@@ -5599,44 +5681,27 @@
          switchDashboard('mydash') et bloquait toute l'application.
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="page" id="page-mydash">
-      <div class="page-header">
-        <div>
-          <div class="page-title">My Dashboard</div>
-          <div class="page-subtitle">Custom widgets</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="pk-btn-ghost" onclick="exportDashConfig()" title="Export config as JSON">⬇ Export</button>
-          <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
+      <div class="pkd-top">
+        <div class="pkd-tabs" id="pkd-tabs" role="tablist" aria-label="Dashboards"></div>
+        <div class="pkd-tools">
+          <span class="pkd-account" id="pkd-account"></span>
+          <button class="pk-btn-ghost" id="pkd-add-sec" type="button" title="Add a full-width section title">+ Section</button>
+          <button class="pk-btn-ghost" id="pkd-add-note" type="button" title="Add a text note">+ Note</button>
+          <button class="pk-btn-ghost" id="pkd-menu" type="button" title="Rename, duplicate, template, export, delete">⋯ Dashboard</button>
+          <button class="pk-btn-primary" id="pkd-add" type="button">+ Add charts</button>
         </div>
       </div>
-      <div class="mydash-grid" id="mydash-grid"></div>
-      <!-- Sibling of #mydash-grid, not a child: renderMyDash() replaces
-           #mydash-grid's innerHTML wholesale on every render, which would
-           destroy this node (and break every render after the first) if it
-           lived inside the grid. -->
-      <div class="mydash-empty" id="mydash-empty">
-        <div style="font-size:32px;margin-bottom:10px;opacity:.5">◎</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">No widgets yet</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Pick the indicators you want to track at a glance.</div>
-        <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
+      <div class="pkd-hint">Drag a card by its title bar, resize it from the bottom-right corner. ☆ on any chart of the site adds it here.</div>
+      <div class="pkd-empty" id="pkd-empty" hidden>
+        <div class="pkd-empty-title">This dashboard is empty</div>
+        <div class="pkd-empty-sub">Pick charts from the catalogue, or click ☆ on any chart of the site.</div>
+        <button class="pk-btn-primary" id="pkd-add-empty" type="button">+ Add charts</button>
       </div>
+      <div class="grid-stack pkd-grid" id="pkd-grid"></div>
     </div>
 
   </main>
 
-  <!-- My Dashboard · widget picker modal -->
-  <div id="widget-picker" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(5,8,12,0.6);backdrop-filter:blur(2px)" onclick="if(event.target===this)closeWidgetPicker()">
-    <div style="width:min(640px,92vw);max-height:80vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">Add widgets</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Click to add or remove an indicator from My Dashboard</div>
-        </div>
-        <button class="pk-btn-ghost" onclick="closeWidgetPicker()" title="Close">✕</button>
-      </div>
-      <div id="widget-picker-list" style="padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
-    </div>
-  </div>
   <!-- Global zone selector panel · shared across all sections, placed outside all pages so it remains accessible regardless of which tab is active -->
   <div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
@@ -6355,6 +6420,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/chartjs-plugin-annotation.min.js"></script>
 <script src="js/fullscreen.js"></script>
 <script src="js/palette.js"></script>
+<script src="js/widgets.js"></script>
 <script src="js/commodities.js"></script>
 <script src="js/carbon.js"></script>
 <script src="js/carbon-ghg.js"></script>
@@ -6382,6 +6448,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/carbon-ui.js"></script>
 <script src="js/negatives.js"></script>
 <script src="js/pr-forward.js"></script>
+<script src="js/widgets-kpi.js"></script>
+<script src="js/account.js"></script>
+<script src="js/dashboard.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
 <script>
