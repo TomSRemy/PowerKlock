@@ -33,8 +33,8 @@ dashboard accounts.
 
 | Schema | Content |
 |---|---|
-| `market` | Facts. `da_price_day`, `generation_day`, `load_day`, `commodity` / `commodity_close`, `forward_settlement`, `forward_contract_close`, `spot_reference`, `go_quote`, `go_auction` |
-| `analytics` | Views. `da_price_15min`, `da_price_hourly`, `da_price_daily`, `negative_hours_monthly`, `bess_spread_daily`, `generation_slot`, `generation_daily`, `capture_price_daily`, `commodity_daily`, `clean_spread_daily`, `forward_curve`, `forward_curve_latest`, `coverage` |
+| `market` | Facts. `da_price_day`, `generation_day`, `load_day`, `commodity` / `commodity_close`, `forward_settlement`, `forward_contract_close`, `spot_reference`, `go_quote`, `go_auction`, `installed_capacity`, `crossborder_flow_day` |
+| `analytics` | Views. `da_price_15min`, `da_price_hourly`, `da_price_daily`, `negative_hours_monthly`, `bess_spread_daily`, `generation_slot`, `generation_daily`, `capture_price_daily`, `commodity_daily`, `clean_spread_daily`, `forward_curve`, `forward_curve_latest`, `coverage`, `installed_capacity` (+`_latest`), `crossborder_flow_hourly`, `net_position_daily` |
 | `meta` | `zone`, `fuel` (with CO2 factors), `convention`, and `dictionary` (every table / view / column with its description) |
 | `ops` | `sync_run`, `file_state`, `quality_issue`, `schema_migrations` |
 
@@ -92,5 +92,11 @@ From then on the sync runs after every data fetch and every 6 hours.
 - Other zones: complete only where the multi-zone backfill has run; check
   `analytics.coverage`.
 - Generation per fuel: FR, DE_LU, ES, BE, NL from the daily fetch onwards.
+- Installed capacity (12 countries, yearly) and physical cross-border flows
+  (12 countries, hourly, from 2020) come from Energy-Charts.info (Fraunhofer
+  ISE), CC BY 4.0: cite "Energy-Charts.info" when reusing them. Country codes
+  there are countries (DE, IT), not bidding zones (DE_LU, IT_NORD).
+  Capacity rows with `counts_in_total = false` (planning targets, storage
+  GWh, solar DC duplicate) must never be summed.
 - Weather is not stored: Open-Meteo's free API is for non-commercial use
   only.
