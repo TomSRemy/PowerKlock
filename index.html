@@ -6370,9 +6370,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/eua.js"></script>
 <script src="js/overview-extra.js"></script>
 <script src="js/go.js"></script>
-<!-- js/weather.js retiré : clone périmé de prices.js, 19 redéclarations top-level
-     (ZONES, pricesData, FLAG_MAP, ZONE_META…) → SyntaxError, le fichier n'était
-     jamais exécuté. Il ne contenait aucun code météo propre. -->
+<!-- js/weather.js and js/globals.js (stale, never-loaded copies of prices.js) were deleted; weather lives in js/meteo.js. -->
 <script src="js/map.js"></script>
 <script src="js/france.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" defer></script>
