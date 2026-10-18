@@ -21,7 +21,7 @@ const GM_FUEL_META = {
   solar:   { emoji: '☀', label: 'Solar',    color: '#FBBF24', co2: 45   },
   hydro:   { emoji: '💧', label: 'Hydro',    color: '#3FA6B4', co2: 24   },
   biomass: { emoji: '🌿', label: 'Biomass',  color: '#94D2BD', co2: 230  },
-  fossil:  { emoji: '🔥', label: 'Fossil',   color: '#ED6965', co2: 820  }, // gas+coal mix
+  fossil:  { emoji: '🔥', label: 'Fossil',   color: '#ED6965', co2: 650  }, // gas+coal blend, same as js/carbon.js LEGACY_BUCKET
   other:   { emoji: '◇', label: 'Other',    color: '#7A93AB', co2: 400  },
 };
 
@@ -153,12 +153,17 @@ function _gmStats(mix) {
   const renPct  = ren / total * 100;
   const lowCPct = lowC / total * 100;
   const fosPct  = fos / total * 100;
-  // CO2 intensity proxy (g CO2eq / kWh) — weighted average by share
-  let co2 = 0;
-  GM_FUEL_ORDER.forEach(k => {
-    const v = mix[k] || 0;
-    co2 += (v / total) * (GM_FUEL_META[k]?.co2 || 0);
-  });
+  // Production CO2 intensity (g CO2eq / kWh): same function and factors as
+  // the Carbon Intensity page (js/carbon.js) — per ENTSO-E production type
+  // when the breakdown is there, family factors otherwise.
+  let co2;
+  if (typeof productionIntensity === 'function') {
+    co2 = (mix.byCode && Object.keys(mix.byCode).length) ? productionIntensity(mix.byCode, true)
+      : productionIntensity({ nuclear: mix.nuclear, wind: mix.wind, solar: mix.solar, hydro: mix.hydro, biomass: mix.biomass, fossil: mix.fossil, other: mix.other }, false);
+  } else {
+    co2 = 0;
+    GM_FUEL_ORDER.forEach(k => { co2 += ((mix[k] || 0) / total) * (GM_FUEL_META[k]?.co2 || 0); });
+  }
   // Dominant fuel
   const dom = GM_FUEL_ORDER.reduce((best, k) =>
     (mix[k] || 0) > (mix[best] || 0) ? k : best, GM_FUEL_ORDER[0]);

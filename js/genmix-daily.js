@@ -23,7 +23,7 @@
 // Lifecycle carbon factors (g CO2eq / kWh) — IPCC AR6 median values
 const _GMD_CO2 = {
   nuclear: 12, wind: 11, solar: 45, hydro: 24, biomass: 230,
-  gas: 490, coal: 820, oil: 740, other: 400, fossil: 600,
+  gas: 490, coal: 820, oil: 740, other: 400, fossil: 650,   // fossil blend as js/carbon.js LEGACY_BUCKET
 };
 
 // Display order (bottom → top) for the stacked profile.
