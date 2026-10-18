@@ -170,6 +170,16 @@ async function _imbDay(dateISO) {
   rows.forEach(r => { const i = Math.round((Date.parse(r.datetime) - t0) / 900e3); if (i >= 0 && i < 96) { price[i] = r.imbalanceprice; sys[i] = r.systemimbalance; } });
   return { price, sys };
 }
+// Latest day Elia serves: today from its first published quarter-hour
+// (near-real-time set, today only), else the last validated day (the
+// validated history lags by a day, so yesterday can be missing at night).
+async function _imbLatestDay() {
+  for (let k = 0; k < 4; k++) {
+    const d = _renAdd(pkTodayISO(), -k), im = await _imbDay(d);
+    if (im && im.price.some(v => v != null)) return d;
+  }
+  return pkTodayISO();
+}
 async function _daDay(zone, dateISO) {
   const j = await _renDaily(dateISO);
   const z = j && j.zones && j.zones[zone];
@@ -204,7 +214,7 @@ _imbReg({
   id: 'imb-intraday', title: 'Belgium · imbalance price vs day-ahead', pageCanvas: 'imb-intraday', size: { w: 12, h: 5 },
   desc: 'Quarter-hour imbalance price, day-ahead price and system imbalance (MW, negative = short).',
   async draw(cid, p) {
-    const day = p.day || pkTodayISO();
+    const day = p.day || await _imbLatestDay();
     const [im, da] = p.im ? [p.im, p.da] : await Promise.all([_imbDay(day), _daDay('BE', day)]);
     if (!im) { noDataMsg(cid, 'No Elia imbalance data for ' + _renFmtDay(day), ''); return null; }
     const lbl = makeTimeLabels(96);
@@ -226,7 +236,7 @@ _imbReg({
   desc: 'Daily average imbalance price, day-ahead average and imbalance volatility.',
   params: [IMB_N_PARAM], defaults: { n: '30' },
   async draw(cid, p) {
-    const H = await _imbHistory(p.day || pkTodayISO(), p.n);
+    const H = await _imbHistory(p.day || await _imbLatestDay(), p.n);
     if (!H.days.length) { noDataMsg(cid, 'Elia history not reachable', ''); return null; }
     const avgs = H.days.map(d => { const v = H.byDay[d].map(r => r.imbalanceprice).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
     const sds = H.days.map((d, k) => { const v = H.byDay[d].map(r => r.imbalanceprice).filter(x => x != null); const m = avgs[k]; return v.length ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) : null; });
@@ -244,7 +254,7 @@ _imbReg({
   desc: 'Distribution of quarter-hour imbalance minus day-ahead spreads over the window.',
   params: [IMB_N_PARAM], defaults: { n: '30' },
   async draw(cid, p) {
-    const H = await _imbHistory(p.day || pkTodayISO(), p.n);
+    const H = await _imbHistory(p.day || await _imbLatestDay(), p.n);
     if (!H.days.length) { noDataMsg(cid, 'Elia history not reachable', ''); return null; }
     const spreads = [];
     H.days.forEach((d, k) => {
@@ -266,7 +276,7 @@ _imbReg({
 
 async function drawImbalance() {
   const zone = 'BE';
-  const day = IMB.day || pkTodayISO();
+  const day = IMB.day || await _imbLatestDay();
   document.getElementById('imb-day').textContent = _renFmtDay(day);
   const [im, da] = await Promise.all([_imbDay(day), _daDay(zone, day)]);
   if (!im) {
