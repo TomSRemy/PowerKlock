@@ -381,6 +381,78 @@ def load_flows(conn, paths):
     return rows
 
 
+# ── French regions (ODRÉ, read from the provider, not from the repo) ──
+ODRE = 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/'
+REGION_FIELDS = [('consommation', 'consumption_mw'), ('nucleaire', 'nuclear_mw'), ('eolien', 'wind_mw'), ('solaire', 'solar_mw'),
+                 ('hydraulique', 'hydro_mw'), ('thermique', 'thermal_mw'), ('bioenergies', 'bio_mw'), ('ech_physiques', 'exchanges_mw'),
+                 ('tch_eolien', 'wind_lf_pct'), ('tch_solaire', 'solar_lf_pct')]
+
+
+def _odre_export(ds, d_from, d_to):
+    import urllib.parse, urllib.request
+    q = urllib.parse.urlencode({'select': 'libelle_region,date_heure,' + ','.join(f for f, _ in REGION_FIELDS),
+                                'where': f'date_heure >= "{d_from}" and date_heure < "{d_to}"'})
+    with urllib.request.urlopen(ODRE + ds + '/exports/json?' + q, timeout=600) as r:
+        return json.load(r)
+
+
+def load_fr_regions(conn, full):
+    """Consolidated history (from 2013 on a full load, else the last 75 days) then
+    the real-time weeks not consolidated yet. Hourly averages on the Paris clock."""
+    with conn.cursor() as cur:
+        cur.execute("select max(delivery_date) from market.fr_region_day where dataset = 'consolidated'")
+        last = cur.fetchone()[0]
+    start = date(2013, 1, 1) if (full or last is None) else last - timedelta(days=75)
+    today = datetime.now(PARIS).date()
+    rows = 0
+    chunks = []
+    a = start
+    while a < today:
+        b = min(today + timedelta(days=1), date(a.year + 1, 1, 1))
+        chunks.append(('eco2mix-regional-cons-def', 'consolidated', a, b))
+        a = b
+    chunks.append(('eco2mix-regional-tr', 'real-time', today - timedelta(days=70), today + timedelta(days=1)))
+    for ds, label, a, b in chunks:
+        recs = _odre_export(ds, a.isoformat(), b.isoformat())
+        acc = {}
+        for r in recs:
+            reg, t = r.get('libelle_region'), r.get('date_heure')
+            if not reg or not t or r.get('consommation') in (None, ''):
+                continue
+            loc = datetime.fromisoformat(t).astimezone(PARIS)
+            day = acc.setdefault((reg, loc.date()), {})
+            for f, _ in REGION_FIELDS:
+                v = num(r.get(f))
+                if v is not None:
+                    s_, n_ = day.setdefault((f, loc.hour), (0.0, 0))
+                    day[(f, loc.hour)] = (s_ + v, n_ + 1)
+        batch = []
+        for (reg, d), vals in acc.items():
+            arrs = {}
+            for f, col in REGION_FIELDS:
+                arr = [None] * 24
+                for h in range(24):
+                    if (f, h) in vals:
+                        s_, n_ = vals[(f, h)]
+                        arr[h] = round(s_ / n_, 2)
+                arrs[col] = arr if any(v is not None for v in arr) else None
+            if arrs['consumption_mw'] is None:
+                continue
+            batch.append((reg, d, label) + tuple(arrs[col] for _, col in REGION_FIELDS))
+        cols = ', '.join(col for _, col in REGION_FIELDS)
+        upd = ', '.join(f'{col} = excluded.{col}' for _, col in REGION_FIELDS)
+        # Real-time rows never overwrite consolidated ones.
+        sql = (f"insert into market.fr_region_day (region, delivery_date, dataset, {cols}) values ({', '.join(['%s'] * (3 + len(REGION_FIELDS)))}) "
+               f"on conflict (region, delivery_date) do update set dataset = excluded.dataset, {upd}, loaded_at = now()"
+               + (" where market.fr_region_day.dataset <> 'consolidated'" if label == 'real-time' else ''))
+        with conn.cursor() as cur:
+            cur.executemany(sql, batch)
+        conn.commit()
+        rows += len(batch)
+        log(f'  fr_regions {label} {a} → {b}: {len(batch)} region-days')
+    return rows
+
+
 def load_go(conn):
     quotes = {}
     path = os.path.join(DATA, 'go_prices.csv')
@@ -485,6 +557,12 @@ def main():
             if ftodo:
                 n = load_flows(conn, ftodo); log(f'load_flows: {n} rows from {len(ftodo)} files'); rows += n
                 mark_loaded(conn, ftodo); files_read += len(ftodo)
+
+            # French regions straight from ODRÉ (a network failure is logged, not fatal)
+            try:
+                n = load_fr_regions(conn, args.full); log(f'load_fr_regions: {n} rows'); rows += n
+            except Exception as e:
+                conn.rollback(); log(f'  ! fr_regions skipped: {e}')
 
             for paths, fn in groups:
                 paths = [p for p in paths if os.path.exists(p)]

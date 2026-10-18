@@ -25,6 +25,9 @@ for the team: how to ask, and what Claude should check first.
 - "Clean spark and clean dark spreads in DE this quarter: how often is gas in the money?"
 - "How did the FR forward curve move over the last month, tenor by tenor?"
 - "Correlation between French nuclear availability and day-ahead base price."
+- "Which French regions have the best solar load factor, month by month, over the last five years?"
+- "Germany's net cross-border position by month since 2020, and its relation to the FR − DE spread."
+- "Installed solar and wind in Spain vs France since 2015."
 
 ## Example queries (tested)
 
@@ -75,6 +78,22 @@ join market.commodity_close c on c.key = 'fr_nuc_avail' and c.trade_date = d.del
 where d.zone = 'FR' order by 1 desc;
 ```
 
+```sql
+-- Solar and wind load factor per French region, by year (PPA yield proxy)
+select region, extract(year from month)::int as year,
+       round(avg(solar_lf_pct)::numeric, 1) as solar_lf, round(avg(wind_lf_pct)::numeric, 1) as wind_lf
+from analytics.fr_region_load_factor_monthly
+group by 1, 2 order by 2 desc, 3 desc;
+
+-- Daily net import of each country (Energy-Charts physical flows)
+select country, date_trunc('month', delivery_date)::date as month, round(avg(net_import_mw)::numeric) as net_import_mw
+from analytics.net_position_daily group by 1, 2 order by 2 desc, 1;
+
+-- Installed capacity that may be summed, latest year
+select country, round(sum(gw)::numeric, 1) as gw
+from analytics.installed_capacity_latest where counts_in_total group by 1 order by 2 desc;
+```
+
 ## Pitfalls Claude should avoid
 
 - **Coverage differs by zone.** France goes back to 2016; most other zones
@@ -88,5 +107,10 @@ where d.zone = 'FR' order by 1 desc;
 - **Forwards by tenor are rolling**: `Y+1` changes contract on 1 January.
   For a fixed contract use `market.forward_contract_close`.
 - **UK forwards are in GBP**: use `value_eur` in `analytics.forward_curve`.
+- **Installed capacity**: never sum rows with `counts_in_total = false`
+  (planning targets, storage GWh, solar DC duplicate). Italy's solar figure
+  comes from ENTSO-E declarations and is far below the national registry.
+- **Countries vs bidding zones**: Energy-Charts tables use countries (DE,
+  IT); price tables use bidding zones (DE_LU, IT_NORD…).
 - **Coal (API2) and EUA are single benchmark contracts**, not rolled
   continuous series (see `market.commodity.contract`).
