@@ -197,6 +197,15 @@
   .news-source.carbonpulse { background: rgba(168,125,196,0.15); color: #A87DC4; }
   .news-source.gasnaturally { background: rgba(196,165,123,0.15); color: #C4A57B; }
   .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
+  .news-source.carbonbrief { background: rgba(168,125,196,0.12); color: #C4A7E7; }
+  .news-source.cew { background: rgba(20,211,169,0.12); color: #14D3A9; }
+  .news-source.pvmag { background: rgba(251,191,36,0.15); color: #FBBF24; }
+  .news-source.windpower { background: rgba(127,200,248,0.15); color: #7FC8F8; }
+  .news-source.storage { background: rgba(148,210,189,0.15); color: #94D2BD; }
+  .news-source.wnn { background: rgba(123,75,156,0.25); color: #C4A7E7; }
+  .news-source.gie { background: rgba(196,165,123,0.15); color: #C4A57B; }
+  .news-source.smard { background: rgba(184,201,217,0.12); color: #B8C9D9; }
+  .news-source.cde { background: rgba(237,105,101,0.12); color: #ED6965; }
   .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
   .up { color: var(--up); }
@@ -4719,7 +4728,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Energy News</div>
-          <div class="page-subtitle">Live feed from ENTSO-E, RTE, CRE, ACER and European energy press</div>
+          <div class="page-subtitle">European energy press · carbon, power, gas, renewables, nuclear · refreshed every 3 hours</div>
         </div>
         <span class="updated-badge" id="news-updated">Loading...</span>
       </div>
@@ -4731,6 +4740,8 @@
         <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
         <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
         <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
+        <button class="filter-btn" onclick="filterNews('fr', this)">🇫🇷 France</button>
+        <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="margin-left:auto;min-width:200px">
       </div>
 
       <div class="news-grid" id="news-grid">

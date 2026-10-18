@@ -1,73 +1,53 @@
+// News come from data/news.json, written every 3 hours by
+// scripts/fetch_news.py (GitHub Actions) from public RSS/Atom feeds.
+// No client-side proxy and no placeholder articles: if the file is missing
+// the page says so.
 async function loadNews() {
   window._newsLoaded = true;
-  const allItems = [];
-
-  // Try RSS feeds via proxy
-  const fetchFeed = async (src) => {
-    try {
-      const resp = await fetch(`${RSS_PROXY}${encodeURIComponent(src.url)}`);
-      const data = await resp.json();
-      if (data.status !== 'ok') return [];
-      return (data.items || []).slice(0, 6).map(item => ({
-        source: src.name,
-        cls: src.cls,
-        title: item.title,
-        snippet: item.description?.replace(/<[^>]+>/g,'').slice(0,150) + '...',
-        link: item.link,
-        date: new Date(item.pubDate),
-        tags: src.tags,
-      }));
-    } catch { return []; }
-  };
-
-  // Fetch all in parallel
-  const results = await Promise.all(RSS_SOURCES.map(fetchFeed));
-  results.forEach(items => allItems.push(...items));
-
-  if (allItems.length === 0) {
-    // Fallback: demo news items
-    allItems.push(...getDemoNews());
+  const badge = document.getElementById('news-updated');
+  try {
+    const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
+      .sort((a, b) => b.date - a.date);
+    const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
+    if (badge) badge.textContent = `${newsData.length} articles · ${new Set(newsData.map(n => n.source)).size} sources · ${upd}`;
+  } catch (e) {
+    newsData = [];
+    if (badge) badge.textContent = 'News feed unavailable';
   }
-
-  newsData = allItems.sort((a,b) => b.date - a.date);
-  document.getElementById('news-updated').textContent = `${newsData.length} articles loaded`;
   renderNews(newsData);
 }
 
-function getDemoNews() {
-  const now = new Date();
-  const ago = (h) => new Date(now - h * 3600000);
-  return [
-    { source:'ENTSO-E', cls:'entsoe', title:'ENTSO-E publishes Winter Outlook 2026: European power system remains resilient', snippet:'The Winter Outlook 2026 confirms European adequacy margins remain above threshold in all scenarios, with interconnection capacity playing a key role.', link:'https://www.entsoe.eu/news', date:ago(1), tags:['power','regulation'] },
-    { source:'RTE', cls:'rte', title:'Record solar curtailment in France: 2.1 TWh lost in Q1 2026', snippet:'RTE publishes its Q1 2026 report. PV overproduction during off-peak hours drove negative prices over 312 hours.', link:'https://www.rte-france.com', date:ago(2), tags:['power','markets'] },
-    { source:'ACER', cls:'acer', title:'ACER recommends reform of capacity mechanism design across EU member states', snippet:'In its latest market monitoring report, ACER identifies design inconsistencies in national capacity mechanisms that distort cross-border competition.', link:'https://www.acer.europa.eu', date:ago(4), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'CRE opens consultation on network tariffs for the 2025-2028 period', snippet:'The French regulator launches a public consultation on the revision of TURPE tariffs applicable to distribution network operators.', link:'https://www.cre.fr', date:ago(6), tags:['regulation','fr'] },
-    { source:'ENTSO-E', cls:'entsoe', title:'Cross-border capacity allocation reaches record levels in Q1 2026', snippet:'The Cross-Border Capacity Allocation report shows that available interconnection capacity increased by 12% year-on-year in the first quarter.', link:'https://www.entsoe.eu/news', date:ago(8), tags:['power','markets'] },
-    { source:'RTE', cls:'rte', title:'Nuclear: EPR2 programme update — six new units confirmed in Normandy', snippet:'Following the government review, RTE confirms the grid connection timeline for the first EPR2 unit is maintained at 2037 for the Penly site.', link:'https://www.rte-france.com', date:ago(10), tags:['power','fr'] },
-    { source:'ACER', cls:'acer', title:'European gas storage reaches 58% ahead of summer injection season', snippet:'GIE data shows EU aggregate storage at 58.3%, slightly below the 5-year average of 61.2% for this time of year, ACER notes in weekly brief.', link:'https://www.acer.europa.eu', date:ago(14), tags:['gas','markets'] },
-    { source:'ENTSO-E', cls:'entsoe', title:'REMIT: 47 new urgent market messages published this week across EU TSOs', snippet:'TSOs across Germany, France, Italy and Poland filed 47 UMMs this week, predominantly affecting gas-fired generation assets.', link:'https://www.entsoe.eu/news', date:ago(18), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'Aggregation: publication of the regulatory framework for BESS in the capacity market', snippet:'CRE clarifies the eligibility conditions for battery storage systems in the French capacity mechanism starting 2027.', link:'https://www.cre.fr', date:ago(22), tags:['regulation','fr','power'] },
-    { source:'RTE', cls:'rte', title:'Monthly report: France\'s export balance down 18% in April 2026', snippet:'RTE publishes its monthly report. The export balance stands at 3.2 TWh for April 2026, down from the same month last year.', link:'https://www.rte-france.com', date:ago(26), tags:['power','markets','fr'] },
-  ];
+function _newsEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function renderNews(items) {
-  const filtered = newsFilter === 'all' ? items : items.filter(i => i.tags?.includes(newsFilter));
+  const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
+  const filtered = (items || []).filter(i =>
+    (newsFilter === 'all' || (i.tags || []).includes(newsFilter)) &&
+    (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   const grid = document.getElementById('news-grid');
+  if (!items || !items.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No news available — data/news.json could not be loaded.</div>';
+    return;
+  }
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No articles for this filter.</div>';
     return;
   }
   grid.innerHTML = filtered.map(item => {
-    const timeAgo = formatTimeAgo(item.date);
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${t}</span>`).join(' ');
-    return `<a class="news-card" href="${item.link}" target="_blank" rel="noopener">
+    const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
+    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsEsc(t)}</span>`).join(' ');
+    return `<a class="news-card" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
-        <span class="news-source ${item.cls}">${item.source}</span>
-        <span class="news-time">${timeAgo}</span>
+        <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
+        <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${item.title}</div>
-      <div class="news-snippet">${item.snippet}</div>
+      <div class="news-title">${_newsEsc(item.title)}</div>
+      <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}</div>
     </a>`;
   }).join('');
@@ -91,31 +71,29 @@ function formatTimeAgo(date) {
 // OVERVIEW
 // ════════════════════════════════════════════
 function loadOverview() {
-  const prices = pricesData.length > 0 ? pricesData : getDemoData();
-  const fr = prices.find(d => d.code === 'FR') || prices[0];
-  const de = prices.find(d => d.code === 'DE_LU') || prices[1];
-  const be = prices.find(d => d.code === 'BE') || prices[2];
-
+  const prices = (typeof pricesData !== 'undefined' && pricesData) ? pricesData : [];
+  const fr = prices.find(d => d.code === 'FR'), de = prices.find(d => d.code === 'DE_LU'), be = prices.find(d => d.code === 'BE');
+  const P = window.PKC, ttf = P && P.last('ttf'), eua = P && P.last('eua'), fx = P && P.last('eurusd');
   document.getElementById('overview-prices').innerHTML = [
-    { label:'🇫🇷 France DA', val:fr?.today, unit:'€/MWh' },
-    { label:'🇩🇪 Germany DA', val:de?.today, unit:'€/MWh' },
-    { label:'🇧🇪 Belgium DA', val:be?.today, unit:'€/MWh' },
-    { label:'TTF D+1', val:45.14, unit:'€/MWh' },
-    { label:'EUA', val:74.09, unit:'€/t' },
-    { label:'EUR/USD', val:1.1680, unit:'' },
+    { label:'🇫🇷 France DA', val:fr && fr.today, unit:'€/MWh' },
+    { label:'🇩🇪 Germany DA', val:de && de.today, unit:'€/MWh' },
+    { label:'🇧🇪 Belgium DA', val:be && be.today, unit:'€/MWh' },
+    { label:'TTF DA', val:ttf && ttf.v, unit:'€/MWh' },
+    { label:'EUA ' + (P ? P.contractLabel('eua') : ''), val:eua && eua.v, unit:'€/t' },
+    { label:'EUR/USD', val:fx && fx.v, unit:'', dp:4 },
   ].map(r => `<tr>
     <td style="font-family:Inter;text-align:left;color:var(--text2)">${r.label}</td>
-    <td style="font-weight:600">${r.val?.toFixed(2) || '--'}</td>
+    <td style="font-weight:600">${r.val != null ? r.val.toFixed(r.dp || 2) : '--'}</td>
     <td style="color:var(--text3);font-size:11px">${r.unit}</td>
   </tr>`).join('');
-
+  const pct = l => l && l.pct != null ? `${l.pct >= 0 ? 'up' : 'down'} ${Math.abs(l.pct).toFixed(2)}% vs prior close` : '';
   document.getElementById('market-status').innerHTML = `
     <div style="margin-bottom:10px"><span style="color:var(--accent)">⚡ Power</span><br>
-    FR price ${fr?.today < 10 ? 'very low' : fr?.today < 50 ? 'below average' : 'elevated'} at ${fr?.today?.toFixed(1)} €/MWh. ${fr?.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}</div>
+    ${fr ? `FR day-ahead at ${fr.today.toFixed(2)} €/MWh. ${fr.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}` : 'Day-ahead prices not loaded.'}</div>
     <div style="margin-bottom:10px"><span style="color:#C4A57B">⛽ Gas</span><br>
-    TTF Day-Ahead at 45.14 €/MWh, up 2.35% vs prior close.</div>
+    ${ttf ? `TTF day-ahead at ${ttf.v.toFixed(2)} €/MWh, ${pct(ttf)}.` : 'Gas data not loaded.'}</div>
     <div><span style="color:#A87DC4">🌿 Carbon</span><br>
-    EUA at 74.09 €/t, near 6-month average.</div>
+    ${eua ? `EUA ${P.contractLabel('eua')} at ${eua.v.toFixed(2)} €/t, ${pct(eua)}.` : 'Carbon data not loaded.'}</div>
   `;
 }
 
