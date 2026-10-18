@@ -1,0 +1,92 @@
+name: Backfill chain (half-years, newest first)
+
+# Runs the multi-zone price backfill one half-year at a time, newest first,
+# each half-year committed to main as soon as it is done. Started by a push
+# to a backfill-run/* branch (or by hand). Files holding fewer than
+# `min_zones` zones (FR-only history) are regenerated with all zones; days
+# that already carry several zones (and generation arrays) are kept.
+
+on:
+  push:
+    branches: ['backfill-run/**']
+  workflow_dispatch:
+
+concurrency:
+  group: backfill-historical
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    permissions:
+      contents: write
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        range:
+          - '2026-07-01 2026-12-31'
+          - '2026-01-01 2026-06-30'
+          - '2025-07-01 2025-12-31'
+          - '2025-01-01 2025-06-30'
+          - '2024-07-01 2024-12-31'
+          - '2024-01-01 2024-06-30'
+          - '2023-07-01 2023-12-31'
+          - '2023-01-01 2023-06-30'
+          - '2022-07-01 2022-12-31'
+          - '2022-01-01 2022-06-30'
+          - '2021-07-01 2021-12-31'
+          - '2021-01-01 2021-06-30'
+          - '2020-07-01 2020-12-31'
+          - '2020-01-01 2020-06-30'
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests==2.33.1
+
+      - name: Run backfill
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: |
+          set -- ${{ matrix.range }}
+          python scripts/enrich_summary.py --fetch-historical --from "$1" --to "$2" \
+            --zones FR,DE_LU,ES,BE,NL,GB,PT,IT_NORD,IT_SICI,GR,RS,MK,HU,CH,RO,BG,ME,HR,SI,AT,SK,CZ,PL,NO_1,DK_W,DK_E,LT,LV,FI,EE,SE \
+            --mode repair --min-zones 2
+
+      # Daily files first (no overlap with the scheduled fetch, which writes
+      # other dates), then summary.json rebuilt on top of the latest main.
+      - name: Commit and push
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          # repair deletes FR-only files before refetching: put back any day the
+          # API failed to return, so no existing history is ever lost.
+          git ls-files --deleted data/history/daily | xargs -r git checkout --
+          git add data/history/daily
+          if git diff --cached --quiet; then
+            echo "No daily file changed"
+            exit 0
+          fi
+          git commit -q -m "backfill[repair]: ${{ matrix.range }} all zones"
+          # The script also rewrote summary.json: drop it, it is rebuilt after the pull.
+          git checkout -- data/history
+          for i in 1 2 3 4 5 6; do
+            git pull -q --rebase -X theirs origin main || { git rebase --abort; sleep 10; continue; }
+            python scripts/enrich_summary.py > /dev/null
+            git add data/history/summary.json
+            git diff --cached --quiet || git commit -q -m "recalc: summary.json after backfill ${{ matrix.range }}"
+            git push origin HEAD:main && exit 0
+            echo "Push attempt $i failed, retrying…"
+            sleep 15
+          done
+          exit 1
