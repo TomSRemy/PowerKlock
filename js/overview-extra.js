@@ -107,3 +107,56 @@
     renderHeatmap().catch(e => console.warn('heatmap', e));
   };
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// SPREAD PAGE · battery arbitrage (TB1 / TB2 / TB4)
+// TBn = mean of the n most expensive hours − mean of the n cheapest hours
+// of the delivery day (hourly averages of the 15-min prices).
+// Revenue proxy: 1 MW / 2 MWh battery, one cycle a day, 85% round trip:
+//   daily € ≈ 2 MWh × (top-2h avg × 0.85 − bottom-2h avg)  (charge at bottom, discharge at top)
+// ════════════════════════════════════════════════════════════════════
+window._bessDays = 30;
+function bessSetWindow(n, btn) {
+  window._bessDays = n;
+  if (btn) { btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  renderBess();
+}
+async function renderBess() {
+  if (!document.getElementById('bess-canvas')) return;
+  const zone = (typeof getHistZone === 'function' ? getHistZone('spread') : 'FR') || 'FR';
+  const end = window._currentPriceDate || pkTodayISO();
+  const days = Array.from({ length: window._bessDays }, (_, i) => _renAdd(end, i - window._bessDays + 1));
+  const files = await Promise.all(days.map(d => fetch(DATA_BASE + 'history/daily/' + d + '.json').then(r => r.ok ? r.json() : null).catch(() => null)));
+  const rows = [];
+  days.forEach((d, k) => {
+    const z = files[k] && files[k].zones && files[k].zones[zone];
+    if (!z || !z.hourly || !z.hourly.length) return;
+    const per = z.hourly.length / 24;
+    const h = Array.from({ length: 24 }, (_, i) => { const v = z.hourly.slice(i * per, (i + 1) * per).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }).filter(v => v != null);
+    if (h.length < 20) return;
+    const srt = h.slice().sort((a, b) => a - b), m = a => a.reduce((x, y) => x + y, 0) / a.length;
+    const tb = n => m(srt.slice(-n)) - m(srt.slice(0, n));
+    const rev2 = 2 * (m(srt.slice(-2)) * 0.85 - m(srt.slice(0, 2)));
+    rows.push({ d, tb1: tb(1), tb2: tb(2), tb4: tb(4), rev2 });
+  });
+  const cov = document.getElementById('bess-cov');
+  if (cov) cov.textContent = `${zone} · ${rows.length}/${days.length} delivery days with prices`;
+  if (!rows.length) { noDataMsg('bess-canvas', 'No price data for ' + zone + ' in this window', ''); document.getElementById('bess-kpis').innerHTML = ''; return; }
+  _renRestore('bess-canvas');
+  const avg = k => rows.reduce((s, r) => s + r[k], 0) / rows.length;
+  const r2 = v => Math.round(v * 100) / 100;
+  const annual = avg('rev2') * 365 / 1000;   // k€ per MW per year
+  document.getElementById('bess-kpis').innerHTML =
+    _fuelKpi('TB1 average', avg('tb1').toFixed(1), '€/MWh', 'best hour − worst hour') +
+    _fuelKpi('TB2 average', avg('tb2').toFixed(1), '€/MWh', '2-hour battery reference') +
+    _fuelKpi('TB4 average', avg('tb4').toFixed(1), '€/MWh', '4-hour battery reference') +
+    _fuelKpi('Max TB2', Math.max(...rows.map(r => r.tb2)).toFixed(1), '€/MWh', rows.reduce((a, b) => b.tb2 > a.tb2 ? b : a).d) +
+    _fuelKpi('2h BESS DA margin', avg('rev2').toFixed(0), '€/MW/day', '1 MW / 2 MWh, 1 cycle, 85% RTE') +
+    _fuelKpi('Annualised', annual.toFixed(0), 'k€/MW/yr', 'window average × 365 · DA only', annual > 0 ? 'up' : null);
+  _fuelChart('bess-canvas', { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
+    _fuelLineDs('TB1', rows.map(r => r2(r.tb1)), '#ED6965', { borderWidth: 1.3 }),
+    _fuelLineDs('TB2', rows.map(r => r2(r.tb2)), '#14D3A9', { borderWidth: 2, pointRadius: 2 }),
+    _fuelLineDs('TB4', rows.map(r => r2(r.tb4)), '#7FC8F8', { borderWidth: 1.3 }),
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'tb-spreads-' + zone);
+  document.getElementById('bess-note').textContent = 'Day-ahead only (no intraday, balancing or ancillary revenues, no degradation or fees). Hours are clock hours of the delivery day; TB spreads ignore the order of the hours, so they are an upper bound for one cycle.';
+}

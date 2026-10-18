@@ -3886,6 +3886,24 @@
       <div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-spread-stats"></div>
         </div>
       </div>
+
+      <div class="hist-section hist-section-strong" id="hs-spread-bess">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-spread-bess')">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Battery arbitrage — TB spreads
+            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Top-n minus bottom-n hourly prices · same zone as above</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-spread-bess">
+          <div class="fuel-toolbar"><span class="fuel-toolbar-lbl">Window</span>
+            <div class="pk-gf-group" id="bess-window"><button class="pk-gf-btn active" onclick="bessSetWindow(30,this)">30D</button><button class="pk-gf-btn" onclick="bessSetWindow(90,this)">90D</button></div>
+            <span class="fuel-note" id="bess-cov" style="margin:0 0 0 8px"></span></div>
+          <div class="kpi-strip fuel-kpis" id="bess-kpis"></div>
+          <div style="position:relative;height:260px"><canvas id="bess-canvas" style="width:100%;height:260px"></canvas></div>
+          <div class="fuel-note" id="bess-note" style="margin-top:8px"></div>
+        </div>
+      </div>
       </div>
 
     </div>
