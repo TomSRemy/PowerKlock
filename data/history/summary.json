@@ -59524,7 +59524,7 @@
         "negH": 0.0,
         "peakAvg": 200.08,
         "offAvg": 143.69,
-        "renPct": 21.5,
+        "renPct": 24.2,
         "domFuel": "Nuclear"
       }
     ],
@@ -61435,7 +61435,7 @@
         "negH": 0.0,
         "peakAvg": 186.22,
         "offAvg": 168.76,
-        "renPct": 56.9,
+        "renPct": 59.3,
         "domFuel": "Wind"
       }
     ],
@@ -63350,7 +63350,7 @@
         "negH": 0.0,
         "peakAvg": 32.62,
         "offAvg": 119.95,
-        "renPct": 77.8,
+        "renPct": 77.4,
         "domFuel": "Wind"
       }
     ],
@@ -65257,7 +65257,7 @@
         "negH": 0.0,
         "peakAvg": 203.31,
         "offAvg": 175.43,
-        "renPct": 55.8,
+        "renPct": 55.2,
         "domFuel": "Wind"
       }
     ],
@@ -67127,8 +67127,8 @@
         "negH": 0.0,
         "peakAvg": 209.27,
         "offAvg": 180.14,
-        "renPct": 45.3,
-        "domFuel": "Wind"
+        "renPct": 42.1,
+        "domFuel": "Gas"
       }
     ],
     "HU": [
@@ -68707,7 +68707,7 @@
         "negH": 0.0,
         "peakAvg": 32.62,
         "offAvg": 119.95,
-        "renPct": 84.0,
+        "renPct": 86.1,
         "domFuel": "Wind"
       }
     ],
