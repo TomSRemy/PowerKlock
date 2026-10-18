@@ -59,6 +59,9 @@
   function hasGen(z) { return z && GEN_KEYS.concat(LOAD_KEYS).some(k => Array.isArray(z[k]) && z[k].length); }
 
   // Null out slots where no technology reported anything (unpublished).
+  // The per-type maps can lag behind the aggregates (a later run completes
+  // the aggregates, the map keeps the zero-filled tail): a slot where every
+  // type is 0 while the aggregates produce is unpublished for the map.
   function nullUnpublished(z) {
     const arrs = GEN_KEYS.filter(k => Array.isArray(z[k]) && z[k].length).map(k => z[k]);
     if (!arrs.length) return;
@@ -69,6 +72,11 @@
       if (!any && !allNullish) {
         GEN_KEYS.forEach(k => { if (Array.isArray(z[k]) && z[k].length === n) z[k][i] = null; });
         GEN_MAPS.forEach(m => { if (z[m] && typeof z[m] === 'object') Object.values(z[m]).forEach(a => { if (Array.isArray(a) && a.length === n) a[i] = null; }); });
+      } else if (any) {
+        GEN_MAPS.forEach(m => {
+          const series = z[m] && typeof z[m] === 'object' ? Object.values(z[m]).filter(a => Array.isArray(a) && a.length === n) : [];
+          if (series.length && series.every(a => !a[i])) series.forEach(a => { a[i] = null; });
+        });
       }
     }
   }
