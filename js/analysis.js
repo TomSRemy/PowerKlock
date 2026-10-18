@@ -46,13 +46,20 @@ function _renDayStats(z) {
   const wind = z.wind || (z.windOnshore && z.windOffshore ? z.windOnshore.map((v, i) => v == null ? null : v + (z.windOffshore[i] || 0)) : z.windOnshore);
   const solar = z.solar;
   const wCap = _renCapture(wind, price), sCap = _renCapture(solar, price);
+  // Partial day (generation published only up to some slot): compare the
+  // capture price with the baseload of the SAME slots, otherwise the
+  // missing evening peak inflates the rate.
+  const n = (wind || solar || []).length, per = n ? price.length / n : 1;
+  const pubIdx = []; for (let i = 0; i < n; i++) if ((wind && wind[i] != null) || (solar && solar[i] != null)) pubIdx.push(i);
+  const partial = n && pubIdx.length < n;
+  const basePub = partial ? _renMean(pubIdx.flatMap(i => price.slice(i * per, (i + 1) * per))) : base;
   const ok = b => b != null && b > 1;
   return {
-    base, wind, solar,
+    base: basePub, baseFull: base, partial, wind, solar,
     windAvg: _renMean(wind), solarAvg: _renMean(solar),
     wCap, sCap,
-    wCR: ok(base) && wCap != null ? wCap / base * 100 : null,
-    sCR: ok(base) && sCap != null ? sCap / base * 100 : null,
+    wCR: ok(basePub) && wCap != null ? wCap / basePub * 100 : null,
+    sCR: ok(basePub) && sCap != null ? sCap / basePub * 100 : null,
   };
 }
 
@@ -132,8 +139,8 @@ async function loadRenewables() {
     _fuelKpi('Wind avg', g(st.windAvg), 'GW', wp >= 0 ? `peak ${g(st.wind[wp])} GW at ${lbls[wp]}` : '') +
     _fuelKpi('Solar avg', g(st.solarAvg), 'GW', sp >= 0 ? `peak ${g(st.solar[sp])} GW at ${lbls[sp]}` : '') +
     _fuelKpi('Wind + solar share', vrePct == null ? '–' : vrePct.toFixed(1), '%', 'of published generation' + partial) +
-    _fuelKpi('Wind capture', st.wCap == null ? '–' : st.wCap.toFixed(2), '€/MWh', st.wCR == null ? '' : `${st.wCR.toFixed(0)}% of baseload ${st.base.toFixed(2)}`, crTone(st.wCR)) +
-    _fuelKpi('Solar capture', st.sCap == null ? '–' : st.sCap.toFixed(2), '€/MWh', st.sCR == null ? '' : `${st.sCR.toFixed(0)}% of baseload ${st.base.toFixed(2)}`, crTone(st.sCR)) +
+    _fuelKpi('Wind capture', st.wCap == null ? '–' : st.wCap.toFixed(2), '€/MWh', st.wCR == null ? '' : `${st.wCR.toFixed(0)}% of ${st.partial ? 'base on published slots' : 'baseload'} ${st.base.toFixed(2)}`, crTone(st.wCR)) +
+    _fuelKpi('Solar capture', st.sCap == null ? '–' : st.sCap.toFixed(2), '€/MWh', st.sCR == null ? '' : `${st.sCR.toFixed(0)}% of ${st.partial ? 'base on published slots' : 'baseload'} ${st.base.toFixed(2)}`, crTone(st.sCR)) +
     _fuelKpi('DA forecast error', wErr == null && sErr == null ? '–' : `${wErr == null ? '–' : wErr.toFixed(1)} / ${sErr == null ? '–' : sErr.toFixed(1)}`, '%',
       fc ? 'wind / solar · WAPE on published slots' : 'forecast kept for the latest day only');
 
