@@ -1,7 +1,6 @@
 // ── CROSS-BORDER ─────────────────────────────────────────────────────
 // France: RTE éCO2mix commercial exchanges per border (15-min, real time).
-// Other zones: ENTSO-E A11 physical flows from data/crossborder.json
-// (daily average per partner). No demo fallback.
+// Other countries: Energy-Charts physical flows (hourly, data/history/flows).
 window._cbDay = null;
 function cbShiftDay(n) {
   const t = pkTodayISO();
@@ -13,11 +12,16 @@ function cbShiftDay(n) {
 async function loadCrossBorder() {
   window._cbLoaded = true;
   const country = document.getElementById('cb-country').value;
-  const day = window._cbDay || pkTodayISO();
-  document.getElementById('cb-day').textContent = _renFmtDay(day);
+  // Just after midnight nothing is published for the new day yet: show the latest day with data.
+  const day = window._cbDay || (country === 'FR' ? await _cbLatestDay() : null);
+  if (day) document.getElementById('cb-day').textContent = _renFmtDay(day);
   ['cb-intraday', 'cb-days'].forEach(_renRestore);
-  if (country === 'FR') return _cbFrance(day);
-  return _cbEntsoe(country);
+  if (country === 'FR') {
+    ['cb-intraday-badge', 'cb-days-badge'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'RTE éCO2mix'; });
+    document.getElementById('cb-intraday-sub').textContent = 'GW · positive = import into France, negative = export';
+    return _cbFrance(day);
+  }
+  return _cbOther(country);
 }
 
 async function _cbFrance(day) {
@@ -71,6 +75,34 @@ async function _cbFrance(day) {
   document.getElementById('cb-note').textContent = 'Commercial exchanges scheduled per border, RTE sign convention (negative = export from France); "Germany + Belgium" is reported jointly by RTE. Energy = Σ 15-min values × 0.25 h.';
 }
 
+// ── Other countries: physical flows from Energy-Charts (repo files) ──
+// data/history/flows/YYYY-MM.json, hourly MW per country and neighbour on
+// the Paris day, + = import into the country (scripts/fetch_energy_charts.py).
+const CB_EC = { DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', IT: 'Italy', CH: 'Switzerland',
+  AT: 'Austria', PL: 'Poland', CZ: 'Czechia', DK: 'Denmark', PT: 'Portugal' };
+const CB_NB_NAME = { AT: 'Austria', BE: 'Belgium', CZ: 'Czechia', DK: 'Denmark', FR: 'France', DE: 'Germany', LU: 'Luxembourg',
+  NL: 'Netherlands', NO: 'Norway', PL: 'Poland', SE: 'Sweden', CH: 'Switzerland', IT: 'Italy', ES: 'Spain', PT: 'Portugal',
+  GB: 'Great Britain', SI: 'Slovenia', SK: 'Slovakia', HU: 'Hungary', LT: 'Lithuania', GR: 'Greece', ME: 'Montenegro', MT: 'Malta', IE: 'Ireland' };
+const CB_NB_COL = ['#FBBF24', '#7FC8F8', '#ED6965', '#14D3A9', '#C4A57B', '#A87DC4', '#94D2BD', '#F472B6', '#8D99AE', '#D6A77A', '#3FA6B4'];
+const _cbEcCache = new Map();
+function _cbEcMonth(ym) {
+  if (!_cbEcCache.has(ym)) _cbEcCache.set(ym, fetch(DATA_BASE + 'history/flows/' + ym + '.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  return _cbEcCache.get(ym);
+}
+async function _cbEcDay(country, day) {
+  const m = await _cbEcMonth(day.slice(0, 7));
+  return m && m.days && m.days[day] && m.days[day][country] || null;
+}
+// Latest day with at least 20 published hours for the country (within 10 days).
+async function _cbEcLatest(country) {
+  for (let k = 0; k < 10; k++) {
+    const d = _renAdd(pkTodayISO(), -k), f = await _cbEcDay(country, d);
+    if (f && Object.values(f).some(a => a.filter(v => v != null).length >= 20)) return d;
+  }
+  return pkTodayISO();
+}
+const CB_COUNTRY_PARAM = { key: 'country', label: 'Country', inTitle: true, options: [['FR', 'France']].concat(Object.entries(CB_EC)) };
+
 // ── France exchanges charts (page + dashboard) ─────────────────────
 // Latest day with published éCO2mix exchanges (today, else yesterday).
 async function _cbLatestDay() {
@@ -84,9 +116,11 @@ function _cbReg(def) {
 }
 
 _cbReg({
-  id: 'cb-intraday', title: 'France · exchanges by border', pageCanvas: 'cb-intraday', size: { w: 12, h: 5 },
-  desc: '15-minute commercial exchanges of France per border and the net position (+ import / − export).',
+  id: 'cb-intraday', title: 'Exchanges by border', pageCanvas: 'cb-intraday', size: { w: 12, h: 5 }, source: 'RTE éCO2mix · Energy-Charts',
+  desc: 'Exchanges per border and net position through the day (+ import / − export): France 15-min commercial (RTE), other countries hourly physical flows (Energy-Charts).',
+  params: [CB_COUNTRY_PARAM], defaults: { country: 'FR' },
   async draw(cid, p) {
+    if (p.country && p.country !== 'FR') return _cbEcIntraday(cid, p.country, p.day);
     const day = p.day || await _cbLatestDay();
     const d = await PK_E2M.day(day);
     if (!d || !d.published) { noDataMsg(cid, 'No éCO2mix exchange data for ' + _renFmtDay(day), ''); return null; }
@@ -105,10 +139,11 @@ _cbReg({
 
 const CB_DAYS_PARAM = { key: 'n', label: 'Window', options: [['7', '7 days'], ['14', '14 days'], ['30', '30 days'], ['45', '45 days']] };
 _cbReg({
-  id: 'cb-days', title: 'France · daily exchanges by border', pageCanvas: 'cb-days',
+  id: 'cb-days', title: 'Daily exchanges by border', pageCanvas: 'cb-days', source: 'RTE éCO2mix · Energy-Charts',
   desc: 'Daily average exchange per border over the last days (+ import / − export).',
-  params: [CB_DAYS_PARAM], defaults: { n: '14' },
+  params: [CB_COUNTRY_PARAM, CB_DAYS_PARAM], defaults: { country: 'FR', n: '14' },
   async draw(cid, p) {
+    if (p.country && p.country !== 'FR') return _cbEcDays(cid, p.country, +p.n || 14, p.day);
     const day = p.day || await _cbLatestDay();
     const B = PK_E2M.BORDERS;
     const from = PK_E2M.dayBoundsUTC(_renAdd(day, 1 - (+p.n || 14)))[0], to = PK_E2M.dayBoundsUTC(day)[1];
@@ -146,38 +181,70 @@ _cbReg({
   },
 });
 
-function _cbEntsoe(country) {
-  const flows = (window._cbData && window._cbData[country]) || [];
-  const anyData = flows.some(f => f.imports || f.exports);
-  document.getElementById('cb-day').textContent = window._cbUpdated ? _renFmtDay(new Date(window._cbUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' })) : '–';
-  document.getElementById('cb-updated').textContent = 'ENTSO-E A11 · physical';
-  if (!anyData) {
-    document.getElementById('cb-kpis').innerHTML = `<div class="fuel-note" style="grid-column:1/-1">The ENTSO-E cross-border feed returned no flow values for ${country} in the last fetch (parser fixed in this release — values appear after the next scheduled fetch). France is available in real time from RTE.</div>`;
-    ['cb-intraday', 'cb-days'].forEach(id => noDataMsg(id, 'No ENTSO-E flow data yet', ''));
-    document.getElementById('cb-tbody').innerHTML = '';
-    document.getElementById('cb-note').textContent = '';
-    return;
+async function _cbEcIntraday(cid, country, day) {
+  day = day || await _cbEcLatest(country);
+  const f = await _cbEcDay(country, day);
+  if (!f) { noDataMsg(cid, 'No Energy-Charts flow data for ' + (CB_EC[country] || country) + ' on ' + _renFmtDay(day), ''); return null; }
+  const nbs = Object.keys(f).sort((a, b) => _renMean(f[a]) - _renMean(f[b]));
+  const lbls = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0') + ':00');
+  const net = lbls.map((_, h) => { const v = nbs.map(n => f[n][h]).filter(x => x != null); return v.length ? v.reduce((a, x) => a + x, 0) / 1000 : null; });
+  const ds = nbs.map((n, k) => ({ label: CB_NB_NAME[n] || n, type: 'bar', data: f[n].map(v => v == null ? null : v / 1000), backgroundColor: rgba(CB_NB_COL[k % CB_NB_COL.length], .65), borderWidth: 0, stack: 'x' }));
+  ds.push({ label: 'Net', type: 'line', data: net, borderColor: '#FFFFFF', borderWidth: 1.6, pointRadius: 0, fill: false, order: -1, stack: 'n', tension: 0 });
+  _fuelChart(cid, { type: 'bar', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
+    scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 12, maxRotation: 0 } }), y: _fuelAxis('GW · + import / − export', { stacked: true }) },
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+      annotation: { annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1 } } } } }) }, 'flows-' + country + '-' + day);
+  return { sub: (CB_EC[country] || country) + ' · ' + _renFmtDay(day) + ' · hourly physical flows', day, f };
+}
+
+async function _cbEcDays(cid, country, n, day) {
+  day = day || await _cbEcLatest(country);
+  const days = Array.from({ length: n }, (_, i) => _renAdd(day, i - n + 1));
+  const rows = await Promise.all(days.map(d => _cbEcDay(country, d)));
+  const nbs = [...new Set(rows.flatMap(r => r ? Object.keys(r) : []))];
+  if (!nbs.length) { noDataMsg(cid, 'No Energy-Charts flow data for ' + (CB_EC[country] || country), ''); return null; }
+  _fuelChart(cid, { type: 'bar', data: { labels: days.map(x => x.slice(8, 10) + '/' + x.slice(5, 7)), datasets: nbs.map((nb, k) => ({
+    label: CB_NB_NAME[nb] || nb, data: rows.map(r => { const a = r && r[nb]; const m = a ? _renMean(a) : null; return m == null ? null : +(m / 1000).toFixed(2); }),
+    backgroundColor: rgba(CB_NB_COL[k % CB_NB_COL.length], .7), borderRadius: 2, stack: 's' })) },
+    options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('GW', { stacked: true }) } }) }, 'flows-' + country + '-' + n + 'd');
+  return { sub: (CB_EC[country] || country) + ' · ' + n + ' days to ' + _renFmtDay(day) };
+}
+
+// Page view for countries other than France.
+async function _cbOther(country) {
+  const day = window._cbDay || await _cbEcLatest(country);
+  document.getElementById('cb-day').textContent = _renFmtDay(day);
+  document.getElementById('cb-updated').textContent = 'Energy-Charts · physical flows';
+  ['cb-intraday-badge', 'cb-days-badge'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'Energy-Charts'; });
+  const r = await PKW.draw('cb-intraday', 'cb-intraday', { country, day });
+  const cbN = window._cbDaysN || '14';
+  PKW.draw('cb-days', 'cb-days', { country, day, n: cbN });
+  PKW.periodButtons('cb-days', CB_DAYS_PARAM.options.map(o => [o[0], o[0] + 'D']), cbN, v => { window._cbDaysN = v; PKW.draw('cb-days', 'cb-days', { country, day, n: v }); });
+  document.getElementById('cb-intraday-title').textContent = 'Hourly physical flows by border · ' + (CB_EC[country] || country) + ' · ' + _renFmtDay(day);
+  document.getElementById('cb-intraday-sub').textContent = 'GW · positive = import into ' + (CB_EC[country] || country) + ', negative = export';
+  const f = r && r.f;
+  if (!f) {
+    document.getElementById('cb-kpis').innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No physical flow data for ${CB_EC[country] || country} on ${_renFmtDay(day)}.</div>`;
+    document.getElementById('cb-tbody').innerHTML = ''; return;
   }
-  const tot = k => flows.reduce((a, f) => a + (f[k] || 0), 0);
-  const net = tot('imports') - tot('exports');
+  const nbs = Object.keys(f);
+  const hourNet = Array.from({ length: 24 }, (_, h) => { const v = nbs.map(n => f[n][h]).filter(x => x != null); return v.length ? v.reduce((a, x) => a + x, 0) : null; });
+  const valid = hourNet.filter(v => v != null), avgNet = valid.reduce((a, b) => a + b, 0) / (valid.length || 1);
+  let expGWh = 0, impGWh = 0;
+  nbs.forEach(n => f[n].forEach(v => { if (v == null) return; if (v < 0) expGWh -= v / 1000; else impGWh += v / 1000; }));
+  const stats = nbs.map(n => { const v = f[n].filter(x => x != null), avg = _renMean(v); return { n, avg, maxExp: Math.min(0, ...v), maxImp: Math.max(0, ...v), hExp: v.filter(x => x < 0).length, gwh: v.reduce((a, x) => a + x, 0) / 1000 }; }).sort((a, b) => a.avg - b.avg);
+  const GW = v => v == null ? '–' : (v / 1000).toFixed(2), top = stats[0];
   document.getElementById('cb-kpis').innerHTML =
-    _fuelKpi('Net position', (Math.abs(net) / 1000).toFixed(2), 'GW', net < 0 ? 'net exporter' : 'net importer', net < 0 ? 'up' : 'down') +
-    _fuelKpi('Exports', (tot('exports') / 1000).toFixed(2), 'GW', 'average over published hours') +
-    _fuelKpi('Imports', (tot('imports') / 1000).toFixed(2), 'GW', 'average over published hours') +
-    _fuelKpi('Borders', flows.length, '', 'with ENTSO-E data');
-  const lbl = flows.map(f => f.partner);
-  _fuelChart('cb-intraday', { type: 'bar', data: { labels: lbl, datasets: [
-    { label: 'Exports', data: flows.map(f => -(f.exports || 0) / 1000), backgroundColor: rgba(C_UP, .65), borderRadius: 2 },
-    { label: 'Imports', data: flows.map(f => (f.imports || 0) / 1000), backgroundColor: rgba(C_DN, .6), borderRadius: 2 },
-  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW') } }) }, 'flows-' + country);
-  document.getElementById('cb-intraday-title').textContent = 'Average physical flows by partner';
-  noDataMsg('cb-days', 'Daily history is available for France only', '');
-  document.getElementById('cb-tbody').innerHTML = flows.map(f => {
-    const n2 = (f.imports || 0) - (f.exports || 0);
-    return `<tr><td>${f.partner}</td><td style="font-weight:600">${_fuelSigned(n2 / 1000)} GW</td><td>${((f.exports || 0) / 1000).toFixed(2)} GW</td><td>${((f.imports || 0) / 1000).toFixed(2)} GW</td><td>–</td><td>–</td>` +
-      `<td class="l" style="text-align:left">${n2 < 0 ? '<span style="color:var(--up)">▶ exports</span>' : '<span style="color:var(--down)">◀ imports</span>'}</td></tr>`;
-  }).join('');
-  document.getElementById('cb-note').textContent = 'ENTSO-E A11 physical flows, average of the published hours of the fetch day.';
+    _fuelKpi('Net position', GW(Math.abs(avgNet)), 'GW', avgNet < 0 ? 'net exporter · day average' : 'net importer · day average', avgNet < 0 ? 'up' : 'down') +
+    _fuelKpi('Exported', expGWh.toFixed(1), 'GWh', `gross, ${valid.length}/24 hours`) +
+    _fuelKpi('Imported', impGWh.toFixed(1), 'GWh', 'gross, all borders') +
+    _fuelKpi('Main outlet', top && top.avg < 0 ? (CB_NB_NAME[top.n] || top.n) : '–', '', top && top.avg < 0 ? `${GW(-top.avg)} GW average export` : 'no net export border') +
+    _fuelKpi('Borders', nbs.length, '', 'reported by Energy-Charts');
+  document.getElementById('cb-table-title').textContent = 'Borders · ' + _renFmtDay(day);
+  document.getElementById('cb-tbody').innerHTML = stats.map(st =>
+    `<tr><td>${CB_NB_NAME[st.n] || st.n}</td><td style="font-weight:600">${_fuelSigned(st.avg / 1000)} GW</td><td>${st.maxExp < 0 ? GW(-st.maxExp) + ' GW' : '–'}</td><td>${st.maxImp > 0 ? GW(st.maxImp) + ' GW' : '–'}</td>` +
+    `<td>${st.hExp} h</td><td>${_fuelSigned(st.gwh, 1)} GWh</td><td class="l" style="text-align:left">${st.avg < 0 ? '<span style="color:var(--up)">▶ exports</span>' : '<span style="color:var(--down)">◀ imports</span>'}</td></tr>`).join('');
+  document.getElementById('cb-note').textContent = 'Physical cross-border flows, hourly averages on the Paris day; + = import into ' + (CB_EC[country] || country) + '. Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0. France uses RTE commercial exchanges (15-min) instead.';
 }
 
 
