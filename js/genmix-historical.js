@@ -76,15 +76,21 @@
     const fmt = (typeof _gmFmtDate === 'function') ? _gmFmtDate : (d => d.toISOString().slice(0, 10));
     const end = _gmhEndDate();
     const D = _gmhDays(period) || 4170;
-    let stepDays = (D <= 31) ? 1 : (D <= 210 ? 7 : 30);
-    let count = Math.ceil(D / stepDays);
-    if (count > 60) { stepDays = Math.ceil(D / 60); count = Math.ceil(D / stepDays); }
     const start = new Date(end.getTime()); start.setDate(start.getDate() - D);
+    // Generation arrays exist only for some days (see Renewables coverage):
+    // aggregate exactly those days instead of sampling one day per week,
+    // which mostly hit days without data.
+    const fromISO = fmt(start), toISO = fmt(end);
+    let dates = [];
+    if (typeof _renDaysWithGen === 'function') {
+      const lists = await Promise.all(['FR', 'DE_LU', 'ES', 'BE', 'NL'].map(z => _renDaysWithGen(z)));
+      dates = [...new Set([].concat(...lists))].filter(d => d >= fromISO && d <= toISO).sort();
+    }
+    const stepDays = 1;
     const acc = {}; // zone -> accumulators
-    for (let i = 0; i < count; i++) {
-      const dt = new Date(start.getTime()); dt.setDate(dt.getDate() + i * stepDays + Math.floor(stepDays / 2));
-      if (dt > end) break;
-      const j = (typeof _gmFetchDaily === 'function') ? await _gmFetchDaily(fmt(dt)) : null;
+    const files = await Promise.all(dates.map(d => (typeof _gmFetchDaily === 'function') ? _gmFetchDaily(d) : null));
+    for (let i = 0; i < dates.length; i++) {
+      const j = files[i];
       if (!j || !j.zones) continue;
       Object.keys(j.zones).forEach(z => {
         const zd = j.zones[z];
@@ -115,7 +121,7 @@
       p.renPct = ren / totalTWh * 100; p.fosPct = a.fuelTWh.fossil / totalTWh * 100; p.lowCPct = lowC / totalTWh * 100;
       p.co2 = a.co2n ? a.co2sum / a.co2n : 0; p.dom = dom;
       p.avgLoadGW = a.loadSumGW / a.samples;
-      p.dRenY1 = 0; p.dCo2Y1 = 0; p._real = true; p._samples = a.samples;
+      p.dRenY1 = null; p.dCo2Y1 = null; p._real = true; p._samples = a.samples;   // no Y-1 archive yet
       out[z] = p;
     });
     return out;
@@ -358,7 +364,7 @@
       case 'fossil': return p.fossil || 0;
       case 'dom': return p.dom || '';
       case 'co2': return p.co2 || 0;
-      case 'dRenY1': return p.dRenY1 || 0;
+      case 'dRenY1': return p.dRenY1 == null ? -Infinity : p.dRenY1;
       default: return p.avgLoadGW || 0;
     }
   }
@@ -498,9 +504,9 @@
       // Restore the unit span on load
       const loadEl = document.getElementById('gmh-kpi-fr-load');
       if (loadEl && !loadEl.querySelector('.kpi-unit')) loadEl.innerHTML = `${fr.avgLoadGW.toFixed(2)}<span class="kpi-unit">GW</span>`;
-      setText('gmh-kpi-fr-load-meta', `over ${period} · ${fr.energyTWh.toFixed(1)} TWh total`);
-      setText('gmh-kpi-fr-ren-meta', `${fr.dRenY1 >= 0 ? '+' : ''}${fr.dRenY1.toFixed(1)} pts vs Y-1`);
-      setText('gmh-kpi-fr-co2-meta', `${fr.dCo2Y1 >= 0 ? '+' : ''}${Math.round(fr.dCo2Y1)} g/kWh vs Y-1`);
+      setText('gmh-kpi-fr-load-meta', fr._samples ? `average of ${fr._samples} archived days in ${period}` : `over ${period}`);
+      setText('gmh-kpi-fr-ren-meta', fr.dRenY1 == null ? 'no Y-1 archive' : `${fr.dRenY1 >= 0 ? '+' : ''}${fr.dRenY1.toFixed(1)} pts vs Y-1`);
+      setText('gmh-kpi-fr-co2-meta', fr.dCo2Y1 == null ? 'no Y-1 archive' : `${fr.dCo2Y1 >= 0 ? '+' : ''}${Math.round(fr.dCo2Y1)} g/kWh vs Y-1`);
     }
 
     // EU weighted aggregates
@@ -514,7 +520,7 @@
     if (euRenEl) euRenEl.innerHTML = `<span style="color:${_gmRen(wRen)}">${wRen.toFixed(1)}</span><span class="kpi-unit">%</span>`;
     const euCo2El = document.getElementById('gmh-kpi-eu-co2');
     if (euCo2El) euCo2El.innerHTML = `<span style="color:${_gmCo2(wCo2)}">${Math.round(wCo2)}</span><span class="kpi-unit">g/kWh</span>`;
-    setText('gmh-kpi-eu-load-meta', `${zones.length} zones · ${totalEnergy.toFixed(0)} TWh`);
+    setText('gmh-kpi-eu-load-meta', `sum of ${zones.length} zone averages`);
     setText('gmh-kpi-eu-ren-meta', `load-weighted`);
     setText('gmh-kpi-eu-co2-meta', `load-weighted`);
 
@@ -538,7 +544,7 @@
       const flag = FLAGS[z] || '';
       const renColor = _gmRen(p.renPct);
       const co2Color = _gmCo2(p.co2);
-      const dRenColor = p.dRenY1 >= 0 ? '#14D3A9' : '#ED6965';
+      const dRenColor = p.dRenY1 == null ? 'var(--tx3)' : p.dRenY1 >= 0 ? '#14D3A9' : '#ED6965';
       return `<tr class="gmh-row" data-zone="${z}" style="cursor:pointer">
         <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
         <td style="text-align:left;padding:9px 6px;font-size:11px;color:var(--tx3)">${NAMES[z] || z}</td>
@@ -550,7 +556,7 @@
         <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${p.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${p.fossil.toFixed(1)}</td>
         <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
         <td style="text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${co2Color};font-weight:600">${Math.round(p.co2)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 >= 0 ? '+' : ''}${p.dRenY1.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 == null ? '–' : (p.dRenY1 >= 0 ? '+' : '') + p.dRenY1.toFixed(1)}</td>
       </tr>`;
     }).join('');
 
@@ -639,7 +645,7 @@
             <div class="kpi-card" style="border-left-color:${renC}">
               <div class="kpi-label">% Renewable</div>
               <div class="kpi-value" style="color:${renC}">${p.renPct.toFixed(1)}<span class="kpi-unit">%</span></div>
-              <div class="kpi-meta">${p.dRenY1 >= 0 ? '+' : ''}${p.dRenY1.toFixed(1)} pts vs Y-1</div>
+              <div class="kpi-meta">${p.dRenY1 == null ? 'no Y-1 archive' : (p.dRenY1 >= 0 ? '+' : '') + p.dRenY1.toFixed(1) + ' pts vs Y-1'}</div>
             </div>
             <div class="kpi-card" style="border-left-color:#14D3A9">
               <div class="kpi-label">Wind</div>
@@ -654,7 +660,7 @@
             <div class="kpi-card" style="border-left-color:${co2C}">
               <div class="kpi-label">Avg CO₂</div>
               <div class="kpi-value" style="color:${co2C}">${Math.round(p.co2)}<span class="kpi-unit">g/kWh</span></div>
-              <div class="kpi-meta">${p.dCo2Y1 >= 0 ? '+' : ''}${Math.round(p.dCo2Y1)} vs Y-1</div>
+              <div class="kpi-meta">${p.dCo2Y1 == null ? 'no Y-1 archive' : (p.dCo2Y1 >= 0 ? '+' : '') + Math.round(p.dCo2Y1) + ' vs Y-1'}</div>
             </div>
           </div>
 
@@ -1234,7 +1240,7 @@
             ${row('Period avg', Math.round(avg), 'g/kWh', '24h weighted average')}
             ${row('Period min', Math.round(min), 'g/kWh', 'cleanest day', '#14D3A9')}
             ${row('Period max', Math.round(max), 'g/kWh', 'dirtiest day', '#ED6965')}
-            ${row('vs Y-1', `${p.dCo2Y1 >= 0 ? '+' : ''}${Math.round(p.dCo2Y1)}`, 'g/kWh', p.dCo2Y1 < 0 ? 'cleaner YoY' : 'dirtier YoY', p.dCo2Y1 < 0 ? '#14D3A9' : '#ED6965')}
+            ${row('vs Y-1', p.dCo2Y1 == null ? '–' : `${p.dCo2Y1 >= 0 ? '+' : ''}${Math.round(p.dCo2Y1)}`, 'g/kWh', p.dCo2Y1 < 0 ? 'cleaner YoY' : 'dirtier YoY', p.dCo2Y1 < 0 ? '#14D3A9' : '#ED6965')}
             ${row('Clean days', cleanDays, 'days', '<50 g/kWh in period')}
             ${row('Dirty days', dirtyDays, 'days', '>300 g/kWh in period')}
           </tbody>
@@ -1359,7 +1365,7 @@
       return builder({ line1, verdict });
     }
     if (tab === 'carbon') {
-      const line1 = `${country} carbon · period avg <strong style="color:#fff">${Math.round(p.co2)} g/kWh</strong>. Y-1 delta <strong style="color:#fff">${p.dCo2Y1 >= 0 ? '+' : ''}${Math.round(p.dCo2Y1)} g/kWh</strong>.`;
+      const line1 = `${country} carbon · period avg <strong style="color:#fff">${Math.round(p.co2)} g/kWh</strong>. ${p.dCo2Y1 == null ? 'No Y-1 archive for comparison.' : `Y-1 delta <strong style="color:#fff">${p.dCo2Y1 >= 0 ? '+' : ''}${Math.round(p.dCo2Y1)} g/kWh</strong>.`}`;
       let verdict = '';
       if (p.dCo2Y1 < -20) verdict = `Decarbonisation trajectory on track — clear improvement vs Y-1, attractive zone for low-carbon offtake.`;
       else if (p.dCo2Y1 > 20) verdict = `Backsliding vs Y-1 — likely fossil ramp-up (gas-dispatch arbitrage, nuclear maintenance).`;
@@ -1406,8 +1412,8 @@
         <div class="kpi-card kpi-flat"><div class="kpi-label">Zones in scope</div><div class="kpi-value">${zones.length}<span class="kpi-unit">zones</span></div><div class="kpi-meta">period ${window._gmhPeriod}</div></div>
         <div class="kpi-card kpi-flat"><div class="kpi-label">Top REN avg</div><div class="kpi-value" style="color:#14D3A9;font-size:18px">${rankRen[0]}</div><div class="kpi-meta">${topRen.renPct.toFixed(0)}% over period</div></div>
         <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid avg</div><div class="kpi-value" style="color:#A78BFA;font-size:18px">${rankCo2[0]}</div><div class="kpi-meta">${Math.round(cleanCo2.co2)} g/kWh avg</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs EU avg</div><div class="kpi-value" style="color:${frVsEu != null && frVsEu >= 0 ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${fr ? fr.renPct.toFixed(0) : '--'}% vs ${avgRen.toFixed(0)}%</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">EU total energy</div><div class="kpi-value">${totalEnergy.toFixed(0)}<span class="kpi-unit">TWh</span></div><div class="kpi-meta">sum across zones</div></div>`;
+        <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs panel avg</div><div class="kpi-value" style="color:${frVsEu != null && frVsEu >= 0 ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${fr ? fr.renPct.toFixed(0) : '--'}% vs ${avgRen.toFixed(0)}%</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Panel load</div><div class="kpi-value">${zones.reduce((s, z) => s + (pdata[z] ? pdata[z].avgLoadGW : 0), 0).toFixed(0)}<span class="kpi-unit">GW</span></div><div class="kpi-meta">sum of zone averages</div></div>`;
     }
 
     // Tabs
