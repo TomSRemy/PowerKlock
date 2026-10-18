@@ -61,6 +61,21 @@ def date_str(offset=0):
     d = datetime.utcnow() + timedelta(days=offset)
     return d.strftime('%Y%m%d') + '0000'
 
+def paris_window(offset=0):
+    """ENTSO-E period covering the Europe/Paris calendar day today+offset,
+    as UTC 'YYYYMMDDHHMM' strings. Generation (A75), forecasts (A69) and load
+    (A65) are requested on this window so slot 0 = 00:00 Paris and the series
+    line up with day-ahead prices (which are indexed on the delivery day).
+    Files written from these series carry slotTz='Europe/Paris'."""
+    from zoneinfo import ZoneInfo
+    from datetime import timezone
+    paris = ZoneInfo('Europe/Paris')
+    day = (datetime.now(paris) + timedelta(days=offset)).date()
+    start = datetime(day.year, day.month, day.day, tzinfo=paris).astimezone(timezone.utc)
+    nxt = day + timedelta(days=1)
+    end = datetime(nxt.year, nxt.month, nxt.day, tzinfo=paris).astimezone(timezone.utc)
+    return start.strftime('%Y%m%d%H%M'), end.strftime('%Y%m%d%H%M')
+
 def fetch(params):
     r = requests.get(BASE, params={'securityToken': TOKEN, **params}, timeout=30)
     r.raise_for_status()
@@ -389,7 +404,7 @@ def fetch_prices(offset=0):
 # ─────────────────────────────────────────────
 def fetch_genmix():
     print("Fetching generation mix...")
-    today, tomorrow = date_str(0), date_str(1)
+    today, tomorrow = paris_window(0)
     result = {}
     for code in ['FR','DE_LU','ES','BE','NL','GB','PT']:
         eic = ZONES.get(code)
@@ -450,6 +465,7 @@ def finalize_yesterday():
     file arrays, so intraday-partial snapshots finalize automatically the next run."""
     import os, json
     y_start = date_str(-1)   # yesterday 00:00 (ENTSO-E period)
+    g_start, g_end = paris_window(-1)   # generation: yesterday's Paris day
     y_end   = date_str(0)    # today 00:00
     y_date  = (datetime.utcnow() + timedelta(days=-1)).strftime('%Y-%m-%d')
     path = f'data/history/daily/{y_date}.json'
@@ -464,13 +480,19 @@ def finalize_yesterday():
         return
     zones = snap.get('zones', {})
     fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other']
+    # Re-fetched profiles are on the Paris day (paris_window). A file written
+    # before that switch holds UTC-indexed arrays (no slotTz marker): only
+    # upgrade it if EVERY generation zone refetches cleanly, so a file never
+    # mixes the two alignments.
+    paris_file = snap.get('slotTz') == 'Europe/Paris'
+    profs, failed = {}, False
     for code in ['FR', 'DE_LU', 'ES', 'GB', 'BE']:
         eic = ZONES.get(code)
         if not eic or code not in zones:
             continue
         try:
             xml = fetch({'documentType': 'A75', 'processType': 'A16', 'in_Domain': eic,
-                         'periodStart': y_start, 'periodEnd': y_end})
+                         'periodStart': g_start, 'periodEnd': g_end})
             prof = _genmix_profiles(parse_generation(xml))
             new_nonzero = sum(1 for i in range(96) if sum(prof[f][i] for f in fuels) > 0)
             ze = zones[code]
@@ -478,18 +500,30 @@ def finalize_yesterday():
             if isinstance(ze.get('nuclear'), list):
                 old_nonzero = sum(1 for i in range(96)
                                   if sum(((ze.get(f) or [])[i] if i < len(ze.get(f) or []) else 0) for f in fuels) > 0)
-            if new_nonzero < old_nonzero:
+            if paris_file and new_nonzero < old_nonzero:
                 print(f'[finalize] {code}: refetch {new_nonzero} < existing {old_nonzero}, keep')
                 continue
-            for k in ['windOnshore', 'windOffshore', 'wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass', 'other', 'byCode']:
-                ze[k] = prof[k]
-            tot = sum(sum(prof[f]) for f in fuels)
-            if tot > 0:
-                ren = sum(sum(prof[f]) for f in ['wind', 'solar', 'hydro'])
-                ze['renPct'] = round(100 * ren / tot, 1)
-            print(f'[finalize] {code}: {y_date} -> {new_nonzero}/96 slots')
+            if new_nonzero == 0:
+                failed = True
+                continue
+            profs[code] = (prof, new_nonzero)
         except Exception as e:
+            failed = True
             print(f'[finalize] {code}: ERROR {e}')
+    if not paris_file and failed:
+        print('[finalize] legacy UTC file and an incomplete refetch: generation left untouched')
+        profs = {}
+    for code, (prof, new_nonzero) in profs.items():
+        ze = zones[code]
+        for k in ['windOnshore', 'windOffshore', 'wind', 'solar', 'nuclear', 'hydro', 'fossil', 'biomass', 'other', 'byCode']:
+            ze[k] = prof[k]
+        tot = sum(sum(prof[f]) for f in fuels)
+        if tot > 0:
+            ren = sum(sum(prof[f]) for f in ['wind', 'solar', 'hydro'])
+            ze['renPct'] = round(100 * ren / tot, 1)
+        print(f'[finalize] {code}: {y_date} -> {new_nonzero}/96 slots')
+    if profs and not paris_file:
+        snap['slotTz'] = 'Europe/Paris'
 
     # ── Finalize PRICES: fill any gaps in yesterday's hourly array ──
     # ENTSO-E's A44 day-ahead curve can have missing quarter-hours when
@@ -547,8 +581,7 @@ def finalize_yesterday():
 # ─────────────────────────────────────────────
 def fetch_renewables():
     print("Fetching renewables + forecast...")
-    today, tomorrow = date_str(0), date_str(1)
-    day_after = date_str(2)
+    today, tomorrow = paris_window(0)
     result = {}
 
     for code in ['FR','DE_LU','ES','GB','BE']:
@@ -792,7 +825,7 @@ def _parse_quantity_series(xml_text):
 
 def fetch_load():
     print("Fetching load...")
-    today, tomorrow = date_str(0), date_str(1)
+    today, tomorrow = paris_window(0)
     result = {}
     for code in ['FR','DE_LU','ES','BE','NL','IT_NORD','PT','AT','PL']:
         eic = ZONES.get(code)
@@ -852,7 +885,7 @@ def _flow_quantities(xml_text):
 
 def fetch_crossborder():
     print("Fetching cross-border flows...")
-    today, tomorrow = date_str(0), date_str(1)
+    today, tomorrow = paris_window(0)
     PAIRS = {
         'FR':    ['DE_LU','BE','ES','IT_NORD','CH','GB'],
         'DE_LU': ['FR','NL','BE','AT','CH','CZ','PL','DK_W'],
@@ -912,10 +945,10 @@ if __name__ == '__main__':
     write_json('data/genmix.json', {'updated': ts, 'countries': genmix})
 
     renewables = fetch_renewables()
-    write_json('data/renewables.json', {'updated': ts, 'countries': renewables})
+    write_json('data/renewables.json', {'updated': ts, 'slotTz': 'Europe/Paris', 'countries': renewables})
 
     load = fetch_load()
-    write_json('data/load.json', {'updated': ts, 'countries': load})
+    write_json('data/load.json', {'updated': ts, 'slotTz': 'Europe/Paris', 'countries': load})
 
     crossborder = fetch_crossborder()
     write_json('data/crossborder.json', {'updated': ts, 'countries': crossborder})
@@ -978,7 +1011,7 @@ if __name__ == '__main__':
         print(f'[ttf] fetch failed: {_e}')
 
     # Build daily snapshot (prices + generation if available)
-    daily_snap = {'date': today_str, 'zones': {}}
+    daily_snap = {'date': today_str, 'zones': {}, 'slotTz': 'Europe/Paris'}
     if ttf_eur is not None:
         daily_snap['ttf'] = ttf_eur
     for z in prices:
