@@ -14865,22 +14865,48 @@ function addFullscreen(canvasId, content) {
   btn.innerHTML = '⛶';
   btn.title = 'Fullscreen';
   btn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(25,37,52,.8);border:1px solid #223344;color:#B8C9D9;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:10';
-  btn.onclick = () => {
-    const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
-    const titleEl = canvas.closest('.chart-container')?.querySelector('.table-title');
-    window.pkOpenOrUpdate({
-      title: cfg.title || (titleEl ? titleEl.textContent.trim() : canvasId),
-      subtitle: cfg.subtitle || '',
-      filenameStem: canvasId,
-      storageKey: 'fs:' + canvasId,
-      kpis: cfg.kpis || null,
-      table: cfg.table || { html: pkAutoTable(Chart.getChart(canvas)) },
-      chartSource: { rebuildInto: (dstCanvas) => pkCloneCanvasChart(canvas, dstCanvas) },
-    });
+  btn.onclick = (ev) => {
+    if (ev) ev.stopPropagation();
+    try {
+      // The page may have re-rendered: use the canvas currently carrying this id.
+      const cv = document.getElementById(canvasId) || canvas;
+      if (!Chart.getChart(cv)) throw new Error('chart not drawn yet');
+      const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
+      const titleEl = cv.closest('.chart-container')?.querySelector('.table-title, .fuel-card-head .table-title');
+      window.pkOpenOrUpdate({
+        title: cfg.title || (titleEl ? titleEl.textContent.trim() : canvasId),
+        subtitle: cfg.subtitle || '',
+        filenameStem: canvasId,
+        storageKey: 'fs:' + canvasId,
+        kpis: cfg.kpis || null,
+        table: cfg.table || { html: pkAutoTable(Chart.getChart(cv)) },
+        chartSource: { rebuildInto: (dstCanvas) => pkCloneCanvasChart(cv, dstCanvas) },
+      });
+      if (!document.getElementById('pk-fs-overlay')) throw new Error('overlay did not open');
+    } catch (e) {
+      pkFsError(canvasId, e);
+    }
   };
   const wrap = canvas.closest('.chart-container') || canvas.parentElement;
   wrap.style.position = 'relative';
   wrap.appendChild(btn);
+}
+
+// Shown when a fullscreen button fails, so the cause is visible instead of
+// a silent no-op (and logged for the console).
+function pkFsError(canvasId, e) {
+  console.error('[fullscreen] ' + canvasId + ':', e);
+  let el = document.getElementById('pk-fs-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'pk-fs-error';
+    el.setAttribute('role', 'alert');
+    el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100001;background:#1a2332;color:#fff;border:1px solid #ED6965;border-radius:8px;padding:10px 14px;font:12px Inter,sans-serif;max-width:min(560px,92vw);box-shadow:0 8px 24px rgba(0,0,0,.5)';
+    document.body.appendChild(el);
+  }
+  el.textContent = 'Fullscreen could not open (' + canvasId + '): ' + (e && e.message ? e.message : e);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.remove(), 8000);
 }
 
 // Clone whatever Chart.js instance is currently attached to `srcCanvas` into

@@ -31,7 +31,9 @@
     openCountry: null,
     drillTab: 'calall',        // calall | cal1 | free | nuc
     drillTenor: 'Y+1',         // for the "Graph libre" drill tab
-    drillWindow: '1Y',
+    drillWindow: '1Y',         // period for every drill chart
+    drillFrom: '',             // custom range (overrides drillWindow when set)
+    drillTo: '',
     drillCalOffset: 1,
     cmpTenor: 'Y+1',
     cmpWindow: '1Y',
@@ -70,6 +72,17 @@
     var startIdx = 0;
     for (var i = 0; i < dates.length; i++) { if (dates[i] >= cutoff) { startIdx = i; break; } }
     return dates.slice(startIdx);
+  }
+
+  // [start, end) indexes of `dates` (sorted ISO) inside the drill window:
+  // the custom From/To range when set, else the period button.
+  function drillRange(dates) {
+    if (!dates.length) return [0, 0];
+    var from = PF.drillFrom, to = PF.drillTo || '9999-12-31';
+    if (!from) { var cut = windowCutoffDates(dates, PF.drillWindow); from = cut.length ? cut[0] : dates[0]; }
+    var a = 0; while (a < dates.length && dates[a] < from) a++;
+    var b = dates.length; while (b > a && dates[b - 1] > to) b--;
+    return [a, b];
   }
 
   function countryMeta(code) {
@@ -243,35 +256,42 @@
     return '<div style="position:relative;height:' + (height || 280) + 'px"><canvas id="' + id + '"></canvas></div>';
   }
 
+  // Period buttons + From/To + reset zoom, shared by every drill tab.
+  function windowBar(tab) {
+    return '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:6px 0">' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">' +
+        '<div class="hist-window-btns" id="pf-drill-window-btns" style="margin:0"></div>' +
+        '<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);font-family:\'JetBrains Mono\',monospace">From' +
+          '<input type="date" id="pf-drill-from" value="' + PF.drillFrom + '" onchange="window._pfSetDrillRange()" style="background:var(--bg);border:1px solid var(--bd);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;color-scheme:dark">' +
+          'To<input type="date" id="pf-drill-to" value="' + PF.drillTo + '" onchange="window._pfSetDrillRange()" style="background:var(--bg);border:1px solid var(--bd);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;color-scheme:dark"></span>' +
+      '</div>' +
+      '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-' + tab + '\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>';
+  }
+
   function renderDrillContent(cc) {
     var host = document.getElementById('pf-drill-content');
     if (!host) return;
     var cs = PF.snap.countries[cc];
 
     if (PF.drillTab === 'calall') {
-      host.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:6px">' +
-        '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-calall\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>' +
-        drillChartBox('pf-drill-chart-calall');
+      host.innerHTML = windowBar('calall') + drillChartBox('pf-drill-chart-calall');
+      renderDrillWindowButtons();
       renderCalAllChart(cc);
       return;
     }
 
     if (PF.drillTab === 'cal1') {
       host.innerHTML = '<div class="hist-window-btns" id="pf-drill-caloffset-btns"></div>' +
-        '<div style="display:flex;justify-content:flex-end;margin:6px 0">' +
-        '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-cal1\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>' +
-        drillChartBox('pf-drill-chart-cal1');
+        windowBar('cal1') + drillChartBox('pf-drill-chart-cal1');
       renderDrillCalOffsetButtons();
+      renderDrillWindowButtons();
       renderCalRollingChart(cc);
       return;
     }
 
     if (PF.drillTab === 'free') {
       host.innerHTML = '<div class="hist-window-btns" id="pf-drill-tenor-btns"></div>' +
-        '<div class="hist-window-btns" id="pf-drill-window-btns" style="margin-top:6px"></div>' +
-        '<div style="display:flex;justify-content:flex-end;margin:6px 0">' +
-        '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-free\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>' +
-        drillChartBox('pf-drill-chart-free');
+        windowBar('free') + drillChartBox('pf-drill-chart-free');
       renderDrillTenorButtons();
       renderDrillWindowButtons();
       renderFreeChart(cc);
@@ -279,9 +299,8 @@
     }
 
     if (PF.drillTab === 'nuc') {
-      host.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:6px">' +
-        '<button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts[\'pf-drill-chart-nuc\'];if(c&&c.resetZoom)c.resetZoom();})()">↺ Reset</button></div>' +
-        drillChartBox('pf-drill-chart-nuc', 260);
+      host.innerHTML = windowBar('nuc') + drillChartBox('pf-drill-chart-nuc', 260);
+      renderDrillWindowButtons();
       renderNucChart(cc);
       return;
     }
@@ -336,7 +355,7 @@
     if (!host) return;
     var wins = [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['5Y', '5Y'], ['all', 'All']];
     host.innerHTML = wins.map(function (w) {
-      return '<button class="hw-btn' + (w[0] === PF.drillWindow ? ' active' : '') + '" onclick="window._pfSetDrillWindow(\'' + w[0] + '\')">' + w[1] + '</button>';
+      return '<button class="hw-btn' + (!PF.drillFrom && !PF.drillTo && w[0] === PF.drillWindow ? ' active' : '') + '" onclick="window._pfSetDrillWindow(\'' + w[0] + '\')">' + w[1] + '</button>';
     }).join('');
   }
 
@@ -350,14 +369,17 @@
     var allDatesSet = {};
     yearKeys.forEach(function (yr) { years[yr].dates.forEach(function (d) { allDatesSet[d] = true; }); });
     var allDates = Object.keys(allDatesSet).sort();
+    var rg = drillRange(allDates);
+    allDates = allDates.slice(rg[0], rg[1]);
     var dateIdx = {};
     allDates.forEach(function (d, i) { dateIdx[d] = i; });
+    // Contracts with no quote in the window are left out of the legend.
     var datasets = yearKeys.map(function (yr, i) {
       var arr = new Array(allDates.length).fill(null);
-      years[yr].dates.forEach(function (d, j) { arr[dateIdx[d]] = years[yr].values[j]; });
+      years[yr].dates.forEach(function (d, j) { if (d in dateIdx) arr[dateIdx[d]] = years[yr].values[j]; });
       return { label: 'Cal' + yr, data: arr, borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5,
         pointRadius: 0, tension: 0, fill: false, spanGaps: true };
-    });
+    }).filter(function (ds) { return ds.data.some(function (v) { return v != null; }); });
     window.mkHistChart('pf-drill-chart-calall', {
       type: 'line',
       data: { labels: allDates, datasets: datasets },
@@ -380,9 +402,10 @@
     var chain = PF.calchain && PF.calchain[cc];
     var label = 'Cal+' + PF.drillCalOffset;
     var rolling = (chain && chain.rolling && chain.rolling[label]) || { dates: [], values: [] };
+    var rg = drillRange(rolling.dates);
     window.mkHistChart('pf-drill-chart-cal1', {
       type: 'line',
-      data: { labels: rolling.dates, datasets: [{ label: label, data: rolling.values, borderColor: meta.colour, borderWidth: 1.5,
+      data: { labels: rolling.dates.slice(rg[0], rg[1]), datasets: [{ label: label, data: rolling.values.slice(rg[0], rg[1]), borderColor: meta.colour, borderWidth: 1.5,
         pointRadius: 0, tension: 0, fill: false, spanGaps: false }] },
       options: {
         interaction: { mode: 'index', intersect: false },
@@ -401,12 +424,10 @@
   function renderFreeChart(cc) {
     var countrySeries = (PF.series.countries && PF.series.countries[cc]) || {};
     var allDates = PF.series.dates || [];
-    var cut = windowCutoffDates(allDates, PF.drillWindow);
-    var startIdx = cut.length ? allDates.indexOf(cut[0]) : 0;
-    if (startIdx < 0) startIdx = 0;
-    var dates = allDates.slice(startIdx);
+    var rg = drillRange(allDates);
+    var dates = allDates.slice(rg[0], rg[1]);
     var fwd = countrySeries.forwardCurve || {};
-    var vals = (fwd[PF.drillTenor] || []).slice(startIdx);
+    var vals = (fwd[PF.drillTenor] || []).slice(rg[0], rg[1]);
     window.mkHistChart('pf-drill-chart-free', {
       type: 'line',
       data: { labels: dates, datasets: [{ label: PF.drillTenor, data: vals, borderColor: countryMeta(cc).colour, borderWidth: 1.5,
@@ -428,13 +449,11 @@
   function renderNucChart(cc) {
     var countrySeries = (PF.series.countries && PF.series.countries[cc]) || {};
     var allDates = PF.series.dates || [];
-    var cut = windowCutoffDates(allDates, '1Y');
-    var startIdx = cut.length ? allDates.indexOf(cut[0]) : 0;
-    if (startIdx < 0) startIdx = 0;
-    var dates = allDates.slice(startIdx);
+    var rg = drillRange(allDates);
+    var dates = allDates.slice(rg[0], rg[1]);
     var nuc = countrySeries.nuclearCapacity || {};
-    var actual = (nuc.actual || []).slice(startIdx);
-    var forecast = (nuc.forecast || []).slice(startIdx);
+    var actual = (nuc.actual || []).slice(rg[0], rg[1]);
+    var forecast = (nuc.forecast || []).slice(rg[0], rg[1]);
     window.mkHistChart('pf-drill-chart-nuc', {
       type: 'line',
       data: {
@@ -618,7 +637,12 @@
   window._pfSetDrillTab = function (tab) { PF.drillTab = tab; renderDrillTabs(PF.openCountry); renderDrillContent(PF.openCountry); };
   window._pfSetDrillCalOffset = function (o) { PF.drillCalOffset = o; renderDrillCalOffsetButtons(); renderCalRollingChart(PF.openCountry); };
   window._pfSetDrillTenor = function (t) { PF.drillTenor = t; renderDrillTenorButtons(); renderFreeChart(PF.openCountry); };
-  window._pfSetDrillWindow = function (w) { PF.drillWindow = w; renderDrillWindowButtons(); renderFreeChart(PF.openCountry); };
+  window._pfSetDrillWindow = function (w) { PF.drillWindow = w; PF.drillFrom = PF.drillTo = ''; renderDrillContent(PF.openCountry); };
+  window._pfSetDrillRange = function () {
+    PF.drillFrom = (document.getElementById('pf-drill-from') || {}).value || '';
+    PF.drillTo = (document.getElementById('pf-drill-to') || {}).value || '';
+    renderDrillContent(PF.openCountry);
+  };
   window._pfSetCmpTenor = function (t) { PF.cmpTenor = t; renderCompareTenorButtons(); renderCompareChart(); renderCompareTable(); };
   window._pfSetCmpWindow = function (w) { PF.cmpWindow = w; renderCompareWindowButtons(); renderCompareChart(); };
 
