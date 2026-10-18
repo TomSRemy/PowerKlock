@@ -347,6 +347,40 @@ def load_forwards(conn):
     return len(fwd) + len(spot) + len(cal)
 
 
+def load_capacity(conn):
+    j = read_json(os.path.join(DATA, 'history', 'capacity.json')) or {}
+    rows = []
+    for c, d in (j.get('countries') or {}).items():
+        years = d.get('years') or []
+        for t, vals in (d.get('types') or {}).items():
+            for y, v in zip(years, vals):
+                if num(v) is not None:
+                    rows.append((c, int(y), t, num(v)))
+    with conn.cursor() as cur:
+        cur.executemany("""insert into market.installed_capacity (country, year, production_type, gw) values (%s,%s,%s,%s)
+            on conflict (country, year, production_type) do update set gw = excluded.gw""", rows)
+    conn.commit()
+    return len(rows)
+
+
+def load_flows(conn, paths):
+    rows = 0
+    for path in paths:
+        m = read_json(path) or {}
+        batch = []
+        for ds, by_c in (m.get('days') or {}).items():
+            for c, by_n in by_c.items():
+                for nb, arr in by_n.items():
+                    if isinstance(arr, list) and len(arr) == 24 and any(v is not None for v in arr):
+                        batch.append((c, nb, ds, [num(v) for v in arr]))
+        with conn.cursor() as cur:
+            cur.executemany("""insert into market.crossborder_flow_day (country, neighbour, delivery_date, mw) values (%s,%s,%s,%s)
+                on conflict (country, neighbour, delivery_date) do update set mw = excluded.mw""", batch)
+        conn.commit()
+        rows += len(batch)
+    return rows
+
+
 def load_go(conn):
     quotes = {}
     path = os.path.join(DATA, 'go_prices.csv')
@@ -440,6 +474,18 @@ def main():
                   os.path.join(DATA, 'fr_market.json')], load_forwards),
                 ([os.path.join(DATA, 'go_prices.csv'), os.path.join(DATA, 'go_auctions.json')], load_go),
             ]
+            # Energy-Charts: installed capacity, monthly flow files
+            cap = [os.path.join(DATA, 'history', 'capacity.json')]
+            cap = [p for p in cap if os.path.exists(p)]
+            if cap and changed(conn, cap, args.full):
+                n = load_capacity(conn); log(f'load_capacity: {n} rows'); rows += n
+                mark_loaded(conn, cap); files_read += len(cap)
+            flows = sorted(glob.glob(os.path.join(DATA, 'history', 'flows', '*.json')))
+            ftodo = changed(conn, flows, args.full)
+            if ftodo:
+                n = load_flows(conn, ftodo); log(f'load_flows: {n} rows from {len(ftodo)} files'); rows += n
+                mark_loaded(conn, ftodo); files_read += len(ftodo)
+
             for paths, fn in groups:
                 paths = [p for p in paths if os.path.exists(p)]
                 if changed(conn, paths, args.full):
