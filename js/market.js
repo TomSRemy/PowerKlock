@@ -54,29 +54,9 @@ async function _cbFrance(day) {
     _fuelKpi('Main outlet', top.avg < 0 ? top.b.label : '–', '', top.avg < 0 ? `${GW(-top.avg)} GW average export` : 'no net export border') +
     _fuelKpi('Physical balance', GW(Math.abs(_renMean(d.ech_physiques))), 'GW', 'all borders, physical (éCO2mix)');
 
-  const ds = B.map(b => ({ label: b.label, data: d[b.key].map(v => v == null ? null : v / 1000), backgroundColor: rgba(b.color, .6), borderColor: b.color, borderWidth: 1, fill: true, pointRadius: 0, tension: 0, stack: 'x' }));
-  ds.push({ label: 'Net', data: net.map(v => v == null ? null : v / 1000), type: 'line', borderColor: '#FFFFFF', borderWidth: 1.5, pointRadius: 0, fill: false, order: -1, stack: 'n', tension: 0 });
-  _fuelChart('cb-intraday', { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
-    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis('GW', { stacked: true }) },
-    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
-      annotation: { annotations: Object.assign({ zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1 } },
-        (() => { const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day }); return a ? { nowLine: a } : {}; })()) } } }) }, 'fr-exchanges-' + day);
+  PKW.draw('cb-intraday', 'cb-intraday', { day });
+  PKW.draw('cb-days', 'cb-days', { day });
   document.getElementById('cb-intraday-title').textContent = 'Intraday exchanges by border · ' + _renFmtDay(day);
-
-  // 14 days, one request
-  const from = PK_E2M.dayBoundsUTC(_renAdd(day, -13))[0], to = PK_E2M.dayBoundsUTC(day)[1];
-  const rows = await PK_E2M.fetchRange(from, to) || [];
-  const byDay = {};
-  rows.forEach(r => {
-    const dd = new Date(r.date_heure).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-    const o = byDay[dd] = byDay[dd] || {};
-    B.forEach(b => { if (r[b.key] != null) { (o[b.key] = o[b.key] || []).push(r[b.key]); } });
-  });
-  const days = Object.keys(byDay).sort();
-  _fuelChart('cb-days', { type: 'bar', data: { labels: days.map(x => x.slice(8, 10) + '/' + x.slice(5, 7)), datasets: B.map(b => ({
-    label: b.label, data: days.map(x => { const v = byDay[x][b.key] || []; return v.length ? +(v.reduce((a, y) => a + y, 0) / v.length / 1000).toFixed(2) : null; }),
-    backgroundColor: rgba(b.color, .7), borderRadius: 2, stack: 's' })) },
-    options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('GW', { stacked: true }) } }) }, 'fr-exchanges-14d');
 
   document.getElementById('cb-table-title').textContent = 'Borders · ' + _renFmtDay(day);
   document.getElementById('cb-updated').textContent = 'RTE éCO2mix · commercial';
@@ -88,6 +68,79 @@ async function _cbFrance(day) {
   }).join('');
   document.getElementById('cb-note').textContent = 'Commercial exchanges scheduled per border, RTE sign convention (negative = export from France); "Germany + Belgium" is reported jointly by RTE. Energy = Σ 15-min values × 0.25 h.';
 }
+
+// ── France exchanges charts (page + dashboard) ─────────────────────
+// Latest day with published éCO2mix exchanges (today, else yesterday).
+async function _cbLatestDay() {
+  const t = pkTodayISO();
+  const d = await PK_E2M.day(t);
+  return d && d.published ? t : _renAdd(t, -1);
+}
+function _cbReg(def) {
+  if (!window.PKW) return;
+  PKW.register(Object.assign({ category: 'flows', page: 'crossborder', source: 'RTE éCO2mix', size: { w: 6, h: 5 } }, def));
+}
+
+_cbReg({
+  id: 'cb-intraday', title: 'France · exchanges by border', pageCanvas: 'cb-intraday', size: { w: 12, h: 5 },
+  desc: '15-minute commercial exchanges of France per border and the net position (+ import / − export).',
+  async draw(cid, p) {
+    const day = p.day || await _cbLatestDay();
+    const d = await PK_E2M.day(day);
+    if (!d || !d.published) { noDataMsg(cid, 'No éCO2mix exchange data for ' + _renFmtDay(day), ''); return null; }
+    const B = PK_E2M.BORDERS, n = 96, lbls = makeTimeLabels(n);
+    const net = Array.from({ length: n }, (_, i) => { const v = B.map(b => d[b.key][i]); return v.every(x => x == null) ? null : v.reduce((a, x) => a + (x || 0), 0); });
+    const ds = B.map(b => ({ label: b.label, data: d[b.key].map(v => v == null ? null : v / 1000), backgroundColor: rgba(b.color, .6), borderColor: b.color, borderWidth: 1, fill: true, pointRadius: 0, tension: 0, stack: 'x' }));
+    ds.push({ label: 'Net', data: net.map(v => v == null ? null : v / 1000), type: 'line', borderColor: '#FFFFFF', borderWidth: 1.5, pointRadius: 0, fill: false, order: -1, stack: 'n', tension: 0 });
+    const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day });
+    _fuelChart(cid, { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
+      scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis('GW', { stacked: true }) },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+        annotation: { annotations: Object.assign({ zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1 } }, a ? { nowLine: a } : {}) } } }) }, 'fr-exchanges-' + day);
+    return { sub: _renFmtDay(day) };
+  },
+});
+
+_cbReg({
+  id: 'cb-days', title: 'France · exchanges, last 14 days', pageCanvas: 'cb-days',
+  desc: 'Daily average exchange per border over two weeks (+ import / − export).',
+  async draw(cid, p) {
+    const day = p.day || await _cbLatestDay();
+    const B = PK_E2M.BORDERS;
+    const from = PK_E2M.dayBoundsUTC(_renAdd(day, -13))[0], to = PK_E2M.dayBoundsUTC(day)[1];
+    const rows = await PK_E2M.fetchRange(from, to) || [];
+    const byDay = {};
+    rows.forEach(r => {
+      const dd = new Date(r.date_heure).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      const o = byDay[dd] = byDay[dd] || {};
+      B.forEach(b => { if (r[b.key] != null) { (o[b.key] = o[b.key] || []).push(r[b.key]); } });
+    });
+    const days = Object.keys(byDay).sort();
+    if (!days.length) { noDataMsg(cid, 'éCO2mix not reachable', ''); return null; }
+    _fuelChart(cid, { type: 'bar', data: { labels: days.map(x => x.slice(8, 10) + '/' + x.slice(5, 7)), datasets: B.map(b => ({
+      label: b.label, data: days.map(x => { const v = byDay[x][b.key] || []; return v.length ? +(v.reduce((a, y) => a + y, 0) / v.length / 1000).toFixed(2) : null; }),
+      backgroundColor: rgba(b.color, .7), borderRadius: 2, stack: 's' })) },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('GW', { stacked: true }) } }) }, 'fr-exchanges-14d');
+    return { sub: 'to ' + _renFmtDay(day) };
+  },
+});
+
+_cbReg({
+  id: 'cb-fr-avg', title: 'France · average exchange by border', size: { w: 4, h: 5 },
+  desc: 'Day-average commercial exchange per border, latest day (+ import / − export).',
+  async draw(cid, p) {
+    const day = p.day || await _cbLatestDay();
+    const d = await PK_E2M.day(day);
+    if (!d || !d.published) { noDataMsg(cid, 'No éCO2mix exchange data for ' + _renFmtDay(day), ''); return null; }
+    const B = PK_E2M.BORDERS;
+    const avg = B.map(b => { const v = d[b.key].filter(x => x != null); return v.length ? v.reduce((a, x) => a + x, 0) / v.length / 1000 : null; });
+    _fuelChart(cid, { type: 'bar', data: { labels: B.map(b => b.label), datasets: [
+      { label: 'Average exchange (GW)', data: avg.map(v => v == null ? null : +v.toFixed(2)), backgroundColor: avg.map(v => v < 0 ? rgba(C_UP, .65) : rgba(C_DN, .55)), borderRadius: 3 },
+    ] }, options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false }, zoom: ZOOM_CFG },
+      scales: { x: _fuelAxis('GW · − export / + import'), y: { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 } } } } }) }, 'fr-exchanges-avg-' + day);
+    return { sub: _renFmtDay(day) };
+  },
+});
 
 function _cbEntsoe(country) {
   const flows = (window._cbData && window._cbData[country]) || [];
@@ -146,24 +199,20 @@ function _e2mFill(a) {
   return o;
 }
 
-async function loadLoad() {
-  window._loadLoaded = true;
-  const country = (document.getElementById('load-country') || {}).value || 'FR';
-  const offset  = window._loadDayOffset || 0;
-  const countryNames = { FR:'France', DE_LU:'Germany', BE:'Belgium', NL:'Netherlands', ES:'Spain', GB:'Great Britain', IT_NORD:'Italy North' };
-  const cname = countryNames[country] || country;
-  const today = pkTodayISO();
-  const dayISO = (() => { const [y,m,d] = today.split('-').map(Number); return new Date(Date.UTC(y, m-1, d + offset)).toISOString().slice(0,10); })();
-  const lyISO  = (() => { const [y,m,d] = dayISO.split('-').map(Number); return new Date(Date.UTC(y, m-1, d - 364)).toISOString().slice(0,10); })();
-  const fetchDay = async iso => { try { const r = await fetch(DATA_BASE + 'history/daily/' + iso + '.json'); return r.ok ? await r.json() : null; } catch (_) { return null; } };
+const LOAD_NAMES = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', GB: 'Great Britain', IT_NORD: 'Italy North' };
+const _loadAdd = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+const _loadFetchDay = async iso => { try { const r = await fetch(DATA_BASE + 'history/daily/' + iso + '.json'); return r.ok ? await r.json() : null; } catch (_) { return null; } };
+const _loadHas = a => !!(a && a.some(v => v != null));
 
-  // Day data. France: RTE éCO2mix (consumption, D-1 and intraday forecasts;
-  // real-time then consolidated history). Other zones: ENTSO-E live
-  // snapshot for its day, daily history file otherwise.
+// Load of one zone and day. France: RTE éCO2mix (consumption, D-1 and
+// intraday forecasts; real-time then consolidated history). Other zones:
+// ENTSO-E live snapshot for its day, daily history file otherwise.
+async function _loadDay(country, dayISO) {
+  const lyISO = _loadAdd(dayISO, -364);
   let actual = null, forecast = null, forecastJ = null, src = '';
   if (country === 'FR' && window.PK_E2M) {
     const e = await PK_E2M.day(dayISO);
-    if (e && e.consommation.some(v => v != null)) {
+    if (e && _loadHas(e.consommation)) {
       actual = _e2mFill(e.consommation); forecast = _e2mFill(e.prevision_j1); forecastJ = _e2mFill(e.prevision_j);
       src = 'RTE éCO2mix · ' + e.dataset;
     }
@@ -172,48 +221,104 @@ async function loadLoad() {
   const liveDate = window._loadDataUpdated ? new Date(window._loadDataUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
   if (!actual && live && liveDate === dayISO) { actual = live.actual; forecast = live.forecast || null; src = 'ENTSO-E A65 · live snapshot'; }
   if (!actual) {
-    const day = await fetchDay(dayISO);
+    const day = await _loadFetchDay(dayISO);
     const z = day && day.zones && day.zones[country];
     if (z && Array.isArray(z.load)) { actual = z.load; forecast = z.loadForecast || null; src = 'ENTSO-E A65 · daily history'; }
   }
   let lastYear = null;
   if (country === 'FR' && window.PK_E2M) {
     const e = await PK_E2M.day(lyISO);
-    if (e && e.consommation.some(v => v != null)) lastYear = _e2mFill(e.consommation);
+    if (e && _loadHas(e.consommation)) lastYear = _e2mFill(e.consommation);
   }
   if (!lastYear) {
-    const lyDay = await fetchDay(lyISO);
+    const lyDay = await _loadFetchDay(lyISO);
     const lyZ = lyDay && lyDay.zones && lyDay.zones[country];
     lastYear = lyZ && Array.isArray(lyZ.load) ? lyZ.load : null;
   }
+  return { day: dayISO, lyISO, liveDate, actual: _loadHas(actual) ? actual : null, forecast, forecastJ, lastYear, src };
+}
+
+// Today, else the live snapshot's day, else yesterday.
+async function _loadLatest(country) {
+  const t = pkTodayISO();
+  let D = await _loadDay(country, t);
+  if (D.actual) return D;
+  if (D.liveDate && D.liveDate < t) { D = await _loadDay(country, D.liveDate); if (D.actual) return D; }
+  return _loadDay(country, _loadAdd(t, -1));
+}
+
+if (window.PKW) PKW.register({
+  id: 'load-day', title: 'Load · actual vs forecast', category: 'system', page: 'load', pageCanvas: 'load-canvas', source: 'RTE éCO2mix · ENTSO-E', size: { w: 6, h: 5 },
+  desc: 'Actual load against the day-ahead forecast and the same weekday last year.',
+  params: [{ key: 'zone', label: 'Zone', inTitle: true, options: Object.keys(LOAD_NAMES).map(k => [k, LOAD_NAMES[k]]) }], defaults: { zone: 'FR' },
+  async draw(cid, p) {
+    const D = p.D || await _loadLatest(p.zone);
+    if (!D.actual) { noDataMsg(cid, `No load data stored for ${LOAD_NAMES[p.zone] || p.zone} on ${_renFmtDay(D.day)}`, 'Load history is kept from the daily fetch onwards (actual + day-ahead forecast).'); return null; }
+    _fuelRestoreCanvas(cid);
+    const n = D.actual.length;
+    const GW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
+    const A = GW(D.actual), F = GW(D.forecast), L = GW(D.lastYear && D.lastYear.length === n ? D.lastYear : null), FJ = GW(D.forecastJ);
+    const labels = makeTimeLabels(n);
+    const ds = [{ label: 'Actual', data: A, borderColor: C_UP, borderWidth: 2, backgroundColor: rgba(C_UP, .08), fill: true, pointRadius: 0, tension: 0, spanGaps: false }];
+    if (F) ds.push({ label: 'Day-ahead forecast', data: F, borderColor: C_WIND, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false });
+    if (FJ && FJ.some(v => v != null)) ds.push({ label: 'Intraday forecast', data: FJ, borderColor: '#7FC8F8', borderWidth: 1.2, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
+    if (L) ds.push({ label: 'Same weekday last year', data: L, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
+    const a = nowLineAnnotation({ slots: n, labels, chartDate: D.day });
+    mkChart(cid, {
+      type: 'line', data: { labels, datasets: ds },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 12 } },
+          tooltip: { mode: 'index', callbacks: { label: ctx => ctx.raw == null ? null : ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)} GW` } },
+          zoom: ZOOM_CFG,
+          annotation: { annotations: a ? { nowLine: a } : {} },
+        },
+        scales: { x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 13, maxRotation: 0 } },
+                  y: { grid: GRID, ticks: { color: C_TX3, callback: v => v.toFixed(0) + ' GW' } } },
+      },
+    });
+    return { sub: _renFmtDay(D.day) + ' · ' + D.src.split(' · ')[0] };
+  },
+});
+
+async function loadLoad() {
+  window._loadLoaded = true;
+  const country = (document.getElementById('load-country') || {}).value || 'FR';
+  const offset  = window._loadDayOffset || 0;
+  const cname = LOAD_NAMES[country] || country;
+  const dayISO = _loadAdd(pkTodayISO(), offset);
+  const D = await _loadDay(country, dayISO);
+  const { actual, forecast, lastYear, lyISO, liveDate, src } = D;
 
   const setKPI = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  const fmtDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short', year:'numeric', timeZone:'UTC' });
+  const fmtDay = _renFmtDay;
   const el_title = document.getElementById('load-chart-title');
   if (el_title) el_title.textContent = `${cname} — load (GW) · ${fmtDay(dayISO)}`;
   document.getElementById('load-updated').textContent = actual ? src : 'No data for this day';
 
   // First visit before today's data exists: show the latest available day
   // instead of an empty "Today".
-  if ((!actual || !actual.some(v => v != null)) && !window._loadUserPicked && offset === 0 && liveDate && liveDate < dayISO) {
+  if (!actual && !window._loadUserPicked && offset === 0 && liveDate && liveDate < dayISO) {
     const back = Math.round((Date.parse(liveDate) - Date.parse(dayISO)) / 864e5);
     window._loadDayOffset = back;
     document.querySelectorAll('#load-day-btns .day-tab').forEach(b => b.classList.toggle('active', (b.getAttribute('onclick') || '').includes('(' + back + ',')));
     return loadLoad();
   }
-  if (!actual || !actual.some(v => v != null)) {
+  PKW.draw('load-day', 'load-canvas', { zone: country, D }).then(() => {
+    setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas', 'load-' + country + '-' + dayISO); }, 100);
+  });
+  if (!actual) {
     ['load-kpi-peak-actual','load-kpi-peak-fc','load-kpi-avg','load-kpi-dev','load-kpi-yoy'].forEach(id => setKPI(id, '–'));
     ['load-kpi-peak-actual-sub','load-kpi-peak-fc-sub','load-kpi-dev-sub','load-kpi-yoy-sub'].forEach(id => setKPI(id, ''));
-    if (typeof noDataMsg === 'function') noDataMsg('load-canvas', `No load data stored for ${cname} on ${fmtDay(dayISO)}`, 'Load history is kept from the daily fetch onwards (actual + day-ahead forecast).');
     const tb = document.getElementById('load-hourly-tbody'); if (tb) tb.innerHTML = '';
     return;
   }
-  const c = document.getElementById('load-canvas'); if (c) { const m = c.parentNode.querySelector('.no-data-msg'); if (m) m.remove(); c.style.display = 'block'; }
 
   const n = actual.length, per = n / 24;
   const GW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
   const A = GW(actual), F = GW(forecast), L = GW(lastYear && lastYear.length === n ? lastYear : null);
-  const labels = (typeof makeTimeLabels === 'function') ? makeTimeLabels(n) : Array.from({ length: n }, (_, i) => String(Math.floor(i / per)).padStart(2, '0') + ':' + String((i % per) * (60 / per)).padStart(2, '0'));
+  const labels = makeTimeLabels(n);
   const valid = a => a ? a.filter(v => v != null) : [];
   const argmax = a => { let mi = -1; (a || []).forEach((v, i) => { if (v != null && (mi < 0 || v > a[mi])) mi = i; }); return mi; };
   const iA = argmax(A), iF = argmax(F);
@@ -236,27 +341,6 @@ async function loadLoad() {
   setKPI('load-kpi-dev-sub', bias == null ? '' : `${bias >= 0 ? 'above' : 'below'} forecast · MAPE ${mape.toFixed(1)}%`);
   setKPI('load-kpi-yoy', yoy == null ? '–' : `<span class="${yoy >= 0 ? 'up' : 'down'}">${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}<span class="kpi-unit">%</span></span>`);
   setKPI('load-kpi-yoy-sub', yoy == null ? `no data for ${fmtDay(lyISO)}` : `vs ${fmtDay(lyISO)} (same weekday)`);
-
-  const ds = [{ label: 'Actual', data: A, borderColor: C_UP, borderWidth: 2, backgroundColor: rgba(C_UP, .08), fill: true, pointRadius: 0, tension: 0, spanGaps: false }];
-  if (F) ds.push({ label: 'Day-ahead forecast', data: F, borderColor: C_WIND, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false });
-  const FJ = GW(forecastJ);
-  if (FJ && FJ.some(v => v != null)) ds.push({ label: 'Intraday forecast', data: FJ, borderColor: '#7FC8F8', borderWidth: 1.2, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
-  if (L) ds.push({ label: 'Same weekday last year', data: L, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false });
-  mkChart('load-canvas', {
-    type: 'line', data: { labels, datasets: ds },
-    options: {
-      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 12 } },
-        tooltip: { mode: 'index', callbacks: { label: ctx => ctx.raw == null ? null : ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)} GW` } },
-        zoom: ZOOM_CFG,
-        annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: n, labels, chartDate: dayISO }); return a ? { nowLine: a } : {}; })() }
-      },
-      scales: { x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 13, maxRotation: 0 } },
-                y: { grid: GRID, ticks: { color: C_TX3, callback: v => v.toFixed(0) + ' GW' } } }
-    }
-  });
-  setTimeout(() => { addFullscreen('load-canvas'); addDownload('load-canvas', 'load-' + country + '-' + dayISO); }, 100);
 
   // Hourly table (mean of the hour's slots), Paris time
   const hourAvg = (a, h) => { if (!a) return null; const v = a.slice(h * per, (h + 1) * per).filter(x => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };

@@ -41,6 +41,8 @@
     ['go', 'Guarantees of origin'],
   ];
 
+  // Period selector shared by the daily time-series charts (same keys as the pages' period buttons).
+  const PERIOD_PARAM = { key: 'period', label: 'Period', options: [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['YTD', 'YTD'], ['1Y', '1Y'], ['2Y', '2Y'], ['5Y', '5Y'], ['All', 'All']] };
   const REG = new Map();
 
   function register(def) {
@@ -124,5 +126,5 @@
     });
   }
 
-  window.PKW = { CATEGORIES, register, get, list, params, draw, waitFor, refreshStars };
+  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, refreshStars };
 })();

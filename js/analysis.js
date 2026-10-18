@@ -89,37 +89,152 @@ function setRenTab() { loadRenewables(); }
 function setRenTech() { loadRenewables(); }
 function drawRenChart() { loadRenewables(); }
 
-async function loadRenewables() {
-  const zone = (document.getElementById('ren-country') || {}).value || 'FR';
+// Latest day whose file carries solar output for the zone.
+async function _renLatestDay(zone) {
   const days = await _renDaysWithGen(zone);
   // Today's file may exist before the summary lists it; probe today/yesterday too.
-  const latestCandidates = [pkTodayISO(), _renAdd(pkTodayISO(), -1)].concat(days.slice().reverse());
-  if (!REN.day) {
-    for (const d of latestCandidates) {
-      const j = await _renDaily(d);
-      const z = j && j.zones && j.zones[zone];
-      if (z && Array.isArray(z.solar) && z.solar.some(v => v)) { REN.day = d; break; }
-    }
+  const cands = [pkTodayISO(), _renAdd(pkTodayISO(), -1)].concat(days.slice().reverse());
+  for (const d of cands) {
+    const j = await _renDaily(d);
+    const z = j && j.zones && j.zones[zone];
+    if (z && Array.isArray(z.solar) && z.solar.some(v => v)) return d;
   }
-  const day = REN.day || pkTodayISO();
-  document.getElementById('ren-day').textContent = _renFmtDay(day);
+  return pkTodayISO();
+}
 
+// One zone, one day: generation, stats and (latest day only) the DA forecast.
+async function _renDay(zone, day) {
+  day = day || await _renLatestDay(zone);
   const j = await _renDaily(day);
   const z = j && j.zones && j.zones[zone];
   const st = _renDayStats(z);
-  const kpis = document.getElementById('ren-kpis');
-  if (!st || (!st.wind && !st.solar)) {
-    kpis.innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No wind/solar data for ${zone} on ${_renFmtDay(day)}.</div>`;
-    ['ren-intraday', 'ren-fc'].forEach(id => { if (typeof noDataMsg === 'function') noDataMsg(id, 'No generation data for this day', ''); });
-    _renHistory();
-    return;
-  }
-  ['ren-intraday', 'ren-fc'].forEach(_renRestore);
-
+  if (!st || (!st.wind && !st.solar)) return { day, z: null };
   // Day-ahead forecast: only renewables.json has it, for its own day.
   const live = window._renData && window._renData[zone];
   const liveDay = window._renUpdated ? new Date(window._renUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
   const fc = (live && liveDay === day) ? live : null;
+  const n = (st.solar || st.wind).length;
+  return { day, z, st, fc, liveDay, n, lbls: makeTimeLabels(n) };
+}
+const _renGW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
+const _renXAxis = () => Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } });
+
+// Daily stats over a window, days with generation only.
+async function _renRows(zone, win) {
+  let days = await _renDaysWithGen(zone);
+  const today = pkTodayISO();
+  const from = win === 'All' ? '0000' : win === 'YTD' ? today.slice(0, 4) + '-01-01'
+    : _renAdd(today, -({ '30D': 30, '90D': 90, '1Y': 365 }[win] || 3650));
+  days = days.filter(d => d >= from);
+  const files = await Promise.all(days.map(d => _renDaily(d)));
+  return days.map((d, i) => ({ d, st: _renDayStats(files[i] && files[i].zones && files[i].zones[zone]) })).filter(r => r.st && r.st.base != null);
+}
+
+const REN_ZONE_PARAM = { key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] };
+const REN_WINDOW_PARAM = { key: 'window', label: 'Window', options: [['30D', '30 days'], ['90D', '90 days'], ['YTD', 'Year to date'], ['1Y', '1 year'], ['All', 'All']] };
+function _renReg(def) {
+  if (!window.PKW) return;
+  PKW.register(Object.assign({ category: 'renewables', page: 'renewables', source: 'ENTSO-E', size: { w: 6, h: 5 },
+    params: [REN_ZONE_PARAM], defaults: { zone: 'FR' } }, def));
+}
+
+_renReg({
+  id: 'ren-intraday', title: 'Wind & solar output vs price', pageCanvas: 'ren-intraday',
+  desc: 'Stacked wind and solar output of the latest day with the day-ahead price.',
+  async draw(cid, p) {
+    const D = await _renDay(p.zone, p.day);
+    if (!D.z) { noDataMsg(cid, 'No generation data for ' + p.zone + ' on ' + _renFmtDay(D.day), ''); return { day: D.day }; }
+    const { z, st, n, lbls, day } = D;
+    const ds = [];
+    const area = (label, data, col) => ({ label, data, backgroundColor: rgba(col, .55), borderColor: col, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
+    if (z.windOnshore) ds.push(area('Wind onshore', _renGW(z.windOnshore), C_WON));
+    if (z.windOffshore && z.windOffshore.some(v => v)) ds.push(area('Wind offshore', _renGW(z.windOffshore), C_WOFF));
+    if (!z.windOnshore && st.wind) ds.push(area('Wind', _renGW(st.wind), C_WON));
+    if (st.solar) ds.push(area('Solar', _renGW(st.solar), C_SOL));
+    if (z.hourly && z.hourly.length === n) ds.push({ label: 'Day-ahead price', data: z.hourly, type: 'line', borderColor: '#FFFFFF', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y1', tension: 0, order: -1, stack: 'p' });
+    const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day });
+    _fuelChart(cid, { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
+      scales: { x: _renXAxis(), y: _fuelAxis('GW', { stacked: true, beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+        annotation: { annotations: a ? { nowLine: a } : {} } } }) }, 'renewables-' + p.zone + '-' + day);
+    return { day, sub: _renFmtDay(day), D };
+  },
+});
+
+_renReg({
+  id: 'ren-fc', title: 'Wind & solar · forecast vs actual', pageCanvas: 'ren-fc',
+  desc: 'Day-ahead forecast against actual output, latest fetched day.',
+  async draw(cid, p) {
+    const D = await _renDay(p.zone, p.day);
+    const fc = D.fc;
+    if (!D.z || !fc || !(fc.windForecast || fc.solarForecast)) {
+      noDataMsg(cid, 'Day-ahead forecast not stored for this day', `The forecast is kept for the latest fetched day${D.liveDay ? ' (' + _renFmtDay(D.liveDay) + ')' : ''}.`);
+      return null;
+    }
+    const st = D.st, fds = [];
+    if (st.wind) fds.push(_fuelLineDs('Wind actual', _renGW(st.wind), C_WON, { borderWidth: 2 }));
+    if (fc.windForecast) fds.push(_fuelLineDs('Wind forecast', _renGW(fc.windForecast), C_WON, { borderDash: [5, 4], borderWidth: 1.3 }));
+    if (st.solar) fds.push(_fuelLineDs('Solar actual', _renGW(st.solar), C_SOL, { borderWidth: 2 }));
+    if (fc.solarForecast) fds.push(_fuelLineDs('Solar forecast', _renGW(fc.solarForecast), C_SOL, { borderDash: [5, 4], borderWidth: 1.3 }));
+    _fuelChart(cid, { type: 'line', data: { labels: D.lbls, datasets: fds }, options: _fuelOpts({
+      scales: { x: _renXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-forecast-' + p.zone + '-' + D.day);
+    return { sub: _renFmtDay(D.day) };
+  },
+});
+
+_renReg({
+  id: 'ren-cr', title: 'Wind & solar capture rates', pageCanvas: 'ren-cr',
+  desc: 'Daily capture price as a share of baseload, wind and solar.',
+  params: [REN_ZONE_PARAM, REN_WINDOW_PARAM], defaults: { zone: 'FR', window: 'All' },
+  async draw(cid, p) {
+    const rows = p.rows || await _renRows(p.zone, p.window);
+    if (!rows.length) { noDataMsg(cid, 'No generation history for ' + p.zone + ' in this window', ''); return null; }
+    const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+    _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
+      _fuelLineDs('Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
+      _fuelLineDs('Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload') },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
+        annotation: { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'capture-rates-' + p.zone);
+    return { sub: rows.length + ' days with generation data' };
+  },
+});
+
+_renReg({
+  id: 'ren-daily', title: 'Daily wind & solar output', pageCanvas: 'ren-daily',
+  desc: 'Daily average wind and solar output with 7-day averages.',
+  params: [REN_ZONE_PARAM, REN_WINDOW_PARAM], defaults: { zone: 'FR', window: 'All' },
+  async draw(cid, p) {
+    const rows = p.rows || await _renRows(p.zone, p.window);
+    if (!rows.length) { noDataMsg(cid, 'No generation history for ' + p.zone + ' in this window', ''); return null; }
+    const roll = (a, k) => a.map((_, i) => { const w = a.slice(Math.max(0, i - k + 1), i + 1).filter(v => v != null); return w.length ? Math.round(w.reduce((s, v) => s + v, 0) / w.length) / 1000 : null; });
+    const wA = rows.map(r => r.st.windAvg), sA = rows.map(r => r.st.solarAvg);
+    _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
+      _fuelLineDs('Wind', wA.map(v => v == null ? null : v / 1000), rgba(C_WON, .55), { borderWidth: 1 }),
+      _fuelLineDs('Wind 7D', roll(wA, 7), C_WON, { borderWidth: 2 }),
+      _fuelLineDs('Solar', sA.map(v => v == null ? null : v / 1000), rgba(C_SOL, .55), { borderWidth: 1 }),
+      _fuelLineDs('Solar 7D', roll(sA, 7), C_SOL, { borderWidth: 2 }),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-daily-' + p.zone);
+  },
+});
+
+async function loadRenewables() {
+  const zone = (document.getElementById('ren-country') || {}).value || 'FR';
+  if (!REN.day) REN.day = await _renLatestDay(zone);
+  const day = REN.day;
+  document.getElementById('ren-day').textContent = _renFmtDay(day);
+  document.getElementById('ren-intraday-title').textContent = `Intraday output vs price · ${zone} · ${_renFmtDay(day)}`;
+
+  const D = await _renDay(zone, day);
+  const kpis = document.getElementById('ren-kpis');
+  PKW.draw('ren-intraday', 'ren-intraday', { zone, day });
+  PKW.draw('ren-fc', 'ren-fc', { zone, day });
+  _renHistory();
+  if (!D.z) {
+    kpis.innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No wind/solar data for ${zone} on ${_renFmtDay(day)}.</div>`;
+    return;
+  }
+  const { z, st, fc, n, lbls } = D;
   const wape = (act, f) => {
     if (!act || !f) return null; let e = 0, s = 0;
     act.forEach((v, i) => { if (v != null && f[i] != null) { e += Math.abs(v - f[i]); s += f[i]; } });
@@ -129,7 +244,6 @@ async function loadRenewables() {
   const total = ['nuclear', 'hydro', 'fossil', 'biomass', 'other', 'wind', 'solar'].map(k => _renMean(z[k]) || 0).reduce((a, b) => a + b, 0);
   const vrePct = total > 0 ? ((st.windAvg || 0) + (st.solarAvg || 0)) / total * 100 : null;
   const peakOf = a => { let mi = -1; (a || []).forEach((v, i) => { if (v != null && (mi < 0 || v > a[mi])) mi = i; }); return mi; };
-  const n = (st.solar || st.wind).length, lbls = typeof makeTimeLabels === 'function' ? makeTimeLabels(n) : [];
   const sp = peakOf(st.solar), wp = peakOf(st.wind);
   const crTone = v => v == null ? null : v >= 100 ? 'up' : 'down';
   const g = v => v == null ? '–' : (v / 1000).toFixed(2);
@@ -143,72 +257,17 @@ async function loadRenewables() {
     _fuelKpi('Solar capture', st.sCap == null ? '–' : st.sCap.toFixed(2), '€/MWh', st.sCR == null ? '' : `${st.sCR.toFixed(0)}% of ${st.partial ? 'base on published slots' : 'baseload'} ${st.base.toFixed(2)}`, crTone(st.sCR)) +
     _fuelKpi('DA forecast error', wErr == null && sErr == null ? '–' : `${wErr == null ? '–' : wErr.toFixed(1)} / ${sErr == null ? '–' : sErr.toFixed(1)}`, '%',
       fc ? 'wind / solar · WAPE on published slots' : 'forecast kept for the latest day only');
-
-  // Intraday stacked output + price
-  const GW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
-  const ds = [];
-  if (z.windOnshore) ds.push({ label: 'Wind onshore', data: GW(z.windOnshore), backgroundColor: rgba(C_WON, .55), borderColor: C_WON, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
-  if (z.windOffshore && z.windOffshore.some(v => v)) ds.push({ label: 'Wind offshore', data: GW(z.windOffshore), backgroundColor: rgba(C_WOFF, .55), borderColor: C_WOFF, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
-  if (!z.windOnshore && st.wind) ds.push({ label: 'Wind', data: GW(st.wind), backgroundColor: rgba(C_WON, .55), borderColor: C_WON, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
-  if (st.solar) ds.push({ label: 'Solar', data: GW(st.solar), backgroundColor: rgba(C_SOL, .55), borderColor: C_SOL, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
-  if (z.hourly && z.hourly.length === n) ds.push({ label: 'Day-ahead price', data: z.hourly, type: 'line', borderColor: '#FFFFFF', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y1', tension: 0, order: -1, stack: 'p' });
-  _fuelChart('ren-intraday', { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({
-    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }),
-      y: _fuelAxis('GW', { stacked: true, beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
-    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
-      annotation: { annotations: (() => { const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day }); return a ? { nowLine: a } : {}; })() } } }) }, 'renewables-' + zone + '-' + day);
-  document.getElementById('ren-intraday-title').textContent = `Intraday output vs price · ${zone} · ${_renFmtDay(day)}`;
-
-  // Forecast vs actual
-  if (fc && (fc.windForecast || fc.solarForecast)) {
-    const fds = [];
-    if (st.wind) fds.push(_fuelLineDs('Wind actual', GW(st.wind), C_WON, { borderWidth: 2 }));
-    if (fc.windForecast) fds.push(_fuelLineDs('Wind forecast', GW(fc.windForecast), C_WON, { borderDash: [5, 4], borderWidth: 1.3 }));
-    if (st.solar) fds.push(_fuelLineDs('Solar actual', GW(st.solar), C_SOL, { borderWidth: 2 }));
-    if (fc.solarForecast) fds.push(_fuelLineDs('Solar forecast', GW(fc.solarForecast), C_SOL, { borderDash: [5, 4], borderWidth: 1.3 }));
-    _fuelChart('ren-fc', { type: 'line', data: { labels: lbls, datasets: fds }, options: _fuelOpts({
-      scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-forecast-' + zone + '-' + day);
-  } else if (typeof noDataMsg === 'function') {
-    noDataMsg('ren-fc', 'Day-ahead forecast not stored for this day', `The forecast is kept for the latest fetched day${liveDay ? ' (' + _renFmtDay(liveDay) + ')' : ''} — use "Latest".`);
-  }
-  _renHistory();
 }
 
 async function _renHistory() {
   const zone = (document.getElementById('ren-country') || {}).value || 'FR';
-  let days = await _renDaysWithGen(zone);
-  const today = pkTodayISO();
-  const from = REN.window === 'All' ? '0000' : REN.window === 'YTD' ? today.slice(0, 4) + '-01-01'
-    : _renAdd(today, -({ '30D': 30, '90D': 90, '1Y': 365 }[REN.window] || 3650));
-  days = days.filter(d => d >= from);
-  const files = await Promise.all(days.map(d => _renDaily(d)));
-  const rows = days.map((d, i) => ({ d, st: _renDayStats(files[i] && files[i].zones && files[i].zones[zone]) })).filter(r => r.st && r.st.base != null);
+  const rows = await _renRows(zone, REN.window);
   document.getElementById('ren-coverage').textContent = rows.length
     ? `${rows.length} days with generation data for ${zone} (${_renFmtDay(rows[0].d)} → ${_renFmtDay(rows[rows.length - 1].d)})`
     : `No generation history for ${zone} in this window`;
-  if (!rows.length) {
-    ['ren-cr', 'ren-daily'].forEach(id => { if (typeof noDataMsg === 'function') noDataMsg(id, 'No history', ''); });
-    document.getElementById('ren-summary-tbody').innerHTML = '';
-    return;
-  }
-  ['ren-cr', 'ren-daily'].forEach(_renRestore);
-  const labels = rows.map(r => r.d);
-  const r1 = v => v == null ? null : Math.round(v * 10) / 10;
-  _fuelChart('ren-cr', { type: 'line', data: { labels, datasets: [
-    _fuelLineDs('Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
-    _fuelLineDs('Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
-  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload') },
-    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
-      annotation: { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'capture-rates-' + zone);
-
-  const roll = (a, k) => a.map((_, i) => { const w = a.slice(Math.max(0, i - k + 1), i + 1).filter(v => v != null); return w.length ? Math.round(w.reduce((s, v) => s + v, 0) / w.length) / 1000 : null; });
-  const wA = rows.map(r => r.st.windAvg), sA = rows.map(r => r.st.solarAvg);
-  _fuelChart('ren-daily', { type: 'line', data: { labels, datasets: [
-    _fuelLineDs('Wind', wA.map(v => v == null ? null : v / 1000), rgba(C_WON, .55), { borderWidth: 1 }),
-    _fuelLineDs('Wind 7D', roll(wA, 7), C_WON, { borderWidth: 2 }),
-    _fuelLineDs('Solar', sA.map(v => v == null ? null : v / 1000), rgba(C_SOL, .55), { borderWidth: 1 }),
-    _fuelLineDs('Solar 7D', roll(sA, 7), C_SOL, { borderWidth: 2 }),
-  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-daily-' + zone);
+  PKW.draw('ren-cr', 'ren-cr', { zone, rows });
+  PKW.draw('ren-daily', 'ren-daily', { zone, rows });
+  if (!rows.length) { document.getElementById('ren-summary-tbody').innerHTML = ''; return; }
 
   // Period table
   const periods = [['Last 7 days', 7], ['Last 30 days', 30], ['Last 90 days', 90], ['Year to date', 'YTD'], ['Window', 'ALL']];
