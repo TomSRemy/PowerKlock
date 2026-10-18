@@ -2716,7 +2716,6 @@
         <div class="sidebar-subitem" data-subdomain="forward" onclick="prSelectSubdomain('forward')">Forward</div>
         <div class="sidebar-subitem" data-subdomain="da" onclick="prSelectSubdomain('da')">Day-Ahead</div>
         <div class="sidebar-subitem" data-subdomain="negative" onclick="prSelectSubdomain('negative')">Negative prices</div>
-        <div class="sidebar-subitem" data-subdomain="negative-legacy" onclick="prSelectSubdomain('negative-legacy')">Negative prices (ancien)</div>
         <div class="sidebar-subitem" data-subdomain="spread" onclick="prSelectSubdomain('spread')">Spread</div>
       </div>
       <div class="sidebar-item" onclick="showPage('genmix')" id="nav-genmix">
@@ -2771,10 +2770,10 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section collapsed" id="sec-meteo">
-      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Meteo France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Weather · France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-meteo-items">
       <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Cities
       </div>
       <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
@@ -2843,7 +2842,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
               Day-Ahead
             </div>
-            <div class="pr-overview-card-desc">ENTSO-E day-ahead market · 32 European bidding zones</div>
+            <div class="pr-overview-card-desc" id="pr-home-card-da-desc">ENTSO-E day-ahead market · European bidding zones</div>
             <div class="pr-overview-card-kpi" id="pr-home-card-da-kpi">— €/MWh</div>
             <div class="pr-overview-card-kpi-label" id="pr-home-card-da-label">Today's average · FR</div>
             <div class="pr-overview-card-link">Open Day-Ahead →</div>
@@ -2987,11 +2986,11 @@
               <table id="prfwd-countries-table" style="font-size:12px">
                 <thead>
                   <tr>
-                    <th style="text-align:left">PAYS</th>
+                    <th style="text-align:left">COUNTRY</th>
                     <th style="text-align:right">SPOT</th>
                     <th style="text-align:right">FORWARD Y+1</th>
                     <th style="text-align:right">VAR J-1</th>
-                    <th style="text-align:right">VAR S-1</th>
+                    <th style="text-align:right">VAR 1W</th>
                   </tr>
                 </thead>
                 <tbody id="prfwd-countries-tbody">
@@ -3034,11 +3033,11 @@
               <table id="prfwd-cmp-table" style="font-size:12px">
                 <thead>
                   <tr>
-                    <th style="text-align:left">PAYS</th>
+                    <th style="text-align:left">COUNTRY</th>
                     <th style="text-align:right">CONTRAT</th>
                     <th style="text-align:right">VALEUR</th>
                     <th style="text-align:right">VAR J-1</th>
-                    <th style="text-align:right">VAR S-1</th>
+                    <th style="text-align:right">VAR 1W</th>
                   </tr>
                 </thead>
                 <tbody id="prfwd-cmp-tbody"></tbody>
@@ -4594,7 +4593,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Market Analysis</div>
-          <div class="page-subtitle">Du prix vers ses causes · drivers · crosshair · AI synthesis</div>
+          <div class="page-subtitle">From price to its drivers · crosshair · AI synthesis</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="country-select" id="ma-zone" onchange="maSetZone(this.value)">
@@ -5535,7 +5534,7 @@
 
             <div class="meth-block">
               <h3 class="meth-h3">Auction date vs delivery date</h3>
-              <p class="meth-p">Day-Ahead prices are auctioned the day <em>before</em> delivery (the EPEX/Nord Pool auction closes at 12:00 CET on day D-1 for delivery on day D). Throughout PowerKlock, dates refer to the <strong>delivery date</strong> by default. Historical CSV filenames in <code>data/history/daily/</code> use the auction date by convention.</p>
+              <p class="meth-p">Day-Ahead prices are auctioned the day <em>before</em> delivery (the EPEX/Nord Pool auction closes at 12:00 CET on day D-1 for delivery on day D). Throughout PowerKlock, dates always refer to the <strong>delivery date</strong> (a CET/CEST calendar day). The daily history files in <code>data/history/daily/</code> are named by delivery date too.</p>
             </div>
 
             <div class="meth-block">
