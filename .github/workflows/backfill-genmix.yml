@@ -9,7 +9,7 @@ name: Backfill generation (after prices)
 
 on:
   workflow_run:
-    workflows: ['Backfill chain (monthly, newest first)']
+    workflows: ['Backfill chain v3 (monthly, parallel)']
     types: [completed]
   workflow_dispatch:
 
