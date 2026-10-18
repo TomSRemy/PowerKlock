@@ -313,7 +313,7 @@ function initLeafletMap() {
 }
 
 function getZoneData() {
-  const data = pricesData && pricesData.length ? pricesData : getDemoData();
+  const data = (pricesData && pricesData.length) ? pricesData : [];   // no demo fallback: empty until prices load
   return data;
 }
 
@@ -457,6 +457,7 @@ function renderMapKPIs() {
   const el = document.getElementById('map-kpis');
   if (!el) return;
   const data = getZoneData();
+  if (!data.length) { el.innerHTML = '<div class="fuel-note" style="grid-column:1/-1"><span class="spinner"></span> Loading day-ahead prices…</div>'; return; }
   const sorted = [...data].sort((a,b)=>b.today-a.today);
   const avg = data.reduce((s,z)=>s+z.today,0)/data.length;
   const negZones = data.filter(z=>(z.negHrs||z.neg||0)>0).length;

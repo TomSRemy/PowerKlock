@@ -1594,7 +1594,7 @@ function renderPricesTableBody() {
     }
 
     // Smooth sparkline: downsample to 24pts first for clean shape
-    let rawHourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min||0, z.max||z.today*1.5);
+    let rawHourly = z.hourly && z.hourly.length ? z.hourly : [];
     rawHourly = rawHourly.filter(v=>v!=null);
     // Downsample to 24 if 96pts
     let h24spark = rawHourly;
@@ -1805,12 +1805,12 @@ function buildHourlyDetail(idx, z) {
   const inner = document.getElementById(`row-detail-inner-${idx}`);
   if (!inner) return;
 
-  // Debug: verify hourly data presence
   if (!z.hourly || !z.hourly.length) {
-    console.warn('[buildHourlyDetail] No hourly data for zone', z.code, '— showing demo. _currentPriceDate=', window._currentPriceDate);
+    inner.innerHTML = '<div style="padding:18px;color:var(--tx3);font-size:12px">No intraday prices stored for ' + z.code + ' on this day.</div>';
+    return;
   }
 
-  const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+  const hourly = z.hourly && z.hourly.length ? z.hourly : [];
   const resMin = getResolution(hourly);
   const slotsPerHour = 60 / resMin;
 
@@ -3397,7 +3397,7 @@ function renderCCLines(data, selected) {
   data.forEach((z, i) => {
     if (!selected.has(z.code)) return;
     const col = ccZoneColor(z.code, data, i);
-    const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+    const hourly = z.hourly && z.hourly.length ? z.hourly : [];
     datasets.push({
       label: `${z.code} · ${z.name}`, data: hourly, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
