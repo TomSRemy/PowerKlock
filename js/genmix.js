@@ -451,7 +451,7 @@ function renderGmMain() {
   if (hdrDate) {
     const d = selDate ? new Date(selDate + 'T12:00:00') : (window._genmixUpdated ? new Date(window._genmixUpdated) : new Date());
     const upd = (!selDate && window._genmixUpdated)
-      ? ' · snapshot ' + new Date(window._genmixUpdated).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
+      ? ' · average 00:00–' + new Date(window._genmixUpdated).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
       : '';
     hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' }) + upd + ' · ENTSO-E';
   }
@@ -566,7 +566,7 @@ function _gmOpenRow(zone) {
           <div class="kpi-card kpi-flat">
             <div class="kpi-label">Total gen</div>
             <div class="kpi-value">${(st.total/1000).toFixed(2)}<span class="kpi-unit">GW</span></div>
-            <div class="kpi-meta">${(st.total).toFixed(0)} MW · instantaneous</div>
+            <div class="kpi-meta">${(st.total).toFixed(0)} MW · average of published slots</div>
           </div>
           <div class="kpi-card" style="border-left-color:${renC}">
             <div class="kpi-label">% Renewable</div>
