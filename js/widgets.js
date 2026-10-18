@@ -91,6 +91,46 @@
     });
   }
 
+  // ── Mirror widgets ─────────────────────────────────────────────────
+  // For page charts still drawn by their page's own code: the widget runs
+  // that code (ensure), waits for the page chart, then copies its config
+  // (data deep-copied; functions, plugins and callbacks kept by reference)
+  // into the dashboard canvas. One drawing code, identical rendering.
+  function cloneCfg(v) {
+    if (Array.isArray(v)) return v.map(cloneCfg);
+    if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) {
+      const o = {}; Object.keys(v).forEach(k => { o[k] = cloneCfg(v[k]); }); return o;
+    }
+    return v;   // primitives, functions, class instances (plugins, gradients)
+  }
+  const MIRRORS = [];
+  function mirror(def) {
+    MIRRORS.push(def);
+    return register(Object.assign({}, def, {
+      kind: 'chart',
+      async draw(cid) {
+        try { await def.ensure(); } catch (e) { console.warn('[PKW] mirror ensure', def.id, e); }
+        const src = await waitFor(() => {
+          const c = document.getElementById(def.pageCanvas), ch = c && window.Chart && Chart.getChart(c);
+          return ch && ch.data && (ch.data.datasets || []).some(d => (d.data || []).length) ? ch : null;
+        }, 25000);
+        if (!src) { if (typeof noDataMsg === 'function') noDataMsg(cid, 'Chart not available yet', def.source || ''); return null; }
+        const cfg = { type: src.config.type, data: cloneCfg(src.config.data), options: cloneCfg(src.config.options || {}),
+                      plugins: (src.config.plugins || []).slice() };
+        cfg.options.responsive = true; cfg.options.maintainAspectRatio = false;
+        if (typeof mkChart === 'function') mkChart(cid, cfg); else new Chart(document.getElementById(cid), cfg);
+        return { sub: def.subFn ? def.subFn() : '' };
+      },
+    }));
+  }
+  // Stars for mirrored charts appear once their page has drawn them.
+  setInterval(() => {
+    MIRRORS.forEach(def => {
+      const c = document.getElementById(def.pageCanvas);
+      if (c && window.Chart && Chart.getChart(c) && !(c.closest('.chart-container') || c.parentElement).querySelector('.pkw-star[data-wid="' + def.id + '"]')) markStar(get(def.id));
+    });
+  }, 3000);
+
   // Period buttons in a page chart's header (same look as the page filters).
   // options: [[value, label], …]; onPick(value) redraws.
   function periodButtons(canvasId, options, current, onPick) {
@@ -146,5 +186,5 @@
     });
   }
 
-  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, periodButtons, refreshStars };
+  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, mirror, periodButtons, refreshStars };
 })();
