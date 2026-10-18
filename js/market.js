@@ -202,17 +202,4 @@ async function loadLoad() {
 // ═════════════════════════════════════════════
 // NEWS
 // ════════════════════════════════════════════
-const RSS_SOURCES = [
-  { name:'ENTSO-E', cls:'entsoe', url:'https://www.entsoe.eu/news/rss/', tags:['power','regulation'] },
-  { name:'RTE', cls:'rte', url:'https://www.rte-france.com/presse/communiques-de-presse?type=rss', tags:['power','fr'] },
-  { name:'CRE', cls:'cre', url:'https://www.cre.fr/en/rss', tags:['regulation','fr'] },
-  { name:'ACER', cls:'acer', url:'https://www.acer.europa.eu/rss', tags:['regulation','markets'] },
-  { name:'Recharge', cls:'recharge', url:'https://www.rechargenews.com/rss', tags:['power','markets'] },
-  { name:'Energy Monitor', cls:'energymonitor', url:'https://energymonitor.ai/feed/', tags:['power','carbon','markets'] },
-  { name:'Carbon Pulse', cls:'carbonpulse', url:'https://carbon-pulse.com/feed/', tags:['carbon','regulation'] },
-  { name:'Gas Naturally', cls:'gasnaturally', url:'https://www.gasnaturally.eu/feed/', tags:['gas','regulation'] },
-  { name:'Montel', cls:'montel', url:'https://www.montelnews.com/rss', tags:['power','gas','markets'] },
-];
-
-// RSS2JSON free proxy (no key needed for low volume)
-const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+// Feeds are fetched server-side by scripts/fetch_news.py → data/news.json.
