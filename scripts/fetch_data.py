@@ -281,9 +281,15 @@ PSR_MAP = {
 def categorize(psr_map):
     cats = {'nuclear':0,'solar':0,'wind':0,'hydro':0,'fossil':0,'biomass':0,'other':0}
     by_code = {}                                   # granular B-codes (carbon intensity)
+    # parse_generation zero-fills slots ENTSO-E hasn't published yet (the rest
+    # of today). Average only over slots where some unit reported, otherwise
+    # an intraday snapshot is understated by the unpublished share of the day
+    # (FR nuclear read 21.6 GW instead of ~38 GW at 14:42 UTC).
+    n = max((len(v) for v in psr_map.values()), default=0)
+    published = [i for i in range(n) if any(i < len(v) and v[i] for v in psr_map.values())]
     for psr, vals in psr_map.items():
-        # vals is now a list of hourly values
-        avg = sum(vals)/len(vals) if vals else 0
+        pts = [vals[i] for i in published if i < len(vals)]
+        avg = sum(pts)/len(pts) if pts else 0
         by_code[psr] = round(avg)                  # keep each B-code separately
         name = PSR_MAP.get(psr,'')
         if 'Nuclear' in name:           cats['nuclear'] += avg
@@ -300,11 +306,13 @@ def categorize(psr_map):
 # ─────────────────────────────────────────────
 # FETCH PRICES
 # ─────────────────────────────────────────────
-def fetch_prices():
-    print("Fetching prices...")
-    today    = date_str(0)
-    tomorrow = date_str(1)
-    yesterday = date_str(-1)
+def fetch_prices(offset=0):
+    """Day-ahead prices for delivery day today+offset (offset=1 → tomorrow,
+    available once the EPEX/ENTSO-E auction results are out, ~12:45 CET)."""
+    print(f"Fetching prices (day offset {offset})...")
+    today    = date_str(offset)
+    tomorrow = date_str(offset + 1)
+    yesterday = date_str(offset - 1)
     results  = []
 
     for code, eic in ZONES.items():
@@ -623,15 +631,23 @@ def fetch_renewables():
             if sum(solar_fc) == 0: solar_fc = solar_act[:]
             if sum(wind_fc) == 0: wind_fc = wind_act[:]
 
-            wind_err  = [round(a-f) for a,f in zip(wind_act, wind_fc)]
-            solar_err = [round(a-f) for a,f in zip(solar_act, solar_fc)]
+            # Actuals are zero-filled beyond what ENTSO-E has published so far
+            # (typically ~1h behind real time). A slot counts as published
+            # when any technology reported output in it; errors and "now"
+            # values use published slots only — the old code compared the
+            # forecast against those zeros (FR wind "error" +51%) and read
+            # "now" at the current UTC slot, which is never published yet.
+            total_act = [sum(x) for x in zip(wind_act, solar_act, nuclear_act, hydro_act, fossil_act, biomass_act, other_act)]
+            published = [i for i, v in enumerate(total_act) if v > 0]
+            cur_slot = published[-1] if published else 0
 
-            avg_wf = max(1, sum(wind_fc)/96)
-            avg_sf = max(1, sum(solar_fc)/96)
+            wind_err  = [round(a-f) if i in published else None for i, (a, f) in enumerate(zip(wind_act, wind_fc))]
+            solar_err = [round(a-f) if i in published else None for i, (a, f) in enumerate(zip(solar_act, solar_fc))]
 
-            import datetime as dt
-            now = dt.datetime.utcnow()
-            cur_slot = min(95, now.hour * 4 + now.minute // 15)
+            def _err_pct(err, fc):
+                pts = [(abs(err[i]), fc[i]) for i in published]
+                den = sum(f for _, f in pts)
+                return round(sum(e for e, _ in pts) / den * 100, 1) if den > 0 else None
 
             result[code] = {
                 'windActual':         wind_act,
@@ -651,8 +667,9 @@ def fetch_renewables():
                 'solarForecast':      solar_fc,
                 'windError':          wind_err,
                 'solarError':         solar_err,
-                'windErrorPct':       round(sum(abs(e) for e in wind_err)/96/avg_wf*100, 1),
-                'solarErrorPct':      round(sum(abs(e) for e in solar_err)/96/avg_sf*100, 1),
+                'windErrorPct':       _err_pct(wind_err, wind_fc),
+                'solarErrorPct':      _err_pct(solar_err, solar_fc),
+                'publishedSlots':     len(published),
                 'windNow':            wind_act[cur_slot],
                 'windOnshoreNow':     wind_onshore_act[cur_slot],
                 'windOffshoreNow':    wind_offshore_act[cur_slot],
@@ -777,7 +794,7 @@ def fetch_load():
     print("Fetching load...")
     today, tomorrow = date_str(0), date_str(1)
     result = {}
-    for code in ['FR','DE_LU','ES','BE']:
+    for code in ['FR','DE_LU','ES','BE','NL','IT_NORD','PT','AT','PL']:
         eic = ZONES.get(code)
         if not eic:
             continue
@@ -786,15 +803,27 @@ def fetch_load():
                           'outBiddingZone_Domain':eic,
                           'periodStart':today,'periodEnd':tomorrow})
             pts = _parse_quantity_series(xml)
-            valid = [v for v in pts if v is not None]
+            valid = [v for v in pts if v is not None and v > 0]
+            # Day-ahead load forecast (A65 / A01) — the page compared actuals
+            # with a Math.random() "forecast" because none was fetched.
+            fc = None
+            try:
+                xml_f = fetch({'documentType':'A65','processType':'A01',
+                               'outBiddingZone_Domain':eic,
+                               'periodStart':today,'periodEnd':tomorrow})
+                fc = _parse_quantity_series(xml_f)
+                if not any(v for v in fc if v):
+                    fc = None
+            except Exception as fe:
+                print(f"  {code}: load forecast ERROR — {fe}")
             if valid:
-                now = datetime.utcnow()
-                cur_slot = min(95, now.hour*4 + now.minute//15)
-                cur_val = pts[cur_slot] if pts[cur_slot] is not None else valid[-1]
+                # Last published slot, not the current UTC slot (always empty).
+                cur_val = valid[-1]
                 result[code] = {
-                    'actual':  pts,
-                    'peak':    max(valid),
-                    'current': cur_val,
+                    'actual':   pts,
+                    'forecast': fc,
+                    'peak':     max(valid),
+                    'current':  cur_val,
                 }
                 print(f"  {code}: current {result[code]['current']} MW")
         except Exception as e:
@@ -804,6 +833,23 @@ def fetch_load():
 # ─────────────────────────────────────────────
 # FETCH CROSS-BORDER FLOWS
 # ─────────────────────────────────────────────
+def _flow_quantities(xml_text):
+    """Point quantities of an A11 document, whatever its namespace. The old
+    parser hard-coded the publication-document namespace; A11 documents that
+    come back under another one yielded no points, so every flow was 0 MW."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return []
+    out = []
+    for pt in root.iter():
+        if strip_ns(pt.tag) != 'Point':
+            continue
+        for child in pt:
+            if strip_ns(child.tag) == 'quantity' and child.text:
+                out.append(float(child.text))
+    return out
+
 def fetch_crossborder():
     print("Fetching cross-border flows...")
     today, tomorrow = date_str(0), date_str(1)
@@ -828,15 +874,12 @@ def fetch_crossborder():
                 # Exports from_c -> to_c
                 xml_e = fetch({'documentType':'A11','in_Domain':to_eic,
                                 'out_Domain':from_eic,'periodStart':today,'periodEnd':tomorrow})
-                ns = {'ns':'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3'}
-                root = ET.fromstring(xml_e)
-                exp_vals = [float(pt.findtext('ns:quantity','0',ns)) for pt in root.findall('.//ns:Point',ns)]
+                exp_vals = _flow_quantities(xml_e)
                 avg_exp = round(sum(exp_vals)/len(exp_vals)) if exp_vals else 0
                 # Imports to_c -> from_c
                 xml_i = fetch({'documentType':'A11','in_Domain':from_eic,
                                 'out_Domain':to_eic,'periodStart':today,'periodEnd':tomorrow})
-                root2 = ET.fromstring(xml_i)
-                imp_vals = [float(pt.findtext('ns:quantity','0',ns)) for pt in root2.findall('.//ns:Point',ns)]
+                imp_vals = _flow_quantities(xml_i)
                 avg_imp = round(sum(imp_vals)/len(imp_vals)) if imp_vals else 0
                 flows.append({
                     'partner': f"{to_c} · {ZONE_NAMES.get(to_c,to_c)}",
@@ -976,6 +1019,11 @@ if __name__ == '__main__':
                 zone_entry['renPct'] = rp
             if dom is not None:
                 zone_entry['domFuel'] = dom
+        # Load (actual + day-ahead forecast) so the Load page can show past days
+        if load and ren_code in load:
+            zone_entry['load'] = load[ren_code].get('actual')
+            if load[ren_code].get('forecast'):
+                zone_entry['loadForecast'] = load[ren_code]['forecast']
         daily_snap['zones'][z['code']] = zone_entry
     write_json(daily_path, daily_snap)
 
@@ -1048,5 +1096,25 @@ if __name__ == '__main__':
         summary['zones'][code].append(entry)
         summary['zones'][code].sort(key=lambda x: x['d'])
     write_json(summary_path, summary)
+
+    # ── Next delivery day (D+1): prices only, written once the auction is out.
+    # The 05:00 UTC run of D+1 rewrites this file with generation data too.
+    try:
+        if datetime.utcnow().hour >= 11:
+            nxt = fetch_prices(1)
+            if len(nxt) >= 20:
+                d1 = (datetime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%d')
+                snap = {'date': d1, 'zones': {}, 'pricesOnly': True}
+                for z in nxt:
+                    e = {'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours'], 'hourly': z['hourly']}
+                    pk, off = peak_offpeak_from_hourly(z['hourly'])
+                    if pk is not None: e['peakAvg'] = pk
+                    if off is not None: e['offAvg'] = off
+                    snap['zones'][z['code']] = e
+                write_json(f'data/history/daily/{d1}.json', snap)
+            else:
+                print(f"[D+1] only {len(nxt)} zones published yet — skipped")
+    except Exception as _e:
+        print(f"[D+1] skipped: {_e}")
 
     print(f"\nDone. All data files written.")

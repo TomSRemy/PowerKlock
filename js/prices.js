@@ -3,6 +3,18 @@
 // ════════════════════════════════════════════
 const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
 
+// Calendar date in Europe/Paris (YYYY-MM-DD). Day-ahead delivery days are
+// CET/CEST days, so "today" must not be derived from the UTC date (which
+// lags by 1-2h around midnight).
+window.pkTodayISO = function() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+};
+// Current Europe/Paris wall-clock hour as a fraction (e.g. 14.25 = 14:15).
+window.pkParisHour = function() {
+  const [h, m] = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
+  return h + m / 60;
+};
+
 // ════════════════════════════════════════════
 // PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
 // Single source of truth for number/delta/neg-hours formatting and
@@ -228,31 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── DASHBOARD TABS ──
-// kind:'kpi' (default) = a single number tile. kind:'chart' = a wider card
-// with its own canvas, drawn by renderMyDashCharts() after the grid HTML is
-// inserted (the canvas has to exist in the DOM before Chart.js can bind to
-// it).
-const AVAILABLE_WIDGETS = [
-  { id:'fr-da',      name:'FR DA Price',         desc:"France day-ahead price, real time" },
-  { id:'de-da',      name:'DE DA Price',         desc:"Germany day-ahead price" },
-  { id:'eua',        name:'EUA Spot',            desc:"EU ETS carbon price · not connected" },
-  { id:'ttf',        name:'TTF D+1',             desc:"TTF natural gas day-ahead · not connected" },
-  { id:'go-renew',   name:'GO Renewables',       desc:"Guarantees of Origin · Commerg mid price" },
-  { id:'fr-mix',     name:'FR Mix',              desc:"Nuclear + renewable share of the mix" },
-  { id:'fr-nuclear', name:'FR Nuclear',          desc:"Available nuclear capacity" },
-  { id:'fr-export',  name:'FR Export Balance',   desc:"Net cross-border flows, France" },
-  { id:'fr-load',    name:'FR Consumption',      desc:"Current grid load" },
-  { id:'hdd-paris',  name:'HDD Paris',           desc:"Heating degree days · not connected" },
-  { id:'fr-da-chart',   name:'FR — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
-  { id:'de-da-chart',   name:'DE — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
-  { id:'fr-mix-chart',  name:'FR — Generation Mix',   desc:"Breakdown by fuel, today", kind:'chart' },
-  { id:'fr-load-chart', name:'FR — Consumption',      desc:"Hourly load curve", kind:'chart' },
-  { id:'fr-cb-chart',   name:'FR — Cross-Border',     desc:"Import/export by border", kind:'chart' },
-  { id:'go-chart',      name:'GO Renewables — history', desc:"Weekly Bid/Ask/Mid · Commerg", kind:'chart' },
-  { id:'fr-ren-chart',  name:'FR — Wind vs Solar',    desc:"Hourly production, today", kind:'chart' },
-];
-let myDashWidgets = JSON.parse(localStorage.getItem('pk-mydash-widgets') || '[]');
-
 // Scope de zone global. null = vue européenne (onglet All), 'FR' = cockpit France.
 // Les modules qui veulent se restreindre à une zone lisent window.PK_ZONE_SCOPE.
 window.PK_ZONE_SCOPE = null;
@@ -296,411 +283,10 @@ function switchDashboard(tab, btn) {
     if (sidebar) sidebar.classList.add('sidebar-special-hidden');
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     setActive('page-mydash', true);
-    if (typeof renderMyDash === 'function') renderMyDash();
+    if (window.PKDash) PKDash.open();
     return;
   }
 }
-
-// ── FRANCE DASHBOARD ──
-function loadFranceDashboard() {
-  // KPIs - pull from pricesData if available
-  if (typeof pricesData !== 'undefined' && pricesData.length) {
-    const fr = pricesData.find(z => z.code === 'FR');
-    if (fr) {
-      document.getElementById('fr-da-price').textContent = fr.today != null ? fr.today.toFixed(1) : '--';
-      const delta = fr.vsYday;
-      const deltaEl = document.getElementById('fr-da-delta');
-      if (delta != null) {
-        deltaEl.textContent = (delta >= 0 ? '▲' : '▼') + Math.abs(delta).toFixed(1);
-        deltaEl.className = 'kpi-delta ' + (delta >= 0 ? 'up' : 'down');
-      }
-    }
-  }
-  // Static placeholders for nuclear/renew/export
-  document.getElementById('fr-nuclear').textContent = '42.3';
-  document.getElementById('fr-renew').textContent = '18.7';
-  document.getElementById('fr-export').textContent = '+8.4';
-
-  // FR price chart (7 days) - use dummy data if real not loaded
-  const ctx = document.getElementById('fr-price-chart');
-  if (ctx) {
-    const labels = ['J-6','J-5','J-4','J-3','J-2','J-1','Auj'];
-    const vals = [58.2, 61.4, 45.8, 32.1, 12.4, 5.2, 1.2];
-    if (window.Chart && !ctx._chart) {
-      ctx._chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            data: vals,
-            borderColor: '#14D3A9',
-            backgroundColor: 'rgba(0,212,168,0.08)',
-            borderWidth: 2,
-            tension: 0,
-            fill: true,
-            pointRadius: 3,
-            pointBackgroundColor: '#14D3A9'
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A6280', font: { size: 11 } }, title: { display: true, text: '€/MWh', color: '#4A6280', font: { size: 10 } } }
-          }
-        }
-      });
-    }
-  }
-
-  // Mix chart
-  const mctx = document.getElementById('fr-mix-chart');
-  if (mctx && window.Chart && !mctx._chart) {
-    mctx._chart = new Chart(mctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Gas', 'Other'],
-        datasets: [{
-          data: [42.3, 9.2, 5.1, 8.8, 3.4, 2.2],
-          backgroundColor: ['#14D3A9','#C4A57B','#fbbf24','#94D2BD','#A87DC4','#4A6280'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom', labels: { color: '#B8C9D9', font: { size: 11 }, padding: 10, boxWidth: 10 } }
-        }
-      }
-    });
-  }
-
-  // REMIT placeholder
-  document.getElementById('fr-remit-list').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Paluel 2 — maintenance</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 350 MW indisponible · jusqu'au 12 mai</div>
-      </div>
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Flamanville 1 — arrêt fortuit</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 330 MW indisponible · retour prévu 05 mai</div>
-      </div>
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid #4A6280">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Belleville 1 — programmé</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 310 MW · rechargement combustible</div>
-      </div>
-    </div>`;
-}
-
-// ── MY DASHBOARD ──
-function renderMyDash() {
-  const grid = document.getElementById('mydash-grid');
-  const empty = document.getElementById('mydash-empty');
-  if (!grid) return;
-  if (!myDashWidgets.length) {
-    if (empty) empty.style.display = 'flex';
-    grid.innerHTML = '';
-    return;
-  }
-  // GO price lives in a lazily-fetched CSV (only auto-loaded when the GO
-  // Prices page itself is opened) — trigger that fetch here too so the
-  // widget doesn't sit on '–' forever just because the user never visited
-  // that page. loadGoData() (called once the fetch resolves) re-renders
-  // My Dashboard itself if it's still the active page — see go.js.
-  if (myDashWidgets.includes('go-renew') && typeof GO_REAL !== 'undefined' && !GO_REAL
-      && !window._mydashGoTried && typeof autoloadGo === 'function') {
-    window._mydashGoTried = true;
-    autoloadGo();
-  }
-  if (empty) empty.style.display = 'none';
-  grid.innerHTML = myDashWidgets.map(id => {
-    const w = AVAILABLE_WIDGETS.find(x => x.id === id);
-    if (!w) return '';
-    if (w.kind === 'chart') {
-      return `<div class="mydash-widget mydash-widget-chart">
-        <button class="mdash-remove" onclick="removeWidget('${id}')" title="Retirer">×</button>
-        <div class="mydash-widget-title">${w.name}</div>
-        <div style="position:relative;height:200px"><canvas id="mdash-canvas-${id}"></canvas></div>
-      </div>`;
-    }
-    const val = getWidgetValue(id);
-    const valColor = val.notConnected ? 'var(--text3)' : 'var(--text)';
-    const valStyle = val.notConnected ? 'font-style:italic' : '';
-    return `<div class="mydash-widget">
-      <button class="mdash-remove" onclick="removeWidget('${id}')" title="Retirer">×</button>
-      <div class="mydash-widget-title">${w.name}</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:${valColor};${valStyle}">${val.val}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:3px">${val.unit}</div>
-      ${val.chg ? `<div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:${val.up ? 'var(--up)' : 'var(--down)'};margin-top:4px">${val.chg}</div>` : ''}
-    </div>`;
-  }).join('');
-  // Canvases only exist in the DOM from this point on (innerHTML above just
-  // created them), so the actual Chart.js draws have to happen after.
-  renderMyDashCharts();
-}
-
-// ── MY DASHBOARD · chart widgets ──
-// Each of these reuses data already loaded live elsewhere in the app
-// (pricesData, _genmixData, _loadData, _cbData, GO_REAL) — no new fetches,
-// no demo numbers.
-function renderMyDashCharts() {
-  // The canvas element itself is id="mdash-canvas-<widget id>" (see the
-  // 'chart' branch in renderMyDash's innerHTML template) — draw functions
-  // below take that already-prefixed canvas id, not the bare widget id.
-  const cid = id => 'mdash-canvas-' + id;
-  if (myDashWidgets.includes('fr-da-chart')) _mdashDrawPriceChart(cid('fr-da-chart'), 'FR');
-  if (myDashWidgets.includes('de-da-chart')) _mdashDrawPriceChart(cid('de-da-chart'), 'DE_LU');
-  if (myDashWidgets.includes('fr-mix-chart')) _mdashDrawMixChart(cid('fr-mix-chart'));
-  if (myDashWidgets.includes('fr-load-chart')) _mdashDrawLoadChart(cid('fr-load-chart'));
-  if (myDashWidgets.includes('fr-cb-chart')) _mdashDrawCbChart(cid('fr-cb-chart'));
-  if (myDashWidgets.includes('go-chart')) _mdashDrawGoChart(cid('go-chart'));
-  if (myDashWidgets.includes('fr-ren-chart')) _mdashDrawRenChart(cid('fr-ren-chart'));
-}
-
-function _mdashDrawPriceChart(canvasId, code) {
-  const z = (typeof pricesData !== 'undefined' ? pricesData : []).find(x => x.code === code);
-  if (!z || !z.hourly || !z.hourly.length) { noDataMsg(canvasId, 'No price yet today', 'Arrives with prices.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(z.hourly.length), datasets: [{
-      data: z.hourly, borderColor: C_UP, borderWidth: 1.5, pointRadius: 0,
-      fill: true, backgroundColor: rgba(C_UP, .08), tension: 0, spanGaps: true,
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' €/MWh' } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + '€' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawMixChart(canvasId) {
-  const mix = window._genmixData && window._genmixData.FR;
-  if (!mix || !mix.total) { noDataMsg(canvasId, 'FR mix not loaded', 'Arrives with genmix.json'); return; }
-  mkChart(canvasId, {
-    type: 'doughnut',
-    data: {
-      labels: ['Nuclear', 'Wind', 'Solar', 'Hydro', 'Fossil', 'Other'],
-      datasets: [{
-        data: [mix.nuclear, mix.wind, mix.solar, mix.hydro, mix.fossil, (mix.biomass || 0) + (mix.other || 0)],
-        backgroundColor: [C_NUC, C_WIND, C_SOLAR, '#94D2BD', C_DN, C_TX3],
-        borderWidth: 0,
-      }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } } },
-    },
-  });
-}
-
-function _mdashDrawLoadChart(canvasId) {
-  const load = window._loadData && window._loadData.FR;
-  if (!load || !load.actual || !load.actual.length) { noDataMsg(canvasId, 'FR load not loaded', 'Arrives with load.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(load.actual.length), datasets: [{
-      data: load.actual.map(v => v == null ? null : v / 1000), borderColor: '#A87DC4', borderWidth: 1.5,
-      pointRadius: 0, fill: true, backgroundColor: rgba('#A87DC4', .08), tension: 0, spanGaps: false,
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' GW' } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawCbChart(canvasId) {
-  const flows = window._cbData && window._cbData.FR;
-  if (!flows || !flows.length) { noDataMsg(canvasId, 'FR flows not loaded', 'Arrives with crossborder.json'); return; }
-  const labels = flows.map(f => (f.partner || '').split(' ').slice(-1)[0] || f.partner);
-  mkChart(canvasId, {
-    type: 'bar',
-    data: { labels, datasets: [
-      { label: 'Export', data: flows.map(f => f.exports || 0), backgroundColor: rgba(C_UP, .65), borderWidth: 0, borderRadius: 3 },
-      { label: 'Import', data: flows.map(f => -(f.imports || 0)), backgroundColor: rgba(C_DN, .55), borderWidth: 0, borderRadius: 3 },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString()} MW` } },
-      },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => Math.abs(v).toLocaleString() } },
-      },
-    },
-  });
-}
-
-function _mdashDrawGoChart(canvasId) {
-  const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-  if (!real || !real.weekly.length) { noDataMsg(canvasId, 'No Commerg data loaded', 'waiting on GO fetch'); return; }
-  const wk = real.weekly;
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: wk.map(w => fmtGoDate(w.t)), datasets: [
-      { label: 'Ask', data: wk.map(w => w.ask), borderColor: C_DN, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
-      { label: 'Bid', data: wk.map(w => w.bid), borderColor: C_UP, borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 6, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v.toFixed(2) + '€' } },
-      },
-    },
-  });
-}
-
-function _mdashDrawRenChart(canvasId) {
-  const ren = window._renData && window._renData.FR;
-  if (!ren || !ren.windActual || !ren.windActual.length) { noDataMsg(canvasId, 'FR renewables not loaded', 'Arrives with renewables.json'); return; }
-  mkChart(canvasId, {
-    type: 'line',
-    data: { labels: makeTimeLabels(ren.windActual.length), datasets: [
-      { label: 'Wind', data: ren.windActual.map(v => v == null ? null : v / 1000), borderColor: C_WIND, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
-      { label: 'Solar', data: (ren.solarActual || []).map(v => v == null ? null : v / 1000), borderColor: C_SOLAR, borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0, spanGaps: false },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw == null ? '–' : ctx.raw.toFixed(1) + ' GW'}` } } },
-      scales: {
-        x: { grid: GRID, ticks: { color: C_TX3, maxTicksLimit: 8, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
-      },
-    },
-  });
-}
-
-// Last non-null value in a slot array (e.g. today's 96×15min series, where
-// future slots that haven't happened yet are null).
-function _mdashLastValid(arr) {
-  if (!Array.isArray(arr)) return null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (arr[i] != null) return arr[i];
-  }
-  return null;
-}
-
-function getWidgetValue(id) {
-  const notConnected = { val:'–', unit:'not connected', chg:'', up:null, notConnected:true };
-
-  if (id === 'fr-da' || id === 'de-da') {
-    const code = id === 'fr-da' ? 'FR' : 'DE_LU';
-    const z = (typeof pricesData !== 'undefined' ? pricesData : []).find(x => x.code === code);
-    if (!z || z.today == null) return { val:'–', unit:'€/MWh', chg:'', up:null };
-    // Rising power price is bad (red) / falling is good (green) — same
-    // convention as the Prices table and the France cockpit.
-    const chg = z.vsYday != null ? (z.vsYday >= 0 ? '▲' : '▼') + Math.abs(z.vsYday).toFixed(1) : '';
-    return { val: z.today.toFixed(1), unit:'€/MWh', chg, up: z.vsYday != null ? z.vsYday < 0 : null };
-  }
-
-  if (id === 'go-renew') {
-    const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-    if (!real || !real.weekly.length) return { val:'–', unit:'en attente Commerg', chg:'', up:null };
-    const last = real.weekly[real.weekly.length - 1];
-    const d = real.d;
-    // Same convention as the GO Prices page itself: rising GO price = 'up'.
-    const chg = d == null ? '' : (d >= 0 ? '▲+' : '▼') + Math.abs(d).toFixed(4);
-    return { val: last.mid != null ? last.mid.toFixed(4) : '–', unit:'€/MWh (mid)', chg, up: d != null ? d >= 0 : null };
-  }
-
-  if (id === 'fr-mix') {
-    const mix = window._genmixData && window._genmixData.FR;
-    if (!mix || !mix.total) return { val:'–', unit:'', chg:'', up:null };
-    const pct = (mix.nuclear + mix.wind + mix.solar + mix.hydro + mix.biomass) / mix.total * 100;
-    return { val: pct.toFixed(0) + '%', unit:'Nuc + ENR', chg:'', up:null };
-  }
-
-  if (id === 'fr-nuclear') {
-    const mix = window._genmixData && window._genmixData.FR;
-    if (!mix || mix.nuclear == null) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (mix.nuclear / 1000).toFixed(1), unit:'GW available', chg:'', up:null };
-  }
-
-  if (id === 'fr-export') {
-    const flows = window._cbData && window._cbData.FR;
-    if (!flows || !flows.length) return { val:'–', unit:'GW', chg:'', up:null };
-    const exp = flows.reduce((s, f) => s + (f.exports || 0), 0);
-    const imp = flows.reduce((s, f) => s + (f.imports || 0), 0);
-    const netGW = (exp - imp) / 1000;
-    return { val: (netGW >= 0 ? '+' : '') + netGW.toFixed(1), unit: netGW >= 0 ? 'GW · net exportateur' : 'GW · net importateur', chg:'', up: netGW >= 0 };
-  }
-
-  if (id === 'fr-load') {
-    const load = window._loadData && window._loadData.FR;
-    const current = load ? (load.current ?? _mdashLastValid(load.actual)) : null;
-    if (current == null) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (current / 1000).toFixed(1), unit:'GW · consommation actuelle', chg:'', up:null };
-  }
-
-  // EUA spot, TTF D+1 and HDD Paris have no live data pipeline anywhere in
-  // this app yet (the EUA/Carbon page is demo data, and weather is an
-  // explicit "not connected" stub — see js/news.js loadWeather/renderHDD).
-  // Showing a fabricated trending number here would be worse than being
-  // honest about it, so these stay '–' until a real source is wired up.
-  if (id === 'eua' || id === 'ttf' || id === 'hdd-paris') return notConnected;
-
-  return { val:'–', unit:'', chg:'', up:null };
-}
-
-function removeWidget(id) {
-  myDashWidgets = myDashWidgets.filter(x => x !== id);
-  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
-  renderMyDash();
-}
-
-function openWidgetPicker() {
-  const list = document.getElementById('widget-picker-list');
-  list.innerHTML = AVAILABLE_WIDGETS.map(w => `
-    <div class="picker-item ${myDashWidgets.includes(w.id) ? 'added' : ''}" onclick="toggleWidget('${w.id}', this)">
-      <div class="picker-item-name">${myDashWidgets.includes(w.id) ? '✓ ' : ''}${w.name}</div>
-      <div class="picker-item-desc">${w.desc}</div>
-    </div>`).join('');
-  document.getElementById('widget-picker').style.display = 'flex';
-}
-
-function closeWidgetPicker() {
-  document.getElementById('widget-picker').style.display = 'none';
-  renderMyDash();
-}
-
-function toggleWidget(id, el) {
-  if (myDashWidgets.includes(id)) {
-    myDashWidgets = myDashWidgets.filter(x => x !== id);
-    el.classList.remove('added');
-    el.querySelector('.picker-item-name').textContent = AVAILABLE_WIDGETS.find(w=>w.id===id).name;
-  } else {
-    myDashWidgets.push(id);
-    el.classList.add('added');
-    el.querySelector('.picker-item-name').textContent = '✓ ' + AVAILABLE_WIDGETS.find(w=>w.id===id).name;
-  }
-  localStorage.setItem('pk-mydash-widgets', JSON.stringify(myDashWidgets));
-}
-
-function exportDashConfig() {
-  const cfg = { widgets: myDashWidgets, exported: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'powerklock-dashboard.json';
-  a.click();
-}
-
-
 
 // ════════════════════════════════════════════
 // ENTSOE API HELPER
@@ -855,12 +441,12 @@ async function loadPricesWithDates(periodStart, periodEnd) {
       updateKPIs(pricesData, histDateISO);
     }
 
-    // Backfill vsYday from J-1 daily file (J-1 delivery = histDateISO − 1, file = histDateISO − 2)
+    // Backfill vsYday from J-1 daily file (files are named by delivery date: J-1 = histDateISO − 1)
     if (typeof fetchHistoricalDaily === 'function' && histDateISO) {
       try {
         const [y,m,d] = histDateISO.split('-').map(Number);
         const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
         const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
         if (yData && yData.zones) {
           let touched = false;
@@ -945,12 +531,12 @@ async function loadPrices() {
       updateKPIs(pricesData, liveDateISO);
     }
 
-    // Backfill vsYday for live data: J-1 delivery = liveDateISO − 1, file = liveDateISO − 2
+    // Backfill vsYday for live data: files are named by delivery date: J-1 = liveDateISO − 1
     if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
       try {
         const [y,m,d] = liveDateISO.split('-').map(Number);
         const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
         const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
         if (yData && yData.zones) {
           let touched = false;
@@ -979,11 +565,11 @@ async function loadPrices() {
     const offH = Math.round((parisNow - utcNowB) / 3600000);
     document.getElementById('prices-updated').textContent = `Updated ${now} ${offH === 1 ? 'CET' : offH === 2 ? 'CEST' : 'UTC' + (offH >= 0 ? '+' : '') + offH}`;
 
-    // Backfill hourlyYday for the single-zone chart overlay (J-1 delivery = today-1, file = today-2)
+    // Backfill hourlyYday for the single-zone chart overlay (J-1 = today − 1; files are named by delivery date)
     if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
       const [y,m,d] = liveDateISO.split('-').map(Number);
       const j1Auc = new Date(Date.UTC(y, m-1, d));
-      j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+      j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
       const j1FileISO = j1Auc.toISOString().slice(0,10);
       fetchHistoricalDaily(j1FileISO).then(j1 => {
         if (!j1 || !j1.zones) return;
@@ -1013,7 +599,7 @@ function updateKPIs(data, dataDateStr) {
   const minZ = data[data.length - 1];
 
   // Resolve display date for MAX/MIN labels
-  const todayISO = new Date().toISOString().slice(0,10);
+  const todayISO = pkTodayISO();
   const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
   const fmtShort = s => {
     const [y,m,d] = s.split('-');
@@ -1086,13 +672,13 @@ function updateKPIs(data, dataDateStr) {
 // Line 4 (kpi-meta) = static context (zones count for AVG, country for MAX/MIN, hours for peak/off-peak).
 async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (typeof fetchHistoricalDaily !== 'function' && typeof fetchYesterdayDaily !== 'function') return;
-  // Files are named by AUCTION date. Today's delivery file = auction (displayDate - 1).
-  // So J-1's delivery file = auction (displayDate - 2). We pass that filename directly.
+  // Files in data/history/daily/ are named by DELIVERY date, so J-1's file
+  // is simply displayDate - 1.
   let yData = null;
   if (displayDate && typeof fetchHistoricalDaily === 'function') {
     const [y,m,d] = displayDate.split('-').map(Number);
     const j1Auction = new Date(Date.UTC(y, m-1, d));
-    j1Auction.setUTCDate(j1Auction.getUTCDate() - 2);
+    j1Auction.setUTCDate(j1Auction.getUTCDate() - 1);
     const j1FileISO = j1Auction.toISOString().slice(0,10);
     yData = await fetchHistoricalDaily(j1FileISO);
   } else if (typeof fetchYesterdayDaily === 'function') {
@@ -1224,7 +810,7 @@ function filterPricesTable(text) {
 function renderPricesTable(data, dataDateStr) {
   // dataDateStr: the date the data actually comes from (may differ from DP.selectedDate)
   const fmtLong = s => { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}); };
-  const todayISO = new Date().toISOString().slice(0,10);
+  const todayISO = pkTodayISO();
   const displayDate = dataDateStr || window.DP?.selectedDate || todayISO;
   // Store globally so chart helpers (e.g. nowLineAnnotation) can determine
   // whether the current price data is for today or another day (DA settled or fwd).
@@ -1245,13 +831,13 @@ function renderPricesTable(data, dataDateStr) {
   window._pricesSortDir = window._pricesSortDir || {};
   // Default Compare Zones selection: shared global zones (default = GenMix data-driven)
   if (!window._userZones) {
-    window._userZones = new Set(getGenMixDefaultZones());
+    window._userZones = new Set(window.PK_DEFAULT_PRICE_ZONES || getGenMixDefaultZones());
   }
   // _compareZones always mirrors _userZones (global state)
   window._compareZones = window._userZones;
   // Default Daily prices table filter: same GenMix zones (data-driven, "With GenMix")
   if (window._pricesZoneFilter === undefined) {
-    window._pricesZoneFilter = new Set(getGenMixDefaultZones());
+    window._pricesZoneFilter = new Set(window.PK_DEFAULT_PRICE_ZONES || getGenMixDefaultZones());
   }
   renderPricesTableBody();
   buildZoneFilterDropdown();
@@ -1560,25 +1146,21 @@ function renderPricesTableBody() {
       if (opV.length) offPeakStr = PK_FMT.num(opV.reduce((a,b)=>a+b,0)/opV.length, 2);
     }
 
-    // % Renewables + Dominant fuel from GM_DEMO
-    const cc = (ZONE_META[z.code]||{}).cc || z.code;
-    const gmKey = z.code in GM_DEMO ? z.code : (cc in GM_DEMO ? cc : null);
+    // % Renewables + dominant fuel of the delivery day (daily history file;
+    // only zones covered by the generation fetch have them).
     let renPctStr = '–', domFuelHtml = '–';
-    if (gmKey) {
-      const mix = GM_DEMO[gmKey];
-      const total = mix.total || 1;
-      const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
-      const renP  = Math.round(renMW/total*100);
-      // Harmonised thresholds (T1 + T2): <35 red / 35-65 orange / >65 green
+    if (z.renPct != null) {
+      const renP = Math.round(z.renPct);
       renPctStr = `<span style="color:${PK_FMT.renColor(renP)};font-weight:600">${renP}%</span>`;
-      // Dominant fuel
-      let domKey = fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
-      const fm = fuelMeta[domKey] || {emoji:'', label:domKey, color:'var(--tx2)'};
+    }
+    if (z.domFuel) {
+      const domKey = String(z.domFuel).toLowerCase();
+      const fm = fuelMeta[domKey] || {emoji:'', label:z.domFuel, color:'var(--tx2)'};
       domFuelHtml = `<span style="color:${fm.color};font-size:11px">${fm.emoji} ${fm.label}</span>`;
     }
 
     // Smooth sparkline: downsample to 24pts first for clean shape
-    let rawHourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min||0, z.max||z.today*1.5);
+    let rawHourly = z.hourly && z.hourly.length ? z.hourly : [];
     rawHourly = rawHourly.filter(v=>v!=null);
     // Downsample to 24 if 96pts
     let h24spark = rawHourly;
@@ -1685,19 +1267,9 @@ function sortPricesTable(key) {
     h.forEach((v,i)=>{ if(v==null)return; const hr=Math.floor(i/nph); if(hr<8||hr>=20)opV.push(v); });
     return opV.length ? opV.reduce((a,b)=>a+b,0)/opV.length : z.today;
   };
-  const calcRenPct = z => {
-    const gmKey = z.code in GM_DEMO ? z.code : null;
-    if (!gmKey) return -1;
-    const mix = GM_DEMO[gmKey];
-    const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
-    return mix.total ? renMW/mix.total*100 : -1;
-  };
+  const calcRenPct = z => z.renPct != null ? z.renPct : -1;
   const calcDomFuel = z => {
-    const gmKey = z.code in GM_DEMO ? z.code : null;
-    if (!gmKey) return 'zz';
-    const mix = GM_DEMO[gmKey];
-    const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
-    return fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
+    return z.domFuel ? String(z.domFuel).toLowerCase() : 'zz';
   };
 
   const val = z => {
@@ -1799,12 +1371,12 @@ function buildHourlyDetail(idx, z) {
   const inner = document.getElementById(`row-detail-inner-${idx}`);
   if (!inner) return;
 
-  // Debug: verify hourly data presence
   if (!z.hourly || !z.hourly.length) {
-    console.warn('[buildHourlyDetail] No hourly data for zone', z.code, '— showing demo. _currentPriceDate=', window._currentPriceDate);
+    inner.innerHTML = '<div style="padding:18px;color:var(--tx3);font-size:12px">No intraday prices stored for ' + z.code + ' on this day.</div>';
+    return;
   }
 
-  const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+  const hourly = z.hourly && z.hourly.length ? z.hourly : [];
   const resMin = getResolution(hourly);
   const slotsPerHour = 60 / resMin;
 
@@ -2065,8 +1637,9 @@ function buildHourlyDetail(idx, z) {
               }
             }
             const nph = tblData.length > 24 ? Math.round(tblData.length/24) : 1; // pts per hour
-            const nowSlot = new Date().getHours() * nph + Math.floor(new Date().getMinutes()/(60/nph));
-            const isToday = !DP.selectedDate || DP.selectedDate === new Date().toISOString().slice(0,10);
+            const _parisHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
+            const nowSlot = _parisHM[0] * nph + Math.floor(_parisHM[1]/(60/nph));
+            const isToday = (window._currentPriceDate || pkTodayISO()) === pkTodayISO();
             return tblData.map((v,i) => {
               const hr  = Math.floor(i / nph);
               const min = (i % nph) * (60 / nph);
@@ -2146,8 +1719,8 @@ function buildHourlyDetail(idx, z) {
   if (_rowCharts[idx]) { _rowCharts[idx].destroy(); }
 
   const chartLabels = makeTimeLabels(chartData.length);
-  const curSlot = (window.DP?.selectedDate && window.DP.selectedDate !== new Date().toISOString().slice(0,10))
-    ? -1 : new Date().getHours() * (chartData.length / 24);
+  const curSlot = ((window._currentPriceDate || pkTodayISO()) !== pkTodayISO())
+    ? -1 : Math.floor(pkParisHour()) * (chartData.length / 24);
 
   const datasets = [{
     label: `${z.code} ${ccFmtDay(window._currentPriceDate)}`,
@@ -2278,10 +1851,10 @@ function buildHourlyDetail(idx, z) {
   // Lazy-fetch J-1 hourly if missing (e.g. user clicked before backfill completed,
   // or J-1 file is dated differently from current view)
   if ((!z.hourlyYday || !z.hourlyYday.length) && typeof fetchHistoricalDaily === 'function') {
-    const displayDate = window._currentPriceDate || new Date().toISOString().slice(0,10);
+    const displayDate = window._currentPriceDate || pkTodayISO();
     const [yy,mm,dd] = displayDate.split('-').map(Number);
     const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
-    j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+    j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
     const j1FileISO = j1Auc.toISOString().slice(0,10);
     fetchHistoricalDaily(j1FileISO).then(j1 => {
       if (!j1 || !j1.zones || !j1.zones[z.code] || !Array.isArray(j1.zones[z.code].hourly) || !j1.zones[z.code].hourly.length) return;
@@ -2730,12 +2303,12 @@ function _clearBreakdownTableP50(idx) {
 // Compute today's KPI values for a zone, fetch J-1 from history, and apply
 // matching border-left colour + sub-text tint based on direction (±1 €/MWh)
 async function applyExpandKPIColours(idx, z, today) {
-  const displayDate = window._currentPriceDate || window.DP?.selectedDate || new Date().toISOString().slice(0,10);
+  const displayDate = window._currentPriceDate || window.DP?.selectedDate || pkTodayISO();
   if (typeof fetchHistoricalDaily !== 'function') return;
-  // Files are named by AUCTION date. J-1 delivery file = displayDate − 2 (auction).
+  // Files are named by DELIVERY date: J-1's file = displayDate − 1.
   const [yy,mm,dd] = displayDate.split('-').map(Number);
   const j1Auc = new Date(Date.UTC(yy, mm-1, dd));
-  j1Auc.setUTCDate(j1Auc.getUTCDate() - 2);
+  j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
   const j1FileISO = j1Auc.toISOString().slice(0,10);
   const yData = await fetchHistoricalDaily(j1FileISO);
   if (!yData) return;
@@ -3236,7 +2809,7 @@ function _ccSetTitle(view, opts) {
   const selected = window._compareZones || new Set(['FR']);
   const zonesCount = selected.size;
   const refCode = window._ccSpreadRef || 'FR';
-  const dateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const dateISO = window._currentPriceDate || pkTodayISO();
   const longDate = (function(){
     try {
       const [y,m,d] = dateISO.split('-').map(Number);
@@ -3384,14 +2957,13 @@ function renderCCLines(data, selected) {
   const firstZone = data.find(z => selected.has(z.code));
   const nPts = (firstZone && firstZone.hourly && firstZone.hourly.length) ? firstZone.hourly.length : 24;
   const hours = makeTimeLabels(nPts);
-  const curHr = new Date().getHours();
-  const curIdx = Math.min(curHr, nPts - 1);
+  const curIdx = Math.min(Math.floor(pkParisHour() * nPts / 24), nPts - 1);
 
   const datasets = [];
   data.forEach((z, i) => {
     if (!selected.has(z.code)) return;
     const col = ccZoneColor(z.code, data, i);
-    const hourly = z.hourly && z.hourly.length ? z.hourly : generateDemoHourly(z.today, z.min, z.max);
+    const hourly = z.hourly && z.hourly.length ? z.hourly : [];
     datasets.push({
       label: `${z.code} · ${z.name}`, data: hourly, borderColor: col, borderWidth: 2,
       pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: col,
@@ -3642,8 +3214,8 @@ function ccOpenFullscreen() {
   const analysisHtml = inlineBanner ? inlineBanner.innerHTML : '';
 
   // ── Filters: View tabs + view-specific controls ──
-  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
-  const todayISO = new Date().toISOString().slice(0,10);
+  const currentDateISO = window._currentPriceDate || pkTodayISO();
+  const todayISO = pkTodayISO();
 
   const viewTabsHtml = ['lines','heatmap','profile','bands','spread'].map(v => `
     <button onclick="Promise.resolve(setCCView('${v}')).then(()=>ccRefreshFullscreen())" style="
@@ -4357,7 +3929,7 @@ function renderCCAnalysis(view, data, selected) {
 
   if (view === 'lines') {
     const inverted = stats.filter(s => s.spread < -5).length;
-    const dateLabel = (window._currentPriceDate && window._currentPriceDate !== new Date().toISOString().slice(0,10)) ? 'On this day' : "Today";
+    const dateLabel = (window._currentPriceDate && window._currentPriceDate !== pkTodayISO()) ? 'On this day' : "Today";
 
     if (stats.length === 1) {
       // Single zone: report intra-day shape, not cross-zone comparison
@@ -4516,7 +4088,9 @@ function renderCompareKpiStrip(data, selected) {
   // KPI 1 · Zones loaded (value = count, meta = loaded avg)
   const zonesVEl = document.getElementById('cc-kpi-zones-v');
   const zonesMetaEl = document.getElementById('cc-kpi-zones-meta');
-  if (zonesVEl) zonesVEl.innerHTML = selected.size + '<span class="kpi-unit">zones</span>';
+  // Count zones that actually have a price (a selected zone may have none,
+  // e.g. GB has no ENTSO-E day-ahead price) so this matches the chart/table.
+  if (zonesVEl) zonesVEl.innerHTML = validStats.length + '<span class="kpi-unit">zones</span>';
   if (zonesMetaEl) {
     if (validStats.length) {
       const loadedAvg = validStats.reduce((s, x) => s + x.avg, 0) / validStats.length;
@@ -5278,7 +4852,7 @@ function downloadRowChart(idx) {
   }
   const z = window._pricesSorted?.[idx];
   const code = z?.code || `zone-${idx}`;
-  const dateStr = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const dateStr = window._currentPriceDate || pkTodayISO();
   // High-res PNG with theme bg color
   const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
   const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
@@ -5359,7 +4933,7 @@ function openRowFullscreen(idx) {
     return `<option value="${origIdx}" ${origIdx === idx ? 'selected' : ''}>${zi.code} — ${safeName}</option>`;
   }).join('');
 
-  const currentDateISO = window._currentPriceDate || new Date().toISOString().slice(0,10);
+  const currentDateISO = window._currentPriceDate || pkTodayISO();
 
   // Filters split: Band (the sub-toggle equivalent) on the LEFT (fixed),
   // Date and Zone on the RIGHT.
@@ -5375,7 +4949,7 @@ function openRowFullscreen(idx) {
     <div class="pk-fs-filters-right">
       <div style="display:flex;align-items:center;gap:5px">
         <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Date</span>
-        <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${new Date().toISOString().slice(0,10)}"
+        <input type="date" id="fs-row-date-input-${idx}" value="${currentDateISO}" max="${pkTodayISO()}"
           style="background:var(--bg);border:1px solid var(--bd);color:var(--tx);font-size:11px;padding:3px 8px;border-radius:4px;font-family:inherit;cursor:pointer;color-scheme:dark">
       </div>
       <div style="display:flex;align-items:center;gap:5px">
@@ -5628,6 +5202,9 @@ function clearSlotHover(idx) {
     const fr = data.find(z => z.code === 'FR');
     const daKpi = document.getElementById('pr-home-card-da-kpi');
     const daLbl = document.getElementById('pr-home-card-da-label');
+    const daDesc = document.getElementById('pr-home-card-da-desc');
+    const nLoaded = data.filter(z => z.today != null).length;
+    if (daDesc && nLoaded) daDesc.textContent = `ENTSO-E day-ahead market · ${nLoaded} European bidding zones`;
     if (fr && fr.today != null) {
       if (daKpi) daKpi.textContent = `${fr.today.toFixed(2)} €/MWh`;
       if (daLbl) daLbl.textContent = `FR · today's average`;
@@ -5652,31 +5229,32 @@ function clearSlotHover(idx) {
     // Negative-prices card · total neg hours today across all loaded zones
     const negKpi = document.getElementById('pr-home-card-neg-kpi');
     const negLbl = document.getElementById('pr-home-card-neg-label');
-    let totalNeg = 0;
-    let zonesWithNeg = 0;
+    // KPI = negative hours in the most-affected zone (a sum across zones
+    // mixes zone-hours with clock hours and isn't readable).
+    let zonesWithNeg = 0, topZone = null, topH = 0;
     data.forEach(z => {
       if (!z.hourly || !z.hourly.length) return;
       const n = z.hourly.filter(v => v != null && v < 0).length;
-      if (n > 0) zonesWithNeg++;
-      totalNeg += n;
+      if (!n) return;
+      zonesWithNeg++;
+      const h = n * 24 / z.hourly.length;
+      if (h > topH) { topH = h; topZone = z.code; }
     });
-    // Convert slot count to hours (z.nph slots per hour)
-    const nph = (data[0] && data[0].nph) || 4;
-    const negHours = totalNeg / nph;
     if (negKpi) {
-      if (negHours === 0) {
-        negKpi.textContent = '0 h';
-        negKpi.style.color = 'var(--up)';
-      } else {
-        negKpi.textContent = `${negHours.toFixed(negHours % 1 === 0 ? 0 : 1)} h`;
-        negKpi.style.color = 'var(--down)';
-      }
+      negKpi.textContent = `${topH.toFixed(topH % 1 === 0 ? 0 : 2)} h`;
+      negKpi.style.color = topH === 0 ? 'var(--up)' : 'var(--down)';
     }
     if (negLbl) {
       negLbl.textContent = zonesWithNeg > 0
-        ? `Today · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`
+        ? `Today · max ${topZone} · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`
         : `Today · no negative prices`;
     }
+  }
+
+  // J-1 daily average: rows carry vsYday (= today − J-1), not J-1 itself.
+  function _yday(z) {
+    if (z.yesterday != null) return z.yesterday;
+    return (z.vsYday != null && z.today != null) ? z.today - z.vsYday : null;
   }
 
   // ── 2 · Snapshot KPI strip (5 cards) ──
@@ -5692,8 +5270,8 @@ function clearSlotHover(idx) {
     const fr = loaded.find(z => z.code === 'FR');
     if (fr) {
       setV('pr-home-kpi-fr-v', `${fr.today.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
-      if (fr.yesterday != null) {
-        const diff = fr.today - fr.yesterday;
+      if (_yday(fr) != null) {
+        const diff = fr.today - _yday(fr);
         const sign = diff >= 0 ? '▲ +' : '▼ ';
         const col = diff >= 0 ? 'var(--down)' : 'var(--up)';
         const meta = document.getElementById('pr-home-kpi-fr-meta');
@@ -5726,7 +5304,7 @@ function clearSlotHover(idx) {
     const sp = pricey.today - cheap.today;
     const spPct = cheap.today > 0 ? (sp / cheap.today) * 100 : 0;
     setV('pr-home-kpi-spread-v', `${sp.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
-    setT('pr-home-kpi-spread-meta', `${spPct.toFixed(0)}% of cheapest`);
+    setT('pr-home-kpi-spread-meta', `${pricey.code} − ${cheap.code} · ${loaded.length} zones`);
   }
 
   // ── 3 · Market Read banner ──
@@ -5744,10 +5322,12 @@ function clearSlotHover(idx) {
 
     // J-1 movement of the panel average (if available)
     let panelMove = '';
-    const withYday = loaded.filter(z => z.yesterday != null);
+    const withYday = loaded.filter(z => _yday(z) != null);
     if (withYday.length >= 3) {
-      const yAvg = withYday.reduce((s, z) => s + z.yesterday, 0) / withYday.length;
-      const dAvg = avg - yAvg;
+      // Same-zone comparison: avg of today vs avg of J-1 over the zones that have both
+      const tAvg = withYday.reduce((s, z) => s + z.today, 0) / withYday.length;
+      const yAvg = withYday.reduce((s, z) => s + _yday(z), 0) / withYday.length;
+      const dAvg = tAvg - yAvg;
       const sign = dAvg >= 0 ? '+' : '';
       const col = dAvg >= 0 ? '#ED6965' : '#14D3A9';
       panelMove = ` EU panel <span style="color:${col};font-weight:600">${sign}${dAvg.toFixed(2)} €/MWh vs J-1</span>.`;
@@ -5764,11 +5344,15 @@ function clearSlotHover(idx) {
     }
 
     const spread = pricey.today - cheap.today;
-    const spreadPct = cheap.today > 0 ? (spread / cheap.today) * 100 : 0;
+    // Regime from the dispersion of the whole panel (coefficient of
+    // variation), not max/min: one near-zero outlier (SE, NO) made the old
+    // "% of cheapest" ratio explode and every day read "highly fragmented".
+    const sd = Math.sqrt(loaded.reduce((s, z) => s + (z.today - avg) ** 2, 0) / loaded.length);
+    const cv = Math.abs(avg) > 1 ? sd / Math.abs(avg) : 0;
     let regime;
-    if (spreadPct > 100) regime = `<b>Highly fragmented European zones</b>`;
-    else if (spreadPct > 40) regime = `<b>Pronounced cross-zone divergence</b>`;
-    else if (spreadPct > 15) regime = `<b>Moderate cross-zone gap</b>`;
+    if (cv > 0.5) regime = `<b>Highly fragmented European zones</b>`;
+    else if (cv > 0.3) regime = `<b>Pronounced cross-zone divergence</b>`;
+    else if (cv > 0.15) regime = `<b>Moderate cross-zone gap</b>`;
     else regime = `<b>Tightly aligned zones</b>`;
 
     host.innerHTML = `
@@ -5783,76 +5367,24 @@ function clearSlotHover(idx) {
     const canvas = document.getElementById('pr-home-intraday-canvas');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    // Tear down any previous instance
-    if (window._prHomeIntradayChart) {
-      try { window._prHomeIntradayChart.destroy(); } catch (_) {}
-      window._prHomeIntradayChart = null;
+    // Zone filter chips (default: the 7 home zones)
+    if (!window._prHomeZones) window._prHomeZones = new Set(HOME_ZONES);
+    const chipHost = document.getElementById('pr-home-zone-chips');
+    if (chipHost) {
+      const avail = data.filter(z => z.hourly && z.hourly.length).map(z => z.code);
+      const order = HOME_ZONES.filter(c => avail.includes(c)).concat(avail.filter(c => !HOME_ZONES.includes(c)).sort());
+      chipHost.innerHTML = order.map(c => {
+        const on = window._prHomeZones.has(c);
+        return `<button class="pk-gf-btn${on ? ' active' : ''}" style="padding:2px 8px;font-size:10px" onclick="prHomeToggleZone('${c}')">${c}</button>`;
+      }).join('');
     }
-
-    // Pick zones from HOME_ZONES that actually have data today
-    const zones = HOME_ZONES
-      .map(code => data.find(z => z.code === code))
-      .filter(z => z && z.hourly && z.hourly.length);
-    if (!zones.length) return;
-
-    const nPts = zones[0].hourly.length;
-    const labels = (typeof makeTimeLabels === 'function') ? makeTimeLabels(nPts) : Array.from({length:nPts}, (_, i) => `${String(Math.floor(i*24/nPts)).padStart(2,'0')}h`);
-
-    // Build datasets · each zone gets its colour from the zone colour map
-    const datasets = zones.map((z, i) => {
-      const col = (typeof ccZoneColor === 'function') ? ccZoneColor(z.code, data, data.indexOf(z))
-                : (window._zoneColorMap && window._zoneColorMap[z.code]) || '#4A6280';
-      return {
-        label: z.code,
-        data: z.hourly,
-        borderColor: col,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: col,
-        fill: false,
-        tension: 0,
-        spanGaps: true,
-      };
-    });
-
     // Update card title with zone count
+    const zonesOn = [...window._prHomeZones].filter(c => data.some(z => z.code === c && z.hourly && z.hourly.length));
     const title = document.getElementById('pr-home-chart-title');
-    if (title) title.textContent = `${zones.length} zone${zones.length > 1 ? 's' : ''} · today vs intraday baseline`;
-
-    const cfg = {
-      type: 'line',
-      data: { labels, datasets },
-      plugins: (typeof ccBuildCommonShading === 'function') ? [ccBuildCommonShading(nPts)] : [],
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: {
-            display: true, position: 'bottom',
-            labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, padding: 10 }
-          },
-          tooltip: {
-            mode: 'index', intersect: false,
-            callbacks: {
-              title: c => c[0].label,
-              label: c => c.raw != null ? ` ${c.dataset.label}: ${c.raw.toFixed(1)} €/MWh` : null,
-            }
-          }
-        },
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 12 } },
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', callback: v => v.toFixed(0) }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } }, grace: '12%' }
-        }
-      }
-    };
-
-    try {
-      window._prHomeIntradayChart = new Chart(canvas, cfg);
-    } catch (e) {
-      console.warn('[prRenderHome] intraday chart build failed', e);
-    }
+    if (title) title.textContent = `${zonesOn.length} zone${zonesOn.length > 1 ? 's' : ''} · 15-min day-ahead profile`;
+    PKW.draw('da-intraday', 'pr-home-intraday-canvas', { codes: [...window._prHomeZones] }).then(() => {
+      setTimeout(() => { addFullscreen('pr-home-intraday-canvas'); addDownload('pr-home-intraday-canvas', 'intraday-' + (window._currentPriceDate || '')); }, 60);
+    });
   }
 
   // ── 5 · Recent anomalies table (last 7 days · |Z| > 2 vs 30D baseline) ──
@@ -5990,7 +5522,7 @@ function clearSlotHover(idx) {
     // Update subtitle date
     const subtitle = document.getElementById('pr-home-subtitle');
     if (subtitle) {
-      const dateStr = _fmtLongDate(window._currentPriceDate || new Date().toISOString().slice(0,10));
+      const dateStr = _fmtLongDate(window._currentPriceDate || pkTodayISO());
       subtitle.textContent = `European power markets · ${dateStr}`;
     }
     if (!Array.isArray(data) || !data.length) {
@@ -6002,11 +5534,76 @@ function clearSlotHover(idx) {
     _renderKpiStrip(data);
     _renderMarketRead(data);
     _renderIntradayChart(data);
+    if (typeof window.prRenderHomeExtra === 'function') window.prRenderHomeExtra(data);
     // Anomalies table runs async (fetches 7 days of JSON)
     _renderAnomaliesTable(data).catch(e => console.warn('[prRenderHome] anomalies failed', e));
   }
 
+  // ── Day-ahead intraday profile (page + dashboard) ──
+  const DA_GROUPS = {
+    core: ['FR', 'DE_LU', 'ES', 'BE', 'NL', 'IT_NORD', 'PT'],
+    FR: ['FR'], 'FR-DE': ['FR', 'DE_LU'],
+    CWE: ['FR', 'DE_LU', 'BE', 'NL', 'AT'],
+    iberia: ['FR', 'ES', 'PT'],
+    south: ['FR', 'IT_NORD', 'CH', 'ES'],
+    nordic: ['DK_W', 'DK_E', 'NO_1', 'SE', 'FI'],
+    cee: ['DE_LU', 'PL', 'CZ', 'SK', 'HU', 'RO'],
+  };
+  PKW.register({
+    id: 'da-intraday', title: 'Day-ahead intraday profile', category: 'prices', source: 'ENTSO-E',
+    page: 'prices', pageCanvas: 'pr-home-intraday-canvas', size: { w: 8, h: 5 },
+    desc: '15-minute day-ahead prices of a group of zones for the current delivery day.',
+    params: [{ key: 'group', label: 'Zones', inTitle: true, options: [
+      ['core', 'Main zones'], ['FR', 'France'], ['FR-DE', 'France · Germany'], ['CWE', 'CWE'], ['iberia', 'France · Iberia'],
+      ['south', 'France · Italy · Switzerland · Spain'], ['nordic', 'Nordics'], ['cee', 'Central-East Europe']] }],
+    defaults: { group: 'core' },
+    async draw(cid, p) {
+      const data = await PKW.waitFor(() => { const d = window._pricesSorted || (typeof pricesData !== 'undefined' ? pricesData : null); return d && d.length ? d : null; });
+      if (!data) { noDataMsg(cid, 'Day-ahead prices not loaded', 'ENTSO-E'); return null; }
+      const codes = p.codes || DA_GROUPS[p.group] || DA_GROUPS.core;
+      const zones = codes.map(code => data.find(z => z.code === code)).filter(z => z && z.hourly && z.hourly.length);
+      if (!zones.length) { noDataMsg(cid, 'No prices for these zones today', 'ENTSO-E'); return null; }
+      const nPts = zones[0].hourly.length;
+      const labels = makeTimeLabels(nPts);
+      const datasets = zones.map(z => {
+        const col = ccZoneColor(z.code, data, data.indexOf(z));
+        return { label: z.code, data: z.hourly, borderColor: col, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
+          pointHoverBackgroundColor: col, fill: false, tension: 0, spanGaps: true };
+      });
+      const a = nowLineAnnotation({ slots: nPts, labels, chartDate: window._currentPriceDate });
+      mkChart(cid, {
+        type: 'line',
+        data: { labels, datasets },
+        plugins: [ccBuildCommonShading(nPts)],
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, padding: 10 } },
+            tooltip: { mode: 'index', intersect: false, callbacks: {
+              title: c => c[0].label,
+              label: c => c.raw != null ? ` ${c.dataset.label}: ${c.raw.toFixed(1)} €/MWh` : null,
+            } },
+            zoom: ZOOM_CFG,
+            annotation: { annotations: a ? { nowLine: a } : {} },
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 12 } },
+            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', callback: v => v.toFixed(0) }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } }, grace: '12%' },
+          },
+        },
+      });
+      return { sub: 'delivery ' + (window._currentPriceDate || '') };
+    },
+  });
+
   window.prRenderHome = prRenderHome;
+  window.prHomeToggleZone = function (code) {
+    const s = window._prHomeZones || new Set(HOME_ZONES);
+    if (s.has(code)) { if (s.size > 1) s.delete(code); } else s.add(code);
+    window._prHomeZones = s;
+    _renderIntradayChart(window._pricesSorted || []);
+  };
 
   // Auto-render when the overview panel is initially active (page load)
   function _maybeAutoRender() {

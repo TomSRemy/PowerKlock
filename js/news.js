@@ -1,73 +1,53 @@
+// News come from data/news.json, written every 3 hours by
+// scripts/fetch_news.py (GitHub Actions) from public RSS/Atom feeds.
+// No client-side proxy and no placeholder articles: if the file is missing
+// the page says so.
 async function loadNews() {
   window._newsLoaded = true;
-  const allItems = [];
-
-  // Try RSS feeds via proxy
-  const fetchFeed = async (src) => {
-    try {
-      const resp = await fetch(`${RSS_PROXY}${encodeURIComponent(src.url)}`);
-      const data = await resp.json();
-      if (data.status !== 'ok') return [];
-      return (data.items || []).slice(0, 6).map(item => ({
-        source: src.name,
-        cls: src.cls,
-        title: item.title,
-        snippet: item.description?.replace(/<[^>]+>/g,'').slice(0,150) + '...',
-        link: item.link,
-        date: new Date(item.pubDate),
-        tags: src.tags,
-      }));
-    } catch { return []; }
-  };
-
-  // Fetch all in parallel
-  const results = await Promise.all(RSS_SOURCES.map(fetchFeed));
-  results.forEach(items => allItems.push(...items));
-
-  if (allItems.length === 0) {
-    // Fallback: demo news items
-    allItems.push(...getDemoNews());
+  const badge = document.getElementById('news-updated');
+  try {
+    const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
+      .sort((a, b) => b.date - a.date);
+    const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
+    if (badge) badge.textContent = `${newsData.length} articles · ${new Set(newsData.map(n => n.source)).size} sources · ${upd}`;
+  } catch (e) {
+    newsData = [];
+    if (badge) badge.textContent = 'News feed unavailable';
   }
-
-  newsData = allItems.sort((a,b) => b.date - a.date);
-  document.getElementById('news-updated').textContent = `${newsData.length} articles loaded`;
   renderNews(newsData);
 }
 
-function getDemoNews() {
-  const now = new Date();
-  const ago = (h) => new Date(now - h * 3600000);
-  return [
-    { source:'ENTSO-E', cls:'entsoe', title:'ENTSO-E publishes Winter Outlook 2026: European power system remains resilient', snippet:'The Winter Outlook 2026 confirms European adequacy margins remain above threshold in all scenarios, with interconnection capacity playing a key role.', link:'https://www.entsoe.eu/news', date:ago(1), tags:['power','regulation'] },
-    { source:'RTE', cls:'rte', title:'Record solar curtailment in France: 2.1 TWh lost in Q1 2026', snippet:'RTE publishes its Q1 2026 report. PV overproduction during off-peak hours drove negative prices over 312 hours.', link:'https://www.rte-france.com', date:ago(2), tags:['power','markets'] },
-    { source:'ACER', cls:'acer', title:'ACER recommends reform of capacity mechanism design across EU member states', snippet:'In its latest market monitoring report, ACER identifies design inconsistencies in national capacity mechanisms that distort cross-border competition.', link:'https://www.acer.europa.eu', date:ago(4), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'CRE opens consultation on network tariffs for the 2025-2028 period', snippet:'The French regulator launches a public consultation on the revision of TURPE tariffs applicable to distribution network operators.', link:'https://www.cre.fr', date:ago(6), tags:['regulation','fr'] },
-    { source:'ENTSO-E', cls:'entsoe', title:'Cross-border capacity allocation reaches record levels in Q1 2026', snippet:'The Cross-Border Capacity Allocation report shows that available interconnection capacity increased by 12% year-on-year in the first quarter.', link:'https://www.entsoe.eu/news', date:ago(8), tags:['power','markets'] },
-    { source:'RTE', cls:'rte', title:'Nuclear: EPR2 programme update — six new units confirmed in Normandy', snippet:'Following the government review, RTE confirms the grid connection timeline for the first EPR2 unit is maintained at 2037 for the Penly site.', link:'https://www.rte-france.com', date:ago(10), tags:['power','fr'] },
-    { source:'ACER', cls:'acer', title:'European gas storage reaches 58% ahead of summer injection season', snippet:'GIE data shows EU aggregate storage at 58.3%, slightly below the 5-year average of 61.2% for this time of year, ACER notes in weekly brief.', link:'https://www.acer.europa.eu', date:ago(14), tags:['gas','markets'] },
-    { source:'ENTSO-E', cls:'entsoe', title:'REMIT: 47 new urgent market messages published this week across EU TSOs', snippet:'TSOs across Germany, France, Italy and Poland filed 47 UMMs this week, predominantly affecting gas-fired generation assets.', link:'https://www.entsoe.eu/news', date:ago(18), tags:['regulation','markets'] },
-    { source:'CRE', cls:'cre', title:'Aggregation: publication of the regulatory framework for BESS in the capacity market', snippet:'CRE clarifies the eligibility conditions for battery storage systems in the French capacity mechanism starting 2027.', link:'https://www.cre.fr', date:ago(22), tags:['regulation','fr','power'] },
-    { source:'RTE', cls:'rte', title:'Monthly report: France\'s export balance down 18% in April 2026', snippet:'RTE publishes its monthly report. The export balance stands at 3.2 TWh for April 2026, down from the same month last year.', link:'https://www.rte-france.com', date:ago(26), tags:['power','markets','fr'] },
-  ];
+function _newsEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function renderNews(items) {
-  const filtered = newsFilter === 'all' ? items : items.filter(i => i.tags?.includes(newsFilter));
+  const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
+  const filtered = (items || []).filter(i =>
+    (newsFilter === 'all' || (i.tags || []).includes(newsFilter)) &&
+    (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   const grid = document.getElementById('news-grid');
+  if (!items || !items.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No news available — data/news.json could not be loaded.</div>';
+    return;
+  }
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No articles for this filter.</div>';
     return;
   }
   grid.innerHTML = filtered.map(item => {
-    const timeAgo = formatTimeAgo(item.date);
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${t}</span>`).join(' ');
-    return `<a class="news-card" href="${item.link}" target="_blank" rel="noopener">
+    const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
+    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsEsc(t)}</span>`).join(' ');
+    return `<a class="news-card" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
-        <span class="news-source ${item.cls}">${item.source}</span>
-        <span class="news-time">${timeAgo}</span>
+        <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
+        <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${item.title}</div>
-      <div class="news-snippet">${item.snippet}</div>
+      <div class="news-title">${_newsEsc(item.title)}</div>
+      <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}</div>
     </a>`;
   }).join('');
@@ -91,44 +71,39 @@ function formatTimeAgo(date) {
 // OVERVIEW
 // ════════════════════════════════════════════
 function loadOverview() {
-  const prices = pricesData.length > 0 ? pricesData : getDemoData();
-  const fr = prices.find(d => d.code === 'FR') || prices[0];
-  const de = prices.find(d => d.code === 'DE_LU') || prices[1];
-  const be = prices.find(d => d.code === 'BE') || prices[2];
-
+  const prices = (typeof pricesData !== 'undefined' && pricesData) ? pricesData : [];
+  const fr = prices.find(d => d.code === 'FR'), de = prices.find(d => d.code === 'DE_LU'), be = prices.find(d => d.code === 'BE');
+  const P = window.PKC, ttf = P && P.last('ttf'), eua = P && P.last('eua'), fx = P && P.last('eurusd');
   document.getElementById('overview-prices').innerHTML = [
-    { label:'🇫🇷 France DA', val:fr?.today, unit:'€/MWh' },
-    { label:'🇩🇪 Germany DA', val:de?.today, unit:'€/MWh' },
-    { label:'🇧🇪 Belgium DA', val:be?.today, unit:'€/MWh' },
-    { label:'TTF D+1', val:45.14, unit:'€/MWh' },
-    { label:'EUA', val:74.09, unit:'€/t' },
-    { label:'EUR/USD', val:1.1680, unit:'' },
+    { label:'🇫🇷 France DA', val:fr && fr.today, unit:'€/MWh' },
+    { label:'🇩🇪 Germany DA', val:de && de.today, unit:'€/MWh' },
+    { label:'🇧🇪 Belgium DA', val:be && be.today, unit:'€/MWh' },
+    { label:'TTF DA', val:ttf && ttf.v, unit:'€/MWh' },
+    { label:'EUA ' + (P ? P.contractLabel('eua') : ''), val:eua && eua.v, unit:'€/t' },
+    { label:'EUR/USD', val:fx && fx.v, unit:'', dp:4 },
   ].map(r => `<tr>
     <td style="font-family:Inter;text-align:left;color:var(--text2)">${r.label}</td>
-    <td style="font-weight:600">${r.val?.toFixed(2) || '--'}</td>
+    <td style="font-weight:600">${r.val != null ? r.val.toFixed(r.dp || 2) : '--'}</td>
     <td style="color:var(--text3);font-size:11px">${r.unit}</td>
   </tr>`).join('');
-
+  const pct = l => l && l.pct != null ? `${l.pct >= 0 ? 'up' : 'down'} ${Math.abs(l.pct).toFixed(2)}% vs prior close` : '';
   document.getElementById('market-status').innerHTML = `
     <div style="margin-bottom:10px"><span style="color:var(--accent)">⚡ Power</span><br>
-    FR price ${fr?.today < 10 ? 'very low' : fr?.today < 50 ? 'below average' : 'elevated'} at ${fr?.today?.toFixed(1)} €/MWh. ${fr?.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}</div>
+    ${fr ? `FR day-ahead at ${fr.today.toFixed(2)} €/MWh. ${fr.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}` : 'Day-ahead prices not loaded.'}</div>
     <div style="margin-bottom:10px"><span style="color:#C4A57B">⛽ Gas</span><br>
-    TTF Day-Ahead at 45.14 €/MWh, up 2.35% vs prior close.</div>
+    ${ttf ? `TTF day-ahead at ${ttf.v.toFixed(2)} €/MWh, ${pct(ttf)}.` : 'Gas data not loaded.'}</div>
     <div><span style="color:#A87DC4">🌿 Carbon</span><br>
-    EUA at 74.09 €/t, near 6-month average.</div>
+    ${eua ? `EUA ${P.contractLabel('eua')} at ${eua.v.toFixed(2)} €/t, ${pct(eua)}.` : 'Carbon data not loaded.'}</div>
   `;
 }
 
 // ════════════════════════════════════════════
 // CONVERTER
 // ════════════════════════════════════════════
-const CONV_FACTORS = {
-  'MW':  { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
-  'GW':  { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
-  'MWh': { MW:1, GW:0.001, MWh:1, GWh:0.001, TWh:0.000001 },
-  'GWh': { MW:1000, GW:1, MWh:1000, GWh:1, TWh:0.001 },
-  'TWh': { MW:1000000, GW:1000, MWh:1000000, GWh:1000, TWh:1 },
-};
+// Power and energy are converted within their own family only: MW → MWh
+// needs a duration, so those results are labelled with the assumption.
+const CONV_POWER = { MW: 1, GW: 1e3 };                     // in MW
+const CONV_ENERGY = { MWh: 1, GWh: 1e3, TWh: 1e6 };        // in MWh
 
 function setConvUnit(unit, btn) {
   convUnit = unit;
@@ -137,22 +112,32 @@ function setConvUnit(unit, btn) {
   updateConverter();
 }
 
+function _convFmt(v) {
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  if (a >= 1e6) return v.toExponential(3);
+  return v.toLocaleString('en-GB', { maximumFractionDigits: a >= 100 ? 1 : a >= 1 ? 3 : 6 });
+}
+
 function updateConverter() {
   const val = parseFloat(document.getElementById('conv-input').value) || 0;
-  const factors = CONV_FACTORS[convUnit] || CONV_FACTORS['MW'];
-  const units = ['MW','GW','MWh','GWh','TWh'];
-  const descs = {
-    'MW':'Megawatt (capacity)','GW':'Gigawatt = 1,000 MW',
-    'MWh':'Megawatt-hour (energy)','GWh':'Gigawatt-hour = 1,000 MWh','TWh':'Terawatt-hour = 1,000 GWh'
-  };
-  document.getElementById('conv-results').innerHTML = units.map(u => {
-    const result = val * (factors[u] || 1);
-    const disp = result >= 1e6 ? result.toExponential(2) : result >= 1000 ? result.toLocaleString('en-GB', {maximumFractionDigits:1}) : result.toFixed(result < 0.01 ? 6 : 3);
-    const active = u === convUnit ? 'border-color:var(--accent)' : '';
-    return `<div class="conv-result" style="${active}" onclick="setConvUnit('${u}', document.querySelectorAll('.conv-tab')[${units.indexOf(u)}])">
-      <div class="conv-result-label">${u}</div>
-      <div class="conv-result-value">${disp}</div>
-      <div class="conv-result-desc">${descs[u]}</div>
+  const isPower = convUnit in CONV_POWER;
+  const base = val * (isPower ? CONV_POWER[convUnit] : CONV_ENERGY[convUnit]);   // MW or MWh
+  const cards = [];
+  if (isPower) {
+    Object.keys(CONV_POWER).forEach(u => cards.push({ u, v: base / CONV_POWER[u], d: u === 'MW' ? 'Megawatt (power)' : 'Gigawatt = 1,000 MW' }));
+    cards.push({ u: 'MWh / hour', v: base, d: 'energy delivered in one hour at full output' });
+    cards.push({ u: 'TWh / year', v: base * 8760 / 1e6, d: 'at 100% load factor (8,760 h)' });
+  } else {
+    Object.keys(CONV_ENERGY).forEach(u => cards.push({ u, v: base / CONV_ENERGY[u], d: { MWh: 'Megawatt-hour (energy)', GWh: 'Gigawatt-hour = 1,000 MWh', TWh: 'Terawatt-hour = 1,000 GWh' }[u] }));
+    cards.push({ u: 'MW average', v: base / 8760, d: 'if spread evenly over one year' });
+  }
+  document.getElementById('conv-results').innerHTML = cards.map(c => {
+    const active = c.u === convUnit ? 'border-color:var(--accent)' : '';
+    return `<div class="conv-result" style="${active}">
+      <div class="conv-result-label">${c.u}</div>
+      <div class="conv-result-value">${_convFmt(c.v)}</div>
+      <div class="conv-result-desc">${c.d}</div>
     </div>`;
   }).join('');
 }
@@ -166,7 +151,7 @@ function updateCapacity() {
   const fLH = (lf/100) * 8760;
 
   document.getElementById('cap-results').innerHTML = `
-    <div class="conv-result"><div class="conv-result-label">Annual Production</div><div class="conv-result-value">${(annualTWh).toFixed(3)} TWh</div><div class="conv-result-desc">= ${annualGWh.toFixed(1)} GWh</div></div>
+    <div class="conv-result"><div class="conv-result-label">Annual Production</div><div class="conv-result-value">${annualTWh.toLocaleString('en-GB', { maximumFractionDigits: 3 })} TWh</div><div class="conv-result-desc">= ${annualGWh.toLocaleString('en-GB', { maximumFractionDigits: 1 })} GWh</div></div>
     <div class="conv-result"><div class="conv-result-label">Full-Load Hours</div><div class="conv-result-value">${Math.round(fLH).toLocaleString()}</div><div class="conv-result-desc">hours/year</div></div>
     <div class="conv-result" style="grid-column:1/-1"><div class="conv-result-label">Formula</div><div style="font-size:12px;color:var(--text2);margin-top:4px;font-family:JetBrains Mono">${mw} MW × ${lf}% × 8,760 h = ${Math.round(annualMWh).toLocaleString()} MWh/year</div></div>
   `;
@@ -174,7 +159,8 @@ function updateCapacity() {
 
 function setLF(val, btn) {
   document.getElementById('cap-lf').value = val;
-  document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+  // Only this button group (the selector used to clear every .day-tab on the site).
+  btn.parentNode.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   updateCapacity();
 }
@@ -195,66 +181,21 @@ const PAGE_LOADERS = {
   // never wired to render once on first page visit, so the chart stayed an
   // empty canvas until the user happened to click a pill button. Each loader
   // below now also fires that first render.
-  renewables: () => {
-    loadRenewables();
-    if (typeof renderHistRenTrend === 'function') renderHistRenTrend();
-    if (typeof renderHistRenStack === 'function') renderHistRenStack();
-  },
+  renewables: () => loadRenewables(),
   nuclear:    () => drawNuclear(),
-  imbalance:  () => {
-    drawImbalance();
-    if (typeof renderHistImb === 'function') renderHistImb();
-    if (typeof renderHistFCR === 'function') renderHistFCR();
-  },
+  imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
-  eua:        () => {
-    drawEUA();
-    if (typeof renderHistEUA === 'function') renderHistEUA();
-  },
+  eua:        () => drawEUA(),
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
+  remit:      () => renderRemit(),
   wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
 };
 
-// ── WEATHER (Météo Énergie / HDD-CDD) ──────────────────────────────────
-// No weather data source is wired up yet (no API key/fetch pipeline
-// exists for Open-Meteo in this repo). Rather than leave the page either
-// crashing (loadWeather was called but never defined) or showing
-// hardcoded numbers with no indication they're fake, both loaders put
-// the page shell into an honest "not connected yet" state, consistent
-// with how the EUA/Imbalance/FCR stub sections already do it.
-function setWxVar(v, btn) {
-  window._wxVar = v;
-  document.querySelectorAll('#wx-var-btns .day-tab').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-}
-
-function loadWeather() {
-  const upd = document.getElementById('wx-upd');
-  if (upd) upd.textContent = 'Open-Meteo · not connected';
-  const cards = document.getElementById('wx-cards');
-  if (cards) cards.innerHTML = '<div style="grid-column:1/-1;color:var(--text3);padding:20px;text-align:center;font-size:12px">Open-Meteo integration not wired up yet.</div>';
-  if (typeof noDataMsg === 'function') {
-    noDataMsg('wx-forecast-canvas', 'Open-Meteo forecast not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
-  }
-  const tbody = document.getElementById('wx-city-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
-}
-
-function renderHDD() {
-  ['hdd-kpi-today', 'hdd-kpi-cum', 'hdd-kpi-cdd', 'hdd-kpi-temp'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.firstChild.textContent = '--';
-  });
-  if (typeof noDataMsg === 'function') {
-    noDataMsg('hdd-canvas', 'HDD/CDD history not connected', 'Needs an Open-Meteo fetch pipeline, not covered by backfill.py');
-  }
-  const tbody = document.getElementById('hdd-tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No weather data source connected yet</td></tr>';
-}
+// Weather pages: see js/meteo.js
 
 // Patch showPage to handle new sections
 // showPage patch applied after all scripts load
@@ -287,16 +228,6 @@ const FUELS = [
   {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},
   {k:'solar',l:'Solar',c:'#FBBF24'},{k:'hydro',l:'Hydro',c:'#94D2BD'},
   {k:'fossil',l:'Fossil',c:'#ED6965'},{k:'biomass',l:'Biomass',c:'#94D2BD'},
-];
-const WX_CITIES = [
-  {name:'Paris',region:'Ile-de-France',lat:48.85,lon:2.35,norm:11.0},
-  {name:'Lyon',region:'Auvergne-Rhone-Alpes',lat:45.74,lon:4.83,norm:12.5},
-  {name:'Marseille',region:'PACA',lat:43.30,lon:5.37,norm:16.0},
-  {name:'Bordeaux',region:'Nouvelle-Aquitaine',lat:44.84,lon:-0.58,norm:13.2},
-  {name:'Strasbourg',region:'Grand Est',lat:48.57,lon:7.75,norm:10.5},
-  {name:'Lille',region:'Hauts-de-France',lat:50.63,lon:3.07,norm:10.0},
-  {name:'Nantes',region:'Pays de la Loire',lat:47.22,lon:-1.55,norm:12.8},
-  {name:'Grenoble',region:'Auvergne-Rhone-Alpes',lat:45.18,lon:5.72,norm:11.2},
 ];
 const GO_CURRENT = [
   {tech:'Wind',cal:'Cal-26',bid:.51,ask:.55,delta:-.02},

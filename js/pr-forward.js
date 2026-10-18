@@ -22,8 +22,8 @@
   var COUNTRIES = [
     { code: 'FR', label: 'France', flag: '🇫🇷', colour: '#14D3A9' },
     { code: 'UK', label: 'UK', flag: '🇬🇧', colour: '#3FA6B4' },
-    { code: 'DE', label: 'Allemagne', flag: '🇩🇪', colour: '#EE9B00' },
-    { code: 'NL', label: 'Pays-Bas', flag: '🇳🇱', colour: '#A87DC4' }
+    { code: 'DE', label: 'Germany', flag: '🇩🇪', colour: '#EE9B00' },
+    { code: 'NL', label: 'Netherlands', flag: '🇳🇱', colour: '#A87DC4' }
   ];
   var PALETTE = ['#14D3A9', '#EE9B00', '#3FA6B4', '#A87DC4', '#ED6965', '#FBBF24', '#7B4B9C', '#94D2BD'];
 
@@ -308,10 +308,10 @@
         '</tr>';
     }).join('');
     host.innerHTML = '<div class="table-wrap">' +
-      '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Tableau forward · tous les tenors</span></div>' +
+      '<div class="table-header"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.06em;text-transform:uppercase">Forward table · all tenors</span></div>' +
       '<table style="font-size:11px">' +
-      '<thead><tr><th style="text-align:left">PRODUIT</th><th style="text-align:left">CONTRAT</th>' +
-      '<th style="text-align:right">VALEUR (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR S-1</th></tr></thead>' +
+      '<thead><tr><th style="text-align:left">PRODUCT</th><th style="text-align:left">CONTRACT</th>' +
+      '<th style="text-align:right">VALUE (J-1)</th><th style="text-align:right">VAR J-1</th><th style="text-align:right">VAR 1W</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>';
   }
 
@@ -472,7 +472,7 @@
         active: isOn,
         color: c.colour,
         onClick: "window._pfToggleCmpZone('" + c.code + "')",
-        title: isOn ? 'Masquer ' + c.label : 'Afficher ' + c.label,
+        title: isOn ? 'Hide ' + c.label : 'Show ' + c.label,
       });
     }).join('');
   }
@@ -516,9 +516,21 @@
     if (startIdx < 0) startIdx = 0;
     var dates = allDates.slice(startIdx);
     var visibleCountries = PF.cmpZones ? COUNTRIES.filter(function (c) { return PF.cmpZones.has(c.code); }) : COUNTRIES;
+    // GBP contracts are converted to EUR at each day's GBP/EUR close (SEFE FX),
+    // so every curve shares one axis. Full FX history loads on demand.
+    var PKC = window.PKC, fullFx = PKC && PKC.loadFull && !PF._fxFull;
+    if (fullFx) { PF._fxFull = true; PKC.loadFull().then(function () { renderCompareChart(); }); }
+    var gbpEur = function (d) {
+      if (!PKC) return null;
+      var g = PKC.valueOn('gbpusd', d, true), e = PKC.valueOn('eurusd', d, true);
+      return g && e ? g / e : null;
+    };
     var datasets = visibleCountries.map(function (c) {
       var cs = (PF.series.countries && PF.series.countries[c.code]) || {};
       var vals = ((cs.forwardCurve && cs.forwardCurve[PF.cmpTenor]) || []).slice(startIdx);
+      if ((cs.currency || (c.code === 'UK' ? 'GBP' : 'EUR')) === 'GBP') {
+        vals = vals.map(function (v, i) { var r = gbpEur(dates[i]); return v == null || r == null ? null : Math.round(v * r * 100) / 100; });
+      }
       return { label: c.flag + ' ' + c.label, data: vals, borderColor: c.colour, borderWidth: 1.5,
         pointRadius: 0, tension: 0, fill: false, spanGaps: true };
     });
@@ -531,7 +543,7 @@
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, maxTicksLimit: 12, autoSkip: true } },
           y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" } },
-               title: { display: true, text: '€ or £ /MWh', color: '#7A93AB', font: { size: 10 } } }
+               title: { display: true, text: '€/MWh (GB converted from £)', color: '#7A93AB', font: { size: 10 } } }
         }
       }
     });

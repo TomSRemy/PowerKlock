@@ -68,6 +68,8 @@
     --cat-carbon-dim: rgba(168,125,196,0.12);
     --cat-go: #94D2BD;
     --cat-go-dim: rgba(148,210,189,0.15);
+    --cat-fuels: #D6A77A;
+    --cat-fuels-dim: rgba(214,167,122,0.15);
 
     /* ── Layout (unchanged) */
     --sidebar-w: 220px;
@@ -144,6 +146,7 @@
   .dd-dot.gas { background:var(--cat-gas); }
   .dd-dot.carbon { background:var(--cat-carbon); }
   .dd-dot.go { background:var(--cat-go); }
+  .dd-dot.fuels { background:var(--cat-fuels); }
 
   .ticker-label {
     padding: 0 14px;
@@ -187,12 +190,22 @@
   .ticker-cat.gas { color: var(--cat-gas); border-color: var(--cat-gas-dim); }
   .ticker-cat.carbon { color: var(--cat-carbon); border-color: var(--cat-carbon-dim); }
   .ticker-cat.go { color: var(--cat-go); border-color: var(--cat-go-dim); }
+  .ticker-cat.fuels { color: var(--cat-fuels); border-color: var(--cat-fuels-dim); }
   /* News source badges */
   .news-source.recharge { background: rgba(148,210,189,0.15); color: #94D2BD; }
   .news-source.energymonitor { background: rgba(251,191,36,0.15); color: #fbbf24; }
   .news-source.carbonpulse { background: rgba(168,125,196,0.15); color: #A87DC4; }
   .news-source.gasnaturally { background: rgba(196,165,123,0.15); color: #C4A57B; }
   .news-source.montel { background: rgba(244,114,182,0.15); color: #f472b6; }
+  .news-source.carbonbrief { background: rgba(168,125,196,0.12); color: #C4A7E7; }
+  .news-source.cew { background: rgba(20,211,169,0.12); color: #14D3A9; }
+  .news-source.pvmag { background: rgba(251,191,36,0.15); color: #FBBF24; }
+  .news-source.windpower { background: rgba(127,200,248,0.15); color: #7FC8F8; }
+  .news-source.storage { background: rgba(148,210,189,0.15); color: #94D2BD; }
+  .news-source.wnn { background: rgba(123,75,156,0.25); color: #C4A7E7; }
+  .news-source.gie { background: rgba(196,165,123,0.15); color: #C4A57B; }
+  .news-source.smard { background: rgba(184,201,217,0.12); color: #B8C9D9; }
+  .news-source.cde { background: rgba(237,105,101,0.12); color: #ED6965; }
   .ticker-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
   .ticker-chg { font-size: 11px; font-family: 'JetBrains Mono', monospace; }
   .up { color: var(--up); }
@@ -1448,37 +1461,119 @@
     color: var(--text2); font-size: 12px; cursor: pointer; font-family: inherit;
   }
   .btn-secondary:hover { background: var(--bg3); }
-  .mydash-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
-    min-height: 200px;
+  /* ── MY DASHBOARD (js/dashboard.js) ─────────────────────────────── */
+  .pkd-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .pkd-tabs { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .pkd-tab { font: 500 13px 'Outfit', 'Inter', sans-serif; color: var(--text3); background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  .pkd-tab:hover { color: var(--text); background: var(--bg3); }
+  .pkd-tab.on { color: var(--text); background: var(--bg2); border-color: var(--border2); }
+  .pkd-tab-new { color: var(--accent); }
+  .pkd-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pkd-account { display: inline-flex; align-items: center; gap: 8px; margin-right: 4px; }
+  .pkd-acc-note, .pkd-sync { font-size: 11px; color: var(--text3); }
+  .pkd-sync[data-state="error"] { color: var(--down); }
+  .pkd-acc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pkd-hint { font-size: 11px; color: var(--text4); margin-bottom: 10px; }
+  @media (max-width: 760px) { .pkd-hint { display: none; } }
+  .pkd-grid { margin: 0 -6px; min-height: 120px; }
+  .pkd-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 16px; text-align: center; border: 1px dashed var(--border2); border-radius: 10px; }
+  .pkd-empty[hidden] { display: none; }
+  .pkd-empty-title { font: 600 15px 'Outfit', sans-serif; color: var(--text); }
+  .pkd-empty-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .pkd-item { display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden !important; }
+  .pkd-item[data-kind="s"] { background: none; border: none; border-radius: 0; }
+  .pkd-head { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px 6px; cursor: grab; flex: none; }
+  .pkd-head:active { cursor: grabbing; }
+  .pkd-titles { display: flex; flex-direction: column; min-width: 0; }
+  .pkd-title { font: 600 12.5px 'Outfit', 'Inter', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkd-sub { font-size: 10.5px; color: var(--text4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkd-actions { position: absolute; top: 5px; right: 6px; display: flex; gap: 2px; padding-left: 16px; background: linear-gradient(90deg, transparent, var(--bg2) 16px); opacity: 0; transition: opacity .12s; }
+  .pkd-item:hover .pkd-actions, .pkd-item:focus-within .pkd-actions { opacity: 1; }
+  @media (hover: none) { .pkd-actions { opacity: 1; } }
+  .pkd-ic { background: none; border: 1px solid transparent; color: var(--text3); border-radius: 4px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; line-height: 1; }
+  .pkd-ic:hover { color: var(--text); background: var(--bg3); border-color: var(--border2); }
+  .pkd-ic:focus-visible, .pkd-tab:focus-visible, .pkd-add:focus-visible, .pkw-star:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pkd-del:hover { color: var(--down); }
+  .pkd-body { flex: 1; min-height: 0; padding: 0 10px 10px; position: relative; }
+  .pkd-canvas { position: relative; height: 100%; }
+  .pkd-loading, .pkd-empty-w { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text4); font-size: 12px; text-align: center; padding: 8px; }
+  .pkd-section { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 100%; padding: 0 4px 6px; border-bottom: 1px solid var(--border2); cursor: grab; }
+  .pkd-section-title { font: 600 17px 'Outfit', sans-serif; color: var(--text); letter-spacing: .01em; outline: none; min-width: 120px; cursor: text; }
+  .pkd-section .pkd-del { opacity: 0; }
+  .pkd-item:hover .pkd-section .pkd-del { opacity: 1; }
+  [data-ph]:empty::before { content: attr(data-ph); color: var(--text4); }
+  .pkd-note { flex: 1; overflow: auto; padding: 0 12px 12px; font-size: 13px; line-height: 1.55; color: var(--text2); white-space: pre-wrap; outline: none; cursor: text; }
+  .pkd-item[data-kind="w"].pkd-html .pkd-sub { display: none; }
+  .pkd-item.pkd-html .pkd-head { padding-bottom: 2px; }
+  .pkd-kpi { display: flex; flex-direction: column; justify-content: center; height: 100%; gap: 2px; padding: 0 2px; }
+  .pkd-kpi-v { font: 600 24px 'JetBrains Mono', monospace; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pkd-kpi-na { color: var(--text4); }
+  .pkd-kpi-u { font-size: 12px; font-weight: 400; color: var(--text3); }
+  .pkd-kpi-c { font: 500 11px 'JetBrains Mono', monospace; color: var(--text3); }
+  .pkd-kpi-c.up { color: var(--up); } .pkd-kpi-c.down { color: var(--down); }
+  .pkd-kpi-m { font-size: 10.5px; color: var(--text4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grid-stack-item > .ui-resizable-se { width: 14px; height: 14px; right: 4px; bottom: 4px; opacity: 0; transition: opacity .12s; }
+  .grid-stack-item:hover > .ui-resizable-se { opacity: .7; }
+  .grid-stack-placeholder > .placeholder-content { background: var(--accent-dim) !important; border: 1px dashed var(--accent); border-radius: 8px; }
+  /* ☆ on site charts */
+  .pkw-star { background: none; border: 1px solid transparent; color: var(--text4); font-size: 15px; line-height: 1; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; flex: none; margin-left: 6px; }
+  .pkw-star:hover { color: var(--highlight); border-color: var(--border2); }
+  .pkw-star.on { color: #FBBF24; }
+  .pkw-star-float { position: absolute; top: 8px; right: 40px; z-index: 11; }
+  /* Dialogs */
+  #pkd-modal { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5,8,12,.62); backdrop-filter: blur(2px); }
+  .pkd-modal { width: min(460px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border2); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; }
+  .pkd-modal.pkd-modal-wide { width: min(880px, 100%); height: min(640px, calc(100vh - 32px)); }
+  .pkd-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex: none; }
+  .pkd-modal-title { font: 600 15px 'Outfit', sans-serif; color: var(--text); }
+  .pkd-modal-sub { font-size: 11.5px; color: var(--text3); margin-top: 3px; }
+  .pkd-form { display: flex; flex-direction: column; gap: 12px; padding: 16px; overflow-y: auto; }
+  .pkd-field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+  .pkd-field input, .pkd-field select { text-transform: none; letter-spacing: 0; font: 13px 'Inter', sans-serif; color: var(--text); background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 10px; }
+  .pkd-field input:focus, .pkd-field select:focus, .pkd-cat-q:focus { outline: none; border-color: var(--accent); }
+  .pkd-form-foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+  .pkd-form-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pkd-danger { color: var(--down) !important; }
+  .pkd-danger:disabled { opacity: .4; cursor: not-allowed; }
+  .pkd-confirm { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pkd-msg { font-size: 12px; color: var(--text2); min-height: 1em; }
+  .pkd-p { font-size: 13px; color: var(--text2); }
+  .pkd-tpls { display: flex; flex-direction: column; gap: 6px; }
+  .pkd-tpl { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; }
+  .pkd-tpl:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); }
+  .pkd-tpl input { margin-top: 3px; accent-color: var(--accent); }
+  .pkd-tpl span { display: flex; flex-direction: column; gap: 2px; }
+  .pkd-tpl b { font-size: 13px; color: var(--text); font-weight: 600; }
+  .pkd-tpl em { font-style: normal; font-size: 11.5px; color: var(--text3); }
+  /* Catalogue */
+  .pkd-cat { display: grid; grid-template-columns: 200px minmax(0, 1fr); flex: 1; min-height: 0; }
+  .pkd-cat-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .pkd-cat-tab { display: flex; justify-content: space-between; gap: 8px; text-align: left; font: 500 12.5px 'Inter', sans-serif; color: var(--text2); background: none; border: none; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+  .pkd-cat-tab span { color: var(--text4); font-variant-numeric: tabular-nums; }
+  .pkd-cat-tab:hover { background: var(--bg3); }
+  .pkd-cat-tab.on { background: var(--accent-dim); color: var(--text); }
+  .pkd-cat-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 12px 14px; gap: 10px; }
+  .pkd-cat-q { font: 13px 'Inter', sans-serif; color: var(--text); background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 10px; }
+  .pkd-cat-extra { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pkd-chip { font-size: 11.5px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border2); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+  .pkd-chip:hover { border-color: var(--accent); color: var(--text); }
+  .pkd-cat-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+  .pkd-cat-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+  .pkd-cat-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .pkd-cat-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .pkd-cat-desc { font-size: 12px; color: var(--text2); }
+  .pkd-cat-meta { font-size: 10.5px; color: var(--text4); }
+  .pkd-add { flex: none; font: 500 12px 'Inter', sans-serif; color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .pkd-add:hover { background: var(--accent-dim); }
+  .pkd-add.on { color: var(--text3); border-color: var(--border2); }
+  @media (max-width: 640px) {
+    .pkd-cat { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .pkd-cat-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .pkd-cat-tab { white-space: nowrap; }
   }
-  .mydash-empty {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 300px; text-align: center;
-  }
-  .mydash-widget {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; position: relative;
-  }
-  .mydash-widget-chart { grid-column: span 2; min-width: 0; }
-  @media (max-width: 620px) { .mydash-widget-chart { grid-column: span 1; } }
-  .mydash-widget-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
-  .mdash-remove {
-    position: absolute; top: 10px; right: 10px;
-    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1;
-  }
-  .mdash-remove:hover { color: var(--down); }
-  .picker-item {
-    background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
-    padding: 12px; cursor: pointer; transition: border-color 0.15s;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .picker-item:hover { border-color: var(--accent); }
-  .picker-item.added { border-color: var(--accent); background: var(--accent-dim); }
-  .picker-item-name { font-size: 12px; font-weight: 600; color: var(--text); }
-  .picker-item-desc { font-size: 11px; color: var(--text3); }
+  #pkd-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 10001; background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.5); transition: opacity .18s, transform .18s; }
+  #pkd-toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { #pkd-toast, .pkd-actions { transition: none; } }
 
   /* ══════════════════════════════════════════════════════════════════════
      FRANCE COCKPIT · tout est scopé sous #page-france pour ne pas
@@ -2040,6 +2135,7 @@
   .pr-home-anomalies-table td {
     padding: 9px 14px;
     color: var(--tx2);
+    text-align: left;
   }
   .pr-home-anomalies-table td.code {
     color: var(--tx);
@@ -2633,6 +2729,25 @@
     font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
   }
 
+
+  /* ── Carbon & Fuels / Forward curves / Spreads ── */
+  .fuel-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+  .fuel-toolbar-lbl { font-size:10px; color:var(--text3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+  .fuel-range { display:inline-flex; align-items:center; gap:4px; padding:0 8px; background:var(--bg3); border:1px solid var(--bd); border-radius:5px; height:26px; box-sizing:border-box; }
+  .fuel-range span { font-size:10px; color:var(--tx3); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .fuel-range input { background:transparent; border:none; color:var(--tx); font-size:11px; font-family:'JetBrains Mono',monospace; padding:0 2px; cursor:pointer; color-scheme:dark; height:22px; }
+  .fuel-select { background:var(--bg3); border:1px solid var(--bd); color:var(--tx); border-radius:5px; height:26px; padding:0 8px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+  .fuel-kpis { grid-template-columns:repeat(6,1fr); margin-bottom:14px; }
+  .fuel-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .fuel-card { margin-bottom:0; }
+  .fuel-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; padding-right:64px; }
+  .fuel-card-sub { font-size:10.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; margin-top:3px; }
+  .fuel-note { font-size:10.5px; color:var(--text3); line-height:1.6; margin:4px 2px 14px; font-family:'JetBrains Mono',monospace; }
+  .fuel-table td, .fuel-table th { text-align:right; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .fuel-table td:first-child, .fuel-table td.l { text-align:left; }
+  @media (max-width: 1100px) { .fuel-grid-2 { grid-template-columns:1fr; } .fuel-kpis { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width: 640px) { .fuel-kpis { grid-template-columns:repeat(2,1fr); } }
+  @media (min-width: 1200px) { #pr-home-fuels { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 </style>
 </head>
 <body>
@@ -2653,6 +2768,7 @@
       <div class="dd-row on" data-cat="power" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot power"></span>Power</div>
       <div class="dd-row on" data-cat="gas" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot gas"></span>Gas</div>
       <div class="dd-row on" data-cat="carbon" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot carbon"></span>Carbon</div>
+      <div class="dd-row on" data-cat="fuels" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot fuels"></span>Coal &amp; Oil</div>
       <div class="dd-row on" data-cat="go" onclick="toggleTickerCat(this)"><span class="dd-check">✓</span><span class="dd-dot go"></span>GO</div>
       <div style="border-top:1px solid var(--border);margin:4px 0"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 4px 14px">
@@ -2726,7 +2842,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>Renewables
       </div>
       <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear &amp; Hydro
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear
       </div>
       <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
@@ -2744,16 +2860,16 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section" id="sec-carbon">
-      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-label" onclick="toggleSection('sec-carbon')">Carbon &amp; Fuels <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-carbon-items">
       <div class="sidebar-item" onclick="showPage('eua')" id="nav-eua">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>EUA Spot
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Fuel &amp; EUA Prices
       </div>
       <div class="sidebar-item" onclick="showPage('euafwd')" id="nav-euafwd">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curve
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward Curves
       </div>
       <div class="sidebar-item" onclick="showPage('spark')" id="nav-spark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Clean Spark Spread
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Spark &amp; Dark Spreads
       </div>
       <div class="sidebar-item" onclick="showPage('carbonintensity')" id="nav-carbonintensity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Carbon Intensity
@@ -2771,10 +2887,10 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section collapsed" id="sec-meteo">
-      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Meteo France <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="sidebar-section-label" onclick="toggleSection('sec-meteo')">Weather <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-meteo-items">
       <div class="sidebar-item" onclick="showPage('wxcities')" id="nav-wxcities">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Villes
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>Cities
       </div>
       <div class="sidebar-item" onclick="showPage('wxhdd')" id="nav-wxhdd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HDD / CDD
@@ -2792,7 +2908,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/></svg>News
       </div>
       <div class="sidebar-item" onclick="showPage('remit')" id="nav-remit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>REMIT Outages
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Outages &amp; REMIT
       </div>
       </div>
     </div>
@@ -2843,7 +2959,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cat-power)" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
               Day-Ahead
             </div>
-            <div class="pr-overview-card-desc">ENTSO-E day-ahead market · 32 European bidding zones</div>
+            <div class="pr-overview-card-desc" id="pr-home-card-da-desc">ENTSO-E day-ahead market · European bidding zones</div>
             <div class="pr-overview-card-kpi" id="pr-home-card-da-kpi">— €/MWh</div>
             <div class="pr-overview-card-kpi-label" id="pr-home-card-da-label">Today's average · FR</div>
             <div class="pr-overview-card-link">Open Day-Ahead →</div>
@@ -2915,6 +3031,10 @@
         </div>
         <div id="pr-home-market-read" style="margin-top:14px"></div>
 
+        <!-- ── Fuels, carbon & generation spreads (commodities feed) ── -->
+        <div class="pr-home-section-label" style="margin-top:32px">Fuels, carbon &amp; spreads</div>
+        <div class="pr-home-kpi-strip" id="pr-home-fuels"></div>
+
         <!-- ── SECTION 3 · Today's intraday chart ── -->
         <div class="pr-home-section-label" style="margin-top:32px">Today's intraday</div>
         <div class="pr-home-chart-card">
@@ -2922,10 +3042,29 @@
             <span id="pr-home-chart-title">All loaded zones · today vs J-1</span>
             <span class="pr-home-chart-hint" onclick="prSelectSubdomain('da')">Drill in Day-Ahead →</span>
           </div>
-          <div style="position:relative;height:240px">
-            <canvas id="pr-home-intraday-canvas" style="width:100%;height:240px;cursor:pointer" onclick="prSelectSubdomain('da')"></canvas>
+          <div id="pr-home-zone-chips" style="display:flex;gap:5px;flex-wrap:wrap;margin:2px 0 8px"></div>
+          <div style="position:relative;height:260px">
+            <canvas id="pr-home-intraday-canvas" style="width:100%;height:260px"></canvas>
           </div>
           <div class="pr-home-chart-shading-legend">Shading: morning peak (07-09) | solar trough (11-14) | evening peak (17-21)</div>
+        </div>
+
+        <!-- ── Forward curves + FR hourly heatmap ── -->
+        <div class="fuel-grid-2" style="margin-top:32px">
+          <div>
+            <div class="pr-home-section-label">Power forward curves</div>
+            <div class="chart-container fuel-card">
+              <div class="fuel-card-head"><div><div class="table-title">FR · DE · NL · GB baseload</div><div class="fuel-card-sub" id="pr-home-fwd-sub">Baseload settlements · SEFE</div></div><span class="source-badge">SEFE</span></div>
+              <div style="position:relative;height:280px"><canvas id="pr-home-fwd-canvas" style="width:100%;height:280px"></canvas></div>
+            </div>
+          </div>
+          <div>
+            <div class="pr-home-section-label">France · hourly prices, last 14 days</div>
+            <div class="chart-container fuel-card">
+              <div class="fuel-card-head"><div><div class="table-title">Hour × day heatmap</div><div class="fuel-card-sub">Day-ahead €/MWh · solar trough and evening peak at a glance</div></div><span class="source-badge">ENTSO-E</span></div>
+              <div id="pr-home-heatmap" style="min-height:280px"></div>
+            </div>
+          </div>
         </div>
 
         <!-- ── SECTION 4 · Recent anomalies (last 7 days, auto-computed) ── -->
@@ -2987,11 +3126,11 @@
               <table id="prfwd-countries-table" style="font-size:12px">
                 <thead>
                   <tr>
-                    <th style="text-align:left">PAYS</th>
+                    <th style="text-align:left">COUNTRY</th>
                     <th style="text-align:right">SPOT</th>
                     <th style="text-align:right">FORWARD Y+1</th>
                     <th style="text-align:right">VAR J-1</th>
-                    <th style="text-align:right">VAR S-1</th>
+                    <th style="text-align:right">VAR 1W</th>
                   </tr>
                 </thead>
                 <tbody id="prfwd-countries-tbody">
@@ -3034,11 +3173,11 @@
               <table id="prfwd-cmp-table" style="font-size:12px">
                 <thead>
                   <tr>
-                    <th style="text-align:left">PAYS</th>
-                    <th style="text-align:right">CONTRAT</th>
-                    <th style="text-align:right">VALEUR</th>
+                    <th style="text-align:left">COUNTRY</th>
+                    <th style="text-align:right">CONTRACT</th>
+                    <th style="text-align:right">VALUE</th>
                     <th style="text-align:right">VAR J-1</th>
-                    <th style="text-align:right">VAR S-1</th>
+                    <th style="text-align:right">VAR 1W</th>
                   </tr>
                 </thead>
                 <tbody id="prfwd-cmp-tbody"></tbody>
@@ -3090,6 +3229,7 @@
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <button onclick="dpSelectToday()" id="btn-today-hdr" style="padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--acc);background:rgba(20,211,169,0.12);color:var(--acc);white-space:nowrap;display:inline-flex;align-items:center;gap:5px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Latest data</button>
+                <button onclick="dpSelectTomorrow()" id="btn-tomorrow-hdr" style="display:none;padding:0 10px;height:26px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid #FBBF24;background:rgba(251,191,36,0.12);color:#FBBF24;white-space:nowrap" title="Next delivery day — auction results published">Tomorrow</button>
                 <div class="date-picker-wrap" id="date-picker-wrap-hdr" style="position:relative">
                   <button class="date-picker-btn" id="date-picker-btn" onclick="toggleDatePicker()" style="font-size:10px;padding:0 10px;height:26px">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -3278,7 +3418,7 @@
         <table id="prices-table" style="font-size:11px;table-layout:fixed">
           <thead>
             <tr>
-              <th onclick="sortPricesTable('code')" style="width:8%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+              <th onclick="sortPricesTable('code')" style="width:10%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('today')" style="width:7%;cursor:pointer;user-select:none;text-align:right">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
               <th onclick="sortPricesTable('peak')" style="width:8%;cursor:pointer;user-select:none;text-align:right" title="Avg over 08h–20h">PEAK AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
@@ -3467,7 +3607,7 @@
       <table id="ho-table" style="font-size:11px;table-layout:fixed">
         <thead>
           <tr>
-            <th onclick="sortHoTable('code')" style="width:6%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
+            <th onclick="sortHoTable('code')" style="width:9%;cursor:pointer;user-select:none;text-align:left">CODE <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('country')" style="width:10%;cursor:pointer;user-select:none;text-align:left">ZONE <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('avg')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average price over selected window">AVG<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
             <th onclick="sortHoTable('peak')" style="width:9%;cursor:pointer;user-select:none;text-align:right" title="Average peak price (08:00-20:00 CET)">PEAK<br><span style="color:var(--tx3);font-weight:400;font-size:9px">€/MWh</span> <span style="opacity:.4">↕</span></th>
@@ -3830,6 +3970,24 @@
       <div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-spread-stats"></div>
         </div>
       </div>
+
+      <div class="hist-section hist-section-strong" id="hs-spread-bess">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-spread-bess')">
+          <div class="hist-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Battery arbitrage — TB spreads
+            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Top-n minus bottom-n hourly prices · same zone as above</span>
+          </div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-spread-bess">
+          <div class="fuel-toolbar"><span class="fuel-toolbar-lbl">Window</span>
+            <div class="pk-gf-group" id="bess-window"><button class="pk-gf-btn active" onclick="bessSetWindow(30,this)">30D</button><button class="pk-gf-btn" onclick="bessSetWindow(90,this)">90D</button></div>
+            <span class="fuel-note" id="bess-cov" style="margin:0 0 0 8px"></span></div>
+          <div class="kpi-strip fuel-kpis" id="bess-kpis"></div>
+          <div style="position:relative;height:260px"><canvas id="bess-canvas" style="width:100%;height:260px"></canvas></div>
+          <div class="fuel-note" id="bess-note" style="margin-top:8px"></div>
+        </div>
+      </div>
       </div>
 
     </div>
@@ -4112,17 +4270,17 @@
                 <div class="kpi-meta" id="gmh-kpi-fr-co2-meta">period weighted avg</div>
               </div>
               <div class="kpi-card kpi-flat">
-                <div class="kpi-label">EU avg load</div>
+                <div class="kpi-label">Panel load</div>
                 <div class="kpi-value" id="gmh-kpi-eu-load">--<span class="kpi-unit">GW</span></div>
                 <div class="kpi-meta" id="gmh-kpi-eu-load-meta">sum across zones</div>
               </div>
               <div class="kpi-card kpi-flat">
-                <div class="kpi-label">EU avg %REN</div>
+                <div class="kpi-label">Panel %REN</div>
                 <div class="kpi-value" id="gmh-kpi-eu-ren">--<span class="kpi-unit">%</span></div>
                 <div class="kpi-meta" id="gmh-kpi-eu-ren-meta">weighted avg</div>
               </div>
               <div class="kpi-card kpi-flat">
-                <div class="kpi-label">EU avg CO₂</div>
+                <div class="kpi-label">Panel CO₂</div>
                 <div class="kpi-value" id="gmh-kpi-eu-co2">--<span class="kpi-unit">g/kWh</span></div>
                 <div class="kpi-meta" id="gmh-kpi-eu-co2-meta">weighted avg</div>
               </div>
@@ -4403,20 +4561,17 @@
         </div>
       </div>
 
-      <!-- Legend + KPIs -->
-      <div style="display:grid;grid-template-columns:1fr auto;gap:14px;margin-bottom:14px;align-items:start">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="map-kpis"></div>
-        <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:7px;padding:10px 14px;min-width:160px">
-          <div id="map-legend-title" style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Scale (€/MWh)</div>
-          <div id="map-legend"></div>
-        </div>
-      </div>
+      <div class="kpi-strip fuel-kpis" id="map-kpis"></div>
 
       <!-- Map + side detail panel, side by side (electricitymaps-style: click a
            country, everything appears next to the map — no scrolling away). -->
       <div style="display:flex;gap:14px;align-items:stretch">
-        <div style="flex:1;min-width:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)">
+        <div style="flex:1;min-width:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35);position:relative">
           <div id="leaflet-map" style="height:620px;width:100%;background:#0a0f14"></div>
+          <div style="position:absolute;right:12px;bottom:28px;z-index:500;background:rgba(15,20,27,.9);border:1px solid var(--bd);border-radius:7px;padding:8px 12px;min-width:120px">
+            <div id="map-legend-title" style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Scale (€/MWh)</div>
+            <div id="map-legend"></div>
+          </div>
         </div>
 
         <!-- Selected country detail — always visible, placeholder until a click -->
@@ -4432,7 +4587,7 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="map-detail-kpis"></div>
             <div style="margin-top:14px">
-              <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Hourly (today)</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">15-min day-ahead profile</div>
               <div style="position:relative;height:200px;overflow:hidden"><canvas id="map-detail-chart" style="width:100%;height:200px"></canvas></div>
             </div>
           </div>
@@ -4443,62 +4598,37 @@
     <!-- ── PAGE: CROSS-BORDER ── -->
     <div class="page" id="page-crossborder">
       <div class="page-header">
-        <div>
-          <div class="page-title">Cross-Border Flows</div>
-          <div class="page-subtitle">Physical flows between bidding zones · ENTSO-E A11</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div><div class="page-title">Cross-Border Flows</div><div class="page-subtitle">France: commercial exchanges per border, 15-min (RTE éCO2mix) · other zones: ENTSO-E physical flows</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
             <option value="FR">France (FR)</option>
             <option value="DE_LU">Germany (DE)</option>
             <option value="BE">Belgium (BE)</option>
             <option value="ES">Spain (ES)</option>
-            <option value="NL">Netherlands (NL)</option>
-            <option value="GB">Great Britain (GB)</option>
           </select>
-          <span class="updated-badge" id="cb-updated">Loading...</span>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(-1)" title="Previous day">‹</button>
+          <span class="updated-badge" id="cb-day" style="min-width:120px;text-align:center">–</span>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="cbShiftDay(0)">Today</button>
         </div>
       </div>
-
-      <!-- KPI strip -->
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="cb-kpi-strip">
-        <div class="kpi-card kpi-up"><div class="kpi-label">Total Exports</div><div class="kpi-value" style="color:var(--up)" id="cb-kpi-exp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-exp-chg">--</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Total Imports</div><div class="kpi-value" style="color:var(--down)" id="cb-kpi-imp">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-imp-chg">--</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Net Position</div><div class="kpi-value" id="cb-kpi-net">--<span class="kpi-unit">MW</span></div><div class="kpi-chg" id="cb-kpi-net-chg">--</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Border Pairs</div><div class="kpi-value" id="cb-kpi-pairs">--</div><div class="kpi-chg" style="color:var(--tx3)">interconnections</div></div>
-      </div>
-
-      <!-- Stacked bar chart: exports vs imports -->
-      <div class="chart-container" style="margin-bottom:16px">
-        <div class="table-header" style="padding:0 0 10px;border:none">
-          <span class="table-title" id="cb-title">France — Cross-Border Flows (avg MW)</span>
-          <span class="source-badge">ENTSO-E A11</span>
+      <div class="kpi-strip fuel-kpis" id="cb-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="cb-intraday-title">Intraday exchanges by border</div><div class="fuel-card-sub" id="cb-intraday-sub">GW · positive = import into France, negative = export</div></div><span class="source-badge" id="cb-intraday-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:280px"><canvas id="cb-intraday" style="width:100%;height:280px"></canvas></div>
         </div>
-        <div style="position:relative;height:240px;overflow:hidden"><canvas id="cb-chart-canvas" style="width:100%;height:240px"></canvas></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="cb-days-title">Last 14 days</div><div class="fuel-card-sub" id="cb-days-sub">Daily average net exchange by border (GW)</div></div><span class="source-badge" id="cb-days-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:280px"><canvas id="cb-days" style="width:100%;height:280px"></canvas></div>
+        </div>
       </div>
-
-      <!-- Partner breakdown table -->
       <div class="table-wrap">
-        <div class="table-header">
-          <span class="table-title">Partner Breakdown</span>
-          <span class="source-badge">Physical NTC · avg MW</span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortGenericTable('cb-tbody',0,this)" style="cursor:pointer;user-select:none">Partner <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',1,this)" style="cursor:pointer;user-select:none">Imports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',2,this)" style="cursor:pointer;user-select:none">Exports MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th onclick="sortGenericTable('cb-tbody',3,this)" style="cursor:pointer;user-select:none">Net MW <span class="sort-ind" style="opacity:.4">↕</span></th>
-              <th style="min-width:120px">Flow balance</th>
-              <th>Direction</th>
-            </tr>
-          </thead>
-          <tbody id="cb-tbody">
-            <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Fetching flows...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-header"><span class="table-title" id="cb-table-title">Borders</span><span class="source-badge" id="cb-updated">–</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Border</th><th>Avg net</th><th>Max export</th><th>Max import</th><th>Hours exporting</th><th>Energy</th><th style="text-align:left">Direction</th></tr></thead>
+        <tbody id="cb-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
       </div>
+      <div class="fuel-note" id="cb-note"></div>
     </div>
 
     <!-- ── PAGE: LOAD ── -->
@@ -4506,7 +4636,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Load & Demand</div>
-          <div class="page-subtitle">Actual and forecast load · ENTSO-E A65</div>
+          <div class="page-subtitle">Actual load vs day-ahead and intraday forecasts · France: RTE éCO2mix (real time) · other zones: ENTSO-E A65</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="country-select" id="load-country" onchange="loadLoad()">
@@ -4515,8 +4645,10 @@
             <option value="BE">Belgium (BE)</option>
             <option value="NL">Netherlands (NL)</option>
             <option value="ES">Spain (ES)</option>
-            <option value="GB">Great Britain (GB)</option>
+            <option value="PT">Portugal (PT)</option>
             <option value="IT_NORD">Italy North (IT)</option>
+            <option value="AT">Austria (AT)</option>
+            <option value="PL">Poland (PL)</option>
           </select>
           <span class="updated-badge" id="load-updated">Loading...</span>
         </div>
@@ -4563,7 +4695,7 @@
       <div class="chart-container">
         <div class="table-header" style="padding:0 0 12px;border:none">
           <span class="table-title" id="load-chart-title">France — Hourly Load (GW)</span>
-          <span class="source-badge">ENTSO-E A65</span>
+          <span class="source-badge" id="load-chart-src">ENTSO-E A65</span>
         </div>
         <div style="position:relative;height:300px;overflow:hidden"><canvas id="load-canvas" style="width:100%;height:300px"></canvas></div>
       </div>
@@ -4576,7 +4708,7 @@
         <table>
           <thead>
             <tr>
-              <th onclick="sortGenericTable('load-hourly-tbody',0,this)" style="cursor:pointer;user-select:none">Hour (UTC) <span class="sort-ind" style="opacity:.4">↕</span></th>
+              <th onclick="sortGenericTable('load-hourly-tbody',0,this)" style="cursor:pointer;user-select:none">Hour (CET/CEST) <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',1,this)" style="cursor:pointer;user-select:none">Actual MW <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',2,this)" style="cursor:pointer;user-select:none">Forecast MW <span class="sort-ind" style="opacity:.4">↕</span></th>
               <th onclick="sortGenericTable('load-hourly-tbody',3,this)" style="cursor:pointer;user-select:none">Deviation <span class="sort-ind" style="opacity:.4">↕</span></th>
@@ -4594,7 +4726,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Market Analysis</div>
-          <div class="page-subtitle">Du prix vers ses causes · drivers · crosshair · AI synthesis</div>
+          <div class="page-subtitle">From price to its drivers · crosshair · AI synthesis</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="country-select" id="ma-zone" onchange="maSetZone(this.value)">
@@ -4604,7 +4736,7 @@
             <option value="BE">Belgium</option>
             <option value="NL">Netherlands</option>
           </select>
-          <span class="updated-badge">ENTSO-E + simulated drivers</span>
+          <span class="updated-badge">ENTSO-E · SEFE · Open-Meteo</span>
         </div>
       </div>
 
@@ -4646,7 +4778,7 @@
         </div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Demande vs Ren</div><div class="ma-lbl-sub">GW</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">Demand vs RES</div><div class="ma-lbl-sub">GW</div></div>
           <div class="ma-panel-svg-col" style="height:190px">
             <canvas id="ma-canvas-loadren" style="width:100%;height:190px"></canvas>
             <!-- Series colours only appeared in the hover tooltip — with the
@@ -4688,7 +4820,7 @@
 
       <!-- Data note -->
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
-        <b style="color:#FBBF24">Data status</b> — DA price + wind/solar + nuclear-hydro-fossil mix = <b style="color:var(--acc)">real ENTSO-E</b>. TTF gas = <b style="color:var(--acc)">real (Yahoo, daily)</b> when archived, simulated otherwise. EUA/temperature/nuclear availability/flows = <b style="color:#FBBF24">simulated</b>. Demand = simulated (not in the ENTSO-E feed). Spark spread = <code>Power − TTF/0.49 − EUA·0.365</code>.
+        <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">SEFE market cockpit</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (SEFE); other zones = actual nuclear output. Demand / net import shown only for days with stored ENTSO-E load. Spark = clean spark spread, CCGT 49.1% (see Methodology). Days without archived data are left empty.
       </div>
     </div>
 
@@ -4697,7 +4829,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Energy News</div>
-          <div class="page-subtitle">Live feed from ENTSO-E, RTE, CRE, ACER and European energy press</div>
+          <div class="page-subtitle">European energy press · carbon, power, gas, renewables, nuclear · refreshed every 3 hours</div>
         </div>
         <span class="updated-badge" id="news-updated">Loading...</span>
       </div>
@@ -4709,6 +4841,8 @@
         <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
         <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
         <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
+        <button class="filter-btn" onclick="filterNews('fr', this)">🇫🇷 France</button>
+        <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="margin-left:auto;min-width:200px">
       </div>
 
       <div class="news-grid" id="news-grid">
@@ -4750,7 +4884,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Energy Converter</div>
-          <div class="page-subtitle">MW ↔ GW · MWh ↔ GWh ↔ TWh · Capacity to annual energy</div>
+          <div class="page-subtitle">Power (MW ↔ GW) · energy (MWh ↔ GWh ↔ TWh) · capacity to annual energy</div>
         </div>
       </div>
       <div class="converter-wrap">
@@ -4777,15 +4911,15 @@
               </div>
               <div>
                 <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Load Factor (%)</div>
-                <input class="conv-input" type="number" id="cap-lf" placeholder="35" style="font-size:32px" oninput="updateCapacity()" value="35">
+                <input class="conv-input" type="number" id="cap-lf" placeholder="25" style="font-size:32px" oninput="updateCapacity()" value="25">
               </div>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:14px">
             <button class="day-tab" onclick="setLF(85, this)">Baseload (85%)</button>
-            <button class="day-tab active" onclick="setLF(35, this)">Wind (35%)</button>
-            <button class="day-tab" onclick="setLF(20, this)">Solar (20%)</button>
-            <button class="day-tab" onclick="setLF(25, this)">BESS (25%)</button>
+            <button class="day-tab active" onclick="setLF(25, this)">Onshore wind (25%)</button>
+            <button class="day-tab" onclick="setLF(14, this)">Solar PV (14%)</button>
+            <button class="day-tab" onclick="setLF(75, this)">Nuclear (75%)</button>
           </div>
           <div class="conv-results" id="cap-results"></div>
         </div>
@@ -4796,298 +4930,242 @@
     <!-- RENEWABLES -->
     <div class="page" id="page-renewables">
       <div class="page-header">
-        <div><div class="page-title">Renewables — Production, Forecast &amp; Capture Rate</div><div class="page-subtitle">Wind · Solar · M0 capture rate · ENTSO-E A69/A71</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div style="display:flex;gap:4px">
-            <button class="day-tab active" id="ren-tech-wind" onclick="setRenTech('wind',this)">🌬 Wind</button>
-            <button class="day-tab" id="ren-tech-solar" onclick="setRenTech('solar',this)">☀ Solar</button>
-            <button class="day-tab" id="ren-tech-both" onclick="setRenTech('both',this)">Both</button>
-          </div>
+        <div><div class="page-title">Renewables</div><div class="page-subtitle">Wind &amp; solar output · day-ahead forecast accuracy · capture prices · ENTSO-E A75 / A69</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="country-select" id="ren-country" onchange="loadRenewables()">
             <option value="FR">France</option><option value="DE_LU">Germany</option>
-            <option value="ES">Spain</option><option value="GB">Great Britain</option>
-            <option value="BE">Belgium</option><option value="IT_NORD">Italy</option>
+            <option value="ES">Spain</option><option value="BE">Belgium</option><option value="NL">Netherlands</option>
           </select>
-          <span class="updated-badge" id="ren-upd">Loading...</span>
+          <button class="pk-btn-ghost" onclick="renShiftDay(-1)" title="Previous day">‹</button>
+          <span class="updated-badge" id="ren-day" style="min-width:120px;text-align:center">–</span>
+          <button class="pk-btn-ghost" onclick="renShiftDay(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="renShiftDay(0)" title="Latest day with data">Latest</button>
         </div>
       </div>
 
-      <!-- KPI strip -->
-      <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Wind Now</div><div class="kpi-value" style="color:var(--up)" id="ren-wind-on">--<span class="kpi-unit">GW</span></div><div class="kpi-chg" id="ren-wind-on-sub">onshore</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Solar Now</div><div class="kpi-value" style="color:#fbbf24" id="ren-solar-now">--<span class="kpi-unit">GW</span></div><div class="kpi-chg" id="ren-solar-sub">--</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Wind M0 Capture</div><div class="kpi-value" id="ren-m0-wind">--<span class="kpi-unit">%</span></div><div class="kpi-chg" id="ren-m0-wind-sub">vs baseload</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Solar M0 Capture</div><div class="kpi-value" id="ren-m0-solar">--<span class="kpi-unit">%</span></div><div class="kpi-chg" id="ren-m0-solar-sub">vs baseload</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Wind FC Error</div><div class="kpi-value" id="ren-fe-wind">--</div><div class="kpi-chg" style="color:var(--tx3)">actual vs DA fc</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Solar FC Error</div><div class="kpi-value" id="ren-fe-solar">--</div><div class="kpi-chg" style="color:var(--tx3)">actual vs DA fc</div></div>
-      </div>
+      <div class="kpi-strip fuel-kpis" id="ren-kpis"></div>
 
-      <!-- Today chart -->
-      <div class="day-tabs" style="margin-bottom:10px">
-        <button class="day-tab active" onclick="setRenTab('today',this)">Today</button>
-        <button class="day-tab" onclick="setRenTab('forecast',this)">DA Forecast</button>
-        <button class="day-tab" onclick="setRenTab('error',this)">Forecast Error</button>
-        <button class="day-tab" onclick="setRenTab('history',this)">J-7</button>
-      </div>
-      <div class="chart-container" style="margin-bottom:16px">
-        <div style="position:relative;height:240px;overflow:hidden"><canvas id="ren-canvas" style="width:100%;height:240px"></canvas></div>
-      </div>
-
-      <!-- Recent Period Summary -->
-      <div class="table-wrap" style="margin-bottom:16px">
-        <div class="table-header">
-          <span class="table-title">Recent Period Summary — Capture Rate M0</span>
-          <span class="source-badge">M0 = Σ(MW×Spot) / Σ(MW) rolling</span>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="ren-intraday-title">Intraday output vs price</div><div class="fuel-card-sub" id="ren-intraday-sub">Wind onshore · offshore · solar (GW, stacked) · day-ahead price (€/MWh)</div></div><span class="source-badge">ENTSO-E</span></div>
+          <div style="position:relative;height:280px"><canvas id="ren-intraday" style="width:100%;height:280px"></canvas></div>
         </div>
-        <table>
-          <thead><tr><th>Period</th><th>Wind Avg GW</th><th>Wind M0</th><th>Wind M0/BL</th><th>Solar Avg GW</th><th>Solar M0</th><th>Solar M0/BL</th></tr></thead>
-          <tbody id="ren-summary-tbody">
-            <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Capture rate historical chart -->
-      <div class="hist-section hist-section-strong" id="hs-ren-capture">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-ren-capture')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Capture Rate M0 — Historical
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Rolling WAP vs baseload</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-ren-capture">
-          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-            <div class="hist-window-btns">
-              <button class="hw-btn" onclick="setHistWindow('ren-cap','30D',this)">30D</button>
-              <button class="hw-btn" onclick="setHistWindow('ren-cap','90D',this)">90D</button>
-              <button class="hw-btn active" onclick="setHistWindow('ren-cap','365D',this)">365D</button>
-              <button class="hw-btn" onclick="setHistWindow('ren-cap','YTD',this)">YTD</button>
-              <button class="hw-btn" onclick="setHistWindow('ren-cap','all',this)">All</button>
-            </div>
-          </div>
-          <div style="position:relative;height:220px;overflow:hidden"><canvas id="ren-cap-canvas" style="width:100%;height:220px"></canvas></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="ren-fc-title">Forecast vs actual</div><div class="fuel-card-sub" id="ren-fc-sub">Day-ahead forecast (dashed) vs actual (GW)</div></div><span class="source-badge">ENTSO-E</span></div>
+          <div style="position:relative;height:280px"><canvas id="ren-fc" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
 
-      <!-- Trend + Stack -->
-      <div class="hist-section hist-section-strong" id="hs-ren-trend">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-ren-trend')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>Wind &amp; Solar — Daily Trend
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Daily avg + 7D rolling</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-ren-trend"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('ren-trend','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-trend','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-trend','3M',this)">3M</button><button class="hw-btn active" onclick="setHistWindow('ren-trend','1Y',this)">1Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('ren-trend','All',this)">All</button></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-ren-trend'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-        <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-trend" style="width:100%;height:220px"></canvas></div></div>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">History</span>
+        <div class="pk-gf-group" id="ren-window"><button class="pk-gf-btn" data-w="30D" onclick="renSetWindow('30D',this)">30D</button><button class="pk-gf-btn" data-w="90D" onclick="renSetWindow('90D',this)">90D</button><button class="pk-gf-btn" data-w="YTD" onclick="renSetWindow('YTD',this)">YTD</button><button class="pk-gf-btn" data-w="1Y" onclick="renSetWindow('1Y',this)">1Y</button><button class="pk-gf-btn active" data-w="All" onclick="renSetWindow('All',this)">All</button></div>
+        <span class="fuel-note" id="ren-coverage" style="margin:0 0 0 8px"></span>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-ren-stack">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-ren-stack')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Renewable Mix — Stacked Area
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Wind + Solar stacked</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="ren-cr-title">Capture rates</div><div class="fuel-card-sub" id="ren-cr-sub">Daily generation-weighted price ÷ baseload (%) · wind &amp; solar</div></div><span class="source-badge">ENTSO-E</span></div>
+          <div style="position:relative;height:280px"><canvas id="ren-cr" style="width:100%;height:280px"></canvas></div>
         </div>
-        <div class="hist-section-body open" id="hs-body-ren-stack"><div class="hist-window-btns"><button class="hw-btn active" onclick="setHistWindow('ren-stack','7D',this)">7D</button><button class="hw-btn" onclick="setHistWindow('ren-stack','1M',this)">1M</button><button class="hw-btn" onclick="setHistWindow('ren-stack','3M',this)">3M</button></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=HIST.charts['hist-ren-stack'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-        <div style="position:relative;height:220px;overflow:hidden"><canvas id="hist-ren-stack" style="width:100%;height:220px"></canvas></div></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="ren-daily-title">Daily output</div><div class="fuel-card-sub" id="ren-daily-sub">Average wind &amp; solar output (GW) · 7-day rolling</div></div><span class="source-badge">ENTSO-E</span></div>
+          <div style="position:relative;height:280px"><canvas id="ren-daily" style="width:100%;height:280px"></canvas></div>
+        </div>
       </div>
+
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title">Capture prices by period</span><span class="source-badge">Σ(MW × price) ÷ Σ(MW)</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Period</th><th>Days</th><th>Baseload</th><th>Wind avg</th><th>Wind capture</th><th>Wind CR</th><th>Solar avg</th><th>Solar capture</th><th>Solar CR</th></tr></thead>
+        <tbody id="ren-summary-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
+      </div>
+      <div class="fuel-note" id="ren-note"></div>
     </div>
 
     <!-- NUCLEAR & HYDRO -->
     <div class="page" id="page-nuclear">
       <div class="page-header">
-        <div><div class="page-title">Nuclear &amp; Hydro</div><div class="page-subtitle">Availability · Output · Reservoir levels · ENTSO-E A73/NVE</div></div>
-        <span class="updated-badge" id="nuc-upd">ENTSO-E · Demo</span>
+        <div><div class="page-title">Nuclear — France</div><div class="page-subtitle">Available capacity · operator forecast · seasonality · modulation vs output</div></div>
+        <span class="updated-badge" id="nuc-upd">SEFE market cockpit</span>
       </div>
-
-      <!-- Nuclear KPIs -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">⚛ Nuclear</div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-up"><div class="kpi-label">FR Output Now</div><div class="kpi-value" style="color:#7B4B9C" id="nuc-kpi-now">38.0<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--up)" id="nuc-kpi-now-chg">↑ 2.1 GW vs yday</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">FR Installed</div><div class="kpi-value" style="color:var(--tx2)">61.4<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">56 reactors · 900–1 450 MW</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Availability Factor</div><div class="kpi-value" style="color:var(--warn)" id="nuc-kpi-avail">61.9<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="nuc-kpi-avail-chg">↓ vs 75% normal</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Active Outages</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-outages">3<span class="kpi-unit">UMM</span></div><div class="kpi-chg" style="color:var(--tx3)">REMIT notified</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">MW Unavailable</div><div class="kpi-value" style="color:var(--down)" id="nuc-kpi-unavail">2 865<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">planned + unplanned</div></div>
+      <div class="kpi-strip fuel-kpis" id="nuc-kpis"></div>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="nuc-period"><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('nuc','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('nuc','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('nuc','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('nuc','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('nuc','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('nuc','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('nuc','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="nuc-from" onchange="fuelSetRange('nuc')">
+          <span>To</span><input type="date" id="nuc-to" onchange="fuelSetRange('nuc')">
+        </div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['nuc-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="nuc-canvas" style="width:100%;height:220px"></canvas></div>
-
-      <!-- Hydro KPIs -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin:16px 0 8px">💧 Hydro</div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">
-        <div class="kpi-card kpi-up"><div class="kpi-label">NO Reservoir Fill</div><div class="kpi-value" style="color:var(--up)" id="hydro-kpi-fill">34.2<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--down)" id="hydro-kpi-fill-chg">↓ 2.1% vs 20yr median</div></div>
-        <div class="kpi-card kpi-up"><div class="kpi-label">FR Hydro Output</div><div class="kpi-value" style="color:var(--up)">4.8<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">run-of-river + storage</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Inflow vs Normal</div><div class="kpi-value" style="color:var(--down)">-14<span class="kpi-unit">%</span></div><div class="kpi-chg" style="color:var(--tx3)">weekly inflow index</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Pumping Activity</div><div class="kpi-value">1.2<span class="kpi-unit">GW</span></div><div class="kpi-chg" style="color:var(--tx3)">storage charging</div></div>
+      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">SEFE</span></div>
+        <div style="position:relative;height:300px"><canvas id="nuc-hist" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="pk-btn-ghost" onclick="(function(){var c=CHARTS['hydro-canvas'];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button></div>
-      <div style="position:relative;height:220px;overflow:hidden;margin-bottom:16px"><canvas id="hydro-canvas" style="width:100%;height:220px"></canvas></div>
-
-      <!-- REMIT: single source of truth lives on the dedicated REMIT page now
-           (this used to duplicate the exact same 3 hardcoded rows). -->
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="nuc-season" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="nuc-mod-title">Output vs availability</div><div class="fuel-card-sub" id="nuc-mod-sub">Daily average nuclear output (ENTSO-E) vs available capacity (GW)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="nuc-mod" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
       <div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div class="table-title" style="margin-bottom:4px">Active REMIT — FR Nuclear Outages</div>
-          <div style="font-size:11px;color:var(--tx3)">3 active UMM · full list, all TSOs and technologies, on the REMIT page</div>
+          <div class="table-title" style="margin-bottom:4px">Unit-level outages</div>
+          <div style="font-size:11px;color:var(--tx3)">Reactor-by-reactor unavailability (REMIT) is published on the operators' and exchanges' transparency platforms — see the REMIT page.</div>
         </div>
         <div class="sidebar-item" style="display:inline-flex;width:auto;padding:6px 14px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd)" onclick="showPage('remit')">Open REMIT →</div>
       </div>
+      <div class="fuel-note" id="nuc-note"></div>
     </div>
 
     <!-- IMBALANCE -->
     <div class="page" id="page-imbalance">
       <div class="page-header">
-        <div><div class="page-title">Imbalance Prices</div><div class="page-subtitle">Settlement prices · System position · FR/DE/BE · RTE</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select class="country-select" id="imb-country" onchange="drawImbalance()">
-            <option value="FR">France (RTE)</option>
-            <option value="DE_LU">Germany (50HzT)</option>
+        <div><div class="page-title">Imbalance Prices</div><div class="page-subtitle">Single imbalance price vs day-ahead · system imbalance · 15-min settlement</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="country-select" id="imb-zone" onchange="drawImbalance()">
             <option value="BE">Belgium (Elia)</option>
+            <option value="FR" disabled>France (RTE) — not ingested yet</option>
+            <option value="DE" disabled>Germany (reBAP) — not ingested yet</option>
+            <option value="NL" disabled>Netherlands (TenneT) — not ingested yet</option>
           </select>
-          <span class="updated-badge" id="imb-upd">Demo data</span>
+          <button class="pk-btn-ghost" onclick="imbShiftDay(-1)" title="Previous day">‹</button>
+          <span class="updated-badge" id="imb-day" style="min-width:120px;text-align:center">–</span>
+          <button class="pk-btn-ghost" onclick="imbShiftDay(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="imbShiftDay(0)">Today</button>
         </div>
       </div>
-
-      <!-- KPI strip -->
-      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-down"><div class="kpi-label">Last Imb. Price</div><div class="kpi-value" style="color:var(--down)" id="imb-kpi-last">-142.5<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--down)" id="imb-kpi-last-chg">Short system</div></div>
-        <div class="kpi-card kpi-up"><div class="kpi-label">Long Price (avg)</div><div class="kpi-value" style="color:var(--up)" id="imb-kpi-long">+198.4<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)" id="imb-kpi-long-chg">system long periods</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">Short Price (avg)</div><div class="kpi-value" style="color:var(--down)" id="imb-kpi-short">-88.2<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)" id="imb-kpi-short-chg">system short periods</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">System Position</div><div class="kpi-value" style="color:var(--down)" id="imb-kpi-pos">-1 240<span class="kpi-unit">MW</span></div><div class="kpi-chg" style="color:var(--tx3)">last quarter-hour</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Spread L/S</div><div class="kpi-value" id="imb-kpi-spread">+286.6<span class="kpi-unit">€/MWh</span></div><div class="kpi-chg" style="color:var(--tx3)">long price − short price</div></div>
+      <div class="kpi-strip fuel-kpis" id="imb-kpis"></div>
+      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title" id="imb-intraday-title">Imbalance price vs day-ahead</div><div class="fuel-card-sub">€/MWh (left) · system imbalance MW (bars, right; negative = system short)</div></div><span class="source-badge">Elia · ENTSO-E</span></div>
+        <div style="position:relative;height:320px"><canvas id="imb-intraday" style="width:100%;height:320px"></canvas></div>
       </div>
-
-      <!-- Day selector -->
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button class="day-tab active" onclick="setImbDay(0,this)">Today</button>
-        <button class="day-tab" onclick="setImbDay(-1,this)">Yesterday</button>
-        <button class="day-tab" onclick="setImbDay(-2,this)">J-2</button>
-      </div>
-
-      <div class="chart-container" style="margin-bottom:16px">
-        <div class="table-title" style="margin-bottom:10px">Imbalance Price Intraday — 15min (€/MWh)</div>
-        <div style="position:relative;height:240px;overflow:hidden"><canvas id="imb-canvas" style="width:100%;height:240px"></canvas></div>
-      </div>
-
-      <!-- Long / Short periods table -->
-      <div class="table-wrap" style="margin-bottom:16px">
-        <div class="table-header">
-          <span class="table-title">Long / Short Periods Today</span>
-          <span class="source-badge">15-min settlement</span>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="imb-days-title">Last 30 days</div><div class="fuel-card-sub" id="imb-days-sub">Daily average imbalance price vs day-ahead, and price volatility (€/MWh)</div></div><span class="source-badge">Elia open data</span></div>
+          <div style="position:relative;height:290px"><canvas id="imb-days" style="width:100%;height:290px"></canvas></div>
         </div>
-        <table>
-          <thead><tr><th>Quarter-hour</th><th>Position</th><th>Imb. Price €/MWh</th><th>vs DA Price</th><th>Direction</th></tr></thead>
-          <tbody id="imb-periods-tbody">
-            <tr class="loading-row"><td colspan="5"><span class="spinner"></span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Historical -->
-      <div class="hist-section hist-section-strong" id="hs-imb-history">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-imb-history')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Imbalance Prices — Historical
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Daily avg · pos vs neg</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-imb-history">
-          <div class="hist-window-btns">
-            <button class="hw-btn" onclick="setHistWindow('imb-hist','7D',this)">7D</button>
-            <button class="hw-btn" onclick="setHistWindow('imb-hist','1M',this)">1M</button>
-            <button class="hw-btn" onclick="setHistWindow('imb-hist','3M',this)">3M</button>
-            <button class="hw-btn active" onclick="setHistWindow('imb-hist','1Y',this)">1Y</button>
-          </div>
-          <div style="position:relative;height:200px;overflow:hidden"><canvas id="hist-imb-canvas" style="width:100%;height:200px"></canvas></div>
-          <div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-imb-stats"></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="imb-dist-title">Imbalance − day-ahead</div><div class="fuel-card-sub" id="imb-dist-sub">Distribution of the quarter-hour spread over 30 days (€/MWh)</div></div><span class="source-badge">Elia open data</span></div>
+          <div style="position:relative;height:290px"><canvas id="imb-dist" style="width:100%;height:290px"></canvas></div>
         </div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-fcr-history">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-fcr-history')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>FCR — Frequency Containment Reserve
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Contracted capacity · €/MW/day</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-fcr-history">
-          <div class="hist-window-btns">
-            <button class="hw-btn" onclick="setHistWindow('fcr-hist','7D',this)">7D</button>
-            <button class="hw-btn" onclick="setHistWindow('fcr-hist','1M',this)">1M</button>
-            <button class="hw-btn" onclick="setHistWindow('fcr-hist','3M',this)">3M</button>
-            <button class="hw-btn active" onclick="setHistWindow('fcr-hist','1Y',this)">1Y</button>
-          </div>
-          <div style="position:relative;height:180px;overflow:hidden"><canvas id="hist-fcr-canvas" style="width:100%;height:180px"></canvas></div>
-        </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title" id="imb-table-title">Largest deviations</span><span class="source-badge">top 10 quarter-hours by |imbalance − DA|</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Quarter-hour</th><th>Imbalance</th><th>Day-ahead</th><th>Spread</th><th>System imbalance</th><th style="text-align:left">Position</th></tr></thead><tbody id="imb-tbody"></tbody></table>
       </div>
+      <div class="fuel-note" id="imb-note"></div>
     </div>
 
     <!-- EUA SPOT -->
     <div class="page" id="page-eua">
       <div class="page-header">
-        <div><div class="page-title">EUA Carbon Allowances</div><div class="page-subtitle">EU ETS spot · ICE/EEX</div></div>
-        <span class="updated-badge">ICE · EEX · Demo</span>
+        <div><div class="page-title">Carbon &amp; Fuels</div><div class="page-subtitle">EUA · gas hubs · coal · oil · EU gas storage · fuel switching</div></div>
+        <span class="updated-badge" id="fuel-upd">SEFE market cockpit</span>
       </div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-flat"><div class="kpi-label">EUA Spot</div><div class="kpi-value" style="color:#A87DC4">74.09<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--down)">&#9660;0.09% vs close</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">EUA Dec-26</div><div class="kpi-value" style="color:#A87DC4">76.40<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--up)">&#9650;0.32%</div></div>
-        <div class="kpi-card kpi-down"><div class="kpi-label">YTD Change</div><div class="kpi-value" style="color:var(--down)">-8.4<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">€/t</span></div><div class="kpi-chg" style="color:var(--down)">from 82.5 Jan 1</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">52w Range</div><div class="kpi-value" style="color:var(--text2);font-size:16px">58.2 – 94.1<span style="font-size:12px;font-weight:400;margin-left:3px">€/t</span></div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Spot Daily (€/t) — 90 days</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-spot-canvas" style="width:100%;height:180px"></canvas></div></div>
-        <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA vs Brent — 90d correlation scatter</div><div style="position:relative;height:180px;overflow:hidden"><canvas id="eua-corr-canvas" style="width:100%;height:180px"></canvas></div></div>
-      </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">Clean Spark Spread vs EUA — Germany (€/MWh)</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="eua-spark-canvas" style="width:100%;height:200px"></canvas></div><div style="font-size:11px;color:var(--text3);margin-top:8px">CSS = DA price − (TTF/0.49) − (EUA × 0.365 tCO₂/MWh CCGT)</div></div>
-      <div class="hist-section hist-section-strong" id="hs-eua-history">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-history')">
-          <div class="hist-section-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22c1.25-1.25 2.5-2.5 3.5-5 1-2.5 1.5-5.5 3.5-7.5 2-2 4.75-3 7.5-3 2 0 4 .5 5.5 2-1.5 1.5-3.5 2-5.5 2-1.5 0-3-.25-4.5-1-1 2-1.5 4-1.5 6 0 2.5.75 5 2 7"/><path d="M20 6c-2 2-3 4-3 6 0 1.5.25 3 1 4.5"/></svg>EUA — Long-term Historical
-            <span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;font-weight:400;text-transform:none;letter-spacing:0;margin-left:10px">Spot daily · clean spark spread</span>
-          </div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="fuel-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('fuel','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('fuel','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('fuel','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('fuel','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('fuel','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('fuel','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('fuel','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('fuel','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="fuel-from" onchange="fuelSetRange('fuel')">
+          <span>To</span><input type="date" id="fuel-to" onchange="fuelSetRange('fuel')">
         </div>
-        <div class="hist-section-body open" id="hs-body-eua-history"><div class="hist-window-btns"><button class="hw-btn" onclick="setHistWindow('eua-hist','3M',this)">3M</button><button class="hw-btn" onclick="setHistWindow('eua-hist','1Y',this)">1Y</button><button class="hw-btn active" onclick="setHistWindow('eua-hist','2Y',this)">2Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','5Y',this)">5Y</button><button class="hw-btn" onclick="setHistWindow('eua-hist','All',this)">All</button></div><div class="hist-two-col"><div><canvas id="hist-eua-canvas" style="width:100%;height:200px"></canvas></div><div><canvas id="hist-spark-canvas" style="width:100%;height:200px"></canvas></div></div><div class="kpi-strip" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:12px" id="hist-eua-stats"></div></div>
       </div>
+      <div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-eua-ttf" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Coal-to-gas switching</div><div class="fuel-card-sub" id="fuel-switch-sub">EUA price at which a CCGT matches a coal unit · vs EUA (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-switch" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-hubs" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EU gas storage</div><div class="fuel-card-sub" id="fuel-storage-sub">Fill level (%) · current year vs previous 5-year range</div></div><span class="source-badge">GIE AGSI</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-storage" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-coal-oil" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">LNG arbitrage</div><div class="fuel-card-sub" id="fuel-lng-sub">JKM front-month vs TTF day-ahead ($/MMBtu)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:260px"><canvas id="fuel-lng" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-note" id="fuel-note"></div>
     </div>
 
-    <!-- EUA FORWARD -->
+    <!-- FORWARD CURVES -->
     <div class="page" id="page-euafwd">
       <div class="page-header">
-        <div><div class="page-title">EUA Forward Curve</div><div class="page-subtitle">December contracts · ICE</div></div>
-        <span class="updated-badge">ICE · Demo</span>
+        <div><div class="page-title">Forward Curves</div><div class="page-subtitle">TTF strip · EUA December strip · implied forward clean spreads</div></div>
+        <span class="updated-badge" id="fwdc-upd">SEFE market cockpit</span>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="fwdc-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">TTF forward curve</div><div class="fuel-card-sub" id="fwdc-ttf-sub">Settlement D-1 (€/MWh) · day-ahead first</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="fwdc-ttf" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">EUA December strip</div><div class="fuel-card-sub" id="fwdc-eua-sub">Settlement D-1 (€/t)</div></div><span class="source-badge">SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="fwdc-eua" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title">TTF &amp; EUA — settlement D-1</span><span class="source-badge">SEFE</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th style="text-align:left">Contract</th><th>Settle</th><th>Unit</th><th>Δ D-1</th><th>Δ W-1</th></tr></thead><tbody id="fwdc-tbody"></tbody></table>
       </div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">EUA Futures — December contracts</span></div>
-        <table><thead><tr><th>Contract</th><th>Last (€/t)</th><th>Bid</th><th>Ask</th><th>Change</th><th>Chg %</th><th>Volume</th><th>OI</th></tr></thead>
-        <tbody>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-25</td><td style="font-weight:600">74.52</td><td class="up">74.48</td><td class="down">74.56</td><td class="down">-0.12</td><td class="down">-0.16%</td><td>12,450</td><td>284,300</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-26</td><td style="font-weight:600">76.40</td><td class="up">76.35</td><td class="down">76.45</td><td class="up">+0.24</td><td class="up">+0.32%</td><td>8,120</td><td>195,800</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-27</td><td style="font-weight:600">79.15</td><td class="up">79.05</td><td class="down">79.25</td><td class="up">+0.35</td><td class="up">+0.44%</td><td>3,240</td><td>112,400</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-28</td><td style="font-weight:600">82.30</td><td class="up">82.10</td><td class="down">82.50</td><td class="up">+0.55</td><td class="up">+0.67%</td><td>1,890</td><td>78,200</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-29</td><td style="font-weight:600">85.80</td><td class="up">85.50</td><td class="down">86.10</td><td class="up">+0.70</td><td class="up">+0.82%</td><td>980</td><td>45,100</td></tr>
-          <tr><td><span style="font-size:10px;color:#A87DC4;font-weight:600;margin-right:4px">EUA</span>Dec-30</td><td style="font-weight:600">89.50</td><td class="up">89.00</td><td class="down">90.00</td><td class="up">+0.90</td><td class="up">+1.02%</td><td>540</td><td>28,700</td></tr>
-        </tbody></table>
+        <div class="table-header"><span class="table-title">Implied forward clean spreads — baseload (€/MWh)</span><span class="source-badge" id="fwdc-css-badge">Power: SEFE · fuel: same tenor</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Tenor</th><th style="text-align:left">Power contract</th><th>TTF</th><th>EUA</th><th>FR base</th><th>FR CSS</th><th>DE base</th><th>DE CSS</th><th>DE CDS</th><th>NL base</th><th>NL CSS</th></tr></thead><tbody id="fwdc-css-tbody"></tbody></table>
+        <div class="fuel-note" id="fwdc-css-note" style="padding:10px 14px 4px"></div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">EUA Forward Curve (€/t)</div><div style="position:relative;height:220px;overflow:hidden"><canvas id="eua-fwd-canvas" style="width:100%;height:220px"></canvas></div></div>
     </div>
 
-    <!-- SPARK SPREAD -->
+    <!-- CLEAN SPARK / DARK SPREADS -->
     <div class="page" id="page-spark">
       <div class="page-header">
-        <div><div class="page-title">Clean Spark Spread</div><div class="page-subtitle">DA price − gas cost − carbon cost · 49% CCGT efficiency</div></div>
-        <span class="updated-badge">ENTSO-E · TTF · EUA</span>
+        <div><div class="page-title">Clean Spark &amp; Dark Spreads</div><div class="page-subtitle" id="spark-subtitle">Day-ahead power − fuel − carbon · CCGT 49.1% · coal 36%</div></div>
+        <span class="updated-badge" id="spark-upd">ENTSO-E · SEFE</span>
       </div>
-      <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Clean Spark Spread — All Zones (€/MWh)</span><span class="source-badge">TTF D+1: 45.14 · EUA: 74.09 · Efficiency: 49%</span></div>
-        <table><thead><tr><th>Zone</th><th>DA Price</th><th>Gas Cost</th><th>Carbon Cost</th><th>CSS</th><th>vs Yday</th></tr></thead>
-        <tbody id="spark-tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span>Loading...</td></tr></tbody></table>
+      <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title" id="spark-table-title">Spreads by zone</span><span class="source-badge" id="spark-refs"></span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th>Gas cost</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
       </div>
+      <div class="fuel-toolbar">
+        <span class="fuel-toolbar-lbl">Period</span>
+        <div class="pk-gf-group" id="sprh-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('sprh','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('sprh','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('sprh','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('sprh','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('sprh','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('sprh','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('sprh','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('sprh','All',this)">All</button></div>
+        <div class="hf-date-range fuel-range">
+          <span>From</span><input type="date" id="sprh-from" onchange="fuelSetRange('sprh')">
+          <span>To</span><input type="date" id="sprh-to" onchange="fuelSetRange('sprh')">
+        </div>
+        <span class="fuel-toolbar-lbl" style="margin-left:8px">Zone</span>
+        <select id="sprh-zone" class="fuel-select" onchange="renderSparkHistory()"></select>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="sprh-daily" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Monthly average</div><div class="fuel-card-sub" id="sprh-monthly-sub">CSS base / CSS peak / CDS base (€/MWh)</div></div><span class="source-badge">ENTSO-E · SEFE</span></div>
+          <div style="position:relative;height:280px"><canvas id="sprh-monthly" style="width:100%;height:280px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-note" id="sprh-note"></div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════
@@ -5228,10 +5306,7 @@
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <span class="table-title">Forward curve — Cal 2025 → 2028</span>
-            <div style="display:flex;gap:8px">
-              <span style="font-size:11px;color:var(--up)">&#9632; Bid</span>
-              <span style="font-size:11px;color:var(--dn)">&#9632; Ask</span>
-            </div>
+
           </div>
           <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:220px"></canvas></div>
         </div>
@@ -5250,7 +5325,7 @@
           <span class="source-badge">Commerg</span>
         </div>
         <table><thead><tr>
-          <th>Produit</th>
+          <th>Product</th>
           <th>Cal-25 Bid</th><th>Cal-25 Ask</th>
           <th>Cal-26 Bid</th><th>Cal-26 Ask</th>
           <th>Cal-27 Bid</th><th>Cal-27 Ask</th>
@@ -5323,97 +5398,81 @@
     <!-- WEATHER CITIES -->
     <div class="page" id="page-wxcities">
       <div class="page-header">
-        <div><div class="page-title">Energy Weather</div><div class="page-subtitle">Temperature · Wind · Precip · Radiation · Open-Meteo API</div></div>
+        <div><div class="page-title">Energy Weather</div><div class="page-subtitle">Temperature, wind, solar radiation and precipitation for the main load centres · 7 days back, 14 days ahead</div></div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="country-select" id="wx-country" onchange="loadWeather()">
-            <option value="FR">France</option>
-            <option value="DE">Germany</option>
-            <option value="ES">Spain</option>
-            <option value="GB">Great Britain</option>
-            <option value="BE">Belgium</option>
-            <option value="NL">Netherlands</option>
+            <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option>
+            <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="IT">Italy</option><option value="GB">Great Britain</option>
           </select>
-          <span class="updated-badge" id="wx-upd">Loading...</span>
+          <span class="updated-badge" id="wx-upd">Open-Meteo</span>
         </div>
       </div>
-
-      <!-- City cards -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px" id="wx-cards">
-        <div style="color:var(--text3);padding:20px"><span class="spinner"></span>Loading...</div>
-      </div>
-
-      <!-- Variable selector -->
+      <div class="kpi-strip fuel-kpis" id="wx-kpis"></div>
       <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="wx-var-btns">
-        <button class="day-tab active" onclick="setWxVar('temp',this)">🌡 Temperature</button>
-        <button class="day-tab" onclick="setWxVar('wind',this)">💨 Wind</button>
-        <button class="day-tab" onclick="setWxVar('precip',this)">🌧 Precipitation</button>
-        <button class="day-tab" onclick="setWxVar('radiation',this)">☀ Solar Radiation</button>
+        <button class="day-tab active" onclick="setWxVar('temp',this)">Temperature</button>
+        <button class="day-tab" onclick="setWxVar('wind',this)">Wind 100 m</button>
+        <button class="day-tab" onclick="setWxVar('radiation',this)">Solar radiation</button>
+        <button class="day-tab" onclick="setWxVar('precip',this)">Precipitation</button>
       </div>
-
-      <!-- 14-day forecast chart -->
-      <div class="chart-container" style="margin-bottom:16px">
-        <div class="table-header" style="padding:0 0 10px;border:none">
-          <span class="table-title" id="wx-chart-title">Temperature — 14-day Forecast</span>
-          <span class="source-badge">Open-Meteo</span>
+      <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="wx-forecast-canvas-title">Temperature</div><div class="fuel-card-sub" id="wx-forecast-canvas-sub">Hourly · population-weighted average (bold) and cities · past 7 days and 14-day forecast</div></div><span class="source-badge">Open-Meteo</span></div>
+          <div style="position:relative;height:300px"><canvas id="wx-forecast-canvas" style="width:100%;height:300px"></canvas></div>
         </div>
-        <div style="position:relative;height:240px;overflow:hidden"><canvas id="wx-forecast-canvas" style="width:100%;height:240px"></canvas></div>
+      <div class="table-wrap" style="margin-top:14px">
+        <div class="table-header"><span class="table-title" id="wx-table-title">Cities — today</span><span class="source-badge">Open-Meteo</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">City</th><th>Weight</th><th>Now °C</th><th>Min / max °C</th><th>Mean °C</th><th>Wind 100 m (m/s)</th><th>Radiation (kWh/m²)</th><th>Precip (mm)</th><th>HDD</th></tr></thead>
+        <tbody id="wx-city-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
       </div>
-
-      <!-- City detail table -->
-      <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Cities — Today Summary</span></div>
-        <table>
-          <thead><tr><th>City</th><th>Now °C</th><th>Min/Max</th><th>Wind km/h</th><th>Precip mm</th><th>Radiation W/m²</th><th>HDD</th></tr></thead>
-          <tbody id="wx-city-tbody">
-            <tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div class="fuel-note" id="wx-note"></div>
     </div>
 
     <!-- HDD/CDD -->
     <div class="page" id="page-wxhdd">
       <div class="page-header">
-        <div><div class="page-title">HDD / CDD — Degree Days</div><div class="page-subtitle">Heating &amp; Cooling · France · Open-Meteo</div></div>
-        <span class="updated-badge">Open-Meteo · Demo</span>
+        <div><div class="page-title">Degree Days — HDD / CDD</div><div class="page-subtitle">Population-weighted heating and cooling degree days vs the 2016–2025 normal · Open-Meteo</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="country-select" id="hdd-country" onchange="renderHDD()">
+            <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option>
+            <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="IT">Italy</option><option value="GB">Great Britain</option>
+          </select>
+          <span class="updated-badge" id="hdd-upd">Open-Meteo</span>
+        </div>
       </div>
-      <div class="kpi-strip" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-        <div class="kpi-card kpi-flat"><div class="kpi-label">HDD Paris Auj.</div><div class="kpi-value" id="hdd-kpi-today">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-today-sub">vs normale</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">HDD Cumul Saison</div><div class="kpi-value" id="hdd-kpi-cum">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">HDD</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-cum-sub">vs norm.</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">CDD YTD</div><div class="kpi-value" id="hdd-kpi-cdd">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">CDD</span></div><div class="kpi-chg" style="color:var(--text3)" id="hdd-kpi-cdd-sub">Normale: --</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Temp. France Now</div><div class="kpi-value" id="hdd-kpi-temp">--<span style="font-size:12px;font-weight:400;color:var(--text2);margin-left:3px">°C</span></div><div class="kpi-chg" style="color:var(--tx3)" id="hdd-kpi-temp-sub">vs norm.</div></div>
+      <div class="kpi-strip fuel-kpis" id="hdd-kpis"></div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="hdd-canvas-title">Daily HDD vs normal</div><div class="fuel-card-sub" id="hdd-canvas-sub">Last 60 days and 14-day forecast · base 18 °C</div></div><span class="source-badge">Open-Meteo</span></div>
+          <div style="position:relative;height:280px"><canvas id="hdd-canvas" style="width:100%;height:280px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title" id="hdd-cum-title">Heating season to date</div><div class="fuel-card-sub" id="hdd-cum-sub">Cumulative HDD since 1 September vs normal and previous season</div></div><span class="source-badge">Open-Meteo</span></div>
+          <div style="position:relative;height:280px"><canvas id="hdd-cum" style="width:100%;height:280px"></canvas></div>
+        </div>
       </div>
-      <div class="chart-container"><div class="table-title" style="margin-bottom:10px">HDD Season Cumulative — Paris vs 20Y Normal</div><div style="position:relative;height:200px;overflow:hidden"><canvas id="hdd-canvas" style="width:100%;height:200px"></canvas></div></div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">HDD by city — last 7 days</span></div>
-        <table><thead><tr><th>City</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th><th>Total</th><th>vs norm.</th></tr></thead>
-        <tbody id="hdd-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody></table>
+        <div class="table-header"><span class="table-title">Weekly degree days</span><span class="source-badge">HDD base 18 °C · CDD base 21 °C</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Week</th><th>Mean °C</th><th>Normal °C</th><th>HDD</th><th>Normal HDD</th><th>vs normal</th><th>CDD</th></tr></thead>
+        <tbody id="hdd-tbody"></tbody></table>
       </div>
+      <div class="fuel-note" id="hdd-note"></div>
     </div>
 
     <!-- REMIT -->
     <div class="page" id="page-remit">
       <div class="page-header">
-        <div><div class="page-title">REMIT — Urgent Market Messages</div><div class="page-subtitle">Generation and infrastructure outages · TSO publications</div></div>
-        <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">3 active UMM · FR</span>
+        <div><div class="page-title">Outages &amp; REMIT</div><div class="page-subtitle">French nuclear unavailability · official urgent-market-message platforms</div></div>
+        <span class="updated-badge" id="remit-upd">SEFE market cockpit</span>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
+      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW), last 180 days · operator forecast dashed</div></div><span class="source-badge">SEFE</span></div>
+        <div style="position:relative;height:280px"><canvas id="remit-unavail" style="width:100%;height:280px"></canvas></div>
       </div>
       <div class="table-wrap">
-        <div class="table-header"><span class="table-title">Active UMMs — France</span></div>
-        <table><thead><tr>
-          <th onclick="sortGenericTable('remit-tbody',0,this)" style="cursor:pointer;user-select:none">TSO <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',1,this)" style="cursor:pointer;user-select:none">Asset <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',2,this)" style="cursor:pointer;user-select:none">Type <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',3,this)" style="cursor:pointer;user-select:none">MW Unavail. <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',4,this)" style="cursor:pointer;user-select:none">Start <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th onclick="sortGenericTable('remit-tbody',5,this)" style="cursor:pointer;user-select:none">End <span class="sort-ind" style="opacity:.4">↕</span></th>
-          <th>Status</th>
-        </tr></thead>
-        <tbody id="remit-tbody">
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Gravelines 4</td><td>Nuclear</td><td class="down">900</td><td>2026-04-15</td><td>2026-05-12</td><td style="color:var(--warn)">Active</td></tr>
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Cattenom 2</td><td>Nuclear</td><td class="down">1,300</td><td>2026-04-22</td><td>2026-05-30</td><td style="color:var(--warn)">Active</td></tr>
-          <tr><td><span style="font-size:10px;color:var(--accent);font-weight:600;margin-right:4px">RTE</span></td><td>Paluel 1</td><td>Nuclear</td><td class="down">665</td><td>2026-04-28</td><td>2026-05-08</td><td style="color:var(--down)">Unplanned</td></tr>
-        </tbody></table>
+        <div class="table-header"><span class="table-title">Unit-level UMMs — official platforms</span><span class="source-badge">REMIT Art. 4</span></div>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Platform</th><th style="text-align:left">Coverage</th><th>Link</th></tr></thead><tbody><tr><td class="l" style="text-align:left;font-weight:600">ENTSO-E Transparency Platform</td><td class="l" style="text-align:left;color:var(--text2)">Unavailability of production and generation units (all EU TSOs)</td><td><a href="https://transparency.entsoe.eu/outage-domain/r2/unavailabilityOfProductionAndGenerationUnits/show" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">EEX Transparency</td><td class="l" style="text-align:left;color:var(--text2)">Inside information / UMMs published by market participants (DE, FR, AT, ...)</td><td><a href="https://www.eex-transparency.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">Nord Pool UMM</td><td class="l" style="text-align:left;color:var(--text2)">Urgent market messages, Nordic and Baltic areas</td><td><a href="https://umm.nordpoolgroup.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">ACER — REMIT</td><td class="l" style="text-align:left;color:var(--text2)">Regulation, inside-information platforms list (IIPs)</td><td><a href="https://www.acer.europa.eu/remit" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr></tbody></table>
       </div>
+      <div class="fuel-note">PowerKlock does not yet ingest unit-level UMMs; the aggregate French nuclear unavailability above is derived from the operator's declared available capacity.</div>
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
@@ -5424,9 +5483,9 @@
           <a href="#meth-prices" class="meth-nav-link">Prices</a>
           <a href="#meth-bands" class="meth-nav-sublink">→ Cross-zone Bands</a>
           <a href="#meth-drill" class="meth-nav-sublink">→ Drill-down envelope</a>
-          <a href="#meth-genmix" class="meth-nav-link">GenMix</a>
-          <a href="#meth-cb" class="meth-nav-link">Cross-border</a>
-          <a href="#meth-eua" class="meth-nav-link">EUA &amp; GO</a>
+          <a href="#meth-genmix" class="meth-nav-link">Generation &amp; renewables</a>
+          <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
+          <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
         <article class="meth-body">
@@ -5516,18 +5575,39 @@
           </section>
 
           <section id="meth-genmix" class="meth-section">
-            <h2 class="meth-h2">GenMix</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Generation, load &amp; renewables</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">Actual generation per technology (ENTSO-E A75), wind/solar day-ahead forecasts (A69) and load (A65 actual and day-ahead forecast) are fetched by the daily job and stored in <code>data/history/daily/</code>. France also uses RTE éCO2mix (real-time and consolidated, via ODRÉ open data) for consumption, forecasts and exchanges.</p>
+            <h3 class="meth-h3">Time alignment</h3>
+            <p class="meth-p">Generation and load series are requested on a UTC day and are realigned client-side to CET/CEST delivery slots (slot 0 = 00:00 Paris), so they line up with day-ahead prices. Slots not yet published by ENTSO-E are shown as empty, never as zero.</p>
+            <h3 class="meth-h3">Capture prices</h3>
+            <p class="meth-p">Capture price = Σ(output × price) ÷ Σ(output) over the delivery day's slots; capture rate = capture price ÷ baseload (simple average price of the same days). Multi-day figures are output-weighted and only use days carrying generation data; the number of days is always shown.</p>
+            <h3 class="meth-h3">Carbon intensity</h3>
+            <p class="meth-p">Average (attributional) life-cycle intensity: Σ(output × emission factor) ÷ Σ(output), with IPCC / ADEME median factors per technology. Imports are not included.</p>
           </section>
 
           <section id="meth-cb" class="meth-section">
-            <h2 class="meth-h2">Cross-border</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Cross-border flows, imbalance &amp; outages</h2>
+            <p class="meth-p"><strong>France:</strong> commercial exchanges per border from RTE éCO2mix (15-min; RTE sign convention, negative = export). <strong>Other zones:</strong> ENTSO-E A11 physical flows, daily average per partner.</p>
+            <p class="meth-p"><strong>Imbalance:</strong> Belgian single imbalance price and system imbalance from Elia open data (today near real time, earlier days validated). Other TSOs are not ingested yet.</p>
+            <p class="meth-p"><strong>Nuclear availability &amp; outages:</strong> French available nuclear capacity (actual and operator forecast) from the SEFE cockpit; unavailability = 63.0 GW installed (57 reactors incl. Flamanville 3) − available. Unit-level UMMs are linked to the official inside-information platforms.</p>
+            <h3 class="meth-h3">Weather &amp; degree days</h3>
+            <p class="meth-p">Open-Meteo forecast and ERA5 archive, population-weighted over each country's main load centres. HDD = max(0, 18 °C − daily mean), CDD = max(0, daily mean − 21 °C); normal = mean of the same calendar day 2016–2025.</p>
+            <h3 class="meth-h3">History coverage</h3>
+            <p class="meth-p">France has day-ahead history since 2015; most other zones are fully covered only since October 2026 (backfill pending). Cross-zone comparisons are computed on the days all selected zones share, and partial years are excluded from yearly totals.</p>
           </section>
 
           <section id="meth-eua" class="meth-section">
-            <h2 class="meth-h2">EUA &amp; GO</h2>
-            <p class="meth-tag-pending">Documentation in progress.</p>
+            <h2 class="meth-h2">Carbon, fuels &amp; spreads</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">Gas (TTF, PEG, THE, NBP day-ahead; JKM front-month), EUA December contracts, API2 coal (ARA CIF, front calendar year), Brent front-month, EUR/USD and GBP/USD, EU gas storage (GIE AGSI) and French nuclear available capacity come from SEFE Energy's public market cockpit, refreshed daily (<code>data/commodities.json</code>). Values are daily settlements/closes; the date shown is the trading date.</p>
+            <p class="meth-p">EUA and coal histories are those of a single benchmark contract (e.g. EUA Dec-26, API2 Cal-27), not a rolled continuous series: earlier points include the contract's carry.</p>
+            <h3 class="meth-h3">Clean spark &amp; clean dark spreads</h3>
+            <p class="meth-p"><strong>CSS</strong> = power − TTF ÷ 49.13% − EUA × 0.411 tCO₂/MWh (CCGT, 0.202 tCO₂/MWh<sub>th</sub>). <strong>CDS</strong> = power − API2 (converted at the EUR/USD close) ÷ (6.978 MWh/t × 36%) − EUA × 0.947 tCO₂/MWh (coal, 0.341 tCO₂/MWh<sub>th</sub>). Day-ahead spreads use TTF day-ahead traded the day before delivery; forward spreads use power and TTF on the same tenor and the EUA December contract of the delivery year. Peak = 08:00–20:00.</p>
+            <h3 class="meth-h3">Coal-to-gas switching price</h3>
+            <p class="meth-p">The EUA price at which a CCGT and a coal unit have the same short-run cost: (gas fuel cost − coal fuel cost) ÷ (0.947 − 0.411). Above it, gas plants are cheaper than coal in the merit order.</p>
+            <h3 class="meth-h3">Guarantees of Origin</h3>
+            <p class="meth-p">Weekly AIB price indications (bid/ask per vintage year) from Commerg, and monthly French auction results published by EEX.</p>
           </section>
 
           <section id="meth-general" class="meth-section">
@@ -5535,7 +5615,7 @@
 
             <div class="meth-block">
               <h3 class="meth-h3">Auction date vs delivery date</h3>
-              <p class="meth-p">Day-Ahead prices are auctioned the day <em>before</em> delivery (the EPEX/Nord Pool auction closes at 12:00 CET on day D-1 for delivery on day D). Throughout PowerKlock, dates refer to the <strong>delivery date</strong> by default. Historical CSV filenames in <code>data/history/daily/</code> use the auction date by convention.</p>
+              <p class="meth-p">Day-Ahead prices are auctioned the day <em>before</em> delivery (the EPEX/Nord Pool auction closes at 12:00 CET on day D-1 for delivery on day D). Throughout PowerKlock, dates always refer to the <strong>delivery date</strong> (a CET/CEST calendar day). The daily history files in <code>data/history/daily/</code> are named by delivery date too.</p>
             </div>
 
             <div class="meth-block">
@@ -5601,44 +5681,27 @@
          switchDashboard('mydash') et bloquait toute l'application.
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="page" id="page-mydash">
-      <div class="page-header">
-        <div>
-          <div class="page-title">My Dashboard</div>
-          <div class="page-subtitle">Custom widgets</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="pk-btn-ghost" onclick="exportDashConfig()" title="Export config as JSON">⬇ Export</button>
-          <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
+      <div class="pkd-top">
+        <div class="pkd-tabs" id="pkd-tabs" role="tablist" aria-label="Dashboards"></div>
+        <div class="pkd-tools">
+          <span class="pkd-account" id="pkd-account"></span>
+          <button class="pk-btn-ghost" id="pkd-add-sec" type="button" title="Add a full-width section title">+ Section</button>
+          <button class="pk-btn-ghost" id="pkd-add-note" type="button" title="Add a text note">+ Note</button>
+          <button class="pk-btn-ghost" id="pkd-menu" type="button" title="Rename, duplicate, template, export, delete">⋯ Dashboard</button>
+          <button class="pk-btn-primary" id="pkd-add" type="button">+ Add charts</button>
         </div>
       </div>
-      <div class="mydash-grid" id="mydash-grid"></div>
-      <!-- Sibling of #mydash-grid, not a child: renderMyDash() replaces
-           #mydash-grid's innerHTML wholesale on every render, which would
-           destroy this node (and break every render after the first) if it
-           lived inside the grid. -->
-      <div class="mydash-empty" id="mydash-empty">
-        <div style="font-size:32px;margin-bottom:10px;opacity:.5">◎</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:4px">No widgets yet</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Pick the indicators you want to track at a glance.</div>
-        <button class="pk-btn-primary" onclick="openWidgetPicker()">+ Add a widget</button>
+      <div class="pkd-hint">Drag a card by its title bar, resize it from the bottom-right corner. ☆ on any chart of the site adds it here.</div>
+      <div class="pkd-empty" id="pkd-empty" hidden>
+        <div class="pkd-empty-title">This dashboard is empty</div>
+        <div class="pkd-empty-sub">Pick charts from the catalogue, or click ☆ on any chart of the site.</div>
+        <button class="pk-btn-primary" id="pkd-add-empty" type="button">+ Add charts</button>
       </div>
+      <div class="grid-stack pkd-grid" id="pkd-grid"></div>
     </div>
 
   </main>
 
-  <!-- My Dashboard · widget picker modal -->
-  <div id="widget-picker" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(5,8,12,0.6);backdrop-filter:blur(2px)" onclick="if(event.target===this)closeWidgetPicker()">
-    <div style="width:min(640px,92vw);max-height:80vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">Add widgets</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Click to add or remove an indicator from My Dashboard</div>
-        </div>
-        <button class="pk-btn-ghost" onclick="closeWidgetPicker()" title="Close">✕</button>
-      </div>
-      <div id="widget-picker-list" style="padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
-    </div>
-  </div>
   <!-- Global zone selector panel · shared across all sections, placed outside all pages so it remains accessible regardless of which tab is active -->
   <div id="global-zone-panel" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;min-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.7)">
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
@@ -6317,6 +6380,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </style>
 
 <script src="js/libs.js"></script>
+<script src="js/widgets.js"></script>
+<script src="js/gen-align.js"></script>
+<script src="js/eco2mix.js"></script>
+<script src="js/meteo.js"></script>
 <script>
   /* ────────────────────────────────────────────────────────────────
      Chart.js · global animation overrides
@@ -6354,6 +6421,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/chartjs-plugin-annotation.min.js"></script>
 <script src="js/fullscreen.js"></script>
 <script src="js/palette.js"></script>
+<script src="js/commodities.js"></script>
 <script src="js/carbon.js"></script>
 <script src="js/carbon-ghg.js"></script>
 <script src="js/prices.js"></script>
@@ -6367,10 +6435,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/market-analysis.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/eua.js"></script>
+<script src="js/overview-extra.js"></script>
 <script src="js/go.js"></script>
-<!-- js/weather.js retiré : clone périmé de prices.js, 19 redéclarations top-level
-     (ZONES, pricesData, FLAG_MAP, ZONE_META…) → SyntaxError, le fichier n'était
-     jamais exécuté. Il ne contenait aucun code météo propre. -->
+<!-- js/weather.js and js/globals.js (stale, never-loaded copies of prices.js) were deleted; weather lives in js/meteo.js. -->
 <script src="js/map.js"></script>
 <script src="js/france.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" defer></script>
@@ -6381,6 +6448,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/carbon-ui.js"></script>
 <script src="js/negatives.js"></script>
 <script src="js/pr-forward.js"></script>
+<script src="js/widgets-kpi.js"></script>
+<script src="js/account.js"></script>
+<script src="js/dashboard.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
 <script>

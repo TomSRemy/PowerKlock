@@ -544,7 +544,7 @@ async function renderHistSpot() {
   const roll30 = _rollingWithContext(data, s.zones[zone], 30);
 
   // "Now" marker -- index of today
-  const today = new Date().toISOString().slice(0,10);
+  const today = pkTodayISO();
   const nowIdx = labels.indexOf(today);
 
   // Period label
@@ -654,7 +654,8 @@ async function renderHistSpread() {
       datasets: [
         {
           label: 'Daily spread', data: spreads,
-          backgroundColor: spreads.map(v => v != null && v > 100 ? 'rgba(239,68,68,0.6)' : 'rgba(0,212,168,0.4)'),
+          // Intensity, not good/bad: a wide spread is an opportunity, not an alarm.
+          backgroundColor: spreads.map(v => v != null && v > 200 ? 'rgba(20,211,169,0.85)' : v != null && v > 100 ? 'rgba(20,211,169,0.6)' : 'rgba(20,211,169,0.3)'),
           borderWidth: 0,
         },
         { label: '30D avg', data: roll30, type: 'line', borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [4,3], order:0 },
@@ -669,6 +670,7 @@ async function renderHistSpread() {
     },
   });
 
+  if (typeof renderBess === 'function') renderBess();
   const valid = spreads.filter(v => v != null);
   setStats('hist-spread-stats', [
     { l: 'Avg spread',  v: round2(valid.reduce((a,b)=>a+b,0)/valid.length)?.toFixed(1), u: '€/MWh' },
@@ -1116,10 +1118,8 @@ window.renderHistMonthly = function(){};
 // ── Global zone state (shared across Daily Compare + Historical + Prices Table) ──
 function getUserZones() {
   if (!window._userZones) {
-    // Default: zones with actual GenMix data
-    const defaults = typeof getGenMixDefaultZones === 'function'
-      ? getGenMixDefaultZones()
-      : ['FR','DE_LU','ES','BE','NL','GB','PT'];
+    // Default: the 7 price zones of the Prices overview (data.js)
+    const defaults = window.PK_DEFAULT_PRICE_ZONES || ['FR','DE_LU','BE','NL','ES','PT','IT_NORD'];
     window._userZones = new Set(defaults);
   }
   return Array.from(window._userZones);
@@ -1877,6 +1877,17 @@ async function _updateHoKpiStrip(stats, selected, seriesByZone) {
   }
 }
 
+// Days present in every zone's series; `restricted` when that is fewer
+// than some zone has on its own.
+function _pkCommonDays(perZone) {
+  const zs = Object.keys(perZone).filter(z => perZone[z] && perZone[z].length);
+  if (!zs.length) return { days: new Set(), restricted: false, min: 0, max: 0 };
+  let common = new Set(perZone[zs[0]].map(e => e.d));
+  zs.slice(1).forEach(z => { const own = new Set(perZone[z].map(e => e.d)); common = new Set([...common].filter(d => own.has(d))); });
+  const counts = zs.map(z => perZone[z].length);
+  return { days: common, restricted: Math.max(...counts) > common.size, min: Math.min(...counts), max: Math.max(...counts), n: common.size };
+}
+
 async function renderHistOverview() {
   const w = HIST.windows['ho'] || '3M';
   const s = await fetchSummary();
@@ -1920,7 +1931,12 @@ async function renderHistOverview() {
   }
   if (periodEl) periodEl.textContent = periodText || '--';
   const zonesLabel = document.getElementById('ho-zones-label');
-  if (zonesLabel) zonesLabel.textContent = `${selected.length} zones loaded`;
+  if (zonesLabel) {
+    const cov = _pkCommonDays(seriesByZone);
+    zonesLabel.innerHTML = `${selected.length} zones loaded` + (cov.restricted
+      ? ` · <span style="color:var(--warn)" title="Per-zone figures use each zone's own days; history backfill pending for most non-FR zones">coverage differs: ${cov.min}–${cov.max} days per zone</span>`
+      : '');
+  }
 
   // ── KPI strip globale (FR-centric + loaded avg) avec vs Y-1 ──
   _updateHoKpiStrip(stats, selected, seriesByZone);
@@ -2043,7 +2059,7 @@ function _downloadHoChart(zone, fullscreen) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
   // High-res PNG with theme bg color
   const bgFill = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0a0d12';
@@ -2119,7 +2135,7 @@ function _exportHoChartCsv(zone, fullscreen) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const tab = (window._HO_TABS && window._HO_TABS[zone]) || 'lines';
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2161,7 +2177,7 @@ function _exportHoQuarterGridCsv(zone, grid) {
   const series = window._HO_LAST_SERIES;
   const periodStr = series && series.length
     ? `${series[0].d}_to_${series[series.length-1].d}`
-    : new Date().toISOString().slice(0,10);
+    : pkTodayISO();
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -8257,8 +8273,14 @@ async function renderHistMulti() {
   const stats = {};
   selected.forEach(z => {
     perZone[z] = filterByWindow(s.zones[z], w);
-    stats[z] = _statsForZone(perZone[z]);
   });
+  // Cross-zone comparisons only make sense on the same delivery days: zones
+  // with a shorter history (most non-FR zones before the backfill) would
+  // otherwise be averaged over a different period than FR.
+  const cov = _pkCommonDays(perZone);
+  if (cov.restricted) selected.forEach(z => { perZone[z] = perZone[z].filter(e => cov.days.has(e.d)); });
+  window._hmzCoverage = cov;
+  selected.forEach(z => { stats[z] = _statsForZone(perZone[z]); });
 
   // KPI strip — baseline is user-configurable via the Compare header dropdown
   let baseline = HIST.hmzBaseline || 'FR';
@@ -8332,7 +8354,11 @@ async function renderHistMulti() {
     }
   });
   const periodEl = document.getElementById('hmz-period');
-  if (periodEl && firstD && lastD) periodEl.textContent = periodLabel([{d:firstD},{d:lastD}]);
+  if (periodEl && firstD && lastD) {
+    const cov = window._hmzCoverage;
+    periodEl.innerHTML = periodLabel([{d:firstD},{d:lastD}]) + (cov && cov.restricted
+      ? ` · <span style="color:var(--warn)">compared on ${cov.n} common days (history coverage differs across zones)</span>` : '');
+  }
 
   // Toggle canvas vs heatmap
   const canvas = document.getElementById('hmz-canvas');
