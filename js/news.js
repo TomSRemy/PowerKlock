@@ -194,6 +194,7 @@ const PAGE_LOADERS = {
   wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },
+  regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
 };
 
 // Weather pages: see js/meteo.js
