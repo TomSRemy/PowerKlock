@@ -516,7 +516,7 @@ function noDataMsg(canvasId, msg, hint) {
   const text = msg || 'No historical data yet';
   // Default hint assumes an ENTSO-E source backfill.py can fill; callers with
   // a different/external data source (EUA, Imbalance, FCR, …) pass their own.
-  const hintText = hint || 'Run backfill.py to populate · Data available on GitHub Pages after fetch';
+  const hintText = hint == null ? 'Run backfill.py to populate · Data available on GitHub Pages after fetch' : hint;
   msgDiv.innerHTML =
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
     '<span>' + text + '</span>' +

@@ -195,6 +195,7 @@ const PAGE_LOADERS = {
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
   status:     () => { if (window.PKStatus) PKStatus.renderStatusPage(); },
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },
+  regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
 };
 
 // Weather pages: see js/meteo.js

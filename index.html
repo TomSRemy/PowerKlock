@@ -2879,6 +2879,9 @@
       <div class="sidebar-item" onclick="showPage('capacity')" id="nav-capacity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>Installed Capacity
       </div>
+      <div class="sidebar-item" onclick="showPage('regions')" id="nav-regions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>France Regions
+      </div>
       <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
       </div>
@@ -5512,6 +5515,31 @@
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
+    <div class="page" id="page-regions">
+      <div class="page-header">
+        <div><div class="page-title">France Regions</div><div class="page-subtitle">Regional consumption, renewable output and load factors · installed capacity · national gas and power demand</div></div>
+        <span class="updated-badge" id="reg-upd">–</span>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="reg-kpis"></div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title" id="reg-lf-title">Wind &amp; solar load factors</div><div class="fuel-card-sub">Average output ÷ installed capacity per region (%)</div></div><span class="source-badge">RTE éCO2mix</span></div>
+        <div style="position:relative;height:280px"><canvas id="reg-lf" style="width:100%;height:280px"></canvas></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title" id="reg-table-title">Regions · daily averages</span><span class="source-badge">GW · load factor %</span></div>
+        <div style="overflow-x:auto"><table><thead><tr><th class="l">Region</th><th>Consumption</th><th>Nuclear</th><th>Wind</th><th>Wind LF</th><th>Solar</th><th>Solar LF</th><th>Hydro</th><th>Thermal</th><th>Net import</th></tr></thead><tbody id="reg-tbody"></tbody></table></div>
+      </div>
+      <div class="chart-container fuel-card" style="margin-top:18px">
+        <div class="fuel-card-head"><div><div class="table-title">Installed capacity by region</div><div class="fuel-card-sub">National registry of production and storage installations (GW)</div></div><span class="source-badge">ODRÉ registry</span></div>
+        <div style="position:relative;height:320px"><canvas id="reg-cap" style="width:100%;height:320px"></canvas></div>
+      </div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">France gas and electricity consumption</div><div class="fuel-card-sub" id="reg-gas-elec-sub">Daily averages, GW</div></div><span class="source-badge">NaTran · Teréga · RTE</span></div>
+        <div style="position:relative;height:300px"><canvas id="reg-gas-elec" style="width:100%;height:300px"></canvas></div>
+      </div>
+      <div class="fuel-note">Sources: RTE éCO2mix régional, national registry of installations and daily gas and electricity consumption (NaTran, Teréga, RTE), published on ODRÉ (odre.opendatasoft.com) under the Etalab open licence. Load factor = output ÷ installed capacity (RTE "TCH"). Regional net import = physical exchanges with neighbouring regions and countries (+ = import).</div>
+    </div>
+
     <div class="page" id="page-capacity">
       <div class="page-header">
         <div><div class="page-title">Installed Capacity</div><div class="page-subtitle">Installed net generating capacity by technology and year · 12 European countries</div></div>
@@ -6545,6 +6573,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/widgets-kpi.js"></script>
 <script src="js/status.js"></script>
 <script src="js/capacity.js"></script>
+<script src="js/regions.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
 
