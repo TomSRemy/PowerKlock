@@ -4800,7 +4800,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Energy Converter</div>
-          <div class="page-subtitle">MW ↔ GW · MWh ↔ GWh ↔ TWh · Capacity to annual energy</div>
+          <div class="page-subtitle">Power (MW ↔ GW) · energy (MWh ↔ GWh ↔ TWh) · capacity to annual energy</div>
         </div>
       </div>
       <div class="converter-wrap">
@@ -4827,15 +4827,15 @@
               </div>
               <div>
                 <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Load Factor (%)</div>
-                <input class="conv-input" type="number" id="cap-lf" placeholder="35" style="font-size:32px" oninput="updateCapacity()" value="35">
+                <input class="conv-input" type="number" id="cap-lf" placeholder="25" style="font-size:32px" oninput="updateCapacity()" value="25">
               </div>
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:14px">
             <button class="day-tab" onclick="setLF(85, this)">Baseload (85%)</button>
-            <button class="day-tab active" onclick="setLF(35, this)">Wind (35%)</button>
-            <button class="day-tab" onclick="setLF(20, this)">Solar (20%)</button>
-            <button class="day-tab" onclick="setLF(25, this)">BESS (25%)</button>
+            <button class="day-tab active" onclick="setLF(25, this)">Onshore wind (25%)</button>
+            <button class="day-tab" onclick="setLF(14, this)">Solar PV (14%)</button>
+            <button class="day-tab" onclick="setLF(75, this)">Nuclear (75%)</button>
           </div>
           <div class="conv-results" id="cap-results"></div>
         </div>
