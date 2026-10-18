@@ -458,11 +458,11 @@
       return;
     }
     const tb = document.getElementById('gmh-table-tbody');
-    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Agrégation des données réelles d'archive…</td></tr>`;
+    if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Aggregating archived data…</td></tr>`;
     _gmhBuildRealBoardData(period).then(data => {
       window._gmhBoardCache = { key, data };
       _gmhPaintBoard(data, period);
-    }).catch(() => { if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Erreur d'agrégation des données réelles</td></tr>`; });
+    }).catch(() => { if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Could not aggregate archived data</td></tr>`; });
   }
   function _gmhPaintBoard(pdata, period) {
     window._gmhAllZones = Object.keys(pdata); // full list (for the zone filter panel)
@@ -483,7 +483,7 @@
 
     if (!zones.length) {
       const tb = document.getElementById('gmh-table-tbody');
-      if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">Pas de données réelles archivées sur cette période. Lancer le backfill genmix pour la couvrir.</td></tr>`;
+      if (tb) tb.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px;font-size:11px">No archived data for this period. Run the genmix backfill to cover it.</td></tr>`;
       return;
     }
 
@@ -764,7 +764,7 @@
       mix:      `Period-aggregated fuel mix · ${(window._gmhDrillMixMode || 'donut').toUpperCase()}`,
       carbon:   `Daily-average CO₂ intensity over period ${period}`,
       seasonal: `Seasonal pattern · weekly heatmap (day × hour-of-day)`,
-      stack:    `24h Production stack · par filière`,
+      stack:    `24h production stack · by technology`,
     };
     if (eb) eb.textContent = `${zone} · ${viewLbl} · ${period}`;
     tt.textContent = titles[tab] || titles.profile;
@@ -957,7 +957,7 @@
     const labels = series.labels;
     const data = series.load;
     if (!data.length) {
-      host.querySelector('div[style*="height:300px"]').innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">Pas de données stockées sur la période pour ${zone}.</div>`;
+      host.querySelector('div[style*="height:300px"]').innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone} over this period.</div>`;
       return;
     }
 
@@ -1240,16 +1240,16 @@
           </tbody>
         </table>
         <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Hypothèses de calcul</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600;margin-bottom:8px">Calculation assumptions</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.6;margin-bottom:10px">
-            <span style="color:var(--tx)">CI = Σ<sub>f</sub> [ génération<sub>f</sub> × FE<sub>f</sub> ] / Σ<sub>f</sub> génération<sub>f</sub></span><br>
-            <span style="color:var(--tx3)">Moyenne attributionnelle, périmètre cycle de vie. Agrégée sur la période sélectionnée.</span>
+            <span style="color:var(--tx)">CI = Σ<sub>f</sub> [ generation<sub>f</sub> × FE<sub>f</sub> ] / Σ<sub>f</sub> generation<sub>f</sub></span><br>
+            <span style="color:var(--tx3)">Attributional average, life-cycle scope. Aggregated over the selected period.</span>
           </div>
           <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
             <thead><tr>
-              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Filière</th>
+              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Technology</th>
               <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
-              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Données</th>
+              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Data</th>
             </tr></thead>
             <tbody>
               ${STACK.map(f => { const m = FUEL_META[f] || { color: '#7A93AB', label: f, emoji: '', co2: 0 }; return `<tr style="border-top:1px solid var(--bd)">
@@ -1260,7 +1260,7 @@
             </tbody>
           </table>
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.6">
-            <span style="color:var(--tx2)">Sources :</span> génération = ENTSO-E Transparency (A75), archive PowerKlock. Facteurs d'émission = base ADEME / GIEC (médianes cycle de vie). « Fossil » = moyenne gaz/charbon ENTSO-E.
+            <span style="color:var(--tx2)">Sources:</span> generation = ENTSO-E Transparency (A75), PowerKlock archive. Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = gas/coal average, ENTSO-E.
           </div>
         </div>`;
     }

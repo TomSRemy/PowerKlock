@@ -388,22 +388,6 @@ function loadFranceDashboard() {
     });
   }
 
-  // REMIT placeholder
-  document.getElementById('fr-remit-list').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Paluel 2 — maintenance</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 350 MW indisponible · jusqu'au 12 mai</div>
-      </div>
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--warn)">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Flamanville 1 — arrêt fortuit</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 330 MW indisponible · retour prévu 05 mai</div>
-      </div>
-      <div style="padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:2px solid #4A6280">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Belleville 1 — programmé</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">1 310 MW · rechargement combustible</div>
-      </div>
-    </div>`;
 }
 
 // ── MY DASHBOARD ──
@@ -1257,7 +1241,7 @@ function renderPricesTable(data, dataDateStr) {
   window._pricesSortDir = window._pricesSortDir || {};
   // Default Compare Zones selection: shared global zones (default = GenMix data-driven)
   if (!window._userZones) {
-    window._userZones = new Set(getGenMixDefaultZones());
+    window._userZones = new Set(window.PK_DEFAULT_PRICE_ZONES || getGenMixDefaultZones());
   }
   // _compareZones always mirrors _userZones (global state)
   window._compareZones = window._userZones;
@@ -1572,20 +1556,16 @@ function renderPricesTableBody() {
       if (opV.length) offPeakStr = PK_FMT.num(opV.reduce((a,b)=>a+b,0)/opV.length, 2);
     }
 
-    // % Renewables + Dominant fuel from GM_DEMO
-    const cc = (ZONE_META[z.code]||{}).cc || z.code;
-    const gmKey = z.code in GM_DEMO ? z.code : (cc in GM_DEMO ? cc : null);
+    // % Renewables + dominant fuel of the delivery day (daily history file;
+    // only zones covered by the generation fetch have them).
     let renPctStr = '–', domFuelHtml = '–';
-    if (gmKey) {
-      const mix = GM_DEMO[gmKey];
-      const total = mix.total || 1;
-      const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
-      const renP  = Math.round(renMW/total*100);
-      // Harmonised thresholds (T1 + T2): <35 red / 35-65 orange / >65 green
+    if (z.renPct != null) {
+      const renP = Math.round(z.renPct);
       renPctStr = `<span style="color:${PK_FMT.renColor(renP)};font-weight:600">${renP}%</span>`;
-      // Dominant fuel
-      let domKey = fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
-      const fm = fuelMeta[domKey] || {emoji:'', label:domKey, color:'var(--tx2)'};
+    }
+    if (z.domFuel) {
+      const domKey = String(z.domFuel).toLowerCase();
+      const fm = fuelMeta[domKey] || {emoji:'', label:z.domFuel, color:'var(--tx2)'};
       domFuelHtml = `<span style="color:${fm.color};font-size:11px">${fm.emoji} ${fm.label}</span>`;
     }
 
@@ -1697,19 +1677,9 @@ function sortPricesTable(key) {
     h.forEach((v,i)=>{ if(v==null)return; const hr=Math.floor(i/nph); if(hr<8||hr>=20)opV.push(v); });
     return opV.length ? opV.reduce((a,b)=>a+b,0)/opV.length : z.today;
   };
-  const calcRenPct = z => {
-    const gmKey = z.code in GM_DEMO ? z.code : null;
-    if (!gmKey) return -1;
-    const mix = GM_DEMO[gmKey];
-    const renMW = (mix.wind||0)+(mix.solar||0)+(mix.hydro||0)+(mix.biomass||0);
-    return mix.total ? renMW/mix.total*100 : -1;
-  };
+  const calcRenPct = z => z.renPct != null ? z.renPct : -1;
   const calcDomFuel = z => {
-    const gmKey = z.code in GM_DEMO ? z.code : null;
-    if (!gmKey) return 'zz';
-    const mix = GM_DEMO[gmKey];
-    const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
-    return fuelOrder.reduce((best,k)=> (mix[k]||0)>(mix[best]||0)?k:best, fuelOrder[0]);
+    return z.domFuel ? String(z.domFuel).toLowerCase() : 'zz';
   };
 
   const val = z => {

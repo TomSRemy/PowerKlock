@@ -1116,10 +1116,8 @@ window.renderHistMonthly = function(){};
 // ── Global zone state (shared across Daily Compare + Historical + Prices Table) ──
 function getUserZones() {
   if (!window._userZones) {
-    // Default: zones with actual GenMix data
-    const defaults = typeof getGenMixDefaultZones === 'function'
-      ? getGenMixDefaultZones()
-      : ['FR','DE_LU','ES','BE','NL','GB','PT'];
+    // Default: the 7 price zones of the Prices overview (data.js)
+    const defaults = window.PK_DEFAULT_PRICE_ZONES || ['FR','DE_LU','BE','NL','ES','PT','IT_NORD'];
     window._userZones = new Set(defaults);
   }
   return Array.from(window._userZones);
