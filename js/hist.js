@@ -11487,3 +11487,14 @@ function _bdHodShape(zone, summary) {
   };
 
 })();
+
+// ── Dashboard catalogue: mirrors of the Prices history charts (js/widgets.js) ──
+(function () {
+  if (!window.PKW) return;
+  PKW.mirror({ id: 'hist-spread', pageCanvas: 'hist-spread-canvas', title: 'Daily intraday spread (max − min)', category: 'spreads', page: 'prices', source: 'ENTSO-E',
+    desc: 'Daily max − min day-ahead price per zone over the selected window (Prices → Spread).', size: { w: 6, h: 5 },
+    ensure: () => { if (typeof renderHistSpread === 'function') return renderHistSpread(); } });
+  PKW.mirror({ id: 'hist-neg', pageCanvas: 'hist-neg-canvas', title: 'Negative-price hours per day', category: 'prices', page: 'prices', source: 'ENTSO-E',
+    desc: 'Hours with a negative day-ahead price per day over the selected window.', size: { w: 6, h: 5 },
+    ensure: () => { if (typeof renderHistNeg === 'function') return renderHistNeg(); } });
+})();

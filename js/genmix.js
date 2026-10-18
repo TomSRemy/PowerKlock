@@ -2567,3 +2567,15 @@ window.gmSetHistDate = function (ds) {
     if (h && h._gmsReflow) h._gmsReflow();
   });
 })();
+
+// ── Dashboard catalogue (js/widgets.js) ─────────────────────────────
+if (window.PKW) PKW.register({
+  id: 'gm-profile', title: '24 h generation profile vs 30-day range', category: 'system', page: 'genmix', source: 'ENTSO-E A75', size: { w: 6, h: 5 },
+  desc: 'Total generation of the latest stored day (15-min, GW) against the P5–P95 and P0–P100 envelope and the median of the last 30 days, with the previous day.',
+  params: [{ key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] }],
+  defaults: { zone: 'FR' },
+  async draw(cid, p) {
+    await _gmRenderProfileReal(cid, p.zone, null, '_pkwGm_' + cid);
+    return { sub: (GM_ZONE_NAMES[p.zone] || p.zone) + ' · latest stored day' };
+  },
+});
