@@ -45,9 +45,9 @@
         const any = j && j.countries && Object.values(j.countries).some(fl => (fl || []).some(f => f.imports || f.exports));
         return { at: d, late: d && Date.now() - d > 14 * H, error: j && !any, detail: j && !any ? 'feed returned no flow values' : '' };
       } },
-    { id: 'commodities', label: 'Fuels, carbon, FX, nuclear availability', provider: 'SEFE cockpit', kind: 'repo', cadence: 'trading days, 06:30 UTC',
+    { id: 'commodities', label: 'Fuels, carbon, FX, nuclear availability', provider: 'Market data feed', kind: 'repo', cadence: 'trading days, 06:30 UTC',
       async check() { const j = await getJSON('commodities.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && businessHours(d) > 30 }; } },
-    { id: 'forwards', label: 'Power forward curves', provider: 'SEFE cockpit', kind: 'repo', cadence: 'trading days, 06:30 UTC',
+    { id: 'forwards', label: 'Power forward curves', provider: 'Market data feed', kind: 'repo', cadence: 'trading days, 06:30 UTC',
       async check() { const j = await getJSON('fr_market.json'); const d = j && j.forwardCurveDate ? new Date(j.forwardCurveDate + 'T17:00:00Z') : null; return { at: d, late: d && businessHours(d) > 40, detail: j ? 'settlement ' + j.forwardCurveDate : '' }; } },
     { id: 'news', label: 'News feeds', provider: 'RSS (Montel, Euractiv…)', kind: 'repo', cadence: 'every 3 h + with day-ahead fetch',
       async check() { const j = await getJSON('news.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && Date.now() - d > 14 * H, detail: j && j.items ? j.items.length + ' items' : '' }; } },
