@@ -306,11 +306,13 @@ def categorize(psr_map):
 # ─────────────────────────────────────────────
 # FETCH PRICES
 # ─────────────────────────────────────────────
-def fetch_prices():
-    print("Fetching prices...")
-    today    = date_str(0)
-    tomorrow = date_str(1)
-    yesterday = date_str(-1)
+def fetch_prices(offset=0):
+    """Day-ahead prices for delivery day today+offset (offset=1 → tomorrow,
+    available once the EPEX/ENTSO-E auction results are out, ~12:45 CET)."""
+    print(f"Fetching prices (day offset {offset})...")
+    today    = date_str(offset)
+    tomorrow = date_str(offset + 1)
+    yesterday = date_str(offset - 1)
     results  = []
 
     for code, eic in ZONES.items():
@@ -1094,5 +1096,25 @@ if __name__ == '__main__':
         summary['zones'][code].append(entry)
         summary['zones'][code].sort(key=lambda x: x['d'])
     write_json(summary_path, summary)
+
+    # ── Next delivery day (D+1): prices only, written once the auction is out.
+    # The 05:00 UTC run of D+1 rewrites this file with generation data too.
+    try:
+        if datetime.utcnow().hour >= 11:
+            nxt = fetch_prices(1)
+            if len(nxt) >= 20:
+                d1 = (datetime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%d')
+                snap = {'date': d1, 'zones': {}, 'pricesOnly': True}
+                for z in nxt:
+                    e = {'avg': z['today'], 'min': z['min'], 'max': z['max'], 'negH': z['negHours'], 'hourly': z['hourly']}
+                    pk, off = peak_offpeak_from_hourly(z['hourly'])
+                    if pk is not None: e['peakAvg'] = pk
+                    if off is not None: e['offAvg'] = off
+                    snap['zones'][z['code']] = e
+                write_json(f'data/history/daily/{d1}.json', snap)
+            else:
+                print(f"[D+1] only {len(nxt)} zones published yet — skipped")
+    except Exception as _e:
+        print(f"[D+1] skipped: {_e}")
 
     print(f"\nDone. All data files written.")
