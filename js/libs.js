@@ -14615,7 +14615,9 @@
       ? parsedY.toLocaleString('en-GB', { maximumFractionDigits: 2 })
       : String(parsedY);
     const tt = chart.options.plugins && chart.options.plugins.tooltip;
-    if (tt && tt.callbacks && typeof tt.callbacks.label === 'function') {
+    // Chart.js always resolves a default label callback: only a chart's own counts.
+    const defLabel = Chart.defaults && Chart.defaults.plugins && Chart.defaults.plugins.tooltip && Chart.defaults.plugins.tooltip.callbacks && Chart.defaults.plugins.tooltip.callbacks.label;
+    if (tt && tt.callbacks && typeof tt.callbacks.label === 'function' && tt.callbacks.label !== defLabel) {
       try {
         const ctx = {
           chart, label: chart.data.labels ? chart.data.labels[idx] : '',
