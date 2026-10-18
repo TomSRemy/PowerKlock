@@ -439,8 +439,11 @@ function renderGmMain() {
   const selDate = window._gmHistDate || null;
   const hdrDate = document.getElementById('gm-main-header-date');
   if (hdrDate) {
-    const d = selDate ? new Date(selDate + 'T00:00:00') : new Date();
-    hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) + ' · ENTSO-E';
+    const d = selDate ? new Date(selDate + 'T12:00:00') : (window._genmixUpdated ? new Date(window._genmixUpdated) : new Date());
+    const upd = (!selDate && window._genmixUpdated)
+      ? ' · snapshot ' + new Date(window._genmixUpdated).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
+      : '';
+    hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' }) + upd + ' · ENTSO-E';
   }
 
   // Table-header label (mirrors prices-date-label in Day-Ahead table-header)
