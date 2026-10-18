@@ -55,7 +55,9 @@ async function _cbFrance(day) {
     _fuelKpi('Physical balance', GW(Math.abs(_renMean(d.ech_physiques))), 'GW', 'all borders, physical (éCO2mix)');
 
   PKW.draw('cb-intraday', 'cb-intraday', { day });
-  PKW.draw('cb-days', 'cb-days', { day });
+  const cbN = window._cbDaysN || '14';
+  PKW.draw('cb-days', 'cb-days', { day, n: cbN });
+  PKW.periodButtons('cb-days', CB_DAYS_PARAM.options.map(o => [o[0], o[0] + 'D']), cbN, v => { window._cbDaysN = v; PKW.draw('cb-days', 'cb-days', { day, n: v }); });
   document.getElementById('cb-intraday-title').textContent = 'Intraday exchanges by border · ' + _renFmtDay(day);
 
   document.getElementById('cb-table-title').textContent = 'Borders · ' + _renFmtDay(day);
@@ -101,13 +103,15 @@ _cbReg({
   },
 });
 
+const CB_DAYS_PARAM = { key: 'n', label: 'Window', options: [['7', '7 days'], ['14', '14 days'], ['30', '30 days'], ['45', '45 days']] };
 _cbReg({
-  id: 'cb-days', title: 'France · exchanges, last 14 days', pageCanvas: 'cb-days',
-  desc: 'Daily average exchange per border over two weeks (+ import / − export).',
+  id: 'cb-days', title: 'France · daily exchanges by border', pageCanvas: 'cb-days',
+  desc: 'Daily average exchange per border over the last days (+ import / − export).',
+  params: [CB_DAYS_PARAM], defaults: { n: '14' },
   async draw(cid, p) {
     const day = p.day || await _cbLatestDay();
     const B = PK_E2M.BORDERS;
-    const from = PK_E2M.dayBoundsUTC(_renAdd(day, -13))[0], to = PK_E2M.dayBoundsUTC(day)[1];
+    const from = PK_E2M.dayBoundsUTC(_renAdd(day, 1 - (+p.n || 14)))[0], to = PK_E2M.dayBoundsUTC(day)[1];
     const rows = await PK_E2M.fetchRange(from, to) || [];
     const byDay = {};
     rows.forEach(r => {
@@ -120,8 +124,8 @@ _cbReg({
     _fuelChart(cid, { type: 'bar', data: { labels: days.map(x => x.slice(8, 10) + '/' + x.slice(5, 7)), datasets: B.map(b => ({
       label: b.label, data: days.map(x => { const v = byDay[x][b.key] || []; return v.length ? +(v.reduce((a, y) => a + y, 0) / v.length / 1000).toFixed(2) : null; }),
       backgroundColor: rgba(b.color, .7), borderRadius: 2, stack: 's' })) },
-      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('GW', { stacked: true }) } }) }, 'fr-exchanges-14d');
-    return { sub: 'to ' + _renFmtDay(day) };
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('GW', { stacked: true }) } }) }, 'fr-exchanges-' + p.n + 'd');
+    return { sub: days.length + ' days to ' + _renFmtDay(day) };
   },
 });
 

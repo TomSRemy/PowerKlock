@@ -123,13 +123,15 @@ _nucReg({
 });
 
 _nucReg({
-  id: 'remit-unavail', title: 'France · nuclear unavailability, 180 days', page: 'remit', pageCanvas: 'remit-unavail', category: 'balancing',
+  id: 'remit-unavail', title: 'France · nuclear unavailability', page: 'remit', pageCanvas: 'remit-unavail', category: 'balancing',
   desc: 'Unavailable French nuclear capacity, actual and operator forecast (GW).',
-  async draw(cid) {
-    const av = await _nucData();
-    const I = FR_NUC_INSTALLED_MW, last = av[av.length - 1];
+  params: [PKW.PERIOD_PARAM], defaults: { period: '6M' },
+  async draw(cid, p) {
+    await _nucData();
+    const I = FR_NUC_INSTALLED_MW;
     const un = v => v == null ? null : (I - v) / 1000;
-    const j = _fuelJoin([PKC.asMap('fr_nuc_avail', true), PKC.asMap('fr_nuc_avail_fc', true)], _renAdd(last[0], -180), '9999');
+    const [from, to] = _fuelRange(p);
+    const j = _fuelJoin([PKC.asMap('fr_nuc_avail', true), PKC.asMap('fr_nuc_avail_fc', true)], from, to);
     _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('Unavailable (actual)', j.cols[0].map(v => v == null ? null : +un(v).toFixed(2)), C_DN, { borderWidth: 2, fill: true, backgroundColor: rgba(C_DN, .12) }),
       _fuelLineDs('Unavailable (operator forecast)', j.cols[1].map(v => v == null ? null : +un(v).toFixed(2)), '#F4A3A0', { borderDash: [5, 4], borderWidth: 1.3 }),
@@ -182,9 +184,12 @@ function _imbReg(def) {
 }
 // Quarter-hour imbalance prices of the 30 days before `day` (validated) with the DA of each day.
 const _imbHist = new Map();
-function _imbHistory(day) {
-  if (!_imbHist.has(day)) _imbHist.set(day, (async () => {
-    const from = PK_E2M.dayBoundsUTC(_renAdd(day, -30))[0], to = PK_E2M.dayBoundsUTC(_renAdd(day, -1))[1];
+const IMB_N_PARAM = { key: 'n', label: 'Window', options: [['30', '30 days'], ['90', '90 days'], ['180', '180 days'], ['365', '1 year']] };
+function _imbHistory(day, n) {
+  n = +n || 30;
+  const key = day + '|' + n;
+  if (!_imbHist.has(key)) _imbHist.set(key, (async () => {
+    const from = PK_E2M.dayBoundsUTC(_renAdd(day, -n))[0], to = PK_E2M.dayBoundsUTC(_renAdd(day, -1))[1];
     const rows = await _eliaRange('ods134', from, to) || [];
     const byDay = {};
     rows.forEach(r => { const d = new Date(r.datetime).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); (byDay[d] = byDay[d] || []).push(r); });
@@ -192,7 +197,7 @@ function _imbHistory(day) {
     const das = await Promise.all(days.map(d => _daDay('BE', d)));
     return { rows, byDay, days, das };
   })());
-  return _imbHist.get(day);
+  return _imbHist.get(key);
 }
 
 _imbReg({
@@ -217,26 +222,29 @@ _imbReg({
 });
 
 _imbReg({
-  id: 'imb-days', title: 'Belgium · imbalance, last 30 days', pageCanvas: 'imb-days',
+  id: 'imb-days', title: 'Belgium · imbalance, daily', pageCanvas: 'imb-days',
   desc: 'Daily average imbalance price, day-ahead average and imbalance volatility.',
+  params: [IMB_N_PARAM], defaults: { n: '30' },
   async draw(cid, p) {
-    const H = await _imbHistory(p.day || pkTodayISO());
+    const H = await _imbHistory(p.day || pkTodayISO(), p.n);
     if (!H.days.length) { noDataMsg(cid, 'Elia history not reachable', ''); return null; }
     const avgs = H.days.map(d => { const v = H.byDay[d].map(r => r.imbalanceprice).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
     const sds = H.days.map((d, k) => { const v = H.byDay[d].map(r => r.imbalanceprice).filter(x => x != null); const m = avgs[k]; return v.length ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) : null; });
-    _fuelChart(cid, { type: 'line', data: { labels: H.days.map(d => d.slice(8, 10) + '/' + d.slice(5, 7)), datasets: [
+    _fuelChart(cid, { type: 'line', data: { labels: H.days, datasets: [
       _fuelLineDs('Imbalance avg', avgs.map(_r2), '#ED6965', { borderWidth: 2, pointRadius: 2 }),
       _fuelLineDs('Day-ahead avg', H.das.map(a => _r2(a ? _renMean(a) : null)), '#FFFFFF', { borderDash: [4, 3], pointRadius: 2 }),
       _fuelLineDs('Imbalance std dev', sds.map(_r2), '#FBBF24', { borderWidth: 1.2, pointRadius: 0 }),
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'be-imbalance-30d');
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'be-imbalance-' + p.n + 'd');
+    return { sub: H.days.length + ' days' };
   },
 });
 
 _imbReg({
   id: 'imb-dist', title: 'Belgium · imbalance − DA distribution', pageCanvas: 'imb-dist',
-  desc: 'Distribution of quarter-hour imbalance minus day-ahead spreads over 30 days.',
+  desc: 'Distribution of quarter-hour imbalance minus day-ahead spreads over the window.',
+  params: [IMB_N_PARAM], defaults: { n: '30' },
   async draw(cid, p) {
-    const H = await _imbHistory(p.day || pkTodayISO());
+    const H = await _imbHistory(p.day || pkTodayISO(), p.n);
     if (!H.days.length) { noDataMsg(cid, 'Elia history not reachable', ''); return null; }
     const spreads = [];
     H.days.forEach((d, k) => {
@@ -288,10 +296,15 @@ async function drawImbalance() {
       `<td>${im.sys[x.i] == null ? '–' : im.sys[x.i].toFixed(0) + ' MW'}</td><td class="l" style="text-align:left">${im.sys[x.i] < 0 ? '<span style="color:var(--down)">System short</span>' : '<span style="color:var(--up)">System long</span>'}</td></tr>`).join('');
   }
 
-  PKW.draw('imb-days', 'imb-days', { day });
-  PKW.draw('imb-dist', 'imb-dist', { day }).then(r => {
-    document.getElementById('imb-dist-sub').textContent = r && r.sub ? 'Imbalance − day-ahead, ' + r.sub : '';
-  });
+  const imbHist = n => {
+    PKW.draw('imb-days', 'imb-days', { day, n });
+    PKW.draw('imb-dist', 'imb-dist', { day, n }).then(r => {
+      document.getElementById('imb-dist-sub').textContent = r && r.sub ? 'Imbalance − day-ahead, ' + r.sub : '';
+    });
+  };
+  const imbN = IMB.n || '30', imbOpts = [['30', '30D'], ['90', '90D'], ['180', '180D'], ['365', '1Y']];
+  imbHist(imbN);
+  ['imb-days', 'imb-dist'].forEach(id => PKW.periodButtons(id, imbOpts, imbN, v => { IMB.n = v; drawImbalance(); }));
   document.getElementById('imb-note').textContent = 'Elia single imbalance price (incl. alpha component) per quarter-hour; today from the near-real-time dataset (not validated), earlier days from the validated history. ' +
     'Day-ahead = BE ENTSO-E price for the same quarter-hour. France (RTE), Germany (reBAP) and the Netherlands (TenneT) require API access that is not wired up yet.';
 }
@@ -315,5 +328,7 @@ async function renderRemit() {
     _fuelKpi('Operator forecast', fcLast ? un(fcLast[1]).toFixed(1) : '–', 'GW', fcLast ? 'unavailable, as of ' + _fuelDate(fcLast[0]) : '') +
     _fuelKpi('180-day max', Math.max(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable') +
     _fuelKpi('180-day min', Math.min(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable');
-  PKW.draw('remit-unavail', 'remit-unavail');
+  const rp = window._remitPeriod || '6M';
+  PKW.draw('remit-unavail', 'remit-unavail', { period: rp });
+  PKW.periodButtons('remit-unavail', PKW.PERIOD_PARAM.options, rp, v => { window._remitPeriod = v; PKW.draw('remit-unavail', 'remit-unavail', { period: v }); });
 }

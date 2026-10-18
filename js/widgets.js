@@ -91,6 +91,26 @@
     });
   }
 
+  // Period buttons in a page chart's header (same look as the page filters).
+  // options: [[value, label], …]; onPick(value) redraws.
+  function periodButtons(canvasId, options, current, onPick) {
+    const canvas = document.getElementById(canvasId);
+    const head = canvas && (canvas.closest('.chart-container') || {}).querySelector && canvas.closest('.chart-container').querySelector('.fuel-card-head');
+    if (!head) return;
+    let g = head.querySelector('.pkw-period');
+    if (!g) {
+      g = document.createElement('div');
+      g.className = 'pk-gf-group pkw-period';
+      const star = head.querySelector('.pkw-star');
+      head.insertBefore(g, star || null);
+    }
+    g.innerHTML = options.map(o => `<button type="button" class="pk-gf-btn${String(o[0]) === String(current) ? ' active' : ''}" data-v="${o[0]}">${o[1]}</button>`).join('');
+    g.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      g.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      onPick(b.dataset.v);
+    }));
+  }
+
   // ── ☆ on page charts ─────────────────────────────────────────────
   // Added the first time a page draws a registered chart. PKDash answers
   // has()/toggleWidget().
@@ -126,5 +146,5 @@
     });
   }
 
-  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, refreshStars };
+  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, periodButtons, refreshStars };
 })();
