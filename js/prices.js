@@ -247,14 +247,14 @@ document.addEventListener('DOMContentLoaded', () => {
 const AVAILABLE_WIDGETS = [
   { id:'fr-da',      name:'FR DA Price',         desc:"France day-ahead price, real time" },
   { id:'de-da',      name:'DE DA Price',         desc:"Germany day-ahead price" },
-  { id:'eua',        name:'EUA Spot',            desc:"EU ETS carbon price · not connected" },
-  { id:'ttf',        name:'TTF D+1',             desc:"TTF natural gas day-ahead · not connected" },
+  { id:'eua',        name:'EUA',                 desc:"EU ETS carbon, front-December contract (SEFE)" },
+  { id:'ttf',        name:'TTF DA',              desc:"TTF natural gas day-ahead (SEFE)" },
   { id:'go-renew',   name:'GO Renewables',       desc:"Guarantees of Origin · Commerg mid price" },
   { id:'fr-mix',     name:'FR Mix',              desc:"Nuclear + renewable share of the mix" },
-  { id:'fr-nuclear', name:'FR Nuclear',          desc:"Available nuclear capacity" },
-  { id:'fr-export',  name:'FR Export Balance',   desc:"Net cross-border flows, France" },
-  { id:'fr-load',    name:'FR Consumption',      desc:"Current grid load" },
-  { id:'hdd-paris',  name:'HDD Paris',           desc:"Heating degree days · not connected" },
+  { id:'fr-nuclear', name:'FR Nuclear',          desc:"Available nuclear capacity (SEFE)" },
+  { id:'fr-export',  name:'FR Export Balance',   desc:"Net commercial exchanges, France (RTE éCO2mix)" },
+  { id:'fr-load',    name:'FR Consumption',      desc:"Latest grid load (RTE éCO2mix)" },
+  { id:'hdd-paris',  name:'HDD France',          desc:"Heating degree days today, population-weighted (Open-Meteo)" },
   { id:'fr-da-chart',   name:'FR — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
   { id:'de-da-chart',   name:'DE — DA Price',         desc:"Hourly day-ahead curve", kind:'chart' },
   { id:'fr-mix-chart',  name:'FR — Generation Mix',   desc:"Breakdown by fuel, today", kind:'chart' },
@@ -263,7 +263,9 @@ const AVAILABLE_WIDGETS = [
   { id:'go-chart',      name:'GO Renewables — history', desc:"Weekly Bid/Ask/Mid · Commerg", kind:'chart' },
   { id:'fr-ren-chart',  name:'FR — Wind vs Solar',    desc:"Hourly production, today", kind:'chart' },
 ];
-let myDashWidgets = JSON.parse(localStorage.getItem('pk-mydash-widgets') || '[]');
+// First visit: a starter layout instead of an empty page (user edits persist).
+const MYDASH_DEFAULT = ['fr-da', 'de-da', 'ttf', 'eua', 'fr-nuclear', 'fr-load', 'fr-export', 'hdd-paris', 'fr-da-chart', 'fr-mix-chart', 'fr-cb-chart', 'go-chart'];
+let myDashWidgets = (() => { try { const v = localStorage.getItem('pk-mydash-widgets'); return v == null ? MYDASH_DEFAULT.slice() : JSON.parse(v); } catch (_) { return MYDASH_DEFAULT.slice(); } })();
 
 // Scope de zone global. null = vue européenne (onglet All), 'FR' = cockpit France.
 // Les modules qui veulent se restreindre à une zone lisent window.PK_ZONE_SCOPE.
@@ -405,7 +407,7 @@ function renderMyDash() {
   // widget doesn't sit on '–' forever just because the user never visited
   // that page. loadGoData() (called once the fetch resolves) re-renders
   // My Dashboard itself if it's still the active page — see go.js.
-  if (myDashWidgets.includes('go-renew') && typeof GO_REAL !== 'undefined' && !GO_REAL
+  if ((myDashWidgets.includes('go-renew') || myDashWidgets.includes('go-chart')) && typeof GO_REAL !== 'undefined' && !GO_REAL
       && !window._mydashGoTried && typeof autoloadGo === 'function') {
     window._mydashGoTried = true;
     autoloadGo();
@@ -416,7 +418,7 @@ function renderMyDash() {
     if (!w) return '';
     if (w.kind === 'chart') {
       return `<div class="mydash-widget mydash-widget-chart">
-        <button class="mdash-remove" onclick="removeWidget('${id}')" title="Retirer">×</button>
+        <button class="mdash-remove" onclick="removeWidget('${id}')" title="Remove">×</button>
         <div class="mydash-widget-title">${w.name}</div>
         <div style="position:relative;height:200px"><canvas id="mdash-canvas-${id}"></canvas></div>
       </div>`;
@@ -425,7 +427,7 @@ function renderMyDash() {
     const valColor = val.notConnected ? 'var(--text3)' : 'var(--text)';
     const valStyle = val.notConnected ? 'font-style:italic' : '';
     return `<div class="mydash-widget">
-      <button class="mdash-remove" onclick="removeWidget('${id}')" title="Retirer">×</button>
+      <button class="mdash-remove" onclick="removeWidget('${id}')" title="Remove">×</button>
       <div class="mydash-widget-title">${w.name}</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:${valColor};${valStyle}">${val.val}</div>
       <div style="font-size:11px;color:var(--text3);margin-top:3px">${val.unit}</div>
@@ -515,25 +517,23 @@ function _mdashDrawLoadChart(canvasId) {
   });
 }
 
-function _mdashDrawCbChart(canvasId) {
-  const flows = window._cbData && window._cbData.FR;
-  if (!flows || !flows.length) { noDataMsg(canvasId, 'FR flows not loaded', 'Arrives with crossborder.json'); return; }
-  const labels = flows.map(f => (f.partner || '').split(' ').slice(-1)[0] || f.partner);
+// FR exchanges per border today (RTE éCO2mix, commercial, average GW).
+async function _mdashDrawCbChart(canvasId) {
+  const d = window.PK_E2M ? await PK_E2M.day(pkTodayISO()) : null;
+  if (!d) { noDataMsg(canvasId, 'FR exchanges not available', 'RTE éCO2mix'); return; }
+  const B = PK_E2M.BORDERS;
+  const avg = B.map(b => { const v = d[b.key].filter(x => x != null); return v.length ? v.reduce((a, x) => a + x, 0) / v.length / 1000 : 0; });
   mkChart(canvasId, {
     type: 'bar',
-    data: { labels, datasets: [
-      { label: 'Export', data: flows.map(f => f.exports || 0), backgroundColor: rgba(C_UP, .65), borderWidth: 0, borderRadius: 3 },
-      { label: 'Import', data: flows.map(f => -(f.imports || 0)), backgroundColor: rgba(C_DN, .55), borderWidth: 0, borderRadius: 3 },
+    data: { labels: B.map(b => b.label), datasets: [
+      { label: 'Average exchange today (GW, + import / − export)', data: avg.map(v => +v.toFixed(2)), backgroundColor: avg.map(v => v < 0 ? rgba(C_UP, .65) : rgba(C_DN, .55)), borderWidth: 0, borderRadius: 3 },
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 9 }, boxWidth: 8, padding: 6 } },
-        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${Math.abs(ctx.raw).toLocaleString()} MW` } },
-      },
+      plugins: { legend: { display: false } },
       scales: {
         x: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 } } },
-        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => Math.abs(v).toLocaleString() } },
+        y: { grid: GRID, ticks: { color: C_TX3, font: { size: 9 }, callback: v => v + ' GW' } },
       },
     },
   });
@@ -606,7 +606,7 @@ function getWidgetValue(id) {
 
   if (id === 'go-renew') {
     const real = (typeof GO_REAL !== 'undefined' && GO_REAL) ? GO_REAL.byKey.renewable : null;
-    if (!real || !real.weekly.length) return { val:'–', unit:'en attente Commerg', chg:'', up:null };
+    if (!real || !real.weekly.length) return { val:'–', unit:'loading Commerg data', chg:'', up:null };
     const last = real.weekly[real.weekly.length - 1];
     const d = real.d;
     // Same convention as the GO Prices page itself: rising GO price = 'up'.
@@ -622,35 +622,59 @@ function getWidgetValue(id) {
   }
 
   if (id === 'fr-nuclear') {
-    const mix = window._genmixData && window._genmixData.FR;
-    if (!mix || mix.nuclear == null) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (mix.nuclear / 1000).toFixed(1), unit:'GW available', chg:'', up:null };
+    const l = window.PKC && PKC.last('fr_nuc_avail');
+    if (!l) return { val:'–', unit:'GW', chg:'', up:null };
+    return { val: (l.v / 1000).toFixed(1), unit:'GW available · ' + l.d, chg: l.chg == null ? '' : (l.chg >= 0 ? '▲' : '▼') + Math.abs(l.chg / 1000).toFixed(2) + ' GW', up: l.chg != null ? l.chg >= 0 : null };
   }
 
-  if (id === 'fr-export') {
-    const flows = window._cbData && window._cbData.FR;
-    if (!flows || !flows.length) return { val:'–', unit:'GW', chg:'', up:null };
-    const exp = flows.reduce((s, f) => s + (f.exports || 0), 0);
-    const imp = flows.reduce((s, f) => s + (f.imports || 0), 0);
-    const netGW = (exp - imp) / 1000;
-    return { val: (netGW >= 0 ? '+' : '') + netGW.toFixed(1), unit: netGW >= 0 ? 'GW · net exportateur' : 'GW · net importateur', chg:'', up: netGW >= 0 };
+  if (id === 'ttf' || id === 'eua') {
+    const l = window.PKC && PKC.last(id);
+    if (!l) return { val:'–', unit: id === 'ttf' ? '€/MWh' : '€/t', chg:'', up:null };
+    // Rising fuel cost = red, like power prices.
+    return { val: l.v.toFixed(2), unit: (id === 'ttf' ? '€/MWh · ' : '€/t · ' + PKC.contractLabel('eua') + ' · ') + l.d,
+      chg: l.pct == null ? '' : (l.pct >= 0 ? '▲' : '▼') + Math.abs(l.pct).toFixed(2) + '%', up: l.pct != null ? l.pct < 0 : null };
   }
 
-  if (id === 'fr-load') {
-    const load = window._loadData && window._loadData.FR;
-    const current = load ? (load.current ?? _mdashLastValid(load.actual)) : null;
-    if (current == null) return { val:'–', unit:'GW', chg:'', up:null };
-    return { val: (current / 1000).toFixed(1), unit:'GW · consommation actuelle', chg:'', up:null };
+  // Live éCO2mix / Open-Meteo values are fetched once, then the dashboard re-renders.
+  const live = window._mdashLive || {};
+  if (id === 'fr-export' || id === 'fr-load') {
+    _mdashFetchLive();
+    const r = live.e2m;
+    if (!r) return { val:'–', unit:'GW', chg:'', up:null };
+    if (id === 'fr-load') return { val: (r.load / 1000).toFixed(1), unit: 'GW · consumption at ' + r.t, chg:'', up:null };
+    return { val: (r.net >= 0 ? '+' : '') + (r.net / 1000).toFixed(1), unit: (r.net >= 0 ? 'GW · net exporter at ' : 'GW · net importer at ') + r.t, chg:'', up: r.net >= 0 };
   }
-
-  // EUA spot, TTF D+1 and HDD Paris have no live data pipeline anywhere in
-  // this app yet (the EUA/Carbon page is demo data, and weather is an
-  // explicit "not connected" stub — see js/news.js loadWeather/renderHDD).
-  // Showing a fabricated trending number here would be worse than being
-  // honest about it, so these stay '–' until a real source is wired up.
-  if (id === 'eua' || id === 'ttf' || id === 'hdd-paris') return notConnected;
+  if (id === 'hdd-paris') {
+    _mdashFetchLive();
+    if (live.hdd == null) return { val:'–', unit:'HDD', chg:'', up:null };
+    return { val: live.hdd.toFixed(1), unit: 'HDD today · mean ' + live.tmean.toFixed(1) + ' °C (base 18)', chg:'', up:null };
+  }
 
   return { val:'–', unit:'', chg:'', up:null };
+}
+
+function _mdashFetchLive() {
+  if (window._mdashLiveTried) return;
+  window._mdashLiveTried = true;
+  window._mdashLive = window._mdashLive || {};
+  const done = () => { if (document.getElementById('page-mydash')?.classList.contains('active')) renderMyDash(); };
+  if (window.PK_E2M) PK_E2M.day(pkTodayISO()).then(d => {
+    if (!d) return;
+    let i = -1; d.consommation.forEach((v, k) => { if (v != null) i = k; });
+    if (i < 0) return;
+    const net = -PK_E2M.BORDERS.reduce((a, b) => a + (d[b.key][i] || 0), 0);   // RTE: negative = export
+    const t = makeTimeLabels(96)[i];
+    window._mdashLive.e2m = { load: d.consommation[i], net, t };
+    done();
+  });
+  if (typeof _wxForecast === 'function') _wxForecast('FR', 7).then(res => {
+    if (!res) return;
+    const di = res[0].daily.time.indexOf(pkTodayISO());
+    const m = _wxWeighted(res, 'FR', r => r.daily.temperature_2m_mean)[di];
+    if (m == null) return;
+    window._mdashLive.tmean = m; window._mdashLive.hdd = Math.max(0, 18 - m);
+    done();
+  });
 }
 
 function removeWidget(id) {
