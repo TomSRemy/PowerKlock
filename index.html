@@ -5539,6 +5539,10 @@
         <div class="fuel-card-head"><div><div class="table-title" id="reg-lf-title">Wind &amp; solar load factors</div><div class="fuel-card-sub">Average output ÷ installed capacity per region (%)</div></div><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:280px"><canvas id="reg-lf" style="width:100%;height:280px"></canvas></div>
       </div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">Load factors by month</div><div class="fuel-card-sub" id="reg-lf-hist-sub">Monthly average (%)</div></div><select class="country-select" id="reg-region" aria-label="Region"></select><span class="source-badge">RTE éCO2mix</span></div>
+        <div style="position:relative;height:280px"><canvas id="reg-lf-hist" style="width:100%;height:280px"></canvas></div>
+      </div>
       <div class="table-wrap">
         <div class="table-header"><span class="table-title" id="reg-table-title">Regions · daily averages</span><span class="source-badge">GW · load factor %</span></div>
         <div style="overflow-x:auto"><table><thead><tr><th class="l">Region</th><th>Consumption</th><th>Nuclear</th><th>Wind</th><th>Wind LF</th><th>Solar</th><th>Solar LF</th><th>Hydro</th><th>Thermal</th><th>Net import</th></tr></thead><tbody id="reg-tbody"></tbody></table></div>

@@ -84,6 +84,38 @@
     },
   });
 
+  // Monthly wind / solar load factor of one region since load factors exist
+  // (consolidated + real-time months), aggregated by ODRÉ.
+  const REGIONS = Object.keys(SHORT).sort((a, b) => a.localeCompare(b, 'fr'));
+  const REGION_PARAM = { key: 'region', label: 'Region', inTitle: true, options: REGIONS.map(r => [r, r]) };
+  async function lfMonthly(region) {
+    const one = async ds => {
+      const url = API + ds + '/exports/json?' + [['select', 'avg(tch_eolien) as wind, avg(tch_solaire) as solar'],
+        ['where', `libelle_region = "${region}"`], ['group_by', "date_format(date_heure, 'yyyy-MM') as ym"]].map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
+      if (!cache.has(url)) cache.set(url, fetch(url).then(r => r.ok ? r.json() : null).catch(() => null));
+      return (await cache.get(url)) || [];
+    };
+    const [def, tr] = await Promise.all([one('eco2mix-regional-cons-def'), one('eco2mix-regional-tr')]);
+    const m = new Map();
+    def.concat(tr).forEach(r => { if (r.wind != null || r.solar != null) if (!m.has(r.ym)) m.set(r.ym, r); });
+    return [...m.values()].sort((a, b) => a.ym < b.ym ? -1 : 1);
+  }
+  reg({
+    id: 'fr-reg-lf-history', title: 'Regional load factors, monthly', pageCanvas: 'reg-lf-hist', size: { w: 12, h: 5 },
+    desc: 'Monthly average wind and solar load factor of one French region since RTE publishes them: a yield reference for regional PPAs.',
+    params: [REGION_PARAM], defaults: { region: 'Occitanie' },
+    async draw(cid, p) {
+      const rows = await lfMonthly(p.region);
+      if (!rows.length) { noDataMsg(cid, 'No load factors for ' + p.region, 'ODRÉ'); return null; }
+      const r1 = v => v == null ? null : +(+v).toFixed(1);
+      _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.ym), datasets: [
+        _fuelLineDs('Wind load factor (%)', rows.map(r => r1(r.wind)), '#14D3A9', { borderWidth: 1.8 }),
+        _fuelLineDs('Solar load factor (%)', rows.map(r => r1(r.solar)), '#FBBF24', { borderWidth: 1.8 }),
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of installed capacity', { beginAtZero: true }) } }) }, 'load-factor-' + p.region);
+      return { sub: p.region + ' · ' + rows[0].ym + ' → ' + rows[rows.length - 1].ym };
+    },
+  });
+
   // France daily gas and electricity consumption (GW, daily averages).
   const DEM_PERIOD = { key: 'years', label: 'History', options: [['1', '1 year'], ['3', '3 years'], ['5', '5 years'], ['14', 'Since 2012']] };
   reg({
@@ -114,6 +146,14 @@
   window.renderRegions = async function () {
     const upd = document.getElementById('reg-upd');
     const lf = await PKW.draw('fr-reg-lf', 'reg-lf');
+    const sel = document.getElementById('reg-region');
+    if (sel && !sel.options.length) { sel.innerHTML = REGIONS.map(r => `<option value="${r}">${r}</option>`).join(''); sel.value = 'Occitanie'; }
+    const drawHist = () => PKW.draw('fr-reg-lf-history', 'reg-lf-hist', { region: sel ? sel.value : 'Occitanie' }).then(r => {
+      addFullscreen('reg-lf-hist'); addDownload('reg-lf-hist', 'regional-load-factor');
+      const t = document.getElementById('reg-lf-hist-sub'); if (t && r) t.textContent = 'Monthly average (%) · ' + r.sub;
+    });
+    if (sel && !sel._wired) { sel._wired = true; sel.addEventListener('change', drawHist); }
+    drawHist();
     PKW.draw('fr-reg-cap', 'reg-cap').then(() => { addFullscreen('reg-cap'); addDownload('reg-cap', 'regional-capacity'); });
     const yrs = window._regYears || '3';
     PKW.draw('fr-gas-elec', 'reg-gas-elec', { years: yrs }).then(r => {
