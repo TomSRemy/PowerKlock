@@ -403,6 +403,52 @@ def load_flows(conn, paths):
     return rows
 
 
+# ── France national generation (RTE éCO2mix files) and M0 ──
+ECO2MIX_FIELDS = [('nuclear', 'nuclear_mw'), ('wind', 'wind_mw'), ('windOnshore', 'wind_onshore_mw'), ('windOffshore', 'wind_offshore_mw'),
+                  ('solar', 'solar_mw'), ('hydro', 'hydro_mw'), ('hydroPS', 'hydro_ps_mw'), ('pumping', 'pumping_mw'), ('gas', 'gas_mw'),
+                  ('coal', 'coal_mw'), ('oil', 'oil_mw'), ('bio', 'bio_mw'), ('load', 'load_mw'), ('exchanges', 'exchanges_mw'), ('co2', 'co2_g_kwh')]
+
+
+def load_fr_eco2mix(conn, paths):
+    cols = [c for _, c in ECO2MIX_FIELDS] + ['battery_net_mw']
+    sql = (f"insert into market.fr_eco2mix_day (delivery_date, dataset, resolution_min, {', '.join(cols)}) "
+           f"values ({', '.join(['%s'] * (3 + len(cols)))}) on conflict (delivery_date) do update set "
+           + ', '.join(f'{c} = excluded.{c}' for c in ['dataset', 'resolution_min'] + cols) + ', loaded_at = now()')
+    rows = 0
+    for path in paths:
+        days = (read_json(path) or {}).get('days') or {}
+        batch = []
+        for d, v in days.items():
+            nuc = v.get('nuclear')
+            if not isinstance(nuc, list) or not any(x is not None for x in nuc):
+                continue
+            arr = lambda k: [num(x) for x in v[k]] if isinstance(v.get(k), list) and any(x is not None for x in v[k]) else None
+            ch, dis = arr('batteryCharge'), arr('batteryDischarge')
+            bat = [None if a is None and b is None else (a or 0) + (b or 0) for a, b in zip(ch, dis)] if ch and dis else None
+            batch.append([d, 'consolidated' if v.get('ds') == 'def' else 'real-time', v.get('res') or 15]
+                         + [arr(k) for k, _ in ECO2MIX_FIELDS] + [bat])
+        with conn.cursor() as cur:
+            cur.executemany(sql, batch)
+        conn.commit()
+        rows += len(batch)
+    return rows
+
+
+def load_m0(conn):
+    m = read_json(os.path.join(DATA, 'm0.json')) or {}
+    batch = [(r['month'] + '-01', r.get('base'), r.get('windM0'), r.get('solarM0'), r.get('windAvgMW'), r.get('solarAvgMW'),
+              r.get('windNegShare'), r.get('solarNegShare'), bool(r.get('complete'))) for r in m.get('months') or [] if r.get('base') is not None]
+    with conn.cursor() as cur:
+        cur.executemany("""insert into market.fr_m0_month (month, base_eur_mwh, wind_m0_eur_mwh, solar_m0_eur_mwh, wind_avg_mw, solar_avg_mw,
+              wind_neg_share, solar_neg_share, complete) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            on conflict (month) do update set base_eur_mwh = excluded.base_eur_mwh, wind_m0_eur_mwh = excluded.wind_m0_eur_mwh,
+              solar_m0_eur_mwh = excluded.solar_m0_eur_mwh, wind_avg_mw = excluded.wind_avg_mw, solar_avg_mw = excluded.solar_avg_mw,
+              wind_neg_share = excluded.wind_neg_share, solar_neg_share = excluded.solar_neg_share, complete = excluded.complete,
+              loaded_at = now()""", batch)
+    conn.commit()
+    return len(batch)
+
+
 # ── French regions (ODRÉ, read from the provider, not from the repo) ──
 ODRE = 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/'
 REGION_FIELDS = [('consommation', 'consumption_mw'), ('nucleaire', 'nuclear_mw'), ('eolien', 'wind_mw'), ('solaire', 'solar_mw'),
@@ -567,6 +613,7 @@ def main():
                 ([os.path.join(DATA, 'history', 'fr_market_series.json'), os.path.join(DATA, 'history', 'fr_market_calchain.json'),
                   os.path.join(DATA, 'fr_market.json')], load_forwards),
                 ([os.path.join(DATA, 'go_prices.csv'), os.path.join(DATA, 'go_auctions.json')], load_go),
+                ([os.path.join(DATA, 'm0.json')], load_m0),
             ]
             # Energy-Charts: installed capacity, monthly flow files
             cap = [os.path.join(DATA, 'history', 'capacity.json')]
@@ -579,6 +626,13 @@ def main():
             if ftodo:
                 n = load_flows(conn, ftodo); log(f'load_flows: {n} rows from {len(ftodo)} files'); rows += n
                 mark_loaded(conn, ftodo); files_read += len(ftodo)
+
+            # France national generation (RTE éCO2mix monthly files)
+            e2m = sorted(glob.glob(os.path.join(DATA, 'history', 'rte', '[0-9]*.json')))
+            etodo = changed(conn, e2m, args.full)
+            if etodo:
+                n = load_fr_eco2mix(conn, etodo); log(f'load_fr_eco2mix: {n} days from {len(etodo)} files'); rows += n
+                mark_loaded(conn, etodo); files_read += len(etodo)
 
             # French regions straight from ODRÉ (a network failure is logged, not fatal)
             try:

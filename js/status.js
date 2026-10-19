@@ -69,6 +69,14 @@
       } },
     { id: 'eccap', label: 'Installed capacity', provider: 'Energy-Charts', kind: 'repo', cadence: 'daily (yearly figures)',
       async check() { const j = await getJSON('history/capacity.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && Date.now() - d > 8 * 24 * H, detail: j ? Object.keys(j.countries || {}).length + ' countries' : '' }; } },
+    { id: 'rte', label: 'France generation (archive)', provider: 'RTE éCO2mix (ODRÉ)', kind: 'repo', cadence: '06:10 and 18:10 UTC',
+      async check() {
+        const ym = pkTodayISO().slice(0, 7);
+        const j = await getJSON('history/rte/' + ym + '.json');
+        const d = j && j.updated ? new Date(j.updated) : null;
+        const days = j && j.days ? Object.keys(j.days).sort() : [];
+        return { at: d, late: !d || Date.now() - d > 30 * H, detail: days.length ? 'up to ' + days[days.length - 1] + ' · today read live from ODRÉ' : 'no file this month' };
+      } },
     { id: 'm0', label: 'France M0 reference prices (wind, solar)', provider: 'RTE (ODRÉ)', kind: 'repo', cadence: 'daily check, RTE publishes monthly',
       async check() {
         const j = await getJSON('m0.json'); const d = j && j.updated ? new Date(j.updated) : null;
