@@ -8,9 +8,6 @@ on:
   schedule:
     - cron: '20 9 * * 3,4'   # Wednesday and Thursday 09:20 UTC
   workflow_dispatch:
-  push:
-    branches: [claude/night-3]
-    paths: [scripts/fetch_hydro_reservoirs.py, .github/workflows/fetch_hydro.yml]
 
 concurrency:
   group: fetch-hydro
