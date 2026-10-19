@@ -1,0 +1,32 @@
+name: Site tests
+
+# Smoke tests (tests/smoke.py) on every code change: every page, every
+# fullscreen button and every dashboard widget must load without error.
+# Data-only commits from the fetch bots do not trigger it.
+
+on:
+  pull_request:
+  push:
+    branches-ignore: ['backfill-run/**']
+    paths:
+      - 'index.html'
+      - 'js/**'
+      - 'tests/**'
+      - '.github/workflows/site-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Playwright
+        run: |
+          pip install playwright==1.48.0
+          python -m playwright install --with-deps chromium
+      - name: Smoke tests
+        run: python tests/smoke.py
