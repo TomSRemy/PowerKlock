@@ -1,0 +1,40 @@
+name: Fetch RTE (M0 reference prices)
+
+# RTE national wind & solar curves for the complément de rémunération
+# (ODRÉ, published monthly) weighted by the France day-ahead history
+# → data/m0.json (scripts/fetch_rte_m0.py).
+
+on:
+  schedule:
+    - cron: '10 6 * * *'     # 06:10 UTC; RTE publishes once a month, the run is cheap
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-rte
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compute M0
+        run: python scripts/fetch_rte_m0.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/m0.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: M0 reference prices $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1

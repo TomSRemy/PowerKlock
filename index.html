@@ -5034,6 +5034,17 @@
         <tbody id="ren-summary-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
       </div>
       <div class="fuel-note" id="ren-note"></div>
+
+      <div class="chart-container fuel-card" style="margin-top:18px">
+        <div class="fuel-card-head"><div><div class="table-title">France · M0 reference prices</div><div class="fuel-card-sub" id="ren-m0-sub">Monthly reference price of the complément de rémunération, wind &amp; solar</div></div><div class="pk-gf-group" id="m0-view"><button class="pk-gf-btn active" data-v="price" onclick="m0SetView('price',this)">€/MWh</button><button class="pk-gf-btn" data-v="ratio" onclick="m0SetView('ratio',this)">% of base</button></div><span class="source-badge">RTE · day-ahead</span></div>
+        <div style="position:relative;height:300px"><canvas id="ren-m0" style="width:100%;height:300px"></canvas></div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title">M0 · last 12 published months</span><span class="source-badge">€/MWh</span></div>
+        <div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Baseload</th><th>Wind M0</th><th>Wind / base</th><th>Solar M0</th><th>Solar / base</th><th>Wind at &lt;0 €</th><th>Solar at &lt;0 €</th></tr></thead>
+        <tbody id="m0-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody></table></div>
+      </div>
+      <div class="fuel-note">M0 = Σ(day-ahead price × production) ÷ Σ production over the month, using RTE's national wind and solar curves published for the complément de rémunération (ODRÉ, monthly). Recomputed by PowerKlock: it can differ marginally from the values published by the CRE. "At &lt;0 €": share of the month's production generated while the day-ahead price was negative. * some day-ahead prices missing that month.</div>
     </div>
 
     <!-- NUCLEAR & HYDRO -->
@@ -6595,6 +6606,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/status.js"></script>
 <script src="js/capacity.js"></script>
 <script src="js/regions.js"></script>
+<script src="js/m0.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
 
