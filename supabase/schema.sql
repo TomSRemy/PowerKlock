@@ -24,3 +24,7 @@ create policy "own row: update" on public.user_dashboards
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own row: delete" on public.user_dashboards
   for delete using (auth.uid() = user_id);
+
+
+-- Alerts (rules and sent alerts): see warehouse/migrations/010_alerts.sql,
+-- applied automatically by the warehouse sync (GitHub Actions).

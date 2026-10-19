@@ -89,6 +89,7 @@
     configured,
     ready, signIn, signOut, load, save,
     get user() { return user; },
+    client: () => client,   // supabase-js client (RLS applies), null until ready()
     onChange(fn) { subs.add(fn); return () => subs.delete(fn); },
   };
 })();

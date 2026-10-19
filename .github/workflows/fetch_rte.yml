@@ -4,13 +4,16 @@ name: Fetch RTE (éCO2mix France, M0 reference prices)
 # - éCO2mix national generation, load and exchanges, Paris quarter-hours
 #   → data/history/rte/YYYY-MM.json + fr_daily.json (scripts/fetch_rte_eco2mix.py).
 #   The site reads today and the two previous days live from ODRÉ.
+# - PP1 / PP2 peak-period days (RTE Data Portal Signal API, secrets
+#   RTE_CLIENT_ID / RTE_CLIENT_SECRET) → data/rte_pp.json.
 # - wind & solar curves of the complément de rémunération, weighted by the
 #   France day-ahead history → data/m0.json (scripts/fetch_rte_m0.py).
 
 on:
   schedule:
     - cron: '10 6 * * *'     # 06:10 UTC, complete previous day
-    - cron: '10 18 * * *'    # 18:10 UTC
+    - cron: '10 18 * * *'    # 18:10 UTC (also PP2 signals of 19:00 Paris in winter)
+    - cron: '50 8 * * *'     # 08:50 UTC: PP1 signals (09:30 Paris)
   workflow_dispatch:
     inputs:
       month_from:
@@ -46,11 +49,16 @@ jobs:
           else python scripts/fetch_rte_eco2mix.py; fi
       - name: Compute M0
         run: python scripts/fetch_rte_m0.py
+      - name: PP1 / PP2 signals (needs an RTE Data Portal account)
+        env:
+          RTE_CLIENT_ID: ${{ secrets.RTE_CLIENT_ID }}
+          RTE_CLIENT_SECRET: ${{ secrets.RTE_CLIENT_SECRET }}
+        run: python scripts/fetch_rte_pp.py || echo "::warning::RTE PP signals failed"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/m0.json data/history/rte
+          git add data/m0.json data/history/rte; git add data/rte_pp.json data/rte_pp_raw.json 2>/dev/null || true
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: RTE éCO2mix France and M0 $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do

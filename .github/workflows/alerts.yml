@@ -1,0 +1,51 @@
+name: Alerts (e-mail)
+
+# Evaluates the site users' alert rules (public.alert_rule in Supabase)
+# against the fresh data and e-mails new alerts (scripts/alerts.py).
+# Runs after each data fetch (day-ahead prices) and after each RTE fetch
+# (PP1 / PP2 signals).
+# Secrets: SUPABASE_DB_URL (required); SMTP_HOST, SMTP_PORT, SMTP_USER,
+# SMTP_PASS, ALERT_FROM (e-mail; without them alerts are recorded only).
+
+on:
+  workflow_run:
+    workflows: ['Fetch Energy Data', 'Fetch RTE (éCO2mix France, M0 reference prices)']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secret
+        id: secret
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB" ]; then echo "::notice::SUPABASE_DB_URL is not set — alerts skipped."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.ok == 'true'
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        if: steps.secret.outputs.ok == 'true'
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        if: steps.secret.outputs.ok == 'true'
+        run: pip install -q 'psycopg[binary]>=3.2'
+      - name: Evaluate and send
+        if: steps.secret.outputs.ok == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+        run: python scripts/alerts.py
