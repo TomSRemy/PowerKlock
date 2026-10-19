@@ -104,3 +104,16 @@ From then on the sync runs after every data fetch and every 6 hours.
   them (`dataset` column). A full load downloads ~800 MB and takes ~10 min.
 - Weather is not stored: Open-Meteo's free API is for non-commercial use
   only.
+
+
+## Claude skill
+
+`.claude/skills/powerklock-sql/` teaches Claude how to query this warehouse
+(workflow, conventions, pitfalls, column reference, tested queries).
+
+- Claude Code: picked up automatically in this repository.
+- claude.ai: zip the `powerklock-sql` folder and upload it in Settings →
+  Capabilities → Skills, with the Supabase connector enabled.
+
+After a migration that changes tables or views, regenerate the column
+reference: `WAREHOUSE_DB_URL=… python warehouse/export_skill_schema.py`.
