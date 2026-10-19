@@ -1,0 +1,41 @@
+name: Fetch weather outlook (France, 5 weeks vs normal)
+
+# Open-Meteo GFS ensemble (35 days) and ERA5 normals 2016–2025 → temperature,
+# wind and solar production (calibrated on RTE), hydro-basin precipitation
+# → data/weather_outlook.json (scripts/fetch_weather_outlook.py).
+# The ERA5 archive cache (data/history/weather_archive.json) is refreshed weekly.
+
+on:
+  schedule:
+    - cron: '30 7 * * *'     # GFS 00z ensemble is available by then
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-weather-outlook
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch
+        run: python scripts/fetch_weather_outlook.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/weather_outlook.json data/history/weather_archive.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: weather outlook $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1
