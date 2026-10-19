@@ -112,7 +112,7 @@ From then on the sync runs after every data fetch and every 6 hours.
 (workflow, conventions, pitfalls, column reference, tested queries).
 
 - Claude Code: picked up automatically in this repository.
-- claude.ai: zip the `powerklock-sql` folder and upload it in Settings →
+- claude.ai: upload `warehouse/powerklock-sql-skill.zip` (rebuild it from the folder after changes) in Settings →
   Capabilities → Skills, with the Supabase connector enabled.
 
 After a migration that changes tables or views, regenerate the column
