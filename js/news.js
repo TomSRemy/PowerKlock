@@ -169,13 +169,7 @@ function setLF(val, btn) {
 // ── NEW SECTION LOADER ──
 const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','wxcities','wxhdd','remit'];
 const PAGE_LOADERS = {
-  map: () => {
-    setTimeout(() => {
-      initLeafletMap();
-      renderMapKPIs();
-      document.getElementById('map-upd').textContent = pricesData?.length ? 'ENTSO-E · Live' : 'Demo data';
-    }, 100);
-  },
+  map: () => { if (window.PKMap) setTimeout(() => PKMap.open(), 50); },
   // Several `hist.js` historical sections only re-render reactively, when the
   // user clicks a window/zone control (setHistWindow/setHistZone) — they were
   // never wired to render once on first page visit, so the chart stayed an
@@ -196,6 +190,7 @@ const PAGE_LOADERS = {
   status:     () => { if (window.PKStatus) PKStatus.renderStatusPage(); },
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },
   regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
+  frsystem:   () => { if (typeof renderFrSystem === 'function') renderFrSystem(); },
 };
 
 // Weather pages: see js/meteo.js

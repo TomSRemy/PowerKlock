@@ -127,7 +127,7 @@ async function _renFrRows() {
   const j = await _renFrDaily;
   if (!j || !Array.isArray(j.rows) || !j.rows.length) return null;
   const ok = b => b != null && b > 5;   // capture rates are meaningless around a 0 €/MWh baseload
-  return j.rows.map(r => ({ d: r.d, st: { base: r.base, baseFull: r.base, partial: false, windAvg: r.windAvg, solarAvg: r.solarAvg,
+  return j.rows.filter(r => r.base != null).map(r => ({ d: r.d, st: { base: r.base, baseFull: r.base, partial: false, windAvg: r.windAvg, solarAvg: r.solarAvg,
     wCap: r.wCap, sCap: r.sCap, wCR: ok(r.base) && r.wCap != null ? r.wCap / r.base * 100 : null, sCR: ok(r.base) && r.sCap != null ? r.sCap / r.base * 100 : null } }));
 }
 

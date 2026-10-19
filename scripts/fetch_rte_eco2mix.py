@@ -158,9 +158,11 @@ def months_between(a, b):
 
 
 def daily_stats():
-    """data/history/rte/fr_daily.json: one row per day with France day-ahead
-    prices — average output per technology and wind/solar capture prices
-    (Σ price × MW ÷ Σ MW over the quarter-hours where both exist)."""
+    """data/history/rte/fr_daily.json: one row per day since 2015 — average
+    output per technology, load (average, peak, trough), exchanges, CO2
+    intensity and, on days with France day-ahead prices, the baseload and
+    wind / solar / nuclear capture prices (Σ price × MW ÷ Σ MW over the
+    quarter-hours where both exist)."""
     daily_dir = os.path.join(ROOT, 'data', 'history', 'daily')
     rows = []
     for fn in sorted(os.listdir(OUT_DIR)):
@@ -169,40 +171,46 @@ def daily_stats():
         with open(os.path.join(OUT_DIR, fn)) as f:
             days = json.load(f).get('days', {})
         for d, v in sorted(days.items()):
+            nuc = v.get('nuclear') or [None] * 96
+            slots = [i for i in range(96) if nuc[i] is not None]
+            if len(slots) < 80:
+                continue          # day in progress: the site reads it live
+
+            def avg(k, idx=slots):
+                a = v.get(k)
+                if not a:
+                    return None
+                x = [a[i] for i in idx if a[i] is not None]
+                return round(sum(x) / len(x)) if x else None
+            load = [v['load'][i] for i in slots if v.get('load') and v['load'][i] is not None]
+            row = {'d': d, 'ds': v.get('ds'),
+                   'nuclearAvg': avg('nuclear'), 'windAvg': avg('wind'), 'windOnAvg': avg('windOnshore'), 'windOffAvg': avg('windOffshore'),
+                   'solarAvg': avg('solar'), 'hydroAvg': avg('hydro'), 'hydroPSAvg': avg('hydroPS'), 'pumpingAvg': avg('pumping'),
+                   'gasAvg': avg('gas'), 'coalAvg': avg('coal'), 'oilAvg': avg('oil'), 'bioAvg': avg('bio'),
+                   'loadAvg': round(sum(load) / len(load)) if load else None, 'loadMax': max(load) if load else None, 'loadMin': min(load) if load else None,
+                   'exchAvg': avg('exchanges'), 'co2Avg': avg('co2')}
             try:
                 with open(os.path.join(daily_dir, d + '.json')) as f:
                     price = ((json.load(f).get('zones') or {}).get('FR') or {}).get('hourly')
             except (OSError, ValueError):
                 price = None
-            if not isinstance(price, list) or len(price) != 96:
-                continue
-            nuc = v.get('nuclear') or [None] * 96
-            pub = [i for i in range(96) if nuc[i] is not None and price[i] is not None]
-            if len(pub) < 80:
-                continue
-            base = sum(price[i] for i in pub) / len(pub)
-
-            def avg(k):
-                a = v.get(k)
-                if not a:
-                    return None
-                x = [a[i] for i in pub if a[i] is not None]
-                return round(sum(x) / len(x)) if x else None
-
-            def cap(k):
-                a = v.get(k)
-                if not a:
-                    return None
-                w = [(a[i], price[i]) for i in pub if a[i] is not None and a[i] > 0]
-                sw = sum(g for g, _ in w)
-                return round(sum(g * p for g, p in w) / sw, 2) if sw > 0 else None
-            rows.append({'d': d, 'ds': v.get('ds'), 'base': round(base, 2),
-                         'nuclearAvg': avg('nuclear'), 'windAvg': avg('wind'), 'solarAvg': avg('solar'),
-                         'hydroAvg': avg('hydro'), 'loadAvg': avg('load'),
-                         'wCap': cap('wind'), 'sCap': cap('solar'), 'nCap': cap('nuclear')})
+            if isinstance(price, list) and len(price) == 96:
+                pub = [i for i in slots if price[i] is not None]
+                if len(pub) >= 80:
+                    def cap(k):
+                        a = v.get(k)
+                        if not a:
+                            return None
+                        w = [(a[i], price[i]) for i in pub if a[i] is not None and a[i] > 0]
+                        sw = sum(g for g, _ in w)
+                        return round(sum(g * p for g, p in w) / sw, 2) if sw > 0 else None
+                    row.update({'base': round(sum(price[i] for i in pub) / len(pub), 2),
+                                'wCap': cap('wind'), 'sCap': cap('solar'), 'nCap': cap('nuclear')})
+            rows.append({k: x for k, x in row.items() if x is not None})
     with open(os.path.join(OUT_DIR, 'fr_daily.json'), 'w') as f:
         json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                   'source': 'RTE éCO2mix (generation) × France day-ahead (PowerKlock history)', 'rows': rows},
+                   'source': 'RTE éCO2mix (generation, load, exchanges, CO2) × France day-ahead (PowerKlock history)',
+                   'unit': 'MW daily averages; g/kWh; €/MWh', 'rows': rows},
                   f, separators=(',', ':'))
     print('fr_daily.json: %d days' % len(rows))
 

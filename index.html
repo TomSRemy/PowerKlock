@@ -2896,6 +2896,9 @@
       <div class="sidebar-item" onclick="showPage('capacity')" id="nav-capacity">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>Installed Capacity
       </div>
+      <div class="sidebar-item" onclick="showPage('frsystem')" id="nav-frsystem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>France System
+      </div>
       <div class="sidebar-item" onclick="showPage('regions')" id="nav-regions">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>France Regions
       </div>
@@ -2903,7 +2906,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
       </div>
       <div class="sidebar-item" onclick="showPage('map')" id="nav-map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Price Map
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Power Map
       </div>
       <div class="sidebar-item" onclick="showPage('crossborder')" id="nav-crossborder">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Cross-Border Flows
@@ -4593,51 +4596,45 @@
     <div class="page" id="page-map">
       <div class="page-header">
         <div>
-          <div class="page-title">Power Price Map</div>
-          <div class="page-subtitle">Day-ahead prices by bidding zone · ENTSO-E · Click a country for details</div>
+          <div class="page-title">Power Map</div>
+          <div class="page-subtitle">Carbon intensity, prices, renewable share and cross-border flows across Europe, hour by hour · Energy-Charts · RTE · ENTSO-E</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div style="display:flex;gap:5px" id="map-view-tabs">
-            <button class="day-tab active" onclick="setMapView('price',this)">DA Price</button>
-            <button class="day-tab" onclick="setMapView('spark',this)">Spark Spread</button>
-            <button class="day-tab" onclick="setMapView('neg',this)">Neg. Hours</button>
-            <button class="day-tab" onclick="setMapView('delta',this)">vs Yday</button>
-          </div>
-          <span class="updated-badge" id="map-upd">Loading...</span>
+        <span class="updated-badge" id="pm-upd">Loading…</span>
+      </div>
+
+      <div class="pm-controls">
+        <div class="pk-gf-group" id="pm-metric">
+          <button class="pk-gf-btn active" data-m="co2" onclick="PKMap.setMetric('co2')">Carbon intensity</button>
+          <button class="pk-gf-btn" data-m="price" onclick="PKMap.setMetric('price')">Price</button>
+          <button class="pk-gf-btn" data-m="ren" onclick="PKMap.setMetric('ren')">Renewables</button>
+          <button class="pk-gf-btn" data-m="lowc" onclick="PKMap.setMetric('lowc')">Low-carbon</button>
+          <button class="pk-gf-btn" data-m="net" onclick="PKMap.setMetric('net')">Net import</button>
+        </div>
+        <div class="pk-gf-group" id="pm-day">
+          <button class="pk-gf-btn" data-d="-1" onclick="PKMap.setDay(-1)">Yesterday</button>
+          <button class="pk-gf-btn active" data-d="0" onclick="PKMap.setDay(0)">Today</button>
+          <button class="pk-gf-btn" data-d="1" onclick="PKMap.setDay(1)" title="Day-ahead prices only">Tomorrow</button>
+        </div>
+        <div class="pm-time">
+          <button class="pm-play" id="pm-play" onclick="PKMap.play()" title="Play the day">▶</button>
+          <input type="range" id="pm-hour" min="0" max="23" step="1" value="12" oninput="PKMap.setHour(this.value)" aria-label="Hour">
+          <span class="pm-hl" id="pm-hour-lbl">–</span>
+          <button class="pk-gf-btn" id="pm-avg" onclick="PKMap.toggleAvg()" title="Daily average">Day avg</button>
         </div>
       </div>
 
-      <div class="kpi-strip fuel-kpis" id="map-kpis"></div>
+      <div class="pm-kpis" id="pm-kpis"></div>
 
-      <!-- Map + side detail panel, side by side (electricitymaps-style: click a
-           country, everything appears next to the map — no scrolling away). -->
-      <div style="display:flex;gap:14px;align-items:stretch">
-        <div style="flex:1;min-width:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35);position:relative">
-          <div id="leaflet-map" style="height:620px;width:100%;background:#0a0f14"></div>
-          <div style="position:absolute;right:12px;bottom:28px;z-index:500;background:rgba(15,20,27,.9);border:1px solid var(--bd);border-radius:7px;padding:8px 12px;min-width:120px">
-            <div id="map-legend-title" style="font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Scale (€/MWh)</div>
-            <div id="map-legend"></div>
-          </div>
+      <div class="pm-wrap">
+        <div class="pm-card pm-side">
+          <input id="pm-search" type="search" placeholder="Search a country" oninput="PKMap.search()" aria-label="Search a country">
+          <div id="pm-rank"></div>
         </div>
-
-        <!-- Selected country detail — always visible, placeholder until a click -->
-        <div id="map-detail" style="width:340px;flex-shrink:0;background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:16px;height:620px;overflow-y:auto">
-          <div id="map-detail-placeholder" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--tx3);gap:10px">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/></svg>
-            <div style="font-size:12px">Click a country on the map<br>to see the full detail</div>
-          </div>
-          <div id="map-detail-content" style="display:none">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-              <div style="font-size:14px;font-weight:700" id="map-detail-title">--</div>
-              <button onclick="closeMapDetail()" title="Close" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="map-detail-kpis"></div>
-            <div style="margin-top:14px">
-              <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">15-min day-ahead profile</div>
-              <div style="position:relative;height:200px;overflow:hidden"><canvas id="map-detail-chart" style="width:100%;height:200px"></canvas></div>
-            </div>
-          </div>
+        <div class="pm-card pm-mapbox">
+          <div id="pm-map"></div>
+          <div class="pm-legend" id="pm-legend"></div>
         </div>
+        <div class="pm-card pm-detail-card"><div class="pm-detail" id="pm-detail"></div></div>
       </div>
     </div>
 
@@ -5543,6 +5540,57 @@
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
+    <div class="page" id="page-frsystem">
+      <div class="page-header">
+        <div><div class="page-title">France System</div><div class="page-subtitle">Production, consumption, CO₂ and exchanges of the French power system · RTE éCO2mix, quarter-hourly, history since 2015</div></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="pk-btn-ghost" onclick="frsShiftDay(-1)" title="Previous day">‹</button>
+          <span class="updated-badge" id="frs-day" style="min-width:120px;text-align:center">–</span>
+          <button class="pk-btn-ghost" onclick="frsShiftDay(1)" title="Next day">›</button>
+          <button class="pk-btn-ghost" onclick="frsShiftDay(0)" title="Latest day">Latest</button>
+        </div>
+      </div>
+      <div class="kpi-strip fuel-kpis" id="frs-kpis"></div>
+
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">Production by source</div><div class="fuel-card-sub">GW, quarter-hours · consumption (white) and D-1 forecast (dashed) · pumping and battery charging below zero</div></div><span class="source-badge">RTE éCO2mix</span></div>
+        <div style="position:relative;height:360px"><canvas id="frs-prod" style="width:100%;height:360px"></canvas></div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">CO₂ intensity</div><div class="fuel-card-sub" id="frs-co2-sub">g CO₂/kWh</div></div><span class="source-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:260px"><canvas id="frs-co2" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Commercial exchanges by border</div><div class="fuel-card-sub">GW, + import / − export · physical net (white)</div></div><span class="source-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:260px"><canvas id="frs-exch" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="fuel-grid-2">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Pumped storage and batteries</div><div class="fuel-card-sub">GW · day-ahead price on the right axis</div></div><span class="source-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:260px"><canvas id="frs-flex" style="width:100%;height:260px"></canvas></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">This year vs previous years</div><div class="fuel-card-sub" id="frs-env-sub">Weekly averages</div></div>
+            <select class="country-select" id="frs-env-series" onchange="frsSetEnv(this.value)" aria-label="Series">
+              <option value="nuclear">Nuclear output</option><option value="load">Consumption</option><option value="wind">Wind output</option><option value="solar">Solar output</option><option value="hydro">Hydro output</option><option value="exch">Net import</option><option value="co2">CO₂ intensity</option>
+            </select><span class="source-badge">RTE éCO2mix</span></div>
+          <div style="position:relative;height:260px"><canvas id="frs-env" style="width:100%;height:260px"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">Monthly production by source</div><div class="fuel-card-sub" id="frs-monthly-sub">TWh</div></div>
+          <div class="pk-gf-group" id="frs-monthly-view"><button class="pk-gf-btn active" data-v="twh" onclick="frsSetMonthly('twh')">TWh</button><button class="pk-gf-btn" data-v="share" onclick="frsSetMonthly('share')">% share</button></div><span class="source-badge">RTE éCO2mix</span></div>
+        <div style="position:relative;height:320px"><canvas id="frs-monthly" style="width:100%;height:320px"></canvas></div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="table-header"><span class="table-title">Annual balance</span><span class="source-badge">TWh · RTE éCO2mix</span></div>
+        <div id="frs-annual"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+      </div>
+      <div class="fuel-note">Source: RTE éCO2mix national data (consolidated history and real-time data, ODRÉ, Etalab open licence). Consolidated data before September 2026 are half-hourly and do not split onshore and offshore wind. Battery data exist in the real-time dataset only. CO₂ intensity is RTE's figure for French generation (direct emissions), lower than the life-cycle figures of the Carbon and Power Map pages. Annual energy = sum of daily averages × 24 h.</div>
+    </div>
+
     <div class="page" id="page-regions">
       <div class="page-header">
         <div><div class="page-title">France Regions</div><div class="page-subtitle">Regional consumption, renewable output and load factors · installed capacity · national gas and power demand</div></div>
@@ -6609,6 +6657,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/regions.js"></script>
 <script src="js/m0.js"></script>
 <script src="js/capacity-gc.js"></script>
+<script src="js/power-map.js"></script>
+<script src="js/fr-system.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
 
