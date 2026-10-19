@@ -43,8 +43,9 @@ const MU_OUT = {
 _muReg({
   id: 'wx-outlook', title: '5-week outlook vs normal', category: 'weather', page: 'wxcities', pageCanvas: 'wx-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
   desc: 'Next 5 weeks against the 2016–2025 normal: temperature, wind and solar production (GWh/day, calibrated on RTE or ENTSO-E output) or hydro-basin precipitation; France, Germany, Spain, Belgium, Netherlands, Italy, Switzerland, Austria. Band = 10th–90th percentile of the 31 ensemble members.',
-  params: [MU_OUT_COUNTRY, { key: 'series', label: 'Series', inTitle: true, options: [['temp', 'Temperature'], ['wind', 'Wind production'], ['solar', 'Solar production'], ['precip', 'Hydro (precipitation)']] }],
-  defaults: { country: 'FR', series: 'wind' },
+  params: [MU_OUT_COUNTRY, { key: 'series', label: 'Series', inTitle: true, options: [['temp', 'Temperature'], ['wind', 'Wind production'], ['solar', 'Solar production'], ['precip', 'Hydro (precipitation)']] },
+    { key: 'past', label: 'Past days shown', options: [['7', '7 days'], ['14', '14 days']] }],
+  defaults: { country: 'FR', series: 'wind', past: '7' },
   titleFn: p => (MU_OUT_COUNTRY.options.find(o => o[0] === (p.country || 'FR')) || ['', 'France'])[1] + ' · ' + (MU_OUT[p.series] || MU_OUT.wind).title,
   async draw(cid, p) {
     const j = await _muGet('out', 'weather_outlook.json');
@@ -55,8 +56,10 @@ _muReg({
       const why = !j ? 'Outlook not available yet' : !C ? 'No outlook for this country' : (C.notes && C.notes[p.series]) || (p.series === 'precip' ? 'No hydro proxy for ' + C.name + ' (little hydro)' : p.series === 'temp' ? 'No temperature outlook' : 'No calibrated ' + p.series + ' outlook for ' + C.name);
       noDataMsg(cid, why, ''); return null;
     }
-    // start at the first day with an actual value or a forecast
-    const i0 = Math.max(0, s.days.findIndex((_, i) => s.mean[i] != null || (s.actual && s.actual[i] != null)));
+    // the future matters: show only the last `past` days before today
+    const firstData = Math.max(0, s.days.findIndex((_, i) => s.mean[i] != null || (s.actual && s.actual[i] != null)));
+    const tIdx = s.days.indexOf(_muToday());
+    const i0 = Math.max(firstData, tIdx >= 0 ? tIdx - (+p.past || 7) : 0);
     const sl = a => (a || []).slice(i0);
     const days = sl(s.days), st = MU_OUT[p.series];
     const r = v => v == null ? null : Math.round(v * 10) / 10;
@@ -67,7 +70,7 @@ _muReg({
       { label: '_p90', data: sl(s.p90).map(r), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
       { label: 'Ensemble 10–90 %', data: sl(s.p10).map(r), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
     ];
-    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', showLine: false, pointRadius: 2.5, order: 0 });
+    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 1.8, pointRadius: 0, tension: .25, spanGaps: false, order: 0 });
     const ti = days.indexOf(_muToday());
     _fuelChart(cid, { type: 'line', data: { labels: days.map(_muDay), datasets: ds }, plugins: [_muTodayPlugin(ti)],
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis(s.unit) },
@@ -100,21 +103,28 @@ _muReg({
 // ── 3. EU gas storage by year ──
 _muReg({
   id: 'gas-storage-years', title: 'EU gas storage by year', category: 'fuels', page: 'eua', pageCanvas: 'fuel-gas-years', source: 'GIE AGSI',
-  desc: 'Aggregate EU gas storage filling level (%), one line per year since 2022.',
+  desc: 'Aggregate EU gas storage filling level (%): this year and last year against the range and mean of the earlier years since 2019.',
   async draw(cid) {
     const j = await _muGet('cs', 'history/commodities_series.json');
     const pts = j && j.series && j.series.agsi && j.series.agsi.points;
     if (!pts) { noDataMsg(cid, 'Gas storage history not available', ''); return null; }
-    const y = +_muToday().slice(0, 4), years = [y - 4, y - 3, y - 2, y - 1, y];
+    const y = +_muToday().slice(0, 4);
     const doy = d => Math.floor((Date.parse(d) - Date.UTC(+d.slice(0, 4), 0, 1)) / 864e5);
     const lbl = Array.from({ length: 366 }, (_, i) => { const t = new Date(Date.UTC(2001, 0, 1 + i)); return t.getUTCDate() === 1 ? MU_MON[t.getUTCMonth()] : ''; });
-    const cols = ['#3A6080', '#4A6280', '#7A93AB', '#C4A57B', '#14D3A9'];   // older years muted, current year in accent
-    const ds = years.map((yy, i) => {
-      const arr = new Array(366).fill(null);
-      pts.forEach(([d, v]) => { if (+d.slice(0, 4) === yy) arr[Math.min(365, doy(d))] = v; });
-      return { label: String(yy), data: arr, borderColor: cols[i], borderWidth: yy === y ? 2.6 : 1.4, pointRadius: 0, spanGaps: true, fill: false };
-    });
-    _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => lbl[i] } }), y: _fuelAxis('% full', { min: 20, max: 100 }) },
+    const byYear = {};
+    pts.forEach(([d, v]) => { const yy = +d.slice(0, 4); (byYear[yy] = byYear[yy] || new Array(366).fill(null))[Math.min(365, doy(d))] = v; });
+    const histYears = Object.keys(byYear).map(Number).filter(yy => yy < y - 1).sort();
+    const band = (fn) => lbl.map((_, i) => { const v = histYears.map(yy => byYear[yy][i]).filter(x => x != null); return v.length ? Math.round(fn(v) * 10) / 10 : null; });
+    const r1 = histYears[0] + '–' + histYears[histYears.length - 1];
+    const ds = [
+      { label: r1 + ' range', data: band(v => Math.max(...v)), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.18)', spanGaps: true },
+      { label: '_min', data: band(v => Math.min(...v)), borderWidth: 0, pointRadius: 0, fill: false, spanGaps: true },
+      { label: r1 + ' mean', data: band(v => v.reduce((a, b) => a + b, 0) / v.length), borderColor: 'rgba(184,201,217,.7)', borderDash: [5, 4], borderWidth: 1.3, pointRadius: 0, fill: false, spanGaps: true },
+      { label: String(y - 1), data: byYear[y - 1] || [], borderColor: '#7FC8F8', borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: true },
+      { label: String(y), data: byYear[y] || [], borderColor: '#14D3A9', borderWidth: 2.6, pointRadius: 0, fill: false, spanGaps: true },
+    ];
+    _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => lbl[i] },
+        grid: { color: c => lbl[c.index] ? 'rgba(26,45,63,.5)' : 'transparent', drawTicks: false } }), y: _fuelAxis('% full', { min: 0, max: 100 }) },
       plugins: { legend: _muLegend() } }) }, 'gas-storage-years');
     const last = pts[pts.length - 1], ly = pts.filter(([d]) => d.startsWith(String(y - 1)) && d.slice(5) <= last[0].slice(5)).slice(-1)[0];
     return { sub: `${last[1].toFixed(1)} % on ${last[0]}` + (ly ? ` · ${(last[1] - ly[1] >= 0 ? '+' : '')}${(last[1] - ly[1]).toFixed(1)} pts vs ${y - 1}` : '') };
