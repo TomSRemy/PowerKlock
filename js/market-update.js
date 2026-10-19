@@ -372,10 +372,50 @@ window.addEventListener('load', () => setTimeout(() => {
   window.showPage = function (id) {
     innerShow(id);
     if (id === 'load') once('load', () => setTimeout(PKSpot.load, 300));
-    if (id === 'wxcities') once('wx', () => { setTimeout(PKSpot.outlook, 300); const sel = document.getElementById('wx-country'); if (sel) sel.addEventListener('change', () => PKSpot.outlook()); });
+    if (id === 'wxcities') once('wx', () => { setTimeout(PKSpot.outlook, 300); setTimeout(() => window.PKHydro && PKHydro.render(), 400); const sel = document.getElementById('wx-country'); if (sel) sel.addEventListener('change', () => PKSpot.outlook()); });
     if (id === 'prices') {   // the Day-Ahead sub-page can be the one open by default
       const da = document.querySelector('[data-subdomain-panel="da"].active');
       if (da) once('da', () => setTimeout(PKSpot.draw, 300));
     }
   };
 }, 50));
+
+// ── Hydro reservoirs (ENTSO-E A72, weekly stored energy) ──
+const MU_HYDRO = { key: 'country', label: 'Country', inTitle: true, options: [['FR', 'France'], ['CH', 'Switzerland'], ['ES', 'Spain'], ['PT', 'Portugal'], ['AT', 'Austria'], ['IT', 'Italy'], ['NO', 'Norway'], ['SE', 'Sweden'], ['FI', 'Finland']] };
+_muReg({
+  id: 'hydro-reservoirs', title: 'Hydro reservoir filling', category: 'weather', page: 'wxcities', pageCanvas: 'hydro-res', source: 'ENTSO-E',
+  desc: 'Energy stored in hydro reservoirs (weekly): this year and last year against the range and mean of the earlier years since 2015.',
+  params: [MU_HYDRO], defaults: { country: 'FR' },
+  titleFn: p => (MU_HYDRO.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · hydro reservoir filling',
+  async draw(cid, p) {
+    const j = await _muGet('hydro', 'history/hydro_reservoirs.json');
+    const c = j && j.countries && j.countries[p.country || 'FR'];
+    if (!c) { noDataMsg(cid, 'No reservoir data for this country', ''); return null; }
+    const y = +_muToday().slice(0, 4);
+    const big = Math.max(...c.weeks.map(w => w[1])) > 2e7;      // Norway, Sweden: TWh
+    const div = big ? 1e6 : 1e3, unit = big ? 'TWh' : 'GWh';
+    const wk = d => Math.min(52, Math.floor((Date.parse(d) - Date.UTC(+d.slice(0, 4), 0, 1)) / (7 * 864e5)));
+    const by = {}; c.weeks.forEach(([d, v]) => { const yy = +d.slice(0, 4); (by[yy] = by[yy] || new Array(53).fill(null))[wk(d)] = Math.round(v / div * 100) / 100; });
+    const hist = Object.keys(by).map(Number).filter(yy => yy < y - 1 && by[yy].filter(v => v != null).length > 40).sort();
+    const band = fn => by[y] ? by[y].map((_, i) => { const v = hist.map(yy => by[yy][i]).filter(x => x != null); return v.length ? Math.round(fn(v) * 100) / 100 : null; }) : [];
+    const r1 = hist[0] + '–' + hist[hist.length - 1];
+    const mean = band(v => v.reduce((a, b) => a + b, 0) / v.length);
+    _fuelChart(cid, { type: 'line', data: { labels: Array.from({ length: 53 }, (_, i) => 'W' + (i + 1)), datasets: [
+      { label: r1 + ' range', data: band(v => Math.max(...v)), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.18)', spanGaps: true },
+      { label: '_min', data: band(v => Math.min(...v)), borderWidth: 0, pointRadius: 0, fill: false, spanGaps: true },
+      { label: r1 + ' mean', data: mean, borderColor: 'rgba(184,201,217,.7)', borderDash: [5, 4], borderWidth: 1.3, pointRadius: 0, fill: false, spanGaps: true },
+      { label: String(y - 1), data: by[y - 1] || [], borderColor: '#7FC8F8', borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: true },
+      { label: String(y), data: by[y] || [], borderColor: '#3FA6B4', borderWidth: 2.6, pointRadius: 0, fill: false, spanGaps: true },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis(unit, { beginAtZero: true }) },
+      plugins: { legend: _muLegend() } }) }, 'hydro-reservoirs-' + (p.country || 'FR'));
+    const last = c.weeks[c.weeks.length - 1], li = wk(last[0]), lv = last[1] / div, mv = mean[li];
+    return { sub: `${lv.toFixed(big ? 1 : 0)} ${unit} in the week of ${last[0]}` + (mv ? ` · ${lv >= mv ? '+' : ''}${((lv / mv - 1) * 100).toFixed(0)} % vs ${r1} mean` : '') };
+  },
+});
+window.PKHydro = {
+  render() {
+    const sel = document.getElementById('hydro-country'); if (!sel || !window.PKW) return;
+    if (!sel.options.length) sel.innerHTML = MU_HYDRO.options.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
+    PKW.draw('hydro-reservoirs', 'hydro-res', { country: sel.value || 'FR' }).then(r => { const e = document.getElementById('hydro-res-sub'); if (e) e.textContent = r && r.sub ? r.sub : ''; });
+  },
+};
