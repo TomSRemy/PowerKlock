@@ -99,19 +99,20 @@
     var dp = { v: 0, z: '' }; z.forEach(function (x) { if (x.min != null && x.min < dp.v) dp = { v: x.min, z: x.code, hr: x.minHour }; });
     var lr = { h: 0, z: '' }; z.forEach(function (x) { var r = longestRun(x.hourly); if (r > lr.h) lr = { h: r, z: x.code }; });
     var most = inNeg.slice().sort(function (a, b) { return (b.negHours || 0) - (a.negHours || 0); })[0];
-    function card(lbl, val, unit, sub, dn, zoneMeta) {
-      return '<div class="kpi-card ' + (dn ? 'kpi-down' : 'kpi-flat') + '"><div class="kpi-label">' + lbl + '</div>' +
+    // other: figures about zones other than France (hidden in the France view, js/scope.js)
+    function card(lbl, val, unit, sub, dn, zoneMeta, other) {
+      return '<div class="kpi-card ' + (dn ? 'kpi-down' : 'kpi-flat') + (other ? ' neg-kpi-other' : '') + '"><div class="kpi-label">' + lbl + '</div>' +
         '<div class="kpi-value"' + (dn ? ' style="color:' + C_NEG + '"' : '') + '>' + val + (unit ? '<span class="kpi-unit">' + unit + '</span>' : '') + '</div>' +
         (zoneMeta ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-chg">' + (sub || '') + '</div>') + '</div>';
     }
     el.innerHTML =
       card('FR neg hours', fr ? n2(fr.negHours, 2) : '–', 'h', fr && fr.min != null && fr.negHours > 0 ? 'min ' + n2(fr.min, 2) + ' · ' + (fr.minHour || '') : 'none today', fr && fr.negHours > 0) +
-      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 2) + ' · ' + (de.minHour || '') : 'none today', de && de.negHours > 0) +
-      card('Zones in negative', inNeg.length, '/' + z.length, 'loaded today', false) +
-      card('Total neg hours', n2(total, 2), 'h', 'across all zones', total > 0) +
-      card('Deepest print', dp.z ? n2(dp.v, 2) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true) +
-      card('Longest run', lr.z ? n2(lr.h, 2) : '–', 'h', lr.z ? flag(lr.z) + ' ' + lr.z : 'none', lr.h > 0, true) +
-      card('Most neg hours', most ? n2(most.negHours, 2) : '–', 'h', most ? flag(most.code) + ' ' + most.code : 'none', most, true);
+      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 2) + ' · ' + (de.minHour || '') : 'none today', de && de.negHours > 0, false, true) +
+      card('Zones in negative', inNeg.length, '/' + z.length, 'loaded today', false, false, true) +
+      card('Total neg hours', n2(total, 2), 'h', 'across all zones', total > 0, false, true) +
+      card('Deepest print', dp.z ? n2(dp.v, 2) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true, true) +
+      card('Longest run', lr.z ? n2(lr.h, 2) : '–', 'h', lr.z ? flag(lr.z) + ' ' + lr.z : 'none', lr.h > 0, true, true) +
+      card('Most neg hours', most ? n2(most.negHours, 2) : '–', 'h', most ? flag(most.code) + ' ' + most.code : 'none', most, true, true);
   }
 
   function spark(hourly) {
@@ -218,6 +219,8 @@
     if (NEG.zoneFilter.size === all.length) NEG.zoneFilter = null;
     buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis();
   };
+  // Site scope (js/scope.js): null = all zones, or an array of zone codes.
+  window.negSetZones = function (codes) { NEG.zoneFilter = codes ? new Set(codes) : null; buildZoneChips(); syncZoneLabel(); try { renderBoardTable(); renderBoardKpis(); } catch (_) {} };
   window.negZonesAll = function () { NEG.zoneFilter = null; buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis(); };
   window.negZonesNeg = function () { NEG.zoneFilter = new Set(getZones().filter(function (x) { return (x.negHours || 0) > 0; }).map(function (x) { return x.code; })); buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis(); };
   document.addEventListener('click', function (e) {
