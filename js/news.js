@@ -185,7 +185,7 @@ const PAGE_LOADERS = {
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
   remit:      () => renderRemit(),
-  wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); if (window.PKW) ['temp', 'wind', 'solar', 'precip'].forEach(k => PKW.draw('wx-outlook', 'wx-out-' + k, { series: k }).then(r => { const e = document.getElementById('wx-out-' + k + '-sub'); if (e && r && r.sub) e.textContent = r.sub; })); },
+  wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
   status:     () => { if (window.PKStatus) PKStatus.renderStatusPage(); },
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },

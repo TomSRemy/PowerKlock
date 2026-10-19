@@ -32,6 +32,7 @@ const _muZoneName = z => ((typeof ZONES !== 'undefined' ? ZONES : []).find(x => 
 function _muReg(def) { if (window.PKW) PKW.register(Object.assign({ size: { w: 6, h: 5 } }, def)); }
 
 // ── 1. outlook vs normal ──
+const MU_OUT_COUNTRY = { key: 'country', label: 'Country', inTitle: true, options: [['FR', 'France'], ['DE', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands'], ['IT', 'Italy'], ['CH', 'Switzerland'], ['AT', 'Austria']] };
 const MU_OUT = {
   precip: { title: 'Hydro proxy · precipitation vs normal', col: '#3B82F6', above: 'rgba(42,163,100,.30)', below: 'rgba(237,105,101,.30)' },
   solar: { title: 'Solar production vs normal', col: '#FBBF24', above: 'rgba(42,163,100,.30)', below: 'rgba(237,105,101,.30)' },
@@ -39,15 +40,20 @@ const MU_OUT = {
   temp: { title: 'Temperature vs normal', col: '#F97316', above: 'rgba(249,115,22,.28)', below: 'rgba(59,130,246,.30)' },
 };
 _muReg({
-  id: 'wx-outlook', title: 'France 5-week outlook vs normal', category: 'weather', page: 'wxcities', pageCanvas: 'wx-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
-  desc: 'Next 5 weeks for France against the 2016–2025 normal: temperature, wind and solar production (GWh/day, calibrated on RTE) or hydro-basin precipitation. Band = 10th–90th percentile of the 31 ensemble members.',
-  params: [{ key: 'series', label: 'Series', inTitle: true, options: [['temp', 'Temperature'], ['wind', 'Wind production'], ['solar', 'Solar production'], ['precip', 'Hydro (precipitation)']] }],
-  defaults: { series: 'wind' },
-  titleFn: p => 'France · ' + (MU_OUT[p.series] || MU_OUT.wind).title,
+  id: 'wx-outlook', title: '5-week outlook vs normal', category: 'weather', page: 'wxcities', pageCanvas: 'wx-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
+  desc: 'Next 5 weeks against the 2016–2025 normal: temperature, wind and solar production (GWh/day, calibrated on RTE or ENTSO-E output) or hydro-basin precipitation; France, Germany, Spain, Belgium, Netherlands, Italy, Switzerland, Austria. Band = 10th–90th percentile of the 31 ensemble members.',
+  params: [MU_OUT_COUNTRY, { key: 'series', label: 'Series', inTitle: true, options: [['temp', 'Temperature'], ['wind', 'Wind production'], ['solar', 'Solar production'], ['precip', 'Hydro (precipitation)']] }],
+  defaults: { country: 'FR', series: 'wind' },
+  titleFn: p => (MU_OUT_COUNTRY.options.find(o => o[0] === (p.country || 'FR')) || ['', 'France'])[1] + ' · ' + (MU_OUT[p.series] || MU_OUT.wind).title,
   async draw(cid, p) {
     const j = await _muGet('out', 'weather_outlook.json');
-    const s = j && j.series && j.series[p.series];
-    if (!s) { noDataMsg(cid, 'Outlook not available yet', 'data/weather_outlook.json'); return null; }
+    const cc = p.country || 'FR';
+    const C = j && (j.countries ? j.countries[cc] : (cc === 'FR' ? j : null));
+    const s = C && C.series && C.series[p.series];
+    if (!s) {
+      const why = !j ? 'Outlook not available yet' : !C ? 'No outlook for this country' : (C.notes && C.notes[p.series]) || (p.series === 'precip' ? 'No hydro proxy for ' + C.name + ' (little hydro)' : p.series === 'temp' ? 'No temperature outlook' : 'No calibrated ' + p.series + ' outlook for ' + C.name);
+      noDataMsg(cid, why, ''); return null;
+    }
     // start at the first day with a forecast
     const i0 = Math.max(0, s.mean.findIndex(v => v != null));
     const sl = a => (a || []).slice(i0);
@@ -64,7 +70,7 @@ _muReg({
     const ti = days.indexOf(_muToday());
     _fuelChart(cid, { type: 'line', data: { labels: days.map(_muDay), datasets: ds }, plugins: [_muTodayPlugin(ti)],
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis(s.unit) },
-        plugins: { legend: _muLegend() } }) }, 'outlook-' + p.series);
+        plugins: { legend: _muLegend() } }) }, 'outlook-' + cc + '-' + p.series);
     const fut = days.map((d, i) => d > _muToday() ? i : -1).filter(i => i >= 0);
     const fm = _muMean(fut.map(i => sl(s.mean)[i])), nm = _muMean(fut.map(i => sl(s.normal)[i]));
     const dev = fm != null && nm ? (p.series === 'temp' ? (fm - nm).toFixed(1) + ' °C' : ((fm / nm - 1) * 100).toFixed(0) + ' %') : '';
@@ -330,6 +336,13 @@ window.PKSpot = {
     PKW.draw('fr-cal-history', 'cal-history', { country: c, win: '3M' }).then(r => sub('cal-history-sub', r));
     PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: '6M' }).then(r => sub('cal-drivers-sub', r));
   },
+  outlook() {
+    const sel = document.getElementById('wx-country');
+    const cc = sel && MU_OUT_COUNTRY.options.some(o => o[0] === sel.value) ? sel.value : 'FR';
+    const note = document.getElementById('wx-out-note');
+    if (note) note.textContent = sel && cc !== sel.value ? 'No outlook for ' + sel.options[sel.selectedIndex].text + ': France shown.' : '';
+    ['temp', 'wind', 'solar', 'precip'].forEach(k => PKW.draw('wx-outlook', 'wx-out-' + k, { country: cc, series: k }).then(r => { const e = document.getElementById('wx-out-' + k + '-sub'); if (e) e.textContent = r && r.sub ? r.sub : ''; }));
+  },
   load() { if (window.PKW) PKW.draw('fr-load-normal', 'load-normal', {}).then(r => { const e = document.getElementById('load-normal-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
 };
 window.addEventListener('load', () => setTimeout(() => {
@@ -348,6 +361,7 @@ window.addEventListener('load', () => setTimeout(() => {
   window.showPage = function (id) {
     innerShow(id);
     if (id === 'load') once('load', () => setTimeout(PKSpot.load, 300));
+    if (id === 'wxcities') once('wx', () => { setTimeout(PKSpot.outlook, 300); const sel = document.getElementById('wx-country'); if (sel) sel.addEventListener('change', () => PKSpot.outlook()); });
     if (id === 'prices') {   // the Day-Ahead sub-page can be the one open by default
       const da = document.querySelector('[data-subdomain-panel="da"].active');
       if (da) once('da', () => setTimeout(PKSpot.draw, 300));
