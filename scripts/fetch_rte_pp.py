@@ -17,6 +17,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -28,20 +29,43 @@ TOKEN_URL = 'https://digital.iservices.rte-france.com/token/oauth/'
 SIGNAL_URL = os.environ.get('RTE_PP_URL', 'https://digital.iservices.rte-france.com/open_api/signal/v1/signals')
 
 
+def note(msg):
+    """Shown in the GitHub run summary (annotations are public, logs are not)."""
+    print('::warning::' + msg)
+
+
+def http(req):
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.status, r.read().decode('utf-8', 'replace')
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode('utf-8', 'replace')
+
+
 def token(cid, secret):
     req = urllib.request.Request(TOKEN_URL, data=b'', method='POST', headers={
         'Authorization': 'Basic ' + base64.b64encode(f'{cid}:{secret}'.encode()).decode(),
         'Content-Type': 'application/x-www-form-urlencoded'})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.load(r)['access_token']
+    code, body = http(req)
+    if code != 200:
+        note(f'RTE token: HTTP {code} {body[:200]}')
+        return None
+    return json.loads(body)['access_token']
 
 
 def call(tok, start, end):
+    """Try the documented resource with and without a date window, v1 then v2."""
     fmt = lambda d: d.strftime('%Y-%m-%dT00:00:00+01:00')
-    url = SIGNAL_URL + '?' + urllib.parse.urlencode({'start_date': fmt(start), 'end_date': fmt(end)})
-    req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + tok, 'Accept': 'application/json'})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.load(r)
+    q = '?' + urllib.parse.urlencode({'start_date': fmt(start), 'end_date': fmt(end)})
+    urls = [SIGNAL_URL + q, SIGNAL_URL, SIGNAL_URL.replace('/v1/', '/v2/') + q, SIGNAL_URL.replace('/v1/', '/v2/')]
+    for url in urls:
+        code, body = http(urllib.request.Request(url, headers={'Authorization': 'Bearer ' + tok, 'Accept': 'application/json'}))
+        path = url.split('open_api')[-1].split('?')[0] + (' (dates)' if '?' in url else '')
+        if code == 200:
+            print(f'RTE Signal API OK: {path}')
+            return json.loads(body) if body.strip() else {}
+        note(f'RTE Signal {path}: HTTP {code} {body[:200]}')
+    return None
 
 
 def parse(obj, days):
@@ -78,10 +102,9 @@ def main():
         return 0
     today = date.today()
     start, end = today - timedelta(days=30), today + timedelta(days=2)
-    try:
-        ans = call(token(cid, secret), start, end)
-    except Exception as e:
-        print('RTE Signal API error:', e)
+    tok = token(cid, secret)
+    ans = call(tok, start, end) if tok else None
+    if ans is None:
         return 1
     with open(RAW, 'w') as f:
         json.dump(ans, f, indent=1)
