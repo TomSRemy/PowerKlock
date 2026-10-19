@@ -587,7 +587,30 @@ def build_daily_snapshot(date_str, prices_per_zone, genmix_per_zone):
                 for k, v in arrays.items():
                     zone_entry[k] = v  # nuclear/hydro/biomass/wind/solar/fossil/other + windOn/Offshore
         snap['zones'][code] = zone_entry
+    drop_flat_zero_zones(snap['zones'], date_str)
     return snap
+
+
+# A whole day at exactly 0.00 while the coupled neighbours price normally is a
+# broken ENTSO-E series (seen for EE and MK), not a price: same rule as
+# fetch_data.py, applied to the history files too.
+COUPLED = {'EE': ['FI', 'LV'], 'LV': ['EE', 'LT'], 'LT': ['LV', 'PL'], 'FI': ['EE', 'SE'], 'SE': ['FI', 'NO_1'],
+           'ES': ['PT'], 'PT': ['ES'], 'MK': ['GR', 'BG', 'RS'], 'ME': ['RS'], 'RS': ['HU', 'RO', 'BG'], 'BG': ['RO', 'GR']}
+
+
+def drop_flat_zero_zones(zones, date_str=''):
+    dropped = []
+    for code in list(zones):
+        h = [v for v in ((zones[code] or {}).get('hourly') or []) if v is not None]
+        if not h or any(v != 0 for v in h):
+            continue
+        nb = [zones[c]['avg'] for c in COUPLED.get(code, []) if isinstance(zones.get(c), dict) and zones[c].get('avg') is not None]
+        if not nb or all(v > 20 for v in nb):
+            dropped.append(code)
+            del zones[code]
+    if dropped:
+        print(f'  {date_str}: dropped flat 0.00 series {dropped}')
+    return dropped
 
 
 def merge_genmix_into_daily(date_str, genmix_per_zone):
