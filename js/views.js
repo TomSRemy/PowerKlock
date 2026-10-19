@@ -20,7 +20,7 @@
     eua: [['Overview', ['hs-eua-0']], ['Gas', ['hs-eua-1']], ['Coal & oil', ['hs-eua-2']]],
     euafwd: [['Curves', ['hs-euafwd-0']], ['Settlements', ['hs-euafwd-1']]],
     spark: [['Daily', ['hs-spark-0']], ['Historical', ['hs-spark-1']]],
-    wxcities: [['Daily', ['hs-wxcities-0', 'hs-wxcities-1']], ['5-week outlook', ['hs-wxcities-outlook']]],
+    wxcities: [['Daily', ['hs-wxcities-0', 'hs-wxcities-1']], ['5-week outlook', ['hs-wxcities-outlook']], ['Hydro reservoirs', ['hs-wxcities-hydro']]],
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
     remit: [['Overview', ['hs-remit-0']], ['Unit messages', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],

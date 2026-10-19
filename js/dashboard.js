@@ -46,7 +46,7 @@
       S('1 · Supply'),
       W('wx-outlook', 6, 5, { series: 'precip' }), W('wx-outlook', 6, 5, { series: 'solar' }),
       W('wx-outlook', 6, 5, { series: 'wind' }), W('nuc-monthly-years', 6, 5),
-      W('gas-storage-years', 12, 5),
+      W('gas-storage-years', 6, 5), W('hydro-reservoirs', 6, 5, { country: 'FR' }),
       S('2 · Demand'),
       W('wx-outlook', 6, 5, { series: 'temp' }), W('fr-load-normal', 6, 5),
       S('3 · News and geopolitics'),
