@@ -89,6 +89,13 @@ def migrate(conn):
             if done[version] != chk:
                 log(f"  ! {version} changed after being applied — add a new migration instead of editing it")
             continue
+        if body.startswith('-- requires: auth'):
+            with conn.cursor() as cur:
+                cur.execute("select exists (select 1 from pg_namespace where nspname = 'auth')")
+                has_auth = cur.fetchone()[0]
+            if not has_auth:
+                log(f"  skipping {version}: needs Supabase's auth schema")
+                continue
         log(f"  applying {version}")
         with conn.cursor() as cur:
             cur.execute(body)
