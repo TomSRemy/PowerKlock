@@ -83,7 +83,10 @@
   let saveTimer = null, cloudTimer = null, syncing = false;
   const uid = () => Math.random().toString(36).slice(2, 10);
 
-  function board() { return state.boards.find(b => b.id === state.active) || state.boards[0]; }
+  // A dashboard opened from a shared link: shown as is, never saved unless
+  // the viewer adds it to their own dashboards.
+  let shared = null;           // { id: 'shared', name, items, code }
+  function board() { return shared || state.boards.find(b => b.id === state.active) || state.boards[0]; }
 
   function fromTemplate(tid) {
     const t = TEMPLATES.find(x => x.id === tid) || TEMPLATES[0];
@@ -138,6 +141,7 @@
   }
 
   function save() {
+    if (shared) return;
     state.updated = new Date().toISOString();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(writeLocal, 200);
@@ -241,6 +245,7 @@
     const host = document.getElementById('pkd-grid');
     if (!host || !window.GridStack) return;
     renderTabs();
+    renderShared();
     if (grid) { grid.destroy(false); grid = null; }
     if (observer) observer.disconnect();
     destroyCharts(host);
@@ -249,7 +254,7 @@
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
     grid = GridStack.init({
       column: COLS, cellHeight: CELL_H, margin: 6, float: false, animate: true,
-      handle: '.pkd-drag', resizable: { handles: 'se' },
+      handle: '.pkd-drag', resizable: { handles: 'se' }, staticGrid: !!shared,
       columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
     }, host);
     observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
@@ -300,7 +305,7 @@
 
     if (it.t === 's') {
       inner.innerHTML = `<div class="pkd-section pkd-drag">
-          <h2 class="pkd-section-title" contenteditable="plaintext-only" spellcheck="false" data-ph="Section title">${esc(it.title)}</h2>
+          <h2 class="pkd-section-title" contenteditable="${shared ? 'false' : 'plaintext-only'}" spellcheck="false" data-ph="Section title">${esc(it.title)}</h2>
           <button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
         </div>`;
       const h = inner.querySelector('.pkd-section-title');
@@ -309,7 +314,7 @@
     } else if (it.t === 'n') {
       inner.innerHTML = `<div class="pkd-head pkd-drag"><span class="pkd-title">${esc(it.title || 'Note')}</span>
           <span class="pkd-actions"><button class="pkd-ic pkd-cfg" title="Rename" type="button">⚙</button><button class="pkd-ic pkd-del" title="Remove note" type="button">✕</button></span></div>
-        <div class="pkd-note" contenteditable="plaintext-only" spellcheck="true" data-ph="Write your market view…"></div>`;
+        <div class="pkd-note" contenteditable="${shared ? 'false' : 'plaintext-only'}" spellcheck="true" data-ph="Write your market view…"></div>`;
       const n = inner.querySelector('.pkd-note');
       n.textContent = it.text || '';
       n.addEventListener('blur', () => { it.text = n.textContent; save(); });
@@ -534,14 +539,16 @@
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
     if (!el || !state) return;
-    el.innerHTML = state.boards.map(b =>
-      `<button type="button" class="pkd-tab${b.id === state.active ? ' on' : ''}" data-b="${b.id}">${esc(b.name)}</button>`).join('') +
+    el.innerHTML = (shared ? `<button type="button" class="pkd-tab on pkd-tab-shared" title="Shared with you">↗ ${esc(shared.name)}</button>` : '') +
+      state.boards.map(b =>
+      `<button type="button" class="pkd-tab${!shared && b.id === state.active ? ' on' : ''}" data-b="${b.id}">${esc(b.name)}</button>`).join('') +
       '<button type="button" class="pkd-tab pkd-tab-new" id="pkd-new" title="New dashboard">+ New</button>';
     el.querySelectorAll('.pkd-tab[data-b]').forEach(t => t.addEventListener('click', () => {
-      if (state.active === t.dataset.b) return;
+      if (!shared && state.active === t.dataset.b) return;
+      if (shared) closeShared(false);
       state.active = t.dataset.b; save(); render();
     }));
-    el.querySelector('#pkd-new').addEventListener('click', openNewBoard);
+    el.querySelector('#pkd-new').addEventListener('click', () => { if (shared) closeShared(false); openNewBoard(); });
   }
 
   function openNewBoard() {
@@ -704,6 +711,97 @@
     if (isOpen() && grid && grid.engine.nodes.length !== board().items.length) render();
   }
 
+  // ── Sharing ──────────────────────────────────────────────────────
+  // The link carries the layout itself (charts, parameters, sections,
+  // notes), compressed in the address after "#": no account or server
+  // needed, and the charts show the data of the day the link is opened.
+  const b64u = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+  async function encodeBoard(b) {
+    const items = b.items.map(it => { const o = Object.assign({}, it); delete o.i; return o; });
+    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, items }));
+    if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
+    return 'j' + b64u(raw);
+  }
+  async function decodeBoard(code) {
+    const bytes = unb64u(code.slice(1));
+    const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
+    const j = JSON.parse(new TextDecoder().decode(raw));
+    if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
+    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), code,
+      items: j.items.filter(it => it && ['w', 's', 'n'].includes(it.t)).map(it => Object.assign({}, it, { i: uid() })) };
+  }
+  const baseUrl = () => location.origin + location.pathname;
+
+  async function openShare() {
+    const b = board();
+    const code = shared ? shared.code : await encodeBoard(b);
+    const link = baseUrl() + '#board=' + code, solo = baseUrl() + '#solo=' + code;
+    modal(`
+      <div class="pkd-modal-head"><div><div class="pkd-modal-title">Share “${esc(b.name)}”</div>
+        <div class="pkd-modal-sub">The link carries the layout: whoever opens it sees the same charts with the latest data. No account needed. Later changes to your dashboard are not in a link already sent: share again.</div></div>
+        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
+      <div class="pkd-form">
+        <div class="pkd-share-row"><div class="pkd-share-t"><b>Link to the dashboard</b><em>Opens PowerKlock on this dashboard; your colleague can add it to theirs.</em></div>
+          <div class="pkd-share-l"><input type="text" readonly value="${esc(link)}" aria-label="Link to the dashboard"><button type="button" class="pk-btn-primary" data-copy="${esc(link)}">Copy</button></div></div>
+        <div class="pkd-share-row"><div class="pkd-share-t"><b>Dashboard only</b><em>The dashboard alone, without the menus: for a meeting-room screen or a quick read on a phone.</em></div>
+          <div class="pkd-share-l"><input type="text" readonly value="${esc(solo)}" aria-label="Link to the dashboard only"><button type="button" class="pk-btn-primary" data-copy="${esc(solo)}">Copy</button>
+          <a class="pk-btn-ghost" href="${esc(solo)}" target="_blank" rel="noopener">Open ↗</a></div></div>
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button></div>
+      </div>`, root => {
+      root.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => {
+        const inp = btn.parentElement.querySelector('input');
+        const done = () => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy'; }, 1800); };
+        (navigator.clipboard ? navigator.clipboard.writeText(btn.dataset.copy) : Promise.reject()).then(done).catch(() => { inp.select(); try { document.execCommand('copy'); done(); } catch (_) {} });
+      }));
+      root.querySelectorAll('.pkd-share-l input').forEach(i => i.addEventListener('focus', () => i.select()));
+    });
+  }
+
+  function renderShared() {
+    const page = document.getElementById('page-mydash');
+    if (!page) return;
+    page.classList.toggle('pkd-viewing', !!shared);
+    let bar = document.getElementById('pkd-shared-bar');
+    if (!shared) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = document.createElement('div'); bar.id = 'pkd-shared-bar'; bar.className = 'pkd-shared-bar';
+      page.querySelector('.pkd-top').after(bar);
+    }
+    const solo = document.body.classList.contains('pk-solo');
+    const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
+    bar.innerHTML = solo
+      ? `<div class="pkd-solo-t"><span class="pkd-solo-name">${esc(shared.name)}</span><span class="pkd-solo-date">${esc(date)}</span></div>
+         <a class="pk-btn-ghost" href="${esc(baseUrl() + '#board=' + shared.code)}">Open in PowerKlock ↗</a>`
+      : `<div class="pkd-shared-t"><b>Shared dashboard · ${esc(shared.name)}</b><span>A copy of a colleague's layout with today's data. Add it to your dashboards to keep or change it.</span></div>
+         <div class="pkd-shared-a"><button type="button" class="pk-btn-ghost" id="pkd-shared-close">Close</button><button type="button" class="pk-btn-primary" id="pkd-shared-add">+ Add to my dashboards</button></div>`;
+    bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
+      const id = uid();
+      state.boards.push({ id, name: shared.name, items: shared.items.map(it => Object.assign({}, it, { i: uid() })) });
+      state.active = id;
+      closeShared(false); save(); render();
+      toast('Added to your dashboards');
+    });
+    bar.querySelector('#pkd-shared-close')?.addEventListener('click', () => closeShared(true));
+  }
+
+  function closeShared(redraw) {
+    shared = null;
+    try { history.replaceState(null, '', location.pathname); } catch (_) {}
+    if (redraw) render();
+  }
+
+  async function openFromLink() {
+    const m = location.hash.match(/^#(board|solo)=([zj][A-Za-z0-9_-]+)$/);
+    if (!m) return;
+    try { shared = await decodeBoard(m[2]); } catch (e) { console.warn('[PKDash] shared link', e); toast('This dashboard link is damaged or incomplete'); return; }
+    if (m[1] === 'solo') document.body.classList.add('pk-solo');
+    const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
+    if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
+    else open();
+  }
+
   // ── Boot ─────────────────────────────────────────────────────────
   function init() {
     if (state) return;
@@ -717,6 +815,7 @@
       document.getElementById('pkd-add-sec')?.addEventListener('click', addSection);
       document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
       document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
+      document.getElementById('pkd-share')?.addEventListener('click', openShare);
       document.getElementById('pkd-pptx')?.addEventListener('click', async ev => {
         const btn = ev.currentTarget, label = btn.textContent;
         if (!window.PKExport) return;
@@ -729,6 +828,9 @@
       });
     }
     PKW.refreshStars();
+    if (/^#(board|solo)=/.test(location.hash)) {
+      if (document.readyState === 'complete') openFromLink(); else window.addEventListener('load', () => setTimeout(openFromLink, 50));
+    }
     if (window.PKAccount && PKAccount.configured) {
       // Coming back from the e-mail link: open My Dashboard once signed in.
       const fromLink = /access_token=|[?&]code=|error_description=/.test(location.hash + location.search);
