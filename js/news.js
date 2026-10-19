@@ -191,6 +191,7 @@ const PAGE_LOADERS = {
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },
   regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
   frsystem:   () => { if (typeof renderFrSystem === 'function') renderFrSystem(); },
+  morning:    () => { if (typeof renderMorning === 'function') renderMorning(); },
 };
 
 // Weather pages: see js/meteo.js
