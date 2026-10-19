@@ -2847,6 +2847,11 @@
   .fuel-grid-2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-bottom:14px; }
   /* Long time series and intraday profiles get the full width (Prices › Day-Ahead model); compact charts stay side by side */
   .fuel-grid-2.pk-stack, .pk-stack { grid-template-columns:minmax(0,1fr) !important; }
+  /* TTF forwards table */
+  .mu-up { color: var(--down) !important; } .mu-dn { color: var(--up) !important; }
+  .mu-pct { font-size: 10px; opacity: .75; margin-left: 4px; }
+  .mu-kind { font-size: 9.5px; color: var(--text4); text-transform: uppercase; letter-spacing: .06em; margin-left: 6px; }
+  tr.mu-sep td { border-top: 1px solid var(--border2) !important; }
   /* Tools › Carbon footprint */
   .cf-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:stretch; margin-bottom:14px; }
   .cf-drop { display:flex; flex-direction:column; justify-content:center; gap:6px; min-height:120px; padding:18px 20px; border:1.5px dashed var(--border2); border-radius:8px; background:#1c242e; cursor:pointer; transition:border-color .15s, background .15s; }
@@ -5555,6 +5560,23 @@
       </div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-euafwd-ttf">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-euafwd-ttf')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>TTF forwards<span class="pk-hs-meta">Gas forward strip and calendar contracts over time</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-euafwd-ttf">
+          <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Window</span><select class="country-select" id="ttf-cal-win" aria-label="Window"><option value="3M">3 months</option><option value="6M" selected>6 months</option><option value="1Y">1 year</option><option value="3Y">3 years</option></select></div>
+          <div class="chart-container fuel-card" style="margin-bottom:14px">
+            <div class="fuel-card-head"><div><div class="table-title">TTF calendar forwards</div><div class="fuel-card-sub" id="ttf-cal-sub">Fixed delivery years · daily settlements (€/MWh)</div></div><span class="source-badge">Market data</span></div>
+            <div style="position:relative;height:320px"><canvas id="ttf-cal" style="width:100%;height:320px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">TTF forward products</div><div class="fuel-card-sub">Settlement and change vs the previous day and the previous week</div></div><span class="source-badge">Market data</span></div>
+            <div id="ttf-fwd-host"></div>
+          </div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-euafwd-1">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-euafwd-1')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Settlements and implied spreads<span class="pk-hs-meta">D-1 settlements, forward clean spreads</span></div>
@@ -6096,6 +6118,16 @@
 <div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Forward prices over the delivery calendar</div><div class="fuel-card-sub" id="mrn-strip-sub">Each product over its delivery period</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:300px"><canvas id="mrn-strip" style="width:100%;height:300px"></canvas></div>
+      </div>
+<div class="fuel-grid-2" style="margin-top:14px">
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">TTF gas forward prices</div><div class="fuel-card-sub">By product · change vs D-1 and W-1</div></div><span class="source-badge">Market data</span></div>
+          <div id="mrn-ttft"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+        </div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">TTF calendar forwards</div><div class="fuel-card-sub" id="mrn-ttfc-sub">6 months</div></div><span class="source-badge">Market data</span></div>
+          <div style="position:relative;height:300px"><canvas id="mrn-ttfc" style="width:100%;height:300px"></canvas></div>
+        </div>
       </div>
         </div>
       </div>
