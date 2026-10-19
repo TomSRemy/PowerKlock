@@ -19,7 +19,7 @@ for the team: how to ask, and what Claude should check first.
 
 - "Monthly base and peak FR prices this year, with negative hours."
 - "Average hourly FR price shape over the last 30 days vs the same 30 days a year earlier."
-- "French solar capture rate by month, and how it relates to installed solar output."
+- "French solar capture rate by month since 2015 (RTE generation), and the M0 solar against baseload."
 - "FR − DE baseload spread per day since September: when does France decouple?"
 - "TB2 battery spread by month in FR, DE and BE: which market pays most for 2-hour storage?"
 - "Clean spark and clean dark spreads in DE this quarter: how often is gas in the money?"
@@ -32,6 +32,17 @@ for the team: how to ask, and what Claude should check first.
 ## Example queries (tested)
 
 ```sql
+-- France monthly solar and wind capture rates from RTE generation (since 2015)
+select date_trunc('month', delivery_date)::date as month,
+       round((sum(price_eur_mwh * solar_mw) / nullif(sum(solar_mw), 0) / avg(price_eur_mwh) * 100)::numeric, 1) as solar_cr_pct,
+       round((sum(price_eur_mwh * wind_mw) / nullif(sum(wind_mw), 0) / avg(price_eur_mwh) * 100)::numeric, 1) as wind_cr_pct
+from analytics.fr_generation_qh where price_eur_mwh is not null
+group by 1 order by 1 desc;
+
+-- M0 vs baseload, last 12 months
+select month, base_eur_mwh, wind_m0_eur_mwh, solar_m0_eur_mwh, round((solar_m0_eur_mwh / base_eur_mwh)::numeric, 2) as solar_ratio
+from market.fr_m0_month order by month desc limit 12;
+
 -- Monthly base / peak and negative hours, France
 select month, round(avg(base)::numeric, 2) as base, round(avg(peak)::numeric, 2) as peak, sum(neg_hours) as neg_hours
 from analytics.da_price_daily
@@ -99,9 +110,17 @@ from analytics.installed_capacity_latest where counts_in_total group by 1 order 
 - **Coverage differs by zone.** France goes back to 2016; most other zones
   only to the dates in `analytics.coverage`. Never average across zones over
   a period some of them do not cover.
-- **Generation rows:** `fuel` holds PowerKlock aggregates (nuclear, wind,
-  solar…) and ENTSO-E production types (`psr:B16`…). Use one family or the
-  other, never both in a sum.
+- **France generation: use RTE, not ENTSO-E.** `market.fr_eco2mix_day`
+  (views `analytics.fr_generation_daily`, `analytics.fr_generation_qh`) holds
+  RTE éCO2mix since 2015: complete days, Paris quarter-hours. ENTSO-E rows
+  for FR in `market.generation_day` arrive late and with gaps; differences
+  are listed in `ops.quality_issue` (`entsoe_vs_rte_*`). Before 2026-09 the
+  consolidated data are half-hourly and do not split onshore / offshore wind.
+- **Generation rows (other zones):** `market.generation_day` holds PowerKlock
+  aggregates (nuclear, wind, solar…) per quarter-hour; ENTSO-E production
+  types (B01…B25) are daily statistics in `market.generation_type_daily`.
+- **M0 (`market.fr_m0_month`)** is recomputed from RTE's curves and the FR
+  day-ahead: it can differ marginally from the CRE's published values.
 - **Partial days:** today's generation stops at the last published slot
   (`published_slots` in `analytics.generation_daily`).
 - **Forwards by tenor are rolling**: `Y+1` changes contract on 1 January.

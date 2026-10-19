@@ -458,7 +458,7 @@ function renderGmMain() {
     const upd = (!selDate && window._genmixUpdated)
       ? ' · average 00:00–' + new Date(window._genmixUpdated).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
       : '';
-    hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' }) + upd + ' · ENTSO-E';
+    hdrDate.textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Paris' }) + upd + ' · ENTSO-E · France: RTE éCO2mix';
   }
 
   // Table-header label (mirrors prices-date-label in Day-Ahead table-header)
@@ -466,8 +466,8 @@ function renderGmMain() {
   if (tbLabel) {
     const zonesCount = zones.length;
     tbLabel.textContent = selDate
-      ? `Generation mix · ${selDate} · ${zonesCount} zones · ENTSO-E A75 (moy. jour)`
-      : `Live generation mix · ${zonesCount} zones · ENTSO-E A75`;
+      ? `Generation mix · ${selDate} · ${zonesCount} zones · ENTSO-E A75, France RTE éCO2mix (daily average)`
+      : `Live generation mix · ${zonesCount} zones · ENTSO-E A75, France RTE éCO2mix`;
   }
 
   // NOTE · template decision (mirrors Prices Day-Ahead Board):
@@ -1207,7 +1207,7 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
         </tbody>
       </table>
       <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);line-height:1.6">
-        <span style="color:var(--tx2)">Sources:</span> generation by technology = ENTSO-E Transparency (Actual Generation per Type, A75), PowerKlock 15-min archive. Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = aggregated gas/coal average, ENTSO-E.
+        <span style="color:var(--tx2)">Sources:</span> generation by technology = ENTSO-E Transparency (Actual Generation per Type, A75), PowerKlock 15-min archive; France: RTE éCO2mix (ODRÉ open data). Emission factors = ADEME / IPCC (life-cycle medians). "Fossil" = aggregated gas/coal average, ENTSO-E.
       </div>
     </div>`;
 }
@@ -2478,7 +2478,7 @@ window.gmSetHistDate = function (ds) {
     const STAT = {}; STACK.forEach(f => { const a = DATA[f].slice(0, nReal); STAT[f] = { min: Math.min.apply(null, a) / 1000, max: Math.max.apply(null, a) / 1000, avg: a.reduce((s, v) => s + v, 0) / a.length / 1000 }; });
     if (isReal && nReal < N) {
       const cm = Math.round(nReal / N * 24 * 60);
-      const note = ' · ENTSO-E data up to ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (day in progress)';
+      const note = ' · ' + (zone === 'FR' ? 'RTE' : 'ENTSO-E') + ' data up to ' + String(Math.floor(cm / 60)).padStart(2, '0') + ':' + String(cm % 60).padStart(2, '0') + ' (day in progress)';
       const lab = wrap.querySelector('.gms-tbl-lab'); if (lab) lab.insertAdjacentHTML('beforeend', '<span style="color:var(--tx4)">' + note + '</span>');
     }
 

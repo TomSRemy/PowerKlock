@@ -123,7 +123,8 @@
     let json;
     try { json = await res.clone().json(); } catch (_) { return res; }
     if (!rawCache.has(m[2])) rawCache.set(m[2], Promise.resolve(JSON.parse(JSON.stringify(json))));
-    const aligned = await alignDaily(json, m[2], m[1]);
+    let aligned = await alignDaily(json, m[2], m[1]);
+    if (window.pkFrOverlay) { try { aligned = await window.pkFrOverlay(aligned, m[2]); } catch (e) { console.warn('RTE overlay failed', e); } }
     return new Response(JSON.stringify(aligned), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
 

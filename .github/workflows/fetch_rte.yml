@@ -1,13 +1,26 @@
-name: Fetch RTE (M0 reference prices)
+name: Fetch RTE (éCO2mix France, M0 reference prices)
 
-# RTE national wind & solar curves for the complément de rémunération
-# (ODRÉ, published monthly) weighted by the France day-ahead history
-# → data/m0.json (scripts/fetch_rte_m0.py).
+# RTE data on ODRÉ (Etalab 2.0):
+# - éCO2mix national generation, load and exchanges, Paris quarter-hours
+#   → data/history/rte/YYYY-MM.json + fr_daily.json (scripts/fetch_rte_eco2mix.py).
+#   The site reads today and the two previous days live from ODRÉ.
+# - wind & solar curves of the complément de rémunération, weighted by the
+#   France day-ahead history → data/m0.json (scripts/fetch_rte_m0.py).
 
 on:
   schedule:
-    - cron: '10 6 * * *'     # 06:10 UTC; RTE publishes once a month, the run is cheap
+    - cron: '10 6 * * *'     # 06:10 UTC, complete previous day
+    - cron: '10 18 * * *'    # 18:10 UTC
   workflow_dispatch:
+    inputs:
+      month_from:
+        description: 'éCO2mix history from (YYYY-MM, empty = last three months)'
+        required: false
+        default: ''
+      month_to:
+        description: 'éCO2mix history to (YYYY-MM, empty = this month)'
+        required: false
+        default: ''
 
 concurrency:
   group: fetch-rte
@@ -16,7 +29,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: write
     steps:
@@ -24,15 +37,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: éCO2mix France
+        env:
+          FROM: ${{ inputs.month_from }}
+          TO: ${{ inputs.month_to || inputs.month_from }}
+        run: |
+          if [ -n "$FROM" ]; then python scripts/fetch_rte_eco2mix.py --from "$FROM" --to "$TO"
+          else python scripts/fetch_rte_eco2mix.py; fi
       - name: Compute M0
         run: python scripts/fetch_rte_m0.py
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/m0.json
+          git add data/m0.json data/history/rte
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
-          git commit -q -m "data: M0 reference prices $(date -u '+%Y-%m-%d')"
+          git commit -q -m "data: RTE éCO2mix France and M0 $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
             git pull -q --rebase origin main && git push && exit 0
             sleep 8
