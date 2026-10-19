@@ -1474,6 +1474,33 @@
   .pkd-sync[data-state="error"] { color: var(--down); }
   .pkd-acc { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pkd-hint { font-size: 11px; color: var(--text4); margin-bottom: 10px; }
+  /* Shared dashboards: read-only view, and the dashboard-only page (#solo=) */
+  .pkd-shared-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border: 1px solid rgba(20,211,169,.35); background: rgba(20,211,169,.07); border-radius: 8px; }
+  .pkd-shared-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .pkd-shared-t b { font-size: 13px; color: var(--text); }
+  .pkd-shared-t span { font-size: 11.5px; color: var(--text3); }
+  .pkd-shared-a { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pkd-tab-shared { border-style: dashed !important; }
+  #page-mydash.pkd-viewing #pkd-add-sec, #page-mydash.pkd-viewing #pkd-add-note, #page-mydash.pkd-viewing #pkd-menu,
+  #page-mydash.pkd-viewing #pkd-add, #page-mydash.pkd-viewing .pkd-hint, #page-mydash.pkd-viewing .pkd-del,
+  #page-mydash.pkd-viewing .pkd-cfg, #page-mydash.pkd-viewing .pkd-empty .pk-btn-primary { display: none !important; }
+  #page-mydash.pkd-viewing .pkd-drag { cursor: default; }
+  .pkd-share-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .pkd-share-t { display: flex; flex-direction: column; gap: 2px; }
+  .pkd-share-t b { font-size: 13px; color: var(--text); }
+  .pkd-share-t em { font-style: normal; font-size: 11.5px; color: var(--text3); }
+  .pkd-share-l { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .pkd-share-l input { flex: 1; min-width: 0; font: 11.5px 'JetBrains Mono', monospace; color: var(--text2); background: var(--bg3); border: 1px solid var(--border2); border-radius: 5px; padding: 7px 9px; }
+  .pkd-share-l a { text-decoration: none; white-space: nowrap; }
+  body.pk-solo .ticker, body.pk-solo .topbar, body.pk-solo .sidebar, body.pk-solo .mobile-backdrop,
+  body.pk-solo #page-mydash .pkd-top { display: none !important; }
+  body.pk-solo .layout { padding-top: 0; }
+  body.pk-solo .es-gamespot { display: none !important; }
+  body.pk-solo .main { width: 100%; }
+  body.pk-solo .pkd-shared-bar { border: 0; background: transparent; padding: 4px 2px 6px; border-bottom: 1px solid var(--border); border-radius: 0; }
+  .pkd-solo-t { display: flex; flex-direction: column; gap: 2px; }
+  .pkd-solo-name { font-size: 20px; font-weight: 700; color: var(--text); }
+  .pkd-solo-date { font-size: 12px; color: var(--accent); }
   @media (max-width: 760px) { .pkd-hint { display: none; } }
   .pkd-grid { margin: 0 -6px; min-height: 120px; }
   .pkd-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 16px; text-align: center; border: 1px dashed var(--border2); border-radius: 10px; }
@@ -2818,6 +2845,8 @@
   .fuel-select { background:var(--bg3); border:1px solid var(--bd); color:var(--tx); border-radius:5px; height:26px; padding:0 8px; font-size:11px; font-family:'JetBrains Mono',monospace; }
   .fuel-kpis { grid-template-columns:repeat(6,1fr); margin-bottom:14px; }
   .fuel-grid-2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-bottom:14px; }
+  /* Long time series and intraday profiles get the full width (Prices › Day-Ahead model); compact charts stay side by side */
+  .fuel-grid-2.pk-stack, .pk-stack { grid-template-columns:minmax(0,1fr) !important; }
   .fuel-grid-2 > * { min-width:0; }
   .fuel-card { margin-bottom:0; }
   .fuel-card-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px; padding-right:64px; }
@@ -2826,7 +2855,7 @@
   .fuel-note { font-size:10.5px; color:var(--text3); line-height:1.6; margin:4px 2px 14px; font-family:'JetBrains Mono',monospace; }
   .fuel-table td, .fuel-table th { text-align:right; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
   .fuel-table td:first-child, .fuel-table td.l { text-align:left; }
-  @media (max-width: 1100px) { .fuel-grid-2 { grid-template-columns:minmax(0,1fr); } .fuel-kpis { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width: 1100px) { .fuel-grid-2, .go-pair { grid-template-columns:minmax(0,1fr) !important; } .fuel-kpis { grid-template-columns:repeat(3,1fr); } }
   @media (max-width: 640px) { .fuel-kpis { grid-template-columns:repeat(2,1fr); } }
   @media (min-width: 1200px) { #pr-home-fuels { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 </style>
@@ -3290,14 +3319,14 @@
           </div>
           <div class="hist-section-body open" id="hs-body-cal-contracts">
             <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Market</span><select class="country-select" id="cal-country" onchange="PKSpot.drawCal()" aria-label="Market"><option value="FR">France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select></div>
-        <div class="fuel-grid-2">
+        <div class="fuel-grid-2 pk-stack">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Calendar forwards</div><div class="fuel-card-sub" id="cal-history-sub">Baseload, fixed delivery years · 3 months</div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:280px"><canvas id="cal-history" style="width:100%;height:280px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="cal-history" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="cal-drivers-sub">Indexed to 100 · 6 months</div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:280px"><canvas id="cal-drivers" style="width:100%;height:280px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="cal-drivers" style="width:100%;height:320px"></canvas></div>
           </div>
         </div>
           </div>
@@ -4765,14 +4794,14 @@
         </div>
         <div class="hist-section-body open" id="hs-body-crossborder-0">
 <div class="kpi-strip fuel-kpis" id="cb-kpis"></div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="cb-intraday-title">Intraday exchanges by border</div><div class="fuel-card-sub" id="cb-intraday-sub">GW · positive = import into France, negative = export</div></div><span class="source-badge" id="cb-intraday-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:280px"><canvas id="cb-intraday" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="cb-intraday" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="cb-days-title">Daily exchanges</div><div class="fuel-card-sub" id="cb-days-sub">Daily average net exchange by border (GW)</div></div><span class="source-badge" id="cb-days-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:280px"><canvas id="cb-days" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="cb-days" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5102,14 +5131,14 @@
         </div>
         <div class="hist-section-body open" id="hs-body-renewables-0">
 <div class="kpi-strip fuel-kpis" id="ren-kpis"></div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-intraday-title">Intraday output vs price</div><div class="fuel-card-sub" id="ren-intraday-sub">Wind onshore · offshore · solar (GW, stacked) · day-ahead price (€/MWh)</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="ren-intraday" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="ren-intraday" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-fc-title">Forecast vs actual</div><div class="fuel-card-sub" id="ren-fc-sub">Day-ahead forecast (dashed) vs actual (GW)</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="ren-fc" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="ren-fc" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5125,14 +5154,14 @@
         <div class="pk-gf-group" id="ren-window"><button class="pk-gf-btn" data-w="30D" onclick="renSetWindow('30D',this)">30D</button><button class="pk-gf-btn" data-w="90D" onclick="renSetWindow('90D',this)">90D</button><button class="pk-gf-btn" data-w="YTD" onclick="renSetWindow('YTD',this)">YTD</button><button class="pk-gf-btn" data-w="1Y" onclick="renSetWindow('1Y',this)">1Y</button><button class="pk-gf-btn active" data-w="All" onclick="renSetWindow('All',this)">All</button></div>
         <span class="fuel-note" id="ren-coverage" style="margin:0 0 0 8px"></span>
       </div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-cr-title">Capture rates</div><div class="fuel-card-sub" id="ren-cr-sub">Daily generation-weighted price ÷ baseload (%) · wind &amp; solar</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="ren-cr" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="ren-cr" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-daily-title">Daily output</div><div class="fuel-card-sub" id="ren-daily-sub">Average wind &amp; solar output (GW) · 7-day rolling</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="ren-daily" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="ren-daily" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
 <div class="table-wrap" style="margin-bottom:14px">
@@ -5202,19 +5231,19 @@
         <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:300px"><canvas id="nuc-hist" style="width:100%;height:300px"></canvas></div>
       </div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="nuc-season" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="nuc-season" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="nuc-mod-title">Output vs availability</div><div class="fuel-card-sub" id="nuc-mod-sub">Daily average nuclear output (ENTSO-E) vs available capacity (GW)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="nuc-mod" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="nuc-mod" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
                   <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Nuclear output by month</div><div class="fuel-card-sub" id="nuc-monthly-sub">TWh, current year vs the two previous years</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:280px"><canvas id="nuc-monthly" style="width:100%;height:280px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="nuc-monthly" style="width:100%;height:320px"></canvas></div>
           </div>
 </div>
       </div>
@@ -5315,14 +5344,14 @@
         </div>
         <div class="hist-section-body open" id="hs-body-eua-0">
 <div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-eua-ttf" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-eua-ttf" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Coal-to-gas switching</div><div class="fuel-card-sub" id="fuel-switch-sub">EUA price at which a CCGT matches a coal unit · vs EUA (€/t)</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-switch" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-switch" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5333,19 +5362,19 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-eua-1">
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-hubs" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-hubs" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">EU gas storage</div><div class="fuel-card-sub" id="fuel-storage-sub">Fill level (%) · current year vs previous 5-year range</div></div><span class="source-badge">GIE AGSI</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-storage" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-storage" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
                   <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">EU gas storage by year</div><div class="fuel-card-sub" id="fuel-gas-years-sub">% full, one line per year</div></div><span class="source-badge">GIE AGSI</span></div>
-            <div style="position:relative;height:280px"><canvas id="fuel-gas-years" style="width:100%;height:280px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="fuel-gas-years" style="width:100%;height:320px"></canvas></div>
           </div>
 </div>
       </div>
@@ -5355,14 +5384,14 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-eua-2">
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-coal-oil" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-coal-oil" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">LNG arbitrage</div><div class="fuel-card-sub" id="fuel-lng-sub">JKM front-month vs TTF day-ahead ($/MMBtu)</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:260px"><canvas id="fuel-lng" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="fuel-lng" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
 <div class="fuel-note" id="fuel-note"></div>
@@ -5453,14 +5482,14 @@
         <span class="fuel-toolbar-lbl" style="margin-left:8px">Zone</span>
         <select id="sprh-zone" class="fuel-select" onchange="renderSparkHistory()"></select>
       </div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="sprh-daily" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="sprh-daily" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Monthly average</div><div class="fuel-card-sub" id="sprh-monthly-sub">CSS base / CSS peak / CDS base (€/MWh)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="sprh-monthly" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="sprh-monthly" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
 <div class="fuel-note" id="sprh-note"></div>
@@ -5591,7 +5620,7 @@
           <span class="table-title" id="go-indic-title">GO AIB Renewable — Price indications (€/MWh)</span>
           <span class="source-badge">Commerg weekly</span>
         </div>
-        <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-indic-canvas" style="width:100%;height:260px"></canvas></div>
+        <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-indic-canvas" style="width:100%;height:320px"></canvas></div>
       </div>
 
       <!-- Chart 2 : CAL+1 rolling front-year price -->
@@ -5604,19 +5633,12 @@
       </div>
 
       <!-- Chart 3 : Forward curve Cal25/26/27/28 = chart_go_cal1 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="chart-container">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="table-title">Forward curve — Cal 2025 → 2028</span>
-
-          </div>
-          <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:220px"></canvas></div>
-        </div>
+      <div class="pk-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <span class="table-title">Spread Bid/Ask — trend (€/MWh)</span>
           </div>
-          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:200px"></canvas></div>
+          <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
 
@@ -5658,16 +5680,25 @@
           <span class="table-title">Weekly price indications — Mid price (€/MWh)</span>
           <span class="source-badge">Commerg weekly assessment</span>
         </div>
-        <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-hist-canvas" style="width:100%;height:260px"></canvas></div>
+        <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-hist-canvas" style="width:100%;height:320px"></canvas></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="pk-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="chart-container">
           <div class="table-title" style="margin-bottom:10px">Week-on-week delta (€/MWh)</div>
-          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-wow-canvas" style="width:100%;height:200px"></canvas></div>
+          <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-wow-canvas" style="width:100%;height:320px"></canvas></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px" class="go-pair">
+        <div class="chart-container">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="table-title">Forward curve — Cal 2025 → 2028</span>
+
+          </div>
+          <div style="position:relative;height:280px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container">
           <div class="table-title" style="margin-bottom:10px">Price distribution — box plot (€/MWh)</div>
-          <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:200px"></canvas></div>
+          <div style="position:relative;height:280px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
       
@@ -5690,14 +5721,14 @@
             <span class="table-title">Volume sold &amp; weighted average price — Wind vs Solar</span>
             <span class="source-badge">EEX monthly auctions</span>
           </div>
-          <div style="position:relative;height:260px;overflow:hidden"><canvas id="go-auct-tech-canvas" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-auct-tech-canvas" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <span class="table-title">Total volume — offered vs allocated (MWh)</span>
             <span class="source-badge">EEX monthly auctions</span>
           </div>
-          <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-auct-vol-canvas" style="width:100%;height:220px"></canvas></div>
+          <div style="position:relative;height:300px;overflow:hidden"><canvas id="go-auct-vol-canvas" style="width:100%;height:300px"></canvas></div>
         </div>
       
         </div>
@@ -5817,14 +5848,14 @@
         </div>
         <div class="hist-section-body open" id="hs-body-wxhdd-0">
 <div class="kpi-strip fuel-kpis" id="hdd-kpis"></div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="hdd-canvas-title">Daily HDD vs normal</div><div class="fuel-card-sub" id="hdd-canvas-sub">Past days and 14-day forecast · base 18 °C</div></div><span class="source-badge">Open-Meteo</span></div>
-          <div style="position:relative;height:280px"><canvas id="hdd-canvas" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="hdd-canvas" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="hdd-cum-title">Heating season to date</div><div class="fuel-card-sub" id="hdd-cum-sub">Cumulative HDD since 1 September vs normal and previous season</div></div><span class="source-badge">Open-Meteo</span></div>
-          <div style="position:relative;height:280px"><canvas id="hdd-cum" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="hdd-cum" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5862,7 +5893,7 @@
 <div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
 <div class="chart-container fuel-card" style="margin-bottom:14px">
         <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">Market data</span></div>
-        <div style="position:relative;height:280px"><canvas id="remit-unavail" style="width:100%;height:280px"></canvas></div>
+        <div style="position:relative;height:320px"><canvas id="remit-unavail" style="width:100%;height:320px"></canvas></div>
       </div>
         </div>
       </div>
@@ -5905,14 +5936,14 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-1">
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Day-ahead France · next delivery day</div><div class="fuel-card-sub" id="mrn-spot-sub">15-min, against the previous day and a week before</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-spot" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-spot" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France vs Germany</div><div class="fuel-card-sub" id="mrn-frde-sub">Daily baseload and FR − DE spread, 30 days</div></div><span class="source-badge">ENTSO-E</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-frde" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-frde" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5945,14 +5976,14 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-3">
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Guarantees of origin · renewable</div><div class="fuel-card-sub" id="mrn-go-sub">Weekly mid, current and next production years</div></div><span class="source-badge">Commerg</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-go" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-go" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France wind & solar capture rates</div><div class="fuel-card-sub" id="mrn-cr-sub">Capture price ÷ baseload, 90 days</div></div><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-cr" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-cr" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -5963,14 +5994,14 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-4">
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France production now</div><div class="fuel-card-sub" id="mrn-prod-sub">Production by source with consumption, quarter-hours</div></div><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-prod" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-prod" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Nuclear unavailability</div><div class="fuel-card-sub" id="mrn-remit-sub">Unavailable capacity, actual and operator forecast</div></div><span class="source-badge">RTE / REMIT</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-remit" style="width:100%;height:280px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="mrn-remit" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
 <div class="fuel-note">Spot: ENTSO-E day-ahead (delivery day, Paris). Forwards: daily settlements of the market data feed (d/d and w/w changes as published). GO: AIB broker mids (Commerg) and French state auctions (EEX). CO₂, nuclear output and production: RTE éCO2mix, live. Rising prices in red, as elsewhere on the site. <a href="#" onclick="PKScope.openLegacy(); return false;" style="color:var(--tx3);text-decoration:underline">Previous France dashboard</a> (to be retired).</div>
@@ -6001,27 +6032,27 @@
         <div class="fuel-card-head"><div><div class="table-title">Production by source</div><div class="fuel-card-sub">GW, quarter-hours · consumption (white) and D-1 forecast (dashed) · pumping and battery charging below zero</div></div><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:360px"><canvas id="frs-prod" style="width:100%;height:360px"></canvas></div>
       </div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">CO₂ intensity</div><div class="fuel-card-sub" id="frs-co2-sub">g CO₂/kWh</div></div><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:260px"><canvas id="frs-co2" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="frs-co2" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Commercial exchanges by border</div><div class="fuel-card-sub">GW, + import / − export · physical net (white)</div></div><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:260px"><canvas id="frs-exch" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="frs-exch" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
-<div class="fuel-grid-2">
+<div class="fuel-grid-2 pk-stack">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Pumped storage and batteries</div><div class="fuel-card-sub">GW · day-ahead price on the right axis</div></div><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:260px"><canvas id="frs-flex" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="frs-flex" style="width:100%;height:320px"></canvas></div>
         </div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">This year vs previous years</div><div class="fuel-card-sub" id="frs-env-sub">Weekly averages</div></div>
             <select class="country-select" id="frs-env-series" onchange="frsSetEnv(this.value)" aria-label="Series">
               <option value="nuclear">Nuclear output</option><option value="load">Consumption</option><option value="wind">Wind output</option><option value="solar">Solar output</option><option value="hydro">Hydro output</option><option value="exch">Net import</option><option value="co2">CO₂ intensity</option>
             </select><span class="source-badge">RTE éCO2mix</span></div>
-          <div style="position:relative;height:260px"><canvas id="frs-env" style="width:100%;height:260px"></canvas></div>
+          <div style="position:relative;height:320px"><canvas id="frs-env" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
         </div>
@@ -6399,6 +6430,7 @@
           <button class="pk-btn-ghost" id="pkd-add-sec" type="button" title="Add a full-width section title">+ Section</button>
           <button class="pk-btn-ghost" id="pkd-add-note" type="button" title="Add a text note">+ Note</button>
           <button class="pk-btn-ghost" id="pkd-pptx" type="button" title="Export this dashboard to PowerPoint (one slide per chart)">⤓ PowerPoint</button>
+          <button class="pk-btn-ghost" id="pkd-share" type="button" title="Copy a link to this dashboard, or to the dashboard alone">↗ Share</button>
           <button class="pk-btn-ghost" id="pkd-menu" type="button" title="Rename, duplicate, template, export, delete">⋯ Dashboard</button>
           <button class="pk-btn-primary" id="pkd-add" type="button">+ Add charts</button>
         </div>
@@ -7176,6 +7208,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/views.js"></script>
 <script src="js/pptx-export.js"></script>
 <script src="js/search.js"></script>
+<script src="js/kpi-tone.js"></script>
 <script src="js/alerts.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
