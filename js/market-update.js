@@ -1,5 +1,6 @@
 // ════════════════════════════════════════════════════════════════════
-// MARKET UPDATE — the internal "point marché" charts, France.
+// MARKET UPDATE charts — the internal "point marché", shown on their
+// pages and gathered in the built-in "Market update" dashboard.
 //   Supply:  5-week outlook vs normal (hydro precipitation, solar, wind),
 //            French nuclear output by month and year, EU gas storage by year
 //   Demand:  temperature outlook vs normal, consumption vs normal
@@ -25,7 +26,10 @@ function _muTodayPlugin(idx) {
     g.fillStyle = 'rgba(226,232,240,.7)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText('today', x + 4, a.top + 10); g.restore(); } };
 }
 
-function _muReg(def) { if (window.PKW) PKW.register(Object.assign({ page: 'marketupdate', size: { w: 6, h: 5 } }, def)); }
+const MU_ZONE = { key: 'zone', label: 'Zone', inTitle: true, options: (typeof ZONES !== 'undefined' ? ZONES : [{ code: 'FR', name: 'France' }]).map(z => [z.code, z.name]).sort((a, b) => a[1].localeCompare(b[1])) };
+const MU_FWD = { key: 'country', label: 'Market', inTitle: true, options: [['FR', 'France'], ['DE', 'Germany'], ['NL', 'Netherlands'], ['UK', 'Great Britain']] };
+const _muZoneName = z => ((typeof ZONES !== 'undefined' ? ZONES : []).find(x => x.code === z) || {}).name || z;
+function _muReg(def) { if (window.PKW) PKW.register(Object.assign({ size: { w: 6, h: 5 } }, def)); }
 
 // ── 1. outlook vs normal ──
 const MU_OUT = {
@@ -35,7 +39,7 @@ const MU_OUT = {
   temp: { title: 'Temperature vs normal', col: '#F97316', above: 'rgba(249,115,22,.28)', below: 'rgba(59,130,246,.30)' },
 };
 _muReg({
-  id: 'wx-outlook', title: 'France 5-week outlook vs normal', category: 'weather', pageCanvas: 'mu-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
+  id: 'wx-outlook', title: 'France 5-week outlook vs normal', category: 'weather', page: 'wxcities', pageCanvas: 'wx-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
   desc: 'Next 5 weeks for France against the 2016–2025 normal: temperature, wind and solar production (GWh/day, calibrated on RTE) or hydro-basin precipitation. Band = 10th–90th percentile of the 31 ensemble members.',
   params: [{ key: 'series', label: 'Series', inTitle: true, options: [['temp', 'Temperature'], ['wind', 'Wind production'], ['solar', 'Solar production'], ['precip', 'Hydro (precipitation)']] }],
   defaults: { series: 'wind' },
@@ -70,7 +74,7 @@ _muReg({
 
 // ── 2. nuclear output by month and year (RTE) ──
 _muReg({
-  id: 'nuc-monthly-years', title: 'France nuclear output by month', category: 'france', pageCanvas: 'mu-nuc', source: 'RTE éCO2mix',
+  id: 'nuc-monthly-years', title: 'France nuclear output by month', category: 'france', page: 'nuclear', pageCanvas: 'nuc-monthly', source: 'RTE éCO2mix',
   desc: 'Monthly French nuclear generation (TWh), current year against the two previous years; the current month is provisional.',
   async draw(cid) {
     const j = await _muGet('frd', 'history/rte/fr_daily.json');
@@ -88,7 +92,7 @@ _muReg({
 
 // ── 3. EU gas storage by year ──
 _muReg({
-  id: 'gas-storage-years', title: 'EU gas storage by year', category: 'fuels', pageCanvas: 'mu-gas', source: 'GIE AGSI',
+  id: 'gas-storage-years', title: 'EU gas storage by year', category: 'fuels', page: 'eua', pageCanvas: 'fuel-gas-years', source: 'GIE AGSI',
   desc: 'Aggregate EU gas storage filling level (%), one line per year since 2022.',
   async draw(cid) {
     const j = await _muGet('cs', 'history/commodities_series.json');
@@ -112,7 +116,7 @@ _muReg({
 
 // ── 4. demand: consumption vs normal (RTE) ──
 _muReg({
-  id: 'fr-load-normal', title: 'France consumption vs normal', category: 'france', pageCanvas: 'mu-load', source: 'RTE éCO2mix',
+  id: 'fr-load-normal', title: 'France consumption vs normal', category: 'france', page: 'load', pageCanvas: 'load-normal', source: 'RTE éCO2mix',
   desc: 'French consumption over the last 60 days (daily and 7-day average) against the 2016–2025 average of the same calendar days (GWh/day).',
   async draw(cid) {
     const j = await _muGet('frd', 'history/rte/fr_daily.json');
@@ -136,30 +140,32 @@ _muReg({
 
 // ── 5. prices ──
 _muReg({
-  id: 'fr-cal-history', title: 'France calendar forwards', category: 'forwards', pageCanvas: 'mu-cal', source: 'Market data',
-  desc: 'Daily settlements of the French baseload calendar contracts (fixed delivery years).',
-  params: [{ key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '3M' },
+  id: 'fr-cal-history', title: 'Calendar forwards', category: 'forwards', page: 'prices', pageCanvas: 'cal-history', source: 'Market data',
+  desc: 'Daily settlements of a market’s baseload calendar contracts (fixed delivery years). UK in GBP.',
+  titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · calendar forwards',
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '3M', country: 'FR' },
   async draw(cid, p) {
     const c = await _muGet('chain', 'history/fr_market_calchain.json');
-    const yrs = c && c.FR && c.FR.years;
+    const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years;
     if (!yrs) { noDataMsg(cid, 'Forward history not available', ''); return null; }
     const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 92));
     const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
     const cols = ['#FDE047', '#B45309', '#F472B6', '#5EEAD4', '#A78BFA'];
     const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
-    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'fr-calendar-forwards');
+    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(cc === 'UK' ? '£/MWh' : '€/MWh') }, plugins: { legend: _muLegend() } }) }, 'calendar-forwards-' + cc);
     const k = Object.keys(yrs).sort()[0], v = yrs[k].values, first = v[yrs[k].dates.findIndex(d => d >= from)];
-    return { sub: `Cal ${k}: ${v[v.length - 1].toFixed(2)} €/MWh, ${first ? ((v[v.length - 1] - first) >= 0 ? '+' : '') + (v[v.length - 1] - first).toFixed(2) : '–'} over ${p.win}` };
+    return { sub: `Cal ${k}: ${v[v.length - 1].toFixed(2)} ${cc === 'UK' ? '£' : '€'}/MWh, ${first ? ((v[v.length - 1] - first) >= 0 ? '+' : '') + (v[v.length - 1] - first).toFixed(2) : '–'} over ${p.win}` };
   },
 });
 
 _muReg({
-  id: 'fr-cal-drivers', title: 'Cal+1 France and its drivers', category: 'forwards', pageCanvas: 'mu-drivers', source: 'Market data',
-  desc: 'French Cal+1 baseload against TTF day-ahead gas and EUA carbon, indexed to 100 at the start of the window.',
-  params: [{ key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year']] }], defaults: { win: '6M' },
+  id: 'fr-cal-drivers', title: 'Cal+1 and its drivers', category: 'forwards', page: 'prices', pageCanvas: 'cal-drivers', source: 'Market data',
+  desc: 'A market’s Cal+1 baseload against TTF day-ahead gas and EUA carbon, indexed to 100 at the start of the window.',
+  titleFn: p => 'Cal+1 ' + (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' and its drivers',
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year']] }], defaults: { win: '6M', country: 'FR' },
   async draw(cid, p) {
     const [c, cs] = await Promise.all([_muGet('chain', 'history/fr_market_calchain.json'), _muGet('cs', 'history/commodities_series.json')]);
-    const yrs = c && c.FR && c.FR.years, ser = cs && cs.series;
+    const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years, ser = cs && cs.series;
     if (!yrs || !ser) { noDataMsg(cid, 'Data not available', ''); return null; }
     const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366 }[p.win] || 183));
     const k = Object.keys(yrs).sort()[0];
@@ -169,7 +175,7 @@ _muReg({
     const dates = [...cal.keys()].filter(d => d >= from).sort();
     const idx = (m) => { const b = dates.map(d => m.get(d)).find(v => v != null); return dates.map(d => m.has(d) && b ? Math.round(m.get(d) / b * 1000) / 10 : null); };
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: [
-      _fuelLineDs('Cal ' + k + ' FR', idx(cal), '#FDE047', { borderWidth: 2.4, spanGaps: true }),
+      _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#FDE047', { borderWidth: 2.4, spanGaps: true }),
       _fuelLineDs('TTF day-ahead', idx(ttf), '#F97316', { borderWidth: 1.5, spanGaps: true }),
       _fuelLineDs('EUA', idx(eua), '#A78BFA', { borderWidth: 1.5, spanGaps: true }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
@@ -177,25 +183,32 @@ _muReg({
   },
 });
 
-async function _muFrDaily() {
-  // FR daily baseload: summary.json, completed with the daily files of the last days
+// Daily baseload of a zone: summary.json (long history, 5 zones), monthly
+// files (every zone since 2025) and the daily files of the last days.
+async function _muZoneDaily(zone) {
+  const rows = new Map();
   const s = await _muGet('sum', 'history/summary.json');
-  const rows = new Map(((s && s.zones && s.zones.FR) || []).map(r => [r.d, r.avg]));
+  ((s && s.zones && s.zones[zone]) || []).forEach(r => { if (r.avg != null) rows.set(r.d, r.avg); });
   const t = _muToday();
+  const months = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1 - i, 1)); months.push(d.toISOString().slice(0, 7)); }
+  const files = await Promise.all(months.map(m => _muGet('m' + m, 'history/monthly/' + m + '.json')));
+  files.forEach(f => ((f && f.zones && f.zones[zone]) || []).forEach(r => { if (r.avg != null && !rows.has(r.d)) rows.set(r.d, r.avg); }));
   for (let i = -10; i <= 1; i++) {
     const d = _muAdd(t, i); if (rows.has(d)) continue;
     const j = await _muGet('d' + d, 'history/daily/' + d + '.json');
-    const h = j && j.zones && j.zones.FR && j.zones.FR.hourly;
-    const m = Array.isArray(h) ? _muMean(h) : null; if (m != null) rows.set(d, Math.round(m * 100) / 100);
+    const h = j && j.zones && j.zones[zone] && j.zones[zone].hourly;
+    const v = Array.isArray(h) ? h.filter(x => x != null) : [];
+    if (v.length && !v.every(x => x === 0)) rows.set(d, Math.round(_muMean(v) * 100) / 100);
   }
   return [...rows.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 _muReg({
-  id: 'fr-spot-monthly', title: 'France spot by month · 12 months', category: 'prices', pageCanvas: 'mu-spm', source: 'ENTSO-E',
-  desc: 'Monthly average French day-ahead baseload over the last 12 months against their 12-month mean; bars above the mean in orange.',
-  async draw(cid) {
-    const rows = await _muFrDaily();
+  id: 'fr-spot-monthly', title: 'Spot by month · 12 months', category: 'prices', page: 'prices', pageCanvas: 'spt-monthly', source: 'ENTSO-E',
+  desc: 'Monthly average day-ahead baseload of a zone over the last 12 months against their 12-month mean; bars above the mean in orange.',
+  params: [MU_ZONE], defaults: { zone: 'FR' }, titleFn: p => _muZoneName(p.zone) + ' · spot by month, 12 months',
+  async draw(cid, p) {
+    const rows = await _muZoneDaily(p.zone || 'FR');
     if (!rows.length) { noDataMsg(cid, 'Price history not available', ''); return null; }
     const by = new Map(); rows.forEach(([d, v]) => { if (v == null) return; const k = d.slice(0, 7); (by.get(k) || by.set(k, []).get(k)).push(v); });
     const months = [...by.keys()].sort().slice(-13);
@@ -204,7 +217,7 @@ _muReg({
     _fuelChart(cid, { type: 'bar', data: { labels: months.map(k => MU_MON[+k.slice(5) - 1] + ' ' + k.slice(2, 4)), datasets: [
       { type: 'bar', label: 'Monthly average', data: avg, backgroundColor: avg.map(v => v > mean ? '#D97706' : '#15803D'), borderRadius: 3, borderWidth: 0, order: 2 },
       { type: 'line', label: '12-month mean ' + mean.toFixed(1), data: avg.map(() => Math.round(mean * 10) / 10), borderColor: '#14D3A9', borderDash: [4, 3], borderWidth: 1.4, pointRadius: 0, order: 1 },
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'fr-spot-monthly');
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'spot-monthly-' + (p.zone || 'FR'));
     const cur = avg[avg.length - 1];
     const rank = avg.slice(0, -1).filter(v => v < cur).length / Math.max(1, avg.length - 1);
     return { sub: `${MU_MON[+months[months.length - 1].slice(5) - 1]} ${months[months.length - 1].slice(0, 4)} so far: ${cur.toFixed(1)} €/MWh · ${rank > .75 ? 'high' : rank < .25 ? 'low' : 'average'} · ${cur - mean >= 0 ? '+' : ''}${(cur - mean).toFixed(1)} vs 12-month mean` };
@@ -212,16 +225,17 @@ _muReg({
 });
 
 _muReg({
-  id: 'fr-spot-30d', title: 'France spot · last 30 days', category: 'prices', pageCanvas: 'mu-sp30', source: 'ENTSO-E',
-  desc: 'Daily French day-ahead baseload over the last 30 delivery days with the 30-day mean.',
-  async draw(cid) {
-    const rows = (await _muFrDaily()).slice(-30);
+  id: 'fr-spot-30d', title: 'Spot · last 30 days', category: 'prices', page: 'prices', pageCanvas: 'spt-30d', source: 'ENTSO-E',
+  desc: 'Daily day-ahead baseload of a zone over the last 30 delivery days with the 30-day mean.',
+  params: [MU_ZONE], defaults: { zone: 'FR' }, titleFn: p => _muZoneName(p.zone) + ' · spot, last 30 days',
+  async draw(cid, p) {
+    const rows = (await _muZoneDaily(p.zone || 'FR')).slice(-30);
     if (!rows.length) { noDataMsg(cid, 'Price history not available', ''); return null; }
     const v = rows.map(r => r[1]), mean = _muMean(v);
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => _muDay(r[0])), datasets: [
       { label: 'Daily baseload', data: v, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.10)', fill: true, borderWidth: 2, pointRadius: 2.5, tension: .35 },
       { label: '30-day mean ' + mean.toFixed(1), data: v.map(() => Math.round(mean * 10) / 10), borderColor: 'rgba(226,232,240,.6)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0 },
-    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'fr-spot-30d');
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'spot-30d-' + (p.zone || 'FR'));
     const last = rows[rows.length - 1];
     return { sub: `Last session ${_muDay(last[0])}: ${last[1].toFixed(1)} €/MWh · 30-day mean ${mean.toFixed(1)} · range ${Math.min(...v).toFixed(0)} → ${Math.max(...v).toFixed(0)}` };
   },
@@ -229,19 +243,20 @@ _muReg({
 
 // Day card: average, change, cheapest / most expensive hour and 3-hour windows, curve with bands.
 if (window.PKW) PKW.register({
-  id: 'fr-spot-day', kind: 'html', title: 'France spot · day profile', category: 'prices', page: 'marketupdate', source: 'ENTSO-E', size: { w: 6, h: 7 },
-  desc: 'One delivery day of French day-ahead prices: average and change, cheapest and most expensive hour, cheapest and dearest 3-hour windows.',
-  params: [{ key: 'day', label: 'Day', options: [['latest', 'Latest delivery day'], ['previous', 'Day before']] }], defaults: { day: 'latest' },
-  titleFn: p => 'France spot · ' + (p.day === 'previous' ? 'previous day' : 'latest day'),
+  id: 'fr-spot-day', kind: 'html', title: 'Spot · day profile', category: 'prices', page: 'prices', source: 'ENTSO-E', size: { w: 6, h: 7 },
+  desc: 'One delivery day of day-ahead prices of a zone: average and change, cheapest and most expensive hour, cheapest and dearest 3-hour windows.',
+  params: [MU_ZONE, { key: 'day', label: 'Day', options: [['latest', 'Latest delivery day'], ['previous', 'Day before']] }], defaults: { zone: 'FR', day: 'latest' },
+  titleFn: p => _muZoneName(p.zone || 'FR') + ' spot · ' + (p.day === 'previous' ? 'previous day' : 'latest day'),
   async html(host, p) {
     const t = _muToday();
     let d = null;
-    for (const c of [_muAdd(t, 1), t, _muAdd(t, -1)]) { const j = await _muGet('d' + c, 'history/daily/' + c + '.json'); if (j && j.zones && j.zones.FR && j.zones.FR.hourly) { d = c; break; } }
-    if (!d) { host.innerHTML = '<div class="fuel-note">No French prices.</div>'; return; }
+    const Z = p.zone || 'FR';
+    for (const c of [_muAdd(t, 1), t, _muAdd(t, -1)]) { const j = await _muGet('d' + c, 'history/daily/' + c + '.json'); if (j && j.zones && j.zones[Z] && j.zones[Z].hourly) { d = c; break; } }
+    if (!d) { host.innerHTML = '<div class="fuel-note">No prices for ' + Z + '.</div>'; return; }
     if (p.day === 'previous') d = _muAdd(d, -1);
     const [J, P] = await Promise.all([_muGet('d' + d, 'history/daily/' + d + '.json'), _muGet('d' + _muAdd(d, -1), 'history/daily/' + _muAdd(d, -1) + '.json')]);
-    const q = J && J.zones && J.zones.FR && J.zones.FR.hourly, qp = P && P.zones && P.zones.FR && P.zones.FR.hourly;
-    if (!q) { host.innerHTML = '<div class="fuel-note">No French prices for ' + d + '.</div>'; return; }
+    const q = J && J.zones && J.zones[Z] && J.zones[Z].hourly, qp = P && P.zones && P.zones[Z] && P.zones[Z].hourly;
+    if (!q) { host.innerHTML = '<div class="fuel-note">No prices for ' + Z + ' on ' + d + '.</div>'; return; }
     const per = q.length / 24, h = Array.from({ length: 24 }, (_, i) => _muMean(q.slice(i * per, (i + 1) * per)));
     const avg = _muMean(q), avgP = qp ? _muMean(qp) : null, chg = avgP ? (avg / avgP - 1) * 100 : null;
     let lo = 0, hi = 0; h.forEach((v, i) => { if (v < h[lo]) lo = i; if (v > h[hi]) hi = i; });
@@ -249,7 +264,7 @@ if (window.PKW) PKW.register({
     const wl = win(-1), wh = win(1);
     const cid = 'mu-day-' + Math.random().toString(36).slice(2, 8);
     const dl = new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-    host.innerHTML = `<div class="mu-day"><div class="mu-day-h"><div><div class="mu-day-t">${dl}</div><div class="mu-day-avg">${avg.toFixed(2)}<small> €/MWh</small></div></div>
+    host.innerHTML = `<div class="mu-day"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · ${dl}</div><div class="mu-day-avg">${avg.toFixed(2)}<small> €/MWh</small></div></div>
       ${chg == null ? '' : `<span class="mu-day-chg ${chg >= 0 ? 'up' : 'down'}">${chg >= 0 ? '▲' : '▼'} ${chg >= 0 ? '+' : ''}${chg.toFixed(1)} % vs previous day</span>`}</div>
       <div class="mu-day-k"><div class="lo"><b>Cheapest</b> ${h[lo].toFixed(2)} €/MWh at ${lo} h<span>trough ${wl} h → ${wl + 3} h</span></div>
       <div class="hi"><b>Most expensive</b> ${h[hi].toFixed(2)} €/MWh at ${hi} h<span>peak ${wh} h → ${wh + 3} h</span></div></div>
@@ -267,7 +282,7 @@ if (window.PKW) PKW.register({
 
 // Latest headlines (geopolitics / markets)
 if (window.PKW) PKW.register({
-  id: 'news-latest', kind: 'html', title: 'Energy news · latest', category: 'intel', page: 'marketupdate', source: 'News feeds', size: { w: 6, h: 6 },
+  id: 'news-latest', kind: 'html', title: 'Energy news · latest', category: 'intel', page: 'news', source: 'News feeds', size: { w: 6, h: 6 },
   desc: 'The latest energy-market headlines (gas, power, carbon, geopolitics).',
   async html(host) {
     const j = await _muGet('news', 'news.json');
@@ -276,23 +291,6 @@ if (window.PKW) PKW.register({
     host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${n.link || n.url || '#'}" target="_blank" rel="noopener">${(n.title || '').replace(/</g, '&lt;')}</a><span>${(n.source || '').replace(/</g, '&lt;')}${n.date || n.published ? ' · ' + String(n.date || n.published).slice(0, 10) : ''}</span></li>`).join('') + '</ul>' : '<div class="fuel-note">No news.</div>';
   },
 });
-
-async function renderMarketUpdate() {
-  const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
-  ['precip', 'solar', 'wind', 'temp'].forEach(s => PKW.draw('wx-outlook', 'mu-out-' + s, { series: s }).then(r => sub('mu-out-' + s + '-sub', r)));
-  PKW.draw('nuc-monthly-years', 'mu-nuc', {}).then(r => sub('mu-nuc-sub', r));
-  PKW.draw('gas-storage-years', 'mu-gas', {}).then(r => sub('mu-gas-sub', r));
-  PKW.draw('fr-load-normal', 'mu-load', {}).then(r => sub('mu-load-sub', r));
-  PKW.draw('fuel-coal-oil', 'mu-oil', {});
-  PKW.draw('fr-cal-history', 'mu-cal', { win: '3M' }).then(r => sub('mu-cal-sub', r));
-  PKW.draw('fr-cal-drivers', 'mu-drivers', { win: '6M' }).then(r => sub('mu-drivers-sub', r));
-  PKW.draw('fr-spot-monthly', 'mu-spm', {}).then(r => sub('mu-spm-sub', r));
-  PKW.draw('fr-spot-30d', 'mu-sp30', {}).then(r => sub('mu-sp30-sub', r));
-  const d1 = document.getElementById('mu-day-latest'), d0 = document.getElementById('mu-day-prev');
-  if (d1) PKW.get('fr-spot-day').html(d1, { day: 'latest' });
-  if (d0) PKW.get('fr-spot-day').html(d0, { day: 'previous' });
-  const nw = document.getElementById('mu-news'); if (nw) PKW.get('news-latest').html(nw, {});
-}
 
 (function () {
   const css = document.createElement('style');
@@ -312,3 +310,47 @@ async function renderMarketUpdate() {
   `;
   document.head.appendChild(css);
 })();
+
+// ── page hooks: Prices › Day-Ahead (spot trend), Prices › Forward (calendar
+//    contracts), Load & Demand (consumption vs normal) ──
+window.PKSpot = {
+  draw() {
+    const sel = document.getElementById('spt-zone'); if (!sel || !window.PKW) return;
+    if (!sel.options.length) sel.innerHTML = MU_ZONE.options.map(([c, n]) => `<option value="${c}"${c === 'FR' ? ' selected' : ''}>${n}</option>`).join('');
+    const z = sel.value || 'FR', sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
+    PKW.draw('fr-spot-monthly', 'spt-monthly', { zone: z }).then(r => sub('spt-monthly-sub', r));
+    PKW.draw('fr-spot-30d', 'spt-30d', { zone: z }).then(r => sub('spt-30d-sub', r));
+    const a = document.getElementById('spt-day-latest'), b = document.getElementById('spt-day-prev');
+    if (a) PKW.get('fr-spot-day').html(a, { zone: z, day: 'latest' });
+    if (b) PKW.get('fr-spot-day').html(b, { zone: z, day: 'previous' });
+  },
+  drawCal() {
+    const sel = document.getElementById('cal-country'); if (!sel || !window.PKW) return;
+    const c = sel.value || 'FR', sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
+    PKW.draw('fr-cal-history', 'cal-history', { country: c, win: '3M' }).then(r => sub('cal-history-sub', r));
+    PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: '6M' }).then(r => sub('cal-drivers-sub', r));
+  },
+  load() { if (window.PKW) PKW.draw('fr-load-normal', 'load-normal', {}).then(r => { const e = document.getElementById('load-normal-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
+};
+window.addEventListener('load', () => setTimeout(() => {
+  const done = {};
+  const once = (k, fn) => { if (!done[k]) { done[k] = true; fn(); } };
+  if (typeof window.prSelectSubdomain === 'function') {
+    const inner = window.prSelectSubdomain;
+    window.prSelectSubdomain = function (d) {
+      const r = inner.apply(this, arguments);
+      if (d === 'da') once('da', () => setTimeout(PKSpot.draw, 300));
+      if (d === 'forward') once('fwd', () => setTimeout(PKSpot.drawCal, 300));
+      return r;
+    };
+  }
+  const innerShow = window.showPage;
+  window.showPage = function (id) {
+    innerShow(id);
+    if (id === 'load') once('load', () => setTimeout(PKSpot.load, 300));
+    if (id === 'prices') {   // the Day-Ahead sub-page can be the one open by default
+      const da = document.querySelector('[data-subdomain-panel="da"].active');
+      if (da) once('da', () => setTimeout(PKSpot.draw, 300));
+    }
+  };
+}, 50));

@@ -42,7 +42,7 @@
       S('Forwards'),
       W('fwd-power', 6, 5), W('fwdc-ttf', 6, 5),
     ] },
-    { id: 'mu', name: 'Market update · France', desc: 'The internal market update: renewables outlook vs normal, nuclear, gas storage, temperature and demand, news, forwards and spot.', items: [
+    { id: 'mu', name: 'Market update', desc: 'The market update, in the order of the internal presentation: renewables outlook vs normal, nuclear, gas storage, temperature and demand, news, forwards and spot (France by default; zone and market can be changed per chart).', items: [
       S('1 · Supply'),
       W('wx-outlook', 6, 5, { series: 'precip' }), W('wx-outlook', 6, 5, { series: 'solar' }),
       W('wx-outlook', 6, 5, { series: 'wind' }), W('nuc-monthly-years', 6, 5),
@@ -118,6 +118,21 @@
     return { v: 2, active: id, boards: [{ id, name: 'My Dashboard', items: items && items.length ? items : fromTemplate('spot') }] };
   }
 
+  // Built-in boards: added once to every user's dashboards (then theirs to
+  // rename, edit or delete — a deleted one does not come back).
+  const BUILTIN = [{ key: 'mu', name: 'Market update', tpl: 'mu' }];
+  function seed() {
+    if (!state || !Array.isArray(state.boards)) return false;
+    state.seeded = state.seeded || {};
+    let added = false;
+    BUILTIN.forEach(b => {
+      if (state.seeded[b.key]) return;
+      if (!state.boards.some(x => x.name === b.name)) state.boards.push({ id: uid(), name: b.name, items: fromTemplate(b.tpl) });
+      state.seeded[b.key] = true; added = true;
+    });
+    return added;
+  }
+
   function writeLocal() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
   }
@@ -144,6 +159,7 @@
       const row = await PKAccount.load();
       if (row && row.data && Array.isArray(row.data.boards) && row.data.boards.length) {
         state = row.data;
+        if (seed()) PKAccount.save(state).catch(() => {});
         writeLocal();
         if (isOpen()) render();
         setSync('saved');
@@ -692,6 +708,7 @@
   function init() {
     if (state) return;
     state = readLocal();
+    seed();
     writeLocal();
     const page = document.getElementById('page-mydash');
     if (page) {
