@@ -146,7 +146,7 @@
   .pk-scope-pill span{opacity:.7;font-size:13px;line-height:1}
   .pk-scope-pill:hover{background:rgba(20,211,169,.18)}
   body.pk-scope-fr #sec-power-items{display:flex;flex-direction:column}
-  body.pk-scope-fr #nav-morning{order:-4} body.pk-scope-fr #nav-frsystem{order:-3} body.pk-scope-fr #nav-regions{order:-2}
+  body.pk-scope-fr #nav-morning{order:-5} body.pk-scope-fr #nav-marketupdate{order:-4} body.pk-scope-fr #nav-frsystem{order:-3} body.pk-scope-fr #nav-regions{order:-2}
   body.pk-scope-fr #nav-imbalance{display:none}
   /* Board key figures about other countries: hidden in the France view (the
      comparison sections below keep them) */

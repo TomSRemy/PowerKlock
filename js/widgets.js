@@ -39,6 +39,7 @@
     ['balancing', 'Balancing & outages'],
     ['weather', 'Weather'],
     ['go', 'Guarantees of origin'],
+    ['intel', 'News & context'],
   ];
 
   // Period selector shared by the daily time-series charts (same keys as the pages' period buttons).

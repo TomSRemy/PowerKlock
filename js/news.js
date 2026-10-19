@@ -176,22 +176,23 @@ const PAGE_LOADERS = {
   // empty canvas until the user happened to click a pill button. Each loader
   // below now also fires that first render.
   renewables: () => loadRenewables(),
-  nuclear:    () => drawNuclear(),
+  nuclear:    () => { drawNuclear(); if (window.PKW) PKW.draw('nuc-monthly-years', 'nuc-monthly', {}).then(r => { const e = document.getElementById('nuc-monthly-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
   imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
-  eua:        () => drawEUA(),
+  eua:        () => { drawEUA(); if (window.PKW) PKW.draw('gas-storage-years', 'fuel-gas-years', {}).then(r => { const e = document.getElementById('fuel-gas-years-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
   remit:      () => renderRemit(),
-  wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
+  wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); if (window.PKW) ['temp', 'wind', 'solar', 'precip'].forEach(k => PKW.draw('wx-outlook', 'wx-out-' + k, { series: k }).then(r => { const e = document.getElementById('wx-out-' + k + '-sub'); if (e && r && r.sub) e.textContent = r.sub; })); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
   status:     () => { if (window.PKStatus) PKStatus.renderStatusPage(); },
   capacity:   () => { if (typeof renderCapacity === 'function') renderCapacity(); },
   regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
   frsystem:   () => { if (typeof renderFrSystem === 'function') renderFrSystem(); },
   morning:    () => { if (typeof renderMorning === 'function') renderMorning(); },
+  marketupdate: () => { if (typeof renderMarketUpdate === 'function') renderMarketUpdate(); },
 };
 
 // Weather pages: see js/meteo.js
