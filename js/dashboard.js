@@ -53,6 +53,7 @@
       W('fuel-coal-oil', 6, 5), W('news-latest', 6, 5),
       S('4 · Prices'),
       W('fr-cal-history', 6, 5, { win: '3M' }), W('fr-cal-drivers', 6, 5, { win: '6M' }),
+      W('ttf-cal-history', 6, 5, { win: '6M' }), W('ttf-fwd-table', 6, 5),
       W('fr-spot-monthly', 6, 5), W('fr-spot-30d', 6, 5),
       W('fr-spot-day', 6, 7, { day: 'latest' }), W('fr-spot-day', 6, 7, { day: 'previous' }),
     ] },

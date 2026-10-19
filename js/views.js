@@ -18,7 +18,7 @@
     crossborder: [['Daily', ['hs-crossborder-0']], ['Borders', ['hs-crossborder-1']]],
     imbalance: [['Daily', ['hs-imbalance-0']], ['Deviations', ['hs-imbalance-1']]],
     eua: [['Overview', ['hs-eua-0']], ['Gas', ['hs-eua-1']], ['Coal & oil', ['hs-eua-2']]],
-    euafwd: [['Curves', ['hs-euafwd-0']], ['Settlements', ['hs-euafwd-1']]],
+    euafwd: [['Curves', ['hs-euafwd-0']], ['TTF forwards', ['hs-euafwd-ttf']], ['Settlements', ['hs-euafwd-1']]],
     spark: [['Daily', ['hs-spark-0']], ['Historical', ['hs-spark-1']]],
     wxcities: [['Daily', ['hs-wxcities-0', 'hs-wxcities-1']], ['5-week outlook', ['hs-wxcities-outlook']], ['Hydro reservoirs', ['hs-wxcities-hydro']]],
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],

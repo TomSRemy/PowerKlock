@@ -177,7 +177,7 @@ _muReg({
 
 _muReg({
   id: 'fr-cal-drivers', title: 'Cal+1 and its drivers', category: 'forwards', page: 'prices', pageCanvas: 'cal-drivers', source: 'Market data',
-  desc: 'A market’s Cal+1 baseload against TTF day-ahead gas and EUA carbon, indexed to 100 at the start of the window.',
+  desc: 'A market’s Cal+1 baseload against TTF gas (calendar of the same year and day-ahead) and EUA carbon, indexed to 100 at the start of the window.',
   titleFn: p => 'Cal+1 ' + (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' and its drivers',
   params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year']] }], defaults: { win: '6M', country: 'FR' },
   async draw(cid, p) {
@@ -189,16 +189,72 @@ _muReg({
     const cal = new Map(yrs[k].dates.map((d, i) => [d, yrs[k].values[i]]));
     const pts = key => new Map(((ser[key] || {}).points || []).filter(([d]) => d >= from));
     const ttf = pts('ttf'), eua = pts('eua');
+    const com = await _muGet('cs', 'history/commodities_series.json'), ty = com && com.calYears && com.calYears.ttf && com.calYears.ttf[k];
+    const ttfCal = ty ? new Map(ty.dates.map((d, i) => [d, ty.values[i]]).filter(([d]) => d >= from)) : null;
     const dates = [...cal.keys()].filter(d => d >= from).sort();
     const idx = (m) => { const b = dates.map(d => m.get(d)).find(v => v != null); return dates.map(d => m.has(d) && b ? Math.round(m.get(d) / b * 1000) / 10 : null); };
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: [
       _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#14D3A9', { borderWidth: 2.4, spanGaps: true }),
-      _fuelLineDs('TTF day-ahead', idx(ttf), '#C4A57B', { borderWidth: 1.5, spanGaps: true }),
+      ...(ttfCal ? [_fuelLineDs('TTF Cal ' + k, idx(ttfCal), '#C4A57B', { borderWidth: 1.8, spanGaps: true })] : []),
+      _fuelLineDs('TTF day-ahead', idx(ttf), 'rgba(196,165,123,.6)', { borderWidth: 1.2, borderDash: [4, 3], spanGaps: true }),
       _fuelLineDs('EUA', idx(eua), '#A87DC4', { borderWidth: 1.5, spanGaps: true }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
     return { sub: 'Indexed to 100 on ' + dates[0] };
   },
 });
+
+// ── TTF forwards ──
+// Snapshot of the TTF strip (months, quarters, seasons, years) and the
+// fixed delivery-year calendar contracts over their life (commodities.json).
+function _muTtfRows(c) {
+  return ((c && c.curves && c.curves.ttf) || []).filter(r => r.value != null).map(r => {
+    const back = pct => pct == null ? null : r.value - r.value / (1 + pct / 100);
+    return { label: r.label || r.contract, kind: /^M/.test(r.tenor) ? 'Month' : /^Q/.test(r.tenor) ? 'Quarter' : /^S/.test(r.tenor) ? 'Season' : 'Year', v: r.value, d1: back(r.varD1Pct), w1: back(r.varW1Pct), p1: r.varD1Pct, pw: r.varW1Pct, date: r.date };
+  });
+}
+_muReg({
+  id: 'ttf-fwd-table', kind: 'html', title: 'TTF forwards · table', category: 'forwards', page: 'euafwd', source: 'Market data', size: { w: 6, h: 6 },
+  desc: 'TTF gas forward products (months, quarters, seasons, calendar years): settlement, change vs the previous day and vs a week before.',
+  async html(host) {
+    const rows = _muTtfRows(await _muGet('com', 'commodities.json'));
+    if (!rows.length) { host.innerHTML = '<div class="fuel-note">TTF forwards not available.</div>'; return; }
+    const chg = (v, p) => v == null ? '<td>–</td>' : `<td class="${v > 0 ? 'mu-up' : v < 0 ? 'mu-dn' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)} <span class="mu-pct">${p > 0 ? '+' : ''}${p.toFixed(1)} %</span></td>`;
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th>€/MWh</th><th>vs D-1</th><th>vs W-1</th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${r.kind}</span></td><td><b>${r.v.toFixed(2)}</b></td>${chg(r.d1, r.p1)}${chg(r.w1, r.pw)}</tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
+  },
+});
+_muReg({
+  id: 'ttf-cal-history', title: 'TTF calendar forwards', category: 'forwards', page: 'euafwd', pageCanvas: 'ttf-cal', source: 'Market data',
+  desc: 'Daily settlements of the TTF gas calendar contracts (fixed delivery years) over the chosen window.',
+  params: [{ key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '6M' },
+  async draw(cid, p) {
+    const long = p.win === '3Y';
+    const c = await _muGet(long ? 'cs' : 'com', long ? 'history/commodities_series.json' : 'commodities.json');
+    const yrs = c && c.calYears && c.calYears.ttf;
+    if (!yrs || !Object.keys(yrs).length) { noDataMsg(cid, 'TTF calendar history not available', ''); return null; }
+    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 183));
+    const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
+    const cols = ['#C4A57B', '#FBBF24', '#7FC8F8', '#14D3A9'];
+    const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('TTF Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
+    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'ttf-calendar-forwards');
+    const k = Object.keys(yrs).sort()[0], v = yrs[k].values, i0 = yrs[k].dates.findIndex(d => d >= from), first = i0 >= 0 ? v[i0] : null, last = v[v.length - 1];
+    return { sub: `TTF Cal ${k}: ${last.toFixed(2)} €/MWh, ${first != null ? ((last - first) >= 0 ? '+' : '') + (last - first).toFixed(2) : '–'} over ${p.win}` };
+  },
+});
+
+window.PKTtf = {
+  render() {
+    const w = (document.getElementById('ttf-cal-win') || {}).value || '6M';
+    PKW.draw('ttf-cal-history', 'ttf-cal', { win: w }).then(r => { const e = document.getElementById('ttf-cal-sub'); if (e && r && r.sub) e.textContent = r.sub; });
+    const host = document.getElementById('ttf-fwd-host'); if (host) PKW.get('ttf-fwd-table').html(host, {});
+  },
+};
+window.addEventListener('load', () => setTimeout(() => {
+  const sel = document.getElementById('ttf-cal-win'); if (sel) sel.addEventListener('change', () => PKTtf.render());
+  const inner = window.showPage; let done = false;
+  if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'euafwd' && !done) { done = true; setTimeout(() => PKTtf.render(), 200); } return r; };
+}, 0));
 
 // Daily baseload of a zone: summary.json (long history, 5 zones), monthly
 // files (every zone since 2025) and the daily files of the last days.
