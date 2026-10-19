@@ -1556,10 +1556,17 @@
   .pkd-actions .pk-tool { width: 24px; height: 24px; background: none; border-color: transparent; }
   .pkd-actions .pk-tool:hover { border-color: var(--border2); }
   /* ☆ on site charts */
+  /* Cards side by side share a height: the chart grows to fill its card
+     instead of leaving empty space below; tables keep their own height. */
+  .fuel-grid-2 > .chart-container { display: flex; flex-direction: column; }
+  .fuel-grid-2 > .chart-container > div[style*="position:relative"], .fuel-grid-2 > .chart-container > div[style*="position: relative"] { flex: 1 1 auto; }
+  .fuel-grid-2 > .chart-container > div[style*="min-height"][style*="flex-direction:column"] { flex: 1 1 auto; }
+  .fuel-grid-2 > .table-wrap { align-self: start; }
   .pkw-star { background: none; border: 1px solid transparent; color: var(--text4); font-size: 15px; line-height: 1; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; flex: none; margin-left: 6px; }
   .pkw-star:hover { color: var(--highlight); border-color: var(--border2); }
   .pkw-star.on { color: #FBBF24; }
   .pkw-star-float { position: absolute; top: 6px; right: 40px; z-index: 11; height: 26px; width: 28px; margin: 0; }
+  .chart-container:not(:has(> .pk-tool-float)) > .pkw-star-float { right: 6px; }
   :has(> .pk-tool-dl) > .pkw-star-float { right: 74px; }
   /* Card headers make room for the floating tools (star, PNG, fullscreen) */
   .chart-container:has(> .pk-tool-float) > :first-child:not(canvas):not(.pk-tool) { padding-right: 112px !important; }
@@ -7138,6 +7145,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/morning.js"></script>
 <script src="js/market-update.js"></script>
 <script src="js/scope.js"></script>
+<script src="js/views.js"></script>
 <script src="js/alerts.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
