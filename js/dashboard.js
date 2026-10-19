@@ -48,6 +48,7 @@
       W('pf-curve', 6, 5, { country: 'FR' }), W('pf-history', 6, 5, { country: 'FR', tenor: 'Y+1', win: '3Y' }),
       S('Value of renewables'),
       W('ren-cr', 6, 5, { zone: 'FR', window: '1Y' }), W('ren-daily', 6, 5, { zone: 'FR', window: '1Y' }),
+      W('fr-m0', 12, 5, { view: 'price', win: '4Y' }),
       S('Regions & capacity'),
       W('fr-reg-lf', 6, 5), W('cap-history', 6, 5, { country: 'FR' }),
       S('Guarantees of origin'),

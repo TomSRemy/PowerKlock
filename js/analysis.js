@@ -230,6 +230,7 @@ async function loadRenewables() {
   PKW.draw('ren-intraday', 'ren-intraday', { zone, day });
   PKW.draw('ren-fc', 'ren-fc', { zone, day });
   _renHistory();
+  if (typeof renderM0 === 'function') renderM0();
   if (!D.z) {
     kpis.innerHTML = `<div class="fuel-note" style="grid-column:1/-1">No wind/solar data for ${zone} on ${_renFmtDay(day)}.</div>`;
     return;

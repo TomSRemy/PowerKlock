@@ -69,6 +69,13 @@
       } },
     { id: 'eccap', label: 'Installed capacity', provider: 'Energy-Charts', kind: 'repo', cadence: 'daily (yearly figures)',
       async check() { const j = await getJSON('history/capacity.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && Date.now() - d > 8 * 24 * H, detail: j ? Object.keys(j.countries || {}).length + ' countries' : '' }; } },
+    { id: 'm0', label: 'France M0 reference prices (wind, solar)', provider: 'RTE (ODRÉ)', kind: 'repo', cadence: 'daily check, RTE publishes monthly',
+      async check() {
+        const j = await getJSON('m0.json'); const d = j && j.updated ? new Date(j.updated) : null;
+        const last = j && j.months && j.months.length ? j.months[j.months.length - 1].month : null;
+        const lag = last ? (Date.parse(pkTodayISO().slice(0, 7) + '-01') - Date.parse(last + '-01')) / (24 * H) : 999;
+        return { at: d, late: !d || Date.now() - d > 3 * 24 * H || lag > 75, detail: last ? 'latest month ' + last : 'no file' };
+      } },
     { id: 'e2m', label: 'France load & exchanges (real time)', provider: 'RTE éCO2mix', kind: 'live', cadence: 'every 15 min',
       async check() {
         if (!window.PK_E2M) return { error: true, detail: 'module not loaded' };
