@@ -169,9 +169,10 @@
         ev.stopPropagation();
         if (window.PKDash) window.PKDash.toggleWidget(w.id);
       });
-      const head = card.querySelector('.fuel-card-head');
-      if (head) head.appendChild(btn);
-      else { btn.classList.add('pkw-star-float'); card.style.position = card.style.position || 'relative'; card.appendChild(btn); }
+      // Always in the top-right corner, next to the PNG and fullscreen tools.
+      btn.classList.add('pkw-star-float');
+      if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+      card.appendChild(btn);
     }
     refreshStars();
   }

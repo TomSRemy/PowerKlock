@@ -301,7 +301,7 @@ if (window.PKW) PKW.register({
 (function () {
   const css = document.createElement('style');
   css.textContent = `
-  .mu-day{display:flex;flex-direction:column;gap:10px;height:100%}
+  .mu-day{display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0}
   .mu-day-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
   .mu-day-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
   .mu-day-avg{font-family:'IBM Plex Mono',monospace;font-size:26px;color:var(--text)} .mu-day-avg small{font-size:11px;color:var(--text3)}
@@ -310,7 +310,7 @@ if (window.PKW) PKW.register({
   .mu-day-k>div{background:var(--bg3);border:1px solid var(--border);border-left:3px solid;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:2px}
   .mu-day-k .lo{border-left-color:#16A34A} .mu-day-k .hi{border-left-color:#F97316}
   .mu-day-k b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text)} .mu-day-k span{font-size:11px;color:var(--text3)}
-  .mu-day-c{position:relative;flex:1;min-height:180px}
+  .mu-day-c{position:relative;flex:1 1 auto;min-height:200px}
   .mu-news{list-style:none;margin:0;padding:0} .mu-news li{padding:7px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
   .mu-news a{color:var(--text);font-size:12.5px;text-decoration:none} .mu-news a:hover{color:var(--accent)} .mu-news span{font-size:10.5px;color:var(--text3)}
   `;
