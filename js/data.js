@@ -62,8 +62,10 @@ window.pkSanitizeZones = pkSanitizeZones;
 const PK_GEN_AGG = { nuclear: 'nuclear', solar: 'solar', wind: 'wind', hydro: 'hydro', fossil: 'fossil', biomass: 'biomass', other: 'other' };
 async function pkGenmixFromDaily(dateISO) {
   const r = await fetch(DATA_BASE + 'history/daily/' + dateISO + '.json?t=' + Date.now());
-  if (!r.ok) return null;
-  const j = await r.json();
+  let j = r.ok ? await r.json() : null;
+  // No file for the day yet: France can still come live from RTE (js/fr-rte.js).
+  if (!j && window.pkFrOverlay) { j = await window.pkFrOverlay({ zones: { FR: {} } }, dateISO); if (!j.zones.FR.genSource) return null; }
+  if (!j) return null;
   const out = {}; let lastSlot = -1, n = 96;
   Object.entries(j.zones || {}).forEach(([code, z]) => {
     if (!z || !Array.isArray(z.nuclear) && !Array.isArray(z.solar)) return;

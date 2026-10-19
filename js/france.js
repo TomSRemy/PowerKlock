@@ -449,7 +449,7 @@
 
       // ── Mix de generation
       html += sectionOpen('FR generation mix',
-        'Power by fuel \u00B7 DA price on secondary axis',
+        'Power by fuel (RTE \u00E9CO2mix) \u00B7 DA price on secondary axis',
         '<button class="pk-btn-ghost" onclick="FRDash.resetChart(\'mix\')">\u21BA Reset</button>');
       html += chartBox('fr-chart-mix', 320);
       html += sectionClose();

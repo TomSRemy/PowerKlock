@@ -4986,7 +4986,7 @@
     <!-- RENEWABLES -->
     <div class="page" id="page-renewables">
       <div class="page-header">
-        <div><div class="page-title">Renewables</div><div class="page-subtitle">Wind &amp; solar output · day-ahead forecast accuracy · capture prices · ENTSO-E A75 / A69</div></div>
+        <div><div class="page-title">Renewables</div><div class="page-subtitle">Wind &amp; solar output · day-ahead forecast accuracy · capture prices · ENTSO-E A75 / A69 · France: RTE éCO2mix since 2016</div></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select class="country-select" id="ren-country" onchange="loadRenewables()">
             <option value="FR">France</option><option value="DE_LU">Germany</option>
@@ -5731,7 +5731,7 @@
           <section id="meth-genmix" class="meth-section">
             <h2 class="meth-h2">Generation, load &amp; renewables</h2>
             <h3 class="meth-h3">Sources</h3>
-            <p class="meth-p">Actual generation per technology (ENTSO-E A75), wind/solar day-ahead forecasts (A69) and load (A65 actual and day-ahead forecast) are fetched by the daily job and stored in <code>data/history/daily/</code>. France also uses RTE éCO2mix (real-time and consolidated, via ODRÉ open data) for consumption, forecasts and exchanges.</p>
+            <p class="meth-p">Actual generation per technology (ENTSO-E A75), wind/solar day-ahead forecasts (A69) and load (A65 actual and day-ahead forecast) are fetched by the daily job and stored in <code>data/history/daily/</code>. France uses RTE éCO2mix instead (real-time and consolidated, via ODRÉ open data) for generation per technology, consumption, forecasts and exchanges: RTE publishes the complete day every 15 minutes with history since 2012, while ENTSO-E's French data per type arrive late and with gaps. Consolidated history before September 2026 is half-hourly and does not split onshore and offshore wind; the ENTSO-E figures stay available for comparison.</p>
             <h3 class="meth-h3">Time alignment</h3>
             <p class="meth-p">Generation and load series are requested on a UTC day and are realigned client-side to CET/CEST delivery slots (slot 0 = 00:00 Paris), so they line up with day-ahead prices. Slots not yet published by ENTSO-E are shown as empty, never as zero.</p>
             <h3 class="meth-h3">Capture prices</h3>
@@ -5801,7 +5801,7 @@
       <div class="fr-topline">
         <div class="fr-topline-text">
           <div class="page-title">🇫🇷 France</div>
-          <div class="page-subtitle">French day-ahead market · production, cannibalisation and positioning · ENTSO-E</div>
+          <div class="page-subtitle">French day-ahead market · production, cannibalisation and positioning · prices ENTSO-E · generation RTE éCO2mix</div>
         </div>
         <div class="fr-topline-actions">
           <button class="pk-btn-ghost" onclick="FRDash.shiftDate(-1)" title="Previous day">‹</button>
@@ -6536,6 +6536,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/libs.js"></script>
 <script src="js/widgets.js"></script>
 <script src="js/gen-align.js"></script>
+<script src="js/fr-rte.js"></script>
 <script src="js/eco2mix.js"></script>
 <script src="js/meteo.js"></script>
 <script>

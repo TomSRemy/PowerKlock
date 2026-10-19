@@ -119,15 +119,53 @@ async function _renDay(zone, day) {
 const _renGW = a => a ? a.map(v => v == null ? null : v / 1000) : null;
 const _renXAxis = () => Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } });
 
+// France: daily stats precomputed from RTE éCO2mix (history since 2015,
+// scripts/fetch_rte_eco2mix.py), so long windows don't load every daily file.
+let _renFrDaily = null;
+async function _renFrRows() {
+  if (!_renFrDaily) _renFrDaily = fetch(DATA_BASE + 'history/rte/fr_daily.json').then(r => r.ok ? r.json() : null).catch(() => null);
+  const j = await _renFrDaily;
+  if (!j || !Array.isArray(j.rows) || !j.rows.length) return null;
+  const ok = b => b != null && b > 5;   // capture rates are meaningless around a 0 €/MWh baseload
+  return j.rows.map(r => ({ d: r.d, st: { base: r.base, baseFull: r.base, partial: false, windAvg: r.windAvg, solarAvg: r.solarAvg,
+    wCap: r.wCap, sCap: r.sCap, wCR: ok(r.base) && r.wCap != null ? r.wCap / r.base * 100 : null, sCR: ok(r.base) && r.sCap != null ? r.sCap / r.base * 100 : null } }));
+}
+
 // Daily stats over a window, days with generation only.
 async function _renRows(zone, win) {
-  let days = await _renDaysWithGen(zone);
   const today = pkTodayISO();
   const from = win === 'All' ? '0000' : win === 'YTD' ? today.slice(0, 4) + '-01-01'
     : _renAdd(today, -({ '30D': 30, '90D': 90, '1Y': 365 }[win] || 3650));
+  if (zone === 'FR') {
+    const fr = await _renFrRows();
+    if (fr) {
+      // Days after the precomputed file (today, yesterday) come from the daily files.
+      const last = fr[fr.length - 1].d, extra = [];
+      for (let d = _renAdd(last, 1); d <= today; d = _renAdd(d, 1)) extra.push(d);
+      const files = await Promise.all(extra.map(_renDaily));
+      const tail = extra.map((d, i) => ({ d, st: _renDayStats(files[i] && files[i].zones && files[i].zones.FR) })).filter(r => r.st && r.st.base != null);
+      return fr.concat(tail).filter(r => r.d >= from);
+    }
+  }
+  let days = await _renDaysWithGen(zone);
   days = days.filter(d => d >= from);
   const files = await Promise.all(days.map(d => _renDaily(d)));
   return days.map((d, i) => ({ d, st: _renDayStats(files[i] && files[i].zones && files[i].zones[zone]) })).filter(r => r.st && r.st.base != null);
+}
+
+// Long windows: one point per month. Capture = output-weighted capture price,
+// base = mean of daily baseloads, rate = capture ÷ base.
+const REN_MONTHLY_FROM = 400;
+function _renMonthly(rows) {
+  const by = new Map();
+  rows.forEach(r => { const k = r.d.slice(0, 7); if (!by.has(k)) by.set(k, []); by.get(k).push(r.st); });
+  return [...by.entries()].map(([m, a]) => {
+    const mean = f => { const v = a.map(f).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+    const wtd = (g, c) => { let sw = 0, sp = 0; a.forEach(x => { if (x[g] != null && x[c] != null) { sw += x[g]; sp += x[g] * x[c]; } }); return sw ? sp / sw : null; };
+    const base = mean(x => x.base), wCap = wtd('windAvg', 'wCap'), sCap = wtd('solarAvg', 'sCap');
+    return { d: m, st: { base, windAvg: mean(x => x.windAvg), solarAvg: mean(x => x.solarAvg), wCap, sCap,
+      wCR: base > 5 && wCap != null ? wCap / base * 100 : null, sCR: base > 5 && sCap != null ? sCap / base * 100 : null } };
+  });
 }
 
 const REN_ZONE_PARAM = { key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] };
@@ -187,16 +225,18 @@ _renReg({
   desc: 'Daily capture price as a share of baseload, wind and solar.',
   params: [REN_ZONE_PARAM, REN_WINDOW_PARAM], defaults: { zone: 'FR', window: 'All' },
   async draw(cid, p) {
-    const rows = p.rows || await _renRows(p.zone, p.window);
+    let rows = p.rows || await _renRows(p.zone, p.window);
     if (!rows.length) { noDataMsg(cid, 'No generation history for ' + p.zone + ' in this window', ''); return null; }
+    const nDays = rows.length, monthly = nDays > REN_MONTHLY_FROM;
+    if (monthly) rows = _renMonthly(rows);
     const r1 = v => v == null ? null : Math.round(v * 10) / 10;
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
-      _fuelLineDs('Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
-      _fuelLineDs('Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
+      _fuelLineDs(monthly ? 'Wind CR (monthly)' : 'Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
+      _fuelLineDs(monthly ? 'Solar CR (monthly)' : 'Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload') },
       plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
         annotation: { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'capture-rates-' + p.zone);
-    return { sub: rows.length + ' days with generation data' };
+    return { sub: nDays + ' days with generation data' + (monthly ? ' · monthly points' : '') };
   },
 });
 
@@ -205,8 +245,16 @@ _renReg({
   desc: 'Daily average wind and solar output with 7-day averages.',
   params: [REN_ZONE_PARAM, REN_WINDOW_PARAM], defaults: { zone: 'FR', window: 'All' },
   async draw(cid, p) {
-    const rows = p.rows || await _renRows(p.zone, p.window);
+    let rows = p.rows || await _renRows(p.zone, p.window);
     if (!rows.length) { noDataMsg(cid, 'No generation history for ' + p.zone + ' in this window', ''); return null; }
+    if (rows.length > REN_MONTHLY_FROM) {
+      const m = _renMonthly(rows);
+      _fuelChart(cid, { type: 'line', data: { labels: m.map(r => r.d), datasets: [
+        _fuelLineDs('Wind (monthly avg)', m.map(r => r.st.windAvg == null ? null : Math.round(r.st.windAvg) / 1000), C_WON, { borderWidth: 2, pointRadius: 1.5 }),
+        _fuelLineDs('Solar (monthly avg)', m.map(r => r.st.solarAvg == null ? null : Math.round(r.st.solarAvg) / 1000), C_SOL, { borderWidth: 2, pointRadius: 1.5 }),
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-daily-' + p.zone);
+      return;
+    }
     const roll = (a, k) => a.map((_, i) => { const w = a.slice(Math.max(0, i - k + 1), i + 1).filter(v => v != null); return w.length ? Math.round(w.reduce((s, v) => s + v, 0) / w.length) / 1000 : null; });
     const wA = rows.map(r => r.st.windAvg), sA = rows.map(r => r.st.solarAvg);
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
@@ -224,6 +272,11 @@ async function loadRenewables() {
   const day = REN.day;
   document.getElementById('ren-day').textContent = _renFmtDay(day);
   document.getElementById('ren-intraday-title').textContent = `Intraday output vs price · ${zone} · ${_renFmtDay(day)}`;
+
+  // France generation comes from RTE éCO2mix (js/fr-rte.js), other zones from ENTSO-E.
+  const srcLbl = { 'ren-intraday': zone === 'FR' ? 'RTE éCO2mix' : 'ENTSO-E', 'ren-fc': zone === 'FR' ? 'RTE actual · ENTSO-E forecast' : 'ENTSO-E',
+    'ren-cr': zone === 'FR' ? 'RTE éCO2mix' : 'ENTSO-E', 'ren-daily': zone === 'FR' ? 'RTE éCO2mix' : 'ENTSO-E' };
+  Object.entries(srcLbl).forEach(([id, t]) => { const c = document.getElementById(id); const b = c && c.closest('.fuel-card') && c.closest('.fuel-card').querySelector('.source-badge'); if (b) b.textContent = t; });
 
   const D = await _renDay(zone, day);
   const kpis = document.getElementById('ren-kpis');
