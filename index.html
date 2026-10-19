@@ -2852,7 +2852,7 @@
     <button class="nav-tab" data-dash="mydash" onclick="switchDashboard('mydash', this)"><span class="tab-icon">◎</span>My Dashboard</button>
   </div>
   <div class="topbar-right">
-    <div class="live-badge"><div class="live-dot"></div> ENTSO-E</div>
+    <button type="button" class="live-badge pk-status-badge" id="pk-status-badge" onclick="showPage('status')" title="Data freshness · click for details"><div class="live-dot"></div> <span class="pk-status-txt">Checking data…</span></button>
     <div class="clock" id="clock">--:--:-- CET/CEST</div>
   </div>
 </div>
@@ -2980,6 +2980,9 @@
     <div class="sidebar-section collapsed" id="sec-general">
       <div class="sidebar-section-label" onclick="toggleSection('sec-general')">General <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-general-items">
+      <div class="sidebar-item" onclick="showPage('status')" id="nav-status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Data status
+      </div>
       <div class="sidebar-item" onclick="showPage('methodology')" id="nav-methodology">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Methodology
       </div>
@@ -5588,6 +5591,34 @@
       <div class="fuel-note">Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0, refreshed daily. Figures are national statistics or ENTSO-E capacity declarations depending on the country: distributed solar is understated for some (Italy's ENTSO-E figure is far below its national registry). Batteries are counted at their power rating; their storage energy (GWh) is not added.</div>
     </div>
 
+    <div class="page" id="page-status">
+      <div class="page-header">
+        <div><div class="page-title">Data status</div><div class="page-subtitle">Freshness of every source shown on PowerKlock · <span id="status-checked">–</span></div></div>
+        <button class="pk-btn-ghost" type="button" onclick="PKStatus.renderStatusPage()">↻ Check again</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">Sources</span></div>
+        <div style="overflow-x:auto"><table class="status-table">
+          <thead><tr><th class="l">Dataset</th><th class="l">Provider</th><th class="l">Read by</th><th>Last update (Paris)</th><th class="l">Expected</th><th class="l">Status</th></tr></thead>
+          <tbody id="status-sources"></tbody>
+        </table></div>
+      </div>
+      <div class="fuel-grid-2" style="margin-top:18px">
+        <div class="table-wrap">
+          <div class="table-header"><span class="table-title">Feed problems handled</span></div>
+          <ul id="status-issues" class="status-issues"></ul>
+          <p class="status-note">"Repository" sources are written by GitHub Actions; a late one usually means the scheduled run was delayed or failed (repository → Actions). "Browser, live" sources are read directly from the provider each time a page opens.</p>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header"><span class="table-title">Day-ahead history per zone</span></div>
+          <div style="overflow-x:auto;max-height:420px"><table class="status-table">
+            <thead><tr><th class="l">Zone</th><th>First day</th><th>Last day</th><th>Days</th></tr></thead>
+            <tbody id="status-coverage"></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-methodology">
       <div class="meth-wrap">
         <aside class="meth-nav">
@@ -6561,6 +6592,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/negatives.js"></script>
 <script src="js/pr-forward.js"></script>
 <script src="js/widgets-kpi.js"></script>
+<script src="js/status.js"></script>
 <script src="js/capacity.js"></script>
 <script src="js/regions.js"></script>
 <script src="js/account.js"></script>

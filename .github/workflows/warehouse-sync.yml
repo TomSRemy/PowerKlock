@@ -1,0 +1,75 @@
+name: Warehouse sync (Supabase)
+
+# Mirrors the data files into the PowerKlock PostgreSQL warehouse
+# (warehouse/README.md). Runs after each data fetch, every 6 hours as a
+# safety net, or by hand (tick "full" to reload everything).
+#
+# Needs the repository secret SUPABASE_DB_URL: Supabase → Connect →
+# Session pooler connection string (IPv4; the "Direct" one is IPv6-only and
+# unreachable from GitHub runners). Without it the job skips cleanly.
+
+on:
+  workflow_run:
+    workflows:
+      - Fetch Energy Data
+      - Fetch FR Market Data (SEFE)
+      - Fetch GO Prices (Commerg)
+      - Fetch GO Auctions (EEX FR)
+      - Fetch Energy-Charts (capacity, cross-border flows)
+      - Backfill Historical Data
+      - Backfill chain v3 (monthly, parallel)
+      - Backfill generation (after prices)
+    types: [completed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Reload every file (otherwise only files changed since the last sync)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: warehouse-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check secret
+        id: secret
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB" ]; then
+            echo "::notice::SUPABASE_DB_URL is not set — warehouse sync skipped."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout main
+        if: steps.secret.outputs.ok == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        if: steps.secret.outputs.ok == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        if: steps.secret.outputs.ok == 'true'
+        run: pip install "psycopg[binary]==3.2.*"
+
+      - name: Sync
+        if: steps.secret.outputs.ok == 'true'
+        env:
+          WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python warehouse/sync.py ${{ inputs.full && '--full' || '' }}
