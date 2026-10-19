@@ -1842,6 +1842,29 @@
     transition: border-color 0.2s ease-out;
   }
 
+  /* Harmonised pages (same model as Prices › Day-Ahead): breadcrumb with a
+     non-clickable parent, section meta, compact controls in the bar */
+  .pk-bc-static { cursor: default; }
+  .pk-bc-static:hover { color: var(--text2); }
+  .pk-hs-meta { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .hist-section-strong .hist-section-title { min-width: 0; }
+  .pr-tabs-bar-filters select { height: 26px; padding: 0 24px 0 10px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background-color: var(--bg3); color: var(--tx2); min-width: 0; }
+  .pr-tabs-bar-filters .pk-btn-ghost { height: 26px; padding: 0 10px; font-size: 10px; display: inline-flex; align-items: center; }
+  .pr-tabs-bar-filters .updated-badge { height: 26px; display: inline-flex; align-items: center; font-size: 10px; }
+  .pr-tabs-bar-filters .fuel-toolbar-lbl { font-size: 10px; }
+  .pr-tabs-bar-filters > div { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hist-section-strong .hist-section-body > :last-child { margin-bottom: 0; }
+  @media (max-width: 760px) {
+    .pk-hs-meta { display: none; }
+    /* the generic phone rule [class*="-tabs"] { flex-wrap: nowrap } must not catch these bars */
+    .pr-tabs-sticky .pr-tabs-bar, .pr-tabs-sticky .pr-tabs-bar .pr-tabs-bar-filters { flex-wrap: wrap !important; overflow: visible !important; }
+    .pr-tabs-bar { gap: 8px; }
+    .pr-tabs-bar > .pr-tabs-bar-filters { flex: 1 1 100%; min-width: 0; justify-content: flex-start; flex-wrap: wrap; }
+    .pr-tabs-bar-filters .pk-gf-group { flex-wrap: wrap; max-width: 100%; }
+    .pr-tabs-bar-filters .hf-date-range { flex-wrap: wrap; max-width: 100%; }
+    .pr-tabs-bar-filters > *, .pr-tabs-bar-filters .pk-gf-tabset > * { max-width: 100%; min-width: 0; }
+    .pr-tabs-bar-filters input[type=date] { max-width: 120px; }
+  }
   .pr-tabs-bar-filters {
     margin-left: auto;
     display: flex;
@@ -4046,21 +4069,13 @@
 
     <!-- ── PAGE: GENERATION MIX ── -->
     <div class="page" id="page-genmix" data-subdomain-panel="genmix">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Generation Mix</div>
-          <div class="page-subtitle">Live snapshot · Cross-zone compare · Historical trends</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="updated-badge" id="genmix-updated">ENTSO-E A75</span>
-        </div>
-      </div>
+      
 
       <!-- Sticky bar : breadcrumb + Daily/Historical tabs + global filters (mirrors Prices > Day-Ahead pattern) -->
       <div class="pr-tabs-sticky" id="gm-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb">
-            <span class="pr-breadcrumb-current">Generation Mix</span>
+            <span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Generation mix</span>
           </div>
           <div class="pr-tabs-separator"></div>
           <div class="tabs-nav" id="gm-tabs-nav" role="tablist">
@@ -4070,6 +4085,8 @@
 
           <!-- Global filters, switched by active tab (mirrors Prices Day-Ahead structure) -->
           <div class="pr-tabs-bar-filters">
+          <span class="updated-badge" id="genmix-updated">ENTSO-E A75</span>
+        
 
             <!-- DAILY filters: zones + Latest data + Date picker (mirrors Prices Day-Ahead) -->
             <div class="pk-gf-tabset" data-gf-tab="daily" style="display:flex;align-items:center;gap:8px">
@@ -4597,15 +4614,19 @@
 
     <!-- ── PAGE: PRICE MAP ── -->
     <div class="page" id="page-map">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Power Map</div>
-          <div class="page-subtitle">Carbon intensity, prices, renewable share and cross-border flows across Europe, hour by hour · Energy-Charts · RTE · ENTSO-E</div>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Power Map</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="pm-upd">Loading…</span></div>
         </div>
-        <span class="updated-badge" id="pm-upd">Loading…</span>
       </div>
-
-      <div class="pm-controls">
+      <div class="hist-section hist-section-strong" id="hs-map-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-map-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>Power map<span class="pk-hs-meta">Carbon intensity, prices, renewable share and cross-border flows across Europe, hour by hour · Energy-Charts · RTE · ENTSO-E</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-map-0">
+<div class="pm-controls">
         <div class="pm-mgroup"><span class="pm-mgroup-l">System</span>
         <div class="pk-gf-group pm-metric">
           <button class="pk-gf-btn active" data-m="co2" onclick="PKMap.setMetric('co2')">Carbon</button>
@@ -4637,10 +4658,8 @@
           <button class="pk-gf-btn" id="pm-avg" onclick="PKMap.toggleAvg()" title="Daily average">Day avg</button>
         </div>
       </div>
-
-      <div class="pm-kpis" id="pm-kpis"></div>
-
-      <div class="pm-wrap">
+<div class="pm-kpis" id="pm-kpis"></div>
+<div class="pm-wrap">
         <div class="pm-card pm-side">
           <input id="pm-search" type="search" placeholder="Search a country" oninput="PKMap.search()" aria-label="Search a country">
           <div id="pm-rank"></div>
@@ -4651,13 +4670,16 @@
         </div>
         <div class="pm-card pm-detail-card"><div class="pm-detail" id="pm-detail"></div></div>
       </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── PAGE: CROSS-BORDER ── -->
     <div class="page" id="page-crossborder">
-      <div class="page-header">
-        <div><div class="page-title">Cross-Border Flows</div><div class="page-subtitle">France: commercial exchanges per border, 15-min (RTE éCO2mix) · other zones: ENTSO-E physical flows</div></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Cross-Border Flows</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="cb-country" onchange="loadCrossBorder()">
             <option value="FR">France (FR)</option>
             <option value="DE">Germany (DE)</option>
@@ -4677,9 +4699,16 @@
           <button class="pk-btn-ghost" onclick="cbShiftDay(1)" title="Next day">›</button>
           <button class="pk-btn-ghost" onclick="cbShiftDay(0)">Today</button>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="cb-kpis"></div>
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-crossborder-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-crossborder-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Cross-border board<span class="pk-hs-meta">France: commercial exchanges per border, 15-min (RTE éCO2mix) · other zones: ENTSO-E physical flows</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-crossborder-0">
+<div class="kpi-strip fuel-kpis" id="cb-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="cb-intraday-title">Intraday exchanges by border</div><div class="fuel-card-sub" id="cb-intraday-sub">GW · positive = import into France, negative = export</div></div><span class="source-badge" id="cb-intraday-badge">RTE éCO2mix</span></div>
           <div style="position:relative;height:280px"><canvas id="cb-intraday" style="width:100%;height:280px"></canvas></div>
@@ -4689,22 +4718,30 @@
           <div style="position:relative;height:280px"><canvas id="cb-days" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="table-wrap">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-crossborder-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-crossborder-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Borders<span class="pk-hs-meta">daily totals per border</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-crossborder-1">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title" id="cb-table-title">Borders</span><span class="source-badge" id="cb-updated">–</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Border</th><th>Avg net</th><th>Max export</th><th>Max import</th><th>Hours exporting</th><th>Energy</th><th style="text-align:left">Direction</th></tr></thead>
         <tbody id="cb-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody></table>
       </div>
-      <div class="fuel-note" id="cb-note"></div>
+<div class="fuel-note" id="cb-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ── PAGE: LOAD ── -->
     <div class="page" id="page-load">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Load & Demand</div>
-          <div class="page-subtitle">Actual load vs day-ahead and intraday forecasts · France: RTE éCO2mix (real time) · other zones: ENTSO-E A65</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Load & Demand</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="load-country" onchange="loadLoad()">
             <option value="FR">France (FR)</option>
             <option value="DE_LU">Germany (DE)</option>
@@ -4718,10 +4755,15 @@
           </select>
           <span class="updated-badge" id="load-updated">Loading...</span>
         </div>
+        </div>
       </div>
-
-      <!-- KPI strip -->
-      <div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+      <div class="hist-section hist-section-strong" id="hs-load-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-load-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Load board<span class="pk-hs-meta">Actual load vs day-ahead and intraday forecasts · France: RTE éCO2mix (real time) · other zones: ENTSO-E A65</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-load-0">
+<div class="kpi-strip" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
         <div class="kpi-card kpi-flat">
           <div class="kpi-label">Peak Actual</div>
           <div class="kpi-value" id="load-kpi-peak-actual">--<span class="kpi-unit">GW</span></div>
@@ -4748,26 +4790,21 @@
           <div class="kpi-chg" id="load-kpi-yoy-sub">vs same day LY</div>
         </div>
       </div>
-
-      <!-- Day selector buttons -->
-      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="load-day-btns">
+<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="load-day-btns">
         <button class="day-tab active" onclick="setLoadDay(0,this)">Today</button>
         <button class="day-tab" onclick="setLoadDay(-1,this)">Yesterday</button>
         <button class="day-tab" onclick="setLoadDay(-2,this)">2 days ago</button>
         <button class="day-tab" onclick="setLoadDay(-7,this)">-7 days</button>
         <button class="day-tab" onclick="setLoadDay(-14,this)">-14 days</button>
       </div>
-
-      <div class="chart-container">
+<div class="chart-container">
         <div class="table-header" style="padding:0 0 12px;border:none">
           <span class="table-title" id="load-chart-title">France — Hourly Load (GW)</span>
           <span class="source-badge" id="load-chart-src">ENTSO-E A65</span>
         </div>
         <div style="position:relative;height:300px;overflow:hidden"><canvas id="load-canvas" style="width:100%;height:300px"></canvas></div>
       </div>
-
-      <!-- Hourly Breakdown Table -->
-      <div class="table-wrap" style="margin-top:16px">
+<div class="table-wrap" style="margin-top:16px">
         <div class="table-header">
           <span class="table-title">Hourly Breakdown</span>
         </div>
@@ -4785,16 +4822,16 @@
           </tbody>
         </table>
       </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── PAGE: MARKET ANALYSIS (v3 · drivers strip + crosshair + 4 panels) ── -->
     <div class="page" id="page-analysis">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Market Analysis</div>
-          <div class="page-subtitle">From price to its drivers · crosshair · AI synthesis</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Market analysis</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="ma-zone" onchange="maSetZone(this.value)">
             <option value="FR">France</option>
             <option value="DE_LU">Germany</option>
@@ -4804,10 +4841,9 @@
           </select>
           <span class="updated-badge">ENTSO-E · market data · Open-Meteo</span>
         </div>
+        </div>
       </div>
-
-      <!-- Window + Granularity filters -->
-      <div class="pk-filters-bar" style="margin-bottom:6px">
+<div class="pk-filters-bar" style="margin-bottom:6px">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Window</span>
           <div id="ma-window-pills" style="display:inline-flex;gap:4px"></div>
@@ -4821,16 +4857,7 @@
              opens the whole group (not addFullscreen() per-canvas, which
              would isolate one panel and break the sync). -->
         <button class="pk-btn-ghost" onclick="maFullscreenPanels()" title="Fullscreen (all 4 synced panels)">⛶ Fullscreen</button>
-      </div>
-
-      <!-- Cursor badges -->
-      <div id="ma-cursor-badges" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"></div>
-
-      <!-- Drivers strip (6 sparklines) -->
-      <div id="ma-drivers-strip" class="ma-drivers-strip"></div>
-
-      <!-- 4 main panels with crosshair + hover tooltip -->
-      <div class="ma-layout">
+      </div><div id="ma-cursor-badges" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"></div><div id="ma-drivers-strip" class="ma-drivers-strip"></div><div class="ma-layout">
       <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px;min-width:0">
 
         <div class="ma-panel-row">
@@ -4864,16 +4891,10 @@
         </div>
       </div>
       <aside id="ma-hover-tooltip" class="ma-hover-tooltip ma-side" aria-live="polite"><div class="ma-ht-time">Hover the charts to read a time slot</div></aside>
-      </div>
-
-      <!-- Episode cards (auto-detected key moments) -->
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)">
+      </div><div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)">
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">↓ Key moments detected (click = position the crosshair)</div>
         <div id="ma-episodes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
-      </div>
-
-      <!-- AI synthesis -->
-      <div class="chart-container" style="padding:14px 16px;margin-top:14px">
+      </div><div class="chart-container" style="padding:14px 16px;margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--acc);text-transform:uppercase;font-weight:700">✦ Causal market read</span>
@@ -4884,25 +4905,25 @@
         <div id="ma-ai-content">
           <div style="color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px">Click to generate a causal synthesis, desk-note style.</div>
         </div>
-      </div>
-
-      <!-- Data note -->
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
+      </div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
         <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">daily market closes</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (operator data); other zones = actual nuclear output. Demand / net import shown only for days with stored ENTSO-E load. Spark = clean spark spread, CCGT 49.1% (see Methodology). Days without archived data are left empty.
-      </div>
-    </div>
+      </div>    </div>
 
     <!-- ── PAGE: NEWS ── -->
     <div class="page" id="page-news">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Energy News</div>
-          <div class="page-subtitle">European energy press · carbon, power, gas, renewables, nuclear · refreshed every 3 hours</div>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">News</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
-        <span class="updated-badge" id="news-updated">Loading...</span>
       </div>
-
-      <div class="news-filters">
+      <div class="hist-section hist-section-strong" id="hs-news-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press · carbon, power, gas, renewables, nuclear · refreshed every 3 hours</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-0">
+<div class="news-filters">
         <button class="filter-btn active" onclick="filterNews('all', this)">All</button>
         <button class="filter-btn" onclick="filterNews('power', this)">⚡ Power</button>
         <button class="filter-btn" onclick="filterNews('gas', this)">🔵 Gas</button>
@@ -4912,9 +4933,10 @@
         <button class="filter-btn" onclick="filterNews('fr', this)">🇫🇷 France</button>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="margin-left:auto;min-width:200px">
       </div>
-
-      <div class="news-grid" id="news-grid">
+<div class="news-grid" id="news-grid">
         <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
+      </div>
+        </div>
       </div>
     </div>
 
@@ -4997,9 +5019,10 @@
   
     <!-- RENEWABLES -->
     <div class="page" id="page-renewables">
-      <div class="page-header">
-        <div><div class="page-title">Renewables</div><div class="page-subtitle">Wind &amp; solar output · day-ahead forecast accuracy · capture prices · ENTSO-E A75 / A69 · France: RTE éCO2mix since 2016</div></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Renewables</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="ren-country" onchange="loadRenewables()">
             <option value="FR">France</option><option value="DE_LU">Germany</option>
             <option value="ES">Spain</option><option value="BE">Belgium</option><option value="NL">Netherlands</option>
@@ -5009,11 +5032,16 @@
           <button class="pk-btn-ghost" onclick="renShiftDay(1)" title="Next day">›</button>
           <button class="pk-btn-ghost" onclick="renShiftDay(0)" title="Latest day with data">Latest</button>
         </div>
+        </div>
       </div>
-
-      <div class="kpi-strip fuel-kpis" id="ren-kpis"></div>
-
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-renewables-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-renewables-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Renewables board<span class="pk-hs-meta">Wind &amp; solar output · day-ahead forecast accuracy · capture prices · ENTSO-E A75 / A69 · France: RTE éCO2mix since 2016</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-renewables-0">
+<div class="kpi-strip fuel-kpis" id="ren-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-intraday-title">Intraday output vs price</div><div class="fuel-card-sub" id="ren-intraday-sub">Wind onshore · offshore · solar (GW, stacked) · day-ahead price (€/MWh)</div></div><span class="source-badge">ENTSO-E</span></div>
           <div style="position:relative;height:280px"><canvas id="ren-intraday" style="width:100%;height:280px"></canvas></div>
@@ -5023,13 +5051,20 @@
           <div style="position:relative;height:280px"><canvas id="ren-fc" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-
-      <div class="fuel-toolbar">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-renewables-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-renewables-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>History<span class="pk-hs-meta">capture rates and output over the selected window</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-renewables-1">
+<div class="fuel-toolbar">
         <span class="fuel-toolbar-lbl">History</span>
         <div class="pk-gf-group" id="ren-window"><button class="pk-gf-btn" data-w="30D" onclick="renSetWindow('30D',this)">30D</button><button class="pk-gf-btn" data-w="90D" onclick="renSetWindow('90D',this)">90D</button><button class="pk-gf-btn" data-w="YTD" onclick="renSetWindow('YTD',this)">YTD</button><button class="pk-gf-btn" data-w="1Y" onclick="renSetWindow('1Y',this)">1Y</button><button class="pk-gf-btn active" data-w="All" onclick="renSetWindow('All',this)">All</button></div>
         <span class="fuel-note" id="ren-coverage" style="margin:0 0 0 8px"></span>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="ren-cr-title">Capture rates</div><div class="fuel-card-sub" id="ren-cr-sub">Daily generation-weighted price ÷ baseload (%) · wind &amp; solar</div></div><span class="source-badge">ENTSO-E</span></div>
           <div style="position:relative;height:280px"><canvas id="ren-cr" style="width:100%;height:280px"></canvas></div>
@@ -5039,34 +5074,40 @@
           <div style="position:relative;height:280px"><canvas id="ren-daily" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-
-      <div class="table-wrap" style="margin-bottom:14px">
+<div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title">Capture prices by period</span><span class="source-badge">Σ(MW × price) ÷ Σ(MW)</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Period</th><th>Days</th><th>Baseload</th><th>Wind avg</th><th>Wind capture</th><th>Wind CR</th><th>Solar avg</th><th>Solar capture</th><th>Solar CR</th></tr></thead>
         <tbody id="ren-summary-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
       </div>
-      <div class="fuel-note" id="ren-note"></div>
-
-      <div class="chart-container fuel-card" style="margin-top:18px">
+<div class="fuel-note" id="ren-note"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-renewables-2">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-renewables-2')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>France · M0 reference prices<span class="pk-hs-meta">complément de rémunération, RTE curves × day-ahead</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-renewables-2">
+<div class="chart-container fuel-card" style="margin-top:18px">
         <div class="fuel-card-head"><div><div class="table-title">France · M0 reference prices</div><div class="fuel-card-sub" id="ren-m0-sub">Monthly reference price of the complément de rémunération, wind &amp; solar</div></div><div class="pk-gf-group" id="m0-view"><button class="pk-gf-btn active" data-v="price" onclick="m0SetView('price',this)">€/MWh</button><button class="pk-gf-btn" data-v="ratio" onclick="m0SetView('ratio',this)">% of base</button></div><span class="source-badge">RTE · day-ahead</span></div>
         <div style="position:relative;height:300px"><canvas id="ren-m0" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div class="table-wrap" style="margin-bottom:14px">
+<div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title">M0 · last 12 published months</span><span class="source-badge">€/MWh</span></div>
         <div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Baseload</th><th>Wind M0</th><th>Wind / base</th><th>Solar M0</th><th>Solar / base</th><th>Wind at &lt;0 €</th><th>Solar at &lt;0 €</th></tr></thead>
         <tbody id="m0-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody></table></div>
       </div>
-      <div class="fuel-note">M0 = Σ(day-ahead price × production) ÷ Σ production over the month, using RTE's national wind and solar curves published for the complément de rémunération (ODRÉ, monthly). Recomputed by PowerKlock: it can differ marginally from the values published by the CRE. "At &lt;0 €": share of the month's production generated while the day-ahead price was negative. * some day-ahead prices missing that month.</div>
+<div class="fuel-note">M0 = Σ(day-ahead price × production) ÷ Σ production over the month, using RTE's national wind and solar curves published for the complément de rémunération (ODRÉ, monthly). Recomputed by PowerKlock: it can differ marginally from the values published by the CRE. "At &lt;0 €": share of the month's production generated while the day-ahead price was negative. * some day-ahead prices missing that month.</div>
+        </div>
+      </div>
     </div>
 
     <!-- NUCLEAR & HYDRO -->
     <div class="page" id="page-nuclear">
-      <div class="page-header">
-        <div><div class="page-title">Nuclear — France</div><div class="page-subtitle">Available capacity · operator forecast · seasonality · modulation vs output</div></div>
-        <span class="updated-badge" id="nuc-upd">Operator data</span>
-      </div>
-      <div class="kpi-strip fuel-kpis" id="nuc-kpis"></div>
-      <div class="fuel-toolbar">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Nuclear</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="nuc-upd">Operator data</span>
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="nuc-period"><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('nuc','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('nuc','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('nuc','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('nuc','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('nuc','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('nuc','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('nuc','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
@@ -5074,11 +5115,20 @@
           <span>To</span><input type="date" id="nuc-to" onchange="fuelSetRange('nuc')">
         </div>
       </div>
-      <div class="chart-container fuel-card" style="margin-bottom:14px">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-nuclear-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-nuclear-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Nuclear availability<span class="pk-hs-meta">Available capacity · operator forecast · seasonality · modulation vs output</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-nuclear-0">
+<div class="kpi-strip fuel-kpis" id="nuc-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
         <div class="fuel-card-head"><div><div class="table-title">Available nuclear capacity</div><div class="fuel-card-sub">Daily average (GW) · operator forecast as published each day · installed capacity</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:300px"><canvas id="nuc-hist" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="nuc-season-title">Seasonal comparison</div><div class="fuel-card-sub" id="nuc-season-sub">Available capacity (GW) · current year vs previous 5-year range</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:280px"><canvas id="nuc-season" style="width:100%;height:280px"></canvas></div>
@@ -5088,21 +5138,32 @@
           <div style="position:relative;height:280px"><canvas id="nuc-mod" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-nuclear-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-nuclear-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Unit-level outages<span class="pk-hs-meta">official platforms</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-nuclear-1">
+<div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
           <div class="table-title" style="margin-bottom:4px">Unit-level outages</div>
           <div style="font-size:11px;color:var(--tx3)">Reactor-by-reactor unavailability (REMIT) is published on the operators' and exchanges' transparency platforms — see the REMIT page.</div>
         </div>
         <div class="sidebar-item" style="display:inline-flex;width:auto;padding:6px 14px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd)" onclick="showPage('remit')">Open REMIT →</div>
       </div>
-      <div class="fuel-note" id="nuc-note"></div>
+<div class="fuel-note" id="nuc-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- IMBALANCE -->
     <div class="page" id="page-imbalance">
-      <div class="page-header">
-        <div><div class="page-title">Imbalance Prices</div><div class="page-subtitle">Single imbalance price vs day-ahead · system imbalance · 15-min settlement</div></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Imbalance Prices</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="imb-zone" onchange="drawImbalance()">
             <option value="BE">Belgium (Elia)</option>
             <option value="FR" disabled>France (RTE) — not ingested yet</option>
@@ -5114,13 +5175,20 @@
           <button class="pk-btn-ghost" onclick="imbShiftDay(1)" title="Next day">›</button>
           <button class="pk-btn-ghost" onclick="imbShiftDay(0)">Today</button>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="imb-kpis"></div>
-      <div class="chart-container fuel-card" style="margin-bottom:14px">
+      <div class="hist-section hist-section-strong" id="hs-imbalance-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-imbalance-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Imbalance board<span class="pk-hs-meta">Single imbalance price vs day-ahead · system imbalance · 15-min settlement</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-imbalance-0">
+<div class="kpi-strip fuel-kpis" id="imb-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
         <div class="fuel-card-head"><div><div class="table-title" id="imb-intraday-title">Imbalance price vs day-ahead</div><div class="fuel-card-sub">€/MWh (left) · system imbalance MW (bars, right; negative = system short)</div></div><span class="source-badge">Elia · ENTSO-E</span></div>
         <div style="position:relative;height:320px"><canvas id="imb-intraday" style="width:100%;height:320px"></canvas></div>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="imb-days-title">Daily imbalance</div><div class="fuel-card-sub" id="imb-days-sub">Daily average imbalance price vs day-ahead, and price volatility (€/MWh)</div></div><span class="source-badge">Elia open data</span></div>
           <div style="position:relative;height:290px"><canvas id="imb-days" style="width:100%;height:290px"></canvas></div>
@@ -5130,20 +5198,29 @@
           <div style="position:relative;height:290px"><canvas id="imb-dist" style="width:100%;height:290px"></canvas></div>
         </div>
       </div>
-      <div class="table-wrap">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-imbalance-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-imbalance-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Largest deviations</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-imbalance-1">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title" id="imb-table-title">Largest deviations</span><span class="source-badge">top 10 quarter-hours by |imbalance − DA|</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Quarter-hour</th><th>Imbalance</th><th>Day-ahead</th><th>Spread</th><th>System imbalance</th><th style="text-align:left">Position</th></tr></thead><tbody id="imb-tbody"></tbody></table>
       </div>
-      <div class="fuel-note" id="imb-note"></div>
+<div class="fuel-note" id="imb-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- EUA SPOT -->
     <div class="page" id="page-eua">
-      <div class="page-header">
-        <div><div class="page-title">Carbon &amp; Fuels</div><div class="page-subtitle">EUA · gas hubs · coal · oil · EU gas storage · fuel switching</div></div>
-        <span class="updated-badge" id="fuel-upd">Market closes</span>
-      </div>
-      <div class="fuel-toolbar">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Carbon &amp; Fuels</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Fuel &amp; EUA prices</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="fuel-upd">Market closes</span>
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="fuel-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('fuel','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('fuel','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('fuel','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('fuel','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('fuel','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('fuel','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('fuel','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('fuel','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
@@ -5151,8 +5228,16 @@
           <span>To</span><input type="date" id="fuel-to" onchange="fuelSetRange('fuel')">
         </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-eua-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Fuels &amp; carbon board<span class="pk-hs-meta">EUA · gas hubs · coal · oil · EU gas storage · fuel switching</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-eua-0">
+<div class="kpi-strip fuel-kpis" id="fuel-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">EUA &amp; TTF</div><div class="fuel-card-sub" id="fuel-eua-ttf-sub">EUA front-December (€/t, left) · TTF day-ahead (€/MWh, right)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-eua-ttf" style="width:100%;height:260px"></canvas></div>
@@ -5162,7 +5247,15 @@
           <div style="position:relative;height:260px"><canvas id="fuel-switch" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-eua-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Gas<span class="pk-hs-meta">European hubs and storage</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-eua-1">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">European gas hubs</div><div class="fuel-card-sub" id="fuel-hubs-sub">Day-ahead · TTF, PEG, THE, NBP converted to €/MWh</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-hubs" style="width:100%;height:260px"></canvas></div>
@@ -5172,7 +5265,15 @@
           <div style="position:relative;height:260px"><canvas id="fuel-storage" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-eua-2">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-eua-2')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Coal &amp; oil</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-eua-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Coal &amp; oil</div><div class="fuel-card-sub" id="fuel-coal-oil-sub">API2 coal Cal+1 ($/t, left) · Brent front-month ($/bbl, right)</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:260px"><canvas id="fuel-coal-oil" style="width:100%;height:260px"></canvas></div>
@@ -5182,17 +5283,27 @@
           <div style="position:relative;height:260px"><canvas id="fuel-lng" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-note" id="fuel-note"></div>
+<div class="fuel-note" id="fuel-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- FORWARD CURVES -->
     <div class="page" id="page-euafwd">
-      <div class="page-header">
-        <div><div class="page-title">Forward Curves</div><div class="page-subtitle">TTF strip · EUA December strip · implied forward clean spreads</div></div>
-        <span class="updated-badge" id="fwdc-upd">Settlements</span>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Carbon &amp; Fuels</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Forward curves</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="fwdc-upd">Settlements</span></div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="fwdc-kpis"></div>
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-euafwd-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-euafwd-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forward curves<span class="pk-hs-meta">TTF strip · EUA December strip · implied forward clean spreads</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-euafwd-0">
+<div class="kpi-strip fuel-kpis" id="fwdc-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">TTF forward curve</div><div class="fuel-card-sub" id="fwdc-ttf-sub">Settlement D-1 (€/MWh) · day-ahead first</div></div><span class="source-badge">Market data</span></div>
           <div style="position:relative;height:280px"><canvas id="fwdc-ttf" style="width:100%;height:280px"></canvas></div>
@@ -5202,29 +5313,55 @@
           <div style="position:relative;height:280px"><canvas id="fwdc-eua" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="table-wrap" style="margin-bottom:14px">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-euafwd-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-euafwd-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Settlements and implied spreads<span class="pk-hs-meta">D-1 settlements, forward clean spreads</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-euafwd-1">
+<div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title">TTF &amp; EUA — settlement D-1</span><span class="source-badge">Market data</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th style="text-align:left">Contract</th><th>Settle</th><th>Unit</th><th>Δ D-1</th><th>Δ W-1</th></tr></thead><tbody id="fwdc-tbody"></tbody></table>
       </div>
-      <div class="table-wrap">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title">Implied forward clean spreads — baseload (€/MWh)</span><span class="source-badge" id="fwdc-css-badge">Power and fuel: same tenor</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Tenor</th><th style="text-align:left">Power contract</th><th>TTF</th><th>EUA</th><th>FR base</th><th>FR CSS</th><th>DE base</th><th>DE CSS</th><th>DE CDS</th><th>NL base</th><th>NL CSS</th></tr></thead><tbody id="fwdc-css-tbody"></tbody></table>
         <div class="fuel-note" id="fwdc-css-note" style="padding:10px 14px 4px"></div>
+      </div>
+        </div>
       </div>
     </div>
 
     <!-- CLEAN SPARK / DARK SPREADS -->
     <div class="page" id="page-spark">
-      <div class="page-header">
-        <div><div class="page-title">Clean Spark &amp; Dark Spreads</div><div class="page-subtitle" id="spark-subtitle">Day-ahead power − fuel − carbon · CCGT 49.1% · coal 36%</div></div>
-        <span class="updated-badge" id="spark-upd">ENTSO-E · market closes</span>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Carbon &amp; Fuels</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Spark &amp; dark spreads</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="spark-upd">ENTSO-E · market closes</span></div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
-      <div class="table-wrap" style="margin-bottom:14px">
+      <div class="hist-section hist-section-strong" id="hs-spark-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-spark-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Spreads board<span class="pk-hs-meta">Day-ahead power − fuel − carbon · CCGT 49.1% · coal 36%</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-spark-0">
+<div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
+<div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title" id="spark-table-title">Spreads by zone</span><span class="source-badge" id="spark-refs"></span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th>Gas cost</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
       </div>
-      <div class="fuel-toolbar">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-spark-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-spark-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>History<span class="pk-hs-meta">daily clean spreads</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-spark-1">
+<div class="fuel-toolbar">
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="sprh-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('sprh','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('sprh','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('sprh','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('sprh','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('sprh','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('sprh','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('sprh','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('sprh','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
@@ -5234,7 +5371,7 @@
         <span class="fuel-toolbar-lbl" style="margin-left:8px">Zone</span>
         <select id="sprh-zone" class="fuel-select" onchange="renderSparkHistory()"></select>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Daily clean spreads</div><div class="fuel-card-sub" id="sprh-daily-sub">Baseload · CSS vs CDS (€/MWh)</div></div><span class="source-badge">ENTSO-E · market data</span></div>
           <div style="position:relative;height:280px"><canvas id="sprh-daily" style="width:100%;height:280px"></canvas></div>
@@ -5244,7 +5381,9 @@
           <div style="position:relative;height:280px"><canvas id="sprh-monthly" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-note" id="sprh-note"></div>
+<div class="fuel-note" id="sprh-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════
@@ -5253,11 +5392,13 @@
          carbon-ui.js. À coller : carbon-section.html.
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="page" id="page-carbonintensity">
-      <div class="page-header">
-        <div><div class="page-title">Carbon Intensity</div><div class="page-subtitle">Carbon intensity of production and consumption · gCO2eq/kWh · ENTSO-E</div></div>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Carbon &amp; Fuels</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Carbon intensity</span></div>
+          <div class="pr-tabs-bar-filters"></div>
+        </div>
       </div>
-
-      <div class="hist-section hist-section-strong" id="carb-board-section">
+<div class="hist-section hist-section-strong" id="carb-board-section">
         <div class="hist-section-header open">
           <div class="hist-section-title">
             <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
@@ -5291,35 +5432,35 @@
           </table>
           <div style="font-size:10px;color:var(--tx4);margin-top:8px">Click a row to drill in: hourly profile (cons/prod intensity, period avg &amp; N-1 lines, NOW), mix by fuel, flows, and estimated residual mix vs AIB. Zones = global filter. Empty period = live snapshot.</div>
         </div>
-      </div>
-    </div>
+      </div>    </div>
 
     <!-- GO PRICES -->
     <!-- GO PRICES -->
     <div class="page" id="page-goprices">
-      <div class="page-header">
-        <div><div class="page-title">Guarantees of Origin</div><div class="page-subtitle">AIB market · Commerg weekly assessment · EEX auctions FR</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Guarantees of origin</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Prices &amp; auctions</span></div>
+          <div class="pr-tabs-separator"></div>
+          <div class="tabs-nav" id="go-tabs-nav" role="tablist">
+        <button class="tab-btn active" data-tab="eu" onclick="goTabNav(event)">EU</button>
+        <button class="tab-btn" data-tab="auctions" onclick="goTabNav(event)">France Auction</button>
+      </div>
+          <div class="pr-tabs-bar-filters">
           <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">Manual upload — Commerg weekly</span>
           <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(16,185,129,.3);padding:3px 9px;border-radius:4px">
             Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)">
           </label>
         </div>
+        </div>
       </div>
+<div class="tab-panel active" data-tab-panel="eu">
+      <div class="hist-section hist-section-strong" id="hs-go-eu">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-go-eu')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>AIB guarantees of origin<span class="pk-hs-meta">AIB market · Commerg weekly assessment · EEX auctions FR</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-go-eu">
 
-      <!-- EU (Commerg) / France Auction (EEX) — two very different sources
-           (weekly AIB forward assessment vs monthly public auction results)
-           that used to live on separate "GO Prices" / "Historical" pages.
-           Folded into one page as tabs since both are "Guarantees of
-           Origin" to a reader, and the old Historical page added a nav
-           entry without adding a distinct audience. -->
-      <div class="tabs-nav" id="go-tabs-nav" role="tablist" style="margin-bottom:14px">
-        <button class="tab-btn active" data-tab="eu" onclick="goTabNav(event)">EU</button>
-        <button class="tab-btn" data-tab="auctions" onclick="goTabNav(event)">France Auction</button>
-      </div>
-
-      <!-- ═══ TAB · EU (Commerg) ═══ -->
-      <div class="tab-panel active" data-tab-panel="eu">
 
       <!-- Duration filter · governs every Commerg chart on this tab
            (Indic/CAL+1/Spread/all-products history), pk-gf pattern shared
@@ -5447,11 +5588,18 @@
           <div style="position:relative;height:200px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:200px"></canvas></div>
         </div>
       </div>
+      
+        </div>
       </div>
-      <!-- ═══ /TAB · EU ═══ -->
+      </div>
+<div class="tab-panel" data-tab-panel="auctions">
+      <div class="hist-section hist-section-strong" id="hs-go-fr">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-go-fr')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>French state auctions<span class="pk-hs-meta">EEX, monthly</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-go-fr">
 
-      <!-- ═══ TAB · FRANCE AUCTION (EEX) ═══ -->
-      <div class="tab-panel" data-tab-panel="auctions">
         <div class="page-header" style="margin-bottom:14px">
           <div><div class="page-title" style="font-size:16px">France Auctions — EEX</div><div class="page-subtitle">Public monthly results · by technology · since 2019</div></div>
         </div>
@@ -5469,56 +5617,83 @@
           </div>
           <div style="position:relative;height:220px;overflow:hidden"><canvas id="go-auct-vol-canvas" style="width:100%;height:220px"></canvas></div>
         </div>
+      
+        </div>
       </div>
-      <!-- ═══ /TAB · FRANCE AUCTION ═══ -->
-
+      </div>
     </div>
 
     <!-- WEATHER CITIES -->
     <div class="page" id="page-wxcities">
-      <div class="page-header">
-        <div><div class="page-title">Energy Weather</div><div class="page-subtitle">Temperature, wind, solar radiation and precipitation for the main load centres · 7 days back, 14 days ahead</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Weather</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Energy weather</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="wx-country" onchange="loadWeather()">
             <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option>
             <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="IT">Italy</option><option value="GB">Great Britain</option>
           </select>
           <span class="updated-badge" id="wx-upd">Open-Meteo</span>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="wx-kpis"></div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="wx-var-btns">
+      <div class="hist-section hist-section-strong" id="hs-wxcities-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-wxcities-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Weather board<span class="pk-hs-meta">Temperature, wind, solar radiation and precipitation for the main load centres · 7 days back, 14 days ahead</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-wxcities-0">
+<div class="kpi-strip fuel-kpis" id="wx-kpis"></div>
+<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="wx-var-btns">
         <button class="day-tab active" onclick="setWxVar('temp',this)">Temperature</button>
         <button class="day-tab" onclick="setWxVar('wind',this)">Wind 100 m</button>
         <button class="day-tab" onclick="setWxVar('radiation',this)">Solar radiation</button>
         <button class="day-tab" onclick="setWxVar('precip',this)">Precipitation</button>
       </div>
-      <div class="chart-container fuel-card">
+<div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="wx-forecast-canvas-title">Temperature</div><div class="fuel-card-sub" id="wx-forecast-canvas-sub">Hourly · population-weighted average (bold) and cities · past 7 days and 14-day forecast</div></div><span class="source-badge">Open-Meteo</span></div>
           <div style="position:relative;height:300px"><canvas id="wx-forecast-canvas" style="width:100%;height:300px"></canvas></div>
         </div>
-      <div class="table-wrap" style="margin-top:14px">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-wxcities-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-wxcities-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Cities<span class="pk-hs-meta">today</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-wxcities-1">
+<div class="table-wrap" style="margin-top:14px">
         <div class="table-header"><span class="table-title" id="wx-table-title">Cities — today</span><span class="source-badge">Open-Meteo</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">City</th><th>Weight</th><th>Now °C</th><th>Min / max °C</th><th>Mean °C</th><th>Wind 100 m (m/s)</th><th>Radiation (kWh/m²)</th><th>Precip (mm)</th><th>HDD</th></tr></thead>
         <tbody id="wx-city-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody></table>
       </div>
-      <div class="fuel-note" id="wx-note"></div>
+<div class="fuel-note" id="wx-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- HDD/CDD -->
     <div class="page" id="page-wxhdd">
-      <div class="page-header">
-        <div><div class="page-title">Degree Days — HDD / CDD</div><div class="page-subtitle">Population-weighted heating and cooling degree days vs the 2016–2025 normal · Open-Meteo</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Weather</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Degree days</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="hdd-country" onchange="renderHDD()">
             <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option>
             <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="IT">Italy</option><option value="GB">Great Britain</option>
           </select>
           <span class="updated-badge" id="hdd-upd">Open-Meteo</span>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="hdd-kpis"></div>
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-wxhdd-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-wxhdd-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Degree days board<span class="pk-hs-meta">Population-weighted heating and cooling degree days vs the 2016–2025 normal · Open-Meteo</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-wxhdd-0">
+<div class="kpi-strip fuel-kpis" id="hdd-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="hdd-canvas-title">Daily HDD vs normal</div><div class="fuel-card-sub" id="hdd-canvas-sub">Past days and 14-day forecast · base 18 °C</div></div><span class="source-badge">Open-Meteo</span></div>
           <div style="position:relative;height:280px"><canvas id="hdd-canvas" style="width:100%;height:280px"></canvas></div>
@@ -5528,43 +5703,85 @@
           <div style="position:relative;height:280px"><canvas id="hdd-cum" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="table-wrap">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-wxhdd-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-wxhdd-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Weekly degree days</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-wxhdd-1">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title">Weekly degree days</span><span class="source-badge">HDD base 18 °C · CDD base 21 °C</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Week</th><th>Mean °C</th><th>Normal °C</th><th>HDD</th><th>Normal HDD</th><th>vs normal</th><th>CDD</th></tr></thead>
         <tbody id="hdd-tbody"></tbody></table>
       </div>
-      <div class="fuel-note" id="hdd-note"></div>
+<div class="fuel-note" id="hdd-note"></div>
+        </div>
+      </div>
     </div>
 
     <!-- REMIT -->
     <div class="page" id="page-remit">
-      <div class="page-header">
-        <div><div class="page-title">Outages &amp; REMIT</div><div class="page-subtitle">French nuclear unavailability · official urgent-market-message platforms</div></div>
-        <span class="updated-badge" id="remit-upd">Operator data</span>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Outages &amp; REMIT</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="remit-upd">Operator data</span></div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
-      <div class="chart-container fuel-card" style="margin-bottom:14px">
+      <div class="hist-section hist-section-strong" id="hs-remit-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-remit-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Nuclear unavailability<span class="pk-hs-meta">French nuclear unavailability · official urgent-market-message platforms</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-remit-0">
+<div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
         <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:280px"><canvas id="remit-unavail" style="width:100%;height:280px"></canvas></div>
       </div>
-      <div class="table-wrap">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-remit-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-remit-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Unit-level UMMs<span class="pk-hs-meta">official platforms</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-remit-1">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title">Unit-level UMMs — official platforms</span><span class="source-badge">REMIT Art. 4</span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Platform</th><th style="text-align:left">Coverage</th><th>Link</th></tr></thead><tbody><tr><td class="l" style="text-align:left;font-weight:600">ENTSO-E Transparency Platform</td><td class="l" style="text-align:left;color:var(--text2)">Unavailability of production and generation units (all EU TSOs)</td><td><a href="https://transparency.entsoe.eu/outage-domain/r2/unavailabilityOfProductionAndGenerationUnits/show" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">EEX Transparency</td><td class="l" style="text-align:left;color:var(--text2)">Inside information / UMMs published by market participants (DE, FR, AT, ...)</td><td><a href="https://www.eex-transparency.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">Nord Pool UMM</td><td class="l" style="text-align:left;color:var(--text2)">Urgent market messages, Nordic and Baltic areas</td><td><a href="https://umm.nordpoolgroup.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr><tr><td class="l" style="text-align:left;font-weight:600">ACER — REMIT</td><td class="l" style="text-align:left;color:var(--text2)">Regulation, inside-information platforms list (IIPs)</td><td><a href="https://www.acer.europa.eu/remit" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Open ↗</a></td></tr></tbody></table>
       </div>
-      <div class="fuel-note">PowerKlock does not yet ingest unit-level UMMs; the aggregate French nuclear unavailability above is derived from the operator's declared available capacity.</div>
+<div class="fuel-note">PowerKlock does not yet ingest unit-level UMMs; the aggregate French nuclear unavailability above is derived from the operator's declared available capacity.</div>
+        </div>
+      </div>
     </div>
 
     <!-- ── PAGE: METHODOLOGY ── -->
     <div class="page" id="page-morning">
-      <div class="page-header">
-        <div><div class="page-title">France Morning</div><div class="page-subtitle"><span id="mrn-date">–</span> · spot, forwards, fuels, guarantees of origin, CO₂ and nuclear in one view</div></div>
-        <button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">France</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Morning brief</span></div>
+          <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
+        </div>
       </div>
-      <div class="mrn-kpis" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
-      <div class="mrn-moves"><h3>What moved</h3><div id="mrn-moves"><div class="fuel-note">Loading…</div></div></div>
-
-      <div class="mrn-sec">Spot</div>
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-morning-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Morning brief<span class="pk-hs-meta"><span id="mrn-date">–</span> · spot, forwards, fuels, guarantees of origin, CO₂ and nuclear in one view</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-0">
+<div class="mrn-kpis" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+<div class="mrn-moves"><h3>What moved</h3><div id="mrn-moves"><div class="fuel-note">Loading…</div></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-morning-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Spot<span class="pk-hs-meta">day-ahead France</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-1">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Day-ahead France · next delivery day</div><div class="fuel-card-sub" id="mrn-spot-sub">15-min, against the previous day and a week before</div></div><span class="source-badge">ENTSO-E</span></div>
           <div style="position:relative;height:280px"><canvas id="mrn-spot" style="width:100%;height:280px"></canvas></div>
@@ -5574,8 +5791,15 @@
           <div style="position:relative;height:280px"><canvas id="mrn-frde" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="mrn-sec">Forwards</div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-morning-2">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-2')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forwards<span class="pk-hs-meta">France baseload</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France forward prices</div><div class="fuel-card-sub">Baseload, by product</div></div><span class="source-badge">Market data</span></div>
           <div id="mrn-fwdt"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
@@ -5585,12 +5809,19 @@
           <div style="position:relative;height:300px"><canvas id="mrn-fwdp" style="width:100%;height:300px"></canvas></div>
         </div>
       </div>
-      <div class="chart-container fuel-card">
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Forward prices over the delivery calendar</div><div class="fuel-card-sub" id="mrn-strip-sub">Each product over its delivery period</div></div><span class="source-badge">Market data</span></div>
         <div style="position:relative;height:300px"><canvas id="mrn-strip" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div class="mrn-sec">Renewables and guarantees of origin</div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-morning-3">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-3')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Renewables and guarantees of origin</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-3">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Guarantees of origin · renewable</div><div class="fuel-card-sub" id="mrn-go-sub">Weekly mid, current and next production years</div></div><span class="source-badge">Commerg</span></div>
           <div style="position:relative;height:280px"><canvas id="mrn-go" style="width:100%;height:280px"></canvas></div>
@@ -5600,8 +5831,15 @@
           <div style="position:relative;height:280px"><canvas id="mrn-cr" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="mrn-sec">System</div>
-      <div class="fuel-grid-2">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-morning-4">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-4')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>System<span class="pk-hs-meta">production and nuclear</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-4">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France production now</div><div class="fuel-card-sub" id="mrn-prod-sub">Production by source with consumption, quarter-hours</div></div><span class="source-badge">RTE éCO2mix</span></div>
           <div style="position:relative;height:280px"><canvas id="mrn-prod" style="width:100%;height:280px"></canvas></div>
@@ -5611,26 +5849,35 @@
           <div style="position:relative;height:280px"><canvas id="mrn-remit" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-note">Spot: ENTSO-E day-ahead (delivery day, Paris). Forwards: daily settlements of the market data feed (d/d and w/w changes as published). GO: AIB broker mids (Commerg) and French state auctions (EEX). CO₂, nuclear output and production: RTE éCO2mix, live. Rising prices in red, as elsewhere on the site. <a href="#" onclick="PKScope.openLegacy(); return false;" style="color:var(--tx3);text-decoration:underline">Previous France dashboard</a> (to be retired).</div>
+<div class="fuel-note">Spot: ENTSO-E day-ahead (delivery day, Paris). Forwards: daily settlements of the market data feed (d/d and w/w changes as published). GO: AIB broker mids (Commerg) and French state auctions (EEX). CO₂, nuclear output and production: RTE éCO2mix, live. Rising prices in red, as elsewhere on the site. <a href="#" onclick="PKScope.openLegacy(); return false;" style="color:var(--tx3);text-decoration:underline">Previous France dashboard</a> (to be retired).</div>
+        </div>
+      </div>
     </div>
 
     <div class="page" id="page-frsystem">
-      <div class="page-header">
-        <div><div class="page-title">France System</div><div class="page-subtitle">Production, consumption, CO₂ and exchanges of the French power system · RTE éCO2mix, quarter-hourly, history since 2015</div></div>
-        <div style="display:flex;gap:6px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">France System</span></div>
+          <div class="pr-tabs-bar-filters">
           <button class="pk-btn-ghost" onclick="frsShiftDay(-1)" title="Previous day">‹</button>
           <span class="updated-badge" id="frs-day" style="min-width:120px;text-align:center">–</span>
           <button class="pk-btn-ghost" onclick="frsShiftDay(1)" title="Next day">›</button>
           <button class="pk-btn-ghost" onclick="frsShiftDay(0)" title="Latest day">Latest</button>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="frs-kpis"></div>
-
-      <div class="chart-container fuel-card">
+      <div class="hist-section hist-section-strong" id="hs-frsystem-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-frsystem-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>France system board<span class="pk-hs-meta">Production, consumption, CO₂ and exchanges of the French power system · RTE éCO2mix, quarter-hourly, history since 2015</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-frsystem-0">
+<div class="kpi-strip fuel-kpis" id="frs-kpis"></div>
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Production by source</div><div class="fuel-card-sub">GW, quarter-hours · consumption (white) and D-1 forecast (dashed) · pumping and battery charging below zero</div></div><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:360px"><canvas id="frs-prod" style="width:100%;height:360px"></canvas></div>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">CO₂ intensity</div><div class="fuel-card-sub" id="frs-co2-sub">g CO₂/kWh</div></div><span class="source-badge">RTE éCO2mix</span></div>
           <div style="position:relative;height:260px"><canvas id="frs-co2" style="width:100%;height:260px"></canvas></div>
@@ -5640,7 +5887,7 @@
           <div style="position:relative;height:260px"><canvas id="frs-exch" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
-      <div class="fuel-grid-2">
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Pumped storage and batteries</div><div class="fuel-card-sub">GW · day-ahead price on the right axis</div></div><span class="source-badge">RTE éCO2mix</span></div>
           <div style="position:relative;height:260px"><canvas id="frs-flex" style="width:100%;height:260px"></canvas></div>
@@ -5653,51 +5900,80 @@
           <div style="position:relative;height:260px"><canvas id="frs-env" style="width:100%;height:260px"></canvas></div>
         </div>
       </div>
-      <div class="chart-container fuel-card">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-frsystem-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-frsystem-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>History since 2015<span class="pk-hs-meta">monthly production and annual balance</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-frsystem-1">
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Monthly production by source</div><div class="fuel-card-sub" id="frs-monthly-sub">TWh</div></div>
           <div class="pk-gf-group" id="frs-monthly-view"><button class="pk-gf-btn active" data-v="twh" onclick="frsSetMonthly('twh')">TWh</button><button class="pk-gf-btn" data-v="share" onclick="frsSetMonthly('share')">% share</button></div><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:320px"><canvas id="frs-monthly" style="width:100%;height:320px"></canvas></div>
       </div>
-      <div class="table-wrap" style="margin-bottom:14px">
+<div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title">Annual balance</span><span class="source-badge">TWh · RTE éCO2mix</span></div>
         <div id="frs-annual"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
       </div>
-      <div class="fuel-note">Source: RTE éCO2mix national data (consolidated history and real-time data, ODRÉ, Etalab open licence). Consolidated data before September 2026 are half-hourly and do not split onshore and offshore wind. Battery data exist in the real-time dataset only. CO₂ intensity is RTE's figure for French generation (direct emissions), lower than the life-cycle figures of the Carbon and Power Map pages. Annual energy = sum of daily averages × 24 h.</div>
+<div class="fuel-note">Source: RTE éCO2mix national data (consolidated history and real-time data, ODRÉ, Etalab open licence). Consolidated data before September 2026 are half-hourly and do not split onshore and offshore wind. Battery data exist in the real-time dataset only. CO₂ intensity is RTE's figure for French generation (direct emissions), lower than the life-cycle figures of the Carbon and Power Map pages. Annual energy = sum of daily averages × 24 h.</div>
+        </div>
+      </div>
     </div>
 
     <div class="page" id="page-regions">
-      <div class="page-header">
-        <div><div class="page-title">France Regions</div><div class="page-subtitle">Regional consumption, renewable output and load factors · installed capacity · national gas and power demand</div></div>
-        <span class="updated-badge" id="reg-upd">–</span>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">France Regions</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="reg-upd">–</span></div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="reg-kpis"></div>
-      <div class="chart-container fuel-card">
+      <div class="hist-section hist-section-strong" id="hs-regions-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-regions-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>Regions board<span class="pk-hs-meta">Regional consumption, renewable output and load factors · installed capacity · national gas and power demand</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-regions-0">
+<div class="kpi-strip fuel-kpis" id="reg-kpis"></div>
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title" id="reg-lf-title">Wind &amp; solar load factors</div><div class="fuel-card-sub">Average output ÷ installed capacity per region (%)</div></div><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:280px"><canvas id="reg-lf" style="width:100%;height:280px"></canvas></div>
       </div>
-      <div class="chart-container fuel-card">
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Load factors by month</div><div class="fuel-card-sub" id="reg-lf-hist-sub">Monthly average (%)</div></div><select class="country-select" id="reg-region" aria-label="Region"></select><span class="source-badge">RTE éCO2mix</span></div>
         <div style="position:relative;height:280px"><canvas id="reg-lf-hist" style="width:100%;height:280px"></canvas></div>
       </div>
-      <div class="table-wrap">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title" id="reg-table-title">Regions · daily averages</span><span class="source-badge">GW · load factor %</span></div>
         <div style="overflow-x:auto"><table><thead><tr><th class="l">Region</th><th>Consumption</th><th>Nuclear</th><th>Wind</th><th>Wind LF</th><th>Solar</th><th>Solar LF</th><th>Hydro</th><th>Thermal</th><th>Net import</th></tr></thead><tbody id="reg-tbody"></tbody></table></div>
       </div>
-      <div class="chart-container fuel-card" style="margin-top:18px">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-regions-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-regions-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Capacity and consumption<span class="pk-hs-meta">registry and daily gas / electricity</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-regions-1">
+<div class="chart-container fuel-card" style="margin-top:18px">
         <div class="fuel-card-head"><div><div class="table-title">Installed capacity by region</div><div class="fuel-card-sub">National registry of production and storage installations (GW)</div></div><span class="source-badge">ODRÉ registry</span></div>
         <div style="position:relative;height:320px"><canvas id="reg-cap" style="width:100%;height:320px"></canvas></div>
       </div>
-      <div class="chart-container fuel-card">
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">France gas and electricity consumption</div><div class="fuel-card-sub" id="reg-gas-elec-sub">Daily averages, GW</div></div><span class="source-badge">NaTran · Teréga · RTE</span></div>
         <div style="position:relative;height:300px"><canvas id="reg-gas-elec" style="width:100%;height:300px"></canvas></div>
       </div>
-      <div class="fuel-note">Sources: RTE éCO2mix régional, national registry of installations and daily gas and electricity consumption (NaTran, Teréga, RTE), published on ODRÉ (odre.opendatasoft.com) under the Etalab open licence. Load factor = output ÷ installed capacity (RTE "TCH"). Regional net import = physical exchanges with neighbouring regions and countries (+ = import).</div>
+<div class="fuel-note">Sources: RTE éCO2mix régional, national registry of installations and daily gas and electricity consumption (NaTran, Teréga, RTE), published on ODRÉ (odre.opendatasoft.com) under the Etalab open licence. Load factor = output ÷ installed capacity (RTE "TCH"). Regional net import = physical exchanges with neighbouring regions and countries (+ = import).</div>
+        </div>
+      </div>
     </div>
 
     <div class="page" id="page-capacity">
-      <div class="page-header">
-        <div><div class="page-title">Installed Capacity</div><div class="page-subtitle">Installed net generating capacity by technology and year · 12 European countries</div></div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Installed Capacity</span></div>
+          <div class="pr-tabs-bar-filters">
           <select class="country-select" id="cap-country" onchange="renderCapacity()">
             <option value="FR">France</option><option value="DE">Germany</option><option value="ES">Spain</option><option value="IT">Italy</option>
             <option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="PT">Portugal</option><option value="CH">Switzerland</option>
@@ -5705,9 +5981,16 @@
           </select>
           <span class="updated-badge" id="cap-upd">–</span>
         </div>
+        </div>
       </div>
-      <div class="kpi-strip fuel-kpis" id="cap-kpis"></div>
-      <div class="fuel-grid-2">
+      <div class="hist-section hist-section-strong" id="hs-capacity-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capacity-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Installed capacity<span class="pk-hs-meta">Installed net generating capacity by technology and year · 12 European countries</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-capacity-0">
+<div class="kpi-strip fuel-kpis" id="cap-kpis"></div>
+<div class="fuel-grid-2">
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title" id="cap-history-title">Installed capacity by year</div><div class="fuel-card-sub">GW by technology · planning targets, storage energy and the DC duplicate of solar excluded</div></div><span class="source-badge">Energy-Charts</span></div>
           <div style="position:relative;height:320px"><canvas id="cap-history" style="width:100%;height:320px"></canvas></div>
@@ -5717,26 +6000,52 @@
           <table><thead><tr><th class="l">Technology</th><th>GW</th><th>Share</th><th>5 years earlier</th><th>Change</th></tr></thead><tbody id="cap-tbody"></tbody></table>
         </div>
       </div>
-      <div class="chart-container fuel-card">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-capacity-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capacity-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Country comparison</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-capacity-1">
+<div class="chart-container fuel-card">
         <div class="fuel-card-head"><div><div class="table-title">Country comparison</div><div class="fuel-card-sub">Latest reported year per country · GW by technology</div></div><span class="source-badge">Energy-Charts</span></div>
         <div style="position:relative;height:380px"><canvas id="cap-compare" style="width:100%;height:380px"></canvas></div>
       </div>
-      <div class="fuel-note">Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0, refreshed daily. Figures are national statistics or ENTSO-E capacity declarations depending on the country: distributed solar is understated for some (Italy's ENTSO-E figure is far below its national registry). Batteries are counted at their power rating; their storage energy (GWh) is not added.</div>
+<div class="fuel-note">Source: Energy-Charts.info (Fraunhofer ISE), CC BY 4.0, refreshed daily. Figures are national statistics or ENTSO-E capacity declarations depending on the country: distributed solar is understated for some (Italy's ENTSO-E figure is far below its national registry). Batteries are counted at their power rating; their storage energy (GWh) is not added.</div>
+        </div>
+      </div>
     </div>
 
     <div class="page" id="page-status">
-      <div class="page-header">
-        <div><div class="page-title">Data status</div><div class="page-subtitle">Freshness of every source shown on PowerKlock · <span id="status-checked">–</span></div></div>
-        <button class="pk-btn-ghost" type="button" onclick="PKStatus.renderStatusPage()">↻ Check again</button>
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">General</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Data status</span></div>
+          <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="PKStatus.renderStatusPage()">↻ Check again</button></div>
+        </div>
       </div>
-      <div class="table-wrap">
+      <div class="hist-section hist-section-strong" id="hs-status-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-status-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Sources<span class="pk-hs-meta">Freshness of every source shown on PowerKlock · <span id="status-checked">–</span></span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-status-0">
+<div class="table-wrap">
         <div class="table-header"><span class="table-title">Sources</span></div>
         <div style="overflow-x:auto"><table class="status-table">
           <thead><tr><th class="l">Dataset</th><th class="l">Provider</th><th class="l">Read by</th><th>Last update (Paris)</th><th class="l">Expected</th><th class="l">Status</th></tr></thead>
           <tbody id="status-sources"></tbody>
         </table></div>
       </div>
-      <div class="fuel-grid-2" style="margin-top:18px">
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-status-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-status-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Feed problems and coverage</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-status-1">
+<div class="fuel-grid-2" style="margin-top:18px">
         <div class="table-wrap">
           <div class="table-header"><span class="table-title">Feed problems handled</span></div>
           <ul id="status-issues" class="status-issues"></ul>
@@ -5748,6 +6057,8 @@
             <thead><tr><th class="l">Zone</th><th>First day</th><th>Last day</th><th>Days</th></tr></thead>
             <tbody id="status-coverage"></tbody>
           </table></div>
+        </div>
+      </div>
         </div>
       </div>
     </div>

@@ -240,7 +240,12 @@ async function _mrnKpis() {
   const { d, prev } = await _mrnSpotDays();
   const [a, b, fwd, gos, auct] = await Promise.all([_mrnDaily(d), _mrnDaily(prev), _mrnFwd(), _mrnGoCsv(), _mrnAuctions()]);
   const fa = a && a.zones && a.zones.FR, fb = b && b.zones && b.zones.FR;
-  const tile = (lbl, val, unit, sub, tone, title) => `<div class="mrn-k"${title ? ` title="${title}"` : ''}><div class="mrn-k-l">${lbl}</div><div class="mrn-k-v">${val}<small>${unit || ''}</small></div><div class="mrn-k-s ${tone || ''}">${sub || ''}</div></div>`;
+  // Same KPI card as the rest of the site; a price rise is red (kpi-down), a fall green.
+  const tile = (lbl, val, unit, sub, tone, title) => {
+    const cls = tone === 'up' ? 'kpi-down' : tone === 'down' ? 'kpi-up' : 'kpi-flat';
+    const col = tone === 'up' ? 'var(--down)' : tone === 'down' ? 'var(--up)' : 'var(--text3)';
+    return `<div class="kpi-card ${cls}"${title ? ` title="${title}"` : ''}><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}<span class="kpi-unit">${unit || ''}</span></div><div class="kpi-meta" style="color:${col}">${sub || ''}</div></div>`;
+  };
   const sg = (v, dp) => v == null || isNaN(v) ? '–' : (v >= 0 ? '+' : '') + v.toFixed(dp == null ? 1 : dp);
   const toneP = v => v == null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';   // price up = red (site convention)
   const tiles = [];
@@ -360,6 +365,7 @@ async function renderMorning() {
   const css = document.createElement('style');
   css.textContent = `
   .mrn-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;margin-bottom:14px}
+  .mrn-kpis .kpi-card{min-width:0}.mrn-kpis .kpi-label,.mrn-kpis .kpi-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mrn-k{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;min-width:0}
   .mrn-k-l{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mrn-k-v{font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--tx);margin-top:4px;white-space:nowrap}
