@@ -1,59 +1,101 @@
 #!/usr/bin/env python3
-"""France weather and renewables outlook for the next 5 weeks vs normal.
+"""Weather and renewables outlook for the next 5 weeks vs normal, by country.
 
 Forecast: Open-Meteo ensemble API, GFS ensemble (0.5°, 31 members, 35 days)
-plus the last 7 days. Normals: Open-Meteo historical archive (ERA5),
+plus the last days. Normals: Open-Meteo historical archive (ERA5),
 2016–2025, same calendar day, smoothed over ±3 days.
 
-Series (France):
+Series per country (when it makes sense and data exist):
   temp    population-weighted mean temperature (°C)
-  solar   solar production (GWh/day): weighted daily irradiation × k, k fitted
-          on RTE's solar output of the last 30 days (season and capacity)
-  wind    wind production (GWh/day): hourly 100 m wind → fleet power curve
-          (logistic) → weighted capacity factor × C, C fitted on RTE's wind
-          output of the last 365 days
-  precip  precipitation over the main hydro basins (mm/day), a proxy of
-          hydro inflows
+  solar   solar production (GWh/day) = weighted daily irradiation × k
+  wind    wind production (GWh/day) = weighted capacity factor (hourly 100 m
+          wind through a logistic fleet power curve) × C
+  precip  precipitation over the main hydro basins (mm/day), hydro proxy
+k and C are fitted on actual output: RTE éCO2mix for France (solar on the
+last 30 days, wind on the last year), ENTSO-E daily averages from
+history/summary.json elsewhere (the days available in the last year).
+Normals for solar and wind apply today's k / C to the 2016–2025 weather.
 
-Normals for solar and wind apply today's fitted k / C to the 2016–2025
-weather: "what an average year's weather gives with today's fleet".
-
-Writes data/weather_outlook.json; caches the archive in
-data/history/weather_archive.json (refreshed weekly).
+Writes data/weather_outlook.json. Cache: data/history/weather_archive.json
+holds the day-of-year normals (computed once) and the last 400 days of
+weather used for the fit (refreshed every two weeks).
 """
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'data', 'weather_outlook.json')
-ARCHIVE = os.path.join(ROOT, 'data', 'history', 'weather_archive.json')
+CACHE = os.path.join(ROOT, 'data', 'history', 'weather_archive.json')
 FR_DAILY = os.path.join(ROOT, 'data', 'history', 'rte', 'fr_daily.json')
+SUMMARY = os.path.join(ROOT, 'data', 'history', 'summary.json')
 ENS = 'https://ensemble-api.open-meteo.com/v1/ensemble'
 ARC = 'https://archive-api.open-meteo.com/v1/archive'
 NORMAL_YEARS = (2016, 2025)
+RECENT_DAYS = 400
 
-# (name, lat, lon, weight)
-TEMP = [('Paris', 48.86, 2.35, .30), ('Lyon', 45.76, 4.84, .09), ('Marseille', 43.30, 5.37, .09), ('Lille', 50.63, 3.06, .09),
-        ('Toulouse', 43.60, 1.44, .08), ('Bordeaux', 44.84, -0.58, .08), ('Nantes', 47.22, -1.55, .08), ('Strasbourg', 48.57, 7.75, .07),
-        ('Rennes', 48.11, -1.68, .06), ('Clermont', 45.78, 3.08, .06)]
-WIND = [('Somme', 49.90, 2.30, .22), ('Marne', 48.95, 4.36, .22), ('Aude', 43.18, 3.00, .10), ('Indre', 46.80, 1.70, .10),
-        ('Côtes-d\'Armor', 48.50, -2.80, .08), ('Deux-Sèvres', 46.30, -0.46, .10), ('Saint-Nazaire offshore', 47.10, -2.60, .10), ('Aisne', 49.60, 3.60, .08)]
-SOLAR = [('Bordeaux', 44.84, -0.58, .18), ('Toulouse', 43.60, 1.44, .18), ('Montpellier', 43.61, 3.88, .14), ('Marseille', 43.30, 5.37, .14),
-         ('Lyon', 45.76, 4.84, .12), ('Nantes', 47.22, -1.55, .09), ('Strasbourg', 48.57, 7.75, .07), ('Paris', 48.86, 2.35, .08)]
-HYDRO = [('Alpes du Nord', 45.30, 6.40, .30), ('Alpes du Sud', 44.40, 6.50, .15), ('Pyrénées', 42.90, 0.20, .20),
-         ('Massif central', 45.20, 2.80, .20), ('Jura / Rhône', 46.30, 5.90, .15)]
+# country → name, price zone of the calibration data, point groups (name, lat, lon, weight)
+COUNTRIES = {
+    'FR': {'name': 'France', 'zone': 'FR',
+           'temp': [('Paris', 48.86, 2.35, .30), ('Lyon', 45.76, 4.84, .09), ('Marseille', 43.30, 5.37, .09), ('Lille', 50.63, 3.06, .09),
+                    ('Toulouse', 43.60, 1.44, .08), ('Bordeaux', 44.84, -0.58, .08), ('Nantes', 47.22, -1.55, .08), ('Strasbourg', 48.57, 7.75, .07),
+                    ('Rennes', 48.11, -1.68, .06), ('Clermont', 45.78, 3.08, .06)],
+           'wind': [('Somme', 49.90, 2.30, .22), ('Marne', 48.95, 4.36, .22), ('Aude', 43.18, 3.00, .10), ('Indre', 46.80, 1.70, .10),
+                    ("Côtes-d'Armor", 48.50, -2.80, .08), ('Deux-Sèvres', 46.30, -0.46, .10), ('Saint-Nazaire offshore', 47.10, -2.60, .10), ('Aisne', 49.60, 3.60, .08)],
+           'solar': [('Bordeaux', 44.84, -0.58, .18), ('Toulouse', 43.60, 1.44, .18), ('Montpellier', 43.61, 3.88, .14), ('Marseille', 43.30, 5.37, .14),
+                     ('Lyon', 45.76, 4.84, .12), ('Nantes', 47.22, -1.55, .09), ('Strasbourg', 48.57, 7.75, .07), ('Paris', 48.86, 2.35, .08)],
+           'precip': [('Alpes du Nord', 45.30, 6.40, .30), ('Alpes du Sud', 44.40, 6.50, .15), ('Pyrénées', 42.90, 0.20, .20),
+                      ('Massif central', 45.20, 2.80, .20), ('Jura / Rhône', 46.30, 5.90, .15)]},
+    'DE': {'name': 'Germany', 'zone': 'DE_LU',
+           'temp': [('Berlin', 52.52, 13.40, .18), ('Hamburg', 53.55, 9.99, .10), ('Munich', 48.14, 11.58, .15), ('Cologne', 50.94, 6.96, .20),
+                    ('Frankfurt', 50.11, 8.68, .14), ('Stuttgart', 48.78, 9.18, .12), ('Leipzig', 51.34, 12.37, .11)],
+           'wind': [('Schleswig-Holstein', 54.50, 9.50, .25), ('Lower Saxony', 52.80, 8.00, .30), ('Brandenburg', 52.40, 13.50, .20), ('North Sea offshore', 54.30, 6.50, .25)],
+           'solar': [('Munich', 48.14, 11.58, .25), ('Stuttgart', 48.78, 9.18, .20), ('Nuremberg', 49.45, 11.08, .15), ('Leipzig', 51.34, 12.37, .20), ('Cologne', 50.94, 6.96, .20)]},
+    'ES': {'name': 'Spain', 'zone': 'ES',
+           'temp': [('Madrid', 40.42, -3.70, .35), ('Barcelona', 41.39, 2.17, .25), ('Valencia', 39.47, -0.38, .15), ('Seville', 37.39, -5.98, .15), ('Bilbao', 43.26, -2.93, .10)],
+           'wind': [('Zaragoza', 41.65, -0.90, .30), ('Castilla y León', 41.60, -4.70, .30), ('Galicia', 42.90, -8.00, .20), ('Albacete', 39.00, -1.90, .20)],
+           'solar': [('Badajoz', 38.88, -6.97, .30), ('Seville', 37.39, -5.98, .25), ('Ciudad Real', 38.98, -3.93, .25), ('Murcia', 37.98, -1.13, .20)],
+           'precip': [('Pyrenees', 42.50, 0.50, .40), ('Miño-Sil', 42.30, -7.90, .30), ('Duero', 41.50, -5.50, .30)]},
+    'BE': {'name': 'Belgium', 'zone': 'BE',
+           'temp': [('Brussels', 50.85, 4.35, .50), ('Antwerp', 51.22, 4.40, .30), ('Liège', 50.63, 5.57, .20)],
+           'wind': [('Belgian offshore', 51.60, 2.90, .60), ('Flanders', 51.00, 3.70, .40)],
+           'solar': [('Brussels', 50.85, 4.35, .40), ('Antwerp', 51.22, 4.40, .30), ('Liège', 50.63, 5.57, .30)]},
+    'NL': {'name': 'Netherlands', 'zone': 'NL',
+           'no_fit': {'solar': 'ENTSO-E publishes only a small part of Dutch solar (daily peaks near 0.1 GW for some 25 GW installed): no reliable calibration.'},
+           'temp': [('Amsterdam', 52.37, 4.90, .40), ('Rotterdam', 51.92, 4.48, .35), ('Eindhoven', 51.44, 5.48, .25)],
+           'wind': [('Dutch offshore', 52.60, 4.00, .50), ('Flevoland', 52.50, 5.50, .30), ('Groningen', 53.22, 6.57, .20)],
+           'solar': [('Eindhoven', 51.44, 5.48, .35), ('Utrecht', 52.09, 5.12, .35), ('Groningen', 53.22, 6.57, .30)]},
+    'IT': {'name': 'Italy', 'zone': None,
+           'temp': [('Milan', 45.46, 9.19, .35), ('Rome', 41.90, 12.50, .30), ('Naples', 40.85, 14.27, .20), ('Turin', 45.07, 7.69, .15)],
+           'precip': [('Central Alps', 46.30, 10.00, .60), ('Northern Apennines', 44.20, 10.80, .40)]},
+    'CH': {'name': 'Switzerland', 'zone': None,
+           'temp': [('Zurich', 47.37, 8.54, .50), ('Geneva', 46.20, 6.15, .30), ('Bern', 46.95, 7.45, .20)],
+           'precip': [('Bernese Alps', 46.60, 8.00, .60), ('Valais', 46.30, 7.50, .40)]},
+    'AT': {'name': 'Austria', 'zone': None,
+           'temp': [('Vienna', 48.21, 16.37, .50), ('Graz', 47.07, 15.44, .25), ('Linz', 48.31, 14.29, .25)],
+           'precip': [('Tyrol', 47.20, 11.40, .50), ('Salzburg Alps', 47.30, 13.50, .50)]},
+}
+LABEL = {'temp': ('Temperature, population-weighted', '°C'), 'solar': ('Solar production', 'GWh/day'),
+         'wind': ('Wind production', 'GWh/day'), 'precip': ('Precipitation over hydro basins', 'mm/day')}
+VAR = {'temp': 'temperature_2m_mean', 'solar': 'shortwave_radiation_sum', 'precip': 'precipitation_sum'}
 
 
-def get(url, params, tries=5):
+def get(url, params, tries=6):
     q = url + '?' + urllib.parse.urlencode(params)
     for k in range(tries):
         try:
-            with urllib.request.urlopen(urllib.request.Request(q, headers={'User-Agent': 'PowerKlock/1.0'}), timeout=180) as r:
-                return json.load(r)
+            with urllib.request.urlopen(urllib.request.Request(q, headers={'User-Agent': 'PowerKlock/1.0'}), timeout=240) as r:
+                data = json.load(r)
+            time.sleep(2)
+            return data
+        except urllib.error.HTTPError as e:
+            wait = 65 if e.code == 429 else 10 * (k + 1)
+            print(f'   HTTP {e.code}, waiting {wait}s')
+            time.sleep(wait)
         except Exception as e:
             print('   retry', k + 1, str(e)[:120])
             time.sleep(10 * (k + 1))
@@ -84,62 +126,37 @@ def pct(xs, p):
     return xs[lo] + (xs[hi] - xs[lo]) * (i - lo)
 
 
-# ── archive (normals and fit) ──
-def archive():
-    if os.path.exists(ARCHIVE):
-        with open(ARCHIVE) as f:
-            a = json.load(f)
-        if (datetime.now(timezone.utc) - datetime.fromisoformat(a['updated'].replace('Z', '+00:00'))).days < 7:
-            return a
-    start, end = f'{NORMAL_YEARS[0]}-01-01', (date.today() - timedelta(days=6)).isoformat()
-    out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'start': start, 'end': end, 'series': {}}
-
-    def daily_group(key, pts, var):
-        series = []
+# ── archive: weighted daily series of a point group ──
+def archive_series(pts, kind, start, end):
+    if kind == 'wind':
+        per_site = []
         for name, lat, lon, w in pts:
-            j = get(ARC, {'latitude': lat, 'longitude': lon, 'start_date': start, 'end_date': end, 'daily': var, 'timezone': 'Europe/Paris'})
-            series.append(j['daily'][var])
-            days = j['daily']['time']
-            time.sleep(1)
-        ws = [p[3] for p in pts]
-        out['series'][key] = {'days': days, 'values': [wmean([s[i] for s in series], ws) for i in range(len(days))]}
-        print(f'  archive {key}: {len(days)} days')
-
-    daily_group('temp', TEMP, 'temperature_2m_mean')
-    daily_group('rad', SOLAR, 'shortwave_radiation_sum')
-    daily_group('precip', HYDRO, 'precipitation_sum')
-    # wind: hourly 100 m → daily mean capacity factor per site → weighted
-    per_site = []
-    for name, lat, lon, w in WIND:
-        j = get(ARC, {'latitude': lat, 'longitude': lon, 'start_date': start, 'end_date': end, 'hourly': 'wind_speed_100m',
-                      'wind_speed_unit': 'ms', 'timezone': 'Europe/Paris'})
-        t, v = j['hourly']['time'], j['hourly']['wind_speed_100m']
-        acc = {}
-        for ti, vi in zip(t, v):
-            if vi is None:
-                continue
-            d = ti[:10]
-            s = acc.setdefault(d, [0.0, 0])
-            s[0] += cf(vi)
-            s[1] += 1
-        per_site.append({d: s[0] / s[1] for d, s in acc.items() if s[1] >= 20})
-        time.sleep(1)
-    days = sorted(set().union(*[set(p) for p in per_site]))
-    out['series']['cf'] = {'days': days, 'values': [wmean([p.get(d) for p in per_site], [x[3] for x in WIND]) for d in days]}
-    print(f'  archive cf: {len(days)} days')
-    os.makedirs(os.path.dirname(ARCHIVE), exist_ok=True)
-    with open(ARCHIVE, 'w') as f:
-        json.dump(out, f, separators=(',', ':'))
-    return out
+            j = get(ARC, {'latitude': lat, 'longitude': lon, 'start_date': start, 'end_date': end, 'hourly': 'wind_speed_100m',
+                          'wind_speed_unit': 'ms', 'timezone': 'Europe/Paris'})
+            acc = {}
+            for t, v in zip(j['hourly']['time'], j['hourly']['wind_speed_100m']):
+                if v is None:
+                    continue
+                s = acc.setdefault(t[:10], [0.0, 0])
+                s[0] += cf(v)
+                s[1] += 1
+            per_site.append({d: s[0] / s[1] for d, s in acc.items() if s[1] >= 20})
+        days = sorted(set().union(*[set(p) for p in per_site]))
+        return days, [wmean([p.get(d) for p in per_site], [x[3] for x in pts]) for d in days]
+    var = VAR[kind]
+    series, days = [], []
+    for name, lat, lon, w in pts:
+        j = get(ARC, {'latitude': lat, 'longitude': lon, 'start_date': start, 'end_date': end, 'daily': var, 'timezone': 'Europe/Paris'})
+        series.append(j['daily'][var])
+        days = j['daily']['time']
+    return days, [wmean([s[i] for s in series], [p[3] for p in pts]) for i in range(len(days))]
 
 
-def normals(series):
-    """Day-of-year (MM-DD) mean over NORMAL_YEARS, smoothed ±3 days."""
+def doy_normals(days, values):
     by = {}
-    for d, v in zip(series['days'], series['values']):
-        if v is None or not (NORMAL_YEARS[0] <= int(d[:4]) <= NORMAL_YEARS[1]):
-            continue
-        by.setdefault(d[5:], []).append(v)
+    for d, v in zip(days, values):
+        if v is not None and NORMAL_YEARS[0] <= int(d[:4]) <= NORMAL_YEARS[1]:
+            by.setdefault(d[5:], []).append(v)
     base = date(2001, 1, 1)
     keys = [(base + timedelta(days=i)).strftime('%m-%d') for i in range(365)]
     raw = {k: sum(by[k]) / len(by[k]) for k in keys if k in by}
@@ -147,63 +164,130 @@ def normals(series):
     for i, k in enumerate(keys):
         win = [raw.get(keys[(i + j) % 365]) for j in range(-3, 4)]
         win = [x for x in win if x is not None]
-        sm[k] = sum(win) / len(win) if win else None
+        sm[k] = round(sum(win) / len(win), 4) if win else None
     sm['02-29'] = sm['02-28']
     return sm
 
 
-def fit(series, target, days=120):
-    """y = k·x through the origin over the last `days` common days."""
-    xs = dict(zip(series['days'], series['values']))
+def load_cache():
+    if os.path.exists(CACHE):
+        with open(CACHE) as f:
+            c = json.load(f)
+        if 'countries' in c:
+            return c
+        # previous single-country format (France, full daily series since 2016)
+        conv = {'countries': {'FR': {'normals': {}, 'recent': {}}}}
+        for kind, key in (('temp', 'temp'), ('solar', 'rad'), ('precip', 'precip'), ('wind', 'cf')):
+            s = c.get('series', {}).get(key)
+            if s:
+                conv['countries']['FR']['normals'][kind] = doy_normals(s['days'], s['values'])
+                if kind in ('solar', 'wind'):
+                    lim = (date.today() - timedelta(days=RECENT_DAYS)).isoformat()
+                    keep = [(d, v) for d, v in zip(s['days'], s['values']) if d >= lim]
+                    conv['countries']['FR']['recent'][kind] = {'end': c.get('end', ''), 'days': [d for d, _ in keep], 'values': [v for _, v in keep]}
+        return conv
+    return {'countries': {}}
+
+
+def save_cache(cache):
+    cache['updated'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    with open(CACHE, 'w') as f:
+        json.dump(cache, f, separators=(',', ':'))
+
+
+def refresh_cache(cache):
+    today = date.today()
+    end = (today - timedelta(days=6)).isoformat()
+    for cc, conf in COUNTRIES.items():
+        c = cache['countries'].setdefault(cc, {'normals': {}, 'recent': {}})
+        for kind in ('temp', 'solar', 'wind', 'precip'):
+            if kind not in conf:
+                continue
+            if kind not in c['normals']:
+                print(f'  {cc} {kind}: normals {NORMAL_YEARS[0]}–{NORMAL_YEARS[1]}')
+                d, v = archive_series(conf[kind], kind, f'{NORMAL_YEARS[0]}-01-01', f'{NORMAL_YEARS[1]}-12-31')
+                c['normals'][kind] = doy_normals(d, v)
+                save_cache(cache)
+            rec = c['recent'].get(kind)
+            if kind in ('solar', 'wind') and (not rec or rec.get('end', '') < (today - timedelta(days=20)).isoformat()):
+                print(f'  {cc} {kind}: last {RECENT_DAYS} days')
+                d, v = archive_series(conf[kind], kind, (today - timedelta(days=RECENT_DAYS)).isoformat(), end)
+                c['recent'][kind] = {'end': end, 'days': d, 'values': [None if x is None else round(x, 4) for x in v]}
+                save_cache(cache)
+    save_cache(cache)
+    return cache
+
+
+def targets():
+    """Actual daily output (GWh) per country for the fit: RTE for France, ENTSO-E summary elsewhere."""
+    out = {}
+    if os.path.exists(FR_DAILY):
+        with open(FR_DAILY) as f:
+            rows = json.load(f).get('rows', [])
+        out['FR'] = {'solar': {r['d']: r['solarAvg'] * 24 / 1000 for r in rows if r.get('solarAvg') is not None},
+                     'wind': {r['d']: r['windAvg'] * 24 / 1000 for r in rows if r.get('windAvg') is not None}}
+    if os.path.exists(SUMMARY):
+        with open(SUMMARY) as f:
+            zones = json.load(f).get('zones', {})
+        for cc, conf in COUNTRIES.items():
+            if cc == 'FR' or not conf['zone']:
+                continue
+            rows = zones.get(conf['zone'], [])
+            out[cc] = {'solar': {r['d']: r['solarAvg'] * 24 / 1000 for r in rows if r.get('solarAvg')},
+                       'wind': {r['d']: r['windAvg'] * 24 / 1000 for r in rows if r.get('windAvg')}}
+    return out
+
+
+def fit(rec, target, days):
+    """y = k·x through the origin over the last `days` common days (at least 20)."""
+    xs = dict(zip(rec['days'], rec['values']))
     common = sorted(d for d in target if d in xs and xs[d] is not None)[-days:]
+    if len(common) < 20:
+        return None, len(common), None
     pairs = [(xs[d], target[d]) for d in common]
     sxx = sum(x * x for x, _ in pairs)
-    if not sxx:
-        return None, 0, None
     k = sum(x * y for x, y in pairs) / sxx
     ym = sum(y for _, y in pairs) / len(pairs)
     sst = sum((y - ym) ** 2 for _, y in pairs)
     sse = sum((y - k * x) ** 2 for x, y in pairs)
-    return k, len(pairs), (1 - sse / sst) if sst else None
+    return k, len(pairs), round(1 - sse / sst, 3) if sst else None
 
 
 # ── forecast ──
-def ensemble_daily(pts, var):
-    j = get(ENS, {'latitude': ','.join(str(p[1]) for p in pts), 'longitude': ','.join(str(p[2]) for p in pts),
-                  'daily': var, 'models': 'gfs05', 'forecast_days': 35, 'past_days': 7, 'timezone': 'Europe/Paris'})
+def ensemble(pts, kind):
+    loc = {'latitude': ','.join(str(p[1]) for p in pts), 'longitude': ','.join(str(p[2]) for p in pts),
+           'models': 'gfs05', 'forecast_days': 35, 'past_days': 7, 'timezone': 'Europe/Paris'}
+    ws = [p[3] for p in pts]
+    if kind == 'wind':
+        j = get(ENS, dict(loc, hourly='wind_speed_100m', wind_speed_unit='ms'))
+        j = j if isinstance(j, list) else [j]
+        times = j[0]['hourly']['time']
+        days = sorted(set(t[:10] for t in times))
+        members = []
+        for key in [k for k in j[0]['hourly'] if k.startswith('wind_speed_100m')]:
+            per_loc = []
+            for l in j:
+                acc = {}
+                for t, v in zip(times, l['hourly'][key]):
+                    if v is None:
+                        continue
+                    s = acc.setdefault(t[:10], [0.0, 0])
+                    s[0] += cf(v)
+                    s[1] += 1
+                per_loc.append({d: s[0] / s[1] for d, s in acc.items() if s[1] >= 12})
+            members.append([wmean([pl.get(d) for pl in per_loc], ws) for d in days])
+        return days, members
+    var = VAR[kind]
+    j = get(ENS, dict(loc, daily=var))
     j = j if isinstance(j, list) else [j]
     days = j[0]['daily']['time']
     keys = [k for k in j[0]['daily'] if k.startswith(var)]
-    # members[m][i] = weighted value of member m on day i
-    members = []
-    for k in keys:
-        members.append([wmean([loc['daily'][k][i] for loc in j], [p[3] for p in pts]) for i in range(len(days))])
+    members = [[wmean([l['daily'][key][i] for l in j], ws) for i in range(len(days))] for key in keys]
     return days, members
 
 
-def ensemble_wind():
-    j = get(ENS, {'latitude': ','.join(str(p[1]) for p in WIND), 'longitude': ','.join(str(p[2]) for p in WIND),
-                  'hourly': 'wind_speed_100m', 'wind_speed_unit': 'ms', 'models': 'gfs05', 'forecast_days': 35, 'past_days': 7,
-                  'timezone': 'Europe/Paris'})
-    j = j if isinstance(j, list) else [j]
-    times = j[0]['hourly']['time']
-    keys = [k for k in j[0]['hourly'] if k.startswith('wind_speed_100m')]
-    days = sorted(set(t[:10] for t in times))
-    members = []
-    for k in keys:
-        acc = {}
-        for loc, (_, _, _, w) in zip(j, WIND):
-            for t, v in zip(times, loc['hourly'][k]):
-                if v is None:
-                    continue
-                s = acc.setdefault(t[:10], {}).setdefault(id(loc), [0.0, 0, w])
-                s[0] += cf(v)
-                s[1] += 1
-        members.append([wmean([s[0] / s[1] for s in acc.get(d, {}).values()], [s[2] for s in acc.get(d, {}).values()]) if d in acc else None for d in days])
-    return days, members
-
-
-def summarise(days, members, scale=1.0):
+def summarise(days, members, scale):
     out = {'mean': [], 'p10': [], 'p90': []}
     for i in range(len(days)):
         vals = [m[i] * scale for m in members if m[i] is not None]
@@ -214,43 +298,43 @@ def summarise(days, members, scale=1.0):
 
 
 def main():
-    arc = archive()
-    rte = {}
-    if os.path.exists(FR_DAILY):
-        with open(FR_DAILY) as f:
-            for r in json.load(f).get('rows', []):
-                rte[r['d']] = r
-    solar_gwh = {d: r['solarAvg'] * 24 / 1000 for d, r in rte.items() if r.get('solarAvg') is not None}
-    wind_gwh = {d: r['windAvg'] * 24 / 1000 for d, r in rte.items() if r.get('windAvg') is not None}
-    k_sol, n_sol, r2_sol = fit(arc['series']['rad'], solar_gwh, days=30)   # season-dependent: recent month
-    k_wind, n_wind, r2_wind = fit(arc['series']['cf'], wind_gwh, days=365)
-    print(f'  fit solar k={k_sol:.3f} GWh per MJ/m² (n={n_sol}, R²={r2_sol:.2f}); wind C={k_wind:.1f} GWh at CF=1 (n={n_wind}, R²={r2_wind:.2f})')
-
-    nm = {key: normals(arc['series'][key]) for key in ('temp', 'rad', 'precip', 'cf')}
+    cache = refresh_cache(load_cache())
+    tg = targets()
     out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-           'source': 'Open-Meteo: GFS ensemble (31 members, 35 days) and ERA5 archive; RTE éCO2mix for the solar / wind calibration',
-           'license': 'Open-Meteo data CC BY 4.0 (non-commercial API tier)',
-           'normal_years': list(NORMAL_YEARS), 'today': date.today().isoformat(),
-           'fit': {'solar_gwh_per_mj': round(k_sol, 4), 'solar_r2': round(r2_sol, 3), 'wind_gwh_at_cf1': round(k_wind, 1), 'wind_r2': round(r2_wind, 3), 'days': n_sol},
-           'series': {}}
-
-    def add(key, days, members, scale, normal_key, unit, label):
-        s = summarise(days, members, scale)
-        s['normal'] = [round(nm[normal_key][d[5:]] * scale, 2) if nm[normal_key].get(d[5:]) is not None else None for d in days]
-        if key == 'solar':
-            s['actual'] = [round(solar_gwh[d], 1) if d in solar_gwh else None for d in days]
-        if key == 'wind':
-            s['actual'] = [round(wind_gwh[d], 1) if d in wind_gwh else None for d in days]
-        s.update({'days': days, 'unit': unit, 'label': label})
-        out['series'][key] = s
-
-    d, m = ensemble_daily(TEMP, 'temperature_2m_mean'); add('temp', d, m, 1, 'temp', '°C', 'Temperature, population-weighted')
-    d, m = ensemble_daily(SOLAR, 'shortwave_radiation_sum'); add('solar', d, m, k_sol, 'rad', 'GWh/day', 'Solar production')
-    d, m = ensemble_wind(); add('wind', d, m, k_wind, 'cf', 'GWh/day', 'Wind production')
-    d, m = ensemble_daily(HYDRO, 'precipitation_sum'); add('precip', d, m, 1, 'precip', 'mm/day', 'Precipitation over hydro basins')
+           'source': 'Open-Meteo: GFS ensemble (31 members, 35 days) and ERA5 archive; output calibrated on RTE éCO2mix (France) and ENTSO-E (other countries)',
+           'license': 'Open-Meteo data CC BY 4.0 (non-commercial API tier)', 'normal_years': list(NORMAL_YEARS),
+           'today': date.today().isoformat(), 'countries': {}}
+    for cc, conf in COUNTRIES.items():
+        c = cache['countries'][cc]
+        entry = {'name': conf['name'], 'fit': {}, 'series': {}, 'notes': dict(conf.get('no_fit', {}))}
+        for kind in ('temp', 'wind', 'solar', 'precip'):
+            if kind not in conf:
+                continue
+            scale = 1.0
+            if kind in conf.get('no_fit', {}):
+                continue
+            if kind in ('solar', 'wind'):
+                t = (tg.get(cc) or {}).get(kind) or {}
+                k, n, r2 = fit(c['recent'][kind], t, 30 if (kind == 'solar' and cc == 'FR') else 365)
+                if k is None:
+                    print(f'  {cc} {kind}: {n} days of actual output, not enough to calibrate — skipped')
+                    entry['notes'][kind] = f'Only {n} days of actual {kind} output in the last year: not enough to calibrate.'
+                    continue
+                scale = k
+                entry['fit'][kind] = {'factor': round(k, 3), 'r2': r2, 'days': n, 'source': 'RTE' if cc == 'FR' else 'ENTSO-E'}
+            days, members = ensemble(conf[kind], kind)
+            s = summarise(days, members, scale)
+            nm = c['normals'][kind]
+            s['normal'] = [round(nm[d[5:]] * scale, 2) if nm.get(d[5:]) is not None else None for d in days]
+            if kind in ('solar', 'wind'):
+                t = (tg.get(cc) or {}).get(kind) or {}
+                s['actual'] = [round(t[d], 1) if d in t else None for d in days]
+            s.update({'days': days, 'unit': LABEL[kind][1], 'label': LABEL[kind][0]})
+            entry['series'][kind] = s
+        out['countries'][cc] = entry
+        print(f'{cc}: ' + ', '.join(entry['series']) + ('  fit ' + json.dumps(entry['fit']) if entry['fit'] else ''))
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
-    print('weather_outlook.json:', ', '.join(f'{k} {len(v["days"])} days' for k, v in out['series'].items()))
 
 
 if __name__ == '__main__':

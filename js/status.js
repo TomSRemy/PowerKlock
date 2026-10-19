@@ -77,8 +77,8 @@
         const days = j && j.days ? Object.keys(j.days).sort() : [];
         return { at: d, late: !d || Date.now() - d > 30 * H, detail: days.length ? 'up to ' + days[days.length - 1] + ' · today read live from ODRÉ' : 'no file this month' };
       } },
-    { id: 'wxout', label: 'Weather outlook France (5 weeks vs normal)', provider: 'Open-Meteo (GFS ensemble, ERA5)', kind: 'repo', cadence: 'daily 07:30 UTC',
-      async check() { const j = await getJSON('weather_outlook.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: !d || Date.now() - d > 30 * H, detail: j && j.fit ? 'wind R² ' + j.fit.wind_r2 + ' · solar R² ' + j.fit.solar_r2 : '' }; } },
+    { id: 'wxout', label: 'Weather outlook (5 weeks vs normal)', provider: 'Open-Meteo (GFS ensemble, ERA5)', kind: 'repo', cadence: 'daily 07:30 UTC',
+      async check() { const j = await getJSON('weather_outlook.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: !d || Date.now() - d > 30 * H, detail: j && j.countries ? Object.keys(j.countries).length + ' countries' : '' }; } },
     { id: 'm0', label: 'France M0 reference prices (wind, solar)', provider: 'RTE (ODRÉ)', kind: 'repo', cadence: 'daily check, RTE publishes monthly',
       async check() {
         const j = await getJSON('m0.json'); const d = j && j.updated ? new Date(j.updated) : null;
