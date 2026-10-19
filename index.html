@@ -2858,6 +2858,40 @@
   @media (max-width: 1100px) { .fuel-grid-2, .go-pair { grid-template-columns:minmax(0,1fr) !important; } .fuel-kpis { grid-template-columns:repeat(3,1fr); } }
   @media (max-width: 640px) { .fuel-kpis { grid-template-columns:repeat(2,1fr); } }
   @media (min-width: 1200px) { #pr-home-fuels { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+  /* ══ KPI design rules — one look for every key figure of the site ══
+     Card: lighter card ground, 1px border, 3px left accent (grey = no
+     comparison, green = favourable / easing, red = unfavourable / price up,
+     blue / amber = colder / warmer). Label 10px uppercase, value 22px mono
+     white, comparison line 11px mono coloured like the accent. */
+  .kpi-card, .pr-home-kpi, .ma-kpi-card {
+    background: #1c242e !important; border: 1px solid var(--border) !important;
+    border-left: 3px solid var(--kpi-flat) !important; border-radius: 8px !important;
+    padding: 14px 16px !important; min-width: 0;
+  }
+  .kpi-card.kpi-up { border-left-color: var(--up) !important; }
+  .kpi-card.kpi-down { border-left-color: var(--down) !important; }
+  .kpi-card.kpi-cold { border-left-color: #7FC8F8 !important; }
+  .kpi-card.kpi-warm { border-left-color: #FBBF24 !important; }
+  .ma-kpi-card { border-top-width: 1px !important; border-left-color: var(--kpi-accent, var(--kpi-flat)) !important; }
+  .kpi-card .kpi-label, .pr-home-kpi-label, .ma-kpi-label {
+    font: 600 10px 'Outfit', sans-serif !important; letter-spacing: .1em !important; text-transform: uppercase;
+    color: var(--text3) !important; margin-bottom: 6px;
+  }
+  .kpi-card .kpi-value, .pr-home-kpi-value, .ma-kpi-val {
+    font: 600 22px 'JetBrains Mono', monospace !important; letter-spacing: -0.02em; line-height: 1.1;
+    color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
+  }
+  .kpi-card .kpi-unit, .pr-home-kpi-unit, .ma-kpi-val .u { font: 400 12px 'JetBrains Mono', monospace !important; color: var(--text3) !important; margin-left: 3px; }
+  .kpi-card .kpi-meta, .kpi-card .kpi-chg, .kpi-card .kpi-delta, .pr-home-kpi-meta, .ma-kpi-delta {
+    font: 400 11px 'JetBrains Mono', monospace !important; margin-top: 5px; line-height: 1.35;
+  }
+  .kpi-card .kpi-meta, .pr-home-kpi-meta { color: var(--text3); }
+  .pr-home-kpi.pk-acc-up { border-left-color: var(--up) !important; } .pr-home-kpi.pk-acc-down { border-left-color: var(--down) !important; }
+  .ma-kpi-card { border-left-color: var(--kpi-flat) !important; }
+  .kpi-card .kpi-label { white-space: normal !important; overflow: visible !important; }
+  .kpi-card .kpi-meta, .kpi-card .kpi-chg, .kpi-card .kpi-delta { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+
 </style>
 </head>
 <body>
@@ -3138,14 +3172,14 @@
             <div class="pr-home-kpi-value" id="pr-home-kpi-eu-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
             <div class="pr-home-kpi-meta" id="pr-home-kpi-eu-meta">--</div>
           </div>
-          <div class="pr-home-kpi">
+          <div class="pr-home-kpi pk-acc-up">
             <div class="pr-home-kpi-label">Cheapest</div>
-            <div class="pr-home-kpi-value" id="pr-home-kpi-cheap-v" style="color:var(--up)">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-cheap-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
             <div class="pr-home-kpi-meta" id="pr-home-kpi-cheap-meta">--</div>
           </div>
-          <div class="pr-home-kpi">
+          <div class="pr-home-kpi pk-acc-down">
             <div class="pr-home-kpi-label">Most expensive</div>
-            <div class="pr-home-kpi-value" id="pr-home-kpi-pricey-v" style="color:var(--down)">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-pricey-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
             <div class="pr-home-kpi-meta" id="pr-home-kpi-pricey-meta">--</div>
           </div>
           <div class="pr-home-kpi">

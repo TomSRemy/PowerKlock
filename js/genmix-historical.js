@@ -1409,8 +1409,8 @@
 
       kpiHost.innerHTML = `
         <div class="kpi-card kpi-flat"><div class="kpi-label">Zones in scope</div><div class="kpi-value">${zones.length}<span class="kpi-unit">zones</span></div><div class="kpi-meta">period ${window._gmhPeriod}</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Top REN avg</div><div class="kpi-value" style="color:#14D3A9;font-size:18px">${rankRen[0]}</div><div class="kpi-meta">${topRen.renPct.toFixed(0)}% over period</div></div>
-        <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid avg</div><div class="kpi-value" style="color:#A78BFA;font-size:18px">${rankCo2[0]}</div><div class="kpi-meta">${Math.round(cleanCo2.co2)} g/kWh avg</div></div>
+        <div class="kpi-card kpi-up"><div class="kpi-label">Top REN avg</div><div class="kpi-value">${rankRen[0]}</div><div class="kpi-meta">${topRen.renPct.toFixed(0)}% over period</div></div>
+        <div class="kpi-card kpi-flat"><div class="kpi-label">Cleanest grid avg</div><div class="kpi-value">${rankCo2[0]}</div><div class="kpi-meta">${Math.round(cleanCo2.co2)} g/kWh avg</div></div>
         <div class="kpi-card kpi-flat"><div class="kpi-label">FR vs panel avg</div><div class="kpi-value" style="color:${frVsEu != null && frVsEu >= 0 ? '#14D3A9' : '#ED6965'}">${frVsEu != null ? (frVsEu >= 0 ? '+' : '') + frVsEu.toFixed(1) : '--'}<span class="kpi-unit">pts REN</span></div><div class="kpi-meta">FR ${fr ? fr.renPct.toFixed(0) : '--'}% vs ${avgRen.toFixed(0)}%</div></div>
         <div class="kpi-card kpi-flat"><div class="kpi-label">Panel load</div><div class="kpi-value">${zones.reduce((s, z) => s + (pdata[z] ? pdata[z].avgLoadGW : 0), 0).toFixed(0)}<span class="kpi-unit">GW</span></div><div class="kpi-meta">sum of zone averages</div></div>`;
     }
