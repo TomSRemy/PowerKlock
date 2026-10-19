@@ -5,7 +5,9 @@
 //   · landing page: France Morning;
 //   · every page opens on France: zone / country selectors set to FR the
 //     first time the page is shown (a selector the user changes is left
-//     alone afterwards), price tables on France and its neighbours;
+//     alone afterwards); zone filters of boards and tables (day-ahead,
+//     negative prices, generation mix, news, ticker) on France only;
+//     comparison views keep France and its neighbours;
 //   · menu: French pages first, pages without French data hidden;
 //   · a "France" pill in the top bar to go back to All.
 // The previous France dashboard stays reachable from France Morning
@@ -33,7 +35,7 @@
       p = document.createElement('button');
       p.id = 'pk-scope-pill'; p.type = 'button'; p.className = 'pk-scope-pill';
       p.title = 'France view: pages open on France. Click to show all of Europe.';
-      p.innerHTML = '🇫🇷 France view <span aria-hidden="true">×</span>';
+      p.innerHTML = '🇫🇷 France <span aria-hidden="true">×</span>';
       p.addEventListener('click', () => window.switchDashboard('all'));
       const anchor = document.getElementById('pk-status-badge');
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(p, anchor); else document.body.appendChild(p);
@@ -64,9 +66,50 @@
     };
     [60, 900, 2500].forEach(t => setTimeout(run, t));
   }
+  // Multi-zone filters that are not comparisons: France only in the France
+  // view, back to their defaults in All. Comparison views (cross-zone
+  // analysis, daily compare, multi-zone history) use the user zone set:
+  // France and its neighbours. Each step is retried while the module loads.
+  const FILTERS = {
+    prices() {   // day-ahead board table and its key figures
+      if (!window._pricesSorted || typeof applyZoneFilter !== 'function') return false;
+      window._pricesZoneFilter = scope === 'FR' ? new Set(['FR']) : null; applyZoneFilter(); return true;
+    },
+    negatives() { if (typeof window.negSetZones !== 'function') return false; window.negSetZones(scope === 'FR' ? ['FR'] : null); return true; },
+    genmix() {
+      let ok = false;
+      if (typeof window.gmApplyZoneFilter === 'function' && (window._gmBoardData || window._genmixData)) { window.gmApplyZoneFilter(scope === 'FR' ? new Set(['FR']) : null); ok = true; }
+      if (typeof window.gmhApplyZoneFilter === 'function' && (window._gmhAllZones || []).length) { window.gmhApplyZoneFilter(scope === 'FR' ? new Set(['FR']) : null); ok = true; }
+      return ok;
+    },
+    news() {
+      if (typeof filterNews !== 'function') return false;
+      const btn = Array.from(document.querySelectorAll('#page-news .filter-btn')).find(b => scope === 'FR' ? /France/.test(b.textContent) : /^All$/.test(b.textContent.trim()));
+      if (!btn) return false; btn.click(); return true;
+    },
+    compare() { if (typeof setUserZones !== 'function') return false; priceZones(); return true; },
+    ticker() {
+      try {
+        if (typeof renderTicker !== 'function') return false;
+        tickerZoneFilter = scope === 'FR' ? new Set(['FR']) : null;   // ticker.js global
+        renderTicker();
+        if (typeof buildTickerZoneList === 'function' && typeof pricesData !== 'undefined' && pricesData) buildTickerZoneList(pricesData);
+        return true;
+      } catch (_) { return false; }
+    },
+  };
+  const PAGE_FILTERS = { prices: ['prices', 'negatives', 'compare'], genmix: ['genmix'], news: ['news'] };
+  function runFilter(name) {
+    let n = 0;
+    const tick = () => { let ok = false; try { ok = FILTERS[name](); } catch (e) { ok = false; } if (!ok && ++n < 12) setTimeout(tick, 700); };
+    tick();
+  }
+  function runFiltersFor(id) { (PAGE_FILTERS[id] || []).forEach(runFilter); }
+
   function setScope(s) {
     scope = s; ls.set(s); preset = new Set();
     applyChrome(); priceZones();
+    Object.keys(FILTERS).forEach(runFilter);
   }
 
   window.PKScope = {
@@ -84,13 +127,17 @@
       if (tab === 'all') { setScope('all'); return origSwitch('all', btn); }
       return origSwitch(tab, btn);
     };
+    if (typeof window.prSelectSubdomain === 'function') {
+      const innerSub = window.prSelectSubdomain;
+      window.prSelectSubdomain = function (d) { const r = innerSub.apply(this, arguments); if (scope === 'FR') runFiltersFor('prices'); return r; };
+    }
     const innerShow = window.showPage;
     window.showPage = function (id) {
       innerShow(id);
-      if (scope === 'FR') { tabs('france'); presetPage(id); }
+      if (scope === 'FR') { tabs('france'); presetPage(id); if (!preset.has('f:' + id)) { preset.add('f:' + id); runFiltersFor(id); } }
     };
     applyChrome();
-    if (scope === 'FR') { priceZones(); window.showPage('morning'); }
+    if (scope === 'FR') { priceZones(); runFilter('ticker'); window.showPage('morning'); }
   }, 0));
 
   const css = document.createElement('style');
@@ -101,6 +148,13 @@
   body.pk-scope-fr #sec-power-items{display:flex;flex-direction:column}
   body.pk-scope-fr #nav-morning{order:-4} body.pk-scope-fr #nav-frsystem{order:-3} body.pk-scope-fr #nav-regions{order:-2}
   body.pk-scope-fr #nav-imbalance{display:none}
+  /* Board key figures about other countries: hidden in the France view (the
+     comparison sections below keep them) */
+  body.pk-scope-fr #kpicard-de, body.pk-scope-fr #kpicard-avg, body.pk-scope-fr #kpicard-max, body.pk-scope-fr #kpicard-min{display:none}
+  body.pk-scope-fr .neg-kpi-other{display:none}
+  /* Top bar: keep the centred tabs clear of the right-hand badges */
+  @media (max-width:1700px){.topbar-right{gap:10px}.pk-status-badge .pk-status-txt{display:none}.pk-status-badge::after{content:attr(data-short)}}
+  @media (max-width:1500px) and (min-width:761px){.topbar-right .clock{display:none}}
   @media (max-width:760px){.pk-scope-pill{padding:3px 8px;font-size:10px;margin-right:4px}}
   `;
   document.head.appendChild(css);
