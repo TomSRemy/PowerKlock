@@ -1,0 +1,41 @@
+name: Fetch Power Map (generation per country, flows)
+
+# Hourly generation per ENTSO-E production type, load and net import for
+# about 30 European countries (Energy-Charts public_power, CC BY 4.0) and
+# today's physical cross-border flows → data/map/YYYY-MM-DD.json and
+# data/history/flows/ (scripts/fetch_energy_charts.py --map). Ten days kept.
+
+on:
+  schedule:
+    - cron: '25 1-22/3 * * *'   # every 3 hours
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-energy-charts
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch
+        run: python scripts/fetch_energy_charts.py --map
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add -A data/map data/history/flows
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: power map $(date -u '+%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1

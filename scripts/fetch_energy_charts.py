@@ -11,11 +11,16 @@ Writes
   data/history/flows/YYYY-MM.json   physical cross-border flows per country
                                     and neighbour, hourly averages (MW) on the
                                     Paris delivery day; + = import, − = export
+  data/map/YYYY-MM-DD.json          generation per ENTSO-E production type,
+                                    load and net import per country, hourly
+                                    (Paris clock), for the Power Map; the last
+                                    10 days are kept
 
 Usage
   python scripts/fetch_energy_charts.py                    # capacity + flows of the last 3 days
   python scripts/fetch_energy_charts.py --from 2020-01-01 --to 2026-10-18   # flow history
   python scripts/fetch_energy_charts.py --capacity-only
+  python scripts/fetch_energy_charts.py --map              # map files for yesterday and today + today's flows
 """
 import argparse
 import json
@@ -145,14 +150,111 @@ def fetch_flows(d_from, d_to):
     print(f'  flows written: {sorted(months)}')
 
 
+
+# ── Generation per country for the Power Map ─────────────────────────
+MAP_DIR = os.path.join(ROOT, 'data', 'map')
+MAP_KEEP_DAYS = 10
+# Energy-Charts country codes with public_power data (PowerKlock / ISO code → API code)
+MAP_COUNTRIES = {
+    'AT': 'at', 'BA': 'ba', 'BE': 'be', 'BG': 'bg', 'CH': 'ch', 'CZ': 'cz', 'DE': 'de', 'DK': 'dk', 'EE': 'ee',
+    'ES': 'es', 'FI': 'fi', 'FR': 'fr', 'GB': 'uk', 'GR': 'gr', 'HR': 'hr', 'HU': 'hu', 'IE': 'ie', 'IT': 'it',
+    'LT': 'lt', 'LU': 'lu', 'LV': 'lv', 'ME': 'me', 'MK': 'mk', 'NL': 'nl', 'NO': 'no', 'PL': 'pl', 'PT': 'pt',
+    'RO': 'ro', 'RS': 'rs', 'SE': 'se', 'SI': 'si', 'SK': 'sk', 'XK': 'xk', 'AL': 'al',
+}
+# Energy-Charts production name → ENTSO-E production type (same codes as the Carbon page)
+EC_TO_PSR = {
+    'Biomass': 'B01', 'Fossil brown coal / lignite': 'B02', 'Fossil coal-derived gas': 'B03', 'Fossil gas': 'B04',
+    'Fossil hard coal': 'B05', 'Fossil oil': 'B06', 'Fossil oil shale': 'B07', 'Fossil peat': 'B08', 'Geothermal': 'B09',
+    'Hydro pumped storage': 'B10', 'Hydro Run-of-River': 'B11', 'Hydro water reservoir': 'B12', 'Marine': 'B13',
+    'Nuclear': 'B14', 'Other renewables': 'B15', 'Solar': 'B16', 'Waste': 'B17', 'Wind offshore': 'B18',
+    'Wind onshore': 'B19', 'Others': 'B20', 'Battery': 'B25',
+}
+EC_STORAGE_IN = ('Hydro pumped storage consumption', 'Battery Consumption')
+
+
+def _hourly_paris(unix, values, day):
+    """Average a series onto the 24 Paris hours of `day` (None when no point)."""
+    acc = [[0.0, 0] for _ in range(24)]
+    for t, v in zip(unix, values):
+        if v is None:
+            continue
+        dt = datetime.fromtimestamp(t, PARIS)
+        if dt.date() != day:
+            continue
+        acc[dt.hour][0] += v
+        acc[dt.hour][1] += 1
+    return [round(s / n) if n else None for s, n in acc]
+
+
+def fetch_map_day(day):
+    out = {}
+    for cc, api in MAP_COUNTRIES.items():
+        try:
+            j = get('public_power', country=api, start=day.isoformat(), end=day.isoformat())
+        except Exception as e:  # one country failing must not stop the others
+            print(f'  {cc}: {e}')
+            continue
+        if not j or not j.get('unix_seconds'):
+            continue
+        unix = j['unix_seconds']
+        rec = {'gen': {}}
+        storage_in = None
+        for p in j.get('production_types', []):
+            name, data = p.get('name'), p.get('data') or []
+            if name in EC_TO_PSR:
+                h = _hourly_paris(unix, data, day)
+                if any(v for v in h if v):
+                    code = EC_TO_PSR[name]
+                    prev = rec['gen'].get(code)
+                    rec['gen'][code] = h if prev is None else [None if a is None and b is None else (a or 0) + (b or 0) for a, b in zip(prev, h)]
+            elif name == 'Load':
+                rec['load'] = _hourly_paris(unix, data, day)
+            elif name == 'Cross border electricity trading':
+                rec['net'] = _hourly_paris(unix, data, day)          # + = net import
+            elif name in EC_STORAGE_IN:
+                h = _hourly_paris(unix, data, day)
+                storage_in = h if storage_in is None else [None if a is None and b is None else (a or 0) + (b or 0) for a, b in zip(storage_in, h)]
+        if storage_in and any(v for v in storage_in if v):
+            rec['storageIn'] = storage_in                            # negative = consumption
+        if rec['gen']:
+            out[cc] = rec
+    return out
+
+
+def fetch_map(days):
+    for day in days:
+        countries = fetch_map_day(day)
+        if not countries:
+            print(f'  map {day}: no data')
+            continue
+        write_json(os.path.join(MAP_DIR, day.isoformat() + '.json'), {
+            'date': day.isoformat(), 'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'resolution_min': 60, 'slotTz': 'Europe/Paris', 'unit': 'MW',
+            'note': 'gen: ENTSO-E production type codes (B01…B25); load; net = net import (+) / export (−); storageIn = pumping and battery charging (−)',
+            'source': 'Energy-Charts public_power (ENTSO-E and national sources)', 'license': LICENSE,
+            'countries': countries,
+        })
+        print(f'  map {day}: {len(countries)} countries')
+    keep = {(date.today() - timedelta(days=i)).isoformat() for i in range(MAP_KEEP_DAYS + 1)}
+    for fn in os.listdir(MAP_DIR) if os.path.isdir(MAP_DIR) else []:
+        if fn.endswith('.json') and fn[:10] not in keep:
+            os.remove(os.path.join(MAP_DIR, fn))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--from', dest='d_from')
     ap.add_argument('--to', dest='d_to')
     ap.add_argument('--capacity-only', action='store_true')
     ap.add_argument('--flows-only', action='store_true')
+    ap.add_argument('--map', action='store_true', help='map files (yesterday, today) and today\'s flows only')
     args = ap.parse_args()
     today = datetime.now(PARIS).date()
+    if args.map:
+        print('Power map')
+        fetch_map([today - timedelta(days=1), today])
+        fetch_flows(today, today)
+        return
     if not args.flows_only:
         print('Installed capacity')
         fetch_capacity()
