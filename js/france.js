@@ -1101,7 +1101,17 @@
       html += chartBox('fr-chart-nuc', 260);
       html += sectionClose();
 
+      html += sectionOpen('Capacity guarantees · bilateral trades',
+        'Volume-weighted monthly price per delivery year (€/MW/year, log scale) · RTE capacity registry', '');
+      html += chartBox('fr-chart-gc', 280);
+      html += '<div id="fr-gc-table" style="margin-top:12px"></div>';
+      html += sectionClose();
+
       host.innerHTML = html;
+      if (window.PKW && typeof renderCapacityGcTable === 'function') {
+        PKW.draw('fr-capacity-gc', 'fr-chart-gc', {});
+        renderCapacityGcTable('fr-gc-table');
+      }
 
       // Courbe forward du jour (term structure)
       var curveLabels = FORWARD_TENORS;
