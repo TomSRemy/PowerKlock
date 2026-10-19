@@ -1,0 +1,41 @@
+name: Fetch AIB residual mixes
+
+# European residual mixes (AIB), used for market-based Scope 2 in
+# Tools › Carbon footprint → data/residual_mix.json. AIB publishes the
+# previous year's results each May/June: a monthly run picks them up.
+
+on:
+  schedule:
+    - cron: '40 6 3 * *'   # 3rd of each month, 06:40 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-residual-mix
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install openpyxl==3.1.5
+      - name: Fetch residual mixes
+        run: python scripts/fetch_residual_mix.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/residual_mix.json
+          if git diff --staged --quiet; then echo "No change."; exit 0; fi
+          git commit -m "data: AIB residual mixes $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -X theirs origin main && git push && exit 0
+            sleep $((5 + RANDOM % 10))
+          done
+          exit 1
