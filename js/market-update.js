@@ -22,8 +22,8 @@ const _muMean = a => { const v = a.filter(x => x != null); return v.length ? v.r
 // vertical "today" line on a category axis
 function _muTodayPlugin(idx) {
   return { id: 'muToday', afterDatasetsDraw(ch) { if (idx < 0) return; const x = ch.scales.x.getPixelForValue(idx), a = ch.chartArea, g = ch.ctx;
-    g.save(); g.strokeStyle = 'rgba(226,232,240,.45)'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke();
-    g.fillStyle = 'rgba(226,232,240,.7)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText('today', x + 4, a.top + 10); g.restore(); } };
+    g.save(); g.strokeStyle = 'rgba(184,201,217,.45)'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke();
+    g.fillStyle = 'rgba(184,201,217,.8)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText('today', x + 4, a.top + 10); g.restore(); } };
 }
 
 const MU_ZONE = { key: 'zone', label: 'Zone', inTitle: true, options: (typeof ZONES !== 'undefined' ? ZONES : [{ code: 'FR', name: 'France' }]).map(z => [z.code, z.name]).sort((a, b) => a[1].localeCompare(b[1])) };
@@ -34,10 +34,11 @@ function _muReg(def) { if (window.PKW) PKW.register(Object.assign({ size: { w: 6
 // ── 1. outlook vs normal ──
 const MU_OUT_COUNTRY = { key: 'country', label: 'Country', inTitle: true, options: [['FR', 'France'], ['DE', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands'], ['IT', 'Italy'], ['CH', 'Switzerland'], ['AT', 'Austria']] };
 const MU_OUT = {
-  precip: { title: 'Hydro proxy · precipitation vs normal', col: '#3B82F6', above: 'rgba(42,163,100,.30)', below: 'rgba(237,105,101,.30)' },
-  solar: { title: 'Solar production vs normal', col: '#FBBF24', above: 'rgba(42,163,100,.30)', below: 'rgba(237,105,101,.30)' },
-  wind: { title: 'Wind production vs normal', col: '#14D3A9', above: 'rgba(42,163,100,.30)', below: 'rgba(237,105,101,.30)' },
-  temp: { title: 'Temperature vs normal', col: '#F97316', above: 'rgba(249,115,22,.28)', below: 'rgba(59,130,246,.30)' },
+  // site palette: more supply than normal = accent, less = down red; warmer = warn, colder = blue
+  precip: { title: 'Hydro proxy · precipitation vs normal', col: '#3FA6B4', above: 'rgba(20,211,169,.20)', below: 'rgba(237,105,101,.20)' },
+  solar: { title: 'Solar production vs normal', col: '#FBBF24', above: 'rgba(20,211,169,.20)', below: 'rgba(237,105,101,.20)' },
+  wind: { title: 'Wind production vs normal', col: '#14D3A9', above: 'rgba(20,211,169,.20)', below: 'rgba(237,105,101,.20)' },
+  temp: { title: 'Temperature vs normal', col: '#EE9B00', above: 'rgba(238,155,0,.20)', below: 'rgba(127,200,248,.20)' },
 };
 _muReg({
   id: 'wx-outlook', title: '5-week outlook vs normal', category: 'weather', page: 'wxcities', pageCanvas: 'wx-out-wind', source: 'Open-Meteo GFS ensemble · RTE',
@@ -54,19 +55,19 @@ _muReg({
       const why = !j ? 'Outlook not available yet' : !C ? 'No outlook for this country' : (C.notes && C.notes[p.series]) || (p.series === 'precip' ? 'No hydro proxy for ' + C.name + ' (little hydro)' : p.series === 'temp' ? 'No temperature outlook' : 'No calibrated ' + p.series + ' outlook for ' + C.name);
       noDataMsg(cid, why, ''); return null;
     }
-    // start at the first day with a forecast
-    const i0 = Math.max(0, s.mean.findIndex(v => v != null));
+    // start at the first day with an actual value or a forecast
+    const i0 = Math.max(0, s.days.findIndex((_, i) => s.mean[i] != null || (s.actual && s.actual[i] != null)));
     const sl = a => (a || []).slice(i0);
     const days = sl(s.days), st = MU_OUT[p.series];
     const r = v => v == null ? null : Math.round(v * 10) / 10;
     const ds = [
-      { label: 'Normal ' + j.normal_years.join('–'), data: sl(s.normal).map(r), borderColor: 'rgba(226,232,240,.7)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false, order: 2 },
+      { label: 'Normal ' + j.normal_years.join('–'), data: sl(s.normal).map(r), borderColor: 'rgba(184,201,217,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false, order: 2 },
       { label: 'Forecast (ensemble mean)', data: sl(s.mean).map(r), borderColor: st.col, borderWidth: 2.2, pointRadius: 0, tension: .25, order: 1,
         fill: { target: 0, above: st.above, below: st.below } },
-      { label: '_p90', data: sl(s.p90).map(r), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(148,163,184,.14)', order: 3 },
-      { label: 'Ensemble 10–90 %', data: sl(s.p10).map(r), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(148,163,184,.14)', order: 3 },
+      { label: '_p90', data: sl(s.p90).map(r), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
+      { label: 'Ensemble 10–90 %', data: sl(s.p10).map(r), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
     ];
-    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: 'Actual (RTE)', data: sl(s.actual), borderColor: '#F8FAFC', backgroundColor: '#F8FAFC', showLine: false, pointRadius: 2.5, order: 0 });
+    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', showLine: false, pointRadius: 2.5, order: 0 });
     const ti = days.indexOf(_muToday());
     _fuelChart(cid, { type: 'line', data: { labels: days.map(_muDay), datasets: ds }, plugins: [_muTodayPlugin(ti)],
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis(s.unit) },
@@ -88,7 +89,7 @@ _muReg({
     const y = +_muToday().slice(0, 4), years = [y - 2, y - 1, y];
     const by = {}; j.rows.forEach(r => { if (r.nuclearAvg == null) return; const k = r.d.slice(0, 7); (by[k] = by[k] || []).push(r.nuclearAvg); });
     const twh = (yy, m) => { const a = by[yy + '-' + String(m).padStart(2, '0')]; return a ? Math.round(a.reduce((s, v) => s + v, 0) * 24 / 1e6 * 10) / 10 : null; };
-    const cols = ['#FBBF24', '#B45309', '#A78BFA'];
+    const cols = ['#4A6280', '#7A93AB', '#A87DC4'];   // older years muted, current year in the nuclear colour
     _fuelChart(cid, { type: 'bar', data: { labels: MU_MON, datasets: years.map((yy, i) => ({ label: String(yy), data: MU_MON.map((_, m) => twh(yy, m + 1)), backgroundColor: cols[i], borderRadius: 3, borderWidth: 0 })) },
       options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('TWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'nuclear-monthly');
     const cur = j.rows[j.rows.length - 1].d;
@@ -107,7 +108,7 @@ _muReg({
     const y = +_muToday().slice(0, 4), years = [y - 4, y - 3, y - 2, y - 1, y];
     const doy = d => Math.floor((Date.parse(d) - Date.UTC(+d.slice(0, 4), 0, 1)) / 864e5);
     const lbl = Array.from({ length: 366 }, (_, i) => { const t = new Date(Date.UTC(2001, 0, 1 + i)); return t.getUTCDate() === 1 ? MU_MON[t.getUTCMonth()] : ''; });
-    const cols = ['#1E3A8A', '#16A34A', '#86EFAC', '#94A3B8', '#F8FAFC'];
+    const cols = ['#3A6080', '#4A6280', '#7A93AB', '#C4A57B', '#14D3A9'];   // older years muted, current year in accent
     const ds = years.map((yy, i) => {
       const arr = new Array(366).fill(null);
       pts.forEach(([d, v]) => { if (+d.slice(0, 4) === yy) arr[Math.min(365, doy(d))] = v; });
@@ -135,9 +136,9 @@ _muReg({
     const all = j.rows.filter(r => r.loadAvg != null), off = all.length - rows.length;
     const roll7 = rows.map((_, i) => { const w = all.slice(off + i - 6, off + i + 1).map(r => r.loadAvg * 24 / 1000); return w.length === 7 ? Math.round(_muMean(w)) : null; });
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => _muDay(r.d)), datasets: [
-      { label: 'Normal 2016–2025', data: nv, borderColor: 'rgba(226,232,240,.7)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false },
-      { label: 'Consumption, 7-day average', data: roll7, borderColor: '#60A5FA', borderWidth: 2.2, pointRadius: 0, tension: .2, fill: { target: 0, above: 'rgba(249,115,22,.25)', below: 'rgba(42,163,100,.25)' } },
-      { label: 'Daily consumption', data: act, borderColor: 'rgba(96,165,250,.35)', borderWidth: 1, pointRadius: 0, tension: .2, fill: false },
+      { label: 'Normal 2016–2025', data: nv, borderColor: 'rgba(184,201,217,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false },
+      { label: 'Consumption, 7-day average', data: roll7, borderColor: '#7FC8F8', borderWidth: 2.2, pointRadius: 0, tension: .2, fill: { target: 0, above: 'rgba(238,155,0,.20)', below: 'rgba(20,211,169,.20)' } },
+      { label: 'Daily consumption', data: act, borderColor: 'rgba(127,200,248,.35)', borderWidth: 1, pointRadius: 0, tension: .2, fill: false },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('GWh/day') }, plugins: { legend: _muLegend() } }) }, 'consumption-vs-normal');
     const a7 = roll7[roll7.length - 1], n7 = _muMean(nv.slice(-7));
     return { sub: `Last 7 days ${a7 ? a7.toFixed(0) : '–'} GWh/day, ${n7 ? ((a7 / n7 - 1) * 100 >= 0 ? '+' : '') + ((a7 / n7 - 1) * 100).toFixed(1) + ' %' : ''} vs normal` };
@@ -156,7 +157,7 @@ _muReg({
     if (!yrs) { noDataMsg(cid, 'Forward history not available', ''); return null; }
     const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 92));
     const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
-    const cols = ['#FDE047', '#B45309', '#F472B6', '#5EEAD4', '#A78BFA'];
+    const cols = ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B'];
     const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(cc === 'UK' ? '£/MWh' : '€/MWh') }, plugins: { legend: _muLegend() } }) }, 'calendar-forwards-' + cc);
     const k = Object.keys(yrs).sort()[0], v = yrs[k].values, first = v[yrs[k].dates.findIndex(d => d >= from)];
@@ -181,9 +182,9 @@ _muReg({
     const dates = [...cal.keys()].filter(d => d >= from).sort();
     const idx = (m) => { const b = dates.map(d => m.get(d)).find(v => v != null); return dates.map(d => m.has(d) && b ? Math.round(m.get(d) / b * 1000) / 10 : null); };
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: [
-      _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#FDE047', { borderWidth: 2.4, spanGaps: true }),
-      _fuelLineDs('TTF day-ahead', idx(ttf), '#F97316', { borderWidth: 1.5, spanGaps: true }),
-      _fuelLineDs('EUA', idx(eua), '#A78BFA', { borderWidth: 1.5, spanGaps: true }),
+      _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#14D3A9', { borderWidth: 2.4, spanGaps: true }),
+      _fuelLineDs('TTF day-ahead', idx(ttf), '#C4A57B', { borderWidth: 1.5, spanGaps: true }),
+      _fuelLineDs('EUA', idx(eua), '#A87DC4', { borderWidth: 1.5, spanGaps: true }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
     return { sub: 'Indexed to 100 on ' + dates[0] };
   },
@@ -221,8 +222,8 @@ _muReg({
     const avg = months.map(k => Math.round(_muMean(by.get(k)) * 10) / 10);
     const mean = _muMean(avg.slice(0, -1).slice(-12));
     _fuelChart(cid, { type: 'bar', data: { labels: months.map(k => MU_MON[+k.slice(5) - 1] + ' ' + k.slice(2, 4)), datasets: [
-      { type: 'bar', label: 'Monthly average', data: avg, backgroundColor: avg.map(v => v > mean ? '#D97706' : '#15803D'), borderRadius: 3, borderWidth: 0, order: 2 },
-      { type: 'line', label: '12-month mean ' + mean.toFixed(1), data: avg.map(() => Math.round(mean * 10) / 10), borderColor: '#14D3A9', borderDash: [4, 3], borderWidth: 1.4, pointRadius: 0, order: 1 },
+      { type: 'bar', label: 'Monthly average', data: avg, backgroundColor: avg.map(v => v > mean ? 'rgba(237,105,101,.75)' : 'rgba(20,211,169,.75)'), borderRadius: 3, borderWidth: 0, order: 2 },
+      { type: 'line', label: '12-month mean ' + mean.toFixed(1), data: avg.map(() => Math.round(mean * 10) / 10), borderColor: '#B8C9D9', borderDash: [4, 3], borderWidth: 1.4, pointRadius: 0, order: 1 },
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'spot-monthly-' + (p.zone || 'FR'));
     const cur = avg[avg.length - 1];
     const rank = avg.slice(0, -1).filter(v => v < cur).length / Math.max(1, avg.length - 1);
@@ -240,7 +241,7 @@ _muReg({
     const v = rows.map(r => r[1]), mean = _muMean(v);
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => _muDay(r[0])), datasets: [
       { label: 'Daily baseload', data: v, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.10)', fill: true, borderWidth: 2, pointRadius: 2.5, tension: .35 },
-      { label: '30-day mean ' + mean.toFixed(1), data: v.map(() => Math.round(mean * 10) / 10), borderColor: 'rgba(226,232,240,.6)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0 },
+      { label: '30-day mean ' + mean.toFixed(1), data: v.map(() => Math.round(mean * 10) / 10), borderColor: 'rgba(184,201,217,.7)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0 },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'spot-30d-' + (p.zone || 'FR'));
     const last = rows[rows.length - 1];
     return { sub: `Last session ${_muDay(last[0])}: ${last[1].toFixed(1)} €/MWh · 30-day mean ${mean.toFixed(1)} · range ${Math.min(...v).toFixed(0)} → ${Math.max(...v).toFixed(0)}` };
@@ -276,11 +277,11 @@ if (window.PKW) PKW.register({
       <div class="hi"><b>Most expensive</b> ${h[hi].toFixed(2)} €/MWh at ${hi} h<span>peak ${wh} h → ${wh + 3} h</span></div></div>
       <div class="mu-day-c"><canvas id="${cid}"></canvas></div></div>`;
     const bands = { id: 'muBands', beforeDatasetsDraw(ch) { const a = ch.chartArea, x = ch.scales.x, g = ch.ctx;
-      [[wl, 'rgba(42,163,100,.16)', 'TROUGH'], [wh, 'rgba(249,115,22,.16)', 'PEAK']].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = 'rgba(226,232,240,.6)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 3, a.top + 10); g.restore(); }); } };
+      [[wl, 'rgba(20,211,169,.12)', 'TROUGH'], [wh, 'rgba(237,105,101,.12)', 'PEAK']].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = 'rgba(184,201,217,.7)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 3, a.top + 10); g.restore(); }); } };
     new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
-      { label: 'Price', data: h.map(v => Math.round(v * 100) / 100), borderColor: '#F97316', borderWidth: 2.2, tension: .35, fill: false,
-        pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => i === lo ? '#16A34A' : '#F97316') },
-      { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#60A5FA', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
+      { label: 'Price', data: h.map(v => Math.round(v * 100) / 100), borderColor: '#14D3A9', borderWidth: 2.2, tension: .35, fill: false,
+        pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
+      { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
     ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#7A93AB', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.04)' } } } } });
   },
@@ -305,10 +306,10 @@ if (window.PKW) PKW.register({
   .mu-day-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
   .mu-day-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
   .mu-day-avg{font-family:'IBM Plex Mono',monospace;font-size:26px;color:var(--text)} .mu-day-avg small{font-size:11px;color:var(--text3)}
-  .mu-day-chg{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600} .mu-day-chg.up{color:#F97316;background:rgba(249,115,22,.12)} .mu-day-chg.down{color:#16A34A;background:rgba(22,163,74,.14)}
+  .mu-day-chg{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600} .mu-day-chg.up{color:var(--down);background:var(--down-dim)} .mu-day-chg.down{color:var(--up);background:var(--up-dim)}
   .mu-day-k{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .mu-day-k>div{background:var(--bg3);border:1px solid var(--border);border-left:3px solid;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:2px}
-  .mu-day-k .lo{border-left-color:#16A34A} .mu-day-k .hi{border-left-color:#F97316}
+  .mu-day-k .lo{border-left-color:var(--up)} .mu-day-k .hi{border-left-color:var(--down)}
   .mu-day-k b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text)} .mu-day-k span{font-size:11px;color:var(--text3)}
   .mu-day-c{position:relative;flex:1 1 auto;min-height:200px}
   .mu-news{list-style:none;margin:0;padding:0} .mu-news li{padding:7px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}

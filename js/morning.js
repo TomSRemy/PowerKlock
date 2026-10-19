@@ -62,7 +62,7 @@ if (window.PKW) {
       const lbl = Array.from({ length: 96 }, (_, i) => String(Math.floor(i / 4)).padStart(2, '0') + ':' + String(i % 4 * 15).padStart(2, '0'));
       const ds = [
         _fuelLineDs(_mrnDay(d), fr(a), '#14D3A9', { borderWidth: 2.2, fill: true, backgroundColor: 'rgba(20,211,169,.10)' }),
-        fr(b) ? _fuelLineDs(_mrnDay(prev), fr(b), 'rgba(226,232,240,.75)', { borderWidth: 1.3, borderDash: [4, 3] }) : null,
+        fr(b) ? _fuelLineDs(_mrnDay(prev), fr(b), 'rgba(184,201,217,.8)', { borderWidth: 1.3, borderDash: [4, 3] }) : null,
         fr(c) ? _fuelLineDs(_mrnDay(_mrnAdd(d, -7)) + ' (D-7)', fr(c), 'rgba(122,147,171,.6)', { borderWidth: 1 }) : null,
       ].filter(Boolean);
       _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds },
@@ -85,7 +85,7 @@ if (window.PKW) {
       const rows = fr.filter(r => r.avg != null && deBy.get(r.d) != null).slice(-(+p.win || 30));
       const r2 = v => Math.round(v * 100) / 100;
       _fuelChart(cid, { type: 'bar', data: { labels: rows.map(r => r.d), datasets: [
-        { type: 'bar', label: 'FR − DE', data: rows.map(r => r2(r.avg - deBy.get(r.d))), backgroundColor: rows.map(r => r.avg - deBy.get(r.d) >= 0 ? 'rgba(249,115,22,.55)' : 'rgba(96,165,250,.55)'), borderWidth: 0, yAxisID: 'y2', order: 3 },
+        { type: 'bar', label: 'FR − DE', data: rows.map(r => r2(r.avg - deBy.get(r.d))), backgroundColor: rows.map(r => r.avg - deBy.get(r.d) >= 0 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.55)'), borderWidth: 0, yAxisID: 'y2', order: 3 },
         _fuelLineDs('France', rows.map(r => r.avg), '#14D3A9', { borderWidth: 2, yAxisID: 'y', type: 'line', order: 1 }),
         _fuelLineDs('Germany', rows.map(r => r2(deBy.get(r.d))), '#FBBF24', { borderWidth: 1.6, yAxisID: 'y', type: 'line', order: 2 }),
       ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh'), y2: _fuelAxis('FR − DE', { position: 'right', grid: { display: false } }) },
@@ -107,7 +107,7 @@ if (window.PKW) {
       const ser = years.map(v => ({ y: v, s: _mrnGoSeries(rows, p.product, v) })).filter(x => x.s.length);
       if (!ser.length) { noDataMsg(cid, 'No ' + p.product + ' prices', ''); return null; }
       const dates = [...new Set(ser.flatMap(x => x.s.map(r => r.t)))].sort().filter(t => t >= _mrnAdd(_mrnToday(), -730));
-      const cols = ['#14D3A9', '#FBBF24', '#A78BFA'];
+      const cols = ['#14D3A9', '#FBBF24', '#A87DC4'];
       _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ser.map((x, i) => {
         const m = new Map(x.s.map(r => [r.t, r.mid]));
         return _fuelLineDs('Cal ' + x.y, dates.map(t => m.has(t) ? Math.round(m.get(t) * 1000) / 1000 : null), cols[i], { borderWidth: i ? 1.5 : 2.2, spanGaps: true });
@@ -174,7 +174,7 @@ if (window.PKW) {
       const from = _mrnAdd(_mrnToday(), -({ '1M': 31, '3M': 92, '1Y': 366 }[p.win] || 92));
       const lines = [];
       const yrs = chain && chain[cc] && chain[cc].years || {};
-      const cols = { Y1: '#14D3A9', Y2: '#7FC8F8', Y3: '#A78BFA', M: '#FBBF24', Q: '#F97316' };
+      const cols = { Y1: '#14D3A9', Y2: '#7FC8F8', Y3: '#A87DC4', M: '#FBBF24', Q: '#C4A57B' };
       Object.keys(yrs).sort().forEach((y, i) => { const v = yrs[y]; lines.push({ label: 'Cal ' + y, pts: v.dates.map((d, k) => [d, v.values[k]]), col: [cols.Y1, cols.Y2, cols.Y3][i] || '#94A3B8' }); });
       const src = cc === 'FR' ? ser : (ser && ser.countries && ser.countries[cc]);
       const fc = src && src.forwardCurve, dates = src && (src.dates || (ser && ser.dates));
@@ -196,7 +196,7 @@ if (window.PKW) {
     async draw(cid, p) {
       const rows = (await _mrnFwdRows(p.country || 'FR')).filter(r => r.per);
       if (!rows.length) { noDataMsg(cid, 'Forward prices not available', ''); return null; }
-      const style = { Year: { col: '#14D3A9', w: 6, op: 0.55 }, Season: { col: '#A78BFA', w: 4, op: 0.8 }, Quarter: { col: '#F97316', w: 4, op: 0.9 }, Month: { col: '#FBBF24', w: 4, op: 1 } };
+      const style = { Year: { col: '#14D3A9', w: 6, op: 0.55 }, Season: { col: '#A87DC4', w: 4, op: 0.8 }, Quarter: { col: '#C4A57B', w: 4, op: 0.9 }, Month: { col: '#FBBF24', w: 4, op: 1 } };
       const seg = (r, val) => [{ x: r.per.a, y: val, r }, { x: r.per.b - 864e5, y: val, r }, { x: r.per.b, y: null }];
       const ds = [];
       ['Year', 'Season', 'Quarter', 'Month'].forEach(k => {
@@ -205,7 +205,7 @@ if (window.PKW) {
         ds.push({ label: { Year: 'Calendar years', Season: 'Seasons', Quarter: 'Quarters', Month: 'Months' }[k], data: rs.flatMap(r => seg(r, r.value)), borderColor: st.col, backgroundColor: st.col,
           borderWidth: st.w, pointRadius: 0, spanGaps: false, tension: 0, borderCapStyle: 'butt', order: { Year: 4, Season: 3, Quarter: 2, Month: 1 }[k] });
       });
-      ds.push({ label: 'A week ago', data: rows.flatMap(r => seg(r, r.prevD7 != null ? Math.round(r.prevD7 * 100) / 100 : null)), borderColor: 'rgba(226,232,240,.55)', borderDash: [3, 3], borderWidth: 1.4, pointRadius: 0, spanGaps: false, order: 0 });
+      ds.push({ label: 'A week ago', data: rows.flatMap(r => seg(r, r.prevD7 != null ? Math.round(r.prevD7 * 100) / 100 : null)), borderColor: 'rgba(184,201,217,.6)', borderDash: [3, 3], borderWidth: 1.4, pointRadius: 0, spanGaps: false, order: 0 });
       const labelPlugin = { id: 'mrnStripLbl', afterDatasetsDraw(ch) {
         const g = ch.ctx; g.save(); g.font = '10px "IBM Plex Mono", monospace'; g.textAlign = 'center';
         const boxes = [], free = b => !boxes.some(o => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
@@ -375,7 +375,7 @@ async function renderMorning() {
   .mrn-moves{background:var(--bg2);border:1px solid var(--bd);border-left:3px solid #14D3A9;border-radius:9px;padding:12px 16px;margin-bottom:14px}
   .mrn-moves h3{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)}
   .mrn-moves ul{margin:0;padding-left:18px} .mrn-moves li{font-size:12.5px;color:var(--tx2);line-height:1.6} .mrn-moves b{color:var(--tx)}
-  .mrn-neg{color:#60A5FA}
+  .mrn-neg{color:#7FC8F8}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
   .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd)}
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}

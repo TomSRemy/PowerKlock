@@ -35,6 +35,8 @@ FR_DAILY = os.path.join(ROOT, 'data', 'history', 'rte', 'fr_daily.json')
 SUMMARY = os.path.join(ROOT, 'data', 'history', 'summary.json')
 ENS = 'https://ensemble-api.open-meteo.com/v1/ensemble'
 ARC = 'https://archive-api.open-meteo.com/v1/archive'
+FC = 'https://api.open-meteo.com/v1/forecast'
+PAST_DAYS = 14   # observed / actual days shown before the forecast
 NORMAL_YEARS = (2016, 2025)
 RECENT_DAYS = 400
 
@@ -287,6 +289,15 @@ def ensemble(pts, kind):
     return days, members
 
 
+def observed(pts, kind):
+    """Last PAST_DAYS days of temperature / precipitation (Open-Meteo best-match analysis)."""
+    j = get(FC, {'latitude': ','.join(str(p[1]) for p in pts), 'longitude': ','.join(str(p[2]) for p in pts),
+                 'daily': VAR[kind], 'past_days': PAST_DAYS, 'forecast_days': 1, 'timezone': 'Europe/Paris'})
+    j = j if isinstance(j, list) else [j]
+    days = j[0]['daily']['time']
+    return {d: wmean([l['daily'][VAR[kind]][i] for l in j], [p[3] for p in pts]) for i, d in enumerate(days)}
+
+
 def summarise(days, members, scale):
     out = {'mean': [], 'p10': [], 'p90': []}
     for i in range(len(days)):
@@ -323,12 +334,24 @@ def main():
                 scale = k
                 entry['fit'][kind] = {'factor': round(k, 3), 'r2': r2, 'days': n, 'source': 'RTE' if cc == 'FR' else 'ENTSO-E'}
             days, members = ensemble(conf[kind], kind)
+            # show the last PAST_DAYS days before the forecast, with actual values
+            first = date.fromisoformat(next(d for d, *v in zip(days, *members) if any(x is not None for x in v)))
+            lead = [(first - timedelta(days=i)).isoformat() for i in range(PAST_DAYS, 0, -1)]
+            members = [[None] * len(lead) + [x for d, x in zip(days, m) if d >= first.isoformat()] for m in members]
+            days = lead + [d for d in days if d >= first.isoformat()]
             s = summarise(days, members, scale)
             nm = c['normals'][kind]
             s['normal'] = [round(nm[d[5:]] * scale, 2) if nm.get(d[5:]) is not None else None for d in days]
             if kind in ('solar', 'wind'):
                 t = (tg.get(cc) or {}).get(kind) or {}
                 s['actual'] = [round(t[d], 1) if d in t else None for d in days]
+            else:
+                try:
+                    obs = observed(conf[kind], kind)
+                    today = date.today().isoformat()
+                    s['actual'] = [round(obs[d], 2) if d in obs and obs[d] is not None and d < today else None for d in days]
+                except Exception as e:
+                    print(f'  {cc} {kind}: observed values unavailable ({e})')
             s.update({'days': days, 'unit': LABEL[kind][1], 'label': LABEL[kind][0]})
             entry['series'][kind] = s
         out['countries'][cc] = entry
