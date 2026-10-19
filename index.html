@@ -5577,13 +5577,17 @@
       <div class="mrn-sec">Forwards</div>
       <div class="fuel-grid-2">
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">France forward curve</div><div class="fuel-card-sub" id="mrn-fwd-sub">Latest settlement vs 1 week and 1 month ago</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-fwd" style="width:100%;height:280px"></canvas></div>
+          <div class="fuel-card-head"><div><div class="table-title">France forward prices</div><div class="fuel-card-sub">Baseload, by product</div></div><span class="source-badge">Market data</span></div>
+          <div id="mrn-fwdt"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
         </div>
         <div class="chart-container fuel-card">
-          <div class="fuel-card-head"><div><div class="table-title">France Cal+1 baseload</div><div class="fuel-card-sub" id="mrn-cal-sub">Daily settlement, rolling front year, 1 year</div></div><span class="source-badge">Market data</span></div>
-          <div style="position:relative;height:280px"><canvas id="mrn-cal" style="width:100%;height:280px"></canvas></div>
+          <div class="fuel-card-head"><div><div class="table-title">Price history by product</div><div class="fuel-card-sub" id="mrn-fwdp-sub">3 months</div></div><span class="source-badge">Market data</span></div>
+          <div style="position:relative;height:300px"><canvas id="mrn-fwdp" style="width:100%;height:300px"></canvas></div>
         </div>
+      </div>
+      <div class="chart-container fuel-card">
+        <div class="fuel-card-head"><div><div class="table-title">Forward prices over the delivery calendar</div><div class="fuel-card-sub" id="mrn-strip-sub">Each product over its delivery period</div></div><span class="source-badge">Market data</span></div>
+        <div style="position:relative;height:300px"><canvas id="mrn-strip" style="width:100%;height:300px"></canvas></div>
       </div>
       <div class="mrn-sec">Renewables and guarantees of origin</div>
       <div class="fuel-grid-2">
