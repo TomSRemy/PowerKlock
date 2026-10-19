@@ -4603,13 +4603,25 @@
       </div>
 
       <div class="pm-controls">
-        <div class="pk-gf-group" id="pm-metric">
-          <button class="pk-gf-btn active" data-m="co2" onclick="PKMap.setMetric('co2')">Carbon intensity</button>
-          <button class="pk-gf-btn" data-m="price" onclick="PKMap.setMetric('price')">Price</button>
+        <div class="pm-mgroup"><span class="pm-mgroup-l">System</span>
+        <div class="pk-gf-group pm-metric">
+          <button class="pk-gf-btn active" data-m="co2" onclick="PKMap.setMetric('co2')">Carbon</button>
           <button class="pk-gf-btn" data-m="ren" onclick="PKMap.setMetric('ren')">Renewables</button>
           <button class="pk-gf-btn" data-m="lowc" onclick="PKMap.setMetric('lowc')">Low-carbon</button>
           <button class="pk-gf-btn" data-m="net" onclick="PKMap.setMetric('net')">Net import</button>
-        </div>
+        </div></div>
+        <div class="pm-mgroup"><span class="pm-mgroup-l">Market</span>
+        <div class="pk-gf-group pm-metric">
+          <button class="pk-gf-btn" data-m="price" onclick="PKMap.setMetric('price')">Price</button>
+          <button class="pk-gf-btn" data-m="delta" onclick="PKMap.setMetric('delta')">Δ D-1</button>
+          <button class="pk-gf-btn" data-m="tb2" onclick="PKMap.setMetric('tb2')" title="Battery spread: top 2 hours − bottom 2 hours">TB2</button>
+          <button class="pk-gf-btn" data-m="neg" onclick="PKMap.setMetric('neg')">Neg. hours</button>
+          <button class="pk-gf-btn" data-m="scap" onclick="PKMap.setMetric('scap')">Solar capture</button>
+          <button class="pk-gf-btn" data-m="wcap" onclick="PKMap.setMetric('wcap')">Wind capture</button>
+          <button class="pk-gf-btn" data-m="css" onclick="PKMap.setMetric('css')">Spark</button>
+          <button class="pk-gf-btn" data-m="cds" onclick="PKMap.setMetric('cds')">Dark</button>
+          <button class="pk-gf-btn" data-m="fwd" onclick="PKMap.setMetric('fwd')">Fwd Y+1</button>
+        </div></div>
         <div class="pk-gf-group" id="pm-day">
           <button class="pk-gf-btn" data-d="-1" onclick="PKMap.setDay(-1)">Yesterday</button>
           <button class="pk-gf-btn active" data-d="0" onclick="PKMap.setDay(0)">Today</button>

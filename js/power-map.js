@@ -54,7 +54,17 @@
     ren: { label: 'Renewable share', unit: '%', fmt: v => Math.round(v), lowGood: false },
     lowc: { label: 'Low-carbon share', unit: '%', fmt: v => Math.round(v), lowGood: false },
     net: { label: 'Net import', unit: 'GW', fmt: v => (v > 0 ? '+' : '') + (v / 1000).toFixed(1), lowGood: null },
+    // market (daily = the hour slider does not apply)
+    delta: { label: 'Price vs previous day', unit: '€/MWh', fmt: v => (v > 0 ? '+' : '') + v.toFixed(1), lowGood: true, daily: true, market: true },
+    tb2: { label: 'Battery spread (TB2)', unit: '€/MWh', fmt: v => Math.round(v), lowGood: false, daily: true, market: true },
+    neg: { label: 'Negative-price hours', unit: 'h', fmt: v => v % 1 ? v.toFixed(2) : String(v), lowGood: false, daily: true, market: true },
+    scap: { label: 'Solar capture rate', unit: '% of base', fmt: v => Math.round(v), lowGood: false, daily: true, market: true },
+    wcap: { label: 'Wind capture rate', unit: '% of base', fmt: v => Math.round(v), lowGood: false, daily: true, market: true },
+    css: { label: 'Clean spark spread', unit: '€/MWh', fmt: v => (v > 0 ? '+' : '') + v.toFixed(1), lowGood: false, market: true },
+    cds: { label: 'Clean dark spread', unit: '€/MWh', fmt: v => (v > 0 ? '+' : '') + v.toFixed(1), lowGood: false, market: true },
+    fwd: { label: 'Forward Y+1 baseload', unit: '€/MWh', fmt: v => v.toFixed(1), lowGood: true, daily: true, market: true },
   };
+  METRICS.price.market = true;
 
   const S = { day: 0, hour: null, avg: false, metric: 'co2', sel: 'FR', playing: null, data: null, map: null, geo: null,
     layer: null, flowLayer: null, labelLayer: null, charts: {}, init: false };
@@ -84,16 +94,28 @@
     ren: [[0, [56, 29, 2]], [30, [158, 66, 41]], [60, [245, 235, 77]], [100, [42, 163, 100]]],
     lowc: [[0, [56, 29, 2]], [30, [158, 66, 41]], [60, [245, 235, 77]], [100, [42, 163, 100]]],
     net: [[-8000, [20, 211, 169]], [0, [71, 85, 105]], [8000, [249, 115, 22]]],
+    delta: [[-40, [59, 130, 246]], [0, [71, 85, 105]], [40, [249, 115, 22]]],
+    tb2: [[0, [30, 41, 59]], [40, [20, 120, 140]], [120, [20, 211, 169]], [250, [245, 235, 77]]],
+    neg: [[0, [51, 65, 85]], [2, [96, 165, 250]], [8, [59, 130, 246]], [14, [30, 58, 138]]],
+    scap: [[20, [190, 30, 45]], [60, [245, 235, 77]], [100, [42, 163, 100]]],
+    wcap: [[50, [190, 30, 45]], [80, [245, 235, 77]], [105, [42, 163, 100]]],
+    css: [[-60, [190, 30, 45]], [0, [71, 85, 105]], [60, [42, 163, 100]]],
+    cds: [[-60, [190, 30, 45]], [0, [71, 85, 105]], [60, [42, 163, 100]]],
+    fwd: [[40, [20, 211, 169]], [90, [245, 235, 77]], [150, [249, 115, 22]], [220, [190, 30, 45]]],
   };
   const colorFor = (m, v) => { const c = ramp(RAMPS[m], v); return c ? `rgb(${c[0]},${c[1]},${c[2]})` : null; };
 
   // ── data ──
   async function loadDay(dateISO) {
-    const [mapF, flowsF, pricesF] = await Promise.all([
+    const [mapF, flowsF, pricesF, prevF, fwdF] = await Promise.all([
       getJSON(base() + 'map/' + dateISO + '.json'),
       getJSON(base() + 'history/flows/' + dateISO.slice(0, 7) + '.json'),
       getJSON(base() + 'history/daily/' + dateISO + '.json'),
+      getJSON(base() + 'history/daily/' + addDays(dateISO, -1) + '.json'),
+      S.fwd || (S.fwd = getJSON(base() + 'fr_market.json')),
     ]);
+    let refs = null;
+    if (window.PKC) { try { await PKC.ready; refs = PKC.refsFor(dateISO); } catch (_) { refs = null; } }
     const C = {};   // country → { gen: {code: [24]}, load, net, storageIn, price: [24] }
     if (mapF && mapF.countries) Object.entries(mapF.countries).forEach(([c, v]) => { C[c] = { gen: v.gen || {}, load: v.load, net: v.net, storageIn: v.storageIn, src: 'Energy-Charts' }; });
     // France from RTE éCO2mix (complete, 15-min, live)
@@ -113,15 +135,32 @@
       }
     }
     // Prices (hourly means of the 96 Paris slots)
-    const zones = pricesF && pricesF.zones || {};
-    Object.entries(PRICE_ZONES).forEach(([c, zs]) => {
-      const arrs = zs.map(z => zones[z] && zones[z].hourly).filter(a => Array.isArray(a) && a.length);
-      if (!arrs.length) return;
+    const toHourly = (file, c) => {
+      const zones = file && file.zones || {};
+      // A whole day at exactly 0.00 is a broken feed (same rule as pkSanitizeZones), not a price.
+      const arrs = PRICE_ZONES[c].map(z => zones[z] && zones[z].hourly).filter(a => Array.isArray(a) && a.length && a.some(v => v != null && v !== 0));
+      if (!arrs.length) return null;
       const hourly = Array.from({ length: 24 }, (_, i) => {
         const v = []; arrs.forEach(a => { const per = a.length / 24; a.slice(i * per, (i + 1) * per).forEach(x => { if (x != null) v.push(x); }); });
         return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
       });
-      (C[c] = C[c] || { gen: {} }).price = hourly;
+      // negative quarter-hours averaged over the country's zones, in hours
+      const negH = arrs.reduce((s, a) => s + a.filter(x => x != null && x < 0).length * 24 / a.length, 0) / arrs.length;
+      return { hourly, negH };
+    };
+    Object.keys(PRICE_ZONES).forEach(c => {
+      const t = toHourly(pricesF, c); if (!t) return;
+      const d = (C[c] = C[c] || { gen: {} });
+      d.price = t.hourly; d.negH = Math.round(t.negH * 4) / 4;
+      const pv = toHourly(prevF, c); if (pv) d.pricePrev = pv.hourly;
+    });
+    // Forward Y+1 baseload (FR, DE, NL, GB converted from GBP)
+    const F = fwdF && fwdF.countries || {};
+    let gbpEur = null;
+    if (window.PKC) { const g = PKC.last('gbpusd'), e = PKC.last('eurusd'); gbpEur = g && e ? g.v / e.v : null; }
+    [['FR', 'FR', 1], ['DE', 'DE', 1], ['NL', 'NL', 1], ['GB', 'UK', gbpEur]].forEach(([c, k, conv]) => {
+      const r = F[k] && (F[k].forwardCurve || []).find(x => x.tenor === 'Y+1');
+      if (r && r.value != null && conv) { (C[c] = C[c] || { gen: {} }).fwd = { value: r.value * conv, contract: (r.contract || '').replace(/\s+base$/, '') }; }
     });
     // Border flows: edge "A|B" (A < B) → [24] MW from A to B
     const E = {};
@@ -134,7 +173,7 @@
       // arr = import into c from n
       E[key] = arr.map(v => v == null ? null : (c === a ? -v : v));
     }));
-    return { date: dateISO, C, E, reporters: Object.keys(fd), hasGen: !!(mapF && mapF.countries) || !!(C.FR && C.FR.gen && Object.keys(C.FR.gen).length) };
+    return { date: dateISO, C, E, refs, reporters: Object.keys(fd), hasGen: !!(mapF && mapF.countries) || !!(C.FR && C.FR.gen && Object.keys(C.FR.gen).length) };
   }
 
   // Values of one country at hour h (null = daily average)
@@ -148,6 +187,41 @@
     const gen = {}; let tot = 0;
     Object.entries(d.gen || {}).forEach(([k, a]) => { const v = at(a); if (v != null && v > 0) { gen[k] = v; tot += v; } });
     const out = { c, gen, total: tot || null, price: at(d.price), load: at(d.load), net: at(d.net), src: d.src };
+    // market — daily figures
+    const P = Array.isArray(d.price) ? d.price : null;
+    if (P) {
+      const pv = P.map((v, i) => [v, i]).filter(x => x[0] != null);
+      const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+      out.base = mean(pv.map(x => x[0]));
+      out.peak = mean(pv.filter(x => x[1] >= 8 && x[1] < 20).map(x => x[0]));
+      out.min = pv.length ? Math.min(...pv.map(x => x[0])) : null;
+      out.max = pv.length ? Math.max(...pv.map(x => x[0])) : null;
+      const srt = pv.map(x => x[0]).sort((a, b) => a - b);
+      out.tb2 = srt.length >= 4 ? (srt[srt.length - 1] + srt[srt.length - 2] - srt[0] - srt[1]) / 2 : null;
+      out.negH = d.negH;
+      if (Array.isArray(d.pricePrev)) { const b0 = mean(d.pricePrev.filter(x => x != null)); out.delta = b0 != null && out.base != null ? out.base - b0 : null; out.basePrev = b0; }
+      // capture prices over the hours where both output and price exist
+      const capture = codes => {
+        let sw = 0, sp = 0, bs = [];
+        for (let i = 0; i < 24; i++) {
+          if (P[i] == null) continue;
+          let g = null; codes.forEach(k => { const a = d.gen && d.gen[k]; if (a && a[i] != null) g = (g || 0) + a[i]; });
+          if (g == null) continue;
+          bs.push(P[i]); if (g > 0) { sw += g; sp += g * P[i]; }
+        }
+        const b = mean(bs);
+        return sw > 0 && b != null ? { price: sp / sw, rate: b > 5 ? sp / sw / b * 100 : null } : null;
+      };
+      out.solarCap = capture(['B16']); out.windCap = capture(['B18', 'B19']);
+      out.scap = out.solarCap && out.solarCap.rate; out.wcap = out.windCap && out.windCap.rate;
+      // clean spark / dark at the hour (or on the daily base)
+      const R = S.data && S.data.refs, ref = h != null ? out.price : out.base;
+      if (R && window.PKC && ref != null) {
+        out.css = PKC.cleanSpark(ref, R.ttf, R.eua);
+        out.cds = PKC.cleanDark(ref, R.coal, R.eurusd, R.eua);
+      }
+    }
+    if (d.fwd) { out.fwd = d.fwd.value; out.fwdContract = d.fwd.contract; }
     if (tot > 0) {
       let em = 0, ren = 0, low = 0, prim = 0;
       Object.entries(gen).forEach(([k, v]) => {
@@ -196,7 +270,7 @@
     withConsumption(snaps, h);
     return snaps;
   }
-  const valueOf = (s, m) => !s ? null : m === 'co2' ? s.co2 : m === 'price' ? s.price : m === 'ren' ? s.ren : m === 'lowc' ? s.lowc : s.net;
+  const valueOf = (s, m) => !s ? null : m === 'co2' ? s.co2 : m === 'ren' ? s.ren : m === 'lowc' ? s.lowc : m === 'net' ? s.net : (s[m] ?? null);
 
   // ── map ──
   function styleFor(feature, snaps) {
@@ -255,12 +329,19 @@
       // shorten both ends so arrows sit across the border
       const k = 0.28, s1 = [p1[0] + (p2[0] - p1[0]) * k, p1[1] + (p2[1] - p1[1]) * k], s2 = [p1[0] + (p2[0] - p1[0]) * (1 - k), p1[1] + (p2[1] - p1[1]) * (1 - k)];
       const w = Math.max(1.5, Math.min(8, Math.sqrt(Math.abs(v)) / 10));
-      const line = L.polyline([s1, s2], { color: '#E2E8F0', weight: w, opacity: 0.8, className: 'pm-flow', interactive: true });
-      line.bindTooltip(`${flag(from)} ${from} → ${flag(to)} ${to}<br><b>${fmtMW(Math.abs(v))}</b>`, { sticky: true, className: 'pm-leaflet-tip' });
+      const pf = S.snaps[from] && (h != null ? S.snaps[from].price : S.snaps[from].base), pt = S.snaps[to] && (h != null ? S.snaps[to].price : S.snaps[to].base);
+      const spread = pf != null && pt != null ? pt - pf : null;
+      const adverse = spread != null && spread < -1;          // flowing from the expensive to the cheap side
+      const mkt = METRICS[S.metric].market;
+      const col = mkt && adverse ? '#FB923C' : '#E2E8F0';
+      const line = L.polyline([s1, s2], { color: col, weight: w, opacity: 0.85, className: 'pm-flow', interactive: true });
+      line.bindTooltip(`${flag(from)} ${from} → ${flag(to)} ${to}<br><b>${fmtMW(Math.abs(v))}</b>` +
+        (spread != null ? `<br>${from} ${pf.toFixed(1)} → ${to} ${pt.toFixed(1)} €/MWh<br>spread ${spread >= 0 ? '+' : ''}${spread.toFixed(1)} €/MWh${adverse ? ' · <span style="color:#FB923C">against the price signal</span>' : Math.abs(spread) < 1 ? ' · prices coupled' : ''}` : ''),
+        { sticky: true, className: 'pm-leaflet-tip' });
       S.flowLayer.addLayer(line);
       // arrow head at the far end
       const ang = Math.atan2(-(s2[0] - s1[0]), s2[1] - s1[1]) * 180 / Math.PI;   // screen angle (lat up)
-      const head = L.divIcon({ className: 'pm-arrow', html: `<div style="transform:rotate(${ang}deg);--w:${4 + w}px"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
+      const head = L.divIcon({ className: 'pm-arrow', html: `<div style="transform:rotate(${ang}deg);--w:${4 + w}px;--c:${col}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] });
       S.flowLayer.addLayer(L.marker(s2, { icon: head, interactive: false, keyboard: false }));
     });
   }
@@ -289,6 +370,22 @@
     const best = withCo2.slice().sort((a, b) => a.co2 - b.co2)[0], worst = withCo2.slice().sort((a, b) => b.co2 - a.co2)[0];
     const pr = list.filter(s => s.price != null).sort((a, b) => b.price - a.price);
     const k = (lbl, val, sub) => `<div class="pm-kpi"><div class="pm-kpi-l">${lbl}</div><div class="pm-kpi-v">${val}</div><div class="pm-kpi-s">${sub}</div></div>`;
+    if (METRICS[S.metric].market) {
+      const h = S.avg ? null : S.hour;
+      const val = s => h != null ? s.price : s.base;
+      const P = list.filter(s => val(s) != null).sort((a, b) => val(a) - val(b));
+      const avgP = P.length ? P.reduce((a, s) => a + val(s), 0) / P.length : null;
+      const negN = list.filter(s => h != null ? s.price != null && s.price < 0 : s.negH > 0).length;
+      let best = null;
+      Object.keys(S.data.E).forEach(key => { const [a, b] = key.split('|'); const x = S.snaps[a], y = S.snaps[b]; if (!x || !y || val(x) == null || val(y) == null) return;
+        const d = Math.abs(val(x) - val(y)); if (!best || d > best.d) best = { a, b, d }; });
+      host.innerHTML =
+        k(h != null ? 'Average price' : 'Average baseload', avgP == null ? '–' : avgP.toFixed(1) + '<small> €/MWh</small>', P.length + ' countries, simple mean') +
+        k('Cheapest → most expensive', P.length ? val(P[0]).toFixed(0) + ' → ' + val(P[P.length - 1]).toFixed(0) + '<small> €/MWh</small>' : '–', P.length ? flag(P[0].c) + ' ' + NAMES[P[0].c] + ' · ' + flag(P[P.length - 1].c) + ' ' + NAMES[P[P.length - 1].c] : '') +
+        k(h != null ? 'Negative prices now' : 'Countries with negative hours', negN + '<small> countries</small>', h != null ? 'at ' + String(h).padStart(2, '0') + ':00' : 'day-ahead, this day') +
+        k('Widest border spread', best ? best.d.toFixed(1) + '<small> €/MWh</small>' : '–', best ? flag(best.a) + ' ' + best.a + ' ↔ ' + flag(best.b) + ' ' + best.b + ' · congestion' : '');
+      return;
+    }
     host.innerHTML =
       k('Europe average', eu == null ? '–' : Math.round(eu) + '<small> g/kWh</small>', withCo2.length + ' countries, weighted by generation') +
       k('Cleanest', best ? flag(best.c) + ' ' + Math.round(best.co2) + '<small> g/kWh</small>' : '–', best ? NAMES[best.c] : '') +
@@ -296,6 +393,18 @@
       k('Price range', pr.length ? Math.round(pr[pr.length - 1].price) + ' → ' + Math.round(pr[0].price) + '<small> €/MWh</small>' : '–',
         pr.length ? flag(pr[pr.length - 1].c) + ' ' + pr[pr.length - 1].c + ' · ' + flag(pr[0].c) + ' ' + pr[0].c : '');
   }
+  const LEG_NOTES = {
+    co2: 'Consumption-based where all borders are known, production-based elsewhere · life-cycle factors (IPCC)',
+    price: 'Hourly day-ahead, mean of the country\'s bidding zones',
+    delta: 'Daily baseload minus the previous day\'s',
+    tb2: 'Mean of the 2 highest hours minus mean of the 2 lowest: what a 2-hour battery could capture',
+    neg: 'Hours with a negative day-ahead price (quarter-hours ÷ 4)',
+    scap: 'Output-weighted price ÷ baseload over the hours with output data',
+    wcap: 'Output-weighted price ÷ baseload over the hours with output data',
+    css: 'Power − TTF ÷ 49.13% − EUA × 0.411 t/MWh (site convention)',
+    cds: 'Power − API2 coal at 36% − EUA × 0.947 t/MWh (site convention)',
+    fwd: 'Baseload calendar Y+1: France, Germany, Netherlands, Great Britain only',
+  };
   function drawLegend() {
     const host = document.getElementById('pm-legend'); if (!host) return;
     const st = RAMPS[S.metric], m = METRICS[S.metric];
@@ -304,7 +413,8 @@
     const f = v => S.metric === 'net' ? (v / 1000) + '' : v;
     host.innerHTML = `<div class="pm-leg-t">${m.label} (${m.unit})</div><div class="pm-leg-bar" style="background:linear-gradient(90deg,${grad})"></div>
       <div class="pm-leg-s"><span>${f(lo)}</span><span>${f(st[Math.floor(st.length / 2)][0])}</span><span>${f(hi)}+</span></div>` +
-      (S.metric === 'co2' ? '<div class="pm-leg-n">Consumption-based where all borders are known, production-based elsewhere · life-cycle factors (IPCC)</div>' : '');
+      (LEG_NOTES[S.metric] ? '<div class="pm-leg-n">' + LEG_NOTES[S.metric] + '</div>' : '') +
+      (METRICS[S.metric].market ? '<div class="pm-leg-n"><span style="color:#FB923C">━</span> flow against the price signal (expensive → cheap)</div>' : '');
   }
 
   // ── detail panel ──
@@ -327,6 +437,30 @@
     const gs = groupSums(s.gen), tot = gs.reduce((a, x) => a + x.v, 0) || 1;
     const fl = imports(c, S.avg ? null : S.hour);
     const mxBar = Math.max(1, ...gs.map(x => x.v), ...fl.map(f => Math.abs(f.mw)));
+    const f1 = v => v == null || isNaN(v) ? '–' : v.toFixed(1), sg = v => v == null || isNaN(v) ? '–' : (v > 0 ? '+' : '') + v.toFixed(1);
+    const R = S.data.refs || {};
+    const cell = (lbl, v, sub, col) => `<div class="pm-m-c"><div class="pm-m-l">${lbl}</div><div class="pm-m-v"${col ? ` style="color:${col}"` : ''}>${v}</div>${sub ? `<div class="pm-m-s">${sub}</div>` : ''}</div>`;
+    const tone = v => v == null ? null : v >= 0 ? 'var(--up,#14D3A9)' : 'var(--down,#ED6965)';
+    const h = S.avg ? null : S.hour;
+    const neigh = fl.map(f => { const o = S.snaps[f.n]; const pn = o ? (h != null ? o.price : o.base) : null, pc = h != null ? s.price : s.base; return { n: f.n, mw: f.mw, pn, sp: pn != null && pc != null ? pn - pc : null }; });
+    const market = s.base == null && s.fwd == null ? '' : `
+      <div class="pm-d-sec">Market <span>day-ahead ${S.data.date}${R.ttf != null ? ' · TTF ' + R.ttf.toFixed(1) + ' · EUA ' + (R.eua != null ? R.eua.toFixed(1) : '–') : ''}</span></div>
+      <div class="pm-market">
+        ${cell('Baseload', f1(s.base), s.delta != null ? sg(s.delta) + ' vs previous day' : '', null)}
+        ${cell('Peak 08–20', f1(s.peak), s.base ? 'ratio ' + (s.peak / s.base).toFixed(2) : '')}
+        ${cell('Min / max', s.min == null ? '–' : Math.round(s.min) + ' / ' + Math.round(s.max), 'hourly')}
+        ${cell('Battery TB2', f1(s.tb2), 'top 2 h − bottom 2 h')}
+        ${cell('Negative hours', s.negH == null ? '–' : s.negH, 'day-ahead', s.negH > 0 ? '#60A5FA' : null)}
+        ${cell('Solar capture', s.solarCap ? f1(s.solarCap.price) : '–', s.scap != null ? Math.round(s.scap) + '% of base' : '', s.scap != null ? colorFor('scap', s.scap) : null)}
+        ${cell('Wind capture', s.windCap ? f1(s.windCap.price) : '–', s.wcap != null ? Math.round(s.wcap) + '% of base' : '', s.wcap != null ? colorFor('wcap', s.wcap) : null)}
+        ${cell('Clean spark', sg(s.css), h != null ? 'at ' + String(h).padStart(2, '0') + ':00' : 'on baseload', tone(s.css))}
+        ${cell('Clean dark', sg(s.cds), h != null ? 'at ' + String(h).padStart(2, '0') + ':00' : 'on baseload', tone(s.cds))}
+        ${s.fwd != null ? cell('Forward Y+1', f1(s.fwd), s.fwdContract || 'baseload') : ''}
+      </div>
+      ${neigh.length ? `<div class="pm-o-sep">Neighbours ${h != null ? 'at ' + String(h).padStart(2, '0') + ':00' : '(daily base)'} · price, spread, physical flow</div>
+        <div class="pm-nb">${neigh.map(x => `<div class="pm-nb-r"><span>${flag(x.n)} ${NAMES[x.n] || x.n}</span><span>${f1(x.pn)}</span><span style="color:${x.sp == null ? 'var(--tx3)' : Math.abs(x.sp) < 1 ? 'var(--tx3)' : x.sp > 0 ? '#F97316' : '#60A5FA'}">${x.sp == null ? '–' : Math.abs(x.sp) < 1 ? 'coupled' : sg(x.sp)}</span><span>${x.mw >= 0 ? '← ' : '→ '}${fmtMW(Math.abs(x.mw))}</span></div>`).join('')}</div>` : ''}
+      <div class="pm-d-sec">24 h day-ahead price <span>this day vs previous day</span></div>
+      <div class="pm-d-chart small"><canvas id="pm-chart-price"></canvas></div>`;
     const bar = (lbl, v, col, extra) => `<div class="pm-o-row"><span class="pm-o-l">${lbl}</span><span class="pm-o-b">${v < 0 ? `<i class="neg" style="width:${Math.abs(v) / mxBar * 50}%;background:${col}"></i>` : `<i style="width:${v / mxBar * 100}%;background:${col}"></i>`}</span><span class="pm-o-v">${fmtMW(v)}${extra || ''}</span></div>`;
     host.innerHTML = `
       <div class="pm-d-h"><span class="pm-d-flag">${flag(c)}</span><div><div class="pm-d-name">${NAMES[c] || c}</div><div class="pm-d-when">${dateLbl} · ${when} · ${s.src || 'Energy-Charts'}</div></div>
@@ -337,12 +471,14 @@
         ${tile('Renewable', s.ren == null ? '–' : Math.round(s.ren), ' %')}
         ${tile('Day-ahead', s.price == null ? '–' : s.price.toFixed(1), ' €/MWh')}
       </div>
+      ${METRICS[S.metric].market ? market : ''}
       <div class="pm-d-sec">Electricity origin <span>${s.co2Basis === 'consumption' ? 'consumption-based intensity' : 'production-based intensity'}</span></div>
       <div class="pm-origin">
         ${gs.sort((a, b) => b.v - a.v).map(x => bar(x.g.label, x.v, x.g.color, ` <em>${Math.round(x.v / tot * 100)}%</em>`)).join('')}
         ${fl.length ? '<div class="pm-o-sep">Cross-border (physical, + import)</div>' + fl.map(f => bar(flag(f.n) + ' ' + (NAMES[f.n] || f.n), f.mw, f.mw >= 0 ? '#94A3B8' : '#475569')).join('') : ''}
         ${s.load != null ? `<div class="pm-o-foot">Load ${fmtMW(s.load)} · generation ${fmtMW(s.total)}${s.net != null ? ' · net ' + (s.net >= 0 ? 'import ' : 'export ') + fmtMW(Math.abs(s.net)) : ''}</div>` : ''}
       </div>
+      ${METRICS[S.metric].market ? '' : market}
       <div class="pm-d-sec">24 h generation mix and price</div>
       <div class="pm-d-chart"><canvas id="pm-chart-mix"></canvas></div>
       <div class="pm-d-sec">24 h carbon intensity</div>
@@ -369,6 +505,13 @@
         plugins: { legend: { display: false }, tooltip: { enabled: true } },
         scales: { x: { ticks: Object.assign({ maxTicksLimit: 8 }, tx), grid }, y: { stacked: true, beginAtZero: true, ticks: tx, grid, title: { display: true, text: 'GW', color: '#7A93AB', font: { size: 9 } } },
           y2: { position: 'right', ticks: tx, grid: { display: false }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } } } } } });
+    const pc = document.getElementById('pm-chart-price');
+    if (pc && Array.isArray(d.price)) S.charts.price = new Chart(pc, { type: 'line', data: { labels, datasets: [
+        { label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.12)', fill: true, borderWidth: 1.8, pointRadius: 0, tension: 0.2 },
+        Array.isArray(d.pricePrev) ? { label: 'Previous day', data: d.pricePrev.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: 'rgba(148,163,184,.8)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.2 } : null,
+      ].filter(Boolean) }, plugins: [marker],
+      options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
+        scales: { x: { ticks: Object.assign({ maxTicksLimit: 8 }, tx), grid }, y: { ticks: tx, grid, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } } } } } });
     const co2 = labels.map((_, i) => { const s = snapshot(c, i); return s && s.co2Prod != null ? Math.round(s.co2Prod) : null; });
     const cc = document.getElementById('pm-chart-co2');
     if (cc) S.charts.co2 = new Chart(cc, { type: 'bar', data: { labels, datasets: [{ label: 'Production intensity', data: co2, backgroundColor: co2.map(v => colorFor('co2', v) || '#334155'), borderWidth: 0 }] }, plugins: [marker],
@@ -388,8 +531,8 @@
   }
   function syncControls() {
     const sl = document.getElementById('pm-hour'); if (sl) { sl.value = S.hour; sl.disabled = S.avg; }
-    const lbl = document.getElementById('pm-hour-lbl'); if (lbl) lbl.textContent = S.avg ? 'Daily average' : String(S.hour).padStart(2, '0') + ':00';
-    document.querySelectorAll('#pm-metric .pk-gf-btn').forEach(b => b.classList.toggle('active', b.dataset.m === S.metric));
+    const lbl = document.getElementById('pm-hour-lbl'); if (lbl) lbl.textContent = METRICS[S.metric].daily ? 'Daily figure' : S.avg ? 'Daily average' : String(S.hour).padStart(2, '0') + ':00';
+    document.querySelectorAll('.pm-metric .pk-gf-btn').forEach(b => b.classList.toggle('active', b.dataset.m === S.metric));
     document.querySelectorAll('#pm-day .pk-gf-btn').forEach(b => b.classList.toggle('active', +b.dataset.d === S.day));
     const av = document.getElementById('pm-avg'); if (av) av.classList.toggle('active', S.avg);
     const play = document.getElementById('pm-play'); if (play) play.textContent = S.playing ? '❚❚' : '▶';
@@ -403,7 +546,7 @@
     const date = addDays(parisToday(), n === 1 ? 1 : n === -1 ? -1 : 0);
     const upd = document.getElementById('pm-upd'); if (upd) upd.textContent = 'Loading…';
     S.data = await loadDay(date);
-    if (n === 1 && S.metric !== 'price') S.metric = 'price';   // tomorrow: prices only
+    if (n === 1 && !METRICS[S.metric].market) S.metric = 'price';   // tomorrow: prices only
     S.hour = n === 0 ? Math.min(latestHour(), parisHour()) : n === 1 ? 12 : latestHour();
     redraw();
   }
@@ -423,7 +566,7 @@
 
   window.PKMap = {
     open, select, setDay,
-    setMetric(m) { if (S.day === 1 && m !== 'price') return; S.metric = m; redraw(); },
+    setMetric(m) { if (S.day === 1 && !(METRICS[m] && METRICS[m].market)) return; S.metric = m; redraw(); },
     setHour(h) { S.hour = +h; S.avg = false; redraw(); },
     toggleAvg() { S.avg = !S.avg; redraw(); },
     play() {
@@ -475,7 +618,7 @@
   .pm-label{text-align:center;pointer-events:none}
   .pm-flow{stroke-dasharray:6 7;animation:pmflow 1.1s linear infinite;stroke-linecap:round}
   @keyframes pmflow{to{stroke-dashoffset:-13}}
-  .pm-arrow div{width:0;height:0;border-top:calc(var(--w)/1.4) solid transparent;border-bottom:calc(var(--w)/1.4) solid transparent;border-left:var(--w) solid rgba(226,232,240,.95);margin:auto;position:relative;top:2px;transform-origin:center}
+  .pm-arrow div{width:0;height:0;border-top:calc(var(--w)/1.4) solid transparent;border-bottom:calc(var(--w)/1.4) solid transparent;border-left:var(--w) solid var(--c,#E2E8F0);margin:auto;position:relative;top:2px;transform-origin:center}
   .pm-leaflet-tip{background:rgba(11,17,24,.95);border:1px solid var(--bd);color:var(--tx);border-radius:7px;box-shadow:0 6px 20px rgba(0,0,0,.4);font-size:11px}
   .pm-leaflet-tip:before{display:none}
   .pm-tip{display:flex;flex-direction:column;gap:2px} .pm-tip span{color:var(--tx2)}
@@ -496,6 +639,15 @@
   .pm-o-v{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--tx);text-align:right;white-space:nowrap} .pm-o-v em{color:var(--tx3);font-style:normal}
   .pm-o-sep{font-size:9.5px;color:var(--tx3);margin:8px 0 3px;text-transform:uppercase;letter-spacing:.06em}
   .pm-o-foot{font-size:10.5px;color:var(--tx3);margin-top:8px;font-family:'IBM Plex Mono',monospace}
+  .pm-market{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .pm-m-c{background:var(--bg);border:1px solid var(--bd);border-radius:7px;padding:6px 8px;min-width:0}
+  .pm-m-l{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-m-v{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--tx);margin-top:2px;white-space:nowrap}
+  .pm-m-s{font-size:9px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-nb-r{display:grid;grid-template-columns:minmax(0,1fr) 56px 64px 76px;gap:6px;font-size:11px;color:var(--tx2);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+  .pm-nb-r span:not(:first-child){font-family:'IBM Plex Mono',monospace;text-align:right}
+  .pm-nb-r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-mgroup{display:flex;align-items:center;gap:6px}.pm-mgroup-l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);font-weight:600}
   .pm-d-chart{position:relative;height:190px} .pm-d-chart.small{height:120px}
   .pm-d-src{font-size:9.5px;color:var(--tx3);line-height:1.45;margin-top:12px}
   .pm-empty{padding:18px;color:var(--tx3);font-size:12px;text-align:center}
