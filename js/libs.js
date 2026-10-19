@@ -14702,9 +14702,12 @@
         const c = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent' && ds.borderWidth !== 0)
           ? ds.borderColor
           : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : (typeof ds.borderColor === 'string' ? ds.borderColor : TX2));
-        rows.push({ name, value, color: c });
+        rows.push({ name, value, color: c, y: pt && typeof pt.y === 'number' && isFinite(pt.y) ? pt.y : null, di });
       }
       if (!rows.length) { ctx.restore(); return; }
+      // Same vertical order as the chart: the highest point first, the lowest
+      // last (series without a drawn point keep their order, at the end).
+      rows.sort((a, b) => (a.y == null) - (b.y == null) || (a.y != null ? a.y - b.y : 0) || a.di - b.di);
       const hidden = rows.length > maxRows ? rows.length - (maxRows - 1) : 0;
       const shown = hidden ? rows.slice(0, maxRows - 1) : rows;
 
