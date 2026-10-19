@@ -32,6 +32,10 @@ jobs:
       - name: Fetch news feeds
         continue-on-error: true
         run: python scripts/fetch_news.py
+      # France day-ahead prices by year for Tools › Carbon footprint
+      - name: Build yearly France price files
+        continue-on-error: true
+        run: python scripts/build_fr_prices_year.py
       - name: Commit and push data files
         run: |
           git config user.name "PowerDesk Bot"
