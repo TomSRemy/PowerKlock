@@ -717,6 +717,16 @@
       document.getElementById('pkd-add-sec')?.addEventListener('click', addSection);
       document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
       document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
+      document.getElementById('pkd-pptx')?.addEventListener('click', async ev => {
+        const btn = ev.currentTarget, label = btn.textContent;
+        if (!window.PKExport) return;
+        btn.disabled = true;
+        try {
+          const name = await PKExport.pptx(board(), { progress: (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; } });
+          toast('Downloaded ' + name);
+        } catch (e) { console.warn(e); toast('Export failed: ' + (e.message || e)); }
+        btn.disabled = false; btn.textContent = label;
+      });
     }
     PKW.refreshStars();
     if (window.PKAccount && PKAccount.configured) {
