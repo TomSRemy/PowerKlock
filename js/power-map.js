@@ -369,7 +369,7 @@
     const eu = totG ? withCo2.reduce((a, s) => a + s.co2 * s.total, 0) / totG : null;
     const best = withCo2.slice().sort((a, b) => a.co2 - b.co2)[0], worst = withCo2.slice().sort((a, b) => b.co2 - a.co2)[0];
     const pr = list.filter(s => s.price != null).sort((a, b) => b.price - a.price);
-    const k = (lbl, val, sub) => `<div class="pm-kpi"><div class="pm-kpi-l">${lbl}</div><div class="pm-kpi-v">${val}</div><div class="pm-kpi-s">${sub}</div></div>`;
+    const k = (lbl, val, sub) => `<div class="kpi-card kpi-flat pm-kpi"><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}</div><div class="kpi-meta">${sub}</div></div>`;
     if (METRICS[S.metric].market) {
       const h = S.avg ? null : S.hour;
       const val = s => h != null ? s.price : s.base;
@@ -598,10 +598,10 @@
   .pm-time .pm-hl{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--tx);min-width:96px;text-align:right}
   .pm-play{width:30px;height:28px;border-radius:6px;border:1px solid var(--bd);background:var(--bg3,#121a24);color:var(--tx);cursor:pointer;font-size:11px}
   .pm-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
-  .pm-kpi{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;min-width:0}
+  .pm-kpi{min-width:0}.pm-kpi .kpi-value,.pm-kpi .kpi-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pm-kpi-l{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600}
   .pm-kpi-v{font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--tx);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pm-kpi-v small{font-size:10px;color:var(--tx3)} .pm-kpi-s{font-size:10px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-kpi-v small,.pm-kpi .kpi-value small{font-size:10px;color:var(--tx3)} .pm-kpi-s{font-size:10px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pm-side{display:flex;flex-direction:column;max-height:640px}
   .pm-side input{margin:10px;padding:7px 10px;border-radius:6px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:12px}
   #pm-rank{overflow-y:auto;padding:0 6px 8px}
