@@ -5,7 +5,16 @@
    "spot": 221.77
   },
   "UK": {
-   "spot": 185.28
+   "spot": 185.28,
+   "generationMix": {
+    "gas": 4.22,
+    "wind": 8.76,
+    "solar": 4.22,
+    "nuclear": 4.87,
+    "hydro": 0.59,
+    "biomass": 2.5,
+    "other": 0.97
+   }
   },
   "DE": {
    "spot": 208.44
