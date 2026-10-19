@@ -266,7 +266,7 @@ function renderGOKPIs() {
   if (!(real && real.weekly.length)) {
     strip.innerHTML = ['Last Bid','Last Ask','Mid Price','Delta WoW'].map(l =>
       `<div class="kpi-card"><div class="kpi-label">${l}</div>
-       <div class="kpi-value" style="font-size:17px">–</div>
+       <div class="kpi-value">–</div>
        <div class="kpi-chg" style="color:var(--text3)">en attente Commerg</div></div>`).join('');
     return;
   }
@@ -283,7 +283,7 @@ function renderGOKPIs() {
     {l:'Delta WoW',   v:(d==null?'–':(d>=0?'+':'')+d.toFixed(2)+' €'), sub: asOfTxt ? ('as-of '+asOfTxt) : 'vs prev. week', cls:(d==null?'':(d>=0?'up':'down'))},
   ].map(k => `<div class="kpi-card">
     <div class="kpi-label">${k.l}</div>
-    <div class="kpi-value ${k.cls}" style="font-size:17px">${k.v}</div>
+    <div class="kpi-value ${k.cls}">${k.v}</div>
     <div class="kpi-chg" style="color:var(--text3)">${k.sub}</div>
   </div>`).join('');
 }

@@ -77,8 +77,6 @@
   .kpi-card.pk-toned.kpi-up { border-left-color: var(--up) !important; } .kpi-card.pk-toned.kpi-down { border-left-color: var(--down) !important; }
   .kpi-card.pk-toned.kpi-flat { border-left-color: var(--kpi-flat) !important; }
   .kpi-card.pk-toned.kpi-cold { border-left-color: #7FC8F8 !important; } .kpi-card.pk-toned.kpi-warm { border-left-color: #FBBF24 !important; }
-  .kpi-card.pk-toned.kpi-up .kpi-value { color: var(--up); } .kpi-card.pk-toned.kpi-down .kpi-value { color: var(--down); }
-  .kpi-card.pk-toned.kpi-cold .kpi-value { color: #7FC8F8; } .kpi-card.pk-toned.kpi-warm .kpi-value { color: #FBBF24; }
   .pk-tone-good { color: var(--up) !important; } .pk-tone-bad { color: var(--down) !important; }
   .pk-tone-cold { color: #7FC8F8 !important; } .pk-tone-warm { color: #FBBF24 !important; }
   `;
