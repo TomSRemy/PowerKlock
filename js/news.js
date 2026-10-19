@@ -175,7 +175,7 @@ const PAGE_LOADERS = {
   // never wired to render once on first page visit, so the chart stayed an
   // empty canvas until the user happened to click a pill button. Each loader
   // below now also fires that first render.
-  renewables: () => loadRenewables(),
+  renewables: () => { loadRenewables(); if (window.PKCaptureFwd) setTimeout(PKCaptureFwd.render, 300); },
   nuclear:    () => { drawNuclear(); if (window.PKW) PKW.draw('nuc-monthly-years', 'nuc-monthly', {}).then(r => { const e = document.getElementById('nuc-monthly-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
   imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
