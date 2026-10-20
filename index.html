@@ -2866,6 +2866,7 @@
   .cf-in { display:flex; align-items:center; gap:6px; }
   .cf-in input { flex:1; width:100%; }
   .cf-in em { font-style:normal; font-size:11px; color:var(--text3); }
+  .cf-link { color:var(--accent); text-decoration:none; letter-spacing:0; text-transform:none; }
   .cf-status { font-size:11.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
   @media (max-width: 700px) { .cf-grid { grid-template-columns:minmax(0,1fr); } }
   .fuel-grid-2 > * { min-width:0; }
@@ -5123,7 +5124,7 @@
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Carbon footprint</span></div>
-          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · RTE éCO2mix · AIB residual mix</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · RTE éCO2mix · market-based with your factors</span></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-cf-input">
@@ -5149,7 +5150,8 @@
             <label class="cf-field"><span>Timestamps mark</span><select id="cf-stamp"><option value="auto">Detect</option><option value="start">Start of each step</option><option value="end">End of each step (Enedis)</option></select></label>
             <label class="cf-field"><span>Guarantees of origin cancelled</span><span class="cf-in"><input type="number" id="cf-go" min="0" step="any" value="0"><em>MWh</em></span></label>
             <label class="cf-field"><span>Renewable PPA or on-site output</span><span class="cf-in"><input type="number" id="cf-ppa" min="0" step="any" value="0"><em>MWh</em><select id="cf-ppa-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select></span></label>
-            <label class="cf-field"><span>Supplier emission factor (optional)</span><span class="cf-in"><input type="number" id="cf-supplier" min="0" step="any" placeholder="residual mix"><em>g/kWh</em></span></label>
+            <label class="cf-field"><span>Residual mix factor · <a href="https://www.aib-net.org/facts/european-residual-mix" target="_blank" rel="noopener" class="cf-link">AIB ↗</a></span><span class="cf-in"><input type="number" id="cf-residual" min="0" step="any" placeholder="France, reporting year"><em>g/kWh</em></span></label>
+            <label class="cf-field"><span>Supplier emission factor (optional)</span><span class="cf-in"><input type="number" id="cf-supplier" min="0" step="any" placeholder="optional"><em>g/kWh</em></span></label>
           </div>
           <div class="cf-status" id="cf-status" role="status">No curve loaded yet.</div>
         </div>
