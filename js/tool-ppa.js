@@ -1,26 +1,34 @@
 // ════════════════════════════════════════════════════════════════════
 // TOOLS › PPA PRICER (France, solar or wind, pay-as-produced)
-// Port of the team's PPA Dashboard (Streamlit) pricing engine onto
-// PowerKlock data:
-//   capture history  — RTE output × day-ahead price per year (national), or
-//                      the uploaded asset curve × France quarter-hour prices
-//   shape discount   — 1 − capture price ÷ baseload, per year
-//   projection       — linear regression on the last N complete years
-//                      (option: without 2022), anchored on the asset's last
-//                      year when a curve is loaded; P10–P90 widening 4 pts/√t
-//   PPA price        = Forward − Forward × (shape disc at the chosen
-//                      percentile + add. discount + volume risk + price risk)
-//                      − imbalance + GO value + margin
-//   P&L              — vs the cannibalisation percentile, stress scenarios
-// Forwards: France Cal contracts (market data), editable. GO: Commerg mid.
+// Two methods, same data:
+//  · Step by step (default) — every chart of the page is a step of the price:
+//      1 forwards       France Cal baseload (market data), editable
+//      2 cannibalisation shape discount = 1 − capture price ÷ baseload, per
+//                       year (national RTE × day-ahead, or the asset curve ×
+//                       France quarter-hour prices), projected over the tenor —
+//                       by default from installed capacity (log fit, PPE3 path)
+//      3 capture value  Σ forward × (1 − projected discount), weighted by the
+//                       expected production and a discount factor
+//      4 risk premium   Monte Carlo (10,000 trajectories: forward path,
+//                       production, cannibalisation drift, correlated): the
+//                       price whose chance of loss equals the risk accepted
+//      5 PPA price      = value at risk − imbalance + GO − margin
+//  · PPA Dashboard — the team's Streamlit formula: Forward − Forward × (shape
+//      discount at a percentile of history + add. discount + volume risk +
+//      price risk) − imbalance + GO + margin
+// Every input is filled automatically (shown as placeholder, "auto · source");
+// a typed value overrides it, ↺ goes back to the automatic one.
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
   const get = path => fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null);
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
-  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, imb: 1.9, add: 0, volRisk: 0, priceRisk: 0, go: null, margin: 1.0,
-    volume: 52000, conv: 'pos', model: 'flat', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
+  const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
+  // null = automatic value
+  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'pos', hedge: 'hedged',
+    mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
+    mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
   const S0 = JSON.parse(JSON.stringify(S));   // defaults, for the site charts (Renewables › Cannibalisation)
 
@@ -37,11 +45,14 @@
     let sxy = 0, sxx = 0, syy = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; });
     const sl = sxx ? sxy / sxx : 0; return { sl, ic: my - sl * mx, r2: sxx && syy ? (sxy * sxy) / (sxx * syy) : 0 };
   }
+  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const std = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1)); };
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
-    const [cap, mkt, goCsv, capa] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json')]);
+    const [cap, mkt, goCsv, capa, chain] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
@@ -50,8 +61,12 @@
     // installed capacity (GW) by year, Energy-Charts
     const fr = capa && capa.countries && capa.countries.FR, capGW = { solar: {}, wind: {} };
     if (fr) fr.years.forEach((y, i) => { const t = fr.types; const s = t['Solar AC'] && t['Solar AC'][i]; const w = (t['Wind onshore'] && t['Wind onshore'][i] || 0) + (t['Wind offshore'] && t['Wind offshore'][i] || 0); if (s) capGW.solar[y] = s; if (w) capGW.wind[y] = w; });
+    // forward volatility: France Cal+1 daily settlements
+    let fwdVol = null, fwdVolN = 0;
+    const c1 = chain && chain.FR && chain.FR.rolling && chain.FR.rolling['Cal+1'];
+    if (c1 && c1.values) { const v = c1.values.filter(x => x > 0), r = []; for (let i = 1; i < v.length; i++) r.push(Math.log(v[i] / v[i - 1])); if (r.length > 40) { fwdVol = std(r) * Math.sqrt(252); fwdVolN = r.length; } }
     const F = cap ? cap.fields : [], ix = Object.fromEntries(F.map((f, i) => [f, i + 1]));
-    D = { cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go };
+    D = { cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
     return D;
   }
 
@@ -59,20 +74,21 @@
   // 'pos' = PPA Dashboard (hours with a price ≤ 0 left out of capture and baseload), 'all' = every hour
   function cols(st = S) {
     const t = st.tech === 'solar' ? 's' : 'w', pos = st.conv === 'pos' ? 'Pos' : '', ix = D.ix;
-    return { E: ix[t + 'E' + pos], R: ix[t + 'R' + pos], P: ix['pSum' + pos], N: ix['pN' + pos] };
+    return { E: ix[t + 'E' + pos], R: ix[t + 'R' + pos], P: ix['pSum' + pos], N: ix['pN' + pos], Eall: ix[t + 'E'] };
   }
   // Sum a set of day rows → capture price, baseload, capture rate
   function agg(rows, st = S) {
-    const c = cols(st); let E = 0, R = 0, P = 0, N = 0;
-    rows.forEach(r => { E += r[c.E]; R += r[c.R]; P += r[c.P]; N += r[c.N]; });
+    const c = cols(st); let E = 0, R = 0, P = 0, N = 0, Ea = 0;
+    rows.forEach(r => { E += r[c.E]; R += r[c.R]; P += r[c.P]; N += r[c.N]; Ea += r[c.Eall]; });
     const base = N ? P / N : null, cp = E ? R / E : null;
-    return { base, cp, cpPct: cp != null && base > 0 ? cp / base : null, E };
+    return { base, cp, cpPct: cp != null && base > 0 ? cp / base : null, E, Ea };
   }
-  // National capture history per year (RTE output × day-ahead price)
+  // National capture history per year (RTE output × day-ahead price), with the load factor
   function nationalYears(st = S) {
     const by = {}; D.cap.forEach(r => { (by[r[0].slice(0, 4)] = by[r[0].slice(0, 4)] || []).push(r); });
-    return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y], st);
-      return { year: y, base: a.base, cp: a.cp, cpPct: a.cpPct, sd: a.cpPct != null ? 1 - a.cpPct : null, days: by[y].length, complete: y < thisYear() && by[y].length >= 360 }; })
+    return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y], st), gw = D.capGW[st.tech][y];
+      return { year: y, base: a.base, cp: a.cp, cpPct: a.cpPct, sd: a.cpPct != null ? 1 - a.cpPct : null, days: by[y].length, complete: y < thisYear() && by[y].length >= 360,
+        lf: gw ? a.Ea / 4 / (gw * 1000 * 24 * by[y].length) : null }; })
       .filter(x => x.cpPct != null);
   }
   // Rolling capture rate and price over 30 / 90 / 365 days (national)
@@ -99,14 +115,38 @@
       .filter(x => x.cpPct != null);
   }
 
+  // ── Installed capacity: observed, then a straight line to the PPE3 targets ──
+  const PPE3 = { solar: { 2030: 48.0, 2035: 67.5 }, wind: { 2030: 31.0, 2035: 37.5 } };
+  function capPath(tech) {
+    const obs = D.capGW[tech], ys = Object.keys(obs).map(Number).sort(), last = ys[ys.length - 1];
+    const pts = [[last, obs[last]]].concat(Object.entries(PPE3[tech]).map(([y, g]) => [+y, g]).filter(([y]) => y > last));
+    return y => {
+      if (obs[y] != null) return obs[y];
+      if (y < ys[0]) return obs[ys[0]];
+      for (let i = 1; i < pts.length; i++) if (y <= pts[i][0]) { const [y0, g0] = pts[i - 1], [y1, g1] = pts[i]; return g0 + (g1 - g0) * (y - y0) / (y1 - y0); }
+      const [ya, ga] = pts[pts.length - 2] || pts[0], [yb, gb] = pts[pts.length - 1];   // after 2035: same yearly pace
+      return gb + (yb > ya ? (gb - ga) / (yb - ya) : 0) * (y - yb);
+    };
+  }
+  // Capture rate against installed capacity: log fit on complete national years
+  function capacityFit(nat, years, tech) {
+    const cap = D.capGW[tech];
+    let use = nat.filter(x => x.complete && cap[x.year] && years.includes(x.year));
+    if (use.length < 2) use = nat.filter(x => x.complete && cap[x.year]).slice(-3);
+    if (use.length < 2) return null;
+    const r = linreg(use.map(x => Math.log(cap[x.year])), use.map(x => x.cpPct));
+    return { f: gw => r.ic + r.sl * Math.log(gw), r2: r.r2, sl: r.sl, use: use.map(x => x.year) };
+  }
+
   async function compute(st = S) {
     await load();
     const nat = nationalYears(st);
     const ast = st.asset ? (await assetYears(st)) : null;
     const useAsset = ast && ast.length >= 1 && st.basis === 'asset';
     const hist = useAsset ? ast : nat;
+    const auto = {};   // key → [value, source]
+    const pick = (k, v, src) => { auto[k] = [v, src]; return st[k] != null && isFinite(st[k]) ? st[k] : v; };
     // Years used: chosen one by one; by default the last three complete years.
-    // The percentile and the regression use the same years.
     const complete = hist.filter(x => x.complete);
     const def = (complete.length ? complete : hist).slice(-3).map(x => x.year);
     const sel = (st.years || def).filter(y => hist.some(x => x.year === y));
@@ -116,35 +156,139 @@
     const reg = linreg(fitRows.map(x => x.year), fitRows.map(x => x.sd));
     const lastYr = fitRows[fitRows.length - 1].year;
     const anchor = useAsset ? fitRows[fitRows.length - 1].cpPct : null;
-    // Projection of the shape discount from the last complete year: the PPA
-    // Dashboard's straight line (capped), a trend halving every year, or flat
     const start = fitRows[fitRows.length - 1].sd;   // the last year used, as observed
-    const clamp = v => Math.max(0, Math.min(0.95, v));
-    const proj = y => { const t = Math.max(0, y - lastYr);
-      return clamp(st.model === 'flat' ? start : st.model === 'linear' ? start + reg.sl * t : start + 2 * reg.sl * (1 - Math.pow(0.5, t))); };
-    const fitLine = y => clamp(reg.ic + reg.sl * y);
-    const ty = thisYear(), t0 = st.tenorStart || ty + 1, t1 = Math.max(t0, st.tenorEnd || t0 + 4);
+    const excluded = nat.filter(x => x.complete && x.year < lastYr && x.year >= Math.min(...sel) && !sel.includes(x.year)).map(x => x.year);
+    // Projection of the shape discount from the last year used
+    const cp = capPath(st.tech), cfit = D.capGW[st.tech] && Object.keys(D.capGW[st.tech]).length ? capacityFit(nat, sel, st.tech) : null;
+    const model = st.model === 'capacity' && !cfit ? 'damped' : st.model;
+    const capOff = cfit ? (1 - start) - cfit.f(cp(lastYr)) : 0;   // anchored on the last year used (asset or national)
+    const cl = v => clamp(v, 0, 0.95);
+    const proj = y => { const t = Math.max(0, y - lastYr); if (!t) return start;
+      return cl(model === 'flat' ? start : model === 'linear' ? start + reg.sl * t : model === 'capacity' ? 1 - (cfit.f(cp(y)) + capOff) : start + 2 * reg.sl * (1 - Math.pow(0.5, t))); };
+    const fitLine = y => cl(reg.ic + reg.sl * y);
+    // uncertainty of the projection: spread of the years used around their trend (3 to 8 pts), widening with √t
+    const resid = fitRows.map(x => x.sd - (reg.ic + reg.sl * x.year));
+    const sig0 = pick('mcSd', clamp(Math.sqrt(mean(resid.map(r => r * r)) || 0), 0.03, 0.08) * 100, 'spread of the years used around their trend, 3 to 8 pts') / 100;
+    const sigT = t => Math.min(0.2, sig0 * Math.sqrt(Math.max(1, t)));
+    // Tenor and forwards
+    const ty = thisYear();
+    const t0 = pick('tenorStart', ty + 1, 'next calendar year'), t1 = Math.max(t0, pick('tenorEnd', t0 + 4, 'five years'));
     const known = Object.keys(D.fwd).map(Number).sort();
-    const fwdFor = y => st.fwd[y] != null ? st.fwd[y] : D.fwd[y] != null ? D.fwd[y] : known.length ? D.fwd[known.filter(k => k <= y).pop() || known[0]] : 60;
+    const fwdAuto = y => D.fwd[y] != null ? D.fwd[y] : known.length ? D.fwd[known.filter(k => k <= y).pop() || known[0]] : 60;
+    const fwdFor = y => st.fwd[y] != null ? st.fwd[y] : fwdAuto(y);
     const tenor = []; for (let y = t0; y <= t1; y++) tenor.push(y);
-    const fwds = tenor.map(fwdFor), ref = fwds.reduce((a, b) => a + b, 0) / fwds.length;
-    const goMkt = (() => { const v = tenor.map(y => D.go[y] && D.go[y].v).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })();
-    const goVal = st.go != null ? st.go : goMkt != null ? goMkt : 1.0;
-    const sdCh = percentile(histSd, st.pct);
-    const price = (f, sd) => f - f * (sd + st.add / 100 + st.volRisk / 100 + st.priceRisk / 100) - st.imb + goVal + st.margin;
-    const ppa = price(ref, sdCh);
-    const volume = useAsset ? (() => { const full = ast.filter(x => x.days >= 330); return full.length ? full.reduce((a, x) => a + x.mwh, 0) / full.length : ast[ast.length - 1].mwh * 365 / ast[ast.length - 1].days; })() : st.volume;
-    const years = tenor.map((y, i) => { const fsd = proj(y), cp = fwds[i] * (1 - fsd); return { y, fwd: fwds[i], fsd, cp, ppaY: price(fwds[i], fsd), pnl: cp - ppa, pnlK: volume * (cp - ppa) / 1000 }; });
+    const fwds = tenor.map(fwdFor), ref = mean(fwds);
+    // GO: market price of each production year, else the average of the known ones
+    const goKnown = tenor.map(y => D.go[y] && D.go[y].v).filter(v => v != null), goMkt = goKnown.length ? mean(goKnown) : null;
+    const goAuto = goMkt != null ? goMkt : 1.0;
+    const goVal = pick('go', +goAuto.toFixed(2), goMkt != null ? 'Commerg mid, AIB renewable, tenor years' : 'default');
+    const goY = tenor.map(y => st.go != null ? st.go : D.go[y] ? D.go[y].v : goAuto);
+    // Volume: asset curve, else capacity × national load factor
+    const natLF = nat.filter(x => x.complete && x.lf).slice(-3), lf = natLF.length ? mean(natLF.map(x => x.lf)) : (st.tech === 'solar' ? 0.135 : 0.23);
+    const fullA = ast ? ast.filter(x => x.days >= 330) : [];
+    const astVol = ast ? (fullA.length ? mean(fullA.map(x => x.mwh)) : ast[ast.length - 1].mwh * 365 / ast[ast.length - 1].days) : null;
+    let peak = null; if (st.asset) { let m = 0; st.asset.slots.forEach(a => { for (let q = 0; q < 96; q++) if (a[q] > m) m = a[q]; }); peak = m * 4 / 1000; }
+    const mw = pick('mw', peak != null ? +peak.toFixed(1) : null, peak != null ? 'peak of the curve' : 'enter it to size the production');
+    const volume = pick('volume', astVol != null ? Math.round(astVol) : mw ? Math.round(mw * lf * 8760) : 52000,
+      astVol != null ? 'asset curve, average year' : mw ? `${mw} MW × national load factor ${(lf * 100).toFixed(1)} %` : 'example: enter the capacity or a curve');
+    const degr = pick('degr', st.tech === 'solar' ? 0.4 : 0, st.tech === 'solar' ? 'typical PV panel ageing' : 'none for wind') / 100;
+    const disc = pick('disc', 0, 'none: values in today’s money') / 100;
+    const imb = pick('imb', 1.9, 'PPA Dashboard default'), margin = pick('margin', 1.0, 'PPA Dashboard default'), add = pick('add', 0, 'none');
+    const volRisk = pick('volRisk', 0, 'none'), priceRisk = pick('priceRisk', 0, 'none');
+    const alpha = pick('alpha', 25, 'one chance in four');
+    const volStress = pick('volStress', 20, 'PPA Dashboard'), spotStress = pick('spotStress', 20, 'PPA Dashboard');
+    // Monte Carlo inputs
+    const lfs = nat.filter(x => x.complete && x.lf).slice(-6).map(x => x.lf), astFull = fullA.map(x => x.mwh);
+    const sigVAuto = astFull.length >= 3 ? std(astFull) / mean(astFull) : lfs.length >= 3 ? std(lfs) / mean(lfs) : 0.08;
+    const sigV = pick('mcVol', +(Math.max(0.04, sigVAuto) * 100).toFixed(1), astFull.length >= 3 ? 'spread of the asset’s yearly output' : 'spread of the national load factor, 6 years') / 100;
+    const sigF = pick('mcFwd', D.fwdVol ? +(clamp(D.fwdVol, 0.1, 0.8) * 100).toFixed(0) : 25, D.fwdVol ? `France Cal+1, ${D.fwdVolN} sessions` : 'assumption') / 100;
+    const rho = clamp(pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
+    // Year by year: expected production, discount factor, capture value
+    const now = nowFrac();
+    const years = tenor.map((y, i) => { const ev = volume * Math.pow(1 - degr, i), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
+      return { y, fwd: fwds[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr) }; });
+    const W = years.reduce((a, r) => a + r.w, 0) || 1;
+    years.forEach(r => { r.wt = r.w / W; });
+    const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
+    const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
+    const o = { st, nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
+      tenor, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
+    // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
+    if (!st.noMC) o.mc = simulate(o, st);
+    // Prices of both methods
+    const sdPct = percentile(histSd, st.pct);
+    o.sdCh = sdPct;
+    o.ppaPct = ref - ref * (sdPct + add / 100 + volRisk / 100 + priceRisk / 100) - imb + goVal + margin;
+    o.qU = o.mc ? qtl(o.mc.Us, alpha / 100) : fair;
+    o.premium = fair - o.qU;
+    o.ppaBuild = o.qU - refW * add / 100 - imb + goW - margin;
+    o.method = st.method;
+    o.ppa = st.method === 'pct' ? o.ppaPct : o.ppaBuild;
+    o.goP = st.method === 'pct' ? goVal : goW;
+    o.refP = st.method === 'pct' ? ref : refW;
+    // P&L per year at the PPA price, central case
+    years.forEach(r => { r.pnl = r.cp - imb + r.go - o.ppa; r.pnlK = r.ev * r.pnl / 1000; });
+    // P&L against the historical percentiles of the shape discount
     const pcts = [...Array(100).keys()].map(i => i + 1), sdP = pcts.map(p => percentile(histSd, p));
-    const pnlCurve = sdP.map(sd => volume * (ref * (1 - sd) - ppa) / 1000);
-    const be = pcts.find((p, i) => pnlCurve[i] < 0) || null;
-    // stress scenarios (same table as the PPA Dashboard): total over the tenor, k€
-    const n = tenor.length, med = percentile(histSd, 50), p10 = percentile(histSd, 10), p90 = percentile(histSd, 90), vs = st.volStress / 100, ss = st.spotStress / 100;
-    const scen = [['Base', 1, 0, 0], ['Cannibalisation +' + st.volStress + ' %', 1, vs, 0], ['Cannibalisation −' + st.volStress + ' %', 1, -vs, 0], ['Spot +' + st.spotStress + ' %', 1 + ss, 0, 0], ['Spot −' + st.spotStress + ' %', 1 - ss, 0, 0],
-      ['Volume +' + st.volStress + ' %', 1, 0, vs], ['Volume −' + st.volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
-      .map(([name, sm, da, va]) => { const base = volume * (1 + va) / 1000 * n; return { name, p10: base * (sm * ref * (1 - (p90 + da)) - ppa), p50: base * (sm * ref * (1 - (med + da)) - ppa), p90: base * (sm * ref * (1 - (p10 + da)) - ppa) }; });
-    const ppaProj = years.reduce((a, r) => a + r.ppaY, 0) / years.length;
-    return { nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, ppaProj, tenor, fwds, ref, goVal, goMkt, sdCh, ppa, volume, years, pcts, pnlCurve, be, scen, fitRows };
+    o.pcts = pcts;
+    o.pnlCurve = sdP.map(sd => volume * (o.refP * (1 - sd) - imb + o.goP - o.ppa) / 1000);
+    o.be = pcts.find((p, i) => o.pnlCurve[i] < 0) || null;
+    // stress scenarios, total over the tenor, k€: around the projection (step by step) or the history (PPA Dashboard)
+    const n = tenor.length, vs = volStress / 100, ss = spotStress / 100, sMid = sigT(tenor[Math.floor(n / 2)] - lastYr);
+    const c50 = st.method === 'pct' ? percentile(histSd, 50) : sdW, cLo = st.method === 'pct' ? percentile(histSd, 10) : sdW - 1.28 * sMid, cHi = st.method === 'pct' ? percentile(histSd, 90) : sdW + 1.28 * sMid;
+    o.scen = [['Base', 1, 0, 0], ['Cannibalisation +' + volStress + ' %', 1, vs, 0], ['Cannibalisation −' + volStress + ' %', 1, -vs, 0], ['Spot +' + spotStress + ' %', 1 + ss, 0, 0], ['Spot −' + spotStress + ' %', 1 - ss, 0, 0],
+      ['Volume +' + volStress + ' %', 1, 0, vs], ['Volume −' + volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
+      .map(([name, sm, da, va]) => { const base = volume * (1 + va) / 1000 * n, v = sd => base * (sm * o.refP * (1 - (sd + da)) - imb + o.goP - o.ppa); return { name, p10: v(cHi), p50: v(c50), p90: v(cLo) }; });
+    if (o.mc) o.mcAt = mcEval(o, o.ppa);
+    return o;
+  }
+
+  // ── Monte Carlo ───────────────────────────────────────────────────
+  // Per trajectory and year: the forward moves as one path to delivery (σ·√τ),
+  // production varies around its expectation, the shape discount drifts away
+  // from its projection (random walk, σ per √year, as in the projection band),
+  // with a correlation between production and that drift. Hedged: the
+  // expected volume is sold forward at the Cal price, so only the volume and
+  // shape risks remain. U = Σ df × (production × spot × (1 − shape discount)
+  // + hedge result) ÷ Σ df × production: what one MWh of the contract earned.
+  function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const qtl = (sorted, q) => { const r = q * (sorted.length - 1), lo = Math.floor(r); return sorted[lo] + (sorted[Math.min(sorted.length - 1, lo + 1)] - sorted[lo]) * (r - lo); };
+  function simulate(o, st) {
+    const N = 10000, Y = o.years, T = Y.length, R = rng(42);
+    let spare = null; const gauss = () => { if (spare != null) { const v = spare; spare = null; return v; } let u = 0, v = 0; while (!u) u = R(); v = R(); const m = Math.sqrt(-2 * Math.log(u)); spare = m * Math.sin(2 * Math.PI * v); return m * Math.cos(2 * Math.PI * v); };
+    const now = nowFrac(), tau = Y.map(r => Math.max(0.05, r.y + 0.5 - now)), hedged = st.hedge !== 'open', rc = Math.sqrt(1 - o.rho * o.rho);
+    const U = new Float64Array(N), prod = Y.map(() => new Float32Array(N)), val = Y.map(() => new Float32Array(N)), sdM = Y.map(() => new Float32Array(N)), cpM = Y.map(() => new Float32Array(N));
+    for (let i = 0; i < N; i++) {
+      let w = 0, tp = 0, rw = 0, num = 0, den = 0;
+      for (let t = 0; t < T; t++) {
+        const r = Y[t];
+        w += Math.sqrt(tau[t] - tp) * gauss(); tp = tau[t];
+        const spot = r.fwd * Math.exp(o.sigF * w - o.sigF * o.sigF * tau[t] / 2);
+        const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
+        const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
+        rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
+        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (1 - sd);
+        const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
+        prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap;
+        num += r.df * v; den += r.df * pr;
+      }
+      U[i] = num / den;
+    }
+    const Us = Float64Array.from(U).sort();
+    return { N, U, Us, prod, val, sdM, cpM, hedged, mean: mean(Array.from(U)) };
+  }
+  // the simulated P&L at a given price, k€
+  function mcEval(o, price) {
+    const mc = o.mc, N = mc.N, T = o.years.length, cum = new Float64Array(N), ann = o.years.map(() => new Float64Array(N));
+    for (let t = 0; t < T; t++) { const c = price + o.imb - o.years[t].go; for (let i = 0; i < N; i++) { const p = (mc.val[t][i] - mc.prod[t][i] * c) / 1000; ann[t][i] = p; cum[i] += p; } }
+    const sorted = Float64Array.from(cum).sort(), p10 = qtl(sorted, 0.1);
+    let es = 0, nes = 0; cum.forEach(v => { if (v <= p10) { es += v; nes++; } });
+    const srt = a => Float64Array.from(a).sort();
+    const annS = ann.map(srt), sdS = mc.sdM.map(srt), cpS = mc.cpM.map(srt);
+    return { cum: sorted, prob: cum.filter(v => v < 0).length / N, es: nes ? es / nes : null,
+      pc: [1, 5, 10, 25, 50, 75, 90, 95, 99].reduce((m, p) => (m[p] = qtl(sorted, p / 100), m), {}),
+      bands: [5, 10, 25, 50, 75, 90, 95].reduce((m, p) => (m[p] = annS.map(a => qtl(a, p / 100)), m), {}),
+      years: o.years.map((r, t) => ({ y: r.y, sdTrend: r.fsd, sd50: qtl(sdS[t], 0.5), sd90: qtl(sdS[t], 0.9), cp50: qtl(cpS[t], 0.5), p10: qtl(annS[t], 0.1), p50: qtl(annS[t], 0.5), p90: qtl(annS[t], 0.9), std: std(Array.from(ann[t])) })) };
   }
 
   // ── Rendering ─────────────────────────────────────────────────────
@@ -152,12 +296,29 @@
   const f0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB');
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
   const sgn = v => (v > 0 ? '+' : '') + f0(v);
+  const MODEL_T = { capacity: 'driven by installed capacity (PPE3)', flat: 'flat at the last year used', damped: 'trend halving every year', linear: 'straight line (PPA Dashboard)' };
+
+  // input id → state key; an empty field takes the automatic value
+  const FIELDS = { 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
+    'pp-disc': 'disc', 'pp-add': 'add', 'pp-volrisk': 'volRisk', 'pp-pricerisk': 'priceRisk', 'pp-mcvol': 'mcVol', 'pp-mcfwd': 'mcFwd', 'pp-mcsd': 'mcSd', 'pp-rho': 'rho', 'pp-vs': 'volStress', 'pp-ss': 'spotStress' };
+  function renderAuto(o) {
+    Object.entries(FIELDS).forEach(([id, k]) => {
+      const inp = $(id), tag = document.querySelector(`.pp-auto[data-for="${id}"]`), a = o.auto[k]; if (!inp || !a) return;
+      const v = a[0];
+      inp.placeholder = v == null ? '' : String(v);
+      if (S[k] == null && document.activeElement !== inp) inp.value = '';
+      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : `auto · ${a[1]}`; tag.title = man ? 'Back to the automatic value: ' + a[1] : a[1]; tag.dataset.k = k; }
+    });
+    const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + S.method;
+  }
 
   function renderForwards(o) {
     const host = $('pp-fwd'); if (!host) return;
-    host.innerHTML = o.tenor.map((y, i) => `<label class="cf-field"><span>Cal ${y}${D.fwd[y] == null ? ' · assumed' : ''}</span><span class="cf-in"><input type="number" step="0.01" data-fy="${y}" value="${o.fwds[i].toFixed(2)}"><em>€/MWh</em></span></label>`).join('') +
-      `<div class="pp-fwd-note">${D.fwdDate ? 'Market settlements of ' + D.fwdDate + '; years without a contract take the last one. ' : ''}Edit to test another curve.</div>`;
-    host.querySelectorAll('input[data-fy]').forEach(inp => inp.addEventListener('change', () => { S.fwd[+inp.dataset.fy] = parseFloat(inp.value); run(); }));
+    host.innerHTML = o.tenor.map((y, i) => { const man = S.fwd[y] != null, a = o.fwdAuto(y);
+      return `<label class="cf-field"><span>Cal ${y} <i class="pp-auto${man ? ' man' : ''}" data-fy="${y}">${man ? '↺ auto ' + f2(a) : D.fwd[y] == null ? 'auto · last contract quoted' : 'auto · market'}</i></span><span class="cf-in"><input type="number" step="0.01" data-fy="${y}" placeholder="${a.toFixed(2)}" value="${man ? S.fwd[y] : ''}"><em>€/MWh</em></span></label>`; }).join('') +
+      `<div class="pp-fwd-note">France baseload calendar contracts${D.fwdDate ? ', settlements of ' + D.fwdDate : ''}; years without a contract take the last one quoted.</div>`;
+    host.querySelectorAll('input[data-fy]').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (isFinite(v)) S.fwd[+inp.dataset.fy] = v; else delete S.fwd[+inp.dataset.fy]; run(); }));
+    host.querySelectorAll('.pp-auto.man[data-fy]').forEach(t => t.addEventListener('click', e => { e.preventDefault(); delete S.fwd[+t.dataset.fy]; run(); }));
   }
 
   function renderYears(o) {
@@ -172,61 +333,75 @@
   }
 
   function render(o) {
-    renderYears(o);
-    const tech = S.tech === 'solar' ? 'Solar' : 'Wind';
-    $('pp-kpis').innerHTML = [
-      _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${o.ref ? (o.ppa / o.ref * 100).toFixed(1) + ' % of forward' : ''}`, ''),
-      _fuelKpi('PPA on projection', f2(o.ppaProj), '€/MWh', `average of the yearly prices with the ${({ damped: 'damped', linear: 'linear', flat: 'flat' })[S.model]} projected shape discount`),
+    renderYears(o); renderAuto(o);
+    const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T0 = o.tenor[0], T1 = o.tenor[o.tenor.length - 1], build = S.method !== 'pct', mcA = o.mcAt;
+    const other = build ? `PPA Dashboard method: ${f2(o.ppaPct)} €/MWh` : `Step-by-step method: ${f2(o.ppaBuild)} €/MWh`;
+    $('pp-kpis').innerHTML = (build ? [
+      _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.refW * 100).toFixed(1)} % of forward`, ''),
+      _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × (1 − projected shape discount), no risk'),
+      _fuelKpi('Risk premium', f2(o.premium), '€/MWh', `${o.alpha} % chance of loss accepted · Monte Carlo`),
+      _fuelKpi('Chance of loss', mcA ? (mcA.prob * 100).toFixed(1) : '–', '%', 'at the PPA price, margin included', mcA && mcA.prob > 0.5 ? 'down' : 'up'),
+      _fuelKpi('Other method', f2(o.ppaPct), '€/MWh', 'PPA Dashboard: percentile of history'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+    ] : [
+      _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.ref * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
       _fuelKpi('Shape discount used', pc(o.sdCh), '', `P${S.pct} of ${o.sel.join(', ')} (${o.useAsset ? 'asset' : 'national'})`),
-      _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'cannibalisation percentile where P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
-      _fuelKpi('Volume', f0(o.volume), 'MWh/yr', o.useAsset ? 'asset average' : 'entered'),
+      _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'percentile where the P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
+      _fuelKpi('Other method', f2(o.ppaBuild), '€/MWh', 'step by step: projection + Monte Carlo'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+    ]).join('');
+    // the price, step by step: each step points to the chart it comes from
+    const first = o.years[0], last = o.years[o.years.length - 1];
+    const step = (t, n, txt, cls) => `<div class="pp-bs${cls ? ' ' + cls : ''}"><div class="t">${t}</div><b class="n">${n}</b>${txt}</div>`;
+    $('pp-build').innerHTML = build ? [
+      step('1 · Forward', f2(o.refW) + ' €/MWh', `Cal ${T0}–${T1}, weighted by production${o.disc ? ' and discounted' : ''} · <a href="#pp-fwd" data-go="hs-pp-in">inputs</a>`),
+      step('2 · Cannibalisation', pc(first.fsd) + ' → ' + pc(last.fsd), `shape discount ${T0} → ${T1}, ${MODEL_T[o.model]} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">chart</a>`),
+      step('3 · Capture value', f2(o.fair) + ' €/MWh', 'forward × (1 − shape discount), year by year · <a href="#pp-years" data-go="hs-pp-price">table</a>'),
+      step('4 · Risk premium', '−' + f2(o.premium) + ' €/MWh', `price with a ${o.alpha} % chance of loss, ${o.mc && o.mc.hedged ? 'forward hedged' : 'forward open'} · <a href="#hs-pp-mc" data-go="hs-pp-mc">Monte Carlo</a>`),
+      step('5 · Costs and GO', (o.goW - o.imb - o.margin - o.refW * o.add / 100 >= 0 ? '+' : '−') + f2(Math.abs(o.goW - o.imb - o.margin - o.refW * o.add / 100)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)}${o.add ? ', add. discount −' + f2(o.refW * o.add / 100) : ''}`),
+      step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
+    ].join('') : [
+      step('1 · Forward', f2(o.ref) + ' €/MWh', `average of Cal ${T0}–${T1}`),
+      step('2 · Shape discount', pc(o.sdCh), `P${S.pct} of the years ${o.sel.join(', ')} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">history</a>`),
+      step('3 · Risks', '−' + f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100) + ' €/MWh', `additional ${o.add} %, volume ${o.volRisk} %, price ${o.priceRisk} % of the forward`),
+      step('4 · Costs and GO', (o.goVal + o.margin - o.imb >= 0 ? '+' : '−') + f2(Math.abs(o.goVal + o.margin - o.imb)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin +${f2(o.margin)} (PPA Dashboard sign)`),
+      step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
     ].join('');
+    $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { const h = sec.querySelector('.hist-section-header'); if (h && !h.classList.contains('open')) h.click(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
     // waterfall
-    const steps = [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * S.add / 100], ['Volume risk', -o.ref * S.volRisk / 100], ['Price risk', -o.ref * S.priceRisk / 100], ['Imbalance', -S.imb], ['GO value', o.goVal], ['Margin', S.margin]];
-    let run_ = 0; const bars = steps.map(([l, v], i) => { if (i === 0) { run_ = v; return [0, v]; } const a = run_; run_ += v; return [a, run_]; });
+    const steps = build
+      ? [['Forward', o.refW], ['Shape discount', o.fair - o.refW], ['Risk premium', -o.premium], ['Add. discount', -o.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
+      : [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', o.margin]];
+    const st2 = steps.filter(([l, v], i) => i === 0 || Math.abs(v) > 0.005);
+    let acc = 0; const bars = st2.map(([l, v], i) => { if (i === 0) { acc = v; return [0, v]; } const a = acc; acc += v; return [a, acc]; });
     bars.push([0, o.ppa]);
-    const labels = steps.map(s => s[0].split(' ')).concat([['PPA', 'price']]), cols = steps.map(([, v], i) => i === 0 ? 'rgba(127,200,248,.75)' : v < 0 ? 'rgba(237,105,101,.8)' : 'rgba(20,211,169,.8)').concat('#FBBF24');
-    _fuelChart('pp-waterfall', { type: 'bar', data: { labels, datasets: [{ label: '€/MWh', data: bars, backgroundColor: cols, borderRadius: 3, borderSkipped: false }] },
+    const labels = st2.map(s => s[0].split(' ')).concat([['PPA', 'price']]), colsW = st2.map(([, v], i) => i === 0 ? 'rgba(127,200,248,.75)' : v < 0 ? 'rgba(237,105,101,.8)' : 'rgba(20,211,169,.8)').concat('#FBBF24');
+    _fuelChart('pp-waterfall', { type: 'bar', data: { labels, datasets: [{ label: '€/MWh', data: bars, backgroundColor: colsW, borderRadius: 3, borderSkipped: false }] },
       options: _fuelOpts({ plugins: { legend: { display: false }, pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => { const r = c.raw; const v = c.dataIndex === 0 || c.dataIndex === labels.length - 1 ? r[1] : r[1] - r[0]; return ' ' + (v > 0 && c.dataIndex && c.dataIndex < labels.length - 1 ? '+' : '') + v.toFixed(2) + ' €/MWh'; } } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
-    // capture history + projection
-    const hy = o.hist.map(x => x.year), all = hy.concat(o.tenor.filter(y => !hy.includes(y))).sort();
-    const band = (k) => all.map(y => { if (!o.tenor.includes(y)) return null; const t = y - o.lastYr, cs = 0.04 * Math.sqrt(Math.max(1, t)); return Math.round((1 - (o.proj(y) + k * cs)) * 1000) / 10; });
-    const natMap = new Map(o.nat.map(x => [x.year, x])), astMap = o.ast ? new Map(o.ast.map(x => [x.year, x])) : null;
-    _fuelChart('pp-history', { type: 'bar', data: { labels: all, datasets: [
-      { label: 'National ' + tech.toLowerCase() + ' capture rate', data: all.map(y => natMap.has(y) ? Math.round(natMap.get(y).cpPct * 1000) / 10 : null), backgroundColor: all.map(y => natMap.has(y) && !natMap.get(y).complete ? 'rgba(127,200,248,.3)' : 'rgba(127,200,248,.7)'), borderRadius: 3 },
-      ...(astMap ? [{ label: (S.assetName || 'Asset') + ' capture rate', data: all.map(y => astMap.has(y) ? Math.round(astMap.get(y).cpPct * 1000) / 10 : null), backgroundColor: S.tech === 'solar' ? 'rgba(251,191,36,.8)' : 'rgba(20,211,169,.8)', borderRadius: 3 }] : []),
-      { type: 'line', label: 'Regression fit', data: all.map(y => o.fitRows.some(r => r.year === y) ? Math.round((1 - o.fitLine(y)) * 1000) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.4, pointRadius: 2, fill: false },
-      { type: 'line', label: '_p10', data: band(1.28), borderWidth: 0, pointRadius: 0, fill: false },
-      { type: 'line', label: 'Projection P10–P90', data: band(-1.28), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(168,125,196,.18)', fill: '-1' },
-      { type: 'line', label: 'Projection (median)', data: all.map(y => o.tenor.includes(y) ? Math.round((1 - o.proj(y)) * 1000) / 10 : y === o.lastYr ? Math.round((1 - o.proj(y)) * 1000) / 10 : null), borderColor: '#A87DC4', borderWidth: 2, borderDash: [5, 4], pointRadius: 2, fill: false, spanGaps: true },
-    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
-      scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-history');
+    // year table
+    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>MWh</th><th>Weight</th><th>P&L k€</th></tr></thead><tbody>` +
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td>${f0(r.ev)}</td><td>${(r.wt * 100).toFixed(1)} %</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
       { label: 'Annual P&L (k€)', data: o.pnlCurve.map(v => Math.round(v)), borderColor: '#FFFFFF', borderWidth: 2, pointRadius: 0, fill: { target: { value: 0 }, above: 'rgba(20,211,169,.18)', below: 'rgba(237,105,101,.22)' } },
     ] }, options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 11, maxRotation: 0 } }), y: _fuelAxis('k€ per year') } }) }, 'ppa-pnl-percentile');
-    $('pp-pnl-sub').textContent = `Volume × (forward × (1 − shape discount at each percentile) − PPA) · chosen P${S.pct}: ${sgn(o.pnlCurve[S.pct - 1])} k€/yr` + (o.be ? ` · break-even P${o.be}` : '');
-    // year table
-    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Projected shape disc.</th><th>Capture price</th><th>PPA if priced on the year</th><th>Capture − PPA</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)}</td><td>${f2(r.cp)}</td><td>${f2(r.ppaY)}</td><td class="${r.pnl >= 0 ? 'pp-pos' : 'pp-neg'}">${(r.pnl >= 0 ? '+' : '') + f2(r.pnl)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Projection: shape discount regressed on ${o.fitRows.map(r => r.year).join(', ') || '–'} (slope ${(o.reg.sl * 100).toFixed(2)} pts/yr, R² ${o.reg.r2.toFixed(2)}), starting from the ${o.lastYr} shape discount, projected ${({ damped: 'with the trend halving every year', linear: 'in a straight line (capped at 95 %)', flat: 'flat at the last year' })[S.model]}. P&L per year against the contract price ${f2(o.ppa)} €/MWh for ${f0(o.volume)} MWh.</div>`;
+    $('pp-pnl-sub').textContent = `If cannibalisation came back like the years ${o.sel.join(', ')}: production × (forward × (1 − shape discount at each percentile) − imbalance + GO − PPA)` + (o.be ? ` · break-even P${o.be}` : ' · no loss up to P100');
     // scenarios
-    $('pp-scen').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scenario · total over ${o.tenor.length} years</th><th>P10 k€</th><th>P50 k€</th><th>P90 k€</th></tr></thead><tbody>` +
+    $('pp-scen').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scenario · total over ${o.tenor.length} years</th><th>Low k€</th><th>Central k€</th><th>High k€</th></tr></thead><tbody>` +
       o.scen.map(r => `<tr><td style="text-align:left">${r.name}</td>${[r.p10, r.p50, r.p90].map(v => `<td class="${v >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(v)}</td>`).join('')}</tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">P10 / P90 use the 90th / 10th percentile of the historical shape discount (high cannibalisation = low P&L). Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production.</div>`;
+      `</tbody></table></div><div class="fuel-note">${build ? 'Low / high: projected shape discount ± 1.28 σ (P90 / P10 of the projection).' : 'Low / high: 90th / 10th percentile of the historical shape discount.'} Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production. No hedge in this table.</div>`;
     // asset diagnostics
     const ad = $('pp-asset-info');
-    if (ad) ad.textContent = o.ast ? `${S.assetName}: ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : 'No asset curve: national ' + tech.toLowerCase() + ' profile (RTE) used.';
-    const goNote = $('pp-go-note'); if (goNote) goNote.textContent = o.goMkt != null ? `Market: ${f2(o.goMkt)} €/MWh (Commerg, AIB renewable, tenor years)` : '';
+    if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
+    renderDoc(o);
   }
-
 
   // ── Market & methodology charts (the PPA Dashboard Overview and Market Evolution tabs) ──
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const MCOL = ['#3B82F6', '#7FC8F8', '#ED6965', '#F4A7A3', '#14D3A9', '#6EE7B7', '#F59E0B', '#FBBF24', '#A87DC4', '#C9CED6', '#1D4ED8', '#93C5FD'];
-  const PPE3 = { solar: { 2030: 48.0, 2035: 67.5 }, wind: { 2030: 31.0, 2035: 37.5 } };
   // Text labels drawn on given points: [{ ds, i, text, dy }]
   const labelPlugin = (marks) => ({ id: 'ppMarks', afterDatasetsDraw(ch) {
     const g = ch.ctx; g.save(); g.font = '600 10.5px "JetBrains Mono", monospace'; g.textAlign = 'center';
@@ -241,14 +416,6 @@
     const step = xs.getPixelForValue(1) - xs.getPixelForValue(0); g.save(); g.fillStyle = 'rgba(251,191,36,.10)';
     idx.forEach(i => { const x = xs.getPixelForValue(i); g.fillRect(x - step / 2, a.top, step, a.bottom - a.top); }); g.restore(); } });
 
-  function capFit(o, st = S) {
-    const cap = D.capGW[st.tech], pts = o.nat.filter(x => cap[x.year] && x.complete && o.sel.includes(x.year) || (cap[x.year] && x.complete && !st.years && true));
-    const use = o.nat.filter(x => cap[x.year] && x.complete && !(o.excluded || []).includes(x.year));
-    if (use.length < 3) return null;
-    const X = use.map(x => Math.log(cap[x.year])), Y = use.map(x => x.cpPct), r = linreg(X, Y);
-    return { f: gw => r.ic + r.sl * Math.log(gw), r2: r.r2, pts, use };
-  }
-
   const IDS = { proj: 'pp-proj', projSub: 'pp-proj-sub', projTable: 'pp-proj-table', capfit: 'pp-capfit', capfitSub: 'pp-capfit-sub', profNat: 'pp-prof-nat', profNatSub: 'pp-prof-nat-sub',
     profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub' };
   function renderMarket(o, st = S, ids) {
@@ -260,11 +427,10 @@
     for (let y = first; y <= endY; y++) Y.push(y);
     const pc1 = v => v == null ? null : Math.round(v * 1000) / 10;
     const natM = new Map(o.nat.map(x => [x.year, x])), astM = o.ast ? new Map(o.ast.map(x => [x.year, x])) : null;
-    const lastY = o.lastYr, sig = t => 0.04 * Math.sqrt(Math.max(1, t));
+    const lastY = o.lastYr, sig = t => o.sigT(t);
     const bandV = (y, z) => y <= lastY ? null : pc1(1 - (o.proj(y) + z * sig(y - lastY)));
-    const excluded = Y.filter(y => y < lastY && natM.has(y) && natM.get(y).complete && !o.sel.includes(y) && y >= o.sel[0]);
-    o.excluded = excluded;
-    const fit = capFit(o, st), ppe = fit ? Object.entries(PPE3[st.tech]).map(([yr, gw]) => ({ yr: +yr, gw, cp: fit.f(gw) })) : [];
+    const excluded = o.useAsset ? [] : o.excluded;
+    const fit = o.cfit, ppe = fit ? Object.entries(PPE3[st.tech]).map(([yr, gw]) => ({ yr: +yr, gw, cp: fit.f(gw), cpA: fit.f(gw) + o.capOff })) : [];
     const tenorSet = new Set(o.tenor);
     const ds = [
       { label: '_p90', data: Y.map(y => bandV(y, -1.28)), borderWidth: 0, pointRadius: 0, fill: false },
@@ -273,18 +439,18 @@
       { label: 'P25–P75', data: Y.map(y => bandV(y, 0.674)), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(251,191,36,.24)', fill: '-1' },
       { label: 'National ' + tech.toLowerCase() + ' capture rate', data: Y.map(y => natM.has(y) ? pc1(natM.get(y).cpPct) : null), borderColor: '#3FA6B4', borderDash: [6, 4], borderWidth: 1.6, pointStyle: 'rect', pointRadius: 4, backgroundColor: '#3FA6B4', fill: false, spanGaps: false },
       ...(astM ? [{ label: (st.assetName || 'Asset') + ' capture rate', data: Y.map(y => astM.has(y) ? pc1(astM.get(y).cpPct) : null), borderColor: tc, borderWidth: 2, pointRadius: 4, backgroundColor: tc, fill: false }] : []),
-      { label: 'Trend (regression on the years used)', data: Y.map(y => y >= Math.min(...o.sel) - 4 ? pc1(1 - Math.max(-0.5, Math.min(1.5, o.reg.ic + o.reg.sl * y))) : null), borderColor: 'rgba(184,201,217,.55)', borderDash: [2, 3], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: 'Trend (linear regression on the years used)', data: Y.map(y => y >= Math.min(...o.sel) - 4 ? pc1(1 - Math.max(-0.5, Math.min(1.5, o.reg.ic + o.reg.sl * y))) : null), borderColor: 'rgba(184,201,217,.55)', borderDash: [2, 3], borderWidth: 1.2, pointRadius: 0, fill: false },
       { label: 'P50 — tenor', data: Y.map(y => tenorSet.has(y) || y === lastY ? pc1(1 - o.proj(y)) : null), borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: Y.map(y => tenorSet.has(y) ? 4 : y === lastY ? 5 : 0), backgroundColor: '#FFFFFF', fill: false, spanGaps: true },
       { label: 'P50 after the tenor', data: Y.map(y => y >= o.tenor[o.tenor.length - 1] ? pc1(1 - o.proj(y)) : null), borderColor: 'rgba(255,255,255,.45)', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 2, fill: false, spanGaps: true },
-      ...ppe.map(t => ({ label: 'PPE3 ' + t.yr, data: Y.map(y => y === t.yr ? pc1(t.cp) : null), pointStyle: 'rectRot', pointRadius: 8, backgroundColor: '#3FA6B4', borderColor: '#0F1419', showLine: false })),
+      ...ppe.map(t => ({ label: 'PPE3 ' + t.yr, data: Y.map(y => y === t.yr ? pc1(o.model === 'capacity' ? t.cpA : t.cp) : null), pointStyle: 'rectRot', pointRadius: 8, backgroundColor: '#3FA6B4', borderColor: '#0F1419', showLine: false })),
     ];
     const iP50 = ds.findIndex(d => d.label === 'P50 — tenor');
     const marks = o.tenor.map((y, k) => ({ ds: iP50, i: Y.indexOf(y), text: Math.round((1 - o.proj(y)) * 100) + '%', dy: k % 2 ? 22 : -14, box: true }))
-      .concat(ppe.map(t => ({ ds: ds.findIndex(d => d.label === 'PPE3 ' + t.yr), i: Y.indexOf(t.yr), text: t.yr + ' ' + Math.round(t.cp * 100) + '%', dy: -14, color: '#3FA6B4' })));
+      .concat(ppe.map(t => ({ ds: ds.findIndex(d => d.label === 'PPE3 ' + t.yr), i: Y.indexOf(t.yr), text: t.yr + ' ' + Math.round((o.model === 'capacity' ? t.cpA : t.cp) * 100) + '%', dy: -14, color: '#3FA6B4' })));
     if (has('proj')) _fuelChart(ids.proj, { type: 'line', data: { labels: Y, datasets: ds }, plugins: [labelPlugin(marks), shadePlugin(excluded.map(y => Y.indexOf(y)))],
       options: _fuelOpts({ layout: { padding: { right: 46, top: 10 } }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
         scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-projection');
-    setT('projSub', `Slope ${(-o.reg.sl * 100).toFixed(2)} %/yr · R² ${o.reg.r2.toFixed(2)} · ${o.useAsset ? 'asset' : 'national'} regression on ${o.sel.join(', ')}${excluded.length ? ' · shaded: left out' : ''} · tenor ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${({ flat: 'flat', damped: 'damped trend', linear: 'straight line' })[st.model]} projection`);
+    setT('projSub', `Projection ${MODEL_T[o.model]} from ${lastY} · ${o.useAsset ? 'asset' : 'national'} years used ${o.sel.join(', ')}${excluded.length ? ' (shaded: left out)' : ''} · bands ± ${(o.sig0 * 100).toFixed(1)} pts × √years · tenor ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · this is step 2 of the price`);
     // P10 / P50 / P90 table
     const rows = []; for (let y = lastY + 1; y <= endY; y++) rows.push(y);
     if (has('projTable')) document.getElementById(ids.projTable).innerHTML = `<table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>P10</th><th>P50</th><th>P90</th></tr></thead><tbody>` +
@@ -308,7 +474,7 @@
       if (has('capfit')) _fuelChart(ids.capfit, { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
         options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => ` ${c.raw.yr || ''} ${c.raw.x.toFixed(1)} GW · ${c.raw.y.toFixed(1)} %` } } },
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
-      setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on the complete years${(o.excluded || []).length ? ' except ' + o.excluded.join(', ') : ''}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}.`);
+      setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
     } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
     // daily profiles
     const profYear = String(Math.max(...o.nat.filter(x => x.complete).map(x => x.year)));
@@ -362,51 +528,31 @@
     setT('rollSub', `Latest: 30 days ${pc1(l30 && l30.pct)}% · 90 days ${pc1(l90 && l90.pct)}% · 365 days ${pc1(last && last.pct)}% (${R.days[R.days.length - 1]}) · 100% = no cannibalisation`);
   }
 
-  // ── Monte Carlo (port of the PPA Dashboard montecarlo.py) ──
-  // Per year: shape discount = projection + N(0, σ history), forward × N(1, σf),
-  // production × N(1, σv); P&L = prod × (forward × (1 − sd) − PPA) − prod × 3 % × imbalance.
-  function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function monteCarlo(o, st = S) {
-    const N = 10000, T = o.tenor.length, R = rng(42);
-    let spare = null; const gauss = () => { if (spare != null) { const v = spare; spare = null; return v; } let u = 0, v = 0; while (!u) u = R(); v = R(); const m = Math.sqrt(-2 * Math.log(u)); spare = m * Math.sin(2 * Math.PI * v); return m * Math.cos(2 * Math.PI * v); };
-    const mean = o.histSd.reduce((a, b) => a + b, 0) / o.histSd.length;
-    const sig = o.histSd.length >= 3 ? Math.sqrt(o.histSd.reduce((a, b) => a + (b - mean) ** 2, 0) / o.histSd.length) : 0.07;
-    const sv = (st.mcVol != null ? st.mcVol : 12) / 100, sf = (st.mcFwd != null ? st.mcFwd : 10) / 100, imbRate = 0.03;
-    const trend = o.tenor.map(y => Math.min(0.95, Math.max(0, o.proj(y))));
-    const cum = new Float64Array(N), ann = o.tenor.map(() => new Float64Array(N)), sdM = o.tenor.map(() => new Float64Array(N)), cpM = o.tenor.map(() => new Float64Array(N));
-    for (let i = 0; i < N; i++) {
-      let c = 0;
-      for (let t = 0; t < T; t++) {
-        const sd = Math.min(0.95, Math.max(0, trend[t] + sig * gauss()));
-        const fw = o.fwds[t] * Math.min(3, Math.max(0.3, 1 + sf * gauss()));
-        const pr = o.volume * Math.min(2, Math.max(0.3, 1 + sv * gauss()));
-        const cp = fw * (1 - sd), pnl = pr * (cp - o.ppa) / 1000 - pr * imbRate * st.imb / 1000;
-        ann[t][i] = pnl; sdM[t][i] = sd; cpM[t][i] = cp; c += pnl;
-      }
-      cum[i] = c;
-    }
-    const pctl = (arr, p) => { const a = Float64Array.from(arr).sort(); const r = p / 100 * (a.length - 1), lo = Math.floor(r); return a[lo] + (a[Math.min(a.length - 1, lo + 1)] - a[lo]) * (r - lo); };
-    const sorted = Float64Array.from(cum).sort(), p10 = pctl(cum, 10);
-    let es = 0, nes = 0; cum.forEach(v => { if (v <= p10) { es += v; nes++; } });
-    return { N, sig, sv, sf, trend, cum: sorted, prob: cum.filter(v => v < 0).length / N, es: nes ? es / nes : null,
-      pc: [1, 5, 10, 25, 50, 75, 90, 95, 99].reduce((m, p) => (m[p] = pctl(cum, p), m), {}),
-      bands: [5, 10, 25, 50, 75, 90, 95].reduce((m, p) => (m[p] = ann.map(a => pctl(a, p)), m), {}),
-      years: o.tenor.map((y, t) => ({ y, sdTrend: trend[t], sd50: pctl(sdM[t], 50), sd90: pctl(sdM[t], 90), cp50: pctl(cpM[t], 50), p10: pctl(ann[t], 10), p50: pctl(ann[t], 50), p90: pctl(ann[t], 90),
-        std: Math.sqrt(ann[t].reduce((a, v) => a + v * v, 0) / N - (ann[t].reduce((a, v) => a + v, 0) / N) ** 2) })) };
-  }
   function renderMC(o) {
-    if (!$('pp-mc')) return;
-    const mc = monteCarlo(o); o.mc = mc;
-    const k = v => (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('en-GB');
+    if (!$('pp-mc') || !o.mc) return;
+    const mc = o.mc, A = o.mcAt, k = v => (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('en-GB'), build = S.method !== 'pct';
+    $('pp-mc').innerHTML = `<b>What the Monte Carlo decides.</b> The capture value (step 3) is what the production is worth if forwards, volumes and cannibalisation turn out as projected. They will not:
+      ${mc.N.toLocaleString('en-GB')} trajectories draw the forward path to delivery (${(o.sigF * 100).toFixed(0)} %/√yr), the yearly production (± ${(o.sigV * 100).toFixed(1)} %) and a drift of the shape discount away from its projection (${(o.sig0 * 100).toFixed(1)} pts/√yr, correlation ${o.rho.toFixed(2)} with production).
+      ${mc.hedged ? 'The expected volume is sold forward at the Cal prices, so the price level is hedged and what is left is volume and shape risk.' : 'The forward price is left open: the price level risk is carried in full.'}
+      Each trajectory gives what one MWh of the contract really earned; ${build ? `the PPA price is set so that only <b>${o.alpha} %</b> of trajectories lose money: that is the risk premium of <b>${f2(o.premium)} €/MWh</b> (step 4).` : `with the PPA Dashboard method the price is fixed first, and the simulation measures its risk: <b>${(A.prob * 100).toFixed(1)} %</b> chance of loss.`}`;
     $('pp-mc-kpis').innerHTML = [
-      _fuelKpi('P50 total P&L', k(mc.pc[50]), 'k€', `${o.tenor.length} years · ${mc.N.toLocaleString('en-GB')} trajectories`, mc.pc[50] >= 0 ? 'up' : 'down'),
-      _fuelKpi('P10 / P90', k(mc.pc[10]) + ' / ' + k(mc.pc[90]), 'k€', 'downside / upside'),
-      _fuelKpi('Probability of loss', (mc.prob * 100).toFixed(1), '%', 'total P&L below zero', mc.prob > 0.5 ? 'down' : mc.prob < 0.2 ? 'up' : ''),
-      _fuelKpi('Expected shortfall', k(mc.es), 'k€', 'average of the worst 10 %', 'down'),
-      _fuelKpi('Cannibalisation noise', (mc.sig * 100).toFixed(1), 'pts', 'σ of the shape discount over the years used'),
+      _fuelKpi('P50 total P&L', k(A.pc[50]), 'k€', `${o.tenor.length} years at ${f2(o.ppa)} €/MWh`, A.pc[50] >= 0 ? 'up' : 'down'),
+      _fuelKpi('P10 / P90', k(A.pc[10]) + ' / ' + k(A.pc[90]), 'k€', 'downside / upside'),
+      _fuelKpi('Chance of loss', (A.prob * 100).toFixed(1), '%', 'total P&L below zero, margin included', A.prob > 0.5 ? 'down' : A.prob < 0.2 ? 'up' : ''),
+      _fuelKpi('Expected shortfall', k(A.es), 'k€', 'average of the worst 10 %', 'down'),
+      _fuelKpi('Value per MWh', f2(mc.mean), '€/MWh', `average · P${o.alpha} ${f2(o.qU)} · capture value ${f2(o.fair)}`),
     ].join('');
+    // distribution of the value per MWh, with the price lines
+    const lo = mc.Us[Math.floor(mc.N * 0.005)], hi = mc.Us[Math.floor(mc.N * 0.995)], nb = 44, w = (hi - lo) / nb || 1, hU = new Array(nb).fill(0);
+    mc.Us.forEach(v => { const b = Math.floor((v - lo) / w); if (b >= 0 && b < nb) hU[b]++; });
+    const midsU = hU.map((_, b) => lo + (b + 0.5) * w), cut = o.ppa + o.imb - o.goP;
+    const vline = (val, color, text, pos) => ({ type: 'line', xMin: (val - lo) / w - 0.5, xMax: (val - lo) / w - 0.5, borderColor: color, borderWidth: 2, borderDash: [5, 4], label: { display: true, content: text, position: pos || 'start', backgroundColor: 'rgba(15,20,25,.85)', color, font: { size: 10 } } });
+    _fuelChart('pp-mc-u', { type: 'bar', data: { labels: midsU.map(v => v.toFixed(1)), datasets: [
+      { label: 'Trajectories', data: hU.map(v => +(v / mc.N * 100).toFixed(2)), backgroundColor: midsU.map(v => v < cut ? 'rgba(237,105,101,.75)' : 'rgba(20,211,169,.7)'), borderWidth: 0, barPercentage: 1, categoryPercentage: 1 },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, annotation: { annotations: { cv: vline(o.fair, '#B8C9D9', 'capture value ' + f2(o.fair)), pp: vline(cut, '#FBBF24', 'PPA price + costs ' + f2(cut), 'end') } } },
+      scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€/MWh earned by the contract (hedge included) · red = below the PPA price + costs', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('% of trajectories', { beginAtZero: true }) } }) }, 'ppa-montecarlo-value');
     // fan chart, annual P&L
-    const L = o.tenor.map(String), B = mc.bands, r0 = v => Math.round(v);
+    const L = o.tenor.map(String), B = A.bands, r0 = v => Math.round(v);
     _fuelChart('pp-mc-fan', { type: 'line', data: { labels: L, datasets: [
       { label: '_p5', data: B[5].map(r0), borderWidth: 0, pointRadius: 0, fill: false },
       { label: 'P5–P95', data: B[95].map(r0), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(127,200,248,.12)', fill: '-1' },
@@ -419,16 +565,48 @@
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
       scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('k€ per year') } }) }, 'ppa-montecarlo-fan');
     // histogram of the total P&L
-    const lo = mc.cum[Math.floor(mc.N * 0.005)], hi = mc.cum[Math.floor(mc.N * 0.995)], nb = 40, w = (hi - lo) / nb || 1, hist = new Array(nb).fill(0);
-    mc.cum.forEach(v => { const b = Math.floor((v - lo) / w); if (b >= 0 && b < nb) hist[b]++; });
-    const mids = hist.map((_, b) => lo + (b + 0.5) * w);
+    const lo2 = A.cum[Math.floor(mc.N * 0.005)], hi2 = A.cum[Math.floor(mc.N * 0.995)], w2 = (hi2 - lo2) / nb || 1, hist = new Array(nb).fill(0);
+    A.cum.forEach(v => { const b = Math.floor((v - lo2) / w2); if (b >= 0 && b < nb) hist[b]++; });
+    const mids = hist.map((_, b) => lo2 + (b + 0.5) * w2);
     _fuelChart('pp-mc-hist', { type: 'bar', data: { labels: mids.map(v => Math.round(v).toLocaleString('en-GB')), datasets: [
       { label: 'Trajectories', data: hist.map(v => +(v / mc.N * 100).toFixed(2)), backgroundColor: mids.map(v => v < 0 ? 'rgba(237,105,101,.75)' : 'rgba(20,211,169,.7)'), borderWidth: 0, barPercentage: 1, categoryPercentage: 1 },
     ] }, options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: 'total P&L over the tenor, k€', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('% of trajectories', { beginAtZero: true }) } }) }, 'ppa-montecarlo-distribution');
     const f1 = v => (v * 100).toFixed(1) + ' %';
-    $('pp-mc-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Shape disc. trend</th><th>P50</th><th>P90 (worst)</th><th>Capture P50</th><th>P&L P10</th><th>P&L P50</th><th>P&L P90</th><th>Volatility</th></tr></thead><tbody>` +
-      mc.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f1(r.sdTrend)}</td><td>${f1(r.sd50)}</td><td>${f1(r.sd90)}</td><td>${r.cp50.toFixed(2)}</td><td class="${r.p10 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p10)}</td><td class="${r.p50 >= 0 ? 'pp-pos' : 'pp-neg'}"><b>${k(r.p50)}</b></td><td class="${r.p90 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p90)}</td><td>${Math.round(r.std).toLocaleString('en-GB')}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">k€ per year. Shape discount = the projection of the years used + a yearly noise with the σ of their shape discounts (${(mc.sig * 100).toFixed(1)} pts); forward ± ${Math.round(mc.sf * 100)} % and production ± ${Math.round(mc.sv * 100)} % (1 σ); imbalance on 3 % of the volume at ${S.imb} €/MWh. Same model as the PPA Dashboard, seed fixed so results are reproducible.</div>`;
+    $('pp-mc-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Shape disc. projected</th><th>P50</th><th>P90 (worst)</th><th>Capture P50</th><th>P&L P10</th><th>P&L P50</th><th>P&L P90</th></tr></thead><tbody>` +
+      A.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f1(r.sdTrend)}</td><td>${f1(r.sd50)}</td><td>${f1(r.sd90)}</td><td>${r.cp50.toFixed(2)}</td><td class="${r.p10 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p10)}</td><td class="${r.p50 >= 0 ? 'pp-pos' : 'pp-neg'}"><b>${k(r.p50)}</b></td><td class="${r.p90 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p90)}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">k€ per year at the PPA price, ${mc.hedged ? 'hedge included' : 'no hedge'}. Seed fixed: the same inputs always give the same results.</div>`;
+  }
+
+  // ── Methodology (with the proposed updates) ──
+  function renderDoc(o) {
+    const el = $('pp-doc'); if (!el) return;
+    el.innerHTML = `
+<h4>Step-by-step method (default)</h4>
+<ol>
+<li><b>Forward.</b> France baseload Cal contracts of each delivery year (latest settlements), editable. Weighted by the expected production of each year (degradation ${(o.degr * 100).toFixed(2)} %/yr) and a discount factor at ${(o.disc * 100).toFixed(1)} %/yr.</li>
+<li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of both the capture price and the baseload (PPA Dashboard)' : 'all hours (as the CRE M0)'}.
+Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going in a straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}), anchored on ${o.lastYr}.` : ''}
+Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>
+<li><b>Capture value</b> = Σ weight × forward × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>.</li>
+<li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
+<li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
+</ol>
+<h4>PPA Dashboard method</h4>
+<p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO + margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. Kept as in the team's Streamlit tool for comparison. Note that the margin is added there.</p>
+<h4>P&L</h4>
+<p>Everywhere on the page: production × (capture price − imbalance + GO − PPA price). Earlier versions left the imbalance and GO out of the P&L.</p>
+<h4>Data</h4>
+<p>RTE éCO2mix (national production, 15 min) · ENTSO-E day-ahead prices · Energy-Charts installed capacity · PPE3 targets · France Cal forwards and Cal+1 history (market data) · Commerg GO mid prices (AIB renewable). Nothing you load leaves the browser.</p>
+<h4>Proposed updates</h4>
+<ul>
+<li><b>Hourly price forward curve.</b> Build hourly prices from the Cal forwards and a shape (month × day type × hour, with a solar-hour discount growing with capacity) and price the asset's profile on it, instead of one shape discount per year. Most rigorous; needs the shape calibration.</li>
+<li><b>Negative prices as a clause.</b> Model the contract options explicitly: no payment when the price is negative (common in French PPAs) or curtailment from a threshold, with a projected number of negative hours (Negative prices page) — today only the "hours > 0" convention approximates it.</li>
+<li><b>Imbalance from data.</b> Replace the fixed 1.9 €/MWh by an estimate from RTE imbalance prices and a forecast error profile per technology (needs RTE imbalance data, not collected yet).</li>
+<li><b>Volume risk in two parts.</b> P50 / P90 production from the asset's yield study, plus weather-year noise; today one σ per year.</li>
+<li><b>Correlation price ↔ cannibalisation.</b> Calibrate the link between the price level and the shape discount on history (2022 shows high prices with a low discount); today zero by assumption.</li>
+<li><b>Battery and flexibility effect.</b> A scenario where storage capacity (RTE Bilan prévisionnel) narrows the solar discount after 2028.</li>
+<li><b>Credit and indexation.</b> Counterparty risk premium and contracts indexed on a reference (M0, Cal) rather than fixed.</li>
+</ul>`;
   }
 
   // ── Excel export ──
@@ -443,25 +621,29 @@
       await loadXLSX();
       const wb = XLSX.utils.book_new(), add = (name, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name);
       const r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100, r4 = v => v == null || !isFinite(v) ? null : Math.round(v * 10000) / 10000;
+      const A = o.mcAt;
       add('Summary', [
-        { Item: 'Technology', Value: S.tech }, { Item: 'Tenor', Value: o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] }, { Item: 'Volume (MWh/yr)', Value: r2(o.volume) },
-        { Item: 'Capture convention', Value: S.conv === 'pos' ? 'hours with price > 0 (PPA Dashboard)' : 'all hours' }, { Item: 'Years used', Value: o.sel.join(', ') },
-        { Item: 'Projection', Value: S.model }, { Item: 'Percentile', Value: 'P' + S.pct }, { Item: 'Reference forward (€/MWh)', Value: r2(o.ref) },
-        { Item: 'Shape discount used', Value: r4(o.sdCh) }, { Item: 'Additional discount (%)', Value: S.add }, { Item: 'Volume risk (%)', Value: S.volRisk }, { Item: 'Price risk (%)', Value: S.priceRisk },
-        { Item: 'Imbalance (€/MWh)', Value: S.imb }, { Item: 'GO value (€/MWh)', Value: r2(o.goVal) }, { Item: 'Margin (€/MWh)', Value: S.margin },
-        { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'PPA on projection (€/MWh)', Value: r2(o.ppaProj) }, { Item: 'Break-even percentile', Value: o.be ? 'P' + o.be : '> P100' },
-        ...(o.mc ? [{ Item: 'Monte Carlo P50 total (k€)', Value: r2(o.mc.pc[50]) }, { Item: 'Monte Carlo P10 total (k€)', Value: r2(o.mc.pc[10]) }, { Item: 'Monte Carlo P90 total (k€)', Value: r2(o.mc.pc[90]) }, { Item: 'Probability of loss', Value: r4(o.mc.prob) }, { Item: 'Expected shortfall (k€)', Value: r2(o.mc.es) }] : []),
-        { Item: 'Exported', Value: new Date().toISOString() }, { Item: 'Source', Value: 'PowerKlock PPA pricer — RTE éCO2mix, ENTSO-E day-ahead, market forwards, Commerg GO' },
+        { Item: 'Method', Value: S.method === 'pct' ? 'PPA Dashboard (percentile of history)' : 'Step by step (projection + Monte Carlo premium)' },
+        { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'Step-by-step price (€/MWh)', Value: r2(o.ppaBuild) }, { Item: 'PPA Dashboard price (€/MWh)', Value: r2(o.ppaPct) },
+        { Item: 'Technology', Value: S.tech }, { Item: 'Tenor', Value: o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] }, { Item: 'Production (MWh/yr)', Value: r2(o.volume) }, { Item: 'Capacity (MW)', Value: o.mw },
+        { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'pos' ? 'hours with price > 0 (PPA Dashboard)' : 'all hours' },
+        { Item: 'Years used', Value: o.sel.join(', ') }, { Item: 'Projection', Value: MODEL_T[o.model] }, { Item: 'Forward, weighted (€/MWh)', Value: r2(o.refW) }, { Item: 'Forward, simple average (€/MWh)', Value: r2(o.ref) },
+        { Item: 'Capture value (€/MWh)', Value: r2(o.fair) }, { Item: 'Risk accepted (% chance of loss)', Value: o.alpha }, { Item: 'Risk premium (€/MWh)', Value: r2(o.premium) },
+        { Item: 'Percentile (PPA Dashboard)', Value: 'P' + S.pct }, { Item: 'Shape discount at the percentile', Value: r4(o.sdCh) },
+        { Item: 'Imbalance (€/MWh)', Value: o.imb }, { Item: 'GO, weighted (€/MWh)', Value: r2(o.goW) }, { Item: 'Margin (€/MWh)', Value: o.margin }, { Item: 'Additional discount (%)', Value: o.add },
+        { Item: 'Volume risk (%) · PPA Dashboard', Value: o.volRisk }, { Item: 'Price risk (%) · PPA Dashboard', Value: o.priceRisk }, { Item: 'Discount rate', Value: o.disc }, { Item: 'Degradation /yr', Value: o.degr },
+        { Item: 'MC production σ', Value: r4(o.sigV) }, { Item: 'MC forward volatility /√yr', Value: r4(o.sigF) }, { Item: 'MC cannibalisation drift /√yr', Value: r4(o.sig0) }, { Item: 'MC correlation production–cannibalisation', Value: o.rho }, { Item: 'Forward hedge', Value: S.hedge },
+        ...(A ? [{ Item: 'MC P50 total P&L (k€)', Value: r2(A.pc[50]) }, { Item: 'MC P10 total (k€)', Value: r2(A.pc[10]) }, { Item: 'MC P90 total (k€)', Value: r2(A.pc[90]) }, { Item: 'Chance of loss', Value: r4(A.prob) }, { Item: 'Expected shortfall (k€)', Value: r2(A.es) }] : []),
+        { Item: 'Exported', Value: new Date().toISOString() }, { Item: 'Source', Value: 'PowerKlock PPA pricer — RTE éCO2mix, ENTSO-E day-ahead, Energy-Charts capacity, PPE3, market forwards, Commerg GO' },
       ]);
-      add('National history', o.nat.map(x => ({ Year: x.year, 'Baseload €/MWh': r2(x.base), 'Capture €/MWh': r2(x.cp), 'Capture rate': r4(x.cpPct), 'Shape discount': r4(x.sd), Days: x.days, Complete: x.complete })));
+      add('Year by year', o.years.map(r => ({ Year: r.y, 'Forward €/MWh': r2(r.fwd), 'Projected shape discount': r4(r.fsd), 'σ': r4(r.sig), 'Capture €/MWh': r2(r.cp), 'GO €/MWh': r2(r.go), 'Production MWh': r2(r.ev), 'Discount factor': r4(r.df), Weight: r4(r.wt), 'P&L k€ (central)': r2(r.pnlK) })));
+      add('National history', o.nat.map(x => ({ Year: x.year, 'Baseload €/MWh': r2(x.base), 'Capture €/MWh': r2(x.cp), 'Capture rate': r4(x.cpPct), 'Shape discount': r4(x.sd), 'Load factor': r4(x.lf), Days: x.days, Complete: x.complete })));
       if (o.ast) add('Asset history', o.ast.map(x => ({ Year: x.year, 'Baseload €/MWh': r2(x.base), 'Capture €/MWh': r2(x.cp), 'Capture rate': r4(x.cpPct), 'Shape discount': r4(x.sd), 'Volume MWh': r2(x.mwh), Days: x.days })));
-      add('Forwards', o.tenor.map((y, i) => ({ Year: y, 'Forward €/MWh': r2(o.fwds[i]) })));
-      const pr = []; for (let y = o.lastYr + 1; y <= 2035; y++) { const t = y - o.lastYr, cs = 0.04 * Math.sqrt(t), m = o.proj(y); pr.push({ Year: y, 'Capture P10': r4(1 - (m + 1.28 * cs)), 'Capture P50': r4(1 - m), 'Capture P90': r4(1 - (m - 1.28 * cs)), Tenor: o.tenor.includes(y) }); }
+      const pr = []; for (let y = o.lastYr + 1; y <= 2035; y++) { const cs = o.sigT(y - o.lastYr), m = o.proj(y); pr.push({ Year: y, 'Installed GW': r2(o.capPath(y)), 'Capture P10': r4(1 - (m + 1.28 * cs)), 'Capture P50': r4(1 - m), 'Capture P90': r4(1 - (m - 1.28 * cs)), Tenor: o.tenor.includes(y) }); }
       add('Projection', pr);
-      add('Year by year', o.years.map(r => ({ Year: r.y, 'Forward €/MWh': r2(r.fwd), 'Projected shape discount': r4(r.fsd), 'Capture €/MWh': r2(r.cp), 'PPA if priced on the year': r2(r.ppaY), 'Capture − PPA': r2(r.pnl), 'P&L k€': r2(r.pnlK) })));
       add('Percentiles P1-P100', o.pcts.map((p, i) => ({ Percentile: p, 'Annual P&L k€': r2(o.pnlCurve[i]) })));
-      add('Scenarios', o.scen.map(r => ({ Scenario: r.name, 'P10 k€': r2(r.p10), 'P50 k€': r2(r.p50), 'P90 k€': r2(r.p90) })));
-      if (o.mc) add('Monte Carlo', o.mc.years.map(r => ({ Year: r.y, 'Shape disc trend': r4(r.sdTrend), 'Shape disc P50': r4(r.sd50), 'Shape disc P90': r4(r.sd90), 'Capture P50 €/MWh': r2(r.cp50), 'P&L P10 k€': r2(r.p10), 'P&L P50 k€': r2(r.p50), 'P&L P90 k€': r2(r.p90), 'Std k€': r2(r.std) })));
+      add('Scenarios', o.scen.map(r => ({ Scenario: r.name, 'Low k€': r2(r.p10), 'Central k€': r2(r.p50), 'High k€': r2(r.p90) })));
+      if (A) add('Monte Carlo', A.years.map(r => ({ Year: r.y, 'Shape disc projected': r4(r.sdTrend), 'Shape disc P50': r4(r.sd50), 'Shape disc P90': r4(r.sd90), 'Capture P50 €/MWh': r2(r.cp50), 'P&L P10 k€': r2(r.p10), 'P&L P50 k€': r2(r.p50), 'P&L P90 k€': r2(r.p90), 'Std k€': r2(r.std) })));
       XLSX.writeFile(wb, `PowerKlock_PPA_${S.tech}_${o.tenor[0]}-${o.tenor[o.tenor.length - 1]}_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (e) { console.warn('[ppa] xlsx', e); }
     if (btn) btn.textContent = '⤓ Excel';
@@ -476,30 +658,29 @@
     busy = false; if (again) { again = false; run(); }
   }
 
+  async function loadAsset(f, name) {
+    $('pp-status').textContent = 'Reading ' + name + '…';
+    try { const rows = await window.PKLoadCurve.readFile(f); S.asset = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' }); S.years = null; S.assetName = name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false; run(); }
+    catch (e) { $('pp-status').textContent = e.message; }
+  }
   function wire() {
     const page = $('page-ppapricer'); if (!page || page.dataset.wired) return;
     page.dataset.wired = '1';
-    const ty = thisYear();
-    $('pp-t0').value = ty + 1; $('pp-t1').value = ty + 5;
-    const num = (id, key, after) => $(id).addEventListener('change', e => { const v = e.target.value === '' ? null : parseFloat(e.target.value); S[key] = v; if (after) after(); run(); });
-    $('pp-tech').addEventListener('change', e => { S.tech = e.target.value; run(); });
-    $('pp-basis').addEventListener('change', e => { S.basis = e.target.value; run(); });
-    $('pp-model').addEventListener('change', e => { S.model = e.target.value; run(); });
-    num('pp-t0', 'tenorStart'); num('pp-t1', 'tenorEnd'); num('pp-pct', 'pct', () => { $('pp-pct-v').textContent = 'P' + S.pct; });
+    Object.entries(FIELDS).forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', ev => { const v = ev.target.value === '' ? null : parseFloat(ev.target.value); S[k] = v != null && isFinite(v) ? v : null; run(); }); });
+    page.addEventListener('click', e => { const t = e.target.closest('.pp-auto.man[data-k]'); if (!t) return; e.preventDefault(); S[t.dataset.k] = null; const id = Object.keys(FIELDS).find(i => FIELDS[i] === t.dataset.k); if (id) $(id).value = ''; run(); });
+    [['pp-tech', 'tech'], ['pp-basis', 'basis'], ['pp-model', 'model'], ['pp-conv', 'conv'], ['pp-method', 'method'], ['pp-hedge', 'hedge']].forEach(([id, k]) => { const e = $(id); if (e) { e.value = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.value; if (k === 'tech') S.years = null; run(); }); } });
+    $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
-    $('pp-conv').addEventListener('change', e => { S.conv = e.target.value; run(); });
-    num('pp-imb', 'imb'); num('pp-add', 'add'); num('pp-volrisk', 'volRisk'); num('pp-pricerisk', 'priceRisk'); num('pp-go', 'go'); num('pp-margin', 'margin'); num('pp-volume', 'volume');
-    num('pp-vs', 'volStress'); num('pp-ss', 'spotStress');
-    num('pp-mcvol', 'mcVol'); num('pp-mcfwd', 'mcFwd');
     $('pp-xlsx').addEventListener('click', exportXlsx);
     const file = $('pp-file');
-    file.addEventListener('change', async () => {
-      const f = file.files[0]; if (!f) return;
-      $('pp-status').textContent = 'Reading ' + f.name + '…';
-      try { const rows = await window.PKLoadCurve.readFile(f); S.asset = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' }); S.years = null; S.assetName = f.name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false; run(); }
-      catch (e) { $('pp-status').textContent = e.message; }
-      file.value = '';
-    });
+    file.addEventListener('change', async () => { const f = file.files[0]; if (f) await loadAsset(f, f.name); file.value = ''; });
+    page.querySelectorAll('a[data-sample]').forEach(a => a.addEventListener('click', async e => {
+      e.preventDefault();
+      const r = await fetch(a.dataset.sample); if (!r.ok) { $('pp-status').textContent = 'Test curve not found'; return; }
+      const name = a.dataset.sample.split('/').pop(), f = new File([await r.blob()], name, { type: 'text/csv' });
+      S.tech = a.dataset.tech; $('pp-tech').value = S.tech; S.mw = null; S.volume = null;
+      await loadAsset(f, name);
+    }));
     $('pp-asset-clear').addEventListener('click', () => { S.years = null; S.asset = null; S.assetName = ''; $('pp-asset-clear').hidden = true; run(); });
     run();
   }
@@ -512,15 +693,15 @@
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'ppapricer') wire(); return r; };
   }, 0));
   // ── Site charts: Renewables › Cannibalisation (same engine, PowerKlock data, no asset) ──
-  const stFor = p => Object.assign(JSON.parse(JSON.stringify(S0)), { tech: p.tech || 'solar', conv: p.conv || 'pos', model: p.model || 'flat' });
+  const stFor = p => Object.assign(JSON.parse(JSON.stringify(S0)), { tech: p.tech || 'solar', conv: p.conv || 'pos', model: p.model || 'capacity', noMC: true });
   async function siteDraw(p, ids) { await load(); const st = stFor(p), o = await compute(st); renderMarket(o, st, ids); return o; }
   const TECH = { key: 'tech', label: 'Technology', options: [['solar', 'Solar'], ['wind', 'Wind']], inTitle: true };
   const CONV = { key: 'conv', label: 'Capture convention', options: [['pos', 'Hours with price > 0 (PPA Dashboard)'], ['all', 'All hours']] };
-  const MODEL = { key: 'model', label: 'Projection', options: [['flat', 'Flat'], ['damped', 'Damped trend'], ['linear', 'Straight line']] };
-  const pageP = () => ({ tech: ($('cn-tech') || {}).value || 'solar', conv: ($('cn-conv') || {}).value || 'pos', model: ($('cn-model') || {}).value || 'flat' });
+  const MODEL = { key: 'model', label: 'Projection', options: [['capacity', 'Installed capacity (PPE3)'], ['flat', 'Flat'], ['damped', 'Damped trend'], ['linear', 'Straight line']] };
+  const pageP = () => ({ tech: ($('cn-tech') || {}).value || 'solar', conv: ($('cn-conv') || {}).value || 'pos', model: ($('cn-model') || {}).value || 'capacity' });
   if (window.PKW) {
     const reg = (id, title, canvas, desc, params, ids, size) => PKW.register({ id, title, category: 'renewables', page: 'renewables', pageCanvas: canvas, source: 'RTE · ENTSO-E', size: size || { w: 12, h: 6 },
-      desc, params, defaults: { tech: 'solar', conv: 'pos', model: 'flat' }, pageParams: pageP,
+      desc, params, defaults: { tech: 'solar', conv: 'pos', model: 'capacity' }, pageParams: pageP,
       titleFn: p => title + ' · ' + (p.tech === 'wind' ? 'wind' : 'solar'),
       async draw(cid, p) { const sub = cid + '-sub'; const o = await siteDraw(p, ids(cid, sub)); const e = document.getElementById(sub); return { sub: e ? e.textContent : '' }; } });
     reg('cannib-projection', 'Capture rate · history and projection', 'cn-proj', 'National capture rate per year, regression on the last three years, P50 with P10–P90 and P25–P75 bands to 2035, PPE3 targets.', [TECH, CONV, MODEL], (c, s2) => ({ proj: c, projSub: s2, projTable: c === 'cn-proj' ? 'cn-proj-table' : null }));
