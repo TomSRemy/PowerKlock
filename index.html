@@ -1761,8 +1761,10 @@
 
   /* Menu groups (Supply & Demand, France): a header that opens its pages */
   .pk-nav-group { position: relative; }
-  .pk-nav-group .pk-nav-chev { width: 11px; height: 11px; margin-left: auto; opacity: .55; transition: transform .2s; }
-  .pk-nav-group.open .pk-nav-chev { transform: rotate(180deg); }
+  .pk-nav-group .pk-nav-chev, #nav-prices .pk-nav-chev { width: 11px; height: 11px; margin-left: auto; opacity: .55; transition: transform .2s; flex-shrink: 0; }
+  #nav-prices .pk-nav-chev { padding: 4px; margin-right: -4px; width: 19px; height: 19px; box-sizing: border-box; border-radius: 4px; cursor: pointer; }
+  #nav-prices .pk-nav-chev:hover { background: rgba(255,255,255,.08); opacity: 1; }
+  .pk-nav-group.open .pk-nav-chev, #nav-prices.open .pk-nav-chev { transform: rotate(180deg); }
   .pk-nav-group.has-active-subitem { color: var(--text); }
   /* Subdomain selectors inside sidebar (children of Prices) · bracket tree style */
   .sidebar-subitems-wrap {
@@ -1773,9 +1775,9 @@
     transition: max-height 0.2s ease;
     position: relative;
   }
-  .sidebar-subitems-wrap.open,
-  .sidebar-item.active + .sidebar-subitems-wrap,
-  .sidebar-item.has-active-subitem + .sidebar-subitems-wrap {
+  /* a group opens only through js/nav-groups.js (.open): the page's own group
+     opens by itself, every group folds with its chevron or a second click */
+  .sidebar-subitems-wrap.open {
     max-height: 420px;
   }
 
@@ -1785,7 +1787,7 @@
     position: absolute;
     left: 22px;
     top: 0;
-    height: var(--line-end, calc(100% - 16px));
+    bottom: 14px;   /* the line stops at the middle of the last entry */
     width: 1px;
     background: var(--border);
     z-index: 1;
@@ -2911,6 +2913,8 @@
   .cf-in input { flex:1; width:100%; }
   .cf-in em { font-style:normal; font-size:11px; color:var(--text3); }
   .cf-link { color:var(--accent); text-decoration:none; letter-spacing:0; text-transform:none; }
+  .cf-samples { font-size:11px; color:var(--text3); }
+  .cf-samples a { color:var(--accent); text-decoration:none; }
   .cf-opt { font-style:normal; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); margin-left:6px; }
   .cf-words { background:#1c242e; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:12px 16px; margin:0 0 14px; }
   .cf-words ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.55; color:var(--text2); }
@@ -3050,7 +3054,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Power Map
       </div>
       <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices<svg class="pk-nav-chev" data-chev="prices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="sidebar-subitems-wrap" id="prices-subitems">
         <div class="sidebar-subitem" data-subdomain="forward" onclick="prSelectSubdomain('forward')">Forward</div>
@@ -3105,8 +3109,11 @@
     <div class="sidebar-section collapsed" id="sec-go">
       <div class="sidebar-section-label" onclick="toggleSection('sec-go')">Guarantees of Origin <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-go-items">
-      <div class="sidebar-item" onclick="showPage('goprices')" id="nav-goprices">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>GO Prices
+      <div class="sidebar-item" onclick="pkGoTab('eu')" id="nav-goprices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Market prices (EU)
+      </div>
+      <div class="sidebar-item" onclick="pkGoTab('auctions')" id="nav-goauctions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 13l-8 8"/><path d="M15 4l5 5-6 6-5-5z"/><path d="M3 21h8"/></svg>France auctions (EEX)
       </div>
       </div>
     </div>
@@ -5231,7 +5238,7 @@
             <label class="cf-field"><span>Tenor start</span><input type="number" id="pp-t0" step="1"></label>
             <label class="cf-field"><span>Tenor end</span><input type="number" id="pp-t1" step="1"></label>
             <label class="cf-field"><span>Volume (no asset curve)</span><span class="cf-in"><input type="number" id="pp-volume" step="100" value="52000"><em>MWh/yr</em></span></label>
-            <label class="cf-field"><span>Asset production curve (optional)</span><span class="cf-in"><label class="pk-btn-ghost pp-file-btn">Load CSV / Excel<input type="file" id="pp-file" accept=".csv,.txt,.xlsx,.xls" hidden></label><select id="pp-unit" aria-label="Unit"><option value="auto">Detect unit</option><option value="mwh">MWh per step</option><option value="kwh">kWh per step</option><option value="kw">kW</option><option value="w">W</option></select><button type="button" class="pk-btn-ghost" id="pp-asset-clear" hidden>✕</button></span></label>
+            <label class="cf-field"><span>Asset production curve (optional)</span><span class="cf-in"><label class="pk-btn-ghost pp-file-btn">Load CSV / Excel<input type="file" id="pp-file" accept=".csv,.txt,.xlsx,.xls" hidden></label><select id="pp-unit" aria-label="Unit"><option value="auto">Detect unit</option><option value="mwh">MWh per step</option><option value="kwh">kWh per step</option><option value="kw">kW</option><option value="w">W</option></select><button type="button" class="pk-btn-ghost" id="pp-asset-clear" hidden>✕</button></span><span class="cf-samples">Test curves: <a href="data/samples/test_production_solar_12MWp_2023-2025.csv" download>solar 12 MWp</a> · <a href="data/samples/test_production_wind_20MW_2023-2025.csv" download>wind 20 MW</a></span></label>
             <label class="cf-field"><span>Price on</span><select id="pp-basis"><option value="asset">Asset history (when loaded)</option><option value="national">National profile</option></select></label>
           </div>
           <div class="cf-status" id="pp-asset-info"></div>
@@ -5350,6 +5357,7 @@
             <div class="cf-side">
               <button type="button" class="pk-btn-primary" id="cf-example">Try with an example (office, 2025)</button>
               <button type="button" class="pk-btn-ghost" id="cf-template">Download a template</button>
+              <div class="cf-samples">Test curves: <a href="data/samples/test_load_curve_industrial_2025.csv" download>industrial site 2025</a> · <a href="data/samples/test_enedis_shop_2026H1.csv" download>shop, Enedis format</a></div>
             </div>
           </div>
           <div class="cf-form">
@@ -8256,9 +8264,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (!sidebar.classList.contains('open')) return;
       // Close only when clicking a navigable item (not section labels)
       const clickedNav = e.target.closest('.sidebar-item, .sidebar-subitem, .mobile-dash-tab');
+      // folding / unfolding a menu group is not a navigation: keep the drawer open
+      if (e.pkFold || e.target.closest('.pk-nav-group, .pk-nav-chev')) return;
       if (clickedNav) {
         // Small delay so the navigation has time to register first
-        setTimeout(() => toggleMobileSidebar(), 120);
+        setTimeout(() => { if (sidebar.classList.contains('open')) toggleMobileSidebar(); }, 120);   // close, never re-open
       }
     });
   });
