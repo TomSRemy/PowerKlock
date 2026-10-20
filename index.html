@@ -1776,7 +1776,7 @@
   .sidebar-subitems-wrap.open,
   .sidebar-item.active + .sidebar-subitems-wrap,
   .sidebar-item.has-active-subitem + .sidebar-subitems-wrap {
-    max-height: 200px;
+    max-height: 420px;
   }
 
   /* Vertical grey line : stops at the middle of the LAST sub-item (--line-end set by JS) */
@@ -1785,7 +1785,7 @@
     position: absolute;
     left: 22px;
     top: 0;
-    height: var(--line-end, 0px);
+    height: var(--line-end, calc(100% - 16px));
     width: 1px;
     background: var(--border);
     z-index: 1;
