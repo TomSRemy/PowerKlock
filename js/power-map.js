@@ -648,7 +648,7 @@
   .pm-nb-r span:not(:first-child){font-family:'IBM Plex Mono',monospace;text-align:right}
   .pm-nb-r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pm-mgroup{display:flex;align-items:center;gap:6px}.pm-mgroup-l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);font-weight:600}
-  .pm-d-chart{position:relative;height:190px} .pm-d-chart.small{height:120px}
+  .pm-d-chart{position:relative;height:260px} .pm-d-chart.small{height:200px}
   .pm-d-src{font-size:9.5px;color:var(--tx3);line-height:1.45;margin-top:12px}
   .pm-empty{padding:18px;color:var(--tx3);font-size:12px;text-align:center}
   @media (max-width:1250px){.pm-wrap{grid-template-columns:220px minmax(0,1fr)}.pm-detail-card{grid-column:1/-1}.pm-detail{max-height:none}}
