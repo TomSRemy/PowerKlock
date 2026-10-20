@@ -1,65 +1,112 @@
 // ════════════════════════════════════════════════════════════════════
-// France M0 — monthly reference prices of the complément de rémunération
-// (wind and solar), recomputed from RTE's national production curves and
-// the France day-ahead history (scripts/fetch_rte_m0.py → data/m0.json).
+// France M0 — reference prices of the complément de rémunération
+// (scripts/fetch_cre_m0.py → data/cre_m0.json)
+//   CRE M0 (official)        — CRE open data, published 5 working days
+//                              (base) / 4 weeks (wind, solar) after the month
+//   Estimated M0 (PowerKlock) — the CRE method on PowerKlock data, for the
+//                              month to date and months not yet published:
+//                              prices ≥ 0 weighted by RTE national output
+//   Forecast M0              — forward baseload × M0 / mean price ratio of
+//                              the same month over the last three years
 // ════════════════════════════════════════════════════════════════════
 let _m0Data = null;
 async function _m0Load() {
-  if (!_m0Data) _m0Data = fetchJSON('m0.json').then(j => j && Array.isArray(j.months) ? j : null);
+  if (!_m0Data) _m0Data = fetchJSON('cre_m0.json').then(j => j && j.official ? j : null);
   return _m0Data;
 }
 const M0_FMT_MONTH = ym => { const [y, m] = ym.split('-'); return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m - 1] + ' ' + y; };
+const M0_TECH = { solar: ['Solar', C_SOL], wind: ['Wind', C_WOFF], base: ['Base', '#B8C9D9'] };
+const M0_OFF = (j, tech) => tech === 'base' ? j.official.monthly : j.official[tech];
 
-if (window.PKW) PKW.register({
-  id: 'fr-m0', title: 'France M0 reference prices', category: 'renewables', page: 'renewables', pageCanvas: 'ren-m0',
-  source: 'RTE · day-ahead', size: { w: 12, h: 5 },
-  desc: 'Monthly M0 of the complément de rémunération for wind and solar against baseload, since 2020.',
-  params: [
-    { key: 'view', label: 'View', options: [['price', '€/MWh'], ['ratio', '% of baseload']] },
-    { key: 'win', label: 'Window', options: [['2Y', '2 years'], ['4Y', '4 years'], ['All', 'All']] },
-  ],
-  defaults: { view: 'price', win: 'All' },
-  async draw(cid, p) {
-    const j = await _m0Load();
-    if (!j || !j.months.length) { noDataMsg(cid, 'M0 history not available', ''); return null; }
-    let ms = j.months;
-    if (p.win !== 'All') ms = ms.slice(-12 * parseInt(p.win, 10));
-    const r = v => v == null ? null : Math.round(v * 10) / 10;
-    const lbls = ms.map(m => M0_FMT_MONTH(m.month));
-    const ratio = p.view === 'ratio';
-    const ds = ratio ? [
-      _fuelLineDs('Wind M0 / base', ms.map(m => m.windRatio == null ? null : r(m.windRatio * 100)), C_WOFF, { pointRadius: 2 }),
-      _fuelLineDs('Solar M0 / base', ms.map(m => m.solarRatio == null ? null : r(m.solarRatio * 100)), C_SOL, { pointRadius: 2 }),
-    ] : [
-      _fuelLineDs('Baseload', ms.map(m => r(m.base)), C_TX2, { borderDash: [4, 3], borderWidth: 1.5 }),
-      _fuelLineDs('Wind M0', ms.map(m => r(m.windM0)), C_WOFF, { pointRadius: 2 }),
-      _fuelLineDs('Solar M0', ms.map(m => r(m.solarM0)), C_SOL, { pointRadius: 2 }),
-    ];
-    const plugins = { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG };
-    if (ratio) plugins.annotation = { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.35)', borderWidth: 1, borderDash: [4, 4] } } };
-    _fuelChart(cid, { type: 'line', data: { labels: lbls, datasets: ds },
-      options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(ratio ? '% of baseload' : '€/MWh') }, plugins }) }, 'fr-m0-' + p.view);
-    const last = ms[ms.length - 1];
-    return { sub: 'Monthly · ' + M0_FMT_MONTH(ms[0].month) + ' → ' + M0_FMT_MONTH(last.month) + ' · latest RTE publication' };
-  },
-});
+// Timeline of one M0: official, estimate where the CRE has not published, forecast with its range
+function _m0Series(j, tech, win) {
+  const off = M0_OFF(j, tech) || {}, est = j.estimate || {}, fc = j.forecast || [];
+  const allM = [...new Set([...Object.keys(off), ...Object.keys(est), ...fc.map(r => r.month)])].sort();
+  const n = { '2Y': 24, '4Y': 48, 'All': 9999 }[win] || 36;
+  const lastOff = Object.keys(off).sort().pop();
+  const months = allM.filter(m => m >= (allM[allM.length - 1 - fc.length - n] || allM[0]));
+  const fcM = new Map(fc.map(r => [r.month, r]));
+  return { months, lastOff, off, est, fcM };
+}
+
+if (window.PKW) {
+  const TECH = { key: 'tech', label: 'Technology', options: [['solar', 'Solar'], ['wind', 'Wind'], ['base', 'Base (all hours ≥ 0)']], inTitle: true };
+  PKW.register({
+    id: 'fr-m0', title: 'France M0', category: 'renewables', page: 'renewables', pageCanvas: 'ren-m0',
+    source: 'CRE · PowerKlock', size: { w: 12, h: 5 },
+    desc: 'Monthly M0 of the complément de rémunération: CRE official values, PowerKlock estimate for months not yet published, forecast from the forwards with its range.',
+    params: [TECH, { key: 'view', label: 'View', options: [['price', '€/MWh'], ['ratio', '% of the mean day-ahead price']] }, { key: 'win', label: 'History', options: [['2Y', '2 years'], ['4Y', '4 years'], ['All', 'Since 2017']] }],
+    defaults: { tech: 'solar', view: 'price', win: '2Y' },
+    titleFn: p => 'France M0 · ' + M0_TECH[p.tech || 'solar'][0].toLowerCase(),
+    pageParams: () => ({ tech: (document.getElementById('m0-tech') || {}).value || 'solar', view: (document.querySelector('#m0-view .pk-gf-btn.active') || {}).dataset?.v || 'price', win: '2Y' }),
+    async draw(cid, p) {
+      const j = await _m0Load();
+      if (!j) { noDataMsg(cid, 'M0 not available', ''); return null; }
+      const tech = p.tech || 'solar', [lbl, col] = M0_TECH[tech], ratio = p.view === 'ratio';
+      const { months, lastOff, off, est, fcM } = _m0Series(j, tech, p.win);
+      const baseAll = m => (est[m] && est[m].baseAll) || (fcM.get(m) && fcM.get(m).forward) || null;
+      const v = x => x == null ? null : ratio ? null : Math.round(x * 100) / 100;
+      const conv = (m, x) => x == null ? null : ratio ? (baseAll(m) ? Math.round(x / baseAll(m) * 1000) / 10 : null) : Math.round(x * 100) / 100;
+      const estOnly = m => !off[m] && est[m] ? (tech === 'base' ? est[m].base : est[m][tech]) : null;
+      const firstFc = months.find(m => fcM.has(m));
+      const ds = [
+        { label: '_lo', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Lo']) : null), borderWidth: 0, pointRadius: 0, fill: false },
+        { label: 'Forecast range (3 years)', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Hi']) : null), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(168,125,196,.18)', fill: '-1' },
+        { label: 'CRE M0 (official)', data: months.map(m => conv(m, off[m])), borderColor: col, backgroundColor: col, borderWidth: 2.4, pointRadius: 2.5, fill: false },
+        { label: 'Estimated M0 (PowerKlock)', data: months.map(m => m === lastOff ? conv(m, off[m]) : conv(m, estOnly(m))), borderColor: col, borderDash: [2, 3], borderWidth: 1.8, pointRadius: months.map(m => estOnly(m) != null ? 3 : 0), pointStyle: 'rectRot', fill: false, spanGaps: true },
+        { label: 'Forecast M0', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech]) : m === months[months.indexOf(firstFc) - 1] ? conv(m, off[m] != null ? off[m] : estOnly(m)) : null), borderColor: '#A87DC4', borderDash: [6, 4], borderWidth: 2, pointRadius: months.map(m => fcM.has(m) ? 2.5 : 0), fill: false, spanGaps: true },
+        ...(!ratio && tech !== 'base' ? [{ label: 'Mean day-ahead price / forward', data: months.map(m => v(baseAll(m))), borderColor: 'rgba(184,201,217,.55)', borderWidth: 1.2, pointRadius: 0, fill: false, spanGaps: true }] : []),
+      ];
+      _fuelChart(cid, { type: 'line', data: { labels: months.map(M0_FMT_MONTH), datasets: ds },
+        options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
+          scales: { x: _fuelXAxis(), y: _fuelAxis(ratio ? '% of the mean day-ahead price' : '€/MWh') } }) }, 'fr-m0-' + tech);
+      const lastEst = Object.keys(est).sort().filter(m => !off[m]);
+      return { sub: `${lbl} · CRE official to ${lastOff ? M0_FMT_MONTH(lastOff) : '–'}${lastEst.length ? ' · PowerKlock estimate for ' + lastEst.map(M0_FMT_MONTH).join(', ') : ''} · forecast from the forwards of ${j.forwardDate || '–'}` };
+    },
+  });
+  PKW.register({
+    id: 'fr-m0-forecast', kind: 'html', title: 'France M0 forecast', category: 'renewables', page: 'renewables', source: 'PowerKlock', size: { w: 12, h: 6 },
+    desc: 'Coming months: forward baseload and the base, wind and solar M0 it implies with the ratios of the last three years (range low–high).',
+    async html(host) {
+      const j = await _m0Load(); if (!j) { host.innerHTML = '<div class="fuel-note">Not available.</div>'; return; }
+      const f = v => v == null ? '–' : v.toFixed(2), est = j.estimate || {}, cur = j.currentMonth, e = est[cur];
+      const row = r => `<tr><td style="text-align:left">${M0_FMT_MONTH(r.month)} <span class="mu-kind">${r.from}</span></td><td>${f(r.forward)}</td><td>${f(r.base)}</td>` +
+        ['wind', 'solar'].map(t => `<td><b>${f(r[t])}</b><span class="m0-rng">${f(r[t + 'Lo'])}–${f(r[t + 'Hi'])}</span></td>`).join('') + `<td>${r.solarRatio ? Math.round(r.solarRatio * 100) + ' %' : '–'}</td></tr>`;
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Forward base</th><th>Base M0</th><th>Wind M0</th><th>Solar M0</th><th>Solar ratio</th></tr></thead><tbody>` +
+        (e ? `<tr class="m0-now"><td style="text-align:left">${M0_FMT_MONTH(cur)} <span class="mu-kind">to date · ${e.days} days</span></td><td>${f(e.baseAll)}</td><td>${f(e.base)}</td><td><b>${f(e.wind)}</b></td><td><b>${f(e.solar)}</b></td><td>${e.solar && e.baseAll ? Math.round(e.solar / e.baseAll * 100) + ' %' : '–'}</td></tr>` : '') +
+        (j.forecast || []).map(row).join('') + `</tbody></table></div><div class="fuel-note">€/MWh. Current month: PowerKlock estimate to date with the CRE method (prices ≥ 0, RTE output). Coming months: forward baseload of the month (month contract, else what its quarter or year leaves) × the M0 / mean day-ahead price ratio of the same month over the last three years; range = lowest and highest year. Forwards of ${j.forwardDate || '–'}.</div>`;
+    },
+  });
+  PKW.register({
+    id: 'fr-m0-official', kind: 'html', title: 'France M0 · CRE and PowerKlock estimate', category: 'renewables', page: 'renewables', source: 'CRE · PowerKlock', size: { w: 12, h: 6 },
+    desc: 'Last 12 months: official CRE M0 (base, wind, solar), the PowerKlock estimate with the same method and the hours with a negative price.',
+    async html(host) {
+      const j = await _m0Load(); if (!j) { host.innerHTML = '<div class="fuel-note">Not available.</div>'; return; }
+      const o = j.official, est = j.estimate || {}, f = v => v == null ? '–' : v.toFixed(2);
+      const ms = [...new Set([...Object.keys(o.monthly), ...Object.keys(est)])].sort().slice(-12).reverse();
+      const gap = (a, b) => a == null || b == null ? '' : `<span class="m0-gap">${(b - a >= 0 ? '+' : '') + (b - a).toFixed(2)}</span>`;
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Base M0</th><th>Wind M0</th><th>Solar M0</th><th>Negative hours</th></tr></thead><tbody>` +
+        ms.map(m => { const e = est[m] || {}, cell = (cre, es) => cre != null ? `<b>${f(cre)}</b>${gap(cre, es)}` : es != null ? `<span class="m0-est" title="PowerKlock estimate, CRE not published yet">${f(es)} est.</span>` : '–';
+          const neg = o.negSteps[m] ? o.negSteps[m].hours : e.negHours;
+          return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td>${cell(o.solar[m], e.solar)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
+        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.</div>`;
+    },
+  });
+}
 
 async function renderM0() {
   if (!document.getElementById('ren-m0')) return;
-  const view = (document.querySelector('#m0-view .pk-gf-btn.active') || {}).dataset?.v || 'price';
-  PKW.draw('fr-m0', 'ren-m0', { view, win: 'All' }).then(res => {
-    const sub = document.getElementById('ren-m0-sub'); if (sub && res && res.sub) sub.textContent = res.sub;
-  });
-  const j = await _m0Load();
-  const tb = document.getElementById('m0-tbody');
-  if (!tb) return;
-  if (!j) { tb.innerHTML = '<tr><td colspan="8" style="color:var(--text3)">M0 history not available</td></tr>'; return; }
-  const pct = v => v == null ? '–' : (v * 100).toFixed(0) + '%';
-  const crCell = v => `<td style="color:${v == null ? 'var(--text3)' : v >= 0.995 ? 'var(--up)' : 'var(--down)'};font-weight:600">${pct(v)}</td>`;
-  tb.innerHTML = j.months.slice(-12).reverse().map(m =>
-    `<tr><td>${M0_FMT_MONTH(m.month)}${m.complete ? '' : ' <span title="Some day-ahead prices missing for this month" style="color:var(--text3)">*</span>'}</td>` +
-    `<td>${_fuelFmt(m.base)}</td><td>${_fuelFmt(m.windM0)}</td>${crCell(m.windRatio)}<td>${_fuelFmt(m.solarM0)}</td>${crCell(m.solarRatio)}` +
-    `<td>${pct(m.windNegShare)}</td><td>${pct(m.solarNegShare)}</td></tr>`).join('');
+  const p = PKW.get('fr-m0').pageParams();
+  PKW.draw('fr-m0', 'ren-m0', p).then(res => { const sub = document.getElementById('ren-m0-sub'); if (sub && res && res.sub) sub.textContent = res.sub; });
+  const fc = document.getElementById('m0-forecast'); if (fc) { await PKW.get('fr-m0-forecast').html(fc); PKW.star('fr-m0-forecast', 'm0-forecast'); }
+  const of = document.getElementById('m0-official'); if (of) { await PKW.get('fr-m0-official').html(of); PKW.star('fr-m0-official', 'm0-official'); }
+  const j = await _m0Load(), ann = document.getElementById('m0-annual');
+  if (j && ann) {
+    const a = j.official.annual, w = j.official.winter, f = v => v == null ? '–' : v.toFixed(2);
+    ann.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Annual M0</th><th style="text-align:left">Contractual winter</th><th>Winter M0</th></tr></thead><tbody>` +
+      Object.keys(a).sort().reverse().map((y, i) => { const wk = Object.keys(w).sort().reverse()[i]; return `<tr><td style="text-align:left">${y}</td><td>${f(a[y])}</td><td style="text-align:left">${wk || ''}</td><td>${wk ? f(w[wk]) : ''}</td></tr>`; }).join('') +
+      `</tbody></table></div><div class="fuel-note">CRE: annual M0 = mean of the day-ahead prices ≥ 0 of the year; winter M0 = 20 % spot (≥ 0) of the winter + 15 % M11 + 15 % M12 + 50 % Q1 forwards (EEX).</div>`;
+  }
 }
 function m0SetView(v, btn) {
   btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.remove('active'));
