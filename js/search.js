@@ -12,7 +12,7 @@
 
   function build() {
     const out = [];
-    document.querySelectorAll('.sidebar-item[onclick*="showPage"]').forEach(el => {
+    document.querySelectorAll('.sidebar-item[onclick*="showPage"], .sidebar-subitem[data-page]').forEach(el => {
       const m = el.getAttribute('onclick').match(/showPage\('([^']+)'\)/); if (!m) return;
       const sec = el.closest('.sidebar-section');
       const group = sec ? (sec.querySelector('.sidebar-section-label') || {}).textContent : '';
