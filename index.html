@@ -2867,6 +2867,10 @@
   .pp-chip.on { border-color:var(--accent); background:rgba(20,211,169,.12); color:var(--text); }
   .pp-chip-reset { justify-content:center; color:var(--accent); min-width:auto; }
   .pp-pos { color: var(--up) !important; } .pp-neg { color: var(--down) !important; }
+  .pp-proj-grid { display:grid; grid-template-columns:minmax(0,3fr) minmax(260px,1fr); gap:14px; }
+  @media (max-width: 1100px) { .pp-proj-grid { grid-template-columns:minmax(0,1fr); } }
+  .pp-ptab td, .pp-ptab th { padding:5px 8px !important; }
+  .pp-ptab tr.pp-tenor td { background: rgba(251,191,36,.10); }
   /* Tools › Carbon footprint */
   .cf-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:stretch; margin-bottom:14px; }
   .cf-drop { display:flex; flex-direction:column; justify-content:center; gap:6px; min-height:120px; padding:18px 20px; border:1.5px dashed var(--border2); border-radius:8px; background:#1c242e; cursor:pointer; transition:border-color .15s, background .15s; }
@@ -5166,7 +5170,7 @@
           <div class="cf-form">
             <label class="cf-field"><span>Projection</span><select id="pp-model"><option value="flat">Flat at the last year used</option><option value="damped">Trend, halving each year</option><option value="linear">Straight line (PPA Dashboard), capped</option></select></label>
             <label class="cf-field"><span>Shape discount percentile · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
-            <label class="cf-field pp-check"><span>Options</span><span class="cf-in"><label><input type="checkbox" id="pp-curtail" checked> No output at negative prices</label></span></label>
+            <label class="cf-field"><span>Capture convention</span><select id="pp-conv"><option value="pos">Hours with price &gt; 0 only (PPA Dashboard)</option><option value="all">All hours (M0 style)</option></select></label>
           </div>
           <div class="pp-group-t">Premiums and costs</div>
           <div class="cf-form">
@@ -5195,6 +5199,28 @@
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price build-up</div><div class="fuel-card-sub">From the baseload forward to the PPA price (€/MWh)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-waterfall" style="width:100%;height:320px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate history and projection</div><div class="fuel-card-sub">% of baseload · regression and P10–P90 band over the tenor</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="pp-history" style="width:100%;height:320px"></canvas></div></div>
 </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-mkt">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-mkt')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Market &amp; methodology<span class="pk-hs-meta">Projection with P10–P90 bands, link with installed capacity (PPE3), production profiles</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-mkt">
+<div class="pp-proj-grid"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate · history and projection</div><div class="fuel-card-sub" id="pp-proj-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:440px"><canvas id="pp-proj" style="width:100%;height:440px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Projection P10 · P50 · P90</div><div class="fuel-card-sub">Capture rate by year</div></div></div><div id="pp-proj-table"></div></div></div>
+<div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate vs installed capacity</div><div class="fuel-card-sub" id="pp-capfit-sub"></div></div><span class="source-badge">RTE · Energy-Charts</span></div><div style="position:relative;height:380px"><canvas id="pp-capfit" style="width:100%;height:380px"></canvas></div></div></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · national</div><div class="fuel-card-sub" id="pp-prof-nat-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-nat" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · asset</div><div class="fuel-card-sub" id="pp-prof-asset-sub">Same view for the uploaded asset</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-asset" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Monthly production</div><div class="fuel-card-sub" id="pp-monthly-sub">Bars = asset GWh per month · dashed = national average MW</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-monthly" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Annual production</div><div class="fuel-card-sub" id="pp-annual-sub">Asset GWh per year</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-annual" style="width:100%;height:300px"></canvas></div></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-roll">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-roll')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Rolling capture rate<span class="pk-hs-meta">30, 90 and 365 days, national</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-roll">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Rolling capture rate</div><div class="fuel-card-sub" id="pp-roll-pct-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:340px"><canvas id="pp-roll-pct" style="width:100%;height:340px"></canvas></div></div>
+<div style="height:14px"></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Rolling captured price vs baseload</div><div class="fuel-card-sub" id="pp-roll-eur-sub">Gap between baseload and captured price = shape discount in €/MWh</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="pp-roll-eur" style="width:100%;height:320px"></canvas></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-risk">

@@ -49,6 +49,8 @@ jobs:
           else python scripts/fetch_rte_eco2mix.py; fi
       - name: Compute M0
         run: python scripts/fetch_rte_m0.py
+      - name: France solar / wind capture by day (PPA pricer)
+        run: python scripts/build_fr_capture.py || echo "::warning::capture build failed"
       - name: PP1 / PP2 signals (needs an RTE Data Portal account)
         env:
           RTE_CLIENT_ID: ${{ secrets.RTE_CLIENT_ID }}
@@ -58,7 +60,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/m0.json data/history/rte; git add data/rte_pp.json data/rte_pp_raw.json 2>/dev/null || true
+          git add data/m0.json data/history/rte data/history/fr_capture.json; git add data/rte_pp.json data/rte_pp_raw.json 2>/dev/null || true
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: RTE éCO2mix France and M0 $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
