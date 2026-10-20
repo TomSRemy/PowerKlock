@@ -336,6 +336,7 @@ async function _mrnMoves(k) {
   }
   const y1 = k['Y+1'];
   if (y1 && y1.varD1Pct != null) L.push(`<b>Cal+1 FR</b> ${y1.value.toFixed(2)} €/MWh, ${sg(y1.varD1Pct, 2)}% on the day and ${sg(y1.varW1Pct || 0, 2)}% on the week (settlement ${y1.date}).`);
+  if (window.PKFwdRead) { try { const r = PKFwdRead.line(await PKFwdRead.compute('1W')); if (r) L.push(r); } catch (_) { /* read unavailable */ } }
   if (k.ttf && k.eua) L.push(`<b>Fuels</b>: TTF ${k.ttf.v.toFixed(2)} €/MWh (${sg(k.ttf.d || 0, 2)}), EUA ${k.eua.v.toFixed(2)} €/t (${sg(k.eua.d || 0, 2)})` +
     (window.PKC && k.spot && k.spot.base != null ? `; clean spark on that day's base ${sg(PKC.cleanSpark(k.spot.base, k.ttf.v, k.eua.v))} €/MWh.` : '.'));
   const y = +_mrnToday().slice(0, 4);
