@@ -5093,12 +5093,12 @@
 
         <div class="ma-panel-row">
           <div class="ma-panel-label-col"><div class="ma-lbl">DA Price</div><div class="ma-lbl-sub">€/MWh</div></div>
-          <div class="ma-panel-svg-col" style="height:215px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:209px"></canvas></div>
+          <div class="ma-panel-svg-col" style="height:215px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:209px"></canvas><div id="ma-legend-price" class="ma-panel-legend"></div></div>
         </div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Spark</div><div class="ma-lbl-sub">€/MWh CCGT</div></div>
-          <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-spark" style="width:100%;height:190px"></canvas></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">Residual load</div><div class="ma-lbl-sub">GW · vs nuclear, imports</div></div>
+          <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-spark" style="width:100%;height:190px"></canvas><div id="ma-legend-resid" class="ma-panel-legend"></div></div>
         </div>
 
         <div class="ma-panel-row">
@@ -5137,7 +5137,7 @@
           <div style="color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px">Click to generate a causal synthesis, desk-note style.</div>
         </div>
       </div><div style="font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;margin:10px 2px 20px;padding:8px 12px;border-radius:5px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);color:var(--tx3)">
-        <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">daily market closes</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (operator data); other zones = actual nuclear output. Demand / net import shown only for days with stored ENTSO-E load. Spark = clean spark spread, CCGT 49.1% (see Methodology). Days without archived data are left empty.
+        <b style="color:#FBBF24">Data sources</b> — DA price, wind/solar and nuclear-hydro-fossil mix = <b style="color:var(--acc)">ENTSO-E</b> (slots in CET/CEST). TTF day-ahead and EUA = <b style="color:var(--acc)">daily market closes</b>. Temperature and 100 m wind speed = <b style="color:var(--acc)">Open-Meteo</b> at a reference point per zone. FR nuclear = available capacity (operator data); other zones = actual nuclear output. Demand = ENTSO-E load (France: RTE éCO2mix when missing); residual load = demand − wind − solar; net import = demand − generation. Gas plant cost = TTF ÷ 49.1 % + EUA × CCGT emissions (the clean-spark convention, see Methodology): price − gas cost = clean spark. Neighbour = Germany for France and the Netherlands, France for the others. Days without archived data are left empty.
       </div>    </div>
 
     <!-- ── PAGE: NEWS ── -->
