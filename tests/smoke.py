@@ -49,6 +49,7 @@ def main():
     srv = serve()
     html = open(os.path.join(ROOT, 'index.html')).read()
     pages = list(dict.fromkeys(re.findall(r'id="nav-([\w-]+)"', html)))
+    pages = [pg for pg in pages if f'id="page-{pg}"' in html]   # menu entries that open a tab of another page have no page of their own
     subs = sorted(set(re.findall(r'data-subdomain-panel="([\w-]+)"', html)))
 
     with sync_playwright() as pw:
