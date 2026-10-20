@@ -1,0 +1,44 @@
+name: Fetch hydro reservoirs (ENTSO-E A72)
+
+# Weekly stored energy of hydro reservoirs per country since 2015
+# → data/history/hydro_reservoirs.json (scripts/fetch_hydro_reservoirs.py).
+# ENTSO-E publishes the week's value on the following Wednesday.
+
+on:
+  schedule:
+    - cron: '20 9 * * 3,4'   # Wednesday and Thursday 09:20 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-hydro
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/fetch_hydro_reservoirs.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/hydro_reservoirs.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: hydro reservoirs $(date -u '+%Y-%m-%d')"
+          BR="${GITHUB_REF_NAME}"
+          for i in 1 2 3 4 5 6; do
+            git pull --rebase -X theirs origin "$BR" && git push origin "HEAD:$BR" && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep $((5 + RANDOM % 20))
+          done
+          exit 1

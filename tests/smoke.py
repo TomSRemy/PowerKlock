@@ -78,6 +78,32 @@ def main():
             p.evaluate(f"prSelectSubdomain('{s}')")
             p.wait_for_timeout(2500)
             fullscreen_buttons(f'[data-subdomain-panel="{s}"]')
+        def check_views(scope, label, width):
+            # every view tab of the page (views.js): charts drawn, no overflow, no empty space under charts
+            n = p.evaluate(f"[...document.querySelectorAll('{scope} .pk-views .tab-btn')].length")
+            for k in range(max(1, n)):
+                if n:
+                    p.evaluate(f"[...document.querySelectorAll('{scope} .pk-views .tab-btn')][{k}].click()")
+                    p.wait_for_timeout(2200)
+                tab = p.evaluate(f"((document.querySelectorAll('{scope} .pk-views .tab-btn')[{k}]) || {{}}).textContent || ''")
+                r = p.evaluate(f"""(() => {{
+                    const root = document.querySelector('{scope}');
+                    const vis = e => e.offsetParent !== null;
+                    const undrawn = [...root.querySelectorAll('canvas')].filter(c => vis(c) && c.id && !c.closest('.leaflet-container') && !(window.Chart && Chart.getChart(c))
+                        && !c.parentElement.querySelector('.no-data-msg')).map(c => c.id);
+                    const gaps = [...root.querySelectorAll('.fuel-grid-2 > .chart-container')].filter(vis).map(card => {{
+                        const c = card.querySelector('canvas'); if (!c) return null;
+                        const g = card.getBoundingClientRect().bottom - c.getBoundingClientRect().bottom; return g > 90 ? (c.id || '?') + ' ' + Math.round(g) + 'px' : null; }}).filter(Boolean);
+                    return {{ overflow: document.documentElement.scrollWidth > {width} + 2, undrawn, gaps }};
+                }})()""")
+                tag = f"{label}{(' › ' + tab) if tab else ''}"
+                if r['overflow']:
+                    errors.append(f"[{tag}] wider than the screen ({width}px)")
+                for c in r['undrawn']:
+                    warnings.append(f"[{tag}] canvas {c} not drawn")
+                for g in r['gaps']:
+                    warnings.append(f"[{tag}] empty space under chart {g}")
+
         for pg in pages:
             if pg == 'prices':
                 continue
@@ -85,6 +111,40 @@ def main():
             p.evaluate(f"document.getElementById('nav-{pg}').click()")
             p.wait_for_timeout(3500)
             fullscreen_buttons(f'#page-{pg}')
+            check_views(f'#page-{pg}', pg, 1440)
+        for s in subs:
+            if s in ('genmix',):
+                continue
+            where['v'] = 'prices/' + s
+            p.evaluate("showPage('prices')")
+            p.evaluate(f"prSelectSubdomain('{s}')")
+            p.wait_for_timeout(2000)
+            check_views(f'[data-subdomain-panel="{s}"]', 'prices/' + s, 1440)
+
+        # Quick search opens and finds a chart
+        where['v'] = 'search'
+        p.keyboard.press('Control+k')
+        p.wait_for_timeout(300)
+        p.keyboard.type('gas storage')
+        p.wait_for_timeout(300)
+        if not p.evaluate("document.querySelectorAll('#pk-search .pk-s-row').length"):
+            errors.append('[search] no result for "gas storage"')
+        p.keyboard.press('Escape')
+
+        # Phone width: nothing wider than the screen (separate page: the
+        # fullscreen tests leave the desktop window in fullscreen mode)
+        ph = b.new_page(viewport={'width': 390, 'height': 844})
+        ph.on('pageerror', lambda e: errors.append(f"[phone] JS error: {str(e)[:300]}"))
+        ph.goto(f'http://127.0.0.1:{PORT}/index.html')
+        ph.wait_for_timeout(5000)
+        for pg in pages:
+            if pg == 'prices':
+                continue
+            ph.evaluate(f"showPage('{pg}')")
+            ph.wait_for_timeout(1500)
+            if ph.evaluate("document.documentElement.scrollWidth > 392"):
+                errors.append(f"[phone/{pg}] wider than the screen (390px)")
+        ph.close()
         for d in ('france', 'mydash'):
             where['v'] = d
             p.evaluate(f"switchDashboard('{d}', document.querySelector('.nav-tab[data-dash={d}]'))")

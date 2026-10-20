@@ -14815,6 +14815,25 @@
     };
     Wrapped._pkReadoutWrapped = true;
     window.Chart = Wrapped;
+
+    // Lines always drawn in front of bars and filled areas (ranges, stacks,
+    // shaded bands): every unfilled line is lifted above every block, keeping
+    // the relative order of the lines. Chart.js draws the lowest order last.
+    Base.register({
+      id: 'pkLinesOnTop',
+      beforeUpdate(chart) {
+        const dsets = chart.data && chart.data.datasets;
+        if (!dsets || !dsets.length) return;
+        const type = d => d.type || chart.config.type;
+        const filled = d => d.fill !== undefined && d.fill !== false;
+        if (!dsets.some(d => type(d) === 'bar' || (type(d) === 'line' && filled(d)))) return;
+        dsets.forEach(d => {
+          if (type(d) !== 'line' || filled(d)) return;
+          if (d._pkOrder === undefined) d._pkOrder = d.order || 0;
+          d.order = d._pkOrder - 100;
+        });
+      },
+    });
   }
 
   window.pkNewChart = function (target, config) {
