@@ -203,9 +203,12 @@ _renReg({
   id: 'ren-fc', title: 'Wind & solar · forecast vs actual', pageCanvas: 'ren-fc',
   desc: 'Day-ahead forecast against actual output, latest fetched day.',
   async draw(cid, p) {
-    const D = await _renDay(p.zone, p.day);
+    let D = await _renDay(p.zone, p.day);
+    const hasFc = x => x.z && x.fc && (x.fc.windForecast || x.fc.solarForecast);
+    // no day asked and the forecast of the newest day not stored yet: show the latest day that has one
+    if (!hasFc(D) && !p.day && D.liveDay && D.liveDay !== D.day) D = await _renDay(p.zone, D.liveDay);
     const fc = D.fc;
-    if (!D.z || !fc || !(fc.windForecast || fc.solarForecast)) {
+    if (!hasFc(D)) {
       noDataMsg(cid, 'Day-ahead forecast not stored for this day', `The forecast is kept for the latest fetched day${D.liveDay ? ' (' + _renFmtDay(D.liveDay) + ')' : ''}.`);
       return null;
     }
