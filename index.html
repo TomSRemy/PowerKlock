@@ -5907,8 +5907,8 @@
         <button class="tab-btn" data-tab="auctions" onclick="goTabNav(event)">France Auction</button>
       </div>
           <div class="pr-tabs-bar-filters">
-          <span style="font-size:10px;color:var(--warn);background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.25);padding:3px 9px;border-radius:4px">Manual upload — Commerg weekly</span>
-          <label style="font-size:11px;color:var(--accent);cursor:pointer;border:1px solid rgba(16,185,129,.3);padding:3px 9px;border-radius:4px">
+          <span class="updated-badge" id="go-src-badge" title="Read automatically every Friday from the Commerg Market Week mail">Commerg · automatic every Friday</span>
+          <label style="font-size:10px;color:var(--text3);cursor:pointer;border:1px solid var(--border2);padding:3px 9px;border-radius:4px" title="Backup only: load a Commerg CSV by hand">
             Load CSV <input type="file" id="go-csv-input" accept=".csv" style="display:none" onchange="loadGoCSV(this)">
           </label>
         </div>
