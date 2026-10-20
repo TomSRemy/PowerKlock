@@ -941,6 +941,19 @@
   .news-time { font-size: 11px; color: var(--text3); margin-left: auto; }
   .news-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
   .news-snippet { font-size: 12px; color: var(--text2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .news-mine { display:flex; align-items:center; gap:10px; margin:-4px 0 14px; flex-wrap:wrap; }
+  .news-mine label { font:600 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
+  .news-mine input { flex:1; min-width:220px; }
+  .news-mine-n { font-size:11px; color:var(--text3); }
+  .news-card.mine { border-color:rgba(251,191,36,.55); }
+  .news-card .news-star { color:#FBBF24; margin-right:4px; }
+  .news-q { font-size:10px; color:var(--text3); font-style:italic; }
+  .news-src-t { width:100%; border-collapse:collapse; font-size:12px; }
+  .news-src-t td, .news-src-t th { padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; color:var(--text2); }
+  .news-src-t th { font:600 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
+  .news-src-t .ok { color:var(--up); } .news-src-t .ko { color:var(--down); }
+  .news-src-help { font-size:12px; color:var(--text2); line-height:1.6; margin-top:12px; max-width:900px; }
+  .news-src-help a { color:var(--accent); }
   .news-tag {
     display: inline-block;
     margin-top: 8px;
@@ -5162,12 +5175,22 @@
         <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
         <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
         <button class="filter-btn" onclick="filterNews('fr', this)">🇫🇷 France</button>
+        <button class="filter-btn" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press">🔎 Watch</button>
+        <button class="filter-btn" onclick="filterNews('mine', this)" title="Articles matching your own keywords (below)">★ My keywords</button>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="margin-left:auto;min-width:200px">
       </div>
+      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated, kept in this browser"><span class="news-mine-n" id="news-kw-n"></span></div>
 <div class="news-grid" id="news-grid">
         <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
       </div>
         </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-src">
+        <div class="hist-section-header" onclick="toggleStrongSection('hs-news-src')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Sources<span class="pk-hs-meta">What is read, what worked at the last run, how to add a source</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body" id="hs-body-news-src"><div id="news-sources"></div></div>
       </div>
     </div>
 
