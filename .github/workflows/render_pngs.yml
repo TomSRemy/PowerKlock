@@ -1,0 +1,39 @@
+name: Render chart images
+
+# A PNG of every catalogue chart (default parameters) for mails, chat tools
+# and other apps, published on the `png` branch, which is replaced at each
+# run so the repository does not grow. Index: png/charts.json.
+
+on:
+  schedule:
+    - cron: '30 7 * * *'    # after the morning fetches
+    - cron: '30 14 * * *'   # after the day-ahead auction results
+  workflow_dispatch:
+
+concurrency:
+  group: render-pngs
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.48.0 && python -m playwright install --with-deps chromium
+      - name: Render
+        run: python scripts/render_pngs.py out_png
+      - name: Publish on the png branch
+        run: |
+          cd out_png
+          git init -q -b png
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add -A
+          git commit -q -m "Chart images $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" png

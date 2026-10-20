@@ -36,6 +36,9 @@ jobs:
       - name: Build yearly France price files
         continue-on-error: true
         run: python scripts/build_fr_prices_year.py
+      - name: Data API index
+        continue-on-error: true
+        run: python scripts/build_api_index.py
       # Negative hours by month × hour for Prices › Negative prices
       - name: Build negative-price profile
         continue-on-error: true

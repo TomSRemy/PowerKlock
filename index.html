@@ -2852,6 +2852,14 @@
   .mu-pct { font-size: 10px; opacity: .75; margin-left: 4px; }
   .mu-kind { font-size: 9.5px; color: var(--text4); text-transform: uppercase; letter-spacing: .06em; margin-left: 6px; }
   tr.mu-sep td { border-top: 1px solid var(--border2) !important; }
+  /* General › API */
+  .api-out { display:flex; flex-direction:column; gap:6px; }
+  .api-line { display:grid; grid-template-columns:56px minmax(0,1fr) auto; gap:8px; align-items:center; }
+  .api-line span { font:600 10px 'JetBrains Mono',monospace; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; }
+  .api-line code { font:11px 'JetBrains Mono',monospace; color:var(--text2); background:var(--bg3); border:1px solid var(--border2); border-radius:5px; padding:6px 8px; overflow-x:auto; white-space:nowrap; }
+  .api-url { font:10.5px 'JetBrains Mono',monospace; color:var(--text3); margin-top:2px; }
+  .api-table td a.pk-btn-ghost { text-decoration:none; white-space:nowrap; }
+  .api-png img { width:100%; border-radius:8px; display:block; }
   /* Tools › PPA pricer */
   .pp-group-t { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:14px 0 8px; }
   .pp-group-t:first-child { margin-top:0; }
@@ -3130,6 +3138,9 @@
       <div class="sidebar-section-items" id="sec-general-items">
       <div class="sidebar-item" onclick="showPage('status')" id="nav-status">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Data status
+      </div>
+      <div class="sidebar-item" onclick="showPage('api')" id="nav-api">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>API
       </div>
       <div class="sidebar-item" onclick="showPage('methodology')" id="nav-methodology">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Methodology
@@ -5141,6 +5152,45 @@
     </div>
 
     <!-- ── PAGE: CONVERTER ── -->
+    <!-- GENERAL · API (js/api-page.js, js/embed.js) -->
+    <div class="page" id="page-api">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">General</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">API</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">No key · HTTPS · JSON, iframe, PNG</span></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-api-embed">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-api-embed')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Charts for other apps<span class="pk-hs-meta">Pick a chart: link, iframe and PNG, ready to paste into Confluence, an intranet, a mail or another application</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-api-embed">
+<div class="cf-form">
+            <label class="cf-field" style="grid-column:span 2"><span>Chart</span><select id="api-chart"></select></label>
+            <label class="cf-field"><span>Height</span><span class="cf-in"><input type="number" id="api-h" value="420" step="20" min="200"><em>px</em></span></label>
+            <label class="cf-field pp-check"><span>Options</span><span class="cf-in"><label><input type="checkbox" id="api-title" checked> Title and source</label></span></label>
+          </div>
+          <div class="cf-status" id="api-desc" style="margin-bottom:10px"></div>
+          <div class="cf-form" id="api-params"></div>
+          <div id="api-out" class="api-out"></div>
+          <div class="fuel-grid-2" style="margin-top:14px">
+            <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Live preview · iframe</div><div class="fuel-card-sub">Always the latest data</div></div></div><div id="api-preview"></div></div>
+            <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PNG image</div><div class="fuel-card-sub">Default parameters · refreshed at 07:30 and 14:30 UTC</div></div></div><div id="api-png" class="api-png"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-api-data">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-api-data')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>Data<span class="pk-hs-meta">The JSON files of PowerKlock, readable by any application</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-api-data">
+<div id="api-data"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- TOOLS · PPA PRICER (js/tool-ppa.js) -->
     <div class="page" id="page-ppapricer">
       <div class="pr-tabs-sticky">
@@ -7508,6 +7558,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/kpi-tone.js"></script>
 <script src="js/tool-carbon.js"></script>
 <script src="js/tool-ppa.js"></script>
+<script src="js/embed.js"></script>
+<script src="js/api-page.js"></script>
 <script src="js/alerts.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
