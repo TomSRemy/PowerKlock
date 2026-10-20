@@ -20,7 +20,7 @@
   const XLSX_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
-  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '' } };
+  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '' } };
 
   // ── Parsing ───────────────────────────────────────────────────────
   // A row → { y, m, d, hh, mi } in Paris local time (naive), or null.
@@ -139,14 +139,13 @@
   const monthCache = {}, priceCache = {};
   const rteMonth = ym => monthCache[ym] || (monthCache[ym] = getJSON('history/rte/' + ym + '.json'));
   const priceYear = y => priceCache[y] || (priceCache[y] = getJSON('history/fr_prices/' + y + '.json'));
-  let rmP = null; const residual = () => rmP || (rmP = getJSON('residual_mix.json'));
 
   // ── Computation ───────────────────────────────────────────────────
   async function compute() {
     const days = [...S.cons.slots.keys()].sort();
     const months = [...new Set(days.map(d => d.slice(0, 7)))];
     const years = [...new Set(days.map(d => d.slice(0, 4)))];
-    const [rte, prices, rm] = await Promise.all([Promise.all(months.map(rteMonth)), Promise.all(years.map(priceYear)), residual()]);
+    const [rte, prices] = await Promise.all([Promise.all(months.map(rteMonth)), Promise.all(years.map(priceYear))]);
     const R = {}; months.forEach((m, i) => { if (rte[i] && rte[i].days) Object.assign(R, rte[i].days); });
     const P = {}; years.forEach((y, i) => { if (prices[i] && prices[i].days) Object.assign(P, prices[i].days); });
     const o = { E: 0, Ecov: 0, em: 0, nat: { em: 0, load: 0 }, mix: {}, cost: 0, Ep: 0, base: { s: 0, n: 0 },
@@ -196,16 +195,15 @@
     o.emLocation = o.ciHourly != null ? o.ciHourly * o.E : null;          // g, missing slots at the period average
     // Market-based
     const year = days[days.length - 1].slice(0, 4);
-    const rmYears = rm && rm.years ? Object.keys(rm.years).sort() : [];
-    const rmYear = rmYears.includes(year) ? year : rmYears.filter(y => y <= year).pop() || rmYears[rmYears.length - 1];
-    o.rmYear = rmYear; o.rmSame = rmYear === year;
-    o.rmCI = rmYear && rm.years[rmYear].FR ? rm.years[rmYear].FR.rm_co2 : null;
+    // Residual mix: entered by the user from the AIB publication (AIB data
+    // are copyrighted, all rights reserved: PowerKlock does not redistribute them)
+    o.rmCI = S.settings.residual === '' || S.settings.residual == null ? null : +S.settings.residual;
     const goMWh = +S.settings.go || 0;
     const coveredMWh = Math.min(o.E / 1000, goMWh + ppaMWh);
     const supplier = S.settings.supplier === '' ? null : +S.settings.supplier;
     o.covered = coveredMWh; o.coverage = o.E ? coveredMWh / (o.E / 1000) : 0;
     o.factorRest = supplier != null && isFinite(supplier) ? supplier : o.rmCI;
-    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : 'AIB residual mix ' + rmYear;
+    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : 'residual mix factor entered';
     o.emMarket = o.factorRest != null ? (o.E / 1000 - coveredMWh) * 1000 * o.factorRest : null;   // g
     o.hourly = ppaMWh ? o.ppa.match / o.E : null;
     o.costAvg = o.Ep ? o.cost / (o.Ep / 1000) : null;
@@ -230,7 +228,7 @@
       _fuelKpi('Consumption', o.E < 100000 ? f2(o.E / 1000) : f1(o.E / 1000), 'MWh', `${o.days.length} days · ${o.days[0]} → ${o.days[o.days.length - 1]}`),
       _fuelKpi('Location-based', eL[0], eL[1], `${f1(o.ciHourly)} g/kWh · quarter-hour by quarter-hour`),
       _fuelKpi('Timing effect', timing == null ? '–' : (timing > 0 ? '+' : '') + timing.toFixed(1), '%', `vs national average ${f1(o.ciAnnual)} g/kWh over the period`, timing == null ? '' : timing <= 0 ? 'up' : 'down'),
-      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? 'no residual mix for this year' : `${f1(o.emMarket / o.E)} g/kWh · rest at ${o.factorRestSrc}`),
+      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? 'enter the residual mix factor above' : `${f1(o.emMarket / o.E)} g/kWh · rest at ${o.factorRestSrc}`),
       _fuelKpi('Renewable coverage', o.coverage ? (o.coverage * 100).toFixed(0) : '0', '%', o.hourly != null ? `hour by hour ${(o.hourly * 100).toFixed(0)} % (${o.settingsPpaTech} profile)` : 'annual volume (GOs + PPA)', o.coverage >= 0.999 ? 'up' : ''),
       _fuelKpi('Cost on the spot', f2(o.costAvg), '€/MWh', shape == null ? 'prices not available' : `${shape > 0 ? '+' : ''}${shape.toFixed(1)} % vs baseload ${f2(o.baseAvg)}`, shape == null ? '' : shape > 0 ? 'down' : 'up'),
     ].join('');
@@ -270,12 +268,12 @@
     const rows = [
       ['Location-based · quarter-hourly (RTE éCO2mix)', t(o.emLocation), o.ciHourly, 'Consumption × French grid intensity at the same quarter-hour. Most precise view of the physical impact of your consumption timing.'],
       ['Location-based · period average', t(o.emAnnualMethod), o.ciAnnual, 'Consumption × national consumption-weighted average intensity over the same period: the usual GHG Protocol location-based figure when hourly data are not used.'],
-      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) at the ${esc(o.factorRestSrc)}${o.factorRest != null ? ' (' + f1(o.factorRest) + ' g/kWh)' : ''}.${o.rmSame || !o.rmYear ? '' : ' The residual mix of ' + o.year + ' is not published yet (AIB, each May): latest available year used.'}`],
+      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'at the ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'needs a residual mix factor: enter the French residual mix of the reporting year published by the AIB'}.`],
     ];
     $('cf-report').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scope 2 · ${esc(o.days[0])} → ${esc(o.days[o.days.length - 1])}</th><th>t CO₂</th><th>g CO₂/kWh</th><th style="text-align:left">How it is computed</th></tr></thead><tbody>` +
       rows.map(r => `<tr><td style="text-align:left"><b>${r[0]}</b></td><td>${f2(r[1])}</td><td>${f1(r[2])}</td><td style="text-align:left;white-space:normal;color:var(--text2);min-width:280px">${r[3]}</td></tr>`).join('') +
       `</tbody></table></div>
-      <div class="fuel-note">Direct emissions of French generation as published by RTE (éCO2mix), excluding imports and life-cycle emissions; most carbon reporting frameworks add an upstream factor on top. Physical mix = French generation at the time of each consumption quarter-hour. Residual mix: AIB European Residual Mixes. Renewable coverage counts guarantees of origin and the PPA / on-site volume against total consumption; the hour-by-hour figure assumes the PPA follows the national ${esc(o.settingsPpaTech)} profile. ${o.missing ? f1(o.missing / 1000) + ' MWh fall on quarter-hours without RTE data and are counted at the period average. ' : ''}Your file is processed in this browser only: nothing is sent or stored.</div>`;
+      <div class="fuel-note">Direct emissions of French generation as published by RTE (éCO2mix), excluding imports and life-cycle emissions; most carbon reporting frameworks add an upstream factor on top. Physical mix = French generation at the time of each consumption quarter-hour. Residual mix: the factor you enter, normally the AIB European Residual Mix of the reporting year (published each May for the previous year). Renewable coverage counts guarantees of origin and the PPA / on-site volume against total consumption; the hour-by-hour figure assumes the PPA follows the national ${esc(o.settingsPpaTech)} profile. ${o.missing ? f1(o.missing / 1000) + ' MWh fall on quarter-hours without RTE data and are counted at the period average. ' : ''}Your file is processed in this browser only: nothing is sent or stored.</div>`;
   }
 
   async function run() {
@@ -306,7 +304,7 @@
     lines.push('');
     lines.push('summary;value;unit');
     [['consumption', (o.E / 1000).toFixed(3), 'MWh'], ['location_based_quarter_hourly', t(o.emLocation).toFixed(3), 't CO2'], ['location_based_period_average', o.emAnnualMethod == null ? '' : t(o.emAnnualMethod).toFixed(3), 't CO2'],
-      ['market_based', o.emMarket == null ? '' : t(o.emMarket).toFixed(3), 't CO2'], ['residual_mix_year', o.rmYear || '', ''], ['renewable_coverage_annual', (o.coverage * 100).toFixed(1), '%'],
+      ['market_based', o.emMarket == null ? '' : t(o.emMarket).toFixed(3), 't CO2'], ['residual_or_supplier_factor', o.factorRest == null ? '' : o.factorRest, 'g CO2/kWh'], ['renewable_coverage_annual', (o.coverage * 100).toFixed(1), '%'],
       ['renewable_coverage_hourly', o.hourly == null ? '' : (o.hourly * 100).toFixed(1), '%'], ['spot_cost_profile', o.costAvg == null ? '' : o.costAvg.toFixed(2), 'EUR/MWh'], ['spot_baseload', o.baseAvg == null ? '' : o.baseAvg.toFixed(2), 'EUR/MWh']]
       .forEach(r => lines.push(r.join(';')));
     const a = document.createElement('a');
@@ -334,7 +332,7 @@
     $('cf-export').addEventListener('click', exportCSV);
     const bind = (id, key, rebuild) => $(id).addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); });
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
-    bind('cf-go', 'go'); bind('cf-ppa', 'ppa'); bind('cf-ppa-tech', 'ppaTech'); bind('cf-supplier', 'supplier');
+    bind('cf-go', 'go'); bind('cf-ppa', 'ppa'); bind('cf-ppa-tech', 'ppaTech'); bind('cf-supplier', 'supplier'); bind('cf-residual', 'residual');
   }
 
   window.addEventListener('load', () => setTimeout(() => {
