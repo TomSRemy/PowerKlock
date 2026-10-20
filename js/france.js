@@ -131,7 +131,7 @@
 
   function loadSummary() {
     if (CACHE.summary) return Promise.resolve(CACHE.summary);
-    return fetch('data/history/summary.json')
+    return window.pkSummary().then(s => ({ ok: !!s, json: () => s }))
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { CACHE.summary = j; return j; })
       .catch(function () { return null; });

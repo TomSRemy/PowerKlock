@@ -1789,8 +1789,8 @@ async function renderGmHistory() {
   let fullZoneData = [];  // unfiltered series for rolling-window context
   try {
     if (!window._GM_HIST_SUMMARY_CACHE) {
-      const r = await fetch('data/history/summary.json');
-      if (r.ok) window._GM_HIST_SUMMARY_CACHE = await r.json();
+      const sm = await window.pkSummary();
+      if (sm) window._GM_HIST_SUMMARY_CACHE = sm;
     }
     const summary = window._GM_HIST_SUMMARY_CACHE;
     const zoneData = summary?.zones?.[zone];

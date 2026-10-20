@@ -20,7 +20,7 @@ function _mrnGet(key, url, parse) {
 const _mrnDaily = iso => _mrnGet('d' + iso, DATA_BASE + 'history/daily/' + iso + '.json');
 const _mrnFwd = () => _mrnGet('fwd', DATA_BASE + 'fr_market.json');
 const _mrnFwdSeries = () => _mrnGet('fwds', DATA_BASE + 'history/fr_market_series.json');
-const _mrnSummary = () => _mrnGet('sum', DATA_BASE + 'history/summary.json');
+const _mrnSummary = () => window.pkSummary();
 const _mrnAuctions = () => _mrnGet('auct', DATA_BASE + 'go_auctions.json');
 function _mrnGoCsv() {
   return _mrnGet('go', DATA_BASE + 'go_prices.csv', txt => {

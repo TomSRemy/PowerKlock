@@ -1810,6 +1810,10 @@
   // ════════════════════════════════════════════════════════════════
   function _gmhRenderAll() {
     if (!document.getElementById('hs-gmh-main')) return; // page not present
+    // not on the Generation Mix page: draw when it is opened (needs the full price history)
+    const pg = document.getElementById('page-genmix');
+    if (pg && !pg.classList.contains('active')) { window._gmhDirty = true; return; }
+    window._gmhDirty = false;
     _gmhRenderBoard();
     _gmhRenderCrossZone();
   }
@@ -1824,6 +1828,10 @@
     document.addEventListener('zones-changed', refresh);
     if (window._genmixData) refresh();
   }
+  window.addEventListener('load', () => setTimeout(() => {
+    const inner = window.showPage;
+    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'genmix' && window._gmhDirty) setTimeout(_gmhRenderAll, 50); return r; };
+  }, 0));
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _gmhInit);
   } else {

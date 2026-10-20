@@ -260,7 +260,7 @@ window.addEventListener('load', () => setTimeout(() => {
 // files (every zone since 2025) and the daily files of the last days.
 async function _muZoneDaily(zone) {
   const rows = new Map();
-  const s = await _muGet('sum', 'history/summary.json');
+  const s = await window.pkSummary();
   ((s && s.zones && s.zones[zone]) || []).forEach(r => { if (r.avg != null) rows.set(r.d, r.avg); });
   const t = _muToday();
   const months = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1 - i, 1)); months.push(d.toISOString().slice(0, 7)); }
