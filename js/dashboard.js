@@ -190,7 +190,7 @@
   // ── Public helpers for ☆ buttons ─────────────────────────────────
   function has(wid) { return !!(state && board().items.some(it => it.t === 'w' && it.wid === wid)); }
 
-  function toggleWidget(wid) {
+  function toggleWidget(wid, p) {
     const b = board();
     if (has(wid)) {
       b.items = b.items.filter(it => !(it.t === 'w' && it.wid === wid));
@@ -198,7 +198,7 @@
     } else {
       const w = PKW.get(wid);
       if (!w) return;
-      b.items.push({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h });
+      b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h }, p ? { p } : {}));
       toast('Added to “' + b.name + '”');
     }
     save();
