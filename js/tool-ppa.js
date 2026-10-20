@@ -20,7 +20,7 @@
   const get = path => fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null);
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, imb: 1.9, add: 0, volRisk: 0, priceRisk: 0, go: null, margin: 1.0,
-    volume: 52000, curtail: true, model: 'flat', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
+    volume: 52000, conv: 'pos', model: 'flat', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
 
   // ── Maths ─────────────────────────────────────────────────────────
@@ -40,25 +40,47 @@
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
-    const [daily, mkt, goCsv] = await Promise.all([get('history/rte/fr_daily.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => '')]);
+    const [cap, mkt, goCsv, capa] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
     const go = {};
     goCsv.split(/\r?\n/).slice(1).forEach(l => { const c = l.split(','); if (c.length < 8 || !/Renewable/i.test(c[4])) return; const bid = parseFloat(c[6]), ask = parseFloat(c[7]); const mid = isFinite(bid) && isFinite(ask) ? (bid + ask) / 2 : isFinite(bid) ? bid : null; if (mid != null && (!go[c[5]] || c[1] >= go[c[5]].d)) go[c[5]] = { d: c[1], v: mid }; });
-    D = { rows: (daily && daily.rows) || [], fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go };
+    // installed capacity (GW) by year, Energy-Charts
+    const fr = capa && capa.countries && capa.countries.FR, capGW = { solar: {}, wind: {} };
+    if (fr) fr.years.forEach((y, i) => { const t = fr.types; const s = t['Solar AC'] && t['Solar AC'][i]; const w = (t['Wind onshore'] && t['Wind onshore'][i] || 0) + (t['Wind offshore'] && t['Wind offshore'][i] || 0); if (s) capGW.solar[y] = s; if (w) capGW.wind[y] = w; });
+    const F = cap ? cap.fields : [], ix = Object.fromEntries(F.map((f, i) => [f, i + 1]));
+    D = { cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go };
     return D;
   }
 
-  // National capture history: output-weighted capture price ÷ average baseload, per year
+  // Column indexes of a day row for the technology and convention:
+  // 'pos' = PPA Dashboard (hours with a price ≤ 0 left out of capture and baseload), 'all' = every hour
+  function cols() {
+    const t = S.tech === 'solar' ? 's' : 'w', pos = S.conv === 'pos' ? 'Pos' : '', ix = D.ix;
+    return { E: ix[t + 'E' + pos], R: ix[t + 'R' + pos], P: ix['pSum' + pos], N: ix['pN' + pos] };
+  }
+  // Sum a set of day rows → capture price, baseload, capture rate
+  function agg(rows) {
+    const c = cols(); let E = 0, R = 0, P = 0, N = 0;
+    rows.forEach(r => { E += r[c.E]; R += r[c.R]; P += r[c.P]; N += r[c.N]; });
+    const base = N ? P / N : null, cp = E ? R / E : null;
+    return { base, cp, cpPct: cp != null && base > 0 ? cp / base : null, E };
+  }
+  // National capture history per year (RTE output × day-ahead price)
   function nationalYears() {
-    const key = S.tech === 'solar' ? ['solarAvg', 'sCap'] : ['windAvg', 'wCap'];
-    const acc = {};
-    D.rows.forEach(r => { if (r.base == null) return; const y = +r.d.slice(0, 4); const a = acc[y] || (acc[y] = { n: 0, base: 0, w: 0, wp: 0 }); a.n++; a.base += r.base;
-      const o = r[key[0]], c = r[key[1]]; if (o != null && c != null) { a.w += o; a.wp += o * c; } });
-    return Object.keys(acc).map(Number).sort().map(y => { const a = acc[y], base = a.base / a.n, cp = a.w ? a.wp / a.w : null;
-      return { year: y, base, cp, cpPct: cp != null && base > 0 ? cp / base : null, sd: cp != null && base > 0 ? 1 - cp / base : null, days: a.n, complete: y < thisYear() && a.n >= 360 }; })
+    const by = {}; D.cap.forEach(r => { (by[r[0].slice(0, 4)] = by[r[0].slice(0, 4)] || []).push(r); });
+    return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y]);
+      return { year: y, base: a.base, cp: a.cp, cpPct: a.cpPct, sd: a.cpPct != null ? 1 - a.cpPct : null, days: by[y].length, complete: y < thisYear() && by[y].length >= 360 }; })
       .filter(x => x.cpPct != null);
+  }
+  // Rolling capture rate and price over 30 / 90 / 365 days (national)
+  function rolling() {
+    const c = cols(), rows = D.cap, n = rows.length, cum = [[0, 0, 0, 0]];
+    rows.forEach((r, i) => { const p = cum[i]; cum.push([p[0] + r[c.E], p[1] + r[c.R], p[2] + r[c.P], p[3] + r[c.N]]); });
+    const win = w => rows.map((r, i) => { if (i + 1 < w) return null; const a = cum[i + 1], b = cum[i + 1 - w]; const E = a[0] - b[0], R = a[1] - b[1], P = a[2] - b[2], N = a[3] - b[3];
+      const base = N ? P / N : null, cp = E ? R / E : null; return { cp, base, pct: cp != null && base > 0 ? cp / base : null }; });
+    return { days: rows.map(r => r[0]), w30: win(30), w90: win(90), w365: win(365) };
   }
   // Asset capture history: curve × France quarter-hour prices
   async function assetYears() {
@@ -66,9 +88,11 @@
     const files = await Promise.all(years.map(y => get('history/fr_prices/' + y + '.json')));
     const P = {}; files.forEach(f => { if (f && f.days) Object.assign(P, f.days); });
     const acc = {};
+    const pos = S.conv === 'pos';
     days.forEach(d => { const p = P[d]; if (!p) return; const c = slots.get(d), y = +d.slice(0, 4), a = acc[y] || (acc[y] = { n: 0, bs: 0, bn: 0, e: 0, rev: 0, all: 0, neg: 0 }); a.n++;
-      for (let q = 0; q < 96; q++) { if (p[q] == null) continue; a.bs += p[q]; a.bn++; const e = c[q] || 0; a.all += e; if (!e) continue;
-        if (p[q] < 0) { a.neg += e; if (S.curtail) continue; } a.e += e; a.rev += e * p[q]; } });
+      for (let q = 0; q < 96; q++) { if (p[q] == null) continue; const e = c[q] || 0; a.all += e;
+        if (pos && p[q] <= 0) { a.neg += e; continue; }   // PPA Dashboard convention: hours ≤ 0 €/MWh left out
+        a.bs += p[q]; a.bn++; if (!e) continue; a.e += e; a.rev += e * p[q]; } });
     return Object.keys(acc).map(Number).sort().map(y => { const a = acc[y], base = a.bs / a.bn, cp = a.e ? a.rev / a.e : null;
       return { year: y, base, cp, cpPct: cp != null && base > 0 ? cp / base : null, sd: cp != null && base > 0 ? 1 - cp / base : null, days: a.n, mwh: a.e / 1000, mwhAll: a.all / 1000, negMwh: a.neg / 1000, complete: a.n >= 330 && y < thisYear() }; })
       .filter(x => x.cpPct != null);
@@ -193,15 +217,150 @@
       `</tbody></table></div><div class="fuel-note">P10 / P90 use the 90th / 10th percentile of the historical shape discount (high cannibalisation = low P&L). Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production.</div>`;
     // asset diagnostics
     const ad = $('pp-asset-info');
-    if (ad) ad.textContent = o.ast ? `${S.assetName}: ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.curtail ? ' (' + f0(x.negMwh) + ' MWh at negative prices left out)' : '')).join(' · ')}` : 'No asset curve: national ' + tech.toLowerCase() + ' profile (RTE) used.';
+    if (ad) ad.textContent = o.ast ? `${S.assetName}: ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : 'No asset curve: national ' + tech.toLowerCase() + ' profile (RTE) used.';
     const goNote = $('pp-go-note'); if (goNote) goNote.textContent = o.goMkt != null ? `Market: ${f2(o.goMkt)} €/MWh (Commerg, AIB renewable, tenor years)` : '';
+  }
+
+
+  // ── Market & methodology charts (the PPA Dashboard Overview and Market Evolution tabs) ──
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MCOL = ['#3B82F6', '#7FC8F8', '#ED6965', '#F4A7A3', '#14D3A9', '#6EE7B7', '#F59E0B', '#FBBF24', '#A87DC4', '#C9CED6', '#1D4ED8', '#93C5FD'];
+  const PPE3 = { solar: { 2030: 48.0, 2035: 67.5 }, wind: { 2030: 31.0, 2035: 37.5 } };
+  // Text labels drawn on given points: [{ ds, i, text, dy }]
+  const labelPlugin = (marks) => ({ id: 'ppMarks', afterDatasetsDraw(ch) {
+    const g = ch.ctx; g.save(); g.font = '600 10.5px "JetBrains Mono", monospace'; g.textAlign = 'center';
+    marks.forEach(m => { const meta = ch.getDatasetMeta(m.ds); const el = meta && meta.data[m.i]; if (!el || meta.hidden) return;
+      const x = el.x, y = el.y + (m.dy || -12); const w = g.measureText(m.text).width + 8;
+      if (m.box) { g.fillStyle = 'rgba(15,20,25,.92)'; g.strokeStyle = m.color || '#FBBF24'; g.lineWidth = 1; g.fillRect(x - w / 2, y - 10, w, 15); g.strokeRect(x - w / 2, y - 10, w, 15); }
+      g.fillStyle = m.color || '#FFFFFF'; g.fillText(m.text, x, y + 1); });
+    g.restore(); } });
+  // Shade category columns (years left out of the regression)
+  const shadePlugin = (idx) => ({ id: 'ppShade', beforeDatasetsDraw(ch) {
+    const xs = ch.scales.x, a = ch.chartArea, g = ch.ctx; if (!xs || !idx.length) return;
+    const step = xs.getPixelForValue(1) - xs.getPixelForValue(0); g.save(); g.fillStyle = 'rgba(251,191,36,.10)';
+    idx.forEach(i => { const x = xs.getPixelForValue(i); g.fillRect(x - step / 2, a.top, step, a.bottom - a.top); }); g.restore(); } });
+
+  function capFit(o) {
+    const cap = D.capGW[S.tech], pts = o.nat.filter(x => cap[x.year] && x.complete && o.sel.includes(x.year) || (cap[x.year] && x.complete && !S.years && true));
+    const use = o.nat.filter(x => cap[x.year] && x.complete && !(o.excluded || []).includes(x.year));
+    if (use.length < 3) return null;
+    const X = use.map(x => Math.log(cap[x.year])), Y = use.map(x => x.cpPct), r = linreg(X, Y);
+    return { f: gw => r.ic + r.sl * Math.log(gw), r2: r.r2, pts, use };
+  }
+
+  function renderMarket(o) {
+    const tech = S.tech === 'solar' ? 'Solar' : 'Wind', tc = S.tech === 'solar' ? '#FBBF24' : '#14D3A9';
+    const first = o.hist[0].year, endY = Math.max(2035, o.tenor[o.tenor.length - 1]), Y = [];
+    for (let y = first; y <= endY; y++) Y.push(y);
+    const pc1 = v => v == null ? null : Math.round(v * 1000) / 10;
+    const natM = new Map(o.nat.map(x => [x.year, x])), astM = o.ast ? new Map(o.ast.map(x => [x.year, x])) : null;
+    const lastY = o.lastYr, sig = t => 0.04 * Math.sqrt(Math.max(1, t));
+    const bandV = (y, z) => y <= lastY ? null : pc1(1 - (o.proj(y) + z * sig(y - lastY)));
+    const excluded = Y.filter(y => y < lastY && natM.has(y) && natM.get(y).complete && !o.sel.includes(y) && y >= o.sel[0]);
+    o.excluded = excluded;
+    const fit = capFit(o), ppe = fit ? Object.entries(PPE3[S.tech]).map(([yr, gw]) => ({ yr: +yr, gw, cp: fit.f(gw) })) : [];
+    const tenorSet = new Set(o.tenor);
+    const ds = [
+      { label: '_p90', data: Y.map(y => bandV(y, -1.28)), borderWidth: 0, pointRadius: 0, fill: false },
+      { label: 'P10–P90', data: Y.map(y => bandV(y, 1.28)), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(251,191,36,.12)', fill: '-1' },
+      { label: '_p75', data: Y.map(y => bandV(y, -0.674)), borderWidth: 0, pointRadius: 0, fill: false },
+      { label: 'P25–P75', data: Y.map(y => bandV(y, 0.674)), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(251,191,36,.24)', fill: '-1' },
+      { label: 'National ' + tech.toLowerCase() + ' capture rate', data: Y.map(y => natM.has(y) ? pc1(natM.get(y).cpPct) : null), borderColor: '#3FA6B4', borderDash: [6, 4], borderWidth: 1.6, pointStyle: 'rect', pointRadius: 4, backgroundColor: '#3FA6B4', fill: false, spanGaps: false },
+      ...(astM ? [{ label: (S.assetName || 'Asset') + ' capture rate', data: Y.map(y => astM.has(y) ? pc1(astM.get(y).cpPct) : null), borderColor: tc, borderWidth: 2, pointRadius: 4, backgroundColor: tc, fill: false }] : []),
+      { label: 'Trend (regression on the years used)', data: Y.map(y => y >= Math.min(...o.sel) - 4 ? pc1(1 - Math.max(-0.5, Math.min(1.5, o.reg.ic + o.reg.sl * y))) : null), borderColor: 'rgba(184,201,217,.55)', borderDash: [2, 3], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: 'P50 — tenor', data: Y.map(y => tenorSet.has(y) || y === lastY ? pc1(1 - o.proj(y)) : null), borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: Y.map(y => tenorSet.has(y) ? 4 : y === lastY ? 5 : 0), backgroundColor: '#FFFFFF', fill: false, spanGaps: true },
+      { label: 'P50 after the tenor', data: Y.map(y => y >= o.tenor[o.tenor.length - 1] ? pc1(1 - o.proj(y)) : null), borderColor: 'rgba(255,255,255,.45)', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 2, fill: false, spanGaps: true },
+      ...ppe.map(t => ({ label: 'PPE3 ' + t.yr, data: Y.map(y => y === t.yr ? pc1(t.cp) : null), pointStyle: 'rectRot', pointRadius: 8, backgroundColor: '#3FA6B4', borderColor: '#0F1419', showLine: false })),
+    ];
+    const iP50 = ds.findIndex(d => d.label === 'P50 — tenor');
+    const marks = o.tenor.map((y, k) => ({ ds: iP50, i: Y.indexOf(y), text: Math.round((1 - o.proj(y)) * 100) + '%', dy: k % 2 ? 22 : -14, box: true }))
+      .concat(ppe.map(t => ({ ds: ds.findIndex(d => d.label === 'PPE3 ' + t.yr), i: Y.indexOf(t.yr), text: t.yr + ' ' + Math.round(t.cp * 100) + '%', dy: -14, color: '#3FA6B4' })));
+    const ch = _fuelChart('pp-proj', { type: 'line', data: { labels: Y, datasets: ds }, plugins: [labelPlugin(marks), shadePlugin(excluded.map(y => Y.indexOf(y)))],
+      options: _fuelOpts({ layout: { padding: { right: 46, top: 10 } }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
+        scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-projection');
+    $('pp-proj-sub').textContent = `Slope ${(-o.reg.sl * 100).toFixed(2)} %/yr · R² ${o.reg.r2.toFixed(2)} · ${o.useAsset ? 'asset' : 'national'} regression on ${o.sel.join(', ')}${excluded.length ? ' · shaded: left out' : ''} · tenor ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${({ flat: 'flat', damped: 'damped trend', linear: 'straight line' })[S.model]} projection`;
+    // P10 / P50 / P90 table
+    const rows = []; for (let y = lastY + 1; y <= endY; y++) rows.push(y);
+    $('pp-proj-table').innerHTML = `<table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>P10</th><th>P50</th><th>P90</th></tr></thead><tbody>` +
+      rows.map(y => `<tr class="${tenorSet.has(y) ? 'pp-tenor' : ''}"><td style="text-align:left">${y}</td><td>${bandV(y, 1.28).toFixed(1)}%</td><td><b>${pc1(1 - o.proj(y)).toFixed(1)}%</b></td><td>${bandV(y, -1.28).toFixed(1)}%</td></tr>`).join('') +
+      `</tbody></table><div class="fuel-note">Capture rate, % of baseload. Highlighted: tenor. P10 = low capture (strong cannibalisation).</div>`;
+    // CP% vs installed capacity
+    const cap = D.capGW[S.tech];
+    const scat = o.nat.filter(x => cap[x.year] || (x.year === thisYear() && Object.keys(cap).length));
+    const capOf = x => cap[x.year] || cap[Math.max(...Object.keys(cap).map(Number))];
+    if (fit) {
+      const xMax = Math.max(...ppe.map(t => t.gw), ...scat.map(capOf)) * 1.05, xMin = Math.min(...scat.map(capOf)) * 0.95, line = [];
+      for (let k = 0; k <= 60; k++) { const gw = xMin + (xMax - xMin) * k / 60; line.push({ x: gw, y: pc1(fit.f(gw)) }); }
+      const pts = scat.map(x => ({ x: capOf(x), y: pc1(x.cpPct), yr: x.year, partial: !x.complete }));
+      const ds2 = [
+        { type: 'scatter', label: 'National ' + tech.toLowerCase() + ' (one point per year)', data: pts, pointRadius: 7, backgroundColor: pts.map(p => p.partial ? '#FBBF24' : (o.excluded || []).includes(p.yr) ? 'rgba(63,166,180,.35)' : '#3FA6B4'), borderColor: '#0F1419' },
+        { type: 'line', label: `Log fit (R² ${fit.r2.toFixed(2)})`, data: line, borderColor: '#FFFFFF', borderWidth: 1.8, pointRadius: 0, fill: false },
+        { type: 'scatter', label: 'PPE3 targets', data: ppe.map(t => ({ x: t.gw, y: pc1(t.cp) })), pointStyle: 'rectRot', pointRadius: 9, backgroundColor: '#ED6965', borderColor: '#0F1419' },
+      ];
+      const marks2 = pts.map((p, i) => ({ ds: 0, i, text: String(p.yr) + (p.partial ? ' YTD' : ''), dy: p.partial ? 20 : -11, color: p.partial ? '#FBBF24' : '#B8C9D9' }))
+        .concat(ppe.map((t, i) => ({ ds: 2, i, text: `PPE3 ${t.yr}: ${t.gw} GW → ${Math.round(t.cp * 100)}%`, dy: -14, color: '#ED6965' })));
+      _fuelChart('pp-capfit', { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
+        options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => ` ${c.raw.yr || ''} ${c.raw.x.toFixed(1)} GW · ${c.raw.y.toFixed(1)} %` } } },
+          layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
+      $('pp-capfit-sub').textContent = `Each point = one year (${S.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on the complete years${(o.excluded || []).length ? ' except ' + o.excluded.join(', ') : ''}; PPE3 targets ${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}.`;
+    } else noDataMsg('pp-capfit', 'Installed capacity not available', '');
+    // daily profiles
+    const profYear = String(Math.max(...o.nat.filter(x => x.complete).map(x => x.year)));
+    const prof = D.profile[profYear] && D.profile[profYear][S.tech];
+    const hrs = [...Array(24).keys()].map(h => h + 'h');
+    const profChart = (cid, grid, unit, file) => {
+      const avg = hrs.map((_, h) => { const v = grid.map(r => r[h]).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 100) / 100 : null; });
+      _fuelChart(cid, { type: 'line', data: { labels: hrs, datasets: grid.map((r, m) => ({ label: MONTHS[m], data: r, borderColor: MCOL[m], borderWidth: 1.2, pointRadius: 0, tension: .35, fill: false }))
+        .concat([{ label: 'Annual average', data: avg, borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 2.5, tension: .35, fill: false }]) },
+        options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(unit, { beginAtZero: true }) } }) }, file);
+    };
+    if (prof) { profChart('pp-prof-nat', prof, 'MW', 'ppa-profile-national'); $('pp-prof-nat-sub').textContent = `Average MW by hour, one line per month · France ${profYear} (RTE)`; }
+    // asset profile / monthly / annual
+    const A = S.asset && S.asset.slots;
+    if (A) {
+      const grid = MONTHS.map(() => new Array(24).fill(0)), cnt = MONTHS.map(() => new Array(24).fill(0)), monthE = new Array(12).fill(0), monthDays = new Array(12).fill(0), yearE = {};
+      A.forEach((arr, d) => { const m = +d.slice(5, 7) - 1, y = d.slice(0, 4); monthDays[m]++; let tot = 0;
+        for (let q = 0; q < 96; q++) { const e = arr[q] || 0; tot += e; grid[m][Math.floor(q / 4)] += e * 4 / 1000 / 4; } for (let h = 0; h < 24; h++) cnt[m][h]++; monthE[m] += tot; yearE[y] = (yearE[y] || 0) + tot; });
+      const g2 = grid.map((r, m) => r.map((v, h) => cnt[m][h] ? Math.round(v / cnt[m][h] * 100) / 100 : null));
+      profChart('pp-prof-asset', g2, 'MW', 'ppa-profile-asset'); $('pp-prof-asset-sub').textContent = `Same view for ${S.assetName}, all years of the curve`;
+      const yrsN = Object.keys(yearE).length || 1, natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
+      _fuelChart('pp-monthly', { type: 'bar', data: { labels: MONTHS, datasets: [
+        { label: S.assetName + ' (GWh per month, average year)', data: monthE.map((v, m) => monthDays[m] ? Math.round(v / 1e6 * (30.4 / (monthDays[m] / yrsN)) / yrsN * 100) / 100 : null), backgroundColor: tc, borderRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3, yAxisID: 'y1' },
+      ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh / month', { beginAtZero: true }), y1: _fuelAxis('MW national', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'ppa-monthly-production');
+      const ys = Object.keys(yearE).sort();
+      _fuelChart('pp-annual', { type: 'bar', data: { labels: ys, datasets: [{ label: S.assetName + ' (GWh per year)', data: ys.map(y => Math.round(yearE[y] / 1e6 * 100) / 100), backgroundColor: tc, borderRadius: 3 }] },
+        options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'ppa-annual-production');
+    } else {
+      ['pp-prof-asset', 'pp-annual'].forEach(id => noDataMsg(id, 'Load an asset production curve above', 'Same view for the asset'));
+      const natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
+      _fuelChart('pp-monthly', { type: 'line', data: { labels: MONTHS, datasets: [{ label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3 }] },
+        options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('MW national', { beginAtZero: true }) } }) }, 'ppa-monthly-production');
+    }
+    // rolling capture
+    const R = rolling(), step = 3, idx = R.days.map((_, i) => i).filter(i => i % step === 0 || i === R.days.length - 1);
+    const L = idx.map(i => R.days[i]);
+    const annualPts = L.map(d => { const y = +d.slice(0, 4); return d.slice(5) >= '07-01' && d.slice(5) < '07-04' && natM.has(y) ? pc1(natM.get(y).cpPct) : null; });
+    _fuelChart('pp-roll-pct', { type: 'line', data: { labels: L, datasets: [
+      { label: '30 days', data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
+      { label: '90 days', data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
+      { label: '365 days', data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
+      { label: 'Calendar year', data: annualPts, pointStyle: 'rect', pointRadius: 5, backgroundColor: '#3FA6B4', borderColor: '#3FA6B4', showLine: false },
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-rolling-capture-rate');
+    _fuelChart('pp-roll-eur', { type: 'line', data: { labels: L, datasets: [
+      { label: 'Baseload, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].base != null ? Math.round(R.w365[i].base * 10) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.8, pointRadius: 0, fill: false },
+      { label: tech + ' captured price, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].cp != null ? Math.round(R.w365[i].cp * 10) / 10 : null), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: { target: 0, above: 'rgba(20,211,169,.12)', below: 'rgba(237,105,101,.18)' } },
+      { label: tech + ' captured price, 90 days', data: idx.map(i => R.w90[i] && R.w90[i].cp != null ? Math.round(R.w90[i].cp * 10) / 10 : null), borderColor: tc, borderDash: [4, 3], borderWidth: 1, pointRadius: 0, fill: false },
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'ppa-rolling-captured-price');
+    const last = R.w365[R.w365.length - 1], l90 = R.w90[R.w90.length - 1], l30 = R.w30[R.w30.length - 1];
+    $('pp-roll-pct-sub').textContent = `Latest: 30 days ${pc1(l30 && l30.pct)}% · 90 days ${pc1(l90 && l90.pct)}% · 365 days ${pc1(last && last.pct)}% (${R.days[R.days.length - 1]}) · 100% = no cannibalisation`;
   }
 
   let busy = false, again = false;
   async function run() {
     if (busy) { again = true; return; }
     busy = true;
-    try { await load(); const o = await compute(); renderForwards(o); render(o); $('pp-status').textContent = ''; }
+    try { await load(); const o = await compute(); renderForwards(o); render(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }
@@ -217,7 +376,7 @@
     $('pp-model').addEventListener('change', e => { S.model = e.target.value; run(); });
     num('pp-t0', 'tenorStart'); num('pp-t1', 'tenorEnd'); num('pp-pct', 'pct', () => { $('pp-pct-v').textContent = 'P' + S.pct; });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
-    $('pp-curtail').addEventListener('change', e => { S.curtail = e.target.checked; run(); });
+    $('pp-conv').addEventListener('change', e => { S.conv = e.target.value; run(); });
     num('pp-imb', 'imb'); num('pp-add', 'add'); num('pp-volrisk', 'volRisk'); num('pp-pricerisk', 'priceRisk'); num('pp-go', 'go'); num('pp-margin', 'margin'); num('pp-volume', 'volume');
     num('pp-vs', 'volStress'); num('pp-ss', 'spotStress');
     const file = $('pp-file');
