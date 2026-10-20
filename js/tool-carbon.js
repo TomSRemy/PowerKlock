@@ -20,7 +20,10 @@
   const XLSX_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
-  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '' } };
+  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR' } };
+  // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
+  // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
+  const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
 
   // ── Parsing ───────────────────────────────────────────────────────
   // A row → { y, m, d, hh, mi } in Paris local time (naive), or null.
@@ -198,13 +201,17 @@
     const year = days[days.length - 1].slice(0, 4);
     // Residual mix: entered by the user from the AIB publication (AIB data
     // are copyrighted, all rights reserved: PowerKlock does not redistribute them)
-    o.rmCI = S.settings.residual === '' || S.settings.residual == null ? null : +S.settings.residual;
+    const typed = S.settings.residual === '' || S.settings.residual == null ? null : +S.settings.residual;
+    const tab = RM[S.settings.rmCountry], tabYears = tab ? Object.keys(tab).sort() : [];
+    const rmYear = tab ? (tabYears.includes(year) ? year : tabYears.filter(y => y <= year).pop() || tabYears[tabYears.length - 1]) : null;
+    o.rmCI = typed != null ? typed : tab ? tab[rmYear] : null;
+    o.rmLabel = typed != null ? 'residual mix factor entered' : tab ? `AIB residual mix ${S.settings.rmCountry === 'FR' ? 'France' : 'Belgium'} ${rmYear}${rmYear !== year ? ' (latest published; ' + year + ' comes out each May)' : ''}` : null;
     const goMWh = +S.settings.go || 0;
     const coveredMWh = Math.min(o.E / 1000, goMWh + ppaMWh);
     const supplier = S.settings.supplier === '' ? null : +S.settings.supplier;
     o.covered = coveredMWh; o.coverage = o.E ? coveredMWh / (o.E / 1000) : 0;
     o.factorRest = supplier != null && isFinite(supplier) ? supplier : o.rmCI;
-    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : 'residual mix factor entered';
+    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : o.rmLabel || 'residual mix factor entered';
     o.emMarket = o.factorRest != null ? (o.E / 1000 - coveredMWh) * 1000 * o.factorRest : null;   // g
     o.hourly = ppaMWh ? o.ppa.match / o.E : null;
     o.costAvg = o.Ep ? o.cost / (o.Ep / 1000) : null;
@@ -274,7 +281,7 @@
     $('cf-report').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scope 2 · ${esc(o.days[0])} → ${esc(o.days[o.days.length - 1])}</th><th>t CO₂</th><th>g CO₂/kWh</th><th style="text-align:left">How it is computed</th></tr></thead><tbody>` +
       rows.map(r => `<tr><td style="text-align:left"><b>${r[0]}</b></td><td>${f2(r[1])}</td><td>${f1(r[2])}</td><td style="text-align:left;white-space:normal;color:var(--text2);min-width:280px">${r[3]}</td></tr>`).join('') +
       `</tbody></table></div>
-      <div class="fuel-note">Direct emissions of French generation as published by RTE (éCO2mix), excluding imports and life-cycle emissions; most carbon reporting frameworks add an upstream factor on top. Physical mix = French generation at the time of each consumption quarter-hour. Residual mix: the factor you enter, normally the AIB European Residual Mix of the reporting year (published each May for the previous year). Renewable coverage counts guarantees of origin and the PPA / on-site volume against total consumption; the hour-by-hour figure assumes the PPA follows the national ${esc(o.settingsPpaTech)} profile. ${o.missing ? f1(o.missing / 1000) + ' MWh fall on quarter-hours without RTE data and are counted at the period average. ' : ''}Your file is processed in this browser only: nothing is sent or stored.</div>`;
+      <div class="fuel-note">Direct emissions of French generation as published by RTE (éCO2mix), excluding imports and life-cycle emissions; most carbon reporting frameworks add an upstream factor on top. Physical mix = French generation at the time of each consumption quarter-hour. Residual mix: AIB European Residual Mix (www.aib-net.org) for France and Belgium, published each May for the previous year; for another country, enter its factor. Renewable coverage counts guarantees of origin and the PPA / on-site volume against total consumption; the hour-by-hour figure assumes the PPA follows the national ${esc(o.settingsPpaTech)} profile. ${o.missing ? f1(o.missing / 1000) + ' MWh fall on quarter-hours without RTE data and are counted at the period average. ' : ''}Your file is processed in this browser only: nothing is sent or stored.</div>`;
   }
 
   async function run() {
@@ -333,7 +340,7 @@
     $('cf-export').addEventListener('click', exportCSV);
     const bind = (id, key, rebuild) => $(id).addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); });
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
-    bind('cf-go', 'go'); bind('cf-ppa', 'ppa'); bind('cf-ppa-tech', 'ppaTech'); bind('cf-supplier', 'supplier'); bind('cf-residual', 'residual');
+    bind('cf-go', 'go'); bind('cf-ppa', 'ppa'); bind('cf-ppa-tech', 'ppaTech'); bind('cf-supplier', 'supplier'); bind('cf-residual', 'residual'); bind('cf-rm-country', 'rmCountry');
   }
 
   window.addEventListener('load', () => setTimeout(() => {
