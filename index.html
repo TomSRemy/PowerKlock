@@ -2911,6 +2911,17 @@
   .cf-in input { flex:1; width:100%; }
   .cf-in em { font-style:normal; font-size:11px; color:var(--text3); }
   .cf-link { color:var(--accent); text-decoration:none; letter-spacing:0; text-transform:none; }
+  .cf-opt { font-style:normal; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); margin-left:6px; }
+  .cf-words { background:#1c242e; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:12px 16px; margin:0 0 14px; }
+  .cf-words ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.55; color:var(--text2); }
+  .cf-words b { color:var(--text); }
+  .cf-hm { overflow-x:auto; padding:2px 0; }
+  .cf-hm table { border-collapse:separate; border-spacing:2px; width:100%; min-width:640px; font:10px 'JetBrains Mono',monospace; }
+  .cf-hm th { color:var(--text3); font-weight:500; padding:2px 4px; text-align:center; white-space:nowrap; }
+  .cf-hm tbody th { text-align:right; padding-right:8px; color:var(--text2); }
+  .cf-hm td { height:22px; border-radius:3px; text-align:center; color:#fff; font-size:9.5px; }
+  .cf-hm-leg { display:flex; align-items:center; gap:8px; margin-top:8px; font:10px 'JetBrains Mono',monospace; color:var(--text3); }
+  .cf-hm-leg i { display:inline-block; width:160px; height:10px; border-radius:3px; }
   .cf-status { font-size:11.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
   @media (max-width: 700px) { .cf-grid { grid-template-columns:minmax(0,1fr); } }
   .fuel-grid-2 > * { min-width:0; }
@@ -5319,21 +5330,22 @@
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Carbon footprint</span></div>
-          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · RTE éCO2mix · market-based with your factors</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · RTE éCO2mix · day-ahead · GHG Protocol · CSRD</span></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-cf-input">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-input')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Your consumption<span class="pk-hs-meta">Load a consumption curve: what you really consume, its carbon footprint (GHG Protocol Scope 2) and its renewable coverage</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Your consumption<span class="pk-hs-meta">Load a curve, add your contracts if you have any</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-cf-input">
+          <div class="pp-group-t">1 · Your load curve</div>
           <div class="cf-grid">
             <label class="cf-drop" id="cf-drop">
               <input type="file" id="cf-file" accept=".csv,.txt,.xlsx,.xls" hidden>
               <span class="cf-drop-t">Drop a load curve here or click to choose a file</span>
-              <span class="cf-drop-s">CSV or Excel · one date-time column and one consumption column · 5-min to hourly steps · Enedis exports read as they are</span>
-              <span class="cf-drop-s">The file is processed in your browser only: nothing is sent or stored.</span>
+              <span class="cf-drop-s">CSV or Excel · a date-time column and a consumption column · 5-min to hourly steps · Enedis exports read as they are</span>
+              <span class="cf-drop-s">Processed in your browser only: nothing is sent or stored.</span>
             </label>
             <div class="cf-side">
               <button type="button" class="pk-btn-primary" id="cf-example">Try with an example (office, 2025)</button>
@@ -5343,49 +5355,92 @@
           <div class="cf-form">
             <label class="cf-field"><span>Values are</span><select id="cf-unit"><option value="auto">Detect</option><option value="kwh">kWh per step</option><option value="mwh">MWh per step</option><option value="kw">kW (average power)</option><option value="w">W (average power, Enedis)</option></select></label>
             <label class="cf-field"><span>Timestamps mark</span><select id="cf-stamp"><option value="auto">Detect</option><option value="start">Start of each step</option><option value="end">End of each step (Enedis)</option></select></label>
-            <label class="cf-field"><span>Guarantees of origin cancelled</span><span class="cf-in"><input type="number" id="cf-go" min="0" step="any" value="0"><em>MWh</em></span></label>
-            <label class="cf-field"><span>Renewable PPA or on-site output</span><span class="cf-in"><input type="number" id="cf-ppa" min="0" step="any" value="0"><em>MWh</em><select id="cf-ppa-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select></span></label>
-            <label class="cf-field"><span>Residual mix · source <a href="https://www.aib-net.org/facts/european-residual-mix" target="_blank" rel="noopener" class="cf-link">AIB ↗</a></span><span class="cf-in"><select id="cf-rm-country" aria-label="Residual mix country"><option value="FR">France (AIB)</option><option value="BE">Belgium (AIB)</option><option value="other">Other: enter</option></select><input type="number" id="cf-residual" min="0" step="any" placeholder="override"><em>g/kWh</em></span></label>
-            <label class="cf-field"><span>Supplier emission factor (optional)</span><span class="cf-in"><input type="number" id="cf-supplier" min="0" step="any" placeholder="optional"><em>g/kWh</em></span></label>
           </div>
-          <div class="cf-status" id="cf-status" role="status">No curve loaded yet.</div>
+          <div class="pp-group-t">2 · Your contracts <em class="cf-opt">optional — for the market-based Scope 2 and the coverage</em></div>
+          <div class="cf-form">
+            <label class="cf-field"><span>Guarantees of origin cancelled</span><span class="cf-in"><input type="number" id="cf-go" min="0" step="any" value="0" placeholder=""><em>MWh</em></span></label>
+            <label class="cf-field"><span>Renewable PPA volume</span><span class="cf-in"><input type="number" id="cf-ppa" min="0" step="any" value="0"><em>MWh</em><select id="cf-ppa-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select></span></label>
+            <label class="cf-field"><span>Supplier emission factor</span><span class="cf-in"><input type="number" id="cf-supplier" min="0" step="any" value="" placeholder="if your supplier gives one"><em>g/kWh</em></span></label>
+            <label class="cf-field"><span>Residual mix · source <a href="https://www.aib-net.org/facts/european-residual-mix" target="_blank" rel="noopener" class="cf-link">AIB ↗</a></span><span class="cf-in"><select id="cf-rm-country" aria-label="Residual mix country"><option value="FR">France (AIB)</option><option value="BE">Belgium (AIB)</option><option value="other">Other: enter</option></select><input type="number" id="cf-residual" min="0" step="any" placeholder="override"><em>g/kWh</em></span></label>
+            <label class="cf-field"><span>Your reporting factor (location)</span><span class="cf-in"><input type="number" id="cf-annual" min="0" step="any" value="" placeholder="e.g. your carbon database"><em>g/kWh</em></span></label>
+          </div>
+          <div class="cf-status" id="cf-status" role="status">No curve loaded yet: drop a file or try the example.</div>
         </div>
       </div>
       <div id="cf-results" hidden>
-      <div class="hist-section hist-section-strong" id="hs-cf-results">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-results')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>What you consume<span class="pk-hs-meta">Quarter-hour by quarter-hour against the French grid</span></div>
+      <div class="hist-section hist-section-strong" id="hs-cf-ov">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-ov')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Overview<span class="pk-hs-meta">The essentials in figures and in plain words</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body open" id="hs-body-cf-results">
-          <div class="kpi-strip fuel-kpis" id="cf-kpis"></div>
-          <div class="chart-container fuel-card" style="margin-bottom:14px">
-            <div class="fuel-card-head"><div><div class="table-title">Daily consumption and its carbon intensity</div><div class="fuel-card-sub">MWh per day · g CO₂/kWh of the French grid weighted by your quarter-hours</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:320px"><canvas id="cf-daily" style="width:100%;height:320px"></canvas></div>
-          </div>
-          <div class="fuel-grid-2">
-            <div class="chart-container fuel-card">
-              <div class="fuel-card-head"><div><div class="table-title">Your average day</div><div class="fuel-card-sub">Consumption by hour and the grid intensity at those hours</div></div><span class="source-badge">RTE éCO2mix</span></div>
-              <div style="position:relative;height:300px"><canvas id="cf-hours" style="width:100%;height:300px"></canvas></div>
-            </div>
-            <div class="chart-container fuel-card">
-              <div class="fuel-card-head"><div><div class="table-title">Where your electricity came from</div><div class="fuel-card-sub">French generation at the time of each of your quarter-hours</div></div><span class="source-badge">RTE éCO2mix</span></div>
-              <div style="position:relative;height:300px"><canvas id="cf-mix" style="width:100%;height:300px"></canvas></div>
-            </div>
-          </div>
+        <div class="hist-section-body open" id="hs-body-cf-ov">
+<div class="kpi-strip fuel-kpis" id="cf-kpis"></div>
+<div class="cf-words" id="cf-words"></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Month by month</div><div class="fuel-card-sub">Consumption, location-based emissions and energy cost on the spot</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-monthly-ov" style="width:100%;height:320px"></canvas></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-cf-cons">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-cons')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Consumption<span class="pk-hs-meta">When and how much you consume</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-cf-cons">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">When you consume · month × hour</div><div class="fuel-card-sub">Average power (kW) for each hour of each month</div></div><span class="source-badge">Your curve</span></div><div id="cf-hm-kw"></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Working days vs weekends</div><div class="fuel-card-sub">Average power by hour of the day</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="cf-week" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Load duration curve</div><div class="fuel-card-sub">Every quarter-hour sorted from the highest power</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="cf-duration" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="fuel-note" id="cf-duration-note"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-cf-carbon">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-carbon')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Carbon<span class="pk-hs-meta">Your emissions quarter-hour by quarter-hour</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-cf-carbon">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily consumption and its carbon intensity</div><div class="fuel-card-sub">MWh per day · g CO₂/kWh of the French grid weighted by your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-daily" style="width:100%;height:320px"></canvas></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day</div><div class="fuel-card-sub">Consumption by hour and the grid intensity at those hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-hours" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">When the grid is clean · month × hour</div><div class="fuel-card-sub">Average CO₂ intensity of French generation (g/kWh)</div></div><span class="source-badge">RTE éCO2mix</span></div><div id="cf-hm-ci"></div></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Where your electricity came from</div><div class="fuel-card-sub">French generation at the time of each of your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-mix" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Scope 2 by month</div><div class="fuel-card-sub">t CO₂ · location-based (quarter-hourly) and market-based</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-monthly" style="width:100%;height:300px"></canvas></div></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-cf-cost">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-cost')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Cost &amp; flexibility<span class="pk-hs-meta">What your profile costs and what moving load would save</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-cf-cost">
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Energy cost on the day-ahead market</div><div class="fuel-card-sub">k€ per month and your average price (€/MWh)</div></div><span class="source-badge">ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-cost-m" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day vs the price</div><div class="fuel-card-sub">When you consume and what the hour costs</div></div><span class="source-badge">ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-cost-h" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="pp-group-t" style="margin-top:16px">Flexibility simulator</div>
+<div class="cf-form"><label class="cf-field"><span>Share of each day you could move</span><span class="cf-in"><input type="number" id="cf-flex-pct" min="0" step="1" value="10" placeholder=""><em>%</em></span></label><label class="cf-field"><span>Move it to the hours that are</span><select id="cf-flex-goal"><option value="cost">Cheapest</option><option value="co2">Least carbon-intensive</option></select></label></div>
+<div class="kpi-strip fuel-kpis" id="cf-flex-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day, before and after</div><div class="fuel-card-sub">Energy moved within the same day, never above the day’s own peak (no change to the contracted power)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-flex" style="width:100%;height:300px"></canvas></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-cf-solar">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-solar')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Solar &amp; coverage<span class="pk-hs-meta">On-site solar simulator and PPA coverage</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-cf-solar">
+<div class="pp-group-t">On-site solar simulator</div>
+<div class="cf-form"><label class="cf-field"><span>Installation size</span><span class="cf-in"><input type="number" id="cf-pv-kwp" min="0" step="1" value="0" placeholder=""><em>kWp</em></span></label><label class="cf-field"><span>Specific yield</span><span class="cf-in"><input type="number" id="cf-pv-yield" min="0" step="10" value="1150" placeholder=""><em>kWh/kWp/yr</em></span></label></div>
+<div class="cf-status" id="cf-pv-hint"></div>
+<div class="kpi-strip fuel-kpis" id="cf-pv-kpis" style="grid-template-columns:repeat(5,1fr)"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average day with solar</div><div class="fuel-card-sub">Production, self-consumption and consumption</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-pv-day" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Month by month</div><div class="fuel-card-sub">Self-sufficiency and self-consumption</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-pv-m" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="pp-group-t" style="margin-top:16px">Renewable PPA · hour-by-hour coverage</div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA output vs your consumption</div><div class="fuel-card-sub">Average day: what the contract delivers at the time you consume</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-ppa" style="width:100%;height:300px"></canvas></div></div>
+<div class="fuel-note" id="cf-ppa-note"></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-cf-report">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-report')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>GHG Protocol · Scope 2<span class="pk-hs-meta">Location-based and market-based</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Reporting<span class="pk-hs-meta">GHG Protocol Scope 2 and CSRD figures, exports</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-cf-report">
-          <div class="chart-container fuel-card" style="margin-bottom:14px">
-            <div class="fuel-card-head"><div><div class="table-title">Scope 2 emissions by month</div><div class="fuel-card-sub">t CO₂ · location-based (quarter-hourly) and market-based</div></div><button type="button" class="pk-btn-ghost" id="cf-export">⤓ Export CSV</button></div>
-            <div style="position:relative;height:300px"><canvas id="cf-monthly" style="width:100%;height:300px"></canvas></div>
-          </div>
-          <div id="cf-report"></div>
+<div class="pk-sec-controls"><button type="button" class="pk-btn-primary" id="cf-xlsx">⤓ Excel</button><button type="button" class="pk-btn-ghost" id="cf-export">⤓ CSV (daily)</button></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">GHG Protocol · Scope 2</div><div class="fuel-card-sub">Location-based and market-based</div></div><span class="source-badge">PowerKlock</span></div><div id="cf-report"></div></div>
+<div style="height:14px"></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">CSRD · ESRS E1 datapoints</div><div class="fuel-card-sub">Energy consumption and mix (E1-5), gross Scope 2 (E1-6)</div></div><span class="source-badge">PowerKlock</span></div><div id="cf-esrs"></div></div>
+<div id="cf-quality"></div>
         </div>
       </div>
       </div>

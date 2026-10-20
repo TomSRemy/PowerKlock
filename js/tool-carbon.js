@@ -9,7 +9,11 @@
 //     origin, PPA, supplier factor, AIB residual mix for the rest),
 //   · its renewable coverage, annual and hour by hour when a PPA or
 //     on-site production is entered,
-//   · the cost of its profile on the day-ahead market vs baseload.
+//   · the cost of its profile on the day-ahead market vs baseload,
+//   · its consumption pattern (heatmap, weekday / weekend, load duration),
+//   · two simulators: load flexibility (move part of each day to cheaper
+//     hours) and on-site solar (self-consumption, coverage, value, CO₂),
+//   · the reporting datapoints (GHG Protocol Scope 2, CSRD ESRS E1-5 / E1-6).
 // Everything runs in the browser: the file never leaves the computer.
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -20,7 +24,7 @@
   const XLSX_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
-  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR' } };
+  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150 } };
   // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
   // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
   const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
@@ -139,149 +143,338 @@
     return rows;
   }
 
+
   // ── Reference data ────────────────────────────────────────────────
   const monthCache = {}, priceCache = {};
   const rteMonth = ym => monthCache[ym] || (monthCache[ym] = getJSON('history/rte/' + ym + '.json'));
   const priceYear = y => priceCache[y] || (priceCache[y] = getJSON('history/fr_prices/' + y + '.json'));
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const HRS = [...Array(24).keys()].map(h => String(h).padStart(2, '0') + 'h');
+  const dow = d => new Date(d + 'T12:00:00Z').getUTCDay();
+  const qTime = (d, q) => `${d} ${String(Math.floor(q / 4)).padStart(2, '0')}:${String(q % 4 * 15).padStart(2, '0')}`;
 
   // ── Computation ───────────────────────────────────────────────────
-  async function compute() {
-    const days = [...S.cons.slots.keys()].sort();
-    const months = [...new Set(days.map(d => d.slice(0, 7)))];
-    const years = [...new Set(days.map(d => d.slice(0, 4)))];
+  // One row per day: consumption (kWh per quarter-hour), day-ahead price,
+  // grid CO₂ intensity and the national generation behind it (RTE éCO2mix).
+  async function rowsFor(days) {
+    const months = [...new Set(days.map(d => d.slice(0, 7)))], years = [...new Set(days.map(d => d.slice(0, 4)))];
     const [rte, prices] = await Promise.all([Promise.all(months.map(rteMonth)), Promise.all(years.map(priceYear))]);
-    const R = {}; months.forEach((m, i) => { if (rte[i] && rte[i].days) Object.assign(R, rte[i].days); });
-    const P = {}; years.forEach((y, i) => { if (prices[i] && prices[i].days) Object.assign(P, prices[i].days); });
-    const o = { E: 0, Ecov: 0, em: 0, nat: { em: 0, load: 0 }, mix: {}, cost: 0, Ep: 0, base: { s: 0, n: 0 },
-      daily: [], hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourW: new Float64Array(24),
-      monthly: {}, missing: 0, ppa: { prof: new Float64Array(24), match: 0, surplus: 0 } };
-    MIX.forEach(([k]) => { o.mix[k] = 0; });
-    const ppaKey = S.settings.ppaTech;
-    let ppaShape = 0;  // sum of the national profile over the period (to scale the PPA volume)
-    days.forEach(d => { const r = R[d]; if (r && r[ppaKey]) r[ppaKey].forEach(v => { ppaShape += Math.max(0, v || 0); }); });
-    const ppaMWh = +S.settings.ppa || 0;
-    const nWeekdays = new Float64Array(24);
-    days.forEach(d => {
-      const c = S.cons.slots.get(d), r = R[d], p = P[d];
-      let dE = 0, dEm = 0;
-      const mk = d.slice(0, 7), M = o.monthly[mk] || (o.monthly[mk] = { E: 0, em: 0 });
-      const wd = new Date(d + 'T12:00:00Z').getUTCDay(), isWd = wd > 0 && wd < 6;
-      for (let q = 0; q < 96; q++) {
-        const e = c[q] || 0;            // kWh
-        const ci = r && r.co2 ? r.co2[q] : null;
-        if (r && r.co2 && r.load && r.load[q] != null && ci != null) { o.nat.em += ci * r.load[q]; o.nat.load += r.load[q]; }
-        if (!e) continue;
-        dE += e;
-        if (ci == null) { o.missing += e; continue; }
-        dEm += e * ci;                   // g
-        const h = Math.floor(q / 4);
-        o.hourC[h] += e; o.hourI[h] += e * ci; o.hourN[h] += e;
-        if (isWd) { o.hourW[h] += e; }
-        // physical mix (French production at the time of consumption)
-        let tot = 0; const sh = {};
-        MIX.forEach(([k]) => { const v = r[k] ? Math.max(0, r[k][q] || 0) : 0; sh[k] = v; tot += v; });
-        if (tot > 0) MIX.forEach(([k]) => { o.mix[k] += e * sh[k] / tot; });
-        // spot cost
-        if (p && p[q] != null) { o.cost += e / 1000 * p[q]; o.Ep += e; }
-        // PPA / on-site profile, hourly matching
-        if (ppaMWh && ppaShape && r[ppaKey]) {
-          const g = Math.max(0, r[ppaKey][q] || 0) / ppaShape * ppaMWh * 1000;   // kWh
-          o.ppa.match += Math.min(e, g); o.ppa.surplus += Math.max(0, g - e); o.ppa.prof[h] += g;
+    const R = {}, P = {};
+    rte.forEach(f => { if (f && f.days) Object.assign(R, f.days); });
+    prices.forEach(f => { if (f && f.days) Object.assign(P, f.days); });
+    return days.map(d => ({ d, e: S.cons.slots.get(d), r: R[d] || null, p: P[d] || null }));
+  }
+
+  // Load flexibility: each day, move a share of the energy from the most
+  // expensive (or most carbon-intensive) quarter-hours to the cheapest ones,
+  // never above the day's own peak (the contracted power does not change).
+  function flex(rows, pct, goal) {
+    let save = 0, dCO2 = 0, moved = 0; const after = new Float64Array(24), before = new Float64Array(24); let n = 0;
+    rows.forEach(({ e, r, p }) => {
+      if (!p || !r || !r.co2) return;
+      const key = q => goal === 'co2' ? r.co2[q] : p[q];
+      const qs = [...Array(96).keys()].filter(q => p[q] != null && r.co2[q] != null);
+      if (qs.length < 90) return;
+      const x = Float64Array.from(e), tot = x.reduce((a, b) => a + b, 0), peak = Math.max(...x);
+      let M = tot * pct / 100;
+      const hi = qs.slice().sort((a, b) => key(b) - key(a)), lo = qs.slice().sort((a, b) => key(a) - key(b));
+      let j = 0;
+      for (const q of hi) {
+        if (M <= 1e-9) break;
+        let take = Math.min(x[q], M);
+        while (take > 1e-9 && j < lo.length) {
+          const t = lo[j]; if (key(t) >= key(q)) { take = 0; break; }
+          const room = peak - x[t]; if (room <= 1e-9) { j++; continue; }
+          const m = Math.min(take, room);
+          x[q] -= m; x[t] += m; take -= m; M -= m; moved += m;
+          save += m * (p[q] - p[t]) / 1000; dCO2 += m * (r.co2[t] - r.co2[q]);
         }
       }
-      if (p) for (let q = 0; q < 96; q++) if (p[q] != null) { o.base.s += p[q]; o.base.n++; }
-      o.E += dE; o.em += dEm; M.E += dE; M.em += dEm;
-      o.daily.push({ d, E: dE, ci: dE ? dEm / dE : null });
+      for (let q = 0; q < 96; q++) { before[q >> 2] += e[q]; after[q >> 2] += x[q]; }
+      n++;
     });
-    o.ciHourly = o.E - o.missing > 0 ? o.em / (o.E - o.missing) : null;   // g/kWh
-    o.ciAnnual = o.nat.load ? o.nat.em / o.nat.load : null;              // national consumption-weighted average, same period
-    o.emAnnualMethod = o.ciAnnual != null ? o.E * o.ciAnnual : null;      // g
-    o.emLocation = o.ciHourly != null ? o.ciHourly * o.E : null;          // g, missing slots at the period average
-    // Market-based
+    return { save, dCO2, moved, before: [...before].map(v => n ? v / n : 0), after: [...after].map(v => n ? v / n : 0) };
+  }
+
+  // On-site solar: the national solar profile of the same quarter-hours,
+  // scaled to the installation (kWp × specific yield, kWh/kWp/yr).
+  function solar(rows, kwp, yieldKWh) {
+    let natSum = 0; rows.forEach(({ r }) => { if (r && r.solar) for (let q = 0; q < 96; q++) natSum += Math.max(0, r.solar[q] || 0); });
+    const out = { prod: 0, self: 0, surplus: 0, valSelf: 0, valSurplus: 0, co2: 0, hourP: new Float64Array(24), hourS: new Float64Array(24), hourC: new Float64Array(24), monthly: {} };
+    if (!kwp || !natSum) return out;
+    const k = kwp * yieldKWh * (rows.length / 365) / natSum;
+    rows.forEach(({ d, e, r, p }) => {
+      if (!r || !r.solar) return;
+      const M = out.monthly[d.slice(0, 7)] || (out.monthly[d.slice(0, 7)] = { E: 0, self: 0, prod: 0 });
+      for (let q = 0; q < 96; q++) {
+        const g = Math.max(0, r.solar[q] || 0) * k, c = e[q] || 0, s = Math.min(g, c), x = g - s;
+        out.prod += g; out.self += s; out.surplus += x; M.prod += g; M.self += s; M.E += c;
+        if (p && p[q] != null) { out.valSelf += s * p[q] / 1000; out.valSurplus += x * p[q] / 1000; }
+        if (r.co2 && r.co2[q] != null) out.co2 += s * r.co2[q];
+        const h = q >> 2; out.hourP[h] += g; out.hourS[h] += s; out.hourC[h] += c;
+      }
+    });
+    const nd = rows.length || 1; ['hourP', 'hourS', 'hourC'].forEach(kk => { out[kk] = [...out[kk]].map(v => v / nd); });
+    return out;
+  }
+
+  async function compute() {
+    const days = [...S.cons.slots.keys()].sort();
+    const rows = await rowsFor(days), st = S.settings;
+    const o = { rows, days, E: 0, em: 0, missing: 0, nat: { em: 0, load: 0 }, mix: {}, cost: 0, Ep: 0, base: { s: 0, n: 0 },
+      daily: [], monthly: {}, hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourP: new Float64Array(24), hourPn: new Float64Array(24),
+      wk: { wd: new Float64Array(24), we: new Float64Array(24), nwd: 0, nwe: 0 }, mh: [...Array(12)].map(() => ({ e: new Float64Array(24), n: new Float64Array(24), ci: new Float64Array(24), cn: new Float64Array(24) })),
+      kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
+    MIX.forEach(([k]) => { o.mix[k] = 0; });
+    const ppaKey = st.ppaTech, ppaMWh = +st.ppa || 0;
+    let ppaShape = 0; rows.forEach(({ r }) => { if (r && r[ppaKey]) r[ppaKey].forEach(v => { ppaShape += Math.max(0, v || 0); }); });
+    rows.forEach(({ d, e, r, p }) => {
+      const mk = d.slice(0, 7), M = o.monthly[mk] || (o.monthly[mk] = { E: 0, em: 0, cost: 0, Ep: 0, ppa: 0 }), mi = +d.slice(5, 7) - 1;
+      const wd = dow(d), isWd = wd > 0 && wd < 6; let dE = 0, dEm = 0, dMin = Infinity;
+      if (isWd) o.wk.nwd++; else o.wk.nwe++;
+      for (let q = 0; q < 96; q++) {
+        const c = e[q] || 0, kw = c * 4, h = q >> 2;
+        o.kw.push(kw); if (kw > o.peak.v) o.peak = { v: kw, at: qTime(d, q) }; if (kw < dMin) dMin = kw;
+        if (!isWd || h < 7 || h >= 20) o.offHours += c;
+        (isWd ? o.wk.wd : o.wk.we)[h] += c;
+        o.mh[mi].e[h] += c; o.mh[mi].n[h] += 0.25;
+        const ci = r && r.co2 ? r.co2[q] : null;
+        if (ci != null) { o.mh[mi].ci[h] += ci; o.mh[mi].cn[h]++; if (r.load && r.load[q] != null) { o.nat.em += ci * r.load[q]; o.nat.load += r.load[q]; } }
+        if (p && p[q] != null) { o.base.s += p[q]; o.base.n++; o.hourP[h] += p[q]; o.hourPn[h]++; }
+        if (!c) continue;
+        dE += c; M.E += c; o.hourC[h] += c;
+        if (ci == null) { o.missing += c; } else {
+          dEm += c * ci; M.em += c * ci; o.hourI[h] += c * ci; o.hourN[h] += c;
+          let tot = 0; const sh = {}; MIX.forEach(([k]) => { const v = r[k] ? Math.max(0, r[k][q] || 0) : 0; sh[k] = v; tot += v; });
+          if (tot > 0) MIX.forEach(([k]) => { o.mix[k] += c * sh[k] / tot; });
+        }
+        if (p && p[q] != null) { o.cost += c / 1000 * p[q]; o.Ep += c; M.cost += c / 1000 * p[q]; M.Ep += c; }
+        if (ppaMWh && ppaShape && r && r[ppaKey]) { const g = Math.max(0, r[ppaKey][q] || 0) / ppaShape * ppaMWh * 1000; o.ppa.match += Math.min(c, g); o.ppa.surplus += Math.max(0, g - c); o.ppa.prof[h] += g; M.ppa += Math.min(c, g); }
+      }
+      o.dailyMinKW.push(dMin);
+      o.E += dE; o.em += dEm;
+      o.daily.push({ d, E: dE, ci: dE ? dEm / dE : null, cost: null });
+    });
+    const nd = days.length;
+    o.avgKW = o.E / (nd * 24);
+    const sortedKW = o.kw.slice().sort((a, b) => b - a);
+    o.p95 = sortedKW[Math.floor(sortedKW.length * 0.05)] || 0;
+    o.baseKW = o.dailyMinKW.slice().sort((a, b) => a - b)[Math.floor(o.dailyMinKW.length / 2)] || 0;
+    o.duration = sortedKW.filter((_, i) => i % Math.max(1, Math.floor(sortedKW.length / 400)) === 0);
+    o.loadFactor = o.peak.v ? o.avgKW / o.peak.v : null;
+    o.ciHourly = o.E - o.missing > 0 ? o.em / (o.E - o.missing) : null;
+    o.ciAnnual = o.nat.load ? o.nat.em / o.nat.load : null;
+    o.emLocation = o.ciHourly != null ? o.ciHourly * o.E : null;
+    o.emAnnualMethod = o.ciAnnual != null ? o.E * o.ciAnnual : null;
+    o.emAnnualFactor = st.annualFactor !== '' && st.annualFactor != null && isFinite(+st.annualFactor) ? o.E * +st.annualFactor : null;
+    // market-based (GHG Protocol Scope 2)
     const year = days[days.length - 1].slice(0, 4);
-    // Residual mix: entered by the user from the AIB publication (AIB data
-    // are copyrighted, all rights reserved: PowerKlock does not redistribute them)
-    const typed = S.settings.residual === '' || S.settings.residual == null ? null : +S.settings.residual;
-    const tab = RM[S.settings.rmCountry], tabYears = tab ? Object.keys(tab).sort() : [];
+    const typed = st.residual === '' || st.residual == null ? null : +st.residual;
+    const tab = RM[st.rmCountry], tabYears = tab ? Object.keys(tab).sort() : [];
     const rmYear = tab ? (tabYears.includes(year) ? year : tabYears.filter(y => y <= year).pop() || tabYears[tabYears.length - 1]) : null;
     o.rmCI = typed != null ? typed : tab ? tab[rmYear] : null;
-    o.rmLabel = typed != null ? 'residual mix factor entered' : tab ? `AIB residual mix ${S.settings.rmCountry === 'FR' ? 'France' : 'Belgium'} ${rmYear}${rmYear !== year ? ' (latest published; ' + year + ' comes out each May)' : ''}` : null;
-    const goMWh = +S.settings.go || 0;
-    const coveredMWh = Math.min(o.E / 1000, goMWh + ppaMWh);
-    const supplier = S.settings.supplier === '' ? null : +S.settings.supplier;
-    o.covered = coveredMWh; o.coverage = o.E ? coveredMWh / (o.E / 1000) : 0;
+    o.rmLabel = typed != null ? 'residual mix factor entered' : tab ? `AIB residual mix ${st.rmCountry === 'FR' ? 'France' : 'Belgium'} ${rmYear}${rmYear !== year ? ' (latest published)' : ''}` : null;
+    const goMWh = +st.go || 0, supplier = st.supplier === '' ? null : +st.supplier;
+    o.goMWh = goMWh; o.ppaMWh = ppaMWh;
+    o.covered = Math.min(o.E / 1000, goMWh + ppaMWh); o.coverage = o.E ? o.covered / (o.E / 1000) : 0;
     o.factorRest = supplier != null && isFinite(supplier) ? supplier : o.rmCI;
-    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : o.rmLabel || 'residual mix factor entered';
-    o.emMarket = o.factorRest != null ? (o.E / 1000 - coveredMWh) * 1000 * o.factorRest : null;   // g
+    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : o.rmLabel || 'residual mix';
+    o.emMarket = o.factorRest != null ? (o.E / 1000 - o.covered) * 1000 * o.factorRest : null;
     o.hourly = ppaMWh ? o.ppa.match / o.E : null;
     o.costAvg = o.Ep ? o.cost / (o.Ep / 1000) : null;
     o.baseAvg = o.base.n ? o.base.s / o.base.n : null;
-    o.year = year; o.days = days;
+    o.year = year;
+    o.flex = flex(rows, +st.flexPct || 0, st.flexGoal);
+    o.pv = solar(rows, +st.pvKwp || 0, +st.pvYield || 1150);
+    o.pvHint = Math.max(10, Math.round(o.avgKW / 10) * 10);
+    o.pvAuto = solar(rows, o.pvHint, +st.pvYield || 1150);
+    o.flexAuto = st.flexPct ? o.flex : flex(rows, 10, 'cost');
     return o;
   }
 
-  // ── Rendering ─────────────────────────────────────────────────────
-  const f0 = v => v == null ? '–' : Math.round(v).toLocaleString('en-GB');
-  const f1 = v => v == null ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const f2 = v => v == null ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // ── Rendering helpers ─────────────────────────────────────────────
+  const f0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB');
+  const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const f2 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pc = v => v == null || !isFinite(v) ? '–' : Math.round(v * 100) + ' %';
   const t = g => g == null ? null : g / 1e6;   // g → t
-  // emissions with a unit that suits the size: kg below one tonne
   const em = (g, small) => g == null ? ['–', 't CO₂'] : (small ? [f0(g / 1000), 'kg CO₂'] : [f2(g / 1e6), 't CO₂']);
-
-  function renderKpis(o) {
-    const timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null;
-    const shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null;
-    const small = (o.emLocation || 0) < 1e6, eL = em(o.emLocation, small), eM = em(o.emMarket, small);
-    $('cf-kpis').innerHTML = [
-      _fuelKpi('Consumption', o.E < 100000 ? f2(o.E / 1000) : f1(o.E / 1000), 'MWh', `${o.days.length} days · ${o.days[0]} → ${o.days[o.days.length - 1]}`),
-      _fuelKpi('Location-based', eL[0], eL[1], `${f1(o.ciHourly)} g/kWh · quarter-hour by quarter-hour`),
-      _fuelKpi('Timing effect', timing == null ? '–' : (timing > 0 ? '+' : '') + timing.toFixed(1), '%', `vs national average ${f1(o.ciAnnual)} g/kWh over the period`, timing == null ? '' : timing <= 0 ? 'up' : 'down'),
-      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? 'enter the residual mix factor above' : `${f1(o.emMarket / o.E)} g/kWh · rest at ${o.factorRestSrc}`),
-      _fuelKpi('Renewable coverage', o.coverage ? (o.coverage * 100).toFixed(0) : '0', '%', o.hourly != null ? `hour by hour ${(o.hourly * 100).toFixed(0)} % (${o.settingsPpaTech} profile)` : 'annual volume (GOs + PPA)', o.coverage >= 0.999 ? 'up' : ''),
-      _fuelKpi('Cost on the spot', f2(o.costAvg), '€/MWh', shape == null ? 'prices not available' : `${shape > 0 ? '+' : ''}${shape.toFixed(1)} % vs baseload ${f2(o.baseAvg)}`, shape == null ? '' : shape > 0 ? 'down' : 'up'),
-    ].join('');
+  const MWh = kwh => kwh >= 10000 ? f1(kwh / 1000) + ' MWh' : f0(kwh) + ' kWh';
+  const eur = v => Math.abs(v) >= 10000 ? f1(v / 1000) + ' k€' : f0(v) + ' €';
+  const legend = () => ({ display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } });
+  const xCat = () => Object.assign(_fuelXAxis(), { grid: { display: false } });
+  function heat(hostId, grid, unit, pal) {
+    const host = $(hostId); if (!host) return;
+    const vals = grid.flat().filter(v => v != null), lo = Math.min(...vals), hi = Math.max(...vals);
+    const col = v => { if (v == null) return 'transparent'; const x = hi > lo ? (v - lo) / (hi - lo) : 0.5; const [a, b] = pal; const c = a.map((ai, i) => Math.round(ai + (b[i] - ai) * x)); return `rgba(${c[0]},${c[1]},${c[2]},${(0.18 + 0.82 * x).toFixed(2)})`; };
+    const fmt = v => v == null ? '' : Math.abs(v) >= 100 ? Math.round(v) : v.toFixed(Math.abs(v) >= 10 ? 0 : 1);
+    host.innerHTML = `<div class="cf-hm"><table><thead><tr><th></th>${HRS.map((h, i) => `<th>${i % 3 ? '' : h}</th>`).join('')}</tr></thead><tbody>` +
+      grid.map((row, m) => row.every(v => v == null) ? '' : `<tr><th>${MON[m]}</th>${row.map((v, h) => `<td style="background:${col(v)}" title="${MON[m]} ${HRS[h]}: ${v == null ? '–' : fmt(v) + ' ' + unit}">${fmt(v)}</td>`).join('')}</tr>`).join('') +
+      `</tbody></table></div><div class="cf-hm-leg"><span>${fmt(lo)} ${unit}</span><i style="background:linear-gradient(90deg,${col(lo)},${col(hi)})"></i><span>${fmt(hi)} ${unit}</span></div>`;
   }
 
-  function charts(o) {
-    // daily consumption + carbon intensity of what was consumed
+  // ── Overview ──────────────────────────────────────────────────────
+  function words(o) {
+    const per = `${o.days[0]} → ${o.days[o.days.length - 1]}`, timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null;
+    const shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null, fx = o.flexAuto, pvA = o.pvAuto;
+    const li = [
+      `Over ${per} you consumed <b>${MWh(o.E)}</b>: an average of <b>${f0(o.avgKW)} kW</b>, a peak of <b>${f0(o.peak.v)} kW</b> (${o.peak.at}) and a base load of <b>${f0(o.baseKW)} kW</b> (typical night-time minimum). <b>${pc(o.offHours / o.E)}</b> of it falls outside working hours (nights and weekends).`,
+      `Location-based, it emitted <b>${em(o.emLocation, o.emLocation < 1e6).join(' ')}</b> (${f1(o.ciHourly)} g/kWh).${timing == null ? '' : ` You consume when the grid is <b>${timing <= 0 ? 'cleaner' : 'more carbon-intensive'}</b> than the national average: ${timing > 0 ? '+' : ''}${timing.toFixed(1)} % vs ${f1(o.ciAnnual)} g/kWh.`}`,
+      o.emMarket != null ? `Market-based (GHG Protocol Scope 2)${o.covered ? `, with ${f0(o.covered)} MWh covered by guarantees of origin or a PPA` : ''}: <b>${em(o.emMarket, o.emMarket < 1e6).join(' ')}</b>.` : 'Market-based: enter the residual mix factor (or keep France) to get it.',
+      shape == null ? '' : `On the day-ahead market your profile costs <b>${f2(o.costAvg)} €/MWh</b>, ${Math.abs(shape).toFixed(1)} % ${shape > 0 ? 'above' : 'below'} baseload (${f2(o.baseAvg)} €/MWh): <b>${eur(o.cost)}</b> of energy over the period.`,
+      fx.moved ? `Moving ${S.settings.flexPct || 10} % of each day's consumption to the cheapest hours (same day, no new peak) would save about <b>${eur(fx.save)}</b> and change emissions by <b>${fx.dCO2 > 0 ? '+' : ''}${f0(fx.dCO2 / 1000)} kg CO₂</b> — see Cost & flexibility.` : '',
+      pvA.prod ? `A solar installation of <b>${f0(o.pvHint)} kWp</b> (sized on your average load) would produce ${MWh(pvA.prod)}, cover <b>${pc(pvA.self / o.E)}</b> of your consumption and be <b>${pc(pvA.self / pvA.prod)}</b> self-consumed — see Solar & coverage.` : '',
+    ].filter(Boolean);
+    $('cf-words').innerHTML = `<ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  }
+  function renderOverview(o) {
+    const timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null, small = (o.emLocation || 0) < 1e6;
+    const eL = em(o.emLocation, small), eM = em(o.emMarket, small), shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null;
+    $('cf-kpis').innerHTML = [
+      _fuelKpi('Consumption', o.E < 100000 ? f2(o.E / 1000) : f1(o.E / 1000), 'MWh', `${o.days.length} days · average ${f0(o.avgKW)} kW`),
+      _fuelKpi('Peak power', f0(o.peak.v), 'kW', `base ${f0(o.baseKW)} kW · load factor ${pc(o.loadFactor)}`),
+      _fuelKpi('Location-based', eL[0], eL[1], `${f1(o.ciHourly)} g/kWh · timing ${timing == null ? '–' : (timing > 0 ? '+' : '') + timing.toFixed(1) + ' %'}`, timing == null ? '' : timing <= 0 ? 'up' : 'down'),
+      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? 'needs a residual mix factor' : `${f1(o.emMarket / o.E)} g/kWh`),
+      _fuelKpi('Spot cost', f2(o.costAvg), '€/MWh', shape == null ? '' : `${shape > 0 ? '+' : ''}${shape.toFixed(1)} % vs baseload · ${eur(o.cost)}`, shape == null ? '' : shape > 0 ? 'down' : 'up'),
+      _fuelKpi('Renewable coverage', o.coverage ? Math.round(o.coverage * 100) : '0', '%', o.hourly != null ? `hour by hour ${pc(o.hourly)}` : 'GOs + PPA, annual volume', o.coverage >= 0.999 ? 'up' : ''),
+    ].join('');
+    words(o);
+    const ms = Object.keys(o.monthly).sort();
+    _fuelChart('cf-monthly-ov', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
+      { label: 'Consumption (MWh)', data: ms.map(m => +(o.monthly[m].E / 1000).toFixed(2)), backgroundColor: 'rgba(127,200,248,.55)', borderRadius: 3, yAxisID: 'y' },
+      { type: 'line', label: 'Emissions, location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 3, yAxisID: 'y1' },
+      { type: 'line', label: 'Spot cost (k€)', data: ms.map(m => +(o.monthly[m].cost / 1000).toFixed(2)), borderColor: '#FBBF24', borderWidth: 1.6, borderDash: [5, 4], pointRadius: 2, yAxisID: 'y2' },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('t CO₂', { position: 'right', beginAtZero: true, grid: { display: false } }), y2: { display: false, beginAtZero: true } } }) }, 'carbon-monthly-overview');
+  }
+
+  // ── Consumption ───────────────────────────────────────────────────
+  function renderConsumption(o) {
+    heat('cf-hm-kw', o.mh.map(m => [...m.e].map((v, h) => m.n[h] ? v / m.n[h] : null)), 'kW', [[30, 70, 110], [127, 200, 248]]);
+    const H = HRS, wd = [...o.wk.wd].map(v => o.wk.nwd ? v / o.wk.nwd : null), we = [...o.wk.we].map(v => o.wk.nwe ? v / o.wk.nwe : null);   // kWh in that hour per day = average kW
+    // kWh per hour per day = average kW of that hour
+    _fuelChart('cf-week', { type: 'line', data: { labels: H, datasets: [
+      { label: 'Working days (Mon–Fri)', data: wd.map(v => v == null ? null : Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+      { label: 'Weekends', data: we.map(v => v == null ? null : Math.round(v)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 0, tension: .3, borderDash: [5, 4], fill: false },
+      { label: 'Base load', data: H.map(() => Math.round(o.baseKW)), borderColor: 'rgba(184,201,217,.6)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, fill: false },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW (average)', { beginAtZero: true }) } }) }, 'carbon-weekday-weekend');
+    const L = o.duration.map((_, i) => Math.round(i / (o.duration.length - 1) * 100) + ' %');
+    _fuelChart('cf-duration', { type: 'line', data: { labels: L, datasets: [
+      { label: 'Power, sorted from the highest quarter-hour', data: o.duration.map(v => Math.round(v)), borderColor: '#7FC8F8', backgroundColor: 'rgba(127,200,248,.15)', fill: 'origin', borderWidth: 2, pointRadius: 0 },
+      { label: `Peak ${f0(o.peak.v)} kW`, data: L.map(() => Math.round(o.peak.v)), borderColor: '#ED6965', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: `95 % of the time below ${f0(o.p95)} kW`, data: L.map(() => Math.round(o.p95)), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: `Base load ${f0(o.baseKW)} kW`, data: L.map(() => Math.round(o.baseKW)), borderColor: '#14D3A9', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: 'share of the time', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('kW', { beginAtZero: true }) } }) }, 'carbon-load-duration');
+    $('cf-duration-note').textContent = `The gap between the peak (${f0(o.peak.v)} kW) and the level exceeded only 5 % of the time (${f0(o.p95)} kW) shows how much the contracted power could be lowered by trimming rare peaks. Load factor ${pc(o.loadFactor)}: average ÷ peak.`;
+  }
+
+  // ── Carbon ────────────────────────────────────────────────────────
+  function renderCarbon(o) {
     const L = o.daily.map(x => x.d);
     _fuelChart('cf-daily', { type: 'bar', data: { labels: L, datasets: [
       { label: 'Consumption (MWh)', data: o.daily.map(x => x.E / 1000), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
       { type: 'line', label: 'Carbon intensity of your consumption (g/kWh)', data: o.daily.map(x => x.ci == null ? null : Math.round(x.ci * 10) / 10), borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, tension: 0.2, yAxisID: 'y1' },
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-daily');
-    // average day: consumption profile vs intensity
-    const H = [...Array(24).keys()].map(h => String(h).padStart(2, '0') + 'h');
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-daily');
     const nd = o.days.length;
-    _fuelChart('cf-hours', { type: 'bar', data: { labels: H, datasets: [
+    _fuelChart('cf-hours', { type: 'bar', data: { labels: HRS, datasets: [
       { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      ...(o.ppa.prof.some(v => v) ? [{ label: 'PPA / on-site output (kWh per hour)', data: [...o.ppa.prof].map(v => Math.round(v / nd)), backgroundColor: o.settingsPpaTech === 'wind' ? 'rgba(20,211,169,.45)' : 'rgba(251,191,36,.45)', borderWidth: 0, yAxisID: 'y' }] : []),
       { type: 'line', label: 'Grid intensity when you consume (g/kWh)', data: [...o.hourI].map((v, h) => o.hourN[h] ? Math.round(v / o.hourN[h] * 10) / 10 : null), borderColor: '#A87DC4', borderWidth: 1.8, pointRadius: 0, tension: 0.3, yAxisID: 'y1' },
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-average-day');
-    // physical mix
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-average-day');
+    heat('cf-hm-ci', o.mh.map(m => [...m.ci].map((v, h) => m.cn[h] ? v / m.cn[h] : null)), 'g/kWh', [[20, 120, 100], [168, 125, 196]]);
     const tot = MIX.reduce((s, [k]) => s + o.mix[k], 0) || 1;
     const mix = MIX.map(([k, l, c]) => [l, o.mix[k] / tot * 100, c]).filter(x => x[1] > 0.05).sort((a, b) => b[1] - a[1]);
-    _fuelChart('cf-mix', { type: 'bar', data: { labels: mix.map(x => x[0]), datasets: [
-      { label: 'Share of your consumption (%)', data: mix.map(x => Math.round(x[1] * 10) / 10), backgroundColor: mix.map(x => x[2]), borderWidth: 0, borderRadius: 3 },
-    ] }, options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: _fuelAxis('%', { beginAtZero: true }), y: { grid: { display: false }, ticks: { color: C_TX2, font: { size: 11 } } } } }) }, 'carbon-mix');
-    // monthly Scope 2, both methods
-    const ms = Object.keys(o.monthly).sort();
-    const share = o.E ? 1 - o.covered * 1000 / o.E : 1;
-    _fuelChart('cf-monthly', { type: 'bar', data: { labels: ms, datasets: [
+    _fuelChart('cf-mix', { type: 'bar', data: { labels: mix.map(x => x[0]), datasets: [{ label: 'Share of your consumption (%)', data: mix.map(x => Math.round(x[1] * 10) / 10), backgroundColor: mix.map(x => x[2]), borderWidth: 0, borderRadius: 3 }] },
+      options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: _fuelAxis('%', { beginAtZero: true }), y: { grid: { display: false }, ticks: { color: C_TX2, font: { size: 11 } } } } }) }, 'carbon-mix');
+    const ms = Object.keys(o.monthly).sort(), share = o.E ? 1 - o.covered * 1000 / o.E : 1;
+    _fuelChart('cf-monthly', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
       { label: 'Location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), backgroundColor: 'rgba(168,125,196,.75)', borderRadius: 3 },
       { label: 'Market-based (t CO₂)', data: ms.map(m => o.factorRest == null ? null : +(o.monthly[m].E * share * o.factorRest / 1e6).toFixed(3)), backgroundColor: 'rgba(20,211,169,.7)', borderRadius: 3 },
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('t CO₂', { beginAtZero: true }) } }) }, 'carbon-monthly');
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('t CO₂', { beginAtZero: true }) } }) }, 'carbon-monthly');
   }
 
-  function report(o) {
+  // ── Cost & flexibility ────────────────────────────────────────────
+  function renderCost(o) {
+    const ms = Object.keys(o.monthly).sort();
+    _fuelChart('cf-cost-m', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
+      { label: 'Energy cost on the spot (k€)', data: ms.map(m => +(o.monthly[m].cost / 1000).toFixed(2)), backgroundColor: 'rgba(251,191,36,.6)', borderRadius: 3, yAxisID: 'y' },
+      { type: 'line', label: 'Your price (€/MWh)', data: ms.map(m => o.monthly[m].Ep ? +(o.monthly[m].cost / (o.monthly[m].Ep / 1000)).toFixed(2) : null), borderColor: '#ED6965', borderWidth: 2, pointRadius: 3, yAxisID: 'y1' },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('k€', { beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'carbon-cost-monthly');
+    const nd = o.days.length;
+    _fuelChart('cf-cost-h', { type: 'bar', data: { labels: HRS, datasets: [
+      { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
+      { type: 'line', label: 'Average day-ahead price (€/MWh)', data: [...o.hourP].map((v, h) => o.hourPn[h] ? Math.round(v / o.hourPn[h] * 10) / 10 : null), borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: .3, yAxisID: 'y1' },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'carbon-cost-hours');
+    const fx = o.flex, pct = +S.settings.flexPct || 0;
+    $('cf-flex-kpis').innerHTML = [
+      _fuelKpi('Energy moved', MWh(fx.moved), '', `${pct} % of each day, same day, no new peak`),
+      _fuelKpi('Saving on the spot', eur(fx.save), '', o.cost ? `${(fx.save / o.cost * 100).toFixed(1)} % of the energy cost` : '', fx.save > 0 ? 'up' : ''),
+      _fuelKpi('Emissions change', (fx.dCO2 > 0 ? '+' : '') + f0(fx.dCO2 / 1000), 'kg CO₂', o.em ? `${(fx.dCO2 / o.em * 100).toFixed(1)} % location-based` : '', fx.dCO2 < 0 ? 'up' : fx.dCO2 > 0 ? 'down' : ''),
+    ].join('');
+    _fuelChart('cf-flex', { type: 'line', data: { labels: HRS, datasets: [
+      { label: 'Today: average kWh per hour', data: fx.before.map(v => Math.round(v)), borderColor: 'rgba(127,200,248,.8)', borderWidth: 2, pointRadius: 0, tension: .3, fill: false },
+      { label: `After moving ${pct} %`, data: fx.after.map(v => Math.round(v)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: { target: 0, above: 'rgba(20,211,169,.15)', below: 'rgba(237,105,101,.15)' } },
+    ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh per hour', { beginAtZero: true }) } }) }, 'carbon-flexibility');
+  }
+
+  // ── Solar & coverage ──────────────────────────────────────────────
+  function renderSolar(o) {
+    const pv = o.pv, kwp = +S.settings.pvKwp || 0;
+    $('cf-pv-hint').textContent = `Suggested starting point: ${f0(o.pvHint)} kWp (your average load). France: about 1,000 kWh/kWp/yr in the north to 1,400 in the south.`;
+    if (!kwp) {
+      $('cf-pv-kpis').innerHTML = '<div class="fuel-note">Enter a size in kWp to simulate an installation on your site.</div>';
+      ['cf-pv-day', 'cf-pv-m'].forEach(id => noDataMsg(id, 'Enter an installation size (kWp)', 'The production follows the national solar profile of the same days (RTE)'));
+    } else {
+      $('cf-pv-kpis').innerHTML = [
+        _fuelKpi('Production', MWh(pv.prod), '', `${f0(kwp)} kWp × ${f0(+S.settings.pvYield || 1150)} kWh/kWp/yr`),
+        _fuelKpi('Self-consumed', pc(pv.prod ? pv.self / pv.prod : null), '', MWh(pv.self) + ' used on site'),
+        _fuelKpi('Coverage of your needs', pc(o.E ? pv.self / o.E : null), '', 'self-sufficiency'),
+        _fuelKpi('Spot value', eur(pv.valSelf), '', `avoided purchases · surplus worth ${eur(pv.valSurplus)}`, 'up'),
+        _fuelKpi('CO₂ avoided', em(pv.co2, pv.co2 < 1e6).join(' '), '', 'location-based, on self-consumption', 'up'),
+      ].join('');
+      _fuelChart('cf-pv-day', { type: 'line', data: { labels: HRS, datasets: [
+        { label: 'Self-consumed solar', data: pv.hourS.map(v => Math.round(v)), borderColor: 'rgba(251,191,36,.9)', backgroundColor: 'rgba(251,191,36,.35)', fill: 'origin', borderWidth: 0, pointRadius: 0, tension: .3 },
+        { label: 'Solar production', data: pv.hourP.map(v => Math.round(v)), borderColor: '#FBBF24', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, tension: .3, fill: false },
+        { label: 'Your consumption', data: pv.hourC.map(v => Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+      ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh per hour (average day)', { beginAtZero: true }) } }) }, 'carbon-solar-day');
+      const ms = Object.keys(pv.monthly).sort();
+      _fuelChart('cf-pv-m', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
+        { label: 'Self-sufficiency (% of consumption)', data: ms.map(m => pv.monthly[m].E ? Math.round(pv.monthly[m].self / pv.monthly[m].E * 1000) / 10 : null), backgroundColor: 'rgba(251,191,36,.7)', borderRadius: 3 },
+        { label: 'Self-consumption (% of production)', data: ms.map(m => pv.monthly[m].prod ? Math.round(pv.monthly[m].self / pv.monthly[m].prod * 1000) / 10 : null), backgroundColor: 'rgba(20,211,169,.6)', borderRadius: 3 },
+      ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('%', { beginAtZero: true, max: 100 }) } }) }, 'carbon-solar-monthly');
+    }
+    // PPA / GO coverage hour by hour
+    const nd = o.days.length;
+    if (o.ppaMWh) {
+      _fuelChart('cf-ppa', { type: 'bar', data: { labels: HRS, datasets: [
+        { label: 'Your consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0 },
+        { type: 'line', label: `${S.settings.ppaTech === 'wind' ? 'Wind' : 'Solar'} PPA output (kWh per hour)`, data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+      ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }) } }) }, 'carbon-ppa-hours');
+      $('cf-ppa-note').textContent = `Annual volume coverage ${pc(o.coverage)}; hour by hour only ${pc(o.hourly)} of your consumption is matched by the PPA output at the same time (24/7 view), ${MWh(o.ppa.surplus)} of PPA output exceed your needs at the time they are produced.`;
+    } else { noDataMsg('cf-ppa', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
+  }
+
+  // ── Reporting ─────────────────────────────────────────────────────
+  function renderReport(o) {
     const rows = [
-      ['Location-based · quarter-hourly (RTE éCO2mix)', t(o.emLocation), o.ciHourly, 'Consumption × French grid intensity at the same quarter-hour. Most precise view of the physical impact of your consumption timing.'],
-      ['Location-based · period average', t(o.emAnnualMethod), o.ciAnnual, 'Consumption × national consumption-weighted average intensity over the same period: the usual GHG Protocol location-based figure when hourly data are not used.'],
-      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'at the ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'needs a residual mix factor: enter the French residual mix of the reporting year published by the AIB'}.`],
+      ['Location-based · quarter-hourly (RTE éCO2mix)', t(o.emLocation), o.ciHourly, 'Consumption × French grid intensity at the same quarter-hour. The most precise view of the physical impact of your consumption timing.'],
+      ['Location-based · period average', t(o.emAnnualMethod), o.ciAnnual, 'Consumption × national consumption-weighted intensity over the same period: the usual location-based figure when hourly data are not used.'],
+      ...(o.emAnnualFactor != null ? [['Location-based · your reporting factor', t(o.emAnnualFactor), +S.settings.annualFactor, 'Consumption × the annual factor you entered (e.g. the factor of your carbon accounting database), for consistency with your other reports.']] : []),
+      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'at the ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'needs a residual mix factor'}.`],
     ];
-    $('cf-report').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scope 2 · ${esc(o.days[0])} → ${esc(o.days[o.days.length - 1])}</th><th>t CO₂</th><th>g CO₂/kWh</th><th style="text-align:left">How it is computed</th></tr></thead><tbody>` +
-      rows.map(r => `<tr><td style="text-align:left"><b>${r[0]}</b></td><td>${f2(r[1])}</td><td>${f1(r[2])}</td><td style="text-align:left;white-space:normal;color:var(--text2);min-width:280px">${r[3]}</td></tr>`).join('') +
-      `</tbody></table></div>
-      <div class="fuel-note">Direct emissions of French generation as published by RTE (éCO2mix), excluding imports and life-cycle emissions; most carbon reporting frameworks add an upstream factor on top. Physical mix = French generation at the time of each consumption quarter-hour. Residual mix: AIB European Residual Mix (www.aib-net.org) for France and Belgium, published each May for the previous year; for another country, enter its factor. Renewable coverage counts guarantees of origin and the PPA / on-site volume against total consumption; the hour-by-hour figure assumes the PPA follows the national ${esc(o.settingsPpaTech)} profile. ${o.missing ? f1(o.missing / 1000) + ' MWh fall on quarter-hours without RTE data and are counted at the period average. ' : ''}Your file is processed in this browser only: nothing is sent or stored.</div>`;
+    $('cf-report').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">GHG Protocol · Scope 2 · ${esc(o.days[0])} → ${esc(o.days[o.days.length - 1])}</th><th>t CO₂</th><th>g CO₂/kWh</th><th style="text-align:left">How it is computed</th></tr></thead><tbody>` +
+      rows.map(r => `<tr><td style="text-align:left"><b>${r[0]}</b></td><td>${f2(r[1])}</td><td>${f1(r[2])}</td><td style="text-align:left;white-space:normal;color:var(--text2);min-width:280px">${r[3]}</td></tr>`).join('') + `</tbody></table></div>`;
+    const ren = o.covered, renShare = o.E ? ren * 1000 / o.E : 0;
+    const esrs = [
+      ['E1-5', 'Electricity consumption', f1(o.E / 1000) + ' MWh', 'Total purchased electricity over the period'],
+      ['E1-5', 'of which from renewable sources', f1(ren) + ' MWh · ' + pc(renShare), 'Covered by guarantees of origin or a renewable PPA (contractual instruments)'],
+      ['E1-5', 'of which from nuclear sources', f1(o.mix.nuclear / 1000) + ' MWh', 'Physical mix of the grid at the time of consumption (RTE); report per your accounting policy'],
+      ['E1-6', 'Gross Scope 2 · location-based', f2(t(o.emLocation)) + ' t CO₂', 'Quarter-hourly method (or the period average / your reporting factor above)'],
+      ['E1-6', 'Gross Scope 2 · market-based', o.emMarket == null ? '–' : f2(t(o.emMarket)) + ' t CO₂', 'Contractual instruments, then residual mix'],
+      ['E1-6', 'Intensity', o.emMarket == null ? '–' : f1(o.emMarket / o.E) + ' g CO₂/kWh (market) · ' + f1(o.ciHourly) + ' (location)', 'Per kWh consumed; divide by your revenue for the ESRS intensity per net revenue'],
+    ];
+    $('cf-esrs').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">ESRS</th><th style="text-align:left">Datapoint</th><th>Value</th><th style="text-align:left">Note</th></tr></thead><tbody>` +
+      esrs.map(r => `<tr><td style="text-align:left">${r[0]}</td><td style="text-align:left"><b>${r[1]}</b></td><td>${r[2]}</td><td style="text-align:left;white-space:normal;color:var(--text2)">${r[3]}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">CSRD (ESRS E1): energy consumption and mix (E1-5), gross Scope 2 emissions location- and market-based (E1-6). France, Bilan GES: these figures feed the item “indirect emissions from electricity consumption” (Scope 2). Grid factors here are RTE's direct emissions of French generation (no imports, no upstream): most carbon databases add an upstream share — enter your database's annual factor in “Your contracts” to report with it. Residual mix: AIB European Residual Mix (France and Belgium quoted; other countries entered).</div>`;
+    $('cf-quality').innerHTML = `<div class="fuel-note">File: ${esc(S.meta)} · ${S.cons.info.rows.toLocaleString('en-GB')} rows · ${S.cons.info.step}-minute steps · ${o.days.length} days (${o.days[0]} → ${o.days[o.days.length - 1]}) · ${o.missing ? f1(o.missing / 1000) + ' MWh on quarter-hours without RTE data (counted at the period average)' : 'every quarter-hour matched with RTE data'}. Your file is processed in this browser only: nothing is sent or stored.</div>`;
   }
 
   async function run() {
@@ -290,11 +483,12 @@
     $('cf-status').textContent = 'Computing…';
     let o;
     try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = 'Computation failed: ' + e.message; return; }
-    o.settingsPpaTech = S.settings.ppaTech;
     S.res = o;
-    renderKpis(o); charts(o); report(o);
+    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
     const i = S.cons.info;
     $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
+    // charts drawn in hidden view tabs get their size when shown
+    document.querySelectorAll('#cf-results canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); });
   }
 
   async function load(rows, name) {
@@ -305,42 +499,58 @@
     } catch (e) { $('cf-status').textContent = e.message; }
   }
 
+  // ── Exports ───────────────────────────────────────────────────────
+  function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
   function exportCSV() {
     const o = S.res; if (!o) return;
     const lines = [['date', 'consumption_kWh', 'carbon_intensity_g_per_kWh', 'location_based_kgCO2'].join(';')];
     o.daily.forEach(x => lines.push([x.d, x.E.toFixed(2), x.ci == null ? '' : x.ci.toFixed(1), x.ci == null ? '' : (x.E * x.ci / 1000).toFixed(2)].join(';')));
-    lines.push('');
-    lines.push('summary;value;unit');
-    [['consumption', (o.E / 1000).toFixed(3), 'MWh'], ['location_based_quarter_hourly', t(o.emLocation).toFixed(3), 't CO2'], ['location_based_period_average', o.emAnnualMethod == null ? '' : t(o.emAnnualMethod).toFixed(3), 't CO2'],
-      ['market_based', o.emMarket == null ? '' : t(o.emMarket).toFixed(3), 't CO2'], ['residual_or_supplier_factor', o.factorRest == null ? '' : o.factorRest, 'g CO2/kWh'], ['renewable_coverage_annual', (o.coverage * 100).toFixed(1), '%'],
-      ['renewable_coverage_hourly', o.hourly == null ? '' : (o.hourly * 100).toFixed(1), '%'], ['spot_cost_profile', o.costAvg == null ? '' : o.costAvg.toFixed(2), 'EUR/MWh'], ['spot_baseload', o.baseAvg == null ? '' : o.baseAvg.toFixed(2), 'EUR/MWh']]
-      .forEach(r => lines.push(r.join(';')));
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
-    a.download = 'powerklock-scope2-' + o.days[0] + '_' + o.days[o.days.length - 1] + '.csv';
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    download('powerklock-scope2-' + o.days[0] + '_' + o.days[o.days.length - 1] + '.csv', new Blob([lines.join('\n')], { type: 'text/csv' }));
+  }
+  async function exportXlsx() {
+    const o = S.res; if (!o) return;
+    const b = $('cf-xlsx'); if (b) b.textContent = 'Preparing…';
+    try {
+      await loadXLSX();
+      const wb = XLSX.utils.book_new(), add = (n, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), n), r2 = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
+      add('Summary', [
+        ['Period', o.days[0] + ' → ' + o.days[o.days.length - 1]], ['Consumption (MWh)', r2(o.E / 1000)], ['Average power (kW)', r2(o.avgKW)], ['Peak power (kW)', r2(o.peak.v)], ['Peak at', o.peak.at],
+        ['Power exceeded 5 % of the time (kW)', r2(o.p95)], ['Base load (kW)', r2(o.baseKW)], ['Load factor', r2(o.loadFactor)], ['Share outside working hours', r2(o.offHours / o.E)],
+        ['Scope 2 location-based, quarter-hourly (t CO2)', r2(t(o.emLocation))], ['Intensity (g/kWh)', r2(o.ciHourly)], ['Scope 2 location-based, period average (t CO2)', r2(t(o.emAnnualMethod))],
+        ...(o.emAnnualFactor != null ? [['Scope 2 location-based, reporting factor (t CO2)', r2(t(o.emAnnualFactor))]] : []),
+        ['Scope 2 market-based (t CO2)', r2(t(o.emMarket))], ['Residual mix / supplier factor (g/kWh)', r2(o.factorRest)], ['Renewable coverage (GOs + PPA)', r2(o.coverage)],
+        ['Spot cost (€)', r2(o.cost)], ['Spot cost (€/MWh)', r2(o.costAvg)], ['Baseload (€/MWh)', r2(o.baseAvg)],
+        ['Flexibility: share moved', +S.settings.flexPct || 0], ['Flexibility: saving (€)', r2(o.flex.save)], ['Flexibility: CO2 change (kg)', r2(o.flex.dCO2 / 1000)],
+        ['Solar: size (kWp)', +S.settings.pvKwp || 0], ['Solar: production (MWh)', r2(o.pv.prod / 1000)], ['Solar: self-consumed (MWh)', r2(o.pv.self / 1000)], ['Solar: CO2 avoided (t)', r2(t(o.pv.co2))],
+        ['Source', 'PowerKlock — RTE éCO2mix, ENTSO-E day-ahead, AIB residual mix'],
+      ].map(([k, v]) => ({ Item: k, Value: v })));
+      add('Monthly', Object.keys(o.monthly).sort().map(m => ({ Month: m, 'Consumption MWh': r2(o.monthly[m].E / 1000), 'Location-based t CO2': r2(o.monthly[m].em / 1e6), 'Spot cost €': r2(o.monthly[m].cost) })));
+      add('Daily', o.daily.map(x => ({ Date: x.d, 'Consumption kWh': r2(x.E), 'Intensity g/kWh': r2(x.ci) })));
+      add('Average day', HRS.map((h, i) => ({ Hour: h, 'Consumption kWh': r2(o.hourC[i] / o.days.length), 'Grid intensity g/kWh': o.hourN[i] ? r2(o.hourI[i] / o.hourN[i]) : null, 'Day-ahead €/MWh': o.hourPn[i] ? r2(o.hourP[i] / o.hourPn[i]) : null })));
+      download(`PowerKlock_carbon_${o.days[0]}_${o.days[o.days.length - 1]}.xlsx`, new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    } catch (e) { console.warn('[carbon] xlsx', e); }
+    if (b) b.textContent = '⤓ Excel';
   }
   function template() {
-    const lines = ['timestamp;kWh', '2025-01-01 00:00;12.4', '2025-01-01 00:15;12.1', '2025-01-01 00:30;11.9', '…'];
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
-    a.download = 'powerklock-load-curve-template.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    download('powerklock-load-curve-template.csv', new Blob([['timestamp;kWh', '2025-01-01 00:00;12.4', '2025-01-01 00:15;12.1', '2025-01-01 00:30;11.9'].join('\n')], { type: 'text/csv' }));
   }
 
   function wire() {
     const page = $('page-carbonfoot'); if (!page || page.dataset.wired) return;
     page.dataset.wired = '1';
     const file = $('cf-file'), drop = $('cf-drop');
-    file.addEventListener('change', async () => { const f = file.files[0]; if (!f) return; $('cf-status').textContent = 'Reading ' + f.name + '…'; try { await load(await readFile(f), f.name); } catch (e) { $('cf-status').textContent = e.message; } file.value = ''; });
+    const read = async f => { $('cf-status').textContent = 'Reading ' + f.name + '…'; try { await load(await readFile(f), f.name); } catch (e) { $('cf-status').textContent = e.message; } };
+    file.addEventListener('change', async () => { const f = file.files[0]; if (f) await read(f); file.value = ''; });
     ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
-    drop.addEventListener('drop', async e => { const f = e.dataTransfer.files[0]; if (!f) return; $('cf-status').textContent = 'Reading ' + f.name + '…'; try { await load(await readFile(f), f.name); } catch (er) { $('cf-status').textContent = er.message; } });
+    drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
     $('cf-example').addEventListener('click', () => load(example(), 'Example: office building, 2025'));
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
-    const bind = (id, key, rebuild) => $(id).addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); });
+    $('cf-xlsx').addEventListener('click', exportXlsx);
+    const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
-    bind('cf-go', 'go'); bind('cf-ppa', 'ppa'); bind('cf-ppa-tech', 'ppaTech'); bind('cf-supplier', 'supplier'); bind('cf-residual', 'residual'); bind('cf-rm-country', 'rmCountry');
+    ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
   }
 
   window.addEventListener('load', () => setTimeout(() => {
