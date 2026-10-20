@@ -63,7 +63,8 @@
   }
 
   // rows (arrays) → { slots: Map(date → Float64Array(96) kWh), info }
-  function buildCurve(rows) {
+  function buildCurve(rows, opts) {
+    opts = opts || S.settings;
     // header row and columns
     let start = 0, header = null;
     for (let i = 0; i < Math.min(rows.length, 40); i++) {
@@ -74,9 +75,9 @@
     const valCol = (() => { for (let c = sepTime ? 2 : 1; c < (rows[start] || []).length; c++) if (toNum(rows[start][c]) != null) return c; return 1; })();
     const htxt = (header || []).join(' ').toLowerCase();
     const enedis = /horodate|valeur/.test(htxt);
-    let unit = S.settings.unit;
+    let unit = opts.unit || 'auto';
     if (unit === 'auto') unit = /\(w\)|\bw\b|valeur/.test(htxt) && !/kw/.test(htxt) ? 'w' : /kwh/.test(htxt) ? 'kwh' : /\bkw\b|\(kw\)/.test(htxt) ? 'kw' : /mwh/.test(htxt) ? 'mwh' : 'kwh';
-    let stamp = S.settings.stamp;
+    let stamp = opts.stamp || 'auto';
     if (stamp === 'auto') stamp = enedis ? 'end' : 'start';
     const pts = [];
     for (let i = start; i < rows.length; i++) {
@@ -341,4 +342,6 @@
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'carbonfoot') wire(); return r; };
   }, 0));
   window.PKCarbonTool = { load, example, compute: () => compute(), state: S };
+  // Shared with the PPA pricer: read a CSV / Excel curve into quarter-hour energy per Paris day
+  window.PKLoadCurve = { readFile, build: (rows, opts) => buildCurve(rows, opts || { unit: 'auto', stamp: 'auto' }) };
 })();
