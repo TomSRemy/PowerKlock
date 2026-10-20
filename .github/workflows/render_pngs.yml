@@ -9,6 +9,9 @@ on:
     - cron: '30 7 * * *'    # after the morning fetches
     - cron: '30 14 * * *'   # after the day-ahead auction results
   workflow_dispatch:
+  push:                     # also when the renderer or the catalogue changes
+    branches: [main]
+    paths: [scripts/render_pngs.py, .github/workflows/render_pngs.yml, js/widgets.js]
 
 concurrency:
   group: render-pngs
