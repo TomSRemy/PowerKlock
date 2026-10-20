@@ -292,7 +292,7 @@
       `</tbody></table><div class="fuel-note">Capture rate, % of baseload. Highlighted: tenor. P10 = low capture (strong cannibalisation).</div>`;
     // CP% vs installed capacity
     const cap = D.capGW[st.tech];
-    const scat = o.nat.filter(x => cap[x.year] || (x.year === thisYear() && Object.keys(cap).length));
+    const scat = o.nat.filter(x => cap[x.year]);   // a year without its installed capacity is not placed
     const capOf = x => cap[x.year] || cap[Math.max(...Object.keys(cap).map(Number))];
     if (fit) {
       const xMax = Math.max(...ppe.map(t => t.gw), ...scat.map(capOf)) * 1.05, xMin = Math.min(...scat.map(capOf)) * 0.95, line = [];
