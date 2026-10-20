@@ -844,8 +844,8 @@
         if (!window.PKExport) return;
         btn.disabled = true;
         try {
-          const name = await PKExport.pptx(board(), { progress: (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; } });
-          toast('Downloaded ' + name);
+          const name = await PKExport.open(board(), (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; });
+          if (name) toast('Downloaded ' + name);
         } catch (e) { console.warn(e); toast('Export failed: ' + (e.message || e)); }
         btn.disabled = false; btn.textContent = label;
       });
