@@ -119,7 +119,8 @@ def estimates(months):
         f = load_json(f'data/history/rte/{ym}.json')
         if not f:
             continue
-        a = {'pAll': 0.0, 'nAll': 0, 'pPos': 0.0, 'nPos': 0, 'w': 0.0, 'wp': 0.0, 's': 0.0, 'sp': 0.0, 'days': 0, 'negQ': 0}
+        a = {'pAll': 0.0, 'nAll': 0, 'pPos': 0.0, 'nPos': 0, 'w': 0.0, 'wp': 0.0, 's': 0.0, 'sp': 0.0, 'days': 0, 'negQ': 0,
+             'wA': 0.0, 'wpA': 0.0, 'sA': 0.0, 'spA': 0.0}
         for day, r in sorted((f.get('days') or {}).items()):
             p = prices(day)
             sol, win = r.get('solar') or [], r.get('wind') or []
@@ -131,6 +132,9 @@ def estimates(months):
                 if v is None:
                     continue
                 a['pAll'] += v; a['nAll'] += 1
+                # capture price: every step, negative prices included
+                wa, sa = max(0.0, win[q] or 0.0), max(0.0, sol[q] or 0.0)
+                a['wA'] += wa; a['wpA'] += wa * v; a['sA'] += sa; a['spA'] += sa * v
                 if v < 0:
                     a['negQ'] += 1
                     continue
@@ -143,6 +147,8 @@ def estimates(months):
                    'baseAll': round(a['pAll'] / a['nAll'], 3),
                    'wind': round(a['wp'] / a['w'], 3) if a['w'] else None,
                    'solar': round(a['sp'] / a['s'], 3) if a['s'] else None,
+                   'windCap': round(a['wpA'] / a['wA'], 3) if a['wA'] else None,
+                   'solarCap': round(a['spA'] / a['sA'], 3) if a['sA'] else None,
                    'days': a['days'], 'negHours': a['negQ'] / 4}
     return res
 
@@ -202,22 +208,25 @@ def main():
     this = f'{today.year}-{today.month:02d}'
     # estimates: every month with RTE data (comparison with CRE) — 36 last months
     months = sorted(f[:-5] for f in os.listdir(os.path.join(ROOT, 'data', 'history', 'rte')) if re.fullmatch(r'\d{4}-\d{2}\.json', f))
-    est = estimates(months[-40:])
+    est = estimates(months)
     # ratios M0 / mean day-ahead price, same calendar month, last three years
     def ratio(ym, tech):
         e = est.get(ym)
         if not e or not e['baseAll']:
             return None
-        v = off[tech].get(ym) if tech in ('wind', 'solar') else off['monthly'].get(ym)
-        if v is None:
-            v = e[tech] if tech in ('wind', 'solar') else e['base']
+        if tech in ('windCap', 'solarCap'):
+            v = e[tech]
+        else:
+            v = off[tech].get(ym) if tech in ('wind', 'solar') else off['monthly'].get(ym)
+            if v is None:
+                v = e[tech] if tech in ('wind', 'solar') else e['base']
         return v / e['baseAll'] if v is not None and e['baseAll'] > 0 else None
     fwd, fwd_date = month_forwards(today)
     forecast = []
     for ym, (f, src) in sorted(fwd.items()):
         mo = int(ym[5:])
         rec = {'month': ym, 'forward': f, 'from': src}
-        for tech in ('base', 'wind', 'solar'):
+        for tech in ('base', 'wind', 'solar', 'windCap', 'solarCap'):
             past = [f'{y}-{mo:02d}' for y in range(today.year - 4, today.year + 1) if f'{y}-{mo:02d}' < this]
             rs = [r for r in (ratio(k, tech) for k in past) if r is not None][-3:]
             if rs:
@@ -230,7 +239,7 @@ def main():
     out = {
         'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'source': {'official': 'CRE — open data, données nécessaires au calcul des compléments de rémunération (' + PAGE + ')',
-                   'estimate': 'PowerKlock — CRE method on RTE éCO2mix output and ENTSO-E day-ahead prices',
+                   'estimate': 'PowerKlock — CRE method on RTE éCO2mix output and ENTSO-E day-ahead prices; capture prices (windCap, solarCap) = same weighting with every step, negative prices included',
                    'forecast': 'PowerKlock — forward baseload × M0 / mean price ratio of the same month over the last three years'},
         'method': 'CRE: mean of the day-ahead prices ≥ 0, weighted at the market time step (15 min since May 2026, hourly before) by the national profile; negative steps left out.',
         'official': off, 'estimate': est, 'forecast': forecast, 'forwardDate': fwd_date, 'currentMonth': this,
