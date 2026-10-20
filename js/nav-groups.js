@@ -6,7 +6,9 @@
 (function () {
   'use strict';
   function lines(wrap) {
-    const items = wrap.querySelectorAll('.sidebar-subitem'); if (!items.length || !wrap.offsetHeight) return;
+    const items = wrap.querySelectorAll('.sidebar-subitem'); if (!items.length) return;
+    // hidden (closed phone menu): let the CSS default draw the line until it can be measured
+    if (!wrap.offsetHeight) { wrap.style.removeProperty('--line-end'); return; }
     const top = wrap.getBoundingClientRect().top, mid = el => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 - top; };
     wrap.style.setProperty('--line-end', mid(items[items.length - 1]) + 'px');
     const a = wrap.querySelector('.sidebar-subitem.active');
@@ -36,6 +38,11 @@
     w.classList.toggle('open'); if (h) h.classList.toggle('open', w.classList.contains('open'));
     fitSection(w); setTimeout(() => lines(w), 230);
   };
+  // phone: the menu is a drawer — measure the tree lines once it is open
+  window.addEventListener('load', () => {
+    const sb = document.getElementById('sidebar');
+    if (sb && window.ResizeObserver) new ResizeObserver(() => document.querySelectorAll('.pk-nav-wrap, #prices-subitems').forEach(lines)).observe(sb);
+  });
   window.addEventListener('load', () => setTimeout(() => {
     const inner = window.showPage;
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); sync(id); return r; };
