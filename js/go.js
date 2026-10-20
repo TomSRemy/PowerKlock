@@ -184,6 +184,8 @@ function loadGoData(text) {
     // GO widgets on My Dashboard trigger this fetch lazily — redraw them once the data lands.
     if (window.PKDash) PKDash.refresh();
     console.log('[go] real Commerg data loaded · as-of', GO_REAL.asOf);
+    const badge = document.getElementById('go-src-badge');
+    if (badge && GO_REAL.asOf) badge.textContent = 'Commerg · automatic every Friday · latest ' + new Date(GO_REAL.asOf).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     return true;
   } catch (e) { console.warn('[go] loadGoData failed', e); return false; }
 }
