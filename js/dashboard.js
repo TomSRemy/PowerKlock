@@ -375,10 +375,18 @@
       try { await w.html(body, p); } catch (e) { body.innerHTML = '<div class="pkd-empty-w">Unavailable</div>'; console.warn(e); }
       return;
     }
-    const cid = 'pkd-c-' + it.i;
-    body.innerHTML = `<div class="pkd-canvas"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
+    const cid = 'pkd-c-' + it.i, kOn = it.k && it.k.on && window.PKFacts;
+    body.classList.toggle('kf-on', !!kOn);
+    body.innerHTML = (kOn ? '<div class="pkd-kf"></div>' : '') + `<div class="pkd-canvas"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
     const res = await PKW.draw(w.id, cid, p);
     if (res && res.sub) inner.querySelector('.pkd-sub').textContent = w.source + ' · ' + res.sub;
+    // enriched card: key figures from the chart's own data, min / max marked
+    if (kOn) {
+      const ch = window.Chart && Chart.getChart(document.getElementById(cid));
+      const f = ch && PKFacts.compute(ch, it.k);
+      const box = body.querySelector('.pkd-kf'); if (box) box.innerHTML = PKFacts.html(f, it.k);
+      if (f) { PKFacts.mark(ch, f, it.k); setTimeout(() => { try { ch.resize(); } catch (_) {} }, 30); }
+    }
   }
 
   function redrawItem(i) {
@@ -461,11 +469,25 @@
         <label class="pkd-field"><span>Title</span>
           <input id="pkd-set-title" type="text" maxlength="80" value="${esc(it.title || '')}" placeholder="${esc(w ? autoTitle(w, Object.assign({}, it, { title: '' })) : 'Note')}"></label>
         ${fields}
+        ${w && w.kind === 'chart' && window.PKFacts ? (() => {
+          const k = it.k || {}, c = document.querySelector('.grid-stack-item[data-i="' + it.i + '"] canvas'), ch = c && window.Chart && Chart.getChart(c);
+          const series = ch ? PKFacts.candidates(ch).map(x => x.d.label) : [], want = k.facts && k.facts.length ? k.facts : PKFacts.DEFAULT;
+          return `<div class="pkd-kf-set"><label class="pkd-kf-on"><input type="checkbox" id="pkd-set-kf"${k.on ? ' checked' : ''}> <b>Key figures above the chart</b> <em>computed from the chart, min and max marked</em></label>
+            <div class="pkd-kf-opts">${PKFacts.FACTS.map(([id, l]) => `<label><input type="checkbox" data-kf="${id}"${want.includes(id) ? ' checked' : ''}> ${esc(l)}</label>`).join('')}</div>
+            ${series.length > 1 ? `<label class="pkd-field"><span>Series</span><select id="pkd-set-kfs">${series.map(sr => `<option${sr === k.series ? ' selected' : ''}>${esc(sr)}</option>`).join('')}</select></label>` : ''}
+            <label class="pkd-field"><span>A rise is</span><select id="pkd-set-kfr">${[['auto', 'Automatic (prices: unfavourable)'], ['bad', 'Unfavourable (red)'], ['good', 'Favourable (green)'], ['neutral', 'Neutral']].map(o => `<option value="${o[0]}"${(k.rise || 'auto') === o[0] ? ' selected' : ''}>${o[1]}</option>`).join('')}</select></label></div>`;
+        })() : ''}
         <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary">Apply</button></div>
       </form>`, root => {
       root.querySelector('#pkd-set-form').addEventListener('submit', ev => {
         ev.preventDefault();
         it.title = root.querySelector('#pkd-set-title').value.trim();
+        const kfOn = root.querySelector('#pkd-set-kf');
+        if (kfOn) {
+          it.k = { on: kfOn.checked, facts: [...root.querySelectorAll('[data-kf]')].filter(x => x.checked).map(x => x.dataset.kf),
+            series: (root.querySelector('#pkd-set-kfs') || {}).value || (it.k && it.k.series), rise: root.querySelector('#pkd-set-kfr').value };
+          if (!it.k.on && !it.k.facts.length) delete it.k;
+        }
         if (w) {
           it.p = {};
           w.params.forEach(d => { it.p[d.key] = root.querySelector('#pkd-set-' + d.key).value; });

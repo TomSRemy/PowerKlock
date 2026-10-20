@@ -54,7 +54,8 @@
       ch.options.devicePixelRatio = 2; ch.options.animation = false;
       ch.resize(1600, 780); ch.update('none');
       await new Promise(r => setTimeout(r, 120));
-      return { img: opaque(ch), sub: res && res.sub || '', text: [] };
+      const kf = p && p.__k && p.__k.on && window.PKFacts ? PKFacts.lines(PKFacts.compute(ch, p.__k), p.__k) : [];
+      return { img: opaque(ch), sub: res && res.sub || '', text: kf };
     } finally {
       host.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.destroy(); });
       host.remove();
@@ -108,7 +109,7 @@
         continue;
       }
       const w = PKW.get(it.wid); if (!w) continue;
-      const p = PKW.params(w.id, it.p);
+      const p = Object.assign(PKW.params(w.id, it.p), it.k ? { __k: it.k } : {});
       const title = it.title || (w.titleFn ? w.titleFn(p) : w.title);
       let r;
       try { r = await renderWidget(w, p, title); } catch (e) { console.warn('[pptx]', w.id, e); continue; }
