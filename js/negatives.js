@@ -62,7 +62,7 @@
     if (NEG.summary) return Promise.resolve(NEG.summary);
     if (typeof fetchSummary === 'function') return fetchSummary().then(function (s) { NEG.summary = s; return s; }).catch(function () { return null; });
     var base = (typeof DATA_BASE !== 'undefined' && DATA_BASE) ? DATA_BASE : './data/';
-    return fetch(base + 'history/summary.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (s) { NEG.summary = s; return s; }).catch(function () { return null; });
+    return window.pkSummary().then(function (s) { NEG.summary = s; return s; }).catch(function () { return null; });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────
