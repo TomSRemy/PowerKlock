@@ -19,8 +19,8 @@
   const $ = id => document.getElementById(id);
   const get = path => fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null);
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
-  const S = { tech: 'solar', regN: 3, ex22: false, from: 2016, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, imb: 1.9, add: 0, volRisk: 0, priceRisk: 0, go: null, margin: 1.0,
-    volume: 52000, curtail: true, model: 'damped', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
+  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, imb: 1.9, add: 0, volRisk: 0, priceRisk: 0, go: null, margin: 1.0,
+    volume: 52000, curtail: true, model: 'flat', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
 
   // ── Maths ─────────────────────────────────────────────────────────
@@ -76,19 +76,24 @@
 
   async function compute() {
     await load();
-    const nat = nationalYears().filter(x => x.year >= S.from);
-    const ast = S.asset ? (await assetYears()).filter(x => x.year >= S.from) : null;
+    const nat = nationalYears();
+    const ast = S.asset ? (await assetYears()) : null;
     const useAsset = ast && ast.length >= 1 && S.basis === 'asset';
     const hist = useAsset ? ast : nat;
-    const complete = hist.filter(x => x.complete && !(S.ex22 && x.year === 2022));
-    const histSd = (complete.length ? complete : hist).map(x => x.sd);
-    const fitRows = complete.slice(-S.regN);
+    // Years used: chosen one by one; by default the last three complete years.
+    // The percentile and the regression use the same years.
+    const complete = hist.filter(x => x.complete);
+    const def = (complete.length ? complete : hist).slice(-3).map(x => x.year);
+    const sel = (S.years || def).filter(y => hist.some(x => x.year === y));
+    const used = hist.filter(x => sel.includes(x.year));
+    const fitRows = used.length ? used : hist.slice(-3);
+    const histSd = fitRows.map(x => x.sd);
     const reg = linreg(fitRows.map(x => x.year), fitRows.map(x => x.sd));
-    const lastYr = (complete.length ? complete : hist)[(complete.length ? complete : hist).length - 1].year;
-    const anchor = useAsset ? hist[hist.length - 1].cpPct : null;
+    const lastYr = fitRows[fitRows.length - 1].year;
+    const anchor = useAsset ? fitRows[fitRows.length - 1].cpPct : null;
     // Projection of the shape discount from the last complete year: the PPA
     // Dashboard's straight line (capped), a trend halving every year, or flat
-    const start = anchor != null ? 1 - anchor : reg.ic + reg.sl * lastYr;
+    const start = fitRows[fitRows.length - 1].sd;   // the last year used, as observed
     const clamp = v => Math.max(0, Math.min(0.95, v));
     const proj = y => { const t = Math.max(0, y - lastYr);
       return clamp(S.model === 'flat' ? start : S.model === 'linear' ? start + reg.sl * t : start + 2 * reg.sl * (1 - Math.pow(0.5, t))); };
@@ -114,7 +119,7 @@
       ['Volume +' + S.volStress + ' %', 1, 0, vs], ['Volume −' + S.volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
       .map(([name, sm, da, va]) => { const base = volume * (1 + va) / 1000 * n; return { name, p10: base * (sm * ref * (1 - (p90 + da)) - ppa), p50: base * (sm * ref * (1 - (med + da)) - ppa), p90: base * (sm * ref * (1 - (p10 + da)) - ppa) }; });
     const ppaProj = years.reduce((a, r) => a + r.ppaY, 0) / years.length;
-    return { nat, ast, hist, useAsset, complete, histSd, reg, lastYr, anchor, proj, fitLine, ppaProj, tenor, fwds, ref, goVal, goMkt, sdCh, ppa, volume, years, pcts, pnlCurve, be, scen, fitRows };
+    return { nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, ppaProj, tenor, fwds, ref, goVal, goMkt, sdCh, ppa, volume, years, pcts, pnlCurve, be, scen, fitRows };
   }
 
   // ── Rendering ─────────────────────────────────────────────────────
@@ -130,13 +135,25 @@
     host.querySelectorAll('input[data-fy]').forEach(inp => inp.addEventListener('change', () => { S.fwd[+inp.dataset.fy] = parseFloat(inp.value); run(); }));
   }
 
+  function renderYears(o) {
+    const host = $('pp-yearsel'); if (!host) return;
+    host.innerHTML = o.hist.map(x => `<button type="button" class="pp-chip${o.sel.includes(x.year) ? ' on' : ''}" data-y="${x.year}" title="Shape discount ${pc(x.sd)}${x.complete ? '' : ' · incomplete year'}">${x.year}${x.complete ? '' : ' YTD'}<em>${pc(x.sd)}</em></button>`).join('') +
+      `<button type="button" class="pp-chip pp-chip-reset" data-y="reset">Last 3 years</button>`;
+    host.querySelectorAll('.pp-chip').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.y === 'reset') S.years = null;
+      else { const y = +b.dataset.y, cur = new Set(o.sel); cur.has(y) ? cur.delete(y) : cur.add(y); if (!cur.size) return; S.years = [...cur].sort(); }
+      run();
+    }));
+  }
+
   function render(o) {
+    renderYears(o);
     const tech = S.tech === 'solar' ? 'Solar' : 'Wind';
     $('pp-kpis').innerHTML = [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${o.ref ? (o.ppa / o.ref * 100).toFixed(1) + ' % of forward' : ''}`, ''),
       _fuelKpi('PPA on projection', f2(o.ppaProj), '€/MWh', `average of the yearly prices with the ${({ damped: 'damped', linear: 'linear', flat: 'flat' })[S.model]} projected shape discount`),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
-      _fuelKpi('Shape discount used', pc(o.sdCh), '', `P${S.pct} of ${o.histSd.length} years (${o.useAsset ? 'asset' : 'national'})`),
+      _fuelKpi('Shape discount used', pc(o.sdCh), '', `P${S.pct} of ${o.sel.join(', ')} (${o.useAsset ? 'asset' : 'national'})`),
       _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'cannibalisation percentile where P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
       _fuelKpi('Volume', f0(o.volume), 'MWh/yr', o.useAsset ? 'asset average' : 'entered'),
     ].join('');
@@ -158,7 +175,7 @@
       { type: 'line', label: 'Regression fit', data: all.map(y => o.fitRows.some(r => r.year === y) ? Math.round((1 - o.fitLine(y)) * 1000) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.4, pointRadius: 2, fill: false },
       { type: 'line', label: '_p10', data: band(1.28), borderWidth: 0, pointRadius: 0, fill: false },
       { type: 'line', label: 'Projection P10–P90', data: band(-1.28), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(168,125,196,.18)', fill: '-1' },
-      { type: 'line', label: 'Projection (median)', data: all.map(y => o.tenor.includes(y) ? Math.round((1 - o.proj(y)) * 1000) / 10 : y === o.lastYr ? Math.round((1 - (o.anchor != null ? 1 - o.anchor : o.fitLine(y))) * 1000) / 10 : null), borderColor: '#A87DC4', borderWidth: 2, borderDash: [5, 4], pointRadius: 2, fill: false, spanGaps: true },
+      { type: 'line', label: 'Projection (median)', data: all.map(y => o.tenor.includes(y) ? Math.round((1 - o.proj(y)) * 1000) / 10 : y === o.lastYr ? Math.round((1 - o.proj(y)) * 1000) / 10 : null), borderColor: '#A87DC4', borderWidth: 2, borderDash: [5, 4], pointRadius: 2, fill: false, spanGaps: true },
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
       scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-history');
     // P&L vs percentile
@@ -169,7 +186,7 @@
     // year table
     $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Projected shape disc.</th><th>Capture price</th><th>PPA if priced on the year</th><th>Capture − PPA</th><th>P&L k€</th></tr></thead><tbody>` +
       o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)}</td><td>${f2(r.cp)}</td><td>${f2(r.ppaY)}</td><td class="${r.pnl >= 0 ? 'pp-pos' : 'pp-neg'}">${(r.pnl >= 0 ? '+' : '') + f2(r.pnl)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Projection: shape discount regressed on ${o.fitRows.map(r => r.year).join(', ') || '–'} (slope ${(o.reg.sl * 100).toFixed(2)} pts/yr, R² ${o.reg.r2.toFixed(2)})${o.anchor != null ? ', anchored on the asset’s ' + o.lastYr + ' capture rate' : ''}, projected ${({ damped: 'with the trend halving every year', linear: 'in a straight line (capped at 95 %)', flat: 'flat at the last year' })[S.model]}. P&L per year against the contract price ${f2(o.ppa)} €/MWh for ${f0(o.volume)} MWh.</div>`;
+      `</tbody></table></div><div class="fuel-note">Projection: shape discount regressed on ${o.fitRows.map(r => r.year).join(', ') || '–'} (slope ${(o.reg.sl * 100).toFixed(2)} pts/yr, R² ${o.reg.r2.toFixed(2)}), starting from the ${o.lastYr} shape discount, projected ${({ damped: 'with the trend halving every year', linear: 'in a straight line (capped at 95 %)', flat: 'flat at the last year' })[S.model]}. P&L per year against the contract price ${f2(o.ppa)} €/MWh for ${f0(o.volume)} MWh.</div>`;
     // scenarios
     $('pp-scen').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scenario · total over ${o.tenor.length} years</th><th>P10 k€</th><th>P50 k€</th><th>P90 k€</th></tr></thead><tbody>` +
       o.scen.map(r => `<tr><td style="text-align:left">${r.name}</td>${[r.p10, r.p50, r.p90].map(v => `<td class="${v >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(v)}</td>`).join('')}</tr>`).join('') +
@@ -198,9 +215,8 @@
     $('pp-tech').addEventListener('change', e => { S.tech = e.target.value; run(); });
     $('pp-basis').addEventListener('change', e => { S.basis = e.target.value; run(); });
     $('pp-model').addEventListener('change', e => { S.model = e.target.value; run(); });
-    num('pp-t0', 'tenorStart'); num('pp-t1', 'tenorEnd'); num('pp-regn', 'regN'); num('pp-from', 'from'); num('pp-pct', 'pct', () => { $('pp-pct-v').textContent = 'P' + S.pct; });
+    num('pp-t0', 'tenorStart'); num('pp-t1', 'tenorEnd'); num('pp-pct', 'pct', () => { $('pp-pct-v').textContent = 'P' + S.pct; });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
-    $('pp-ex22').addEventListener('change', e => { S.ex22 = e.target.checked; run(); });
     $('pp-curtail').addEventListener('change', e => { S.curtail = e.target.checked; run(); });
     num('pp-imb', 'imb'); num('pp-add', 'add'); num('pp-volrisk', 'volRisk'); num('pp-pricerisk', 'priceRisk'); num('pp-go', 'go'); num('pp-margin', 'margin'); num('pp-volume', 'volume');
     num('pp-vs', 'volStress'); num('pp-ss', 'spotStress');
@@ -208,11 +224,11 @@
     file.addEventListener('change', async () => {
       const f = file.files[0]; if (!f) return;
       $('pp-status').textContent = 'Reading ' + f.name + '…';
-      try { const rows = await window.PKLoadCurve.readFile(f); S.asset = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' }); S.assetName = f.name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false; run(); }
+      try { const rows = await window.PKLoadCurve.readFile(f); S.asset = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' }); S.years = null; S.assetName = f.name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false; run(); }
       catch (e) { $('pp-status').textContent = e.message; }
       file.value = '';
     });
-    $('pp-asset-clear').addEventListener('click', () => { S.asset = null; S.assetName = ''; $('pp-asset-clear').hidden = true; run(); });
+    $('pp-asset-clear').addEventListener('click', () => { S.years = null; S.asset = null; S.assetName = ''; $('pp-asset-clear').hidden = true; run(); });
     run();
   }
   window.addEventListener('load', () => setTimeout(() => {
