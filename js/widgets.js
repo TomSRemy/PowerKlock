@@ -167,7 +167,8 @@
       btn.type = 'button';
       btn.addEventListener('click', ev => {
         ev.stopPropagation();
-        if (window.PKDash) window.PKDash.toggleWidget(w.id);
+        // pageParams: the page's current settings (zone, view…) go to the dashboard with the chart
+        if (window.PKDash) window.PKDash.toggleWidget(w.id, typeof w.pageParams === 'function' ? w.pageParams() : undefined);
       });
       // Always in the top-right corner, next to the PNG and fullscreen tools.
       btn.classList.add('pkw-star-float');
@@ -176,6 +177,9 @@
     }
     refreshStars();
   }
+
+  // ☆ on any page element (HTML widgets: tables, heatmaps) — elId is the element inside the card
+  function star(id, elId) { const w = get(id); if (w) markStar(Object.assign({}, w, { pageCanvas: elId })); }
 
   function refreshStars() {
     const on = id => !!(window.PKDash && window.PKDash.has(id));
@@ -188,5 +192,5 @@
     });
   }
 
-  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, mirror, periodButtons, refreshStars };
+  window.PKW = { CATEGORIES, PERIOD_PARAM, register, get, list, params, draw, waitFor, mirror, periodButtons, refreshStars, star };
 })();

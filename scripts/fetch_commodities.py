@@ -9,7 +9,8 @@ Writes data/commodities.json:
     "updated": ISO-8601 UTC,
     "source":  "...",
     "series": { key: {"name", "unit", "points": [["YYYY-MM-DD", value], ...]} },
-    "curves": { "eua": [row...], "ttf": [row...] }     # row = tenor, contract, value, date, varD1Pct, varW1Pct
+    "curves": { "eua": [row...], "ttf": [row...] },    # row = tenor, contract, value, date, varD1Pct, varW1Pct
+    "calYears": { "ttf": { "2027": {"marketName", "dates", "values"}, … } }   # fixed delivery years
   }
 
 Series are daily closes as published by the cockpit, trimmed to HISTORY_START.
@@ -180,6 +181,19 @@ def main():
         except Exception as e:
             print(f"  {name} curve skipped: {e}")
 
+    # Fixed delivery-year TTF calendar contracts, each over its own life
+    print("Fetching TTF calendar-year contracts...")
+    try:
+        from fetch_fr_market import fetch_country_cal_years
+        yrs = fetch_country_cal_years(h, {"forward": CURVES["ttf"]}, HISTORY_DAYS)
+        out["calYears"] = {"ttf": {str(y): {"marketName": v["marketName"], "dates": v["dates"],
+                                            "values": [None if x is None else round(float(x), 3) for x in v["values"]]}
+                                   for y, v in sorted(yrs.items())}}
+        for y, v in sorted(yrs.items()):
+            print(f"  Cal{y}: {len(v['dates'])} points, last {v['dates'][-1] if v['dates'] else '-'}")
+    except Exception as e:
+        print(f"  TTF calendar years skipped: {e}")
+
     # Never overwrite a good file with an empty fetch.
     if not any(s["points"] for s in out["series"].values()):
         raise SystemExit("No commodity data returned — keeping the previous file.")
@@ -191,6 +205,10 @@ def main():
     cutoff = (date.today() - timedelta(days=RECENT_DAYS)).isoformat()
     light = dict(out, series={k: dict(v, points=[p for p in v["points"] if p[0] >= cutoff])
                               for k, v in out["series"].items()})
+    if out.get("calYears"):
+        light["calYears"] = {c: {y: dict(v, dates=[d for d in v["dates"] if d >= cutoff],
+                                         values=[x for d, x in zip(v["dates"], v["values"]) if d >= cutoff])
+                                 for y, v in ys.items()} for c, ys in out["calYears"].items()}
     OUT.write_text(json.dumps(light, separators=(",", ":")))
     print(f"Wrote {OUT} ({OUT.stat().st_size // 1024} KB)")
 
