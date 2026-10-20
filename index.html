@@ -1754,6 +1754,11 @@
   /* PRICES PAGE · subdomain pages, with section title + tabs sticky      */
   /* ════════════════════════════════════════════════════════════════════ */
 
+  /* Menu groups (Supply & Demand, France): a header that opens its pages */
+  .pk-nav-group { position: relative; }
+  .pk-nav-group .pk-nav-chev { width: 11px; height: 11px; margin-left: auto; opacity: .55; transition: transform .2s; }
+  .pk-nav-group.open .pk-nav-chev { transform: rotate(180deg); }
+  .pk-nav-group.has-active-subitem { color: var(--text); }
   /* Subdomain selectors inside sidebar (children of Prices) · bracket tree style */
   .sidebar-subitems-wrap {
     overflow: hidden;
@@ -1763,6 +1768,7 @@
     transition: max-height 0.2s ease;
     position: relative;
   }
+  .sidebar-subitems-wrap.open,
   .sidebar-item.active + .sidebar-subitems-wrap,
   .sidebar-item.has-active-subitem + .sidebar-subitems-wrap {
     max-height: 200px;
@@ -3018,6 +3024,9 @@
     <div class="sidebar-section section-active" id="sec-power">
       <div class="sidebar-section-label" onclick="toggleSection('sec-power')">Power <svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="sidebar-section-items" id="sec-power-items">
+      <div class="sidebar-item" onclick="showPage('map')" id="nav-map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Power Map
+      </div>
       <div class="sidebar-item active" onclick="showPage('prices')" id="nav-prices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Prices
       </div>
@@ -3027,39 +3036,28 @@
         <div class="sidebar-subitem" data-subdomain="negative" onclick="prSelectSubdomain('negative')">Negative prices</div>
         <div class="sidebar-subitem" data-subdomain="negative-legacy" onclick="prSelectSubdomain('negative-legacy')">Negative prices (ancien)</div>
         <div class="sidebar-subitem" data-subdomain="spread" onclick="prSelectSubdomain('spread')">Spread</div>
-      </div>
-      <div class="sidebar-item" onclick="showPage('genmix')" id="nav-genmix">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Generation Mix
+        <div class="sidebar-subitem" data-page="imbalance" onclick="showPage('imbalance')" id="nav-imbalance">Imbalance Prices</div>
       </div>
       <div class="sidebar-item" onclick="showPage('renewables')" id="nav-renewables">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>Renewables
       </div>
-      <div class="sidebar-item" onclick="showPage('nuclear')" id="nav-nuclear">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Nuclear
+      <div class="sidebar-item pk-nav-group" id="navg-supply" onclick="pkNavGroup('supply')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>Supply &amp; Demand<svg class="pk-nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      <div class="sidebar-item" onclick="showPage('capacity')" id="nav-capacity">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>Installed Capacity
+      <div class="sidebar-subitems-wrap pk-nav-wrap" id="navw-supply">
+        <div class="sidebar-subitem" data-page="genmix" onclick="showPage('genmix')" id="nav-genmix">Generation Mix</div>
+        <div class="sidebar-subitem" data-page="nuclear" onclick="showPage('nuclear')" id="nav-nuclear">Nuclear</div>
+        <div class="sidebar-subitem" data-page="capacity" onclick="showPage('capacity')" id="nav-capacity">Installed Capacity</div>
+        <div class="sidebar-subitem" data-page="load" onclick="showPage('load')" id="nav-load">Load &amp; Demand</div>
+        <div class="sidebar-subitem" data-page="crossborder" onclick="showPage('crossborder')" id="nav-crossborder">Cross-Border Flows</div>
       </div>
-      <div class="sidebar-item" onclick="showPage('morning')" id="nav-morning">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>France Morning
+      <div class="sidebar-item pk-nav-group" id="navg-france" onclick="pkNavGroup('france')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>France<svg class="pk-nav-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      <div class="sidebar-item" onclick="showPage('frsystem')" id="nav-frsystem">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>France System
-      </div>
-      <div class="sidebar-item" onclick="showPage('regions')" id="nav-regions">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>France Regions
-      </div>
-      <div class="sidebar-item" onclick="showPage('load')" id="nav-load">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Load &amp; Demand
-      </div>
-      <div class="sidebar-item" onclick="showPage('map')" id="nav-map">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Power Map
-      </div>
-      <div class="sidebar-item" onclick="showPage('crossborder')" id="nav-crossborder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Cross-Border Flows
-      </div>
-      <div class="sidebar-item" onclick="showPage('imbalance')" id="nav-imbalance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M5 12l7-7 7 7"/></svg>Imbalance Prices
+      <div class="sidebar-subitems-wrap pk-nav-wrap" id="navw-france">
+        <div class="sidebar-subitem" data-page="morning" onclick="showPage('morning')" id="nav-morning">France Morning</div>
+        <div class="sidebar-subitem" data-page="frsystem" onclick="showPage('frsystem')" id="nav-frsystem">France System</div>
+        <div class="sidebar-subitem" data-page="regions" onclick="showPage('regions')" id="nav-regions">France Regions</div>
       </div>
       </div>
     </div>
@@ -7560,6 +7558,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/tool-ppa.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
+<script src="js/nav-groups.js"></script>
 <script src="js/alerts.js"></script>
 <script src="js/account.js"></script>
 <script src="js/dashboard.js"></script>
