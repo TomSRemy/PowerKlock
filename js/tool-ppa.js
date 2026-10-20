@@ -22,6 +22,7 @@
   const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, imb: 1.9, add: 0, volRisk: 0, priceRisk: 0, go: null, margin: 1.0,
     volume: 52000, conv: 'pos', model: 'flat', volStress: 20, spotStress: 20, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
+  const S0 = JSON.parse(JSON.stringify(S));   // defaults, for the site charts (Renewables › Cannibalisation)
 
   // ── Maths ─────────────────────────────────────────────────────────
   function percentile(arr, p) {   // numpy linear interpolation
@@ -56,39 +57,39 @@
 
   // Column indexes of a day row for the technology and convention:
   // 'pos' = PPA Dashboard (hours with a price ≤ 0 left out of capture and baseload), 'all' = every hour
-  function cols() {
-    const t = S.tech === 'solar' ? 's' : 'w', pos = S.conv === 'pos' ? 'Pos' : '', ix = D.ix;
+  function cols(st = S) {
+    const t = st.tech === 'solar' ? 's' : 'w', pos = st.conv === 'pos' ? 'Pos' : '', ix = D.ix;
     return { E: ix[t + 'E' + pos], R: ix[t + 'R' + pos], P: ix['pSum' + pos], N: ix['pN' + pos] };
   }
   // Sum a set of day rows → capture price, baseload, capture rate
-  function agg(rows) {
-    const c = cols(); let E = 0, R = 0, P = 0, N = 0;
+  function agg(rows, st = S) {
+    const c = cols(st); let E = 0, R = 0, P = 0, N = 0;
     rows.forEach(r => { E += r[c.E]; R += r[c.R]; P += r[c.P]; N += r[c.N]; });
     const base = N ? P / N : null, cp = E ? R / E : null;
     return { base, cp, cpPct: cp != null && base > 0 ? cp / base : null, E };
   }
   // National capture history per year (RTE output × day-ahead price)
-  function nationalYears() {
+  function nationalYears(st = S) {
     const by = {}; D.cap.forEach(r => { (by[r[0].slice(0, 4)] = by[r[0].slice(0, 4)] || []).push(r); });
-    return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y]);
+    return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y], st);
       return { year: y, base: a.base, cp: a.cp, cpPct: a.cpPct, sd: a.cpPct != null ? 1 - a.cpPct : null, days: by[y].length, complete: y < thisYear() && by[y].length >= 360 }; })
       .filter(x => x.cpPct != null);
   }
   // Rolling capture rate and price over 30 / 90 / 365 days (national)
-  function rolling() {
-    const c = cols(), rows = D.cap, n = rows.length, cum = [[0, 0, 0, 0]];
+  function rolling(st = S) {
+    const c = cols(st), rows = D.cap, n = rows.length, cum = [[0, 0, 0, 0]];
     rows.forEach((r, i) => { const p = cum[i]; cum.push([p[0] + r[c.E], p[1] + r[c.R], p[2] + r[c.P], p[3] + r[c.N]]); });
     const win = w => rows.map((r, i) => { if (i + 1 < w) return null; const a = cum[i + 1], b = cum[i + 1 - w]; const E = a[0] - b[0], R = a[1] - b[1], P = a[2] - b[2], N = a[3] - b[3];
       const base = N ? P / N : null, cp = E ? R / E : null; return { cp, base, pct: cp != null && base > 0 ? cp / base : null }; });
     return { days: rows.map(r => r[0]), w30: win(30), w90: win(90), w365: win(365) };
   }
   // Asset capture history: curve × France quarter-hour prices
-  async function assetYears() {
-    const slots = S.asset.slots, days = [...slots.keys()].sort(), years = [...new Set(days.map(d => d.slice(0, 4)))];
+  async function assetYears(st = S) {
+    const slots = st.asset.slots, days = [...slots.keys()].sort(), years = [...new Set(days.map(d => d.slice(0, 4)))];
     const files = await Promise.all(years.map(y => get('history/fr_prices/' + y + '.json')));
     const P = {}; files.forEach(f => { if (f && f.days) Object.assign(P, f.days); });
     const acc = {};
-    const pos = S.conv === 'pos';
+    const pos = st.conv === 'pos';
     days.forEach(d => { const p = P[d]; if (!p) return; const c = slots.get(d), y = +d.slice(0, 4), a = acc[y] || (acc[y] = { n: 0, bs: 0, bn: 0, e: 0, rev: 0, all: 0, neg: 0 }); a.n++;
       for (let q = 0; q < 96; q++) { if (p[q] == null) continue; const e = c[q] || 0; a.all += e;
         if (pos && p[q] <= 0) { a.neg += e; continue; }   // PPA Dashboard convention: hours ≤ 0 €/MWh left out
@@ -98,17 +99,17 @@
       .filter(x => x.cpPct != null);
   }
 
-  async function compute() {
+  async function compute(st = S) {
     await load();
-    const nat = nationalYears();
-    const ast = S.asset ? (await assetYears()) : null;
-    const useAsset = ast && ast.length >= 1 && S.basis === 'asset';
+    const nat = nationalYears(st);
+    const ast = st.asset ? (await assetYears(st)) : null;
+    const useAsset = ast && ast.length >= 1 && st.basis === 'asset';
     const hist = useAsset ? ast : nat;
     // Years used: chosen one by one; by default the last three complete years.
     // The percentile and the regression use the same years.
     const complete = hist.filter(x => x.complete);
     const def = (complete.length ? complete : hist).slice(-3).map(x => x.year);
-    const sel = (S.years || def).filter(y => hist.some(x => x.year === y));
+    const sel = (st.years || def).filter(y => hist.some(x => x.year === y));
     const used = hist.filter(x => sel.includes(x.year));
     const fitRows = used.length ? used : hist.slice(-3);
     const histSd = fitRows.map(x => x.sd);
@@ -120,27 +121,27 @@
     const start = fitRows[fitRows.length - 1].sd;   // the last year used, as observed
     const clamp = v => Math.max(0, Math.min(0.95, v));
     const proj = y => { const t = Math.max(0, y - lastYr);
-      return clamp(S.model === 'flat' ? start : S.model === 'linear' ? start + reg.sl * t : start + 2 * reg.sl * (1 - Math.pow(0.5, t))); };
+      return clamp(st.model === 'flat' ? start : st.model === 'linear' ? start + reg.sl * t : start + 2 * reg.sl * (1 - Math.pow(0.5, t))); };
     const fitLine = y => clamp(reg.ic + reg.sl * y);
-    const ty = thisYear(), t0 = S.tenorStart || ty + 1, t1 = Math.max(t0, S.tenorEnd || t0 + 4);
+    const ty = thisYear(), t0 = st.tenorStart || ty + 1, t1 = Math.max(t0, st.tenorEnd || t0 + 4);
     const known = Object.keys(D.fwd).map(Number).sort();
-    const fwdFor = y => S.fwd[y] != null ? S.fwd[y] : D.fwd[y] != null ? D.fwd[y] : known.length ? D.fwd[known.filter(k => k <= y).pop() || known[0]] : 60;
+    const fwdFor = y => st.fwd[y] != null ? st.fwd[y] : D.fwd[y] != null ? D.fwd[y] : known.length ? D.fwd[known.filter(k => k <= y).pop() || known[0]] : 60;
     const tenor = []; for (let y = t0; y <= t1; y++) tenor.push(y);
     const fwds = tenor.map(fwdFor), ref = fwds.reduce((a, b) => a + b, 0) / fwds.length;
     const goMkt = (() => { const v = tenor.map(y => D.go[y] && D.go[y].v).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; })();
-    const goVal = S.go != null ? S.go : goMkt != null ? goMkt : 1.0;
-    const sdCh = percentile(histSd, S.pct);
-    const price = (f, sd) => f - f * (sd + S.add / 100 + S.volRisk / 100 + S.priceRisk / 100) - S.imb + goVal + S.margin;
+    const goVal = st.go != null ? st.go : goMkt != null ? goMkt : 1.0;
+    const sdCh = percentile(histSd, st.pct);
+    const price = (f, sd) => f - f * (sd + st.add / 100 + st.volRisk / 100 + st.priceRisk / 100) - st.imb + goVal + st.margin;
     const ppa = price(ref, sdCh);
-    const volume = useAsset ? (() => { const full = ast.filter(x => x.days >= 330); return full.length ? full.reduce((a, x) => a + x.mwh, 0) / full.length : ast[ast.length - 1].mwh * 365 / ast[ast.length - 1].days; })() : S.volume;
+    const volume = useAsset ? (() => { const full = ast.filter(x => x.days >= 330); return full.length ? full.reduce((a, x) => a + x.mwh, 0) / full.length : ast[ast.length - 1].mwh * 365 / ast[ast.length - 1].days; })() : st.volume;
     const years = tenor.map((y, i) => { const fsd = proj(y), cp = fwds[i] * (1 - fsd); return { y, fwd: fwds[i], fsd, cp, ppaY: price(fwds[i], fsd), pnl: cp - ppa, pnlK: volume * (cp - ppa) / 1000 }; });
     const pcts = [...Array(100).keys()].map(i => i + 1), sdP = pcts.map(p => percentile(histSd, p));
     const pnlCurve = sdP.map(sd => volume * (ref * (1 - sd) - ppa) / 1000);
     const be = pcts.find((p, i) => pnlCurve[i] < 0) || null;
     // stress scenarios (same table as the PPA Dashboard): total over the tenor, k€
-    const n = tenor.length, med = percentile(histSd, 50), p10 = percentile(histSd, 10), p90 = percentile(histSd, 90), vs = S.volStress / 100, ss = S.spotStress / 100;
-    const scen = [['Base', 1, 0, 0], ['Cannibalisation +' + S.volStress + ' %', 1, vs, 0], ['Cannibalisation −' + S.volStress + ' %', 1, -vs, 0], ['Spot +' + S.spotStress + ' %', 1 + ss, 0, 0], ['Spot −' + S.spotStress + ' %', 1 - ss, 0, 0],
-      ['Volume +' + S.volStress + ' %', 1, 0, vs], ['Volume −' + S.volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
+    const n = tenor.length, med = percentile(histSd, 50), p10 = percentile(histSd, 10), p90 = percentile(histSd, 90), vs = st.volStress / 100, ss = st.spotStress / 100;
+    const scen = [['Base', 1, 0, 0], ['Cannibalisation +' + st.volStress + ' %', 1, vs, 0], ['Cannibalisation −' + st.volStress + ' %', 1, -vs, 0], ['Spot +' + st.spotStress + ' %', 1 + ss, 0, 0], ['Spot −' + st.spotStress + ' %', 1 - ss, 0, 0],
+      ['Volume +' + st.volStress + ' %', 1, 0, vs], ['Volume −' + st.volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
       .map(([name, sm, da, va]) => { const base = volume * (1 + va) / 1000 * n; return { name, p10: base * (sm * ref * (1 - (p90 + da)) - ppa), p50: base * (sm * ref * (1 - (med + da)) - ppa), p90: base * (sm * ref * (1 - (p10 + da)) - ppa) }; });
     const ppaProj = years.reduce((a, r) => a + r.ppaY, 0) / years.length;
     return { nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, ppaProj, tenor, fwds, ref, goVal, goMkt, sdCh, ppa, volume, years, pcts, pnlCurve, be, scen, fitRows };
@@ -240,16 +241,21 @@
     const step = xs.getPixelForValue(1) - xs.getPixelForValue(0); g.save(); g.fillStyle = 'rgba(251,191,36,.10)';
     idx.forEach(i => { const x = xs.getPixelForValue(i); g.fillRect(x - step / 2, a.top, step, a.bottom - a.top); }); g.restore(); } });
 
-  function capFit(o) {
-    const cap = D.capGW[S.tech], pts = o.nat.filter(x => cap[x.year] && x.complete && o.sel.includes(x.year) || (cap[x.year] && x.complete && !S.years && true));
+  function capFit(o, st = S) {
+    const cap = D.capGW[st.tech], pts = o.nat.filter(x => cap[x.year] && x.complete && o.sel.includes(x.year) || (cap[x.year] && x.complete && !st.years && true));
     const use = o.nat.filter(x => cap[x.year] && x.complete && !(o.excluded || []).includes(x.year));
     if (use.length < 3) return null;
     const X = use.map(x => Math.log(cap[x.year])), Y = use.map(x => x.cpPct), r = linreg(X, Y);
     return { f: gw => r.ic + r.sl * Math.log(gw), r2: r.r2, pts, use };
   }
 
-  function renderMarket(o) {
-    const tech = S.tech === 'solar' ? 'Solar' : 'Wind', tc = S.tech === 'solar' ? '#FBBF24' : '#14D3A9';
+  const IDS = { proj: 'pp-proj', projSub: 'pp-proj-sub', projTable: 'pp-proj-table', capfit: 'pp-capfit', capfitSub: 'pp-capfit-sub', profNat: 'pp-prof-nat', profNatSub: 'pp-prof-nat-sub',
+    profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub' };
+  function renderMarket(o, st = S, ids) {
+    ids = ids || IDS;
+    const has = k => ids[k] && document.getElementById(ids[k]);
+    const setT = (k, t) => { const e = ids[k] && document.getElementById(ids[k]); if (e) e.textContent = t; };
+    const tech = st.tech === 'solar' ? 'Solar' : 'Wind', tc = st.tech === 'solar' ? '#FBBF24' : '#14D3A9';
     const first = o.hist[0].year, endY = Math.max(2035, o.tenor[o.tenor.length - 1]), Y = [];
     for (let y = first; y <= endY; y++) Y.push(y);
     const pc1 = v => v == null ? null : Math.round(v * 1000) / 10;
@@ -258,7 +264,7 @@
     const bandV = (y, z) => y <= lastY ? null : pc1(1 - (o.proj(y) + z * sig(y - lastY)));
     const excluded = Y.filter(y => y < lastY && natM.has(y) && natM.get(y).complete && !o.sel.includes(y) && y >= o.sel[0]);
     o.excluded = excluded;
-    const fit = capFit(o), ppe = fit ? Object.entries(PPE3[S.tech]).map(([yr, gw]) => ({ yr: +yr, gw, cp: fit.f(gw) })) : [];
+    const fit = capFit(o, st), ppe = fit ? Object.entries(PPE3[st.tech]).map(([yr, gw]) => ({ yr: +yr, gw, cp: fit.f(gw) })) : [];
     const tenorSet = new Set(o.tenor);
     const ds = [
       { label: '_p90', data: Y.map(y => bandV(y, -1.28)), borderWidth: 0, pointRadius: 0, fill: false },
@@ -266,7 +272,7 @@
       { label: '_p75', data: Y.map(y => bandV(y, -0.674)), borderWidth: 0, pointRadius: 0, fill: false },
       { label: 'P25–P75', data: Y.map(y => bandV(y, 0.674)), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(251,191,36,.24)', fill: '-1' },
       { label: 'National ' + tech.toLowerCase() + ' capture rate', data: Y.map(y => natM.has(y) ? pc1(natM.get(y).cpPct) : null), borderColor: '#3FA6B4', borderDash: [6, 4], borderWidth: 1.6, pointStyle: 'rect', pointRadius: 4, backgroundColor: '#3FA6B4', fill: false, spanGaps: false },
-      ...(astM ? [{ label: (S.assetName || 'Asset') + ' capture rate', data: Y.map(y => astM.has(y) ? pc1(astM.get(y).cpPct) : null), borderColor: tc, borderWidth: 2, pointRadius: 4, backgroundColor: tc, fill: false }] : []),
+      ...(astM ? [{ label: (st.assetName || 'Asset') + ' capture rate', data: Y.map(y => astM.has(y) ? pc1(astM.get(y).cpPct) : null), borderColor: tc, borderWidth: 2, pointRadius: 4, backgroundColor: tc, fill: false }] : []),
       { label: 'Trend (regression on the years used)', data: Y.map(y => y >= Math.min(...o.sel) - 4 ? pc1(1 - Math.max(-0.5, Math.min(1.5, o.reg.ic + o.reg.sl * y))) : null), borderColor: 'rgba(184,201,217,.55)', borderDash: [2, 3], borderWidth: 1.2, pointRadius: 0, fill: false },
       { label: 'P50 — tenor', data: Y.map(y => tenorSet.has(y) || y === lastY ? pc1(1 - o.proj(y)) : null), borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: Y.map(y => tenorSet.has(y) ? 4 : y === lastY ? 5 : 0), backgroundColor: '#FFFFFF', fill: false, spanGaps: true },
       { label: 'P50 after the tenor', data: Y.map(y => y >= o.tenor[o.tenor.length - 1] ? pc1(1 - o.proj(y)) : null), borderColor: 'rgba(255,255,255,.45)', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 2, fill: false, spanGaps: true },
@@ -275,17 +281,17 @@
     const iP50 = ds.findIndex(d => d.label === 'P50 — tenor');
     const marks = o.tenor.map((y, k) => ({ ds: iP50, i: Y.indexOf(y), text: Math.round((1 - o.proj(y)) * 100) + '%', dy: k % 2 ? 22 : -14, box: true }))
       .concat(ppe.map(t => ({ ds: ds.findIndex(d => d.label === 'PPE3 ' + t.yr), i: Y.indexOf(t.yr), text: t.yr + ' ' + Math.round(t.cp * 100) + '%', dy: -14, color: '#3FA6B4' })));
-    const ch = _fuelChart('pp-proj', { type: 'line', data: { labels: Y, datasets: ds }, plugins: [labelPlugin(marks), shadePlugin(excluded.map(y => Y.indexOf(y)))],
+    if (has('proj')) _fuelChart(ids.proj, { type: 'line', data: { labels: Y, datasets: ds }, plugins: [labelPlugin(marks), shadePlugin(excluded.map(y => Y.indexOf(y)))],
       options: _fuelOpts({ layout: { padding: { right: 46, top: 10 } }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
         scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-projection');
-    $('pp-proj-sub').textContent = `Slope ${(-o.reg.sl * 100).toFixed(2)} %/yr · R² ${o.reg.r2.toFixed(2)} · ${o.useAsset ? 'asset' : 'national'} regression on ${o.sel.join(', ')}${excluded.length ? ' · shaded: left out' : ''} · tenor ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${({ flat: 'flat', damped: 'damped trend', linear: 'straight line' })[S.model]} projection`;
+    setT('projSub', `Slope ${(-o.reg.sl * 100).toFixed(2)} %/yr · R² ${o.reg.r2.toFixed(2)} · ${o.useAsset ? 'asset' : 'national'} regression on ${o.sel.join(', ')}${excluded.length ? ' · shaded: left out' : ''} · tenor ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]} · ${({ flat: 'flat', damped: 'damped trend', linear: 'straight line' })[st.model]} projection`);
     // P10 / P50 / P90 table
     const rows = []; for (let y = lastY + 1; y <= endY; y++) rows.push(y);
-    $('pp-proj-table').innerHTML = `<table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>P10</th><th>P50</th><th>P90</th></tr></thead><tbody>` +
+    if (has('projTable')) document.getElementById(ids.projTable).innerHTML = `<table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>P10</th><th>P50</th><th>P90</th></tr></thead><tbody>` +
       rows.map(y => `<tr class="${tenorSet.has(y) ? 'pp-tenor' : ''}"><td style="text-align:left">${y}</td><td>${bandV(y, 1.28).toFixed(1)}%</td><td><b>${pc1(1 - o.proj(y)).toFixed(1)}%</b></td><td>${bandV(y, -1.28).toFixed(1)}%</td></tr>`).join('') +
       `</tbody></table><div class="fuel-note">Capture rate, % of baseload. Highlighted: tenor. P10 = low capture (strong cannibalisation).</div>`;
     // CP% vs installed capacity
-    const cap = D.capGW[S.tech];
+    const cap = D.capGW[st.tech];
     const scat = o.nat.filter(x => cap[x.year] || (x.year === thisYear() && Object.keys(cap).length));
     const capOf = x => cap[x.year] || cap[Math.max(...Object.keys(cap).map(Number))];
     if (fit) {
@@ -299,14 +305,14 @@
       ];
       const marks2 = pts.map((p, i) => ({ ds: 0, i, text: String(p.yr) + (p.partial ? ' YTD' : ''), dy: p.partial ? 20 : -11, color: p.partial ? '#FBBF24' : '#B8C9D9' }))
         .concat(ppe.map((t, i) => ({ ds: 2, i, text: `PPE3 ${t.yr}: ${t.gw} GW → ${Math.round(t.cp * 100)}%`, dy: -14, color: '#ED6965' })));
-      _fuelChart('pp-capfit', { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
+      if (has('capfit')) _fuelChart(ids.capfit, { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
         options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => ` ${c.raw.yr || ''} ${c.raw.x.toFixed(1)} GW · ${c.raw.y.toFixed(1)} %` } } },
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
-      $('pp-capfit-sub').textContent = `Each point = one year (${S.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on the complete years${(o.excluded || []).length ? ' except ' + o.excluded.join(', ') : ''}; PPE3 targets ${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}.`;
-    } else noDataMsg('pp-capfit', 'Installed capacity not available', '');
+      setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on the complete years${(o.excluded || []).length ? ' except ' + o.excluded.join(', ') : ''}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}.`);
+    } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
     // daily profiles
     const profYear = String(Math.max(...o.nat.filter(x => x.complete).map(x => x.year)));
-    const prof = D.profile[profYear] && D.profile[profYear][S.tech];
+    const prof = D.profile[profYear] && D.profile[profYear][st.tech];
     const hrs = [...Array(24).keys()].map(h => h + 'h');
     const profChart = (cid, grid, unit, file) => {
       const avg = hrs.map((_, h) => { const v = grid.map(r => r[h]).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 100) / 100 : null; });
@@ -314,46 +320,46 @@
         .concat([{ label: 'Annual average', data: avg, borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 2.5, tension: .35, fill: false }]) },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(unit, { beginAtZero: true }) } }) }, file);
     };
-    if (prof) { profChart('pp-prof-nat', prof, 'MW', 'ppa-profile-national'); $('pp-prof-nat-sub').textContent = `Average MW by hour, one line per month · France ${profYear} (RTE)`; }
+    if (prof) { if (has('profNat')) profChart(ids.profNat, prof, 'MW', 'ppa-profile-national'); setT('profNatSub', `Average MW by hour, one line per month · France ${profYear} (RTE)`); }
     // asset profile / monthly / annual
-    const A = S.asset && S.asset.slots;
+    const A = st.asset && st.asset.slots;
     if (A) {
       const grid = MONTHS.map(() => new Array(24).fill(0)), cnt = MONTHS.map(() => new Array(24).fill(0)), monthE = new Array(12).fill(0), monthDays = new Array(12).fill(0), yearE = {};
       A.forEach((arr, d) => { const m = +d.slice(5, 7) - 1, y = d.slice(0, 4); monthDays[m]++; let tot = 0;
         for (let q = 0; q < 96; q++) { const e = arr[q] || 0; tot += e; grid[m][Math.floor(q / 4)] += e * 4 / 1000 / 4; } for (let h = 0; h < 24; h++) cnt[m][h]++; monthE[m] += tot; yearE[y] = (yearE[y] || 0) + tot; });
       const g2 = grid.map((r, m) => r.map((v, h) => cnt[m][h] ? Math.round(v / cnt[m][h] * 100) / 100 : null));
-      profChart('pp-prof-asset', g2, 'MW', 'ppa-profile-asset'); $('pp-prof-asset-sub').textContent = `Same view for ${S.assetName}, all years of the curve`;
+      if (has('profAsset')) profChart(ids.profAsset, g2, 'MW', 'ppa-profile-asset'); setT('profAssetSub', `Same view for ${st.assetName}, all years of the curve`);
       const yrsN = Object.keys(yearE).length || 1, natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
-      _fuelChart('pp-monthly', { type: 'bar', data: { labels: MONTHS, datasets: [
-        { label: S.assetName + ' (GWh per month, average year)', data: monthE.map((v, m) => monthDays[m] ? Math.round(v / 1e6 * (30.4 / (monthDays[m] / yrsN)) / yrsN * 100) / 100 : null), backgroundColor: tc, borderRadius: 3, yAxisID: 'y' },
+      if (has('monthly')) _fuelChart(ids.monthly, { type: 'bar', data: { labels: MONTHS, datasets: [
+        { label: st.assetName + ' (GWh per month, average year)', data: monthE.map((v, m) => monthDays[m] ? Math.round(v / 1e6 * (30.4 / (monthDays[m] / yrsN)) / yrsN * 100) / 100 : null), backgroundColor: tc, borderRadius: 3, yAxisID: 'y' },
         { type: 'line', label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3, yAxisID: 'y1' },
       ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh / month', { beginAtZero: true }), y1: _fuelAxis('MW national', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'ppa-monthly-production');
       const ys = Object.keys(yearE).sort();
-      _fuelChart('pp-annual', { type: 'bar', data: { labels: ys, datasets: [{ label: S.assetName + ' (GWh per year)', data: ys.map(y => Math.round(yearE[y] / 1e6 * 100) / 100), backgroundColor: tc, borderRadius: 3 }] },
+      if (has('annual')) _fuelChart(ids.annual, { type: 'bar', data: { labels: ys, datasets: [{ label: st.assetName + ' (GWh per year)', data: ys.map(y => Math.round(yearE[y] / 1e6 * 100) / 100), backgroundColor: tc, borderRadius: 3 }] },
         options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'ppa-annual-production');
     } else {
-      ['pp-prof-asset', 'pp-annual'].forEach(id => noDataMsg(id, 'Load an asset production curve above', 'Same view for the asset'));
+      ['profAsset', 'annual'].filter(has).forEach(k => noDataMsg(ids[k], 'Load an asset production curve above', 'Same view for the asset'));
       const natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
-      _fuelChart('pp-monthly', { type: 'line', data: { labels: MONTHS, datasets: [{ label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3 }] },
+      if (has('monthly')) _fuelChart(ids.monthly, { type: 'line', data: { labels: MONTHS, datasets: [{ label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3 }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('MW national', { beginAtZero: true }) } }) }, 'ppa-monthly-production');
     }
     // rolling capture
-    const R = rolling(), step = 3, idx = R.days.map((_, i) => i).filter(i => i % step === 0 || i === R.days.length - 1);
+    const R = rolling(st), step = 3, idx = R.days.map((_, i) => i).filter(i => i % step === 0 || i === R.days.length - 1);
     const L = idx.map(i => R.days[i]);
     const annualPts = L.map(d => { const y = +d.slice(0, 4); return d.slice(5) >= '07-01' && d.slice(5) < '07-04' && natM.has(y) ? pc1(natM.get(y).cpPct) : null; });
-    _fuelChart('pp-roll-pct', { type: 'line', data: { labels: L, datasets: [
+    if (has('rollPct')) _fuelChart(ids.rollPct, { type: 'line', data: { labels: L, datasets: [
       { label: '30 days', data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
       { label: '90 days', data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
       { label: '365 days', data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
       { label: 'Calendar year', data: annualPts, pointStyle: 'rect', pointRadius: 5, backgroundColor: '#3FA6B4', borderColor: '#3FA6B4', showLine: false },
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-rolling-capture-rate');
-    _fuelChart('pp-roll-eur', { type: 'line', data: { labels: L, datasets: [
+    if (has('rollEur')) _fuelChart(ids.rollEur, { type: 'line', data: { labels: L, datasets: [
       { label: 'Baseload, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].base != null ? Math.round(R.w365[i].base * 10) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.8, pointRadius: 0, fill: false },
       { label: tech + ' captured price, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].cp != null ? Math.round(R.w365[i].cp * 10) / 10 : null), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: { target: 0, above: 'rgba(20,211,169,.12)', below: 'rgba(237,105,101,.18)' } },
       { label: tech + ' captured price, 90 days', data: idx.map(i => R.w90[i] && R.w90[i].cp != null ? Math.round(R.w90[i].cp * 10) / 10 : null), borderColor: tc, borderDash: [4, 3], borderWidth: 1, pointRadius: 0, fill: false },
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'ppa-rolling-captured-price');
     const last = R.w365[R.w365.length - 1], l90 = R.w90[R.w90.length - 1], l30 = R.w30[R.w30.length - 1];
-    $('pp-roll-pct-sub').textContent = `Latest: 30 days ${pc1(l30 && l30.pct)}% · 90 days ${pc1(l90 && l90.pct)}% · 365 days ${pc1(last && last.pct)}% (${R.days[R.days.length - 1]}) · 100% = no cannibalisation`;
+    setT('rollSub', `Latest: 30 days ${pc1(l30 && l30.pct)}% · 90 days ${pc1(l90 && l90.pct)}% · 365 days ${pc1(last && last.pct)}% (${R.days[R.days.length - 1]}) · 100% = no cannibalisation`);
   }
 
   let busy = false, again = false;
@@ -391,8 +397,31 @@
     run();
   }
   window.addEventListener('load', () => setTimeout(() => {
+    ['cn-tech', 'cn-conv', 'cn-model'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => PKCannib.render()); });
+    let cnDone = false;
+    const sec = $('hs-renewables-cannib');
+    if (sec && window.IntersectionObserver) new IntersectionObserver(es => { if (!cnDone && es.some(e => e.isIntersecting)) { cnDone = true; PKCannib.render(); } }).observe(sec);
     const inner = window.showPage;
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'ppapricer') wire(); return r; };
   }, 0));
+  // ── Site charts: Renewables › Cannibalisation (same engine, PowerKlock data, no asset) ──
+  const stFor = p => Object.assign(JSON.parse(JSON.stringify(S0)), { tech: p.tech || 'solar', conv: p.conv || 'pos', model: p.model || 'flat' });
+  async function siteDraw(p, ids) { await load(); const st = stFor(p), o = await compute(st); renderMarket(o, st, ids); return o; }
+  const TECH = { key: 'tech', label: 'Technology', options: [['solar', 'Solar'], ['wind', 'Wind']], inTitle: true };
+  const CONV = { key: 'conv', label: 'Capture convention', options: [['pos', 'Hours with price > 0 (PPA Dashboard)'], ['all', 'All hours']] };
+  const MODEL = { key: 'model', label: 'Projection', options: [['flat', 'Flat'], ['damped', 'Damped trend'], ['linear', 'Straight line']] };
+  const pageP = () => ({ tech: ($('cn-tech') || {}).value || 'solar', conv: ($('cn-conv') || {}).value || 'pos', model: ($('cn-model') || {}).value || 'flat' });
+  if (window.PKW) {
+    const reg = (id, title, canvas, desc, params, ids, size) => PKW.register({ id, title, category: 'renewables', page: 'renewables', pageCanvas: canvas, source: 'RTE · ENTSO-E', size: size || { w: 12, h: 6 },
+      desc, params, defaults: { tech: 'solar', conv: 'pos', model: 'flat' }, pageParams: pageP,
+      titleFn: p => title + ' · ' + (p.tech === 'wind' ? 'wind' : 'solar'),
+      async draw(cid, p) { const sub = cid + '-sub'; const o = await siteDraw(p, ids(cid, sub)); const e = document.getElementById(sub); return { sub: e ? e.textContent : '' }; } });
+    reg('cannib-projection', 'Capture rate · history and projection', 'cn-proj', 'National capture rate per year, regression on the last three years, P50 with P10–P90 and P25–P75 bands to 2035, PPE3 targets.', [TECH, CONV, MODEL], (c, s2) => ({ proj: c, projSub: s2, projTable: c === 'cn-proj' ? 'cn-proj-table' : null }));
+    reg('cannib-capacity', 'Capture rate vs installed capacity', 'cn-capfit', 'One point per year: national capture rate against installed capacity, log fit and the PPE3 2030 / 2035 targets.', [TECH, CONV], (c, s2) => ({ capfit: c, capfitSub: s2 }));
+    reg('cannib-rolling', 'Rolling capture rate', 'cn-roll', 'National capture rate over the last 30, 90 and 365 days, with the calendar-year values.', [TECH, CONV], (c, s2) => ({ rollPct: c, rollSub: s2 }));
+    reg('cannib-rolling-eur', 'Rolling captured price vs baseload', 'cn-roll-eur', '365-day captured price against the 365-day baseload: the gap is the shape discount in €/MWh.', [TECH, CONV], c => ({ rollEur: c }));
+    reg('cannib-profile', 'Daily production profile by month', 'cn-prof', 'Average MW by hour of the day, one line per month, last complete year (RTE).', [TECH], (c, s2) => ({ profNat: c, profNatSub: s2 }), { w: 6, h: 5 });
+  }
+  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
   window.PKPpa = { compute: () => compute(), state: S, run };
 })();
