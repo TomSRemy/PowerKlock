@@ -427,10 +427,8 @@ function dpRecordNegHours(zonesData) {
 // Load historical neg hours from summary.json for red dots
 async function dpLoadHistoryNegDays() {
   try {
-    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
-    const r = await fetch(base + 'history/summary.json?t=' + Date.now());
-    if (!r.ok) return;
-    const s = await r.json();
+    const s = await window.pkSummary();
+    if (!s) return;
     const fr = s?.zones?.FR;
     if (!fr) return;
     let changed = false;
@@ -445,15 +443,15 @@ async function dpLoadHistoryNegDays() {
     }
   } catch(e) {}
 }
-// Call on load
-dpLoadHistoryNegDays();
+// Loaded the first time the date picker opens (the history is large: not at start-up)
+let _dpNegLoaded = false;
 
 function toggleDatePicker() {
   const btn = document.getElementById('date-picker-btn');
   const popup = document.getElementById('date-picker-popup');
   btn.classList.toggle('open');
   popup.classList.toggle('open');
-  if (popup.classList.contains('open')) dpRender();
+  if (popup.classList.contains('open')) { dpRender(); if (!_dpNegLoaded) { _dpNegLoaded = true; dpLoadHistoryNegDays().then(() => { if (popup.classList.contains('open')) dpRender(); }); } }
 }
 
 document.addEventListener('click', e => {
