@@ -63,8 +63,9 @@ function _renDayStats(z) {
   };
 }
 
-async function _renDaysWithGen(zone) {
-  const s = typeof fetchSummary === 'function' ? await fetchSummary() : null;
+async function _renDaysWithGen(zone, recentOnly) {
+  // recentOnly: the last 14 daily files are enough (latest day) — the full history is not needed
+  const s = !recentOnly && typeof fetchSummary === 'function' ? await fetchSummary() : null;
   const ser = s && s.zones && s.zones[zone] || [];
   const set = new Set(ser.filter(e => e.windAvg != null || e.solarAvg != null).map(e => e.d));
   // summary.json isn't refreshed by the daily fetch: probe the last 14 days.
@@ -91,9 +92,12 @@ function drawRenChart() { loadRenewables(); }
 
 // Latest day whose file carries solar output for the zone.
 async function _renLatestDay(zone) {
+  // newest first, one file at a time, stop at the first day with solar output (14 days back),
+  // then the history if none
+  const hasSolar = j => { const z = j && j.zones && j.zones[zone]; return z && Array.isArray(z.solar) && z.solar.some(v => v); };
+  for (let i = 0; i < 14; i++) { const d = _renAdd(pkTodayISO(), -i); if (hasSolar(await _renDaily(d))) return d; }
   const days = await _renDaysWithGen(zone);
-  // Today's file may exist before the summary lists it; probe today/yesterday too.
-  const cands = [pkTodayISO(), _renAdd(pkTodayISO(), -1)].concat(days.slice().reverse());
+  const cands = days.slice().reverse();
   for (const d of cands) {
     const j = await _renDaily(d);
     const z = j && j.zones && j.zones[zone];

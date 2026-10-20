@@ -17,7 +17,7 @@
   const FEATURED = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'SE', 'PL', 'FI'];
   const cache = {};
   const get = (k, path) => cache[k] || (cache[k] = fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null));
-  const summary = () => (typeof fetchSummary === 'function' ? fetchSummary().catch(() => null) : get('sum', 'history/summary.json'));
+  const summary = () => window.pkSummary();
   const profile = () => get('prof', 'history/neg_profile.json');
   const today = () => (typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString().slice(0, 10));
   const cy = () => today().slice(0, 4);

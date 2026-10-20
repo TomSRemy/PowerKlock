@@ -65,15 +65,22 @@ function pkUpdateHistPeriodLabels(w) {
 window.pkUpdateHistPeriodLabels = pkUpdateHistPeriodLabels;
 
 // ── Fetch helpers ──
+// One download of the price history (≈15 MB) for the whole site, only when a
+// page needs it, cached by the browser for the day (?v = Paris date).
+window.pkSummary = function () {
+  if (!window.__pkSummaryP) {
+    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
+    const v = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+    window.__pkSummaryP = fetch(base + 'history/summary.json?v=' + v).then(r => r.ok ? r.json() : null).catch(() => null)
+      .then(s => { if (!s) window.__pkSummaryP = null; return s; });
+  }
+  return window.__pkSummaryP;
+};
 async function fetchSummary() {
   if (HIST.summary) return HIST.summary;
-  try {
-    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
-    const r = await fetch(base + 'history/summary.json?t=' + Date.now());
-    if (!r.ok) return null;
-    HIST.summary = await r.json();
-    return HIST.summary;
-  } catch { return null; }
+  const s = await window.pkSummary();
+  if (s) HIST.summary = s;
+  return s;
 }
 
 
@@ -1138,9 +1145,12 @@ document.addEventListener('zones-changed', () => {
   // Re-render Daily Compare
   if (typeof renderCompareChart === 'function') renderCompareChart();
   if (typeof buildCompareChips === 'function') buildCompareChips();
-  // Re-render Historical sections (multi-zone)
-  if (typeof renderHistOverview === 'function') renderHistOverview();
-  if (typeof renderHistMulti === 'function') renderHistMulti();
+  // Re-render Historical sections (multi-zone) — only once the Historical tab
+  // has been opened: they need the full price history, not loaded at start-up
+  if (window._histInited) {
+    if (typeof renderHistOverview === 'function') renderHistOverview();
+    if (typeof renderHistMulti === 'function') renderHistMulti();
+  }
   // Update zone labels
   updateZoneLabels();
 
