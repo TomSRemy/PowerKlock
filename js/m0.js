@@ -34,7 +34,7 @@ if (window.PKW) {
   PKW.register({
     id: 'fr-m0', title: 'France M0', category: 'renewables', page: 'renewables', pageCanvas: 'ren-m0',
     source: 'CRE · PowerKlock', size: { w: 12, h: 5 },
-    desc: 'Monthly M0 of the complément de rémunération: CRE official values, PowerKlock estimate for months not yet published, forecast from the forwards with its range.',
+    desc: 'Monthly M0 of the complément de rémunération: CRE official values, PowerKlock estimate for months not yet published, forecast from the forwards with its range, and the capture price with negative prices included.',
     params: [TECH, { key: 'view', label: 'View', options: [['price', '€/MWh'], ['ratio', '% of the mean day-ahead price']] }, { key: 'win', label: 'History', options: [['2Y', '2 years'], ['4Y', '4 years'], ['All', 'Since 2017']] }],
     defaults: { tech: 'solar', view: 'price', win: '2Y' },
     titleFn: p => 'France M0 · ' + M0_TECH[p.tech || 'solar'][0].toLowerCase(),
@@ -55,12 +55,16 @@ if (window.PKW) {
         { label: 'CRE M0 (official)', data: months.map(m => conv(m, off[m])), borderColor: col, backgroundColor: col, borderWidth: 2.4, pointRadius: 2.5, fill: false },
         { label: 'Estimated M0 (PowerKlock)', data: months.map(m => m === lastOff ? conv(m, off[m]) : conv(m, estOnly(m))), borderColor: col, borderDash: [2, 3], borderWidth: 1.8, pointRadius: months.map(m => estOnly(m) != null ? 3 : 0), pointStyle: 'rectRot', fill: false, spanGaps: true },
         { label: 'Forecast M0', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech]) : m === months[months.indexOf(firstFc) - 1] ? conv(m, off[m] != null ? off[m] : estOnly(m)) : null), borderColor: '#A87DC4', borderDash: [6, 4], borderWidth: 2, pointRadius: months.map(m => fcM.has(m) ? 2.5 : 0), fill: false, spanGaps: true },
+        ...(tech !== 'base' ? [
+          { label: 'Capture price (negative prices included)', data: months.map(m => est[m] ? conv(m, est[m][tech + 'Cap']) : null), borderColor: '#ED6965', borderWidth: 1.6, pointRadius: 1.5, fill: false, spanGaps: true },
+          { label: 'Capture price forecast', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Cap']) : null), borderColor: '#ED6965', borderDash: [6, 4], borderWidth: 1.4, pointRadius: 0, fill: false, spanGaps: true },
+        ] : []),
         ...(!ratio && tech !== 'base' ? [{ label: 'Mean day-ahead price / forward', data: months.map(m => v(baseAll(m))), borderColor: 'rgba(184,201,217,.55)', borderWidth: 1.2, pointRadius: 0, fill: false, spanGaps: true }] : []),
       ];
       _fuelChart(cid, { type: 'line', data: { labels: months.map(M0_FMT_MONTH), datasets: ds },
         options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => !/^_/.test(it.text) } } },
           scales: { x: _fuelXAxis(), y: _fuelAxis(ratio ? '% of the mean day-ahead price' : '€/MWh') } }) }, 'fr-m0-' + tech);
-      const lastEst = Object.keys(est).sort().filter(m => !off[m]);
+      const lastEst = Object.keys(est).sort().filter(m => !off[m] && (!lastOff || m > lastOff));
       return { sub: `${lbl} · CRE official to ${lastOff ? M0_FMT_MONTH(lastOff) : '–'}${lastEst.length ? ' · PowerKlock estimate for ' + lastEst.map(M0_FMT_MONTH).join(', ') : ''} · forecast from the forwards of ${j.forwardDate || '–'}` };
     },
   });
@@ -71,10 +75,10 @@ if (window.PKW) {
       const j = await _m0Load(); if (!j) { host.innerHTML = '<div class="fuel-note">Not available.</div>'; return; }
       const f = v => v == null ? '–' : v.toFixed(2), est = j.estimate || {}, cur = j.currentMonth, e = est[cur];
       const row = r => `<tr><td style="text-align:left">${M0_FMT_MONTH(r.month)} <span class="mu-kind">${r.from}</span></td><td>${f(r.forward)}</td><td>${f(r.base)}</td>` +
-        ['wind', 'solar'].map(t => `<td><b>${f(r[t])}</b><span class="m0-rng">${f(r[t + 'Lo'])}–${f(r[t + 'Hi'])}</span></td>`).join('') + `<td>${r.solarRatio ? Math.round(r.solarRatio * 100) + ' %' : '–'}</td></tr>`;
-      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Forward base</th><th>Base M0</th><th>Wind M0</th><th>Solar M0</th><th>Solar ratio</th></tr></thead><tbody>` +
-        (e ? `<tr class="m0-now"><td style="text-align:left">${M0_FMT_MONTH(cur)} <span class="mu-kind">to date · ${e.days} days</span></td><td>${f(e.baseAll)}</td><td>${f(e.base)}</td><td><b>${f(e.wind)}</b></td><td><b>${f(e.solar)}</b></td><td>${e.solar && e.baseAll ? Math.round(e.solar / e.baseAll * 100) + ' %' : '–'}</td></tr>` : '') +
-        (j.forecast || []).map(row).join('') + `</tbody></table></div><div class="fuel-note">€/MWh. Current month: PowerKlock estimate to date with the CRE method (prices ≥ 0, RTE output). Coming months: forward baseload of the month (month contract, else what its quarter or year leaves) × the M0 / mean day-ahead price ratio of the same month over the last three years; range = lowest and highest year. Forwards of ${j.forwardDate || '–'}.</div>`;
+        ['wind', 'windCap', 'solar', 'solarCap'].map(t => `<td${/Cap/.test(t) ? ' class="m0-cap"' : ''}><b>${f(r[t])}</b><span class="m0-rng">${f(r[t + 'Lo'])}–${f(r[t + 'Hi'])}</span></td>`).join('') + '</tr>';
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Forward base</th><th>Base M0</th><th>Wind M0</th><th>Wind capture</th><th>Solar M0</th><th>Solar capture</th></tr></thead><tbody>` +
+        (e ? `<tr class="m0-now"><td style="text-align:left">${M0_FMT_MONTH(cur)} <span class="mu-kind">to date · ${e.days} days</span></td><td>${f(e.baseAll)}</td><td>${f(e.base)}</td><td><b>${f(e.wind)}</b></td><td class="m0-cap"><b>${f(e.windCap)}</b></td><td><b>${f(e.solar)}</b></td><td class="m0-cap"><b>${f(e.solarCap)}</b></td></tr>` : '') +
+        (j.forecast || []).map(row).join('') + `</tbody></table></div><div class="fuel-note">€/MWh. Current month: PowerKlock estimate to date with the CRE method (prices ≥ 0, RTE output). Coming months: forward baseload of the month (month contract, else what its quarter or year leaves) × the M0 / mean day-ahead price ratio of the same month over the last three years; range = lowest and highest year. M0 = prices ≥ 0 only (CRE); capture = every step, negative prices included (what an asset producing through negative hours earns on the spot). Forwards of ${j.forwardDate || '–'}.</div>`;
     },
   });
   PKW.register({
@@ -85,11 +89,11 @@ if (window.PKW) {
       const o = j.official, est = j.estimate || {}, f = v => v == null ? '–' : v.toFixed(2);
       const ms = [...new Set([...Object.keys(o.monthly), ...Object.keys(est)])].sort().slice(-12).reverse();
       const gap = (a, b) => a == null || b == null ? '' : `<span class="m0-gap">${(b - a >= 0 ? '+' : '') + (b - a).toFixed(2)}</span>`;
-      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Base M0</th><th>Wind M0</th><th>Solar M0</th><th>Negative hours</th></tr></thead><tbody>` +
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Base M0</th><th>Wind M0</th><th>Wind capture</th><th>Solar M0</th><th>Solar capture</th><th>Negative hours</th></tr></thead><tbody>` +
         ms.map(m => { const e = est[m] || {}, cell = (cre, es) => cre != null ? `<b>${f(cre)}</b>${gap(cre, es)}` : es != null ? `<span class="m0-est" title="PowerKlock estimate, CRE not published yet">${f(es)} est.</span>` : '–';
           const neg = o.negSteps[m] ? o.negSteps[m].hours : e.negHours;
-          return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td>${cell(o.solar[m], e.solar)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
-        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.</div>`;
+          return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td class="m0-cap">${f(e.windCap)}</td><td>${cell(o.solar[m], e.solar)}</td><td class="m0-cap">${f(e.solarCap)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
+        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar. Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
     },
   });
 }
