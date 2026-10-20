@@ -24,6 +24,7 @@
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
     remit: [['Overview', ['hs-remit-0']], ['Unit messages', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],
+    carbonfoot: [['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
   };
   const KEY = 'pk-view-';
 
