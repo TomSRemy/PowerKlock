@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-20T13:12:24Z",
+ "updated": "2026-10-20T15:11:29Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -76,12 +76,12 @@
    "sizeKB": 480
   },
   {
-   "url": "https://tomsremy.github.io/PowerKlock/data/m0.json",
-   "title": "France M0 wind and solar",
-   "content": "Monthly reference market prices M0 for wind and solar since 2020.",
+   "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
+   "title": "France M0 · CRE, estimate and forecast",
+   "content": "CRE official M0 (annual, monthly base / wind / solar, contractual winter, negative steps, capacity reference), PowerKlock estimate with the CRE method for months not yet published, forecast for the next 14 months.",
    "refresh": "daily",
-   "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 18
+   "source": "CRE open data (Licence Ouverte) and PowerKlock",
+   "sizeKB": 17
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/hydro_reservoirs.json",
