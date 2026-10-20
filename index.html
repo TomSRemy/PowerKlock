@@ -5200,7 +5200,7 @@
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">PPA pricer</span></div>
-          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · pay-as-produced · solar or wind</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · pay-as-produced · solar or wind</span><button type="button" class="pk-btn-ghost" id="pp-xlsx" title="All inputs and results in one workbook">⤓ Excel</button></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-in">
@@ -5288,6 +5288,23 @@
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">Forward, projected capture and P&amp;L against the contract price</div></div></div><div id="pp-years"></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Stress scenarios</div><div class="fuel-card-sub">Total P&amp;L over the tenor</div></div></div><div id="pp-scen"></div></div>
 </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-mc">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-mc')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-6 3 4 4-8"/></svg>Monte Carlo<span class="pk-hs-meta">10,000 trajectories: cannibalisation, forward and production uncertainty</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-mc">
+<div id="pp-mc"></div>
+<div class="cf-form"><label class="cf-field"><span>Production uncertainty (1 σ)</span><span class="cf-in"><input type="number" id="pp-mcvol" value="12" step="1" min="0"><em>%</em></span></label>
+<label class="cf-field"><span>Forward uncertainty (1 σ)</span><span class="cf-in"><input type="number" id="pp-mcfwd" value="10" step="1" min="0"><em>%</em></span></label></div>
+<div class="kpi-strip fuel-kpis" id="pp-mc-kpis" style="grid-template-columns:repeat(5,1fr)"></div>
+<div class="fuel-grid-2">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Annual P&amp;L · fan chart</div><div class="fuel-card-sub">k€ per year, P5 to P95</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-mc-fan" style="width:100%;height:320px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Total P&amp;L · distribution</div><div class="fuel-card-sub">Over the tenor · red = loss</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-mc-hist" style="width:100%;height:320px"></canvas></div></div>
+</div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">Simulated shape discount, capture and P&amp;L</div></div></div><div id="pp-mc-table"></div></div>
         </div>
       </div>
     </div>
