@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-20",
+ "countries": {
+  "FR": {
+   "spot": 161.34
+  },
+  "UK": {
+   "spot": 173.08
+  },
+  "DE": {
+   "spot": 211.94
+  },
+  "NL": {
+   "spot": 202.36
+  }
+ },
+ "marketInsightsHtml": "<p>La base spot au Royaume-Uni est de 177,44 £/MWh, tandis qu'en Allemagne, elle est de 195,66 €/MWh, en France de 212,33 €/MWh et aux Pays-Bas de 186,30 €/MWh.</p>"
+}
