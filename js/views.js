@@ -10,7 +10,7 @@
   const VIEWS = {
     'prices:forward': [['Board', ['hs-prfwd-board']], ['Comparison', ['hs-prfwd-compare']], ['Calendar contracts', ['hs-cal-contracts']]],
     'prices:spread': [['Intraday spread', ['hs-spread-history']], ['Battery spreads', ['hs-spread-bess']]],
-    renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Forward capture', ['hs-renewables-capfwd']]],
+    renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Cannibalisation', ['hs-renewables-cannib']], ['Forward capture', ['hs-renewables-capfwd']]],
     nuclear: [['Availability', ['hs-nuclear-0']], ['Outages', ['hs-nuclear-1']]],
     capacity: [['By year', ['hs-capacity-0']], ['Comparison', ['hs-capacity-1']]],
     frsystem: [['Daily', ['hs-frsystem-0']], ['Historical', ['hs-frsystem-1']]],
