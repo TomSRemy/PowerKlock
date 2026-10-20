@@ -85,7 +85,6 @@
   function trailing(s, w) { if (!s) return []; if (w === 'all') return s; return s.slice(-winDays(w)); }
   function curYear() { return String(new Date().getFullYear()); }
   function doy(ds) { var d = new Date(ds); return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000); }
-  function niceTicks(max) { var step = Math.pow(10, Math.floor(Math.log10(max || 1))); if (max / step < 2) step /= 2; else if (max / step > 6) step *= 2; var t = []; for (var v = 0; v <= max; v += step) t.push(Math.round(v)); return t; }
 
   // ════════════════════════════════════════════════════════════════
   // SECTION 1 · BOARD
@@ -105,9 +104,15 @@
         '<div class="kpi-value"' + (dn ? ' style="color:' + C_NEG + '"' : '') + '>' + val + (unit ? '<span class="kpi-unit">' + unit + '</span>' : '') + '</div>' +
         (zoneMeta ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-chg">' + (sub || '') + '</div>') + '</div>';
     }
+    // none today: when was the last negative price (history summary)
+    function lastNeg(code) {
+      var ser = NEG.summary && NEG.summary.zones && NEG.summary.zones[code]; if (!ser) return 'none today';
+      for (var i = ser.length - 1; i >= 0; i--) if ((ser[i].negH || 0) > 0) return 'none today · last ' + ser[i].d + ' (' + n2(ser[i].negH, 1) + ' h)';
+      return 'none today';
+    }
     el.innerHTML =
-      card('FR neg hours', fr ? n2(fr.negHours, 2) : '–', 'h', fr && fr.min != null && fr.negHours > 0 ? 'min ' + n2(fr.min, 2) + ' · ' + (fr.minHour || '') : 'none today', fr && fr.negHours > 0) +
-      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 2) + ' · ' + (de.minHour || '') : 'none today', de && de.negHours > 0, false, true) +
+      card('FR neg hours', fr ? n2(fr.negHours, 2) : '–', 'h', fr && fr.min != null && fr.negHours > 0 ? 'min ' + n2(fr.min, 2) + ' · ' + (fr.minHour || '') : lastNeg('FR'), fr && fr.negHours > 0) +
+      card('DE neg hours', de ? n2(de.negHours, 2) : '–', 'h', de && de.min != null && de.negHours > 0 ? 'min ' + n2(de.min, 2) + ' · ' + (de.minHour || '') : lastNeg('DE_LU'), de && de.negHours > 0, false, true) +
       card('Zones in negative', inNeg.length, '/' + z.length, 'loaded today', false, false, true) +
       card('Total neg hours', n2(total, 2), 'h', 'across all zones', total > 0, false, true) +
       card('Deepest print', dp.z ? n2(dp.v, 2) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true, true) +
@@ -256,8 +261,8 @@
     function kc(lbl, val, unit, sub, dn, zm) { return '<div class="kpi-card ' + (dn ? 'kpi-down' : 'kpi-flat') + '"><div class="kpi-label">' + lbl + '</div><div class="kpi-value"' + (dn ? ' style="color:' + C_NEG + '"' : '') + '>' + val + (unit ? '<span class="kpi-unit">' + unit + '</span>' : '') + '</div>' + (zm ? '<div class="kpi-meta kpi-meta-zone">' + (sub || '') + '</div>' : '<div class="kpi-chg">' + (sub || '') + '</div>') + '</div>'; }
     var TABS = [
       { k: 'month', i: ICONS.bars, l: 'By month' }, { k: 'year', i: ICONS.bars, l: 'Per year' },
-      { k: 'cumul', i: ICONS.trend, l: 'Cumulative' }, { k: 'cal', i: ICONS.cal, l: 'Calendar' },
-      { k: 'daily', i: ICONS.chart, l: 'Daily bars' }, { k: 'mh', i: ICONS.grid, l: 'Month×hour' }, { k: 'driver', i: ICONS.bolt, l: 'Driver' }
+      { k: 'cumul', i: ICONS.trend, l: 'Pace' }, { k: 'cal', i: ICONS.cal, l: 'Calendar' },
+      { k: 'daily', i: ICONS.chart, l: 'Daily' }, { k: 'hour', i: ICONS.bolt, l: 'Hour of day' }, { k: 'mh', i: ICONS.grid, l: 'Month × hour' }
     ];
     var tabs = TABS.map(function (t) { var on = t.k === view; return '<button onclick="negSetDrillView(\'' + code + '\',\'' + t.k + '\')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:' + (on ? 'var(--bg3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text3)') + ';font-family:\'Inter\',sans-serif;font-weight:500;letter-spacing:.03em">' + t.i + t.l + '</button>'; }).join('');
     host.innerHTML =
@@ -265,7 +270,7 @@
         '<div class="pk-eyebrow">Negative prices <span class="pk-sep">·</span> ' + flag(code) + ' ' + code + ' <span class="pk-sep">·</span> Country detail</div>' +
         '<div class="pk-section-title">' + zname(code) + ' — negative-price profile</div>' +
         '<div class="pk-section-subtitle">' + (series ? series.length + ' days · ' + series[0].d + ' → ' + series[series.length - 1].d : 'no history') + ' · ENTSO-E</div></div>' +
-        '<div class="pk-section-header-actions"><button class="pk-btn-primary" onclick="event.stopPropagation();negDrillFullscreen(\'' + code + '\')">⛶ Fullscreen</button><button class="pk-btn-ghost" onclick="event.stopPropagation();negToggleRow(\'' + code + '\')">✕ Close</button></div></div>' +
+        '<div class="pk-section-header-actions"><button class="pk-btn-ghost" onclick="event.stopPropagation();negToggleRow(\'' + code + '\')">✕ Close</button></div></div>' +
       '<div class="kpi-strip" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px">' +
         kc('Neg h ' + cy, n2(ys[cy] || 0, 0), 'h', 'YTD', (ys[cy] || 0) > 0) +
         kc('Neg h ' + ly, n2(ys[ly] || 0, 0), 'h', 'full year', false) +
@@ -274,10 +279,8 @@
         kc('Max neg/day', n2(maxDay, 1), 'h', 'single day', false) +
         kc('Peak month', MN[peakM], '', n2(ms[peakM], 0) + 'h cumul', (ms[peakM] || 0) > 0, true) +
       '</div>' +
-      '<div class="pk-tabbar"><div class="pk-tabbar-left"><div class="pk-tabbar-tabs">' + tabs + '</div></div>' +
-        '<div class="pk-tabbar-right"><span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--tx3)">↺ Reset · zoom XY</span></div></div>' +
-      '<div id="neg-drill-title-' + code + '"></div>' +
-      '<div id="neg-drill-chart-' + code + '" style="position:relative;min-height:300px;margin-top:6px"></div>';
+      '<div class="pk-tabbar"><div class="pk-tabbar-left"><div class="pk-tabbar-tabs">' + tabs + '</div></div></div>' +
+      '<div id="neg-drill-chart-' + code + '" style="position:relative;min-height:300px"></div>';
     renderDrillChart(code, view, series);
   }
   window.negSetDrillView = function (code, v) { NEG.drillView[code] = v; renderDrill(code); };
@@ -312,77 +315,9 @@
     if (typeof window.pkFsIsOpen === 'function' && window.pkFsIsOpen('neg-drill')) window.negDrillFullscreen(code);
   };
 
-  function dTitle(code, eyebrow, title, sub) {
-    var el = document.getElementById('neg-drill-title-' + code); if (!el) return;
-    el.innerHTML = '<div style="margin:6px 0 4px"><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:600;color:' + C_NEG + ';letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">' + eyebrow + '</div><div style="font-size:15px;font-weight:700;letter-spacing:-0.01em">' + title + '</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX3 + '">' + sub + '</div></div>';
-  }
   function renderDrillChart(code, view, series) {
-    var host = document.getElementById('neg-drill-chart-' + code); if (!host) return;
-    var MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], cy = curYear();
-    if (!series) { dTitle(code, 'No history', zname(code), ''); host.innerHTML = backlog('No history for this zone.'); return; }
-    if (view === 'month') { dTitle(code, 'Seasonality', 'Negative hours by month', 'cumulative, all years'); host.innerHTML = svgBars(MN, monthSum(series), {}); }
-    else if (view === 'year') { var ys = yearSum(series), yk = Object.keys(ys).sort(); dTitle(code, 'Trend', 'Negative hours per year', yk[0] + ' → ' + yk[yk.length - 1]); host.innerHTML = svgBars(yk, yk.map(function (y) { return ys[y]; }), { partial: cy }); }
-    else if (view === 'cumul') { dTitle(code, 'Pace tracker', 'Cumulative negative hours · YTD', 'current year vs prior'); host.innerHTML = svgCumul(series, cy); }
-    else if (view === 'cal') { dTitle(code, 'Existing', 'Calendar heatmap — neg hours / day', 'last 12 months'); host.innerHTML = svgCalendar(series); }
-    else if (view === 'daily') { dTitle(code, 'Existing', 'Daily negative hours', NEG.win + ' window'); host.innerHTML = svgDaily(trailing(series, NEG.win)); }
-    else if (view === 'mh') { dTitle(code, 'Signature', 'When do negative prices hit? — month × hour', 'needs hourly aggregate'); host.innerHTML = backlog('Month×hour heatmap needs a precomputed hourly aggregate (neg_mh) in enrich_summary.py. Daily history files already carry the hourly arrays.'); }
-    else if (view === 'driver') { dTitle(code, 'Driver attribution', 'Occurrences by hour + renewable surplus', 'needs hourly aggregate'); host.innerHTML = backlog('Driver chart needs a precomputed hourly aggregate (neg_driver) in enrich_summary.py.'); }
-  }
-  function backlog(msg) { return '<div style="border:1px dashed #2c4054;border-radius:8px;background:rgba(255,253,130,.04);padding:18px;color:' + C_TX3 + ';font-family:\'JetBrains Mono\',monospace;font-size:11px;line-height:1.5;text-align:center"><div style="color:#c49a2a;font-weight:700;margin-bottom:6px">◈ Coming soon — needs precomputed aggregate</div>' + msg + '</div>'; }
-
-  // ════════════════════════════════════════════════════════════════
-  // SVG primitives (viewBox 1000×320 → reads at template chart size)
-  // ════════════════════════════════════════════════════════════════
-  function svgOpen() { return '<svg style="width:100%;height:auto;display:block" viewBox="0 0 1000 320" preserveAspectRatio="xMidYMid meet">'; }
-  function svgBars(labels, values, opt) {
-    opt = opt || {}; var W = 1000, H = 320, padL = 44, padB = 30, padT = 16, padR = 12;
-    var max = Math.max.apply(null, values.concat([1])) * 1.12, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
-    var bw = (W - padL - padR) / labels.length;
-    var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
-    labels.forEach(function (lb, i) {
-      var v = values[i] || 0, x = padL + i * bw + bw * 0.18, w = bw * 0.64, bh = (H - padB) - sy(v), partial = opt.partial && String(lb) === String(opt.partial);
-      s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="2" fill="' + C_NEG + '"' + (partial ? ' opacity=".55" stroke="' + C_NEG + '" stroke-dasharray="3 2"' : '') + '/>';
-      if (v > 0) s += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (sy(v) - 5).toFixed(1) + '" fill="' + C_NEG + '" font-size="11" font-weight="700" text-anchor="middle" font-family="monospace">' + Math.round(v) + '</text>';
-      s += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (H - 10) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="middle" font-family="monospace">' + String(lb).slice(-4) + '</text>';
-    });
-    return svgOpen() + s + '</svg>';
-  }
-  function svgCumul(series, cy) {
-    var W = 1000, H = 320, padL = 44, padB = 26, padT = 16, padR = 12;
-    var byY = {}; series.forEach(function (d) { (byY[d.d.slice(0, 4)] = byY[d.d.slice(0, 4)] || []).push(d); });
-    var years = Object.keys(byY).sort().slice(-5), max = 1, cum = {};
-    years.forEach(function (y) { var c = 0; cum[y] = byY[y].map(function (d) { c += (d.negH || 0); return { x: doy(d.d), v: c }; }); max = Math.max(max, c); });
-    max *= 1.12;
-    var sx = function (x) { return padL + (x / 366) * (W - padL - padR); }, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
-    var grey = ['#3a434d', '#566370', '#7a8794', '#9aa7b4'];
-    var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
-    var leg = '';
-    years.forEach(function (y, i) {
-      var col = y === cy ? C_NEG : grey[Math.max(0, grey.length - (years.length - i))], pts = cum[y]; if (!pts.length) return;
-      s += '<path d="M' + pts.map(function (p) { return sx(p.x).toFixed(1) + ' ' + sy(p.v).toFixed(1); }).join(' L') + '" fill="none" stroke="' + col + '" stroke-width="' + (y === cy ? 2.6 : 1.4) + '"/>';
-      var lp = pts[pts.length - 1]; s += '<circle cx="' + sx(lp.x).toFixed(1) + '" cy="' + sy(lp.v).toFixed(1) + '" r="' + (y === cy ? 3.5 : 2.2) + '" fill="' + col + '"/>';
-      leg += '<span style="margin-right:14px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + col + ';vertical-align:-1px;margin-right:4px"></span>' + y + (y === cy ? ' (YTD)' : '') + '</span>';
-    });
-    return svgOpen() + s + '</svg><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX3 + ';margin-top:6px">' + leg + '</div>';
-  }
-  function svgDaily(series) {
-    var W = 1000, H = 220, padL = 40, padB = 22, padT = 10, padR = 10;
-    var vals = series.map(function (d) { return d.negH || 0; }), max = Math.max.apply(null, vals.concat([1])) * 1.1, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
-    var bw = (W - padL - padR) / (vals.length || 1);
-    var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    vals.forEach(function (v, i) { if (!v) return; var x = padL + i * bw, bh = (H - padB) - sy(v); s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + Math.max(0.8, bw - 0.5).toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + C_NEG + '" opacity="' + (0.5 + 0.5 * v / max).toFixed(2) + '"/>'; });
-    return '<svg style="width:100%;height:auto;display:block" viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
-  }
-  function svgCalendar(series) {
-    var last = series.slice(-371), max = Math.max.apply(null, last.map(function (d) { return d.negH || 0; }).concat([1]));
-    function col(v) { if (!v) return '#0f1419'; var t = v / max; return t < .25 ? 'rgba(237,105,101,.3)' : t < .55 ? 'rgba(237,105,101,.55)' : t < .85 ? C_NEG : C_NEG_DEEP; }
-    var startDow = new Date(last[0].d).getDay(), pad = (startDow + 6) % 7;
-    var html = '<div style="display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;max-width:100%;overflow-x:auto;padding:6px 0">';
-    for (var i = 0; i < pad; i++) html += '<div style="width:13px;height:13px"></div>';
-    last.forEach(function (d) { html += '<div title="' + d.d + ': ' + (d.negH || 0).toFixed(1) + 'h" style="width:13px;height:13px;border-radius:2px;background:' + col(d.negH || 0) + '"></div>'; });
-    return html + '</div>';
+    if (view === 'driver') view = 'hour';
+    if (window.NegCharts) window.NegCharts.zone(code, view, NEG.win);
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -403,57 +338,13 @@
   }
   function renderCCTabs() {
     var el = document.getElementById('neg-cc-tabs'); if (!el) return;
-    var V = [{ k: 'year', i: ICONS.bars, l: 'By zone × year' }, { k: 'rank', i: ICONS.rank, l: 'Ranking' }, { k: 'monthhm', i: ICONS.map, l: 'Heatmap zone×month' }, { k: 'cumul', i: ICONS.trend, l: 'Cumulative' }];
+    var V = [{ k: 'year', i: ICONS.bars, l: 'By zone × year' }, { k: 'rank', i: ICONS.rank, l: 'Ranking' }, { k: 'season', i: ICONS.map, l: 'Seasonality' }, { k: 'hour', i: ICONS.bolt, l: 'Hour of day' }, { k: 'cumul', i: ICONS.trend, l: 'Pace this year' }];
     el.innerHTML = V.map(function (v) { var on = v.k === NEG.ccView; return '<button onclick="negSetCCView(\'' + v.k + '\')" style="display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;border-radius:4px;cursor:pointer;border:none;background:' + (on ? 'var(--bg3)' : 'transparent') + ';color:' + (on ? 'var(--text)' : 'var(--text3)') + ';font-family:\'Inter\',sans-serif;font-weight:500;letter-spacing:.03em">' + v.i + v.l + '</button>'; }).join('');
   }
   window.negSetCCView = function (v) { NEG.ccView = v; renderCCTabs(); renderCCChart(); };
-  function ccTitle(e, t, su) { var E = document.getElementById('neg-cc-eyebrow'), T = document.getElementById('neg-cc-title'), S = document.getElementById('neg-cc-subtitle'); if (E) E.textContent = e; if (T) T.textContent = t; if (S) S.textContent = su; }
   function renderCCChart() {
-    var host = document.getElementById('neg-cc-chart'); if (!host) return;
-    var s = NEG.summary; if (!s || !s.zones) { host.innerHTML = backlog('No history loaded.'); return; }
-    var view = NEG.ccView, cy = curYear(), zones = CC_ZONES.filter(function (c) { return s.zones[c]; });
-    if (view === 'year') { ccTitle('Cross-zone — negative hours', 'Negative hours by zone and year', '2022 → ' + cy + ' · featured zones'); var years = []; for (var y = 2022; y <= +cy; y++) years.push(String(y)); host.innerHTML = svgGrouped(zones.map(function (c) { var ys = yearSum(s.zones[c]); return { c: c, vals: years.map(function (yy) { return yearComplete(s.zones[c], yy) ? (ys[yy] || 0) : null; }) }; }), years, cy) + coverageNote(zones, s, years); }
-    else if (view === 'rank') { ccTitle('Cross-zone — ranking', 'Negative hours over window', NEG.win + ' · sorted'); host.innerHTML = svgHBars(zones.map(function (c) { return { c: c, v: trailing(s.zones[c], NEG.win).reduce(function (a, d) { return a + (d.negH || 0); }, 0) }; }).sort(function (a, b) { return b.v - a.v; })); }
-    else if (view === 'monthhm') { ccTitle('Cross-zone — seasonality', 'Negative hours · zone × month', 'cumulative all years'); host.innerHTML = svgZoneMonth(zones, s); }
-    else if (view === 'cumul') { ccTitle('Cross-zone — pace', 'Cumulative negative hours · ' + cy, 'featured zones, current year'); host.innerHTML = svgCCcumul(zones, s, cy); }
-  }
-  function coverageNote(zones, s, years) {
-    var gaps = zones.filter(function (c) { return years.some(function (y) { return !yearComplete(s.zones[c], y); }); });
-    if (!gaps.length) return '';
-    return '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10.5px;color:' + C_TX3 + ';margin-top:6px">Years with incomplete daily history are not drawn · ' + gaps.join(', ') + '</div>';
-  }
-  function svgGrouped(data, years, partial) {
-    var W = 1000, H = 320, padL = 44, padB = 30, padT = 16, padR = 12, max = 1;
-    data.forEach(function (d) { d.vals.forEach(function (v) { if (v != null && v > max) max = v; }); }); max *= 1.12;
-    var sy = function (v) { return H - padB - (v / max) * (H - padB - padT); }, gw = (W - padL - padR) / data.length, bw = (gw * 0.8) / years.length;
-    var greys = ['#3a434d', '#566370', '#7a8794'], YC = {}; years.forEach(function (y, i) { YC[y] = y === partial ? C_NEG_DEEP : (i === years.length - 2 ? C_NEG : greys[Math.min(i, greys.length - 1)]); });
-    var s = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + W + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s += '<line x1="' + padL + '" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
-    data.forEach(function (d, gi) { var gx = padL + gi * gw + gw * 0.1; d.vals.forEach(function (v, yi) { if (v == null) return; var x = gx + yi * bw, bh = (H - padB) - sy(v); s += '<rect x="' + x.toFixed(1) + '" y="' + sy(v).toFixed(1) + '" width="' + (bw - 1.5).toFixed(1) + '" height="' + Math.max(0, bh).toFixed(1) + '" rx="1.5" fill="' + YC[years[yi]] + '"' + (years[yi] === partial ? ' opacity=".75"' : '') + '/>'; }); s += '<text x="' + (gx + (years.length * bw) / 2).toFixed(1) + '" y="' + (H - 10) + '" fill="' + C_TX2 + '" font-size="12" text-anchor="middle" font-family="monospace" font-weight="700">' + flag(d.c) + ' ' + d.c + '</text>'; });
-    var leg = years.map(function (y) { return '<span style="margin-right:12px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + YC[y] + ';vertical-align:-1px;margin-right:4px"></span>' + y + (y === partial ? ' (YTD)' : '') + '</span>'; }).join('');
-    return svgOpen() + s + '</svg><div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX3 + ';margin-top:6px">' + leg + '</div>';
-  }
-  function svgHBars(rk) {
-    var W = 1000, rowH = 34, padL = 120, padR = 60, padT = 8, H = padT + rk.length * rowH + 6, max = Math.max.apply(null, rk.map(function (r) { return r.v; }).concat([1])), s = '';
-    rk.forEach(function (r, i) { var y = padT + i * rowH, bw = (r.v / max) * (W - padL - padR); s += '<text x="' + (padL - 10) + '" y="' + (y + rowH / 2 + 4) + '" fill="' + C_TX2 + '" font-size="13" text-anchor="end" font-family="monospace" font-weight="700">' + flag(r.c) + ' ' + r.c + '</text><rect x="' + padL + '" y="' + (y + 6) + '" width="' + Math.max(1, bw).toFixed(1) + '" height="' + (rowH - 14) + '" rx="3" fill="' + C_NEG + '"/><text x="' + (padL + bw + 8).toFixed(1) + '" y="' + (y + rowH / 2 + 4) + '" fill="' + C_NEG + '" font-size="12" font-family="monospace" font-weight="700">' + Math.round(r.v) + 'h</text>'; });
-    return '<svg style="width:100%;height:auto;display:block" viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
-  }
-  function svgZoneMonth(zones, s) {
-    var MN = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'], rows = zones.map(function (c) { return { c: c, m: monthSum(s.zones[c]) }; }), max = 1;
-    rows.forEach(function (r) { r.m.forEach(function (v) { if (v > max) max = v; }); });
-    function col(v) { if (!v) return '#0f1419'; var t = v / max; return t < .25 ? 'rgba(237,105,101,.28)' : t < .55 ? 'rgba(237,105,101,.55)' : t < .85 ? C_NEG : C_NEG_DEEP; }
-    var html = '<div style="display:grid;grid-template-columns:70px repeat(12,1fr);gap:4px;padding:6px 0"><div></div>' + MN.map(function (m) { return '<div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;color:' + C_TX3 + ';text-align:center">' + m + '</div>'; }).join('');
-    rows.forEach(function (r) { html += '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:' + C_TX2 + ';font-weight:700;display:flex;align-items:center;gap:4px">' + flag(r.c) + ' ' + r.c + '</div>'; r.m.forEach(function (v) { html += '<div title="' + Math.round(v) + 'h" style="aspect-ratio:2.4;border-radius:2px;background:' + col(v) + '"></div>'; }); });
-    return html + '</div>';
-  }
-  function svgCCcumul(zones, s, cy) {
-    var W = 1000, H = 320, padL = 44, padB = 26, padT = 16, padR = 70, pal = ['#ED6965', '#14D3A9', '#FFB454', '#7FC8F8', '#9b8cff', '#34D399', '#F472B6', '#FBBF24'];
-    var sc = zones.map(function (c, i) { var ser = s.zones[c].filter(function (d) { return d.d.slice(0, 4) === cy; }), cum = 0, pts = ser.map(function (d) { cum += (d.negH || 0); return { x: doy(d.d), v: cum }; }); return { c: c, pts: pts, col: pal[i % pal.length], tot: cum }; });
-    var max = Math.max.apply(null, sc.map(function (x) { return x.tot; }).concat([1])) * 1.12, sx = function (x) { return padL + (x / 366) * (W - padL - padR); }, sy = function (v) { return H - padB - (v / max) * (H - padB - padT); };
-    var s2 = '<line x1="' + padL + '" y1="' + (H - padB) + '" x2="' + (W - padR) + '" y2="' + (H - padB) + '" stroke="' + C_BD + '"/>';
-    niceTicks(max).forEach(function (g) { var y = sy(g); s2 += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="' + C_BD + '" stroke-dasharray="2 3" opacity=".4"/><text x="' + (padL - 6) + '" y="' + (y + 3) + '" fill="' + C_TX3 + '" font-size="11" text-anchor="end" font-family="monospace">' + g + 'h</text>'; });
-    sc.forEach(function (x) { if (!x.pts.length) return; s2 += '<path d="M' + x.pts.map(function (p) { return sx(p.x).toFixed(1) + ' ' + sy(p.v).toFixed(1); }).join(' L') + '" fill="none" stroke="' + x.col + '" stroke-width="1.8"/>'; var lp = x.pts[x.pts.length - 1]; s2 += '<text x="' + (sx(lp.x) + 6).toFixed(1) + '" y="' + (sy(lp.v) + 3).toFixed(1) + '" fill="' + x.col + '" font-size="11" font-family="monospace" font-weight="700">' + x.c + '</text>'; });
-    return svgOpen() + s2 + '</svg>';
+    if (NEG.ccView === 'monthhm') NEG.ccView = 'season';
+    if (window.NegCharts) window.NegCharts.cc(NEG.ccView, NEG.win);
   }
   function renderCCTable() {
     var tb = document.getElementById('neg-cc-tbody'); if (!tb) return;
@@ -549,6 +440,7 @@
     try { syncZoneLabel(); } catch (e) {}
     // cross-zone + drill need history summary
     loadSummary().then(function () {
+      try { renderBoardKpis(); } catch (e) {}
       try { renderCCKpis(); } catch (e) { console.warn('[neg] cc kpis', e); }
       try { renderCCTabs(); } catch (e) { console.warn('[neg] cc tabs', e); }
       try { renderCCChart(); } catch (e) { console.warn('[neg] cc chart', e); }
