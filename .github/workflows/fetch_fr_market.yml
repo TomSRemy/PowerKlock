@@ -38,7 +38,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json data/commodities.json
+          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json data/commodities.json data/history/commodities_series.json
           if git diff --staged --quiet; then
             echo "No data changes — skipping commit."
             exit 0
@@ -47,10 +47,10 @@ jobs:
           # Other bots push to main at the same time: on a conflict keep this
           # run's fresh files (-X theirs = the commit being replayed).
           for i in 1 2 3 4 5 6 7 8; do
-            git pull --rebase -X theirs origin main && git push && exit 0
+            git pull --rebase --autostash -X theirs origin main && git push && exit 0
             git rebase --abort 2>/dev/null || true
             echo "Push attempt $i failed, retrying..."
             sleep $((5 + RANDOM % 20))
           done
-          echo "Failed to push after 5 attempts."
+          echo "Failed to push after 8 attempts."
           exit 1
