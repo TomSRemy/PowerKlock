@@ -52,8 +52,8 @@ def ratios():
 
 def main():
     ct = json.load(open(os.path.join(H, 'fr_market_contracts.json')))['FR']
-    newest = max(max(v['points']) for v in ct.values() if v.get('points'))
-    live = {k: v['points'][max(v['points'])] for k, v in ct.items() if v.get('points') and max(v['points']) >= newest}
+    newest = max(max(v['points']) for k, v in ct.items() if v.get('points') and not k.endswith('Peak'))
+    live = {k: v['points'][max(v['points'])] for k, v in ct.items() if v.get('points') and max(v['points']) >= newest and not k.endswith('Peak')}
     R = ratios()
     today = date.today()
     first = (today.year, today.month + 1) if today.month < 12 else (today.year + 1, 1)
@@ -111,6 +111,16 @@ def main():
                     months[x]['value'] *= f
                 done |= set(ks)
         fixed |= done
+    # the market's peak ÷ base ratio of each month (weekdays 08:00-20:00): finest peak contract listed with its base
+    pk = {k[:-4]: v['points'][max(v['points'])] for k, v in ct.items() if k.endswith('Peak') and v.get('points') and max(v['points']) >= newest}
+    for k, v in months.items():
+        y, m = int(k[:4]), int(k[5:7])
+        q = (m - 1) // 3 + 1
+        for lab in (f'{MON[m - 1]}{y}', f'Q{q}{y}', f'Cal{y}'):
+            if lab in pk and lab in live:
+                v['peakRatio'] = round(pk[lab] / live[lab], 3)
+                v['peakFrom'] = lab
+                break
     for v in months.values():
         v['value'] = round(v['value'], 2)
     out = {'asOf': newest, 'source': 'SEFE Energy Market Insights, last closes; day-ahead ratios (complete years, 2022 left out)',

@@ -767,6 +767,44 @@ def rebuild_from_rolling(roll):
     return out
 
 
+def write_peak():
+    """France peak contracts (EEX, weekdays 08:00-20:00): months, quarters, seasons and Cal, a year of
+    daily closes, kept in fr_market_contracts.json as <label>Peak (Nov2026Peak, Q12027Peak, Cal2027Peak …)
+    next to the base contracts, so the warehouse and the pricer read them the same way."""
+    h = auth_headers(get_token())
+    out = json.loads(OUT_CONTRACTS.read_text()) if OUT_CONTRACTS.exists() else {}
+    got = []
+    for period in ("Month", "Quarter", "Season", "Year"):
+        try:
+            r = requests.get(f"{API}/MarketFilter", headers=h, timeout=40, params={
+                "Commodity": "Power", "ResourcesCode": "France", "PeriodName": period, "TypeName": "Peak",
+                "Absolut": "Absolute", "IsLive": "false", "AccountId": "0"})
+            ms = [m for m in (r.json() if r.ok else []) if not (m.get("marketName") or "").startswith("FR I ")]
+        except requests.RequestException:
+            continue
+        for m in ms:
+            try:
+                series = fetch_chart_series(h, [m], 400)
+            except requests.RequestException:
+                continue
+            if not series:
+                continue
+            item = series[0]
+            lab = contract_label((item.get("marketName") or "").replace(" peak", " base"))
+            if not lab:
+                continue
+            label, kind, a, b = lab
+            c = out.setdefault("FR", {}).setdefault(label + "Peak", {"marketName": item["marketName"], "kind": kind, "type": "peak", "deliveryStart": a,
+                                                                      "deliveryEnd": b, "currency": "EUR", "points": {}})
+            for p in item.get("value") or []:
+                if p.get("value") is not None:
+                    c["points"][ms_to_date(p["milisec"])] = p["value"]
+            c["lastSeen"] = date.today().isoformat()
+            got.append(label)
+    OUT_CONTRACTS.write_text(json.dumps(out, separators=(",", ":")))
+    print(f"  FR peak: {len(got)} contracts ({', '.join(got[:8])}…)")
+
+
 def write_contracts():
     token = get_token()
     h = auth_headers(token)
@@ -847,6 +885,10 @@ def write_contracts():
 if __name__ == "__main__":
     if "--contracts" in sys.argv:
         write_contracts()
+        write_peak()
+        sys.exit(0)
+    if "--peak" in sys.argv:
+        write_peak()
         sys.exit(0)
     if "--backfill" in sys.argv:
         backfill()
@@ -858,4 +900,8 @@ if __name__ == "__main__":
         write_contracts()
     except Exception as e:   # never block the daily run
         print(f"Dated contracts failed: {e}")
+    try:
+        write_peak()
+    except Exception as e:
+        print(f"Peak contracts failed: {e}")
     print("Done.")

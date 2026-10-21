@@ -14,6 +14,7 @@
   const f2 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(2);
   const f1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const lab = k => MON[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4);
   const NAMES = { hybrid: 'Ensemble (4 methods)', weather: 'MC weather', regional: 'Regional model', regionalMC: 'Regional Monte Carlo', fpc: 'Asset-specific FPC', step: 'Step by step', dashboard: 'PPA Dashboard', weather: 'MC weather' };
@@ -50,6 +51,15 @@
     const share = Array.from({ length: 12 }, (_, i) => ys.reduce((a, y) => a + (r.years[y][tech].share || [])[i] || 0, 0) / ys.length);
     return { name: r.name, gap, share, years: ys };
   }
+  // a loaded curve: its own capture gap to the national profile on the years both cover (last three complete)
+  function assetGap(c) {
+    const o = c.o;
+    if (!o || !o.ast || !o.useAsset) return null;
+    const nat = new Map((o.nat || []).map(x => [x.year, x]));
+    const ys = o.ast.filter(x => x.complete && nat.has(x.year) && x.cpPct != null && nat.get(x.year).cpPct != null).slice(-3);
+    if (!ys.length) return null;
+    return { gap: ys.reduce((a, x) => a + x.cpPct - nat.get(x.year).cpPct, 0) / ys.length, years: ys.map(x => x.year), name: (c.st && c.st.assetName) || 'your asset' };
+  }
   // the asset's own monthly output shape when a curve is loaded, else the region's, else the national one
   function shareOf(tech, st, conv) {
     const nat = FC.share[tech];
@@ -64,7 +74,7 @@
   }
 
   function price(ks, method, c) {
-    const f = FC.forecast[c.tech][c.conv], sh = shareOf(c.tech, c.st, c.conv), rg = regionOf(c.tech, c.conv), gap = rg ? rg.gap : 0;
+    const f = FC.forecast[c.tech][c.conv], sh = shareOf(c.tech, c.st, c.conv), ag = assetGap(c), rg = ag ? null : regionOf(c.tech, c.conv), gap = ag ? ag.gap : rg ? rg.gap : 0;
     let w = 0, v = 0, F = 0, cap = 0, paid = 0, out = 0;
     ks.forEach(k => { const e = f[k], m = +k.slice(5, 7), cr0 = e[method]; if (cr0 == null) return; const cr = cr0 + gap;
       const p = c.conv === 'curt' ? e.paid : 1, o = sh(m), fw = FW.months[k].value;
@@ -111,7 +121,8 @@
     $('pp-st-note').innerHTML = (h.used === 'ensemble' ? `<b>Ensemble</b> = ${rule}, equal weights.`
       : `<b>Hybrid</b> = ${rule}: the combination that erred least on 2019–2023, set before looking at 2024–2026.`) +
       (c.legacy ? ' The PPA Dashboard convention has no monthly forecast: shown with curtailment.' : '') +
-      (regionOf(c.tech, c.conv) ? ` <b>${regionOf(c.tech, c.conv).name}</b>: ${(regionOf(c.tech, c.conv).gap * 100 >= 0 ? '+' : '') + f1(regionOf(c.tech, c.conv).gap * 100)} capture points against the national profile (average ${regionOf(c.tech, c.conv).years.join(', ')}), and the region's monthly output shape.` : '') +
+      (assetGap(c) ? ` <b>${esc(assetGap(c).name)}</b>: ${(assetGap(c).gap * 100 >= 0 ? '+' : '') + f1(assetGap(c).gap * 100)} capture points against the national profile on ${assetGap(c).years.join(', ')}, applied to every month (its curve also sets the monthly weights; the region is ignored).` : '') +
+      (!assetGap(c) && regionOf(c.tech, c.conv) ? ` <b>${regionOf(c.tech, c.conv).name}</b>: ${(regionOf(c.tech, c.conv).gap * 100 >= 0 ? '+' : '') + f1(regionOf(c.tech, c.conv).gap * 100)} capture points against the national profile (average ${regionOf(c.tech, c.conv).years.join(', ')}), and the region's monthly output shape.` : '') +
       ` Costs: imbalance −${f2(c.o && c.o.imb)}, GO +${f2(c.o && c.o.goW)}, margin −${f2(c.o && c.o.margin)} €/MWh (inputs above).`;
     // the methods for the period, with their replay record
     const sc = FC.scores[c.tech][c.conv], ver = Object.keys(sc.pts).map(Number).filter(y => y >= 2024).sort();
@@ -120,8 +131,8 @@
       `</tbody></table></div><div class="fuel-note">Years: replay error in capture points on years the method never saw (production-weighted, + = too optimistic; * = to date). 2019–2023 chose every setting; 2024–2026 only judge.</div>`;
     // month by month
     const f = FC.forecast[c.tech][c.conv];
-    $('pp-st-months').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Month</th><th>Forward</th><th style="text-align:left">From</th><th>Capture (hybrid)</th><th>P10 – P90</th><th>Paid</th><th>Hours ≤ 0</th><th>Value</th></tr></thead><tbody>` +
-      ks.map(k => { const e = f[k], fw = FW.months[k]; return `<tr><td style="text-align:left">${lab(k)}</td><td>${f2(fw.value)}</td><td style="text-align:left" class="pp-hint">${fw.from}</td><td>${pc(e.hybrid)}</td><td class="pp-hint">${pc(e.p10)} – ${pc(e.p90)}</td><td>${c.conv === 'curt' ? pc(e.paid) : '–'}</td><td>${Math.round(e.negH)}</td><td>${f2(fw.value * e.hybrid)}</td></tr>`; }).join('') + '</tbody></table></div>';
+    $('pp-st-months').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Month</th><th>Forward</th><th style="text-align:left">From</th><th>Capture (hybrid)</th><th>P10 – P90</th><th>Paid</th><th>Hours ≤ 0</th><th title="Market forward: peak (weekdays 08:00-20:00) ÷ base. Below 1: the market expects cheap daytime hours (solar)">Peak ÷ base</th><th>Value</th></tr></thead><tbody>` +
+      ks.map(k => { const e = f[k], fw = FW.months[k]; return `<tr><td style="text-align:left">${lab(k)}</td><td>${f2(fw.value)}</td><td style="text-align:left" class="pp-hint">${fw.from}</td><td>${pc(e.hybrid)}</td><td class="pp-hint">${pc(e.p10)} – ${pc(e.p90)}</td><td>${c.conv === 'curt' ? pc(e.paid) : '–'}</td><td>${Math.round(e.negH)}</td><td title="${fw.peakFrom || ''}">${fw.peakRatio != null ? fw.peakRatio.toFixed(2) : '–'}</td><td>${f2(fw.value * e.hybrid)}</td></tr>`; }).join('') + '</tbody></table></div>';
     _fuelChart('pp-st-chart', { type: 'bar', data: { labels: ks.map(lab), datasets: [
       { type: 'line', label: 'Value of one MWh (hybrid)', data: ks.map(k => +(FW.months[k].value * f[k].hybrid).toFixed(2)), borderColor: '#FBBF24', backgroundColor: '#FBBF24', borderWidth: 2.4, pointRadius: 2.5, fill: false, order: 0 },
       { type: 'line', label: 'P10 – P90 (simulated weather)', data: ks.map(k => +(FW.months[k].value * f[k].p90).toFixed(2)), borderColor: 'rgba(251,191,36,0)', backgroundColor: 'rgba(251,191,36,.14)', pointRadius: 0, fill: '+1', order: 1 },
