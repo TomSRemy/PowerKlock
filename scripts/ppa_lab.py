@@ -56,6 +56,22 @@ RNG = np.random.default_rng(7)
 
 
 # ── data ─────────────────────────────────────────────────────────────────────
+def pumping_hours(y):
+    """France pumped-storage and battery charging (MW, positive), {Paris day: [24]} from RTE éCO2mix"""
+    out = {}
+    for m in range(1, 13):
+        try:
+            d = json.load(open(os.path.join(ROOT, 'data', 'history', 'rte', f'{y}-{m:02d}.json')))['days']
+        except OSError:
+            continue
+        for day, v in d.items():
+            q = v.get('pumping') or []
+            if len(q) >= 24:
+                k = len(q) // 24
+                out[day] = [abs(sum(x or 0 for x in q[h * k:(h + 1) * k]) / k) for h in range(24)]
+    return out
+
+
 def load_years():
     caps = FCC.capacity()
     Y = {}
@@ -80,6 +96,8 @@ def load_years():
         for c in NEIGH:
             for k in 'swln':
                 a[c + '_' + k] = np.array([[x or 0 for x in rg[c][k].get(d, [0] * 24)] for d in days], float)
+        pu = pumping_hours(y)
+        a['fr_pump'] = np.array([pu.get(d, [0] * 24) for d in days], float)
         a['complete'] = len(days) >= 340
         Y[y] = a
     return Y, caps
@@ -129,9 +147,17 @@ def cap_future(c, t, Y):
 
 
 # ── regional price model ─────────────────────────────────────────────────────
-def residual_share(a, region=True, s=None, w=None, l=None, n=None):
-    """(load − solar − wind − nuclear) ÷ load, France alone or with the neighbours"""
+FLEX = {'on': False}
+
+
+def residual_share(a, region=True, s=None, w=None, l=None, n=None, pump=None):
+    """(load − solar − wind − nuclear) ÷ load, France alone or with the neighbours; with FLEX on, France's
+    pumped-storage and battery charging counts as load (it absorbs the midday surplus)"""
     cs = ('FR',) + (NEIGH if region else ())
+    if FLEX['on']:
+        extra = pump if pump is not None else (a['fr_pump'] if a is not None else 0)
+        l = dict(l) if l else {c: a[('fr_' if c == 'FR' else c + '_') + 'l'] for c in cs}
+        l['FR'] = l['FR'] + extra
     L = sum(l[c] if l else a[('fr_' if c == 'FR' else c + '_') + 'l'] for c in cs)
     R = sum((l[c] if l else a[('fr_' if c == 'FR' else c + '_') + 'l'])
             - (s[c] if s else a[('fr_' if c == 'FR' else c + '_') + 's'])
@@ -267,6 +293,7 @@ def assemble(Y, days, weather_src, demand_year, capY):
                 k = min(di.values(), key=lambda q: abs(int(dmd['doy'][q]) - doy(d)))
             L[i] = dmd[pre + 'l'][k]; N[i] = dmd[pre + 'n'][k]
         out['s'][c], out['w'][c], out['l'][c], out['n'][c] = S, Wd, L, N
+    out['pump'] = np.array([dmd['fr_pump'][di.get(doy(d), 0)] for d in days])
     return out
 
 
@@ -312,7 +339,7 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
     for wy in train_w:
         src = weather_index(Y, wy, days)
         h = assemble(Y, days, src, demand_year, capY)
-        x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'])
+        x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
         rm, rp, pp = pm.expected(x, g)
         res4.append(month_rates(month, h[t]['FR'], rm, rp, pp))
     m4 = {m: {k: float(np.mean([r[m][k] for r in res4 if m in r and r[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}
@@ -327,7 +354,7 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
                 wy = pick[weeks[i]]
                 src.append(weather_index(Y, wy, [d])[0])
             h = assemble(Y, days, src, demand_year, capY)
-            x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'])
+            x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
             r = pm.draw(x, g)
             allm.append(month_rates(month, h[t]['FR'], r, r * (r > 0), (r > 0).astype(float)))
         m5 = {m: {k: float(np.mean([a[m][k] for a in allm if m in a and a[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}
@@ -460,6 +487,9 @@ def main():
             past = [y for y in DATA if y < Y and DATA[y]['complete']]
             train = [y for y in past if y != 2022]
             preds, m4, m5, dist = predict(t, Y, choice[t], sims)
+            _, wmc, _ = BD.m_weather(t, Y, train, B.S if t == 's' else B.W, 40)
+            for conv in ('all', 'curt'):
+                preds[conv]['weather'] = wmc[conv]
             act = actual(t, Y)
             row = {'tech': TECH[t], 'year': Y, 'set': 'calibration' if Y in CAL else 'verdict', 'actual': act, 'pred': preds,
                    'negH': {'actual': int(sum(v['negH'] for v in act.values())), 'regional': float(sum(m4[m]['negH'] for m in m4 if m in act)),
@@ -554,7 +584,7 @@ def regional_fr_only(t, Y, train_w, pm, demand_year, capY):
     res4 = []
     for wy in train_w:
         h = assemble(Y, days, weather_index(Y, wy, days), demand_year, capY)
-        x = residual_share(None, False, h['s'], h['w'], h['l'], h['n'])
+        x = residual_share(None, False, h['s'], h['w'], h['l'], h['n'], h['pump'])
         rm, rp, pp = pm.expected(x, g)
         res4.append(month_rates(month, h[t]['FR'], rm, rp, pp))
     m4 = {m: {k: float(np.mean([r[m][k] for r in res4 if m in r and r[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}
@@ -570,7 +600,7 @@ def add_weather(res):
     for row in res['rows']:
         for conv in ('all', 'curt'):
             d = next((r for r in det['rows'] if r['tech'] == row['tech'] and r['year'] == row['year'] and r['conv'] == conv), None)
-            if d:
+            if d and not row['pred'][conv].get('weather'):
                 row['pred'][conv]['weather'] = {mm['m']: mm['pred']['weather'] for mm in d['months'] if mm['pred']['weather'] is not None}
                 row['score'][conv]['weather'] = score(row['pred'][conv]['weather'], row['actual'], conv)
 
@@ -694,19 +724,21 @@ def forward_levels(Y):
     return out or None
 
 
-ENSEMBLE = ('step', 'fpc', 'regional')
+ENSEMBLE = ('step', 'fpc', 'regional', 'weather')
 
 
 def ensemble(res):
-    """equal-weight average of three different families: a trend on capacity (Step by step), the forward-curve
-    shape (FPC) and the regional hourly price model. The strict protocol picked the regional model alone
-    (calibration 0.68 €/MWh against 0.73 for the average: within noise); the verdict years showed it failing
-    in 2024 while the average held. Used by the pricer, and recorded as chosen AFTER the verdict."""
+    """equal-weight average of four different families: a trend on capacity (Step by step), the forward-curve
+    shape (FPC), the regional hourly price model and the Monte Carlo on simulated weather. The walk-forward
+    test (scripts/ppa_walkforward.py: each year 2020-2026 scored with choices made on the years before) showed
+    that a fixed average beats picking the best method so far, and that this one is the best or close to it
+    every year. Used by the pricer."""
     for r in res['rows']:
         for conv in ('all', 'curt'):
             P = r['pred'][conv]
-            ks = [k for k in P[ENSEMBLE[0]] if all(k in P[e] and P[e][k] is not None for e in ENSEMBLE)]
-            P['ensemble'] = {k: float(np.mean([P[e][k] for e in ENSEMBLE])) for k in ks}
+            mem = [e for e in ENSEMBLE if P.get(e)]
+            ks = [k for k in P[mem[0]] if all(k in P[e] and P[e][k] is not None for e in mem)]
+            P['ensemble'] = {k: float(np.mean([P[e][k] for e in mem])) for k in ks}
             r['score'][conv]['ensemble'] = score({int(k): v for k, v in P['ensemble'].items()}, {int(k): v for k, v in r['actual'].items()}, conv)
     for tech in ('solar', 'wind'):
         for conv in ('all', 'curt'):
@@ -718,7 +750,7 @@ def ensemble(res):
         for conv, ms in d.items():
             for e in ms.values():
                 e['protocolPick'] = e.get('hybrid')
-                e['hybrid'] = float(np.mean([e[k] for k in ENSEMBLE]))
+                e['hybrid'] = float(np.mean([e[k] for k in ENSEMBLE if e.get(k) is not None]))
 
 
 def forecast(res, choice, sims):
@@ -740,12 +772,14 @@ def forecast(res, choice, sims):
             for conv in ('all', 'curt'):
                 fy, fm, _ = BD.m_fpc(t, Y, train, V, conv)
                 dash, stp = BD.m_dashboard(t, Y, train, V, conv), BD.m_step(t, Y, train, V, conv)
+                if conv == 'all':
+                    _, wfc, _ = BD.m_weather(t, Y, train, V, 40)
                 for m in range(1, 13):
                     if date(Y, m, 1) <= date(this.year, this.month, 1):
                         continue
                     k = f'{Y}-{m:02d}'
                     e = out['months'].setdefault(tech, {}).setdefault(conv, {}).setdefault(k, {})
-                    e.update({'dashboard': dash, 'step': stp, 'fpc': fm[m], 'regional': m4[m][conv], 'regionalMC': m5[m][conv], 'p10': dist[m][conv][0], 'p90': dist[m][conv][2],
+                    e.update({'weather': wfc[conv].get(m), 'dashboard': dash, 'step': stp, 'fpc': fm[m], 'regional': m4[m][conv], 'regionalMC': m5[m][conv], 'p10': dist[m][conv][0], 'p90': dist[m][conv][2],
                               'paid': m4[m]['paid'], 'negH': m4[m]['negH'], 'capGW': capY['FR'][t]})
             print('forecast', tech, Y, flush=True)
     # the hybrid rule chosen on the calibration years, applied to the forecasts
