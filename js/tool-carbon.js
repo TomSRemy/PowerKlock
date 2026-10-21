@@ -420,7 +420,7 @@
     const pv = o.pv, kwp = +S.settings.pvKwp || 0;
     $('cf-pv-hint').textContent = `Suggested starting point: ${f0(o.pvHint)} kWp (your average load). France: about 1,000 kWh/kWp/yr in the north to 1,400 in the south.`;
     if (!kwp) {
-      $('cf-pv-kpis').innerHTML = '<div class="fuel-note">Enter a size in kWp to simulate an installation on your site.</div>';
+      $('cf-pv-kpis').innerHTML = '<div class="fuel-note" style="grid-column:1/-1">Enter a size in kWp to simulate an installation on your site.</div>';
       ['cf-pv-day', 'cf-pv-m'].forEach(id => noDataMsg(id, 'Enter an installation size (kWp)', 'The production follows the national solar profile of the same days (RTE)'));
     } else {
       $('cf-pv-kpis').innerHTML = [
@@ -444,12 +444,12 @@
     // PPA / GO coverage hour by hour
     const nd = o.days.length;
     if (o.ppaMWh) {
-      _fuelChart('cf-ppa', { type: 'bar', data: { labels: HRS, datasets: [
+      _fuelChart('cf-ppa-chart', { type: 'bar', data: { labels: HRS, datasets: [
         { label: 'Your consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0 },
         { type: 'line', label: `${S.settings.ppaTech === 'wind' ? 'Wind' : 'Solar'} PPA output (kWh per hour)`, data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
       ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }) } }) }, 'carbon-ppa-hours');
       $('cf-ppa-note').textContent = `Annual volume coverage ${pc(o.coverage)}; hour by hour only ${pc(o.hourly)} of your consumption is matched by the PPA output at the same time (24/7 view), ${MWh(o.ppa.surplus)} of PPA output exceed your needs at the time they are produced.`;
-    } else { noDataMsg('cf-ppa', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
+    } else { noDataMsg('cf-ppa-chart', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
   }
 
   // ── Reporting ─────────────────────────────────────────────────────
@@ -477,6 +477,27 @@
     $('cf-quality').innerHTML = `<div class="fuel-note">File: ${esc(S.meta)} · ${S.cons.info.rows.toLocaleString('en-GB')} rows · ${S.cons.info.step}-minute steps · ${o.days.length} days (${o.days[0]} → ${o.days[o.days.length - 1]}) · ${o.missing ? f1(o.missing / 1000) + ' MWh on quarter-hours without RTE data (counted at the period average)' : 'every quarter-hour matched with RTE data'}. Your file is processed in this browser only: nothing is sent or stored.</div>`;
   }
 
+  // one line on every tab but the inputs: what is loaded, with a way back to edit it
+  function sumbar(o) {
+    const el = $('cf-sumbar'); if (!el || !o) return;
+    const st = S.settings;
+    el.innerHTML = `<span><b>${esc(S.meta || 'Your curve')}</b></span><span>${o.days[0]} → ${o.days[o.days.length - 1]}</span><span><b>${f1(o.E / 1000)}</b> MWh</span>` +
+      (+st.go ? `<span>GO ${f1(+st.go)} MWh</span>` : '') + (+st.ppa ? `<span>${st.ppaTech === 'wind' ? 'Wind' : 'Solar'} PPA ${f1(+st.ppa)} MWh</span>` : '') +
+      (+st.pvKwp ? `<span>Solar on site ${f0(+st.pvKwp)} kWp</span>` : '') + `<button type="button" class="cf-edit">Edit data</button>`;
+    el.querySelector('.cf-edit').addEventListener('click', () => { const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Your data'); if (t) t.click(); });
+    sumVis();
+  }
+  function sumVis() {
+    const el = $('cf-sumbar'), act = document.querySelector('#page-carbonfoot .pk-views .tab-btn.active');
+    if (!el) return;
+    el.hidden = !act || act.textContent === 'Your data';
+    if (!S.res && !el.hidden) {
+      el.innerHTML = '<span>No consumption loaded yet: load your curve (or try the example) in <b>Your data</b>.</span><button type="button" class="cf-edit">Load data</button>';
+      el.querySelector('.cf-edit').addEventListener('click', () => { const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Your data'); if (t) t.click(); });
+    }
+  }
+  document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'carbonfoot') sumVis(); });
+
   async function run() {
     if (!S.cons) return;
     $('cf-results').hidden = false;
@@ -489,6 +510,9 @@
     $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
     // charts drawn in hidden view tabs get their size when shown
     document.querySelectorAll('#cf-results canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); });
+    sumbar(o);
+    // first result: open the Overview (the inputs stay one click away)
+    if (!S.shown) { S.shown = true; const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Overview'); if (t) t.click(); }
   }
 
   async function load(rows, name) {

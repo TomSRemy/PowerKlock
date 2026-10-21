@@ -3011,6 +3011,10 @@
   @media (max-width: 900px) { .pp-resbar .rel { margin-left:0; flex-basis:100%; } }
   .pp-resbar .rel a { color:var(--accent); }
   @media (max-width: 640px) { .pp-resbar { gap:4px; padding:6px 8px; } .pp-resbar .lbl, .pp-resbar .rel { display:none; } .pp-rb { padding:3px 7px; font-size:11px; } .pp-rb b { font-size:12px; } }
+  /* carbon tool: the inputs live in the first tab, a one-line summary elsewhere */
+  .cf-sumbar { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; margin-top:8px; padding:7px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; font:12px 'Inter',sans-serif; color:var(--text2); }
+  .cf-sumbar b { color:var(--text); font-weight:600; }
+  .cf-sumbar .cf-edit { margin-left:auto; background:none; border:1px solid var(--border2); border-radius:6px; color:var(--accent); font-size:11.5px; padding:3px 10px; cursor:pointer; }
   /* Tools › Carbon footprint */
   .cf-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:stretch; margin-bottom:14px; }
   .cf-drop { display:flex; flex-direction:column; justify-content:center; gap:6px; min-height:120px; padding:18px 20px; border:1.5px dashed var(--border2); border-radius:8px; background:#1c242e; cursor:pointer; transition:border-color .15s, background .15s; }
@@ -5600,6 +5604,7 @@
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Carbon footprint</span></div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge">France · RTE éCO2mix · day-ahead · GHG Protocol · CSRD</span></div>
         </div>
+        <div class="cf-sumbar" id="cf-sumbar" hidden></div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-cf-input">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-cf-input')">
@@ -5695,7 +5700,7 @@
 <div class="kpi-strip fuel-kpis" id="cf-pv-kpis" style="grid-template-columns:repeat(5,1fr)"></div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average day with solar</div><div class="fuel-card-sub">Production, self-consumption and consumption</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-pv-day" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Month by month</div><div class="fuel-card-sub">Self-sufficiency and self-consumption</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-pv-m" style="width:100%;height:300px"></canvas></div></div></div>
 <div class="pp-group-t" style="margin-top:16px">Renewable PPA · hour-by-hour coverage</div>
-<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA output vs your consumption</div><div class="fuel-card-sub">Average day: what the contract delivers at the time you consume</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-ppa" style="width:100%;height:300px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA output vs your consumption</div><div class="fuel-card-sub">Average day: what the contract delivers at the time you consume</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-ppa-chart" style="width:100%;height:300px"></canvas></div></div>
 <div class="fuel-note" id="cf-ppa-note"></div>
         </div>
       </div>
