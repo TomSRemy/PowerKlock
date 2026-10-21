@@ -114,7 +114,8 @@
       "tags": [
         "fr",
         "power"
-      ]
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     },
     {
       "name": "Enerzine",
@@ -123,7 +124,8 @@
       "tags": [
         "fr",
         "power"
-      ]
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     },
     {
       "name": "SER",
@@ -157,7 +159,8 @@
       "url": "https://www.lemonde.fr/energies/rss_full.xml",
       "tags": [
         "fr"
-      ]
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     },
     {
       "name": "GEM Energy Analytics",
