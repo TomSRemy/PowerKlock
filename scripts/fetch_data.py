@@ -1065,6 +1065,21 @@ if __name__ == '__main__':
             if load[ren_code].get('forecast'):
                 zone_entry['loadForecast'] = load[ren_code]['forecast']
         daily_snap['zones'][z['code']] = zone_entry
+    # keep what other jobs added to today's file (generation arrays from the Energy-Charts backfill …)
+    try:
+        with open(daily_path) as f:
+            _old = json.load(f)
+        for _z, _zd in (_old.get('zones') or {}).items():
+            if not isinstance(_zd, dict):
+                continue
+            _new = daily_snap['zones'].get(_z)
+            if _new is None:
+                daily_snap['zones'][_z] = _zd
+            else:
+                for _k, _v in _zd.items():
+                    _new.setdefault(_k, _v)
+    except (OSError, ValueError):
+        pass
     write_json(daily_path, daily_snap)
 
     # Finalize the previous day (now fully settled) so partial intraday snapshots complete
