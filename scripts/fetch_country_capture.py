@@ -107,7 +107,9 @@ def capacity():
         t = d['types']
         sol = t.get('Solar AC') or t.get('Solar') or t.get('Solar DC')
         won, woff = t.get('Wind onshore') or [], t.get('Wind offshore') or []
-        out[c] = {y: {'solarGW': sol[i] if sol and i < len(sol) else None,
+        # all installed capacity (GW), storage energy (GWh) left out: the solar or wind share of the fleet
+        tot = [sum((v[i] or 0) for k, v in t.items() if 'capacity)' not in k and i < len(v)) for i in range(len(d['years']))]
+        out[c] = {y: {'totalGW': round(tot[i], 2) or None, 'solarGW': sol[i] if sol and i < len(sol) else None,
                       'windGW': ((won[i] if i < len(won) and won[i] else 0) + (woff[i] if i < len(woff) and woff[i] else 0)) or None}
                   for i, y in enumerate(d['years'])}
     return out
