@@ -44,6 +44,7 @@ BASE = 'https://web-api.tp.entsoe.eu/api'
 FR = '10YFR-RTE------C'
 PARIS = ZoneInfo('Europe/Paris')
 Q = timedelta(minutes=15)
+DIAG = []   # written into the output: what ENTSO-E answered (no access to the Actions logs from the site)
 
 
 def local(tag):
@@ -60,7 +61,9 @@ def fetch(params, tries=3):
             continue
         # "No matching data found" comes back as an acknowledgement document
         if 'No matching data' in r.text:
+            DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: no matching data")
             return ''
+        DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: HTTP {r.status_code} {r.text[:160]!r}")
         r.raise_for_status()
     return ''
 
@@ -238,7 +241,9 @@ def month_cost(m):
         if a_['n'] >= 96 * 5 and a_['mwh'] > 0:
             out[k] = {'eurMWh': round(a_['cost'] / a_['mwh'], 3), 'costEur': round(a_['cost']), 'mwh': round(a_['mwh']),
                       'errPct': round(a_['err'] / a_['mwh'] * 100, 1), 'slots': a_['n']}
-    return out, {'forecastSlots': len(fc_s) + len(fc_w), 'priceSlots': len(lg) + len(sh)}
+    rte_days = len((rte.get('days') or {}))
+    return out, {'forecastSlots': len(fc_s) + len(fc_w), 'priceSlots': len(lg) + len(sh), 'rteDays': rte_days, 'matched': {k: a_['n'] for k, a_ in acc.items()},
+                 'fcFirst': str(min(fc_s)) if fc_s else None, 'priceFirst': str(min(lg)) if lg else None}
 
 
 def main():
@@ -246,12 +251,15 @@ def main():
         sys.exit('ENTSOE_TOKEN is not set.')
     prev = load(OUT) or {'months': {}}
     n = int(sys.argv[sys.argv.index('--months') + 1]) if '--months' in sys.argv else (2 if prev['months'] else 24)
+    prev['diag'] = {}
     for m in months_back(n):
         try:
             res, info = month_cost(m)
         except Exception as e:
             print(f'  {m:%Y-%m} ERROR {e}')
+            prev.setdefault('diag', {})[m.strftime('%Y-%m')] = {'error': str(e)[:200]}
             continue
+        prev.setdefault('diag', {})[m.strftime('%Y-%m')] = info
         print(f'  {m:%Y-%m} ' + ', '.join(f'{k} {v["eurMWh"]:+.2f} €/MWh ({v["errPct"]} % error)' for k, v in res.items()) + f'  {info}')
         if res:
             prev['months'][m.strftime('%Y-%m')] = res
@@ -259,6 +267,7 @@ def main():
                  'source': 'ENTSO-E (day-ahead wind and solar forecast A69, imbalance prices A85) · RTE éCO2mix (actual) · ENTSO-E day-ahead (spot)',
                  'method': 'cost = −Σ (actual − forecast) × (imbalance price − spot) × 0.25 h, per MWh produced; national, basic'})
     prev['months'] = dict(sorted(prev['months'].items()))
+    prev['answers'] = DIAG[-40:]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w') as f:
         json.dump(prev, f, separators=(',', ':'))
