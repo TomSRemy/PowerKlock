@@ -360,6 +360,13 @@ def load_forwards(conn):
         for d, v in zip(dates, cs.get('spot') or []):
             if num(v) is not None:
                 spot.append((c, d, num(v), cur_of[c]))
+    # every dated contract kept by scripts/fetch_fr_market.py (Nov2026, Q12027, Sum2027, Cal2027 …)
+    contracts = read_json(os.path.join(DATA, 'history', 'fr_market_contracts.json')) or {}
+    for c, cs in contracts.items():
+        for label, ct in (cs or {}).items():
+            for d, v in ((ct or {}).get('points') or {}).items():
+                if num(v) is not None:
+                    cal.append((c, label, d, num(v), ct.get('currency') or cur_of.get(c, 'EUR')))
     for c, ch in chain.items():
         for yr, s in ((ch or {}).get('years') or {}).items():
             for d, v in zip(s.get('dates') or [], s.get('values') or []):
@@ -618,7 +625,7 @@ def main():
             groups = [
                 ([os.path.join(DATA, 'history', 'commodities_series.json'), os.path.join(DATA, 'commodities.json')], load_commodities),
                 ([os.path.join(DATA, 'history', 'fr_market_series.json'), os.path.join(DATA, 'history', 'fr_market_calchain.json'),
-                  os.path.join(DATA, 'fr_market.json')], load_forwards),
+                  os.path.join(DATA, 'history', 'fr_market_contracts.json'), os.path.join(DATA, 'fr_market.json')], load_forwards),
                 ([os.path.join(DATA, 'go_prices.csv'), os.path.join(DATA, 'go_auctions.json')], load_go),
                 ([os.path.join(DATA, 'm0.json')], load_m0),
             ]

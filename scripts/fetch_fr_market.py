@@ -669,11 +669,101 @@ def write_cal_chain():
     print(f"Wrote {OUT_CALCHAIN}")
 
 
+# ── Dated contracts: every month, quarter, season and year the cockpit exposes ──
+# The cockpit only answers by tenor code (M+1 … M+12, Q+1 … Q+8, S+1 … S+6,
+# Y+1 … Y+6) and always resolves a code to the contract it designates TODAY,
+# with that contract's whole life. Asking for every code each day and keeping
+# what we get, contract by contract, builds dated histories that survive the
+# roll: a contract that enters delivery is no longer quoted, but stays here.
+OUT_CONTRACTS = Path("data/history/fr_market_contracts.json")
+_MON = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+
+
+def contract_label(name):
+    """'FR Dec26 base' → ('Dec2026', 'month', '2026-12-01', '2026-12-31'), 'FR Q4 26 base' → Q42026,
+    'FR Sum2027 base' / 'Sum27' → Sum2027 (Apr–Sep), Win2027 (Oct 2027–Mar 2028), 'Cal 2027' → Cal2027."""
+    import calendar
+    n = re.sub(r"^(FR|GE|DE|NL|UK)\s+", "", name.strip(), flags=re.I)
+    n = re.sub(r"\s+(base|baseload)$", "", n, flags=re.I).strip()
+    y4 = lambda t: int(t) + 2000 if len(t) == 2 else int(t)
+    m = re.match(r"^([A-Za-z]{3})\s?(\d{4}|\d{2})$", n)
+    if m and m.group(1).lower() in _MON:
+        y, mo = y4(m.group(2)), _MON[m.group(1).lower()]
+        return f"{m.group(1).title()}{y}", "month", f"{y}-{mo:02d}-01", f"{y}-{mo:02d}-{calendar.monthrange(y, mo)[1]:02d}"
+    m = re.match(r"^Q([1-4])\s?(\d{4}|\d{2})$", n)
+    if m:
+        y, q = y4(m.group(2)), int(m.group(1))
+        return f"Q{q}{y}", "quarter", f"{y}-{3 * q - 2:02d}-01", f"{y}-{3 * q:02d}-{calendar.monthrange(y, 3 * q)[1]:02d}"
+    m = re.match(r"^(Sum|Win)\s?(\d{4}|\d{2})\b", n, re.I)
+    if m:
+        y = y4(m.group(2))
+        if m.group(1).lower() == "sum":
+            return f"Sum{y}", "season", f"{y}-04-01", f"{y}-09-30"
+        return f"Win{y}", "season", f"{y}-10-01", f"{y + 1}-03-31"
+    m = re.match(r"^Cal\s?(\d{4})$", n, re.I)
+    if m:
+        y = int(m.group(1))
+        return f"Cal{y}", "year", f"{y}-01-01", f"{y}-12-31"
+    return None
+
+
+def write_contracts():
+    token = get_token()
+    h = auth_headers(token)
+    out = json.loads(OUT_CONTRACTS.read_text()) if OUT_CONTRACTS.exists() else {}
+    codes = {"M+1": ("M", 12), "Q+1": ("Q", 8), "S+1": ("S", 6), "Y+1": ("Y", 6)}
+    for cc, cfg in COUNTRIES.items():
+        resolved = dict(resolve_forward_markets(h, cfg["forward"]))
+        currency = "GBP" if cc == "UK" else "EUR"
+        got = []
+        for base_code, (pref, top) in codes.items():
+            if base_code not in resolved:
+                continue
+            for k in range(1, top + 1):
+                code = f"{pref}+{k}"
+                m = dict(resolved[base_code])
+                m.update({"marketCode": code, "marketNameCode": m["marketName"] + " " + code})
+                try:
+                    series = fetch_chart_series(h, [m], BACKFILL_DAYS)
+                except requests.RequestException:
+                    series = []
+                if not series:
+                    break
+                item = series[0]
+                lab = contract_label(item.get("marketName") or "")
+                if not lab:
+                    continue
+                label, kind, a, b = lab
+                c = out.setdefault(cc, {}).setdefault(label, {"marketName": item["marketName"], "kind": kind, "deliveryStart": a, "deliveryEnd": b,
+                                                              "currency": currency, "points": {}})
+                for p in item.get("value") or []:
+                    if p.get("value") is not None:
+                        c["points"][ms_to_date(p["milisec"])] = p["value"]
+                c["lastCode"] = code
+                c["lastSeen"] = date.today().isoformat()
+                got.append(label)
+        print(f"  {cc}: {len(got)} contracts quoted today ({', '.join(got[:6])}…)")
+    # dates sorted, compact
+    for cc in out:
+        for label, c in out[cc].items():
+            c["points"] = dict(sorted(c["points"].items()))
+    OUT_CONTRACTS.parent.mkdir(parents=True, exist_ok=True)
+    OUT_CONTRACTS.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+    print(f"Wrote {OUT_CONTRACTS}: " + ", ".join(f"{cc} {len(v)}" for cc, v in out.items()))
+
+
 if __name__ == "__main__":
+    if "--contracts" in sys.argv:
+        write_contracts()
+        sys.exit(0)
     if "--backfill" in sys.argv:
         backfill()
     else:
         daily_run()
     rebuild_series_summary()
     write_cal_chain()
+    try:
+        write_contracts()
+    except Exception as e:   # never block the daily run
+        print(f"Dated contracts failed: {e}")
     print("Done.")
