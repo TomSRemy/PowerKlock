@@ -2917,6 +2917,7 @@
   .pp-asset-row .cf-in { flex-wrap:wrap; gap:6px; }
   .pp-more { margin-top:4px; } .pp-more summary { cursor:pointer; font-size:11px; color:var(--text3); margin-bottom:8px; }
   .pp-need input { border-color:#F2B544 !important; }
+  .pp-steps.m-fpc .pp-only-pct,
   .pp-steps.m-build .pp-only-pct, .pp-steps.m-pct .pp-only-build { display:none; }
   .pp-build { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; margin:4px 0 14px; counter-reset:pps; }
   .pp-bs { background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:9px 11px; font-size:11.5px; color:var(--text2); line-height:1.45; min-width:0; }
@@ -2929,6 +2930,14 @@
   .pp-mc-draws { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
   @media (max-width: 1100px) { .pp-mc-draws { grid-template-columns:minmax(0,1fr); } }
   .pp-cmp3 th.pp-cur { color:var(--accent); } .pp-cmp3 tr.pp-main td { font-weight:600; color:var(--text); }
+  .pp-guide { background:var(--bg3); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:7px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:var(--text2); line-height:1.55; }
+  .pp-guide-t { font:700 11px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  .pp-guide ol { margin:0 0 6px; padding-left:20px; } .pp-guide li { margin-bottom:4px; } .pp-guide b { color:var(--text); }
+  .pp-gloss summary { cursor:pointer; color:var(--accent); font-size:12px; } .pp-gloss dl { display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:4px 14px; margin:8px 0 0; }
+  .pp-gloss dt { font-weight:600; color:var(--text); } .pp-gloss dd { margin:0; }
+  @media (max-width:640px) { .pp-gloss dl { grid-template-columns:1fr; } .pp-gloss dd { margin-bottom:6px; } }
+  .pp-help { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid var(--border2); color:var(--text3); font:600 9px 'Outfit',sans-serif; font-style:normal; text-transform:none; letter-spacing:0; margin-left:4px; cursor:help; position:relative; vertical-align:middle; }
+  .pp-help:hover::after, .pp-help:focus::after { content:attr(data-tip); position:absolute; left:50%; top:18px; transform:translateX(-50%); z-index:30; width:260px; background:var(--bg2); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; font:400 11.5px/1.45 'Inter',sans-serif; color:var(--text2); box-shadow:0 8px 24px rgba(0,0,0,.4); text-align:left; white-space:normal; }
   .pp-scen-btns { display:flex; gap:8px; flex-wrap:wrap; }
   .pp-cmp td.best { color:var(--accent); font-weight:600; }
   .pp-cmp .pp-x { background:none; border:0; color:var(--text3); cursor:pointer; font-size:11px; }
@@ -5314,7 +5323,6 @@
           <div class="cf-form" id="pp-fwd"></div>
           <div class="cf-field" style="margin:4px 0 10px"><span>Years the cannibalisation is fitted on · click to add or remove</span><div class="pp-yearsel" id="pp-yearsel"></div></div>
           <div class="cf-form">
-            <label class="cf-field"><span>Pricing method</span><select id="pp-method"><option value="build">Step by step · projection + Monte Carlo premium</option><option value="pct">PPA Dashboard · percentile of history</option><option value="fpc">Asset-specific · FPC, three pricings</option></select></label>
             <label class="cf-field"><span>Cannibalisation projection</span><select id="pp-model"><option value="capacity">Driven by installed capacity (PPE3)</option><option value="flat">Flat at the last year used</option><option value="damped">Trend, halving each year</option><option value="linear">Straight line (PPA Dashboard), capped</option></select></label>
             <label class="cf-field pp-only-pct"><span>Shape discount percentile · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
             <label class="cf-field"><span>Capture convention</span><select id="pp-conv"><option value="pos">Hours with price &gt; 0 only (PPA Dashboard)</option><option value="all">All hours (M0 style)</option></select></label>
@@ -5346,15 +5354,45 @@
           <div class="cf-status" id="pp-status" role="status"></div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-cmp">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-cmp')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>The methods compared<span class="pk-hs-meta">Same inputs, each method on its own tab</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-cmp">
+<div class="pp-guide"><div class="pp-guide-t">Start here</div>
+<ol><li><b>Set the inputs at the top.</b> Technology, delivery years and, if you have it, your asset’s production curve (CSV or Excel). Every field is already filled from market data: type a value to change it, click ↺ to go back to the automatic one, hover ⓘ for what it means.</li>
+<li><b>Check the forward prices</b> (step 2 of the inputs). They are market quotes; a year without a quote is highlighted and must be entered by you.</li>
+<li><b>Read the prices below.</b> The PPA price is what you could pay the producer per MWh delivered. The four methods use the same inputs; when they agree, the price is robust; when they differ, open their tabs to see why.</li>
+<li><b>Open a method’s tab</b> for its steps, charts and risks. <i>Methodology</i> gives the formulas.</li></ol>
+<details class="pp-gloss"><summary>Words used in the pricer</summary><dl>
+<dt>Cal (forward)</dt><dd>Market price today for a flat (baseload) delivery over a whole calendar year.</dd>
+<dt>Capture price · capture rate</dt><dd>The average price earned by the production (more weight on the hours it produces), and that price as a % of the baseload price.</dd>
+<dt>Shape discount · profile cost</dt><dd>How much less the production earns than a flat delivery, in %. Solar earns less because it produces when everyone else does.</dd>
+<dt>Cannibalisation</dt><dd>The part of that discount caused by the fleet producing at the same time: more solar → lower prices exactly when solar produces.</dd>
+<dt>FPC</dt><dd>Forward price curve: the forwards spread hour by hour with the usual shape of prices (season, day type, hour).</dd>
+<dt>P10 · P50 · P90</dt><dd>Low, middle and high outcome: 10 % of cases are below P10, half below P50, 90 % below P90.</dd>
+<dt>Risk premium</dt><dd>The amount taken off the price so that the chance of losing money stays at the level you accept.</dd>
+<dt>GO</dt><dd>Guarantees of origin: certificates of renewable production, worth a little per MWh; the buyer receives them.</dd>
+<dt>Imbalance</dt><dd>The cost of producing more or less than forecast, paid to the grid operator.</dd>
+<dt>Hours ≤ 0 €</dt><dd>Hours with a zero or negative price; under the PPA Dashboard convention their production is not paid.</dd>
+</dl></details></div>
+<div class="kpi-strip fuel-kpis" id="pp-cmp-kpis"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="pp-group-t" style="margin-top:16px">Which method was right in the past? · historical replay</div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate: predicted at the start of each year vs actual</div><div class="fuel-card-sub">National profile · each method only sees the years before (2022 left out)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-bt-chart" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average error by method</div><div class="fuel-card-sub">Capture rate points, |predicted − actual|</div></div></div><div id="pp-bt-table"></div></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Side by side</div><div class="fuel-card-sub">The building blocks of each method</div></div></div><div id="pp-compare"></div></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-pp-price">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-price')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>PPA price<span class="pk-hs-meta">How the price is built, step by step</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-price">
+<div class="pp-explain" id="pp-intro"></div>
 <div class="kpi-strip fuel-kpis" id="pp-kpis"></div>
 <div class="pp-build" id="pp-build"></div>
-<div class="chart-container fuel-card" style="margin-bottom:14px"><div class="fuel-card-head"><div><div class="table-title">The three methods compared</div><div class="fuel-card-sub">Same inputs, three ways to price</div></div></div><div id="pp-compare"></div></div>
 <div class="fuel-grid-2">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price build-up</div><div class="fuel-card-sub">From the baseload forward to the PPA price (€/MWh)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-waterfall" style="width:100%;height:320px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">What each delivery year contributes to the price</div></div></div><div id="pp-years"></div></div>
@@ -5408,10 +5446,30 @@
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Total P&amp;L · distribution</div><div class="fuel-card-sub">Over the tenor at the PPA price · red = loss</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-mc-hist" style="width:100%;height:300px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Simulated years</div><div class="fuel-card-sub">Shape discount, capture and P&amp;L</div></div></div><div id="pp-mc-table"></div></div>
 </div>
-<div class="fuel-grid-2" style="margin-top:14px">
+
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-pctrisk">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-pctrisk')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Risk against history<span class="pk-hs-meta">P&amp;L if cannibalisation came back like the years used, stress scenarios</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-pctrisk">
+<div class="fuel-grid-2">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">P&amp;L against historical cannibalisation</div><div class="fuel-card-sub" id="pp-pnl-sub">k€ per year at each percentile of the shape discount of the years used</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-pnl" style="width:100%;height:300px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Stress scenarios</div><div class="fuel-card-sub">Total P&amp;L over the tenor</div></div></div><div id="pp-scen"></div></div>
 </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-wx">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-wx')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Monte Carlo on simulated weather<span class="pk-hs-meta">Fourth method, under construction: simulated weather → production → prices</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-wx">
+<div class="pp-explain" id="pp-wx"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate by delivery year</div><div class="fuel-card-sub">Spread over the simulated years (P10–P90) · correlated vs decorrelated prices</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-wx-rates" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">One simulated week of June</div><div class="fuel-card-sub">Simulated price and production, first delivery year</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-wx-week" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What one MWh earns over the delivery</div><div class="fuel-card-sub">Distribution over the simulated deliveries · line = the price kept</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:280px"><canvas id="pp-wx-u" style="width:100%;height:280px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Delivery years</div><div class="fuel-card-sub">Simulated capture rate and cannibalisation</div></div></div><div id="pp-wx-table"></div></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-roll">
@@ -7763,6 +7821,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/kpi-tone.js"></script>
 <script src="js/tool-carbon.js"></script>
 <script src="js/ppa-fpc.js"></script>
+<script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
