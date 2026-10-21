@@ -346,7 +346,30 @@ async function _mrnMoves(k) {
   host.innerHTML = L.length ? '<ul>' + L.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '<div class="fuel-note">Waiting for data…</div>';
 }
 
+// ── News digest: articles matching the reader's ★ keywords (News page), last 48 h;
+// without keywords, French policy, regulation and market news ──
+async function _mrnNews() {
+  const host = document.getElementById('mrn-news'); if (!host) return;
+  const j = await _mrnGet('news', DATA_BASE + 'news.json');
+  const items = (j && j.items) || [];
+  const kw = typeof _newsKw === 'function' ? _newsKw() : [];
+  const key = i => (i.tags || []).some(t => t === 'regulation' || t === 'markets' || t === 'watch') ? 1 : 0;
+  // last 48 h, or the last week when the 48 h are empty
+  let span = '48 h', mine = [], pick = [];
+  for (const [h, lbl] of [[48, '48 h'], [168, 'week']]) {
+    const recent = items.filter(i => Date.parse(i.date) >= Date.now() - h * 3600e3);
+    mine = kw.length ? recent.filter(i => _newsMine(i, kw)) : [];
+    pick = mine.length ? mine : recent.filter(i => (i.tags || []).includes('fr')).sort((a, b) => key(b) - key(a) || Date.parse(b.date) - Date.parse(a.date));
+    span = lbl; if (pick.length) break;
+  }
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const head = kw.length ? (mine.length ? `${mine.length} article${mine.length > 1 ? 's' : ''} on ${esc(kw.join(', '))} in the last ${span}.` : `Nothing on ${esc(kw.join(', '))} in the last ${span}; French policy and market news instead.`)
+    : `French energy news of the last ${span}, policy and markets first. Set your own subjects with ★ My keywords on the News page.`;
+  host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">${head}</div>` + (pick.length ? '<ul>' + pick.slice(0, 6).map(i => `<li><a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)}</span></li>`).join('') + '</ul>' : '<div class="fuel-note">No article.</div>');
+}
+
 async function renderMorning() {
+  _mrnNews();
   const upd = document.getElementById('mrn-date');
   if (upd) upd.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
@@ -377,6 +400,7 @@ async function renderMorning() {
   .mrn-k-s.up{color:var(--down,#ED6965)} .mrn-k-s.down{color:var(--up,#14D3A9)}
   .mrn-moves{background:var(--bg2);border:1px solid var(--bd);border-left:3px solid #14D3A9;border-radius:9px;padding:12px 16px;margin-bottom:14px}
   .mrn-moves h3{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)}
+  .mrn-news{border-left-color:#FBBF24} .mrn-news a{color:var(--tx);text-decoration:none} .mrn-news a:hover{color:var(--acc);text-decoration:underline} .mrn-src{font-size:10.5px;color:var(--tx3)} .mrn-news-more{float:right;font-size:10px;letter-spacing:0;text-transform:none;color:var(--acc);text-decoration:none}
   .mrn-moves ul{margin:0;padding-left:18px} .mrn-moves li{font-size:12.5px;color:var(--tx2);line-height:1.6} .mrn-moves b{color:var(--tx)}
   .mrn-neg{color:#7FC8F8}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
