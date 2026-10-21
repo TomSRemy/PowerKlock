@@ -609,6 +609,71 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 </ul>`;
   }
 
+  // ── Scenarios: saved pricings compared side by side (localStorage) ──
+  const SKEY = 'pk-ppa-scen';
+  const scenLoad = () => { try { return JSON.parse(localStorage.getItem(SKEY) || '[]'); } catch (_) { return []; } };
+  const scenSave = a => { try { localStorage.setItem(SKEY, JSON.stringify(a.slice(-8))); } catch (_) {} };
+  function scenOf(o) {
+    const inp = JSON.parse(JSON.stringify(Object.assign({}, S, { asset: null, last: null })));
+    const tech = S.tech === 'solar' ? 'Solar' : 'Wind';
+    return { id: Date.now(), name: `${tech} · ${o.useAsset ? S.assetName : 'national'} · ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}${S.method === 'pct' ? ' · PPA Dashboard' : ' · risk ' + o.alpha + ' %'}${S.hedge === 'open' ? ' · open' : ''}`,
+      at: new Date().toISOString().slice(0, 16).replace('T', ' '), inputs: inp, assetName: o.useAsset ? S.assetName : '',
+      out: { ppa: o.ppa, build: o.ppaBuild, pct: o.ppaPct, fair: o.fair, premium: o.premium, refW: o.refW, sd0: o.years[0].fsd, sd1: o.years[o.years.length - 1].fsd, prob: o.mcAt ? o.mcAt.prob : null, p10: o.mcAt ? o.mcAt.pc[10] : null, vol: o.volume, alpha: o.alpha, imb: o.imb, go: o.goW, margin: o.margin } };
+  }
+  function renderScen() {
+    const host = $('pp-scen-cmp'); if (!host) return;
+    const L = scenLoad();
+    if (!L.length) { host.innerHTML = '<div class="fuel-note">No scenario saved yet: set the inputs, then “Save this scenario”; change them and save again to compare.</div>'; return; }
+    const rows = [['PPA price €/MWh', x => x.ppa, 2, 'max'], ['Step-by-step method', x => x.build, 2], ['PPA Dashboard method', x => x.pct, 2], ['Capture value', x => x.fair, 2], ['Risk premium', x => x.premium, 2, 'min'],
+      ['Forward (weighted)', x => x.refW, 2], ['Shape discount first year', x => x.sd0, 'pc'], ['Shape discount last year', x => x.sd1, 'pc'], ['Chance of loss', x => x.prob, 'pc', 'min'], ['P10 total P&L k€', x => x.p10, 0, 'max'],
+      ['Production MWh/yr', x => x.vol, 0], ['Risk accepted %', x => x.alpha, 0], ['Imbalance', x => x.imb, 2], ['GO', x => x.go, 2], ['Margin', x => x.margin, 2]];
+    const fmt = (v, d) => v == null || !isFinite(v) ? '–' : d === 'pc' ? (v * 100).toFixed(1) + ' %' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp"><thead><tr><th style="text-align:left"></th>${L.map(x => `<th title="${esc(x.at)}">${esc(x.name)}<br><button type="button" class="pp-load" data-id="${x.id}">load</button> <button type="button" class="pp-x" data-id="${x.id}" aria-label="Delete">✕</button></th>`).join('')}</tr></thead><tbody>` +
+      rows.map(([lbl, f, d, best]) => { const vals = L.map(x => f(x.out)), ok = vals.filter(v => v != null && isFinite(v)), b = best && ok.length > 1 ? (best === 'max' ? Math.max(...ok) : Math.min(...ok)) : null;
+        return `<tr><td style="text-align:left">${lbl}</td>${vals.map(v => `<td class="${b != null && v === b ? 'best' : ''}">${fmt(v, d)}</td>`).join('')}</tr>`; }).join('') +
+      `</tbody></table></div><div class="fuel-note">Green: best of the row. “load” puts the scenario’s inputs back (a curve has to be loaded again if the scenario used one).</div>`;
+    host.querySelectorAll('.pp-x').forEach(b => b.addEventListener('click', () => { scenSave(scenLoad().filter(x => String(x.id) !== b.dataset.id)); renderScen(); }));
+    host.querySelectorAll('.pp-load').forEach(b => b.addEventListener('click', () => {
+      const x = scenLoad().find(y => String(y.id) === b.dataset.id); if (!x) return;
+      const keep = { asset: S.asset, assetName: S.assetName };
+      Object.keys(S).forEach(k => { if (k in x.inputs) S[k] = x.inputs[k]; });
+      Object.assign(S, keep);
+      Object.entries(FIELDS).forEach(([id, k]) => { const e = $(id); if (e) e.value = S[k] == null ? '' : S[k]; });
+      [['pp-tech', 'tech'], ['pp-basis', 'basis'], ['pp-model', 'model'], ['pp-conv', 'conv'], ['pp-method', 'method'], ['pp-hedge', 'hedge'], ['pp-pct', 'pct']].forEach(([id, k]) => { const e = $(id); if (e) e.value = S[k]; });
+      $('pp-pct-v').textContent = 'P' + S.pct;
+      if (x.assetName && x.assetName !== S.assetName) $('pp-status').textContent = 'This scenario used the curve “' + x.assetName + '”: load it again to reproduce it exactly.';
+      run();
+    }));
+  }
+
+  // ── PowerPoint report: the price, its steps, the charts that make it ──
+  async function pptxReport() {
+    const o = S.last, btn = $('pp-pptx'); if (!o || !window.PKExport || !PKExport.deck) return;
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…';
+    try {
+      const card = id => { const e = $(id); return e && e.closest('.chart-container'); };
+      const shots = [['pp-waterfall', 'Price build-up', 'From the baseload forward to the PPA price (€/MWh)'], ['pp-years', 'Year by year', 'What each delivery year contributes'],
+        ['pp-proj', 'Cannibalisation · history and projection', ($('pp-proj-sub') || {}).textContent || ''], ['pp-capfit', 'Capture rate vs installed capacity', ($('pp-capfit-sub') || {}).textContent || ''],
+        ['pp-mc-u', 'What the asset is worth per MWh · Monte Carlo', 'Realised value per MWh over 10,000 trajectories, line = PPA price'], ['pp-mc-fan', 'Annual P&L at the PPA price', 'k€ per year, P5 to P95'],
+        ['pp-scen', 'Stress scenarios', 'Total P&L over the tenor'], ['pp-scen-cmp', 'Scenarios compared', 'Saved pricings side by side']];
+      const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T = o.tenor[0] + '–' + o.tenor[o.tenor.length - 1];
+      const steps = (S.method === 'pct'
+        ? [`Forward: ${f2(o.ref)} €/MWh (Cal ${T})`, `Shape discount: ${pc(o.sdCh)} (P${S.pct} of ${o.sel.join(', ')})`, `Risks: −${f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100)} €/MWh`, `Imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin +${f2(o.margin)}`, `PPA price: ${f2(o.ppa)} €/MWh (step-by-step method: ${f2(o.ppaBuild)})`]
+        : [`1 · Forward: ${f2(o.refW)} €/MWh (Cal ${T}, weighted by production)`, `2 · Cannibalisation: shape discount ${pc(o.years[0].fsd)} → ${pc(o.years[o.years.length - 1].fsd)}, ${MODEL_T[o.model]}`,
+          `3 · Capture value: ${f2(o.fair)} €/MWh`, `4 · Risk premium: −${f2(o.premium)} €/MWh (${o.alpha} % chance of loss accepted, Monte Carlo, ${S.hedge === 'open' ? 'forward open' : 'forward hedged'})`,
+          `5 · Imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)}`, `PPA price: ${f2(o.ppa)} €/MWh (PPA Dashboard method: ${f2(o.ppaPct)})`]).join('\n');
+      const specs = [{ k: 'note', title: `${tech} PPA · ${o.useAsset ? S.assetName : 'national profile'} · ${T}: ${f2(o.ppa)} €/MWh`, text: steps + `\n\nProduction ${f0(o.volume)} MWh/yr · chance of loss at this price ${o.mcAt ? (o.mcAt.prob * 100).toFixed(1) + ' %' : '–'} · P10 total P&L ${o.mcAt ? sgn(o.mcAt.pc[10]) + ' k€' : '–'}` }];
+      for (const [id, title, sub] of shots) { const el = card(id); if (!el || !el.offsetHeight) continue; try { specs.push({ k: 'card', title, sub, src: 'PowerKlock PPA pricer', r: await PKExport.snap(el) }); } catch (e) { console.warn('[ppa] snap', id, e); } }
+      const a = o.auto, line = (l, k, u) => `${l}: ${a[k] ? a[k][0] : '–'}${u || ''}${S[k] != null ? ' (entered: ' + S[k] + ')' : ' · ' + (a[k] ? a[k][1] : '')}`;
+      specs.push({ k: 'note', title: 'Assumptions', text: [line('Production', 'volume', ' MWh/yr'), line('Degradation', 'degr', ' %/yr'), line('Imbalance', 'imb', ' €/MWh'), line('GO', 'go', ' €/MWh'), line('Margin', 'margin', ' €/MWh'), line('Discount rate', 'disc', ' %'),
+        line('Risk accepted', 'alpha', ' %'), line('Production uncertainty', 'mcVol', ' %'), line('Forward volatility', 'mcFwd', ' %/√yr'), line('Cannibalisation drift', 'mcSd', ' pts/√yr'), line('Production ↔ cannibalisation', 'rho', ''),
+        `Years fitted: ${o.sel.join(', ')} · capture convention: ${S.conv === 'pos' ? 'hours with price > 0' : 'all hours'} · forwards of ${D.fwdDate || '–'}`].join('\n') });
+      await PKExport.deck(`PPA pricing · ${tech} ${T}`, specs);
+    } catch (e) { console.warn('[ppa] pptx', e); $('pp-status').textContent = 'PowerPoint report failed: ' + (e.message || e); }
+    btn.disabled = false; btn.textContent = label;
+  }
+
   // ── Excel export ──
   function loadXLSX() {
     if (window.XLSX) return Promise.resolve();
@@ -653,7 +718,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
   async function run() {
     if (busy) { again = true; return; }
     busy = true;
-    try { await load(); const o = await compute(); S.last = o; renderForwards(o); render(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
+    try { await load(); const o = await compute(); S.last = o; renderForwards(o); render(o); renderScen(); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }
@@ -672,6 +737,9 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
     $('pp-xlsx').addEventListener('click', exportXlsx);
+    $('pp-scen-save').addEventListener('click', () => { if (!S.last) return; const L = scenLoad(); L.push(scenOf(S.last)); scenSave(L); renderScen(); });
+    $('pp-pptx').addEventListener('click', pptxReport);
+    renderScen();
     const file = $('pp-file');
     file.addEventListener('change', async () => { const f = file.files[0]; if (f) await loadAsset(f, f.name); file.value = ''; });
     page.querySelectorAll('a[data-sample]').forEach(a => a.addEventListener('click', async e => {

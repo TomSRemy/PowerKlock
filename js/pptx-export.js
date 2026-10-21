@@ -452,5 +452,21 @@
   .pkx-light table td, .pkx-light table th { color: #374151; border-color: #E5E7EB !important; }
   `;
   document.head.appendChild(css);
-  window.PKExport = { pptx: exportBoard, open };
+  // ── for other pages (e.g. the PPA pricer report): a picture of an element, and a deck from ready specs ──
+  async function snap(el) {
+    await load(H2C, () => window.html2canvas);
+    const cv = await window.html2canvas(el, { backgroundColor: '#0F1419', scale: 1.5, logging: false, useCORS: true, ignoreElements: e => e.matches && e.matches('button, .pkw-star, .pk-tool, .pk-gf-group') });
+    return { img: cv.toDataURL('image/png'), ratio: cv.width / cv.height };
+  }
+  // specs: [{ k: 'section' | 'note' | 'card', title, text, sub, src, r: { img, ratio } }]; the user's export settings, template when one is kept
+  async function deck(name, specs, extra) {
+    const opt = Object.assign(getOpts(), extra || {});
+    await load(LIB, () => window.PptxGenJS);
+    const tpl = opt.useTemplate === false ? null : ((await idb('get')) || {}).buf;
+    opt.template = !!tpl;
+    const board = { name };
+    const all = [{ k: 'title', title: name, sub: dateEn() }].concat(specs);
+    return tpl ? buildTemplate(board, all, opt, tpl) : buildPlain(board, all, opt);
+  }
+  window.PKExport = { pptx: exportBoard, open, snap, deck };
 })();
