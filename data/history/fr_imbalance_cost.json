@@ -1,0 +1,1 @@
+{"months":{},"updated":"2026-10-21T06:52:51+00:00","source":"ENTSO-E (day-ahead wind and solar forecast A69, imbalance prices A85) \u00b7 RTE \u00e9CO2mix (actual) \u00b7 ENTSO-E day-ahead (spot)","method":"cost = \u2212\u03a3 (actual \u2212 forecast) \u00d7 (imbalance price \u2212 spot) \u00d7 0.25 h, per MWh produced; national, basic"}
