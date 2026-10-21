@@ -1,31 +1,262 @@
 {
   "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (GDELT, world press, a few days back). Pages without a feed can only be added with a dedicated reader (see 'pages').",
   "feeds": [
-    {"name": "Carbon Pulse", "cls": "carbonpulse", "url": "https://carbon-pulse.com/feed/", "tags": ["carbon"]},
-    {"name": "Carbon Brief", "cls": "carbonbrief", "url": "https://www.carbonbrief.org/feed/", "tags": ["carbon"]},
-    {"name": "Clean Energy Wire", "cls": "cew", "url": "https://www.cleanenergywire.org/rss.xml", "tags": ["power"]},
-    {"name": "Energy Monitor", "cls": "energymonitor", "url": "https://www.energymonitor.ai/feed/", "tags": ["power"]},
-    {"name": "pv magazine", "cls": "pvmag", "url": "https://www.pv-magazine.com/feed/", "tags": ["power"]},
-    {"name": "PV Tech", "cls": "pvtech", "url": "https://www.pv-tech.org/feed/", "tags": ["power"]},
-    {"name": "Windpower Monthly", "cls": "windpower", "url": "https://www.windpowermonthly.com/rss/news", "tags": ["power"]},
-    {"name": "Energy-Storage.news", "cls": "storage", "url": "https://www.energy-storage.news/feed/", "tags": ["power"]},
-    {"name": "World Nuclear News", "cls": "wnn", "url": "https://www.world-nuclear-news.org/rss", "tags": ["power"]},
-    {"name": "GIE", "cls": "gie", "url": "https://www.gie.eu/feed/", "tags": ["gas"]},
-    {"name": "SMARD", "cls": "smard", "url": "https://www.smard.de/service/rss/en/feed.rss", "tags": ["power", "markets"]},
-    {"name": "Connaissance des Énergies", "cls": "cde", "url": "https://www.connaissancedesenergies.org/rss.xml", "tags": ["fr"]},
-    {"name": "GreenUnivers", "cls": "greenunivers", "url": "https://www.greenunivers.com/feed/", "tags": ["fr", "power"]},
-    {"name": "Révolution Énergétique", "cls": "revener", "url": "https://www.revolution-energetique.com/feed/", "tags": ["fr", "power"]},
-    {"name": "Enerzine", "cls": "enerzine", "url": "https://www.enerzine.com/feed", "tags": ["fr", "power"]}
+    {
+      "name": "Carbon Pulse",
+      "cls": "carbonpulse",
+      "url": "https://carbon-pulse.com/feed/",
+      "tags": [
+        "carbon"
+      ]
+    },
+    {
+      "name": "Carbon Brief",
+      "cls": "carbonbrief",
+      "url": "https://www.carbonbrief.org/feed/",
+      "tags": [
+        "carbon"
+      ]
+    },
+    {
+      "name": "Clean Energy Wire",
+      "cls": "cew",
+      "url": "https://www.cleanenergywire.org/rss.xml",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Energy Monitor",
+      "cls": "energymonitor",
+      "url": "https://www.energymonitor.ai/feed/",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "pv magazine",
+      "cls": "pvmag",
+      "url": "https://www.pv-magazine.com/feed/",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "PV Tech",
+      "cls": "pvtech",
+      "url": "https://www.pv-tech.org/feed/",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Windpower Monthly",
+      "cls": "windpower",
+      "url": "https://www.windpowermonthly.com/rss/news",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Energy-Storage.news",
+      "cls": "storage",
+      "url": "https://www.energy-storage.news/feed/",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "World Nuclear News",
+      "cls": "wnn",
+      "url": "https://www.world-nuclear-news.org/rss",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "GIE",
+      "cls": "gie",
+      "url": "https://www.gie.eu/feed/",
+      "tags": [
+        "gas"
+      ]
+    },
+    {
+      "name": "SMARD",
+      "cls": "smard",
+      "url": "https://www.smard.de/service/rss/en/feed.rss",
+      "tags": [
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Connaissance des Énergies",
+      "cls": "cde",
+      "url": "https://www.connaissancedesenergies.org/rss.xml",
+      "tags": [
+        "fr"
+      ]
+    },
+    {
+      "name": "GreenUnivers",
+      "cls": "greenunivers",
+      "url": "https://www.greenunivers.com/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "Révolution Énergétique",
+      "cls": "revener",
+      "url": "https://www.revolution-energetique.com/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "Enerzine",
+      "cls": "enerzine",
+      "url": "https://www.enerzine.com/feed",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "SER",
+      "cls": "ser",
+      "url": "https://www.syndicat-energies-renouvelables.fr/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "UFE",
+      "cls": "ufe",
+      "url": "https://ufe-electricite.fr/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "WindEurope",
+      "cls": "windeurope",
+      "url": "https://windeurope.org/feed/",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Le Monde · Énergies",
+      "cls": "lemonde",
+      "url": "https://www.lemonde.fr/energies/rss_full.xml",
+      "tags": [
+        "fr"
+      ]
+    },
+    {
+      "name": "GEM Energy Analytics",
+      "cls": "gem",
+      "url": "https://gemenergyanalytics.substack.com/feed",
+      "tags": [
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "AleaSoft",
+      "cls": "aleasoft",
+      "url": "https://aleasoft.com/feed/",
+      "tags": [
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Pexapark",
+      "cls": "pexapark",
+      "url": "https://pexapark.com/feed/",
+      "tags": [
+        "markets"
+      ]
+    },
+    {
+      "name": "E-CUBE",
+      "cls": "ecube",
+      "url": "https://e-cube.com/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "Enerdata",
+      "cls": "enerdata",
+      "url": "https://www.enerdata.net/rss.xml",
+      "tags": [
+        "power"
+      ]
+    }
   ],
   "pages": [
-    {"name": "CRE", "cls": "cre", "reader": "cre", "url": "https://www.cre.fr/actualites/toute-lactualite.html", "tags": ["fr", "regulation"]}
+    {
+      "name": "CRE",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/actualites/toute-lactualite.html",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    }
   ],
   "searches": [
-    {"q": "\"power purchase agreement\" France", "tags": ["markets", "fr"]},
-    {"q": "PPA électricité", "tags": ["markets", "fr"]},
-    {"q": "\"prix négatifs\" électricité", "tags": ["markets", "fr"]},
-    {"q": "RTE électricité réseau", "tags": ["fr", "power"]},
-    {"q": "\"Commission de régulation de l'énergie\"", "tags": ["fr", "regulation"]},
-    {"q": "agrégateur électricité renouvelable", "tags": ["fr", "markets"]}
+    {
+      "q": "\"power purchase agreement\" France",
+      "tags": [
+        "markets",
+        "fr"
+      ]
+    },
+    {
+      "q": "PPA électricité",
+      "tags": [
+        "markets",
+        "fr"
+      ]
+    },
+    {
+      "q": "\"prix négatifs\" électricité",
+      "tags": [
+        "markets",
+        "fr"
+      ]
+    },
+    {
+      "q": "RTE électricité réseau",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "q": "\"Commission de régulation de l'énergie\"",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "q": "agrégateur électricité renouvelable",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    }
   ]
 }
