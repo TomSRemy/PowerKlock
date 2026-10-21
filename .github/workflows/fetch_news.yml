@@ -6,7 +6,7 @@ name: Fetch Energy News
 
 on:
   schedule:
-    - cron: '15 */3 * * *'   # every 3 hours
+    - cron: '15 * * * *'     # every hour (sources added from the site are read at the next run)
   push:                      # a source added in config/news_sources.json is read right away
     branches: [main]
     paths: ['config/news_sources.json']
@@ -29,8 +29,10 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install requests==2.33.1
+        run: pip install requests==2.33.1 "psycopg[binary]==3.2.*"
       - name: Fetch news feeds
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # optional: sources added from the site
         run: python scripts/fetch_news.py
       - name: Commit and push
         run: |

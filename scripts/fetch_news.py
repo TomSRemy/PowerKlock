@@ -8,6 +8,7 @@ them again before rendering. Only http(s) links are kept.
 """
 import html
 import json
+import os
 import re
 import sys
 import time
@@ -30,7 +31,27 @@ PER_SEARCH = 8
 
 
 def load_config():
-    return json.loads(CONFIG.read_text(encoding="utf-8"))
+    cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
+    # sources added from the site (public.news_source, warehouse migration 012), when the database is reachable
+    db = os.environ.get("SUPABASE_DB_URL")
+    if db:
+        try:
+            import psycopg
+            with psycopg.connect(db, connect_timeout=15) as conn, conn.cursor() as cur:
+                cur.execute("select kind, name, url, query, tags from public.news_source where active order by created_at")
+                rows = cur.fetchall()
+            known = {f["url"] for f in cfg.get("feeds", [])} | {x["q"] for x in cfg.get("searches", [])}
+            for kind, name, url, query, tags in rows:
+                if (url if kind == "feed" else query) in known:
+                    continue
+                if kind == "feed":
+                    cfg.setdefault("feeds", []).append({"name": name, "cls": "added", "url": url, "tags": list(tags or []), "added": True})
+                else:
+                    cfg.setdefault("searches", []).append({"q": query, "tags": list(tags or []), "added": True})
+            print(f"  {len(rows)} source(s) added from the site")
+        except Exception as e:   # the news must not depend on the database
+            print("  site sources not read:", str(e)[:160])
+    return cfg
 
 
 # Keyword tagging on title + summary (word-ish boundaries, case-insensitive).
@@ -171,17 +192,17 @@ def main():
             r.raise_for_status()
             items = READERS[src["reader"]](r.content) if src.get("reader") else parse_feed(r.content)
             n = add_items(out, items, src, now, PER_SOURCE)
-            status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n})
+            status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n, "added": bool(src.get("added"))})
         except Exception as e:
-            status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": False, "error": str(e)[:120]})
+            status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": False, "error": str(e)[:120], "added": bool(src.get("added"))})
     for k, s in enumerate(cfg.get("searches", [])):
         if k:
             time.sleep(6)               # GDELT: one request every 5 seconds
         try:
             n = add_items(out, gdelt(s["q"]), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
-            status.append({"name": s["q"], "kind": "search", "ok": True, "n": n})
+            status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
-            status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120]})
+            status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
     for st in status:
         print(f"  {st['kind']:6s} {st['name'][:40]:40s} " + (f"{st['n']} items" if st["ok"] else "ERROR " + st["error"]))
     if not out:

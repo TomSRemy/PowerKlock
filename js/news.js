@@ -23,12 +23,24 @@ async function loadNews() {
   _newsWireKw();
   renderNews(newsData);
   renderNewsSources();
+  renderNewsAdd();
 }
 
 // Personal keywords: kept in this browser, matching articles get a star
 function _newsKw() { try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; } }
 function _newsMine(i, kw) { if (!kw.length) return false; const t = (i.title + ' ' + i.snippet).toLowerCase(); return kw.some(k => t.includes(k)); }
+// France focus: French sources (tag fr) and articles about France; kept in this browser
+const _NEWS_FR = /\b(France|French|Fran[cç]ais\w*|fran[cç]ais\w*|hexagone|Paris|EDF|Engie|TotalEnergies|Flamanville|Bugey|Gravelines|ARENH|Enedis|Elengy|Ademe|ADEME|PPE ?3?|PPE3)\b|\b(RTE|CRE|DGEC)\b/;
+function _newsFr() { try { return localStorage.getItem('pk-news-fr') === '1'; } catch (_) { return false; } }
+function _newsIsFr(i) { return (i.tags || []).includes('fr') || _NEWS_FR.test(i.title + ' ' + i.snippet); }
 function _newsWireKw() {
+  const fr = document.getElementById('news-fr');
+  if (fr && !fr.dataset.wired) { fr.dataset.wired = '1'; fr.checked = _newsFr();
+    fr.addEventListener('change', () => { try { localStorage.setItem('pk-news-fr', fr.checked ? '1' : '0'); } catch (_) {} renderNews(newsData); }); }
+  const add = document.getElementById('news-add-btn');
+  if (add && !add.dataset.wired) { add.dataset.wired = '1'; add.addEventListener('click', () => {
+    const sec = document.getElementById('hs-news-src'); if (sec) { sec.classList.remove('collapsed'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    const f = document.getElementById('news-add-name'); if (f) setTimeout(() => f.focus(), 350); }); }
   const inp = document.getElementById('news-kw'); if (!inp || inp.dataset.wired) return;
   inp.dataset.wired = '1';
   inp.value = _newsKw().join(', ');
@@ -39,11 +51,68 @@ function renderNewsSources() {
   const host = document.getElementById('news-sources'); if (!host) return;
   const src = window._newsSources;
   const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
-  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? '🔎 ' + s.name : s.name)}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? '🔎 ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
-    `<div class="news-src-help"><b>Add a source for everyone</b>: edit <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub — a public RSS / Atom feed goes in <code>feeds</code>, a subject to follow across the press goes in <code>searches</code> (a phrase in quotes is searched as such). Saving the file starts a news run: the source appears within a few minutes.<br>
+    `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
     <b>Not possible</b>: LinkedIn (no public feed, and its terms forbid reading pages automatically) and subscription sites without a feed (Contexte, Montel): their articles still appear when the press search finds them. RTE has no news feed: its news come through the press search.</div>`;
+}
+
+// Add a source from the site: public.news_source (warehouse migration 012), read by
+// scripts/fetch_news.py at the next hourly run. Signed-in users only (RLS).
+const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr'];
+async function renderNewsAdd() {
+  const host = document.getElementById('news-add'); if (!host) return;
+  const A = window.PKAccount;
+  if (!A || !A.configured) { host.innerHTML = ''; return; }
+  if (!host.dataset.sub && A.onChange) { host.dataset.sub = '1'; A.onChange(() => renderNewsAdd()); }
+  await A.ready();
+  const head = '<div class="news-add-t">Add a source for everyone</div>';
+  if (!A.user) {
+    host.innerHTML = `<div class="news-add">${head}<div class="news-add-msg"><a href="#" id="news-add-signin">Sign in</a> to add an RSS / Atom feed or a press search: it is read at the next hourly news run, for everyone.</div></div>`;
+    const si = document.getElementById('news-add-signin');
+    if (si) si.addEventListener('click', e => { e.preventDefault(); if (typeof window.switchDashboard === 'function') window.switchDashboard('mydash'); setTimeout(() => { const b = document.getElementById('pkd-acc-btn'); if (b) b.click(); }, 400); });
+    return;
+  }
+  const cl = A.client();
+  let rows = [];
+  try { const r = await cl.from('news_source').select('id, user_id, kind, name, url, query, tags, created_at').order('created_at'); if (r.error) throw r.error; rows = r.data || []; }
+  catch (e) { host.innerHTML = `<div class="news-add">${head}<div class="news-add-msg ko">Sources added from the site are not available yet (${_newsEsc(e.message || e)}).</div></div>`; return; }
+  const st = window._newsSources || [];
+  const status = r => { const s = st.find(x => x.added && (r.kind === 'feed' ? x.url === r.url : x.name === r.query));
+    return s ? (s.ok ? `<span class="ok">${s.n} articles</span>` : `<span class="ko">failed: ${_newsEsc(s.error || '')}</span>`) : '<span>waiting for the next run</span>'; };
+  host.innerHTML = `<div class="news-add">${head}
+    <div class="news-add-row">
+      <select id="news-add-kind" class="fuel-select" aria-label="Kind"><option value="feed">RSS / Atom feed</option><option value="search">Press search</option></select>
+      <input type="text" id="news-add-name" class="fuel-select" maxlength="80" placeholder="Name, e.g. Montel news">
+      <input type="text" id="news-add-val" class="fuel-select" maxlength="300" placeholder="Feed address, https://…/feed">
+      <button type="button" class="pk-btn-primary" id="news-add-go">＋ Add</button><span></span>
+    </div>
+    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t}</label>`).join('')}</div>
+    <div class="news-add-msg" id="news-add-msg">Read at the next hourly news run. A feed is any public RSS / Atom address; a press search follows a phrase across the world press (put an exact phrase in quotes).</div>
+    ${rows.length ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Added from the site</th><th>Read as</th><th>Last run</th><th></th></tr></thead><tbody>${rows.map(r => `<tr><td>${_newsEsc(r.name)}<div class="news-q">${_newsEsc(r.kind === 'feed' ? r.url : r.query)}</div></td><td>${r.kind === 'feed' ? 'RSS feed' : 'press search'}</td><td>${status(r)}</td><td>${r.user_id === A.user.id ? `<button type="button" class="pk-btn-ghost" data-del="${r.id}">✕ Remove</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  </div>`;
+  const kind = document.getElementById('news-add-kind'), val = document.getElementById('news-add-val'), msg = document.getElementById('news-add-msg');
+  kind.addEventListener('change', () => { val.placeholder = kind.value === 'feed' ? 'Feed address, https://…/feed' : 'Phrase to follow, e.g. "prix négatifs" batteries'; });
+  document.getElementById('news-add-go').addEventListener('click', async () => {
+    const name = document.getElementById('news-add-name').value.trim(), v = val.value.trim(), k = kind.value;
+    const tags = [...host.querySelectorAll('.news-add-tags input:checked')].map(x => x.value);
+    const say = (t, c) => { msg.textContent = t; msg.className = 'news-add-msg ' + (c || ''); };
+    if (!v) return say(k === 'feed' ? 'Enter the feed address.' : 'Enter the phrase to follow.', 'ko');
+    if (k === 'feed' && !/^https?:\/\/\S+\.\S+/.test(v)) return say('The feed address must start with https://', 'ko');
+    const row = { kind: k, name: name || (k === 'feed' ? v.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : v).slice(0, 80), tags };
+    if (k === 'feed') row.url = v; else row.query = v.slice(0, 200);
+    say('Adding…');
+    const { error } = await cl.from('news_source').insert(row);
+    if (error) return say('Not added: ' + error.message, 'ko');
+    await renderNewsAdd();
+    const m = document.getElementById('news-add-msg'); if (m) { m.textContent = `“${row.name}” added: read at the next hourly news run, for everyone.`; m.className = 'news-add-msg ok'; }
+  });
+  host.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    const { error } = await cl.from('news_source').delete().eq('id', b.dataset.del);
+    if (error) { msg.textContent = 'Not removed: ' + error.message; msg.className = 'news-add-msg ko'; return; }
+    renderNewsAdd();
+  }));
 }
 
 function _newsEsc(s) {
@@ -55,7 +124,8 @@ function renderNews(items) {
   const kw = _newsKw();
   const kn = document.getElementById('news-kw-n');
   if (kn) kn.textContent = kw.length ? (items || []).filter(i => _newsMine(i, kw)).length + ' matching' : '';
-  const filtered = (items || []).filter(i =>
+  const frOnly = _newsFr();
+  const filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
     (newsFilter === 'all' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   const grid = document.getElementById('news-grid');
@@ -64,7 +134,7 @@ function renderNews(items) {
     return;
   }
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${newsFilter === 'mine' && !kw.length ? 'Type your keywords above to follow your subjects.' : newsFilter === 'watch' ? 'No press-search results at the last run.' : 'No articles for this filter.'}</div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${frOnly && newsFilter === 'all' ? 'No French news at the last run.' : newsFilter === 'mine' && !kw.length ? 'Type your keywords above to follow your subjects.' : newsFilter === 'watch' ? 'No press-search results at the last run.' : 'No articles for this filter.'}</div>`;
     return;
   }
   grid.innerHTML = filtered.map(item => {
