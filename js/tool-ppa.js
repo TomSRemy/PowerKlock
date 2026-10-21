@@ -264,7 +264,11 @@
     o.capPathFor = capPath;
     if (!st.noMC && window.PKWx && (st.method === 'wx' || st.view === 'compare')) {
       const monthLevel = (y, m) => { const r = o.m3 && o.m3.fwd.find(f => f.y === y); const i = o.tenor.indexOf(y); return m === 0 ? (r ? r.cal : fwds[i]) : (r && r.months[m - 1] != null ? r.months[m - 1] : fwds[i]); };
-      try { o.m4 = await PKWx.compute(o, st, D, capPath, monthLevel, 120); } catch (e) { console.warn('[ppa] wx', e); o.m4 = null; }
+      // model risk measured on the historical replay: the weather method's own past errors (2022 left out)
+      if (!BT) BT = await get('history/ppa_backtest.json');
+      const bt = BT ? BT.rows.filter(r => r.tech === st.tech && r.year !== 2022) : [];
+      const sigModel = bt.length >= 3 ? Math.sqrt(mean(bt.map(r => (r.weather - r.actual) ** 2))) : 0;
+      try { o.m4 = await PKWx.compute(o, st, D, capPath, monthLevel, 120, sigModel); } catch (e) { console.warn('[ppa] wx', e); o.m4 = null; }
     }
     o.ppaWx = o.m4 ? o.m4.ppa : null;
     o.ppa = st.method === 'pct' ? o.ppaPct : st.method === 'fpc' && o.m3 ? o.ppaFpc : st.method === 'wx' && o.m4 ? o.ppaWx : o.ppaBuild;
@@ -524,6 +528,7 @@
     if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
     renderDoc(o);
     renderCompare(o);
+    renderBacktest();
     try { renderWx(o); } catch (e) { console.warn('[ppa] wx render', e); }
     try { renderFpc(o); } catch (e) { console.warn('[ppa] fpc render', e); }
   }
@@ -759,7 +764,7 @@
     const el = $('pp-wx'); if (!el) return;
     const w = o.m4;
     if (!w) { el.innerHTML = '<b>How this method works.</b> Thousands of possible years are simulated: the weather, then the national solar and wind production on the capacity projected for each delivery year, then the hourly prices that this production causes. Open this tab to run it (a few seconds).'; return; }
-    el.innerHTML = `<b>How this method works.</b> ${w.N} years are simulated for each delivery year. Each day draws sun and wind from what that month has really seen (with the persistence of real weather, so calm or sunny spells last), puts it on the capacity installed that year (${f0(w.capS[0])} GW of solar and ${f0(w.capW[0])} GW of wind in ${o.tenor[0]}), and takes consumption and nuclear from a recent real day. The price of each hour follows from what is left to produce once solar, wind and nuclear are counted (the net residual load): the lower it is, the lower the price, as measured on ${w.recent.join(' and ')}. Each simulated year then averages exactly its Cal. <b>Correlated</b> uses the prices of the same simulated year, <b>decorrelated</b> the prices of another one: the gap is the cannibalisation.`;
+    el.innerHTML = `<b>How this method works.</b> ${w.N} years are simulated for each delivery year. Each day draws sun and wind from what that month has really seen (with the persistence of real weather, so calm or sunny spells last), puts it on the capacity installed that year (${f0(w.capS[0])} GW of solar and ${f0(w.capW[0])} GW of wind in ${o.tenor[0]}), and takes consumption and nuclear from a recent real day. The price of each hour follows from what is left to produce once solar, wind and nuclear are counted (the net residual load): the lower it is, the lower the price, as measured on ${w.recent.join(' and ')}. Each simulated year then averages exactly its Cal. ${w.sigModel ? `On top of the weather, each simulated delivery carries a model-risk deviation of ± ${(w.sigModel * 100).toFixed(1)} capture-rate points, the size of this method’s errors in the historical replay (Compare tab): weather alone gives a band far too narrow. ` : ''}<b>Correlated</b> uses the prices of the same simulated year, <b>decorrelated</b> the prices of another one: the gap is the cannibalisation.`;
     const L = w.years.map(r => String(r.y));
     _fuelChart('pp-wx-rates', { type: 'bar', data: { labels: L, datasets: [
       { label: 'P10–P90 of the simulated years', data: w.years.map(r => [+(r.p10 * 100).toFixed(1), +(r.p90 * 100).toFixed(1)]), backgroundColor: 'rgba(127,200,248,.35)', borderColor: '#7FC8F8', borderWidth: 1, barPercentage: 0.4, grouped: false },
@@ -778,7 +783,28 @@
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€ earned per MWh, before costs · red = below the price kept (' + f2(w.qU) + ')', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('% of deliveries', { beginAtZero: true }) } }) }, 'ppa-wx-value');
     $('pp-wx-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Delivery</th><th>Cal</th><th>Capture rate</th><th>P10 – P90</th><th>Decorrelated</th><th>Cannibalisation</th><th>Capture €/MWh</th></tr></thead><tbody>` +
       w.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.cal)}</td><td>${pc(r.rate)}</td><td>${pc(r.p10)} – ${pc(r.p90)}</td><td>${pc(r.rateD)}</td><td>${pc(r.cannib)}</td><td>${f2(r.capture)}</td></tr>`).join('') + '</tbody></table></div>' +
-      `<div class="fuel-note">${o.useAsset ? 'Uses the national ' + S.tech + ' profile for now: the asset as “national + local deviation” comes next.' : 'National ' + S.tech + ' profile.'} Price effect measured on ${w.recent.join(' and ')} only: older years describe a market without today’s solar fleet.</div>`;
+      `<div class="fuel-note">${w.asset ? `Your asset follows the national ${S.tech} production day to day with a factor β = ${w.asset.beta.toFixed(2)} (R² ${w.asset.r2.toFixed(2)}, ${w.asset.n} days); its own deviations (± ${(w.asset.sd * 100).toFixed(0)} %, persistence ${w.asset.phi.toFixed(2)}) do not move prices, so they are not cannibalised.` : o.useAsset ? 'The asset curve has too few days in common with the national data: national profile used.' : 'National ' + S.tech + ' profile: load a curve to price your asset as national + local deviation.'} Price effect measured on ${w.recent.join(' and ')} only: older years describe a market without today’s solar fleet.</div>`;
+  }
+
+  // ── Historical replay of the four methods (scripts/ppa_backtest.py → ppa_backtest.json) ──
+  let BT = null;
+  async function renderBacktest() {
+    if (!$('pp-bt-chart')) return;
+    if (!BT) BT = await get('history/ppa_backtest.json');
+    if (!BT) { $('pp-bt-table').innerHTML = '<div class="fuel-note">Replay not available.</div>'; return; }
+    const tech = S.tech, rs = BT.rows.filter(r => r.tech === tech), M = [['dashboard', 'PPA Dashboard', '#B8C9D9'], ['step', 'Step by step', '#14D3A9'], ['fpc', 'Asset-specific FPC', '#FBBF24'], ['weather', 'MC weather', '#A87DC4']];
+    const L = rs.map(r => String(r.year)), p1 = v => +(v * 100).toFixed(1);
+    _fuelChart('pp-bt-chart', { type: 'line', data: { labels: L, datasets: [
+      { label: 'Actual', data: rs.map(r => p1(r.actual)), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 4, fill: false },
+      ...M.map(([k, l, c]) => ({ label: l, data: rs.map(r => p1(r[k])), borderColor: c, backgroundColor: c, borderWidth: 1.4, borderDash: [5, 3], pointRadius: 3, fill: false })),
+    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-backtest');
+    const err = (k, f) => { const x = rs.filter(f); return x.length ? mean(x.map(r => Math.abs(r[k] - r.actual))) : null; };
+    const bias = k => { const x = rs.filter(r => r.year !== 2022); return mean(x.map(r => r[k] - r.actual)); };
+    const rows = M.map(([k, l]) => ({ k, l, all: err(k, r => r.year !== 2022), rec: err(k, r => r.year >= 2023), b: bias(k) }));
+    const best = Math.min(...rows.map(r => r.all)), bestR = Math.min(...rows.map(r => r.rec));
+    $('pp-bt-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Method</th><th>All years*</th><th>2023–${BT.targets[BT.targets.length - 1]}</th><th>Bias</th></tr></thead><tbody>` +
+      rows.map(r => `<tr><td style="text-align:left">${r.l}</td><td class="${r.all === best ? 'pp-pos' : ''}">${(r.all * 100).toFixed(1)} pts</td><td class="${r.rec === bestR ? 'pp-pos' : ''}">${(r.rec * 100).toFixed(1)} pts</td><td>${r.b > 0 ? '+' : ''}${(r.b * 100).toFixed(1)}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">* ${BT.targets[0]}–${BT.targets[BT.targets.length - 1]} without 2022, a crisis year no method could foresee. Green: the smallest error. Each year is priced as at its start: the history before it, the capacity extrapolated from the two previous years; all hours count. Bias (pts): positive = the method expected more than the asset really earned (too optimistic).${rows.every(r => r.b > 0.02) ? ' <b>All methods were too optimistic:</b> none saw how fast cannibalisation grew in 2024.' : ''} Replay of ${BT.updated}.</div>`;
   }
 
   // ── Three methods side by side ──
