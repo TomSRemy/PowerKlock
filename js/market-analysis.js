@@ -886,6 +886,12 @@
         wind_speed: _r(f.drivers.windSpeed[m.idx], 0),
         ttf: _r(f.drivers.ttf[m.idx], 1),
         eua: _r(f.drivers.eua[m.idx], 1),
+        gas_plant_cost: _r(f.srmc[m.idx], 0),
+        residual_load_GW: _r(f.resid[m.idx], 1),
+        nuclear_available_GW: _r(f.drivers.nucAvail[m.idx], 1),
+        net_import_GW: _r(f.drivers.flux[m.idx], 1),
+        neighbour_price: _r(f.nbPrice[m.idx], 1),
+        marginal_reading: _marginal(f.price[m.idx], f.srmc[m.idx], f.mix.fossil[m.idx], f.wind[m.idx], f.solar[m.idx], f.load[m.idx]).t,
       };
     });
     const prices = f.price.filter(function (p) { return p != null; });
@@ -902,6 +908,13 @@
       ttf_avg: _r(_avg(f.drivers.ttf), 1),
       eua_avg: _r(_avg(f.drivers.eua), 1),
       negative_hours: prices.filter(function (p) { return p < 0; }).length,
+      gas_plant_cost_avg: _r(_avg(f.srmc), 0),
+      share_of_slots_above_gas_cost: (function () { let n = 0, a = 0; f.price.forEach(function (p, i) { if (p != null && f.srmc[i] != null) { n++; if (p >= f.srmc[i]) a++; } }); return n ? _r(a / n * 100, 0) : null; })(),
+      neighbour: STATE.data.nbZone,
+      neighbour_price_avg: _r(_avg(f.nbPrice), 1),
+      residual_load_avg_GW: _r(_avg(f.resid), 1),
+      nuclear_available_avg_GW: _r(_avg(f.drivers.nucAvail), 1),
+      net_import_avg_GW: _r(_avg(f.drivers.flux), 1),
       moments: moments,
     };
   }
@@ -916,7 +929,7 @@
     out.innerHTML = '<div style="color:var(--tx3);font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">Building causal market read...</div>';
 
     const ctx = _buildAIContext();
-    const systemPrompt = 'You are a senior power market analyst writing for a director-level origination audience (PPA, BESS, supply). Given window data with prices, spark spread, key moments and drivers (TTF, EUA, wind, weather, nuclear, flows), write a SHORT causal market read.\n\nStyle:\n- Trading desk morning note tone\n- UK English\n- 3-5 punchy sentences, no bullets\n- Each sentence chains causes: "X happened, therefore Y, therefore Z"\n- Be specific with numbers\n- Use <b style="color:#fff">…</b> to highlight key figures, fuels, and turning points\n- Use <b style="color:#14D3A9">…</b> for positive/floor values and <b style="color:#ED6965">…</b> for peaks/risks\n- Focus on what an originator needs: capture rates, marginal fuel switches, BESS arbitrage spreads, PPA stress signals\n- No preamble. Just the text.\n\nReading order: the weather drives the supply mix, which drives the marginal fuel and price. If TTF and EUA are stable, the price story is physical (weather, availability), not commodity. Reflect this hierarchy explicitly.';
+    const systemPrompt = 'You are a senior power market analyst writing for a director-level origination audience (PPA, BESS, supply). Given window data with prices, the gas plant cost (CCGT fuel + CO2: price above it = gas in the money, price far below = nuclear/hydro/renewables set the price), the neighbour’s price, residual load (demand − wind − solar) against nuclear availability and net imports, key moments and drivers (TTF, EUA, wind, weather), write a SHORT causal market read.\n\nStyle:\n- Trading desk morning note tone\n- UK English\n- 3-5 punchy sentences, no bullets\n- Each sentence chains causes: "X happened, therefore Y, therefore Z"\n- Be specific with numbers\n- Use <b style="color:#fff">…</b> to highlight key figures, fuels, and turning points\n- Use <b style="color:#14D3A9">…</b> for positive/floor values and <b style="color:#ED6965">…</b> for peaks/risks\n- Focus on what an originator needs: capture rates, marginal fuel switches, BESS arbitrage spreads, PPA stress signals\n- No preamble. Just the text.\n\nReading order: the weather drives the supply mix, which drives the marginal fuel and price. If TTF and EUA are stable, the price story is physical (weather, availability), not commodity. In France, compare residual load with nuclear availability: when residual load exceeds it, imports or gas set the price. Say how often the price reached the gas plant cost and whether the market stayed coupled with the neighbour. Reflect this hierarchy explicitly.';
 
     const userPrompt = 'Analyse this ' + ctx.window_days + '-day window for ' + ctx.zone + ':\n\n' + JSON.stringify(ctx, null, 2);
 

@@ -16,6 +16,7 @@
     pp2: { label: 'PP2 day (France)', help: 'RTE signals a PP2 peak-period day (the day before, 09:30 or 19:00).' },
     base_above: { label: 'Baseload above', help: 'Daily baseload above a price.' },
     base_below: { label: 'Baseload below', help: 'Daily baseload below a price.' },
+    fwd_fr: { label: 'Cal+1 France: French move', help: 'The part of the day’s French Cal+1 move that gas and CO₂ do not explain (Prices › Forward, analyst read) is above a threshold, up or down.' },
   };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const zoneList = () => (typeof ZONES !== 'undefined' ? ZONES : []).slice().sort((a, b) => a.name.localeCompare(b.name));
@@ -92,6 +93,7 @@
     for (const d of days) {
       const zones = await getDay(d);
       rules.filter(r => r.active !== false).forEach(r => {
+        if (r.kind === 'fwd_fr') return;
         if (r.kind === 'pp1' || r.kind === 'pp2') {
           const e = pp[d]; if (e && e[r.kind]) out.push({ d, z: 'FR', kind: r.kind, text: fmtDay(d) + ' is a ' + r.kind.toUpperCase() + ' day (RTE peak-period signal)' });
           return;
@@ -103,6 +105,14 @@
           else if (r.kind === 'base_below' && r.threshold != null && st.base < r.threshold) out.push({ d, z, kind: r.kind, text: `baseload ${st.base.toFixed(2)} €/MWh on ${fmtDay(d)}, below ${r.threshold}` });
         });
       });
+    }
+    // Cal+1 France: France-specific part of the latest daily move
+    const fr = rules.filter(r => r.active !== false && r.kind === 'fwd_fr' && r.threshold != null);
+    if (fr.length && window.PKFwdRead) {
+      try {
+        const o = await PKFwdRead.compute('1D');
+        if (o && o.resid != null && o.Z.d >= addDays(today(), -3)) fr.forEach(r => { if (Math.abs(o.resid) >= r.threshold) out.push({ d: o.Z.d, z: 'FR', kind: 'fwd_fr', text: `Cal ${o.k} ${(o.dP >= 0 ? '+' : '') + o.dP.toFixed(2)} € on ${fmtDay(o.Z.d)}: ${(o.resid >= 0 ? '+' : '') + o.resid.toFixed(2)} € France-specific, gas and CO₂ explain ${(o.fromFuel + o.fromCo2 >= 0 ? '+' : '') + (o.fromFuel + o.fromCo2).toFixed(2)} €` }); });
+      } catch (_) { /* forward data unavailable */ }
     }
     // one line per day, zone and kind
     const seen = new Set();
@@ -132,8 +142,8 @@
   function escClose(e) { if (e.key === 'Escape') close(); }
   function ruleText(r) {
     const k = KINDS[r.kind] || { label: r.kind };
-    const zs = r.kind === 'pp1' || r.kind === 'pp2' ? 'France' : (r.zones || []).map(z => flagOf(z) + ' ' + z).join(', ');
-    const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 1} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh` : '';
+    const zs = r.kind === 'pp1' || r.kind === 'pp2' || r.kind === 'fwd_fr' ? 'France' : (r.zones || []).map(z => flagOf(z) + ' ' + z).join(', ');
+    const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 1} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh` : r.kind === 'fwd_fr' ? ` · ±${r.threshold} €/MWh` : '';
     return `<div><b>${esc(k.label)}</b>${cond}</div><span>${esc(zs)}</span>`;
   }
   async function open() {
@@ -167,9 +177,11 @@
     const sync = () => {
       const k = $('#pk-al-kind').value;
       $('#pk-al-help').textContent = KINDS[k].help + (k.startsWith('pp') ? ' PP data need the RTE account to be connected.' : '');
-      $('#pk-al-zones-wrap').style.display = k.startsWith('pp') ? 'none' : '';
+      $('#pk-al-zones-wrap').style.display = k.startsWith('pp') || k === 'fwd_fr' ? 'none' : '';
       $('#pk-al-hours-wrap').style.display = k === 'neg_price' ? '' : 'none';
-      $('#pk-al-thr-wrap').style.display = k.startsWith('base_') ? '' : 'none';
+      $('#pk-al-thr-wrap').style.display = k.startsWith('base_') || k === 'fwd_fr' ? '' : 'none';
+      $('#pk-al-thr-wrap').querySelector('span').textContent = k === 'fwd_fr' ? 'French part of the move above (€/MWh, up or down)' : 'Price (€/MWh)';
+      if (k === 'fwd_fr' && +$('#pk-al-thr').value > 20) $('#pk-al-thr').value = 2;
     };
     $('#pk-al-kind').addEventListener('change', sync); sync();
     const drawHits = () => {
@@ -189,9 +201,9 @@
     drawHits(); drawRules();
     $('#pk-al-add').addEventListener('click', async () => {
       const k = $('#pk-al-kind').value, msg = $('#pk-al-msg');
-      const zones = k.startsWith('pp') ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
+      const zones = k.startsWith('pp') || k === 'fwd_fr' ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
       if (!zones.length) { msg.textContent = 'Choose at least one zone.'; return; }
-      const r = { kind: k, zones, min_hours: k === 'neg_price' ? +$('#pk-al-hours').value || 1 : null, threshold: k.startsWith('base_') ? +$('#pk-al-thr').value : null, email: true, active: true };
+      const r = { kind: k, zones, min_hours: k === 'neg_price' ? +$('#pk-al-hours').value || 1 : null, threshold: k.startsWith('base_') || k === 'fwd_fr' ? +$('#pk-al-thr').value : null, email: true, active: true };
       try { await addRule(r); msg.textContent = 'Alert added' + (cloud ? ': you will get an e-mail when it triggers.' : ' (this browser only).'); await evaluate(); drawRules(); drawHits(); }
       catch (e) { msg.textContent = 'Could not save: ' + (e.message || e); }
     });
@@ -215,7 +227,7 @@
   .pk-al-sec{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:4px}
   .pk-al-hit{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-hit b{color:var(--text)}
-  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9}
+  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.fwd_fr{background:#A78BFA}
   .pk-al-empty{font-size:12px;color:var(--text3)}
   .pk-al-rule{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-rule.off{opacity:.5}
