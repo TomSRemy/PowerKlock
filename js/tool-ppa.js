@@ -344,6 +344,41 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const MODEL_T = { capacity: 'driven by installed capacity (PPE3)', flat: 'flat at the last year used', damped: 'trend halving every year', linear: 'straight line (PPA Dashboard)' };
 
+  // plain-language help on every input (ⓘ next to its label)
+  const HELP = {
+    'pp-tech': 'Solar or wind: which national production profile, installed capacity and history are used.',
+    'pp-t0': 'First calendar year of delivery.', 'pp-t1': 'Last calendar year of delivery. By default the last year with a market price (Cal).',
+    'pp-mw': 'Installed capacity of the asset. Used to estimate its yearly production when no curve is loaded.',
+    'pp-volume': 'Production expected per year. Sets the P&L in k€ and the weight of each year.',
+    'pp-degr': 'Yearly loss of output (panel ageing): later years weigh a little less.',
+    'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
+    'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
+    'pp-pct': 'PPA Dashboard method only: which percentile of the past discounts is used. Higher = more cautious.',
+    'pp-conv': 'Whether hours with a price ≤ 0 € count. “Hours > 0 only” means their production is not paid (PPA Dashboard convention).',
+    'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
+    'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
+    'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (forecast error × gap between imbalance and spot prices).',
+    'pp-go': 'Value of the guarantees of origin per MWh, from market prices.',
+    'pp-margin': 'What the buyer keeps per MWh. Deducted from the price paid to the producer (the PPA Dashboard method adds it).',
+    'pp-disc': 'Discount rate applied to later years (0 = none).', 'pp-add': 'An extra discount in % of the forward, if you want one.',
+    'pp-volrisk': 'PPA Dashboard method: volume risk margin, in % of the forward, entered by hand.', 'pp-pricerisk': 'PPA Dashboard method: price risk margin, in % of the forward, entered by hand.',
+    'pp-mcvol': 'How much the yearly production can vary (1 standard deviation).', 'pp-mcfwd': 'How much the forward price can move until delivery (yearly volatility).',
+    'pp-mcsd': 'How far the discount can drift from its projection each year.', 'pp-rho': 'Link between a high-production year and a deeper discount (0 = none, 1 = full).',
+    'pp-vs': 'Size of the volume and cannibalisation shocks in the stress scenarios.', 'pp-ss': 'Size of the spot price shocks in the stress scenarios.',
+  };
+  function addHelp() {
+    Object.entries(HELP).forEach(([id, tip]) => { const el = $(id); const f = el && el.closest('.cf-field'); const lab = f && f.querySelector(':scope > span'); if (!lab || lab.querySelector('.pp-help')) return;
+      const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = tip; i.setAttribute('aria-label', tip); lab.appendChild(i); });
+    const ys = $('pp-yearsel'), lab = ys && ys.closest('.cf-field') && ys.closest('.cf-field').querySelector(':scope > span');
+    if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; lab.appendChild(i); }
+  }
+  const INTRO = {
+    pct: '<b>PPA Dashboard method</b> — the team’s original formula. Price = average forward − a historical discount (a percentile of the past years chosen) − risk margins entered by hand. Quick and simple; it assumes the delivery years will look like the past years chosen.',
+    build: '<b>Step by step</b> — the discount is projected year by year with the installed capacity (more solar → deeper discount), then a Monte Carlo sets a risk premium for the chance of loss you accept. Suited when cannibalisation keeps growing.',
+    fpc: '<b>Asset-specific FPC</b> — the method of the pricing deck: the expected production is valued on an hourly forward price curve (profile cost), then a cannibalisation coefficient measured on history — historical (1) minus decorrelated (3) — is added. The most direct link with today’s forward prices.',
+    wx: '<b>Monte Carlo on simulated weather</b> — simulates the weather, the national production and the hourly prices for many possible years. It captures the link between weather and prices directly; its risk premium covers weather only, not a change of market regime.',
+  };
+
   // input id → state key; an empty field takes the automatic value
   const FIELDS = { 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
     'pp-disc': 'disc', 'pp-add': 'add', 'pp-volrisk': 'volRisk', 'pp-pricerisk': 'priceRisk', 'pp-mcvol': 'mcVol', 'pp-mcfwd': 'mcFwd', 'pp-mcsd': 'mcSd', 'pp-rho': 'rho', 'pp-vs': 'volStress', 'pp-ss': 'spotStress' };
@@ -383,7 +418,8 @@
   }
 
   function render(o) {
-    renderYears(o); renderAuto(o);
+    renderYears(o); renderAuto(o); addHelp();
+    const intro = $('pp-intro'); if (intro) intro.innerHTML = INTRO[S.method] || '';
     const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T0 = o.tenor[0], T1 = o.tenor[o.tenor.length - 1], build = S.method !== 'pct', mcA = o.mcAt;
     const other = build ? `PPA Dashboard method: ${f2(o.ppaPct)} €/MWh` : `Step-by-step method: ${f2(o.ppaBuild)} €/MWh`;
     const wm = S.method === 'wx' && o.m4 ? o.m4 : null;
@@ -768,20 +804,21 @@
       ...(m3c ? [{ label: 'Asset-specific FPC', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
       ...(o.m4 ? [{ label: 'MC weather', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
-    const m3 = o.m3, Y = o.years, a = Y[0], z = Y[Y.length - 1];
+    const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
+    const W4 = m4 ? m4.years : null;
     const rows = [
-      ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', true],
-      ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–'],
-      ['Shape / profile', pc(-o.sdCh) + ' (P' + S.pct + ' of history)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–'],
-      ['Cannibalisation', 'inside the percentile', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–'],
-      ['Capture value, €/MWh', f2(o.ref * (1 - o.sdCh)), f2(o.fair), m3 ? f2(m3.fair) : '–'],
-      ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–'],
-      ['Margin', '+' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–'],
+      ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', m4 ? f2(m4.ppa) : 'open its tab', true],
+      ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–', m4 ? f2(m4.refW) + ' (Cal, weighted)' : '–'],
+      ['Shape / profile', pc(-o.sdCh) + ' (P' + S.pct + ' of history)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–', W4 ? pc(W4[0].rate - 1) + ' → ' + pc(W4[W4.length - 1].rate - 1) + ' (simulated, all effects)' : '–'],
+      ['Cannibalisation', 'inside the percentile', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–'],
+      ['Capture value, €/MWh', f2(o.ref * (1 - o.sdCh)), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–'],
+      ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–', m4 ? '−' + f2(m4.premium) + ' (simulated weather)' : '–'],
+      ['Margin', '+' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin)],
     ];
-    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('PPA Dashboard', S.method === 'pct')}${col('Step by step', S.method === 'build')}${col('Asset-specific FPC', S.method === 'fpc')}</tr></thead><tbody>` +
-      rows.map(r => `<tr${r[4] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the tab you came from. Each method has its own tab with its price, its steps and its charts. A historical replay of the three methods will tell which one is the most reliable.</div>`;
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('PPA Dashboard', S.method === 'pct')}${col('Step by step', S.method === 'build')}${col('Asset-specific FPC', S.method === 'fpc')}${col('MC weather', S.method === 'wx')}</tr></thead><tbody>` +
+      rows.map(r => `<tr${r[5] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the method of the last tab opened. Each method has its own tab with its price, its steps and its charts.</div>`;
   }
 
   // ── Asset-specific FPC method: the curve, the three pricings by year, the forward years ──
