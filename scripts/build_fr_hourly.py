@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """France, one compact file per year at the hourly step: day-ahead price and
-national solar, wind and consumption. Input of the PPA pricer's FPC methods
+national solar, wind, consumption and nuclear. Input of the PPA pricer's FPC methods
 (js/ppa-fpc.js): shaping coefficients of the forward price curve, the
 historical and the decorrelated pricings, the production model.
 
@@ -50,7 +50,7 @@ def build(year):
         rte = load(os.path.join(RTE, f'{year}-{m:02d}.json')) or {}
         for d, row in (rte.get('days') or {}).items():
             days.setdefault(d, {})
-            for k, src in (('s', 'solar'), ('w', 'wind'), ('l', 'load')):
+            for k, src in (('s', 'solar'), ('w', 'wind'), ('l', 'load'), ('n', 'nuclear')):
                 h = hourly(row.get(src))
                 if h:
                     days[d][k] = [None if v is None else round(v) for v in h]
@@ -63,7 +63,7 @@ def build(year):
         return 0
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, f'{year}.json'), 'w') as f:
-        json.dump({'year': year, 'unit': {'p': '€/MWh', 's': 'MW', 'w': 'MW', 'l': 'MW'}, 'days': days}, f, separators=(',', ':'))
+        json.dump({'year': year, 'unit': {'p': '€/MWh', 's': 'MW', 'w': 'MW', 'l': 'MW', 'n': 'MW'}, 'days': days}, f, separators=(',', ':'))
     return len(days)
 
 
