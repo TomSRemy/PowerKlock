@@ -4638,6 +4638,18 @@
            ═══════════════════════════════════════════════════════════════════ -->
       <div class="tab-panel" data-tab-panel="historical">
 
+        <!-- ════ Generation over time (js/genmix-series.js) ════ -->
+        <div class="hist-section hist-section-strong" id="hs-gms">
+          <div class="hist-section-header open" onclick="toggleStrongSection('hs-gms')">
+            <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg>Generation over time<span class="pk-hs-meta">One zone · day by day, average day and fuel shares over the period chosen above</span></div>
+            <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hist-section-body open" id="hs-body-gms">
+<div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Zone</span><select class="country-select" id="gms-zone" aria-label="Zone"></select></div>
+<div class="fuel-grid-2 pk-stack"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Generation by fuel, day by day</div><div class="fuel-card-sub" id="gms-daily-sub"></div></div><span class="source-badge">Energy-Charts</span></div><div style="position:relative;height:340px"><canvas id="gms-daily" style="width:100%;height:340px"></canvas></div></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average day by fuel</div><div class="fuel-card-sub" id="gms-profile-sub"></div></div><span class="source-badge">Energy-Charts</span></div><div style="position:relative;height:300px"><canvas id="gms-profile" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Fuel shares by month</div><div class="fuel-card-sub" id="gms-share-sub"></div></div><span class="source-badge">Energy-Charts</span></div><div style="position:relative;height:300px"><canvas id="gms-share" style="width:100%;height:300px"></canvas></div></div></div>
+          </div>
+        </div>
         <!-- ════ Section 1 · Historical Board ════ -->
         <div class="hist-section hist-section-strong" id="hs-gmh-main">
           <div class="hist-section-header open" onclick="toggleStrongSection('hs-gmh-main')">
@@ -7872,6 +7884,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/genmix.js"></script>
 <script src="js/genmix-daily.js"></script>
 <script src="js/genmix-historical.js"></script>
+<script src="js/genmix-series.js"></script>
 <script src="js/market.js"></script>
 <script src="js/news.js"></script>
 <script src="js/analysis.js"></script>

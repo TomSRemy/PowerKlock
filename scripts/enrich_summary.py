@@ -238,6 +238,13 @@ def build_entry_from_daily(date_str, zone_data):
     if pk is not None:  entry['peakAvg'] = pk
     if off is not None: entry['offAvg']  = off
     gm = zone_data.get('genmix')
+    if not gm and isinstance(zone_data.get('nuclear'), list):
+        # hourly generation arrays only (ENTSO-E backfill or Energy-Charts): their daily means
+        gm = {}
+        for f in ('nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'):
+            arr = [x for x in (zone_data.get(f) or []) if x is not None]
+            gm[f] = sum(arr) / len(arr) if arr else 0
+        gm['total'] = sum(gm.values())
     if gm:
         rp, dom = ren_pct_and_dom_fuel(gm)
         if rp is not None:  entry['renPct']  = rp
