@@ -1,0 +1,52 @@
+name: FR imbalance cost (solar, wind)
+
+# Basic national imbalance cost for the PPA pricer:
+# day-ahead forecast error (ENTSO-E A69 vs RTE éCO2mix) × (imbalance price A85 − spot)
+# → data/history/fr_imbalance_cost.json (scripts/fetch_fr_imbalance_cost.py).
+
+on:
+  schedule:
+    - cron: '30 6 * * 1'     # Mondays 06:30 UTC: the last two months again
+  push:                      # first run (24 months) as soon as the script lands
+    branches: [main]
+    paths: ['scripts/fetch_fr_imbalance_cost.py', '.github/workflows/fetch_fr_imbalance.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-fr-imbalance
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests==2.33.1
+      - name: Imbalance cost
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/fetch_fr_imbalance_cost.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/fr_imbalance_cost.json
+          if git diff --staged --quiet; then
+            echo "No change — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: FR imbalance cost $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && exit 0
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          exit 1
