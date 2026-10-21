@@ -891,6 +891,24 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity to the PPE3 targets, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>PPA Dashboard method</h4>
 <p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO + margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. Kept as in the team's Streamlit tool for comparison. Note that the margin is added there.</p>
+<h4>Asset-specific FPC method (the pricing deck’s “asset-specific approach”)</h4>
+<ol>
+<li><b>Forward price curve (FPC).</b> Hourly prices for each delivery year: the usual shape of prices (month in the year, weekday / Saturday / Sunday in the month, hour in the day), averaged on the years used, then calibrated on today’s quotes without arbitrage — months, then quarters and seasons, then each year exactly on its Cal.</li>
+<li><b>(2) Forward profile cost.</b> The expected production (average by month and hour) valued on the FPC, compared with a flat delivery. It contains the usual shape, not the weather link: the FPC is smooth.</li>
+<li><b>(1) Historical and (3) decorrelated profile costs</b>, year by year: the real production on the real prices (1), and on the FPC shape recalibrated on that year’s monthly prices (3). <b>Cannibalisation = (1) − (3)</b>: what the weather link cost that year.</li>
+<li><b>Projection</b> of the cannibalisation with installed capacity (or flat), then <code>capture = Cal × (1 + profile cost + cannibalisation)</code>; the risk premium comes from the spread of the yearly cannibalisation.</li>
+</ol>
+<h4>Monte Carlo on simulated weather</h4>
+<ol>
+<li><b>Weather.</b> For each day, solar and wind capacity factors are drawn from that month’s real distribution (2016–2025), with the persistence of real weather and the solar ↔ wind link; the hourly shape comes from a real day with a similar output. Checked against the ten real years.</li>
+<li><b>Production</b> on the installed capacity of the delivery year (PPE3 path). With a curve, the asset follows the national production through a factor β plus its own deviations, which do not move prices.</li>
+<li><b>Prices.</b> Month level of the FPC × the effect of the net residual load (consumption − solar − wind − nuclear available), measured on the last two complete years only — older years describe a market without today’s solar fleet — then each year rescaled exactly to its Cal.</li>
+<li><b>Risk.</b> Weather alone moves a year’s capture rate by a few points only; each simulated delivery also carries a model-risk deviation the size of this method’s past errors (historical replay).</li>
+</ol>
+<h4>Imbalance cost</h4>
+<p>National and basic: every quarter-hour, (actual − day-ahead forecast of national solar or wind) × (imbalance price − spot), divided by the production; the last 12 months (ENTSO-E forecasts and imbalance prices, RTE actual production, updated weekly). An asset’s own forecast error is usually larger.</p>
+<h4>Historical replay</h4>
+<p>Each delivery year 2019–2025 is priced as at its start (history before it, capacity extrapolated) and the predicted capture rate is compared with the actual one (Compare tab). On the national profile, without 2022: solar — FPC 4.9 pts of average error, step by step 8.1, Monte Carlo 9.0, PPA Dashboard 11.9; wind — step by step 1.5, PPA Dashboard 2.3, Monte Carlo 2.5, FPC 4.0. All methods were too optimistic on solar in 2024: cannibalisation grew faster than any history showed.</p>
 <h4>P&L</h4>
 <p>Everywhere on the page: production × (capture price − imbalance + GO − PPA price). Earlier versions left the imbalance and GO out of the P&L.</p>
 <h4>Data</h4>
