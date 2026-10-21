@@ -24,7 +24,7 @@
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
     remit: [['Overview', ['hs-remit-0']], ['Unit messages', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],
-    ppapricer: [['Compare', ['hs-pp-cmp']], ['PPA Dashboard', ['hs-pp-price', 'hs-pp-pctrisk']], ['Step by step', ['hs-pp-price', 'hs-pp-mkt', 'hs-pp-mc', 'hs-pp-pctrisk']], ['Asset-specific FPC', ['hs-pp-price', 'hs-pp-fpc']], ['Monte Carlo (weather)', ['hs-pp-wx']], ['Market context', ['hs-pp-roll']], ['Methodology', ['hs-pp-doc']]],
+    ppapricer: [['Compare', ['hs-pp-cmp']], ['PPA Dashboard', ['hs-pp-price', 'hs-pp-pctrisk']], ['Step by step', ['hs-pp-price', 'hs-pp-mkt', 'hs-pp-mc', 'hs-pp-pctrisk']], ['Asset-specific FPC', ['hs-pp-price', 'hs-pp-fpc']], ['Monte Carlo (weather)', ['hs-pp-price', 'hs-pp-wx']], ['Market context', ['hs-pp-roll']], ['Methodology', ['hs-pp-doc']]],
     carbonfoot: [['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
   };
   const KEY = 'pk-view-';
