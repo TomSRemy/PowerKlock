@@ -96,7 +96,7 @@
     const recent = complete.slice(-2);
     const PC = priceCurve(B, recent);
     const recentDays = {}; B.days.filter(d => recent.includes(d.y)).forEach(d => { const k = d.m + '|' + d.t; (recentDays[k] = recentDays[k] || []).push(d); });
-    const tech = st.tech === 'solar' ? 'S' : 'W', pos = st.conv === 'pos';
+    const tech = st.tech === 'solar' ? 'S' : 'W', pos = st.conv !== 'all', baseAll = st.conv === 'curt';
     const AF = o.useAsset ? fitAsset(st, B, tech) : null;
     const meanCF = {}; for (let m = 1; m <= 12; m++) { const q = B.model.months[String(m)][tech === 'S' ? 's' : 'w']; meanCF[m] = mean(q); }
     let eA = 0;
@@ -137,7 +137,7 @@
         simsY.push({ P, V });
         if (yi === 0 && n === 0) { const a = days.indexOf(Y + '-06-01'); week = Array.from({ length: 7 * 24 }, (_, k) => ({ p: P[a * 24 + k], v: V[a * 24 + k] })); }
       }
-      const capRate = (V, P) => { let num = 0, den = 0, ps = 0, pn = 0; for (let k = 0; k < P.length; k++) { if (pos && P[k] <= 0) continue; ps += P[k]; pn++; num += V[k] * P[k]; den += V[k]; } return den && pn ? (num / den) / (ps / pn) : null; };
+      const capRate = (V, P) => { let num = 0, den = 0, ps = 0, pn = 0; for (let k = 0; k < P.length; k++) { const paid = !pos || P[k] > 0; if (paid || baseAll) { ps += P[k]; pn++; } if (!paid) continue; num += V[k] * P[k]; den += V[k]; } return den && pn ? (num / den) / (ps / pn) : null; };
       simsY.forEach((s, n) => { out[yi].rate[n] = capRate(s.V, s.P); out[yi].rateD[n] = capRate(s.V, simsY[(n + 1) % N].P); let v = 0; for (let k = 0; k < s.V.length; k++) v += s.V[k]; out[yi].vol[n] = v; });
       sims.push(simsY);
     });

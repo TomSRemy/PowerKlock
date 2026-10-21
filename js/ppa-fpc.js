@@ -93,9 +93,10 @@
   }
 
   // profile cost of a production curve on a price curve: Σ V·P / (Σ V × mean P) − 1
-  function profileCost(V, P, mask) {
+  // mask = the paid hours; baseAll = the baseload keeps every hour (curtailment) instead of the paid ones only (PPA Dashboard)
+  function profileCost(V, P, mask, baseAll) {
     let num = 0, den = 0, ps = 0, pn = 0;
-    for (let i = 0; i < P.length; i++) { if (P[i] == null || (mask && !mask[i])) continue; ps += P[i]; pn++; if (V[i] == null) continue; num += V[i] * P[i]; den += V[i]; }
+    for (let i = 0; i < P.length; i++) { if (P[i] == null) continue; const paid = !mask || mask[i]; if (paid || baseAll) { ps += P[i]; pn++; } if (!paid || V[i] == null) continue; num += V[i] * P[i]; den += V[i]; }
     return den && pn ? (num / den) / (ps / pn) - 1 : null;
   }
 
@@ -106,7 +107,7 @@
     const yrs = years.filter(y => H[y]);
     if (yrs.length < 2) return null;
     const K = coefficients(H, yrs);
-    const pos = st.conv === 'pos';
+    const pos = st.conv !== 'all', baseAll = st.conv === 'curt';
     const capOf = D.capGW[st.tech];
     // production by hour for a historical year: the asset's curve (kWh per quarter-hour → MW) or the national one
     const assetH = st.asset && o.useAsset ? (() => { const out = {}; st.asset.slots.forEach((a, d) => { const h = []; for (let k = 0; k < 24; k++) { let s = 0, n = 0; for (let q = 0; q < 4; q++) { const v = a[k * 4 + q]; if (v != null) { s += v * 4 / 1000; n++; } } h.push(n ? s / n : null); } out[d] = h; }); return out; })() : null;
@@ -122,7 +123,7 @@
       const mask = pos ? P.map(p => p != null && p > 0) : null;
       const hasV = V.some(v => v != null && v > 0);
       if (!hasV) return null;
-      const h = profileCost(V, P, mask), d = profileCost(V, Pt, mask);
+      const h = profileCost(V, P, mask, baseAll), d = profileCost(V, Pt, mask, baseAll);
       return h == null || d == null ? null : { y, hist: h, decorr: d, cannib: h - d, gw: capOf[y] || null };
     }).filter(Boolean);
     if (!hist.length) return null;

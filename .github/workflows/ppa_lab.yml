@@ -1,0 +1,44 @@
+name: PPA pricer test bench (weekly)
+
+# Neighbours' hourly data (Energy-Charts), then the test bench of the PPA pricer:
+# six approaches replayed month by month (calibration 2019-2023, verdict 2024 →),
+# the ensemble and its band, and monthly capture forecasts for the short-term tab
+# (scripts/ppa_lab.py → data/history/ppa_lab.json, ppa_forecast.json).
+
+on:
+  schedule:
+    - cron: '20 4 * * 0'      # Sunday 04:20 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ppa-lab
+  cancel-in-progress: false
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install requests==2.33.1 numpy
+      - name: Neighbours, recent years
+        run: python scripts/fetch_region_hourly.py --recent
+      - name: Detailed replay of the current methods
+        run: python scripts/ppa_backtest_detail.py --sims 40
+      - name: Test bench and forecasts
+        run: python scripts/ppa_lab.py --sims 100
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do git pull --rebase origin main && git push && exit 0; sleep 5; done
+          exit 1
