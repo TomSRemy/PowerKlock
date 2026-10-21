@@ -171,6 +171,9 @@ def add_items(out, items, src, now, limit, extra=None):
         if it["date"] > now:            # some feeds publish future-dated items
             it["date"] = now
         blob = (it["title"] + " " + it["snippet"]).lower()
+        # general-interest feeds ("require": a regex on the title, in config): keep only the energy-market articles
+        if src.get("require") and not re.search(src["require"], it["title"].lower()):
+            continue
         tags = list(dict.fromkeys(src.get("tags", []) + [t for t, rx in KEYWORDS.items() if re.search(rx, blob)]))
         rec = {"source": it.get("domain") or src["name"], "cls": src.get("cls", "search"), "title": it["title"], "link": it["link"],
                "snippet": it["snippet"], "date": it["date"].isoformat(timespec="seconds"), "tags": tags}
