@@ -2957,6 +2957,8 @@
   .pp-steps .cf-in em { flex:0 0 52px; }
   .pp-steps .pp-asset-row .cf-in select, .pp-steps .pp-asset-row .cf-in em { flex:none; }
   .pp-k5 { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .fuel-grid-2:has(> .chart-container[hidden]) { grid-template-columns:minmax(0,1fr); }
+  #pp-in-sum { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
   .pp-pgrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
   .pp-pgrid .pp-scen-card { grid-column:1/-1; }
   #page-ppapricer[data-m="fpc"] .pp-years-card, #page-ppapricer[data-m="wx"] .pp-years-card { display:none; }
@@ -5320,10 +5322,11 @@
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-in">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-in')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>Inputs<span class="pk-hs-meta">Filled from market data · type to override · ↺ back to auto · ⓘ what it means</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>Inputs<span class="pk-hs-meta" id="pp-in-sum">Filled from market data · type to override · ↺ back to auto · ⓘ what it means</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-in">
+          <div class="pp-hint" style="margin-bottom:10px">Every field is filled from market data: type a value to override it, ↺ goes back to the automatic one, ⓘ says what it means. Click the bar above to fold the inputs into one line.</div>
           <div class="pp-steps">
           <div class="pp-step"><div class="pp-group-t">1 · Asset and contract</div>
           <div class="cf-form">
@@ -5342,15 +5345,15 @@
           <div class="cf-form" id="pp-fwd"></div>
           <div class="cf-field" style="margin:4px 0 10px"><span>Years the cannibalisation is fitted on · click to add or remove</span><div class="pp-yearsel" id="pp-yearsel"></div></div>
           <div class="cf-form">
-            <label class="cf-field"><span>Cannibalisation projection</span><select id="pp-model"><option value="capacity">Driven by installed capacity (PPE3)</option><option value="flat">Flat at the last year used</option><option value="damped">Trend, halving each year</option><option value="linear">Straight line (PPA Dashboard), capped</option></select></label>
+            <label class="cf-field"><span>Cannibalisation projection</span><select id="pp-model"><option value="capacity">Installed capacity (PPE3)</option><option value="flat">Flat at last year</option><option value="damped">Trend, halving yearly</option><option value="linear">Straight line, capped</option></select></label>
             <label class="cf-field pp-only-pct"><span>Shape discount percentile · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
-            <label class="cf-field"><span>Capture convention</span><select id="pp-conv"><option value="pos">Hours with price &gt; 0 only (PPA Dashboard)</option><option value="all">All hours (M0 style)</option></select></label>
+            <label class="cf-field"><span>Capture convention</span><select id="pp-conv"><option value="pos">Hours &gt; 0 € only</option><option value="all">All hours (M0)</option></select></label>
           </div>
           </div>
           <div class="pp-step"><div class="pp-group-t">3 · Risk, costs and margin</div>
           <div class="cf-form">
             <label class="cf-field pp-only-build"><span>Risk accepted <i class="pp-auto" data-for="pp-alpha"></i></span><span class="cf-in"><input type="number" id="pp-alpha" step="1" min="1" max="50"><em>% loss</em></span></label>
-            <label class="cf-field pp-only-build"><span>Forward price risk</span><select id="pp-hedge"><option value="hedged">Hedged with Cal baseload forwards</option><option value="open">Left open</option></select></label>
+            <label class="cf-field pp-only-build"><span>Forward price risk</span><select id="pp-hedge"><option value="hedged">Hedged with Cal forwards</option><option value="open">Left open</option></select></label>
             <label class="cf-field"><span>Imbalance cost <i class="pp-auto" data-for="pp-imb"></i></span><span class="cf-in"><input type="number" id="pp-imb" step="0.1"><em>€/MWh</em></span></label>
             <label class="cf-field"><span>GO value <i class="pp-auto" data-for="pp-go"></i></span><span class="cf-in"><input type="number" id="pp-go" step="0.05"><em>€/MWh</em></span></label>
             <label class="cf-field"><span>Margin <i class="pp-auto" data-for="pp-margin"></i></span><span class="cf-in"><input type="number" id="pp-margin" step="0.1"><em>€/MWh</em></span></label>
