@@ -205,7 +205,98 @@ def m_weather(t, Y, train, V, n_sims):
     return float(np.mean(rates)), float(np.percentile(rates, 10)), float(np.percentile(rates, 90))
 
 
+# ── cross-country: the slope of cannibalisation learnt on several markets ──
+# penetration = installed GW ÷ GW of average load, so that 90 GW in Germany and
+# 30 GW in France are comparable; country fixed effects keep each market's own level.
+CC = None
+
+
+def cc_points(t, before):
+    """(country, year, ln penetration, capture rate) of complete years before `before`, 2022 left out"""
+    global CC
+    if CC is None:
+        try:
+            CC = json.load(open(os.path.join(ROOT, 'data', 'history', 'country_capture.json')))['countries']
+        except OSError:
+            CC = {}
+    pts = []
+    for c, d in CC.items():
+        for y, f in d['years'].items():
+            y = int(y)
+            gw, r, ld = f.get('solarGW' if t == 's' else 'windGW'), f.get('solarRate' if t == 's' else 'windRate'), f.get('avgLoadGW')
+            if y < before and y != 2022 and f.get('complete') and gw and r and ld:
+                pts.append((c, y, math.log(gw / ld), r))
+    return pts
+
+
+def fr_load(y):
+    return float(L[yr == y].mean()) / 1000
+
+
+def pooled_slope(pts):
+    """within-country slope of capture rate on ln penetration"""
+    by = {}
+    for c, y, x, r in pts:
+        by.setdefault(c, []).append((x, r))
+    num = den = 0.0
+    for c, v in by.items():
+        if len(v) < 2:
+            continue
+        mx, mr = np.mean([a for a, _ in v]), np.mean([b for _, b in v])
+        num += sum((a - mx) * (b - mr) for a, b in v)
+        den += sum((a - mx) ** 2 for a, _ in v)
+    return num / den if den else 0.0
+
+
+def fr_pts(t, train, V):
+    return [('FR', y, math.log(CAP[t][y] / fr_load(y)), rate(yr == y, V, P)) for y in train]
+
+
+def m_multi(t, Y, train, V, others=None):
+    """step by step with the slope learnt on France and its neighbours, anchored on France's last year"""
+    pts = fr_pts(t, train, V) + [p for p in cc_points(t, Y) if others is None or p[0] in others]
+    b = pooled_slope(pts)
+    last = train[-1]
+    r_last = rate(yr == last, V, P)
+    x_last = math.log(CAP[t][last] / fr_load(last))
+    x_y = math.log(cap_guess(t, Y, last) / fr_load(last))
+    return r_last + b * (x_y - x_last)
+
+
+def m_multi_level(t, Y, train, V):
+    """pooled curve with a French offset averaged over the French years (less tied to the last year)"""
+    pts = fr_pts(t, train, V) + cc_points(t, Y)
+    b = pooled_slope(pts)
+    fr = [(x, r) for c, y, x, r in pts if c == 'FR']
+    a = np.mean([r - b * x for x, r in fr])
+    last = train[-1]
+    return a + b * math.log(cap_guess(t, Y, last) / fr_load(last))
+
+
+def add_multi():
+    """adds the cross-country variants to an existing replay without re-running the weather simulations"""
+    out = json.load(open(OUT))
+    for row in out['rows']:
+        t, V = ('s', S) if row['tech'] == 'solar' else ('w', W)
+        row['multi'] = m_multi(t, row['year'], row['train'], V)
+        row['multiLevel'] = m_multi_level(t, row['year'], row['train'], V)
+        row['multiDE'] = m_multi(t, row['year'], row['train'], V, others={'DE'})
+    meths = ('dashboard', 'step', 'fpc', 'weather', 'multi', 'multiLevel', 'multiDE')
+    for tech in ('solar', 'wind'):
+        rs = [r for r in out['rows'] if r['tech'] == tech and r['year'] != 2022]
+        out['mae'][tech] = {m: round(float(np.mean([abs(r[m] - r['actual']) for r in rs])), 4) for m in meths}
+        out['mae'][tech + 'Recent'] = {m: round(float(np.mean([abs(r[m] - r['actual']) for r in rs if r['year'] >= 2023])), 4) for m in meths}
+        out['mae'][tech + 'Bias'] = {m: round(float(np.mean([r[m] - r['actual'] for r in rs])), 4) for m in meths}
+        for r in [r for r in out['rows'] if r['tech'] == tech]:
+            print(tech, r['year'], 'actual %.3f' % r['actual'], ' '.join('%s %.3f' % (m, r[m]) for m in meths))
+    print(json.dumps({k: v for k, v in out['mae'].items()}, indent=1))
+    with open(OUT, 'w') as f:
+        json.dump(out, f, separators=(',', ':'))
+
+
 def main():
+    if '--add-multi' in sys.argv:
+        return add_multi()
     n_sims = int(sys.argv[sys.argv.index('--sims') + 1]) if '--sims' in sys.argv else 40
     out = {'updated': date.today().isoformat(), 'convention': 'all hours', 'targets': TARGETS, 'rows': []}
     for t, V in (('s', S), ('w', W)):
