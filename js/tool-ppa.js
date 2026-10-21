@@ -392,9 +392,10 @@
       const v = a[0];
       inp.placeholder = v == null ? '' : String(v);
       if (S[k] == null && document.activeElement !== inp) inp.value = '';
-      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : `auto · ${a[1]}`; tag.title = man ? 'Back to the automatic value: ' + a[1] : a[1]; tag.dataset.k = k; }
+      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : 'auto'; tag.title = man ? 'Back to the automatic value: ' + a[1] : 'Automatic: ' + a[1]; tag.dataset.k = k; }
     });
     const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + (S.view === 'compare' ? 'all' : S.method);
+    const pg = $('page-ppapricer'); if (pg) pg.dataset.m = S.view === 'compare' ? 'all' : S.method;
   }
 
   function renderForwards(o) {
@@ -435,7 +436,6 @@
         _fuelKpi('Cannibalisation', pc(Y0.cannib) + (wm.years.length > 1 ? ' → ' + pc(Y1.cannib) : ''), '', 'same-year prices vs prices of another simulated year'),
         _fuelKpi('Capture value', f2(wm.fair), '€/MWh', 'average over the simulated years'),
         _fuelKpi('Risk premium', f2(wm.premium), '€/MWh', `${o.alpha} % of simulated deliveries earn less than the price`),
-        _fuelKpi('Other methods', [o.ppaPct, o.ppaBuild, o.ppaFpc].map(f2).join(' / '), '€/MWh', 'PPA Dashboard / step by step / FPC'),
       ].join('');
     }
     const fm = !wm && S.method === 'fpc' && o.m3 ? o.m3 : null;
@@ -446,21 +446,18 @@
       _fuelKpi('Cannibalisation', pc(F0.cannib) + (fm.fwd.length > 1 ? ' → ' + pc(F1.cannib) : ''), '', fm.flat ? 'flat at the average of the years used' : 'projected with installed capacity'),
       _fuelKpi('Capture value', f2(fm.fair), '€/MWh', 'Cal × (1 + profile cost + cannibalisation)'),
       _fuelKpi('Risk premium', f2(fm.premium), '€/MWh', `spread of the yearly cannibalisation (± ${(fm.sigC * 100).toFixed(1)} pts), ${o.alpha} % accepted`),
-      _fuelKpi('Other methods', f2(o.ppaBuild) + ' / ' + f2(o.ppaPct), '€/MWh', 'step by step / PPA Dashboard'),
     ].join(''); } else
     $('pp-kpis').innerHTML = (build ? [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.refW * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × (1 − projected shape discount), no risk'),
       _fuelKpi('Risk premium', f2(o.premium), '€/MWh', `${o.alpha} % chance of loss accepted · Monte Carlo`),
       _fuelKpi('Chance of loss', mcA ? (mcA.prob * 100).toFixed(1) : '–', '%', 'at the PPA price, margin included', mcA && mcA.prob > 0.5 ? 'down' : 'up'),
-      _fuelKpi('Other method', f2(o.ppaPct), '€/MWh', 'PPA Dashboard: percentile of history'),
       _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
     ] : [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.ref * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
       _fuelKpi('Shape discount used', pc(o.sdCh), '', `P${S.pct} of ${o.sel.join(', ')} (${o.useAsset ? 'asset' : 'national'})`),
       _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'percentile where the P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
-      _fuelKpi('Other method', f2(o.ppaBuild), '€/MWh', 'step by step: projection + Monte Carlo'),
       _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
     ]).join('');
     // the price, step by step: each step points to the chart it comes from
@@ -511,8 +508,8 @@
       options: _fuelOpts({ plugins: { legend: { display: false }, pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => { const r = c.raw; const v = c.dataIndex === 0 || c.dataIndex === labels.length - 1 ? r[1] : r[1] - r[0]; return ' ' + (v > 0 && c.dataIndex && c.dataIndex < labels.length - 1 ? '+' : '') + v.toFixed(2) + ' €/MWh'; } } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
     // year table
-    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>Weight</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices ≤ 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td>${(r.wt * 100).toFixed(1)} %</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>P&L k€</th></tr></thead><tbody>` +
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices ≤ 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices ≤ 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
@@ -816,8 +813,8 @@
     const meth = [['PPA Dashboard', o.ppaPct, null, null, '#B8C9D9'], ['Step by step', o.ppaBuild, atA(0.10), atA(0.50), '#14D3A9'],
       ['Asset-specific FPC', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24'],
       ['MC weather', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4']].filter(x => x[1] != null);
-    $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} for 10 % to 50 % risk accepted` : 'no risk range (risks entered by hand)')).join('') +
-      _fuelKpi('Spread between methods', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest price');
+    $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} at 10–50 % risk` : 'risks entered by hand')).join('') +
+      _fuelKpi('Spread', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest method');
     _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => x[0]), datasets: [
       { label: 'Range', data: meth.map(x => x[2] != null ? [x[2], x[3]] : null), backgroundColor: meth.map(x => x[4] + '33'), borderColor: meth.map(x => x[4]), borderWidth: 1, barPercentage: 0.25, grouped: false },
       { label: 'PPA price', data: meth.map(x => +x[1].toFixed(2)), backgroundColor: meth.map(x => x[4] + 'CC'), borderRadius: 3, barPercentage: 0.6, grouped: false },
@@ -1057,6 +1054,10 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
     $('pp-xlsx').addEventListener('click', exportXlsx);
+    // the guide stays closed once the user has closed it
+    const gd = $('pp-guide');
+    if (gd) { try { if (localStorage.getItem('pk-pp-guide') === 'closed') gd.open = false; } catch (e) {}
+      gd.addEventListener('toggle', () => { try { localStorage.setItem('pk-pp-guide', gd.open ? 'open' : 'closed'); } catch (e) {} }); }
     $('pp-scen-save').addEventListener('click', () => { if (!S.last) return; const L = scenLoad(); L.push(scenOf(S.last)); scenSave(L); renderScen(); });
     $('pp-pptx').addEventListener('click', pptxReport);
     renderScen();
