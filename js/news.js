@@ -1,5 +1,6 @@
 // News come from data/news.json, written every 3 hours by
-// scripts/fetch_news.py (GitHub Actions) from public RSS/Atom feeds.
+// scripts/fetch_news.py (GitHub Actions) from the sources of
+// config/news_sources.json: RSS/Atom feeds, the CRE news page, press searches.
 // No client-side proxy and no placeholder articles: if the file is missing
 // the page says so.
 async function loadNews() {
@@ -12,12 +13,37 @@ async function loadNews() {
     newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
       .sort((a, b) => b.date - a.date);
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
-    if (badge) badge.textContent = `${newsData.length} articles · ${new Set(newsData.map(n => n.source)).size} sources · ${upd}`;
+    window._newsSources = j.sources || null;
+    const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
+    if (badge) badge.textContent = `${newsData.length} articles · ${nSrc} sources${j.sources ? ' + ' + j.sources.filter(s => s.kind === 'search').length + ' searches' : ''} · ${upd}`;
   } catch (e) {
     newsData = [];
     if (badge) badge.textContent = 'News feed unavailable';
   }
+  _newsWireKw();
   renderNews(newsData);
+  renderNewsSources();
+}
+
+// Personal keywords: kept in this browser, matching articles get a star
+function _newsKw() { try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; } }
+function _newsMine(i, kw) { if (!kw.length) return false; const t = (i.title + ' ' + i.snippet).toLowerCase(); return kw.some(k => t.includes(k)); }
+function _newsWireKw() {
+  const inp = document.getElementById('news-kw'); if (!inp || inp.dataset.wired) return;
+  inp.dataset.wired = '1';
+  inp.value = _newsKw().join(', ');
+  inp.addEventListener('change', () => { try { localStorage.setItem('pk-news-kw', inp.value); } catch (_) {} renderNews(newsData); });
+}
+
+function renderNewsSources() {
+  const host = document.getElementById('news-sources'); if (!host) return;
+  const src = window._newsSources;
+  const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? '🔎 ' + s.name : s.name)}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
+    `<div class="news-src-help"><b>Add a source for everyone</b>: edit <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub — a public RSS / Atom feed goes in <code>feeds</code>, a subject to follow across the press goes in <code>searches</code> (a phrase in quotes is searched as such). Saving the file starts a news run: the source appears within a few minutes.<br>
+    <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
+    <b>Not possible</b>: LinkedIn (no public feed, and its terms forbid reading pages automatically) and subscription sites without a feed (Contexte, Montel): their articles still appear when the press search finds them. RTE has no news feed: its news come through the press search.</div>`;
 }
 
 function _newsEsc(s) {
@@ -26,8 +52,11 @@ function _newsEsc(s) {
 
 function renderNews(items) {
   const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
+  const kw = _newsKw();
+  const kn = document.getElementById('news-kw-n');
+  if (kn) kn.textContent = kw.length ? (items || []).filter(i => _newsMine(i, kw)).length + ' matching' : '';
   const filtered = (items || []).filter(i =>
-    (newsFilter === 'all' || (i.tags || []).includes(newsFilter)) &&
+    (newsFilter === 'all' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   const grid = document.getElementById('news-grid');
   if (!items || !items.length) {
@@ -35,20 +64,21 @@ function renderNews(items) {
     return;
   }
   if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No articles for this filter.</div>';
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${newsFilter === 'mine' && !kw.length ? 'Type your keywords above to follow your subjects.' : newsFilter === 'watch' ? 'No press-search results at the last run.' : 'No articles for this filter.'}</div>`;
     return;
   }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
     const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsEsc(t)}</span>`).join(' ');
-    return `<a class="news-card" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
+    const mine = _newsMine(item, kw);
+    return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
         <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
         <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${_newsEsc(item.title)}</div>
+      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
-      <div>${tagsHtml}</div>
+      <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}</div>
     </a>`;
   }).join('');
 }
