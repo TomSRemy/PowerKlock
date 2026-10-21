@@ -31,13 +31,17 @@ jobs:
         run: python scripts/fetch_region_hourly.py --recent
       - name: Detailed replay of the current methods
         run: python scripts/ppa_backtest_detail.py --sims 40
+      - name: Regional capture (France, 12 regions)
+        run: python scripts/fetch_fr_regions_capture.py --recent || echo "::warning::regional capture not updated"
       - name: Test bench and forecasts
         run: python scripts/ppa_lab.py --sims 100
+      - name: Walk-forward test, year by year
+        run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull --rebase origin main && git push && exit 0; sleep 5; done

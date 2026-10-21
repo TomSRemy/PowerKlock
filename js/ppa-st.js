@@ -16,14 +16,14 @@
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const lab = k => MON[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4);
-  const NAMES = { hybrid: 'Ensemble (3 methods)', regional: 'Regional model', regionalMC: 'Regional Monte Carlo', fpc: 'Asset-specific FPC', step: 'Step by step', dashboard: 'PPA Dashboard', weather: 'MC weather' };
-  let FW = null, FC = null, loading = null;
-  const S = { from: null, to: null };
+  const NAMES = { hybrid: 'Ensemble (4 methods)', weather: 'MC weather', regional: 'Regional model', regionalMC: 'Regional Monte Carlo', fpc: 'Asset-specific FPC', step: 'Step by step', dashboard: 'PPA Dashboard', weather: 'MC weather' };
+  let FW = null, FC = null, RG = null, loading = null;
+  const S = { from: null, to: null, region: '' };
 
   function load() {
     if (loading) return loading;
     const get = p => fetch(DATA_BASE + p + '?t=' + Date.now()).then(r => r.ok ? r.json() : null).catch(() => null);
-    loading = Promise.all([get('history/fr_forward_monthly.json'), get('history/ppa_forecast.json')]).then(([a, b]) => { FW = a; FC = b; });
+    loading = Promise.all([get('history/fr_forward_monthly.json'), get('history/ppa_forecast.json'), get('history/fr_regional_capture.json')]).then(([a, b, c]) => { FW = a; FC = b; RG = c; });
     return loading;
   }
 
@@ -39,10 +39,23 @@
     return FW && f ? Object.keys(FW.months).filter(k => f[k]).sort() : [];
   }
 
-  // the asset's own monthly output shape when a curve is loaded, else the national one
-  function shareOf(tech, st) {
+  // regional basis: capture gap of the region to the national profile (capture points), average of the last
+  // three complete years, and the region's monthly output shape
+  function regionOf(tech, conv) {
+    const r = S.region && RG && RG.regions[S.region];
+    if (!r) return null;
+    const ys = Object.keys(r.years).filter(y => r.years[y][tech] && r.years[y][tech].complete && r.years[y][tech].gap).sort().slice(-3);
+    if (!ys.length) return null;
+    const gap = ys.reduce((a, y) => a + r.years[y][tech].gap[conv], 0) / ys.length;
+    const share = Array.from({ length: 12 }, (_, i) => ys.reduce((a, y) => a + (r.years[y][tech].share || [])[i] || 0, 0) / ys.length);
+    return { name: r.name, gap, share, years: ys };
+  }
+  // the asset's own monthly output shape when a curve is loaded, else the region's, else the national one
+  function shareOf(tech, st, conv) {
     const nat = FC.share[tech];
     const A = st && st.asset && st.asset.slots;
+    const rg = regionOf(tech, conv);
+    if (!A && rg) return m => rg.share[m - 1];
     if (!A) return m => nat[m];
     const acc = Array(13).fill(0);
     A.forEach((row, d) => { const m = +d.slice(5, 7); row.forEach(v => { if (v) acc[m] += v; }); });
@@ -51,9 +64,9 @@
   }
 
   function price(ks, method, c) {
-    const f = FC.forecast[c.tech][c.conv], sh = shareOf(c.tech, c.st);
+    const f = FC.forecast[c.tech][c.conv], sh = shareOf(c.tech, c.st, c.conv), rg = regionOf(c.tech, c.conv), gap = rg ? rg.gap : 0;
     let w = 0, v = 0, F = 0, cap = 0, paid = 0, out = 0;
-    ks.forEach(k => { const e = f[k], m = +k.slice(5, 7), cr = e[method]; if (cr == null) return;
+    ks.forEach(k => { const e = f[k], m = +k.slice(5, 7), cr0 = e[method]; if (cr0 == null) return; const cr = cr0 + gap;
       const p = c.conv === 'curt' ? e.paid : 1, o = sh(m), fw = FW.months[k].value;
       w += o * p; v += o * p * fw * cr; F += o * p * fw; cap += o * p * cr; paid += o * p; out += o; });
     if (!w) return null;
@@ -76,9 +89,15 @@
       stt.addEventListener('change', () => { S.to = stt.value; if (S.from > S.to) { S.from = S.to; sf.value = S.from; } render(); });
     }
     host.innerHTML = '';
+    const sr = $('pp-st-region');
+    if (sr && RG && !sr.dataset.wired) {
+      sr.dataset.wired = '1';
+      sr.innerHTML = '<option value="">National profile</option>' + Object.entries(RG.regions).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([k, r]) => `<option value="${k}">${r.name}</option>`).join('');
+      sr.addEventListener('change', () => { S.region = sr.value; render(); });
+    }
     const ks = all.filter(k => k >= S.from && k <= S.to);
     const h = FC.hybrid[c.tech][c.conv], res = {};
-    ['hybrid', 'regional', 'regionalMC', 'fpc', 'step', 'dashboard'].forEach(m => { res[m] = price(ks, m, c); });
+    ['hybrid', 'regional', 'regionalMC', 'weather', 'fpc', 'step', 'dashboard'].forEach(m => { res[m] = price(ks, m, c); });
     const H = res.hybrid, band = h.bandPts;
     const lo = H ? H.ppa + band.lo / 100 * H.fwd : null, hi = H ? H.ppa + band.hi / 100 * H.fwd : null;
     const rule = h.used === 'ensemble' ? `average of ${h.members.map(m => NAMES[m]).join(', ')}` : h.pick === 'season' ? `${NAMES[h.summerBest]} in summer, ${NAMES[h.winterBest]} in winter` : h.pick === 'avg2' ? `average of ${NAMES[h.ranking[0]]} and ${NAMES[h.ranking[1]]}` : h.pick === 'bestDebiased' ? `${NAMES[h.ranking[0]]}, bias removed` : NAMES[h.ranking[0]];
@@ -89,14 +108,15 @@
       _fuelKpi('Capture rate', pc(H.capture), '', `value ÷ forward · ${c.conv === 'curt' ? 'curtailed at ≤ 0 €' : 'every hour paid'}`),
       _fuelKpi(c.conv === 'curt' ? 'Output paid' : 'Costs and GO', c.conv === 'curt' ? pc(H.paid) : f2(H.cost), c.conv === 'curt' ? '' : '€/MWh', c.conv === 'curt' ? 'the rest is curtailed at prices ≤ 0' : 'imbalance, GO, margin (inputs above)'),
     ].join('') : '';
-    $('pp-st-note').innerHTML = (h.used === 'ensemble' ? `<b>Ensemble</b> = ${rule}. The strict protocol picked ${NAMES[h.ranking[0]]} alone on 2019–2023; on the years it never saw (2024–2026) the average of three different methods held best, so the pricer uses it.`
+    $('pp-st-note').innerHTML = (h.used === 'ensemble' ? `<b>Ensemble</b> = ${rule}, equal weights.`
       : `<b>Hybrid</b> = ${rule}: the combination that erred least on 2019–2023, set before looking at 2024–2026.`) +
       (c.legacy ? ' The PPA Dashboard convention has no monthly forecast: shown with curtailment.' : '') +
+      (regionOf(c.tech, c.conv) ? ` <b>${regionOf(c.tech, c.conv).name}</b>: ${(regionOf(c.tech, c.conv).gap * 100 >= 0 ? '+' : '') + f1(regionOf(c.tech, c.conv).gap * 100)} capture points against the national profile (average ${regionOf(c.tech, c.conv).years.join(', ')}), and the region's monthly output shape.` : '') +
       ` Costs: imbalance −${f2(c.o && c.o.imb)}, GO +${f2(c.o && c.o.goW)}, margin −${f2(c.o && c.o.margin)} €/MWh (inputs above).`;
     // the methods for the period, with their replay record
     const sc = FC.scores[c.tech][c.conv], ver = Object.keys(sc.pts).map(Number).filter(y => y >= 2024).sort();
     $('pp-st-methods').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Method</th><th>PPA €/MWh</th><th>Capture</th>${ver.map(y => `<th title="Replay error on ${y}, capture points">${y}${y >= new Date().getFullYear() ? '*' : ''}</th>`).join('')}</tr></thead><tbody>` +
-      ['hybrid', 'regional', 'regionalMC', 'fpc', 'step', 'dashboard'].filter(m => res[m]).map(m => `<tr${m === 'hybrid' ? ' class="pp-main"' : ''}><td style="text-align:left">${NAMES[m]}</td><td>${f2(res[m].ppa)}</td><td>${pc(res[m].capture)}</td>${ver.map(y => { const e = sc.pts[y] && sc.pts[y][m]; return `<td class="${e == null ? '' : Math.abs(e) < 3 ? 'pp-pos' : Math.abs(e) > 8 ? 'pp-neg' : ''}">${e == null ? '–' : (e > 0 ? '+' : '') + f1(e) + ' pts'}</td>`; }).join('')}</tr>`).join('') +
+      ['hybrid', 'regional', 'regionalMC', 'weather', 'fpc', 'step', 'dashboard'].filter(m => res[m]).map(m => `<tr${m === 'hybrid' ? ' class="pp-main"' : ''}><td style="text-align:left">${NAMES[m]}</td><td>${f2(res[m].ppa)}</td><td>${pc(res[m].capture)}</td>${ver.map(y => { const e = sc.pts[y] && sc.pts[y][m]; return `<td class="${e == null ? '' : Math.abs(e) < 3 ? 'pp-pos' : Math.abs(e) > 8 ? 'pp-neg' : ''}">${e == null ? '–' : (e > 0 ? '+' : '') + f1(e) + ' pts'}</td>`; }).join('')}</tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">Years: replay error in capture points on years the method never saw (production-weighted, + = too optimistic; * = to date). 2019–2023 chose every setting; 2024–2026 only judge.</div>`;
     // month by month
     const f = FC.forecast[c.tech][c.conv];
