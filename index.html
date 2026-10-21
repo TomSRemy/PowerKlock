@@ -2928,6 +2928,7 @@
   .pp-explain b { color:var(--text); }
   .pp-mc-draws { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
   @media (max-width: 1100px) { .pp-mc-draws { grid-template-columns:minmax(0,1fr); } }
+  .pp-cmp3 th.pp-cur { color:var(--accent); } .pp-cmp3 tr.pp-main td { font-weight:600; color:var(--text); }
   .pp-scen-btns { display:flex; gap:8px; flex-wrap:wrap; }
   .pp-cmp td.best { color:var(--accent); font-weight:600; }
   .pp-cmp .pp-x { background:none; border:0; color:var(--text3); cursor:pointer; font-size:11px; }
@@ -5313,7 +5314,7 @@
           <div class="cf-form" id="pp-fwd"></div>
           <div class="cf-field" style="margin:4px 0 10px"><span>Years the cannibalisation is fitted on · click to add or remove</span><div class="pp-yearsel" id="pp-yearsel"></div></div>
           <div class="cf-form">
-            <label class="cf-field"><span>Pricing method</span><select id="pp-method"><option value="build">Step by step · projection + Monte Carlo premium</option><option value="pct">PPA Dashboard · percentile of history</option></select></label>
+            <label class="cf-field"><span>Pricing method</span><select id="pp-method"><option value="build">Step by step · projection + Monte Carlo premium</option><option value="pct">PPA Dashboard · percentile of history</option><option value="fpc">Asset-specific · FPC, three pricings</option></select></label>
             <label class="cf-field"><span>Cannibalisation projection</span><select id="pp-model"><option value="capacity">Driven by installed capacity (PPE3)</option><option value="flat">Flat at the last year used</option><option value="damped">Trend, halving each year</option><option value="linear">Straight line (PPA Dashboard), capped</option></select></label>
             <label class="cf-field pp-only-pct"><span>Shape discount percentile · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
             <label class="cf-field"><span>Capture convention</span><select id="pp-conv"><option value="pos">Hours with price &gt; 0 only (PPA Dashboard)</option><option value="all">All hours (M0 style)</option></select></label>
@@ -5353,11 +5354,23 @@
         <div class="hist-section-body open" id="hs-body-pp-price">
 <div class="kpi-strip fuel-kpis" id="pp-kpis"></div>
 <div class="pp-build" id="pp-build"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px"><div class="fuel-card-head"><div><div class="table-title">The three methods compared</div><div class="fuel-card-sub">Same inputs, three ways to price</div></div></div><div id="pp-compare"></div></div>
 <div class="fuel-grid-2">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price build-up</div><div class="fuel-card-sub">From the baseload forward to the PPA price (€/MWh)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-waterfall" style="width:100%;height:320px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">What each delivery year contributes to the price</div></div></div><div id="pp-years"></div></div>
 </div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Scenarios</div><div class="fuel-card-sub">Save the current pricing and compare it with others, side by side (kept in this browser)</div></div><div class="pp-scen-btns"><button type="button" class="pk-btn-primary" id="pp-scen-save">＋ Save this scenario</button><button type="button" class="pk-btn-ghost" id="pp-pptx" title="The price, its steps and its charts as a PowerPoint (your export settings and template)">⤓ PowerPoint report</button></div></div><div id="pp-scen-cmp"></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-fpc">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-fpc')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M6 15c2-6 4-6 6 0s4 6 6 0"/></svg>Asset-specific FPC method<span class="pk-hs-meta">Forward curve, (1) historical, (2) forward and (3) decorrelated pricings, cannibalisation</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-fpc">
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Forward price curve · monthly averages</div><div class="fuel-card-sub">Hourly FPC calibrated on today’s quotes without arbitrage</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:280px"><canvas id="pp-fpc-curve" style="width:100%;height:280px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Forward price curve · a week of June</div><div class="fuel-card-sub">Hourly FPC and the expected production profile</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:280px"><canvas id="pp-fpc-week" style="width:100%;height:280px"></canvas></div></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The three pricings, year by year</div><div class="fuel-card-sub">% of the baseload · cannibalisation = (1) − (3), then projected over the delivery</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-fpc-years" style="width:100%;height:320px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Delivery years</div><div class="fuel-card-sub">Cal × (1 + profile cost + cannibalisation)</div></div></div><div id="pp-fpc-table"></div></div></div>
+<div class="fuel-note" id="pp-fpc-note" style="margin-top:8px"></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-mkt">
@@ -7749,6 +7762,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/search.js"></script>
 <script src="js/kpi-tone.js"></script>
 <script src="js/tool-carbon.js"></script>
+<script src="js/ppa-fpc.js"></script>
 <script src="js/tool-ppa.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
