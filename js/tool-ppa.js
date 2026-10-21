@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'pos', hedge: 'hedged',
+  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -80,10 +80,13 @@
   }
 
   // Column indexes of a day row for the technology and convention:
-  // 'pos' = PPA Dashboard (hours with a price ≤ 0 left out of capture and baseload), 'all' = every hour
+  // 'curt' = curtailment: output at prices ≤ 0 is stopped and not paid; capture over the paid hours against the
+  //          baseload of every hour (the Cal settles on every hour)
+  // 'all'  = no curtailment: every hour produced and paid, negative prices included
+  // 'pos'  = PPA Dashboard convention (legacy): hours ≤ 0 left out of the capture AND of the baseload
   function cols(st = S) {
-    const t = st.tech === 'solar' ? 's' : 'w', pos = st.conv === 'pos' ? 'Pos' : '', ix = D.ix;
-    return { E: ix[t + 'E' + pos], R: ix[t + 'R' + pos], P: ix['pSum' + pos], N: ix['pN' + pos], Eall: ix[t + 'E'] };
+    const t = st.tech === 'solar' ? 's' : 'w', c = st.conv, ix = D.ix, pe = c === 'all' ? '' : 'Pos', pb = c === 'pos' ? 'Pos' : '';
+    return { E: ix[t + 'E' + pe], R: ix[t + 'R' + pe], P: ix['pSum' + pb], N: ix['pN' + pb], Eall: ix[t + 'E'] };
   }
   // Sum a set of day rows → capture price, baseload, capture rate
   function agg(rows, st = S) {
@@ -114,9 +117,10 @@
     const files = await Promise.all(years.map(y => get('history/fr_prices/' + y + '.json')));
     const P = {}; files.forEach(f => { if (f && f.days) Object.assign(P, f.days); });
     const acc = {};
-    const pos = st.conv === 'pos';
+    const pos = st.conv === 'pos', curt = st.conv === 'curt';
     days.forEach(d => { const p = P[d]; if (!p) return; const c = slots.get(d), y = +d.slice(0, 4), a = acc[y] || (acc[y] = { n: 0, bs: 0, bn: 0, e: 0, rev: 0, all: 0, neg: 0 }); a.n++;
       for (let q = 0; q < 96; q++) { if (p[q] == null) continue; const e = c[q] || 0; a.all += e;
+        if (curt && p[q] <= 0) { a.neg += e; a.bs += p[q]; a.bn++; continue; }   // curtailed: not produced, not paid; the baseload keeps the hour
         if (pos && p[q] <= 0) { a.neg += e; continue; }   // PPA Dashboard convention: hours ≤ 0 €/MWh left out
         a.bs += p[q]; a.bn++; if (!e) continue; a.e += e; a.rev += e * p[q]; } });
     return Object.keys(acc).map(Number).sort().map(y => { const a = acc[y], base = a.bs / a.bn, cp = a.e ? a.rev / a.e : null;
@@ -234,7 +238,7 @@
     const rho = clamp(pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
     // Year by year: expected production, discount factor, capture value
     const now = nowFrac();
-    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv === 'pos' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
+    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv !== 'all' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
       return { y, fwd: fwds[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
@@ -358,7 +362,7 @@
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
     'pp-pct': 'PPA Dashboard method only: which percentile of the past discounts is used. Higher = more cautious.',
-    'pp-conv': 'Whether hours with a price ≤ 0 € count. “Hours > 0 only” means their production is not paid (PPA Dashboard convention).',
+    'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
     'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (forecast error × gap between imbalance and spot prices).',
@@ -449,7 +453,7 @@
   // how many advanced settings differ from the automatic ones
   const ADV = ['degr', 'alpha', 'imb', 'go', 'disc', 'add', 'volRisk', 'priceRisk', 'mcVol', 'mcFwd', 'mcSd', 'rho', 'volStress', 'spotStress'];
   function advCount() {
-    const n = ADV.filter(k => S[k] != null).length + (S.years ? 1 : 0) + ['model', 'conv', 'hedge', 'pct'].filter(k => S[k] !== S0[k]).length;
+    const n = ADV.filter(k => S[k] != null).length + (S.years ? 1 : 0) + ['model', 'hedge', 'pct'].filter(k => S[k] !== S0[k]).length;
     const e = $('pp-adv-n'); if (e) e.textContent = n ? n + ' changed' : '';
   }
   // long notes fold to two lines; a click opens them
@@ -561,7 +565,7 @@
       `</tbody></table></div><div class="fuel-note">${build ? 'Low / high: projected shape discount ± 1.28 σ (P90 / P10 of the projection).' : 'Low / high: 90th / 10th percentile of the historical shape discount.'} Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production. No hedge in this table.</div>`;
     // asset diagnostics
     const ad = $('pp-asset-info');
-    if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
+    if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv !== 'all' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
     renderDoc(o);
     renderCompare(o);
     renderBacktest();
@@ -721,7 +725,7 @@
       if (has('capfit')) _fuelChart(ids.capfit, { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
         options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => ` ${c.raw.yr || ''} ${c.raw.x.toFixed(1)} GW · ${c.raw.y.toFixed(1)} %` } } },
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
-      setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
+      setT('capfitSub', `Each point = one year (${(st.conv === 'curt' ? 'curtailment at prices ≤ 0' : st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours')}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
     } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
     // France and its neighbours: capture rate against installed capacity, one colour per country with its trend (log fit)
     if (has('xc') && D.cc) drawXC(ids.xc, ids.xcSub, st);
@@ -1115,7 +1119,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       const a = o.auto, line = (l, k, u) => `${l}: ${a[k] ? a[k][0] : '–'}${u || ''}${S[k] != null ? ' (entered: ' + S[k] + ')' : ' · ' + (a[k] ? a[k][1] : '')}`;
       specs.push({ k: 'note', title: 'Assumptions', text: [line('Production', 'volume', ' MWh/yr'), line('Degradation', 'degr', ' %/yr'), line('Imbalance', 'imb', ' €/MWh'), line('GO', 'go', ' €/MWh'), line('Margin', 'margin', ' €/MWh'), line('Discount rate', 'disc', ' %'),
         line('Risk accepted', 'alpha', ' %'), line('Production uncertainty', 'mcVol', ' %'), line('Forward volatility', 'mcFwd', ' %/√yr'), line('Cannibalisation drift', 'mcSd', ' pts/√yr'), line('Production ↔ cannibalisation', 'rho', ''),
-        `Years fitted: ${o.sel.join(', ')} · capture convention: ${S.conv === 'pos' ? 'hours with price > 0' : 'all hours'} · forwards of ${D.fwdDate || '–'}`].join('\n') });
+        `Years fitted: ${o.sel.join(', ')} · capture convention: ${S.conv === 'curt' ? 'curtailment at prices ≤ 0' : S.conv === 'pos' ? 'hours with price > 0' : 'all hours'} · forwards of ${D.fwdDate || '–'}`].join('\n') });
       await PKExport.deck(`PPA pricing · ${tech} ${T}`, specs);
     } catch (e) { console.warn('[ppa] pptx', e); $('pp-status').textContent = 'PowerPoint report failed: ' + (e.message || e); }
     btn.disabled = false; btn.textContent = label;
@@ -1138,7 +1142,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
         { Item: 'Method', Value: S.method === 'pct' ? 'PPA Dashboard (percentile of history)' : 'Step by step (projection + Monte Carlo premium)' },
         { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'Step-by-step price (€/MWh)', Value: r2(o.ppaBuild) }, { Item: 'PPA Dashboard price (€/MWh)', Value: r2(o.ppaPct) },
         { Item: 'Technology', Value: S.tech }, { Item: 'Tenor', Value: o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] }, { Item: 'Production (MWh/yr)', Value: r2(o.volume) }, { Item: 'Capacity (MW)', Value: o.mw },
-        { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'pos' ? 'hours with price > 0 (PPA Dashboard)' : 'all hours' },
+        { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'curt' ? 'curtailment at prices ≤ 0' : S.conv === 'pos' ? 'hours with price > 0 (PPA Dashboard)' : 'all hours' },
         { Item: 'Years used', Value: o.sel.join(', ') }, { Item: 'Projection', Value: MODEL_T[o.model] }, { Item: 'Forward, weighted (€/MWh)', Value: r2(o.refW) }, { Item: 'Forward, simple average (€/MWh)', Value: r2(o.ref) },
         { Item: 'Capture value (€/MWh)', Value: r2(o.fair) }, { Item: 'Risk accepted (% chance of loss)', Value: o.alpha }, { Item: 'Risk premium (€/MWh)', Value: r2(o.premium) },
         { Item: 'Percentile (PPA Dashboard)', Value: 'P' + S.pct }, { Item: 'Shape discount at the percentile', Value: r4(o.sdCh) },
@@ -1169,7 +1173,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       if (o.missing) { S.last = null; renderForwards(o); renderYears(o); renderAuto(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); }
         $('pp-status').innerHTML = `<b>No market price for Cal ${o.missing.join(', ')}.</b> Enter your forward for ${o.missing.length > 1 ? 'these years' : 'this year'} (step 2), or end the delivery in ${o.missing[0] - 1}. Nothing is priced until then.`;
         $('pp-kpis').innerHTML = ''; $('pp-build').innerHTML = ''; busy = false; if (again) { again = false; run(); } return; }
-      S.last = o; renderForwards(o); render(o); renderScen(); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
+      S.last = o; renderForwards(o); render(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }
