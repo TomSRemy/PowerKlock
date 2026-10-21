@@ -30,6 +30,8 @@ jobs:
         run: pip install requests==2.33.1
       - name: Fetch FR market data
         run: python scripts/fetch_fr_market.py
+      - name: Monthly forward over the quoted horizon
+        run: python scripts/build_forward_monthly.py || echo "::warning::monthly forward not rebuilt"
       - name: Fetch gas / carbon / coal / oil + FR nuclear availability
         # Same SEFE public cockpit; failure must not block the FR market commit.
         continue-on-error: true
@@ -38,7 +40,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json data/history/fr_market_contracts.json data/history/fr_market_rolling.json data/commodities.json data/history/commodities_series.json
+          git add data/fr_market.json data/history/fr_market/ data/history/fr_market_series.json data/history/fr_market_calchain.json data/history/fr_market_contracts.json data/history/fr_market_rolling.json data/history/fr_forward_monthly.json data/commodities.json data/history/commodities_series.json
           if git diff --staged --quiet; then
             echo "No data changes — skipping commit."
             exit 0

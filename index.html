@@ -5385,6 +5385,7 @@
           <div class="cf-form" id="pp-fwd"></div>
           <div class="cf-form">
             <label class="cf-field"><span>Margin <i class="pp-auto" data-for="pp-margin"></i></span><span class="cf-in"><input type="number" id="pp-margin" step="0.1"><em>€/MWh</em></span></label>
+            <label class="cf-field"><span>Negative prices</span><select id="pp-conv"><option value="curt">Curtailed at ≤ 0 € (not paid)</option><option value="all">No curtailment, all hours paid</option><option value="pos">PPA Dashboard convention (legacy)</option></select></label>
           </div>
           </div>
           <details class="pp-adv" id="pp-adv"><summary>Advanced settings <span class="pp-adv-n" id="pp-adv-n"></span><span class="pp-hint">history used, projection, risk, costs, uncertainty · every value is set automatically</span></summary>
@@ -5393,7 +5394,6 @@
           <div class="cf-form">
             <label class="cf-field"><span>How the discount evolves</span><select id="pp-model"><option value="capacity">Installed capacity (PPE3)</option><option value="flat">Flat at last year</option><option value="damped">Trend, halving yearly</option><option value="linear">Straight line, capped</option></select></label>
             <label class="cf-field pp-only-pct"><span>Historical discount used · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
-            <label class="cf-field"><span>Hours that count</span><select id="pp-conv"><option value="pos">Hours &gt; 0 € only</option><option value="all">All hours (M0)</option></select></label>
             <label class="cf-field"><span>Degradation <i class="pp-auto" data-for="pp-degr"></i></span><span class="cf-in"><input type="number" id="pp-degr" step="0.05"><em>%/yr</em></span></label>
           </div>
           </div>
@@ -5452,6 +5452,22 @@
 <div class="pp-group-t" style="margin-top:16px">Which method was right in the past? · historical replay</div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate: predicted at the start of each year vs actual</div><div class="fuel-card-sub">National profile · each method only sees the years before (2022 left out)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-bt-chart" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average error by method</div><div class="fuel-card-sub">Capture rate points, |predicted − actual|</div></div></div><div id="pp-bt-table"></div></div></div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Side by side</div><div class="fuel-card-sub">The building blocks of each method</div></div></div><div id="pp-compare"></div></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-st">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-st')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>Short-term PPA<span class="pk-hs-meta">Any period of the quoted horizon, month by month · negative-price option above</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-st">
+<div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Delivery from</span><select class="country-select" id="pp-st-from" aria-label="First month"></select><span class="fuel-toolbar-lbl">to</span><select class="country-select" id="pp-st-to" aria-label="Last month"></select></div>
+<div class="pp-explain">Each month is priced on its own forward (the month contract when listed, else its quarter, season or Cal, shaped by history) and its own capture rate. The capture rate is the <b>average of three different methods</b> (Step by step, Asset-specific FPC, regional hourly model): the most robust on the years the methods never saw. Technology, output, negative prices, imbalance, GO and margin come from the inputs above.</div>
+<div class="kpi-strip fuel-kpis pp-k5" id="pp-st-kpis"></div>
+<div class="fuel-note" id="pp-st-note" style="margin:-4px 0 12px"></div>
+<div id="pp-st-body"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Month by month</div><div class="fuel-card-sub" id="pp-st-chart-sub"></div></div><span class="source-badge">SEFE · PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-st-chart" style="width:100%;height:300px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The methods for this period</div><div class="fuel-card-sub">Price and capture rate, with each method's record on the years it never saw</div></div></div><div id="pp-st-methods"></div></div></div>
+<details class="pp-fold" style="margin-top:12px"><summary>The months in detail</summary><div id="pp-st-months"></div></details>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-price">
@@ -5834,7 +5850,7 @@
         </div>
         <div class="hist-section-body open" id="hs-body-renewables-cannib">
 <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Technology</span><select class="country-select" id="cn-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select>
-<span class="fuel-toolbar-lbl">Convention</span><select class="country-select" id="cn-conv" aria-label="Capture convention"><option value="pos">Hours with price &gt; 0</option><option value="all">All hours</option></select>
+<span class="fuel-toolbar-lbl">Convention</span><select class="country-select" id="cn-conv" aria-label="Capture convention"><option value="pos">Hours with price &gt; 0</option><option value="all">All hours</option><option value="curt">Curtailment at ≤ 0 €</option></select>
 <span class="fuel-toolbar-lbl">Projection</span><select class="country-select" id="cn-model" aria-label="Projection"><option value="capacity">Installed capacity (PPE3)</option><option value="flat">Flat</option><option value="damped">Damped trend</option><option value="linear">Straight line</option></select></div>
 <div class="pp-proj-grid"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate · history and projection</div><div class="fuel-card-sub" id="cn-proj-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:440px"><canvas id="cn-proj" style="width:100%;height:440px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Projection P10 · P50 · P90</div><div class="fuel-card-sub">Capture rate by year</div></div></div><div id="cn-proj-table"></div></div></div>
 <div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate vs installed capacity</div><div class="fuel-card-sub" id="cn-capfit-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:380px"><canvas id="cn-capfit" style="width:100%;height:380px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Rolling capture rate</div><div class="fuel-card-sub" id="cn-roll-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:340px"><canvas id="cn-roll" style="width:100%;height:340px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Rolling captured price vs baseload</div><div class="fuel-card-sub" id="cn-roll-eur-sub">Gap between baseload and captured price = shape discount in €/MWh</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cn-roll-eur" style="width:100%;height:320px"></canvas></div></div></div>
@@ -7897,6 +7913,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/ppa-fpc.js"></script>
 <script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
+<script src="js/ppa-st.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
 <script src="js/nav-groups.js"></script>
