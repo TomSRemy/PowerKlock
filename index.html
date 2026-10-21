@@ -2930,6 +2930,14 @@
   .pp-mc-draws { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
   @media (max-width: 1100px) { .pp-mc-draws { grid-template-columns:minmax(0,1fr); } }
   .pp-cmp3 th.pp-cur { color:var(--accent); } .pp-cmp3 tr.pp-main td { font-weight:600; color:var(--text); }
+  .pp-guide { background:var(--bg3); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:7px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:var(--text2); line-height:1.55; }
+  .pp-guide-t { font:700 11px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  .pp-guide ol { margin:0 0 6px; padding-left:20px; } .pp-guide li { margin-bottom:4px; } .pp-guide b { color:var(--text); }
+  .pp-gloss summary { cursor:pointer; color:var(--accent); font-size:12px; } .pp-gloss dl { display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:4px 14px; margin:8px 0 0; }
+  .pp-gloss dt { font-weight:600; color:var(--text); } .pp-gloss dd { margin:0; }
+  @media (max-width:640px) { .pp-gloss dl { grid-template-columns:1fr; } .pp-gloss dd { margin-bottom:6px; } }
+  .pp-help { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:50%; border:1px solid var(--border2); color:var(--text3); font:600 9px 'Outfit',sans-serif; font-style:normal; text-transform:none; letter-spacing:0; margin-left:4px; cursor:help; position:relative; vertical-align:middle; }
+  .pp-help:hover::after, .pp-help:focus::after { content:attr(data-tip); position:absolute; left:50%; top:18px; transform:translateX(-50%); z-index:30; width:260px; background:var(--bg2); border:1px solid var(--border2); border-radius:6px; padding:8px 10px; font:400 11.5px/1.45 'Inter',sans-serif; color:var(--text2); box-shadow:0 8px 24px rgba(0,0,0,.4); text-align:left; white-space:normal; }
   .pp-scen-btns { display:flex; gap:8px; flex-wrap:wrap; }
   .pp-cmp td.best { color:var(--accent); font-weight:600; }
   .pp-cmp .pp-x { background:none; border:0; color:var(--text3); cursor:pointer; font-size:11px; }
@@ -5352,6 +5360,23 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-cmp">
+<div class="pp-guide"><div class="pp-guide-t">Start here</div>
+<ol><li><b>Set the inputs at the top.</b> Technology, delivery years and, if you have it, your asset’s production curve (CSV or Excel). Every field is already filled from market data: type a value to change it, click ↺ to go back to the automatic one, hover ⓘ for what it means.</li>
+<li><b>Check the forward prices</b> (step 2 of the inputs). They are market quotes; a year without a quote is highlighted and must be entered by you.</li>
+<li><b>Read the prices below.</b> The PPA price is what you could pay the producer per MWh delivered. The four methods use the same inputs; when they agree, the price is robust; when they differ, open their tabs to see why.</li>
+<li><b>Open a method’s tab</b> for its steps, charts and risks. <i>Methodology</i> gives the formulas.</li></ol>
+<details class="pp-gloss"><summary>Words used in the pricer</summary><dl>
+<dt>Cal (forward)</dt><dd>Market price today for a flat (baseload) delivery over a whole calendar year.</dd>
+<dt>Capture price · capture rate</dt><dd>The average price earned by the production (more weight on the hours it produces), and that price as a % of the baseload price.</dd>
+<dt>Shape discount · profile cost</dt><dd>How much less the production earns than a flat delivery, in %. Solar earns less because it produces when everyone else does.</dd>
+<dt>Cannibalisation</dt><dd>The part of that discount caused by the fleet producing at the same time: more solar → lower prices exactly when solar produces.</dd>
+<dt>FPC</dt><dd>Forward price curve: the forwards spread hour by hour with the usual shape of prices (season, day type, hour).</dd>
+<dt>P10 · P50 · P90</dt><dd>Low, middle and high outcome: 10 % of cases are below P10, half below P50, 90 % below P90.</dd>
+<dt>Risk premium</dt><dd>The amount taken off the price so that the chance of losing money stays at the level you accept.</dd>
+<dt>GO</dt><dd>Guarantees of origin: certificates of renewable production, worth a little per MWh; the buyer receives them.</dd>
+<dt>Imbalance</dt><dd>The cost of producing more or less than forecast, paid to the grid operator.</dd>
+<dt>Hours ≤ 0 €</dt><dd>Hours with a zero or negative price; under the PPA Dashboard convention their production is not paid.</dd>
+</dl></details></div>
 <div class="kpi-strip fuel-kpis" id="pp-cmp-kpis"></div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Side by side</div><div class="fuel-card-sub">The building blocks of each method</div></div></div><div id="pp-compare"></div></div>
@@ -5363,6 +5388,7 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-price">
+<div class="pp-explain" id="pp-intro"></div>
 <div class="kpi-strip fuel-kpis" id="pp-kpis"></div>
 <div class="pp-build" id="pp-build"></div>
 <div class="fuel-grid-2">
