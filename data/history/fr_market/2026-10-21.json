@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-21",
+ "countries": {
+  "FR": {
+   "spot": 156.28
+  },
+  "UK": {
+   "spot": 151.77
+  },
+  "DE": {
+   "spot": 148.61
+  },
+  "NL": {
+   "spot": 150.44
+  }
+ },
+ "marketInsightsHtml": "<p>In France, the front-year contract ended a long upwards run on Tuesday, falling €2.50 to €107.75/MWh after rising in each of the previous 10 sessions. Pressure from lower gas was a factor, and heavy rainfall across the south and southwest of France is likely to support hydro output in the coming days.</p>"
+}
