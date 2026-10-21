@@ -426,7 +426,34 @@
     renderYears(o); renderAuto(o); addHelp();
     inSummary(o);
     renderRest(o);
+    renderResBar(o); advCount(); clampNotes();
   }
+  // inputs fingerprint: a price computed on other inputs is never shown as current
+  function fp() { const c = Object.assign({}, S, { method: null, view: null, last: null, wxLast: null, asset: S.asset ? S.assetName + ':' + (S.asset.slots ? S.asset.slots.length : 0) : null }); return JSON.stringify(c); }
+  // the four prices, always in sight; the replay says which method was closest in the past (information, not a recommendation)
+  const RB = [['pct', 'PPA Dashboard', 'PPA Dashboard', 'dashboard'], ['build', 'Step by step', 'Step by step', 'step'], ['fpc', 'Asset-specific FPC', 'Asset-specific FPC', 'fpc'], ['wx', 'MC weather', 'Monte Carlo (weather)', 'weather']];
+  function renderResBar(o) {
+    const host = $('pp-resbar'); if (!host || !o) return;
+    if (o.m4) S.wxLast = { ppa: o.ppaWx, fp: fp() };
+    const wx = o.m4 ? o.ppaWx : S.wxLast && S.wxLast.fp === fp() ? S.wxLast.ppa : null;
+    const val = { pct: o.ppaPct, build: o.ppaBuild, fpc: o.ppaFpc, wx };
+    const cur = S.view === 'compare' ? null : S.method;
+    let rel = '';
+    if (BT && BT.rows) { const rs = BT.rows.filter(r => r.tech === S.tech && r.year !== 2022), m = {}; RB.forEach(r => { if (rs.length) m[r[3]] = mean(rs.map(x => Math.abs(x[r[3]] - x.actual))); }); const best = RB.filter(r => m[r[3]] != null).sort((a, b) => m[a[3]] - m[b[3]])[0];
+      if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <a href="#" data-rb-tab="Compare">see the replay</a></span>`; }
+    else if (!BT) get('history/ppa_backtest.json').then(j => { if (j) { BT = j; renderResBar(S.last); } });
+    host.innerHTML = `<span class="lbl">PPA price · €/MWh</span>` + RB.map(([k, l, tab]) => `<button type="button" class="pp-rb${cur === k ? ' on' : ''}" data-rb-tab="${tab}" title="Open the ${l} tab">${l} ${val[k] != null ? '<b>' + f2(val[k]) + '</b>' : '<span class="na">open its tab</span>'}</button>`).join('') + rel;
+    host.querySelectorAll('[data-rb-tab]').forEach(b => b.addEventListener('click', e => { e.preventDefault();
+      const t = [...document.querySelectorAll('#page-ppapricer .pk-views .tab-btn')].find(x => x.textContent === b.dataset.rbTab); if (t) t.click(); }));
+  }
+  // how many advanced settings differ from the automatic ones
+  const ADV = ['degr', 'alpha', 'imb', 'go', 'disc', 'add', 'volRisk', 'priceRisk', 'mcVol', 'mcFwd', 'mcSd', 'rho', 'volStress', 'spotStress'];
+  function advCount() {
+    const n = ADV.filter(k => S[k] != null).length + (S.years ? 1 : 0) + ['model', 'conv', 'hedge', 'pct'].filter(k => S[k] !== S0[k]).length;
+    const e = $('pp-adv-n'); if (e) e.textContent = n ? n + ' changed' : '';
+  }
+  // long notes fold to two lines; a click opens them
+  function clampNotes() { document.querySelectorAll('#page-ppapricer .fuel-note').forEach(n => { if (!n.dataset.clamp) { n.dataset.clamp = '1'; n.classList.add('pp-clamp'); n.title = 'Click to read the whole note'; n.addEventListener('click', () => { n.classList.toggle('pp-clamp'); n.title = n.classList.contains('pp-clamp') ? 'Click to read the whole note' : ''; }); } }); }
   // the inputs in one line, readable when the section is folded
   function inSummary(o) {
     const sum = $('pp-in-sum');
@@ -503,7 +530,7 @@
       step('4 · Costs and GO', (o.goVal - o.margin - o.imb >= 0 ? '+' : '−') + f2(Math.abs(o.goVal - o.margin - o.imb)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin −${f2(o.margin)}`),
       step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
     ].join('');
-    $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { const h = sec.querySelector('.hist-section-header'); if (h && !h.classList.contains('open')) h.click(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
+    $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { sec.classList.remove('collapsed'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
     // waterfall
     const steps = wm
       ? [['Forward', wm.refW], ['Capture discount', wm.fair - wm.refW], ['Risk premium', -wm.premium], ['Add. discount', -wm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
@@ -1106,7 +1133,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     S.view = e.detail.label === 'Compare' ? 'compare' : 'method';
     if (S.view === 'compare' && was !== 'compare' && S.last && !S.last.m4 && $('page-ppapricer').dataset.wired) { run(); return; }
     if (m && m !== S.method) { S.method = m; if ($('page-ppapricer') && $('page-ppapricer').dataset.wired) run(); }
-    else if (S.last) renderAuto(S.last);
+    else if (S.last) { renderAuto(S.last); renderResBar(S.last); }
   });
   window.addEventListener('load', () => setTimeout(() => {
     ['cn-tech', 'cn-conv', 'cn-model'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => PKCannib.render()); });
