@@ -81,7 +81,11 @@
       w += o * p; v += o * p * fw * cr; F += o * p * fw; cap += o * p * cr; paid += o * p; out += o; });
     if (!w) return null;
     const o = c.o, cost = o ? -o.imb + o.goW - o.margin : 0;
-    return { value: v / w, fwd: F / w, capture: cap / w, paid: paid / out, ppa: v / w + cost, cost, mwhShare: out };
+    // weather spread of the value (P10-P90 of the simulated years, months weighted like the price)
+    let lo = 0, hi = 0;
+    ks.forEach(k => { const e = f[k], m = +k.slice(5, 7); if (e[method] == null || e.p10 == null) return; const p = c.conv === 'curt' ? e.paid : 1, wt = sh(m) * p / w, fw = FW.months[k].value;
+      lo += wt * fw * (e.p10 - e.regionalMC); hi += wt * fw * (e.p90 - e.regionalMC); });
+    return { value: v / w, fwd: F / w, capture: cap / w, paid: paid / out, ppa: v / w + cost, cost, mwhShare: out, wxLo: lo, wxHi: hi };
   }
 
   function render() {
@@ -110,12 +114,17 @@
     ['hybrid', 'regional', 'regionalMC', 'weather', 'fpc', 'step', 'dashboard'].forEach(m => { res[m] = price(ks, m, c); });
     const H = res.hybrid, band = h.bandPts;
     const lo = H ? H.ppa + band.lo / 100 * H.fwd : null, hi = H ? H.ppa + band.hi / 100 * H.fwd : null;
+    // P&L of the contract at the ensemble price: model error (replay) and weather (simulated years) combined, MWh paid over the period
+    const vol = c.o && c.o.volume ? c.o.volume : null, mwhPaid = H && vol ? vol * H.mwhShare * H.paid : null;
+    const per = H ? Math.sqrt((band.hi / 100 * H.fwd) ** 2 + ((H.wxHi - H.wxLo) / 2) ** 2) : null;
+    const pnl = mwhPaid ? [-per * mwhPaid / 1000, per * mwhPaid / 1000] : null;
     const rule = h.used === 'ensemble' ? `average of ${h.members.map(m => NAMES[m]).join(', ')}` : h.pick === 'season' ? `${NAMES[h.summerBest]} in summer, ${NAMES[h.winterBest]} in winter` : h.pick === 'avg2' ? `average of ${NAMES[h.ranking[0]]} and ${NAMES[h.ranking[1]]}` : h.pick === 'bestDebiased' ? `${NAMES[h.ranking[0]]}, bias removed` : NAMES[h.ranking[0]];
     $('pp-st-kpis').innerHTML = H ? [
       _fuelKpi('PPA price', f2(H.ppa), '€/MWh', `${c.tech === 'solar' ? 'Solar' : 'Wind'} · ${lab(ks[0])} → ${lab(ks[ks.length - 1])} · ensemble`, ''),
       _fuelKpi('80 % range', f1(lo) + '–' + f1(hi), '€/MWh', `± ${f1(band.hi)} capture pts: the replay's errors, ${band.n} years`),
       _fuelKpi('Forward', f2(H.fwd), '€/MWh', 'weighted by the output paid, month by month'),
       _fuelKpi('Capture rate', pc(H.capture), '', `value ÷ forward · ${c.conv === 'curt' ? 'curtailed at ≤ 0 €' : 'every hour paid'}`),
+      _fuelKpi('P&L, 80 % range', pnl ? (pnl[0] >= 0 ? '+' : '−') + Math.abs(pnl[0]).toFixed(0) + ' / +' + pnl[1].toFixed(0) : '–', 'k€', pnl ? `${Math.round(mwhPaid).toLocaleString('en-GB')} MWh paid over the period · model error and weather combined` : 'needs the asset\'s yearly output'),
       _fuelKpi(c.conv === 'curt' ? 'Output paid' : 'Costs and GO', c.conv === 'curt' ? pc(H.paid) : f2(H.cost), c.conv === 'curt' ? '' : '€/MWh', c.conv === 'curt' ? 'the rest is curtailed at prices ≤ 0' : 'imbalance, GO, margin (inputs above)'),
     ].join('') : '';
     $('pp-st-note').innerHTML = (h.used === 'ensemble' ? `<b>Ensemble</b> = ${rule}, equal weights.`
