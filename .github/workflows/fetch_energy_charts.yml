@@ -44,12 +44,14 @@ jobs:
           if [ "$(date -u +%H)" -lt 12 ]; then
             pip install -q requests==2.33.1
             python scripts/fetch_country_capture.py --recent || echo "::warning::country capture rates not updated"
+            # hour-by-hour cannibalisation, last three complete years: once a week (Monday)
+            if [ "$(date -u +%u)" = "1" ]; then Y=$(date -u +%Y); python scripts/hourly_cannib.py --years $((Y-3)),$((Y-2)),$((Y-1)) || echo "::warning::hourly cannibalisation not updated"; fi
           fi
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/capacity.json data/history/flows data/history/country_capture.json
+          git add data/history/capacity.json data/history/flows data/history/country_capture.json data/history/hourly_cannib.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: Energy-Charts capacity and flows $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
