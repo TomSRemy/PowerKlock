@@ -4,7 +4,9 @@
  *
  * Architecture:
  *   1. Drivers strip   · 6 sparklines (TTF · EUA · Wind · Temp · Nuc · Flux)
- *   2. 4 main panels   · Prix / Spark / Load vs Ren / Mix supply (Chart.js)
+ *   2. 4 main panels   · Price (with the gas-plant cost and the neighbour)
+ *                        / Residual load vs nuclear and imports / Load vs Ren /
+ *                        Mix supply (Chart.js)
  *   3. Crosshair       · synchronised vertical line across all 4 panels
  *   4. Hover tooltip   · all values at hovered timestamp (3 sections)
  *   5. Episode cards   · auto-detected key moments (template-narrative)
@@ -19,7 +21,10 @@
  *   - Load / net import · REAL when the day carries ENTSO-E load (A65);
  *                         net import = load − total generation
  *   - Mix               · REAL (ENTSO-E A75); days without data stay empty
- *   - Spark spread      · DERIVED (PKC.cleanSpark, site-wide convention)
+ *   - Spark spread      · DERIVED (PKC.cleanSpark, site-wide convention); drawn
+ *                         as the CCGT cost line on the price panel (price − cost)
+ *   - Residual load     · load − wind − solar (GW)
+ *   - Neighbour price   · same daily file (FR ↔ DE_LU, others ↔ FR)
  * ════════════════════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -48,6 +53,20 @@
   const EPISODE_KIND_COLOURS = {
     floor: '#14D3A9', weekend: '#FBBF24', cannibalisation: '#A78BFA', peak: '#ED6965',
   };
+
+  // Neighbour shown on the price panel
+  const NEIGHBOUR = { FR: 'DE_LU', DE_LU: 'FR', ES: 'FR', BE: 'FR', NL: 'DE_LU' };
+  const ZONE_SHORT = { FR: 'FR', DE_LU: 'DE', ES: 'ES', BE: 'BE', NL: 'NL' };
+  // What sets the price in a slot: a reading of price vs the gas-plant cost and the mix
+  function _marginal(price, srmc, fossil, wind, solar, load) {
+    if (price == null) return { t: '--', c: 'hydro' };
+    const ren = (wind || 0) + (solar || 0);
+    if (price <= 5) return { t: ren > 0 && load ? 'Wind / solar surplus' : 'Renewable surplus', c: 'ren' };
+    if (srmc != null && price > srmc * 1.25 && fossil > 0.5) return { t: 'Scarcity · peakers / imports', c: 'gas' };
+    if (srmc != null && fossil > 0.5 && Math.abs(price - srmc) <= srmc * 0.25) return { t: 'Gas CCGT', c: 'gas' };
+    if (srmc != null && price < srmc * 0.6) return { t: 'Nuclear / hydro modulation', c: 'hydro' };
+    return { t: fossil > 0.5 ? 'Gas CCGT' : 'Hydro / imports', c: fossil > 0.5 ? 'gas' : 'hydro' };
+  }
 
   const DRIVER_COLOURS = {
     ttf: '#F59E0B', eua: '#A78BFA', wind: '#14D3A9',
@@ -274,6 +293,11 @@
       const nucAvail = frAvail != null ? new Array(slotsPerDay).fill(frAvail / 1000) : mix.nuclear.map(v => v == null ? null : v / 1000);
 
       const spark = price.map((p, i) => (window.PKC ? PKC.cleanSpark(p, ttf[i], eua[i]) : null));
+      // Running cost of a gas plant (CCGT, fuel + CO₂): price − spark
+      const srmc = ttf.map((t, i) => (window.PKC && t != null && eua[i] != null) ? -PKC.cleanSpark(0, t, eua[i]) : null);
+      // Neighbour day-ahead price (coupling / decoupling)
+      const nbZ = NEIGHBOUR[zone], nbd = nbZ && daily && daily.zones && daily.zones[nbZ];
+      const nbPrice = nbd && Array.isArray(nbd.hourly) ? _resample(nbd.hourly, nbd.hourly.length === 96 ? 96 : 24, slotsPerDay) : nulls();
 
       const carbon = [];
       for (let i = 0; i < slotsPerDay; i++) {
@@ -292,14 +316,14 @@
 
       days.push({
         date: dateStr, jsDate: dt, dow: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
-        isReal: isReal, price: price, spark: spark, wind: wind, solar: solar, load: load,
+        isReal: isReal, price: price, spark: spark, srmc: srmc, nbPrice: nbPrice, wind: wind, solar: solar, load: load,
         mix: mix, carbon: carbon,
         drivers: { ttf: ttf, eua: eua, windSpeed: windSpeed, temp: temp, nucAvail: nucAvail, flux: flux },
       });
     }
 
     const flat = {
-      price: [], spark: [], wind: [], solar: [], load: [], carbon: [],
+      price: [], spark: [], srmc: [], nbPrice: [], resid: [], wind: [], solar: [], load: [], carbon: [],
       mix: { nuclear: [], hydro: [], fossil: [], biomass: [], other: [] },
       drivers: { ttf: [], eua: [], windSpeed: [], temp: [], nucAvail: [], flux: [] },
       labels: [], slotDates: [],
@@ -312,6 +336,9 @@
         flat.labels.push(_slotShortLabel(dt, gran));
         flat.price.push(day.price[i]);
         flat.spark.push(day.spark[i]);
+        flat.srmc.push(day.srmc[i]);
+        flat.nbPrice.push(day.nbPrice[i]);
+        flat.resid.push(day.load[i] == null ? null : (day.load[i] - (day.wind[i] || 0) - (day.solar[i] || 0)) / 1000);
         const gw = v => v == null ? null : v / 1000;
         flat.wind.push(gw(day.wind[i]));
         flat.solar.push(gw(day.solar[i]));
@@ -329,7 +356,7 @@
       }
     });
 
-    return { zone: zone, days: days, flat: flat, slotsPerDay: slotsPerDay, gran: gran };
+    return { zone: zone, nbZone: NEIGHBOUR[zone], days: days, flat: flat, slotsPerDay: slotsPerDay, gran: gran };
   }
 
   function _slotShortLabel(dt, gran) {
@@ -413,20 +440,33 @@
     const fmt = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
     const dowCap = dow.charAt(0).toUpperCase() + dow.slice(1);
 
+    // Sentences only cite the figures the slot actually has (no "--" in the text)
+    const ok = v => v != null && !isNaN(v);
+    const W = t => '<b style="color:#fff">' + t + '</b>';
+    const srmc = f.srmc[i], resid = f.resid[i], nucA = f.drivers.nucAvail[i], nbP = f.nbPrice[i], nbN = ZONE_SHORT[data.nbZone] || 'neighbour';
+    const parts = [];
     let title, body;
     if (moment.kind === 'floor') {
-      title = dowCap + ' ' + time + ' · wind sets the price';
-      body = 'Wind at ' + fmt(windSpeed) + ' m/s (100 m) so <b style="color:#fff">' + fmt(wind) + ' GW of wind</b> covers <b style="color:#fff">' + renCover + '%</b> of demand, so fossil drops out of the merit order (' + fmt(fossil) + ' GW), so spark plunges to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>, so price touches <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>.';
+      title = dowCap + ' ' + time + ' · ' + ((solar || 0) > (wind || 0) ? 'solar' : 'wind') + ' sets the price';
+      if (ok(windSpeed)) parts.push('wind at ' + fmt(windSpeed) + ' m/s (100 m)');
+      if (ok(wind) || ok(solar)) parts.push(W(fmt((wind || 0) + (solar || 0)) + ' GW of wind and solar') + (load != null ? ' for ' + fmt(demand) + ' GW of demand (' + renCover + '%)' : ''));
+      if (ok(resid) && ok(nucA)) parts.push('residual load ' + fmt(resid) + ' GW ' + (resid < nucA ? 'below' : 'above') + ' the ' + fmt(nucA, 0) + ' GW of nuclear available');
+      body = (parts.length ? parts.join(', ') + ': ' : '') + 'gas is out of the merit order' + (ok(srmc) ? ' (cost ' + fmt(srmc, 0) + ' €)' : '') + ', so the price falls to <b style="color:#14D3A9">' + fmt(price, 1) + ' €</b>' + (ok(nbP) ? ' (' + nbN + ' ' + fmt(nbP, 0) + ' €)' : '') + '.';
     } else if (moment.kind === 'peak') {
       title = dowCap + ' ' + time + ' · spike';
-      body = 'Wind dropped to ' + fmt(windSpeed) + ' m/s so only <b style="color:#ED6965">' + fmt(wind) + ' GW</b>, demand at ' + fmt(demand) + ' GW, so gas CCGT sets the margin at <b style="color:#fff">' + fmt(fossil) + ' GW</b>, spark explodes to <b style="color:#fff">' + (spark >= 0 ? '+' : '') + fmt(spark, 0) + ' €</b>. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) + '.';
+      if (ok(wind)) parts.push('only <b style="color:#ED6965">' + fmt(wind) + ' GW</b> of wind' + (ok(windSpeed) ? ' (' + fmt(windSpeed) + ' m/s)' : ''));
+      if (ok(load)) parts.push('demand at ' + fmt(demand) + ' GW');
+      if (ok(resid) && ok(nucA)) parts.push('residual load ' + W(fmt(resid) + ' GW') + ' vs ' + fmt(nucA, 0) + ' GW of nuclear');
+      body = (parts.length ? parts.join(', ') + ': ' : '') + (ok(fossil) && fossil > 0.5 ? 'gas plants run (' + W(fmt(fossil) + ' GW') + ')' : 'imports and flexible plants are needed')
+        + (ok(srmc) ? ', price ' + (price > srmc ? W(fmt(price - srmc, 0) + ' € above') : W(fmt(srmc - price, 0) + ' € below')) + ' the gas plant cost (' + fmt(srmc, 0) + ' €)' : '')
+        + (ok(ttf) && ok(eua) ? '. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) : '') + '.';
     } else if (moment.kind === 'cannibalisation') {
-      const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : '--';
+      const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
       title = dowCap + ' ' + time + ' · duck curve';
-      body = 'Solar at <b style="color:#fff">' + fmt(solar) + ' GW</b> covers ' + solarCover + '% of demand in the middle of low demand, so classic cannibalisation. Midday price at <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
+      body = 'Solar at ' + W(fmt(solar) + ' GW') + (solarCover ? ' covers ' + solarCover + '% of demand' : '') + ' at midday: classic cannibalisation, price at <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
     } else {
       title = dowCap + ' · weekend lull';
-      body = 'Industry idle so load <b style="color:#fff">' + fmt(demand) + ' GW</b>, nuclear modulating, hydro in storage mode. No system stress, average price ' + fmt(price, 0) + ' €.';
+      body = (ok(demand) && demand > 0 ? 'Industry idle, load ' + W(fmt(demand) + ' GW') + ', ' : 'Industry idle, ') + 'nuclear modulating, hydro storing. No system stress, price ' + fmt(price, 0) + ' €' + (ok(srmc) ? ' vs a gas plant cost of ' + fmt(srmc, 0) + ' €' : '') + '.';
     }
     return { title: title, body: body, price: fmt(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
   }
@@ -562,28 +602,36 @@
       labels: labels,
       datasets: [{
         label: 'DA Price', data: f.price,
-        borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0,
+        borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0,
         tension: 0, spanGaps: false,
+      }, {
+        label: 'Gas plant cost', data: f.srmc,
+        borderColor: DRIVER_COLOURS.ttf, borderWidth: 1.3, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false,
+      }, {
+        label: (ZONE_SHORT[STATE.data.nbZone] || '') + ' price', data: f.nbPrice,
+        borderColor: 'rgba(127,200,248,0.75)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false, spanGaps: false,
       }],
     }, _commonChartOpts('€/MWh'));
+    _renderPanelLegend('ma-legend-price', [
+      { label: ZONE_SHORT[STATE.zone] + ' day-ahead', color: '#E6EDF3' },
+      { label: 'Gas plant cost (CCGT, gas + CO₂): price above = gas in the money', color: DRIVER_COLOURS.ttf },
+      { label: (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' day-ahead', color: 'rgba(127,200,248,0.75)' },
+    ]);
 
     _mkChart('ma-canvas-spark', 'line', {
       labels: labels,
-      datasets: [{
-        label: 'Spark', data: f.spark,
-        borderColor: '#ED6965', borderWidth: 1.4, pointRadius: 0,
-        tension: 0, spanGaps: false,
-        backgroundColor: function (ctx) {
-          if (!ctx.chart || !ctx.chart.ctx) return 'rgba(237,105,101,0.10)';
-          const c = ctx.chart.ctx;
-          const grad = c.createLinearGradient(0, 0, 0, ctx.chart.height);
-          grad.addColorStop(0, 'rgba(237,105,101,0.0)');
-          grad.addColorStop(1, 'rgba(237,105,101,0.18)');
-          return grad;
-        },
-        fill: 'origin',
-      }],
-    }, _commonChartOpts('€/MWh CCGT'));
+      datasets: [
+        { label: 'Residual load', data: f.resid, borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0, tension: 0, spanGaps: false,
+          backgroundColor: 'rgba(230,237,243,0.08)', fill: 'origin' },
+        { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', data: f.drivers.nucAvail, borderColor: FUEL_COLORS.nuclear, borderWidth: 1.6, borderDash: [5, 3], pointRadius: 0, tension: 0, fill: false },
+        { label: 'Net import', data: f.drivers.flux, borderColor: DRIVER_COLOURS.flux, borderWidth: 1.2, pointRadius: 0, tension: 0, fill: false },
+      ],
+    }, _commonChartOpts('GW'));
+    _renderPanelLegend('ma-legend-resid', [
+      { label: 'Residual load (demand − wind − solar)', color: '#E6EDF3' },
+      { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', color: FUEL_COLORS.nuclear },
+      { label: 'Net import (− = export)', color: DRIVER_COLOURS.flux },
+    ]);
 
     _mkChart('ma-canvas-loadren', 'line', {
       labels: labels,
@@ -712,23 +760,29 @@
     // Null-safe formatter: ENTSO-E slots can have gaps; show '--' instead of crashing
     const fx = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d == null ? 1 : d);
 
-    let marginal = 'Hydro / STEP', marginalClass = 'hydro';
-    if (fossil > 0.5) { marginal = 'Gas CCGT'; marginalClass = 'gas'; }
+    const srmc = f.srmc[idx], nbP = f.nbPrice[idx], resid = f.resid[idx];
+    const mg = _marginal(price, srmc, fossil, wind, solar, load);
+    const marginal = mg.t, marginalClass = mg.c;
 
     const priceClass = price < 5 ? 'floor' : (price > 100 ? 'peak' : '');
     const sparkClass = spark < 0 ? 'floor' : (spark > 20 ? 'peak' : '');
     const priceColor = priceClass === 'peak' ? '#ED6965' : (priceClass === 'floor' ? '#14D3A9' : '#E6EDF3');
     const sparkColor = sparkClass === 'peak' ? '#ED6965' : (sparkClass === 'floor' ? '#14D3A9' : '#E6EDF3');
-    const mgColor = marginalClass === 'gas' ? '#ED6965' : '#3FA6B4';
+    const mgColor = marginalClass === 'gas' ? '#ED6965' : marginalClass === 'ren' ? '#14D3A9' : '#3FA6B4';
     const dot = (c) => '<span class="ma-ht-dot" style="background:' + c + '"></span>';
 
     tip.innerHTML =
       '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + '</div>'
       + '<div class="ma-ht-hero">'
       +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">DA Price</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
-      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">Spark CCGT</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
+      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
       + '</div>'
       + '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + 'Marginal · ' + marginal + '</div>'
+      + '<div class="ma-ht-grid" style="margin-top:6px">'
+      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.ttf) + 'Gas cost</span><span class="v">' + fx(srmc, 0) + ' €</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot('rgba(127,200,248,0.75)') + (ZONE_SHORT[STATE.data.nbZone] || 'Nb') + ' price</span><span class="v">' + fx(nbP, 0) + ' €' + (nbP != null && price != null ? ' <span style="opacity:.6">(' + (price - nbP >= 0 ? '+' : '') + (price - nbP).toFixed(0) + ')</span>' : '') + '</span></div>'
+      +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Residual</span><span class="v">' + fx(resid, 1) + ' GW</span></div>'
+      + '</div>'
       + '<div class="ma-ht-section">Demand &amp; mix</div>'
       + '<div class="ma-ht-grid">'
       +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'

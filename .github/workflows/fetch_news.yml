@@ -1,11 +1,15 @@
 name: Fetch Energy News
 
-# Public RSS/Atom feeds → data/news.json (scripts/fetch_news.py).
+# Public RSS/Atom feeds, the CRE news page and press searches (GDELT)
+# listed in config/news_sources.json → data/news.json (scripts/fetch_news.py).
 # Server-side so the site needs no CORS proxy.
 
 on:
   schedule:
     - cron: '15 */3 * * *'   # every 3 hours
+  push:                      # a source added in config/news_sources.json is read right away
+    branches: [main]
+    paths: ['config/news_sources.json']
   workflow_dispatch:
 
 concurrency:
