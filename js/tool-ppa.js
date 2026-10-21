@@ -347,7 +347,7 @@
       if (S[k] == null && document.activeElement !== inp) inp.value = '';
       if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : `auto · ${a[1]}`; tag.title = man ? 'Back to the automatic value: ' + a[1] : a[1]; tag.dataset.k = k; }
     });
-    const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + S.method;
+    const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + (S.view === 'compare' ? 'all' : S.method);
   }
 
   function renderForwards(o) {
@@ -690,6 +690,24 @@
   // ── Three methods side by side ──
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
+    const m3c = o.m3, mc = o.mc;
+    // the step-by-step price for other risk levels: the same 10,000 futures, another percentile
+    const atA = a => mc ? qtl(mc.Us, a) - o.refW * o.add / 100 - o.imb + o.goW - o.margin : null;
+    const meth = [['PPA Dashboard', o.ppaPct, null, null, '#B8C9D9'], ['Step by step', o.ppaBuild, atA(0.10), atA(0.50), '#14D3A9'],
+      ['Asset-specific FPC', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24']].filter(x => x[1] != null);
+    $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} for 10 % to 50 % risk accepted` : 'no risk range (risks entered by hand)')).join('') +
+      _fuelKpi('Spread between methods', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest price');
+    _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => x[0]), datasets: [
+      { label: 'Range', data: meth.map(x => x[2] != null ? [x[2], x[3]] : null), backgroundColor: meth.map(x => x[4] + '33'), borderColor: meth.map(x => x[4]), borderWidth: 1, barPercentage: 0.25, grouped: false },
+      { label: 'PPA price', data: meth.map(x => +x[1].toFixed(2)), backgroundColor: meth.map(x => x[4] + 'CC'), borderRadius: 3, barPercentage: 0.6, grouped: false },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { enabled: true, callbacks: { label: c => Array.isArray(c.raw) ? ` range ${f2(c.raw[0])} – ${f2(c.raw[1])} €/MWh` : ` ${f2(c.raw)} €/MWh` } }, pkHoverReadout: false },
+      scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-price');
+    _fuelChart('pp-cmp-years', { type: 'bar', data: { labels: o.tenor.map(String), datasets: [
+      { label: 'Forward (Cal)', type: 'line', data: o.years.map(r => +r.fwd.toFixed(2)), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3, fill: false },
+      { label: 'PPA Dashboard', data: o.years.map(r => +(r.fwd * (1 - o.sdCh)).toFixed(2)), backgroundColor: '#B8C9D9AA', borderRadius: 3 },
+      { label: 'Step by step', data: o.years.map(r => +r.cp.toFixed(2)), backgroundColor: '#14D3A9AA', borderRadius: 3 },
+      ...(m3c ? [{ label: 'Asset-specific FPC', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
+    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
     const m3 = o.m3, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
     const rows = [
@@ -703,7 +721,7 @@
     ];
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('PPA Dashboard', S.method === 'pct')}${col('Step by step', S.method === 'build')}${col('Asset-specific FPC', S.method === 'fpc')}</tr></thead><tbody>` +
       rows.map(r => `<tr${r[4] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the method that sets the PPA price above (Pricing method, step 2 of the inputs). A historical replay of the three methods will tell which one is the most reliable.</div>`;
+      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the tab you came from. Each method has its own tab with its price, its steps and its charts. A historical replay of the three methods will tell which one is the most reliable.</div>`;
   }
 
   // ── Asset-specific FPC method: the curve, the three pricings by year, the forward years ──
@@ -913,6 +931,15 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     $('pp-asset-clear').addEventListener('click', () => { S.years = null; S.asset = null; S.assetName = ''; $('pp-asset-clear').hidden = true; run(); });
     run();
   }
+  // one tab per method (js/views.js): the tab sets the method that prices
+  const VIEW_METHOD = { 'PPA Dashboard': 'pct', 'Step by step': 'build', 'Asset-specific FPC': 'fpc' };
+  document.addEventListener('pk-view', e => {
+    if (!e.detail || e.detail.key !== 'ppapricer') return;
+    const m = VIEW_METHOD[e.detail.label];
+    S.view = e.detail.label === 'Compare' ? 'compare' : 'method';
+    if (m && m !== S.method) { S.method = m; if ($('page-ppapricer') && $('page-ppapricer').dataset.wired) run(); }
+    else if (S.last) renderAuto(S.last);
+  });
   window.addEventListener('load', () => setTimeout(() => {
     ['cn-tech', 'cn-conv', 'cn-model'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => PKCannib.render()); });
     let cnDone = false;
