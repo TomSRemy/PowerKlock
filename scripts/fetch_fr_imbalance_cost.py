@@ -27,8 +27,10 @@ Writes data/history/fr_imbalance_cost.json:
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py              # last 2 months (24 if no file yet)
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py --months 24
 """
+import io
 import json
 import os
+import zipfile
 import re
 import sys
 import time
@@ -55,6 +57,14 @@ def fetch(params, tries=3):
     for k in range(tries):
         r = requests.get(BASE, params={'securityToken': os.environ['ENTSOE_TOKEN'], **params}, timeout=60)
         if r.status_code == 200:
+            # balancing documents (A85) come as a ZIP of XML files
+            if r.content[:2] == b'PK':
+                with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+                    parts = [z.read(n).decode('utf-8', 'replace') for n in z.namelist() if n.lower().endswith('.xml')]
+                DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: zip, {len(parts)} xml")
+                return '<root>' + ''.join(re.sub(r'<\?xml[^>]*\?>', '', x) for x in parts) + '</root>'
+            if params.get('documentType') == 'A85':
+                DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: {r.text[:200]!r}")
             return r.text
         if r.status_code in (429, 503) and k < tries - 1:
             time.sleep(10 * (k + 1))
