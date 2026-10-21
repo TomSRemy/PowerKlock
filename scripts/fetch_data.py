@@ -926,6 +926,17 @@ def fetch_crossborder():
 # ─────────────────────────────────────────────
 def write_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # a failed fetch (empty zones / countries) never replaces a file that holds data
+    body = data.get('countries', data.get('zones')) if isinstance(data, dict) else data
+    if not body and os.path.exists(path):
+        try:
+            with open(path) as f:
+                old = json.load(f)
+            if old.get('countries') or old.get('zones'):
+                print(f"  Kept {path}: nothing fetched this run")
+                return
+        except (OSError, ValueError):
+            pass
     with open(path,'w') as f:
         json.dump(data, f, indent=2)
     print(f"  Wrote {path}")
