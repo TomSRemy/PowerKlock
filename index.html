@@ -2925,6 +2925,10 @@
   .pp-bs.final { border-color:var(--accent); } .pp-bs.final b.n { color:var(--accent); }
   .pp-explain { font-size:12px; color:var(--text2); line-height:1.55; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:10px 13px; margin-bottom:12px; }
   .pp-explain b { color:var(--text); }
+  .pp-scen-btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .pp-cmp td.best { color:var(--accent); font-weight:600; }
+  .pp-cmp .pp-x { background:none; border:0; color:var(--text3); cursor:pointer; font-size:11px; }
+  .pp-cmp .pp-load { background:none; border:0; color:var(--accent); cursor:pointer; font-size:11px; text-decoration:underline; }
   .pp-doc { font-size:12.5px; color:var(--text2); line-height:1.6; max-width:980px; }
   .pp-doc h4 { font:700 11px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:16px 0 6px; }
   .pp-doc code { font:11.5px 'JetBrains Mono',monospace; color:var(--text); background:var(--bg3); padding:1px 5px; border-radius:4px; }
@@ -5350,6 +5354,7 @@
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price build-up</div><div class="fuel-card-sub">From the baseload forward to the PPA price (€/MWh)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-waterfall" style="width:100%;height:320px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">What each delivery year contributes to the price</div></div></div><div id="pp-years"></div></div>
 </div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Scenarios</div><div class="fuel-card-sub">Save the current pricing and compare it with others, side by side (kept in this browser)</div></div><div class="pp-scen-btns"><button type="button" class="pk-btn-primary" id="pp-scen-save">＋ Save this scenario</button><button type="button" class="pk-btn-ghost" id="pp-pptx" title="The price, its steps and its charts as a PowerPoint (your export settings and template)">⤓ PowerPoint report</button></div></div><div id="pp-scen-cmp"></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-mkt">
