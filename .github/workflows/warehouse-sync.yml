@@ -20,6 +20,13 @@ on:
       - Backfill chain v3 (monthly, parallel)
       - Backfill generation (after prices)
     types: [completed]
+  # a push to main that changes the forward contracts or the warehouse code syncs at once
+  push:
+    branches: [main]
+    paths:
+      - 'data/history/fr_market_contracts.json'
+      - 'warehouse/**'
+      - '.github/workflows/warehouse-sync.yml'
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
