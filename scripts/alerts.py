@@ -12,6 +12,9 @@ Rule kinds
   base_above  daily baseload above `threshold` €/MWh
   base_below  daily baseload below `threshold` €/MWh
   pp1, pp2    RTE signals a PP1 / PP2 peak-period day (France, data/rte_pp.json)
+  fwd_fr      the France-specific part of the day's French Cal+1 move (the part
+              gas and CO₂ do not explain, as on Prices › Forward) above
+              `threshold` €/MWh in absolute value
 
 Environment
   SUPABASE_DB_URL (or WAREHOUSE_DB_URL)   database (owner role)
@@ -53,6 +56,59 @@ def pp_days():
         return {}
 
 
+def _load(path):
+    try:
+        with open(os.path.join(ROOT, 'data', *path.split('/'))) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def fwd_fr_move():
+    """Last daily move of the French Cal+1 split into gas and CO₂ (6-month
+    pass-through of the gas plant cost of the same delivery year, clean-spark
+    convention: TTF ÷ 49.13 % + EUA × 0.202 ÷ 0.4913) and the France-specific
+    rest. Same method as js/forward-read.js."""
+    chain, cs = _load('history/fr_market_calchain.json'), _load('history/commodities_series.json')
+    if not chain or not cs or 'FR' not in chain:
+        return None
+    y0 = datetime.now(PARIS).year
+    yrs = sorted(int(y) for y in chain['FR']['years'])
+    k = next((y for y in yrs if y > y0), yrs[0])
+    fr = chain['FR']['years'][str(k)]
+    gy = (cs.get('calYears') or {}).get('ttf', {}).get(str(k))
+    gas = list(zip(gy['dates'], gy['values'])) if gy else (cs['series']['ttf']['points'])
+    eua = cs['series']['eua']['points']
+
+    def as_of(pts, d):
+        v = None
+        for x, y in pts:
+            if x > d:
+                break
+            if y is not None:
+                v = y
+        return v
+    rows = []
+    for d, p in zip(fr['dates'], fr['values']):
+        g, e = as_of(gas, d), as_of(eua, d)
+        if p is not None:
+            rows.append((d, p, g / 0.4913 + e * 0.202 / 0.4913 if g is not None and e is not None else None))
+    if len(rows) < 30:
+        return None
+    pairs = [(b[2] - a[2], b[1] - a[1]) for a, b in zip(rows[-127:-1], rows[-126:]) if a[2] is not None and b[2] is not None]
+    if len(pairs) < 10:
+        return None
+    mx = sum(x for x, _ in pairs) / len(pairs)
+    my = sum(y for _, y in pairs) / len(pairs)
+    sxx = sum((x - mx) ** 2 for x, _ in pairs)
+    beta = max(0.0, min(1.2, sum((x - mx) * (y - my) for x, y in pairs) / sxx)) if sxx else 0.0
+    (_, p0, c0), (d1, p1, c1) = rows[-2], rows[-1]
+    if c0 is None or c1 is None:
+        return None
+    fc = beta * (c1 - c0)
+    return {'day': date.fromisoformat(d1), 'k': k, 'p': p1, 'dp': p1 - p0, 'fc': fc, 'resid': p1 - p0 - fc, 'beta': beta}
+
+
 def fmt_day(d):
     return d.strftime('%a %d %b')
 
@@ -77,10 +133,18 @@ def evaluate(rules, days):
     """→ list of (rule, day, zone, detail)."""
     out = []
     pp = pp_days()
+    fw = fwd_fr_move() if any(r['kind'] == 'fwd_fr' for r in rules) else None
+    if fw and fw['day'] >= min(days) - timedelta(days=3):     # the latest session, not an old one
+        for r in rules:
+            if r['kind'] == 'fwd_fr' and r['threshold'] is not None and abs(fw['resid']) >= r['threshold']:
+                out.append((r, fw['day'], 'FR', f'Cal {fw["k"]} France {fw["dp"]:+.2f} € on {fmt_day(fw["day"])} to {fw["p"]:.2f} €/MWh: '
+                                             f'{fw["resid"]:+.2f} € France-specific, gas and CO₂ explain {fw["fc"]:+.2f} € (pass-through {fw["beta"] * 100:.0f} %).'))
     for d in days:
         zones = day_file(d)
         for r in rules:
             kind = r['kind']
+            if kind == 'fwd_fr':
+                continue
             if kind in ('pp1', 'pp2'):
                 e = pp.get(d.isoformat())
                 if e and e.get(kind):
