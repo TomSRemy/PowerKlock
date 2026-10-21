@@ -23,6 +23,10 @@
   const cy = () => today().slice(0, 4);
   const zname = c => { try { return (ZONE_META[c] && ZONE_META[c].country) || c; } catch (_) { return c; } };
   const winDays = w => ({ '1M': 31, '3M': 92, '1Y': 365, '2Y': 730, '5Y': 1825, all: 99999 }[w] || 365);
+  // the page's window applied to the views by year (at least three years to compare) and by month of history
+  const winYears = w => ({ '5Y': 6, all: 30 }[w] || 3);
+  const winMonths = w => ({ '1M': 1, '3M': 3, '1Y': 12, '2Y': 24, '5Y': 60, all: 600 }[w] || 12);
+  const winLabel = w => ({ '1M': 'last month', '3M': 'last 3 months', '1Y': 'last 12 months', '2Y': 'last 2 years', '5Y': 'last 5 years', all: 'all history' }[w] || 'last 12 months');
   const leap = y => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0));
   const doy = ds => { const d = new Date(ds + 'T12:00:00Z'); return Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000); };
   function yearInfo(ser) {
@@ -37,17 +41,18 @@
 
   // ── Cross-zone ────────────────────────────────────────────────────
   const CC = {
-    async year(cid) {
+    async year(cid, p) {
       const s = await summary(); const zones = FEATURED.filter(z => s && s.zones && s.zones[z]);
       if (!zones.length) { noDataMsg(cid, 'History not available', ''); return null; }
-      const years = []; for (let y = 2022; y <= +cy(); y++) years.push(String(y));
+      const first = Math.min(...zones.map(z => +s.zones[z][0].d.slice(0, 4)));
+      const years = []; for (let y = Math.max(first, +cy() - winYears(p && p.win) + 1); y <= +cy(); y++) years.push(String(y));
       const info = Object.fromEntries(zones.map(z => [z, yearInfo(s.zones[z])]));
       const cols = yearColors(years);
       _fuelChart(cid, { type: 'bar', data: { labels: zones.map(z => z.replace('_LU', '')), datasets: years.map((y, i) => ({
         label: y + (y === cy() ? ' (YTD)' : ''), data: zones.map(z => { const r = info[z][y]; return r && (r.complete || r.partial) ? Math.round(r.h) : null; }),
         backgroundColor: cols[i], borderRadius: 2, borderWidth: y === cy() ? 1 : 0, borderColor: RED, borderDash: [3, 2] })) },
         options: optsBar('hours below 0 €/MWh') }, 'negative-hours-by-zone-year');
-      return { title: 'Negative hours by zone and year', sub: '2022 → ' + cy() + ' · ' + cy() + ' to date · years with incomplete history left out' };
+      return { title: 'Negative hours by zone and year', sub: years[0] + ' → ' + cy() + ' · ' + cy() + ' to date · years with incomplete history left out · window: the period buttons above' };
     },
     async rank(cid, p) {
       const s = await summary(); if (!s || !s.zones) { noDataMsg(cid, 'History not available', ''); return null; }
@@ -57,23 +62,23 @@
         options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: _fuelAxis('hours', { beginAtZero: true }), y: { grid: { display: false }, ticks: { color: C_TX2, font: { size: 11 }, autoSkip: false } } } }) }, 'negative-hours-ranking');
       return { title: 'Ranking · negative hours over the window', sub: 'Last ' + (p.win === 'all' ? 'available history' : p.win) + ' · top 20 zones · France in blue' };
     },
-    async season(cid) {
+    async season(cid, p) {
       const s = await summary(); const zones = FEATURED.filter(z => s && s.zones && s.zones[z]);
       if (!zones.length) { noDataMsg(cid, 'History not available', ''); return null; }
       const ds = zones.map((z, i) => {
-        const info = yearInfo(s.zones[z]), full = Object.keys(info).filter(y => info[y].complete && !info[y].partial && +y >= 2022);
+        const info = yearInfo(s.zones[z]), full = Object.keys(info).filter(y => info[y].complete && !info[y].partial && +y > +cy() - winYears(p && p.win));
         const m = new Array(12).fill(0); s.zones[z].forEach(d => { if (full.includes(d.d.slice(0, 4))) m[+d.d.slice(5, 7) - 1] += d.negH || 0; });
         return _fuelLineDs(z.replace('_LU', ''), full.length ? m.map(v => Math.round(v / full.length * 10) / 10) : m.map(() => null), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: .3, pointRadius: 2 });
       });
       _fuelChart(cid, { type: 'line', data: { labels: MN, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('hours per month', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-seasonality');
-      return { title: 'Seasonality · average negative hours per month', sub: 'Average of the complete years since 2022' };
+      return { title: 'Seasonality · average negative hours per month', sub: 'Average of the complete years since ' + (+cy() - winYears(p && p.win) + 1) + ' · window: the period buttons above' };
     },
-    async hour(cid) {
+    async hour(cid, p) {
       const pr = await profile(); const zones = FEATURED.filter(z => pr && pr.zones && pr.zones[z]);
       if (!zones.length) { noDataMsg(cid, 'Hourly profile not available', ''); return null; }
-      const ds = zones.map((z, i) => { const r = last12(pr.zones[z]); return _fuelLineDs(z.replace('_LU', ''), r.map(v => v == null ? null : Math.round(v * 10) / 10), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: .3 }); });
+      const ds = zones.map((z, i) => { const r = last12(pr.zones[z], null, winMonths(p && p.win)); return _fuelLineDs(z.replace('_LU', ''), r.map(v => v == null ? null : Math.round(v * 10) / 10), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: .3 }); });
       _fuelChart(cid, { type: 'line', data: { labels: HRS, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of days negative', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-by-hour');
-      return { title: 'Hour of day · share of days with a negative price', sub: 'Last 12 months · the solar signature: negative prices cluster around midday' };
+      return { title: 'Hour of day · share of days with a negative price', sub: winLabel(p && p.win).replace(/^./, c => c.toUpperCase()) + ' (complete months) · the solar signature: negative prices cluster around midday' };
     },
     async cumul(cid) {
       const s = await summary(); const zones = FEATURED.filter(z => s && s.zones && s.zones[z]);
@@ -89,10 +94,10 @@
     },
   };
   // % of days with a negative price at each hour over the last 12 complete months
-  function last12(zp, year) {
+  function last12(zp, year, n) {
     const out = new Array(24).fill(0); let days = 0;
     const t = today(), Y = +t.slice(0, 4), M = +t.slice(5, 7) - 1;
-    for (let k = 1; k <= 12; k++) {
+    for (let k = 1; k <= (n || 12); k++) {
       let m = M - k, y = Y; while (m < 0) { m += 12; y--; }
       if (year && String(y) !== String(year)) continue;
       const r = zp[String(y)]; if (!r) continue;
@@ -106,7 +111,7 @@
     async month(cid, p) {
       const s = await summary(), ser = s && s.zones && s.zones[p.zone];
       if (!ser) { noDataMsg(cid, 'No history for ' + p.zone, ''); return null; }
-      const info = yearInfo(ser), years = Object.keys(info).filter(y => info[y].complete || info[y].partial).slice(-4), cols = yearColors(years);
+      const info = yearInfo(ser), years = Object.keys(info).filter(y => info[y].complete || info[y].partial).slice(-(p.win === 'all' ? 99 : p.win === '5Y' ? 6 : 4)), cols = yearColors(years);
       const ds = years.map((y, i) => { const m = new Array(12).fill(0); ser.forEach(d => { if (d.d.slice(0, 4) === y) m[+d.d.slice(5, 7) - 1] += d.negH || 0; }); return { label: y + (y === cy() ? ' (YTD)' : ''), data: m.map(v => Math.round(v * 10) / 10), backgroundColor: cols[i], borderRadius: 2 }; });
       _fuelChart(cid, { type: 'bar', data: { labels: MN, datasets: ds }, options: optsBar('hours') }, 'negative-hours-by-month-' + p.zone);
       return { title: 'Negative hours by month', sub: zname(p.zone) + ' · last ' + years.length + ' years' };
