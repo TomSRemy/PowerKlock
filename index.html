@@ -2950,6 +2950,25 @@
   @media (max-width: 1100px) { .pp-proj-grid { grid-template-columns:minmax(0,1fr); } }
   .pp-ptab td, .pp-ptab th { padding:5px 8px !important; }
   .pp-ptab tr.pp-tenor td { background: rgba(251,191,36,.10); }
+  /* pricer layout: aligned fields, lean strips, method-specific blocks */
+  .pp-steps .cf-form { align-items:end; }
+  .pp-steps .cf-field > span:first-child { white-space:nowrap; }
+  .pp-steps .cf-in input, .pp-steps .cf-in select { flex:1 1 auto; min-width:0; }
+  .pp-steps .cf-in em { flex:0 0 52px; }
+  .pp-steps .pp-asset-row .cf-in select, .pp-steps .pp-asset-row .cf-in em { flex:none; }
+  .pp-k5 { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .pp-pgrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+  .pp-pgrid .pp-scen-card { grid-column:1/-1; }
+  #page-ppapricer[data-m="fpc"] .pp-years-card, #page-ppapricer[data-m="wx"] .pp-years-card { display:none; }
+  #page-ppapricer[data-m="fpc"] .pp-scen-card, #page-ppapricer[data-m="wx"] .pp-scen-card { grid-column:auto; }
+  .fuel-table.pp-cmp3 td, .fuel-table.pp-cmp3 th { white-space:normal; }
+  .fuel-table.pp-cmp3 td:first-child { white-space:nowrap; }
+  details.pp-guide > summary { cursor:pointer; list-style:none; margin-bottom:0; }
+  details.pp-guide > summary::-webkit-details-marker { display:none; }
+  details.pp-guide > summary::before { content:'▸ '; } details.pp-guide[open] > summary::before { content:'▾ '; }
+  details.pp-guide[open] > summary { margin-bottom:6px; }
+  @media (max-width: 1100px) { .pp-k5 { grid-template-columns:repeat(3,minmax(0,1fr)); } .pp-pgrid { grid-template-columns:minmax(0,1fr); } .pp-pgrid .pp-scen-card { grid-column:auto; } }
+  @media (max-width: 640px) { .pp-k5 { grid-template-columns:repeat(2,minmax(0,1fr)); } .pp-steps .cf-field > span:first-child { white-space:normal; } }
   /* Tools › Carbon footprint */
   .cf-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:stretch; margin-bottom:14px; }
   .cf-drop { display:flex; flex-direction:column; justify-content:center; gap:6px; min-height:120px; padding:18px 20px; border:1.5px dashed var(--border2); border-radius:8px; background:#1c242e; cursor:pointer; transition:border-color .15s, background .15s; }
@@ -5301,7 +5320,7 @@
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-in">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-in')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>Inputs<span class="pk-hs-meta">Every field is filled from market data; type a value to override it, ↺ to go back to the automatic one</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>Inputs<span class="pk-hs-meta">Filled from market data · type to override · ↺ back to auto · ⓘ what it means</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-in">
@@ -5309,8 +5328,8 @@
           <div class="pp-step"><div class="pp-group-t">1 · Asset and contract</div>
           <div class="cf-form">
             <label class="cf-field"><span>Technology</span><select id="pp-tech"><option value="solar">Solar</option><option value="wind">Wind</option></select></label>
-            <label class="cf-field"><span>Delivery from <i class="pp-auto" data-for="pp-t0"></i></span><span class="cf-in"><input type="number" id="pp-t0" step="1"></span></label>
-            <label class="cf-field"><span>Delivery to <i class="pp-auto" data-for="pp-t1"></i></span><span class="cf-in"><input type="number" id="pp-t1" step="1"></span></label>
+            <label class="cf-field"><span>Delivery from <i class="pp-auto" data-for="pp-t0"></i></span><span class="cf-in"><input type="number" id="pp-t0" step="1"><em>year</em></span></label>
+            <label class="cf-field"><span>Delivery to <i class="pp-auto" data-for="pp-t1"></i></span><span class="cf-in"><input type="number" id="pp-t1" step="1"><em>year</em></span></label>
             <label class="cf-field"><span>Installed capacity <i class="pp-auto" data-for="pp-mw"></i></span><span class="cf-in"><input type="number" id="pp-mw" step="0.1"><em>MW</em></span></label>
             <label class="cf-field"><span>Expected production <i class="pp-auto" data-for="pp-volume"></i></span><span class="cf-in"><input type="number" id="pp-volume" step="100"><em>MWh/yr</em></span></label>
             <label class="cf-field"><span>Degradation <i class="pp-auto" data-for="pp-degr"></i></span><span class="cf-in"><input type="number" id="pp-degr" step="0.05"><em>%/yr</em></span></label>
@@ -5330,7 +5349,7 @@
           </div>
           <div class="pp-step"><div class="pp-group-t">3 · Risk, costs and margin</div>
           <div class="cf-form">
-            <label class="cf-field pp-only-build"><span>Risk accepted <i class="pp-auto" data-for="pp-alpha"></i></span><span class="cf-in"><input type="number" id="pp-alpha" step="1" min="1" max="50"><em>% chance of loss</em></span></label>
+            <label class="cf-field pp-only-build"><span>Risk accepted <i class="pp-auto" data-for="pp-alpha"></i></span><span class="cf-in"><input type="number" id="pp-alpha" step="1" min="1" max="50"><em>% loss</em></span></label>
             <label class="cf-field pp-only-build"><span>Forward price risk</span><select id="pp-hedge"><option value="hedged">Hedged with Cal baseload forwards</option><option value="open">Left open</option></select></label>
             <label class="cf-field"><span>Imbalance cost <i class="pp-auto" data-for="pp-imb"></i></span><span class="cf-in"><input type="number" id="pp-imb" step="0.1"><em>€/MWh</em></span></label>
             <label class="cf-field"><span>GO value <i class="pp-auto" data-for="pp-go"></i></span><span class="cf-in"><input type="number" id="pp-go" step="0.05"><em>€/MWh</em></span></label>
@@ -5360,7 +5379,7 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-cmp">
-<div class="pp-guide"><div class="pp-guide-t">Start here</div>
+<details class="pp-guide" id="pp-guide" open><summary class="pp-guide-t">Start here · how to use the pricer</summary>
 <ol><li><b>Set the inputs at the top.</b> Technology, delivery years and, if you have it, your asset’s production curve (CSV or Excel). Every field is already filled from market data: type a value to change it, click ↺ to go back to the automatic one, hover ⓘ for what it means.</li>
 <li><b>Check the forward prices</b> (step 2 of the inputs). They are market quotes; a year without a quote is highlighted and must be entered by you.</li>
 <li><b>Read the prices below.</b> The PPA price is what you could pay the producer per MWh delivered. The four methods use the same inputs; when they agree, the price is robust; when they differ, open their tabs to see why.</li>
@@ -5376,8 +5395,8 @@
 <dt>GO</dt><dd>Guarantees of origin: certificates of renewable production, worth a little per MWh; the buyer receives them.</dd>
 <dt>Imbalance</dt><dd>The cost of producing more or less than forecast, paid to the grid operator.</dd>
 <dt>Hours ≤ 0 €</dt><dd>Hours with a zero or negative price; under the PPA Dashboard convention their production is not paid.</dd>
-</dl></details></div>
-<div class="kpi-strip fuel-kpis" id="pp-cmp-kpis"></div>
+</dl></details></details>
+<div class="kpi-strip fuel-kpis pp-k5" id="pp-cmp-kpis"></div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
 <div class="pp-group-t" style="margin-top:16px">Which method was right in the past? · historical replay</div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate: predicted at the start of each year vs actual</div><div class="fuel-card-sub">National profile · each method only sees the years before (2022 left out)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-bt-chart" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average error by method</div><div class="fuel-card-sub">Capture rate points, |predicted − actual|</div></div></div><div id="pp-bt-table"></div></div></div>
@@ -5391,13 +5410,13 @@
         </div>
         <div class="hist-section-body open" id="hs-body-pp-price">
 <div class="pp-explain" id="pp-intro"></div>
-<div class="kpi-strip fuel-kpis" id="pp-kpis"></div>
+<div class="kpi-strip fuel-kpis pp-k5" id="pp-kpis"></div>
 <div class="pp-build" id="pp-build"></div>
-<div class="fuel-grid-2">
+<div class="pp-pgrid">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price build-up</div><div class="fuel-card-sub">From the baseload forward to the PPA price (€/MWh)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-waterfall" style="width:100%;height:320px"></canvas></div></div>
-<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">What each delivery year contributes to the price</div></div></div><div id="pp-years"></div></div>
+<div class="chart-container fuel-card pp-years-card"><div class="fuel-card-head"><div><div class="table-title">Year by year</div><div class="fuel-card-sub">What each delivery year contributes to the price</div></div></div><div id="pp-years"></div></div>
+<div class="chart-container fuel-card pp-scen-card"><div class="fuel-card-head"><div><div class="table-title">Scenarios</div><div class="fuel-card-sub">Save the current pricing and compare it with others, side by side (kept in this browser)</div></div><div class="pp-scen-btns"><button type="button" class="pk-btn-primary" id="pp-scen-save">＋ Save this scenario</button><button type="button" class="pk-btn-ghost" id="pp-pptx" title="The price, its steps and its charts as a PowerPoint (your export settings and template)">⤓ PowerPoint report</button></div></div><div id="pp-scen-cmp"></div></div>
 </div>
-<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Scenarios</div><div class="fuel-card-sub">Save the current pricing and compare it with others, side by side (kept in this browser)</div></div><div class="pp-scen-btns"><button type="button" class="pk-btn-primary" id="pp-scen-save">＋ Save this scenario</button><button type="button" class="pk-btn-ghost" id="pp-pptx" title="The price, its steps and its charts as a PowerPoint (your export settings and template)">⤓ PowerPoint report</button></div></div><div id="pp-scen-cmp"></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-fpc">
@@ -5437,7 +5456,7 @@
 <div class="pp-group-t">2 · What the 10,000 futures give</div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Where the risk premium comes from</div><div class="fuel-card-sub">€/MWh · each source alone, then all together</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:260px"><canvas id="pp-mc-src" style="width:100%;height:260px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price → risk and margin</div><div class="fuel-card-sub">Chance of loss and expected P&L for each price you could offer</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:260px"><canvas id="pp-mc-curve" style="width:100%;height:260px"></canvas></div></div></div>
 <div class="pp-group-t" style="margin-top:14px">3 · Distributions and year by year</div>
-<div class="kpi-strip fuel-kpis" id="pp-mc-kpis" style="grid-template-columns:repeat(5,1fr)"></div>
+<div class="kpi-strip fuel-kpis pp-k5" id="pp-mc-kpis"></div>
 <div class="fuel-grid-2">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What the asset is worth per MWh · distribution</div><div class="fuel-card-sub">Realised value of the production, €/MWh, over 10,000 trajectories · line = PPA price</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-mc-u" style="width:100%;height:320px"></canvas></div></div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Annual P&amp;L at the PPA price · fan chart</div><div class="fuel-card-sub">k€ per year, P5 to P95</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:320px"><canvas id="pp-mc-fan" style="width:100%;height:320px"></canvas></div></div>
@@ -5463,7 +5482,7 @@
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-wx">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-wx')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Monte Carlo on simulated weather<span class="pk-hs-meta">Fourth method, under construction: simulated weather → production → prices</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Monte Carlo on simulated weather<span class="pk-hs-meta">Simulated weather → production → hourly prices</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-wx">
