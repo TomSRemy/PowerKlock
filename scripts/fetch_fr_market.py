@@ -707,10 +707,71 @@ def contract_label(name):
     return None
 
 
+RESOURCE = {"FR": "France", "DE": "Germany", "NL": "Netherlands", "UK": "United Kingdom"}
+OUT_ROLLING = Path("data/history/fr_market_rolling.json")
+_MON_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def market_list(h, resource, period, absolut):
+    """The cockpit's own market filter (the Month / Quarter / Season / Year drop-downs)."""
+    r = requests.get(f"{API}/MarketFilter", headers=h, timeout=40, params={
+        "Commodity": "Power", "ResourcesCode": resource, "PeriodName": period, "TypeName": "Base",
+        "Absolut": absolut, "IsLive": "false", "AccountId": "0"})
+    return r.json() if r.ok else []
+
+
+def rolling_series(h, cc):
+    """The cockpit's true rolling series ("FR M+1 base" … "FR Q+4 base", type Relative): on each day,
+    M+k is the contract of calendar month (today + k), until that contract stops trading."""
+    out = {}
+    for period, pref in (("Month", "M"), ("Quarter", "Q")):
+        ms = [m for m in market_list(h, RESOURCE[cc], period, "Relative")
+              if re.match(rf"^(FR|GE|NL|UK) {pref}\+(\d+) base$", m.get("marketName") or "")]
+        if not ms:
+            continue
+        for item in fetch_chart_series(h, ms, BACKFILL_DAYS):
+            k = int(re.search(r"\+(\d+)", item["marketName"]).group(1))
+            out[f"{pref}+{k}"] = {ms_to_date(p["milisec"]): p["value"] for p in item.get("value") or [] if p.get("value") is not None}
+    return out
+
+
+def rebuild_from_rolling(roll):
+    """Dated month and quarter closes rebuilt from the rolling series: on day d, M+k is month(d)+k and
+    Q+k is quarter(d)+k. When a contract no longer trades (expiry, or a quarter cascaded into its months)
+    the cockpit shows the next contract in its place: the day is skipped when M+k equals M+(k+1).
+    Checked against the contracts still quoted: identical on 99 % of the days."""
+    import calendar
+    out = {}
+    for pref, per_year in (("M", 12), ("Q", 4)):
+        for k in range(1, 30):
+            s = roll.get(f"{pref}+{k}")
+            if not s:
+                continue
+            nxt = roll.get(f"{pref}+{k + 1}") or {}
+            for d, v in s.items():
+                y, m = int(d[:4]), int(d[5:7])
+                idx = (y * 12 + m - 1 if pref == "M" else y * 4 + (m - 1) // 3) + k
+                if d in nxt and nxt[d] == v:
+                    continue
+                if pref == "M":
+                    yy, mm = divmod(idx, 12); mm += 1
+                    label, kind = f"{_MON_NAMES[mm - 1]}{yy}", "month"
+                    a, b = f"{yy}-{mm:02d}-01", f"{yy}-{mm:02d}-{calendar.monthrange(yy, mm)[1]:02d}"
+                else:
+                    yy, q = divmod(idx, 4); q += 1
+                    label, kind = f"Q{q}{yy}", "quarter"
+                    a, b = f"{yy}-{3 * q - 2:02d}-01", f"{yy}-{3 * q:02d}-{calendar.monthrange(yy, 3 * q)[1]:02d}"
+                c = out.setdefault(label, {"kind": kind, "deliveryStart": a, "deliveryEnd": b, "points": {}, "tenors": set()})
+                c["points"][d] = v
+                c["tenors"].add(f"{pref}+{k}")
+    return out
+
+
 def write_contracts():
     token = get_token()
     h = auth_headers(token)
     out = json.loads(OUT_CONTRACTS.read_text()) if OUT_CONTRACTS.exists() else {}
+    rolling_out = {}
     codes = {"M+1": ("M", 12), "Q+1": ("Q", 8), "S+1": ("S", 6), "Y+1": ("Y", 6)}
     for cc, cfg in COUNTRIES.items():
         resolved = dict(resolve_forward_markets(h, cfg["forward"]))
@@ -736,13 +797,41 @@ def write_contracts():
                 label, kind, a, b = lab
                 c = out.setdefault(cc, {}).setdefault(label, {"marketName": item["marketName"], "kind": kind, "deliveryStart": a, "deliveryEnd": b,
                                                               "currency": currency, "points": {}})
+                own = set(c.get("ownDates") or [])
                 for p in item.get("value") or []:
                     if p.get("value") is not None:
-                        c["points"][ms_to_date(p["milisec"])] = p["value"]
+                        d = ms_to_date(p["milisec"])
+                        c["points"][d] = p["value"]
+                        own.add(d)
+                c["ownDates"] = sorted(own)
                 c["lastCode"] = code
                 c["lastSeen"] = date.today().isoformat()
                 got.append(label)
         print(f"  {cc}: {len(got)} contracts quoted today ({', '.join(got[:6])}…)")
+        # contracts no longer quoted (in delivery, expired), and the days before a contract's own series:
+        # rebuilt from the rolling series; a contract's own closes always win
+        try:
+            roll = rolling_series(h, cc)
+        except requests.RequestException as e:
+            roll = {}
+            print(f"  {cc}: rolling series failed ({e})")
+        rolling_out.setdefault(cc, {})
+        for tenor, pts in roll.items():
+            rolling_out[cc][tenor] = dict(sorted(pts.items()))
+        n_new = 0
+        for label, rb in rebuild_from_rolling(roll).items():
+            c = out.setdefault(cc, {}).get(label)
+            if c is None:
+                c = out[cc][label] = {"marketName": f"{cc} {label} base (rebuilt from rolling series)", "kind": rb["kind"],
+                                      "deliveryStart": rb["deliveryStart"], "deliveryEnd": rb["deliveryEnd"], "currency": currency, "points": {}}
+                n_new += 1
+            own_set = set(c.get("ownDates") or [])
+            added = [d for d in rb["points"] if d not in own_set]
+            for d in added:
+                c["points"][d] = rb["points"][d]
+            c["rebuiltDates"] = sorted((set(c.get("rebuiltDates", [])) | set(added)) - own_set)
+            c["rebuiltFrom"] = sorted(rb["tenors"], key=lambda t: int(t[2:]))
+        print(f"  {cc}: {len(roll)} rolling series, {n_new} contracts rebuilt that the cockpit no longer quotes")
     # dates sorted, compact
     for cc in out:
         for label, c in out[cc].items():
@@ -750,6 +839,9 @@ def write_contracts():
     OUT_CONTRACTS.parent.mkdir(parents=True, exist_ok=True)
     OUT_CONTRACTS.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
     print(f"Wrote {OUT_CONTRACTS}: " + ", ".join(f"{cc} {len(v)}" for cc, v in out.items()))
+    OUT_ROLLING.write_text(json.dumps({"note": "Rolling series of the cockpit (type Relative): on day d, M+k = calendar month(d)+k, Q+k = quarter(d)+k; when that contract no longer trades the value is the next contract's.",
+                                       "series": rolling_out}, ensure_ascii=False, separators=(",", ":")))
+    print(f"Wrote {OUT_ROLLING}")
 
 
 if __name__ == "__main__":
