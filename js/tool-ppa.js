@@ -52,7 +52,7 @@
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
-    const [cap, mkt, goCsv, capa, chain, imbc] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json')]);
+    const [cap, mkt, goCsv, capa, chain, imbc, ccap] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
@@ -70,7 +70,7 @@
     const imbCost = {};
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
+    D = { cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
@@ -593,7 +593,7 @@
     idx.forEach(i => { const x = xs.getPixelForValue(i); g.fillRect(x - step / 2, a.top, step, a.bottom - a.top); }); g.restore(); } });
 
   const IDS = { proj: 'pp-proj', projSub: 'pp-proj-sub', projTable: 'pp-proj-table', capfit: 'pp-capfit', capfitSub: 'pp-capfit-sub', profNat: 'pp-prof-nat', profNatSub: 'pp-prof-nat-sub',
-    profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub', negh: 'pp-negh', neghSub: 'pp-negh-sub' };
+    profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', xc: 'pp-xc', xcSub: 'pp-xc-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub', negh: 'pp-negh', neghSub: 'pp-negh-sub' };
   function renderMarket(o, st = S, ids) {
     ids = ids || IDS;
     const has = k => ids[k] && document.getElementById(ids[k]);
@@ -652,6 +652,30 @@
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
       setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
     } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
+    // France and its neighbours: capture rate against penetration (installed GW ÷ GW of average load), one line per country
+    if (has('xc') && D.cc) {
+      const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain' };
+      const key = st.tech === 'solar' ? (st.conv === 'pos' ? 'solarRatePos' : 'solarRate') : (st.conv === 'pos' ? 'windRatePos' : 'windRate'), gk = st.tech === 'solar' ? 'solarGW' : 'windGW';
+      const ds3 = [], marks3 = [];
+      Object.keys(CNAME).filter(c => D.cc[c]).forEach(c => {
+        const pts = Object.entries(D.cc[c].years).map(([y, f]) => ({ y: +y, f })).filter(r => r.f.complete && r.f[gk] && r.f[key] && r.f.avgLoadGW)
+          .map(r => ({ x: Math.round(r.f[gk] / r.f.avgLoadGW * 1000) / 10, y: pc1(r.f[key]), yr: r.y, c })).sort((a, b) => a.yr - b.yr);
+        if (!pts.length) return;
+        ds3.push({ type: 'line', label: CNAME[c], data: pts, borderColor: CCOL[c], backgroundColor: CCOL[c], borderWidth: c === 'FR' ? 2.4 : 1.4, pointRadius: pts.map(p => p.yr === 2022 ? 3 : 4.5), pointStyle: 'circle', showLine: true, tension: 0, fill: false });
+        const l = pts[pts.length - 1]; marks3.push({ ds: ds3.length - 1, i: pts.length - 1, text: c + ' ' + l.yr, dy: -11, color: CCOL[c] });
+      });
+      // the PPE3 targets of France, on the load of its last complete year
+      const fr = D.cc.FR && Object.entries(D.cc.FR.years).filter(([, f]) => f.complete && f.avgLoadGW).pop();
+      if (fr) { const ld = fr[1].avgLoadGW; const tg = Object.entries(PPE3[st.tech]).map(([yr, gw]) => ({ x: Math.round(gw / ld * 1000) / 10, y: null, yr: +yr, gw }));
+        const yMin = Math.min(...ds3.flatMap(d => d.data.map(p => p.y)));
+        ds3.push({ type: 'scatter', label: 'France PPE3 targets', data: tg.map(t => ({ x: t.x, y: yMin, yr: t.yr, gw: t.gw })), pointStyle: 'triangle', pointRadius: 8, backgroundColor: '#FBBF24', borderColor: '#0F1419' });
+        tg.forEach((t, i) => marks3.push({ ds: ds3.length - 1, i, text: `PPE3 ${t.yr}: ${t.gw} GW`, dy: -12, color: '#FBBF24' })); }
+      _fuelChart(ids.xc, { type: 'line', data: { datasets: ds3 }, plugins: [labelPlugin(marks3)],
+        options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } },
+          tooltip: { enabled: true, callbacks: { label: c => c.raw.gw ? ` France PPE3 ${c.raw.yr}: ${c.raw.gw} GW = ${c.raw.x.toFixed(1)} % of average load` : ` ${CNAME[c.raw.c]} ${c.raw.yr}: ${c.raw.x.toFixed(1)} % of load installed · capture ${c.raw.y.toFixed(1)} %` } } },
+          layout: { padding: { right: 24, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed, % of average load'), { type: 'linear', min: 0 }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-countries');
+      setT('xcSub', `One point per complete year · installed ${tech.toLowerCase()} capacity ÷ average load, so markets of different sizes compare · ${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'} · triangles: France's PPE3 targets on today's load · Energy-Charts`);
+    }
     // negative-price hours: history (YTD annualised, lighter) and projection with the solar build-out
     if (has('negh')) {
       const NY = []; for (let y = Math.min(...Object.keys(D.negH).map(Number)); y <= endY; y++) NY.push(y);
@@ -1157,11 +1181,12 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       async draw(cid, p) { const sub = cid + '-sub'; const o = await siteDraw(p, ids(cid, sub)); const e = document.getElementById(sub); return { sub: e ? e.textContent : '' }; } });
     reg('cannib-projection', 'Capture rate · history and projection', 'cn-proj', 'National capture rate per year, projected with installed capacity to the PPE3 targets (complete years except 2022), P50 with P10–P90 and P25–P75 bands to 2035.', [TECH, CONV, MODEL], (c, s2) => ({ proj: c, projSub: s2, projTable: c === 'cn-proj' ? 'cn-proj-table' : null }));
     reg('cannib-capacity', 'Capture rate vs installed capacity', 'cn-capfit', 'One point per year: national capture rate against installed capacity, log fit and the PPE3 2030 / 2035 targets.', [TECH, CONV], (c, s2) => ({ capfit: c, capfitSub: s2 }));
+    reg('cannib-countries', 'Capture rate vs penetration · France and its neighbours', 'cn-xc', 'One line per country (France, Germany, Belgium, Netherlands, Spain): capture rate against installed capacity as a share of average load, with the French PPE3 targets.', [TECH, CONV], (c, s2) => ({ xc: c, xcSub: s2 }));
     reg('cannib-neghours', 'Hours at zero or negative prices · history and projection', 'cn-negh', 'Hours with a day-ahead price at or below zero in France per year, projected with the solar build-out to the PPE3 targets, and the share of solar or wind output in those hours.', [TECH, CONV], (c, s2) => ({ negh: c, neghSub: s2 }));
     reg('cannib-rolling', 'Rolling capture rate', 'cn-roll', 'National capture rate over the last 30, 90 and 365 days, with the calendar-year values.', [TECH, CONV], (c, s2) => ({ rollPct: c, rollSub: s2 }));
     reg('cannib-rolling-eur', 'Rolling captured price vs baseload', 'cn-roll-eur', '365-day captured price against the 365-day baseload: the gap is the shape discount in €/MWh.', [TECH, CONV], c => ({ rollEur: c }));
     reg('cannib-profile', 'Daily production profile by month', 'cn-prof', 'Average MW by hour of the day, one line per month, last complete year (RTE).', [TECH], (c, s2) => ({ profNat: c, profNatSub: s2 }), { w: 6, h: 5 });
   }
-  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
+  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries', 'cn-xc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
   window.PKPpa = { compute: () => compute(), state: S, run };
 })();
