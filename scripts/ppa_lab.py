@@ -309,8 +309,9 @@ def weather_index(Y, wy, days):
     return res
 
 
-def month_rates(month, v, r_mean, r_pos, p_pos):
-    """monthly capture rate in both conventions + paid share, from expected or drawn ratios"""
+def month_rates(month, v, r_mean, r_pos, p_pos, peak=None):
+    """monthly capture rate in both conventions + paid share (+ the peak ÷ base price ratio, peak = weekdays
+    08:00-20:00), from expected or drawn ratios"""
     out = {}
     for m in range(1, 13):
         k = month == m
@@ -324,6 +325,8 @@ def month_rates(month, v, r_mean, r_pos, p_pos):
         out[m] = {'all': float((vv * r_mean[k]).sum() / den / base),
                   'curt': float((vv * r_pos[k]).sum() / paid / base) if paid > 0 else None,
                   'paid': float(paid / den), 'negH': float((1 - p_pos[k]).sum())}
+        if peak is not None and (k[:, None] & peak).any():
+            out[m]['peak'] = float(r_mean[k[:, None].repeat(24, 1) & peak].mean() / base)
     return out
 
 
@@ -335,14 +338,16 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
     if pm.level:
         lv = np.array([(levels or {}).get(int(m), 50.0) for m in month])
         g = g + 6 * pm.lclass(lv)[:, None]
+    wkd = np.array([date.fromisoformat(d).weekday() < 5 for d in days])
+    peak = wkd[:, None] & ((np.arange(24) >= 8) & (np.arange(24) < 20))[None, :]
     res4 = []
     for wy in train_w:
         src = weather_index(Y, wy, days)
         h = assemble(Y, days, src, demand_year, capY)
         x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
         rm, rp, pp = pm.expected(x, g)
-        res4.append(month_rates(month, h[t]['FR'], rm, rp, pp))
-    m4 = {m: {k: float(np.mean([r[m][k] for r in res4 if m in r and r[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}
+        res4.append(month_rates(month, h[t]['FR'], rm, rp, pp, peak))
+    m4 = {m: {k: float(np.mean([r[m][k] for r in res4 if m in r and r[m].get(k) is not None])) for k in ('all', 'curt', 'paid', 'negH', 'peak')} for m in range(1, 13)}
     m5, dist = None, None
     if sims:
         weeks = [(i // 7) for i in range(len(days))]
@@ -708,6 +713,7 @@ def forward_levels(Y):
         ct = json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_market_contracts.json')))['FR']
     except OSError:
         return None
+    ct = {k: v for k, v in ct.items() if not k.endswith('Peak')}      # base contracts only
     lastv = {k: v['points'][max(v['points'])] for k, v in ct.items() if v.get('points')}
     newest = max(max(v['points']) for v in ct.values() if v.get('points'))
     live = {k: lastv[k] for k, v in ct.items() if v.get('points') and max(v['points']) >= newest}
@@ -779,7 +785,7 @@ def forecast(res, choice, sims):
                         continue
                     k = f'{Y}-{m:02d}'
                     e = out['months'].setdefault(tech, {}).setdefault(conv, {}).setdefault(k, {})
-                    e.update({'weather': wfc[conv].get(m), 'dashboard': dash, 'step': stp, 'fpc': fm[m], 'regional': m4[m][conv], 'regionalMC': m5[m][conv], 'p10': dist[m][conv][0], 'p90': dist[m][conv][2],
+                    e.update({'peakRatio': m4[m].get('peak'), 'weather': wfc[conv].get(m), 'dashboard': dash, 'step': stp, 'fpc': fm[m], 'regional': m4[m][conv], 'regionalMC': m5[m][conv], 'p10': dist[m][conv][0], 'p90': dist[m][conv][2],
                               'paid': m4[m]['paid'], 'negH': m4[m]['negH'], 'capGW': capY['FR'][t]})
             print('forecast', tech, Y, flush=True)
     # the hybrid rule chosen on the calibration years, applied to the forecasts
