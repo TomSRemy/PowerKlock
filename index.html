@@ -2892,6 +2892,19 @@
   .api-url { font:10.5px 'JetBrains Mono',monospace; color:var(--text3); margin-top:2px; }
   .api-table td a.pk-btn-ghost { text-decoration:none; white-space:nowrap; }
   .api-png img { width:100%; border-radius:8px; display:block; }
+  /* News: France focus, sources added from the site */
+  .news-fr { display:inline-flex; align-items:center; gap:6px; margin-left:auto; padding:5px 10px; border:1px solid var(--border2); border-radius:6px; font-size:12px; color:var(--text2); cursor:pointer; white-space:nowrap; }
+  .news-fr:has(input:checked) { border-color:var(--accent); color:var(--text); background:rgba(20,211,169,.10); }
+  .news-fr input { accent-color:var(--accent); margin:0; }
+  .news-add { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:14px; }
+  .news-add-t { font:700 11px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+  .news-add-row { display:grid; grid-template-columns:150px minmax(0,1.2fr) minmax(0,2fr) auto auto; gap:8px; align-items:center; }
+  .news-add-tags { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11.5px; color:var(--text2); }
+  .news-add-tags label { display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .news-add-msg { font-size:11.5px; color:var(--text3); margin-top:8px; }
+  .news-add-msg.ko { color:var(--down); } .news-add-msg.ok { color:var(--accent); } .news-add-msg a { color:var(--accent); }
+  .news-add table { margin-top:10px; }
+  @media (max-width: 900px) { .news-add-row { grid-template-columns:minmax(0,1fr); } .news-fr { margin-left:0; } }
   /* Tools › PPA pricer */
   .pp-group-t { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:14px 0 8px; }
   .pp-group-t:first-child { margin-top:0; }
@@ -5212,7 +5225,7 @@
       </div>
       <div class="hist-section hist-section-strong" id="hs-news-0">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press · carbon, power, gas, renewables, nuclear · refreshed every 3 hours</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press · carbon, power, gas, renewables, nuclear · refreshed every hour</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-news-0">
@@ -5223,10 +5236,11 @@
         <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
         <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
         <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
-        <button class="filter-btn" onclick="filterNews('fr', this)">🇫🇷 France</button>
         <button class="filter-btn" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press">🔎 Watch</button>
         <button class="filter-btn" onclick="filterNews('mine', this)" title="Articles matching your own keywords (below)">★ My keywords</button>
-        <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="margin-left:auto;min-width:200px">
+        <label class="news-fr" title="Only French news: French sources, and articles that talk about France (RTE, CRE, EDF, PPE…). Combines with the other filters."><input type="checkbox" id="news-fr"> 🇫🇷 France focus</label>
+        <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
+        <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button>
       </div>
       <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated, kept in this browser"><span class="news-mine-n" id="news-kw-n"></span></div>
 <div class="news-grid" id="news-grid">
@@ -5236,10 +5250,10 @@
       </div>
       <div class="hist-section hist-section-strong" id="hs-news-src">
         <div class="hist-section-header" onclick="toggleStrongSection('hs-news-src')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Sources<span class="pk-hs-meta">What is read, what worked at the last run, how to add a source</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Sources<span class="pk-hs-meta">Add a feed or a press search, what is read, what worked at the last run</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-news-src"><div id="news-sources"></div></div>
+        <div class="hist-section-body" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
       </div>
     </div>
 
