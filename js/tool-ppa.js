@@ -15,7 +15,7 @@
 //      5 PPA price      = value at risk − imbalance + GO − margin
 //  · PPA Dashboard — the team's Streamlit formula: Forward − Forward × (shape
 //      discount at a percentile of history + add. discount + volume risk +
-//      price risk) − imbalance + GO + margin
+//      price risk) − imbalance + GO − margin (the Streamlit tool added it; deducted here like every method)
 // Every input is filled automatically (shown as placeholder, "auto · source");
 // a typed value overrides it, ↺ goes back to the automatic one.
 // ════════════════════════════════════════════════════════════════════
@@ -247,7 +247,7 @@
     // Prices of both methods
     const sdPct = percentile(histSd, st.pct);
     o.sdCh = sdPct;
-    o.ppaPct = ref - ref * (sdPct + add / 100 + volRisk / 100 + priceRisk / 100) - imb + goVal + margin;
+    o.ppaPct = ref - ref * (sdPct + add / 100 + volRisk / 100 + priceRisk / 100) - imb + goVal - margin;
     o.qU = o.mc ? qtl(o.mc.Us, alpha / 100) : fair;
     // where the premium comes from: the same simulation with one source of risk at a time
     if (o.mc) {
@@ -363,7 +363,7 @@
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
     'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (forecast error × gap between imbalance and spot prices).',
     'pp-go': 'Value of the guarantees of origin per MWh, from market prices.',
-    'pp-margin': 'What the buyer keeps per MWh. Deducted from the price paid to the producer (the PPA Dashboard method adds it).',
+    'pp-margin': 'What the buyer keeps per MWh. Deducted from the price paid to the producer, in every method.',
     'pp-disc': 'Discount rate applied to later years (0 = none).', 'pp-add': 'An extra discount in % of the forward, if you want one.',
     'pp-volrisk': 'PPA Dashboard method: volume risk margin, in % of the forward, entered by hand.', 'pp-pricerisk': 'PPA Dashboard method: price risk margin, in % of the forward, entered by hand.',
     'pp-mcvol': 'How much the yearly production can vary (1 standard deviation).', 'pp-mcfwd': 'How much the forward price can move until delivery (yearly volatility).',
@@ -424,6 +424,18 @@
 
   function render(o) {
     renderYears(o); renderAuto(o); addHelp();
+    inSummary(o);
+    renderRest(o);
+  }
+  // the inputs in one line, readable when the section is folded
+  function inSummary(o) {
+    const sum = $('pp-in-sum');
+    if (sum && o) { const t = sum.closest('.hist-section').classList.contains('collapsed');
+      sum.textContent = t ? [(S.tech === 'solar' ? 'Solar' : 'Wind') + ' ' + o.tenor[0] + (o.tenor.length > 1 ? '–' + o.tenor[o.tenor.length - 1] : ''), f0(o.volume) + ' MWh/yr',
+        'Cal ' + o.fwds.map(f2).join(' / '), 'years ' + o.sel.map(y => String(y).slice(2)).join(','), 'imb. ' + f2(o.imb), 'GO ' + f2(o.goW), 'margin ' + f2(o.margin), 'click to edit'].join(' · ')
+        : 'Click to fold the inputs into one line'; }
+  }
+  function renderRest(o) {
     const intro = $('pp-intro'); if (intro) intro.innerHTML = INTRO[S.method] || '';
     const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T0 = o.tenor[0], T1 = o.tenor[o.tenor.length - 1], build = S.method !== 'pct', mcA = o.mcAt;
     const other = build ? `PPA Dashboard method: ${f2(o.ppaPct)} €/MWh` : `Step-by-step method: ${f2(o.ppaBuild)} €/MWh`;
@@ -488,7 +500,7 @@
       step('1 · Forward', f2(o.ref) + ' €/MWh', `average of Cal ${T0}–${T1}`),
       step('2 · Shape discount', pc(o.sdCh), `P${S.pct} of the years ${o.sel.join(', ')} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">history</a>`),
       step('3 · Risks', '−' + f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100) + ' €/MWh', `additional ${o.add} %, volume ${o.volRisk} %, price ${o.priceRisk} % of the forward`),
-      step('4 · Costs and GO', (o.goVal + o.margin - o.imb >= 0 ? '+' : '−') + f2(Math.abs(o.goVal + o.margin - o.imb)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin +${f2(o.margin)} (PPA Dashboard sign)`),
+      step('4 · Costs and GO', (o.goVal - o.margin - o.imb >= 0 ? '+' : '−') + f2(Math.abs(o.goVal - o.margin - o.imb)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin −${f2(o.margin)}`),
       step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
     ].join('');
     $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { const h = sec.querySelector('.hist-section-header'); if (h && !h.classList.contains('open')) h.click(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
@@ -499,7 +511,7 @@
       ? [['Forward', fm.refW], ['Profile cost', fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Cannibalisation', fm.fair - fm.refW - fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Risk premium', -fm.premium], ['Add. discount', -fm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
       : build
       ? [['Forward', o.refW], ['Shape discount', o.fair - o.refW], ['Risk premium', -o.premium], ['Add. discount', -o.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
-      : [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', o.margin]];
+      : [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', -o.margin]];
     const st2 = steps.filter(([l, v], i) => i === 0 || Math.abs(v) > 0.005);
     let acc = 0; const bars = st2.map(([l, v], i) => { if (i === 0) { acc = v; return [0, v]; } const a = acc; acc += v; return [a, acc]; });
     bars.push([0, o.ppa]);
@@ -535,9 +547,15 @@
   const MCOL = ['#3B82F6', '#7FC8F8', '#ED6965', '#F4A7A3', '#14D3A9', '#6EE7B7', '#F59E0B', '#FBBF24', '#A87DC4', '#C9CED6', '#1D4ED8', '#93C5FD'];
   // Text labels drawn on given points: [{ ds, i, text, dy }]
   const labelPlugin = (marks) => ({ id: 'ppMarks', afterDatasetsDraw(ch) {
-    const g = ch.ctx; g.save(); g.font = '600 10.5px "JetBrains Mono", monospace'; g.textAlign = 'center';
+    const g = ch.ctx, placed = []; g.save(); g.font = '600 10.5px "JetBrains Mono", monospace'; g.textAlign = 'center';
     marks.forEach(m => { const meta = ch.getDatasetMeta(m.ds); const el = meta && meta.data[m.i]; if (!el || meta.hidden) return;
-      const x = el.x, y = el.y + (m.dy || -12); const w = g.measureText(m.text).width + 8;
+      const w = g.measureText(m.text).width + 8, dy = m.dy || -12;
+      // first free spot among above, below, right, left; a label that fits nowhere is left to the tooltip
+      const spots = [[0, dy], [0, -dy + 6], [w / 2 + 8, 4], [-w / 2 - 8, 4]], a = ch.chartArea;
+      const at = spots.map(([ox, oy]) => [el.x + ox, el.y + oy]).find(([x, y]) => x - w / 2 >= a.left - 4 && x + w / 2 <= a.right + 4 && y - 10 >= a.top - 14 && y + 5 <= a.bottom
+        && !placed.some(r => x - w / 2 < r[2] && x + w / 2 > r[0] && y - 10 < r[3] && y + 5 > r[1]));
+      if (!at) return;
+      const [x, y] = at; placed.push([x - w / 2, y - 10, x + w / 2, y + 5]);
       if (m.box) { g.fillStyle = 'rgba(15,20,25,.92)'; g.strokeStyle = m.color || '#FBBF24'; g.lineWidth = 1; g.fillRect(x - w / 2, y - 10, w, 15); g.strokeRect(x - w / 2, y - 10, w, 15); }
       g.fillStyle = m.color || '#FFFFFF'; g.fillText(m.text, x, y + 1); });
     g.restore(); } });
@@ -636,6 +654,7 @@
     // asset profile / monthly / annual
     const A = st.asset && st.asset.slots;
     if (A) {
+      if (ids === IDS) ['profAsset', 'annual'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = false; });
       const grid = MONTHS.map(() => new Array(24).fill(0)), cnt = MONTHS.map(() => new Array(24).fill(0)), monthE = new Array(12).fill(0), monthDays = new Array(12).fill(0), yearE = {};
       A.forEach((arr, d) => { const m = +d.slice(5, 7) - 1, y = d.slice(0, 4); monthDays[m]++; let tot = 0;
         for (let q = 0; q < 96; q++) { const e = arr[q] || 0; tot += e; grid[m][Math.floor(q / 4)] += e * 4 / 1000 / 4; } for (let h = 0; h < 24; h++) cnt[m][h]++; monthE[m] += tot; yearE[y] = (yearE[y] || 0) + tot; });
@@ -651,6 +670,7 @@
         options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'ppa-annual-production');
     } else {
       ['profAsset', 'annual'].filter(has).forEach(k => noDataMsg(ids[k], 'Load an asset production curve above', 'Same view for the asset'));
+      if (ids === IDS) ['profAsset', 'annual'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = true; });
       const natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
       if (has('monthly')) _fuelChart(ids.monthly, { type: 'line', data: { labels: MONTHS, datasets: [{ label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3 }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('MW national', { beginAtZero: true }) } }) }, 'ppa-monthly-production');
@@ -837,7 +857,7 @@
       ['Cannibalisation', 'inside the percentile', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–'],
       ['Capture value, €/MWh', f2(o.ref * (1 - o.sdCh)), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–'],
       ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–', m4 ? '−' + f2(m4.premium) + ' (simulated weather)' : '–'],
-      ['Margin', '+' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin)],
+      ['Margin', '−' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin)],
     ];
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('PPA Dashboard', S.method === 'pct')}${col('Step by step', S.method === 'build')}${col('Asset-specific FPC', S.method === 'fpc')}${col('MC weather', S.method === 'wx')}</tr></thead><tbody>` +
       rows.map(r => `<tr${r[5] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('') +
@@ -887,7 +907,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <h4>Hours at zero or negative prices</h4>
 <p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity to the PPE3 targets, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>PPA Dashboard method</h4>
-<p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO + margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. Kept as in the team's Streamlit tool for comparison. Note that the margin is added there.</p>
+<p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO − margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. As in the team's Streamlit tool, except the margin: it added it, here it is deducted like in every other method.</p>
 <h4>Asset-specific FPC method (the pricing deck’s “asset-specific approach”)</h4>
 <ol>
 <li><b>Forward price curve (FPC).</b> Hourly prices for each delivery year: the usual shape of prices (month in the year, weekday / Saturday / Sunday in the month, hour in the day), averaged on the years used, then calibrated on today’s quotes without arbitrage — months, then quarters and seasons, then each year exactly on its Cal.</li>
@@ -972,7 +992,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
         ['pp-scen', 'Stress scenarios', 'Total P&L over the tenor'], ['pp-scen-cmp', 'Scenarios compared', 'Saved pricings side by side']];
       const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T = o.tenor[0] + '–' + o.tenor[o.tenor.length - 1];
       const steps = (S.method === 'pct'
-        ? [`Forward: ${f2(o.ref)} €/MWh (Cal ${T})`, `Shape discount: ${pc(o.sdCh)} (P${S.pct} of ${o.sel.join(', ')})`, `Risks: −${f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100)} €/MWh`, `Imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin +${f2(o.margin)}`, `PPA price: ${f2(o.ppa)} €/MWh (step-by-step method: ${f2(o.ppaBuild)})`]
+        ? [`Forward: ${f2(o.ref)} €/MWh (Cal ${T})`, `Shape discount: ${pc(o.sdCh)} (P${S.pct} of ${o.sel.join(', ')})`, `Risks: −${f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100)} €/MWh`, `Imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin −${f2(o.margin)}`, `PPA price: ${f2(o.ppa)} €/MWh (step-by-step method: ${f2(o.ppaBuild)})`]
         : [`1 · Forward: ${f2(o.refW)} €/MWh (Cal ${T}, weighted by production)`, `2 · Cannibalisation: shape discount ${pc(o.years[0].fsd)} → ${pc(o.years[o.years.length - 1].fsd)}, ${MODEL_T[o.model]}`,
           `3 · Capture value: ${f2(o.fair)} €/MWh`, `4 · Risk premium: −${f2(o.premium)} €/MWh (${o.alpha} % chance of loss accepted, Monte Carlo, ${S.hedge === 'open' ? 'forward open' : 'forward hedged'})`,
           `5 · Imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)}`, `PPA price: ${f2(o.ppa)} €/MWh (PPA Dashboard method: ${f2(o.ppaPct)})`]).join('\n');
@@ -1054,6 +1074,10 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
     $('pp-xlsx').addEventListener('click', exportXlsx);
+    // the inputs stay folded once folded; the folded bar shows their summary
+    const inSec = $('hs-pp-in');
+    if (inSec) { try { if (localStorage.getItem('pk-pp-in') === 'closed') inSec.classList.add('collapsed'); } catch (e) {}
+      inSec.querySelector('.hist-section-header').addEventListener('click', () => { try { localStorage.setItem('pk-pp-in', inSec.classList.contains('collapsed') ? 'closed' : 'open'); } catch (e) {} inSummary(S.last); }); }
     // the guide stays closed once the user has closed it
     const gd = $('pp-guide');
     if (gd) { try { if (localStorage.getItem('pk-pp-guide') === 'closed') gd.open = false; } catch (e) {}
