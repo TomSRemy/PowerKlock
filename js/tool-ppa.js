@@ -67,6 +67,11 @@
     if (c1 && c1.values) { const v = c1.values.filter(x => x > 0), r = []; for (let i = 1; i < v.length; i++) r.push(Math.log(v[i] / v[i - 1])); if (r.length > 40) { fwdVol = std(r) * Math.sqrt(252); fwdVolN = r.length; } }
     const F = cap ? cap.fields : [], ix = Object.fromEntries(F.map((f, i) => [f, i + 1]));
     D = { cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
+    // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
+    const negH = {}, ix2 = D.ix;
+    D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
+    Object.entries(negH).forEach(([y, e]) => { e.ann = e.h * (+y % 4 ? 365 : 366) / e.d; if (e.d < 20) delete negH[y]; });
+    D.negH = negH;
     return D;
   }
 
@@ -88,7 +93,7 @@
     const by = {}; D.cap.forEach(r => { (by[r[0].slice(0, 4)] = by[r[0].slice(0, 4)] || []).push(r); });
     return Object.keys(by).map(Number).sort().map(y => { const a = agg(by[y], st), gw = D.capGW[st.tech][y];
       return { year: y, base: a.base, cp: a.cp, cpPct: a.cpPct, sd: a.cpPct != null ? 1 - a.cpPct : null, days: by[y].length, complete: y < thisYear() && by[y].length >= 360,
-        lf: gw ? a.Ea / 4 / (gw * 1000 * 24 * by[y].length) : null }; })
+        lf: gw ? a.Ea / 4 / (gw * 1000 * 24 * by[y].length) : null, negShare: (() => { const t = st.tech === 'solar' ? 's' : 'w'; let ep = 0, ea = 0; by[y].forEach(r => { ep += r[D.ix[t + 'EPos']]; ea += r[D.ix[t + 'E']]; }); return ea ? Math.max(0, 1 - ep / ea) : null; })() }; })
       .filter(x => x.cpPct != null);
   }
   // Rolling capture rate and price over 30 / 90 / 365 days (national)
@@ -170,6 +175,18 @@
     const resid = fitRows.map(x => x.sd - (reg.ic + reg.sl * x.year));
     const sig0 = pick('mcSd', clamp(Math.sqrt(mean(resid.map(r => r * r)) || 0), 0.03, 0.08) * 100, 'spread of the years used around their trend, 3 to 8 pts') / 100;
     const sigT = t => Math.min(0.2, sig0 * Math.sqrt(Math.max(1, t)));
+    // Negative hours: linear in installed solar capacity (they follow the solar build-out), anchored on the last complete year
+    const solPath = capPath('solar'), nh = D.negH, nhYears = Object.keys(nh).map(Number).filter(y => y < thisYear() && D.capGW.solar[y]).sort();
+    const nhFitYears = nhYears.filter(y => sel.includes(y)).length >= 2 ? nhYears.filter(y => sel.includes(y)) : nhYears.slice(-3);
+    const nhReg = nhFitYears.length >= 2 ? linreg(nhFitYears.map(y => D.capGW.solar[y]), nhFitYears.map(y => nh[y].h)) : null;
+    const nhLast = nhFitYears.length ? nhFitYears[nhFitYears.length - 1] : null;
+    const negHours = y => { if (nh[y] && y < thisYear()) return nh[y].h; if (!nhReg || nhLast == null) return null; return clamp(nh[nhLast].h + Math.max(0, nhReg.sl) * (solPath(y) - solPath(nhLast)), 0, 2500); };
+    // share of the production at prices <= 0: asset or national history, scaled with the negative hours
+    const shRow = (useAsset ? ast : nat).filter(x => x.complete).slice(-1)[0];
+    const shLast = shRow ? (useAsset ? (shRow.mwhAll ? shRow.negMwh / shRow.mwhAll : null) : shRow.negShare) : null;
+    // saturating: share = 1 − exp(−hours / h0), h0 calibrated on the last complete year (new hours fall on less productive slots)
+    const h0 = shLast != null && shLast > 0 && shLast < 0.95 && shRow && nh[shRow.year] && nh[shRow.year].h ? -nh[shRow.year].h / Math.log(1 - shLast) : null;
+    const negShare = y => { const h = negHours(y); return h == null || h0 == null ? null : clamp(1 - Math.exp(-h / h0), 0, 0.8); };
     // Tenor and forwards
     const ty = thisYear();
     const t0 = pick('tenorStart', ty + 1, 'next calendar year'), t1 = Math.max(t0, pick('tenorEnd', t0 + 4, 'five years'));
@@ -205,14 +222,14 @@
     const rho = clamp(pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
     // Year by year: expected production, discount factor, capture value
     const now = nowFrac();
-    const years = tenor.map((y, i) => { const ev = volume * Math.pow(1 - degr, i), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
-      return { y, fwd: fwds[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr) }; });
+    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv === 'pos' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
+      return { y, fwd: fwds[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
     const o = { st, nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
-      tenor, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
+      tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
     // Prices of both methods
@@ -381,9 +398,9 @@
       options: _fuelOpts({ plugins: { legend: { display: false }, pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => { const r = c.raw; const v = c.dataIndex === 0 || c.dataIndex === labels.length - 1 ? r[1] : r[1] - r[0]; return ' ' + (v > 0 && c.dataIndex && c.dataIndex < labels.length - 1 ? '+' : '') + v.toFixed(2) + ' €/MWh'; } } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
     // year table
-    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>MWh</th><th>Weight</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td>${f0(r.ev)}</td><td>${(r.wt * 100).toFixed(1)} %</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
+    $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>Weight</th><th>P&L k€</th></tr></thead><tbody>` +
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices ≤ 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td>${(r.wt * 100).toFixed(1)} %</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices ≤ 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
       { label: 'Annual P&L (k€)', data: o.pnlCurve.map(v => Math.round(v)), borderColor: '#FFFFFF', borderWidth: 2, pointRadius: 0, fill: { target: { value: 0 }, above: 'rgba(20,211,169,.18)', below: 'rgba(237,105,101,.22)' } },
@@ -417,7 +434,7 @@
     idx.forEach(i => { const x = xs.getPixelForValue(i); g.fillRect(x - step / 2, a.top, step, a.bottom - a.top); }); g.restore(); } });
 
   const IDS = { proj: 'pp-proj', projSub: 'pp-proj-sub', projTable: 'pp-proj-table', capfit: 'pp-capfit', capfitSub: 'pp-capfit-sub', profNat: 'pp-prof-nat', profNatSub: 'pp-prof-nat-sub',
-    profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub' };
+    profAsset: 'pp-prof-asset', profAssetSub: 'pp-prof-asset-sub', monthly: 'pp-monthly', annual: 'pp-annual', rollPct: 'pp-roll-pct', rollEur: 'pp-roll-eur', rollSub: 'pp-roll-pct-sub', negh: 'pp-negh', neghSub: 'pp-negh-sub' };
   function renderMarket(o, st = S, ids) {
     ids = ids || IDS;
     const has = k => ids[k] && document.getElementById(ids[k]);
@@ -476,6 +493,21 @@
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
       setT('capfitSub', `Each point = one year (${st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours'}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
     } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
+    // negative-price hours: history (YTD annualised, lighter) and projection with the solar build-out
+    if (has('negh')) {
+      const NY = []; for (let y = Math.min(...Object.keys(D.negH).map(Number)); y <= endY; y++) NY.push(y);
+      const ty = thisYear(), last = Math.max(...Object.keys(D.negH).map(Number).filter(y => y < ty));
+      const hist = NY.map(y => D.negH[y] ? Math.round(y < ty ? D.negH[y].h : D.negH[y].ann) : null);
+      const proj = NY.map(y => y >= last ? (y === last ? D.negH[y].h : Math.round(o.negHours(y) || 0)) : null);
+      const share = NY.map(y => y > last && o.negShare(y) != null ? Math.round(o.negShare(y) * 1000) / 10 : null);
+      _fuelChart(ids.negh, { type: 'bar', data: { labels: NY, datasets: [
+        { label: 'Hours at or below 0 €/MWh, France', data: hist, backgroundColor: NY.map(y => y >= ty ? 'rgba(237,105,101,.35)' : 'rgba(237,105,101,.8)'), borderRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'Projection (solar build-out to PPE3)', data: proj, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 2, pointRadius: NY.map(y => tenorSet.has(y) ? 4 : 2), spanGaps: true, fill: false, yAxisID: 'y' },
+        { type: 'line', label: tech + ' output at prices ≤ 0 (%)', data: share, borderColor: tc, borderWidth: 1.6, pointRadius: 2, fill: false, yAxisID: 'y1' },
+      ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } } },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('hours per year', { beginAtZero: true }), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'negative-hours-projection');
+      setT('neghSub', o.nhReg ? `Hours with a day-ahead price at or below zero; ${ty} annualised from ${D.negH[ty] ? D.negH[ty].d : 0} days (light bar). Projection: +${Math.max(0, o.nhReg.sl).toFixed(0)} h per GW of solar, fitted on ${o.nhFitYears.join(', ')}, solar capacity to the PPE3 targets; line = ${tech.toLowerCase()} output in those hours (${o.useAsset ? 'asset' : 'national'}).` : 'Not enough history');
+    }
     // daily profiles
     const profYear = String(Math.max(...o.nat.filter(x => x.complete).map(x => x.year)));
     const prof = D.profile[profYear] && D.profile[profYear][st.tech];
@@ -591,6 +623,8 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
 </ol>
+<h4>Hours at zero or negative prices</h4>
+<p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity to the PPE3 targets, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>PPA Dashboard method</h4>
 <p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO + margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. Kept as in the team's Streamlit tool for comparison. Note that the margin is added there.</p>
 <h4>P&L</h4>
@@ -774,10 +808,11 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       async draw(cid, p) { const sub = cid + '-sub'; const o = await siteDraw(p, ids(cid, sub)); const e = document.getElementById(sub); return { sub: e ? e.textContent : '' }; } });
     reg('cannib-projection', 'Capture rate · history and projection', 'cn-proj', 'National capture rate per year, regression on the last three years, P50 with P10–P90 and P25–P75 bands to 2035, PPE3 targets.', [TECH, CONV, MODEL], (c, s2) => ({ proj: c, projSub: s2, projTable: c === 'cn-proj' ? 'cn-proj-table' : null }));
     reg('cannib-capacity', 'Capture rate vs installed capacity', 'cn-capfit', 'One point per year: national capture rate against installed capacity, log fit and the PPE3 2030 / 2035 targets.', [TECH, CONV], (c, s2) => ({ capfit: c, capfitSub: s2 }));
+    reg('cannib-neghours', 'Hours at zero or negative prices · history and projection', 'cn-negh', 'Hours with a day-ahead price at or below zero in France per year, projected with the solar build-out to the PPE3 targets, and the share of solar or wind output in those hours.', [TECH, CONV], (c, s2) => ({ negh: c, neghSub: s2 }));
     reg('cannib-rolling', 'Rolling capture rate', 'cn-roll', 'National capture rate over the last 30, 90 and 365 days, with the calendar-year values.', [TECH, CONV], (c, s2) => ({ rollPct: c, rollSub: s2 }));
     reg('cannib-rolling-eur', 'Rolling captured price vs baseload', 'cn-roll-eur', '365-day captured price against the 365-day baseload: the gap is the shape discount in €/MWh.', [TECH, CONV], c => ({ rollEur: c }));
     reg('cannib-profile', 'Daily production profile by month', 'cn-prof', 'Average MW by hour of the day, one line per month, last complete year (RTE).', [TECH], (c, s2) => ({ profNat: c, profNatSub: s2 }), { w: 6, h: 5 });
   }
-  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
+  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
   window.PKPpa = { compute: () => compute(), state: S, run };
 })();
