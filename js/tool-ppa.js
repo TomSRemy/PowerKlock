@@ -69,7 +69,8 @@
     // national imbalance cost per technology, last 12 months with data (scripts/fetch_fr_imbalance_cost.py)
     const imbCost = {};
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
-    D = { imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
+    const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
+    D = { fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
@@ -256,7 +257,10 @@
     o.premium = fair - o.qU;
     o.ppaBuild = o.qU - refW * add / 100 - imb + goW - margin;
     o.method = st.method;
-    o.ppa = st.method === 'pct' ? o.ppaPct : o.ppaBuild;
+    // asset-specific FPC method (three pricings): js/ppa-fpc.js
+    if (!st.noMC && window.PKFpc) { try { o.m3 = await PKFpc.compute(o, st, D); } catch (e) { console.warn('[ppa] fpc', e); o.m3 = null; } }
+    o.ppaFpc = o.m3 ? o.m3.ppa : null;
+    o.ppa = st.method === 'pct' ? o.ppaPct : st.method === 'fpc' && o.m3 ? o.ppaFpc : o.ppaBuild;
     o.goP = st.method === 'pct' ? goVal : goW;
     o.refP = st.method === 'pct' ? ref : refW;
     // P&L per year at the PPA price, central case
@@ -329,6 +333,7 @@
   const f0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB');
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
   const sgn = v => (v > 0 ? '+' : '') + f0(v);
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const MODEL_T = { capacity: 'driven by installed capacity (PPE3)', flat: 'flat at the last year used', damped: 'trend halving every year', linear: 'straight line (PPA Dashboard)' };
 
   // input id → state key; an empty field takes the automatic value
@@ -373,6 +378,15 @@
     renderYears(o); renderAuto(o);
     const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T0 = o.tenor[0], T1 = o.tenor[o.tenor.length - 1], build = S.method !== 'pct', mcA = o.mcAt;
     const other = build ? `PPA Dashboard method: ${f2(o.ppaPct)} €/MWh` : `Step-by-step method: ${f2(o.ppaBuild)} €/MWh`;
+    const fm = S.method === 'fpc' && o.m3 ? o.m3 : null;
+    if (fm) { const F0 = fm.fwd[0], F1 = fm.fwd[fm.fwd.length - 1]; $('pp-kpis').innerHTML = [
+      _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · asset-specific FPC method`, ''),
+      _fuelKpi('Forward profile cost', pc(F0.fwdCost) + (fm.fwd.length > 1 ? ' → ' + pc(F1.fwdCost) : ''), '', 'expected production on the forward curve (FPC)'),
+      _fuelKpi('Cannibalisation', pc(F0.cannib) + (fm.fwd.length > 1 ? ' → ' + pc(F1.cannib) : ''), '', fm.flat ? 'flat at the average of the years used' : 'projected with installed capacity'),
+      _fuelKpi('Capture value', f2(fm.fair), '€/MWh', 'Cal × (1 + profile cost + cannibalisation)'),
+      _fuelKpi('Risk premium', f2(fm.premium), '€/MWh', `spread of the yearly cannibalisation (± ${(fm.sigC * 100).toFixed(1)} pts), ${o.alpha} % accepted`),
+      _fuelKpi('Other methods', f2(o.ppaBuild) + ' / ' + f2(o.ppaPct), '€/MWh', 'step by step / PPA Dashboard'),
+    ].join(''); } else
     $('pp-kpis').innerHTML = (build ? [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.refW * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × (1 − projected shape discount), no risk'),
@@ -391,7 +405,14 @@
     // the price, step by step: each step points to the chart it comes from
     const first = o.years[0], last = o.years[o.years.length - 1];
     const step = (t, n, txt, cls) => `<div class="pp-bs${cls ? ' ' + cls : ''}"><div class="t">${t}</div><b class="n">${n}</b>${txt}</div>`;
-    $('pp-build').innerHTML = build ? [
+    $('pp-build').innerHTML = fm ? [
+      step('1 · Forward curve', f2(fm.refW) + ' €/MWh', `hourly FPC calibrated on ${fm.used.length} quotes (${esc(fm.used.slice(0, 4).join(', '))}${fm.used.length > 4 ? '…' : ''}) · <a href="#hs-pp-fpc" data-go="hs-pp-fpc">curve</a>`),
+      step('2 · Forward profile cost', pc(fm.fwd[0].fwdCost), `expected ${S.tech} production × FPC, ${T0} (no link with the weather)`),
+      step('3 · Cannibalisation', pc(fm.fwd[0].cannib) + (fm.fwd.length > 1 ? ' → ' + pc(fm.fwd[fm.fwd.length - 1].cannib) : ''), `historical (1) − decorrelated (3) on ${fm.years.length} years, ${fm.flat ? 'flat' : 'projected with capacity'} · <a href="#hs-pp-fpc" data-go="hs-pp-fpc">by year</a>`),
+      step('4 · Capture value', f2(fm.fair) + ' €/MWh', 'Cal × (1 + profile cost + cannibalisation), weighted'),
+      step('5 · Risk premium', '−' + f2(fm.premium) + ' €/MWh', `${o.alpha} % chance to miss, from the spread of the yearly cannibalisation`),
+      step('PPA price', f2(o.ppa) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)} · other methods ${f2(o.ppaBuild)} / ${f2(o.ppaPct)}`, 'final'),
+    ].join('') : build ? [
       step('1 · Forward', f2(o.refW) + ' €/MWh', `Cal ${T0}–${T1}, weighted by production${o.disc ? ' and discounted' : ''} · <a href="#pp-fwd" data-go="hs-pp-in">inputs</a>`),
       step('2 · Cannibalisation', pc(first.fsd) + ' → ' + pc(last.fsd), `shape discount ${T0} → ${T1}, ${MODEL_T[o.model]} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">chart</a>`),
       step('3 · Capture value', f2(o.fair) + ' €/MWh', 'forward × (1 − shape discount), year by year · <a href="#pp-years" data-go="hs-pp-price">table</a>'),
@@ -407,7 +428,9 @@
     ].join('');
     $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { const h = sec.querySelector('.hist-section-header'); if (h && !h.classList.contains('open')) h.click(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
     // waterfall
-    const steps = build
+    const steps = fm
+      ? [['Forward', fm.refW], ['Profile cost', fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Cannibalisation', fm.fair - fm.refW - fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Risk premium', -fm.premium], ['Add. discount', -fm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
+      : build
       ? [['Forward', o.refW], ['Shape discount', o.fair - o.refW], ['Risk premium', -o.premium], ['Add. discount', -o.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
       : [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', o.margin]];
     const st2 = steps.filter(([l, v], i) => i === 0 || Math.abs(v) > 0.005);
@@ -434,6 +457,8 @@
     const ad = $('pp-asset-info');
     if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
     renderDoc(o);
+    renderCompare(o);
+    try { renderFpc(o); } catch (e) { console.warn('[ppa] fpc render', e); }
   }
 
   // ── Market & methodology charts (the PPA Dashboard Overview and Market Evolution tabs) ──
@@ -660,6 +685,51 @@
     $('pp-mc-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Year</th><th>Shape disc. projected</th><th>P50</th><th>P90 (worst)</th><th>Capture P50</th><th>P&L P10</th><th>P&L P50</th><th>P&L P90</th></tr></thead><tbody>` +
       A.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f1(r.sdTrend)}</td><td>${f1(r.sd50)}</td><td>${f1(r.sd90)}</td><td>${r.cp50.toFixed(2)}</td><td class="${r.p10 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p10)}</td><td class="${r.p50 >= 0 ? 'pp-pos' : 'pp-neg'}"><b>${k(r.p50)}</b></td><td class="${r.p90 >= 0 ? 'pp-pos' : 'pp-neg'}">${k(r.p90)}</td></tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">k€ per year at the PPA price, ${mc.hedged ? 'hedge included' : 'no hedge'}. Seed fixed: the same inputs always give the same results.</div>`;
+  }
+
+  // ── Three methods side by side ──
+  function renderCompare(o) {
+    const host = $('pp-compare'); if (!host) return;
+    const m3 = o.m3, Y = o.years, a = Y[0], z = Y[Y.length - 1];
+    const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
+    const rows = [
+      ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', true],
+      ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–'],
+      ['Shape / profile', pc(-o.sdCh) + ' (P' + S.pct + ' of history)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–'],
+      ['Cannibalisation', 'inside the percentile', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–'],
+      ['Capture value, €/MWh', f2(o.ref * (1 - o.sdCh)), f2(o.fair), m3 ? f2(m3.fair) : '–'],
+      ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–'],
+      ['Margin', '+' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–'],
+    ];
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('PPA Dashboard', S.method === 'pct')}${col('Step by step', S.method === 'build')}${col('Asset-specific FPC', S.method === 'fpc')}</tr></thead><tbody>` +
+      rows.map(r => `<tr${r[4] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the method that sets the PPA price above (Pricing method, step 2 of the inputs). A historical replay of the three methods will tell which one is the most reliable.</div>`;
+  }
+
+  // ── Asset-specific FPC method: the curve, the three pricings by year, the forward years ──
+  function renderFpc(o) {
+    const m3 = o.m3, sec = $('hs-pp-fpc'); if (!sec) return;
+    if (!m3) { $('pp-fpc-note').textContent = 'Not enough hourly history for the years used.'; return; }
+    const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], cols = ['#7FC8F8', '#FBBF24', '#A87DC4', '#14D3A9', '#ED6965'];
+    _fuelChart('pp-fpc-curve', { type: 'line', data: { labels: MO, datasets: m3.fwd.map((r, i) => ({ label: 'FPC ' + r.y + ' · Cal ' + f2(r.cal), data: r.months.map(v => v == null ? null : +v.toFixed(1)), borderColor: cols[i % 5], borderWidth: 2, pointRadius: 3, fill: false })) },
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh, monthly average') } }) }, 'ppa-fpc-monthly');
+    const W = m3.week, mx = Math.max(...W.map(p => p.prod)) || 1;
+    _fuelChart('pp-fpc-week', { type: 'line', data: { labels: W.map(p => p.h === 0 ? p.d.slice(5) : ''), datasets: [
+      { label: 'FPC, €/MWh', data: W.map(p => +p.v.toFixed(1)), borderColor: '#FFFFFF', borderWidth: 1.6, pointRadius: 0, fill: false, yAxisID: 'y' },
+      { label: 'Expected production (relative)', data: W.map(p => +(p.prod / mx * 100).toFixed(1)), borderColor: S.tech === 'solar' ? '#FBBF24' : '#14D3A9', backgroundColor: S.tech === 'solar' ? 'rgba(251,191,36,.18)' : 'rgba(20,211,169,.18)', borderWidth: 1.2, pointRadius: 0, fill: 'origin', yAxisID: 'y1' },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, autoSkip: false, maxRotation: 0, font: { size: 10 } } }), y: _fuelAxis('€/MWh'), y1: _fuelAxis('% of peak', { position: 'right', beginAtZero: true, max: 100, grid: { display: false } }) } }) }, 'ppa-fpc-week');
+    const H = m3.hist, Ys = H.map(x => x.y).concat(m3.fwd.map(r => r.y)), pp = v => v == null ? null : +(v * 100).toFixed(1);
+    _fuelChart('pp-fpc-years', { type: 'bar', data: { labels: Ys, datasets: [
+      { type: 'line', label: '(1) Historical profile cost', data: Ys.map(y => { const x = H.find(h => h.y === y); return x ? pp(x.hist) : null; }), borderColor: '#7FC8F8', backgroundColor: '#7FC8F8', borderWidth: 0, pointRadius: 5, showLine: false },
+      { type: 'line', label: '(3) Decorrelated profile cost', data: Ys.map(y => { const x = H.find(h => h.y === y); return x ? pp(x.decorr) : null; }), borderColor: '#B8C9D9', backgroundColor: '#B8C9D9', borderWidth: 0, pointRadius: 4, pointStyle: 'rect', showLine: false },
+      { label: 'Cannibalisation (1) − (3)', data: Ys.map(y => { const x = H.find(h => h.y === y); return x ? pp(x.cannib) : null; }), backgroundColor: 'rgba(237,105,101,.8)', borderRadius: 3 },
+      { label: 'Cannibalisation, projected', data: Ys.map(y => { const r = m3.fwd.find(f => f.y === y); return r ? pp(r.cannib) : null; }), backgroundColor: 'rgba(237,105,101,.35)', borderColor: 'rgba(237,105,101,.8)', borderWidth: 1, borderRadius: 3 },
+      { type: 'line', label: '(2) Forward profile cost', data: Ys.map(y => { const r = m3.fwd.find(f => f.y === y); return r ? pp(r.fwdCost) : null; }), borderColor: '#FBBF24', backgroundColor: '#FBBF24', borderWidth: 0, pointRadius: 5, pointStyle: 'rectRot', showLine: false },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('% of the baseload') } }) }, 'ppa-fpc-three-pricings');
+    $('pp-fpc-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Delivery</th><th>Cal (FPC)</th><th>(2) Profile cost</th><th>Cannibalisation</th><th>Capture rate</th><th>Capture €/MWh</th></tr></thead><tbody>` +
+      m3.fwd.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.cal)}</td><td>${pc(r.fwdCost)}</td><td>${pc(r.cannib)}</td><td>${pc(r.rate)}</td><td>${f2(r.capture)}</td></tr>`).join('') +
+      `</tbody></table></div>`;
+    $('pp-fpc-note').innerHTML = `${m3.asset ? 'Production: the asset’s curve (years ' + m3.years.join(', ') + ').' : 'Production: national ' + S.tech + ' (RTE), years ' + m3.years.join(', ') + '.'} Shaping coefficients (month, day type, hour) averaged on the same years. The FPC is calibrated on ${m3.used.join(', ') || 'no quote'}: months first, then quarters and seasons (a period already set is not changed), then each year is rescaled so that it averages exactly its Cal${Object.entries(m3.calGap || {}).filter(([, g]) => Math.abs(g) > 0.05).map(([y, g]) => ` (${y}: the shorter quotes gave ${g > 0 ? '+' : ''}${g.toFixed(2)} €/MWh vs the Cal)`).join('')}. Cannibalisation = historical (1) − decorrelated (3), year by year; ${m3.flat ? 'flat at their average ' + pc(m3.meanC) : 'projected with installed capacity (log), anchored on ' + H[H.length - 1].y} · spread ± ${(m3.sigC * 100).toFixed(1)} pts. Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of (1) and (3)' : 'all hours'}.`;
   }
 
   // ── Methodology (with the proposed updates) ──
