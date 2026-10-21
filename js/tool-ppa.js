@@ -260,7 +260,14 @@
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     if (!st.noMC && window.PKFpc) { try { o.m3 = await PKFpc.compute(o, st, D); } catch (e) { console.warn('[ppa] fpc', e); o.m3 = null; } }
     o.ppaFpc = o.m3 ? o.m3.ppa : null;
-    o.ppa = st.method === 'pct' ? o.ppaPct : st.method === 'fpc' && o.m3 ? o.ppaFpc : o.ppaBuild;
+    // Monte Carlo on simulated weather (js/ppa-wx.js): heavier, run on its tab and on Compare
+    o.capPathFor = capPath;
+    if (!st.noMC && window.PKWx && (st.method === 'wx' || st.view === 'compare')) {
+      const monthLevel = (y, m) => { const r = o.m3 && o.m3.fwd.find(f => f.y === y); const i = o.tenor.indexOf(y); return m === 0 ? (r ? r.cal : fwds[i]) : (r && r.months[m - 1] != null ? r.months[m - 1] : fwds[i]); };
+      try { o.m4 = await PKWx.compute(o, st, D, capPath, monthLevel, 120); } catch (e) { console.warn('[ppa] wx', e); o.m4 = null; }
+    }
+    o.ppaWx = o.m4 ? o.m4.ppa : null;
+    o.ppa = st.method === 'pct' ? o.ppaPct : st.method === 'fpc' && o.m3 ? o.ppaFpc : st.method === 'wx' && o.m4 ? o.ppaWx : o.ppaBuild;
     o.goP = st.method === 'pct' ? goVal : goW;
     o.refP = st.method === 'pct' ? ref : refW;
     // P&L per year at the PPA price, central case
@@ -333,6 +340,7 @@
   const f0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB');
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
   const sgn = v => (v > 0 ? '+' : '') + f0(v);
+  const quantFloat = (v, p) => { const r = p * (v.length - 1), lo = Math.floor(r), hi = Math.min(lo + 1, v.length - 1); return v[lo] + (v[hi] - v[lo]) * (r - lo); };
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const MODEL_T = { capacity: 'driven by installed capacity (PPE3)', flat: 'flat at the last year used', damped: 'trend halving every year', linear: 'straight line (PPA Dashboard)' };
 
@@ -378,7 +386,20 @@
     renderYears(o); renderAuto(o);
     const tech = S.tech === 'solar' ? 'Solar' : 'Wind', T0 = o.tenor[0], T1 = o.tenor[o.tenor.length - 1], build = S.method !== 'pct', mcA = o.mcAt;
     const other = build ? `PPA Dashboard method: ${f2(o.ppaPct)} €/MWh` : `Step-by-step method: ${f2(o.ppaBuild)} €/MWh`;
-    const fm = S.method === 'fpc' && o.m3 ? o.m3 : null;
+    const wm = S.method === 'wx' && o.m4 ? o.m4 : null;
+    if (wm) {
+      const Y0 = wm.years[0], Y1 = wm.years[wm.years.length - 1];
+      $('pp-kpis').innerHTML = [
+        _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · Monte Carlo on simulated weather`, ''),
+        _fuelKpi('Capture rate', pc(Y0.rate) + (wm.years.length > 1 ? ' → ' + pc(Y1.rate) : ''), '', `average of ${wm.N} simulated years per delivery year`),
+        _fuelKpi('Cannibalisation', pc(Y0.cannib) + (wm.years.length > 1 ? ' → ' + pc(Y1.cannib) : ''), '', 'same-year prices vs prices of another simulated year'),
+        _fuelKpi('Capture value', f2(wm.fair), '€/MWh', 'average over the simulated years'),
+        _fuelKpi('Risk premium', f2(wm.premium), '€/MWh', `${o.alpha} % of simulated deliveries earn less than the price`),
+        _fuelKpi('Other methods', [o.ppaPct, o.ppaBuild, o.ppaFpc].map(f2).join(' / '), '€/MWh', 'PPA Dashboard / step by step / FPC'),
+      ].join('');
+    }
+    const fm = !wm && S.method === 'fpc' && o.m3 ? o.m3 : null;
+    if (wm) {} else
     if (fm) { const F0 = fm.fwd[0], F1 = fm.fwd[fm.fwd.length - 1]; $('pp-kpis').innerHTML = [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · asset-specific FPC method`, ''),
       _fuelKpi('Forward profile cost', pc(F0.fwdCost) + (fm.fwd.length > 1 ? ' → ' + pc(F1.fwdCost) : ''), '', 'expected production on the forward curve (FPC)'),
@@ -405,7 +426,14 @@
     // the price, step by step: each step points to the chart it comes from
     const first = o.years[0], last = o.years[o.years.length - 1];
     const step = (t, n, txt, cls) => `<div class="pp-bs${cls ? ' ' + cls : ''}"><div class="t">${t}</div><b class="n">${n}</b>${txt}</div>`;
-    $('pp-build').innerHTML = fm ? [
+    $('pp-build').innerHTML = wm ? [
+      step('1 · Weather', wm.N + ' years', 'daily sun and wind drawn from each month’s real distribution, with persistence · <a href="#hs-pp-wx" data-go="hs-pp-wx">simulation</a>'),
+      step('2 · Production', f0(wm.capS[0]) + ' GW solar · ' + f0(wm.capW[0]) + ' GW wind', `installed in ${T0} on the PPE3 path, hourly shape of a real day`),
+      step('3 · Prices', 'Cal ' + f2(wm.years[0].cal), `forward curve × effect of net residual load, measured on ${wm.recent.join('–')}; each year rescaled to its Cal`),
+      step('4 · Capture value', f2(wm.fair) + ' €/MWh', `capture rate ${pc(wm.years[0].rate)} in ${T0}, cannibalisation ${pc(wm.years[0].cannib)}`),
+      step('5 · Risk premium', '−' + f2(wm.premium) + ' €/MWh', `${o.alpha} % of simulated deliveries earn less`),
+      step('PPA price', f2(o.ppa) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)}`, 'final'),
+    ].join('') : fm ? [
       step('1 · Forward curve', f2(fm.refW) + ' €/MWh', `hourly FPC calibrated on ${fm.used.length} quotes (${esc(fm.used.slice(0, 4).join(', '))}${fm.used.length > 4 ? '…' : ''}) · <a href="#hs-pp-fpc" data-go="hs-pp-fpc">curve</a>`),
       step('2 · Forward profile cost', pc(fm.fwd[0].fwdCost), `expected ${S.tech} production × FPC, ${T0} (no link with the weather)`),
       step('3 · Cannibalisation', pc(fm.fwd[0].cannib) + (fm.fwd.length > 1 ? ' → ' + pc(fm.fwd[fm.fwd.length - 1].cannib) : ''), `historical (1) − decorrelated (3) on ${fm.years.length} years, ${fm.flat ? 'flat' : 'projected with capacity'} · <a href="#hs-pp-fpc" data-go="hs-pp-fpc">by year</a>`),
@@ -428,7 +456,9 @@
     ].join('');
     $('pp-build').querySelectorAll('a[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); const sec = $(a.dataset.go); if (sec) { const h = sec.querySelector('.hist-section-header'); if (h && !h.classList.contains('open')) h.click(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
     // waterfall
-    const steps = fm
+    const steps = wm
+      ? [['Forward', wm.refW], ['Capture discount', wm.fair - wm.refW], ['Risk premium', -wm.premium], ['Add. discount', -wm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
+      : fm
       ? [['Forward', fm.refW], ['Profile cost', fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Cannibalisation', fm.fair - fm.refW - fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Risk premium', -fm.premium], ['Add. discount', -fm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
       : build
       ? [['Forward', o.refW], ['Shape discount', o.fair - o.refW], ['Risk premium', -o.premium], ['Add. discount', -o.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
@@ -458,6 +488,7 @@
     if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv === 'pos' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
     renderDoc(o);
     renderCompare(o);
+    try { renderWx(o); } catch (e) { console.warn('[ppa] wx render', e); }
     try { renderFpc(o); } catch (e) { console.warn('[ppa] fpc render', e); }
   }
 
@@ -687,6 +718,33 @@
       `</tbody></table></div><div class="fuel-note">k€ per year at the PPA price, ${mc.hedged ? 'hedge included' : 'no hedge'}. Seed fixed: the same inputs always give the same results.</div>`;
   }
 
+  // ── Monte Carlo on simulated weather: what the simulation draws and gives ──
+  function renderWx(o) {
+    const el = $('pp-wx'); if (!el) return;
+    const w = o.m4;
+    if (!w) { el.innerHTML = '<b>How this method works.</b> Thousands of possible years are simulated: the weather, then the national solar and wind production on the capacity projected for each delivery year, then the hourly prices that this production causes. Open this tab to run it (a few seconds).'; return; }
+    el.innerHTML = `<b>How this method works.</b> ${w.N} years are simulated for each delivery year. Each day draws sun and wind from what that month has really seen (with the persistence of real weather, so calm or sunny spells last), puts it on the capacity installed that year (${f0(w.capS[0])} GW of solar and ${f0(w.capW[0])} GW of wind in ${o.tenor[0]}), and takes consumption and nuclear from a recent real day. The price of each hour follows from what is left to produce once solar, wind and nuclear are counted (the net residual load): the lower it is, the lower the price, as measured on ${w.recent.join(' and ')}. Each simulated year then averages exactly its Cal. <b>Correlated</b> uses the prices of the same simulated year, <b>decorrelated</b> the prices of another one: the gap is the cannibalisation.`;
+    const L = w.years.map(r => String(r.y));
+    _fuelChart('pp-wx-rates', { type: 'bar', data: { labels: L, datasets: [
+      { label: 'P10–P90 of the simulated years', data: w.years.map(r => [+(r.p10 * 100).toFixed(1), +(r.p90 * 100).toFixed(1)]), backgroundColor: 'rgba(127,200,248,.35)', borderColor: '#7FC8F8', borderWidth: 1, barPercentage: 0.4, grouped: false },
+      { type: 'line', label: 'Correlated (average)', data: w.years.map(r => +(r.rate * 100).toFixed(1)), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', pointRadius: 5, showLine: false },
+      { type: 'line', label: 'Decorrelated (average)', data: w.years.map(r => +(r.rateD * 100).toFixed(1)), borderColor: '#B8C9D9', backgroundColor: '#B8C9D9', pointStyle: 'rect', pointRadius: 5, showLine: false },
+    ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } }, pkHoverReadout: false }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('capture rate, % of the Cal') } }) }, 'ppa-wx-capture-rates');
+    if (w.week) { const mx = Math.max(...w.week.map(p => p.v)) || 1;
+      _fuelChart('pp-wx-week', { type: 'line', data: { labels: w.week.map((p, k) => k % 24 === 0 ? 'day ' + (k / 24 + 1) : ''), datasets: [
+        { label: 'Simulated price, €/MWh', data: w.week.map(p => +p.p.toFixed(1)), borderColor: '#FFFFFF', borderWidth: 1.4, pointRadius: 0, yAxisID: 'y' },
+        { label: (S.tech === 'solar' ? 'Solar' : 'Wind') + ' production (relative)', data: w.week.map(p => +(p.v / mx * 100).toFixed(1)), borderColor: S.tech === 'solar' ? '#FBBF24' : '#14D3A9', backgroundColor: S.tech === 'solar' ? 'rgba(251,191,36,.18)' : 'rgba(20,211,169,.18)', borderWidth: 1, pointRadius: 0, fill: 'origin', yAxisID: 'y1' },
+      ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, autoSkip: false, maxRotation: 0, font: { size: 10 } } }), y: _fuelAxis('€/MWh'), y1: _fuelAxis('% of peak', { position: 'right', beginAtZero: true, max: 100, grid: { display: false } }) } }) }, 'ppa-wx-week'); }
+    const U = w.U, lo = U[0], hi = U[U.length - 1], nb = 24, bw = (hi - lo) / nb || 1, h = new Array(nb).fill(0);
+    U.forEach(v => { const k = Math.min(nb - 1, Math.floor((v - lo) / bw)); h[k]++; });
+    const mids = h.map((_, k) => lo + (k + 0.5) * bw);
+    _fuelChart('pp-wx-u', { type: 'bar', data: { labels: mids.map(v => v.toFixed(1)), datasets: [{ label: '% of simulated deliveries', data: h.map(v => +(v / U.length * 100).toFixed(1)), backgroundColor: mids.map(v => v < w.qU ? 'rgba(237,105,101,.75)' : 'rgba(20,211,169,.7)'), barPercentage: 1, categoryPercentage: 1 }] },
+      options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€ earned per MWh, before costs · red = below the price kept (' + f2(w.qU) + ')', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('% of deliveries', { beginAtZero: true }) } }) }, 'ppa-wx-value');
+    $('pp-wx-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Delivery</th><th>Cal</th><th>Capture rate</th><th>P10 – P90</th><th>Decorrelated</th><th>Cannibalisation</th><th>Capture €/MWh</th></tr></thead><tbody>` +
+      w.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.cal)}</td><td>${pc(r.rate)}</td><td>${pc(r.p10)} – ${pc(r.p90)}</td><td>${pc(r.rateD)}</td><td>${pc(r.cannib)}</td><td>${f2(r.capture)}</td></tr>`).join('') + '</tbody></table></div>' +
+      `<div class="fuel-note">${o.useAsset ? 'Uses the national ' + S.tech + ' profile for now: the asset as “national + local deviation” comes next.' : 'National ' + S.tech + ' profile.'} Price effect measured on ${w.recent.join(' and ')} only: older years describe a market without today’s solar fleet.</div>`;
+  }
+
   // ── Three methods side by side ──
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
@@ -694,7 +752,8 @@
     // the step-by-step price for other risk levels: the same 10,000 futures, another percentile
     const atA = a => mc ? qtl(mc.Us, a) - o.refW * o.add / 100 - o.imb + o.goW - o.margin : null;
     const meth = [['PPA Dashboard', o.ppaPct, null, null, '#B8C9D9'], ['Step by step', o.ppaBuild, atA(0.10), atA(0.50), '#14D3A9'],
-      ['Asset-specific FPC', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24']].filter(x => x[1] != null);
+      ['Asset-specific FPC', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24'],
+      ['MC weather', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4']].filter(x => x[1] != null);
     $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} for 10 % to 50 % risk accepted` : 'no risk range (risks entered by hand)')).join('') +
       _fuelKpi('Spread between methods', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest price');
     _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => x[0]), datasets: [
@@ -707,6 +766,7 @@
       { label: 'PPA Dashboard', data: o.years.map(r => +(r.fwd * (1 - o.sdCh)).toFixed(2)), backgroundColor: '#B8C9D9AA', borderRadius: 3 },
       { label: 'Step by step', data: o.years.map(r => +r.cp.toFixed(2)), backgroundColor: '#14D3A9AA', borderRadius: 3 },
       ...(m3c ? [{ label: 'Asset-specific FPC', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
+      ...(o.m4 ? [{ label: 'MC weather', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
     const m3 = o.m3, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
@@ -932,11 +992,13 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     run();
   }
   // one tab per method (js/views.js): the tab sets the method that prices
-  const VIEW_METHOD = { 'PPA Dashboard': 'pct', 'Step by step': 'build', 'Asset-specific FPC': 'fpc' };
+  const VIEW_METHOD = { 'PPA Dashboard': 'pct', 'Step by step': 'build', 'Asset-specific FPC': 'fpc', 'Monte Carlo (weather)': 'wx' };
   document.addEventListener('pk-view', e => {
     if (!e.detail || e.detail.key !== 'ppapricer') return;
     const m = VIEW_METHOD[e.detail.label];
+    const was = S.view;
     S.view = e.detail.label === 'Compare' ? 'compare' : 'method';
+    if (S.view === 'compare' && was !== 'compare' && S.last && !S.last.m4 && $('page-ppapricer').dataset.wired) { run(); return; }
     if (m && m !== S.method) { S.method = m; if ($('page-ppapricer') && $('page-ppapricer').dataset.wired) run(); }
     else if (S.last) renderAuto(S.last);
   });

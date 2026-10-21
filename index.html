@@ -5439,7 +5439,9 @@
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-wx">
-<div class="pp-explain" id="pp-wx"><b>Under construction.</b> Brick 1 is done: national solar and wind production simulated year by year, checked against the ten real years (<a href="https://claude.ai/artifact/NnRnnvn1XqqAerSi4NKdwW" target="_blank" rel="noopener">validation</a>). Next: the effect of residual load on prices, then the asset as national + local deviation, then the price. Until then this tab prices nothing.</div>
+<div class="pp-explain" id="pp-wx"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate by delivery year</div><div class="fuel-card-sub">Spread over the simulated years (P10–P90) · correlated vs decorrelated prices</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-wx-rates" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">One simulated week of June</div><div class="fuel-card-sub">Simulated price and production, first delivery year</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-wx-week" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What one MWh earns over the delivery</div><div class="fuel-card-sub">Distribution over the simulated deliveries · line = the price kept</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:280px"><canvas id="pp-wx-u" style="width:100%;height:280px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Delivery years</div><div class="fuel-card-sub">Simulated capture rate and cannibalisation</div></div></div><div id="pp-wx-table"></div></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-roll">
@@ -7791,6 +7793,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/kpi-tone.js"></script>
 <script src="js/tool-carbon.js"></script>
 <script src="js/ppa-fpc.js"></script>
+<script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
