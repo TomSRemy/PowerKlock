@@ -601,14 +601,14 @@
   // capture rate vs installed capacity, France and its neighbours. x axis: GW installed, % of average load, or % of the installed fleet.
   // Each country: one point per complete year (2022 left out, as in the French fit) and its trend, capture = a + b · ln(x).
   // The legend switches a country on and off, its trend with it.
-  const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain' };
+  const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
   const XC_AX = { gw: ['GW installed', f => f.g], load: ['% of average load', f => f.g / f.avgLoadGW * 100], share: ['% of the installed fleet', f => f.totalGW ? f.g / f.totalGW * 100 : null] };
   const xcHidden = {};
   function drawXC(cid, subId, st) {
     if (!D || !D.cc || !document.getElementById(cid)) return;
     const sel = document.getElementById(cid + '-axis'), mode = sel ? sel.value : 'gw';
     if (sel) { sel._st = st; if (!sel.dataset.wired) { sel.dataset.wired = '1'; sel.addEventListener('change', () => drawXC(cid, subId, sel._st)); } }
-    const hide = xcHidden[cid] || (xcHidden[cid] = { NL: true });
+    const hide = xcHidden[cid] || (xcHidden[cid] = { NL: true, UK: true });
     const tech = st.tech === 'solar' ? 'Solar' : 'Wind', gk = st.tech === 'solar' ? 'solarGW' : 'windGW';
     const key = st.tech === 'solar' ? (st.conv === 'pos' ? 'solarRatePos' : 'solarRate') : (st.conv === 'pos' ? 'windRatePos' : 'windRate');
     const [axName, xOf] = XC_AX[mode], ds = [], marks = [], r1 = v => Math.round(v * 10) / 10;
@@ -731,7 +731,7 @@
     if (has('xc') && D.cc) drawXC(ids.xc, ids.xcSub, st);
     if (has('hc') && D.hc) drawHC(ids.hc, ids.hcSub, st);
     if (has('xcy') && D.cc) {
-      const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain' };
+      const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
       const key = st.tech === 'solar' ? (st.conv === 'pos' ? 'solarRatePos' : 'solarRate') : (st.conv === 'pos' ? 'windRatePos' : 'windRate');
       const yrs = [...new Set(Object.values(D.cc).flatMap(d => Object.keys(d.years)))].sort();
       const ds4 = Object.keys(CNAME).filter(c => D.cc[c]).map(c => ({ label: CNAME[c], data: yrs.map(y => { const f = D.cc[c].years[y]; return f && f[key] ? pc1(f[key]) : null; }),

@@ -44,6 +44,7 @@ jobs:
           if [ "$(date -u +%H)" -lt 12 ]; then
             pip install -q requests==2.33.1
             python scripts/fetch_country_capture.py --recent || echo "::warning::country capture rates not updated"
+            python scripts/fetch_country_capture.py --recent --only UK || echo "::warning::UK capture not updated"
             # generation mix by zone, last 40 days (Generation mix › Historical), then the summary index
             python scripts/backfill_genmix_ec.py --recent && python scripts/enrich_summary.py || echo "::warning::genmix history not updated"
             # hour-by-hour cannibalisation, last three complete years: once a week (Monday)
