@@ -55,6 +55,9 @@ data update. Supabase project id: `xtqeslyjtjrbjpffpixn`.
 - **Forwards by tenor are rolling** (`Y+1` changes contract on 1 January,
   `M+1` every month). For one fixed contract use
   `market.forward_contract_close`. UK forwards are in GBP: use `value_eur`.
+- **Short-term PPA value**: capture value of a month = `forward_month.value × ppa_forecast_month.ensemble`; with curtailment
+  (`convention = 'curt'`) weight months by output × `paid_share`. Conventions: all = every hour paid; curt = output at
+  prices ≤ 0 curtailed, baseload over all hours; pos = PPA Dashboard legacy (≤ 0 hours out of capture and baseload).
 - **Capture rates** around a near-zero baseload are meaningless: aggregate
   monthly (Σ price × MW ÷ Σ MW) or exclude days with base < 5 €/MWh.
 - **M0** (`market.fr_m0_month`) is recomputed by PowerKlock from RTE's
@@ -78,7 +81,8 @@ data update. Supabase project id: `xtqeslyjtjrbjpffpixn`.
 |---|---|
 | Day-ahead prices | `analytics.da_price_daily`, `analytics.da_price_hourly`, `analytics.da_price_15min`, `analytics.negative_hours_monthly` |
 | Spreads | `analytics.bess_spread_daily` (TB1/TB2/TB4), `analytics.clean_spread_daily` |
-| Forwards | `analytics.forward_curve`, `analytics.forward_curve_latest`, `market.forward_contract_close` |
+| Forwards | `analytics.forward_curve`, `analytics.forward_curve_latest`, `market.forward_contract_close` (base contracts Nov2026, Q12027, Cal2027…; peak ones end in `Peak`: Cal2027Peak), `market.forward_month` (France, every delivery month of the quoted horizon, with its source contract and the market peak/base ratio) |
+| PPA pricing | `market.capture_country_year` (solar/wind capture by country, conventions all / pos), `market.capture_region_year` (French regions, all / curt / pos, gap to national), `analytics.ppa_forecast_month` (the pricer's monthly capture forecasts: ensemble and each method, P10/P90, paid share), `analytics.ppa_replay_year` (errors of each method per year) |
 | Fuels and carbon | `analytics.commodity_daily` (TTF, EUA, coal, Brent, FX, gas storage) |
 | France generation (RTE) | `analytics.fr_generation_daily`, `analytics.fr_generation_qh`, `market.fr_eco2mix_day` |
 | France M0 | `market.fr_m0_month` |
