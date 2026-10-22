@@ -1911,7 +1911,7 @@
      non-clickable parent, section meta, compact controls in the bar */
   .pk-sec-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .pk-sec-controls select { height: 26px; padding: 0 24px 0 10px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background-color: var(--bg3); color: var(--tx2); }
-  .pk-sec-controls input[type=number] { height: 26px; padding: 0 6px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background: var(--bg3); color: var(--tx1); font-variant-numeric: tabular-nums; }
+  .pk-sec-controls input[type=number] { height: 26px; padding: 0 6px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-variant-numeric: tabular-nums; }
   .pk-bc-static { cursor: default; }
   .pk-bc-static:hover { color: var(--text2); }
   .pk-hs-meta { font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -3063,6 +3063,18 @@
   .cf-hm th { color:var(--text3); font-weight:500; padding:2px 4px; text-align:center; white-space:nowrap; }
   .cf-hm tbody th { text-align:right; padding-right:8px; color:var(--text2); }
   .cf-hm td { height:22px; border-radius:3px; text-align:center; color:#fff; font-size:9.5px; }
+  .cf-ex-wrap { display:grid; grid-template-columns:minmax(0,1fr) 270px; gap:14px; align-items:start; }
+  @media (max-width: 900px) { .cf-ex-wrap { grid-template-columns:1fr; } }
+  .cf-ex table { min-width:500px; border-spacing:1px; } .cf-ex td { height:20px; font-size:8.5px; }
+  .cf-ex td, .cf-ex th[data-a], .cf-ex th[data-h] { cursor:pointer; }
+  .cf-ex td:hover, .cf-ex .cf-ex-on { outline:2px solid var(--text); outline-offset:-1px; }
+  .cf-ex-detail { border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--bg2); font-size:12px; min-height:180px; }
+  .cf-ex-kv { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; align-items:baseline; margin-bottom:10px; }
+  .cf-ex-kv span { color:var(--text3); font-size:11px; } .cf-ex-kv span:nth-child(3n) { grid-column:1 / -1; margin:-1px 0 5px; font-size:10px; } .cf-ex-kv b { font-variant-numeric:tabular-nums; }
+  .cf-ex-mix { display:flex; height:10px; border-radius:3px; overflow:hidden; margin:6px 0 4px; }
+  .cf-ex-mixl { display:flex; flex-wrap:wrap; gap:4px 10px; font-size:10.5px; color:var(--text2); }
+  .cf-ex-mixl i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; }
+  .cf-ex-tip { margin-top:10px; padding:8px 10px; border-radius:6px; background:var(--bg3); line-height:1.5; }
   .cf-hm-leg { display:flex; align-items:center; gap:8px; margin-top:8px; font:10px 'JetBrains Mono',monospace; color:var(--text3); }
   .cf-hm-leg i { display:inline-block; width:160px; height:10px; border-radius:3px; }
   .cf-status { font-size:11.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
@@ -5809,6 +5821,8 @@
         </div>
         <div class="hist-section-body open" id="hs-body-cf-carbon">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily consumption and its carbon intensity</div><div class="fuel-card-sub">MWh per day · g CO₂/kWh of the French grid weighted by your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-daily" style="width:100%;height:320px"></canvas></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Explore your consumption · click for the detail</div><div class="fuel-card-sub">One matrix, the measure you choose; a cell, a row or a column opens what happened then: the grid mix, the price, your share, what moving part of it would save</div></div><div class="pk-sec-controls" style="margin:0"><select class="country-select" id="cf-ex-metric" aria-label="Measure"><option value="ci">Grid carbon intensity</option><option value="kw">Your power (kW)</option><option value="em">Your emissions</option><option value="p">Day-ahead price</option><option value="cost">Your spot cost</option><option value="share">Share of your consumption</option></select><select class="country-select" id="cf-ex-grid" aria-label="Rows"><option value="mh">month × hour</option><option value="wh">day of the week × hour</option></select></div></div>
+<div class="cf-ex-wrap"><div id="cf-ex" style="min-width:0"></div><div id="cf-ex-detail" class="cf-ex-detail"><div class="fuel-note">Click a cell of the matrix, a month or an hour, or a day of the calendar below.</div></div></div></div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Green days calendar</div><div class="fuel-card-sub" id="cf-cal-sub">One square per day, coloured by the carbon intensity of your consumption</div></div></div><div id="cf-cal"></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day</div><div class="fuel-card-sub">Consumption by hour and the grid intensity at those hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-hours" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">When the grid is clean · month × hour</div><div class="fuel-card-sub">Average CO₂ intensity of French generation (g/kWh)</div></div><span class="source-badge">RTE éCO2mix</span></div><div id="cf-hm-ci"></div></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Where your electricity came from</div><div class="fuel-card-sub">French generation at the time of each of your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-mix" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Scope 2 by month</div><div class="fuel-card-sub">t CO₂ · location-based (quarter-hourly) and market-based</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-monthly" style="width:100%;height:300px"></canvas></div></div></div>
