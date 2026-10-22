@@ -583,8 +583,8 @@ function _gmdczRenderRanking() {
                   : (metric === 'total') ? r.value.toFixed(1)
                   : r.value.toFixed(1);
     return `
-      <div style="display:grid;grid-template-columns:60px 1fr 90px;gap:10px;align-items:center;padding:5px 0;
-                  ${isFr ? 'background:rgba(255,255,255,0.03);border-radius:4px;padding-left:6px;padding-right:6px;' : ''}">
+      <div style="display:grid;grid-template-columns:60px 1fr 90px;gap:10px;align-items:center;padding:5px 6px;border-radius:4px;
+                  ${isFr ? 'background:rgba(255,255,255,0.03);' : ''}">
         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${isFr ? '#fff' : 'var(--tx)'};letter-spacing:.04em">
           ${r.zone}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}
         </div>
@@ -602,7 +602,7 @@ function _gmdczRenderRanking() {
 
   host.innerHTML = `
     <div style="padding:8px 4px">
-      <div style="display:grid;grid-template-columns:60px 1fr 90px;gap:10px;padding:2px 0 10px 0;border-bottom:1px solid var(--bd);margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:60px 1fr 90px;gap:10px;padding:2px 6px 10px 6px;border-bottom:1px solid var(--bd);margin-bottom:8px">
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">Zone</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.06em;text-transform:uppercase;font-weight:600">${labelMetric}</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.06em;text-transform:uppercase;font-weight:600;text-align:right">Value</div>

@@ -797,10 +797,22 @@ function setGmDrillCarbonCmp(cmp) {
 window.setGmDrillCarbonCmp = setGmDrillCarbonCmp;
 
 // Dispatch render based on active tab
+// ☆ on the drill card: the widget of the tab shown (dashboard catalogue)
+const _GM_DRILL_WIDGET = { profile: 'gm-profile', stack: 'gm-stack' };
+function _gmDrillStar(tab) {
+  if (!window.PKW) return;
+  const el = document.getElementById('gm-drill-content'); if (!el) return;
+  const card = el.closest('.chart-container') || el.parentElement;
+  if (card) card.querySelectorAll('.pkw-star').forEach(b => b.remove());
+  const id = _GM_DRILL_WIDGET[tab];
+  if (id && PKW.get(id)) PKW.star(id, 'gm-drill-content');
+}
+
 function _gmDrillDispatchRender(zone) {
   if (!zone) return;
   const tab = window._gmDrillTab || 'profile';
   _gmDrillSetTitle(tab, zone);
+  setTimeout(() => _gmDrillStar(tab), 0);
 
   // Stack tab → eCO2mix-style production stack (reads the daily JSON, async)
   if (tab === 'stack') {
@@ -2457,7 +2469,7 @@ window.gmSetHistDate = function (ds) {
     host.innerHTML =
       '<div class="gms-wrap">'
       + '<div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">'
-      +   '<div style="flex:1 1 58%;min-width:300px;position:relative;height:340px"><canvas id="gms-canvas" style="width:100%;height:100%;display:block"></canvas></div>'
+      +   '<div style="flex:1 1 58%;min-width:300px;position:relative;height:340px"><canvas id="' + containerId + '-gms" style="width:100%;height:100%;display:block"></canvas></div>'
       +   '<div class="gms-panel" style="flex:1 1 34%;min-width:230px"><div class="gms-panel-main"><div class="gms-panel-hd">Mix · <b class="gms-ptime">—</b></div><div class="gms-list"></div></div><div class="gms-vbar"></div></div>'
       + '</div>'
       + '<div class="gms-tbl-lab">Breakdown by fuel · day' + (isReal ? '' : ' · (simulated data — no real arrays for this day)') + '</div>'
@@ -2496,10 +2508,10 @@ window.gmSetHistDate = function (ds) {
       fill: false, tension: 0, pointRadius: 0, stack: 'j1', spanGaps: false,
     });
 
-    const canvas = document.getElementById('gms-canvas');
+    const canvas = document.getElementById(containerId + '-gms');
     if (typeof Chart !== 'undefined' && canvas) {
-      if (window._gmDrillStackChart) { try { window._gmDrillStackChart.destroy(); } catch (_) {} }
-      window._gmDrillStackChart = new Chart(canvas, {
+      if (host._gmsChart) { try { host._gmsChart.destroy(); } catch (_) {} }
+      const stackChart = new Chart(canvas, {
         type: 'line',
         data: { labels, datasets },
         options: {
@@ -2517,7 +2529,9 @@ window.gmSetHistDate = function (ds) {
           },
         },
       });
-      _gmZoomify(window._gmDrillStackChart, 'gms-canvas');
+      host._gmsChart = stackChart;
+      if (containerId === 'gm-drill-content') window._gmDrillStackChart = stackChart;
+      _gmZoomify(stackChart, containerId + '-gms');
       canvas.addEventListener('mouseleave', () => update(Math.max(0, nReal - 1)));
     }
 
@@ -2570,7 +2584,19 @@ window.gmSetHistDate = function (ds) {
 
 // ── Dashboard catalogue (js/widgets.js) ─────────────────────────────
 if (window.PKW) PKW.register({
+  id: 'gm-stack', kind: 'html', title: '24 h production stack by technology', category: 'system', page: 'genmix', source: 'ENTSO-E A75 · RTE', size: { w: 12, h: 6 },
+  desc: 'Production of the latest stored day stacked by technology (15-min, GW), with the mix at the time pointed and the day’s breakdown by fuel.',
+  params: [{ key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] }],
+  defaults: { zone: 'FR' },
+  pageParams: () => ({ zone: window._GM_DRILL_ZONE || 'FR' }),
+  async html(host, p) {
+    if (!host.id) host.id = 'pkw-gms-' + Math.random().toString(36).slice(2, 8);
+    if (typeof window.renderGenMixStack === 'function') await window.renderGenMixStack(host.id, p.zone || 'FR', null);
+  },
+});
+if (window.PKW) PKW.register({
   id: 'gm-profile', title: '24 h generation profile vs 30-day range', category: 'system', page: 'genmix', source: 'ENTSO-E A75', size: { w: 6, h: 5 },
+  pageParams: () => ({ zone: window._GM_DRILL_ZONE || 'FR' }),
   desc: 'Total generation of the latest stored day (15-min, GW) against the P5–P95 and P0–P100 envelope and the median of the last 30 days, with the previous day.',
   params: [{ key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] }],
   defaults: { zone: 'FR' },
