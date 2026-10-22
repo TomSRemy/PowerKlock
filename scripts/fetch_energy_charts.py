@@ -253,7 +253,13 @@ def main():
     if args.map:
         print('Power map')
         fetch_map([today - timedelta(days=1), today])
-        fetch_flows(today, today)
+        # just after midnight (Paris) the new day has no data yet and Energy-Charts answers 500: finish yesterday instead
+        try:
+            fetch_flows(today - timedelta(days=1) if datetime.now(PARIS).hour < 3 else today, today)
+        except Exception as e:
+            print(f'  flows {today}: {e}')
+            if datetime.now(PARIS).hour >= 3:
+                raise
         return
     if not args.flows_only:
         print('Installed capacity')
