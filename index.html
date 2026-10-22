@@ -3289,6 +3289,9 @@
       <div class="sidebar-item" onclick="showPage('ppapricer')" id="nav-ppapricer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>PPA pricer
       </div>
+      <div class="sidebar-item" onclick="showPage('fcst')" id="nav-fcst">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Production forecast
+      </div>
       <div class="sidebar-item" onclick="showPage('carbonfoot')" id="nav-carbonfoot">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c4.4 0 8-3.6 8-8 0-5-8-12-8-12S4 9 4 14c0 4.4 3.6 8 8 8z"/><path d="M9 15h6M12 12v6"/></svg>Carbon footprint
       </div>
@@ -5646,6 +5649,40 @@
     </div>
 
     <!-- TOOLS · CARBON FOOTPRINT OF A LOAD CURVE (js/tool-carbon.js) -->
+    <div class="page" id="page-fcst">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Production forecast</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">Open-Meteo · best model + GFS ensemble · day-ahead prices</span></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-fc-in">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-fc-in')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/></svg>Your site<span class="pk-hs-meta">coordinates and a few characteristics: the forecast follows</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-fc-in">
+<div class="cf-form"><label class="cf-field"><span>Technology</span><select id="fc-tech"><option value="solar">Solar</option><option value="wind">Wind</option></select></label><label class="cf-field "><span>Latitude</span><span class="cf-in"><input type="number" id="fc-lat" step="any" value="49.44" ><em>°N</em></span></label><label class="cf-field "><span>Longitude</span><span class="cf-in"><input type="number" id="fc-lon" step="any" value="1.10" ><em>°E</em></span></label><label class="cf-field "><span>Capacity</span><span class="cf-in"><input type="number" id="fc-mw" step="0.1" value="10" min="0"><em>MW</em></span></label><label class="cf-field"><span>Paste coordinates</span><span class="cf-in"><input type="text" id="fc-paste" placeholder="49.44, 1.10 (from a map)"></span></label><label class="cf-field"><span>Price zone</span><select id="fc-zone"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option></select></label></div>
+<div class="cf-form"><label class="cf-field fc-solar"><span>Panel tilt</span><span class="cf-in"><input type="number" id="fc-tilt" step="1" value="30" min="0" max="90"><em>°</em></span></label><label class="cf-field fc-solar"><span>Azimuth (0 = south)</span><span class="cf-in"><input type="number" id="fc-az" step="1" value="0" min="-180" max="180"><em>°</em></span></label><label class="cf-field fc-solar"><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-s" step="0.5" value="14" min="0" max="50"><em>%</em></span></label><label class="cf-field fc-wind" hidden><span>Hub height</span><select id="fc-hub"><option value="80">80 m</option><option value="100">100 m</option><option value="120">120 m</option><option value="150">150 m</option><option value="180">180 m</option></select></label><label class="cf-field fc-wind" hidden><span>Turbine class</span><select id="fc-cls"><option value="low">Low wind (large rotor)</option><option value="medium">Medium wind</option><option value="high">High wind</option></select></label><label class="cf-field fc-wind" hidden><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-w" step="0.5" value="12" min="0" max="50"><em>%</em></span></label></div>
+<div class="cf-status" id="fc-status"></div>
+<div class="kpi-strip fuel-kpis" id="fc-kpis" style="grid-template-columns:repeat(4,1fr);margin-top:10px"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-fc-out">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-fc-out')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forecast<span class="pk-hs-meta">hour by hour for 7 days, day by day for 16 days, P10–P90 band</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-fc-out">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Production, hour by hour <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub">MW · the last 2 days are modelled from the observed weather, then the forecast</div></div><span class="source-badge">Open-Meteo</span></div><div style="position:relative;height:320px"><canvas id="fc-hourly" style="width:100%;height:320px"></canvas></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Energy per day, 16 days <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub">MWh · beyond a week the weather is a trend, read the band more than the bar</div></div><span class="source-badge">Open-Meteo</span></div><div style="position:relative;height:280px"><canvas id="fc-daily" style="width:100%;height:280px"></canvas></div></div>
+<div class="pp-group-t" style="margin-top:16px">Today and tomorrow on the day-ahead market</div>
+<div id="fc-market"></div>
+<div class="fuel-note" id="fc-method" style="margin-top:12px"></div>
+<div class="fuel-note">Generic model, not calibrated on a real site yet: compare with the site’s metered output before relying on it. Coordinates: right-click a point in Google Maps or Géoportail and copy them.</div>
+        </div>
+      </div>
+    </div>
     <div class="page" id="page-carbonfoot">
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
@@ -8005,6 +8042,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/search.js"></script>
 <script src="js/kpi-tone.js"></script>
 <script src="js/tool-carbon.js"></script>
+<script src="js/tool-forecast.js"></script>
 <script src="js/ppa-fpc.js"></script>
 <script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
