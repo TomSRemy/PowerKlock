@@ -26,6 +26,33 @@ Z = {10: 1.2816, 25: 0.6745, 50: 0.0, 75: -0.6745, 90: -1.2816}   # exceedance: 
 PS = (50, 60, 70, 75, 80, 90)
 
 
+def t_cdf(x, nu):
+    """Student t cumulative distribution (Simpson integration of the density)"""
+    c = math.gamma((nu + 1) / 2) / (math.sqrt(nu * math.pi) * math.gamma(nu / 2))
+    f = lambda u: c * (1 + u * u / nu) ** (-(nu + 1) / 2)
+    a, n = 0.0, 400
+    h = abs(x) / n
+    if h == 0:
+        return 0.5
+    s = f(0) + f(abs(x)) + sum((4 if i % 2 else 2) * f(i * h) for i in range(1, n))
+    area = s * h / 3
+    return 0.5 + area if x > 0 else 0.5 - area
+
+
+def tq(p, nu):
+    """Student t quantile of the exceedance percentile p (P90 → negative): wider than the normal
+    when the model error rests on few replay years"""
+    q = 1 - p / 100
+    lo, hi = -20.0, 20.0
+    for _ in range(70):
+        mid = (lo + hi) / 2
+        if t_cdf(mid, nu) < q:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
 def z(p):
     """standard normal quantile of the exceedance percentile p (P90 → −1.2816)"""
     q = 1 - p / 100
@@ -48,7 +75,8 @@ def main():
     out = {'asOf': fc.get('asOf'), 'forwardAsOf': fw.get('asOf'), 'percentiles': list(PS),
            'note': 'exceedance: P90 = 90 % chance the realised capture is above it',
            'method': 'blend of 4 methods (Capacity trend, Forward shape, European price model, Weather simulation); '
-                     'spread = weather (European model simulated) and model error (replay of the blend), growing with the horizon',
+                     'spread = weather (European model simulated) and model error (replay of the blend), growing with the horizon; '
+                     'percentiles from a Student t with (replay years − 1) degrees of freedom',
            'tech': {}}
     for tech in ('solar', 'wind'):
         out['tech'][tech] = {}
@@ -90,14 +118,15 @@ def main():
                 fm = {k: (fw['months'].get(k) or {}).get('value') for k in ms}
                 fwd = sum(wt[k] * fm[k] for k in ms) / W if all(fm.values()) else None
                 q = {}
+                nu = max(2, len(errs) - 1)
                 for p in sorted(set(PS) | set(Z)):
-                    zz = z(p)
+                    zz = tq(p, nu)
                     r_ = c + zz * s
                     v = sum(wt[k] * fm[k] * (F[k]['hybrid'] + zz * s) for k in ms) / W if fwd else None
                     q[str(p)] = {'rate': round(r_, 4), 'value': None if v is None else round(v, 2)}
                 proj.append({'year': y, 'h': h, 'central': round(c, 4), 'sigma': round(s, 4), 'sWeather': round(sw, 4),
                              'forward': None if fwd is None else round(fwd, 2), 'q': q})
-            out['tech'][tech][conv] = {'history': hist, 'projection': proj,
+            out['tech'][tech][conv] = {'history': hist, 'projection': proj, 'dof': max(2, len(errs) - 1),
                                        'sModel': round(s_model, 4), 'biasModel': round(bias, 4), 'nReplay': len(errs)}
     with open(os.path.join(H, 'ppa_fan.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))
