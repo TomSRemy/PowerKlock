@@ -39,11 +39,13 @@ jobs:
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
         run: python scripts/build_ppa_fan.py
+      - name: Production forecast backtest
+        run: python scripts/fcst_backtest.py || echo "::warning::forecast backtest not updated"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull --rebase origin main && git push && exit 0; sleep 5; done
