@@ -2769,6 +2769,11 @@
     border: 1px solid;
   }
 
+  .ma-fc-section { margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(127,200,248,.35); }
+  .ma-fc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .ma-fc-title { font-size: 13px; font-weight: 600; color: var(--tx); }
+  .ma-fc-sub { font-size: 11px; color: var(--tx3); min-width: 0; }
+  .ma-panel-legend .ma-fc-key { color: var(--acc, #7FC8F8); }
   .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
   .ma-hover-tooltip.ma-side { position: sticky; top: 12px; margin-top: 12px; min-width: 0; max-width: none; box-shadow: none; display: block !important; }
   @media (max-width: 1100px) { .ma-layout { grid-template-columns: minmax(0, 1fr); } .ma-hover-tooltip.ma-side { position: static; } }
@@ -5214,6 +5219,10 @@
           <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Pas</span>
           <div id="ma-granularity-pills" style="display:inline-flex;gap:4px"></div>
         </div>
+        <div style="display:flex;align-items:center;gap:6px" title="TSO day-ahead forecasts of load, wind and solar: dashed lines, hatched band after the last measured slot">
+          <span style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-family:'JetBrains Mono',monospace">Forecast</span>
+          <div id="ma-fc-pills" style="display:inline-flex;gap:4px"></div>
+        </div>
         <div class="pk-filters-bar-spacer"></div>
         <!-- The 4 panels below share one crosshair/tooltip, so fullscreen
              opens the whole group (not addFullscreen() per-canvas, which
@@ -5253,6 +5262,24 @@
         </div>
       </div>
       <aside id="ma-hover-tooltip" class="ma-hover-tooltip ma-side" aria-live="polite"><div class="ma-ht-time">Hover the charts to read a time slot</div></aside>
+      </div>
+      <div class="ma-fc-section">
+        <div class="ma-fc-head"><span class="pkf-chip">Forecast</span><span class="ma-fc-title">What comes next</span><span class="ma-fc-sub">grid operators' day-ahead forecasts for today and tomorrow, then the 5-week weather outlook. Not measured data: each card gives the source and the usual error.</span></div>
+        <div id="ma-fc-tiles" style="margin-bottom:12px"></div>
+        <div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">Solar, wind and load · today and tomorrow</div><div class="fuel-card-sub" id="ma-fc-48h-sub">TSO day-ahead forecast</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
+          <div style="position:relative;height:300px"><canvas id="ma-fc-48h" style="width:100%;height:300px"></canvas></div>
+        </div>
+        <div class="fuel-grid-2" style="margin-top:14px">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Wind production · next 5 weeks</div><div class="fuel-card-sub" id="ma-fc-wind-sub">Weather ensemble, calibrated on actual output</div></div><span class="source-badge">Open-Meteo GFS</span></div>
+            <div style="position:relative;height:260px"><canvas id="ma-fc-wind" style="width:100%;height:260px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Solar production · next 5 weeks</div><div class="fuel-card-sub" id="ma-fc-solar-sub">Weather ensemble, calibrated on actual output</div></div><span class="source-badge">Open-Meteo GFS</span></div>
+            <div style="position:relative;height:260px"><canvas id="ma-fc-solar" style="width:100%;height:260px"></canvas></div>
+          </div>
+        </div>
       </div><div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)">
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">↓ Key moments detected (click = position the crosshair)</div>
         <div id="ma-episodes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
@@ -6672,6 +6699,19 @@
       </div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-morning-fc">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-fc')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forecast<span class="pk-hs-meta">solar, wind and load, today and tomorrow · grid operators' day-ahead forecasts</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-fc">
+<div id="mrn-fc-tiles" style="margin-bottom:12px"></div>
+<div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">France · forecast, today and tomorrow <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fc-sub">TSO day-ahead forecast</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
+          <div style="position:relative;height:300px"><canvas id="mrn-fc" style="width:100%;height:300px"></canvas></div>
+        </div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-morning-2">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-2')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Forwards<span class="pk-hs-meta">France baseload</span></div>
@@ -7913,6 +7953,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/market.js"></script>
 <script src="js/news.js"></script>
 <script src="js/analysis.js"></script>
+<script src="js/pk-forecast.js"></script>
 <script src="js/market-analysis.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/eua.js"></script>
