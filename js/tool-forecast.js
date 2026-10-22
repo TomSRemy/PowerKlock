@@ -235,7 +235,7 @@
     Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => { S[k] = e.type === 'number' ? +e.value : e.value; vis(); run(); }); });
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
-    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory);
+    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
     const sbt = $('fc-hist-send'); if (sbt) sbt.addEventListener('click', sendToPricer);
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
@@ -479,7 +479,7 @@
         { type: 'bar', label: 'Output at prices ≤ 0 (%)', data: capY.map(y => +(cap[y].neg / Y[y] * 100).toFixed(1)), backgroundColor: 'rgba(237,105,101,.45)', borderRadius: 3, yAxisID: 'y1' }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, %'), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'park-capture-rate');
       if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} park at ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · history built ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
-      const sb = $('fc-hist-send'); if (sb) sb.hidden = false;
+      const sb = $('fc-hist-send'); if (sb) sb.hidden = false; const pb = $('fc-hist-pptx'); if (pb) pb.hidden = !window.PKExport;
     } catch (e) { if (st) st.textContent = 'History not built: ' + e.message; }
   }
   let ERA_LAST = null;
@@ -496,5 +496,31 @@
     st.tech = S.tech; st.years = null; st.volume = Math.round(ERA_LAST.p50); st.mw = S.mw;
     showPage('ppapricer'); setTimeout(() => { try { const e = document.getElementById('pp-tech'); if (e) e.value = S.tech; const c = document.getElementById('pp-asset-clear'); if (c) c.hidden = false; window.PKPpa.run(); } catch (_) {} }, 300);
   }
-  window.PKFcst = { run, state: S, buildHistory, sendToPricer };
+
+  // the park on a few slides: what it produces, what it captures, and the prices from the pricer when they were run for it
+  async function parkSheet() {
+    if (!ERA_LAST || !window.PKExport || !PKExport.deck) return;
+    const btn = $('fc-hist-pptx'), lab = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…';
+    try {
+      const L = ERA_LAST, f = v => (v / 1000).toLocaleString('en-GB', { maximumFractionDigits: 2 }), c3 = L.capY.slice(-3);
+      const capAvg = c3.length ? c3.reduce((s, y) => s + L.cap[y].v / L.cap[y].e / (L.cap[y].b / L.cap[y].n), 0) / c3.length * 100 : null;
+      const where = `${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${L.regName ? ' · ' + L.regName : ''}`;
+      const lines = [`${S.tech === 'solar' ? 'Solar' : 'Wind'} park · ${S.mw} MW${S.inj !== '' && +S.inj > 0 ? ' (injection ' + S.inj + ' MW)' : ''} · ${where}`,
+        `Yearly output: P50 ${f(L.p50)} GWh (${Math.round(L.p50 / S.mw)} kWh/kW), P90 ${f(L.p90)} GWh, from ${L.ys.length} weather years ${L.ys[0]}–${L.ys[L.ys.length - 1]}`,
+        `Capture rate, last three years: ${capAvg == null ? '–' : capAvg.toFixed(1) + ' %'} of the baseload, on the real day-ahead price of each hour`,
+        `How the level is set: ${L.how}`];
+      const P = window.PKPpa && PKPpa.state, o = P && P.last;
+      if (o && P.assetName && /^Park /.test(P.assetName)) lines.push(`PPA pricer (${P.assetName}): ${o.ppa != null ? o.ppa.toFixed(2) + ' €/MWh' : '–'} over ${o.tenor ? o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] : '–'}`);
+      const cr = window.PKPpaCR && PKPpaCR.last();
+      if (cr && cr.P && cr.P.own) { const x = cr.sol.out[PKPpaCR.state.formula];
+        lines.push(`Aggregation contract under complément de rémunération: ${PKPpaCR.state.formula === 'a' ? (x.A * 100).toFixed(1) + ' % × M0' : PKPpaCR.state.formula === 'b' ? 'M0 − ' + x.B.toFixed(2) + ' €/MWh' : (x.A * 100).toFixed(1) + ' % × M0 − ' + x.B.toFixed(2) + ' €/MWh'} (park ${((cr.sol.ratio - 1) * 100).toFixed(1)} % vs M0, costs ${cr.cost.toFixed(2)} €/MWh)`); }
+      const specs = [{ k: 'note', title: 'The park in brief', text: lines.join('\n') }];
+      for (const [id, title, sub] of [['fc-hist-y', 'Yearly output', 'GWh · each weather year replayed on today’s park'], ['fc-hist-c', 'Capture rate year by year', 'On the real day-ahead price of each hour']]) {
+        const el = $(id) && $(id).closest('.chart-container'); if (el && el.offsetHeight) specs.push({ k: 'card', title, sub, src: 'PowerKlock · ERA5 · RTE · ENTSO-E', r: await PKExport.snap(el) }); }
+      specs.push({ k: 'note', title: 'Method and limits', text: 'Hourly weather of the reanalysis ERA5 at the park since 2005 through the physical model of the production forecast tool, corrected month by month on the real output of the region (RTE, 2020–2025); level from the park’s metering pooled with that prior, or from its P50. P90 = P50 − 1.28 σ (weather years and model uncertainty). Checked on two metered parks over their second year: output value within 1–3 % with 12 months of metering, 9–11 % too high on the regional prior alone. Not included: availability losses beyond those in the metering, degradation, future curtailment rules.' });
+      await PKExport.deck(`Park sheet · ${S.tech} ${S.mw} MW · ${where}`, specs);
+    } catch (e) { const st = $('fc-hist-status'); if (st) st.textContent = 'Park sheet failed: ' + (e.message || e); }
+    btn.disabled = false; btn.textContent = lab;
+  }
+  window.PKFcst = { run, state: S, buildHistory, sendToPricer, parkSheet };
 })();
