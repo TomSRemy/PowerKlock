@@ -199,7 +199,7 @@
       const prod = Array.from({ length: 24 }, (_, hh) => { const i = T.indexOf(d + 'T' + String(hh).padStart(2, '0') + ':00'); return i >= 0 ? P[i] : null; });
       const E = prod.reduce((s, v) => s + (v || 0), 0);
       if (!pr) { rows.push({ d, E, none: true }); continue; }
-      let rev = 0, neg = 0, negE = 0; prod.forEach((v, hh) => { if (v == null || pr[hh] == null) return; if (pr[hh] <= 0) { neg++; negE += v; if (S.curt) return; } rev += v * pr[hh]; });
+      let rev = 0, neg = 0, negE = 0; prod.forEach((v, hh) => { if (v == null || pr[hh] == null) return; if (pr[hh] <= 0) { neg++; negE += v; if (S.curt) { const k = siteCal() && siteCal().curtRatio != null ? siteCal().curtRatio : 0; negE -= v * k; rev += v * k * pr[hh]; return; } } rev += v * pr[hh]; });
       const base = pr.filter(x => x != null).reduce((s, x) => s + x, 0) / pr.filter(x => x != null).length;
       const Ep = S.curt ? E - negE : E;
       rows.push({ d, E: Ep, rev, cap: Ep ? rev / Ep : null, base, neg, negE });
@@ -225,48 +225,89 @@
   function calInfo() {
     const el = $('fc-calinfo'); if (!el) return;
     const c = siteCal();
-    el.innerHTML = c ? `<b>Calibrated on this site:</b> ${c.n.toLocaleString('en-GB')} hours (${c.period}), ${c.bins ? 'empirical power curve' : 'scale factor ' + c.scale.toFixed(3)}. Tested on the last third, never used to fit: hourly error ${(c.nmae0 * 100).toFixed(1)} % of capacity before, <b>${(c.nmae1 * 100).toFixed(1)} %</b> after.`
+    el.innerHTML = c ? `<b>Calibrated on this site:</b> ${c.n.toLocaleString('en-GB')} hours (${c.period}) · ${c.bins ? 'empirical power curve' : c.scale ? 'scale factor ' + c.scale.toFixed(3) : 'level kept (less than 9 months to fit it)'}${c.curtRatio != null ? ` · at prices ≤ 0 the site kept ${Math.round(c.curtRatio * 100)} % of its output (curtailment)` : ''}${c.shift && (c.shift.winter || c.shift.summer) ? ` · clock of the file corrected (${c.shift.winter >= 0 ? '+' : ''}${c.shift.winter} h winter, ${c.shift.summer >= 0 ? '+' : ''}${c.shift.summer} h summer)` : ''}. Tested on the last third, never used to fit: hourly error ${(c.nmae0 * 100).toFixed(1)} % of capacity before, <b>${(c.nmae1 * 100).toFixed(1)} %</b> after.`
       : 'Not calibrated on this site yet: load its metered output to adjust the model to it.';
   }
 
-  // Calibration on the site's metered output: the forecast archive of the same hours (Open-Meteo
-  // historical forecasts, best model), fitted on the first two thirds, tested on the last third.
+  // Calibration on the site's metered output (lessons of the backtest on real sites):
+  //  · the clock of metered files is checked: the shift between the file and the forecast is found
+  //    separately for summer and winter time (Enedis curves were 2 h behind in winter, 1 h in summer)
+  //  · the fit uses only hours priced above 5 €/MWh, so the site's curtailment at negative prices
+  //    does not bias it; that curtailment is learned apart (share of the output kept at prices ≤ 0)
+  //  · a scale factor needs 9 months of data or more, else the monthly French correction stays
+  //  · fitted on the first two thirds, tested on the last third, applied only if it beats the model
+  const isDST = t => { const y = +t.slice(0, 4), m = +t.slice(5, 7), d = +t.slice(8, 10);
+    const lastSun = mm => { const x = new Date(Date.UTC(y, mm, 0)); return x.getUTCDate() - x.getUTCDay(); };
+    return (m > 3 && m < 10) || (m === 3 && d >= lastSun(3)) || (m === 10 && d < lastSun(10)); };
+  const shiftKey = (t, h) => { const d = new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1, +t.slice(8, 10), +t.slice(11, 13) + h)); return d.toISOString().slice(0, 13) + ':00'; };
+  const corrOf = (a, b) => { const n = a.length; if (n < 50) return -1; const ma = a.reduce((s, x) => s + x, 0) / n, mb = b.reduce((s, x) => s + x, 0) / n;
+    let sab = 0, saa = 0, sbb = 0; for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; sab += x * y; saa += x * x; sbb += y * y; } return saa && sbb ? sab / Math.sqrt(saa * sbb) : -1; };
+  async function frPrices(years) {
+    const P = {};
+    for (const y of years) { try { const r = await fetch(DATA_BASE + 'history/fr_prices/' + y + '.json'); if (r.ok) Object.assign(P, (await r.json()).days || {}); } catch (_) {} }
+    return t => { const a = P[t.slice(0, 10)]; if (!a) return null; const k = a.length / 24, h = +t.slice(11, 13); const v = a.slice(h * k, h * k + k).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+  }
   async function calibrate(file) {
     const el = $('fc-calinfo'); if (el) el.textContent = 'Reading the file…';
     try {
       if (!window.PKLoadCurve) throw new Error('reader not loaded');
       const cv = window.PKLoadCurve.build(await window.PKLoadCurve.readFile(file));
-      const act = new Map();   // 'YYYY-MM-DDTHH:00' → MW (hourly average)
+      const act = new Map();   // file label 'YYYY-MM-DDTHH:00' → MW (hourly average)
       [...cv.slots.keys()].sort().forEach(d => { const e = cv.slots.get(d); for (let hh = 0; hh < 24; hh++) { let s = 0, k = 0; for (let q4 = 0; q4 < 4; q4++) { const v = e[hh * 4 + q4]; if (v != null) { s += v; k++; } } if (k) act.set(`${d}T${String(hh).padStart(2, '0')}:00`, s * 4 / k / 1000); } });
       const days = [...cv.slots.keys()].sort(); if (days.length < 30) throw new Error('at least 30 days of output are needed');
       const d0 = days[0] < '2022-01-01' ? '2022-01-01' : days[0], d1 = days[days.length - 1];
       if (el) el.textContent = `Fetching the forecast archive ${d0} → ${d1}…`;
       const v = S.tech === 'solar' ? `global_tilted_irradiance,temperature_2m&tilt=${S.tilt}&azimuth=${S.az}` : 'wind_speed_80m,wind_speed_100m,wind_speed_120m,wind_speed_180m';
-      const H = (await getJSON(`https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&start_date=${d0}&end_date=${d1}&hourly=${v}`)).hourly;
+      const [Hj, C, price] = await Promise.all([
+        getJSON(`https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&start_date=${d0}&end_date=${d1}&hourly=${v}`),
+        calFr(), S.zone === 'FR' ? frPrices([...new Set(days.map(d => d.slice(0, 4)))]) : Promise.resolve(() => null)]);
+      const H = Hj.hourly;
       const keep = S.cal[siteKey()]; delete S.cal[siteKey()];   // the raw model, without any earlier calibration
-      const rows = [];
-      H.time.forEach((t, i) => { const y = act.get(t); if (y == null) return;
-        const x = S.tech === 'solar' ? (H.global_tilted_irradiance[i] == null ? null : solarMW(H.global_tilted_irradiance[i], H.temperature_2m[i])) : windMW(hubWind(H, i));
-        const ws = S.tech === 'wind' ? hubWind(H, i) : null;
-        if (x != null) rows.push({ t, y, x, ws }); });
+      const X = new Map();
+      H.time.forEach((t, i) => { const x = S.tech === 'solar' ? (H.global_tilted_irradiance[i] == null ? null : solarMW(H.global_tilted_irradiance[i], H.temperature_2m[i])) : windMW(hubWind(H, i));
+        if (x != null) X.set(t, { x, ws: S.tech === 'wind' ? hubWind(H, i) : null }); });
       if (keep) S.cal[siteKey()] = keep;
+      // the clock of the file: best shift (−3 … +3 h) for summer time and for winter time apart
+      const shift = {};
+      for (const dst of [true, false]) {
+        let best = 0, bc = -2;
+        for (let h = -3; h <= 3; h++) {
+          const a = [], b = [];
+          act.forEach((y, t) => { if (isDST(t) !== dst) return; const m = X.get(shiftKey(t, h)); if (m && (m.x > 0 || y > 0)) { a.push(y); b.push(m.x); } });
+          const c = corrOf(a, b); if (c > bc + 0.005) { bc = c; best = h; }
+        }
+        shift[dst ? 'summer' : 'winter'] = best;
+      }
+      const fr = C && C.solar_month, frc = t => S.tech === 'solar' && fr ? (fr[String(+t.slice(5, 7))] || 1) : 1;
+      const rows = [];
+      act.forEach((y, t) => { const tm = shiftKey(t, shift[isDST(t) ? 'summer' : 'winter']); const m = X.get(tm); if (m) rows.push({ t: tm, y, x: m.x, ws: m.ws, p: price(tm) }); });
+      rows.sort((a, b) => a.t < b.t ? -1 : 1);
       if (rows.length < 500) throw new Error('too few hours match the forecast archive');
       const cut = Math.floor(rows.length * 2 / 3), tr = rows.slice(0, cut), te = rows.slice(cut);
+      const span = (Date.parse(tr[tr.length - 1].t.slice(0, 10)) - Date.parse(tr[0].t.slice(0, 10))) / 864e5;
       const err = (arr, f) => arr.reduce((s, r) => s + Math.abs(f(r) - r.y), 0) / arr.length / S.mw;
       const daylight = r => S.tech !== 'solar' || r.x > 0 || r.y > 0;
-      const trD = tr.filter(daylight), teD = te.filter(daylight);
-      const scale = trD.reduce((s, r) => s + r.y, 0) / Math.max(1e-9, trD.reduce((s, r) => s + r.x, 0));
-      let cal = { scale, n: rows.length, period: `${rows[0].t.slice(0, 10)} → ${rows[rows.length - 1].t.slice(0, 10)}` }, fit = r => Math.min(S.mw, r.x * scale);
-      if (S.tech === 'wind' && tr.length >= 1500) {
-        const sum = [], cnt = []; tr.forEach(r => { const b = Math.min(59, Math.floor(r.ws * 2)); sum[b] = (sum[b] || 0) + r.y / S.mw; cnt[b] = (cnt[b] || 0) + 1; });
-        const bins = Array.from({ length: 60 }, (_, b) => cnt[b] >= 10 ? sum[b] / cnt[b] : null);
-        for (let b = 1; b < 60; b++) if (bins[b] != null && bins[b - 1] != null && bins[b] < bins[b - 1] && b < 40) bins[b] = bins[b - 1];   // monotone up to ~20 m/s
-        const at = w => { let k = Math.min(59, Math.floor(w * 2)); while (k > 0 && bins[k] == null) k--; return bins[k] == null ? 0 : bins[k]; };
-        const fb = r => S.mw * at(r.ws);
-        if (err(te, fb) < err(te, fit)) { cal = { bins, n: rows.length, period: cal.period }; fit = fb; }
+      const free = r => r.p == null || r.p > 5, neg = r => r.p != null && r.p <= 0;
+      const trF = tr.filter(r => daylight(r) && free(r)), teD = te.filter(daylight);
+      const base = r => Math.min(S.mw, r.x * frc(r.t));   // what the tool shows without calibration
+      let scale = null;
+      if (span >= 270) scale = trF.reduce((s, r) => s + r.y, 0) / Math.max(1e-9, trF.reduce((s, r) => s + r.x, 0));
+      let fitU = r => scale ? Math.min(S.mw, r.x * scale) : base(r), bins = null;
+      if (S.tech === 'wind' && trF.length >= 1500) {
+        const sum = [], cnt = []; trF.forEach(r => { const b = Math.min(59, Math.floor(r.ws * 2)); sum[b] = (sum[b] || 0) + r.y / S.mw; cnt[b] = (cnt[b] || 0) + 1; });
+        const bb = Array.from({ length: 60 }, (_, b) => cnt[b] >= 10 ? sum[b] / cnt[b] : null);
+        for (let b = 1; b < 40; b++) if (bb[b] != null && bb[b - 1] != null && bb[b] < bb[b - 1]) bb[b] = bb[b - 1];
+        const at = w => { let k = Math.min(59, Math.floor(w * 2)); while (k > 0 && bb[k] == null) k--; return bb[k] == null ? 0 : bb[k]; };
+        const fb = r => S.mw * at(r.ws), teF = te.filter(free);
+        if (err(teF, fb) < err(teF, fitU)) { bins = bb; fitU = fb; scale = null; }
       }
-      cal.nmae0 = err(teD, r => r.x); cal.nmae1 = err(teD, fit);
-      if (!(cal.nmae1 < cal.nmae0)) { if (el) el.innerHTML = `Calibration not applied: on the test third it does not beat the generic model (${(cal.nmae0 * 100).toFixed(1)} % → ${(cal.nmae1 * 100).toFixed(1)} % of capacity). Check the technology, the coordinates and the capacity entered.`; return; }
+      const trN = tr.filter(r => neg(r) && daylight(r));
+      const curtRatio = trN.length >= 30 ? Math.min(1, trN.reduce((s, r) => s + r.y, 0) / Math.max(1e-9, trN.reduce((s, r) => s + fitU(r), 0))) : null;
+      const fit = r => neg(r) && curtRatio != null ? fitU(r) * curtRatio : fitU(r);
+      const cal = { n: rows.length, period: `${rows[0].t.slice(0, 10)} → ${rows[rows.length - 1].t.slice(0, 10)}`, shift, curtRatio, span: Math.round(span) };
+      if (bins) cal.bins = bins; else if (scale) cal.scale = scale;
+      cal.nmae0 = err(teD, base); cal.nmae1 = err(teD, fit);
+      if (!(cal.nmae1 < cal.nmae0)) { if (el) el.innerHTML = `Calibration not applied: on the test third it does not beat the model (${(cal.nmae0 * 100).toFixed(1)} % → ${(cal.nmae1 * 100).toFixed(1)} % of capacity). Clock of the file: ${shift.winter >= 0 ? '+' : ''}${shift.winter} h in winter, ${shift.summer >= 0 ? '+' : ''}${shift.summer} h in summer. Check the technology, the coordinates and the capacity entered.`; return; }
       S.cal[siteKey()] = cal; save(); calInfo(); run();
     } catch (e) { if (el) el.textContent = 'Calibration failed: ' + e.message; }
   }
