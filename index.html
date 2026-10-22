@@ -3023,6 +3023,11 @@
   .cf-sumbar { display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; margin-top:8px; padding:7px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; font:12px 'Inter',sans-serif; color:var(--text2); }
   .cf-sumbar b { color:var(--text); font-weight:600; }
   .cf-sumbar .cf-edit { margin-left:auto; background:none; border:1px solid var(--border2); border-radius:6px; color:var(--accent); font-size:11.5px; padding:3px 10px; cursor:pointer; }
+  /* carbon tool: green days calendar */
+  .cf-cal { display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 13px); gap:3px; overflow-x:auto; padding:4px 0 8px; }
+  .cf-cal i { width:13px; height:13px; border-radius:3px; display:block; background:var(--bg3); }
+  .cf-cal-leg { display:flex; align-items:center; gap:4px; font:10px 'JetBrains Mono',monospace; color:var(--text3); margin-top:6px; flex-wrap:wrap; }
+  .cf-cal-leg i { width:12px; height:12px; border-radius:2px; display:inline-block; }
   /* Tools › Carbon footprint */
   .cf-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:stretch; margin-bottom:14px; }
   .cf-drop { display:flex; flex-direction:column; justify-content:center; gap:6px; min-height:120px; padding:18px 20px; border:1.5px dashed var(--border2); border-radius:8px; background:#1c242e; cursor:pointer; transition:border-color .15s, background .15s; }
@@ -5679,6 +5684,7 @@
         </div>
         <div class="hist-section-body open" id="hs-body-cf-carbon">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily consumption and its carbon intensity</div><div class="fuel-card-sub">MWh per day · g CO₂/kWh of the French grid weighted by your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-daily" style="width:100%;height:320px"></canvas></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Green days calendar</div><div class="fuel-card-sub" id="cf-cal-sub">One square per day, coloured by the carbon intensity of your consumption</div></div></div><div id="cf-cal"></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day</div><div class="fuel-card-sub">Consumption by hour and the grid intensity at those hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-hours" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">When the grid is clean · month × hour</div><div class="fuel-card-sub">Average CO₂ intensity of French generation (g/kWh)</div></div><span class="source-badge">RTE éCO2mix</span></div><div id="cf-hm-ci"></div></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Where your electricity came from</div><div class="fuel-card-sub">French generation at the time of each of your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-mix" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Scope 2 by month</div><div class="fuel-card-sub">t CO₂ · location-based (quarter-hourly) and market-based</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-monthly" style="width:100%;height:300px"></canvas></div></div></div>
         </div>
@@ -5713,6 +5719,8 @@
 <div class="pp-group-t" style="margin-top:16px">Renewable PPA · hour-by-hour coverage</div>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA output vs your consumption</div><div class="fuel-card-sub">Average day: what the contract delivers at the time you consume</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-ppa-chart" style="width:100%;height:300px"></canvas></div></div>
 <div class="fuel-note" id="cf-ppa-note"></div>
+<div class="pp-group-t" style="margin-top:14px">24/7 · hour-by-hour renewable coverage</div>
+<div class="kpi-strip fuel-kpis" id="cf-247" style="grid-template-columns:repeat(3,1fr)"></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-cf-report">
