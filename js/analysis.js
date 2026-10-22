@@ -221,9 +221,14 @@ _renReg({
     if (fc.windForecast) fds.push(_fuelLineDs('Wind forecast', _renGW(fc.windForecast), C_WON, { borderDash: [5, 4], borderWidth: 1.3 }));
     if (st.solar) fds.push(_fuelLineDs('Solar actual', _renGW(st.solar), C_SOL, { borderWidth: 2 }));
     if (fc.solarForecast) fds.push(_fuelLineDs('Solar forecast', _renGW(fc.solarForecast), C_SOL, { borderDash: [5, 4], borderWidth: 1.3 }));
+    // slots after the last measured one: hatched FORECAST band (js/pk-forecast.js)
+    let last = -1; [st.wind, st.solar].forEach(a => (a || []).forEach((v, i) => { if (v != null && i > last) last = i; }));
+    const n = (D.lbls || []).length, from = last >= 0 && last < n - 1 ? last + 1 : -1;
     _fuelChart(cid, { type: 'line', data: { labels: D.lbls, datasets: fds }, options: _fuelOpts({
-      scales: { x: _renXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'ren-forecast-' + p.zone + '-' + D.day);
-    return { sub: _renFmtDay(D.day) };
+      scales: { x: _renXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) },
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG, pkFcZone: { from, now: from > 0 ? from - 1 : -1 } } }) }, 'ren-forecast-' + p.zone + '-' + D.day);
+    const acc = window.PKF ? await PKF.accText(p.zone, ['wind', 'solar']) : '';
+    return { sub: _renFmtDay(D.day) + ' · forecast dashed' + (acc ? ' · ' + acc + ' (30 days)' : '') };
   },
 });
 

@@ -72,9 +72,12 @@ _muReg({
     ];
     if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 1.8, pointRadius: 0, tension: .25, spanGaps: false, order: 0 });
     const ti = days.indexOf(_muToday());
-    _fuelChart(cid, { type: 'line', data: { labels: days.map(_muDay), datasets: ds }, plugins: [_muTodayPlugin(ti)],
+    // the forecast part (days after the last observed one) sits on the hatched FORECAST band (js/pk-forecast.js)
+    const obs = sl(s.actual); let fi = -1; obs.forEach((v, i) => { if (v != null) fi = i; });
+    const from = window.PKF ? Math.max(fi + 1, ti >= 0 ? ti : 0) : -1;
+    _fuelChart(cid, { type: 'line', data: { labels: days.map(_muDay), datasets: ds }, plugins: window.PKF ? [] : [_muTodayPlugin(ti)],
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis(s.unit) },
-        plugins: { legend: _muLegend() } }) }, 'outlook-' + cc + '-' + p.series);
+        plugins: { legend: _muLegend(), pkFcZone: { from: from, now: ti, nowLabel: 'today', label: 'FORECAST · ensemble' } } }) }, 'outlook-' + cc + '-' + p.series);
     const fut = days.map((d, i) => d > _muToday() ? i : -1).filter(i => i >= 0);
     const fm = _muMean(fut.map(i => sl(s.mean)[i])), nm = _muMean(fut.map(i => sl(s.normal)[i]));
     const dev = fm != null && nm ? (p.series === 'temp' ? (fm - nm).toFixed(1) + ' °C' : ((fm / nm - 1) * 100).toFixed(0) + ' %') : '';
