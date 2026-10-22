@@ -4,7 +4,7 @@
 The pricing of a single park (with or without its own history) rests on a synthetic history:
 ERA5 reanalysis weather at the park (Open-Meteo archive, hourly since 1940) through the
 physical model of the production forecast tool. This script learns, from the REAL output of
-every French region (RTE éCO2mix, load factor, monthly, 2018 → 2025), how far that simulation
+every French region (RTE éCO2mix, load factor, monthly, 2020 → 2025), how far that simulation
 is from reality, month by month: the prior the tool applies when the park has no history.
 
   factor[tech][region][month] = Σ actual load factor ÷ Σ simulated load factor (centre of the
@@ -24,7 +24,7 @@ import fcst_backtest as FB
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'data', 'history', 'era5_calib.json')
-Y0, Y1 = 2018, 2025
+Y0, Y1 = 2020, 2025   # RTE publishes regional load factors (tch) from 2020
 # mainland regions: (lat min, lat max, lon min, lon max), INSEE code
 REG = {
     'Auvergne-Rhône-Alpes': ((44.6, 46.2, 3.2, 6.2), '84'), 'Bourgogne-Franche-Comté': ((46.4, 47.9, 3.3, 6.6), '27'),
@@ -42,14 +42,16 @@ def actual_monthly(region):
         out = {}
         for ds in ('eco2mix-regional-cons-def',):
             url = ('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/' + ds + '/exports/json?' + urllib.parse.urlencode({
-                'select': "date_format(date_heure, 'yyyy-MM') as ym, avg(tch_solaire) as s, avg(tch_eolien) as w",
+                'select': 'avg(tch_solaire) as s, avg(tch_eolien) as w',
                 'where': f'libelle_region="{region}" and date_heure>="{Y0}-01-01" and date_heure<"{Y1 + 1}-01-01"',
-                'group_by': "date_format(date_heure, 'yyyy-MM')", 'timezone': 'Europe/Paris'}))
+                'group_by': "date_format(date_heure, 'yyyy-MM') as ym", 'timezone': 'Europe/Paris'}))
             for r in FB.get(url):
                 if r.get('ym'):
                     out[r['ym']] = [None if r['s'] is None else r['s'] / 100, None if r['w'] is None else r['w'] / 100]
+        if not out:
+            raise RuntimeError('no regional load factor returned for ' + region)
         return out
-    return FB.cached('era5_act_' + region.replace(' ', '_').replace("'", ''), fetch)
+    return FB.cached('era5_act2_' + region.replace(' ', '_').replace("'", ''), fetch)
 
 
 def simulated_monthly(region, box):
@@ -102,6 +104,8 @@ def main():
             print(tech, region, 'months', out[tech][region], 'yearly', yf)
     for tech in ('solar', 'wind'):
         out['national'][tech] = {str(m): round(nat[tech][0][m] / nat[tech][1][m], 3) for m in sorted(nat[tech][0])}
+    if not out['solar'] and not out['wind']:
+        raise SystemExit('nothing learned: the file is left as it was')
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
 
