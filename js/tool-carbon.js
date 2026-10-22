@@ -218,13 +218,14 @@
     return out;
   }
 
+  const CAP_PRICE = 18646.63;   // €/MW, capacity price of winter 2026-27 (RTE, single price set on 1 October)
   async function compute() {
     const days = [...S.cons.slots.keys()].sort();
     const rows = await rowsFor(days), st = S.settings;
     const o = { rows, days, E: 0, em: 0, missing: 0, nat: { em: 0, load: 0 }, mix: {}, cost: 0, Ep: 0, base: { s: 0, n: 0 },
       daily: [], monthly: {}, hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourP: new Float64Array(24), hourPn: new Float64Array(24),
       wk: { wd: new Float64Array(24), we: new Float64Array(24), nwd: 0, nwe: 0 }, mh: [...Array(12)].map(() => ({ e: new Float64Array(24), n: new Float64Array(24), ci: new Float64Array(24), cn: new Float64Array(24) })),
-      kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
+      kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
     MIX.forEach(([k]) => { o.mix[k] = 0; });
     const ppaKey = st.ppaTech, ppaMWh = +st.ppa || 0;
     let ppaShape = 0; rows.forEach(({ r }) => { if (r && r[ppaKey]) r[ppaKey].forEach(v => { ppaShape += Math.max(0, v || 0); }); });
@@ -252,9 +253,24 @@
         if (ppaMWh && ppaShape && r && r[ppaKey]) { const g = Math.max(0, r[ppaKey][q] || 0) / ppaShape * ppaMWh * 1000; o.ppa.match += Math.min(c, g); o.ppa.surplus += Math.max(0, g - c); o.ppa.prof[h] += g; M.ppa += Math.min(c, g); }
       }
       o.dailyMinKW.push(dMin);
+      // capacity mechanism (winter peak days, 07:00-10:00 and 17:00-20:00): the day's national load and the site's load in the windows
+      if (isWd && (mi >= 10 || mi <= 2) && r && r.load) {
+        const nl = r.load.filter(v => v != null); let win = 0;
+        for (let q = 28; q < 40; q++) win += e[q] || 0;
+        for (let q = 68; q < 80; q++) win += e[q] || 0;
+        if (nl.length > 80) o.capDays.push({ d, nat: nl.reduce((a, b) => a + b, 0) / nl.length, kw: win * 4 / 24 });
+      }
       o.E += dE; o.em += dEm;
       o.daily.push({ d, E: dE, ci: dE ? dEm / dE : null, cost: null });
     });
+    // the capacity obligation, new mechanism (RTE single buyer, winter 2026-27 price 18,646.63 € per MW consumed at the
+    // peak): RTE's peak days are not public here, so the 22 weekdays of highest national load per winter stand in for them
+    if (o.capDays.length) {
+      const k = Math.max(1, Math.round(22 * o.capDays.length / 105));
+      const top = o.capDays.slice().sort((a, b) => b.nat - a.nat).slice(0, k);
+      const mw = top.reduce((a, x) => a + x.kw, 0) / top.length / 1000;
+      o.capacity = { days: top.map(x => x.d).sort(), mw, cost: mw * CAP_PRICE, avgMW: o.E / (days.length * 24) / 1000 };
+    }
     const nd = days.length;
     o.avgKW = o.E / (nd * 24);
     const sortedKW = o.kw.slice().sort((a, b) => b - a);
@@ -403,6 +419,12 @@
       { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
       { type: 'line', label: 'Average day-ahead price (€/MWh)', data: [...o.hourP].map((v, h) => o.hourPn[h] ? Math.round(v / o.hourPn[h] * 10) / 10 : null), borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: .3, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'carbon-cost-hours');
+    const cp = o.capacity, ce = $('cf-cap-kpis');
+    if (ce) ce.innerHTML = cp ? [
+      _fuelKpi('Capacity cost', eur(cp.cost), '', `${f1(cp.mw * 1000)} kW average in the peak windows × 18,647 €/MW (winter 2026-27)`),
+      _fuelKpi('Peak vs average', cp.avgMW ? (cp.mw / cp.avgMW * 100).toFixed(0) : '–', '%', 'your load in the peak windows ÷ your average load', cp.mw > cp.avgMW ? 'down' : 'up'),
+      _fuelKpi('Saving per kW cut', f1(CAP_PRICE / 1000), '€', `each kW less in the ${cp.days.length} peak days' windows, every winter`),
+    ].join('') + `<div class="fuel-note" style="grid-column:1/-1">Peak windows: 07:00–10:00 and 17:00–20:00 on RTE's winter peak days (up to 22 per winter, announced the day before). RTE's own list is not public here: the ${cp.days.length} weekdays of highest national consumption in your data stand in for them (${cp.days.slice(0, 6).join(', ')}${cp.days.length > 6 ? '…' : ''}).</div>` : '<div class="fuel-note" style="grid-column:1/-1">No winter weekday (November to March) in your data: the capacity cost needs one.</div>';
     const fx = o.flex, pct = +S.settings.flexPct || 0;
     $('cf-flex-kpis').innerHTML = [
       _fuelKpi('Energy moved', MWh(fx.moved), '', `${pct} % of each day, same day, no new peak`),
