@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-22",
+ "countries": {
+  "FR": {
+   "spot": 72.76,
+   "nuclearCapacity": {
+    "actualMW": 40936.77,
+    "forecastMW": 49140
+   }
+  },
+  "UK": {
+   "spot": 162.95
+  },
+  "DE": {
+   "spot": 137.59
+  },
+  "NL": {
+   "spot": 133.52
+  }
+ },
+ "marketInsightsHtml": "<p>In France, EDF has pushed back the return of 2.6 GW of Cattenom nuclear capacity by a day and delayed the restart of the 1.5 GW Chooz 2 unit, while the country’s 2026 nuclear output forecast has been cut by 2% due to heat-related curtailments.</p>"
+}
