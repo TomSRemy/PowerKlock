@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { tech: 'solar', years: null, pct: 74, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
+  const S = { tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -249,9 +249,21 @@
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
     // Prices of both methods
+    // Past discount, as the team's PPA Dashboard does it. 'projected' (default): each delivery year takes the
+    // linear trend of the shape discount over the last N years used (3 by default, as in the tool), shifted by
+    // the gap between the chosen percentile and the median of the past discounts (its "trend + offset"
+    // projection). 'past': the percentile of the past discounts, no projection (the tool's single headline price).
     const sdPct = percentile(histSd, st.pct);
-    o.sdCh = sdPct;
-    o.ppaPct = ref - ref * (sdPct + add / 100 + volRisk / 100 + priceRisk / 100) - imb + goVal - margin;
+    const pdRows = fitRows.slice(-Math.max(2, st.pdYears || 3)), pdReg = linreg(pdRows.map(x => x.year), pdRows.map(x => x.sd));
+    const pdOff = sdPct - percentile(histSd, 50);
+    o.pdMode = st.pdMode === 'past' || !pdReg ? 'past' : 'projected';
+    o.pdYears = pdRows.map(x => x.year); o.pdOff = pdOff;
+    o.sdPctY = years.map(r => o.pdMode === 'past' ? sdPct : cl(pdReg.ic + pdReg.sl * r.y + pdOff));
+    const capPD = years.reduce((a, r, i) => a + r.wt * r.fwd * (1 - o.sdPctY[i]), 0);
+    o.sdCh = o.pdMode === 'past' ? sdPct : years.reduce((a, r, i) => a + r.wt * o.sdPctY[i], 0);
+    o.pdEur = o.pdMode === 'past' ? ref * sdPct : ref - capPD;
+    o.pdTxt = o.pdMode === 'past' ? `P${st.pct} of the past discounts ${fitRows.map(x => x.year).join(', ')}, no projection` : `trend of ${o.pdYears.join(', ')} + offset P${st.pct} − P50 of the past discounts (${(pdOff * 100).toFixed(1)} pts)`;
+    o.ppaPct = (o.pdMode === 'past' ? ref - ref * sdPct : capPD) - ref * (add / 100 + volRisk / 100 + priceRisk / 100) - imb + goVal - margin;
     o.qU = o.mc ? qtl(o.mc.Us, alpha / 100) : fair;
     // where the premium comes from: the same simulation with one source of risk at a time
     if (o.mc) {
@@ -361,7 +373,7 @@
     'pp-degr': 'Yearly loss of output (panel ageing): later years weigh a little less.',
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
-    'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Higher = more cautious.',
+    'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
     'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
@@ -381,7 +393,7 @@
     if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; lab.appendChild(i); }
   }
   const INTRO = {
-    pct: '<b>Past discount</b> (formerly “PPA Dashboard”): the team’s original formula. Price = average forward − a historical discount (a percentile of the past years chosen) − risk margins entered by hand. Quick and simple; it assumes the delivery years will look like the past years chosen.',
+    pct: '<b>Past discount</b> (formerly “PPA Dashboard”): the team’s original formula. By default, as in the tool’s projection: each delivery year’s discount = the linear trend of the last 3 years + (chosen percentile − median) of the past discounts; price = Σ forward × (1 − that discount), weighted by output, − risk margins entered by hand. Option: the percentile of the past years alone (the tool’s single headline price), which assumes the delivery years look like the past.',
     build: '<b>Capacity trend</b> (formerly “Step by step”): the discount is projected year by year with the installed capacity (more solar → deeper discount), then a Monte Carlo sets a risk premium for the chance of loss you accept. Suited when cannibalisation keeps growing.',
     fpc: '<b>Forward shape</b> (formerly “Asset-specific FPC”): the method of the pricing deck, the expected production is valued on an hourly forward price curve (profile cost), then a cannibalisation coefficient measured on history — historical (1) minus decorrelated (3) — is added. The most direct link with today’s forward prices.',
     wx: '<b>Weather simulation</b> (formerly “Monte Carlo weather”): simulates the weather, the national production and the hourly prices for many possible years. It captures the link between weather and prices directly; its risk premium covers weather only, not a change of market regime.',
@@ -499,7 +511,7 @@
     ] : [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.ref * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
-      _fuelKpi('Shape discount used', pc(o.sdCh), '', `P${S.pct} of ${o.sel.join(', ')} (${o.useAsset ? 'asset' : 'national'})`),
+      _fuelKpi('Shape discount used', pc(o.sdCh), '', `${o.pdMode === 'past' ? 'P' + S.pct + ' of the past' : 'projected, trend + P' + S.pct + ' offset'} (${o.useAsset ? 'asset' : 'national'})`),
       _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'percentile where the P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
       _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
     ]).join('');
@@ -529,7 +541,7 @@
       step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
     ].join('') : [
       step('1 · Forward', f2(o.ref) + ' €/MWh', `average of Cal ${T0}–${T1}`),
-      step('2 · Shape discount', pc(o.sdCh), `P${S.pct} of the years ${o.sel.join(', ')} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">history</a>`),
+      step('2 · Shape discount', pc(o.sdCh), `${o.pdTxt} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">history</a>`),
       step('3 · Risks', '−' + f2(o.ref * (o.add + o.volRisk + o.priceRisk) / 100) + ' €/MWh', `additional ${o.add} %, volume ${o.volRisk} %, price ${o.priceRisk} % of the forward`),
       step('4 · Costs and GO', (o.goVal - o.margin - o.imb >= 0 ? '+' : '−') + f2(Math.abs(o.goVal - o.margin - o.imb)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goVal)}, margin −${f2(o.margin)}`),
       step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
@@ -542,7 +554,7 @@
       ? [['Forward', fm.refW], ['Profile cost', fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Cannibalisation', fm.fair - fm.refW - fm.refW * mean(fm.fwd.map(r => r.fwdCost))], ['Risk premium', -fm.premium], ['Add. discount', -fm.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
       : build
       ? [['Forward', o.refW], ['Shape discount', o.fair - o.refW], ['Risk premium', -o.premium], ['Add. discount', -o.refW * o.add / 100], ['Imbalance', -o.imb], ['GO value', o.goW], ['Margin', -o.margin]]
-      : [['Forward', o.ref], ['Shape discount', -o.ref * o.sdCh], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', -o.margin]];
+      : [['Forward', o.ref], ['Shape discount', -o.pdEur], ['Add. discount', -o.ref * o.add / 100], ['Volume risk', -o.ref * o.volRisk / 100], ['Price risk', -o.ref * o.priceRisk / 100], ['Imbalance', -o.imb], ['GO value', o.goVal], ['Margin', -o.margin]];
     const st2 = steps.filter(([l, v], i) => i === 0 || Math.abs(v) > 0.005);
     let acc = 0; const bars = st2.map(([l, v], i) => { if (i === 0) { acc = v; return [0, v]; } const a = acc; acc += v; return [a, acc]; });
     bars.push([0, o.ppa]);
@@ -960,7 +972,7 @@
       scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-price');
     _fuelChart('pp-cmp-years', { type: 'bar', data: { labels: o.tenor.map(String), datasets: [
       { label: 'Forward (Cal)', type: 'line', data: o.years.map(r => +r.fwd.toFixed(2)), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3, fill: false },
-      { label: 'Past discount', data: o.years.map(r => +(r.fwd * (1 - o.sdCh)).toFixed(2)), backgroundColor: '#B8C9D9AA', borderRadius: 3 },
+      { label: 'Past discount', data: o.years.map((r, i) => +(r.fwd * (1 - (o.sdPctY ? o.sdPctY[i] : o.sdCh))).toFixed(2)), backgroundColor: '#B8C9D9AA', borderRadius: 3 },
       { label: 'Capacity trend', data: o.years.map(r => +r.cp.toFixed(2)), backgroundColor: '#14D3A9AA', borderRadius: 3 },
       ...(m3c ? [{ label: 'Forward shape', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
       ...(o.m4 ? [{ label: 'Weather simulation', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
@@ -971,9 +983,9 @@
     const rows = [
       ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', m4 ? f2(m4.ppa) : 'open its tab', true],
       ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–', m4 ? f2(m4.refW) + ' (Cal, weighted)' : '–'],
-      ['Shape / profile', pc(-o.sdCh) + ' (P' + S.pct + ' of history)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–', W4 ? pc(W4[0].rate - 1) + ' → ' + pc(W4[W4.length - 1].rate - 1) + ' (simulated, all effects)' : '–'],
-      ['Cannibalisation', 'inside the percentile', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–'],
-      ['Capture value, €/MWh', f2(o.ref * (1 - o.sdCh)), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–'],
+      ['Shape / profile', o.pdMode === 'past' ? pc(-o.sdCh) + ' (P' + S.pct + ' of history)' : pc(-o.sdPctY[0]) + ' → ' + pc(-o.sdPctY[o.sdPctY.length - 1]) + ' (trend + P' + S.pct + ' offset)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–', W4 ? pc(W4[0].rate - 1) + ' → ' + pc(W4[W4.length - 1].rate - 1) + ' (simulated, all effects)' : '–'],
+      ['Cannibalisation', o.pdMode === 'past' ? 'inside the percentile' : 'linear trend of the last years', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–'],
+      ['Capture value, €/MWh', f2(o.ref - o.pdEur), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–'],
       ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–', m4 ? '−' + f2(m4.premium) + ' (simulated weather)' : '–'],
       ['Margin', '−' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin)],
     ];
@@ -1025,7 +1037,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <h4>Hours at zero or negative prices</h4>
 <p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity to the PPE3 targets, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>Past-discount method</h4>
-<p><code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO − margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. As in the team's Streamlit tool, except the margin: it added it, here it is deducted like in every other method.</p>
+<p>Projected mode (default): <code>discount(y) = trend of the last N years used (y) + [P${S.pct} − P50] of the past discounts</code>, then <code>PPA = Σ w(y) × F(y) × (1 − discount(y)) − F × (add. discount + volume risk + price risk) − imbalance + GO − margin</code>. Past-only mode: <code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO − margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. As in the team's Streamlit tool, except the margin: it added it, here it is deducted like in every other method.</p>
 <h4>Forward shape method (the pricing deck’s “asset-specific approach”)</h4>
 <ol>
 <li><b>Forward price curve (FPC).</b> Hourly prices for each delivery year: the usual shape of prices (month in the year, weekday / Saturday / Sunday in the month, hour in the day), averaged on the years used, then calibrated on today’s quotes without arbitrage — months, then quarters and seasons, then each year exactly on its Cal.</li>
@@ -1190,6 +1202,8 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     page.addEventListener('click', e => { const t = e.target.closest('.pp-auto.man[data-k]'); if (!t) return; e.preventDefault(); S[t.dataset.k] = null; const id = Object.keys(FIELDS).find(i => FIELDS[i] === t.dataset.k); if (id) $(id).value = ''; run(); });
     [['pp-tech', 'tech'], ['pp-basis', 'basis'], ['pp-model', 'model'], ['pp-conv', 'conv'], ['pp-method', 'method'], ['pp-hedge', 'hedge']].forEach(([id, k]) => { const e = $(id); if (e) { e.value = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.value; if (k === 'tech') S.years = null; run(); }); } });
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
+    const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
+    const pdy = $('pp-pdyears'); if (pdy) pdy.addEventListener('change', e => { S.pdYears = +e.target.value; run(); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
     $('pp-xlsx').addEventListener('click', exportXlsx);
     // the inputs stay folded once folded; the folded bar shows their summary
