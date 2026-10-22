@@ -375,6 +375,7 @@ async function renderMorning() {
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnKpis().then(_mrnMoves);
   PKW.draw('fr-spot-next', 'mrn-spot', {}).then(r => sub('mrn-spot-sub', r));
+  if (window.PKF) { PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); }
   const ft = document.getElementById('mrn-fwdt'); if (ft) PKW.get('fr-fwd-table').html(ft, { country: 'FR' });
   PKW.draw('fr-fwd-products', 'mrn-fwdp', { country: 'FR', win: '3M' }).then(r => sub('mrn-fwdp-sub', r));
   const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, {});

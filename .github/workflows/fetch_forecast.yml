@@ -1,0 +1,54 @@
+name: Fetch forecasts (solar, wind, load · today and tomorrow)
+
+# TSO day-ahead forecasts (ENTSO-E, served by Energy-Charts) for FR, DE, BE,
+# NL, ES → data/forecast.json (scripts/fetch_forecast.py). The morning run
+# also refreshes the last 30 days of forecasts and actuals
+# (data/history/forecast/) and the usual error shown on the site.
+
+on:
+  schedule:
+    - cron: '15 6 * * *'     # morning: today + error over 30 days
+    - cron: '30 11 * * *'    # tomorrow's forecasts usually out before the day-ahead auction
+    - cron: '30 16 * * *'
+    - cron: '30 19 * * *'    # late publishers
+  workflow_dispatch:
+    inputs:
+      accuracy:
+        description: 'Also refresh the 30-day error'
+        type: boolean
+        default: true
+
+concurrency:
+  group: fetch-forecast
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch
+        run: |
+          if [ "${{ github.event.schedule }}" = "15 6 * * *" ] || [ "${{ inputs.accuracy }}" = "true" ]; then
+            python scripts/fetch_forecast.py --accuracy
+          else
+            python scripts/fetch_forecast.py
+          fi
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/forecast.json data/history/forecast
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: forecasts $(date -u '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1

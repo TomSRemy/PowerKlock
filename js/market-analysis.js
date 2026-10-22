@@ -87,6 +87,7 @@
     hoverIndex: -1,
     cursors: [],
     aiBusy: false,
+    showFc: true,   // TSO day-ahead forecasts of load, wind and solar (js/pk-forecast.js)
   };
 
   const WINDOWS = [
@@ -223,8 +224,15 @@
     // midnight (the old code kept the current time of day, so slot labels
     // and key-moment times were shifted by the hour the page was opened).
     const endISO = STATE.endDate ? String(STATE.endDate).slice(0, 10) : pkTodayISO();
-    for (let d = STATE.windowDays - 1; d >= 0; d--) {
-      const dateStr = _renAdd(endISO, -d);
+    // Forecast days after the last day with data (today, tomorrow once published) are appended.
+    const fcOn = STATE.showFc && window.PKF;
+    const dates = [];
+    for (let d = STATE.windowDays - 1; d >= 0; d--) dates.push(_renAdd(endISO, -d));
+    if (fcOn) {
+      const t = pkTodayISO();
+      for (const x of [t, _renAdd(t, 1)]) if (x > endISO && await PKF.day(zone, x)) dates.push(x);
+    }
+    for (const dateStr of dates) {
       const [yy, mm, dd] = dateStr.split('-').map(Number);
       const dt = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
       const daily = await _fetchDaily(dateStr);
@@ -293,6 +301,10 @@
       const nucAvail = frAvail != null ? new Array(slotsPerDay).fill(frAvail / 1000) : mix.nuclear.map(v => v == null ? null : v / 1000);
 
       const spark = price.map((p, i) => (window.PKC ? PKC.cleanSpark(p, ttf[i], eua[i]) : null));
+      // TSO day-ahead forecast of the day (MW, 96 quarter-hours)
+      const fd = fcOn ? await PKF.day(zone, dateStr) : null;
+      const fcs = k => fd && fd[k] ? _resample(fd[k], 96, slotsPerDay) : nulls();
+      const fc = { solar: fcs('solar'), wind: fcs('wind'), load: fcs('load') };
       // Running cost of a gas plant (CCGT, fuel + CO₂): price − spark
       const srmc = ttf.map((t, i) => (window.PKC && t != null && eua[i] != null) ? -PKC.cleanSpark(0, t, eua[i]) : null);
       // Neighbour day-ahead price (coupling / decoupling)
@@ -317,7 +329,7 @@
       days.push({
         date: dateStr, jsDate: dt, dow: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
         isReal: isReal, price: price, spark: spark, srmc: srmc, nbPrice: nbPrice, wind: wind, solar: solar, load: load,
-        mix: mix, carbon: carbon,
+        mix: mix, carbon: carbon, fc: fc,
         drivers: { ttf: ttf, eua: eua, windSpeed: windSpeed, temp: temp, nucAvail: nucAvail, flux: flux },
       });
     }
@@ -327,6 +339,7 @@
       mix: { nuclear: [], hydro: [], fossil: [], biomass: [], other: [] },
       drivers: { ttf: [], eua: [], windSpeed: [], temp: [], nucAvail: [], flux: [] },
       labels: [], slotDates: [],
+      fc: { solar: [], wind: [], load: [], resid: [] },
     };
     days.forEach(day => {
       for (let i = 0; i < slotsPerDay; i++) {
@@ -344,6 +357,9 @@
         flat.solar.push(gw(day.solar[i]));
         flat.load.push(gw(day.load[i]));
         flat.carbon.push(day.carbon[i]);
+        const fl = day.fc.load[i], fw = day.fc.wind[i], fs = day.fc.solar[i];
+        flat.fc.load.push(gw(fl)); flat.fc.wind.push(gw(fw)); flat.fc.solar.push(gw(fs));
+        flat.fc.resid.push(fl == null ? null : (fl - (fw || 0) - (fs || 0)) / 1000);
         ['nuclear', 'hydro', 'fossil', 'biomass', 'other'].forEach(f => {
           flat.mix[f].push(gw(day.mix[f][i]));
         });
@@ -356,6 +372,14 @@
       }
     });
 
+    // Where the forecast takes over: after the last slot with measured load or output;
+    // "now" = the current slot when today is in the window.
+    let lastAct = -1;
+    flat.load.forEach((v, i) => { if (v != null || flat.wind[i] != null || flat.solar[i] != null) lastAct = i; });
+    const anyFc = i => flat.fc.load[i] != null || flat.fc.wind[i] != null || flat.fc.solar[i] != null;
+    flat.fcFrom = fcOn && flat.fc.load.some((_, i) => i > lastAct && anyFc(i)) ? lastAct + 1 : -1;
+    const ti = days.findIndex(d => d.date === pkTodayISO());
+    flat.nowIdx = ti >= 0 && window.PKF ? ti * slotsPerDay + Math.floor(PKF.nowSlot() * slotsPerDay / 96) : -1;
     return { zone: zone, nbZone: NEIGHBOUR[zone], days: days, flat: flat, slotsPerDay: slotsPerDay, gran: gran };
   }
 
@@ -554,6 +578,7 @@
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
+        pkFcZone: STATE.data && STATE.data.flat ? { from: STATE.data.flat.fcFrom, now: STATE.data.flat.nowIdx } : false,
       },
       scales: {
         x: {
@@ -594,6 +619,11 @@
     });
   }
 
+  function _hasFc() {
+    const f = STATE.data && STATE.data.flat;
+    return !!(f && f.fc && (f.fc.load.some(v => v != null) || f.fc.wind.some(v => v != null)));
+  }
+
   function _renderPanels() {
     const f = STATE.data.flat;
     const labels = f.labels;
@@ -625,13 +655,13 @@
           backgroundColor: 'rgba(230,237,243,0.08)', fill: 'origin' },
         { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', data: f.drivers.nucAvail, borderColor: FUEL_COLORS.nuclear, borderWidth: 1.6, borderDash: [5, 3], pointRadius: 0, tension: 0, fill: false },
         { label: 'Net import', data: f.drivers.flux, borderColor: DRIVER_COLOURS.flux, borderWidth: 1.2, pointRadius: 0, tension: 0, fill: false },
-      ],
+      ].concat(_hasFc() ? [{ label: 'Residual load · forecast', data: f.fc.resid, borderColor: '#E6EDF3', borderWidth: 1.3, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false }] : []),
     }, _commonChartOpts('GW'));
     _renderPanelLegend('ma-legend-resid', [
       { label: 'Residual load (demand − wind − solar)', color: '#E6EDF3' },
       { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', color: FUEL_COLORS.nuclear },
       { label: 'Net import (− = export)', color: DRIVER_COLOURS.flux },
-    ]);
+    ].concat(_hasFc() ? [{ label: 'Residual load · forecast (dotted)', color: '#E6EDF3', fc: true }] : []));
 
     _mkChart('ma-canvas-loadren', 'line', {
       labels: labels,
@@ -653,13 +683,17 @@
           borderColor: '#fff', borderWidth: 1.5, borderDash: [3, 2],
           pointRadius: 0, tension: 0, fill: false,
         },
-      ],
+      ].concat(_hasFc() ? [
+        { label: 'Solar · forecast', data: f.fc.solar, borderColor: FUEL_COLORS.solar, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+        { label: 'Wind · forecast', data: f.fc.wind, borderColor: FUEL_COLORS.wind, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+        { label: 'Load · forecast', data: f.fc.load, borderColor: 'rgba(255,255,255,.75)', borderWidth: 1.2, borderDash: [1, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+      ] : []),
     }, _commonChartOpts('GW'));
     _renderPanelLegend('ma-legend-loadren', [
       { label: 'Solar', color: FUEL_COLORS.solar },
       { label: 'Wind', color: FUEL_COLORS.wind },
       { label: 'Load', color: '#fff' },
-    ]);
+    ].concat(_hasFc() ? [{ label: 'Forecasts (TSO day-ahead): dashed lines', color: 'transparent', fc: true }] : []));
 
     const stackDatasets = FUEL_STACK.map(function (fuel) {
       const data = (fuel === 'wind' || fuel === 'solar') ? f[fuel] : f.mix[fuel];
@@ -687,6 +721,7 @@
     const host = document.getElementById(hostId);
     if (!host) return;
     host.innerHTML = items.map(function (it) {
+      if (it.fc) return '<span class="ma-fc-key"><span class="dot" style="background:transparent;border:1px dashed ' + (it.color === 'transparent' ? 'var(--acc,#7FC8F8)' : it.color) + '"></span>' + it.label + '</span>';
       return '<span><span class="dot" style="background:' + it.color + '"></span>' + it.label + '</span>';
     }).join('');
   }
@@ -771,8 +806,21 @@
     const mgColor = marginalClass === 'gas' ? '#ED6965' : marginalClass === 'ren' ? '#14D3A9' : '#3FA6B4';
     const dot = (c) => '<span class="ma-ht-dot" style="background:' + c + '"></span>';
 
+    const fl = f.fc ? f.fc.load[idx] : null, fw = f.fc ? f.fc.wind[idx] : null, fs = f.fc ? f.fc.solar[idx] : null, fr = f.fc ? f.fc.resid[idx] : null;
+    const isFc = f.fcFrom >= 0 && idx >= f.fcFrom;
+    const fcBlock = (fl != null || fw != null || fs != null)
+      ? '<div class="ma-ht-section">' + (window.PKF ? PKF.chip('Forecast') : 'Forecast') + ' TSO day-ahead</div>'
+        + '<div class="ma-ht-grid">'
+        +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(fl, 1) + ' GW</span></div>'
+        +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.wind) + 'Wind</span><span class="v">' + fx(fw, 1) + ' GW</span></div>'
+        +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.solar) + 'Solar</span><span class="v">' + fx(fs, 1) + ' GW</span></div>'
+        +   '<div class="ma-ht-row"><span class="k">' + dot('#A87DC4') + 'Residual</span><span class="v">' + fx(fr, 1) + ' GW</span></div>'
+        + '</div>'
+        + (!isFc && wind != null && fw != null ? '<div class="ma-ht-row" style="font-size:10px"><span class="k">Forecast error (wind · solar)</span><span class="v">' + (wind - fw >= 0 ? '+' : '') + fx(wind - fw, 1) + ' · ' + (solar != null && fs != null ? (solar - fs >= 0 ? '+' : '') + fx(solar - fs, 1) : '--') + ' GW</span></div>' : '')
+      : '';
     tip.innerHTML =
-      '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + '</div>'
+      '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + (isFc ? ' ' + (window.PKF ? PKF.chip('Forecast') : '') : '') + '</div>'
+      + (isFc ? fcBlock : '')
       + '<div class="ma-ht-hero">'
       +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">DA Price</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
       +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
@@ -800,7 +848,8 @@
       +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.temp) + 'Temp</span><span class="v">' + fx(temp, 0) + '°C</span></div>'
       +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.nuc) + 'Nuc dispo</span><span class="v">' + fx(nucA, 0) + ' GW</span></div>'
       +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.flux) + 'Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
-      + '</div>';
+      + '</div>'
+      + (isFc ? '' : fcBlock);
 
     // Docked in its own column beside the charts (never over them).
     tip.style.display = 'block';
@@ -916,6 +965,14 @@
       nuclear_available_avg_GW: _r(_avg(f.drivers.nucAvail), 1),
       net_import_avg_GW: _r(_avg(f.drivers.flux), 1),
       moments: moments,
+      forecast_ahead: (function () {
+        if (f.fcFrom < 0) return null;
+        const sl = a => a.slice(f.fcFrom);
+        return { note: 'TSO day-ahead forecasts for the slots after the last measured one (not actuals)',
+          slots: f.fc.load.length - f.fcFrom, load_avg_GW: _r(_avg(sl(f.fc.load)), 1), wind_avg_GW: _r(_avg(sl(f.fc.wind)), 1),
+          solar_avg_GW: _r(_avg(sl(f.fc.solar)), 1), residual_load_avg_GW: _r(_avg(sl(f.fc.resid)), 1),
+          residual_load_max_GW: _r(Math.max.apply(null, sl(f.fc.resid).filter(v => v != null)), 1) };
+      })(),
     };
   }
 
@@ -975,6 +1032,9 @@
       }).join('');
     }
 
+    const fcp = document.getElementById('ma-fc-pills');
+    if (fcp) fcp.innerHTML = pkPill({ label: 'On', active: STATE.showFc, onClick: 'maSetForecast(true)' }) + pkPill({ label: 'Off', active: !STATE.showFc, onClick: 'maSetForecast(false)' });
+
     const gran = document.getElementById('ma-granularity-pills');
     if (gran) {
       gran.innerHTML = GRANULARITIES.map(function (g) {
@@ -999,7 +1059,20 @@
 
   window.maSetWindow = function (days) { STATE.windowDays = days; _reload(); };
   window.maSetGranularity = function (g) { STATE.granularity = g; _reload(); };
-  window.maSetZone = function (zone) { STATE.zone = zone; _reload(); };
+  window.maSetZone = function (zone) { STATE.zone = zone; _reload(); _renderOutlook(); };
+  window.maSetForecast = function (on) { STATE.showFc = !!on; _reload(); };
+
+  // Forecast section under the panels: tomorrow in figures, the next 48 h, and the 5-week weather outlook.
+  const OUTLOOK_CC = { FR: 'FR', DE_LU: 'DE', BE: 'BE', NL: 'NL', ES: 'ES' };
+  function _renderOutlook() {
+    if (!window.PKW || !window.PKF) return;
+    const z = STATE.zone, cc = OUTLOOK_CC[z] || 'FR';
+    const t = document.getElementById('ma-fc-tiles'); if (t) PKF.tiles(t, z);
+    const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
+    PKW.draw('fc-48h', 'ma-fc-48h', { zone: z }).then(r => sub('ma-fc-48h-sub', r));
+    PKW.draw('wx-outlook', 'ma-fc-wind', { country: cc, series: 'wind', past: '7' }).then(r => sub('ma-fc-wind-sub', r));
+    PKW.draw('wx-outlook', 'ma-fc-solar', { country: cc, series: 'solar', past: '7' }).then(r => sub('ma-fc-solar-sub', r));
+  }
 
   // Native fullscreen on the whole 4-panel group, not the usual per-chart
   // addFullscreen() — these panels share one crosshair/hover tooltip across
@@ -1038,6 +1111,7 @@
     if (wrap) wrap.addEventListener('mouseleave', _clearHover);
 
     await _reload();
+    _renderOutlook();
   };
 
   window.maGenerateAIRefresh = window.maGenerateAI;
