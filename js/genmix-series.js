@@ -50,6 +50,7 @@
       zs.value = S.zone; zs.addEventListener('change', () => { S.zone = zs.value; render(); });
     }
     await draw(S.zone, PAGE, true);
+    if (window.PKW && PKW.star) [['genmix-hist-daily', 'gms-daily'], ['genmix-hist-avgday', 'gms-profile'], ['genmix-hist-shares', 'gms-share']].forEach(([w, c]) => PKW.star(w, c));
     ['gms-daily', 'gms-profile', 'gms-share'].forEach(id => { if (typeof addFullscreen === 'function') addFullscreen(id); });
   }
   // draws one, two or three charts (ids: {daily, profile, share}) for a zone; subtitles only on the page
