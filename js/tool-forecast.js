@@ -59,7 +59,7 @@
     }
     const r = curve(v, S.cls); return r == null ? null : S.mw * r * (1 - S.lossW / 100);
   }
-  let CAL = null;
+  let CAL = null, LAST_ACT = null, ERA = null;
   const calFr = () => CAL || (CAL = fetch(DATA_BASE + 'history/fcst_calib.json').then(r => r.ok ? r.json() : null).catch(() => null));
   const OTHER = { solar: ['meteofrance_seamless', 'icon_seamless', 'gfs_seamless'], wind: ['icon_seamless', 'gfs_seamless'] };
   // wind at hub height from the 80 / 120 / 180 m levels (log-height interpolation)
@@ -235,6 +235,8 @@
     Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => { S[k] = e.type === 'number' ? +e.value : e.value; vis(); run(); }); });
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
+    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory);
+    const sbt = $('fc-hist-send'); if (sbt) sbt.addEventListener('click', sendToPricer);
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
     if (pasteBox) pasteBox.addEventListener('change', () => { const m = pasteBox.value.match(/(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)/); if (m) { S.lat = +m[1].replace(',', '.'); S.lon = +m[2].replace(',', '.'); $('fc-lat').value = S.lat; $('fc-lon').value = S.lon; pasteBox.value = ''; run(); } });
@@ -271,6 +273,7 @@
       if (!window.PKLoadCurve) throw new Error('reader not loaded');
       const cv = window.PKLoadCurve.build(await window.PKLoadCurve.readFile(file));
       const act = new Map();   // file label 'YYYY-MM-DDTHH:00' → MW (hourly average)
+      LAST_ACT = { key: siteKey(), act };
       [...cv.slots.keys()].sort().forEach(d => { const e = cv.slots.get(d); for (let hh = 0; hh < 24; hh++) { let s = 0, k = 0; for (let q4 = 0; q4 < 4; q4++) { const v = e[hh * 4 + q4]; if (v != null) { s += v; k++; } } if (k) act.set(`${d}T${String(hh).padStart(2, '0')}:00`, s * 4 / k / 1000); } });
       const days = [...cv.slots.keys()].sort(); if (days.length < 30) throw new Error('at least 30 days of output are needed');
       const d0 = days[0] < '2022-01-01' ? '2022-01-01' : days[0], d1 = days[days.length - 1];
@@ -386,5 +389,112 @@
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'fcst') wire(); return r; };
     if (document.querySelector('#page-fcst.active')) wire();
   }, 0));
-  window.PKFcst = { run, state: S };
+  // ════════════════════════════════════════════════════════════════
+  // PRICE A PARK — its synthetic history, with or without its own data
+  //   1  weather of every hour 2005 → last year at the park: ERA5 reanalysis
+  //   2  the tool's physical model (panels, injection limit, power curve)
+  //   3  prior correction learned on the real output of the park's region
+  //      (RTE vs ERA5, month by month, 2016 → 2025: data/history/era5_calib.json)
+  //   4  the park's own evidence, pooled with the prior (empirical Bayes):
+  //      metered output → level fitted on the same hours (priced > 5 €/MWh),
+  //      weight n days ÷ (n + 180); else the P50 entered sets the level
+  //   5  every weather year is a scenario: P50 / P90 of the yearly output from
+  //      21 years, model uncertainty added (spread of the regional factor)
+  //   6  priced on the real hourly day-ahead price of the same hour (2016 →):
+  //      capture rate and output at prices ≤ 0 year by year, the real link
+  //      between weather and price kept; then sent to the PPA pricer
+  // ════════════════════════════════════════════════════════════════
+  const Y_FROM = 2005;
+  async function regionOf(lat, lon) {
+    try { const r = await fetch(`https://geo.api.gouv.fr/communes?lat=${lat}&lon=${lon}&fields=nom,codeRegion&format=json`); const j = r.ok ? await r.json() : []; return j[0] || null; } catch (_) { return null; }
+  }
+  async function buildHistory() {
+    const host = $('fc-hist'), st = $('fc-hist-status'); if (!host) return;
+    const yEnd = new Date().getUTCFullYear() - 1;
+    if (st) st.textContent = `Fetching ${yEnd - Y_FROM + 1} years of hourly weather at the park (ERA5)…`;
+    try {
+      const v = S.tech === 'solar' ? `global_tilted_irradiance,temperature_2m&tilt=${S.tilt}&azimuth=${S.az}` : 'wind_speed_100m';
+      const [A, EC, com, prY] = await Promise.all([
+        getJSON(`https://archive-api.open-meteo.com/v1/archive?latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&models=era5&start_date=${Y_FROM}-01-01&end_date=${yEnd}-12-31&hourly=${v}`),
+        ERA || (ERA = fetch(DATA_BASE + 'history/era5_calib.json').then(r => r.ok ? r.json() : null).catch(() => null)),
+        regionOf(S.lat, S.lon),
+        S.zone === 'FR' ? frPrices(Array.from({ length: yEnd - 2016 + 1 }, (_, i) => 2016 + i)) : Promise.resolve(() => null)]);
+      price = prY;
+      const H = A.hourly;
+      // 1–2 raw model, MW
+      const raw = H.time.map((t, i) => S.tech === 'solar' ? solarMW(H.global_tilted_irradiance[i], H.temperature_2m[i]) : (H.wind_speed_100m[i] == null ? null : windMW(H.wind_speed_100m[i] * Math.pow(S.hub / 100, 0.14))));
+      // 3 prior: regional monthly factor (national when the region is unknown)
+      const regName = com && EC ? Object.keys(EC.codes || {}).find(r => EC.codes[r] === com.codeRegion) : null;
+      const fac = EC ? ((regName && EC[S.tech][regName]) || EC.national[S.tech]) : null;
+      const sdModel = EC && regName && EC.stability[S.tech] && EC.stability[S.tech][regName] ? EC.stability[S.tech][regName].sd : 0.05;
+      const capOut = S.inj !== '' && +S.inj > 0 ? Math.min(S.mw, +S.inj) : S.mw;
+      let P = raw.map((x, i) => x == null ? null : Math.min(capOut, x * (fac ? fac[String(+H.time[i].slice(5, 7))] || 1 : 1)));
+      // 4 the park's evidence
+      let level = 1, how = regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2016–2025)` : 'prior: national factor', wSite = 0;
+      const sc = siteCal();
+      if (LAST_ACT && LAST_ACT.key === siteKey() && sc) {
+        const idx = new Map(H.time.map((t, i) => [t, i]));
+        let sy = 0, sp = 0; const days = new Set();
+        LAST_ACT.act.forEach((y, t) => { const tm = shiftKey(t, (sc.shift || {})[isDST(t) ? 'summer' : 'winter'] || 0); const i = idx.get(tm); if (i == null || P[i] == null) return;
+          const p = price(tm); if (p != null && p <= 5) return; if (S.tech === 'solar' && P[i] <= 0 && y <= 0) return; sy += y; sp += P[i]; days.add(tm.slice(0, 10)); });
+        if (sp > 0 && days.size >= 30) { const site = sy / sp; wSite = days.size / (days.size + 180); level = wSite * site + (1 - wSite); how = `park’s metered output (${days.size} days, weight ${Math.round(wSite * 100)} %) pooled with the regional prior`; }
+      } else if (S.tech === 'solar' && S.p50 !== '' && +S.p50 > 0) {
+        const yrs = new Set(H.time.map(t => t.slice(0, 4))).size, e = P.reduce((s, x) => s + (x || 0), 0) / yrs / S.mw;
+        if (e > 0) { level = +S.p50 / e; how = `level set on the P50 entered (${S.p50} kWh/kWc), regional prior for the shape`; }
+      }
+      if (level !== 1) P = P.map(x => x == null ? null : Math.min(capOut, x * level));
+      // 5 yearly output, P50 / P90
+      const Y = {}; H.time.forEach((t, i) => { if (P[i] == null) return; const y = t.slice(0, 4); Y[y] = (Y[y] || 0) + P[i]; });
+      const ys = Object.keys(Y).sort(), E = ys.map(y => Y[y]);
+      const mean = E.reduce((a, b) => a + b, 0) / E.length, sdW = Math.sqrt(E.reduce((a, b) => a + (b - mean) ** 2, 0) / (E.length - 1));
+      const sdTot = Math.sqrt(sdW ** 2 + (mean * sdModel * (1 - wSite)) ** 2);
+      const p90 = mean - 1.2816 * sdTot, p50 = mean;
+      // 6 capture rate year by year on the real day-ahead prices
+      //   at prices ≤ 0 the park keeps only part of its output: the share learned on its metered data, else 35 %
+      //   (two metered parks, 2024–2026: 31–46 %; counting every hour produced put the capture rate 19–25 points too low)
+      const kNeg = sc && sc.curtRatio != null ? sc.curtRatio : 0.35, kHow = sc && sc.curtRatio != null ? 'learned on the park' : 'typical of French parks';
+      const cap = {};
+      H.time.forEach((t, i) => { if (P[i] == null || +t.slice(0, 4) < 2016) return; const p = price(t); if (p == null) return; const y = t.slice(0, 4);
+        const o = cap[y] || (cap[y] = { e: 0, v: 0, b: 0, n: 0, neg: 0 }); const x = p <= 0 ? P[i] * kNeg : P[i]; o.e += x; o.v += x * p; o.b += p; o.n++; if (p <= 0) o.neg += P[i]; });
+      const capY = Object.keys(cap).sort().filter(y => cap[y].n > 8000);
+      const series = { time: H.time, P };
+      ERA_LAST = { series, ys, E, p50, p90, how, regName, capY, cap, sdTot };
+      // render
+      const f = v => (v / 1000).toLocaleString('en-GB', { maximumFractionDigits: 2 });
+      host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">${[
+        _fuelKpi('P50 yearly output', f(p50), 'GWh', `${Math.round(p50 / S.mw)} kWh/kWc · ${ys.length} weather years`),
+        _fuelKpi('P90 yearly output', f(p90), 'GWh', `${((p90 / p50 - 1) * 100).toFixed(1)} % · weather + model uncertainty`),
+        _fuelKpi('Capture rate, last 3 years', capY.length ? (capY.slice(-3).reduce((s, y) => s + cap[y].v / cap[y].e / (cap[y].b / cap[y].n), 0) / Math.min(3, capY.length) * 100).toFixed(1) : '–', '%', 'on the real day-ahead price of each hour'),
+        _fuelKpi('Output at prices ≤ 0, last year', capY.length ? (cap[capY[capY.length - 1]].neg / Y[capY[capY.length - 1]] * 100).toFixed(1) : '–', '%', `${Math.round(kNeg * 100)} % of it kept (${kHow})`)].join('')}</div>
+        <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Yearly output, ${ys[0]}–${ys[ys.length - 1]}</div><div class="fuel-card-sub">GWh · each weather year replayed on today’s park</div></div><span class="source-badge">ERA5 · RTE</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-y" style="width:100%;height:260px"></canvas></div></div>
+        <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate year by year</div><div class="fuel-card-sub">the park’s simulated output on the real day-ahead price of each hour</div></div><span class="source-badge">ERA5 · ENTSO-E</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-c" style="width:100%;height:260px"></canvas></div></div></div>
+        <div class="fuel-note">How the level is set: ${how}. P90 = P50 − 1.28 σ, σ combining the spread of the ${ys.length} weather years and the uncertainty of the correction (${(sdModel * 100).toFixed(1)} % a year, less as the park’s own data weighs more). Capture rate: at prices ≤ 0 the park keeps ${Math.round(kNeg * 100)} % of its output (${kHow}); checked on two metered parks over their second year, output value within 1–3 % when the level comes from 12 months of metering, 9–11 % too high on the regional prior alone.</div>`;
+      _fuelChart('fc-hist-y', { type: 'bar', data: { labels: ys, datasets: [
+        { label: 'Yearly output (GWh)', data: E.map(x => +(x / 1000).toFixed(2)), backgroundColor: S.tech === 'solar' ? 'rgba(244,196,48,.7)' : 'rgba(20,211,169,.7)', borderRadius: 3 },
+        { type: 'line', label: 'P50', data: ys.map(() => +(p50 / 1000).toFixed(2)), borderColor: '#E6EDF3', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
+        { type: 'line', label: 'P90', data: ys.map(() => +(p90 / 1000).toFixed(2)), borderColor: '#ED6965', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 }] },
+        options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'park-yearly-output');
+      _fuelChart('fc-hist-c', { type: 'line', data: { labels: capY, datasets: [
+        { label: 'Capture rate (%)', data: capY.map(y => +(cap[y].v / cap[y].e / (cap[y].b / cap[y].n) * 100).toFixed(1)), borderColor: '#F4C430', borderWidth: 2.2, pointRadius: 3, yAxisID: 'y' },
+        { type: 'bar', label: 'Output at prices ≤ 0 (%)', data: capY.map(y => +(cap[y].neg / Y[y] * 100).toFixed(1)), backgroundColor: 'rgba(237,105,101,.45)', borderRadius: 3, yAxisID: 'y1' }] },
+        options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, %'), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'park-capture-rate');
+      if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} park at ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · history built ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
+      const sb = $('fc-hist-send'); if (sb) sb.hidden = false;
+    } catch (e) { if (st) st.textContent = 'History not built: ' + e.message; }
+  }
+  let ERA_LAST = null;
+  let price = () => null;
+  // the synthetic years with prices go to the PPA pricer as the asset curve (kWh per quarter-hour, Paris days)
+  function sendToPricer() {
+    if (!ERA_LAST || !window.PKPpa) return;
+    const slots = new Map(), { time, P } = ERA_LAST.series;
+    time.forEach((t, i) => { if (+t.slice(0, 4) < 2016 || P[i] == null) return; const d = t.slice(0, 10), h = +t.slice(11, 13);
+      let a = slots.get(d); if (!a) { a = new Array(96).fill(0); slots.set(d, a); } const q = P[i] * 1000 / 4; for (let k = 0; k < 4; k++) a[h * 4 + k] = q; });
+    const st = window.PKPpa.state;
+    st.asset = { slots, info: { rows: slots.size * 24, step: 60, unit: 'kwh', stamp: 'start' } };
+    st.assetName = `Park ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)} (synthetic ${[...slots.keys()][0].slice(0, 4)}–${[...slots.keys()].pop().slice(0, 4)})`;
+    st.tech = S.tech; st.years = null; st.volume = Math.round(ERA_LAST.p50); st.mw = S.mw;
+    showPage('ppapricer'); setTimeout(() => { try { const e = document.getElementById('pp-tech'); if (e) e.value = S.tech; const c = document.getElementById('pp-asset-clear'); if (c) c.hidden = false; window.PKPpa.run(); } catch (_) {} }, 300);
+  }
+  window.PKFcst = { run, state: S, buildHistory, sendToPricer };
 })();
