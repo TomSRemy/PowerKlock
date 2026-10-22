@@ -576,6 +576,84 @@
     } else { noDataMsg('cf-ppa-chart', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
   }
 
+
+  // ── Explorer: one matrix, a measure to choose, a click on a cell, a row, a column or a calendar day opens its detail ──
+  const EX = { metric: 'ci', grid: 'mh' };
+  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const EXM = {
+    kw: ['Your power', 'kW', c => c.n ? c.E / (c.n / 4) : null, [[30, 70, 110], [127, 200, 248]]],
+    ci: ['Grid carbon intensity', 'g/kWh', c => c.cin ? c.ci / c.cin : null, [[20, 120, 100], [168, 125, 196]]],
+    em: ['Your emissions', 'kg CO₂', c => c.E ? c.em / 1000 : null, [[40, 40, 70], [168, 125, 196]]],
+    p: ['Day-ahead price', '€/MWh', c => c.pn ? c.p / c.pn : null, [[30, 90, 80], [251, 191, 36]]],
+    cost: ['Your spot cost', '€', c => c.Ep ? c.cost : null, [[40, 60, 40], [251, 191, 36]]],
+    share: ['Share of your consumption', '%', (c, tot) => tot ? c.E / tot * 100 : null, [[30, 70, 110], [127, 200, 248]]],
+  };
+  const exKey = (grid, d, q) => grid === 'mh' ? [+d.slice(5, 7) - 1, q >> 2] : [(dow(d) + 6) % 7, q >> 2];
+  function exAgg(o, pred) {
+    const c = { E: 0, n: 0, ci: 0, cin: 0, em: 0, p: 0, pn: 0, cost: 0, Ep: 0, mix: {}, days: new Set() };
+    o.rows.forEach(({ d, e, r, p }) => { for (let q = 0; q < 96; q++) { if (!pred(d, q)) continue;
+      const x = e[q] || 0, ci = r && r.co2 ? r.co2[q] : null, pr = p ? p[q] : null; c.E += x; c.n++; c.days.add(d);
+      if (ci != null) { c.ci += ci; c.cin++; c.em += x * ci; let t = 0; const sh = {}; MIX.forEach(([k]) => { const v = r[k] ? Math.max(0, r[k][q] || 0) : 0; sh[k] = v; t += v; }); if (t > 0) MIX.forEach(([k]) => { c.mix[k] = (c.mix[k] || 0) + sh[k] / t; }); }
+      if (pr != null) { c.p += pr; c.pn++; c.cost += x / 1000 * pr; c.Ep += x; } } });
+    return c;
+  }
+  function renderExplore(o) {
+    const host = $('cf-ex'); if (!host) return;
+    const rows = EX.grid === 'mh' ? 12 : 7, G = [...Array(rows)].map(() => [...Array(24)].map(() => ({ E: 0, n: 0, ci: 0, cin: 0, em: 0, p: 0, pn: 0, cost: 0, Ep: 0 })));
+    o.rows.forEach(({ d, e, r, p }) => { for (let q = 0; q < 96; q++) { const [a, h] = exKey(EX.grid, d, q), c = G[a][h], x = e[q] || 0, ci = r && r.co2 ? r.co2[q] : null, pr = p ? p[q] : null;
+      c.E += x; c.n++; if (ci != null) { c.ci += ci; c.cin++; c.em += x * ci; } if (pr != null) { c.p += pr; c.pn++; c.cost += x / 1000 * pr; c.Ep += x; } } });
+    const [name, unit, fn, pal] = EXM[EX.metric], V = G.map(row => row.map(c => c.n ? fn(c, o.E) : null));
+    const vals = V.flat().filter(v => v != null), lo = Math.min(...vals), hi = Math.max(...vals);
+    const col = v => { if (v == null) return 'transparent'; const x = hi > lo ? (v - lo) / (hi - lo) : 0.5; const [a, b] = pal; const c = a.map((ai, i) => Math.round(ai + (b[i] - ai) * x)); return `rgba(${c[0]},${c[1]},${c[2]},${(0.18 + 0.82 * x).toFixed(2)})`; };
+    const fmt = v => v == null ? '' : Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-GB') : v.toFixed(Math.abs(v) >= 10 ? 0 : 1);
+    const lab = EX.grid === 'mh' ? MON : DOW;
+    host.innerHTML = `<div class="cf-hm cf-ex"><table><thead><tr><th></th>${HRS.map((h, i) => `<th data-h="${i}" title="Click: every ${h} of the period">${i % 3 ? '' : h}</th>`).join('')}</tr></thead><tbody>` +
+      V.map((row, a) => row.every(v => v == null) ? '' : `<tr><th data-a="${a}" title="Click: the whole of ${lab[a]}">${lab[a]}</th>${row.map((v, h) => `<td data-a="${a}" data-h="${h}" style="background:${col(v)}" title="${lab[a]} ${HRS[h]}: ${v == null ? '–' : fmt(v) + ' ' + unit} · click for the detail">${fmt(v)}</td>`).join('')}</tr>`).join('') +
+      `</tbody></table></div><div class="cf-hm-leg"><span>${fmt(lo)} ${unit}</span><i style="background:linear-gradient(90deg,${col(lo)},${col(hi)})"></i><span>${fmt(hi)} ${unit}</span><span style="margin-left:auto">${name} · click a cell, a ${EX.grid === 'mh' ? 'month' : 'day of the week'}, an hour, or a day of the calendar</span></div>`;
+    host.querySelectorAll('td[data-a], th[data-a], th[data-h]').forEach(el => el.addEventListener('click', () => {
+      host.querySelectorAll('.cf-ex-on').forEach(x => x.classList.remove('cf-ex-on')); el.classList.add('cf-ex-on');
+      const a = el.dataset.a != null ? +el.dataset.a : null, h = el.dataset.h != null ? +el.dataset.h : null;
+      exDetail(o, a, h);
+    }));
+  }
+  function exDetail(o, a, h) {
+    const box = $('cf-ex-detail'); if (!box) return;
+    const lab = EX.grid === 'mh' ? MON : DOW, inRow = (d) => a == null || exKey(EX.grid, d, 0)[0] === a;
+    const pred = (d, q) => inRow(d) && (h == null || (q >> 2) === h);
+    const c = exAgg(o, pred);
+    const title = a != null && h != null ? `${lab[a]} · ${HRS[h]}` : a != null ? `${EX.grid === 'mh' ? 'Month' : 'Every'} ${lab[a]}` : `Every ${HRS[h]}`;
+    const ciMine = c.E && c.cin ? c.em / c.E : null, pAvg = c.pn ? c.p / c.pn : null;
+    const mixT = Object.values(c.mix).reduce((s, x) => s + x, 0) || 1;
+    let shift = '';
+    if (h != null && c.E > 0) {   // the same days, other hours: where would 10 % of this consumption be greener, cheaper
+      const hrs = [...Array(24).keys()].map(k => k === h ? null : exAgg(o, (d, q) => inRow(d) && (q >> 2) === k));
+      const best = (f) => hrs.map((x, k) => x && f(x) != null ? [k, f(x)] : null).filter(Boolean).sort((u, v) => u[1] - v[1])[0];
+      const bc = best(x => x.cin ? x.ci / x.cin : null), bp = best(x => x.pn ? x.p / x.pn : null), mv = c.E * (S.settings.flexPct || 10) / 100;
+      const gCI = c.cin && bc ? mv * (c.ci / c.cin - bc[1]) / 1000 : null, gP = pAvg != null && bp ? mv / 1000 * (pAvg - bp[1]) : null;
+      shift = `<div class="cf-ex-tip"><b>Moving ${S.settings.flexPct || 10} % of it</b> (${MWh(mv)})<br>to ${HRS[bc ? bc[0] : 0]}, the cleanest hour of the same ${a != null ? 'days' : 'period'}: <b>${gCI == null ? '–' : Math.abs(gCI) < 1 ? '≈ 0 kg CO₂' : (gCI >= 0 ? '−' : '+') + f0(Math.abs(gCI)) + ' kg CO₂'}</b><br>to ${HRS[bp ? bp[0] : 0]}, the cheapest: <b>${gP == null ? '–' : Math.abs(gP) < 1 ? '≈ 0 €' : (gP >= 0 ? '−' : '+') + eur(Math.abs(gP))}</b><div style="color:var(--text3);font-size:10px;margin-top:4px">At the average conditions of those hours; a real shift also depends on what the process allows.</div></div>`;
+    }
+    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${title}</div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(c.E)}</b><span>${c.n ? f0(c.E / (c.n / 4)) + ' kW on average' : ''} · ${pc(o.E ? c.E / o.E : null)} of the total</span>
+      <span>Grid intensity</span><b>${c.cin ? f0(c.ci / c.cin) + ' g/kWh' : '–'}</b><span>${ciMine != null && o.ciHourly ? (ciMine > o.ciHourly ? '+' : '') + Math.round((ciMine / o.ciHourly - 1) * 100) + ' % vs your average' : ''}</span>
+      <span>Your emissions</span><b>${em(c.em, c.em < 1e6).join(' ')}</b><span>${pc(o.em ? c.em / o.em : null)} of the total</span>
+      <span>Day-ahead price</span><b>${pAvg == null ? '–' : f2(pAvg) + ' €/MWh'}</b><span>${pAvg != null && o.costAvg ? (pAvg > o.costAvg ? '+' : '') + Math.round((pAvg / o.costAvg - 1) * 100) + ' % vs your average' : ''}</span>
+      <span>Your spot cost</span><b>${c.Ep ? eur(c.cost) : '–'}</b><span>${c.days.size} days</span></div>
+      <div class="cf-ex-mix">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.005).map(([k, n, colr]) => `<i style="flex:${(c.mix[k] / mixT).toFixed(3)};background:${colr}" title="${n} ${pc(c.mix[k] / mixT)}"></i>`).join('')}</div>
+      <div class="cf-ex-mixl">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.02).map(([k, n, colr]) => `<span><i style="background:${colr}"></i>${n} ${pc(c.mix[k] / mixT)}</span>`).join('')}</div>${shift}`;
+  }
+  function exDay(o, d) {
+    const box = $('cf-ex-detail'), row = o.rows.find(x => x.d === d); if (!box || !row) return;
+    const { e, r, p } = row, L = [...Array(96).keys()].map(q => q % 4 ? '' : HRS[q >> 2]);
+    const E = e.reduce((s, x) => s + (x || 0), 0), emD = e.reduce((s, x, q) => s + (x || 0) * (r && r.co2 && r.co2[q] != null ? r.co2[q] : 0), 0);
+    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(E)}</b><span>peak ${f0(Math.max(...e.map(x => (x || 0) * 4)))} kW</span><span>Emissions</span><b>${em(emD, emD < 1e6).join(' ')}</b><span>${E ? f0(emD / E) + ' g/kWh' : ''}</span></div>
+      <div style="position:relative;height:200px"><canvas id="cf-ex-day" style="width:100%;height:200px"></canvas></div>`;
+    _fuelChart('cf-ex-day', { type: 'bar', data: { labels: L, datasets: [
+      { label: 'Your power (kW)', data: e.map(x => Math.round((x || 0) * 4)), backgroundColor: 'rgba(127,200,248,.5)', yAxisID: 'y' },
+      { type: 'line', label: 'Grid g/kWh', data: r && r.co2 ? r.co2.map(v => v == null ? null : Math.round(v)) : [], borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, yAxisID: 'y1' },
+      { type: 'line', label: 'Price €/MWh', data: p ? p.map(v => v == null ? null : +(+v).toFixed(1)) : [], borderColor: '#FBBF24', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, yAxisID: 'y2' }] },
+      options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW', { beginAtZero: true }), y1: _fuelAxis('g/kWh', { position: 'right', grid: { display: false } }), y2: { display: false } } }) }, 'carbon-day-detail');
+  }
   // ── Green days calendar (Carbon tab) and 24/7 coverage (Solar & coverage tab) ──
   function renderCalendar(o) {
     const host = $('cf-cal'); if (!host) return;
@@ -589,10 +667,11 @@
     let html = '<div class="cf-cal">' + '<i style="visibility:hidden"></i>'.repeat(pad);
     for (let t = new Date(first); t <= new Date(days[days.length - 1].d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)) {
       const d = t.toISOString().slice(0, 10), x = byDay.get(d);
-      html += x ? `<i style="background:${col(x.ci)}" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh"></i>` : `<i title="${d} · no data"></i>`;
+      html += x ? `<i data-d="${d}" style="background:${col(x.ci)};cursor:pointer" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh · click for the day"></i>` : `<i title="${d} · no data"></i>`;
     }
     const best = days.slice().sort((a, b) => a.ci - b.ci)[0], worst = days.slice().sort((a, b) => b.ci - a.ci)[0];
     host.innerHTML = html + '</div><div class="cf-cal-leg">cleaner ' + COLS.map(c => `<i style="background:${c}"></i>`).join('') + ` dirtier · quintiles of your days: ${cuts.map(c => f0(c)).join(' / ')} g/kWh</div>`;
+    host.querySelectorAll('i[data-d]').forEach(el => el.addEventListener('click', () => { exDay(o, el.dataset.d); const b = $('cf-ex-detail'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }));
     $('cf-cal-sub').textContent = `One square per day (weeks in columns, Monday on top) · greenest ${best.d} (${f0(best.ci)} g/kWh), most carbon-intensive ${worst.d} (${f0(worst.ci)} g/kWh)`;
   }
   function render247(o) {
@@ -769,7 +848,7 @@
     let o;
     try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = 'Computation failed: ' + e.message; return; }
     S.res = o;
-    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
+    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247, renderExplore].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
     const i = S.cons.info;
     $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
     // charts drawn in hidden view tabs get their size when shown
@@ -838,6 +917,7 @@
     ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
     drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
+    [['cf-ex-metric', 'metric'], ['cf-ex-grid', 'grid']].forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', () => { EX[k] = e.value; if (S.res) { renderExplore(S.res); $('cf-ex-detail').innerHTML = '<div class="fuel-note">Click a cell of the matrix, a month or an hour, or a day of the calendar below.</div>'; } }); });
     $('cf-example').addEventListener('click', () => load(example(), 'Example: office building, 2025'));
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
