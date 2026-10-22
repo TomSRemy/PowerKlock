@@ -12,7 +12,7 @@ import os
 import re
 import sys
 import time
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -123,6 +123,33 @@ def parse_feed(xml_bytes):
     return items
 
 
+BROWSER_UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+              "Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/html;q=0.8"}
+
+
+def read_feed(url, r):
+    """A feed; when the address gives a web page instead: the feed the page announces (<link rel="alternate">),
+    else one more try as a browser (some sites serve a bot check to automated readers)."""
+    try:
+        return parse_feed(r.content)
+    except ET.ParseError:
+        page = r.content.decode("utf-8", "ignore")
+        if "<html" not in page[:2000].lower():
+            raise
+    m = re.search(r'<link[^>]+type="application/(?:rss|atom)\+xml"[^>]*>', page, re.I)
+    href = re.search(r'href="([^"]+)"', m.group(0)) if m else None
+    if href:
+        r2 = requests.get(urljoin(url, html.unescape(href.group(1))), headers=UA, timeout=25)
+        r2.raise_for_status()
+        return parse_feed(r2.content)
+    r3 = requests.get(url, headers=BROWSER_UA, timeout=25)
+    r3.raise_for_status()
+    try:
+        return parse_feed(r3.content)
+    except ET.ParseError:
+        raise ValueError("the address gives a web page, not a feed (or a bot check for automated readers)")
+
+
 def read_cre(content):
     """CRE news listing (no RSS): title, link and publication time of each card."""
     s = content.decode("utf-8", "ignore")
@@ -193,7 +220,7 @@ def main():
         try:
             r = requests.get(src["url"], headers=UA, timeout=25)
             r.raise_for_status()
-            items = READERS[src["reader"]](r.content) if src.get("reader") else parse_feed(r.content)
+            items = READERS[src["reader"]](r.content) if src.get("reader") else read_feed(src["url"], r)
             n = add_items(out, items, src, now, PER_SOURCE)
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n, "added": bool(src.get("added"))})
         except Exception as e:
