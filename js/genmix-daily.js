@@ -354,7 +354,32 @@ function _gmdczDispatchRender() {
 
   // Summary table below content (mirrors Prices Cross-zone compare-data-table)
   _gmdczRenderSummaryTable();
+  setTimeout(_gmdczStar, 0);
 }
+
+// ☆ on the cross-zone card: the view, metric and reference shown go to the dashboard
+function _gmdczStar() {
+  if (!window.PKW || !PKW.get('gm-crosszone') || !document.getElementById('gmdcz-content')) return;
+  PKW.star('gm-crosszone', 'gmdcz-content');
+}
+if (window.PKW) PKW.register({
+  id: 'gm-crosszone', kind: 'html', title: 'Cross-zone generation mix · today', category: 'system', page: 'genmix', source: 'ENTSO-E A75 · RTE', size: { w: 12, h: 6 },
+  desc: 'Today\u2019s generation across zones: ranking, zones × fuels heatmap, 24 h profiles or spread against a reference zone, on renewable share, low-carbon share, CO₂ intensity or total output.',
+  params: [{ key: 'view', label: 'View', options: [['ranking', 'Ranking'], ['heatmap', 'Heatmap'], ['profiles', 'Profiles'], ['spread', 'Spread']] },
+    { key: 'metric', label: 'Metric', options: [['ren', 'Renewable %'], ['lowc', 'Low-carbon %'], ['co2', 'CO₂ g/kWh'], ['total', 'Total GW']] },
+    { key: 'ref', label: 'Reference (spread)', options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] }],
+  defaults: { view: 'ranking', metric: 'ren', ref: 'FR' },
+  titleFn: p => 'Cross-zone · ' + ({ ranking: 'ranking', heatmap: 'heatmap', profiles: '24 h profiles', spread: 'spread vs ' + (p.ref || 'FR') }[p.view] || 'ranking') + (p.view === 'heatmap' ? '' : ' · ' + _gmdczMetricLabel(p.metric)),
+  pageParams: () => ({ view: window._gmdczView || 'ranking', metric: window._gmdczMetric || 'ren', ref: window._gmdczRef || 'FR' }),
+  async html(host, p) {
+    if (!window._genmixData || !Object.keys(window._genmixData).length) await PKW.waitFor(() => window._genmixData && Object.keys(window._genmixData).length ? window._genmixData : null);
+    const pre = 'pkw-gmcz-' + Math.random().toString(36).slice(2, 8);
+    host.innerHTML = '<div id="' + pre + '-content"></div>';
+    const o = { pre, metric: p.metric || 'ren', ref: p.ref || 'FR' };
+    const f = { ranking: _gmdczRenderRanking, heatmap: _gmdczRenderHeatmap, profiles: _gmdczRenderProfiles, spread: _gmdczRenderSpread }[p.view] || _gmdczRenderRanking;
+    await f(o);
+  },
+});
 
 // ─────────────────────────────────────────────────────────────────
 // SUMMARY TABLE · below the chart, fixed across views (like Prices cc)
@@ -495,8 +520,9 @@ window.renderGmdczMain = renderGmdczMain;
 // VIEW · HEATMAP (zones × fuels · % share)
 // Recovered from legacy hs-gm-compare and embedded into Cross-zone.
 // ─────────────────────────────────────────────────────────────────
-function _gmdczRenderHeatmap() {
-  const host = document.getElementById('gmdcz-content');
+function _gmdczRenderHeatmap(o) {
+  o = o || {}; const PRE = o.pre || 'gmdcz';
+  const host = document.getElementById(PRE + '-content');
   if (!host) return;
   host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
   const data = window._genmixData || {};
@@ -562,11 +588,12 @@ function _gmdczRenderHeatmap() {
 // ─────────────────────────────────────────────────────────────────
 // VIEW 1 · RANKING
 // ─────────────────────────────────────────────────────────────────
-function _gmdczRenderRanking() {
-  const host = document.getElementById('gmdcz-content');
+function _gmdczRenderRanking(o) {
+  o = o || {}; const PRE = o.pre || 'gmdcz';
+  const host = document.getElementById(PRE + '-content');
   if (!host) return;
   host.style.minHeight = '0';   // the ranking list sizes itself
-  const metric = window._gmdczMetric || 'ren';
+  const metric = o.metric || window._gmdczMetric || 'ren';
   const rows = _gmdczRanking(metric);
   if (!rows.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
 
@@ -614,20 +641,21 @@ function _gmdczRenderRanking() {
 // ─────────────────────────────────────────────────────────────────
 // VIEW 2 · PROFILES (overlay 24h per zone)
 // ─────────────────────────────────────────────────────────────────
-async function _gmdczRenderProfiles() {
-  const host = document.getElementById('gmdcz-content');
+async function _gmdczRenderProfiles(o) {
+  o = o || {}; const PRE = o.pre || 'gmdcz';
+  const host = document.getElementById(PRE + '-content');
   if (!host) return;
   host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
-  const metric = window._gmdczMetric || 'ren';
+  const metric = o.metric || window._gmdczMetric || 'ren';
   const data = window._genmixData || {};
   const zones = Object.keys(data);
   if (!zones.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
 
   host.innerHTML = `
     <div style="position:relative;width:100%;height:420px">
-      <canvas id="gmdcz-profiles-canvas" style="width:100%;height:100%;display:block"></canvas>
+      <canvas id="${PRE}-profiles-canvas" style="width:100%;height:100%;display:block"></canvas>
     </div>
-    <div id="gmdcz-profiles-legend" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)"></div>`;
+    <div id="${PRE}-profiles-legend" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx)"></div>`;
 
   const zoneColor = (z) => (window._zoneColorMap && window._zoneColorMap[z]) || '#7A93AB';
   const N = 96;
@@ -640,7 +668,7 @@ async function _gmdczRenderProfiles() {
   // Real 15-min generation of each zone's latest stored day (ENTSO-E A75,
   // daily files); slots not yet published stay empty.
   const days = await Promise.all(zones.map(z => (typeof _gmResolveDay === 'function' ? _gmResolveDay(z, null) : null)));
-  if (!document.getElementById('gmdcz-profiles-canvas')) return;   // view changed meanwhile
+  if (!document.getElementById(PRE + '-profiles-canvas')) return;   // view changed meanwhile
   const REN = ['wind', 'solar', 'hydro', 'biomass'], LOWC = REN.concat(['nuclear']);
   const dayShown = new Set();
   const datasets = zones.map((z, k) => {
@@ -673,13 +701,13 @@ async function _gmdczRenderProfiles() {
   }).filter(d => d != null);
   if (!datasets.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No stored 15-min generation for these zones.</div>`; return; }
 
-  const canvas = document.getElementById('gmdcz-profiles-canvas');
-  if (window._gmdczProfilesChart) { try { window._gmdczProfilesChart.destroy(); } catch(_) {} }
+  const canvas = document.getElementById(PRE + '-profiles-canvas');
+  { const prev = canvas && Chart.getChart(canvas); if (prev) { try { prev.destroy(); } catch(_) {} } }
 
   const yTitle = _gmdczMetricLabel(metric);
   const yUnit  = _gmdczMetricUnit(metric);
 
-  window._gmdczProfilesChart = new Chart(canvas, {
+  const profChart = new Chart(canvas, {
     type: 'line',
     data: { labels, datasets },
     options: {
@@ -731,10 +759,11 @@ async function _gmdczRenderProfiles() {
       },
     },
   });
-  _gmZoomify(window._gmdczProfilesChart, 'gmdcz-profiles-canvas');
-  if (typeof addFullscreen === 'function') addFullscreen('gmdcz-profiles-canvas');
+  if (PRE === 'gmdcz') window._gmdczProfilesChart = profChart;
+  _gmZoomify(profChart, PRE + '-profiles-canvas');
+  if (typeof addFullscreen === 'function' && PRE === 'gmdcz') addFullscreen('gmdcz-profiles-canvas');
 
-  const legendHost = document.getElementById('gmdcz-profiles-legend');
+  const legendHost = document.getElementById(PRE + '-profiles-legend');
   if (legendHost) {
     legendHost.innerHTML = datasets.map(d => `
       <span style="display:inline-flex;align-items:center;gap:5px;${d.label === 'FR' ? 'font-weight:700' : ''}">
@@ -747,12 +776,13 @@ async function _gmdczRenderProfiles() {
 // ─────────────────────────────────────────────────────────────────
 // VIEW 3 · SPREAD vs reference
 // ─────────────────────────────────────────────────────────────────
-function _gmdczRenderSpread() {
-  const host = document.getElementById('gmdcz-content');
+function _gmdczRenderSpread(o) {
+  o = o || {}; const PRE = o.pre || 'gmdcz';
+  const host = document.getElementById(PRE + '-content');
   if (!host) return;
   host.style.minHeight = '420px';   // chart views; the ranking list sizes itself
-  const metric = window._gmdczMetric || 'ren';
-  const ref    = window._gmdczRef    || 'FR';
+  const metric = o.metric || window._gmdczMetric || 'ren';
+  const ref    = o.ref || o.ref || window._gmdczRef || 'FR';
   const data   = window._genmixData || {};
   if (!Object.keys(data).length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
 

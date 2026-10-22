@@ -798,7 +798,7 @@ window.setGmDrillCarbonCmp = setGmDrillCarbonCmp;
 
 // Dispatch render based on active tab
 // ☆ on the drill card: the widget of the tab shown (dashboard catalogue)
-const _GM_DRILL_WIDGET = { profile: 'gm-profile', stack: 'gm-stack' };
+const _GM_DRILL_WIDGET = { profile: 'gm-profile', stack: 'gm-stack', mix: 'gm-mix', carbon: 'gm-carbon' };
 function _gmDrillStar(tab) {
   if (!window.PKW) return;
   const el = document.getElementById('gm-drill-content'); if (!el) return;
@@ -1017,25 +1017,28 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
 // ─────────────────────────────────────────────────────────────────
 // VIEW · MIX (donut / bar / treemap)
 // ─────────────────────────────────────────────────────────────────
-function _gmDrillRenderMix(zone, mix, st) {
-  const host = document.getElementById('gm-drill-content');
+// pre: id prefix of the host ('gm-drill' on the page; another prefix for a dashboard copy)
+function _gmDrillRenderMix(zone, mix, st, pre, dateStr, mode) {
+  pre = pre || 'gm-drill';
+  const host = document.getElementById(pre + '-content');
   if (!host) return;
   host.innerHTML = `
     <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
       <div style="flex:1 1 55%;min-width:280px;position:relative;height:340px">
-        <canvas id="gm-drill-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
-        <div id="gm-drill-mix-treemap" style="position:absolute;inset:0;display:none"></div>
+        <canvas id="${pre}-mix-canvas" style="width:100%;height:100%;display:block"></canvas>
+        <div id="${pre}-mix-treemap" style="position:absolute;inset:0;display:none"></div>
       </div>
-      <div style="flex:1 1 38%;min-width:240px;align-self:center" id="gm-drill-mix-table"></div>
+      <div style="flex:1 1 38%;min-width:240px;align-self:center" id="${pre}-mix-table"></div>
     </div>`;
-  _gmRenderMixReal(zone, window._gmHistDate || null, mix, st);
+  return _gmRenderMixReal(zone, dateStr !== undefined ? dateStr : (window._gmHistDate || null), mix, st, pre, mode);
 }
 
 // Mix of the selected stored day (per-fuel average over real slots); fallback to instant snapshot.
-async function _gmRenderMixReal(zone, dateStr, fallbackMix, fallbackSt) {
-  const breakHost = document.getElementById('gm-drill-breakdown');
-  const tableHost = document.getElementById('gm-drill-mix-table');
-  const mode = window._gmDrillMixMode || 'donut';
+async function _gmRenderMixReal(zone, dateStr, fallbackMix, fallbackSt, pre, modeIn) {
+  pre = pre || 'gm-drill';
+  const breakHost = document.getElementById(pre + '-breakdown');
+  const tableHost = document.getElementById(pre + '-mix-table');
+  const mode = modeIn || window._gmDrillMixMode || 'donut';
   const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
 
   let mix, st, srcLabel = '';
@@ -1053,9 +1056,12 @@ async function _gmRenderMixReal(zone, dateStr, fallbackMix, fallbackSt) {
     mix = fallbackMix; st = fallbackSt; srcLabel = 'snapshot';
   }
 
-  if (mode === 'donut') { document.getElementById('gm-drill-mix-canvas').style.display = 'block'; document.getElementById('gm-drill-mix-treemap').style.display = 'none'; _gmBuildDonut(mix, st, 'gm-drill-mix-canvas', false); }
-  else if (mode === 'bar') { document.getElementById('gm-drill-mix-canvas').style.display = 'block'; document.getElementById('gm-drill-mix-treemap').style.display = 'none'; _gmBuildBar(mix, st, 'gm-drill-mix-canvas', false); }
-  else if (mode === 'treemap') { document.getElementById('gm-drill-mix-canvas').style.display = 'none'; const t = document.getElementById('gm-drill-mix-treemap'); t.style.display = 'block'; _gmDrillBuildTreemap(t, mix); }
+  if (!mix) return;
+  const cv = document.getElementById(pre + '-mix-canvas'), tm = document.getElementById(pre + '-mix-treemap');
+  if (!cv || !tm) return;
+  if (mode === 'donut') { cv.style.display = 'block'; tm.style.display = 'none'; _gmBuildDonut(mix, st, pre + '-mix-canvas', false); }
+  else if (mode === 'bar') { cv.style.display = 'block'; tm.style.display = 'none'; _gmBuildBar(mix, st, pre + '-mix-canvas', false); }
+  else if (mode === 'treemap') { cv.style.display = 'none'; tm.style.display = 'block'; _gmDrillBuildTreemap(tm, mix); }
 
   if (tableHost) tableHost.innerHTML = _gmBuildBreakdownTable(mix, st);
   if (breakHost) breakHost.innerHTML = '';
@@ -1097,17 +1103,19 @@ function _gmDrillBuildTreemap(host, mix) {
 // ─────────────────────────────────────────────────────────────────
 // VIEW · CARBON (24h carbon intensity)
 // ─────────────────────────────────────────────────────────────────
-function _gmDrillRenderCarbon(zone, mix, st) {
-  const host = document.getElementById('gm-drill-content');
+function _gmDrillRenderCarbon(zone, mix, st, pre, dateStr) {
+  pre = pre || 'gm-drill';
+  const host = document.getElementById(pre + '-content');
   if (!host) return;
-  host.innerHTML = `<div style="position:relative;width:100%;height:340px"><canvas id="gm-drill-carbon-canvas" style="width:100%;height:100%;display:block"></canvas></div>`;
-  _gmRenderCarbonReal(zone, window._gmHistDate || null);
+  host.innerHTML = `<div style="position:relative;width:100%;height:340px"><canvas id="${pre}-carbon-canvas" style="width:100%;height:100%;display:block"></canvas></div>`;
+  return _gmRenderCarbonReal(zone, dateStr !== undefined ? dateStr : (window._gmHistDate || null), pre);
 }
 
 // Real-data 24h carbon-intensity (g CO2/kWh) from the stored archive + real J-1.
-async function _gmRenderCarbonReal(zone, dateStr) {
+async function _gmRenderCarbonReal(zone, dateStr, pre) {
   zone = zone || 'FR';
-  const breakHost = document.getElementById('gm-drill-breakdown');
+  pre = pre || 'gm-drill';
+  const breakHost = document.getElementById(pre + '-breakdown');
   const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
   const CO2 = {}; STACK.forEach(f => { CO2[f] = (GM_FUEL_META[f] && GM_FUEL_META[f].co2) || 0; });
   const intensity = (DATA, n) => {
@@ -1117,7 +1125,7 @@ async function _gmRenderCarbonReal(zone, dateStr) {
   };
 
   const cur = await _gmResolveDay(zone, dateStr);
-  if (!cur) { const c = document.getElementById('gm-drill-carbon-canvas'); if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone}.</div>`; return; }
+  if (!cur) { const c = document.getElementById(pre + '-carbon-canvas'); if (c && c.parentElement) c.parentElement.innerHTML = `<div style="padding:20px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px">No stored data for ${zone}.</div>`; return; }
   const { DATA, N } = _gmDayArrays(cur.zd);
   let nReal = 0; for (let i = N - 1; i >= 0; i--) { const t = STACK.reduce((s, f) => s + DATA[f][i], 0); if (t > 0) { nReal = i + 1; break; } }
   if (nReal < 1) nReal = N;
@@ -1130,10 +1138,10 @@ async function _gmRenderCarbonReal(zone, dateStr) {
   const pj = await _gmFetchDaily(_gmFmtDate(pd)); const pzd = pj && pj.zones && pj.zones[zone];
   if (_gmHasArrays(pzd)) { const pa = _gmDayArrays(pzd); const pc = intensity(pa.DATA, pa.N); cmpData = co2.map((_, i) => pc[Math.min(pa.N - 1, Math.round(i / Math.max(1, nReal - 1) * (pa.N - 1)))]); }
 
-  const canvas = document.getElementById('gm-drill-carbon-canvas');
+  const canvas = document.getElementById(pre + '-carbon-canvas');
   if (!canvas || typeof Chart === 'undefined') return;
-  if (window._gmDrillCarbonChart) { try { window._gmDrillCarbonChart.destroy(); } catch (_) {} }
-  window._gmDrillCarbonChart = new Chart(canvas, {
+  { const prev = Chart.getChart(canvas); if (prev) { try { prev.destroy(); } catch (_) {} } }
+  const carbonChart = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
@@ -1160,7 +1168,8 @@ async function _gmRenderCarbonReal(zone, dateStr) {
       },
     },
   });
-  _gmZoomify(window._gmDrillCarbonChart, 'gm-drill-carbon-canvas');
+  if (pre === 'gm-drill') window._gmDrillCarbonChart = carbonChart;
+  _gmZoomify(carbonChart, pre + '-carbon-canvas');
 
   _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK);
 }
@@ -1282,9 +1291,7 @@ function _gmBuildDonut(mix, st, canvasId, fullscreen) {
   const colors  = fuels.map(k => GM_FUEL_META[k].color);
 
   const targetVar = fullscreen ? '_GM_FS_DONUT_CHART' : '_GM_DONUT_CHART';
-  if (window[targetVar]) {
-    try { window[targetVar].destroy(); } catch (_) {}
-  }
+  { const prev = Chart.getChart(canvas); if (prev) { try { prev.destroy(); } catch (_) {} } }
 
   window[targetVar] = new Chart(canvas, {
     type: 'doughnut',
@@ -1352,9 +1359,7 @@ function _gmBuildBar(mix, st, canvasId, fullscreen) {
   const colors  = fuels.map(k => GM_FUEL_META[k].color);
 
   const targetVar = fullscreen ? '_GM_FS_BAR_CHART' : '_GM_BAR_CHART';
-  if (window[targetVar]) {
-    try { window[targetVar].destroy(); } catch (_) {}
-  }
+  { const prev = Chart.getChart(canvas); if (prev) { try { prev.destroy(); } catch (_) {} } }
 
   window[targetVar] = new Chart(canvas, {
     type: 'bar',
@@ -2583,6 +2588,35 @@ window.gmSetHistDate = function (ds) {
 })();
 
 // ── Dashboard catalogue (js/widgets.js) ─────────────────────────────
+// Mix and carbon of a day: drawn by the drill renderers into their own host (prefix per widget)
+function _gmWidgetHost(host, tag) {
+  const pre = 'pkw-' + tag + '-' + Math.random().toString(36).slice(2, 8);
+  host.innerHTML = `<div id="${pre}-content"></div><div id="${pre}-breakdown" style="margin-top:10px;overflow-x:auto"></div>`;
+  return pre;
+}
+const _GM_ZONE_PARAM = { key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['ES', 'Spain'], ['BE', 'Belgium'], ['NL', 'Netherlands']] };
+if (window.PKW) PKW.register({
+  id: 'gm-mix', kind: 'html', title: 'Generation mix of the day', category: 'system', page: 'genmix', source: 'ENTSO-E A75 · RTE', size: { w: 6, h: 6 },
+  desc: 'Average generation mix of the latest stored day by technology (donut, bars or treemap) with the breakdown table.',
+  params: [_GM_ZONE_PARAM, { key: 'mode', label: 'View', options: [['donut', 'Donut'], ['bar', 'Bars'], ['treemap', 'Treemap']] }],
+  defaults: { zone: 'FR', mode: 'donut' },
+  pageParams: () => ({ zone: window._GM_DRILL_ZONE || 'FR', mode: window._gmDrillMixMode || 'donut' }),
+  async html(host, p) {
+    const pre = _gmWidgetHost(host, 'gmmix'), z = p.zone || 'FR';
+    const mix = window._genmixData && window._genmixData[z], st = mix ? _gmStats(mix) : null;
+    await _gmDrillRenderMix(z, mix, st, pre, null, p.mode || 'donut');
+  },
+});
+if (window.PKW) PKW.register({
+  id: 'gm-carbon', kind: 'html', title: '24 h carbon intensity of generation', category: 'system', page: 'genmix', source: 'ENTSO-E A75 · RTE · ADEME/IPCC factors', size: { w: 6, h: 6 },
+  desc: 'Carbon intensity of the generation mix (g CO₂/kWh, 15-min) of the latest stored day against the day before, with min, max and clean hours.',
+  params: [_GM_ZONE_PARAM], defaults: { zone: 'FR' },
+  pageParams: () => ({ zone: window._GM_DRILL_ZONE || 'FR' }),
+  async html(host, p) {
+    const pre = _gmWidgetHost(host, 'gmco2');
+    await _gmDrillRenderCarbon(p.zone || 'FR', null, null, pre, null);
+  },
+});
 if (window.PKW) PKW.register({
   id: 'gm-stack', kind: 'html', title: '24 h production stack by technology', category: 'system', page: 'genmix', source: 'ENTSO-E A75 · RTE', size: { w: 12, h: 6 },
   desc: 'Production of the latest stored day stacked by technology (15-min, GW), with the mix at the time pointed and the day’s breakdown by fuel.',
