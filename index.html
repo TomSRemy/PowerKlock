@@ -2769,6 +2769,9 @@
     border: 1px solid;
   }
 
+  .fc-opts { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 4px 0 6px; }
+  .fc-chk { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--tx2); cursor: pointer; }
+  .fc-calbtn { cursor: pointer; }
   .ma-fc-section { margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(127,200,248,.35); }
   .ma-fc-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
   .ma-fc-title { font-size: 13px; font-weight: 600; color: var(--tx); }
@@ -5664,6 +5667,9 @@
         <div class="hist-section-body open" id="hs-body-fc-in">
 <div class="cf-form"><label class="cf-field"><span>Technology</span><select id="fc-tech"><option value="solar">Solar</option><option value="wind">Wind</option></select></label><label class="cf-field "><span>Latitude</span><span class="cf-in"><input type="number" id="fc-lat" step="any" value="49.44" ><em>°N</em></span></label><label class="cf-field "><span>Longitude</span><span class="cf-in"><input type="number" id="fc-lon" step="any" value="1.10" ><em>°E</em></span></label><label class="cf-field "><span>Capacity</span><span class="cf-in"><input type="number" id="fc-mw" step="0.1" value="10" min="0"><em>MW</em></span></label><label class="cf-field"><span>Paste coordinates</span><span class="cf-in"><input type="text" id="fc-paste" placeholder="49.44, 1.10 (from a map)"></span></label><label class="cf-field"><span>Price zone</span><select id="fc-zone"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option></select></label></div>
 <div class="cf-form"><label class="cf-field fc-solar"><span>Panel tilt</span><span class="cf-in"><input type="number" id="fc-tilt" step="1" value="30" min="0" max="90"><em>°</em></span></label><label class="cf-field fc-solar"><span>Azimuth (0 = south)</span><span class="cf-in"><input type="number" id="fc-az" step="1" value="0" min="-180" max="180"><em>°</em></span></label><label class="cf-field fc-solar"><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-s" step="0.5" value="14" min="0" max="50"><em>%</em></span></label><label class="cf-field fc-wind" hidden><span>Hub height</span><select id="fc-hub"><option value="80">80 m</option><option value="100">100 m</option><option value="120">120 m</option><option value="150">150 m</option><option value="180">180 m</option></select></label><label class="cf-field fc-wind" hidden><span>Turbine class</span><select id="fc-cls"><option value="low">Low wind (large rotor)</option><option value="medium">Medium wind</option><option value="high">High wind</option></select></label><label class="cf-field fc-wind" hidden><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-w" step="0.5" value="12" min="0" max="50"><em>%</em></span></label></div>
+<div class="fc-opts"><label class="fc-chk fc-solar"><input type="checkbox" id="fc-calfr" checked> Monthly correction learned on French solar output</label><label class="fc-chk"><input type="checkbox" id="fc-curt"> Curtail at day-ahead prices ≤ 0 €</label>
+<label class="pk-btn-ghost fc-calbtn">Calibrate on the site’s metered output (CSV or Excel)<input type="file" id="fc-calfile" accept=".csv,.txt,.xlsx,.xls" hidden></label><button type="button" class="pk-btn-ghost" id="fc-calreset">Remove calibration</button></div>
+<div class="fuel-note" id="fc-calinfo"></div>
 <div class="cf-status" id="fc-status"></div>
 <div class="kpi-strip fuel-kpis" id="fc-kpis" style="grid-template-columns:repeat(4,1fr);margin-top:10px"></div>
         </div>
@@ -5679,7 +5685,18 @@
 <div class="pp-group-t" style="margin-top:16px">Today and tomorrow on the day-ahead market</div>
 <div id="fc-market"></div>
 <div class="fuel-note" id="fc-method" style="margin-top:12px"></div>
-<div class="fuel-note">Generic model, not calibrated on a real site yet: compare with the site’s metered output before relying on it. Coordinates: right-click a point in Google Maps or Géoportail and copy them.</div>
+<div class="fuel-note">Without calibration the model is generic: load the site’s metered output above to fit it to the site. Coordinates: right-click a point in Google Maps or Géoportail and copy them.</div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-fc-bt">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-fc-bt')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>How good is it<span class="pk-hs-meta">backtest on real French production, step by step</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-fc-bt">
+<div id="fc-bt"></div>
+<div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Solar · Occitanie · a summer week</div><div class="fuel-card-sub">forecast issued the day before vs actual, July 2025</div></div><span class="source-badge">RTE · Open-Meteo</span></div><div style="position:relative;height:260px"><canvas id="fc-bt-solar" style="width:100%;height:260px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Wind · Hauts-de-France · a winter week</div><div class="fuel-card-sub">forecast issued the day before vs actual, January 2026</div></div><span class="source-badge">RTE · Open-Meteo</span></div><div style="position:relative;height:260px"><canvas id="fc-bt-wind" style="width:100%;height:260px"></canvas></div></div></div>
         </div>
       </div>
     </div>
