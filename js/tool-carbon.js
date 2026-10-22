@@ -474,6 +474,35 @@
     } else { noDataMsg('cf-ppa-chart', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
   }
 
+  // ── Green days calendar (Carbon tab) and 24/7 coverage (Solar & coverage tab) ──
+  function renderCalendar(o) {
+    const host = $('cf-cal'); if (!host) return;
+    const days = o.daily.filter(x => x.ci != null);
+    if (!days.length) { host.innerHTML = ''; return; }
+    const sorted = days.map(x => x.ci).sort((a, b) => a - b), q = p => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+    const cuts = [q(0.2), q(0.4), q(0.6), q(0.8)], COLS = ['#0E7C5A', '#14D3A9', '#FBBF24', '#F2A65A', '#ED6965'];
+    const col = v => COLS[cuts.findIndex(c => v <= c) < 0 ? 4 : cuts.findIndex(c => v <= c)];
+    const byDay = new Map(days.map(x => [x.d, x]));
+    const first = new Date(days[0].d + 'T12:00:00Z'), pad = (first.getUTCDay() + 6) % 7;
+    let html = '<div class="cf-cal">' + '<i style="visibility:hidden"></i>'.repeat(pad);
+    for (let t = new Date(first); t <= new Date(days[days.length - 1].d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)) {
+      const d = t.toISOString().slice(0, 10), x = byDay.get(d);
+      html += x ? `<i style="background:${col(x.ci)}" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh"></i>` : `<i title="${d} · no data"></i>`;
+    }
+    const best = days.slice().sort((a, b) => a.ci - b.ci)[0], worst = days.slice().sort((a, b) => b.ci - a.ci)[0];
+    host.innerHTML = html + '</div><div class="cf-cal-leg">cleaner ' + COLS.map(c => `<i style="background:${c}"></i>`).join('') + ` dirtier · quintiles of your days: ${cuts.map(c => f0(c)).join(' / ')} g/kWh</div>`;
+    $('cf-cal-sub').textContent = `One square per day (weeks in columns, Monday on top) · greenest ${best.d} (${f0(best.ci)} g/kWh), most carbon-intensive ${worst.d} (${f0(worst.ci)} g/kWh)`;
+  }
+  function render247(o) {
+    const host = $('cf-247'); if (!host) return;
+    const pv = o.pv || {}, matched = (o.ppa.match || 0) + (pv.self || 0), annual = Math.min(o.E, (+S.settings.go || 0) * 1000 + (+S.settings.ppa || 0) * 1000 + (pv.self || 0));
+    host.innerHTML = [
+      _fuelKpi('24/7 score', o.E ? (Math.min(1, matched / o.E) * 100).toFixed(1) : '–', '%', 'consumption matched hour by hour by your PPA and on-site solar'),
+      _fuelKpi('Annual matching', o.E ? (annual / o.E * 100).toFixed(1) : '–', '%', 'the same contracts counted over the year (GO included), the usual claim'),
+      _fuelKpi('Gap', o.E ? ((annual - Math.min(annual, matched)) / o.E * 100).toFixed(1) : '–', 'pts', 'what annual matching claims beyond hour-by-hour reality'),
+    ].join('') + '<div class="fuel-note" style="grid-column:1/-1">24/7 matching, as Google and the 24/7 Carbon-Free Energy Compact count it: an hour is covered only by renewable production of that same hour. Guarantees of origin are yearly certificates: they count in annual matching, not in 24/7.</div>';
+  }
+
   // ── Reporting ─────────────────────────────────────────────────────
   function renderReport(o) {
     const rows = [
@@ -527,7 +556,7 @@
     let o;
     try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = 'Computation failed: ' + e.message; return; }
     S.res = o;
-    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
+    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
     const i = S.cons.info;
     $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
     // charts drawn in hidden view tabs get their size when shown
