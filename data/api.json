@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-21T16:29:21Z",
+ "updated": "2026-10-22T10:13:29Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -9,7 +9,7 @@
    "content": "Every bidding zone: average, min, max, peak / off-peak, negative hours and the 96 quarter-hour prices of the latest delivery day.",
    "refresh": "twice a day",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 0
+   "sizeKB": 51
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/daily/{YYYY-MM-DD}.json",
@@ -17,7 +17,7 @@
    "content": "Same content for any delivery day since 2015 (France) / 2020 (other zones).",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-10-21.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-10-22.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/monthly/{YYYY-MM}.json",
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 23769
+   "sizeKB": 31534
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -65,7 +65,7 @@
    "content": "Every day since 2015: average output by source, consumption min / max, CO₂, baseload and wind / solar / nuclear capture prices.",
    "refresh": "daily",
    "source": "RTE éCO2mix × ENTSO-E",
-   "sizeKB": 1301
+   "sizeKB": 1302
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_capture.json",
@@ -73,7 +73,7 @@
    "content": "Per day: price sums and counts, solar and wind output and revenue, for all hours and for hours with a price > 0 — aggregate any window into capture prices and rates.",
    "refresh": "daily",
    "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 481
+   "sizeKB": 480
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
@@ -105,7 +105,7 @@
    "content": "Generation mix, CO₂, renewable share and cross-border flows per country, every hour of a day (last 10 days).",
    "refresh": "every 3 hours",
    "source": "Energy-Charts (Fraunhofer ISE) — CC BY 4.0",
-   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-21.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-22.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/crossborder.json",
@@ -113,7 +113,7 @@
    "content": "Physical flows on French borders, latest days.",
    "refresh": "twice a day",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 0
+   "sizeKB": 3
   }
  ],
  "charts": {
