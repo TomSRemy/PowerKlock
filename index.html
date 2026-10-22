@@ -5503,6 +5503,12 @@
 <dt>Imbalance</dt><dd>The cost of producing more or less than forecast, paid to the grid operator.</dd>
 <dt>Hours ≤ 0 €</dt><dd>Hours with a zero or negative price; under the PPA Dashboard convention their production is not paid.</dd>
 </dl></details></details>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Capture: past and projection, with percentiles</div><div class="fuel-card-sub" id="pp-fan-sub">Blend of 4 methods</div></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="pp-fan-unit" class="pk-select" style="font-size:11px"><option value="value">€/MWh produced</option><option value="rate">Capture rate %</option></select>
+<select id="pp-fan-p" class="pk-select" style="font-size:11px" title="Exceedance: P90 = 90 % chance the realised value is above the line (cautious)"><option value="50">P50 · central</option><option value="60">P60</option><option value="70">P70</option><option value="75" selected>P75</option><option value="80">P80</option><option value="90">P90 · cautious</option></select></div></div>
+<div style="position:relative;height:320px"><canvas id="pp-fan" style="width:100%;height:320px"></canvas></div>
+<div id="pp-fan-table" style="margin-top:8px"></div>
+<div class="fuel-note">The realised years are measured (national profile × French day-ahead). The projection is the blend of 4 methods; its spread adds the weather (European model simulated) and the error the blend made on past years, widening with the horizon. A percentile here is a <b>projection</b> read with a level of caution: P75 = 3 chances in 4 that the realised value is higher. The Past discount method instead takes a percentile of past years without projecting them, which is why it stays too high on solar.</div></div>
 <div class="kpi-strip fuel-kpis pp-k5" id="pp-cmp-kpis"></div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
 <div class="pp-group-t" style="margin-top:16px">Which method was right in the past? · historical replay</div>
@@ -8001,6 +8007,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
 <script src="js/ppa-st.js"></script>
+<script src="js/ppa-fan.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>
 <script src="js/nav-groups.js"></script>
