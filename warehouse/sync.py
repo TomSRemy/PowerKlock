@@ -535,6 +535,67 @@ def load_fr_regions(conn, full):
     return rows
 
 
+def load_pricing(conn):
+    """monthly forward, capture rates by country and region, the pricer's forecasts and replay (migration 013)"""
+    n = 0
+    with conn.cursor() as cur:
+        fm = read_json(os.path.join(DATA, 'history', 'fr_forward_monthly.json'))
+        if fm and fm.get('months'):
+            cur.execute("delete from market.forward_month where market = 'FR'")
+            cur.executemany("insert into market.forward_month (market, month, value, from_contract, peak_ratio, as_of) values ('FR', %s, %s, %s, %s, %s)",
+                            [(k + '-01', v['value'], v.get('from'), v.get('peakRatio'), fm['asOf']) for k, v in fm['months'].items() if num(v.get('value')) is not None])
+            n += len(fm['months'])
+        cc = read_json(os.path.join(DATA, 'history', 'country_capture.json'))
+        rows = []
+        for c, d in ((cc or {}).get('countries') or {}).items():
+            for y, f in d.get('years', {}).items():
+                for tech, gk, tw in (('solar', 'solarGW', 'solarTWh'), ('wind', 'windGW', 'windTWh')):
+                    for conv, key in (('all', tech + 'Rate'), ('pos', tech + 'RatePos')):
+                        if num(f.get(key)) is not None:
+                            rows.append((c, int(y), tech, conv, num(f.get(key)), num(f.get(gk)), num(f.get('avgLoadGW')), num(f.get(tw)), f.get('negH'), num(f.get('base')), bool(f.get('complete'))))
+        if rows:
+            cur.executemany("""insert into market.capture_country_year values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                on conflict (country, year, tech, convention) do update set capture_rate = excluded.capture_rate, installed_gw = excluded.installed_gw,
+                avg_load_gw = excluded.avg_load_gw, output_twh = excluded.output_twh, negative_hours = excluded.negative_hours, baseload = excluded.baseload, complete = excluded.complete""", rows)
+            n += len(rows)
+        rg = read_json(os.path.join(DATA, 'history', 'fr_regional_capture.json'))
+        rows = []
+        for code, r in ((rg or {}).get('regions') or {}).items():
+            for y, t in r.get('years', {}).items():
+                for tech, f in t.items():
+                    for conv in ('all', 'curt', 'pos'):
+                        if num(f.get(conv)) is not None:
+                            rows.append((code, r['name'], int(y), tech, conv, num(f[conv]), num((f.get('gap') or {}).get(conv)), num(f.get('paid')), num(f.get('twh')), bool(f.get('complete'))))
+        if rows:
+            cur.executemany("""insert into market.capture_region_year values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                on conflict (region_code, year, tech, convention) do update set capture_rate = excluded.capture_rate, gap_to_national = excluded.gap_to_national,
+                paid_share = excluded.paid_share, output_twh = excluded.output_twh, complete = excluded.complete""", rows)
+            n += len(rows)
+        pf = read_json(os.path.join(DATA, 'history', 'ppa_forecast.json'))
+        if pf and pf.get('forecast'):
+            rows = []
+            for tech, d in pf['forecast'].items():
+                for conv, ms in d.items():
+                    for k, e in ms.items():
+                        rows.append((tech, conv, k + '-01', num(e.get('hybrid')), num(e.get('step')), num(e.get('fpc')), num(e.get('regional')), num(e.get('regionalMC')),
+                                     num(e.get('weather')), num(e.get('dashboard')), num(e.get('p10')), num(e.get('p90')), num(e.get('paid')), num(e.get('negH')), num(e.get('capGW')), pf['asOf']))
+            cur.execute("delete from analytics.ppa_forecast_month")
+            cur.executemany("insert into analytics.ppa_forecast_month values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", rows)
+            n += len(rows)
+            rows = []
+            for tech, d in (pf.get('scores') or {}).items():
+                for conv, sc in d.items():
+                    for y, ms in sc['pts'].items():
+                        for m, v in ms.items():
+                            if v is not None and m != 'protocolPick':
+                                rows.append((tech, conv, int(y), 'ensemble' if m == 'hybrid' else m, num(v), num((sc['eur'].get(y) or {}).get(m))))
+            cur.execute("delete from analytics.ppa_replay_year")
+            cur.executemany("insert into analytics.ppa_replay_year values (%s,%s,%s,%s,%s,%s)", rows)
+            n += len(rows)
+    conn.commit()
+    return n
+
+
 def load_go(conn):
     quotes = {}
     path = os.path.join(DATA, 'go_prices.csv')
@@ -628,6 +689,7 @@ def main():
                   os.path.join(DATA, 'history', 'fr_market_contracts.json'), os.path.join(DATA, 'fr_market.json')], load_forwards),
                 ([os.path.join(DATA, 'go_prices.csv'), os.path.join(DATA, 'go_auctions.json')], load_go),
                 ([os.path.join(DATA, 'm0.json')], load_m0),
+                ([os.path.join(DATA, 'history', f) for f in ('fr_forward_monthly.json', 'country_capture.json', 'fr_regional_capture.json', 'ppa_forecast.json')], load_pricing),
             ]
             # Energy-Charts: installed capacity, monthly flow files
             cap = [os.path.join(DATA, 'history', 'capacity.json')]
