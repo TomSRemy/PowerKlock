@@ -661,6 +661,11 @@ def main():
     with psycopg.connect(args.db, autocommit=False, prepare_threshold=None) as conn:
         log('Migrations')
         migrate(conn)
+        with conn.cursor() as cur:   # audience rows older than 13 months (014_site_visits.sql)
+            cur.execute("select to_regprocedure('public.site_visit_purge()') is not null")
+            if cur.fetchone()[0]:
+                cur.execute('select public.site_visit_purge()')
+        conn.commit()
         with conn.cursor() as cur:
             cur.execute("insert into ops.sync_run (mode, git_commit) values (%s, %s) returning run_id",
                         ('full' if args.full else 'incremental', commit))
