@@ -160,12 +160,12 @@ _muReg({
   id: 'fr-cal-history', title: 'Calendar forwards', category: 'forwards', page: 'prices', pageCanvas: 'cal-history', source: 'Market data',
   desc: 'Daily settlements of a market’s baseload calendar contracts (fixed delivery years). UK in GBP.',
   titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · calendar forwards',
-  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '3M', country: 'FR' },
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years'], ['all', 'All']] }], defaults: { win: '3M', country: 'FR' },
   async draw(cid, p) {
     const c = await _muGet('chain', 'history/fr_market_calchain.json');
     const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years;
     if (!yrs) { noDataMsg(cid, 'Forward history not available', ''); return null; }
-    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 92));
+    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
     const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
     const cols = ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B'];
     const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
@@ -179,12 +179,12 @@ _muReg({
   id: 'fr-cal-drivers', title: 'Cal+1 and its drivers', category: 'forwards', page: 'prices', pageCanvas: 'cal-drivers', source: 'Market data',
   desc: 'A market’s Cal+1 baseload against TTF gas (calendar of the same year and day-ahead) and EUA carbon, indexed to 100 at the start of the window.',
   titleFn: p => 'Cal+1 ' + (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' and its drivers',
-  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year']] }], defaults: { win: '6M', country: 'FR' },
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '6M', country: 'FR' },
   async draw(cid, p) {
     const [c, cs] = await Promise.all([_muGet('chain', 'history/fr_market_calchain.json'), _muGet('cs', 'history/commodities_series.json')]);
     const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years, ser = cs && cs.series;
     if (!yrs || !ser) { noDataMsg(cid, 'Data not available', ''); return null; }
-    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366 }[p.win] || 183));
+    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 183));
     const k = Object.keys(yrs).sort()[0];
     const cal = new Map(yrs[k].dates.map((d, i) => [d, yrs[k].values[i]]));
     const pts = key => new Map(((ser[key] || {}).points || []).filter(([d]) => d >= from));
@@ -400,8 +400,13 @@ window.PKSpot = {
   drawCal() {
     const sel = document.getElementById('cal-country'); if (!sel || !window.PKW) return;
     const c = sel.value || 'FR', sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
-    PKW.draw('fr-cal-history', 'cal-history', { country: c, win: '3M' }).then(r => sub('cal-history-sub', r));
-    PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: '6M' }).then(r => sub('cal-drivers-sub', r));
+    const W = window._muCalWin || (window._muCalWin = { h: '3M', d: '6M' });
+    const hist = () => PKW.draw('fr-cal-history', 'cal-history', { country: c, win: W.h }).then(r => sub('cal-history-sub', r));
+    const drv = () => PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: W.d }).then(r => sub('cal-drivers-sub', r));
+    hist(); drv();
+    // period buttons in each card's header (the history goes back to 2022)
+    PKW.periodButtons('cal-history', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['all', 'All']], W.h, v => { W.h = v; hist(); });
+    PKW.periodButtons('cal-drivers', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y']], W.d, v => { W.d = v; drv(); });
   },
   outlook() {
     const sel = document.getElementById('wx-country');
