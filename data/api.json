@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-22T10:13:29Z",
+ "updated": "2026-10-22T16:47:25Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -17,7 +17,7 @@
    "content": "Same content for any delivery day since 2015 (France) / 2020 (other zones).",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-10-22.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-10-23.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/monthly/{YYYY-MM}.json",
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 31534
+   "sizeKB": 31547
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -73,7 +73,7 @@
    "content": "Per day: price sums and counts, solar and wind output and revenue, for all hours and for hours with a price > 0 — aggregate any window into capture prices and rates.",
    "refresh": "daily",
    "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 480
+   "sizeKB": 481
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
