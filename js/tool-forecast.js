@@ -328,9 +328,43 @@
       const cal = { n: rows.length, period: `${rows[0].t.slice(0, 10)} → ${rows[rows.length - 1].t.slice(0, 10)}`, shift, curtRatio, span: Math.round(span) };
       if (bins) cal.bins = bins; else if (scale) cal.scale = scale;
       cal.nmae0 = err(teD, base); cal.nmae1 = err(teD, fit);
+      try { perfCheck(rows, r => daylight(r) && free(r), cal.nmae1 < cal.nmae0 ? fit : base); } catch (e) { console.warn('[fcst] perf', e); }
       if (!(cal.nmae1 < cal.nmae0)) { if (el) el.innerHTML = `Calibration not applied: on the test third it does not beat the model (${(cal.nmae0 * 100).toFixed(1)} % → ${(cal.nmae1 * 100).toFixed(1)} % of capacity). Clock of the file: ${shift.winter >= 0 ? '+' : ''}${shift.winter} h in winter, ${shift.summer >= 0 ? '+' : ''}${shift.summer} h in summer. Check the technology, the coordinates and the capacity entered.`; return; }
       S.cal[siteKey()] = cal; save(); calInfo(); run();
     } catch (e) { if (el) el.textContent = 'Calibration failed: ' + e.message; }
+  }
+
+  // ── Performance check: the park against what the weather allowed, week by week; days it stopped ──
+  //   ratio = metered output ÷ modelled output on hours priced above 5 €/MWh (no curtailment); a week below the
+  //   usual ratio by more than 15 % (or 2.5 robust deviations) is flagged; a day is "stopped" when the model
+  //   expected a real output and the park gave less than 5 % of it
+  function perfCheck(rows, use, model) {
+    const host = $('fc-perf'); if (!host) return;
+    const wk = {}, dy = {};
+    const monday = t => { const d = new Date(t.slice(0, 10) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+    rows.forEach(r => { if (!use(r)) return; const m = model(r), w = monday(r.t), d = r.t.slice(0, 10);
+      const a = wk[w] || (wk[w] = [0, 0]); a[0] += r.y; a[1] += m; const b = dy[d] || (dy[d] = [0, 0]); b[0] += r.y; b[1] += m; });
+    const W = Object.keys(wk).sort().filter(w => wk[w][1] > 0.02 * S.mw * 24);
+    if (W.length < 8) { host.innerHTML = ''; return; }
+    const R = W.map(w => wk[w][0] / wk[w][1]), srt = R.slice().sort((a, b) => a - b), med = srt[Math.floor(srt.length / 2)];
+    const mad = R.map(x => Math.abs(x - med)).sort((a, b) => a - b)[Math.floor(R.length / 2)] * 1.4826;
+    // usual ratio of the same calendar month when it has 3 weeks or more (the model is weaker in winter: low sun, fog, snow)
+    const byM = {}; W.forEach((w, i) => (byM[w.slice(5, 7)] = byM[w.slice(5, 7)] || []).push(R[i]));
+    const usual = w => { const a = byM[w.slice(5, 7)]; if (!a || a.length < 3) return med; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+    const limW = w => Math.min(usual(w) * 0.85, usual(w) - 2.5 * mad), lim = Math.min(med * 0.85, med - 2.5 * mad);
+    const flags = W.map((w, i) => R[i] < limW(w) ? { w, r: R[i] / usual(w), lost: (wk[w][1] * usual(w) - wk[w][0]) } : null).filter(Boolean);
+    const typDay = Object.values(dy).map(x => x[1]).sort((a, b) => a - b)[Math.floor(Object.keys(dy).length / 2)] || 0;
+    const stops = Object.keys(dy).sort().filter(d => dy[d][1] > 0.3 * typDay && dy[d][0] < 0.05 * dy[d][1]);
+    const lostTot = flags.reduce((s, x) => s + x.lost, 0) + stops.reduce((s, d) => s + dy[d][1] * usual(d) - dy[d][0], 0);
+    const totE = W.reduce((s, w) => s + wk[w][0], 0);
+    host.innerHTML = `<div class="chart-container fuel-card" style="margin-top:10px"><div class="fuel-card-head"><div><div class="table-title">Performance check · the park against its weather</div><div class="fuel-card-sub">Metered ÷ modelled output each week, hours priced above 5 €/MWh (no curtailment) · usual ratio ${med.toFixed(2)} (by month when known), alert 15 % below it</div></div><span class="source-badge">Your file · Open-Meteo</span></div>
+      <div style="position:relative;height:220px"><canvas id="fc-perf-c" style="width:100%;height:220px"></canvas></div>
+      <div class="fuel-note">${flags.length || stops.length ? `<b>${flags.length} week${flags.length === 1 ? '' : 's'} under the usual level</b>${flags.length ? ' (' + flags.slice(-6).map(x => x.w + ' ' + Math.round((x.r - 1) * 100) + ' %').join(', ') + (flags.length > 6 ? '…' : '') + ')' : ''} and <b>${stops.length} day${stops.length === 1 ? '' : 's'} stopped</b> while the weather allowed output${stops.length ? ' (' + stops.slice(-6).join(', ') + (stops.length > 6 ? '…' : '') + ')' : ''}: about <b>${(lostTot).toLocaleString('en-GB', { maximumFractionDigits: 0 })} MWh</b> not produced, ${(lostTot / Math.max(1e-9, totE) * 100).toFixed(1)} % of the output over the period. Worth checking with the operator: outages, inverter faults, grid works, soiling, shading.` : 'No week below the usual level and no stopped day: the park produced what its weather allowed.'} The model is the forecast archive of the place, so a week with poor forecasts can also look low; a flag that repeats or a stopped day is the signal.</div></div>`;
+    _fuelChart('fc-perf-c', { type: 'bar', data: { labels: W, datasets: [
+      { label: 'Metered ÷ modelled', data: R.map(x => +x.toFixed(3)), backgroundColor: R.map((x, i) => x < limW(W[i]) ? 'rgba(237,105,101,.75)' : 'rgba(127,200,248,.5)'), borderRadius: 2 },
+      { type: 'line', label: 'Usual for the month', data: W.map(w => +usual(w).toFixed(3)), borderColor: '#E6EDF3', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
+      { type: 'line', label: 'Alert', data: W.map(w => +limW(w).toFixed(3)), borderColor: '#ED6965', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 0 }] },
+      options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('ratio', { beginAtZero: true }) } }) }, 'park-performance');
   }
   function vis() {
     document.querySelectorAll('#page-fcst .fc-solar').forEach(e => { e.hidden = S.tech !== 'solar'; });
@@ -522,5 +556,5 @@
     } catch (e) { const st = $('fc-hist-status'); if (st) st.textContent = 'Park sheet failed: ' + (e.message || e); }
     btn.disabled = false; btn.textContent = lab;
   }
-  window.PKFcst = { run, state: S, buildHistory, sendToPricer, parkSheet };
+  window.PKFcst = { run, state: S, buildHistory, sendToPricer, parkSheet, perfCheck };
 })();
