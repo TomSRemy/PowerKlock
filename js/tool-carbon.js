@@ -25,7 +25,7 @@
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
   const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150, fixPeriod: 'cal1',
-    conn: 'auto', margin: 2, cee: 10, goP: 0, turpe: '', turpeFix: '', net: 'dist', turpeAcc: '', accKwc: 0, accKey: 100, accYield: 1150, accPrice: 80, pmo: 7.5 } };
+    conn: 'auto', margin: 2, cee: 10, goP: 0, turpe: '', turpeFix: '', net: 'dist', turpeAcc: '', accRisk: '', accKwc: 0, accKey: 100, accYield: 1150, accPrice: 80, pmo: 7.5 } };
   // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
   // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
   const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
@@ -312,6 +312,11 @@
     try { o.fixed = await fixedPrice(o, st.fixPeriod, o.shp); } catch (e) { console.warn('[carbon] fixed price', e); o.fixed = null; }
     o.acc = accSim(o, rows, st);
     if (o.acc) { try { o.acc.fixed = await fixedPrice(o, st.fixPeriod, o.acc.shp); } catch (e) { console.warn('[carbon] ACC complement', e); } }
+    if (o.acc) {   // national cost of solar forecast errors (€/MWh produced), ENTSO-E, scripts/fetch_fr_imbalance_cost.py
+      const ic = await (imbP || (imbP = getJSON('history/fr_imbalance_cost.json')));
+      let c = 0, m = 0; if (ic && ic.months) Object.values(ic.months).forEach(x => { if (x.solar && x.solar.mwh) { c += x.solar.costEur; m += x.solar.mwh; } });
+      o.acc.imbNat = m ? c / m : null;
+    }
     return o;
   }
 
@@ -323,7 +328,7 @@
   // last two complete years of French day-ahead prices), + the capacity cost
   // spread over the volume. Excludes grid fees, taxes, guarantees of origin
   // and the supplier's margin and risk premium.
-  let fwdP = null;
+  let fwdP = null, imbP = null;
   // Collective self-consumption (ACC): a share (allocation key) of a local solar installation's output
   // (national solar profile scaled to kWc × yield) covers the site quarter-hour by quarter-hour; the
   // rest (allo-consumption) comes from the supplier. Returns the residual average days for its price.
@@ -656,7 +661,7 @@
     const A = o.acc && o.acc.fixed && !o.acc.fixed.missing ? o.acc : null;
     const Er = A ? A.fixed.E / 1000 : E, Ea = E - Er;
     const row = (label, a, b, note) => lines.push({ label, a, b, note });
-    row('Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh (factor ${(A.fixed.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
+    row('Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh vs ${f2(x.energy)} for all your consumption (profile factor ${(A.fixed.factor * 100).toFixed(1)} % vs ${(x.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
     const capB = A && A.capR != null && o.capacity && o.capacity.cost ? capEur * A.capR / o.capacity.cost : capEur;
     row('Capacity', capEur, A ? capB : null, A ? `winter peak days; with ACC on your load left in the 07–10h and 17–20h windows (${pc(o.capacity && o.capacity.cost ? 1 - capB / capEur : 0)} lower)` : 'winter peak days, 07–10h and 17–20h');
     row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`);
@@ -665,6 +670,8 @@
     if (A) {
       row('ACC energy (to the producer)', 0, n(st.accPrice) * Ea, `${f1(Ea)} MWh at ${f2(n(st.accPrice))} €/MWh`);
       row('PMO fees', 0, n(st.pmo) * Ea, `${f2(n(st.pmo))} €/MWh of ACC energy`);
+      const risk = has(st.accRisk) ? n(st.accRisk) : (A.imbNat != null ? Math.max(0, A.imbNat) : 0);
+      row('Complement risk (ACC volume)', 0, risk * Ea, `the supplier carries the forecast error of the ACC output on the complement: ${f2(risk)} €/MWh of ACC energy${has(st.accRisk) ? ' (entered)' : ' (national solar imbalance cost, ENTSO-E; a single site is less predictable: raise it if needed)'}`);
     }
     row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, 2026)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
     if (turpeIn) {
@@ -675,12 +682,17 @@
     }
     const tA = lines.reduce((s, l) => s + l.a, 0), tB = A ? lines.reduce((s, l) => s + l.b, 0) : null;
     o.bill = { lines, tA, tB, E, acc: !!A };
+    // what the supplier charges per MWh it supplies: full consumption vs complement only
+    const SUP = ['Energy (fixed price)', 'Capacity', 'Energy savings certificates (CEE)', 'Guarantees of origin', 'Supplier margin', 'Complement risk (ACC volume)'];
+    const supA = lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.a, 0) / (E || 1);
+    const supB = A ? lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.b, 0) / (Er || 1) : null;
     const k = v => v == null ? '–' : eur(v);
-    host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(${A ? 5 : 2},1fr);margin-bottom:10px">` + [
+    host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(${A ? 3 : 2},1fr);margin-bottom:10px">` + [
       _fuelKpi('All-in · supplier only', f2(per(tA, E)), '€/MWh', `${k(tA)} a year before VAT${turpeIn ? '' : ' · grid fees not entered'}`),
       _fuelKpi('Volume', f1(E), 'MWh', 'over the delivery period'),
       ...(A ? [_fuelKpi('All-in · with ACC', f2(per(tB, E)), '€/MWh', `${k(tB)} a year before VAT`, tB < tA ? 'up' : 'down'),
         _fuelKpi('ACC covers', pc(A.share), '', `${f0(A.kwc)} kWc × ${Math.round(A.key * 100)} % · ${tB < tA ? 'saving' : 'extra cost'} ${k(Math.abs(tA - tB))} a year`, tB < tA ? 'up' : 'down'),
+        _fuelKpi('Supplier price · complement', f2(supB), '€/MWh', `vs ${f2(supA)} €/MWh to supply all your consumption (+${f2(supB - supA)}): fewer, dearer hours and the ACC volume risk`, 'down'),
         _fuelKpi('Break-even ACC price', Ea ? f2(n(st.accPrice) + (tA - tB) / Ea) : '–', '€/MWh', 'above it, the ACC costs you more than supplier only')] : []),
     ].join('') + `</div><div class="chart-container fuel-card" style="margin-bottom:12px"><div class="fuel-card-head"><div><div class="table-title">What your bill is made of</div><div class="fuel-card-sub">€/MWh of your total consumption, before VAT · each block of the bill${A ? ', supplier only vs with ACC' : ''}</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:${A ? 230 : 160}px"><canvas id="cf-bill-chart" style="width:100%;height:${A ? 230 : 160}px"></canvas></div></div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Component</th><th>Supplier only · €/MWh</th><th>k€</th>${A ? '<th>With ACC · €/MWh</th><th>k€</th>' : ''}<th style="text-align:left">Basis</th></tr></thead><tbody>` +
       lines.map(l => `<tr><td style="text-align:left">${l.label}</td><td>${f2(per(l.a, E))}</td><td>${f1(l.a / 1000)}</td>${A ? `<td>${f2(per(l.b, E))}</td><td>${f1(l.b / 1000)}</td>` : ''}<td style="text-align:left;white-space:normal;color:var(--tx3)">${l.note}</td></tr>`).join('') +
@@ -688,7 +700,7 @@
       `<div class="fuel-note">${A ? `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. ` : ''}Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.</div>`;
     // stacked bar: one bar per scenario, one block per component, totals at the end
     const COL = { 'Energy (fixed price)': '#7FC8F8', 'Capacity': '#A87DC4', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
-      'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155' };
+      'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155' };
     const bars = A ? ['Supplier only', 'With ACC'] : ['Supplier only'];
     const r2 = v => Math.round(v * 100) / 100;
     const tot = A ? [per(tA, E), per(tB, E)] : [per(tA, E)];
@@ -834,7 +846,7 @@
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
     ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield', 'fix-period:fixPeriod',
-      'fix-conn:conn', 'fix-margin:margin', 'fix-cee:cee', 'fix-go:goP', 'fix-turpe:turpe', 'fix-turpefix:turpeFix', 'fix-net:net', 'acc-turpe:turpeAcc', 'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield', 'acc-price:accPrice', 'acc-pmo:pmo'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
+      'fix-conn:conn', 'fix-margin:margin', 'fix-cee:cee', 'fix-go:goP', 'fix-turpe:turpe', 'fix-turpefix:turpeFix', 'fix-net:net', 'acc-turpe:turpeAcc', 'acc-risk:accRisk', 'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield', 'acc-price:accPrice', 'acc-pmo:pmo'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
   }
 
   window.addEventListener('load', () => setTimeout(() => {
