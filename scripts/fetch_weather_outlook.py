@@ -95,6 +95,13 @@ def get(url, params, tries=6):
             time.sleep(2)
             return data
         except urllib.error.HTTPError as e:
+            body = ''
+            try:
+                body = e.read().decode('utf-8', 'replace')[:300]
+            except Exception:
+                pass
+            if e.code == 429 and 'Daily' in body:   # the daily quota: waiting will not help, keep the last file
+                raise RuntimeError('Open-Meteo daily limit reached: ' + body)
             wait = 65 if e.code == 429 else 10 * (k + 1)
             print(f'   HTTP {e.code}, waiting {wait}s')
             time.sleep(wait)
