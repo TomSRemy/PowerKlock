@@ -10,12 +10,15 @@
 //             class chosen (low, medium, high wind), minus losses
 //   market    today and tomorrow: production × day-ahead price of the zone
 //             (when published), revenue, capture price, hours ≤ 0 €
-// No calibration on a real site yet: a generic model, flagged as such.
+//   improvements kept from the backtest on RTE regional data (scripts/
+//   fcst_backtest.py, data/history/fcst_backtest.json): average of several
+//   weather models, monthly solar correction learned on French production,
+//   curtailment at prices ≤ 0, calibration on the site's own metered output
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const S = { tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR' };
+  const S = { tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem('pk-fcst') || '{}')); } catch (_) {}
   const save = () => { try { localStorage.setItem('pk-fcst', JSON.stringify(S)); } catch (_) {} };
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -42,7 +45,22 @@
     const tc = (t == null ? 15 : t) + gti * (45 - 20) / 800;
     return Math.max(0, Math.min(S.mw, S.mw * gti / 1000 * (1 - 0.004 * (tc - 25)) * (1 - S.lossS / 100)));
   };
-  const windMW = v => { const c = curve(v, S.cls); return c == null ? null : S.mw * c * (1 - S.lossW / 100); };
+  // the site's own calibration (from its metered output), keyed by technology and coordinates
+  const siteKey = () => `${S.tech}|${(+S.lat).toFixed(3)}|${(+S.lon).toFixed(3)}`;
+  const siteCal = () => (S.cal || {})[siteKey()] || null;
+  function windMW(v) {
+    if (v == null) return null;
+    const c = siteCal();
+    if (c && c.bins) {   // empirical curve of the site: share of capacity by forecast wind speed (0.5 m/s bins)
+      const b = Math.min(c.bins.length - 1, Math.max(0, Math.floor(v * 2)));
+      let k = b; while (k > 0 && c.bins[k] == null) k--;
+      return S.mw * (c.bins[k] == null ? 0 : c.bins[k]);
+    }
+    const r = curve(v, S.cls); return r == null ? null : S.mw * r * (1 - S.lossW / 100);
+  }
+  let CAL = null;
+  const calFr = () => CAL || (CAL = fetch(DATA_BASE + 'history/fcst_calib.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  const OTHER = { solar: ['meteofrance_seamless', 'icon_seamless', 'gfs_seamless'], wind: ['icon_seamless', 'gfs_seamless'] };
   // wind at hub height from the 80 / 120 / 180 m levels (log-height interpolation)
   function hubWind(h, i) {
     const L = [[80, h.wind_speed_80m], [120, h.wind_speed_120m], [180, h.wind_speed_180m]].filter(x => x[1] && x[1][i] != null);
@@ -75,12 +93,29 @@
       ? `https://api.open-meteo.com/v1/forecast?${base}&past_days=2&hourly=global_tilted_irradiance,shortwave_radiation,temperature_2m&tilt=${S.tilt}&azimuth=${S.az}`
       : `https://api.open-meteo.com/v1/forecast?${base}&past_days=2&hourly=wind_speed_80m,wind_speed_100m,wind_speed_120m,wind_speed_180m`;
     const ens = `https://ensemble-api.open-meteo.com/v1/ensemble?${base}&models=gfs_seamless&hourly=` + (S.tech === 'solar' ? 'shortwave_radiation,temperature_2m' : 'wind_speed_100m');
-    let D, E;
-    try { [D, E] = await Promise.all([getJSON(det), getJSON(ens).catch(() => null)]); }
+    const oth = `https://api.open-meteo.com/v1/forecast?${base}&past_days=2&models=${OTHER[S.tech].join(',')}&hourly=` + (S.tech === 'solar' ? `global_tilted_irradiance&tilt=${S.tilt}&azimuth=${S.az}` : 'wind_speed_100m');
+    let D, E, O, C;
+    try { [D, E, O, C] = await Promise.all([getJSON(det), getJSON(ens).catch(() => null), getJSON(oth).catch(() => null), calFr()]); }
     catch (e) { if (st) st.textContent = 'Weather forecast not available: ' + e.message; return; }
     const h = D.hourly, T = h.time, n = T.length;
-    // central forecast (best model)
-    const P = T.map((_, i) => S.tech === 'solar' ? solarMW(h.global_tilted_irradiance[i], h.temperature_2m[i]) : windMW(hubWind(h, i)));
+    // central forecast: average of the weather models available for the hour (best model + Météo-France, ICON, GFS)
+    const oh = O && O.hourly, oIdx = oh ? new Map(oh.time.map((t, k) => [t, k])) : null;
+    let nModels = 1;
+    const P = T.map((t, i) => {
+      const own = S.tech === 'solar' ? solarMW(h.global_tilted_irradiance[i], h.temperature_2m[i]) : windMW(hubWind(h, i));
+      const vals = own == null ? [] : [own];
+      if (oh) { const k = oIdx.get(t); if (k != null) OTHER[S.tech].forEach(m => {
+        const x = oh[(S.tech === 'solar' ? 'global_tilted_irradiance_' : 'wind_speed_100m_') + m]; if (!x || x[k] == null) return;
+        vals.push(S.tech === 'solar' ? solarMW(x[k], h.temperature_2m[i]) : windMW(x[k] * Math.pow(S.hub / 100, 0.14)));
+      }); }
+      nModels = Math.max(nModels, vals.length);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    });
+    // corrections: the site's own calibration first, else the monthly French solar correction
+    const sc = siteCal(), fr = C && C.solar_month;
+    const corr = t => S.tech !== 'solar' ? 1 : sc && sc.scale ? sc.scale : (S.calFr && fr && fr[String(+t.slice(5, 7))]) || 1;
+    T.forEach((t, i) => { if (P[i] != null) P[i] = Math.min(S.mw, P[i] * corr(t)); });
+    if (S.tech === 'wind' && sc && sc.scale) T.forEach((t, i) => { if (P[i] != null) P[i] = Math.min(S.mw, P[i] * sc.scale); });
     // ensemble members on the same hours
     const band = { lo: new Array(n).fill(null), hi: new Array(n).fill(null) };
     if (E && E.hourly) {
@@ -100,7 +135,8 @@
         }).filter(v => v != null);
         // the ensemble gives the spread; it is centred on the best-model forecast (other model, other resolution)
         if (vals.length >= 5 && P[i] != null) {
-          const m = q(vals, 0.5);
+          const m = q(vals, 0.5), c = corr(t);
+          vals.forEach((v, j) => { vals[j] = v * c; });
           band.lo[i] = Math.max(0, Math.min(S.mw, P[i] + q(vals, 0.10) - m));
           band.hi[i] = Math.max(0, Math.min(S.mw, P[i] + q(vals, 0.90) - m));
         }
@@ -109,7 +145,8 @@
     const now = new Date(), nowKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false }).format(now).replace(' ', 'T').slice(0, 13) + ':00';
     const iNow = T.indexOf(nowKey);
     render({ T, P, band, iNow });
-    if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} · ${f2(S.lat)}, ${f2(S.lon)} · ${f1(S.mw)} MW · forecast fetched ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} · Open-Meteo (best model + GFS ensemble, 31 members)`;
+    const calTxt = sc ? `calibrated on the site’s metered output (${sc.period}, error ${(sc.nmae0 * 100).toFixed(1)} → ${(sc.nmae1 * 100).toFixed(1)} % of capacity)` : S.tech === 'solar' && S.calFr ? 'monthly correction learned on French solar output' : 'generic model';
+    if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} · ${f2(S.lat)}, ${f2(S.lon)} · ${f1(S.mw)} MW · average of ${nModels} weather models · ${calTxt} · fetched ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
   }
 
   function render(R) {
@@ -139,7 +176,7 @@
     _fuelChart('fc-hourly', { type: 'line', data: { labels: lbl, datasets: [
       { label: '_hi', data: sl(band.hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,200,248,.18)' },
       { label: 'P10–P90 (31 weather scenarios)', data: sl(band.lo), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(127,200,248,.18)' },
-      { label: 'Forecast (best model)', data: sl(P), borderColor: col, backgroundColor: col, borderWidth: 2.2, pointRadius: 0, tension: .25, fill: false },
+      { label: 'Forecast (average of the weather models)', data: sl(P), borderColor: col, backgroundColor: col, borderWidth: 2.2, pointRadius: 0, tension: .25, fill: false },
     ] }, options: _fuelOpts({ plugins: { pkFcZone: { from: Math.max(0, iNow), now: iNow, label: 'FORECAST' }, legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^_/.test(it.text) } } },
       scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => /^[A-Z]/.test(lbl[i]) ? lbl[i] : '' } }), y: _fuelAxis('MW', { beginAtZero: true }) } }) }, 'production-forecast-hourly');
     // daily chart, 16 days
@@ -162,14 +199,15 @@
       const prod = Array.from({ length: 24 }, (_, hh) => { const i = T.indexOf(d + 'T' + String(hh).padStart(2, '0') + ':00'); return i >= 0 ? P[i] : null; });
       const E = prod.reduce((s, v) => s + (v || 0), 0);
       if (!pr) { rows.push({ d, E, none: true }); continue; }
-      let rev = 0, neg = 0, negE = 0; prod.forEach((v, hh) => { if (v == null || pr[hh] == null) return; rev += v * pr[hh]; if (pr[hh] <= 0) { neg++; negE += v; } });
+      let rev = 0, neg = 0, negE = 0; prod.forEach((v, hh) => { if (v == null || pr[hh] == null) return; if (pr[hh] <= 0) { neg++; negE += v; if (S.curt) return; } rev += v * pr[hh]; });
       const base = pr.filter(x => x != null).reduce((s, x) => s + x, 0) / pr.filter(x => x != null).length;
-      rows.push({ d, E, rev, cap: E ? rev / E : null, base, neg, negE });
+      const Ep = S.curt ? E - negE : E;
+      rows.push({ d, E: Ep, rev, cap: Ep ? rev / Ep : null, base, neg, negE });
     }
     const name = d => d === t0 ? 'Today' : 'Tomorrow';
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Day</th><th>Production MWh</th><th>Day-ahead base €/MWh</th><th>Capture price €/MWh</th><th>Revenue €</th><th>Hours ≤ 0 €</th><th>Output in those hours MWh</th></tr></thead><tbody>` +
       rows.map(r => r.none ? `<tr><td style="text-align:left">${name(r.d)}</td><td>${f1(r.E)}</td><td colspan="5" style="text-align:left;color:var(--tx3)">day-ahead prices not published yet (around 13:00 the day before)</td></tr>`
-        : `<tr><td style="text-align:left">${name(r.d)}</td><td>${f1(r.E)}</td><td>${f2(r.base)}</td><td><b>${f2(r.cap)}</b></td><td>${f0(r.rev)}</td><td>${r.neg}</td><td>${f1(r.negE)}${r.negE > 0 ? ' <span style="color:#ED6965">· curtail?</span>' : ''}</td></tr>`).join('') +
+        : `<tr><td style="text-align:left">${name(r.d)}</td><td>${f1(r.E)}</td><td>${f2(r.base)}</td><td><b>${f2(r.cap)}</b></td><td>${f0(r.rev)}</td><td>${r.neg}</td><td>${f1(r.negE)}${r.negE > 0 ? (S.curt ? ' <span style="color:var(--tx3)">· curtailed</span>' : ' <span style="color:#ED6965">· curtail?</span>') : ''}</td></tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">Zone ${S.zone} · forecast production × the hourly day-ahead price of the zone. Hours at zero or negative prices: output there is paid nothing or costs money, the hours to curtail under a contract that allows it.</div>`;
   }
 
@@ -177,9 +215,60 @@
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
     const ids = { 'fc-tech': 'tech', 'fc-lat': 'lat', 'fc-lon': 'lon', 'fc-mw': 'mw', 'fc-tilt': 'tilt', 'fc-az': 'az', 'fc-loss-s': 'lossS', 'fc-hub': 'hub', 'fc-cls': 'cls', 'fc-loss-w': 'lossW', 'fc-zone': 'zone' };
     Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => { S[k] = e.type === 'number' ? +e.value : e.value; vis(); run(); }); });
+    [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
+    const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
+    const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
     if (pasteBox) pasteBox.addEventListener('change', () => { const m = pasteBox.value.match(/(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)/); if (m) { S.lat = +m[1].replace(',', '.'); S.lon = +m[2].replace(',', '.'); $('fc-lat').value = S.lat; $('fc-lon').value = S.lon; pasteBox.value = ''; run(); } });
-    vis(); run();
+    vis(); calInfo(); run(); backtest();
+  }
+  function calInfo() {
+    const el = $('fc-calinfo'); if (!el) return;
+    const c = siteCal();
+    el.innerHTML = c ? `<b>Calibrated on this site:</b> ${c.n.toLocaleString('en-GB')} hours (${c.period}), ${c.bins ? 'empirical power curve' : 'scale factor ' + c.scale.toFixed(3)}. Tested on the last third, never used to fit: hourly error ${(c.nmae0 * 100).toFixed(1)} % of capacity before, <b>${(c.nmae1 * 100).toFixed(1)} %</b> after.`
+      : 'Not calibrated on this site yet: load its metered output to adjust the model to it.';
+  }
+
+  // Calibration on the site's metered output: the forecast archive of the same hours (Open-Meteo
+  // historical forecasts, best model), fitted on the first two thirds, tested on the last third.
+  async function calibrate(file) {
+    const el = $('fc-calinfo'); if (el) el.textContent = 'Reading the file…';
+    try {
+      if (!window.PKLoadCurve) throw new Error('reader not loaded');
+      const cv = window.PKLoadCurve.build(await window.PKLoadCurve.readFile(file));
+      const act = new Map();   // 'YYYY-MM-DDTHH:00' → MW (hourly average)
+      [...cv.slots.keys()].sort().forEach(d => { const e = cv.slots.get(d); for (let hh = 0; hh < 24; hh++) { let s = 0, k = 0; for (let q4 = 0; q4 < 4; q4++) { const v = e[hh * 4 + q4]; if (v != null) { s += v; k++; } } if (k) act.set(`${d}T${String(hh).padStart(2, '0')}:00`, s * 4 / k / 1000); } });
+      const days = [...cv.slots.keys()].sort(); if (days.length < 30) throw new Error('at least 30 days of output are needed');
+      const d0 = days[0] < '2022-01-01' ? '2022-01-01' : days[0], d1 = days[days.length - 1];
+      if (el) el.textContent = `Fetching the forecast archive ${d0} → ${d1}…`;
+      const v = S.tech === 'solar' ? `global_tilted_irradiance,temperature_2m&tilt=${S.tilt}&azimuth=${S.az}` : 'wind_speed_80m,wind_speed_100m,wind_speed_120m,wind_speed_180m';
+      const H = (await getJSON(`https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&start_date=${d0}&end_date=${d1}&hourly=${v}`)).hourly;
+      const keep = S.cal[siteKey()]; delete S.cal[siteKey()];   // the raw model, without any earlier calibration
+      const rows = [];
+      H.time.forEach((t, i) => { const y = act.get(t); if (y == null) return;
+        const x = S.tech === 'solar' ? (H.global_tilted_irradiance[i] == null ? null : solarMW(H.global_tilted_irradiance[i], H.temperature_2m[i])) : windMW(hubWind(H, i));
+        const ws = S.tech === 'wind' ? hubWind(H, i) : null;
+        if (x != null) rows.push({ t, y, x, ws }); });
+      if (keep) S.cal[siteKey()] = keep;
+      if (rows.length < 500) throw new Error('too few hours match the forecast archive');
+      const cut = Math.floor(rows.length * 2 / 3), tr = rows.slice(0, cut), te = rows.slice(cut);
+      const err = (arr, f) => arr.reduce((s, r) => s + Math.abs(f(r) - r.y), 0) / arr.length / S.mw;
+      const daylight = r => S.tech !== 'solar' || r.x > 0 || r.y > 0;
+      const trD = tr.filter(daylight), teD = te.filter(daylight);
+      const scale = trD.reduce((s, r) => s + r.y, 0) / Math.max(1e-9, trD.reduce((s, r) => s + r.x, 0));
+      let cal = { scale, n: rows.length, period: `${rows[0].t.slice(0, 10)} → ${rows[rows.length - 1].t.slice(0, 10)}` }, fit = r => Math.min(S.mw, r.x * scale);
+      if (S.tech === 'wind' && tr.length >= 1500) {
+        const sum = [], cnt = []; tr.forEach(r => { const b = Math.min(59, Math.floor(r.ws * 2)); sum[b] = (sum[b] || 0) + r.y / S.mw; cnt[b] = (cnt[b] || 0) + 1; });
+        const bins = Array.from({ length: 60 }, (_, b) => cnt[b] >= 10 ? sum[b] / cnt[b] : null);
+        for (let b = 1; b < 60; b++) if (bins[b] != null && bins[b - 1] != null && bins[b] < bins[b - 1] && b < 40) bins[b] = bins[b - 1];   // monotone up to ~20 m/s
+        const at = w => { let k = Math.min(59, Math.floor(w * 2)); while (k > 0 && bins[k] == null) k--; return bins[k] == null ? 0 : bins[k]; };
+        const fb = r => S.mw * at(r.ws);
+        if (err(te, fb) < err(te, fit)) { cal = { bins, n: rows.length, period: cal.period }; fit = fb; }
+      }
+      cal.nmae0 = err(teD, r => r.x); cal.nmae1 = err(teD, fit);
+      if (!(cal.nmae1 < cal.nmae0)) { if (el) el.innerHTML = `Calibration not applied: on the test third it does not beat the generic model (${(cal.nmae0 * 100).toFixed(1)} % → ${(cal.nmae1 * 100).toFixed(1)} % of capacity). Check the technology, the coordinates and the capacity entered.`; return; }
+      S.cal[siteKey()] = cal; save(); calInfo(); run();
+    } catch (e) { if (el) el.textContent = 'Calibration failed: ' + e.message; }
   }
   function vis() {
     document.querySelectorAll('#page-fcst .fc-solar').forEach(e => { e.hidden = S.tech !== 'solar'; });
@@ -188,6 +277,31 @@
       ? `Irradiance on the panel plane (tilt ${S.tilt}°, azimuth ${S.az}°, 0 = south, −90 = east, 90 = west) from Open-Meteo, converted with the cell temperature (NOCT 45 °C, −0.4 % per °C above 25 °C), minus ${S.lossS} % losses (inverter, cabling, soiling), capped at the capacity. Band: spread of the 31 members of the GFS ensemble (10th to 90th percentile around their median), centred on the forecast.`
       : `Wind at ${S.hub} m interpolated between the 80, 120 and 180 m levels of Open-Meteo, through a generic power curve, ${CLS_T[S.cls]}, cut-out at 25 m/s, minus ${S.lossW} % losses (wake, availability, electrical). Band: spread of the 31 members of the GFS ensemble (100 m wind, 0.14 shear to hub height), centred on the forecast.`;
   }
+  // ── Backtest on real data (scripts/fcst_backtest.py) ──
+  const STEP = { v0: 'Tool', v1: 'Grid', v2: '+ bias', v3: '+ shape', v4: '+ MOS', v5: '+ price', v6: '+ models' };
+  async function backtest() {
+    const host = $('fc-bt'); if (!host || host.dataset.done) return;
+    let j; try { const r = await fetch(DATA_BASE + 'history/fcst_backtest.json'); j = r.ok ? await r.json() : null; } catch (_) { j = null; }
+    if (!j) { host.innerHTML = '<div class="fuel-note">Backtest not available.</div>'; return; }
+    host.dataset.done = '1';
+    const keys = Object.keys(j.results), vs = Object.keys(STEP);
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Fleet tested</th>${vs.map(v => `<th>${STEP[v]}</th>`).join('')}</tr></thead><tbody>` +
+      keys.map(k => { const [t, reg] = k.split('|'), r = j.results[k], best = Math.min(...vs.map(v => r[v] ? r[v].nmae : 9));
+        return `<tr><td style="text-align:left">${t === 'solar' ? 'Solar' : 'Wind'} · ${reg}</td>${vs.map(v => r[v] ? `<td${r[v].nmae === best ? ' style="font-weight:700;color:var(--acc)"' : ''}>${(r[v].nmae * 100).toFixed(1)}</td>` : '<td>–</td>').join('')}</tr>`; }).join('') +
+      `</tbody></table></div><div class="fuel-note">Steps, each adding to the previous one: Tool = the first version at one point · Grid = averaged over 9 points of the region · + bias = monthly scale factor · + shape = solar correction by month × hour, wind empirical power curve · + MOS = regression on several forecast variables · + price = curtailment at day-ahead prices ≤ 0 · + models = Météo-France, ICON and GFS next to the best model, recent months weighing more. Hourly error in % of installed capacity (solar: daylight hours), ${j.period[0]} → ${j.period[1]}, each month predicted with the forecast issued the day before and corrections learned only on the months before it. The tool for a single site uses the steps that carry over to one site: several weather models, the monthly French solar correction, curtailment at negative prices, and the calibration on the site’s own output.</div>`;
+    const draw = (cid, key, col) => { const a = j.samples[key]; if (!a || !a.length) return;
+      const L = a.map(r => r[0].slice(11, 13) === '00' ? new Date(r[0].slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' }) : r[0].slice(11, 16));
+      _fuelChart(cid, { type: 'line', data: { labels: L, datasets: [
+        { label: 'Actual (RTE)', data: a.map(r => r[1] * 100), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, fill: false },
+        { label: 'Tool, first version', data: a.map(r => r[2] == null ? null : r[2] * 100), borderColor: 'rgba(122,147,171,.8)', borderDash: [4, 3], borderWidth: 1.3, pointRadius: 0, fill: false },
+        { label: 'Best version (v6)', data: a.map(r => r[3] == null ? null : r[3] * 100), borderColor: col, borderWidth: 2, pointRadius: 0, fill: false },
+      ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
+        scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => /^[A-Z]/.test(L[i]) ? L[i] : '' } }), y: _fuelAxis('load factor, %', { beginAtZero: true }) } }) }, cid); };
+    draw('fc-bt-solar', 'solar|Occitanie|summer', '#F4C430');
+    draw('fc-bt-wind', 'wind|Hauts-de-France|winter', '#14D3A9');
+  }
+  document.addEventListener('pk-view', () => {});
+
   window.addEventListener('load', () => setTimeout(() => {
     const inner = window.showPage;
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'fcst') wire(); return r; };
