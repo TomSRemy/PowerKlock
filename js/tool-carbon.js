@@ -24,7 +24,7 @@
   const XLSX_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
-  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150 } };
+  const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150, fixPeriod: 'cal1' } };
   // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
   // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
   const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
@@ -225,6 +225,7 @@
     const o = { rows, days, E: 0, em: 0, missing: 0, nat: { em: 0, load: 0 }, mix: {}, cost: 0, Ep: 0, base: { s: 0, n: 0 },
       daily: [], monthly: {}, hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourP: new Float64Array(24), hourPn: new Float64Array(24),
       wk: { wd: new Float64Array(24), we: new Float64Array(24), nwd: 0, nwe: 0 }, mh: [...Array(12)].map(() => ({ e: new Float64Array(24), n: new Float64Array(24), ci: new Float64Array(24), cn: new Float64Array(24) })),
+      shp: [...Array(12)].map(() => [new Float64Array(96), new Float64Array(96)]), shpN: [...Array(12)].map(() => [0, 0]),
       kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
     MIX.forEach(([k]) => { o.mix[k] = 0; });
     const ppaKey = st.ppaTech, ppaMWh = +st.ppa || 0;
@@ -233,6 +234,8 @@
       const mk = d.slice(0, 7), M = o.monthly[mk] || (o.monthly[mk] = { E: 0, em: 0, cost: 0, Ep: 0, ppa: 0 }), mi = +d.slice(5, 7) - 1;
       const wd = dow(d), isWd = wd > 0 && wd < 6; let dE = 0, dEm = 0, dMin = Infinity;
       if (isWd) o.wk.nwd++; else o.wk.nwe++;
+      o.shpN[mi][isWd ? 0 : 1]++;
+      for (let q = 0; q < 96; q++) o.shp[mi][isWd ? 0 : 1][q] += e[q] || 0;
       for (let q = 0; q < 96; q++) {
         const c = e[q] || 0, kw = c * 4, h = q >> 2;
         o.kw.push(kw); if (kw > o.peak.v) o.peak = { v: kw, at: qTime(d, q) }; if (kw < dMin) dMin = kw;
@@ -305,7 +308,60 @@
     o.pvHint = Math.max(10, Math.round(o.avgKW / 10) * 10);
     o.pvAuto = solar(rows, o.pvHint, +st.pvYield || 1150);
     o.flexAuto = st.flexPct ? o.flex : flex(rows, 10, 'cost');
+    try { o.fixed = await fixedPrice(o, st.fixPeriod); } catch (e) { console.warn('[carbon] fixed price', e); o.fixed = null; }
     return o;
+  }
+
+  // ── Fixed price of your consumption ───────────────────────────────
+  // Energy price a supplier would fix today for your profile over a future
+  // delivery period: each month's baseload forward × your profile factor
+  // (what your quarter-hours cost on the spot ÷ the baseload, measured with
+  // your average day of that month, working days and weekends apart, on the
+  // last two complete years of French day-ahead prices), + the capacity cost
+  // spread over the volume. Excludes grid fees, taxes, guarantees of origin
+  // and the supplier's margin and risk premium.
+  let fwdP = null;
+  async function fixedPrice(o, period) {
+    const fwd = await (fwdP || (fwdP = getJSON('history/fr_forward_monthly.json')));
+    if (!fwd || !fwd.months) return null;
+    const now = new Date(), Y = now.getUTCFullYear(), hy = [Y - 2, Y - 1];
+    const hist = await Promise.all(hy.map(priceYear));
+    // your average day per month and day type (kWh per quarter-hour); months without data take the all-months shape
+    const avg = (m, k) => o.shpN[m][k] ? [...o.shp[m][k]].map(v => v / o.shpN[m][k]) : null;
+    const all = [0, 1].map(k => { const n = o.shpN.reduce((a, x) => a + x[k], 0); if (!n) return null; const v = new Float64Array(96); o.shp.forEach(x => x[k].forEach((y, q) => { v[q] += y; })); return [...v].map(y => y / n); });
+    const shape = (m, k) => avg(m, k) || all[k] || all[1 - k];
+    const factors = [...Array(12)].map(() => []);
+    hist.forEach(h => {
+      if (!h || !h.days) return;
+      const acc = [...Array(12)].map(() => ({ w: 0, e: 0, b: 0, n: 0 }));
+      Object.entries(h.days).forEach(([d, p]) => {
+        const m = +d.slice(5, 7) - 1, wd = dow(d), sh = shape(m, wd > 0 && wd < 6 ? 0 : 1); if (!sh || !p) return;
+        const A = acc[m];
+        for (let q = 0; q < 96; q++) { if (p[q] == null) continue; A.w += sh[q] * p[q]; A.e += sh[q]; A.b += p[q]; A.n++; }
+      });
+      acc.forEach((A, m) => { if (A.e && A.n > 2000 && A.b) factors[m].push((A.w / A.e) / (A.b / A.n)); });
+    });
+    // delivery months
+    const ym = (y, m) => y + '-' + String(m + 1).padStart(2, '0');
+    let months = [];
+    if (period === 'next12') { for (let i = 1; i <= 12; i++) { const d = new Date(Date.UTC(Y, now.getUTCMonth() + i, 1)); months.push(ym(d.getUTCFullYear(), d.getUTCMonth())); } }
+    else { const y = Y + (period === 'cal2' ? 2 : 1); for (let m = 0; m < 12; m++) months.push(ym(y, m)); }
+    const rows = [];
+    for (const k of months) {
+      const F = fwd.months[k]; const m = +k.slice(5) - 1, f = factors[m];
+      if (!F || !f.length) return { missing: k, period };
+      // working days and weekends of that month × your average day of each
+      const [yy, mm] = k.split('-').map(Number), nd = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+      let E = 0; for (let d = 1; d <= nd; d++) { const w = new Date(Date.UTC(yy, mm - 1, d)).getUTCDay(), sh = shape(m, w > 0 && w < 6 ? 0 : 1); if (sh) E += sh.reduce((a, b) => a + b, 0); }
+      const fac = f.reduce((a, b) => a + b, 0) / f.length;
+      rows.push({ k, E, F: F.value, from: F.from, fac, lo: Math.min(...f), hi: Math.max(...f) });
+    }
+    const Et = rows.reduce((a, r) => a + r.E, 0); if (!Et) return null;
+    const wavg = key => rows.reduce((a, r) => a + r.E * (key === 'p' ? r.F * r.fac : key === 'lo' ? r.F * r.lo : key === 'hi' ? r.F * r.hi : r.F), 0) / Et;
+    const energy = wavg('p'), base = wavg('F');
+    const cap = o.capacity && o.capacity.cost ? o.capacity.cost / (Et / 1000) : null;   // € per winter ÷ MWh per year
+    return { period, months: rows, E: Et, energy, base, factor: energy / base, lo: wavg('lo'), hi: wavg('hi'), cap, total: energy + (cap || 0),
+      histYears: hy, asOf: fwd.asOf, realised: o.costAvg != null && o.baseAvg ? o.costAvg / o.baseAvg : null };
   }
 
   // ── Rendering helpers ─────────────────────────────────────────────
@@ -425,6 +481,7 @@
       _fuelKpi('Peak vs average', cp.avgMW ? (cp.mw / cp.avgMW * 100).toFixed(0) : '–', '%', 'your load in the peak windows ÷ your average load', cp.mw > cp.avgMW ? 'down' : 'up'),
       _fuelKpi('Saving per kW cut', f1(CAP_PRICE / 1000), '€', `each kW less in the ${cp.days.length} peak days' windows, every winter`),
     ].join('') + `<div class="fuel-note" style="grid-column:1/-1">Peak windows: 07:00–10:00 and 17:00–20:00 on RTE's winter peak days (up to 22 per winter, announced the day before). RTE's own list is not public here: the ${cp.days.length} weekdays of highest national consumption in your data stand in for them (${cp.days.slice(0, 6).join(', ')}${cp.days.length > 6 ? '…' : ''}).</div>` : '<div class="fuel-note" style="grid-column:1/-1">No winter weekday (November to March) in your data: the capacity cost needs one.</div>';
+    renderFixed(o);
     const fx = o.flex, pct = +S.settings.flexPct || 0;
     $('cf-flex-kpis').innerHTML = [
       _fuelKpi('Energy moved', MWh(fx.moved), '', `${pct} % of each day, same day, no new peak`),
@@ -501,6 +558,23 @@
       _fuelKpi('Annual matching', o.E ? (annual / o.E * 100).toFixed(1) : '–', '%', 'the same contracts counted over the year (GO included), the usual claim'),
       _fuelKpi('Gap', o.E ? ((annual - Math.min(annual, matched)) / o.E * 100).toFixed(1) : '–', 'pts', 'what annual matching claims beyond hour-by-hour reality'),
     ].join('') + '<div class="fuel-note" style="grid-column:1/-1">24/7 matching, as Google and the 24/7 Carbon-Free Energy Compact count it: an hour is covered only by renewable production of that same hour. Guarantees of origin are yearly certificates: they count in annual matching, not in 24/7.</div>';
+  }
+
+  function renderFixed(o) {
+    const host = $('cf-fix'); if (!host) return;
+    const x = o.fixed;
+    if (!x) { host.innerHTML = '<div class="fuel-note">Forward prices not available: the fixed price cannot be computed.</div>'; return; }
+    if (x.missing) { host.innerHTML = `<div class="fuel-note">No forward price or price history for ${esc(x.missing)}: pick another period.</div>`; return; }
+    const lbl = { cal1: 'Cal ' + x.months[0].k.slice(0, 4), cal2: 'Cal ' + x.months[0].k.slice(0, 4), next12: 'next 12 months' }[x.period];
+    const pct1 = v => (v * 100).toFixed(1) + ' %';
+    host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">` + [
+      _fuelKpi('Fixed price · energy', f2(x.energy), '€/MWh', `${lbl} · range ${f2(x.lo)}–${f2(x.hi)} with each history year`),
+      _fuelKpi('Your profile factor', pct1(x.factor), '', `vs the forward baseload weighted by your volume (${f2(x.base)} €/MWh) · measured on ${x.histYears.join(' and ')}${x.realised ? ' · ' + pct1(x.realised) + ' in your own period' : ''}`, x.factor > 1 ? 'down' : 'up'),
+      _fuelKpi('Capacity', x.cap == null ? '–' : f2(x.cap), '€/MWh', x.cap == null ? 'needs a winter weekday in your data' : 'winter peak days, spread over the year'),
+      _fuelKpi('Energy + capacity', f2(x.total), '€/MWh', `≈ ${eur(x.total * x.E / 1000)} for ${f1(x.E / 1000)} MWh`),
+    ].join('') + `</div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Volume MWh</th><th>Forward base €/MWh</th><th style="text-align:left">Contract</th><th>Profile factor</th><th>Your price €/MWh</th></tr></thead><tbody>` +
+      x.months.map(r => `<tr><td style="text-align:left">${MON[+r.k.slice(5) - 1]} ${r.k.slice(0, 4)}</td><td>${f1(r.E / 1000)}</td><td>${f2(r.F)}</td><td style="text-align:left;color:var(--tx3)">${esc(r.from || '')}</td><td>${pct1(r.fac)}</td><td><b>${f2(r.F * r.fac)}</b></td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">How it is computed: each month's baseload forward (latest settlement, ${esc(x.asOf || '')}; a month without its own contract takes its quarter, season or year shaped by day-ahead ratios) × your profile factor for that month, i.e. what your average working day and weekend would have cost on the French day-ahead market in ${x.histYears.join(' and ')} divided by the baseload (the range uses each year alone). Volume = your average days repeated over the delivery calendar. Capacity = the winter peak-day cost above spread over the volume. <b>Not included</b>: grid fees (TURPE), taxes (excise, CTA, VAT), guarantees of origin, the supplier's margin and its volume and shape risk premium (often 1 to 5 €/MWh).</div>`;
   }
 
   // ── Reporting ─────────────────────────────────────────────────────
@@ -599,6 +673,10 @@
         ['Solar: size (kWp)', +S.settings.pvKwp || 0], ['Solar: production (MWh)', r2(o.pv.prod / 1000)], ['Solar: self-consumed (MWh)', r2(o.pv.self / 1000)], ['Solar: CO2 avoided (t)', r2(t(o.pv.co2))],
         ['Source', 'PowerKlock — RTE éCO2mix, ENTSO-E day-ahead, AIB residual mix'],
       ].map(([k, v]) => ({ Item: k, Value: v })));
+      if (o.fixed && o.fixed.months) add('Fixed price', o.fixed.months.map(r => ({ Month: r.k, 'Volume MWh': r2(r.E / 1000), 'Forward base €/MWh': r2(r.F), Contract: r.from, 'Profile factor': Math.round(r.fac * 10000) / 10000, 'Your price €/MWh': r2(r.F * r.fac) }))
+        .concat([{ Month: 'Total', 'Volume MWh': r2(o.fixed.E / 1000), 'Forward base €/MWh': r2(o.fixed.base), 'Profile factor': Math.round(o.fixed.factor * 10000) / 10000, 'Your price €/MWh': r2(o.fixed.energy) },
+          { Month: 'Capacity €/MWh', 'Your price €/MWh': r2(o.fixed.cap) }, { Month: 'Energy + capacity €/MWh', 'Your price €/MWh': r2(o.fixed.total) },
+          { Month: 'Excludes grid fees, taxes, guarantees of origin, supplier margin and risk premium' }]));
       add('Monthly', Object.keys(o.monthly).sort().map(m => ({ Month: m, 'Consumption MWh': r2(o.monthly[m].E / 1000), 'Location-based t CO2': r2(o.monthly[m].em / 1e6), 'Spot cost €': r2(o.monthly[m].cost) })));
       add('Daily', o.daily.map(x => ({ Date: x.d, 'Consumption kWh': r2(x.E), 'Intensity g/kWh': r2(x.ci) })));
       add('Average day', HRS.map((h, i) => ({ Hour: h, 'Consumption kWh': r2(o.hourC[i] / o.days.length), 'Grid intensity g/kWh': o.hourN[i] ? r2(o.hourI[i] / o.hourN[i]) : null, 'Day-ahead €/MWh': o.hourPn[i] ? r2(o.hourP[i] / o.hourPn[i]) : null })));
@@ -625,7 +703,7 @@
     $('cf-xlsx').addEventListener('click', exportXlsx);
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
-    ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
+    ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield', 'fix-period:fixPeriod'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
   }
 
   window.addEventListener('load', () => setTimeout(() => {
