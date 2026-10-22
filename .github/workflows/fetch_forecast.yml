@@ -40,11 +40,13 @@ jobs:
           else
             python scripts/fetch_forecast.py
           fi
+      - name: Negative prices, today and tomorrow
+        run: pip install -q numpy && python scripts/neg_forecast.py || echo "::warning::negative-price forecast failed"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/forecast.json data/history/forecast
+          git add data/forecast.json data/history/forecast data/neg_forecast.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: forecasts $(date -u '+%Y-%m-%d %H:%M')"
           for i in 1 2 3 4 5; do
