@@ -2,16 +2,77 @@
  "date": "2026-10-21",
  "countries": {
   "FR": {
-   "spot": 156.28
+   "spot": 156.28,
+   "forwardCurve": {
+    "M+1": 170,
+    "M+2": 168.68,
+    "M+3": 184.02,
+    "Q+1": 169.62,
+    "Q+2": 72.18,
+    "Q+3": 88.54,
+    "S+1": 80.36,
+    "S+2": 111.77,
+    "Y+1": 110.61,
+    "Y+2": 67.29,
+    "Y+3": 60.49
+   }
   },
   "UK": {
-   "spot": 151.77
+   "spot": 151.77,
+   "forwardCurve": {
+    "M+1": 170.22,
+    "M+2": 168.95,
+    "M+3": 184,
+    "Q+1": 175.2,
+    "Q+2": 134.17,
+    "Q+3": 126.08,
+    "S+1": 130.1,
+    "S+2": 128.78,
+    "Y+1": 140.6,
+    "Y+2": 95.75,
+    "Y+3": 77.87
+   },
+   "generationMix": {
+    "gas": 8.63,
+    "wind": 10.44,
+    "solar": 1.98,
+    "nuclear": 4.94,
+    "hydro": 0.61,
+    "biomass": 3.22,
+    "other": 1.04
+   }
   },
   "DE": {
-   "spot": 148.61
+   "spot": 148.61,
+   "forwardCurve": {
+    "M+1": 193.76,
+    "M+2": 188.56,
+    "M+3": 201.58,
+    "Q+1": 188.35,
+    "Q+2": 122.75,
+    "Q+3": 131.68,
+    "S+1": 127.22,
+    "S+2": 146.36,
+    "Y+1": 147.75,
+    "Y+2": 110.64,
+    "Y+3": 94.6
+   }
   },
   "NL": {
-   "spot": 150.44
+   "spot": 150.44,
+   "forwardCurve": {
+    "M+1": 196.89,
+    "M+2": 191.81,
+    "M+3": 202.65,
+    "Q+1": 188,
+    "Q+2": 123.21,
+    "Q+3": 129.16,
+    "S+1": 126.2,
+    "S+2": 144.41,
+    "Y+1": 146.64,
+    "Y+2": 106.98,
+    "Y+3": 93.9
+   }
   }
  },
  "marketInsightsHtml": "<p>In France, the front-year contract ended a long upwards run on Tuesday, falling €2.50 to €107.75/MWh after rising in each of the previous 10 sessions. Pressure from lower gas was a factor, and heavy rainfall across the south and southwest of France is likely to support hydro output in the coming days.</p>"
