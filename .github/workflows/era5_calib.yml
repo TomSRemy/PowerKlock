@@ -1,0 +1,44 @@
+name: ERA5 correction learned on regional output
+
+# scripts/era5_calib.py: how far the ERA5 simulation of a park is from the real output of its
+# region (RTE), month by month → data/history/era5_calib.json, read by Tools › Production
+# forecast › Price this park.
+
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/era5_calib.py']
+  schedule:
+    - cron: '0 4 3 * *'      # monthly
+  workflow_dispatch:
+
+concurrency:
+  group: era5-calib
+  cancel-in-progress: false
+
+jobs:
+  calib:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy
+      - name: Learn the correction
+        run: cd scripts && PK_FC_CACHE=/tmp/fc python era5_calib.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/era5_calib.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -q -m "data: ERA5 correction by region"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase origin main && git push && exit 0
+            sleep 8
+          done
+          exit 1

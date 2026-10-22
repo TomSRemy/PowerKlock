@@ -5688,6 +5688,17 @@
 <div class="fuel-note">Without calibration the model is generic: load the site’s metered output above to fit it to the site. Coordinates: right-click a point in Google Maps or Géoportail and copy them.</div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-fc-price">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-fc-price')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Price this park<span class="pk-hs-meta">its history rebuilt hour by hour from 2005, with or without its own data, then priced</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-fc-price">
+<div class="fc-opts"><button type="button" class="pk-btn-primary" id="fc-hist-btn">Build the park’s history (ERA5, 2005 → last year)</button><button type="button" class="pk-btn-ghost" id="fc-hist-send" hidden>Price it in the PPA pricer →</button></div>
+<div class="cf-status" id="fc-hist-status">Uses the site above: coordinates, capacity, panels or turbine, injection limit, P50 if entered, and the metered output if loaded for calibration.</div>
+<div id="fc-hist"></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-fc-bt">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-fc-bt')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>How good is it<span class="pk-hs-meta">backtest on real French production, step by step</span></div>
@@ -7041,6 +7052,10 @@
           <tbody id="status-sources"></tbody>
         </table></div>
       </div>
+<div class="table-wrap" style="margin-top:14px">
+        <div class="table-header"><span class="table-title">Who visits the site · last 30 days</span></div>
+        <div id="status-visits"><div class="fuel-note">Sign in to see who visits the site.</div></div>
+      </div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-status-1">
@@ -8076,6 +8091,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/key-facts.js"></script>
 <script src="js/alerts.js"></script>
 <script src="js/account.js"></script>
+<script src="js/visits.js"></script>
 <script src="js/dashboard.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
