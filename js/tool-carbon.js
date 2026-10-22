@@ -334,12 +334,16 @@
     if (!natSum || !key) return null;
     const k = kwc * yld * (rows.length / 365) / natSum * key;
     const shp = [...Array(12)].map(() => [new Float64Array(96), new Float64Array(96)]);
+    // average day per month, hour by hour (kWh per hour per day): consumption, ACC production, self-consumed
+    const day = [...Array(12)].map(() => ({ c: new Float64Array(24), g: new Float64Array(24), x: new Float64Array(24), n: 0 }));
     let prod = 0, self = 0;
     rows.forEach(({ d, e, r }) => {
-      const mi = +d.slice(5, 7) - 1, w = dow(d), t = w > 0 && w < 6 ? 0 : 1;
+      const mi = +d.slice(5, 7) - 1, w = dow(d), t = w > 0 && w < 6 ? 0 : 1, D = day[mi];
+      D.n++;
       for (let q = 0; q < 96; q++) {
         const g = r && r.solar ? Math.max(0, r.solar[q] || 0) * k : 0, c = e[q] || 0, x = Math.min(g, c);
         prod += g; self += x; shp[mi][t][q] += c - x;
+        D.c[q >> 2] += c; D.g[q >> 2] += g; D.x[q >> 2] += x;
       }
     });
     // capacity: your load in the peak windows of the same peak days, after the ACC share
@@ -354,7 +358,7 @@
       });
       if (nd) capR = (tot / nd / 1000) * CAP_PRICE;
     }
-    return { kwc, key, yld, prod, self, surplus: prod - self, share: o.E ? self / o.E : 0, exempt: kwc < 1000, shp, capR };
+    return { kwc, key, yld, prod, self, surplus: prod - self, share: o.E ? self / o.E : 0, exempt: kwc < 1000, shp, capR, day };
   }
 
   async function fixedPrice(o, period, shp) {
@@ -614,6 +618,29 @@
     renderBill(o);
   }
 
+  // ── ACC: average day hour by hour (consumption, ACC share, complement, surplus) ──
+  function renderAccDay(o) {
+    const card = $('cf-accday-card'), A = o.acc; if (!card) return;
+    card.hidden = !A; if (!A) return;
+    const sel = $('cf-accday-m'), m = sel ? sel.value : 'all';
+    const ms = m === 'all' ? [...Array(12).keys()] : m === 'sum' ? [3, 4, 5, 6, 7, 8] : m === 'win' ? [9, 10, 11, 0, 1, 2] : [+m];
+    const agg = k => { const v = new Float64Array(24); let n = 0; ms.forEach(i => { const D = A.day[i]; if (!D.n) return; n += D.n; D[k].forEach((y, h) => { v[h] += y; }); }); return [...v].map(y => n ? y / n : null); };
+    const c = agg('c'), g = agg('g'), x = agg('x');
+    if (c.every(v => !v)) { noDataMsg('cf-accday', 'No data for this period', ''); return; }
+    const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+    const comp = c.map((v, h) => r1(v - x[h])), sur = g.map((v, h) => r1(v - x[h]));
+    _fuelChart('cf-accday', { type: 'bar', data: { labels: HRS, datasets: [
+      { label: 'Covered by the ACC', data: x.map(r1), backgroundColor: 'rgba(251,191,36,.85)', stack: 's', borderWidth: 0, order: 2 },
+      { label: 'Complement from the supplier', data: comp, backgroundColor: 'rgba(127,200,248,.55)', stack: 's', borderWidth: 0, order: 2 },
+      { label: 'Surplus (your share not consumed)', data: sur, backgroundColor: 'rgba(237,105,101,.55)', stack: 's', borderWidth: 0, order: 2 },
+      { type: 'line', label: 'Your consumption', stack: 'lc', data: c.map(r1), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, tension: .3, fill: false, order: 1 },
+      { type: 'line', label: 'Your share of the ACC production', stack: 'lg', data: g.map(r1), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, tension: .3, fill: false, order: 1 },
+    ] }, options: _fuelOpts({ plugins: { legend: legend(), tooltip: { callbacks: { label: t => ` ${t.dataset.label}: ${f1(t.raw)} kWh` } } },
+      scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('kWh per hour (average day)', { stacked: true, beginAtZero: true }) } }) }, 'carbon-acc-average-day');
+    const S = v => v.reduce((a, b) => a + (b || 0), 0), sc = S(c), sx = S(x), sg = S(g);
+    const sub = $('cf-accday-sub'); if (sub) sub.textContent = `Average day · ACC covers ${pc(sc ? sx / sc : 0)} of your consumption · ${pc(sg ? sx / sg : 0)} of your share self-consumed, ${f1(S(sur))} kWh a day surplus`;
+  }
+
   // ── The whole bill, before VAT: supplier only vs with ACC ─────────
   const ACCISE = { small: 30.85, large: 26.58 };   // €/MWh from 1 Feb 2026 (≤ 36 kVA; > 36 kVA), ZNI surcharge included
   function renderBill(o) {
@@ -669,6 +696,7 @@
       tot.forEach((t, i) => g.fillText(f2(t) + ' €/MWh', xs.getPixelForValue(t) + 8, ys.getPixelForValue(i))); g.restore(); } };
     const inBar = { id: 'cfBillLabels', afterDatasetsDraw(ch) { const g = ch.ctx; g.save(); g.font = '600 10px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#0B1620';
       ch.data.datasets.forEach((d, di) => ch.getDatasetMeta(di).data.forEach((el, i) => { const v = d.data[i]; if (!v) return; const w = Math.abs(el.x - el.base); if (w < 34) return; g.fillText(v.toFixed(v >= 10 ? 0 : 1), (el.x + el.base) / 2, el.y); })); g.restore(); } };
+    renderAccDay(o);
     _fuelChart('cf-bill-chart', { type: 'bar', data: { labels: bars, datasets: lines.filter(l => l.a || l.b).map(l => ({
       label: l.label, data: A ? [r2(per(l.a, E)), r2(per(l.b, E))] : [r2(per(l.a, E))], backgroundColor: COL[l.label] || '#7A93AB', borderWidth: 0, borderSkipped: false, barPercentage: .62, categoryPercentage: .9 })) },
       plugins: [totals, inBar],
@@ -802,6 +830,7 @@
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
     $('cf-xlsx').addEventListener('click', exportXlsx);
+    const am = $('cf-accday-m'); if (am) am.addEventListener('change', () => { if (S.res) renderAccDay(S.res); });
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
     ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield', 'fix-period:fixPeriod',
