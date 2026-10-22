@@ -17,7 +17,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const lab = k => MON[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4);
-  const NAMES = { hybrid: 'Ensemble (4 methods)', weather: 'MC weather', regional: 'Regional model', regionalMC: 'Regional Monte Carlo', fpc: 'Asset-specific FPC', step: 'Step by step', dashboard: 'PPA Dashboard', weather: 'MC weather' };
+  const NAMES = { hybrid: 'Blend of 4 methods', weather: 'Weather simulation', regional: 'European price model', regionalMC: 'European model, simulated', fpc: 'Forward shape', step: 'Capacity trend', dashboard: 'Past discount', weather: 'Weather simulation' };
   let FW = null, FC = null, RG = null, loading = null;
   const S = { from: null, to: null, region: '' };
 
