@@ -5450,6 +5450,8 @@
           <div class="cf-form">
             <label class="cf-field"><span>How the discount evolves</span><select id="pp-model"><option value="capacity">Installed capacity (PPE3)</option><option value="flat">Flat at last year</option><option value="damped">Trend, halving yearly</option><option value="linear">Straight line, capped</option></select></label>
             <label class="cf-field pp-only-pct"><span>Historical discount used · <b id="pp-pct-v">P74</b></span><input type="range" id="pp-pct" min="1" max="100" value="74"></label>
+            <label class="cf-field pp-only-pct"><span>Past discount mode</span><select id="pp-pdmode"><option value="projected">Projected: trend + percentile offset (as the PPA Dashboard projection)</option><option value="past">Past only: percentile of past years (the tool’s single price)</option></select></label>
+            <label class="cf-field pp-only-pct"><span>Trend over the last</span><select id="pp-pdyears"><option value="3">3 years (tool default)</option><option value="5">5 years</option></select></label>
             <label class="cf-field"><span>Degradation <i class="pp-auto" data-for="pp-degr"></i></span><span class="cf-in"><input type="number" id="pp-degr" step="0.05"><em>%/yr</em></span></label>
           </div>
           </div>
