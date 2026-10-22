@@ -430,7 +430,7 @@
       const capOut = S.inj !== '' && +S.inj > 0 ? Math.min(S.mw, +S.inj) : S.mw;
       let P = raw.map((x, i) => x == null ? null : Math.min(capOut, x * (fac ? fac[String(+H.time[i].slice(5, 7))] || 1 : 1)));
       // 4 the park's evidence
-      let level = 1, how = regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2016–2025)` : 'prior: national factor', wSite = 0;
+      let level = 1, how = regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2020–2025)` : 'prior: national factor', wSite = 0;
       const sc = siteCal();
       if (LAST_ACT && LAST_ACT.key === siteKey() && sc) {
         const idx = new Map(H.time.map((t, i) => [t, i]));
