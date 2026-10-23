@@ -242,6 +242,13 @@
     render();
   }
 
+  // row height follows the screen width: on a large screen every chart grows in height as well as in width
+  //   (64 px up to ~1300 px of grid, then proportional, capped at 120 px)
+  const cellH = host => Math.round(Math.max(CELL_H, Math.min(120, (host.clientWidth || 1200) / 20)));
+  let resizeT = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
+    const host = document.getElementById('pkd-grid'); if (!grid || !host || !host.offsetParent) return;
+    const h = cellH(host); if (h !== grid.getCellHeight()) { grid.cellHeight(h); setTimeout(() => host.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); }), 300); } }, 200); });
   function render() {
     const host = document.getElementById('pkd-grid');
     if (!host || !window.GridStack) return;
@@ -254,7 +261,7 @@
     const b = board();
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
     grid = GridStack.init({
-      column: COLS, cellHeight: CELL_H, margin: 6, float: false, animate: true,
+      column: COLS, cellHeight: cellH(host), margin: 6, float: false, animate: true,
       handle: '.pkd-drag', resizable: { handles: 'se' }, staticGrid: !!shared,
       columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
     }, host);
@@ -796,7 +803,7 @@
     const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
     bar.innerHTML = solo
       ? `<div class="pkd-solo-t"><span class="pkd-solo-name">${esc(shared.name)}</span><span class="pkd-solo-date">${esc(date)}</span></div>
-         <a class="pk-btn-ghost" href="${esc(baseUrl() + '#board=' + shared.code)}">Open in PowerKlock ↗</a>`
+`
       : `<div class="pkd-shared-t"><b>Shared dashboard · ${esc(shared.name)}</b><span>A copy of a colleague's layout with today's data. Add it to your dashboards to keep or change it.</span></div>
          <div class="pkd-shared-a"><button type="button" class="pk-btn-ghost" id="pkd-shared-close">Close</button><button type="button" class="pk-btn-primary" id="pkd-shared-add">+ Add to my dashboards</button></div>`;
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
