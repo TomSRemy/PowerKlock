@@ -25,7 +25,7 @@
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
   const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150, fixPeriod: 'cal1',
-    conn: 'auto', margin: 2, cee: 10, goP: 0, turpe: '', turpeFix: '', net: 'dist', turpeAcc: '', accRisk: '', accKwc: 0, accKey: 100, accYield: 1150, accPrice: 80, pmo: 7.5 } };
+    conn: 'auto', margin: 2, cee: 10, goP: 0, turpe: '', turpeFix: '', net: 'dist', turpeAcc: '', accRisk: '', accKwc: 0, accKey: 100, accYield: 1150, accPrice: 80, pmo: 7.5, country: 'FR', gc: '' } };
   // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
   // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
   const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
@@ -227,7 +227,7 @@
       daily: [], monthly: {}, hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourP: new Float64Array(24), hourPn: new Float64Array(24),
       wk: { wd: new Float64Array(24), we: new Float64Array(24), nwd: 0, nwe: 0 }, mh: [...Array(12)].map(() => ({ e: new Float64Array(24), n: new Float64Array(24), ci: new Float64Array(24), cn: new Float64Array(24) })),
       shp: [...Array(12)].map(() => [new Float64Array(96), new Float64Array(96)]), shpN: [...Array(12)].map(() => [0, 0]),
-      kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
+      kw: [], peak: { v: -Infinity, at: '' }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
     MIX.forEach(([k]) => { o.mix[k] = 0; });
     const ppaKey = st.ppaTech, ppaMWh = +st.ppa || 0;
     let ppaShape = 0; rows.forEach(({ r }) => { if (r && r[ppaKey]) r[ppaKey].forEach(v => { ppaShape += Math.max(0, v || 0); }); });
@@ -576,6 +576,84 @@
     } else { noDataMsg('cf-ppa-chart', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
   }
 
+
+  // ── Explorer: one matrix, a measure to choose, a click on a cell, a row, a column or a calendar day opens its detail ──
+  const EX = { metric: 'ci', grid: 'mh' };
+  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const EXM = {
+    kw: ['Your power', 'kW', c => c.n ? c.E / (c.n / 4) : null, [[30, 70, 110], [127, 200, 248]]],
+    ci: ['Grid carbon intensity', 'g/kWh', c => c.cin ? c.ci / c.cin : null, [[20, 120, 100], [168, 125, 196]]],
+    em: ['Your emissions', 'kg CO₂', c => c.E ? c.em / 1000 : null, [[40, 40, 70], [168, 125, 196]]],
+    p: ['Day-ahead price', '€/MWh', c => c.pn ? c.p / c.pn : null, [[30, 90, 80], [251, 191, 36]]],
+    cost: ['Your spot cost', '€', c => c.Ep ? c.cost : null, [[40, 60, 40], [251, 191, 36]]],
+    share: ['Share of your consumption', '%', (c, tot) => tot ? c.E / tot * 100 : null, [[30, 70, 110], [127, 200, 248]]],
+  };
+  const exKey = (grid, d, q) => grid === 'mh' ? [+d.slice(5, 7) - 1, q >> 2] : [(dow(d) + 6) % 7, q >> 2];
+  function exAgg(o, pred) {
+    const c = { E: 0, n: 0, ci: 0, cin: 0, em: 0, p: 0, pn: 0, cost: 0, Ep: 0, mix: {}, days: new Set() };
+    o.rows.forEach(({ d, e, r, p }) => { for (let q = 0; q < 96; q++) { if (!pred(d, q)) continue;
+      const x = e[q] || 0, ci = r && r.co2 ? r.co2[q] : null, pr = p ? p[q] : null; c.E += x; c.n++; c.days.add(d);
+      if (ci != null) { c.ci += ci; c.cin++; c.em += x * ci; let t = 0; const sh = {}; MIX.forEach(([k]) => { const v = r[k] ? Math.max(0, r[k][q] || 0) : 0; sh[k] = v; t += v; }); if (t > 0) MIX.forEach(([k]) => { c.mix[k] = (c.mix[k] || 0) + sh[k] / t; }); }
+      if (pr != null) { c.p += pr; c.pn++; c.cost += x / 1000 * pr; c.Ep += x; } } });
+    return c;
+  }
+  function renderExplore(o) {
+    const host = $('cf-ex'); if (!host) return;
+    const rows = EX.grid === 'mh' ? 12 : 7, G = [...Array(rows)].map(() => [...Array(24)].map(() => ({ E: 0, n: 0, ci: 0, cin: 0, em: 0, p: 0, pn: 0, cost: 0, Ep: 0 })));
+    o.rows.forEach(({ d, e, r, p }) => { for (let q = 0; q < 96; q++) { const [a, h] = exKey(EX.grid, d, q), c = G[a][h], x = e[q] || 0, ci = r && r.co2 ? r.co2[q] : null, pr = p ? p[q] : null;
+      c.E += x; c.n++; if (ci != null) { c.ci += ci; c.cin++; c.em += x * ci; } if (pr != null) { c.p += pr; c.pn++; c.cost += x / 1000 * pr; c.Ep += x; } } });
+    const [name, unit, fn, pal] = EXM[EX.metric], V = G.map(row => row.map(c => c.n ? fn(c, o.E) : null));
+    const vals = V.flat().filter(v => v != null), lo = Math.min(...vals), hi = Math.max(...vals);
+    const col = v => { if (v == null) return 'transparent'; const x = hi > lo ? (v - lo) / (hi - lo) : 0.5; const [a, b] = pal; const c = a.map((ai, i) => Math.round(ai + (b[i] - ai) * x)); return `rgba(${c[0]},${c[1]},${c[2]},${(0.18 + 0.82 * x).toFixed(2)})`; };
+    const fmt = v => v == null ? '' : Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-GB') : v.toFixed(Math.abs(v) >= 10 ? 0 : 1);
+    const lab = EX.grid === 'mh' ? MON : DOW;
+    host.innerHTML = `<div class="cf-hm cf-ex"><table><thead><tr><th></th>${HRS.map((h, i) => `<th data-h="${i}" title="Click: every ${h} of the period">${i % 3 ? '' : h}</th>`).join('')}</tr></thead><tbody>` +
+      V.map((row, a) => row.every(v => v == null) ? '' : `<tr><th data-a="${a}" title="Click: the whole of ${lab[a]}">${lab[a]}</th>${row.map((v, h) => `<td data-a="${a}" data-h="${h}" style="background:${col(v)}" title="${lab[a]} ${HRS[h]}: ${v == null ? '–' : fmt(v) + ' ' + unit} · click for the detail">${fmt(v)}</td>`).join('')}</tr>`).join('') +
+      `</tbody></table></div><div class="cf-hm-leg"><span>${fmt(lo)} ${unit}</span><i style="background:linear-gradient(90deg,${col(lo)},${col(hi)})"></i><span>${fmt(hi)} ${unit}</span><span style="margin-left:auto">${name} · click a cell, a ${EX.grid === 'mh' ? 'month' : 'day of the week'}, an hour, or a day of the calendar</span></div>`;
+    host.querySelectorAll('td[data-a], th[data-a], th[data-h]').forEach(el => el.addEventListener('click', () => {
+      host.querySelectorAll('.cf-ex-on').forEach(x => x.classList.remove('cf-ex-on')); el.classList.add('cf-ex-on');
+      const a = el.dataset.a != null ? +el.dataset.a : null, h = el.dataset.h != null ? +el.dataset.h : null;
+      exDetail(o, a, h);
+    }));
+  }
+  function exDetail(o, a, h) {
+    const box = $('cf-ex-detail'); if (!box) return;
+    const lab = EX.grid === 'mh' ? MON : DOW, inRow = (d) => a == null || exKey(EX.grid, d, 0)[0] === a;
+    const pred = (d, q) => inRow(d) && (h == null || (q >> 2) === h);
+    const c = exAgg(o, pred);
+    const title = a != null && h != null ? `${lab[a]} · ${HRS[h]}` : a != null ? `${EX.grid === 'mh' ? 'Month' : 'Every'} ${lab[a]}` : `Every ${HRS[h]}`;
+    const ciMine = c.E && c.cin ? c.em / c.E : null, pAvg = c.pn ? c.p / c.pn : null;
+    const mixT = Object.values(c.mix).reduce((s, x) => s + x, 0) || 1;
+    let shift = '';
+    if (h != null && c.E > 0) {   // the same days, other hours: where would 10 % of this consumption be greener, cheaper
+      const hrs = [...Array(24).keys()].map(k => k === h ? null : exAgg(o, (d, q) => inRow(d) && (q >> 2) === k));
+      const best = (f) => hrs.map((x, k) => x && f(x) != null ? [k, f(x)] : null).filter(Boolean).sort((u, v) => u[1] - v[1])[0];
+      const bc = best(x => x.cin ? x.ci / x.cin : null), bp = best(x => x.pn ? x.p / x.pn : null), mv = c.E * (S.settings.flexPct || 10) / 100;
+      const gCI = c.cin && bc ? mv * (c.ci / c.cin - bc[1]) / 1000 : null, gP = pAvg != null && bp ? mv / 1000 * (pAvg - bp[1]) : null;
+      shift = `<div class="cf-ex-tip"><b>Moving ${S.settings.flexPct || 10} % of it</b> (${MWh(mv)})<br>to ${HRS[bc ? bc[0] : 0]}, the cleanest hour of the same ${a != null ? 'days' : 'period'}: <b>${gCI == null ? '–' : Math.abs(gCI) < 1 ? '≈ 0 kg CO₂' : (gCI >= 0 ? '−' : '+') + f0(Math.abs(gCI)) + ' kg CO₂'}</b><br>to ${HRS[bp ? bp[0] : 0]}, the cheapest: <b>${gP == null ? '–' : Math.abs(gP) < 1 ? '≈ 0 €' : (gP >= 0 ? '−' : '+') + eur(Math.abs(gP))}</b><div style="color:var(--text3);font-size:10px;margin-top:4px">At the average conditions of those hours; a real shift also depends on what the process allows.</div></div>`;
+    }
+    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${title}</div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(c.E)}</b><span>${c.n ? f0(c.E / (c.n / 4)) + ' kW on average' : ''} · ${pc(o.E ? c.E / o.E : null)} of the total</span>
+      <span>Grid intensity</span><b>${c.cin ? f0(c.ci / c.cin) + ' g/kWh' : '–'}</b><span>${ciMine != null && o.ciHourly ? (ciMine > o.ciHourly ? '+' : '') + Math.round((ciMine / o.ciHourly - 1) * 100) + ' % vs your average' : ''}</span>
+      <span>Your emissions</span><b>${em(c.em, c.em < 1e6).join(' ')}</b><span>${pc(o.em ? c.em / o.em : null)} of the total</span>
+      <span>Day-ahead price</span><b>${pAvg == null ? '–' : f2(pAvg) + ' €/MWh'}</b><span>${pAvg != null && o.costAvg ? (pAvg > o.costAvg ? '+' : '') + Math.round((pAvg / o.costAvg - 1) * 100) + ' % vs your average' : ''}</span>
+      <span>Your spot cost</span><b>${c.Ep ? eur(c.cost) : '–'}</b><span>${c.days.size} days</span></div>
+      <div class="cf-ex-mix">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.005).map(([k, n, colr]) => `<i style="flex:${(c.mix[k] / mixT).toFixed(3)};background:${colr}" title="${n} ${pc(c.mix[k] / mixT)}"></i>`).join('')}</div>
+      <div class="cf-ex-mixl">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.02).map(([k, n, colr]) => `<span><i style="background:${colr}"></i>${n} ${pc(c.mix[k] / mixT)}</span>`).join('')}</div>${shift}`;
+  }
+  function exDay(o, d) {
+    const box = $('cf-ex-detail'), row = o.rows.find(x => x.d === d); if (!box || !row) return;
+    const { e, r, p } = row, L = [...Array(96).keys()].map(q => q % 4 ? '' : HRS[q >> 2]);
+    const E = e.reduce((s, x) => s + (x || 0), 0), emD = e.reduce((s, x, q) => s + (x || 0) * (r && r.co2 && r.co2[q] != null ? r.co2[q] : 0), 0);
+    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(E)}</b><span>peak ${f0(Math.max(...e.map(x => (x || 0) * 4)))} kW</span><span>Emissions</span><b>${em(emD, emD < 1e6).join(' ')}</b><span>${E ? f0(emD / E) + ' g/kWh' : ''}</span></div>
+      <div style="position:relative;height:200px"><canvas id="cf-ex-day" style="width:100%;height:200px"></canvas></div>`;
+    _fuelChart('cf-ex-day', { type: 'bar', data: { labels: L, datasets: [
+      { label: 'Your power (kW)', data: e.map(x => Math.round((x || 0) * 4)), backgroundColor: 'rgba(127,200,248,.5)', yAxisID: 'y' },
+      { type: 'line', label: 'Grid g/kWh', data: r && r.co2 ? r.co2.map(v => v == null ? null : Math.round(v)) : [], borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, yAxisID: 'y1' },
+      { type: 'line', label: 'Price €/MWh', data: p ? p.map(v => v == null ? null : +(+v).toFixed(1)) : [], borderColor: '#FBBF24', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, yAxisID: 'y2' }] },
+      options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW', { beginAtZero: true }), y1: _fuelAxis('g/kWh', { position: 'right', grid: { display: false } }), y2: { display: false } } }) }, 'carbon-day-detail');
+  }
   // ── Green days calendar (Carbon tab) and 24/7 coverage (Solar & coverage tab) ──
   function renderCalendar(o) {
     const host = $('cf-cal'); if (!host) return;
@@ -589,10 +667,11 @@
     let html = '<div class="cf-cal">' + '<i style="visibility:hidden"></i>'.repeat(pad);
     for (let t = new Date(first); t <= new Date(days[days.length - 1].d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)) {
       const d = t.toISOString().slice(0, 10), x = byDay.get(d);
-      html += x ? `<i style="background:${col(x.ci)}" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh"></i>` : `<i title="${d} · no data"></i>`;
+      html += x ? `<i data-d="${d}" style="background:${col(x.ci)};cursor:pointer" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh · click for the day"></i>` : `<i title="${d} · no data"></i>`;
     }
     const best = days.slice().sort((a, b) => a.ci - b.ci)[0], worst = days.slice().sort((a, b) => b.ci - a.ci)[0];
     host.innerHTML = html + '</div><div class="cf-cal-leg">cleaner ' + COLS.map(c => `<i style="background:${c}"></i>`).join('') + ` dirtier · quintiles of your days: ${cuts.map(c => f0(c)).join(' / ')} g/kWh</div>`;
+    host.querySelectorAll('i[data-d]').forEach(el => el.addEventListener('click', () => { exDay(o, el.dataset.d); const b = $('cf-ex-detail'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }));
     $('cf-cal-sub').textContent = `One square per day (weeks in columns, Monday on top) · greenest ${best.d} (${f0(best.ci)} g/kWh), most carbon-intensive ${worst.d} (${f0(worst.ci)} g/kWh)`;
   }
   function render247(o) {
@@ -650,12 +729,21 @@
   // €/MWh, ZNI surcharge included (≤ 36 kVA; > 36 kVA), revised every 1 February and 1 August (CIBS L. 312-37):
   //   1 Feb 2026 30.85 / 26.58 · 1 Aug 2026 30.62 / 26.35 (24.69 + ZNI 5.93 for households)
   const ACCISE = { small: 30.62, large: 26.35, since: '1 August 2026' };
+  // Belgium (professional use), INDICATIVE 2026 values to check against the supplier's tariff card: federal special
+  // excise by yearly consumption band (€/MWh; band rates found on 2026 supplier tariff cards, not on an official text),
+  // energy contribution (kept for professional use after the 1 August 2026 reform, Programme Act of 30 May 2026)
+  const BE_EXCISE = [[20, 14.21], [50, 12.09], [1000, 11.39]], BE_CONTRIB = 1.9261;
+  const beExcise = mwh => { let left = mwh, prev = 0, eur = 0; for (const [up, r] of BE_EXCISE) { const q = Math.max(0, Math.min(left, up - prev)); eur += q * r; left -= q; prev = up; } if (left > 0) eur += left * BE_EXCISE[BE_EXCISE.length - 1][1]; return mwh ? eur / mwh : BE_EXCISE[0][1]; };
+  const BE_REG = { WAL: 'Wallonia', VLA: 'Flanders', BRU: 'Brussels' };
   function renderBill(o) {
     const host = $('cf-bill'), x = o.fixed; if (!host) return;
     if (!x || x.missing) { host.innerHTML = ''; return; }
     const st = S.settings, n = v => v === '' || v == null || !isFinite(+v) ? 0 : +v;
     const conn = st.conn === 'auto' ? (o.peak.v <= 36 ? 'small' : 'large') : st.conn;
-    const acc = ACCISE[conn], has = v => v !== '' && v != null && isFinite(+v), turpeIn = has(st.turpe) || has(st.turpeFix);
+    const BE = /^BE/.test(st.country || 'FR'), reg = BE ? BE_REG[st.country.slice(3)] || 'Belgium' : '';
+    const has = v => v !== '' && v != null && isFinite(+v), turpeIn = has(st.turpe) || has(st.turpeFix);
+    const yearMWh = o.E / 1000 * 365 / Math.max(1, o.days.length);
+    const acc = BE ? beExcise(yearMWh) : ACCISE[conn];
     const ctaRate = st.net === 'trans' ? 0.05 : 0.15;   // CTA from 1 Feb 2026: 15 % of the fixed TURPE on distribution networks, 5 % on transmission
     const E = x.E / 1000, capEur = (x.cap || 0) * E;   // MWh, € per year
     const per = (eur, mwh) => mwh ? eur / mwh : 0;
@@ -663,10 +751,11 @@
     const A = o.acc && o.acc.fixed && !o.acc.fixed.missing ? o.acc : null;
     const Er = A ? A.fixed.E / 1000 : E, Ea = E - Er;
     const row = (label, a, b, note) => lines.push({ label, a, b, note });
-    row('Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh vs ${f2(x.energy)} for all your consumption (profile factor ${(A.fixed.factor * 100).toFixed(1)} % vs ${(x.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
+    row(BE ? 'Energy (fixed price, French forwards)' : 'Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh vs ${f2(x.energy)} for all your consumption (profile factor ${(A.fixed.factor * 100).toFixed(1)} % vs ${(x.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
     const capB = A && A.capR != null && o.capacity && o.capacity.cost ? capEur * A.capR / o.capacity.cost : capEur;
-    row('Capacity', capEur, A ? capB : null, A ? `winter peak days; with ACC on your load left in the 07–10h and 17–20h windows (${pc(o.capacity && o.capacity.cost ? 1 - capB / capEur : 0)} lower)` : 'winter peak days, 07–10h and 17–20h');
-    row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`);
+    if (!BE) row('Capacity', capEur, A ? capB : null, A ? `winter peak days; with ACC on your load left in the 07–10h and 17–20h windows (${pc(o.capacity && o.capacity.cost ? 1 - capB / capEur : 0)} lower)` : 'winter peak days, 07–10h and 17–20h');
+    if (BE) row('Green certificates (regional quota)', n(st.gc) * E, A ? n(st.gc) * Er : null, has(st.gc) ? `${f2(n(st.gc))} €/MWh on the energy the supplier sells (${reg})` : `enter the cost from your supplier's tariff card (${reg}: quota × certificate price; Wallonia's is the highest)`);
+    else row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`);
     if (n(st.goP)) row('Guarantees of origin', n(st.goP) * E, A ? n(st.goP) * Er : null, `${f2(n(st.goP))} €/MWh`);
     row('Supplier margin', n(st.margin) * E, A ? n(st.margin) * Er : null, `${f2(n(st.margin))} €/MWh`);
     if (A) {
@@ -675,17 +764,20 @@
       const risk = has(st.accRisk) ? n(st.accRisk) : (A.imbNat != null ? Math.max(0, A.imbNat) : 0);
       row('Complement risk (ACC volume)', 0, risk * Ea, `the supplier carries the forecast error of the ACC output on the complement: ${f2(risk)} €/MWh of ACC energy${has(st.accRisk) ? ' (entered)' : ' (national solar imbalance cost, ENTSO-E; a single site is less predictable: raise it if needed)'}`);
     }
-    row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, since ${ACCISE.since}; revised each 1 Feb and 1 Aug)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
+    if (BE) {
+      row('Federal special excise', acc * E, A ? acc * E : null, `${f2(acc)} €/MWh on ${f0(yearMWh)} MWh a year, bands ${BE_EXCISE.map(([u, r]) => '≤ ' + u + ' MWh ' + r).join(' · ')} €/MWh (indicative 2026, professional use: check your tariff card) · shared energy taxed like any other`);
+      row('Energy contribution', BE_CONTRIB * E, A ? BE_CONTRIB * E : null, `${BE_CONTRIB} €/MWh (professional use; abolished for households from 1 August 2026)`);
+    } else row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, since ${ACCISE.since}; revised each 1 Feb and 1 Aug)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
     if (turpeIn) {
       const tv = n(st.turpe), tva = has(st.turpeAcc) ? n(st.turpeAcc) : tv, tf = n(st.turpeFix);
-      row('TURPE · variable part', tv * E, A ? tv * Er + tva * Ea : null, `${f2(tv)} €/MWh drawn${A ? (has(st.turpeAcc) ? ` · ${f2(tva)} €/MWh on the ACC energy (ACC withdrawal option, self-produced indices)` : ' · same rate on the ACC energy (enter the ACC option rate if chosen)') : ''}`);
-      if (tf) row('TURPE · fixed part', tf, A ? tf : null, `${eur(tf)} a year (management, metering, subscribed power)`);
-      if (tf) row('CTA', tf * ctaRate, A ? tf * ctaRate : null, `${(ctaRate * 100).toFixed(0)} % of the fixed TURPE (${st.net === 'trans' ? 'transmission' : 'distribution'} network, rate from 1 Feb 2026): does not move with volume`);
+      row(BE ? 'Grid fees · variable part' : 'TURPE · variable part', tv * E, A ? tv * Er + tva * Ea : null, BE ? `${f2(tv)} €/MWh (distribution, transmission, federal and regional surcharges of your DSO's tariff card)${A ? ` · ${f2(tva)} €/MWh on the shared energy${has(st.turpeAcc) ? '' : ' (same rate: enter the reduced local-sharing rate if your DSO grants one)'}` : ''}` : `${f2(tv)} €/MWh drawn${A ? (has(st.turpeAcc) ? ` · ${f2(tva)} €/MWh on the ACC energy (ACC withdrawal option, self-produced indices)` : ' · same rate on the ACC energy (enter the ACC option rate if chosen)') : ''}`);
+      if (tf) row(BE ? 'Grid fees · fixed part' : 'TURPE · fixed part', tf, A ? tf : null, `${eur(tf)} a year (management, metering, ${BE ? 'capacity' : 'subscribed power'})`);
+      if (tf && !BE) row('CTA', tf * ctaRate, A ? tf * ctaRate : null, `${(ctaRate * 100).toFixed(0)} % of the fixed TURPE (${st.net === 'trans' ? 'transmission' : 'distribution'} network, rate from 1 Feb 2026): does not move with volume`);
     }
     const tA = lines.reduce((s, l) => s + l.a, 0), tB = A ? lines.reduce((s, l) => s + l.b, 0) : null;
     o.bill = { lines, tA, tB, E, acc: !!A };
     // what the supplier charges per MWh it supplies: full consumption vs complement only
-    const SUP = ['Energy (fixed price)', 'Capacity', 'Energy savings certificates (CEE)', 'Guarantees of origin', 'Supplier margin', 'Complement risk (ACC volume)'];
+    const SUP = ['Energy (fixed price)', 'Energy (fixed price, French forwards)', 'Capacity', 'Energy savings certificates (CEE)', 'Green certificates (regional quota)', 'Guarantees of origin', 'Supplier margin', 'Complement risk (ACC volume)'];
     const supA = lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.a, 0) / (E || 1);
     const supB = A ? lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.b, 0) / (Er || 1) : null;
     const k = v => v == null ? '–' : eur(v);
@@ -698,11 +790,12 @@
         _fuelKpi('Break-even ACC price', Ea ? f2(n(st.accPrice) + (tA - tB) / Ea) : '–', '€/MWh', 'above it, the ACC costs you more than supplier only')] : []),
     ].join('') + `</div><div class="chart-container fuel-card" style="margin-bottom:12px"><div class="fuel-card-head"><div><div class="table-title">What your bill is made of</div><div class="fuel-card-sub">€/MWh of your total consumption, before VAT · each block of the bill${A ? ', supplier only vs with ACC' : ''}</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:${A ? 230 : 160}px"><canvas id="cf-bill-chart" style="width:100%;height:${A ? 230 : 160}px"></canvas></div></div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Component</th><th>Supplier only · €/MWh</th><th>k€</th>${A ? '<th>With ACC · €/MWh</th><th>k€</th>' : ''}<th style="text-align:left">Basis</th></tr></thead><tbody>` +
       lines.map(l => `<tr><td style="text-align:left">${l.label}</td><td>${f2(per(l.a, E))}</td><td>${f1(l.a / 1000)}</td>${A ? `<td>${f2(per(l.b, E))}</td><td>${f1(l.b / 1000)}</td>` : ''}<td style="text-align:left;white-space:normal;color:var(--tx3)">${l.note}</td></tr>`).join('') +
-      `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">€/MWh of your total consumption · VAT 20 % on top (recoverable for most businesses)</td></tr></tbody></table></div>` +
-      `<div class="fuel-note">${A ? `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. ` : ''}Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.</div>`;
+      `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">€/MWh of your total consumption · VAT ${BE ? 21 : 20} % on top (recoverable for most businesses)</td></tr></tbody></table></div>` +
+      `<div class="fuel-note">${A ? `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. ` : ''}${BE ? `Belgium (${reg}): energy priced on the French forwards (Belgian forwards are not in PowerKlock; the two markets are coupled and usually within a few €/MWh: adjust the margin if your offer differs). No capacity block (the Belgian capacity mechanism is paid through the grid tariffs). Energy sharing (partage d'énergie / energiedelen): the shared energy pays the excise and the energy contribution like any other; grid fees are your DSO's, reduced in some regions for local sharing: enter that rate as the ACC grid rate. Excise bands and green certificates are indicative: check your supplier's tariff card.` : `Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.`}</div>`;
     // stacked bar: one bar per scenario, one block per component, totals at the end
-    const COL = { 'Energy (fixed price)': '#7FC8F8', 'Capacity': '#A87DC4', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
-      'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155' };
+    const COL = { 'Energy (fixed price)': '#7FC8F8', 'Energy (fixed price, French forwards)': '#7FC8F8', 'Capacity': '#A87DC4', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
+      'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155',
+      'Green certificates (regional quota)': '#22C55E', 'Federal special excise': '#ED6965', 'Energy contribution': '#F87171', 'Grid fees · variable part': '#64748B', 'Grid fees · fixed part': '#475569' };
     const bars = A ? ['Supplier only', 'With ACC'] : ['Supplier only'];
     const r2 = v => Math.round(v * 100) / 100;
     const tot = A ? [per(tA, E), per(tB, E)] : [per(tA, E)];
@@ -771,7 +864,7 @@
     let o;
     try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = 'Computation failed: ' + e.message; return; }
     S.res = o;
-    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
+    [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247, renderExplore].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
     const i = S.cons.info;
     $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
     // charts drawn in hidden view tabs get their size when shown
@@ -785,7 +878,12 @@
     try {
       S.raw = rows; S.meta = name;
       S.cons = buildCurve(rows);
+      // a curve mostly negative is an injection or an export sign convention: read as consumption, and said so
+      let neg = 0, pos = 0; S.cons.slots.forEach(a => a.forEach(v => { if (v < 0) neg++; else if (v > 0) pos++; }));
+      S.flipped = neg > pos;
+      if (S.flipped) S.cons.slots.forEach(a => { for (let q = 0; q < a.length; q++) if (a[q] != null) a[q] = Math.abs(a[q]); });
       await run();
+      if (S.flipped) $('cf-status').textContent += ' · values were negative (export sign convention?): read as consumption';
     } catch (e) { $('cf-status').textContent = e.message; }
   }
 
@@ -840,15 +938,22 @@
     ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
     drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
+    [['cf-ex-metric', 'metric'], ['cf-ex-grid', 'grid']].forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', () => { EX[k] = e.value; if (S.res) { renderExplore(S.res); $('cf-ex-detail').innerHTML = '<div class="fuel-note">Click a cell of the matrix, a month or an hour, or a day of the calendar below.</div>'; } }); });
     $('cf-example').addEventListener('click', () => load(example(), 'Example: office building, 2025'));
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
     $('cf-xlsx').addEventListener('click', exportXlsx);
     const am = $('cf-accday-m'); if (am) am.addEventListener('change', () => { if (S.res) renderAccDay(S.res); });
+    // France / Belgium: the fields that only exist in one country
+    const beUI = () => { const be = /^BE/.test(S.settings.country || 'FR'), lab = (id, fr, bel) => { const e = $(id); const sp = e && e.closest('.cf-field') && e.closest('.cf-field').querySelector('span'); if (sp) sp.textContent = be ? bel : fr; };
+      document.querySelectorAll('#page-carbonfoot .cf-be').forEach(e => { e.hidden = !be; });
+      ['cf-fix-cee', 'cf-fix-conn', 'cf-fix-net'].forEach(id => { const f = $(id) && $(id).closest('.cf-field'); if (f) f.hidden = be; });
+      lab('cf-fix-turpe', 'TURPE variable part', 'Grid fees, variable (DSO card)'); lab('cf-fix-turpefix', 'TURPE fixed part', 'Grid fees, fixed'); };
+    const cty = $('cf-fix-country'); if (cty) { cty.value = S.settings.country || 'FR'; cty.addEventListener('change', () => setTimeout(beUI, 0)); setTimeout(beUI, 0); }
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
     ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield', 'fix-period:fixPeriod',
-      'fix-conn:conn', 'fix-margin:margin', 'fix-cee:cee', 'fix-go:goP', 'fix-turpe:turpe', 'fix-turpefix:turpeFix', 'fix-net:net', 'acc-turpe:turpeAcc', 'acc-risk:accRisk', 'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield', 'acc-price:accPrice', 'acc-pmo:pmo'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
+      'fix-country:country', 'fix-gc:gc', 'fix-conn:conn', 'fix-margin:margin', 'fix-cee:cee', 'fix-go:goP', 'fix-turpe:turpe', 'fix-turpefix:turpeFix', 'fix-net:net', 'acc-turpe:turpeAcc', 'acc-risk:accRisk', 'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield', 'acc-price:accPrice', 'acc-pmo:pmo'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
   }
 
   window.addEventListener('load', () => setTimeout(() => {

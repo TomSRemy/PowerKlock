@@ -122,6 +122,22 @@ def main():
             p.wait_for_timeout(2000)
             check_views(f'[data-subdomain-panel="{s}"]', 'prices/' + s, 1440)
 
+        # Tools that compute in the page: they must give a result, not only draw
+        where['v'] = 'tools'
+        if p.evaluate("!!document.getElementById('pp-cr-kpis')"):
+            p.evaluate("showPage('ppapricer')"); p.wait_for_timeout(3000)
+            p.evaluate("[...document.querySelectorAll('#page-ppapricer .pk-views .tab-btn')].find(b => /M0/.test(b.textContent)).click()"); p.wait_for_timeout(6000)
+            t = p.evaluate("document.getElementById('pp-cr-kpis').innerText")
+            if '%' not in t or 'NaN' in t:
+                errors.append(f"[tools] M0 contract: no result ({t[:80]!r})")
+        if p.evaluate("!!document.getElementById('cf-ex')"):
+            p.evaluate("showPage('carbonfoot')"); p.wait_for_timeout(1500)
+            p.evaluate("document.getElementById('cf-example').click()"); p.wait_for_timeout(9000)
+            p.evaluate("[...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Carbon').click()"); p.wait_for_timeout(1500)
+            p.evaluate("(document.querySelector('#cf-ex td[data-a]') || {click(){}}).click()"); p.wait_for_timeout(800)
+            if 'g/kWh' not in p.evaluate("document.getElementById('cf-ex-detail').innerText"):
+                errors.append('[tools] carbon explorer: a click on the matrix opens no detail')
+
         # Quick search opens and finds a chart
         where['v'] = 'search'
         p.keyboard.press('Control+k')
@@ -130,6 +146,10 @@ def main():
         p.wait_for_timeout(300)
         if not p.evaluate("document.querySelectorAll('#pk-search .pk-s-row').length"):
             errors.append('[search] no result for "gas storage"')
+        p.keyboard.press('Escape')
+        p.keyboard.press('Control+k'); p.wait_for_timeout(300); p.keyboard.type('prix négatifs'); p.wait_for_timeout(300)
+        if not p.evaluate("document.querySelectorAll('#pk-search .pk-s-row').length"):
+            errors.append('[search] no result for "prix négatifs" (French words)')
         p.keyboard.press('Escape')
 
         # Phone width: nothing wider than the screen (separate page: the

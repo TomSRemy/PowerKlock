@@ -3098,6 +3098,18 @@
   .cf-hm th { color:var(--text3); font-weight:500; padding:2px 4px; text-align:center; white-space:nowrap; }
   .cf-hm tbody th { text-align:right; padding-right:8px; color:var(--text2); }
   .cf-hm td { height:22px; border-radius:3px; text-align:center; color:#fff; font-size:9.5px; }
+  .cf-ex-wrap { display:grid; grid-template-columns:minmax(0,1fr) 270px; gap:14px; align-items:start; }
+  @media (max-width: 900px) { .cf-ex-wrap { grid-template-columns:1fr; } }
+  .cf-ex table { min-width:500px; border-spacing:1px; } .cf-ex td { height:20px; font-size:8.5px; }
+  .cf-ex td, .cf-ex th[data-a], .cf-ex th[data-h] { cursor:pointer; }
+  .cf-ex td:hover, .cf-ex .cf-ex-on { outline:2px solid var(--text); outline-offset:-1px; }
+  .cf-ex-detail { border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--bg2); font-size:12px; min-height:180px; }
+  .cf-ex-kv { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; align-items:baseline; margin-bottom:10px; }
+  .cf-ex-kv span { color:var(--text3); font-size:11px; } .cf-ex-kv span:nth-child(3n) { grid-column:1 / -1; margin:-1px 0 5px; font-size:10px; } .cf-ex-kv b { font-variant-numeric:tabular-nums; }
+  .cf-ex-mix { display:flex; height:10px; border-radius:3px; overflow:hidden; margin:6px 0 4px; }
+  .cf-ex-mixl { display:flex; flex-wrap:wrap; gap:4px 10px; font-size:10.5px; color:var(--text2); }
+  .cf-ex-mixl i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; }
+  .cf-ex-tip { margin-top:10px; padding:8px 10px; border-radius:6px; background:var(--bg3); line-height:1.5; }
   .cf-hm-leg { display:flex; align-items:center; gap:8px; margin-top:8px; font:10px 'JetBrains Mono',monospace; color:var(--text3); }
   .cf-hm-leg i { display:inline-block; width:160px; height:10px; border-radius:3px; }
   .cf-status { font-size:11.5px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
@@ -5115,6 +5127,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <button class="pk-gf-btn" data-d="-1" onclick="PKMap.setDay(-1)">Yesterday</button>
           <button class="pk-gf-btn active" data-d="0" onclick="PKMap.setDay(0)">Today</button>
           <button class="pk-gf-btn" data-d="1" onclick="PKMap.setDay(1)" title="Day-ahead prices only">Tomorrow</button>
+          <input type="date" id="pm-date" class="pm-date" aria-label="Any day of the last month" title="Replay any day of the last month" onchange="this.value && PKMap.setDay(this.value)">
         </div>
         <div class="pm-time">
           <button class="pm-play" id="pm-play" onclick="PKMap.play()" title="Play the day">▶</button>
@@ -5642,6 +5655,25 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <details class="pp-fold" style="margin-top:12px"><summary>The months in detail</summary><div id="pp-st-months"></div></details>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-cr">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-cr')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l5-5 4 3 7-7"/><circle cx="20" cy="6" r="1.5"/></svg>Aggregation contract indexed on the M0<span class="pk-hs-meta">Park under complément de rémunération · A % × M0, M0 − B, A % × M0 − B</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-cr">
+<div class="pk-sec-controls" style="flex-wrap:wrap"><span class="fuel-toolbar-lbl">Formula</span><select class="country-select" id="pp-cr-formula" aria-label="Formula"><option value="ab">A % × M0 − B</option><option value="a">A % × M0</option><option value="b">M0 − B</option></select>
+<span class="fuel-toolbar-lbl">Margin</span><input class="pp-in" id="pp-cr-margin" type="number" step="0.1" style="width:70px" aria-label="Target margin, €/MWh"><span class="fuel-toolbar-lbl">€/MWh</span>
+<span class="fuel-toolbar-lbl">Fees</span><input class="pp-in" id="pp-cr-fee" type="number" step="0.1" style="width:70px" aria-label="Variable fees, €/MWh" title="Market access, scheduling, management: €/MWh"><span class="fuel-toolbar-lbl">€/MWh +</span><input class="pp-in" id="pp-cr-feem" type="number" step="10" style="width:80px" aria-label="Fixed fees, € per month" title="Fixed costs of the contract, € per month"><span class="fuel-toolbar-lbl">€/month</span>
+<span class="fuel-toolbar-lbl">Imbalance</span><input class="pp-in" id="pp-cr-imb" type="number" step="0.1" style="width:70px" placeholder="auto" aria-label="Imbalance cost, €/MWh" title="Empty: national cost of the technology over 12 months × the factor"><span class="fuel-toolbar-lbl">€/MWh or national ×</span><input class="pp-in" id="pp-cr-imbf" type="number" step="0.1" style="width:60px" aria-label="Single-park factor on the national imbalance cost">
+<span class="fuel-toolbar-lbl">Volume</span><input class="pp-in" id="pp-cr-vol" type="number" step="100" style="width:90px" placeholder="auto" aria-label="Yearly output, MWh"><span class="fuel-toolbar-lbl">MWh/yr</span>
+<span class="fuel-toolbar-lbl">Months used</span><select class="country-select" id="pp-cr-years" aria-label="Months used for A and B"><option value="recent">last 3 years</option><option value="no2022">all but 2022</option><option value="all">all since 2017</option></select>
+<span class="fuel-toolbar-lbl">M0 level</span><select class="country-select" id="pp-cr-level" aria-label="M0 level priced"><option value="fwd">from the forwards</option><option value="hist">average of the months used</option></select>
+<label class="fuel-toolbar-lbl"><input type="checkbox" id="pp-cr-stop"> park stops at negative prices</label></div>
+<div class="pp-explain">For a park under <b>complément de rémunération</b>: the State pays the producer the gap between its reference tariff and the M0; Selfee sells the output and pays the producer an amount indexed on the M0 of the technology. A and B depend on the market (how far the park earns from the M0, the imbalance cost) and on the fixed costs, margin included. With no curve loaded the park follows the national profile and earns the M0 almost exactly: load its curve (file above, or Tools › Production forecast › Price this park) to see its own gap.</div>
+<div class="kpi-strip fuel-kpis pp-k5" id="pp-cr-kpis"></div>
+<div id="pp-cr-body"></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-pp-price">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-price')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>PPA price<span class="pk-hs-meta">How the price is built, step by step</span></div>
@@ -5771,7 +5803,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="cf-form"><label class="cf-field fc-solar"><span>Panel tilt</span><span class="cf-in"><input type="number" id="fc-tilt" step="1" value="30" min="0" max="90"><em>°</em></span></label><label class="cf-field fc-solar"><span>Azimuth (0 = south)</span><span class="cf-in"><input type="number" id="fc-az" step="1" value="0" min="-180" max="180"><em>°</em></span></label><label class="cf-field fc-solar"><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-s" step="0.5" value="14" min="0" max="50"><em>%</em></span></label><label class="cf-field fc-wind" hidden><span>Hub height</span><select id="fc-hub"><option value="80">80 m</option><option value="100">100 m</option><option value="120">120 m</option><option value="150">150 m</option><option value="180">180 m</option></select></label><label class="cf-field fc-wind" hidden><span>Turbine class</span><select id="fc-cls"><option value="low">Low wind (large rotor)</option><option value="medium">Medium wind</option><option value="high">High wind</option></select></label><label class="cf-field fc-wind" hidden><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-w" step="0.5" value="12" min="0" max="50"><em>%</em></span></label></div>
 <div class="fc-opts"><label class="fc-chk fc-solar"><input type="checkbox" id="fc-calfr" checked> Monthly correction learned on French solar output</label><label class="fc-chk"><input type="checkbox" id="fc-curt"> Curtail at day-ahead prices ≤ 0 €</label>
 <label class="pk-btn-ghost fc-calbtn">Calibrate on the site’s metered output (CSV or Excel)<input type="file" id="fc-calfile" accept=".csv,.txt,.xlsx,.xls" hidden></label><button type="button" class="pk-btn-ghost" id="fc-calreset">Remove calibration</button></div>
+<div class="fuel-note" id="fc-range-note" hidden style="color:#FBBF24"></div>
 <div class="fuel-note" id="fc-calinfo"></div>
+<div id="fc-perf"></div>
 <div class="cf-status" id="fc-status"></div>
 <div class="kpi-strip fuel-kpis" id="fc-kpis" style="grid-template-columns:repeat(4,1fr);margin-top:10px"></div>
         </div>
@@ -5796,7 +5830,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-fc-price">
-<div class="fc-opts"><button type="button" class="pk-btn-primary" id="fc-hist-btn">Build the park’s history (ERA5, 2005 → last year)</button><button type="button" class="pk-btn-ghost" id="fc-hist-send" hidden>Price it in the PPA pricer →</button></div>
+<div class="fc-opts"><button type="button" class="pk-btn-primary" id="fc-hist-btn">Build the park’s history (ERA5, 2005 → last year)</button><button type="button" class="pk-btn-ghost" id="fc-hist-send" hidden>Price it in the PPA pricer →</button><label class="fuel-toolbar-lbl" title="By default the level comes from the model with the single-park factor; the annex P50s of four metered parks were 8–17 % below their real output"><input type="checkbox" id="fc-hist-p50"> level from the P50</label><button type="button" class="pk-btn-ghost" id="fc-hist-pptx" hidden title="The park on a few slides: output P50/P90, capture rate, and the prices from the PPA pricer and the M0 contract when they were run">⤓ Park sheet (PowerPoint)</button></div>
 <div class="cf-status" id="fc-hist-status">Uses the site above: coordinates, capacity, panels or turbine, injection limit, P50 if entered, and the metered output if loaded for calibration.</div>
 <div id="fc-hist"></div>
         </div>
@@ -5891,6 +5925,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-cf-carbon">
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily consumption and its carbon intensity</div><div class="fuel-card-sub">MWh per day · g CO₂/kWh of the French grid weighted by your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-daily" style="width:100%;height:320px"></canvas></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Explore your consumption · click for the detail</div><div class="fuel-card-sub">One matrix, the measure you choose; a cell, a row or a column opens what happened then: the grid mix, the price, your share, what moving part of it would save</div></div><div class="pk-sec-controls" style="margin:0"><select class="country-select" id="cf-ex-metric" aria-label="Measure"><option value="ci">Grid carbon intensity</option><option value="kw">Your power (kW)</option><option value="em">Your emissions</option><option value="p">Day-ahead price</option><option value="cost">Your spot cost</option><option value="share">Share of your consumption</option></select><select class="country-select" id="cf-ex-grid" aria-label="Rows"><option value="mh">month × hour</option><option value="wh">day of the week × hour</option></select></div></div>
+<div class="cf-ex-wrap"><div id="cf-ex" style="min-width:0"></div><div id="cf-ex-detail" class="cf-ex-detail"><div class="fuel-note">Click a cell of the matrix, a month or an hour, or a day of the calendar below.</div></div></div></div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Green days calendar</div><div class="fuel-card-sub" id="cf-cal-sub">One square per day, coloured by the carbon intensity of your consumption</div></div></div><div id="cf-cal"></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Your average day</div><div class="fuel-card-sub">Consumption by hour and the grid intensity at those hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-hours" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">When the grid is clean · month × hour</div><div class="fuel-card-sub">Average CO₂ intensity of French generation (g/kWh)</div></div><span class="source-badge">RTE éCO2mix</span></div><div id="cf-hm-ci"></div></div></div>
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Where your electricity came from</div><div class="fuel-card-sub">French generation at the time of each of your quarter-hours</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cf-mix" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Scope 2 by month</div><div class="fuel-card-sub">t CO₂ · location-based (quarter-hourly) and market-based</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="cf-monthly" style="width:100%;height:300px"></canvas></div></div></div>
@@ -5907,7 +5943,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="cf-form"><label class="cf-field"><span>Delivery period</span><select id="cf-fix-period"><option value="cal1">Next calendar year</option><option value="next12">Next 12 months</option><option value="cal2">Calendar year after next</option></select></label></div>
 <div id="cf-fix" style="margin-bottom:14px"></div>
 <div class="pp-group-t" style="margin-top:4px">Your whole bill · taxes and ACC</div>
-<div class="cf-form"><label class="cf-field"><span>Connection (sets the excise)</span><select id="cf-fix-conn"><option value="auto">From your peak power</option><option value="small">≤ 36 kVA · 30.62 €/MWh</option><option value="large">&gt; 36 kVA · 26.35 €/MWh</option></select></label><label class="cf-field"><span>Supplier margin</span><span class="cf-in"><input type="number" id="cf-fix-margin" min="0" step="any" value="2" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>Energy savings certificates (CEE)</span><span class="cf-in"><input type="number" id="cf-fix-cee" min="0" step="any" value="10" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>Guarantees of origin</span><span class="cf-in"><input type="number" id="cf-fix-go" min="0" step="any" value="0" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>TURPE variable part</span><span class="cf-in"><input type="number" id="cf-fix-turpe" min="0" step="any" value="" placeholder="from your bill"><em>€/MWh</em></span></label><label class="cf-field"><span>TURPE fixed part</span><span class="cf-in"><input type="number" id="cf-fix-turpefix" min="0" step="any" value="" placeholder="management, metering, power"><em>€/year</em></span></label><label class="cf-field"><span>Network (sets the CTA)</span><select id="cf-fix-net"><option value="dist">Distribution · CTA 15 %</option><option value="trans">Transmission · CTA 5 %</option></select></label></div>
+<div class="cf-form"><label class="cf-field"><span>Country (taxes and levies)</span><select id="cf-fix-country"><option value="FR">France</option><option value="BE-WAL">Belgium · Wallonia</option><option value="BE-VLA">Belgium · Flanders</option><option value="BE-BRU">Belgium · Brussels</option></select></label><label class="cf-field cf-be"><span>Green certificates (BE)</span><span class="cf-in"><input type="number" id="cf-fix-gc" min="0" step="any" value="" placeholder="tariff card"><em>€/MWh</em></span></label><label class="cf-field"><span>Connection (sets the excise)</span><select id="cf-fix-conn"><option value="auto">From your peak power</option><option value="small">≤ 36 kVA · 30.62 €/MWh</option><option value="large">&gt; 36 kVA · 26.35 €/MWh</option></select></label><label class="cf-field"><span>Supplier margin</span><span class="cf-in"><input type="number" id="cf-fix-margin" min="0" step="any" value="2" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>Energy savings certificates (CEE)</span><span class="cf-in"><input type="number" id="cf-fix-cee" min="0" step="any" value="10" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>Guarantees of origin</span><span class="cf-in"><input type="number" id="cf-fix-go" min="0" step="any" value="0" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>TURPE variable part</span><span class="cf-in"><input type="number" id="cf-fix-turpe" min="0" step="any" value="" placeholder="from your bill"><em>€/MWh</em></span></label><label class="cf-field"><span>TURPE fixed part</span><span class="cf-in"><input type="number" id="cf-fix-turpefix" min="0" step="any" value="" placeholder="management, metering, power"><em>€/year</em></span></label><label class="cf-field"><span>Network (sets the CTA)</span><select id="cf-fix-net"><option value="dist">Distribution · CTA 15 %</option><option value="trans">Transmission · CTA 5 %</option></select></label></div>
 <div class="cf-form"><label class="cf-field"><span>ACC installation (solar)</span><span class="cf-in"><input type="number" id="cf-acc-kwc" min="0" step="1" value="0" placeholder=""><em>kWc</em></span></label><label class="cf-field"><span>Your allocation key</span><span class="cf-in"><input type="number" id="cf-acc-key" min="0" step="1" value="100" placeholder=""><em>%</em></span></label><label class="cf-field"><span>Specific yield</span><span class="cf-in"><input type="number" id="cf-acc-yield" min="0" step="10" value="1150" placeholder=""><em>kWh/kWc/yr</em></span></label><label class="cf-field"><span>ACC energy price</span><span class="cf-in"><input type="number" id="cf-acc-price" min="0" step="any" value="80" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>PMO fees</span><span class="cf-in"><input type="number" id="cf-acc-pmo" min="0" step="any" value="7.5" placeholder=""><em>€/MWh</em></span></label><label class="cf-field"><span>TURPE on ACC energy</span><span class="cf-in"><input type="number" id="cf-acc-turpe" min="0" step="any" value="" placeholder="ACC option, if chosen"><em>€/MWh</em></span></label><label class="cf-field"><span>Complement risk</span><span class="cf-in"><input type="number" id="cf-acc-risk" min="0" step="any" value="" placeholder="auto: solar imbalance"><em>€/MWh ACC</em></span></label></div>
 <div id="cf-bill" style="margin-bottom:14px"></div>
 <div class="chart-container fuel-card" id="cf-accday-card" hidden style="margin-bottom:14px"><div class="fuel-card-head"><div><div class="table-title">Hour by hour with the ACC</div><div class="fuel-card-sub" id="cf-accday-sub">Average day</div></div><select id="cf-accday-m" class="pk-select" style="font-size:11px"><option value="all">Whole year</option><option value="sum">Apr–Sep</option><option value="win">Oct–Mar</option><option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option><option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option><option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option><option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option></select></div><div style="position:relative;height:300px"><canvas id="cf-accday" style="width:100%;height:300px"></canvas></div></div>
@@ -6109,6 +6145,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price vs solar or wind share, hour by hour · France and its neighbours</div><div class="fuel-card-sub" id="cn-hc-sub"></div></div><select class="country-select" id="cn-hc-mode" aria-label="Share counted on" title="Whose solar or wind share"><option value="regional">Share of the coupled region</option><option value="own">Share of the country alone</option></select></div><div style="position:relative;height:380px"><canvas id="cn-hc" style="width:100%;height:380px"></canvas></div></div></div>
 <div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Hours at zero or negative prices · history and projection</div><div class="fuel-card-sub" id="cn-negh-sub"></div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div><div style="position:relative;height:340px"><canvas id="cn-negh" style="width:100%;height:340px"></canvas></div></div></div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily production profile by month</div><div class="fuel-card-sub" id="cn-prof-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="cn-prof" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">How to read these charts</div><div class="fuel-card-sub">Method</div></div></div><div class="fuel-note" style="font-size:12px;line-height:1.6">Capture rate = output-weighted day-ahead price ÷ baseload, per year (RTE éCO2mix output × ENTSO-E prices, quarter-hours). With the PPA Dashboard convention, hours with a price ≤ 0 are left out of both (production assumed stopped). The projection starts from the last complete year; the regression uses the last three complete years; bands widen by 4 pts × √years. The log fit links the capture rate to installed capacity (Energy-Charts) and reads it at the PPE3 targets. The same engine prices PPAs in Tools › PPA pricer.</div></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Capture rate by region</div><div class="fuel-card-sub" id="cn-reg-sub">Each region's solar and wind output on the French day-ahead price, against the national capture rate</div></div><div class="pk-sec-controls" style="margin:0"><select class="country-select" id="cn-reg-year" aria-label="Year"></select></div><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div><div style="position:relative;height:340px"><canvas id="cn-reg" style="width:100%;height:340px"></canvas></div><div class="fuel-note" id="cn-reg-note"></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-renewables-capfwd">
@@ -6629,7 +6666,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px" class="go-pair">
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="table-title">Forward curve — Cal 2025 → 2028</span>
+            <span class="table-title" id="go-cal-title">Forward curve by production year</span>
 
           </div>
           <div style="position:relative;height:280px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:280px"></canvas></div>
@@ -6900,6 +6937,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="fuel-card-head"><div><div class="table-title">France · forecast, today and tomorrow <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fc-sub">TSO day-ahead forecast</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
           <div style="position:relative;height:300px"><canvas id="mrn-fc" style="width:100%;height:300px"></canvas></div>
         </div>
+<div class="fuel-grid-2" style="margin-top:12px"><div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">France · wind, PowerKlock vs TSO <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fcc-sub">Combined forecast with its P10–P90 band</div></div><span class="source-badge">PowerKlock model</span></div>
+          <div style="position:relative;height:260px"><canvas id="mrn-fcc" style="width:100%;height:260px"></canvas></div>
+        </div><div class="chart-container fuel-card">
+          <div class="fuel-card-head"><div><div class="table-title">France · solar, PowerKlock vs TSO <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fcs-sub">Combined forecast with its P10–P90 band</div></div><span class="source-badge">PowerKlock model</span></div>
+          <div style="position:relative;height:260px"><canvas id="mrn-fcs" style="width:100%;height:260px"></canvas></div>
+        </div></div>
+<div class="chart-container fuel-card" style="margin-top:12px">
+          <div class="fuel-card-head"><div><div class="table-title">France · day-ahead price and chance of a negative price <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-neg-sub">Each hour of today and tomorrow</div></div><span class="source-badge">PowerKlock model</span></div>
+          <div style="position:relative;height:240px"><canvas id="mrn-neg" style="width:100%;height:240px"></canvas></div>
+        </div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-morning-2">
@@ -7119,6 +7167,16 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <table><thead><tr><th class="l">Technology</th><th>GW</th><th>Share</th><th>5 years earlier</th><th>Change</th></tr></thead><tbody id="cap-tbody"></tbody></table>
         </div>
       </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-capacity-ppe">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capacity-ppe')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.5"/></svg>France against the PPE3<span class="pk-hs-meta">Solar and onshore wind installed vs the 2030 and 2035 targets · pace needed vs recent pace</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-capacity-ppe">
+<div class="kpi-strip fuel-kpis" id="cap-ppe-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Installed capacity and the PPE3 path</div><div class="fuel-card-sub" id="cap-ppe-sub">GW, end of year · dashed: straight line to the targets</div></div><span class="source-badge">Energy-Charts · PPE3</span></div><div style="position:relative;height:300px"><canvas id="cap-ppe" style="width:100%;height:300px"></canvas></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-capacity-1">
@@ -8177,6 +8235,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/morning.js"></script>
 <script src="js/market-update.js"></script>
 <script src="js/capture-forward.js"></script>
+<script src="js/capture-regions.js"></script>
+<script src="js/cap-ppe.js"></script>
 <script src="js/market-brief.js"></script>
 <script src="js/scope.js"></script>
 <script src="js/views.js"></script>
@@ -8189,6 +8249,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/ppa-wx.js"></script>
 <script src="js/tool-ppa.js"></script>
 <script src="js/ppa-st.js"></script>
+<script src="js/ppa-cr.js"></script>
 <script src="js/ppa-fan.js"></script>
 <script src="js/embed.js"></script>
 <script src="js/api-page.js"></script>

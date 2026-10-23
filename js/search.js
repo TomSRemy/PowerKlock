@@ -22,6 +22,14 @@
       const m = el.getAttribute('onclick').match(/prSelectSubdomain\('([^']+)'\)/); if (!m) return;
       out.push({ kind: 'Page', label: 'Prices › ' + el.textContent.trim(), sub: 'Power', go: () => { window.showPage('prices'); window.prSelectSubdomain(m[1]); } });
     });
+    // sections of every page (tools included): open the page, the view tab holding the section, and scroll to it
+    document.querySelectorAll('.page[id^="page-"] .hist-section-strong[id]').forEach(sec => {
+      const t = sec.querySelector('.hist-section-title'); if (!t) return;
+      const page = sec.closest('.page').id.slice(5), meta = (t.querySelector('.pk-hs-meta') || {}).textContent || '';
+      const label = [...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(' ').trim(); if (!label) return;
+      const navEl = document.getElementById('nav-' + page), pageName = navEl ? navEl.textContent.trim() : page;
+      out.push({ kind: 'Section', label: pageName + ' › ' + label, sub: meta.trim(), go: () => openSection(page, sec) });
+    });
     if (window.PKW) PKW.list().forEach(w => {
       out.push({ kind: 'Chart', label: w.title, sub: [w.source, w.desc].filter(Boolean).join(' · '), w, go: () => openChart(w) });
     });
@@ -29,6 +37,20 @@
     return out;
   }
 
+  function openSection(page, sec) {
+    window.showPage(page);
+    setTimeout(() => {
+      if (sec.style.display === 'none') { for (const t of sec.closest('.page').querySelectorAll('.pk-views .tab-btn')) { t.click(); if (sec.style.display !== 'none') break; } }
+      setTimeout(() => { sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); sec.classList.add('pk-found'); setTimeout(() => sec.classList.remove('pk-found'), 2200); }, 250);
+    }, 450);
+  }
+  // French words typed in the search find the English labels
+  const FR = { negatif: 'negative', negatifs: 'negative', prix: 'price', eolien: 'wind', eolienne: 'wind', solaire: 'solar', nucleaire: 'nuclear', charbon: 'coal', gaz: 'gas',
+    prevision: 'forecast', previsions: 'forecast', consommation: 'consumption', carbone: 'carbon', parc: 'park', production: 'output', capacite: 'capacity', echanges: 'flows',
+    stockage: 'storage', hydraulique: 'hydro', meteo: 'weather', garanties: 'guarantees', origine: 'origin', facture: 'bill', fourniture: 'supply', ecarts: 'imbalance',
+    desequilibre: 'imbalance', interconnexion: 'flows', marche: 'market', actualites: 'news', alerte: 'alert', alertes: 'alerts', cannibalisation: 'cannibalisation',
+    complement: 'complément', remuneration: 'complément', agregation: 'aggregation', taux: 'rate', cout: 'cost', couts: 'cost', fixe: 'fixed', regions: 'regions', region: 'region' };
+  const tr = q => norm(q).split(/\s+/).filter(Boolean).map(w => FR[w] || w).join(' ');
   function openChart(w) {
     if (!w.page) return;
     if (w.page === 'prices') window.showPage('prices'); else window.showPage(w.page);
@@ -55,10 +77,10 @@
 
   function score(o, q) {
     if (!q) return 0;
-    const words = norm(q).split(/\s+/).filter(Boolean);
+    const words = norm(tr(q)).split(/\s+/).filter(Boolean);
     let s = 0;
     for (const w of words) { const i = o.key.indexOf(w); if (i < 0) return -1; s += i === 0 ? 3 : norm(o.label).includes(w) ? 2 : 1; }
-    return s + (o.kind === 'Page' ? 1 : 0);
+    return s + (o.kind === 'Page' ? 1 : o.kind === 'Section' ? 0.5 : 0);
   }
 
   function close() { const m = document.getElementById('pk-search'); if (m) m.remove(); }
@@ -116,6 +138,7 @@
   .pk-s-row.on,.pk-s-row:hover{background:var(--accent-dim)}
   .pk-s-k{grid-row:1/3;align-self:center;font:600 9.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);border:1px solid var(--border2);border-radius:4px;text-align:center;padding:2px 0}
   .pk-s-k.page{color:var(--accent);border-color:rgba(20,211,169,.4)}
+  .pk-s-k.section{color:#7FC8F8;border-color:rgba(127,200,248,.4)}
   .pk-s-l{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pk-s-sub{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pk-s-empty{padding:16px;color:var(--text3);font-size:12px;text-align:center}

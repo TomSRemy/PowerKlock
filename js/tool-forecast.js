@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const S = { tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
+  const S = { useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem('pk-fcst') || '{}')); } catch (_) {}
   const save = () => { try { localStorage.setItem('pk-fcst', JSON.stringify(S)); } catch (_) {} };
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -232,10 +232,17 @@
   function wire() {
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
     const ids = { 'fc-inj': 'inj', 'fc-p50': 'p50', 'fc-tech': 'tech', 'fc-lat': 'lat', 'fc-lon': 'lon', 'fc-mw': 'mw', 'fc-tilt': 'tilt', 'fc-az': 'az', 'fc-loss-s': 'lossS', 'fc-hub': 'hub', 'fc-cls': 'cls', 'fc-loss-w': 'lossW', 'fc-zone': 'zone' };
-    Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => { S[k] = e.type === 'number' ? +e.value : e.value; vis(); run(); }); });
+    // sane ranges: a value outside is brought back to the nearest limit, and said so
+    const RANGE = { lat: [-90, 90, 'latitude'], lon: [-180, 180, 'longitude'], mw: [0.01, 5000, 'capacity (MW)'], tilt: [0, 90, 'tilt (°)'], az: [-180, 180, 'azimuth (°)'],
+      lossS: [0, 60, 'losses (%)'], lossW: [0, 60, 'losses (%)'], hub: [20, 250, 'hub height (m)'], inj: [0, 5000, 'injection limit (MW)'], p50: [0, 3000, 'P50 (kWh/kWc)'] };
+    Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => {
+      let v = e.type === 'number' ? (e.value === '' ? (k === 'inj' || k === 'p50' ? '' : S[k]) : +e.value) : e.value;
+      const r = RANGE[k], note = $('fc-range-note');
+      if (r && v !== '' && typeof v === 'number' && (v < r[0] || v > r[1] || !isFinite(v))) { const was = v; v = Math.min(r[1], Math.max(r[0], isFinite(v) ? v : r[0])); e.value = v; if (note) { note.textContent = `${r[2]} ${was} is outside ${r[0]}–${r[1]}: set to ${v}.`; note.hidden = false; setTimeout(() => { note.hidden = true; }, 6000); } }
+      S[k] = v; vis(); run(); }); });
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
-    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory);
+    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const up = $('fc-hist-p50'); if (up) { up.checked = S.useP50; up.addEventListener('change', () => { S.useP50 = up.checked; if (ERA_LAST) buildHistory(); }); } const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
     const sbt = $('fc-hist-send'); if (sbt) sbt.addEventListener('click', sendToPricer);
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
@@ -328,9 +335,43 @@
       const cal = { n: rows.length, period: `${rows[0].t.slice(0, 10)} → ${rows[rows.length - 1].t.slice(0, 10)}`, shift, curtRatio, span: Math.round(span) };
       if (bins) cal.bins = bins; else if (scale) cal.scale = scale;
       cal.nmae0 = err(teD, base); cal.nmae1 = err(teD, fit);
+      try { perfCheck(rows, r => daylight(r) && free(r), cal.nmae1 < cal.nmae0 ? fit : base); } catch (e) { console.warn('[fcst] perf', e); }
       if (!(cal.nmae1 < cal.nmae0)) { if (el) el.innerHTML = `Calibration not applied: on the test third it does not beat the model (${(cal.nmae0 * 100).toFixed(1)} % → ${(cal.nmae1 * 100).toFixed(1)} % of capacity). Clock of the file: ${shift.winter >= 0 ? '+' : ''}${shift.winter} h in winter, ${shift.summer >= 0 ? '+' : ''}${shift.summer} h in summer. Check the technology, the coordinates and the capacity entered.`; return; }
       S.cal[siteKey()] = cal; save(); calInfo(); run();
     } catch (e) { if (el) el.textContent = 'Calibration failed: ' + e.message; }
+  }
+
+  // ── Performance check: the park against what the weather allowed, week by week; days it stopped ──
+  //   ratio = metered output ÷ modelled output on hours priced above 5 €/MWh (no curtailment); a week below the
+  //   usual ratio by more than 15 % (or 2.5 robust deviations) is flagged; a day is "stopped" when the model
+  //   expected a real output and the park gave less than 5 % of it
+  function perfCheck(rows, use, model) {
+    const host = $('fc-perf'); if (!host) return;
+    const wk = {}, dy = {};
+    const monday = t => { const d = new Date(t.slice(0, 10) + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+    rows.forEach(r => { if (!use(r)) return; const m = model(r), w = monday(r.t), d = r.t.slice(0, 10);
+      const a = wk[w] || (wk[w] = [0, 0]); a[0] += r.y; a[1] += m; const b = dy[d] || (dy[d] = [0, 0]); b[0] += r.y; b[1] += m; });
+    const W = Object.keys(wk).sort().filter(w => wk[w][1] > 0.02 * S.mw * 24);
+    if (W.length < 8) { host.innerHTML = ''; return; }
+    const R = W.map(w => wk[w][0] / wk[w][1]), srt = R.slice().sort((a, b) => a - b), med = srt[Math.floor(srt.length / 2)];
+    const mad = R.map(x => Math.abs(x - med)).sort((a, b) => a - b)[Math.floor(R.length / 2)] * 1.4826;
+    // usual ratio of the same calendar month when it has 3 weeks or more (the model is weaker in winter: low sun, fog, snow)
+    const byM = {}; W.forEach((w, i) => (byM[w.slice(5, 7)] = byM[w.slice(5, 7)] || []).push(R[i]));
+    const usual = w => { const a = byM[w.slice(5, 7)]; if (!a || a.length < 3) return med; const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+    const limW = w => Math.min(usual(w) * 0.85, usual(w) - 2.5 * mad), lim = Math.min(med * 0.85, med - 2.5 * mad);
+    const flags = W.map((w, i) => R[i] < limW(w) ? { w, r: R[i] / usual(w), lost: (wk[w][1] * usual(w) - wk[w][0]) } : null).filter(Boolean);
+    const typDay = Object.values(dy).map(x => x[1]).sort((a, b) => a - b)[Math.floor(Object.keys(dy).length / 2)] || 0;
+    const stops = Object.keys(dy).sort().filter(d => dy[d][1] > 0.3 * typDay && dy[d][0] < 0.05 * dy[d][1]);
+    const lostTot = flags.reduce((s, x) => s + x.lost, 0) + stops.reduce((s, d) => s + dy[d][1] * usual(d) - dy[d][0], 0);
+    const totE = W.reduce((s, w) => s + wk[w][0], 0);
+    host.innerHTML = `<div class="chart-container fuel-card" style="margin-top:10px"><div class="fuel-card-head"><div><div class="table-title">Performance check · the park against its weather</div><div class="fuel-card-sub">Metered ÷ modelled output each week, hours priced above 5 €/MWh (no curtailment) · usual ratio ${med.toFixed(2)} (by month when known), alert 15 % below it</div></div><span class="source-badge">Your file · Open-Meteo</span></div>
+      <div style="position:relative;height:220px"><canvas id="fc-perf-c" style="width:100%;height:220px"></canvas></div>
+      <div class="fuel-note">${flags.length || stops.length ? `<b>${flags.length} week${flags.length === 1 ? '' : 's'} under the usual level</b>${flags.length ? ' (' + flags.slice(-6).map(x => x.w + ' ' + Math.round((x.r - 1) * 100) + ' %').join(', ') + (flags.length > 6 ? '…' : '') + ')' : ''} and <b>${stops.length} day${stops.length === 1 ? '' : 's'} stopped</b> while the weather allowed output${stops.length ? ' (' + stops.slice(-6).join(', ') + (stops.length > 6 ? '…' : '') + ')' : ''}: about <b>${(lostTot).toLocaleString('en-GB', { maximumFractionDigits: 0 })} MWh</b> not produced, ${(lostTot / Math.max(1e-9, totE) * 100).toFixed(1)} % of the output over the period. Worth checking with the operator: outages, inverter faults, grid works, soiling, shading.` : 'No week below the usual level and no stopped day: the park produced what its weather allowed.'} The model is the forecast archive of the place, so a week with poor forecasts can also look low; a flag that repeats or a stopped day is the signal.</div></div>`;
+    _fuelChart('fc-perf-c', { type: 'bar', data: { labels: W, datasets: [
+      { label: 'Metered ÷ modelled', data: R.map(x => +x.toFixed(3)), backgroundColor: R.map((x, i) => x < limW(W[i]) ? 'rgba(237,105,101,.75)' : 'rgba(127,200,248,.5)'), borderRadius: 2 },
+      { type: 'line', label: 'Usual for the month', data: W.map(w => +usual(w).toFixed(3)), borderColor: '#E6EDF3', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
+      { type: 'line', label: 'Alert', data: W.map(w => +limW(w).toFixed(3)), borderColor: '#ED6965', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 0 }] },
+      options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('ratio', { beginAtZero: true }) } }) }, 'park-performance');
   }
   function vis() {
     document.querySelectorAll('#page-fcst .fc-solar').forEach(e => { e.hidden = S.tech !== 'solar'; });
@@ -368,10 +409,10 @@
     const host = $('fc-nat'); if (!host) return;
     let j; try { const r = await fetch(DATA_BASE + 'history/fcst_national.json'); j = r.ok ? await r.json() : null; } catch (_) { j = null; }
     if (!j) { host.innerHTML = ''; return; }
-    const N = { ent: 'ENTSO-E (TSO day-ahead)', n0: 'Ours · generic', n1: 'Ours · + monthly level', n2: 'Ours · full (regression, price, several models)', mix: 'Average of ENTSO-E and ours' };
+    const N = { ent: 'ENTSO-E (TSO day-ahead)', n0: 'Ours · generic', n1: 'Ours · + monthly level', n2: 'Ours · full (regression, price, several models)', n3: 'Ours · + learned weights of regions and models', mix: 'Average of ENTSO-E and ours', stack: 'PowerKlock combined (ours with ENTSO-E as an input) · shown live' };
     const R = j.results, pc = v => (v * 100).toFixed(2);
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Forecast issued the day before</th><th>Solar · hourly error</th><th>Solar · bias</th><th>Wind · hourly error</th><th>Wind · bias</th></tr></thead><tbody>` +
-      Object.keys(N).map(k => { const b = ['solar', 'wind'].map(t => Math.min(...Object.keys(N).map(x => R[t][x].nmae)));
+      Object.keys(N).filter(k => R.solar[k] && R.wind[k]).map(k => { const b = ['solar', 'wind'].map(t => Math.min(...Object.keys(N).filter(x => R[t][x]).map(x => R[t][x].nmae)));
         return `<tr><td style="text-align:left">${N[k]}</td>${['solar', 'wind'].map((t, i) => `<td${R[t][k].nmae === b[i] ? ' style="font-weight:700;color:var(--acc)"' : ''}>${pc(R[t][k].nmae)} %</td><td>${R[t][k].bias >= 0 ? '+' : ''}${pc(R[t][k].bias)}</td>`).join('')}</tr>`; }).join('') +
       `</tbody></table></div><div class="fuel-note">France, ${j.period[0]} → ${j.period[1]}: error of the national solar and wind output in % of installed capacity (solar: daylight hours), each month predicted with corrections learned only on the months before. Actual output: RTE éCO2mix. Ours: one point per region weighted by its installed capacity, offshore farms apart.</div>`;
     const draw = (cid, t) => { const m = j.monthly[t]; if (!m) return; const L = Object.keys(m);
@@ -379,6 +420,7 @@
         { label: 'ENTSO-E', data: L.map(k => m[k].ent), borderColor: 'rgba(122,147,171,.9)', borderWidth: 1.6, pointRadius: 2, fill: false },
         { label: 'Ours', data: L.map(k => m[k].n2), borderColor: t === 'solar' ? '#F4C430' : '#14D3A9', borderWidth: 2, pointRadius: 2, fill: false },
         { label: 'Average of both', data: L.map(k => m[k].mix), borderColor: '#A87DC4', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, fill: false },
+        ...(L.some(k => m[k].stack != null) ? [{ label: 'PowerKlock combined', data: L.map(k => m[k].stack), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, fill: false }] : []),
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('hourly error, % of capacity', { beginAtZero: true }) } }) }, cid); };
     draw('fc-nat-solar', 'solar'); draw('fc-nat-wind', 'wind');
   }
@@ -394,7 +436,7 @@
   //   1  weather of every hour 2005 → last year at the park: ERA5 reanalysis
   //   2  the tool's physical model (panels, injection limit, power curve)
   //   3  prior correction learned on the real output of the park's region
-  //      (RTE vs ERA5, month by month, 2016 → 2025: data/history/era5_calib.json)
+  //      (RTE vs ERA5, month by month, 2020 → 2025: data/history/era5_calib.json)
   //   4  the park's own evidence, pooled with the prior (empirical Bayes):
   //      metered output → level fitted on the same hours (priced > 5 €/MWh),
   //      weight n days ÷ (n + 180); else the P50 entered sets the level
@@ -429,18 +471,23 @@
       const sdModel = EC && regName && EC.stability[S.tech] && EC.stability[S.tech][regName] ? EC.stability[S.tech][regName].sd : 0.05;
       const capOut = S.inj !== '' && +S.inj > 0 ? Math.min(S.mw, +S.inj) : S.mw;
       let P = raw.map((x, i) => x == null ? null : Math.min(capOut, x * (fac ? fac[String(+H.time[i].slice(5, 7))] || 1 : 1)));
-      // 4 the park's evidence
-      let level = 1, how = regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2020–2025)` : 'prior: national factor', wSite = 0;
+      // 4 the park's evidence. Prior level of a single solar park: 0.887 of its region's fleet in the same weather
+      //   (four metered parks, 2024–2026: 0.881–0.892; left out one at a time, the value of the second year came within
+      //   −4.8 … +3.3 %, against +7.5 … +16.4 % at the fleet level and −12.5 … −22 % on the annex P50s)
+      const PRIOR = S.tech === 'solar' ? 0.887 : 1;
+      let level = PRIOR, how = (regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2020–2025)` : 'prior: national factor') + (S.tech === 'solar' ? ', × 0.887 for a single park (four metered parks)' : ''), wSite = 0;
       const sc = siteCal();
+      const p50Level = () => { const yrs = new Set(H.time.map(t => t.slice(0, 4))).size, e = P.reduce((s, x) => s + (x || 0), 0) / yrs / S.mw; return e > 0 ? +S.p50 / e : null; };
       if (LAST_ACT && LAST_ACT.key === siteKey() && sc) {
         const idx = new Map(H.time.map((t, i) => [t, i]));
         let sy = 0, sp = 0; const days = new Set();
         LAST_ACT.act.forEach((y, t) => { const tm = shiftKey(t, (sc.shift || {})[isDST(t) ? 'summer' : 'winter'] || 0); const i = idx.get(tm); if (i == null || P[i] == null) return;
           const p = price(tm); if (p != null && p <= 5) return; if (S.tech === 'solar' && P[i] <= 0 && y <= 0) return; sy += y; sp += P[i]; days.add(tm.slice(0, 10)); });
-        if (sp > 0 && days.size >= 30) { const site = sy / sp; wSite = days.size / (days.size + 180); level = wSite * site + (1 - wSite); how = `park’s metered output (${days.size} days, weight ${Math.round(wSite * 100)} %) pooled with the regional prior`; }
+        if (sp > 0 && days.size >= 30) { const site = sy / sp; wSite = days.size / (days.size + 180); level = wSite * site + (1 - wSite) * PRIOR; how = `park’s metered output (${days.size} days, weight ${Math.round(wSite * 100)} %) pooled with the prior`; }
       } else if (S.tech === 'solar' && S.p50 !== '' && +S.p50 > 0) {
-        const yrs = new Set(H.time.map(t => t.slice(0, 4))).size, e = P.reduce((s, x) => s + (x || 0), 0) / yrs / S.mw;
-        if (e > 0) { level = +S.p50 / e; how = `level set on the P50 entered (${S.p50} kWh/kWc), regional prior for the shape`; }
+        const l = p50Level();
+        if (l && S.useP50) { level = l; how = `level set on the P50 entered (${S.p50} kWh/kWc), regional prior for the shape`; }
+        else if (l) how += ` · the P50 entered (${S.p50} kWh/kWc) would give ${Math.round((l / PRIOR - 1) * 100)} % (not used: the annex P50s of four metered parks were 8–17 % below their real output; tick “level from the P50” to use it)`;
       }
       if (level !== 1) P = P.map(x => x == null ? null : Math.min(capOut, x * level));
       // 5 yearly output, P50 / P90
@@ -468,7 +515,7 @@
         _fuelKpi('Output at prices ≤ 0, last year', capY.length ? (cap[capY[capY.length - 1]].neg / Y[capY[capY.length - 1]] * 100).toFixed(1) : '–', '%', `${Math.round(kNeg * 100)} % of it kept (${kHow})`)].join('')}</div>
         <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Yearly output, ${ys[0]}–${ys[ys.length - 1]}</div><div class="fuel-card-sub">GWh · each weather year replayed on today’s park</div></div><span class="source-badge">ERA5 · RTE</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-y" style="width:100%;height:260px"></canvas></div></div>
         <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate year by year</div><div class="fuel-card-sub">the park’s simulated output on the real day-ahead price of each hour</div></div><span class="source-badge">ERA5 · ENTSO-E</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-c" style="width:100%;height:260px"></canvas></div></div></div>
-        <div class="fuel-note">How the level is set: ${how}. P90 = P50 − 1.28 σ, σ combining the spread of the ${ys.length} weather years and the uncertainty of the correction (${(sdModel * 100).toFixed(1)} % a year, less as the park’s own data weighs more). Capture rate: at prices ≤ 0 the park keeps ${Math.round(kNeg * 100)} % of its output (${kHow}); checked on two metered parks over their second year, output value within 1–3 % when the level comes from 12 months of metering, 9–11 % too high on the regional prior alone.</div>`;
+        <div class="fuel-note">How the level is set: ${how}. P90 = P50 − 1.28 σ, σ combining the spread of the ${ys.length} weather years and the uncertainty of the correction (${(sdModel * 100).toFixed(1)} % a year, less as the park’s own data weighs more). Capture rate: at prices ≤ 0 the park keeps ${Math.round(kNeg * 100)} % of its output (${kHow}); checked on four metered parks over their second year: output value within −0.3 … +7 % with 12 months of metering, −5 … +3 % with none (single-park factor), against +8 … +16 % on the regional prior alone and −12 … −22 % on the annex P50s; the capture rate came out 3–6 points below the real one (the model produces a little more in the cheapest hours).</div>`;
       _fuelChart('fc-hist-y', { type: 'bar', data: { labels: ys, datasets: [
         { label: 'Yearly output (GWh)', data: E.map(x => +(x / 1000).toFixed(2)), backgroundColor: S.tech === 'solar' ? 'rgba(244,196,48,.7)' : 'rgba(20,211,169,.7)', borderRadius: 3 },
         { type: 'line', label: 'P50', data: ys.map(() => +(p50 / 1000).toFixed(2)), borderColor: '#E6EDF3', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
@@ -479,7 +526,7 @@
         { type: 'bar', label: 'Output at prices ≤ 0 (%)', data: capY.map(y => +(cap[y].neg / Y[y] * 100).toFixed(1)), backgroundColor: 'rgba(237,105,101,.45)', borderRadius: 3, yAxisID: 'y1' }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, %'), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'park-capture-rate');
       if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} park at ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · history built ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
-      const sb = $('fc-hist-send'); if (sb) sb.hidden = false;
+      const sb = $('fc-hist-send'); if (sb) sb.hidden = false; const pb = $('fc-hist-pptx'); if (pb) pb.hidden = !window.PKExport;
     } catch (e) { if (st) st.textContent = 'History not built: ' + e.message; }
   }
   let ERA_LAST = null;
@@ -496,5 +543,31 @@
     st.tech = S.tech; st.years = null; st.volume = Math.round(ERA_LAST.p50); st.mw = S.mw;
     showPage('ppapricer'); setTimeout(() => { try { const e = document.getElementById('pp-tech'); if (e) e.value = S.tech; const c = document.getElementById('pp-asset-clear'); if (c) c.hidden = false; window.PKPpa.run(); } catch (_) {} }, 300);
   }
-  window.PKFcst = { run, state: S, buildHistory, sendToPricer };
+
+  // the park on a few slides: what it produces, what it captures, and the prices from the pricer when they were run for it
+  async function parkSheet() {
+    if (!ERA_LAST || !window.PKExport || !PKExport.deck) return;
+    const btn = $('fc-hist-pptx'), lab = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing…';
+    try {
+      const L = ERA_LAST, f = v => (v / 1000).toLocaleString('en-GB', { maximumFractionDigits: 2 }), c3 = L.capY.slice(-3);
+      const capAvg = c3.length ? c3.reduce((s, y) => s + L.cap[y].v / L.cap[y].e / (L.cap[y].b / L.cap[y].n), 0) / c3.length * 100 : null;
+      const where = `${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${L.regName ? ' · ' + L.regName : ''}`;
+      const lines = [`${S.tech === 'solar' ? 'Solar' : 'Wind'} park · ${S.mw} MW${S.inj !== '' && +S.inj > 0 ? ' (injection ' + S.inj + ' MW)' : ''} · ${where}`,
+        `Yearly output: P50 ${f(L.p50)} GWh (${Math.round(L.p50 / S.mw)} kWh/kW), P90 ${f(L.p90)} GWh, from ${L.ys.length} weather years ${L.ys[0]}–${L.ys[L.ys.length - 1]}`,
+        `Capture rate, last three years: ${capAvg == null ? '–' : capAvg.toFixed(1) + ' %'} of the baseload, on the real day-ahead price of each hour`,
+        `How the level is set: ${L.how}`];
+      const P = window.PKPpa && PKPpa.state, o = P && P.last;
+      if (o && P.assetName && /^Park /.test(P.assetName)) lines.push(`PPA pricer (${P.assetName}): ${o.ppa != null ? o.ppa.toFixed(2) + ' €/MWh' : '–'} over ${o.tenor ? o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] : '–'}`);
+      const cr = window.PKPpaCR && PKPpaCR.last();
+      if (cr && cr.P && cr.P.own) { const x = cr.sol.out[PKPpaCR.state.formula];
+        lines.push(`Aggregation contract under complément de rémunération: ${PKPpaCR.state.formula === 'a' ? (x.A * 100).toFixed(1) + ' % × M0' : PKPpaCR.state.formula === 'b' ? 'M0 − ' + x.B.toFixed(2) + ' €/MWh' : (x.A * 100).toFixed(1) + ' % × M0 − ' + x.B.toFixed(2) + ' €/MWh'} (park ${((cr.sol.ratio - 1) * 100).toFixed(1)} % vs M0, costs ${cr.cost.toFixed(2)} €/MWh)`); }
+      const specs = [{ k: 'note', title: 'The park in brief', text: lines.join('\n') }];
+      for (const [id, title, sub] of [['fc-hist-y', 'Yearly output', 'GWh · each weather year replayed on today’s park'], ['fc-hist-c', 'Capture rate year by year', 'On the real day-ahead price of each hour']]) {
+        const el = $(id) && $(id).closest('.chart-container'); if (el && el.offsetHeight) specs.push({ k: 'card', title, sub, src: 'PowerKlock · ERA5 · RTE · ENTSO-E', r: await PKExport.snap(el) }); }
+      specs.push({ k: 'note', title: 'Method and limits', text: 'Hourly weather of the reanalysis ERA5 at the park since 2005 through the physical model of the production forecast tool, corrected month by month on the real output of the region (RTE, 2020–2025); a single park at 0.887 of the regional fleet, the park’s metering pooled with that prior, or its P50 when asked. P90 = P50 − 1.28 σ (weather years and model uncertainty). Checked on four metered parks over their second year (ERA5 chain): output value within −0.3 … +7 % with 12 months of metering, within −5 … +3 % with no metering at all (single-park factor, each park left out of its own factor), against +8 … +16 % on the regional prior alone and −12 … −22 % on the annex P50s. Not included: availability losses beyond those in the metering, degradation, future curtailment rules.' });
+      await PKExport.deck(`Park sheet · ${S.tech} ${S.mw} MW · ${where}`, specs);
+    } catch (e) { const st = $('fc-hist-status'); if (st) st.textContent = 'Park sheet failed: ' + (e.message || e); }
+    btn.disabled = false; btn.textContent = lab;
+  }
+  window.PKFcst = { run, state: S, buildHistory, sendToPricer, parkSheet, perfCheck };
 })();

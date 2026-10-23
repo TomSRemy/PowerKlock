@@ -11,7 +11,10 @@ Ours     the forecast tool's model on the forecast issued the day before (Open-M
            N1  + monthly level learned walk-forward
            N2  + regression on the forecast variables, the day-ahead price and the models'
                disagreement, recent months weighing more (the v6 recipe of fcst_backtest.py)
-         and the blend of N2 with ENTSO-E (average)
+           N3  + each region's and each model's own load factor (where the fleet really is and
+               which model is best in which season are learned)
+         and two combinations with ENTSO-E: the average with N2, and STACK, the regression with the
+         TSO forecast as one more input (the combined forecast shown live, data/fr_fc_combined.json)
 Score    walk-forward by month (corrections learned on the months before, at least 6), error in
          % of the installed capacity (Energy-Charts yearly, interpolated), solar on daylight hours
 
@@ -147,46 +150,79 @@ def frame(tech):
                 vals.append(v)
             if len(vals) == len(W):
                 per.append(float(np.dot(wts, vals)))
-        if not per:
+        if not per or len(per) < len(models):
             continue
+        Mx = np.array([[(FB.solar_lf(H.get(f'global_tilted_irradiance_previous_day1_{m}')[i], H.get('temperature_2m_previous_day1_best_match')[i]) if tech == 'solar'
+                         else FB.wind_lf(H.get(f'wind_speed_100m_previous_day1_{m}')[i] * 1.2 ** 0.14)) for H in W] for m in models])
         d = date.fromisoformat(t[:10])
         C = cap('solarGW' if tech == 'solar' else 'windGW', d) * 1000
         cs = FB.clear_sky_ghi(t, 46.5)
         rows.append({'t': t, 'ym': t[:7], 'm': int(t[5:7]), 'h': int(t[11:13]), 'C': C, 'y': a[0 if tech == 'solar' else 1] / C,
                      'ent': e[0 if tech == 'solar' else 1] / C, 'n0': per[0], 'mu': float(np.mean(per)), 'sd': float(np.std(per)),
-                     'cs': cs, 'p': FB.price(t)})
-    return rows
+                     'cs': cs, 'p': FB.price(t), 'M': Mx})
+    return rows, wts
 
 
-def walk(rows, tech):
+def feats(r, tech, wts, kind):
+    """n2 = the v6 recipe; n3 + each region's and each model's own load factor (the fleet's real weights and the models'
+    seasonal skill are learned); stack = n3 + the TSO forecast as an input (a learned combination)"""
+    p = r['p']; neg = r.get('negp') if r.get('negp') is not None else (1.0 if p is not None and p <= 0 else 0.0)
+    low = 1.0 if p is not None and 0 < p <= 10 else 0.0
+    s, c = np.sin(2 * np.pi * r['m'] / 12), np.cos(2 * np.pi * r['m'] / 12)
+    f = [1, r['mu'], r['mu'] ** 2, r['n0'], r['sd'], r['mu'] * r['sd'], neg * r['mu'], low * r['mu'], neg, s, c]
+    if tech == 'solar':
+        f += [r['cs'] / 1000, r['mu'] * s]
+    if kind == 'n2':
+        return f
+    M = r['M']; per_model = M @ wts
+    f += list(M.mean(0)) + list(per_model) + list(per_model * s) + list(per_model * c)
+    if kind == 'stack':
+        f += [r['ent'], r['ent'] * s, r['ent'] * c, r['ent'] * r['mu']]
+    return f
+
+
+def fit(tr, tech, wts, kind, now):
+    w = np.array([0.5 ** ((now - (int(r['ym'][:4]) * 12 + int(r['ym'][5:7]))) / 6.0) for r in tr])
+    X = np.array([feats(r, tech, wts, kind) for r in tr]); Y = np.array([r['y'] for r in tr])
+    lam = 1e-3 * np.eye(X.shape[1]); lam[0, 0] = 0
+    return np.linalg.solve(X.T @ (w[:, None] * X) + w.sum() * lam, X.T @ (w * Y))
+
+
+def walk(rows, tech, wts):
     months = sorted({r['ym'] for r in rows})
     for k, mth in enumerate(months):
         test = [r for r in rows if r['ym'] == mth]
         if k < 6:
             for r in test:
-                r['n1'] = r['n2'] = None
+                r['n1'] = r['n2'] = r['n3'] = r['stack'] = None
             continue
         tr = [r for r in rows if r['ym'] < mth and (tech != 'solar' or r['cs'] > 0)]
         free = [r for r in tr if r['p'] is None or r['p'] > 5]
         sc = sum(r['y'] for r in free) / max(1e-9, sum(r['mu'] for r in free))
-        def feats(r):
-            p = r['p']; neg = 1.0 if p is not None and p <= 0 else 0.0; low = 1.0 if p is not None and 0 < p <= 10 else 0.0
-            base = [1, r['mu'], r['mu'] ** 2, r['n0'], r['sd'], r['mu'] * r['sd'], neg * r['mu'], low * r['mu'], neg,
-                    np.sin(2 * np.pi * r['m'] / 12), np.cos(2 * np.pi * r['m'] / 12)]
-            if tech == 'solar':
-                base += [r['cs'] / 1000, r['mu'] * np.sin(2 * np.pi * r['m'] / 12)]
-            return base
         now = int(mth[:4]) * 12 + int(mth[5:7])
-        w = np.array([0.5 ** ((now - (int(r['ym'][:4]) * 12 + int(r['ym'][5:7]))) / 6.0) for r in tr])
-        X = np.array([feats(r) for r in tr]); Y = np.array([r['y'] for r in tr])
-        lam = 1e-3 * np.eye(X.shape[1]); lam[0, 0] = 0
-        beta = np.linalg.solve(X.T @ (w[:, None] * X) + w.sum() * lam, X.T @ (w * Y))
+        B = {kind: fit(tr, tech, wts, kind, now) for kind in ('n2', 'n3', 'stack')}
         for r in test:
             r['n1'] = min(1.0, r['mu'] * sc)
-            r['n2'] = 0.0 if tech == 'solar' and r['cs'] <= 0 else float(min(1.0, max(0.0, np.array(feats(r)) @ beta)))
+            for kind, b in B.items():
+                r[kind] = 0.0 if tech == 'solar' and r['cs'] <= 0 else float(min(1.0, max(0.0, np.array(feats(r, tech, wts, kind)) @ b)))
     for r in rows:
         r['mix'] = None if r.get('n2') is None else (r['n2'] + r['ent']) / 2
     return rows
+
+
+def band(rows, tech):
+    """P10 / P90 of the error of the combined forecast, by level of the forecast (5 bins), walk-forward errors"""
+    rr = [r for r in rows if r.get('stack') is not None and (tech != 'solar' or r['cs'] > 0)]
+    edges = [0, 0.05, 0.15, 0.3, 0.5, 1.01]
+    out = []
+    for a, b in zip(edges, edges[1:]):
+        e = np.array([r['y'] - r['stack'] for r in rr if a <= r['stack'] < b])
+        if len(e) < 50:
+            out.append([a, b, 0.0, 0.0]); continue
+        out.append([a, b, round(float(np.quantile(e, 0.1)), 4), round(float(np.quantile(e, 0.9)), 4)])
+    def cover(r):
+        q = next(x for x in out if x[0] <= r['stack'] < x[1]); return r['stack'] + q[2] <= r['y'] <= r['stack'] + q[3]
+    return out, round(float(np.mean([cover(r) for r in rr])), 3)
 
 
 def score(rows, key, tech):
@@ -200,23 +236,32 @@ def score(rows, key, tech):
 
 
 def main():
-    out = {'protocol': __doc__.split('Writes')[0].strip(), 'period': [START, END], 'results': {}, 'monthly': {}, 'sample': {}}
+    out = {'protocol': __doc__.split('Writes')[0].strip(), 'period': [START, END], 'results': {}, 'monthly': {}, 'sample': {}, 'live': {}}
     for tech in ('solar', 'wind'):
-        rows = walk(frame(tech), tech)
-        res = {k: score(rows, k, tech) for k in ('ent', 'n0', 'n1', 'n2', 'mix')}
+        rows, wts = frame(tech)
+        rows = walk(rows, tech, wts)
+        res = {k: score(rows, k, tech) for k in ('ent', 'n0', 'n1', 'n2', 'n3', 'mix', 'stack')}
         out['results'][tech] = res
         print(tech, {k: (round(v['nmae'] * 100, 2), round(v['bias'] * 100, 2), round(v['nmae_day'] * 100, 2)) for k, v in res.items()})
         mon = {}
         for r in rows:
             if r.get('n2') is None or (tech == 'solar' and r['cs'] <= 0):
                 continue
-            a = mon.setdefault(r['ym'], {'ent': [], 'n2': [], 'mix': []})
+            a = mon.setdefault(r['ym'], {'ent': [], 'n2': [], 'mix': [], 'n3': [], 'stack': []})
             for k in a:
                 a[k].append(abs(r[k] - r['y']))
         out['monthly'][tech] = {m: {k: round(float(np.mean(v)) * 100, 2) for k, v in a.items()} for m, a in sorted(mon.items())}
         d0 = '2026-03-16' if tech == 'solar' else '2026-02-02'
-        out['sample'][tech] = [[r['t'], round(r['y'] * r['C']), round(r['ent'] * r['C']), round(r['n2'] * r['C']) if r.get('n2') is not None else None]
+        out['sample'][tech] = [[r['t'], round(r['y'] * r['C']), round(r['ent'] * r['C']), round(r['n2'] * r['C']) if r.get('n2') is not None else None,
+                                round(r['stack'] * r['C']) if r.get('stack') is not None else None]
                                for r in rows if d0 <= r['t'][:10] < str(np.datetime64(d0) + np.timedelta64(7, 'D'))]
+        # the combined forecast run live every day (scripts/fcst_live.py): coefficients fitted on every month, its band
+        last = max(r['ym'] for r in rows); now = int(last[:4]) * 12 + int(last[5:7]) + 1
+        tr = [r for r in rows if tech != 'solar' or r['cs'] > 0]
+        q, cov = band(rows, tech)
+        out['live'][tech] = {'beta': [round(float(x), 6) for x in fit(tr, tech, wts, 'stack', now)], 'points': list(POINTS), 'weights': [round(float(x), 5) for x in wts],
+                             'models': list(M_SOLAR if tech == 'solar' else M_WIND), 'band': q, 'coverage': cov, 'fitted_to': last}
+        print(tech, 'band', q, 'coverage', cov)
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
 

@@ -195,6 +195,64 @@
       },
     });
 
+
+    // negative day-ahead prices: chance of each hour, today and tomorrow (scripts/neg_forecast.py)
+    PKW.register({
+      id: 'fc-neg', title: 'France · day-ahead price and chance of a negative price, today and tomorrow', category: 'prices', page: 'morning', pageCanvas: 'mrn-neg',
+      source: 'PowerKlock model on RTE éCO2mix history and TSO day-ahead forecasts', size: { w: 6, h: 4 },
+      desc: 'For each hour of today and tomorrow, the chance that the French day-ahead price is below zero: residual demand once solar, wind and the nuclear available are served, the same for Germany, the solar share, the calendar; a logistic model on the last three years. Its record since January 2025 is given under the chart. Where the price is already known, the real price is drawn.',
+      async draw(cid) {
+        let j = null; try { const r = await fetch(DATA_BASE + 'neg_forecast.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
+        const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
+        if (!ds0.length) { noDataMsg(cid, 'No negative-price forecast yet', 'Built with the day-ahead forecasts, four times a day'); return null; }
+        const lbl = [], pr = [], act = [], pf = [];
+        ds0.forEach(d => { const x = j.days[d]; for (let h = 0; h < 24; h++) { lbl.push(h === 0 ? new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : String(h).padStart(2, '0') + 'h');
+          pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null); } });
+        _fuelChart(cid, { type: 'bar', data: { labels: lbl, datasets: [
+          { label: 'Chance of a negative price (%)', data: pr, backgroundColor: pr.map(v => v == null ? 'transparent' : v >= 50 ? 'rgba(237,105,101,.8)' : v >= 20 ? 'rgba(251,191,36,.7)' : 'rgba(127,200,248,.45)'), borderRadius: 2, yAxisID: 'y' },
+          { type: 'line', label: 'Day-ahead price, when known (€/MWh)', data: act, borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0, spanGaps: false, yAxisID: 'y1' },
+          { type: 'line', label: 'Price forecast (€/MWh)', data: pf, borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, spanGaps: false, yAxisID: 'y1' }] },
+          options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }), y: _fuelAxis('% chance', { min: 0, max: 100 }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }) }, 'forecast-negative-prices');
+        const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + j.days[d].expected_hours + ' h').join(' · ');
+        const ps = j.price_skill; return { sub: `Expected negative hours: ${exp}${ps ? ` · price forecast: ${ps.mae} €/MWh mean error since ${ps.from} vs ${ps.naive_mae} for the price two days before` : ''} · record since ${k.from || '–'}: ${k.caught != null ? Math.round(k.caught * 100) + ' % of the days with negative prices flagged' : ''}${k.false_alarms != null ? ', ' + Math.round(k.false_alarms * 100) + ' % false alarms' : ''}${k.skill_vs_climatology != null ? ', ' + Math.round(k.skill_vs_climatology * 100) + ' % better than the usual frequency' : ''}` };
+      },
+    });
+
+    // France: PowerKlock's combined forecast (physics + learned weights + TSO forecast, scripts/fcst_live.py), P10–P90 band
+    PKW.register({
+      id: 'fc-combined', title: 'France · PowerKlock combined forecast, solar and wind', category: 'renewables', page: 'morning', pageCanvas: 'mrn-fcc',
+      source: 'PowerKlock model on Open-Meteo and the TSO day-ahead forecast', size: { w: 6, h: 5 },
+      desc: 'Solar and wind output of France for today and tomorrow: PowerKlock’s forecast (the forecast tool’s physics at 15 points weighted by the fleet, with the TSO forecast as an input), its P10–P90 band, the TSO forecast and the actual output so far. Walk-forward since 2024 it beats the TSO forecast alone.',
+      params: [{ key: 'tech', label: 'Technology', options: [['wind', 'Wind'], ['solar', 'Solar']] }], defaults: { tech: 'wind' },
+      titleFn: p => 'France · ' + (p.tech === 'solar' ? 'solar' : 'wind') + ' forecast, PowerKlock vs TSO',
+      async draw(cid, p) {
+        const tech = p.tech === 'solar' ? 'solar' : 'wind';
+        let j = null; try { const r = await fetch(DATA_BASE + 'fr_fc_combined.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
+        const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
+        if (!ds0.length) { noDataMsg(cid, 'No combined forecast yet', 'Built with each TSO day-ahead forecast'); return null; }
+        const s = await series48('FR');
+        const lbl = [], mid = [], lo = [], hi = [], tso = [], act = [];
+        ds0.forEach((d, k) => { const x = j.days[d][tech] || {}; for (let h = 0; h < 24; h++) {
+          lbl.push(h === 0 ? new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : String(h).padStart(2, '0') + 'h');
+          const g = v => v == null ? null : Math.round(v / 10) / 100;
+          mid.push(g((x.mid || [])[h])); lo.push(g((x.p10 || [])[h])); hi.push(g((x.p90 || [])[h])); tso.push(g((x.tso || [])[h]));
+          const a = s && s.days && s.days.indexOf(d) >= 0 && s.actual[tech] ? s.actual[tech].slice(s.days.indexOf(d) * 96 + h * 4, s.days.indexOf(d) * 96 + h * 4 + 4).filter(v => v != null) : [];
+          act.push(a.length ? Math.round(a.reduce((u, v) => u + v, 0) / a.length / 10) / 100 : null); } });
+        const col = tech === 'solar' ? '#F4C430' : '#14D3A9';
+        _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: [
+          { label: 'P90', data: hi, borderColor: 'transparent', backgroundColor: tech === 'solar' ? 'rgba(244,196,48,.15)' : 'rgba(20,211,169,.15)', pointRadius: 0, fill: '+1' },
+          { label: 'P10', data: lo, borderColor: 'transparent', pointRadius: 0, fill: false },
+          { label: 'PowerKlock', data: mid, borderColor: col, borderWidth: 2.2, pointRadius: 0 },
+          { label: 'TSO (ENTSO-E)', data: tso, borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
+          { label: 'Actual', data: act, borderColor: '#E6EDF3', borderWidth: 1.8, pointRadius: 0, spanGaps: false }] },
+          options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }), y: _fuelAxis('GW', { beginAtZero: true }) },
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^P[19]0$/.test(it.text) } } } }) }, 'forecast-combined-' + tech);
+        const k = (j.skill || {})[tech] || {}, tot = a => a.reduce((u, v) => u + (v || 0), 0);
+        const per = ds0.map((d, i) => `${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })} ${tot(mid.slice(i * 24, i * 24 + 24)).toFixed(0)} GWh (TSO ${tot(tso.slice(i * 24, i * 24 + 24)).toFixed(0)})`).join(' · ');
+        return { sub: `${per} · band P10–P90 (${Math.round((k.coverage || 0.8) * 100)} % of past hours inside) · record since 2024: ${k.combined} % of capacity vs TSO ${k.tso} %` };
+      },
+    });
     PKW.register({
       id: 'fc-tomorrow', kind: 'html', title: 'Tomorrow · forecast output and load', category: 'kpi', page: 'analysis', source: 'TSO day-ahead forecasts (ENTSO-E, via Energy-Charts)', size: { w: 6, h: 2 },
       desc: 'Tomorrow’s forecast wind and solar output (GWh), load and residual load (average GW), against today; flagged as a forecast with its usual error.',
