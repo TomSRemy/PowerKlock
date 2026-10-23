@@ -1515,7 +1515,7 @@
   body.pk-solo .layout { padding-top: 0; }
   body.pk-solo .page:not(#page-mydash), body.pk-solo #pk-loader, body.pk-solo .pk-status-badge { display: none !important; }
   body.pk-solo #page-mydash { display: block !important; }
-  body.pk-solo .pkd-actions, body.pk-solo .pkw-star, body.pk-solo .grid-stack-item > .ui-resizable-se { display: none !important; }   /* read-only: nothing to edit, nowhere else to go */
+  body.pk-solo .pkd-actions > :not(.pkd-fs), body.pk-solo .pkw-star, body.pk-solo .grid-stack-item > .ui-resizable-se { display: none !important; }   /* fullscreen stays */   /* read-only: nothing to edit, nowhere else to go */
   body.pk-solo .es-gamespot, body.pk-solo [class^="es-"], body.pk-solo [class*=" es-"] { display: none !important; }
   body.pk-solo .main { width: 100%; }
   body.pk-solo .pkd-shared-bar { border: 0; background: transparent; padding: 4px 2px 6px; border-bottom: 1px solid var(--border); border-radius: 0; }
