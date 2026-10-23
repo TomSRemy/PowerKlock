@@ -1,21 +1,21 @@
 {
- "updated": "2026-10-23T14:08:39+00:00",
+ "updated": "2026-10-23T14:09:42+00:00",
  "asof": "2026-10-23",
  "notes": 1,
  "context": [
   {
    "topic": "France",
-   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pourrait entraîner une hausse des prix de l'électricité",
+   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pousse les prix à la hausse. L'Autorité de sûreté nucléaire a estimé que rien n'empêche de poursuivre l'exploitation du parc électronucléaire au-delà de 60 ans, à condition que des travaux conséquents soient réalisés",
    "tone": "up"
   },
   {
    "topic": "Golfe",
-   "text": "Les tensions dans la région du Golfe pourraient perturber les exportations de pétrole et avoir un impact sur les prix de l'énergie",
+   "text": "Les événements dans la région du Golfe, notamment les attaques contre les transports maritimes et les infrastructures énergétiques, maintiennent la pression sur les prix du pétrole",
    "tone": "up"
   },
   {
    "topic": "Norvège",
-   "text": "La baisse des importations de gaz norvégien en Europe pourrait créer des pressions sur le marché du gaz et influencer les prix de l'électricité",
+   "text": "La baisse des importations de gaz norvégien, couplée à la demande croissante pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz européen",
    "tone": "up"
   }
  ]
