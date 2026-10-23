@@ -3,6 +3,7 @@
 //   1 · data      : documented JSON files (data/api.json)
 //   2 · embed     : any catalogue chart in an iframe (index.html?embed=…)
 //   3 · images    : PNG of every chart, refreshed twice a day (png branch)
+//   4 · dashboard : a whole dashboard of the reader, as a link or an iframe (#solo=…)
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -66,7 +67,22 @@
     $('api-h').addEventListener('change', update); $('api-title').addEventListener('change', update);
     renderParams();
   }
-  function wire() { if (wired) return; wired = true; data(); charts(); }
+  // a whole dashboard: the reader's own dashboards, as a link and an iframe of the dashboard alone
+  async function dashOut() {
+    const id = $('api-dash').value, h = $('api-dash-h').value || 900, out = $('api-dash-out');
+    const url = await PKDash.soloLink(id, SITE + 'index.html'); if (!url) { out.innerHTML = ''; return; }
+    const iframe = `<iframe src="${url}" width="100%" height="${h}" style="border:0;border-radius:8px" loading="lazy" title="PowerKlock dashboard"></iframe>`;
+    out.innerHTML = `<div class="api-line"><span>Link</span><code>${esc(url.slice(0, 90))}…</code>${copyBtn(url)}</div><div class="api-line"><span>iframe</span><code>${esc(iframe.slice(0, 90))}…</code>${copyBtn(iframe)}</div>`;
+    wireCopies(out);
+  }
+  function dashboards() {
+    const sel = $('api-dash'); if (!sel || !window.PKDash || !PKDash.boards) return;
+    const B = PKDash.boards();
+    sel.innerHTML = B.map(b => `<option value="${esc(b.id)}">${esc(b.name)} · ${b.n} chart${b.n > 1 ? 's' : ''}</option>`).join('');
+    sel.addEventListener('change', dashOut); $('api-dash-h').addEventListener('change', dashOut);
+    if (B.length) dashOut();
+  }
+  function wire() { if (wired) return; wired = true; data(); charts(); dashboards(); }
   window.addEventListener('load', () => setTimeout(() => {
     const inner = window.showPage;
     if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'api') wire(); return r; };

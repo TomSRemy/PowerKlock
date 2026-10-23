@@ -1040,7 +1040,10 @@
     }
   }
 
-  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addSection, addNote, TEMPLATES };
+  // for the API page: the reader's dashboards and the link that shows one alone (a copy of its layout at that moment)
+  function boards() { if (!state) init(); return state.boards.map(b => ({ id: b.id, name: b.name, n: b.items.filter(i => i.t === 'w').length })); }
+  async function soloLink(id, site) { if (!state) init(); const b = state.boards.find(x => x.id === id); return b ? (site || baseUrl()) + '#solo=' + await encodeBoard(b) : null; }
+  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addSection, addNote, TEMPLATES, boards, soloLink };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
