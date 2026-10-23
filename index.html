@@ -1921,6 +1921,7 @@
      non-clickable parent, section meta, compact controls in the bar */
   .pk-sec-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
   .pk-sec-controls select { height: 26px; padding: 0 24px 0 10px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background-color: var(--bg3); color: var(--tx2); }
+  .news-vote { display: flex; gap: 4px; align-items: center; margin-top: 6px; } .news-vote .nv { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 12px; cursor: pointer; opacity: .55; } .news-vote .nv:hover, .news-vote .nv.on { opacity: 1; border-color: var(--accent); } .news-vote .nv-msg { font-size: 10.5px; color: var(--text3); margin-left: 4px; }
   .pk-sec-checks { display: inline-flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--text2); } .pk-sec-checks label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
   .pk-sec-controls input[type=number] { height: 26px; padding: 0 6px; font-size: 11px; font-weight: 600; border-radius: 5px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-variant-numeric: tabular-nums; }
   .pk-bc-static { cursor: default; }
@@ -5347,6 +5348,10 @@ if (/^#solo=/.test(location.hash)) document.body.classList.add('pk-solo');</scri
         <div class="hist-section-body open" id="hs-body-news-0">
 <div class="news-filters">
         <button class="filter-btn active" onclick="filterNews('all', this)">All</button>
+        <button class="filter-btn" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your 👍 / 👎 teach it">🔥 Market movers</button>
+        <button class="filter-btn" onclick="filterNews('geopolitics', this)" title="Conflicts, sanctions, supply routes: what moves gas and power prices">🌍 Geopolitics</button>
+        <button class="filter-btn" onclick="filterNews('deal', this)" title="Acquisitions, sales of parks, financings">🤝 Deals</button>
+        <button class="filter-btn" onclick="filterNews('build', this)" title="Commissionings, construction starts, permits">🏗 New capacity</button>
         <button class="filter-btn" onclick="filterNews('power', this)">⚡ Power</button>
         <button class="filter-btn" onclick="filterNews('gas', this)">🔵 Gas</button>
         <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
@@ -5355,6 +5360,8 @@ if (/^#solo=/.test(location.hash)) document.body.classList.add('pk-solo');</scri
         <button class="filter-btn" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press">🔎 Watch</button>
         <button class="filter-btn" onclick="filterNews('mine', this)" title="Articles matching your own keywords (below)">★ My keywords</button>
         <label class="news-fr" title="Only French news: French sources, and articles that talk about France (RTE, CRE, EDF, PPE…). Combines with the other filters."><input type="checkbox" id="news-fr"> 🇫🇷 France focus</label>
+        <select id="news-src" class="fuel-select" onchange="renderNews(newsData)" aria-label="Source"><option value="">All sources</option></select>
+        <select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
         <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button>
       </div>
