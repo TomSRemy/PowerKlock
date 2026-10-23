@@ -3154,6 +3154,7 @@
   .kpi-card .kpi-meta, .kpi-card .kpi-chg, .kpi-card .kpi-delta { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
 
 </style>
+<style>.nic{vertical-align:-2px;margin-right:5px;flex:none}.news-vote .nv .nic{margin:0}</style>
 </head>
 <body>
 <script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows;
@@ -5417,18 +5418,18 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-news-0">
 <div class="news-filters">
         <button class="filter-btn active" onclick="filterNews('all', this)">All</button>
-        <button class="filter-btn" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your 👍 / 👎 teach it">🔥 Market movers</button>
-        <button class="filter-btn" onclick="filterNews('geopolitics', this)" title="Conflicts, sanctions, supply routes: what moves gas and power prices">🌍 Geopolitics</button>
-        <button class="filter-btn" onclick="filterNews('deal', this)" title="Acquisitions, sales of parks, financings">🤝 Deals</button>
-        <button class="filter-btn" onclick="filterNews('build', this)" title="Commissionings, construction starts, permits">🏗 New capacity</button>
-        <button class="filter-btn" onclick="filterNews('power', this)">⚡ Power</button>
-        <button class="filter-btn" onclick="filterNews('gas', this)">🔵 Gas</button>
-        <button class="filter-btn" onclick="filterNews('carbon', this)">🌿 Carbon</button>
-        <button class="filter-btn" onclick="filterNews('regulation', this)">📋 Regulation</button>
-        <button class="filter-btn" onclick="filterNews('markets', this)">📈 Markets</button>
-        <button class="filter-btn" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press">🔎 Watch</button>
+        <button class="filter-btn" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your votes (useful / not useful) teach it"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Market movers</button>
+        <button class="filter-btn" onclick="filterNews('geopolitics', this)" title="Conflicts, sanctions, supply routes: what moves gas and power prices"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Geopolitics</button>
+        <button class="filter-btn" onclick="filterNews('deal', this)" title="Acquisitions, sales of parks, financings"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Deals</button>
+        <button class="filter-btn" onclick="filterNews('build', this)" title="Commissionings, construction starts, permits"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/></svg>New capacity</button>
+        <button class="filter-btn" onclick="filterNews('power', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Power</button>
+        <button class="filter-btn" onclick="filterNews('gas', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>Gas</button>
+        <button class="filter-btn" onclick="filterNews('carbon', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>Carbon</button>
+        <button class="filter-btn" onclick="filterNews('regulation', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Regulation</button>
+        <button class="filter-btn" onclick="filterNews('markets', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Markets</button>
+        <button class="filter-btn" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Watch</button>
         <button class="filter-btn" onclick="filterNews('mine', this)" title="Articles matching your own keywords (below)">★ My keywords</button>
-        <label class="news-fr" title="Only French news: French sources, and articles that talk about France (RTE, CRE, EDF, PPE…). Combines with the other filters."><input type="checkbox" id="news-fr"> 🇫🇷 France focus</label>
+        <label class="news-fr" title="Only French news: French sources, and articles that talk about France (RTE, CRE, EDF, PPE…). Combines with the other filters."><input type="checkbox" id="news-fr"> France focus</label>
         <select id="news-src" class="fuel-select" onchange="renderNews(newsData)" aria-label="Source"><option value="">All sources</option></select>
         <select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
@@ -6892,7 +6893,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="mrn-kpis" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
 <div class="mrn-moves"><h3>What moved</h3><div id="mrn-moves"><div class="fuel-note">Loading…</div></div></div>
 <div class="mrn-moves mrn-news"><h3>Market movers in the news <a href="#" class="mrn-news-more" onclick="showPage('news');return false">all news ›</a></h3><div id="mrn-news"><div class="fuel-note">Loading…</div></div></div>
-<div class="chart-container fuel-card" style="margin-top:12px"><div class="fuel-card-head"><div><div class="table-title">Marchés de l’énergie · la semaine</div><div class="fuel-card-sub">Six prix sur 7 et 60 jours, un digest par marché, et les notes de marché face au mouvement réel</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Chargement…</div></div></div>
+<div class="chart-container fuel-card" style="margin-top:12px"><div class="fuel-card-head"><div><div class="table-title">Marchés de l’énergie · la semaine</div><div class="fuel-card-sub">Six prix sur 7 et 60 jours, un digest par marché, et ce qu’annonçaient les analystes face au mouvement réel</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Chargement…</div></div></div>
 <div class="chart-container fuel-card" style="margin-top:12px"><div class="fuel-card-head"><div><div class="table-title">France power · the next 30 days</div><div class="fuel-card-sub">Month-ahead forward, weather against normal week by week, nuclear, gas storage</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></div>
         </div>
       </div>

@@ -349,7 +349,7 @@ async function _mrnMoves(k) {
 // ── News digest, short: what moves prices or the renewable business (geopolitics, regulation, deals, new
 // capacity, gas…), last 48 h, highest market impact first (scripts/fetch_news.py; readers' 👍 / 👎 teach the
 // ranking); the reader's ★ keywords on the News page come first ──
-const _MRN_CAT = { geopolitics: '🌍', regulation: '⚖', deal: '🤝', build: '🏗', gas: '🔵', carbon: '🌿', markets: '📈', power: '⚡' };
+const _MRN_CAT = { geopolitics: 1, regulation: 1, deal: 1, build: 1, gas: 1, carbon: 1, markets: 1, power: 1 };   // line icons from js/news.js
 async function _mrnNews() {
   const host = document.getElementById('mrn-news'); if (!host) return;
   const j = await _mrnGet('news', DATA_BASE + 'news.json');
@@ -363,9 +363,9 @@ async function _mrnNews() {
     span = lbl; if (pick.length >= 4) break;
   }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const cat = i => { const t = (i.tags || []).find(x => _MRN_CAT[x] && x !== 'power') || ((i.tags || []).includes('power') ? 'power' : ''); return t ? `<span class="mrn-cat" title="${t}">${_MRN_CAT[t]}</span>` : ''; };
+  const cat = i => { const t = (i.tags || []).find(x => _MRN_CAT[x] && x !== 'power') || ((i.tags || []).includes('power') ? 'power' : ''); return t ? `<span class="mrn-cat" title="${t}">${window._newsIc ? _newsIc(t) : ''}</span>` : ''; };
   const vote = i => typeof _newsVoteBtns === 'function' ? `<span class="news-vote mrn-vote" data-link="${esc(i.link)}">${_newsVoteBtns(i.link)}</span>` : '';
-  host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">Market movers of the last ${span}: geopolitics, regulation, deals, new capacity, gas${kw.length ? ', and your ★ keywords first' : ''}. 👍 / 👎 teach the selection.</div>` +
+  host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">Market movers of the last ${span}: geopolitics, regulation, deals, new capacity, gas${kw.length ? ', and your ★ keywords first' : ''}. Your votes (useful / not useful) teach the selection.</div>` +
     (pick.length ? '<ul class="mrn-movers">' + pick.slice(0, 8).map(i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)}${(i.countries || []).length ? ' · ' + esc(i.countries.slice(0, 2).join(' · ')) : ''}</span>${vote(i)}</li>`).join('') + '</ul>' : '<div class="fuel-note">No market-moving article in the last days.</div>');
 }
 
@@ -406,7 +406,7 @@ async function renderMorning() {
   .mrn-news{border-left-color:#FBBF24} .mrn-news a{color:var(--tx);text-decoration:none} .mrn-news a:hover{color:var(--acc);text-decoration:underline} .mrn-src{font-size:10.5px;color:var(--tx3)} .mrn-news-more{float:right;font-size:10px;letter-spacing:0;text-transform:none;color:var(--acc);text-decoration:none}
   .mrn-moves ul{margin:0;padding-left:18px} .mrn-moves li{font-size:12.5px;color:var(--tx2);line-height:1.6} .mrn-moves b{color:var(--tx)}
   .mrn-neg{color:#7FC8F8}
-  .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center} .mrn-vote{margin:0 0 0 auto}
+  .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
   .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd)}
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}
