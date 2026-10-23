@@ -1,14 +1,15 @@
 // ════════════════════════════════════════════════════════════════════
 // MARKET BRIEF and NEXT 30 DAYS (catalogue widgets, any dashboard)
 //   market-brief  the week in energy markets, in the order of a broker's
-//                 morning note: context (market-moving news), oil, gas,
+//                 morning note: context (France first, written from the market
+//                 notes and news, data/market_digest.json), oil, gas,
 //                 carbon, power spot, power forwards — each with its move
 //   next-30-days  what the coming month looks like for French power: the
 //                 month-ahead forward, weather week by week against normal
 //                 (temperature, wind, sun), nuclear availability, gas
 //                 storage — and what each means for prices
 // Data: data/history/commodities_series.json, fr_market_calchain.json,
-// fr_forward_monthly.json, data/weather_outlook.json, data/news.json,
+// fr_forward_monthly.json, data/weather_outlook.json, data/market_digest.json,
 // data/history/daily (spot), all already on the site.
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -78,11 +79,6 @@
   // where the price sits in its 60-day range, in words
   const range = pts => { const s = since(pts, 60).map(p => p[1]); if (s.length < 10) return ''; const v = s[s.length - 1], lo = Math.min(...s), hi = Math.max(...s);
     return v >= hi - 1e-9 ? ', au plus haut sur 60 jours' : v <= lo + 1e-9 ? ', au plus bas sur 60 jours' : (v - lo) / ((hi - lo) || 1) > 0.85 ? ', près du plus haut sur 60 jours' : (v - lo) / ((hi - lo) || 1) < 0.15 ? ', près du plus bas sur 60 jours' : ''; };
-  // the region a headline is about, for the context lines
-  const REG = [[/\b(iran\w*|israel\w*|gulf|hormuz|red sea|houthi\w*|saudi\w*|qatar\w*|golfe|moyen-orient|middle east)\b/i, 'Golfe'], [/\b(russia\w*|ukrain\w*|kremlin|russie)\b/i, 'Russie · Ukraine'],
-    [/\b(france|french|fran[cç]ais\w*|edf|rte|cre|paris)\b/i, 'France'], [/\b(german\w*|allemagne|berlin)\b/i, 'Allemagne'], [/\b(norw\w*|norv[eè]ge)\b/i, 'Norvège'],
-    [/\b(china|chinese|chine|beijing)\b/i, 'Chine'], [/\b(u\.?s\.?|united states|america\w*|trump|washington|[ée]tats-unis)\b/i, 'États-Unis'], [/\b(eu|european|europe|brussels|commission|bruxelles)\b/i, 'Europe']];
-  const region = t => { for (const [re, n] of REG) if (re.test(t)) return n; return 'Monde'; };
   // the market notes received in the last 10 days (signed-in users only for the e-mailed one; the daily report is public):
   // per market, the tone of what each said — never their text, only rising / easing / neutral
   const UPW = /\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*|jump\w*|surg\w*|climb\w*|strong\w*|gain\w*|deteriorat\w*|disrupt\w*|risk\w*)\b/gi;
@@ -111,7 +107,7 @@
   }
 
   async function brief(host) {
-    const [cs, chain, news, sum, nt] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), get('news.json'), window.pkSummary ? window.pkSummary().catch(() => null) : null, notes()]);
+    const [cs, chain, sum, nt] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), window.pkSummary ? window.pkSummary().catch(() => null) : null, notes()]);
     const S = cs && cs.series || {}, P = k => (S[k] || {}).points || [];
     const yrs = chain && chain.FR && chain.FR.years, ck = yrs && Object.keys(yrs).sort()[0];
     const calP = ck ? yrs[ck].dates.map((d, i) => [d, yrs[ck].values[i]]) : [];
@@ -124,11 +120,12 @@
         return `<div class="wk-tile" title="${spot ? 'Moyenne des 7 derniers jours contre les 7 précédents' : 'Variation sur 7 jours'}"><div class="wk-tn">${k}</div><div class="wk-tv">${nf(l[1], l[1] >= 100 ? 1 : 2)} <small>${u}</small></div><div class="wk-tc ${c}">${c === 'wk-fl' ? '→ stable' : arrow(w) + ' ' + fr(w) + ' %'}${spot ? ' <span class="wk-fl" style="font-weight:400">moy. 7 j</span>' : ''}</div>${spark(since(pts, 60), c)}</div>`; });
     // digest rows: [key, chip move, chip class, lines[], notes column]
     const R = [];
-    const movers = ((news && news.items) || []).filter(n => Date.now() - Date.parse(n.date) < 72 * 3600e3 && (n.tags || []).some(t => ['geopolitics', 'gas', 'regulation'].includes(t)))
-      .sort((a, b) => ((b.tags || []).includes('geopolitics') - (a.tags || []).includes('geopolitics')) || (b.impact || 0) - (a.impact || 0)), seen = new Set(), ctx = [];
-    for (const n of movers) { const r = region(n.title + ' ' + (n.snippet || '')); if (seen.has(r)) continue; seen.add(r); ctx.push(`<span class="wk-l"><b>${r} :</b> <a href="${/^https?:\/\//.test(n.link) ? esc(n.link) : '#'}" target="_blank" rel="noopener" style="color:inherit">${esc(n.title)}</a></span>`); if (ctx.length >= 3) break; }
-    const ct = nt.ctx, cUp = ct.filter(t => t > 0).length - ct.filter(t => t < 0).length;
-    if (ctx.length || ct.length) R.push(['Contexte', ct.length ? (cUp > 0 ? 'risque haussier' : cUp < 0 ? 'détente' : 'équilibré') : 'actualité', ct.length ? (cUp > 0 ? 'wk-up' : cUp < 0 ? 'wk-dn' : 'wk-fl') : 'wk-fl', ctx.length ? ctx : ['<span class="wk-l">Pas d’article à fort impact sur les 72 dernières heures.</span>'], verdict(ct, null, true)]);
+    // context: a short French text per topic, France first, written each morning and evening from the market notes,
+    // the news and the week's prices (scripts/market_digest.py), never a list of articles
+    const dg = await get('market_digest.json'), ctxT = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.context || []) : [];
+    if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
+      R.push(['Contexte', u > 0 ? '↑ haussier' : u < 0 ? '↓ baissier' : '→ neutre', u > 0 ? 'wk-up' : u < 0 ? 'wk-dn' : 'wk-fl',
+        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`), verdict(nt.ctx, null, true)]); }
     const br = last(P('brent'));
     if (br) { const w = wkPct(P('brent')); R.push(['Pétrole', arrow(w) + ' ' + fr(w) + ' %', wc(w), [`<span class="wk-l"><b>Brent :</b> ${nf(br[1])} $/b${range(P('brent'))}.</span>`], verdict(nt.brent, w)]); }
     const ttf = last(P('ttf'));
