@@ -1,21 +1,22 @@
 {
- "updated": "2026-10-23T20:00:06+00:00",
+ "updated": "2026-10-23T20:29:44+00:00",
  "asof": "2026-10-23",
  "notes": 1,
+ "engine": "proxy",
  "context": [
   {
    "topic": "France",
-   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pourrait entraîner une hausse des prix de l'électricité. L'Autorité de sûreté nucléaire a estimé que rien n'empêche de poursuivre l'exploitation du parc électronucléaire au-delà de 60 ans, à condition que des travaux conséquents soient réalisés.",
+   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pousse les prix à la hausse. L'Autorité de sûreté nucléaire a estimé que rien n'empêche de poursuivre l'exploitation du parc électronucléaire au-delà de 60 ans, à condition que des travaux conséquents soient réalisés",
    "tone": "up"
   },
   {
    "topic": "Golfe",
-   "text": "Les événements dans la région du Golfe, notamment les attaques contre les transports maritimes et les infrastructures énergétiques, maintiennent la pression sur les prix du pétrole et, par conséquent, sur les prix de l'électricité en Europe.",
+   "text": "Les attaques répétées contre les transports maritimes et les infrastructures énergétiques dans la région du Golfe maintiennent la pression sur les prix du pétrole, malgré des flux relativement résilients",
    "tone": "up"
   },
   {
    "topic": "Norvège",
-   "text": "La baisse des imports de gaz norvégien, couplée à la hausse de la demande pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz européen, ce qui pourrait entraîner une hausse des prix de l'électricité.",
+   "text": "La baisse des importations de gaz norvégien, couplée à une demande accrue pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz européen",
    "tone": "up"
   }
  ]
