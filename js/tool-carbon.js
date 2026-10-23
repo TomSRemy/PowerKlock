@@ -94,7 +94,7 @@
       if (!t || v == null) continue;
       pts.push({ t, k: Date.UTC(t.y, t.m - 1, t.d, t.hh, t.mi) / 60000, v });
     }
-    if (pts.length < 4) throw new Error('No timestamp + value rows found. Expected two columns: date-time and consumption.');
+    if (pts.length < 4) throw new Error('No timestamp + value rows found. Expected two columns: date-time and a value (consumption or production).');
     pts.sort((a, b) => a.k - b.k);
     const diffs = []; for (let i = 1; i < pts.length; i++) { const d = pts[i].k - pts[i - 1].k; if (d > 0) diffs.push(d); }
     diffs.sort((a, b) => a - b);
