@@ -158,40 +158,67 @@ _muReg({
   },
 });
 
+// ── forward contracts, contract by contract (power: fr_market_contracts.json, TTF: ttf_contracts.json) ──
+async function _muContracts(cc) {
+  if (cc === 'TTF') { const j = await _muGet('ttfc', 'history/ttf_contracts.json'); return j && j.TTF; }
+  const C = await _muGet('contracts', 'history/fr_market_contracts.json'); return C && C[cc];
+}
+const _MU_KIND = { month: 0, quarter: 1, season: 2, year: 3 };
+// the liquid products: delivery not started, quoted in the last 7 days; base or peak; nearest first within each type
+function _muLiquid(all, kinds, peak) {
+  const today = _muToday(), fresh = _muAdd(today, -7), isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
+  return Object.entries(all || {}).filter(([k, c]) => c && c.points && (!kinds || kinds.includes(c.kind)) && (c.deliveryStart || '') > today && isPeak(k, c) === !!peak
+      && Object.keys(c.points).some(d => d >= fresh))
+    .sort((a, b) => _MU_KIND[a[1].kind] - _MU_KIND[b[1].kind] || (a[1].deliveryStart < b[1].deliveryStart ? -1 : 1));
+}
+const _muCLabel = (k, c) => (c.marketName || k).replace(/^(FR|GE|DE|NL|UK|TTF)\s+/i, '').replace(/\s+(base|peak)$/i, '').replace(/\s*\(.*\)$/, '');
+// last settlement, change vs the previous one and vs a week before, from a contract's own history
+function _muCStats(c) {
+  const ks = Object.keys(c.points).sort(), d = ks[ks.length - 1], v = c.points[d], p1 = ks.length > 1 ? c.points[ks[ks.length - 2]] : null;
+  const wk = _muAdd(d, -7), kw = ks.filter(x => x <= wk).pop(), pw = kw ? c.points[kw] : null;
+  return { d, v, d1: p1 != null ? v - p1 : null, p1: p1 ? (v / p1 - 1) * 100 : null, w1: pw != null ? v - pw : null, pw: pw ? (v / pw - 1) * 100 : null };
+}
+function _muCTable(rows, unit, note) {
+  const chg = (v, q) => v == null ? '<td>–</td>' : `<td class="${v > 0 ? 'mu-up' : v < 0 ? 'mu-dn' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)} <span class="mu-pct">${q > 0 ? '+' : ''}${q.toFixed(1)} %</span></td>`;
+  const KN = { month: 'Month', quarter: 'Quarter', season: 'Season', year: 'Year' };
+  const last = rows.reduce((a, r) => r.s.d > a ? r.s.d : a, '');
+  return `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th>${unit}</th><th>vs D-1</th><th>vs W-1</th></tr></thead><tbody>` +
+    rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${KN[r.kind]}</span></td><td><b>${r.s.v.toFixed(2)}</b></td>${chg(r.s.d1, r.s.p1)}${chg(r.s.w1, r.s.pw)}</tr>`).join('') +
+    `</tbody></table></div><div class="fuel-note">${rows.length} products quoted in the last 7 days · settlements of ${last}. ${note || ''}A rise is shown red (cost up for a buyer).</div>`;
+}
+const _muCRows = (all, kinds, peak) => _muLiquid(all, kinds, peak).map(([k, c]) => ({ label: _muCLabel(k, c), kind: c.kind, s: _muCStats(c) }));
+// the chart: every liquid product of the chosen types over the window
+function _muCChart(cid, all, p, unit, tag) {
+  const kinds = String(p.kinds || 'year,season,quarter,month').split(','), today = _muToday(), peak = p.load === 'peak';
+  const from = _muAdd(today, -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
+  const pick = _muLiquid(all, kinds, peak).filter(([, c]) => Object.keys(c.points).some(d => d >= from));
+  if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
+  const dates = [...new Set(pick.flatMap(([, c]) => Object.keys(c.points).filter(d => d >= from)))].sort();
+  const PAL = { year: ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635', '#FB7185', '#38BDF8'],
+    quarter: ['#22D3EE', '#FB923C', '#C084FC', '#4ADE80', '#F87171', '#FACC15', '#818CF8', '#2DD4BF'], month: ['#E6EDF3', '#93C5FD', '#FDA4AF', '#86EFAC', '#FCD34D', '#C4B5FD', '#67E8F9', '#FDBA74', '#F9A8D4', '#BEF264', '#A5B4FC', '#99F6E4'] };
+  const n = {};
+  const ds = pick.map(([k, c]) => { const i = (n[c.kind] = (n[c.kind] || 0) + 1) - 1;
+    return _fuelLineDs(_muCLabel(k, c), dates.map(d => c.points[d] != null ? c.points[d] : null), PAL[c.kind][i % PAL[c.kind].length],
+      { borderWidth: c.kind === 'year' ? 2.2 : 1.5, borderDash: c.kind === 'month' ? [3, 3] : c.kind === 'quarter' ? [6, 3] : c.kind === 'season' ? [10, 4] : [], spanGaps: true }); });
+  _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(unit) }, plugins: { legend: _muLegend() } }) }, tag);
+  const y0 = pick.find(([, c]) => c.kind === 'year') || pick[0], pts = y0[1].points, ks = Object.keys(pts).filter(d => d >= from).sort();
+  const last = pts[ks[ks.length - 1]], first = pts[ks[0]];
+  return { sub: `${peak ? 'Peakload' : 'Baseload'} · ${pick.length} products quoted · ${_muCLabel(y0[0], y0[1])}: ${last.toFixed(2)} ${unit}, ${(last - first >= 0 ? '+' : '') + (last - first).toFixed(2)} over ${p.win} · solid = year, long dash = season, dash = quarter, dots = month · click a product in the legend to hide it` };
+}
+
 // ── 5. prices ──
 _muReg({
   id: 'fr-cal-history', title: 'Forward contracts', category: 'forwards', page: 'prices', pageCanvas: 'cal-history', source: 'Market data',
-  desc: 'Daily settlements of a market’s baseload forward contracts still to deliver: months, quarters, seasons and calendar years, each type shown or hidden. UK in GBP.',
+  desc: 'Daily settlements of every liquid forward contract of a market (quoted in the last 7 days, still to deliver): months, quarters, seasons and calendar years, each type shown or hidden. UK in GBP.',
   titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · forward contracts',
   params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years'], ['all', 'All']] },
     { key: 'load', label: 'Load', options: [['base', 'Baseload'], ['peak', 'Peakload']] },
     { key: 'kinds', label: 'Products', options: [['year', 'Calendar years'], ['year,season', 'Years and seasons'], ['year,season,quarter', 'Years, seasons, quarters'], ['year,season,quarter,month', 'All products']] }],
-  defaults: { win: '3M', country: 'FR', kinds: 'year', load: 'base' },
+  defaults: { win: '3M', country: 'FR', kinds: 'year,season,quarter,month', load: 'base' },
   async draw(cid, p) {
-    const C = await _muGet('contracts', 'history/fr_market_contracts.json');
-    const cc = p.country || 'FR', all = C && C[cc];
+    const cc = p.country || 'FR', all = await _muContracts(cc);
     if (!all) { noDataMsg(cid, 'Forward history not available', ''); return null; }
-    const kinds = String(p.kinds || 'year').split(','), today = _muToday();
-    const from = _muAdd(today, -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
-    const ORDER = { month: 0, quarter: 1, season: 2, year: 3 }, CAP = { month: 6, quarter: 6, season: 4, year: p.years === 'all' ? 8 : 3 };   // the next three calendar years unless asked
-    // contracts still to deliver, nearest first, a few of each type
-    const peak = p.load === 'peak', isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
-    // still to deliver (delivery not started), base or peak as chosen
-    const live = Object.entries(all).filter(([k, c]) => c && c.points && kinds.includes(c.kind) && (c.deliveryStart || '') > today && isPeak(k, c) === peak && Object.keys(c.points).some(d => d >= from) && Object.keys(c.points).some(d => d >= _muAdd(today, -30)))   // no quote for a month: stale, left out
-      .sort((a, b) => ORDER[a[1].kind] - ORDER[b[1].kind] || (a[1].deliveryStart < b[1].deliveryStart ? -1 : 1));
-    const per = {}; const pick = live.filter(([, c]) => (per[c.kind] = (per[c.kind] || 0) + 1) <= CAP[c.kind]);
-    if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
-    const dates = [...new Set(pick.flatMap(([, c]) => Object.keys(c.points).filter(d => d >= from)))].sort();
-    const PAL = { year: ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635'],
-      quarter: ['#22D3EE', '#FB923C', '#C084FC', '#4ADE80', '#F87171', '#FACC15'], month: ['#E6EDF3', '#93C5FD', '#FDA4AF', '#86EFAC', '#FCD34D', '#C4B5FD'] };
-    const n = {}; const lab = (k, c) => (c.marketName || k).replace(/^(FR|GE|DE|NL|UK)\s+/, '').replace(/\s+(base|peak)$/i, '').replace(/\s*\(.*\)$/, '');
-    const ds = pick.map(([k, c]) => { const i = (n[c.kind] = (n[c.kind] || 0) + 1) - 1;
-      return _fuelLineDs(lab(k, c), dates.map(d => c.points[d] != null ? c.points[d] : null), PAL[c.kind][i % PAL[c.kind].length],
-        { borderWidth: c.kind === 'year' ? 2.2 : 1.5, borderDash: c.kind === 'month' ? [3, 3] : c.kind === 'quarter' ? [6, 3] : c.kind === 'season' ? [10, 4] : [], spanGaps: true }); });
-    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(cc === 'UK' ? '£/MWh' : '€/MWh') }, plugins: { legend: _muLegend() } }) }, 'forward-contracts-' + cc);
-    const y0 = pick.find(([, c]) => c.kind === 'year') || pick[0], pts = y0[1].points, ks = Object.keys(pts).filter(d => d >= from).sort();
-    const last = pts[ks[ks.length - 1]], first = pts[ks[0]], cur = cc === 'UK' ? '£' : '€';
-    return { sub: `${peak ? 'Peakload' : 'Baseload'} · ${pick.length} contracts · ${lab(y0[0], y0[1])}: ${last.toFixed(2)} ${cur}/MWh, ${(last - first >= 0 ? '+' : '') + (last - first).toFixed(2)} over ${p.win} · line style: solid = year, long dash = season, dash = quarter, dots = month · click a product in the legend to hide it` };
+    return _muCChart(cid, all, p, cc === 'UK' ? '£/MWh' : '€/MWh', 'forward-contracts-' + cc);
   },
 });
 
@@ -235,34 +262,25 @@ function _muTtfRows(c) {
 }
 _muReg({
   id: 'ttf-fwd-table', kind: 'html', title: 'TTF forwards · table', category: 'forwards', page: 'euafwd', source: 'Market data', size: { w: 6, h: 6 },
-  desc: 'TTF gas forward products (months, quarters, seasons, calendar years): settlement, change vs the previous day and vs a week before.',
+  desc: 'Every liquid TTF gas forward product (months, quarters, seasons, calendar years quoted in the last 7 days): settlement, change vs the previous day and vs a week before.',
   async html(host) {
-    const rows = _muTtfRows(await _muGet('com', 'commodities.json'));
-    if (!rows.length) { host.innerHTML = '<div class="fuel-note">TTF forwards not available.</div>'; return; }
-    const chg = (v, p) => v == null ? '<td>–</td>' : `<td class="${v > 0 ? 'mu-up' : v < 0 ? 'mu-dn' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)} <span class="mu-pct">${p > 0 ? '+' : ''}${p.toFixed(1)} %</span></td>`;
-    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Product</th><th>€/MWh</th><th>vs D-1</th><th>vs W-1</th></tr></thead><tbody>` +
-      rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${r.kind}</span></td><td><b>${r.v.toFixed(2)}</b></td>${chg(r.d1, r.p1)}${chg(r.w1, r.pw)}</tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
+    const all = await _muContracts('TTF'), rows = all ? _muCRows(all) : [];
+    if (rows.length) { host.innerHTML = _muCTable(rows, '€/MWh'); return; }
+    const snap = _muTtfRows(await _muGet('com', 'commodities.json'));   // contract history missing: the day's strip
+    if (!snap.length) { host.innerHTML = '<div class="fuel-note">TTF forwards not available.</div>'; return; }
+    host.innerHTML = _muCTable(snap.map(r => ({ label: r.label, kind: r.kind.toLowerCase(), s: { d: r.date, v: r.v, d1: r.d1, p1: r.p1, w1: r.w1, pw: r.pw } })), '€/MWh');
   },
 });
 // ── Power forwards, same table as the TTF one: the strip of a market (months, quarters, seasons, years, base) ──
 _muReg({
   id: 'power-fwd-table', kind: 'html', title: 'Power forwards · table', category: 'forwards', page: 'prices', source: 'Market data', size: { w: 6, h: 8 },
-  desc: 'Power forward products of a market (months, quarters, seasons, calendar years, baseload): settlement, change vs the previous day and vs a week before.',
+  desc: 'Every liquid power forward product of a market (baseload months, quarters, seasons, calendar years quoted in the last 7 days): settlement, change vs the previous day and vs a week before.',
   params: [MU_FWD], defaults: { country: 'FR' },
   titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' power forwards · table',
   async html(host, p) {
-    const fm = await _muGet('frm', 'fr_market.json'), cc = (p && p.country) || 'FR', c = fm && fm.countries && fm.countries[cc];
-    const cur = c && c.currency === 'GBP' ? '£/MWh' : '€/MWh';
-    const rows = ((c && c.forwardCurve) || (cc === 'FR' && fm && fm.forwardCurve) || []).filter(r => r.value != null).map(r => {
-      const back = pct => pct == null ? null : r.value - r.value / (1 + pct / 100);
-      return { label: String(r.contract || r.tenor).replace(/^(FR|GE|DE|NL|UK|BL)\s+/, '').replace(/\s*base$/i, ''), kind: /^M/.test(r.tenor) ? 'Month' : /^Q/.test(r.tenor) ? 'Quarter' : /^S/.test(r.tenor) ? 'Season' : 'Year', v: r.value, d1: back(r.varD1Pct), w1: back(r.varW1Pct), p1: r.varD1Pct, pw: r.varW1Pct, date: r.date };
-    });
+    const cc = (p && p.country) || 'FR', all = await _muContracts(cc), rows = all ? _muCRows(all) : [];
     if (!rows.length) { host.innerHTML = '<div class="fuel-note">Power forwards not available for this market.</div>'; return; }
-    const chg = (v, q) => v == null ? '<td>–</td>' : `<td class="${v > 0 ? 'mu-up' : v < 0 ? 'mu-dn' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)} <span class="mu-pct">${q > 0 ? '+' : ''}${q.toFixed(1)} %</span></td>`;
-    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Product · base</th><th>${cur}</th><th>vs D-1</th><th>vs W-1</th></tr></thead><tbody>` +
-      rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${r.kind}</span></td><td><b>${r.v.toFixed(2)}</b></td>${chg(r.d1, r.p1)}${chg(r.w1, r.pw)}</tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
+    host.innerHTML = _muCTable(rows, cc === 'UK' ? '£/MWh' : '€/MWh', 'Baseload. ');
   },
 });
 // on Prices › Forward: the table drawn when it comes into view, redrawn when the market changes
@@ -274,28 +292,25 @@ _muReg({
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
 _muReg({
-  id: 'ttf-cal-history', title: 'TTF calendar forwards', category: 'forwards', page: 'euafwd', pageCanvas: 'ttf-cal', source: 'Market data',
-  desc: 'Daily settlements of the TTF gas calendar contracts (fixed delivery years) over the chosen window.',
-  params: [{ key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '6M' },
+  id: 'ttf-cal-history', title: 'TTF forward contracts', category: 'forwards', page: 'euafwd', pageCanvas: 'ttf-cal', source: 'Market data',
+  desc: 'Daily settlements of every liquid TTF gas forward contract (quoted in the last 7 days, still to deliver): months, quarters, seasons and calendar years, each type shown or hidden.',
+  params: [{ key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] },
+    { key: 'kinds', label: 'Products', options: [['year', 'Calendar years'], ['year,season', 'Years and seasons'], ['year,season,quarter', 'Years, seasons, quarters'], ['year,season,quarter,month', 'All products']] }],
+  defaults: { win: '6M', kinds: 'year,season,quarter,month' },
   async draw(cid, p) {
-    const long = p.win === '3Y';
-    const c = await _muGet(long ? 'cs' : 'com', long ? 'history/commodities_series.json' : 'commodities.json');
-    const yrs = c && c.calYears && c.calYears.ttf;
-    if (!yrs || !Object.keys(yrs).length) { noDataMsg(cid, 'TTF calendar history not available', ''); return null; }
-    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 183));
-    const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
-    const cols = ['#C4A57B', '#FBBF24', '#7FC8F8', '#14D3A9'];
-    const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('TTF Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
-    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'ttf-calendar-forwards');
-    const k = Object.keys(yrs).sort()[0], v = yrs[k].values, i0 = yrs[k].dates.findIndex(d => d >= from), first = i0 >= 0 ? v[i0] : null, last = v[v.length - 1];
-    return { sub: `TTF Cal ${k}: ${last.toFixed(2)} €/MWh, ${first != null ? ((last - first) >= 0 ? '+' : '') + (last - first).toFixed(2) : '–'} over ${p.win}` };
+    const all = await _muContracts('TTF');
+    if (!all) { noDataMsg(cid, 'TTF contract history not available', ''); return null; }
+    const r = _muCChart(cid, all, p, '€/MWh', 'ttf-forward-contracts');
+    if (r) r.sub = r.sub.replace(/^Baseload · /, '');
+    return r;
   },
 });
 
 window.PKTtf = {
   render() {
     const w = (document.getElementById('ttf-cal-win') || {}).value || '6M';
-    PKW.draw('ttf-cal-history', 'ttf-cal', { win: w }).then(r => { const e = document.getElementById('ttf-cal-sub'); if (e && r && r.sub) e.textContent = r.sub; });
+    const kinds = [...document.querySelectorAll('#ttf-kinds input:checked')].map(x => x.value).join(',') || 'year';
+    PKW.draw('ttf-cal-history', 'ttf-cal', { win: w, kinds }).then(r => { const e = document.getElementById('ttf-cal-sub'); if (e && r && r.sub) e.textContent = r.sub; });
     const host = document.getElementById('ttf-fwd-host'); if (host) PKW.get('ttf-fwd-table').html(host, {});
   },
 };
