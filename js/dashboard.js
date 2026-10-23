@@ -244,7 +244,7 @@
 
   // row height follows the screen width: on a large screen every chart grows in height as well as in width
   //   (64 px up to ~1300 px of grid, then proportional, capped at 120 px)
-  const cellH = host => Math.round(Math.max(CELL_H, Math.min(120, (host.clientWidth || 1200) / 20)));
+  const cellH = () => Math.round(Math.max(CELL_H, Math.min(120, (window.innerWidth - 260) / 20)));   // the menu's width taken off even when hidden: the shared view keeps PowerKlock's proportions
   let resizeT = null;
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
     const host = document.getElementById('pkd-grid'); if (!grid || !host || !host.offsetParent) return;
@@ -823,9 +823,16 @@
     const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
     bar.innerHTML = solo
       ? `<div class="pkd-solo-t"><span class="pkd-solo-name">${esc(shared.name)}</span><span class="pkd-solo-date">${esc(date)}</span></div>
-`
+         <button type="button" class="pk-btn-ghost" id="pkd-solo-pptx" title="This dashboard as a PowerPoint">⤓ PowerPoint</button>`
       : `<div class="pkd-shared-t"><b>Shared dashboard · ${esc(shared.name)}</b><span>A copy of a colleague's layout with today's data. Add it to your dashboards to keep or change it.</span></div>
          <div class="pkd-shared-a"><button type="button" class="pk-btn-ghost" id="pkd-shared-close">Close</button><button type="button" class="pk-btn-primary" id="pkd-shared-add">+ Add to my dashboards</button></div>`;
+    bar.querySelector('#pkd-solo-pptx')?.addEventListener('click', async ev => {
+      const btn = ev.currentTarget, label = btn.textContent; if (!window.PKExport) return;
+      btn.disabled = true;
+      try { const name = await PKExport.open(shared, (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; }); if (name) toast('Downloaded ' + name); }
+      catch (e) { console.warn(e); toast('Export failed: ' + (e.message || e)); }
+      btn.disabled = false; btn.textContent = label;
+    });
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
       const id = uid();
       state.boards.push({ id, name: shared.name, desc: shared.desc || '', items: shared.items.map(it => Object.assign({}, it, { i: uid() })) });
@@ -871,7 +878,7 @@
         if (!window.PKExport) return;
         btn.disabled = true;
         try {
-          const name = await PKExport.open(board(), (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; });
+          const name = await PKExport.open(shared || board(), (k, n) => { btn.textContent = 'Exporting ' + k + '/' + n + '…'; });
           if (name) toast('Downloaded ' + name);
         } catch (e) { console.warn(e); toast('Export failed: ' + (e.message || e)); }
         btn.disabled = false; btn.textContent = label;

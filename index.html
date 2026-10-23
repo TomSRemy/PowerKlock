@@ -1513,6 +1513,8 @@
   body.pk-solo .ticker, body.pk-solo .topbar, body.pk-solo .sidebar, body.pk-solo .mobile-backdrop,
   body.pk-solo #page-mydash .pkd-top { display: none !important; }
   body.pk-solo .layout { padding-top: 0; }
+  body.pk-solo .page:not(#page-mydash), body.pk-solo #pk-loader, body.pk-solo .pk-status-badge { display: none !important; }
+  body.pk-solo #page-mydash { display: block !important; }
   body.pk-solo .pkd-actions, body.pk-solo .pkw-star, body.pk-solo .grid-stack-item > .ui-resizable-se { display: none !important; }   /* read-only: nothing to edit, nowhere else to go */
   body.pk-solo .es-gamespot, body.pk-solo [class^="es-"], body.pk-solo [class*=" es-"] { display: none !important; }
   body.pk-solo .main { width: 100%; }
@@ -3124,6 +3126,8 @@
 </style>
 </head>
 <body>
+<script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows */
+if (/^#solo=/.test(location.hash)) document.body.classList.add('pk-solo');</script>
 
 <!-- Mobile sidebar backdrop -->
 <div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>

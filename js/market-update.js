@@ -363,13 +363,13 @@ if (window.PKW) PKW.register({
       <div class="hi"><b>Most expensive</b> ${h[hi].toFixed(2)} €/MWh at ${hi} h<span>peak ${wh} h → ${wh + 3} h</span></div></div>
       <div class="mu-day-c"><canvas id="${cid}"></canvas></div></div>`;
     const bands = { id: 'muBands', beforeDatasetsDraw(ch) { const a = ch.chartArea, x = ch.scales.x, g = ch.ctx;
-      [[wl, 'rgba(20,211,169,.12)', 'TROUGH'], [wh, 'rgba(237,105,101,.12)', 'PEAK']].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = 'rgba(184,201,217,.7)'; g.font = '9px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 3, a.top + 10); g.restore(); }); } };
+      [[wl, 'rgba(20,211,169,.12)', 'TROUGH'], [wh, 'rgba(237,105,101,.12)', 'PEAK']].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = t === 'PEAK' ? '#D64545' : '#0E9F7E'; g.font = '600 10px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 4, a.top + 12); g.restore(); }); } };
     new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
       { label: 'Price', data: h.map(v => Math.round(v * 100) / 100), borderColor: '#14D3A9', borderWidth: 2.2, tension: .35, fill: false,
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
       { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
     ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } } } } });
+      scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: 'hour (Paris)', color: '#7A93AB', font: { size: 11 } } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 11 } } } } } });
   },
 });
 
