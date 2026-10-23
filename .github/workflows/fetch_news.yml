@@ -38,7 +38,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/news.json
+          git add data/news.json data/news_prefs.json 2>/dev/null || git add data/news.json
           if git diff --staged --quiet; then
             echo "No news changes — skipping commit."
             exit 0

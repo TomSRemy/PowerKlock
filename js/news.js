@@ -125,9 +125,14 @@ function renderNews(items) {
   const kn = document.getElementById('news-kw-n');
   if (kn) kn.textContent = kw.length ? (items || []).filter(i => _newsMine(i, kw)).length + ' matching' : '';
   const frOnly = _newsFr();
-  const filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
-    (newsFilter === 'all' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
+  _newsFillSelects(items || []);
+  const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
+  let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
+    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
+    (!src || i.source === src) && (!cty || (i.countries || []).includes(cty)) &&
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
+  // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
+  if (newsFilter === 'movers') filtered = filtered.filter(i => (i.impact || 0) >= 3 && Date.now() - i.date < 72 * 3600e3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
   const grid = document.getElementById('news-grid');
   if (!items || !items.length) {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No news available — data/news.json could not be loaded.</div>';
@@ -148,10 +153,48 @@ function renderNews(items) {
       </div>
       <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
-      <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}</div>
+      <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
+      <div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>
     </a>`;
   }).join('');
 }
+
+// selects of the sources and countries present in the feed
+function _newsFillSelects(items) {
+  const fill = (id, vals, all) => { const el = document.getElementById(id); if (!el || el.dataset.n == vals.length) return; const cur = el.value;
+    el.innerHTML = `<option value="">${all}</option>` + vals.map(v => `<option value="${_newsEsc(v[0])}">${_newsEsc(v[1])}</option>`).join(''); el.value = cur; el.dataset.n = vals.length; };
+  const cnt = {}; items.forEach(i => { cnt[i.source] = (cnt[i.source] || 0) + 1; });
+  fill('news-src', Object.keys(cnt).sort((a, b) => a.localeCompare(b)).map(k => [k, k + ' (' + cnt[k] + ')']), 'All sources');
+  const CN = { FR: 'France', EU: 'Europe / EU', DE: 'Germany', BE: 'Belgium', ES: 'Spain', IT: 'Italy', NL: 'Netherlands', UK: 'United Kingdom' };
+  const cc = [...new Set(items.flatMap(i => i.countries || []))].sort((a, b) => Object.keys(CN).indexOf(a) - Object.keys(CN).indexOf(b));
+  fill('news-cty', cc.map(c => [c, CN[c] || c]), 'All countries');
+}
+
+// 👍 / 👎 on each article (signed in): public.news_vote (warehouse migration 015); the news run learns from them
+//   which sources, subjects and words matter (data/news_prefs.json) and ranks the next articles with it
+const _newsVotes = (() => { try { return JSON.parse(localStorage.getItem('pk-news-votes') || '{}'); } catch (_) { return {}; } })();
+function _newsVoteBtns(link) {
+  const v = _newsVotes[link] || 0;
+  return `<button type="button" class="nv${v === 1 ? ' on' : ''}" data-v="1" title="Useful: more like this">👍</button><button type="button" class="nv${v === -1 ? ' on' : ''}" data-v="-1" title="Not useful: fewer like this">👎</button>`;
+}
+async function _newsVote(link, vote, box) {
+  const item = (newsData || []).find(i => i.link === link); if (!item) return;
+  const cl = window.PKAccount && window.PKAccount.user && window.PKAccount.client && window.PKAccount.client();
+  if (!cl) { box.insertAdjacentHTML('beforeend', '<span class="nv-msg">sign in to vote</span>'); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
+  const prev = _newsVotes[link] || 0, v = prev === vote ? 0 : vote;
+  try {
+    if (v === 0) { const r = await cl.from('news_vote').delete().eq('link', link); if (r.error) throw r.error; }
+    else { const r = await cl.from('news_vote').upsert({ link, title: String(item.title).slice(0, 300), source: item.source, tags: item.tags || [], vote: v }, { onConflict: 'user_id,link' }); if (r.error) throw r.error; }
+    if (v) _newsVotes[link] = v; else delete _newsVotes[link];
+    try { localStorage.setItem('pk-news-votes', JSON.stringify(_newsVotes)); } catch (_) {}
+    box.innerHTML = _newsVoteBtns(link);
+  } catch (e) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">not saved: ${_newsEsc(e.message || e)}</span>`); }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.news-vote .nv'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const box = b.closest('.news-vote'); _newsVote(box.dataset.link, +b.dataset.v, box);
+}, true);
 
 function filterNews(tag, btn) {
   newsFilter = tag;
