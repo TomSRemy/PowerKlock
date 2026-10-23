@@ -146,6 +146,25 @@ if (window.PKW) {
   });
 }
 
+// ── public cost of the support to renewables by technology (CRE deliberation each July, data/cspe.json) ──
+if (window.PKW) PKW.register({
+  id: 'cspe-enr', title: 'Public cost of renewable support', category: 'renewables', page: 'renewables', pageCanvas: 'ren-cspe',
+  source: 'CRE deliberation', size: { w: 6, h: 5 },
+  desc: 'Charges of public service paid to support renewable power in mainland France, by technology (M€): observed for past years, CRE forecast for the coming ones. Negative: the market paid more than the support contracts.',
+  async draw(cid) {
+    const j = await fetchJSON('cspe.json');
+    const Y = j && j.years ? Object.keys(j.years).sort() : [];
+    if (!Y.length) { noDataMsg(cid, 'CSPE not available', ''); return null; }
+    const pick = y => j.years[y].observed ? ['observed', j.years[y].observed] : ['forecast', j.years[y].forecast];
+    const T = [['solar', 'Solar', '#FBBF24'], ['onshore', 'Onshore wind', '#7FC8F8'], ['offshore', 'Offshore wind', '#38BDF8'], ['bio', 'Bio-energies', '#86EFAC'], ['other', 'Other', '#94A3B8']];
+    const ds = T.map(([k, lab, col]) => ({ label: lab, data: Y.map(y => (pick(y)[1] || {})[k] ?? null), backgroundColor: Y.map(y => pick(y)[0] === 'forecast' ? col + '66' : col), borderColor: col, borderWidth: Y.map(y => pick(y)[0] === 'forecast' ? 1 : 0), stack: 's' }));
+    _fuelChart(cid, { type: 'bar', data: { labels: Y.map(y => y + (pick(y)[0] === 'forecast' ? ' (forecast)' : '')), datasets: ds },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: Object.assign(_fuelAxis('M€'), { stacked: true }) }, plugins: { legend: { labels: { color: C_TX2, font: { size: 10 }, boxWidth: 12 } } } }) }, 'cspe-enr');
+    const ly = Y[Y.length - 1], lo = Y.filter(y => j.years[y].observed).pop(), tot = y => (pick(y)[1] || {}).total_power;
+    return { sub: `${lo ? `Observed ${lo}: ${Math.round(tot(lo)).toLocaleString('en-GB')} M€` : ''}${ly !== lo ? ` · forecast ${ly}: ${Math.round(tot(ly)).toLocaleString('en-GB')} M€` : ''} · renewable power, mainland France` };
+  },
+});
+
 async function renderM0() {
   if (!document.getElementById('ren-m0')) return;
   const p = PKW.get('fr-m0').pageParams();
@@ -153,6 +172,7 @@ async function renderM0() {
   const fc = document.getElementById('m0-forecast'); if (fc) { await PKW.get('fr-m0-forecast').html(fc); PKW.star('fr-m0-forecast', 'm0-forecast'); }
   const of = document.getElementById('m0-official'); if (of) { await PKW.get('fr-m0-official').html(of); PKW.star('fr-m0-official', 'm0-official'); }
   if (document.getElementById('ren-ao')) PKW.draw('cre-tenders', 'ren-ao', {}).then(res => { const e = document.getElementById('ren-ao-sub'); if (e && res && res.sub) e.textContent = res.sub; });
+  if (document.getElementById('ren-cspe')) PKW.draw('cspe-enr', 'ren-cspe', {}).then(res => { const e = document.getElementById('ren-cspe-sub'); if (e && res && res.sub) e.textContent = res.sub; });
   const aot = document.getElementById('m0-ao'); if (aot) { await PKW.get('cre-tenders-table').html(aot); PKW.star('cre-tenders-table', 'm0-ao'); }
   const j = await _m0Load(), ann = document.getElementById('m0-annual');
   if (j && ann) {
