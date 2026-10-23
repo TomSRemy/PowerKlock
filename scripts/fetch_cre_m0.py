@@ -113,20 +113,26 @@ def prices(day):
 
 
 def estimates(months):
-    """CRE method on PowerKlock data for the given YYYY-MM months."""
+    """CRE method on PowerKlock data for the given YYYY-MM months. Where the production of the parks under
+    complément de rémunération is published (ODRÉ, scripts/fetch_cr_production.py), the same method weighted
+    with that real profile gives windCR / solarCR."""
     res = {}
+    cr = (load_json('data/history/cr_production.json') or {}).get('days') or {}
     for ym in months:
         f = load_json(f'data/history/rte/{ym}.json')
         if not f:
             continue
         a = {'pAll': 0.0, 'nAll': 0, 'pPos': 0.0, 'nPos': 0, 'w': 0.0, 'wp': 0.0, 's': 0.0, 'sp': 0.0, 'days': 0, 'negQ': 0,
-             'wA': 0.0, 'wpA': 0.0, 'sA': 0.0, 'spA': 0.0}
+             'wA': 0.0, 'wpA': 0.0, 'sA': 0.0, 'spA': 0.0, 'wC': 0.0, 'wpC': 0.0, 'sC': 0.0, 'spC': 0.0, 'dC': 0}
         for day, r in sorted((f.get('days') or {}).items()):
             p = prices(day)
             sol, win = r.get('solar') or [], r.get('wind') or []
             if not p or len(sol) != 96 or len(win) != 96:
                 continue
             a['days'] += 1
+            c = cr.get(day)
+            if c:
+                a['dC'] += 1
             for q in range(96):
                 v = p[q]
                 if v is None:
@@ -139,6 +145,9 @@ def estimates(months):
                     a['negQ'] += 1
                     continue
                 a['pPos'] += v; a['nPos'] += 1
+                if c:
+                    cw, cs = max(0.0, c['wind'][q] or 0.0), max(0.0, c['solar'][q] or 0.0)
+                    a['wC'] += cw; a['wpC'] += cw * v; a['sC'] += cs; a['spC'] += cs * v
                 w, s = max(0.0, win[q] or 0.0), max(0.0, sol[q] or 0.0)
                 a['w'] += w; a['wp'] += w * v; a['s'] += s; a['sp'] += s * v
         if not a['nAll']:
@@ -150,6 +159,13 @@ def estimates(months):
                    'windCap': round(a['wpA'] / a['wA'], 3) if a['wA'] else None,
                    'solarCap': round(a['spA'] / a['sA'], 3) if a['sA'] else None,
                    'days': a['days'], 'negHours': a['negQ'] / 4}
+        if a['dC'] == a['days'] and a['wC']:   # the whole month covered by the published parks' output
+            # the parks' own profile reproduces the CRE M0 to a few cents (39 months: solar 0.08 €, wind 0.14 € mean gap,
+            # against 1.06 € and 0.28 € with the national output): it becomes the estimate, the national one is kept
+            res[ym]['windNat'], res[ym]['solarNat'] = res[ym]['wind'], res[ym]['solar']
+            res[ym]['wind'] = round(a['wpC'] / a['wC'], 3)
+            res[ym]['solar'] = round(a['spC'] / a['sC'], 3) if a['sC'] else res[ym]['solar']
+            res[ym]['profile'] = 'cr'
     return res
 
 
@@ -239,7 +255,7 @@ def main():
     out = {
         'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         'source': {'official': 'CRE — open data, données nécessaires au calcul des compléments de rémunération (' + PAGE + ')',
-                   'estimate': 'PowerKlock — CRE method on RTE éCO2mix output and ENTSO-E day-ahead prices; capture prices (windCap, solarCap) = same weighting with every step, negative prices included',
+                   'estimate': 'PowerKlock — CRE method on ENTSO-E day-ahead prices, weighted by the output of the parks under complément de rémunération (ODRÉ) where published, else by RTE éCO2mix national output; capture prices (windCap, solarCap) = same weighting with every step, negative prices included',
                    'forecast': 'PowerKlock — forward baseload × M0 / mean price ratio of the same month over the last three years'},
         'method': 'CRE: mean of the day-ahead prices ≥ 0, weighted at the market time step (15 min since May 2026, hourly before) by the national profile; negative steps left out.',
         'official': off, 'estimate': est, 'forecast': forecast, 'forwardDate': fwd_date, 'currentMonth': this,
