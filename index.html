@@ -5530,6 +5530,20 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-api-dash">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-api-dash')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>A whole dashboard</div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-api-dash">
+          <div class="cf-form">
+            <label class="cf-field" style="grid-column:span 2"><span>Dashboard</span><select id="api-dash"></select></label>
+            <label class="cf-field"><span>Height</span><span class="cf-in"><input type="number" id="api-dash-h" value="900" step="50" min="300"><em>px</em></span></label>
+          </div>
+          <div id="api-dash-out" class="api-out"></div>
+          <div class="fuel-note">The link carries the dashboard's layout as it is now: charts, sections, sizes and settings; the data stays live. After changing the dashboard, copy a new link. Viewers see the dashboard alone, read-only, with full screen and PowerPoint export.</div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-api-data">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-api-data')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>Data<span class="pk-hs-meta">The JSON files of PowerKlock, readable by any application</span></div>
