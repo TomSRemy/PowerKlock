@@ -5032,6 +5032,7 @@
           <button class="pk-gf-btn" data-d="-1" onclick="PKMap.setDay(-1)">Yesterday</button>
           <button class="pk-gf-btn active" data-d="0" onclick="PKMap.setDay(0)">Today</button>
           <button class="pk-gf-btn" data-d="1" onclick="PKMap.setDay(1)" title="Day-ahead prices only">Tomorrow</button>
+          <input type="date" id="pm-date" class="pm-date" aria-label="Any day of the last month" title="Replay any day of the last month" onchange="this.value && PKMap.setDay(this.value)">
         </div>
         <div class="pm-time">
           <button class="pm-play" id="pm-play" onclick="PKMap.play()" title="Play the day">▶</button>
