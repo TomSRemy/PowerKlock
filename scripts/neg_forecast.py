@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Negative day-ahead prices in France: the chance of each hour of today and tomorrow.
+"""Day-ahead prices in France, today and tomorrow: the chance of a negative price each hour, and the price.
 
 What drives a negative price is the share of demand left once solar, wind and nuclear are served:
   R = (load − solar − wind − nuclear) ÷ load          (RTE éCO2mix actuals, data/history/fr_hourly)
@@ -109,6 +109,85 @@ def predict(b, X):
     return 1 / (1 + np.exp(-np.clip(X @ b, -30, 30)))
 
 
+# ── day-ahead price: ridge regression, the level of the last week, gas and CO2 cost of a gas plant, the
+#    residual shares of France (nuclear available) and Germany, solar share, calendar; trained on two years
+CS = os.path.join(ROOT, 'data', 'history', 'commodities_series.json')
+
+
+def _asof(pts, d):
+    lo, hi, ans = 0, len(pts) - 1, None
+    while lo <= hi:
+        m = (lo + hi) // 2
+        if pts[m][0] < d:
+            ans = pts[m][1]; lo = m + 1
+        else:
+            hi = m - 1
+    return ans
+
+
+def price_feats(hist, fuel_pts, d, h, s, w, l, nav, de):
+    if None in (s, w, l) or not l:
+        return None
+    t = date.fromisoformat(d)
+    prev = [hist.get((t - timedelta(days=k)).isoformat()) for k in range(2, 9)]   # known before the auction: D-2 and before
+    pm = [x for pp in prev if pp for x in pp['p'] if x is not None]
+    ph = [pp['p'][h] for pp in prev if pp and pp['p'][h] is not None]
+    ttf, eua = _asof(fuel_pts[0], d), _asof(fuel_pts[1], d)
+    if len(pm) < 48 or not ph or ttf is None or eua is None:
+        return None
+    fuel = 2.0 * ttf + 0.37 * eua
+    R = (l - s - w - nav) / l
+    Rd = 0.0
+    if de and None not in (de[0][h], de[1][h], de[2][h]) and de[2][h]:
+        Rd = (de[2][h] - de[0][h] - de[1][h]) / de[2][h]
+    we = 1.0 if t.weekday() >= 5 else 0.0
+    return [1, float(np.mean(pm)), float(np.mean(ph)), fuel, fuel * max(R, -1), R, max(R, 0) * fuel, min(R, 0), Rd, Rd * fuel, s / l, we,
+            math.sin(2 * math.pi * h / 24), math.cos(2 * math.pi * h / 24), we * s / l]
+
+
+def ridge(A, Y):
+    sc = A.std(0); sc[sc == 0] = 1
+    lam = 1e-2 * np.eye(A.shape[1]); lam[0, 0] = 0
+    return np.linalg.solve((A / sc).T @ (A / sc) + len(A) * lam, (A / sc).T @ Y) / sc
+
+
+def price_model(data, hist):
+    cs = json.load(open(CS))['series']; fuel = (cs['ttf']['points'], cs['eua']['points'])
+    X, Y, K = [], [], []
+    for d, r in data:
+        if d < '2023-01-01':
+            continue
+        nav = nuclear_avail(hist, d)
+        if nav is None:
+            continue
+        for h in range(24):
+            f = price_feats(hist, fuel, d, h, r['s'][h], r['w'][h], r['l'][h], nav, r['de'])
+            if f is None or r['p'][h] is None:
+                continue
+            X.append(f); Y.append(r['p'][h]); K.append(d)
+    X, Y = np.array(X), np.array(Y)
+    err, naive = [], []
+    for m in sorted({k[:7] for k in K if k >= '2025-01'}):
+        tr = np.array([m + '-01' > k >= str(int(m[:4]) - 2) + m[4:] for k in K]); te = np.array([k[:7] == m for k in K])
+        b = ridge(X[tr], Y[tr]); err += list(np.abs(X[te] @ b - Y[te]))
+    for d, r in data:
+        if d >= '2025-01':
+            p2 = hist.get((date.fromisoformat(d) - timedelta(days=2)).isoformat())
+            if p2:
+                naive += [abs(a - b) for a, b in zip(r['p'], p2['p']) if a is not None and b is not None]
+    last = K[-1]
+    b = ridge(X[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]], Y[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]])
+    skill = {'mae': round(float(np.mean(err)), 2), 'naive_mae': round(float(np.mean(naive)), 2), 'from': '2025-01'}
+    return b, fuel, skill
+
+
+def fc_days_hint():
+    try:
+        return list(json.load(open(os.path.join(ROOT, 'data', 'forecast.json')))['zones']['FR']['days'])
+    except (OSError, ValueError, KeyError):
+        return []
+
+
 def main():
     data = rows(2022)
     hist = dict(data)
@@ -153,6 +232,13 @@ def main():
     last = data[-1][0]
     X, Y, W, _ = dataset(data, hist, str(int(last[:4]) - 3) + last[4:], (date.fromisoformat(last) + timedelta(days=1)).isoformat())
     b = logit(X, Y, W)
+    PF = price_model(data, hist)
+    rawp = {}
+    for y in {d[:4] for d in fc_days_hint()}:
+        try:
+            rawp.update({k: v.get('p') for k, v in json.load(open(os.path.join(H, f'{y}.json')))['days'].items()})
+        except OSError:
+            pass
     fc = json.load(open(os.path.join(ROOT, 'data', 'forecast.json')))
     fr, dez = fc['zones']['FR']['days'], fc['zones'].get('DE_LU', {}).get('days', {})
     out_days = {}
@@ -170,11 +256,13 @@ def main():
         if nav is None:
             continue
         pr = [None if None in (s_[h], w_[h], l_[h]) or not l_[h] else round(float(predict(b, np.array([feats(d, h, s_[h], w_[h], l_[h], nav, de)]))[0]), 3) for h in range(24)]
-        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav),
-                       'actual': hist[d]['p'] if d in hist else None}
+        pp = [None if None in (s_[h], w_[h], l_[h]) else price_feats(hist, PF[1], d, h, s_[h], w_[h], l_[h], nav, de) for h in range(24)]
+        price = [None if f is None else round(float(np.array(f) @ PF[0]), 1) for f in pp]
+        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav), 'price': price,
+                       'actual': rawp.get(d)}
     out = {'updated': fc.get('updated'), 'method': __doc__.split('\n\n')[1].replace('\n', ' '),
            'source': 'RTE éCO2mix (history) · ENTSO-E day-ahead forecasts via Energy-Charts · ENTSO-E day-ahead prices',
-           'days': out_days, 'skill': skill, 'replay_monthly': {k: [round(v[0], 1), int(v[1])] for k, v in sorted(monthly.items())}}
+           'days': out_days, 'skill': skill, 'price_skill': PF[2], 'replay_monthly': {k: [round(v[0], 1), int(v[1])] for k, v in sorted(monthly.items())}}
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
     print(json.dumps(skill), {d: v['expected_hours'] for d, v in out_days.items()})
