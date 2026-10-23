@@ -726,7 +726,9 @@
   }
 
   // ── The whole bill, before VAT: supplier only vs with ACC ─────────
-  const ACCISE = { small: 30.85, large: 26.58 };   // €/MWh from 1 Feb 2026 (≤ 36 kVA; > 36 kVA), ZNI surcharge included
+  // €/MWh, ZNI surcharge included (≤ 36 kVA; > 36 kVA), revised every 1 February and 1 August (CIBS L. 312-37):
+  //   1 Feb 2026 30.85 / 26.58 · 1 Aug 2026 30.62 / 26.35 (24.69 + ZNI 5.93 for households)
+  const ACCISE = { small: 30.62, large: 26.35, since: '1 August 2026' };
   function renderBill(o) {
     const host = $('cf-bill'), x = o.fixed; if (!host) return;
     if (!x || x.missing) { host.innerHTML = ''; return; }
@@ -752,7 +754,7 @@
       const risk = has(st.accRisk) ? n(st.accRisk) : (A.imbNat != null ? Math.max(0, A.imbNat) : 0);
       row('Complement risk (ACC volume)', 0, risk * Ea, `the supplier carries the forecast error of the ACC output on the complement: ${f2(risk)} €/MWh of ACC energy${has(st.accRisk) ? ' (entered)' : ' (national solar imbalance cost, ENTSO-E; a single site is less predictable: raise it if needed)'}`);
     }
-    row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, 2026)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
+    row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, since ${ACCISE.since}; revised each 1 Feb and 1 Aug)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
     if (turpeIn) {
       const tv = n(st.turpe), tva = has(st.turpeAcc) ? n(st.turpeAcc) : tv, tf = n(st.turpeFix);
       row('TURPE · variable part', tv * E, A ? tv * Er + tva * Ea : null, `${f2(tv)} €/MWh drawn${A ? (has(st.turpeAcc) ? ` · ${f2(tva)} €/MWh on the ACC energy (ACC withdrawal option, self-produced indices)` : ' · same rate on the ACC energy (enter the ACC option rate if chosen)') : ''}`);
