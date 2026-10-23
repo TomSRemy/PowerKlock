@@ -45,28 +45,40 @@
     try { ch.update('none'); } catch (_) {}
   }
 
+  // ── slide-sized text: a chart drawn ~1100 px wide fills ~10.8 inches of slide: 16 px fonts read about 11 pt ──
+  function bigFonts(ch) {
+    // the chart's own configuration (ch.options is a resolved proxy: writing into it recurses)
+    const o = ch.config.options || (ch.config.options = {}), big = f => Object.assign({}, f && typeof f === 'object' ? f : {}, { size: 16 });
+    Object.values(o.scales || {}).forEach(sc => { if (!sc || typeof sc !== 'object') return;
+      sc.ticks = sc.ticks || {}; sc.ticks.font = big(sc.ticks.font);
+      if (sc.title) sc.title.font = big(sc.title.font); });
+    o.plugins = o.plugins || {};
+    if (o.plugins.legend) { o.plugins.legend.labels = o.plugins.legend.labels || {}; o.plugins.legend.labels.font = big(o.plugins.legend.labels.font); o.plugins.legend.labels.boxWidth = 14; o.plugins.legend.labels.padding = 14; }
+    try { ch.update('none'); } catch (_) {}
+  }
   // ── one card drawn off screen, as on the dashboard (key figures included) ──
   async function renderCard(w, it, p, opt) {
     const T = THEMES[opt.theme], host = document.createElement('div');
     host.className = 'pkx-host' + (opt.theme === 'light' ? ' pkx-light' : '');
-    host.style.cssText = `position:fixed;left:-30000px;top:0;width:1600px;background:${opt.template ? 'transparent' : T.card};padding:24px;z-index:-1;box-sizing:border-box`;
+    host.style.cssText = `position:fixed;left:-30000px;top:0;width:1100px;background:${opt.template ? 'transparent' : T.card};padding:24px;z-index:-1;box-sizing:border-box`;
     document.body.appendChild(host);
     const out = { img: null, ratio: null, sub: '', native: null };
     try {
       if (w.kind === 'html') {
-        host.style.width = Math.max(900, Math.round(1600 * Math.min(12, (w.size && w.size.w) || 12) / 12)) + 'px';
+        host.style.width = Math.max(760, Math.round(1100 * Math.min(12, (w.size && w.size.w) || 12) / 12)) + 'px';
         host.innerHTML = '<div class="pkx-html" style="min-height:300px"></div>';
         await w.html(host.firstChild, p);
         await new Promise(r => setTimeout(r, 600));
-        host.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) { ch.options.animation = false; if (opt.theme === 'light') lighten(ch); } });
+        host.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) { ch.options.animation = false; bigFonts(ch); if (opt.theme === 'light') lighten(ch); try { ch.update('none'); } catch (_) {} } });
       } else {
         const cid = 'pkx-' + Math.random().toString(36).slice(2, 9), kOn = it.k && it.k.on && window.PKFacts;
-        host.innerHTML = (kOn ? '<div class="pkx-kf"></div>' : '') + `<div style="position:relative;width:1552px;height:${kOn ? 640 : 760}px"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
+        host.innerHTML = (kOn ? '<div class="pkx-kf"></div>' : '') + `<div style="position:relative;width:1052px;height:${kOn ? 440 : 520}px"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
         const res = await PKW.draw(w.id, cid, p);
         out.sub = res && res.sub || '';
         const ch = window.Chart && Chart.getChart(document.getElementById(cid));
         if (ch) {
           ch.options.animation = false;
+          bigFonts(ch);
           if (opt.theme === 'light') lighten(ch);
           if (kOn) { const f = PKFacts.compute(ch, it.k); host.querySelector('.pkx-kf').innerHTML = PKFacts.html(f, it.k); if (f) PKFacts.mark(ch, f, it.k); }
           if (opt.charts === 'native') out.native = nativeChart(ch);
@@ -77,7 +89,7 @@
       host.querySelectorAll('.pk-tool, .pkw-star, button').forEach(e => e.remove());
       if (!out.native) {
         await load(H2C, () => window.html2canvas);
-        const cv = await window.html2canvas(host, { backgroundColor: opt.template ? null : T.card, scale: 1.5, logging: false, useCORS: true });
+        const cv = await window.html2canvas(host, { backgroundColor: opt.template ? null : T.card, scale: 2, logging: false, useCORS: true });
         out.img = cv.toDataURL('image/png'); out.ratio = cv.width / cv.height;
       }
     } finally {
@@ -122,8 +134,8 @@
   const fit = (box, ratio) => { let w = box.w, h = box.w / ratio; if (h > box.h) { h = box.h; w = box.h * ratio; } return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }; };
   const fileName = board => board.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pptx';
   function addNative(pptx, s, native, box, T, F) {
-    const opts = { x: box.x, y: box.y, w: box.w, h: box.h, showLegend: true, legendPos: 'b', legendFontFace: F, legendFontSize: 10, legendColor: T.tx2,
-      catAxisLabelColor: T.tx3, valAxisLabelColor: T.tx3, catAxisLabelFontSize: 9, valAxisLabelFontSize: 9, valGridLine: { color: T.bd, size: 0.5 }, catGridLine: { style: 'none' },
+    const opts = { x: box.x, y: box.y, w: box.w, h: box.h, showLegend: true, legendPos: 'b', legendFontFace: F, legendFontSize: 13, legendColor: T.tx2,
+      catAxisLabelColor: T.tx3, valAxisLabelColor: T.tx3, catAxisLabelFontSize: 12, valAxisLabelFontSize: 12, valGridLine: { color: T.bd, size: 0.5 }, catGridLine: { style: 'none' },
       lineSize: 2, lineDataSymbol: 'none', barGapWidthPct: 40, catAxisLabelFrequency: Math.max(1, Math.round(native[0].data[0].labels.length / 12)) };
     if (native.length === 1) {
       const g = native[0];
@@ -145,7 +157,7 @@
     const bar = (s, w) => s.addShape('rect', { x: 0, y: 0, w, h: 7.5, fill: { color: ACC }, line: { color: ACC } });
     const footer = (s, src, n) => {
       s.addShape('line', { x: 0.45, y: 7.0, w: 12.45, h: 0, line: { color: T.bd, width: 0.75 } });
-      s.addText([src ? 'Source: ' + src : '', opt.footer || ''].filter(Boolean).join(' · '), { x: 0.45, y: 7.05, w: 10.5, h: 0.3, fontFace: F, fontSize: 9, color: T.tx3 });
+      s.addText([src ? 'Source: ' + src : '', opt.footer || ''].filter(Boolean).join(' · '), { x: 0.45, y: 7.05, w: 10.5, h: 0.3, fontFace: F, fontSize: 10, color: T.tx3 });
       s.addText(String(n), { x: 12.2, y: 7.05, w: 0.7, h: 0.3, fontFace: F, fontSize: 9, color: T.tx3, align: 'right' });
     };
     let n = 0;
@@ -168,7 +180,7 @@
         const r = sp.r;
         bar(s, 0.12); logo(s);
         s.addText(sp.title, { x: 0.45, y: 0.22, w: 11.2, h: 0.6, fontFace: F, fontSize: 24, bold: true, color: T.tx });
-        if (sp.sub) s.addText(sp.sub, { x: 0.45, y: 0.8, w: 11.2, h: 0.4, fontFace: F, fontSize: 12, color: T.tx2 });
+        if (sp.sub) s.addText(sp.sub, { x: 0.45, y: 0.8, w: 11.2, h: 0.4, fontFace: F, fontSize: 14, color: T.tx2 });
         const box = { x: 0.45, y: 1.3, w: 12.45, h: 5.55 };
         if (r.native) addNative(pptx, s, r.native, box, T, F);
         else if (r.img) s.addImage(Object.assign({ data: r.img }, fit(box, r.ratio)));   // proportions kept
