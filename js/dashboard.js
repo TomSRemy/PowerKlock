@@ -254,6 +254,7 @@
     if (!host || !window.GridStack) return;
     renderTabs();
     renderShared();
+    renderDesc();
     if (grid) { grid.destroy(false); grid = null; }
     if (observer) observer.disconnect();
     destroyCharts(host);
@@ -566,6 +567,25 @@
   }
 
   // ── Dashboards (tabs) ────────────────────────────────────────────
+  // a short text under the dashboard's name saying what it shows; empty = a suggestion built from its charts
+  function suggestDesc(b) {
+    const ws = b.items.filter(it => it.t === 'w').map(it => PKW.get(it.wid)).filter(Boolean);
+    const secs = b.items.filter(it => it.t === 's' && it.title).map(it => it.title);
+    if (!ws.length) return 'What this dashboard is for, in one or two sentences.';
+    const cats = [...new Set(ws.map(w => (PKW.CATEGORIES.find(c => c[0] === w.category) || [, w.category])[1]))].slice(0, 4);
+    return `${ws.length} chart${ws.length > 1 ? 's' : ''}${secs.length ? ' in ' + secs.length + (secs.length > 1 ? ' sections (' : ' section (') + secs.slice(0, 4).join(', ') + ')' : ''}: ${cats.join(', ').toLowerCase()}. Click to write what it is for.`;
+  }
+  function renderDesc() {
+    const page = document.getElementById('page-mydash'); if (!page) return;
+    let el = document.getElementById('pkd-desc');
+    if (!el) { el = document.createElement('div'); el.id = 'pkd-desc'; el.className = 'pkd-desc'; const g = document.getElementById('pkd-grid'); g.parentElement.insertBefore(el, g); }
+    const b = shared || board(), txt = (b && b.desc) || '';
+    if (shared) { el.contentEditable = 'false'; el.textContent = txt; el.hidden = !txt; return; }
+    el.hidden = false; el.contentEditable = 'plaintext-only'; el.spellcheck = true; el.dataset.ph = suggestDesc(b); el.textContent = txt;
+    el.title = 'What this dashboard shows: click to write it (kept with the dashboard and in its share links)';
+    el.onblur = () => { const v = el.textContent.trim().slice(0, 400); if (v !== (b.desc || '')) { b.desc = v; save(); } };
+    el.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); } };
+  }
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
     if (!el || !state) return;
@@ -598,7 +618,7 @@
         ev.preventDefault();
         const tpl = root.querySelector('input[name=tpl]:checked').value;
         const id = uid();
-        state.boards.push({ id, name: root.querySelector('#pkd-new-name').value.trim() || 'Dashboard', items: tpl ? fromTemplate(tpl) : [] });
+        state.boards.push({ id, name: root.querySelector('#pkd-new-name').value.trim() || 'Dashboard', desc: tpl ? ((TEMPLATES.find(t => t.id === tpl) || {}).desc || '') : '', items: tpl ? fromTemplate(tpl) : [] });
         state.active = id;
         save(); closeModal(); render();
       });
@@ -632,7 +652,7 @@
       });
       root.querySelector('#pkd-board-dup').addEventListener('click', () => {
         const id = uid();
-        state.boards.push({ id, name: b.name + ' (copy)', items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
+        state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
         state.active = id; save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-export').addEventListener('click', () => {
@@ -750,7 +770,7 @@
   async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
   async function encodeBoard(b) {
     const items = b.items.map(it => { const o = Object.assign({}, it); delete o.i; return o; });
-    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, items }));
+    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || undefined, items }));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
   }
@@ -759,7 +779,7 @@
     const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
     const j = JSON.parse(new TextDecoder().decode(raw));
     if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
-    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), code,
+    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code,
       items: j.items.filter(it => it && ['w', 's', 'n'].includes(it.t)).map(it => Object.assign({}, it, { i: uid() })) };
   }
   const baseUrl = () => location.origin + location.pathname;
@@ -808,7 +828,7 @@
          <div class="pkd-shared-a"><button type="button" class="pk-btn-ghost" id="pkd-shared-close">Close</button><button type="button" class="pk-btn-primary" id="pkd-shared-add">+ Add to my dashboards</button></div>`;
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
       const id = uid();
-      state.boards.push({ id, name: shared.name, items: shared.items.map(it => Object.assign({}, it, { i: uid() })) });
+      state.boards.push({ id, name: shared.name, desc: shared.desc || '', items: shared.items.map(it => Object.assign({}, it, { i: uid() })) });
       state.active = id;
       closeShared(false); save(); render();
       toast('Added to your dashboards');
