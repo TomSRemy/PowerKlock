@@ -17,6 +17,7 @@ Series are daily closes as published by the cockpit, trimmed to HISTORY_START.
 No credentials needed.
 """
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -159,6 +160,49 @@ def fetch_curve(h, template, use_contract_label=False):
     return rows
 
 
+OUT_TTF_CONTRACTS = Path("data/history/ttf_contracts.json")
+
+
+def write_ttf_contracts(h):
+    """M+1…M+12, Q+1…Q+8, S+1…S+6, Y+1…Y+6 of TTF: each code resolved to the contract it designates today,
+    with that contract's whole life; a contract no longer quoted stays in the file (same format as fr_market_contracts.json)"""
+    from fetch_fr_market import resolve_forward_markets, fetch_chart_series, contract_label, ms_to_date, BACKFILL_DAYS
+    from datetime import date
+    out = json.loads(OUT_TTF_CONTRACTS.read_text()) if OUT_TTF_CONTRACTS.exists() else {}
+    resolved = dict(resolve_forward_markets(h, CURVES["ttf"]))
+    got = []
+    for base_code, (pref, top) in {"M+1": ("M", 12), "Q+1": ("Q", 8), "S+1": ("S", 6), "Y+1": ("Y", 6)}.items():
+        if base_code not in resolved:
+            continue
+        for k in range(1, top + 1):
+            code = f"{pref}+{k}"
+            m = dict(resolved[base_code])
+            m.update({"marketCode": code, "marketNameCode": m["marketName"] + " " + code})
+            try:
+                series = fetch_chart_series(h, [m], BACKFILL_DAYS)
+            except Exception:
+                series = []
+            if not series:
+                break
+            item = series[0]
+            lab = contract_label(re.sub(r"^TTF\s+", "", item.get("marketName") or "", flags=re.I))
+            if not lab:
+                continue
+            label, kind, a, b = lab
+            c = out.setdefault("TTF", {}).setdefault(label, {"marketName": item["marketName"], "kind": kind, "deliveryStart": a, "deliveryEnd": b, "currency": "EUR", "points": {}})
+            for p in item.get("value") or []:
+                d = ms_to_date(p["milisec"])
+                if p.get("value") is not None and d < date.today().isoformat():   # today's intraday value is not a settlement
+                    c["points"][d] = round(float(p["value"]), 3)
+            c["points"] = dict(sorted(c["points"].items()))
+            c["lastCode"], c["lastSeen"] = code, date.today().isoformat()
+            got.append(label)
+    if not got:
+        raise RuntimeError("no TTF contract returned")
+    OUT_TTF_CONTRACTS.write_text(json.dumps(out, separators=(",", ":")))
+    print(f"  TTF: {len(got)} contracts quoted today ({', '.join(got)})")
+
+
 def main():
     h = auth_headers(get_token())
     out = {
@@ -193,6 +237,14 @@ def main():
             print(f"  Cal{y}: {len(v['dates'])} points, last {v['dates'][-1] if v['dates'] else '-'}")
     except Exception as e:
         print(f"  TTF calendar years skipped: {e}")
+
+    # Every TTF contract still quoted (months, quarters, seasons, years), each with its own life,
+    # kept contract by contract like the power ones (data/history/ttf_contracts.json)
+    print("Fetching TTF contracts...")
+    try:
+        write_ttf_contracts(h)
+    except Exception as e:
+        print(f"  TTF contracts skipped: {e}")
 
     # Never overwrite a good file with an empty fetch.
     if not any(s["points"] for s in out["series"].values()):

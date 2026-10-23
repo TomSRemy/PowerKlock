@@ -3638,7 +3638,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
               </table>
             </div>
             <div class="chart-container fuel-card" style="margin-top:14px">
-              <div class="fuel-card-head"><div><div class="table-title">Power forward products</div><div class="fuel-card-sub">Settlement and change vs the previous day and the previous week · baseload</div></div>
+              <div class="fuel-card-head"><div><div class="table-title">Power forward products</div><div class="fuel-card-sub">Every liquid baseload product: settlement and change vs the previous day and the previous week</div></div>
                 <div style="display:flex;gap:8px;align-items:center"><select class="country-select" id="pf-fwd-mkt" aria-label="Market"><option value="FR" selected>France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select><span class="source-badge">Market data</span></div></div>
               <div id="pf-fwd-host"><div class="fuel-note">Loading…</div></div>
             </div>
@@ -3697,7 +3697,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hist-section-body open" id="hs-body-cal-contracts">
-            <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Market</span><select class="country-select" id="cal-country" onchange="PKSpot.drawCal()" aria-label="Market"><option value="FR">France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select><select class="country-select" id="cal-load" onchange="PKSpot.drawCal()" aria-label="Load"><option value="base">Baseload</option><option value="peak">Peakload</option></select><span class="fuel-toolbar-lbl" style="margin-left:10px">Products</span><span id="cal-kinds" class="pk-sec-checks"><label><input type="checkbox" value="year" checked onchange="PKSpot.drawCal()"> Years</label><label><input type="checkbox" value="season" onchange="PKSpot.drawCal()"> Seasons</label><label><input type="checkbox" value="quarter" onchange="PKSpot.drawCal()"> Quarters</label><label><input type="checkbox" value="month" onchange="PKSpot.drawCal()"> Months</label></span></div>
+            <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Market</span><select class="country-select" id="cal-country" onchange="PKSpot.drawCal()" aria-label="Market"><option value="FR">France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select><select class="country-select" id="cal-load" onchange="PKSpot.drawCal()" aria-label="Load"><option value="base">Baseload</option><option value="peak">Peakload</option></select><span class="fuel-toolbar-lbl" style="margin-left:10px">Products</span><span id="cal-kinds" class="pk-sec-checks"><label><input type="checkbox" value="year" checked onchange="PKSpot.drawCal()"> Years</label><label><input type="checkbox" value="season" checked onchange="PKSpot.drawCal()"> Seasons</label><label><input type="checkbox" value="quarter" checked onchange="PKSpot.drawCal()"> Quarters</label><label><input type="checkbox" value="month" checked onchange="PKSpot.drawCal()"> Months</label></span></div>
         <div class="fuel-grid-2 pk-stack">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Forward contracts</div><div class="fuel-card-sub" id="cal-history-sub">Baseload, contracts still to deliver · 3 months</div></div><span class="source-badge">Market data</span></div>
@@ -6390,13 +6390,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-euafwd-ttf">
-          <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Window</span><select class="country-select" id="ttf-cal-win" aria-label="Window"><option value="3M">3 months</option><option value="6M" selected>6 months</option><option value="1Y">1 year</option><option value="3Y">3 years</option></select></div>
+          <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Window</span><select class="country-select" id="ttf-cal-win" aria-label="Window"><option value="3M">3 months</option><option value="6M" selected>6 months</option><option value="1Y">1 year</option><option value="3Y">3 years</option></select><span class="fuel-toolbar-lbl" style="margin-left:10px">Products</span><span id="ttf-kinds" class="pk-sec-checks"><label><input type="checkbox" value="year" checked onchange="PKTtf.render()"> Years</label><label><input type="checkbox" value="season" checked onchange="PKTtf.render()"> Seasons</label><label><input type="checkbox" value="quarter" checked onchange="PKTtf.render()"> Quarters</label><label><input type="checkbox" value="month" checked onchange="PKTtf.render()"> Months</label></span></div>
           <div class="chart-container fuel-card" style="margin-bottom:14px">
-            <div class="fuel-card-head"><div><div class="table-title">TTF calendar forwards</div><div class="fuel-card-sub" id="ttf-cal-sub">Fixed delivery years · daily settlements (€/MWh)</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF forward contracts</div><div class="fuel-card-sub" id="ttf-cal-sub">Every liquid product · daily settlements (€/MWh)</div></div><span class="source-badge">Market data</span></div>
             <div style="position:relative;height:320px"><canvas id="ttf-cal" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">TTF forward products</div><div class="fuel-card-sub">Settlement and change vs the previous day and the previous week</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF forward products</div><div class="fuel-card-sub">Every liquid product: settlement and change vs the previous day and the previous week</div></div><span class="source-badge">Market data</span></div>
             <div id="ttf-fwd-host"></div>
           </div>
         </div>
