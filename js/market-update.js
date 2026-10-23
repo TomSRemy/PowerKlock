@@ -245,6 +245,26 @@ _muReg({
       `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
   },
 });
+// ── Power forwards, same table as the TTF one: the strip of a market (months, quarters, seasons, years, base) ──
+_muReg({
+  id: 'power-fwd-table', kind: 'html', title: 'Power forwards · table', category: 'forwards', page: 'prices', source: 'Market data', size: { w: 6, h: 8 },
+  desc: 'Power forward products of a market (months, quarters, seasons, calendar years, baseload): settlement, change vs the previous day and vs a week before.',
+  params: [MU_FWD], defaults: { country: 'FR' },
+  titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' power forwards · table',
+  async html(host, p) {
+    const fm = await _muGet('frm', 'fr_market.json'), cc = (p && p.country) || 'FR', c = fm && fm.countries && fm.countries[cc];
+    const cur = c && c.currency === 'GBP' ? '£/MWh' : '€/MWh';
+    const rows = ((c && c.forwardCurve) || (cc === 'FR' && fm && fm.forwardCurve) || []).filter(r => r.value != null).map(r => {
+      const back = pct => pct == null ? null : r.value - r.value / (1 + pct / 100);
+      return { label: String(r.contract || r.tenor).replace(/^(FR|GE|DE|NL|UK|BL)\s+/, '').replace(/\s*base$/i, ''), kind: /^M/.test(r.tenor) ? 'Month' : /^Q/.test(r.tenor) ? 'Quarter' : /^S/.test(r.tenor) ? 'Season' : 'Year', v: r.value, d1: back(r.varD1Pct), w1: back(r.varW1Pct), p1: r.varD1Pct, pw: r.varW1Pct, date: r.date };
+    });
+    if (!rows.length) { host.innerHTML = '<div class="fuel-note">Power forwards not available for this market.</div>'; return; }
+    const chg = (v, q) => v == null ? '<td>–</td>' : `<td class="${v > 0 ? 'mu-up' : v < 0 ? 'mu-dn' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)} <span class="mu-pct">${q > 0 ? '+' : ''}${q.toFixed(1)} %</span></td>`;
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Product · base</th><th>${cur}</th><th>vs D-1</th><th>vs W-1</th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${r.kind}</span></td><td><b>${r.v.toFixed(2)}</b></td>${chg(r.d1, r.p1)}${chg(r.w1, r.pw)}</tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
+  },
+});
 _muReg({
   id: 'ttf-cal-history', title: 'TTF calendar forwards', category: 'forwards', page: 'euafwd', pageCanvas: 'ttf-cal', source: 'Market data',
   desc: 'Daily settlements of the TTF gas calendar contracts (fixed delivery years) over the chosen window.',

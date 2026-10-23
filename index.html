@@ -1571,6 +1571,12 @@
   body.pk-solo .pkd-desc:hover { background: none; }
   .pkd-section .pkd-del, .pkd-sec-move { opacity: 0; }
   .pkd-sec-move { display: flex; gap: 2px; margin-left: auto; }
+  .pkd-sec-fold { align-self: flex-end; margin-bottom: 4px; color: var(--text3); padding: 2px; margin-right: -2px; }
+  .pkd-sec-fold svg { display: block; transition: transform .2s ease; }
+  .pkd-sec-fold:hover { color: var(--accent); }
+  .pkd-sec-closed .pkd-sec-fold svg { transform: rotate(-90deg); }
+  .pkd-sec-closed .pkd-section-title { color: var(--text2); }
+  .pkd-sec-n { align-self: flex-end; margin-bottom: 5px; font: 600 10.5px 'JetBrains Mono', monospace; color: var(--text3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
   .pkd-item:hover .pkd-sec-move { opacity: 1; }
   .pkd-sec-move .pkd-ic:disabled { opacity: .25; cursor: default; }
   .pkd-toast-act { margin-left: 12px; background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 5px; padding: 2px 10px; font-weight: 600; cursor: pointer; }
