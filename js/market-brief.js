@@ -104,6 +104,16 @@
       out.push(sec('📈', `Power forwards · Cal ${k} France <b>${fr[1].toFixed(2)} €/MWh</b>`, `<span class="${cls(dFR)}">${sg(dFR, 2)} €</span> over a week${dDE != null ? `; Germany ${sg(dDE, 2)} €` : ''}.` +
         (dT != null ? ` Gas Cal ${k} ${sg(dT, 2)} €/MWh, worth about ${sg(gasPart, 1)} €/MWh on a gas plant's cost: the French move is ${Math.abs(dFR - gasPart) < 1 ? 'mostly gas' : dFR - gasPart > 0 ? 'stronger than gas alone (French fundamentals: nuclear, demand)' : 'weaker than gas alone (French fundamentals easing)'}.` : '')));
     }
+    // SEFE's daily energy report (public cockpit, the forwards' source): gas and power commentaries, set against the market
+    try {
+      const fm = await get('fr_market.json'), mi = fm && fm.marketInsights, d = (fm && (fm.marketInsightsDate || fm.lastUpdate) || '').slice(0, 10);
+      if (mi && (mi.gas || mi.power) && d) {
+        const plain = h => String(h || '').replace(/<[^>]+>/g, ' ').replace(/&pound;/g, '£').replace(/&euro;/g, '€').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+        const part = (name, h) => { const t = plain(h); if (!t) return ''; const sents = t.split(/(?<=\.)\s+(?=[A-Z])/); const x = { name, headline: sents[0], points: sents.slice(1) };
+          return `<li><b style="color:var(--text)">${name}</b>: ${esc(x.headline)}${checkNote(x, d, S, chain)}${x.points.length ? `<details><summary class="mb-note">read on (${x.points.length} sentences)</summary><p style="margin:4px 0">${esc(x.points.join(' '))}</p></details>` : ''}</li>`; };
+        out.push(sec('📰', `SEFE · daily energy report · ${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`, '<ul>' + part('Gas', mi.gas) + part('Electricity', mi.power) + '</ul><div class="mb-note">Source: SEFE Energy, daily energy report (public cockpit).</div>'));
+      }
+    } catch (_) {}
     // the latest market note received by e-mail (ENGIE Energy Market News), for signed-in users: third-party text, never in the public files
     try {
       const cl = window.PKAccount && PKAccount.user && PKAccount.client && PKAccount.client();

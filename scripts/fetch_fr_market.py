@@ -302,6 +302,26 @@ FRANCE_KEYWORDS = re.compile(r"\bFrance\b|\bFrench\b", re.IGNORECASE)
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
 
 
+def fetch_market_insights_all(h):
+    """Both daily commentaries of the cockpit, in full (English): Natural Gas and Electricity → {"gas": html, "power": html}"""
+    r = requests.get(f"{API}/Cockpits/{COCKPIT_GUID}", params={"isTemplate": "false"}, headers=h, timeout=30)
+    r.raise_for_status()
+    content = json.loads(r.json()["content"])
+    out, section, armed = {}, None, False
+    for w in content:
+        if w.get("type") == "title":
+            t = (w.get("titleText") or "").strip()
+            if t in ("Natural Gas", "Electricity"):
+                section, armed = ("gas" if t == "Natural Gas" else "power"), False
+            elif t == "Market Insights":
+                armed = section is not None
+            else:
+                armed = False
+        elif w.get("type") == "text" and armed and section and (w.get("content") or "").strip():
+            out[section] = w["content"]; armed = False
+    return out
+
+
 def translate_to_fr(text):
     if not text.strip():
         return text
@@ -494,6 +514,10 @@ def daily_run():
     print("Fetching market insights narrative...")
     raw_insights_html = fetch_market_insights_text(h)
     insights_html = france_focus_french(raw_insights_html)
+    try:
+        insights_all = fetch_market_insights_all(h)   # gas and power commentaries in full, for the market brief
+    except Exception as e:
+        print("  all insights not read:", e); insights_all = {}
 
     fr = countries_out["FR"]
     snapshot = {
@@ -507,6 +531,7 @@ def daily_run():
         "generationMix": fr["generationMix"],
         "generationMixDate": fr["generationMixDate"],
         "marketInsightsHtml": insights_html,
+        "marketInsights": insights_all,
         "marketInsightsDate": today,
         "countries": countries_out,
     }
@@ -545,6 +570,7 @@ def daily_run():
     # Market insights narrative only exists for "today" — no historical lookup for it.
     day = load_hist_day(today)
     day["marketInsightsHtml"] = insights_html
+    day["marketInsights"] = insights_all
     save_hist_day(today, day)
     touched_dates.add(today)
     print(f"Updated history for {sorted(touched_dates)}")
