@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROXY = "https://powerklock-ai.tom-s-remy.workers.dev"
 OUT = os.path.join(ROOT, "data", "market_digest.json")
+ENGINE = None
 
 
 def load(p):
@@ -91,10 +92,13 @@ def ask(payload):
     # otherwise the site's AI proxy, whose model writes vaguer French
     msg = {"max_tokens": 900, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
     key, model = os.environ.get("ANTHROPIC_API_KEY"), os.environ.get("DIGEST_MODEL")
+    global ENGINE
     if key and model:
+        ENGINE = "anthropic"
         req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps(dict(msg, model=model)).encode(),
                                      headers={"Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
     else:
+        ENGINE = "proxy"
         req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-digest"})
     r = json.load(urllib.request.urlopen(req, timeout=120))
     parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
@@ -129,7 +133,7 @@ def run(notes=None):
         payload["notes"].append({"date": d, "kind": "daily energy report", "gas": plain(mi.get("gas"))[:3000], "power": plain(mi.get("power"))[:3000]})
     ctx = ask(payload)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
-               "notes": len(payload["notes"]), "context": ctx}, open(OUT, "w"), ensure_ascii=False, indent=1)
+               "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx}, open(OUT, "w"), ensure_ascii=False, indent=1)
     print("digest:", [c["topic"] for c in ctx])
 
 
