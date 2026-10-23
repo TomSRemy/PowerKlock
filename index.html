@@ -3625,6 +3625,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
                 </tbody>
               </table>
             </div>
+            <div class="chart-container fuel-card" style="margin-top:14px">
+              <div class="fuel-card-head"><div><div class="table-title">Power forward products</div><div class="fuel-card-sub">Settlement and change vs the previous day and the previous week · baseload</div></div>
+                <div style="display:flex;gap:8px;align-items:center"><select class="country-select" id="pf-fwd-mkt" aria-label="Market"><option value="FR" selected>France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select><span class="source-badge">Market data</span></div></div>
+              <div id="pf-fwd-host"><div class="fuel-note">Loading…</div></div>
+            </div>
           </div>
         </div>
 

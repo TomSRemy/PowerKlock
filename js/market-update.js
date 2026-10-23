@@ -265,6 +265,14 @@ _muReg({
       `</tbody></table></div><div class="fuel-note">Settlements of ${rows[0].date}. A rise is shown red (cost up for a buyer).</div>`;
   },
 });
+// on Prices › Forward: the table drawn when it comes into view, redrawn when the market changes
+(function () {
+  const go = () => { const h = document.getElementById('pf-fwd-host'), sel = document.getElementById('pf-fwd-mkt'); if (!h || !sel || !window.PKW) return;
+    const draw = () => PKW.get('power-fwd-table').html(h, { country: sel.value });
+    sel.addEventListener('change', draw);
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); draw(); } }, { rootMargin: '200px' }); io.observe(h); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
 _muReg({
   id: 'ttf-cal-history', title: 'TTF calendar forwards', category: 'forwards', page: 'euafwd', pageCanvas: 'ttf-cal', source: 'Market data',
   desc: 'Daily settlements of the TTF gas calendar contracts (fixed delivery years) over the chosen window.',
