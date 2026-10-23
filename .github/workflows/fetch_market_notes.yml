@@ -30,6 +30,8 @@ jobs:
           GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DIGEST_MODEL: ${{ vars.DIGEST_MODEL }}
         run: python scripts/fetch_market_notes.py
       - name: Commit the run status (dates and section names only, no text) and the week's context (own words)
         run: |
