@@ -20,7 +20,8 @@ import sys
 from email.header import decode_header, make_header
 from email.utils import parsedate_to_datetime
 
-SOURCES = [{"name": "ENGIE Energy Market News", "from": "e-news.engie.be", "subject": "Energy Market News"}]
+SOURCES = [{"name": "ENGIE Energy Market News", "from": "e-news.engie.be", "subject": "Energy Market News"},
+           {"name": "SEFE market newsletter", "from": "sefe", "subject": ""}]   # any SEFE mail; only those that parse into sections are kept
 SECTIONS = ["Global context", "Oil", "Gas", "Electricity", "Power", "CO2", "CO₂", "Carbon", "Coal", "Renewables"]
 END = re.compile(r"^(Follow the evolution|Do you find this e-mail|Register your colleagues|©)", re.I)
 
@@ -76,7 +77,8 @@ def from_imap():
     imap = imaplib.IMAP4_SSL("imap.gmail.com"); imap.login(user, pw); imap.select("INBOX", readonly=True)
     notes = []
     for src in SOURCES:
-        st, data = imap.search(None, f'(FROM "{src["from"]}" SUBJECT "{src["subject"]}")')
+        crit = f'(FROM "{src["from"]}" SUBJECT "{src["subject"]}")' if src["subject"] else f'(FROM "{src["from"]}")'
+        st, data = imap.search(None, crit)
         ids = data[0].split()[-15:] if st == "OK" and data and data[0] else []
         for mid in ids:
             st, d = imap.fetch(mid, "(RFC822)")
@@ -116,7 +118,8 @@ def main():
         conn.commit()
     # a public trace without any of the notes' text: dates and section counts, to check the run
     st = {"updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
-          "notes": [{"source": n["source"], "date": n["note_date"], "sections": [x["name"] for x in n["sections"]]} for n in notes[-10:]]}
+          "notes": [{"source": n["source"], "date": n["note_date"], "sections": [x["name"] for x in n["sections"]]} for n in notes if n["sections"]][-16:],
+          "unparsed": {src["name"]: sum(1 for n in notes if n["source"] == src["name"] and not n["sections"]) for src in SOURCES}}
     open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market_notes_status.json"), "w").write(json.dumps(st, ensure_ascii=False))
     print("written")
 
