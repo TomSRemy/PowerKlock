@@ -191,7 +191,7 @@
 
   if (window.PKW) {
     PKW.register({ id: 'market-brief', kind: 'html', title: 'Marchés de l’énergie · la semaine', category: 'intel', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
-      desc: 'La semaine des marchés de l’énergie en un coup d’œil : six prix avec leur variation et leur courbe sur 60 jours, puis un digest par marché (contexte, pétrole, gaz, électricité, carbone) et ce qu’annonçaient les analystes face au mouvement réel.', html: brief });
+      desc: 'Ce qui a bougé cette semaine sur le pétrole, le gaz, le carbone et l’électricité, et pourquoi : les prix et leur tendance, le contexte en France et dans le monde, et si les analystes avaient vu juste.', html: brief });
     PKW.register({ id: 'next-30-days', kind: 'html', title: 'France power · the next 30 days', category: 'forwards', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
       desc: 'What the coming month looks like for French power: month-ahead forward, weather week by week against normal (temperature, wind, sun), nuclear availability and gas storage, with what each means for prices.', html: next30 });
   }
