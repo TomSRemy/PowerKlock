@@ -1,0 +1,40 @@
+name: Market notes by e-mail (ENGIE Energy Market News)
+
+# Reads the market notes received in the team mailbox (same IMAP app password as
+# the GO prices) and stores them in Supabase (public.market_note, warehouse
+# migration 016), readable by signed-in users only. Only a status file (dates and
+# section names, no text) is committed, to check the runs.
+
+on:
+  schedule:
+    - cron: '30 6,16 * * 1-5'    # morning and late afternoon, working days
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/fetch_market_notes.py', '.github/workflows/fetch_market_notes.yml']
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q "psycopg[binary]"
+      - name: Read and store
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python scripts/fetch_market_notes.py
+      - name: Commit the run status (dates and section names only, no text)
+        run: |
+          git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
+          git add data/market_notes_status.json
+          git diff --staged --quiet && exit 0
+          git commit -q -m "data: market notes status $(date -u '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done

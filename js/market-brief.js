@@ -81,6 +81,14 @@
       out.push(sec('📈', `Power forwards · Cal ${k} France <b>${fr[1].toFixed(2)} €/MWh</b>`, `<span class="${cls(dFR)}">${sg(dFR, 2)} €</span> over a week${dDE != null ? `; Germany ${sg(dDE, 2)} €` : ''}.` +
         (dT != null ? ` Gas Cal ${k} ${sg(dT, 2)} €/MWh, worth about ${sg(gasPart, 1)} €/MWh on a gas plant's cost: the French move is ${Math.abs(dFR - gasPart) < 1 ? 'mostly gas' : dFR - gasPart > 0 ? 'stronger than gas alone (French fundamentals: nuclear, demand)' : 'weaker than gas alone (French fundamentals easing)'}.` : '')));
     }
+    // the latest market note received by e-mail (ENGIE Energy Market News), for signed-in users: third-party text, never in the public files
+    try {
+      const cl = window.PKAccount && PKAccount.user && PKAccount.client && PKAccount.client();
+      if (cl) { const r = await cl.from('market_note').select('source, note_date, subject, sections').order('note_date', { ascending: false }).limit(1);
+        const n = r.data && r.data[0];
+        if (n && (n.sections || []).length) out.push(sec('📰', `${esc(n.source)} · ${new Date(n.note_date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`,
+          '<ul>' + n.sections.map(x => `<li><b style="color:var(--text)">${esc(x.name)}</b>: ${esc(x.headline)}${(x.points || []).length ? `<details><summary class="mb-note">${x.points.length} point${x.points.length > 1 ? 's' : ''}</summary><ul>${x.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : ''}</li>`).join('') + '</ul>')); }
+    } catch (_) {}
     host.innerHTML = out.length ? `<div class="mb">${out.join('')}<div class="mb-note">Moves over 7 days, latest settlements. Red = price up.</div></div>` : '<div class="fuel-note">Market data not available.</div>';
   }
 
