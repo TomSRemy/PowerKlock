@@ -227,7 +227,7 @@
       daily: [], monthly: {}, hourC: new Float64Array(24), hourI: new Float64Array(24), hourN: new Float64Array(24), hourP: new Float64Array(24), hourPn: new Float64Array(24),
       wk: { wd: new Float64Array(24), we: new Float64Array(24), nwd: 0, nwe: 0 }, mh: [...Array(12)].map(() => ({ e: new Float64Array(24), n: new Float64Array(24), ci: new Float64Array(24), cn: new Float64Array(24) })),
       shp: [...Array(12)].map(() => [new Float64Array(96), new Float64Array(96)]), shpN: [...Array(12)].map(() => [0, 0]),
-      kw: [], peak: { v: 0 }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
+      kw: [], peak: { v: -Infinity, at: '' }, offHours: 0, dailyMinKW: [], capDays: [], ppa: { prof: new Float64Array(24), match: 0, surplus: 0, monthly: {} } };
     MIX.forEach(([k]) => { o.mix[k] = 0; });
     const ppaKey = st.ppaTech, ppaMWh = +st.ppa || 0;
     let ppaShape = 0; rows.forEach(({ r }) => { if (r && r[ppaKey]) r[ppaKey].forEach(v => { ppaShape += Math.max(0, v || 0); }); });
@@ -862,7 +862,12 @@
     try {
       S.raw = rows; S.meta = name;
       S.cons = buildCurve(rows);
+      // a curve mostly negative is an injection or an export sign convention: read as consumption, and said so
+      let neg = 0, pos = 0; S.cons.slots.forEach(a => a.forEach(v => { if (v < 0) neg++; else if (v > 0) pos++; }));
+      S.flipped = neg > pos;
+      if (S.flipped) S.cons.slots.forEach(a => { for (let q = 0; q < a.length; q++) if (a[q] != null) a[q] = Math.abs(a[q]); });
       await run();
+      if (S.flipped) $('cf-status').textContent += ' · values were negative (export sign convention?): read as consumption';
     } catch (e) { $('cf-status').textContent = e.message; }
   }
 
