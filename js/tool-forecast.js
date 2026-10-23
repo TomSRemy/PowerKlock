@@ -409,10 +409,10 @@
     const host = $('fc-nat'); if (!host) return;
     let j; try { const r = await fetch(DATA_BASE + 'history/fcst_national.json'); j = r.ok ? await r.json() : null; } catch (_) { j = null; }
     if (!j) { host.innerHTML = ''; return; }
-    const N = { ent: 'ENTSO-E (TSO day-ahead)', n0: 'Ours · generic', n1: 'Ours · + monthly level', n2: 'Ours · full (regression, price, several models)', mix: 'Average of ENTSO-E and ours' };
+    const N = { ent: 'ENTSO-E (TSO day-ahead)', n0: 'Ours · generic', n1: 'Ours · + monthly level', n2: 'Ours · full (regression, price, several models)', n3: 'Ours · + learned weights of regions and models', mix: 'Average of ENTSO-E and ours', stack: 'PowerKlock combined (ours with ENTSO-E as an input) · shown live' };
     const R = j.results, pc = v => (v * 100).toFixed(2);
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Forecast issued the day before</th><th>Solar · hourly error</th><th>Solar · bias</th><th>Wind · hourly error</th><th>Wind · bias</th></tr></thead><tbody>` +
-      Object.keys(N).map(k => { const b = ['solar', 'wind'].map(t => Math.min(...Object.keys(N).map(x => R[t][x].nmae)));
+      Object.keys(N).filter(k => R.solar[k] && R.wind[k]).map(k => { const b = ['solar', 'wind'].map(t => Math.min(...Object.keys(N).filter(x => R[t][x]).map(x => R[t][x].nmae)));
         return `<tr><td style="text-align:left">${N[k]}</td>${['solar', 'wind'].map((t, i) => `<td${R[t][k].nmae === b[i] ? ' style="font-weight:700;color:var(--acc)"' : ''}>${pc(R[t][k].nmae)} %</td><td>${R[t][k].bias >= 0 ? '+' : ''}${pc(R[t][k].bias)}</td>`).join('')}</tr>`; }).join('') +
       `</tbody></table></div><div class="fuel-note">France, ${j.period[0]} → ${j.period[1]}: error of the national solar and wind output in % of installed capacity (solar: daylight hours), each month predicted with corrections learned only on the months before. Actual output: RTE éCO2mix. Ours: one point per region weighted by its installed capacity, offshore farms apart.</div>`;
     const draw = (cid, t) => { const m = j.monthly[t]; if (!m) return; const L = Object.keys(m);
@@ -420,6 +420,7 @@
         { label: 'ENTSO-E', data: L.map(k => m[k].ent), borderColor: 'rgba(122,147,171,.9)', borderWidth: 1.6, pointRadius: 2, fill: false },
         { label: 'Ours', data: L.map(k => m[k].n2), borderColor: t === 'solar' ? '#F4C430' : '#14D3A9', borderWidth: 2, pointRadius: 2, fill: false },
         { label: 'Average of both', data: L.map(k => m[k].mix), borderColor: '#A87DC4', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, fill: false },
+        ...(L.some(k => m[k].stack != null) ? [{ label: 'PowerKlock combined', data: L.map(k => m[k].stack), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, fill: false }] : []),
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('hourly error, % of capacity', { beginAtZero: true }) } }) }, cid); };
     draw('fc-nat-solar', 'solar'); draw('fc-nat-wind', 'wind');
   }
@@ -435,7 +436,7 @@
   //   1  weather of every hour 2005 → last year at the park: ERA5 reanalysis
   //   2  the tool's physical model (panels, injection limit, power curve)
   //   3  prior correction learned on the real output of the park's region
-  //      (RTE vs ERA5, month by month, 2016 → 2025: data/history/era5_calib.json)
+  //      (RTE vs ERA5, month by month, 2020 → 2025: data/history/era5_calib.json)
   //   4  the park's own evidence, pooled with the prior (empirical Bayes):
   //      metered output → level fitted on the same hours (priced > 5 €/MWh),
   //      weight n days ÷ (n + 180); else the P50 entered sets the level
