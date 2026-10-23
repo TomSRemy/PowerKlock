@@ -77,6 +77,8 @@ Règles :
 - Chaque sujet : un nom court (« France », « Golfe », « Norvège »…) et 1 à 2 phrases : le fait concret, puis son effet sur les prix. Chiffres quand ils existent.
 - Écris avec tes propres mots : ne cite aucune source, aucun média, aucun fournisseur, ne recopie aucune phrase.
 - N'invente rien : seulement ce que disent les notes, les articles et les chiffres fournis. Pas de sujet sans fait concret (jamais « aucun événement notable ») : mieux vaut 2 sujets solides que 4 creux.
+- Le sujet « France » reprend TOUT ce que les notes et les articles disent de la France : politique et budget, nucléaire (réacteurs, arrêts, retours), réglementation, consommation, météo.
+- Sois précis : qui, quoi, combien, quand. Pas de conditionnel vague (« pourrait », « pourraient ») : dis ce qui se passe et dans quel sens cela pousse les prix.
 - Ne répète pas les variations de prix seules (elles sont affichées ailleurs) : explique les causes.
 - tone = "up" si le sujet pousse les prix à la hausse, "down" à la baisse, "flat" sinon.
 
@@ -85,8 +87,15 @@ Réponds uniquement avec ce JSON, sans texte autour :
 
 
 def ask(payload):
-    body = json.dumps({"max_tokens": 900, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}).encode()
-    req = urllib.request.Request(PROXY, data=body, headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-digest"})
+    # the Anthropic API when its key and model are set (secret ANTHROPIC_API_KEY, variable DIGEST_MODEL);
+    # otherwise the site's AI proxy, whose model writes vaguer French
+    msg = {"max_tokens": 900, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
+    key, model = os.environ.get("ANTHROPIC_API_KEY"), os.environ.get("DIGEST_MODEL")
+    if key and model:
+        req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps(dict(msg, model=model)).encode(),
+                                     headers={"Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01"})
+    else:
+        req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-digest"})
     r = json.load(urllib.request.urlopen(req, timeout=120))
     parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
     out = next((x for x in parts if isinstance(x, dict)), None)   # the proxy sometimes hands back the JSON already parsed
