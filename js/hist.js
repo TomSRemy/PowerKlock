@@ -4657,6 +4657,28 @@ function setHszYPreset(preset) {
 }
 window.setHszYPreset = setHszYPreset;
 
+// Min / max markers and the y range follow the series shown: each of Daily avg, 7D and 30D rolling
+// gets its own ▼ / ▲ when visible; the scale fits what is on screen (hiding Daily avg no longer
+// leaves its extremes squashing the rolling lines).
+function _hoFollowVisible(ci, opt) {
+  const pick = ['Daily avg', '7D rolling', '30D rolling'], short = { 'Daily avg': 'daily', '7D rolling': '7D', '30D rolling': '30D' };
+  const ann = ((ci.options.plugins || {}).annotation || {}).annotations; if (!ann) return;
+  Object.keys(ann).forEach(k => { if (/^(minPt|maxPt|mm_)/.test(k)) delete ann[k]; });
+  let lo = Infinity, hi = -Infinity;
+  ci.data.datasets.forEach((d, i) => {
+    if (!ci.isDatasetVisible(i)) return;
+    const v = (d.data || []).map(x => x == null || isNaN(x) ? null : +x), ok = v.filter(x => x != null);
+    if (!ok.length) return;
+    lo = Math.min(lo, ...ok); hi = Math.max(hi, ...ok);
+    if (!pick.includes(d.label)) return;
+    const mn = Math.min(...ok), mx = Math.max(...ok), col = d.borderColor || '#7FC8F8', tag = short[d.label];
+    const mk = (val, up) => ({ type: 'point', xValue: v.indexOf(val), yValue: val, backgroundColor: up ? _HIST_UP : _HIST_DN, radius: 5, borderColor: col, borderWidth: 2,
+      label: { display: true, content: `${up ? '▲ Max' : '▼ Min'} ${tag} ${val.toFixed(2)}`, color: '#fff', font: { size: 10, weight: '600' }, backgroundColor: up ? _HIST_UP : _HIST_DN, position: 'center', yAdjust: up ? -20 : 20, padding: 4, borderRadius: 3 } });
+    ann['mm_min_' + tag] = mk(mn, false); ann['mm_max_' + tag] = mk(mx, true);
+  });
+  if (!(opt && opt.keepScale) && isFinite(lo) && isFinite(hi)) { const pad = Math.max(1, hi - lo) * 0.1; ci.options.scales.y.min = Math.floor(lo - pad); ci.options.scales.y.max = Math.ceil(hi + pad); }
+}
+
 function _computeYRange(validAvgs, validMaxes, validMins, preset, roll7, roll30) {
   // Returns {yMin, yMax} based on the preset:
   //  - 'focus':    tight range around the rolling 7D/30D lines (the trend)
@@ -4902,6 +4924,7 @@ function _hszRenderLines(filtered, zone) {
               const wasVisible = ci.isDatasetVisible(index);
               ci.setDatasetVisibility(index, !wasVisible);
             }
+            _hoFollowVisible(ci);
             ci.update();
           },
         },
@@ -4956,6 +4979,8 @@ function _hszRenderLines(filtered, zone) {
       },
     }
   });
+  // ▼ / ▲ on the rolling averages too (the scale keeps the chosen preset until a series is hidden)
+  { const ch = HIST.charts[_hszCtx().canvasId]; if (ch) { _hoFollowVisible(ch, { keepScale: true }); ch.update('none'); } }
   // Analyst banner under the chart
   if (periodAvg != null && sigma != null && minV != null && maxV != null) {
     _renderAnalystBanner(_buildAnalystBanner('lines', {
