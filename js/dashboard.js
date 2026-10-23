@@ -622,21 +622,41 @@
     undoLayout.items.forEach(u => { const it = b.items.find(x => x.i === u.i); if (it) Object.assign(it, { x: u.x, y: u.y, w: u.w, h: u.h }); });
     undoLayout = null; save(); render(); toast('Section move undone');
   }
+  // blocks of the dashboard: what sits before the first section, then each section with every card whose top
+  // is at or below it and above the next section (side by side included); sections are made full width
+  function blocksOf(b) {
+    syncFromGrid(b);
+    const secs = b.items.filter(it => it.t === 's').sort((x, y) => x.y - y.y);
+    secs.forEach(sc => { sc.x = 0; sc.w = COLS; });
+    const blocks = [{ items: [] }].concat(secs.map(sc => ({ sec: sc.i, title: sc.title || '', items: [sc] })));
+    b.items.filter(it => it.t !== 's').sort((x, y) => (x.y - y.y) || (x.x - y.x)).forEach(it => {
+      let k = 0; secs.forEach((sc, j) => { if (sc.y <= it.y) k = j + 1; }); blocks[k].items.push(it); });
+    return blocks.filter(bl => bl.items.length);
+  }
+  function stack(blocks) {
+    let y = 0;
+    blocks.forEach(bl => { const top = Math.min(...bl.items.map(it => it.y)); let h = 0;
+      bl.items.forEach(it => { it.y = y + (it.y - top); h = Math.max(h, it.y + it.h - y); });   // a section is its block's top: cards keep their places under it
+      y += Math.max(h, 1); });
+  }
+  function snapshot(b) { undoLayout = { board: b.id, items: b.items.map(it => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h })) }; }
   function moveSection(id, dir) {
-    const b = board(); syncFromGrid(b);
-    undoLayout = { board: b.id, items: b.items.map(it => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h })) };
-    const its = b.items.slice().sort((x, y) => (x.y - y.y) || (x.x - y.x));
-    const blocks = []; let cur = { items: [] };
-    its.forEach(it => { if (it.t === 's') { if (cur.items.length) blocks.push(cur); cur = { items: [it], sec: it.i }; } else cur.items.push(it); });
-    if (cur.items.length) blocks.push(cur);
+    const b = board(); snapshot(b);
+    const blocks = blocksOf(b);
     const k = blocks.findIndex(bl => bl.sec === id), j = k + dir;
     if (k < 0 || j < 0 || j >= blocks.length || !blocks[j].sec) return;   // never above the charts that sit before the first section
     [blocks[k], blocks[j]] = [blocks[j], blocks[k]];
-    let y = 0;
-    blocks.forEach(bl => { const top = Math.min(...bl.items.map(it => it.y)); let h = 0;
-      bl.items.forEach(it => { it.y = y + (it.y - top); h = Math.max(h, it.y + it.h - y); }); y += h; });
-    save(); render();
+    stack(blocks); save(); render();
     toast('Section moved with its ' + (blocks[j].items.length - 1) + ' item' + (blocks[j].items.length > 2 ? 's' : ''), 'Undo', undoMove);
+  }
+  // sections numbered "1 · …", "2 · …": put them back in their numbers' order, each with its charts
+  function orderSections() {
+    const b = board(); snapshot(b);
+    const blocks = blocksOf(b), head = blocks[0] && !blocks[0].sec ? [blocks.shift()] : [];
+    const num = t => { const m = String(t || '').match(/^\s*(\d+)/); return m ? +m[1] : 1e9; };
+    blocks.sort((a, c) => num(a.title) - num(c.title) || String(a.title).localeCompare(String(c.title)));
+    stack(head.concat(blocks)); save(); render();
+    toast('Sections in order: ' + blocks.map(bl => bl.title.trim().split(/\s+/)[0]).join(', '), 'Undo', undoMove);
   }
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
@@ -687,6 +707,7 @@
         <label class="pkd-field"><span>Replace content with a template</span>
           <select id="pkd-board-tpl"><option value="">Keep current content</option>${TEMPLATES.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
         <div class="pkd-form-row">
+          <button type="button" class="pk-btn-ghost" id="pkd-board-order" title="Sections numbered 1 · …, 2 · …: back in their numbers' order, each with its charts">Order sections by number</button>
           <button type="button" class="pk-btn-ghost" id="pkd-board-dup">Duplicate</button>
           <button type="button" class="pk-btn-ghost" id="pkd-board-export">Export layout</button>
           <button type="button" class="pk-btn-ghost" id="pkd-board-import">Import layout</button>
@@ -702,6 +723,7 @@
         if (tpl) b.items = fromTemplate(tpl);
         save(); closeModal(); render();
       });
+      root.querySelector('#pkd-board-order').addEventListener('click', () => { closeModal(); orderSections(); });
       root.querySelector('#pkd-board-dup').addEventListener('click', () => {
         const id = uid();
         state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
