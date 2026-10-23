@@ -396,6 +396,7 @@ function drawGoCalChart() {
   const curYear = GO_REAL.asOf ? GO_REAL.asOf.getFullYear() : new Date().getFullYear();
   const years = real.years.filter(y => y >= curYear);
   const cals = years.map(y => 'Cal-' + String(y).slice(-2));
+  const gt = document.getElementById('go-cal-title'); if (gt && years.length) gt.textContent = `Forward curve — Cal ${years[0]} → ${years[years.length - 1]}`;
   const bids = years.map(y => fwd[y] ? fwd[y].bid : null);
   const asks = years.map(y => fwd[y] ? fwd[y].ask : null);
 
