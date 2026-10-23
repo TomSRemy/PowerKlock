@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-23",
+ "countries": {
+  "FR": {
+   "spot": 48.76
+  },
+  "UK": {
+   "spot": 37
+  },
+  "DE": {
+   "spot": 30.12
+  },
+  "NL": {
+   "spot": 33.62
+  }
+ },
+ "marketInsightsHtml": "<p>La disponibilité du nucléaire français se resserre encore.</p>"
+}
