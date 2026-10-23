@@ -114,18 +114,33 @@
     return json;
   }
 
+  // one download and one alignment per daily file every 5 minutes: a dozen modules ask for the same days at boot
+  // (271 requests for 45 files before), each with its own ?t= cache-buster
+  const memo = new Map(), MEMO_MS = 5 * 60 * 1000;
   window.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     const m = url.match(/^(.*history\/daily\/)(\d{4}-\d{2}-\d{2})\.json/);
-    if (!m) return origFetch(input, init);
-    const res = await origFetch(input, init);
-    if (!res.ok) return res;
-    let json;
-    try { json = await res.clone().json(); } catch (_) { return res; }
-    if (!rawCache.has(m[2])) rawCache.set(m[2], Promise.resolve(JSON.parse(JSON.stringify(json))));
-    let aligned = await alignDaily(json, m[2], m[1]);
-    if (window.pkFrOverlay) { try { aligned = await window.pkFrOverlay(aligned, m[2]); } catch (e) { console.warn('RTE overlay failed', e); } }
-    return new Response(JSON.stringify(aligned), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (!m || (init && init.method && init.method !== 'GET')) return origFetch(input, init);
+    const hit = memo.get(m[2]);
+    if (hit && Date.now() - hit.at < MEMO_MS) {
+      const body = await hit.p;
+      return body == null ? origFetch(input, init) : new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    let failed = null;
+    const p = (async () => {
+      const res = await origFetch(input, init);
+      if (!res.ok) { failed = res; return null; }
+      let json;
+      try { json = await res.clone().json(); } catch (_) { failed = res; return null; }
+      if (!rawCache.has(m[2])) rawCache.set(m[2], Promise.resolve(JSON.parse(JSON.stringify(json))));
+      let aligned = await alignDaily(json, m[2], m[1]);
+      if (window.pkFrOverlay) { try { aligned = await window.pkFrOverlay(aligned, m[2]); } catch (e) { console.warn('RTE overlay failed', e); } }
+      return JSON.stringify(aligned);
+    })();
+    memo.set(m[2], { at: Date.now(), p });
+    const body = await p;
+    if (body == null) { memo.delete(m[2]); return failed || origFetch(input, init); }
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
 
   // Live snapshots (renewables.json / load.json): arrays cover the UTC day
