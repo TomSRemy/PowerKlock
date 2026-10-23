@@ -48,6 +48,29 @@
     return { last: v[0], wk: m(a), prev: b.length ? m(b) : null, neg: a.reduce((s, y) => s + y.neg, 0) };
   }
 
+  // a note's section against the market it talks about: the tone of its words (tight, rising… / easing, falling…)
+  // vs the move of the matching price in the week before the note, and what the price did since
+  const UPW = /\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*|jump\w*|surg\w*|climb\w*|strong\w*|gain\w*|deteriorat\w*|disrupt\w*|risk\w*)\b/gi;
+  const DNW = /\b(eas(e|es|ed|ing)|fall\w*|fell|lower\w*|declin\w*|drop\w*|bearish|weak\w*|loosen\w*|relief|soft\w*|improv\w*|calm\w*|resilient|ample|comfortable|down\w*)\b/gi;
+  function checkNote(x, date, S, chain) {
+    const nm = (x.name || '').toLowerCase(), key = /oil/.test(nm) ? 'brent' : /gas/.test(nm) ? 'ttf' : /co2|co₂|carbon/.test(nm) ? 'eua' : /electric|power/.test(nm) ? 'cal' : null;
+    if (!key) return '';
+    let pts = null, unit = '', label = '';
+    if (key === 'cal') { const yrs = chain && chain.FR && chain.FR.years, k = yrs && Object.keys(yrs).sort()[0]; if (!k) return ''; pts = yrs[k].dates.map((d, i) => [d, yrs[k].values[i]]); unit = '€/MWh'; label = 'Cal ' + k + ' FR'; }
+    else { pts = (S[key] || {}).points; unit = key === 'brent' ? '$/b' : key === 'eua' ? '€/t' : '€/MWh'; label = { brent: 'Brent', ttf: 'TTF', eua: 'EUA' }[key]; }
+    if (!pts || !pts.length) return '';
+    const at = d => { let v = null; for (const [t, y] of pts) { if (t <= d) v = y; else break; } return v; };
+    const dd = new Date(date + 'T12:00:00Z'); dd.setUTCDate(dd.getUTCDate() - 7); const wk = iso(dd);
+    const p0 = at(wk), p1 = at(date), pn = pts[pts.length - 1][1];
+    if (p0 == null || p1 == null) return '';
+    const before = pct(p1, p0), after = pct(pn, p1);
+    const txt = (x.headline || '') + ' ' + (x.points || []).join(' ');
+    const tone = (txt.match(UPW) || []).length - (txt.match(DNW) || []).length;
+    const toneW = tone > 0 ? 'tone ↑ (tight, rising)' : tone < 0 ? 'tone ↓ (easing, falling)' : 'tone neutral';
+    const agree = tone === 0 || Math.abs(before) < 1 ? '' : (tone > 0) === (before > 0) ? ' · <span style="color:var(--up)">in line with the market</span>' : ' · <span style="color:var(--down)">against the market move</span>';
+    return `<div class="mb-note">${label} ${sg(before)} % in the week to the note (${p1.toFixed(2)} ${unit}), ${sg(after)} % since · ${toneW}${agree}</div>`;
+  }
+
   async function brief(host) {
     const [cs, chain, news, sp] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), get('news.json'), spotWeek()]);
     const S = cs && cs.series || {}, P = k => (S[k] || {}).points || [];
@@ -87,7 +110,7 @@
       if (cl) { const r = await cl.from('market_note').select('source, note_date, subject, sections').order('note_date', { ascending: false }).limit(1);
         const n = r.data && r.data[0];
         if (n && (n.sections || []).length) out.push(sec('📰', `${esc(n.source)} · ${new Date(n.note_date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`,
-          '<ul>' + n.sections.map(x => `<li><b style="color:var(--text)">${esc(x.name)}</b>: ${esc(x.headline)}${(x.points || []).length ? `<details><summary class="mb-note">${x.points.length} point${x.points.length > 1 ? 's' : ''}</summary><ul>${x.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : ''}</li>`).join('') + '</ul>')); }
+          '<ul>' + n.sections.map(x => `<li><b style="color:var(--text)">${esc(x.name)}</b>: ${esc(x.headline)}${checkNote(x, n.note_date, S, chain)}${(x.points || []).length ? `<details><summary class="mb-note">${x.points.length} point${x.points.length > 1 ? 's' : ''}</summary><ul>${x.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul></details>` : ''}</li>`).join('') + '</ul>')); }
     } catch (_) {}
     host.innerHTML = out.length ? `<div class="mb">${out.join('')}<div class="mb-note">Moves over 7 days, latest settlements. Red = price up.</div></div>` : '<div class="fuel-note">Market data not available.</div>';
   }
