@@ -3160,7 +3160,57 @@
 <script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows;
    a short animation covers the first seconds until the first chart is drawn */
 if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
-  document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>'); }</script>
+  document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>');
+  function pkBall(dot, word) {
+    // the dot bounces like a ball in its slot, then, if loading lasts, hops all around the word and drops back in
+    if (!dot || !word || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    dot.style.animation = 'none';
+    var R = 5.5, segs = [], T0 = 0;
+    function build() {
+      var d = dot.getBoundingClientRect(), w = word.getBoundingClientRect(), fs = parseFloat(getComputedStyle(word).fontSize) || 44;
+      if (!d.width) return false;
+      var hx = d.left + d.width / 2, base = d.bottom;
+      var top = base - fs * 0.74 - R - (d.bottom - d.top) / 2 + R, floor = base + fs * 0.32;
+      var L = w.left - hx - 16, Rt = w.right - hx + 16, up = top - base, dn = floor - base;
+      segs = [];
+      var hop = function (x0, y0, x1, y1, h, ms, sq) { segs.push({ x0: x0, y0: y0, x1: x1, y1: y1, h: h, ms: ms, sq: sq }); };
+      // three bounces in place, each lower
+      hop(0, 0, 0, 0, -30, 460, 1); hop(0, 0, 0, 0, -15, 330, 1); hop(0, 0, 0, 0, -6, 220, 1);
+      // up on the letters, right along the top
+      var x = 0, st = Math.max(38, (Rt - 0) / 4);
+      hop(0, 0, 18, up, -26, 420, 1); x = 18;
+      while (x + st < Rt - 8) { hop(x, up, x + st, up, -16, 300, 1); x += st; }
+      hop(x, up, Rt, (up + dn) / 2, -14, 300, 0);            // round the right end
+      hop(Rt, (up + dn) / 2, Rt - 20, dn, 12, 300, 0);
+      x = Rt - 20; st = Math.max(38, (Rt - L) / 7);
+      while (x - st > L + 20) { hop(x, dn, x - st, dn, 14, 300, 2); x -= st; }   // under the word, leftwards
+      hop(x, dn, L, (up + dn) / 2, 14, 300, 0);              // round the left end
+      hop(L, (up + dn) / 2, L + 20, up, -14, 300, 0);
+      x = L + 20; st = Math.max(38, (0 - L) / 4);
+      while (x + st < -18) { hop(x, up, x + st, up, -16, 300, 1); x += st; }
+      hop(x, up, 0, 0, -22, 420, 1);                         // and back into its slot
+      return true;
+    }
+    var total = 0;
+    function frame(now) {
+      if (!dot.isConnected) return;
+      if (!segs.length) { if (!build()) { requestAnimationFrame(frame); return; } total = segs.reduce(function (a, s) { return a + s.ms; }, 0); T0 = now; }
+      var t = (now - T0) % total, s = segs[0];
+      for (var i = 0; i < segs.length; i++) { s = segs[i]; if (t < s.ms) break; t -= s.ms; }
+      var u = Math.min(1, t / s.ms), arc = 4 * u * (1 - u);
+      var x = s.x0 + (s.x1 - s.x0) * u, y = s.y0 + (s.y1 - s.y0) * u + s.h * arc;
+      // squash on landing and take-off, stretch in flight
+      var k = Math.min(u, 1 - u), sx = 1, sy = 1;
+      if (s.sq && k < 0.1) { var q = 1 - k / 0.1; sx = 1 + 0.3 * q; sy = 1 - 0.3 * q; if (s.sq === 2) { var z = sx; sx = sy; sy = z; } }
+      else if (s.sq) { sy = 1 + 0.08 * arc; sx = 1 - 0.06 * arc; }
+      dot.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + sx.toFixed(2) + ',' + sy.toFixed(2) + ')';
+      requestAnimationFrame(frame);
+    }
+    dot.style.transformOrigin = '50% 100%';
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { segs = []; });
+    requestAnimationFrame(frame);
+  }
+  pkBall(document.querySelector('#pk-boot .pk-boot-dot'), document.querySelector('#pk-boot .pk-boot-w')); }</script>
 
 <!-- Mobile sidebar backdrop -->
 <div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>
@@ -6843,8 +6893,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="mrn-kpis" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
 <div class="mrn-moves"><h3>What moved</h3><div id="mrn-moves"><div class="fuel-note">Loading…</div></div></div>
 <div class="mrn-moves mrn-news"><h3>Market movers in the news <a href="#" class="mrn-news-more" onclick="showPage('news');return false">all news ›</a></h3><div id="mrn-news"><div class="fuel-note">Loading…</div></div></div>
-<div class="fuel-grid-2" style="margin-top:12px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Energy markets · the week</div><div class="fuel-card-sub">Context, oil, gas, carbon, power spot and forwards: each move and what drives it</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></div>
-<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France power · the next 30 days</div><div class="fuel-card-sub">Month-ahead forward, weather against normal week by week, nuclear, gas storage</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></div></div>
+<div class="chart-container fuel-card" style="margin-top:12px"><div class="fuel-card-head"><div><div class="table-title">Marchés de l’énergie · la semaine</div><div class="fuel-card-sub">Six prix sur 7 et 60 jours, un digest par marché, et les notes de marché face au mouvement réel</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Chargement…</div></div></div>
+<div class="chart-container fuel-card" style="margin-top:12px"><div class="fuel-card-head"><div><div class="table-title">France power · the next 30 days</div><div class="fuel-card-sub">Month-ahead forward, weather against normal week by week, nuclear, gas storage</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-morning-1">
