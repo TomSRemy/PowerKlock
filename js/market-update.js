@@ -376,12 +376,23 @@ if (window.PKW) PKW.register({
 // Latest headlines (geopolitics / markets)
 if (window.PKW) PKW.register({
   id: 'news-latest', kind: 'html', title: 'Energy news · latest', category: 'intel', page: 'news', source: 'News feeds', size: { w: 6, h: 6 },
-  desc: 'The latest energy-market headlines (gas, power, carbon, geopolitics).',
-  async html(host) {
+  desc: 'Energy-market headlines, filtered as you choose in the settings (⚙): what (market movers, geopolitics, regulation, deals, new capacity…), where (country) and from which source.',
+  params: [
+    { key: 'what', label: 'Articles', options: [['movers', 'Market movers (highest impact)'], ['all', 'All, latest first'], ['geopolitics', 'Geopolitics'], ['regulation', 'Regulation'], ['deal', 'Deals'], ['build', 'New capacity'], ['gas', 'Gas'], ['carbon', 'Carbon'], ['markets', 'Markets']] },
+    { key: 'country', label: 'Country', options: [['', 'All countries'], ['FR', 'France'], ['EU', 'Europe / EU'], ['DE', 'Germany'], ['BE', 'Belgium'], ['ES', 'Spain'], ['IT', 'Italy'], ['NL', 'Netherlands'], ['UK', 'United Kingdom']] },
+    { key: 'source', label: 'Source', options: [['', 'All sources'], ['GreenUnivers', 'GreenUnivers'], ['CRE', 'CRE'], ['Pexapark', 'Pexapark'], ['AleaSoft', 'AleaSoft'], ['Connaissance des Énergies', 'Connaissance des Énergies'], ['Révolution Énergétique', 'Révolution Énergétique'], ['Le Monde · Énergies', 'Le Monde · Énergies'], ['UFE', 'UFE'], ['PV Tech', 'PV Tech'], ['pv magazine', 'pv magazine'], ['Energy-Storage.news', 'Energy-Storage.news'], ['Windpower Monthly', 'Windpower Monthly'], ['WindEurope', 'WindEurope'], ['World Nuclear News', 'World Nuclear News'], ['Carbon Pulse', 'Carbon Pulse'], ['Carbon Brief', 'Carbon Brief'], ['Energy Monitor', 'Energy Monitor'], ['GIE', 'GIE'], ['Clean Energy Wire', 'Clean Energy Wire'], ['Enerdata', 'Enerdata'], ['E-CUBE', 'E-CUBE']] }],
+  defaults: { what: 'movers', country: '', source: '' },
+  titleFn: p => 'Energy news · ' + ({ movers: 'market movers', all: 'latest', geopolitics: 'geopolitics', regulation: 'regulation', deal: 'deals', build: 'new capacity', gas: 'gas', carbon: 'carbon', markets: 'markets' }[p.what || 'movers']) + (p.country ? ' · ' + p.country : '') + (p.source ? ' · ' + p.source : ''),
+  async html(host, p) {
     const j = await _muGet('news', 'news.json');
-    const items = (j && (j.items || j.articles || j)) || [];
-    const list = (Array.isArray(items) ? items : []).slice(0, 8);
-    host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${n.link || n.url || '#'}" target="_blank" rel="noopener">${(n.title || '').replace(/</g, '&lt;')}</a><span>${(n.source || '').replace(/</g, '&lt;')}${n.date || n.published ? ' · ' + String(n.date || n.published).slice(0, 10) : ''}</span></li>`).join('') + '</ul>' : '<div class="fuel-note">No news.</div>';
+    let list = ((j && j.items) || []).filter(n => (!p.country || (n.countries || []).includes(p.country)) && (!p.source || n.source === p.source));
+    const what = p.what || 'movers';
+    if (what === 'movers') list = list.filter(n => Date.now() - Date.parse(n.date) < 72 * 3600e3 && (n.impact || 0) >= 3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
+    else if (what !== 'all') list = list.filter(n => (n.tags || []).includes(what));
+    list = list.slice(0, 10);
+    const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${/^https?:\/\//.test(n.link || '') ? esc(n.link) : '#'}" target="_blank" rel="noopener">${esc(n.title)}</a><span>${esc(n.source)}${(n.countries || []).length ? ' · ' + esc(n.countries.slice(0, 2).join(' · ')) : ''} · ${new Date(n.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></li>`).join('') + '</ul>'
+      : '<div class="fuel-note">No article for these filters: change them in the settings (⚙).</div>';
   },
 });
 
