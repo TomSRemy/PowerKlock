@@ -4057,11 +4057,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
           <div class="hist-section-body open" id="hs-body-spot-trend">
             <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Zone</span><select class="country-select" id="spt-zone" onchange="PKSpot.draw()" aria-label="Zone"></select></div>
-        <div class="fuel-grid-2">
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Spot by month · 12 months</div><div class="fuel-card-sub" id="spt-monthly-sub">Monthly average baseload</div></div><span class="source-badge">ENTSO-E</span></div>
-            <div style="position:relative;height:280px"><canvas id="spt-monthly" style="width:100%;height:280px"></canvas></div>
-          </div>
+        <div class="">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Spot · last 30 days</div><div class="fuel-card-sub" id="spt-30d-sub">Daily baseload</div></div><span class="source-badge">ENTSO-E</span></div>
             <div style="position:relative;height:280px"><canvas id="spt-30d" style="width:100%;height:280px"></canvas></div>
@@ -4083,6 +4079,18 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 
         <!-- TAB · HISTORICAL -->
         <div class="tab-panel" data-tab-panel="historical" id="prtab-historical">
+<div class="hist-section hist-section-strong" id="hs-spot-month">
+  <div class="hist-section-header open" onclick="toggleStrongSection('hs-spot-month')">
+    <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Spot by month</div>
+    <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <div class="hist-section-body open" id="hs-body-spot-month">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Spot by month · 12 months</div><div class="fuel-card-sub" id="spt-monthly-sub">Monthly average baseload</div></div><span style="display:flex;gap:8px;align-items:center"><select class="country-select" id="spt-m-zone" onchange="PKSpot.drawMonthly()" aria-label="Zone"></select></span><span class="source-badge">ENTSO-E</span></div>
+            <div style="position:relative;height:280px"><canvas id="spt-monthly" style="width:100%;height:280px"></canvas></div>
+          </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════════
      BLOCK 1 · MULTI-ZONE OVERVIEW TABLE (style Daily DA)
@@ -6923,6 +6931,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="fuel-card-head"><div><div class="table-title">France vs Germany</div><div class="fuel-card-sub" id="mrn-frde-sub">Daily baseload and FR − DE spread, 30 days</div></div><span class="source-badge">ENTSO-E</span></div>
           <div style="position:relative;height:320px"><canvas id="mrn-frde" style="width:100%;height:320px"></canvas></div>
         </div>
+      </div>
+      <div class="chart-container fuel-card" style="margin-top:12px">
+        <div class="fuel-card-head"><div><div class="table-title">France · spot by month, 12 months</div><div class="fuel-card-sub" id="mrn-sptm-sub">Monthly average baseload against the 12-month mean</div></div><span class="source-badge">ENTSO-E</span></div>
+        <div style="position:relative;height:280px"><canvas id="mrn-sptm" style="width:100%;height:280px"></canvas></div>
       </div>
         </div>
       </div>
