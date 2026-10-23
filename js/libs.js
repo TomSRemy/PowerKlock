@@ -14967,8 +14967,9 @@ function addFullscreen(canvasId, content) {
       const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
       const titleEl = cv.closest('.chart-container')?.querySelector('.table-title, .fuel-card-head .table-title');
       window.pkOpenOrUpdate({
-        title: cfg.title || (titleEl ? titleEl.textContent.trim() : canvasId),
-        subtitle: cfg.subtitle || '',
+        title: cfg.title || (titleEl ? [...titleEl.childNodes].filter(n => !(n.classList && n.classList.contains('pkf-chip'))).map(n => n.textContent).join('').trim() : canvasId),
+        subtitle: cfg.subtitle || ((cv.closest('.chart-container')?.querySelector('.fuel-card-sub') || {}).textContent || '').trim(),
+        source: cfg.source || ((cv.closest('.chart-container')?.querySelector('.source-badge') || {}).textContent || '').trim(),
         filenameStem: canvasId,
         storageKey: 'fs:' + canvasId,
         kpis: cfg.kpis || null,

@@ -163,8 +163,13 @@
         <div class="pk-fs-screenshot-chart-wrap">
           <canvas class="pk-fs-screenshot-chart"></canvas>
         </div>
-        <div class="pk-fs-screenshot-source">Source: ENTSO-E Transparency · powerklock.com</div>
-        <button class="pk-fs-btn pk-fs-screenshot-exit" data-act="screenshot-exit" title="Back to full view">↩ Back</button>
+        <div class="pk-fs-screenshot-source">${cfg.source && !/^powerklock$/i.test(cfg.source) ? 'Source: ' + esc(cfg.source) : ''}</div>
+        <div class="pk-fs-screenshot-exit">
+          <span class="pk-fs-shot-msg"></span>
+          <button class="pk-fs-btn" data-act="screenshot-copy" title="Copy the image again">⧉ Copy</button>
+          <button class="pk-fs-btn" data-act="screenshot-save" title="Save the image (PNG)">⤓ Save</button>
+          <button class="pk-fs-btn" data-act="screenshot-exit" title="Back to full view">↩ Back</button>
+        </div>
       </div>
     `;
     injectStylesOnce();
@@ -303,7 +308,7 @@
         display: flex; align-items: center; gap: 9px;
       }
       .pk-fs-screenshot-logo-img {
-        height: 36px; width: auto; display: block;
+        height: 18px; width: auto; display: block; opacity: .75;
       }
       .pk-fs-screenshot-chart-wrap {
         flex: 1; background: #0a0e13; border: 1px solid #1e2d3d;
@@ -317,8 +322,9 @@
         font-family: 'JetBrains Mono', monospace; text-align: right;
       }
       .pk-fs-screenshot-exit {
-        position: absolute; top: 20px; right: 20px;
+        position: absolute; top: 12px; right: 20px; display: flex; gap: 6px; align-items: center;
       }
+      .pk-fs-shot-msg { font-size: 11px; color: #14D3A9; margin-right: 6px; }
     `;
     const style = document.createElement('style');
     style.id = 'pk-fs-styles';
@@ -503,6 +509,8 @@
         else if (act === 'autofit') autofitTable(root);
         else if (act === 'screenshot') enterScreenshot(root, cfg);
         else if (act === 'screenshot-exit') exitScreenshot(root);
+        else if (act === 'screenshot-copy') shotCopy(root);
+        else if (act === 'screenshot-save') shotSave(root, cfg);
       });
     });
   }
@@ -581,6 +589,27 @@
       try { if (root._fsShotChart) { root._fsShotChart.destroy(); } } catch (_) {}
       root._fsShotChart = cloneChartTo(canvas, root._fsChart);
     }
+    shotCopy(root);
+  }
+  // the clean view as an image, the buttons left out: copied to the clipboard as soon as the view opens
+  //   (ready to paste in a mail or a chat), saved as PNG on request
+  function shotBlob(root) {
+    const el = root.querySelector('.pk-fs-screenshot');
+    const ready = window.html2canvas ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+    return ready.then(() => new Promise(r => setTimeout(r, 450)))
+      .then(() => window.html2canvas(el, { backgroundColor: '#060a0f', scale: 2, logging: false, ignoreElements: e => e.classList && e.classList.contains('pk-fs-screenshot-exit') }))
+      .then(cv => new Promise(res => cv.toBlob(res, 'image/png')));
+  }
+  function shotMsg(root, t) { const m = root.querySelector('.pk-fs-shot-msg'); if (m) { m.textContent = t; clearTimeout(m._t); m._t = setTimeout(() => { m.textContent = ''; }, 4000); } }
+  function shotCopy(root) {
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('no clipboard');
+      // the promise form keeps the click's permission while the image is drawn
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': shotBlob(root) })]).then(() => shotMsg(root, 'Image copied: paste it in a mail or a chat'), () => shotMsg(root, 'Copy refused by the browser: use Save'));
+    } catch (_) { shotMsg(root, 'Copy not available here: use Save'); }
+  }
+  function shotSave(root, cfg) {
+    shotBlob(root).then(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (cfg.filenameStem || 'powerklock-chart') + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); shotMsg(root, 'Image saved'); });
   }
   function exitScreenshot(root) {
     root.querySelector('.pk-fs-header').style.display = '';

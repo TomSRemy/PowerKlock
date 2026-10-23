@@ -413,7 +413,7 @@
     window.pkOpenOrUpdate({
       title: inner.querySelector('.pkd-title').textContent,
       subtitle: inner.querySelector('.pkd-sub').textContent,
-      filenameStem: it.wid,
+      filenameStem: it.wid, source: (PKW.get(it.wid) || {}).source || '',
       storageKey: 'fs:pkd:' + it.wid,
       table: { html: typeof pkAutoTable === 'function' ? pkAutoTable(Chart.getChart(c)) : '' },
       chartSource: { rebuildInto: dst => pkCloneCanvasChart(c, dst) },
