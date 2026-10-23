@@ -88,12 +88,16 @@ if (window.PKW) {
       const j = await _m0Load(); if (!j) { host.innerHTML = '<div class="fuel-note">Not available.</div>'; return; }
       const o = j.official, est = j.estimate || {}, f = v => v == null ? '–' : v.toFixed(2);
       const ms = [...new Set([...Object.keys(o.monthly), ...Object.keys(est)])].sort().slice(-12).reverse();
+      // record of the estimate since 2023: mean absolute gap and bias against the CRE, per technology
+      const rec = k => { const g = Object.keys(o[k] || {}).filter(m => m >= '2023' && est[m] && est[m][k === 'monthly' ? 'base' : k] != null).map(m => est[m][k === 'monthly' ? 'base' : k] - o[k][m]);
+        return g.length ? `${k === 'monthly' ? 'base' : k} ${(g.reduce((s, x) => s + Math.abs(x), 0) / g.length).toFixed(2)} €/MWh (bias ${(g.reduce((s, x) => s + x, 0) / g.length >= 0 ? '+' : '')}${(g.reduce((s, x) => s + x, 0) / g.length).toFixed(2)}, ${g.length} months)` : ''; };
+      const record = ['monthly', 'wind', 'solar'].map(rec).filter(Boolean).join(' · ');
       const gap = (a, b) => a == null || b == null ? '' : `<span class="m0-gap">${(b - a >= 0 ? '+' : '') + (b - a).toFixed(2)}</span>`;
       host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Base M0</th><th>Wind M0</th><th>Wind capture</th><th>Solar M0</th><th>Solar capture</th><th>Negative hours</th></tr></thead><tbody>` +
         ms.map(m => { const e = est[m] || {}, cell = (cre, es) => cre != null ? `<b>${f(cre)}</b>${gap(cre, es)}` : es != null ? `<span class="m0-est" title="PowerKlock estimate, CRE not published yet">${f(es)} est.</span>` : '–';
           const neg = o.negSteps[m] ? o.negSteps[m].hours : e.negHours;
           return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td class="m0-cap">${f(e.windCap)}</td><td>${cell(o.solar[m], e.solar)}</td><td class="m0-cap">${f(e.solarCap)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
-        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar. Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
+        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.${record ? ' <b>Record of the estimate since 2023</b>, mean gap to the CRE: ' + record + '.' : ''} Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
     },
   });
 }

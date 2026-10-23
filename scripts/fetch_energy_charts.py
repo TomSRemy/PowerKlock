@@ -153,7 +153,7 @@ def fetch_flows(d_from, d_to):
 
 # ── Generation per country for the Power Map ─────────────────────────
 MAP_DIR = os.path.join(ROOT, 'data', 'map')
-MAP_KEEP_DAYS = 10
+MAP_KEEP_DAYS = 31   # the Power Map replays any day of the last month
 # Energy-Charts country codes with public_power data (PowerKlock / ISO code → API code)
 MAP_COUNTRIES = {
     'AT': 'at', 'BA': 'ba', 'BE': 'be', 'BG': 'bg', 'CH': 'ch', 'CZ': 'cz', 'DE': 'de', 'DK': 'dk', 'EE': 'ee',
@@ -248,11 +248,12 @@ def main():
     ap.add_argument('--capacity-only', action='store_true')
     ap.add_argument('--flows-only', action='store_true')
     ap.add_argument('--map', action='store_true', help='map files (yesterday, today) and today\'s flows only')
+    ap.add_argument('--map-days', type=int, default=0, help='with --map: also rebuild the map files of the last N days')
     args = ap.parse_args()
     today = datetime.now(PARIS).date()
     if args.map:
         print('Power map')
-        fetch_map([today - timedelta(days=1), today])
+        fetch_map([today - timedelta(days=k) for k in range(max(1, args.map_days), -1, -1)])
         # just after midnight (Paris) the new day has no data yet and Energy-Charts answers 500: finish yesterday instead
         try:
             fetch_flows(today - timedelta(days=1) if datetime.now(PARIS).hour < 3 else today, today)

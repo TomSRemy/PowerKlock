@@ -82,6 +82,10 @@
       const res = await w.draw(canvasId, params(id, p));
       addUnits(id, canvasId);
       if (w.pageCanvas === canvasId) markStar(w);
+      else {   // the same chart drawn elsewhere on a page (France Morning…): a star too, with the settings it was drawn with
+        const c = document.getElementById(canvasId);
+        if (c && c.closest('.page') && !c.closest('#pkd-grid')) { const pp = params(id, p); markStar(Object.assign({}, w, { pageCanvas: canvasId, pageParams: () => pp })); }
+      }
       return res || null;
     } catch (e) {
       console.warn('[PKW] draw failed', id, e);

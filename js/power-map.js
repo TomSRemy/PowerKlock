@@ -542,12 +542,16 @@
   function redraw() { drawMap(); drawRanking(); drawKpis(); drawLegend(); drawDetail(); syncControls(); }
 
   async function setDay(n) {
+    // n: -1 yesterday, 0 today, 1 tomorrow, or a date 'YYYY-MM-DD' (the date picker: any kept day)
+    const today = parisToday();
+    if (typeof n === 'string') { const k = Math.round((Date.parse(n) - Date.parse(today)) / 864e5); n = k === 0 || k === 1 || k === -1 ? k : n; }
     S.day = n;
-    const date = addDays(parisToday(), n === 1 ? 1 : n === -1 ? -1 : 0);
+    const date = typeof n === 'string' ? n : addDays(today, n === 1 ? 1 : n === -1 ? -1 : 0);
+    const dp = document.getElementById('pm-date'); if (dp) { dp.value = date; dp.max = addDays(today, 1); dp.min = addDays(today, -30); }
     const upd = document.getElementById('pm-upd'); if (upd) upd.textContent = 'Loading…';
     S.data = await loadDay(date);
     if (n === 1 && !METRICS[S.metric].market) S.metric = 'price';   // tomorrow: prices only
-    S.hour = n === 0 ? Math.min(latestHour(), parisHour()) : n === 1 ? 12 : latestHour();
+    S.hour = n === 0 ? Math.min(latestHour(), parisHour()) : n === 1 ? 12 : typeof n === 'string' ? 12 : latestHour();
     redraw();
   }
 
@@ -572,7 +576,7 @@
     play() {
       if (S.playing) { clearInterval(S.playing); S.playing = null; syncControls(); return; }
       S.avg = false;
-      const last = S.day === 0 ? latestHour() : 23;
+      const last = S.day === 0 ? latestHour() : 23;   // a past day plays in full
       if (S.hour >= last) S.hour = 0;
       S.playing = setInterval(() => {
         if (S.hour >= last) { clearInterval(S.playing); S.playing = null; syncControls(); return; }
@@ -587,6 +591,7 @@
   // styles
   const css = document.createElement('style');
   css.textContent = `
+  .pm-date{height:26px;padding:0 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg3);color:var(--text);font-size:11px;color-scheme:dark}
   .pm-wrap{display:grid;grid-template-columns:250px minmax(0,1fr) 380px;gap:12px;align-items:stretch}
   .pm-card{background:var(--bg2);border:1px solid var(--bd);border-radius:10px}
   .pm-mapbox{position:relative;overflow:hidden;min-height:640px}
