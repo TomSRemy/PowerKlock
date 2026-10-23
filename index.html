@@ -1549,7 +1549,13 @@
   .pkd-kf-opts label { display: flex; align-items: center; gap: 5px; }
   .pkd-loading, .pkd-empty-w { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text4); font-size: 12px; text-align: center; padding: 8px; }
   .pkd-section { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 100%; padding: 0 4px 6px; border-bottom: 1px solid var(--border2); cursor: grab; }
-  .pkd-section-title { font: 600 17px 'Outfit', sans-serif; color: var(--text); letter-spacing: .01em; outline: none; min-width: 120px; cursor: text; }
+  .pkd-section-title { font: 700 20px 'Outfit', sans-serif; color: var(--text); letter-spacing: .01em; outline: none; min-width: 120px; cursor: text; padding-left: 10px; border-left: 3px solid var(--accent); line-height: 1.2; }
+  .pkd-section { border-bottom-color: rgba(20,211,169,.35) !important; }
+  .pkd-desc { font-size: 13px; color: var(--text2); line-height: 1.5; max-width: 900px; margin: 2px 2px 12px; padding: 4px 6px; border-radius: 6px; outline: none; cursor: text; }
+  .pkd-desc:hover, .pkd-desc:focus { background: var(--bg2); }
+  .pkd-desc:empty::before { content: attr(data-ph); color: var(--text4); font-style: italic; }
+  body.pk-solo .pkd-desc { cursor: default; font-size: 14px; margin-top: 8px; }
+  body.pk-solo .pkd-desc:hover { background: none; }
   .pkd-section .pkd-del { opacity: 0; }
   .pkd-item:hover .pkd-section .pkd-del { opacity: 1; }
   [data-ph]:empty::before { content: attr(data-ph); color: var(--text4); }
