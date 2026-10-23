@@ -122,6 +122,13 @@ def main():
           "unparsed": {src["name"]: sum(1 for n in notes if n["source"] == src["name"] and not n["sections"]) for src in SOURCES}}
     open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market_notes_status.json"), "w").write(json.dumps(st, ensure_ascii=False))
     print("written")
+    # the week's context in French, centred on France, written from these notes (own words, no source named)
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import market_digest
+        market_digest.run([n for n in notes if n["sections"]])
+    except Exception as e:
+        print("digest failed:", e)
 
 
 if __name__ == "__main__":

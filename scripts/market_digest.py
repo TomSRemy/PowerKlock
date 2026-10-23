@@ -1,0 +1,131 @@
+"""
+Weekly market context, written in French and centred on France, for the
+"Marchés de l'énergie · la semaine" widget (js/market-brief.js).
+
+The latest market notes (the weekly note received by e-mail, the supplier's
+daily report from the public cockpit), the market-moving news of the last days
+and the week's prices are handed to the site's AI proxy, which writes 3 to 4
+short topics in its own words: France first (politics, nuclear, regulation,
+weather), then the world events that move European prices. No source is named
+and nothing is quoted, so the file can be public.
+
+Out  data/market_digest.json  {"updated", "asof", "context": [{"topic", "text", "tone"}]}
+Called by scripts/fetch_market_notes.py with the notes it just read; runs alone
+(without the e-mailed note) with: python scripts/market_digest.py
+"""
+import json, os, re, sys, urllib.request
+from datetime import datetime, timedelta, timezone
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROXY = "https://powerklock-ai.tom-s-remy.workers.dev"
+OUT = os.path.join(ROOT, "data", "market_digest.json")
+
+
+def load(p):
+    try:
+        return json.load(open(os.path.join(ROOT, "data", p)))
+    except Exception:
+        return None
+
+
+def plain(h):
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", str(h or "")).replace("&nbsp;", " ").replace("&amp;", "&").replace("&euro;", "€")).strip()
+
+
+def week_move(pts):
+    """last value and its move over 7 days, from [[date, value], …]"""
+    if not pts:
+        return None
+    d, v = pts[-1]
+    k = (datetime.fromisoformat(d) - timedelta(days=7)).date().isoformat()
+    old = [x for t, x in pts if t <= k]
+    return {"date": d, "value": round(v, 2), "move_7d_pct": round((v / old[-1] - 1) * 100, 1) if old and old[-1] else None}
+
+
+def facts():
+    cs = (load("history/commodities_series.json") or {}).get("series", {})
+    f = {k: week_move(cs.get(k, {}).get("points")) for k in ("brent", "ttf", "eua", "coal", "agsi", "fr_nuc_avail")}
+    ch = (load("history/fr_market_calchain.json") or {}).get("FR", {}).get("years", {})
+    if ch:
+        y = sorted(ch)[0]
+        f["cal_fr_" + y] = week_move(list(zip(ch[y]["dates"], ch[y]["values"])))
+    sp = [(r["d"], r["avg"]) for r in ((load("history/summary.json") or {}).get("zones", {}).get("FR") or []) if r.get("avg") is not None]
+    if sp:
+        f["spot_fr_last_days"] = [[d, round(v, 1)] for d, v in sp[-8:]]
+    return f
+
+
+def news():
+    it = (load("news.json") or {}).get("items") or []
+    now = datetime.now(timezone.utc)
+    keep = []
+    for n in it:
+        try:
+            age = now - datetime.fromisoformat(str(n.get("date")).replace("Z", "+00:00"))
+        except Exception:
+            continue
+        if age < timedelta(days=4) and set(n.get("tags") or []) & {"geopolitics", "regulation", "gas", "fr", "markets"}:
+            keep.append({"title": n.get("title"), "summary": (n.get("snippet") or "")[:300], "tags": n.get("tags")})
+    return keep[:40]
+
+
+SYSTEM = """Tu es analyste des marchés de l'énergie et tu écris pour des acheteurs et vendeurs d'électricité en France (PPA, fourniture). Tu rédiges le CONTEXTE de la semaine, comme le paragraphe « contexte général » d'une lettre de marché de fournisseur, mais centré sur la France.
+
+Règles :
+- Français, phrases courtes, ton de note de salle de marché.
+- 2 à 4 sujets. D'abord la France (politique et budget, nucléaire, réglementation, météo, consommation), puis les événements mondiaux qui font bouger les prix européens (Golfe, Russie, Norvège, GNL, États-Unis, Chine…). Ne garde que ce qui compte pour les prix.
+- Chaque sujet : un nom court (« France », « Golfe », « Norvège »…) et 1 à 2 phrases : le fait concret, puis son effet sur les prix. Chiffres quand ils existent.
+- Écris avec tes propres mots : ne cite aucune source, aucun média, aucun fournisseur, ne recopie aucune phrase.
+- N'invente rien : seulement ce que disent les notes, les articles et les chiffres fournis. Pas de sujet sans fait concret (jamais « aucun événement notable ») : mieux vaut 2 sujets solides que 4 creux.
+- Ne répète pas les variations de prix seules (elles sont affichées ailleurs) : explique les causes.
+- tone = "up" si le sujet pousse les prix à la hausse, "down" à la baisse, "flat" sinon.
+
+Réponds uniquement avec ce JSON, sans texte autour :
+{"context":[{"topic":"France","text":"…","tone":"up"}]}"""
+
+
+def ask(payload):
+    body = json.dumps({"max_tokens": 900, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}).encode()
+    req = urllib.request.Request(PROXY, data=body, headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-digest"})
+    r = json.load(urllib.request.urlopen(req, timeout=120))
+    parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
+    out = next((x for x in parts if isinstance(x, dict)), None)   # the proxy sometimes hands back the JSON already parsed
+    if out is None:
+        txt = "".join(x for x in parts if isinstance(x, str))
+        m = re.search(r"\{.*\}", txt, re.S)
+        if not m:
+            raise ValueError("no JSON in the answer: " + txt[:200])
+        out = json.loads(m.group(0))
+    ctx = [c for c in out.get("context", []) if c.get("topic") and c.get("text")][:4]
+    for c in ctx:
+        c["tone"] = c.get("tone") if c.get("tone") in ("up", "down", "flat") else "flat"
+    if not ctx:
+        raise ValueError("empty context")
+    return ctx
+
+
+def run(notes=None):
+    """notes: the e-mailed notes just read ([{note_date, sections:[{name, headline, points}]}]), newest last"""
+    today = datetime.now(timezone.utc).date()
+    payload = {"today": today.isoformat(), "market_figures": facts(), "news_last_days": news(), "notes": []}
+    for n in (notes or [])[-1:]:
+        try:
+            if today - datetime.fromisoformat(n["note_date"]).date() <= timedelta(days=10):
+                payload["notes"].append({"date": n["note_date"], "kind": "weekly market note", "sections": n["sections"]})
+        except Exception:
+            pass
+    fm = load("fr_market.json") or {}
+    mi, d = fm.get("marketInsights") or {}, (fm.get("marketInsightsDate") or fm.get("lastUpdate") or "")[:10]
+    if mi and (mi.get("gas") or mi.get("power")):
+        payload["notes"].append({"date": d, "kind": "daily energy report", "gas": plain(mi.get("gas"))[:3000], "power": plain(mi.get("power"))[:3000]})
+    ctx = ask(payload)
+    json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
+               "notes": len(payload["notes"]), "context": ctx}, open(OUT, "w"), ensure_ascii=False, indent=1)
+    print("digest:", [c["topic"] for c in ctx])
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except Exception as e:
+        sys.exit(f"digest failed: {e}")
