@@ -405,9 +405,9 @@ if (window.PKW) PKW.register({
 // Latest headlines (geopolitics / markets)
 if (window.PKW) PKW.register({
   id: 'news-latest', kind: 'html', title: 'Energy news · latest', category: 'intel', page: 'news', source: 'News feeds', size: { w: 6, h: 6 },
-  desc: 'Energy-market headlines, filtered as you choose in the settings (⚙): what (market movers, geopolitics, regulation, deals, new capacity…), where (country) and from which source.',
+  desc: 'Every energy-market headline of the last 7 days, newest first, filtered as you choose in the settings (⚙): what (market movers, geopolitics, regulation, deals, new capacity…), where (country) and from which source.',
   params: [
-    { key: 'what', label: 'Articles', options: [['movers', 'Market movers (highest impact)'], ['all', 'All, latest first'], ['geopolitics', 'Geopolitics'], ['regulation', 'Regulation'], ['deal', 'Deals'], ['build', 'New capacity'], ['gas', 'Gas'], ['carbon', 'Carbon'], ['markets', 'Markets']] },
+    { key: 'what', label: 'Articles', options: [['movers', 'Market movers'], ['all', 'All'], ['geopolitics', 'Geopolitics'], ['regulation', 'Regulation'], ['deal', 'Deals'], ['build', 'New capacity'], ['gas', 'Gas'], ['carbon', 'Carbon'], ['markets', 'Markets']] },
     { key: 'country', label: 'Country', options: [['', 'All countries'], ['FR', 'France'], ['EU', 'Europe / EU'], ['DE', 'Germany'], ['BE', 'Belgium'], ['ES', 'Spain'], ['IT', 'Italy'], ['NL', 'Netherlands'], ['UK', 'United Kingdom']] },
     { key: 'source', label: 'Source', options: [['', 'All sources'], ['GreenUnivers', 'GreenUnivers'], ['CRE', 'CRE'], ['Pexapark', 'Pexapark'], ['AleaSoft', 'AleaSoft'], ['Connaissance des Énergies', 'Connaissance des Énergies'], ['Révolution Énergétique', 'Révolution Énergétique'], ['Le Monde · Énergies', 'Le Monde · Énergies'], ['UFE', 'UFE'], ['PV Tech', 'PV Tech'], ['pv magazine', 'pv magazine'], ['Energy-Storage.news', 'Energy-Storage.news'], ['Windpower Monthly', 'Windpower Monthly'], ['WindEurope', 'WindEurope'], ['World Nuclear News', 'World Nuclear News'], ['Carbon Pulse', 'Carbon Pulse'], ['Carbon Brief', 'Carbon Brief'], ['Energy Monitor', 'Energy Monitor'], ['GIE', 'GIE'], ['Clean Energy Wire', 'Clean Energy Wire'], ['Enerdata', 'Enerdata'], ['E-CUBE', 'E-CUBE']] }],
   defaults: { what: 'movers', country: '', source: '' },
@@ -417,11 +417,13 @@ if (window.PKW) PKW.register({
     const isFr = n => (n.tags || []).includes('fr') || (typeof _newsIsFr === 'function' && _newsIsFr(n));
     let list = ((j && j.items) || []).filter(n => (!p.country || (n.countries || []).includes(p.country) || (p.country === 'FR' && isFr(n))) && (!p.source || n.source === p.source));
     const what = p.what || 'movers';
-    if (what === 'movers') list = list.filter(n => Date.now() - Date.parse(n.date) < 72 * 3600e3 && (n.impact || 0) >= 3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
+    // every article of the last 7 days matching the filters, newest first (the card scrolls)
+    list = list.filter(n => Date.now() - Date.parse(n.date) < 7 * 864e5);
+    if (what === 'movers') list = list.filter(n => (n.impact || 0) >= 3);
     else if (what !== 'all') list = list.filter(n => (n.tags || []).includes(what));
-    list = list.slice(0, 10);
+    list.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
     const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${/^https?:\/\//.test(n.link || '') ? esc(n.link) : '#'}" target="_blank" rel="noopener">${esc(n.title)}</a><span>${esc(n.source)}${(n.countries || []).length ? ' · ' + esc(n.countries.slice(0, 2).join(' · ')) : ''} · ${new Date(n.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></li>`).join('') + '</ul>'
+    host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${/^https?:\/\//.test(n.link || '') ? esc(n.link) : '#'}" target="_blank" rel="noopener">${esc(n.title)}</a><span>${esc(n.source)}${(n.countries || []).length ? ' · ' + esc(n.countries.slice(0, 2).join(' · ')) : ''} · ${new Date(n.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}</span></li>`).join('') + `</ul><div class="fuel-note">${list.length} article${list.length > 1 ? 's' : ''} over the last 7 days, newest first.</div>`
       : '<div class="fuel-note">No article for these filters: change them in the settings (⚙).</div>';
   },
 });
