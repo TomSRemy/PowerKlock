@@ -177,7 +177,7 @@ _muReg({
     // contracts still to deliver, nearest first, a few of each type
     const peak = p.load === 'peak', isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
     // still to deliver (delivery not started), base or peak as chosen
-    const live = Object.entries(all).filter(([k, c]) => c && c.points && kinds.includes(c.kind) && (c.deliveryStart || '') > today && isPeak(k, c) === peak && Object.keys(c.points).some(d => d >= from))
+    const live = Object.entries(all).filter(([k, c]) => c && c.points && kinds.includes(c.kind) && (c.deliveryStart || '') > today && isPeak(k, c) === peak && Object.keys(c.points).some(d => d >= from) && Object.keys(c.points).some(d => d >= _muAdd(today, -30)))   // no quote for a month: stale, left out
       .sort((a, b) => ORDER[a[1].kind] - ORDER[b[1].kind] || (a[1].deliveryStart < b[1].deliveryStart ? -1 : 1));
     const per = {}; const pick = live.filter(([, c]) => (per[c.kind] = (per[c.kind] || 0) + 1) <= CAP[c.kind]);
     if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
@@ -385,7 +385,8 @@ if (window.PKW) PKW.register({
   titleFn: p => 'Energy news · ' + ({ movers: 'market movers', all: 'latest', geopolitics: 'geopolitics', regulation: 'regulation', deal: 'deals', build: 'new capacity', gas: 'gas', carbon: 'carbon', markets: 'markets' }[p.what || 'movers']) + (p.country ? ' · ' + p.country : '') + (p.source ? ' · ' + p.source : ''),
   async html(host, p) {
     const j = await _muGet('news', 'news.json');
-    let list = ((j && j.items) || []).filter(n => (!p.country || (n.countries || []).includes(p.country)) && (!p.source || n.source === p.source));
+    const isFr = n => (n.tags || []).includes('fr') || (typeof _newsIsFr === 'function' && _newsIsFr(n));
+    let list = ((j && j.items) || []).filter(n => (!p.country || (n.countries || []).includes(p.country) || (p.country === 'FR' && isFr(n))) && (!p.source || n.source === p.source));
     const what = p.what || 'movers';
     if (what === 'movers') list = list.filter(n => Date.now() - Date.parse(n.date) < 72 * 3600e3 && (n.impact || 0) >= 3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
     else if (what !== 'all') list = list.filter(n => (n.tags || []).includes(what));
