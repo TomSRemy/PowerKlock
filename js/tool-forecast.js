@@ -232,7 +232,14 @@
   function wire() {
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
     const ids = { 'fc-inj': 'inj', 'fc-p50': 'p50', 'fc-tech': 'tech', 'fc-lat': 'lat', 'fc-lon': 'lon', 'fc-mw': 'mw', 'fc-tilt': 'tilt', 'fc-az': 'az', 'fc-loss-s': 'lossS', 'fc-hub': 'hub', 'fc-cls': 'cls', 'fc-loss-w': 'lossW', 'fc-zone': 'zone' };
-    Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => { S[k] = e.type === 'number' ? +e.value : e.value; vis(); run(); }); });
+    // sane ranges: a value outside is brought back to the nearest limit, and said so
+    const RANGE = { lat: [-90, 90, 'latitude'], lon: [-180, 180, 'longitude'], mw: [0.01, 5000, 'capacity (MW)'], tilt: [0, 90, 'tilt (°)'], az: [-180, 180, 'azimuth (°)'],
+      lossS: [0, 60, 'losses (%)'], lossW: [0, 60, 'losses (%)'], hub: [20, 250, 'hub height (m)'], inj: [0, 5000, 'injection limit (MW)'], p50: [0, 3000, 'P50 (kWh/kWc)'] };
+    Object.entries(ids).forEach(([id, k]) => { const e = $(id); if (!e) return; e.value = S[k]; e.addEventListener('change', () => {
+      let v = e.type === 'number' ? (e.value === '' ? (k === 'inj' || k === 'p50' ? '' : S[k]) : +e.value) : e.value;
+      const r = RANGE[k], note = $('fc-range-note');
+      if (r && v !== '' && typeof v === 'number' && (v < r[0] || v > r[1] || !isFinite(v))) { const was = v; v = Math.min(r[1], Math.max(r[0], isFinite(v) ? v : r[0])); e.value = v; if (note) { note.textContent = `${r[2]} ${was} is outside ${r[0]}–${r[1]}: set to ${v}.`; note.hidden = false; setTimeout(() => { note.hidden = true; }, 6000); } }
+      S[k] = v; vis(); run(); }); });
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
     const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
