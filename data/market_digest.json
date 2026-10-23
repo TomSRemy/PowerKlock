@@ -1,0 +1,22 @@
+{
+ "updated": "2026-10-23T13:59:57+00:00",
+ "asof": "2026-10-23",
+ "notes": 0,
+ "context": [
+  {
+   "topic": "France",
+   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pourrait entraîner une hausse des prix de l'électricité. L'Autorité de sûreté nucléaire a estimé que rien n'empêche de poursuivre l'exploitation du parc électronucléaire au-delà de 60 ans, à condition que des travaux conséquents soient réalisés",
+   "tone": "up"
+  },
+  {
+   "topic": "Golfe",
+   "text": "Les prix du pétrole ont augmenté de 6,8% en une semaine, ce qui pourrait avoir un impact sur les prix de l'électricité en Europe",
+   "tone": "up"
+  },
+  {
+   "topic": "Marché européen",
+   "text": "Les prix du carbone ont stagné malgré la hausse des prix de l'énergie, les négociations sur la réforme du marché du carbone de l'UE sont en cours",
+   "tone": "flat"
+  }
+ ]
+}
