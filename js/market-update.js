@@ -173,7 +173,7 @@ _muReg({
     if (!all) { noDataMsg(cid, 'Forward history not available', ''); return null; }
     const kinds = String(p.kinds || 'year').split(','), today = _muToday();
     const from = _muAdd(today, -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
-    const ORDER = { month: 0, quarter: 1, season: 2, year: 3 }, CAP = { month: 6, quarter: 6, season: 4, year: 8 };
+    const ORDER = { month: 0, quarter: 1, season: 2, year: 3 }, CAP = { month: 6, quarter: 6, season: 4, year: p.years === 'all' ? 8 : 3 };   // the next three calendar years unless asked
     // contracts still to deliver, nearest first, a few of each type
     const peak = p.load === 'peak', isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
     // still to deliver (delivery not started), base or peak as chosen
@@ -197,7 +197,7 @@ _muReg({
 
 _muReg({
   id: 'fr-cal-drivers', title: 'Cal+1 and its drivers', category: 'forwards', page: 'prices', pageCanvas: 'cal-drivers', source: 'Market data',
-  desc: 'A market’s Cal+1 baseload against TTF gas (calendar of the same year and day-ahead) and EUA carbon, indexed to 100 at the start of the window.',
+  desc: 'A market’s Cal+1 baseload against its drivers: TTF gas of the same calendar year, EUA carbon, API2 coal Cal+1 and Brent oil, indexed to 100 at the start of the window.',
   titleFn: p => 'Cal+1 ' + (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' and its drivers',
   params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '6M', country: 'FR' },
   async draw(cid, p) {
@@ -208,7 +208,7 @@ _muReg({
     const k = Object.keys(yrs).sort()[0];
     const cal = new Map(yrs[k].dates.map((d, i) => [d, yrs[k].values[i]]));
     const pts = key => new Map(((ser[key] || {}).points || []).filter(([d]) => d >= from));
-    const ttf = pts('ttf'), eua = pts('eua');
+    const eua = pts('eua'), coal = pts('coal'), oil = pts('brent');
     const com = await _muGet('cs', 'history/commodities_series.json'), ty = com && com.calYears && com.calYears.ttf && com.calYears.ttf[k];
     const ttfCal = ty ? new Map(ty.dates.map((d, i) => [d, ty.values[i]]).filter(([d]) => d >= from)) : null;
     const dates = [...cal.keys()].filter(d => d >= from).sort();
@@ -216,8 +216,9 @@ _muReg({
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: [
       _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#14D3A9', { borderWidth: 2.4, spanGaps: true }),
       ...(ttfCal ? [_fuelLineDs('TTF Cal ' + k, idx(ttfCal), '#C4A57B', { borderWidth: 1.8, spanGaps: true })] : []),
-      _fuelLineDs('TTF day-ahead', idx(ttf), 'rgba(196,165,123,.6)', { borderWidth: 1.2, borderDash: [4, 3], spanGaps: true }),
       _fuelLineDs('EUA', idx(eua), '#A87DC4', { borderWidth: 1.5, spanGaps: true }),
+      _fuelLineDs('Coal API2 Cal+1', idx(coal), '#94A3B8', { borderWidth: 1.4, spanGaps: true }),
+      _fuelLineDs('Brent', idx(oil), '#E6EDF3', { borderWidth: 1.2, borderDash: [4, 3], spanGaps: true }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
     return { sub: 'Indexed to 100 on ' + dates[0] };
   },
