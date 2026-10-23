@@ -54,6 +54,7 @@
   .wk-up{color:var(--down)} .wk-dn{color:var(--up)} .wk-fl{color:var(--text3)}
   .wk-row{display:grid;grid-template-columns:92px 84px minmax(0,1fr) 230px;column-gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border)}
   .wk-row:last-child{border-bottom:0} .wk-row.wk-hr{padding:2px 0 5px}
+  .wk-wide .wk-k{display:flex;flex-direction:column;align-items:flex-start;gap:6px} .wk-wide .wk-tx{grid-column:2/-1}
   .wk-hd{font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
   .wk-cn{border-left:1px solid var(--border);padding-left:12px;align-self:stretch}
   .wk-k{font:600 11px 'JetBrains Mono',monospace;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
@@ -62,7 +63,7 @@
   .wk-l{display:block} .wk-l b{color:var(--text);font-weight:600}
   .wk-n{font-size:11.5px;color:var(--text3)} .wk-n b{font-weight:600} .wk-ok{color:var(--accent)} .wk-ko{color:#fbbf24}
   .wk-foot{font-size:11px;color:var(--text3)}
-  @container (max-width:760px){.wk-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.wk-row{grid-template-columns:auto minmax(0,1fr);row-gap:3px}.wk-hr{display:none}.wk-tx,.wk-cn{grid-column:1/-1}.wk-cn{border-left:0;padding-left:0}.wk-cn:before{content:'Analystes vs prix · ';font-size:11px;color:var(--text3)}}`;
+  @container (max-width:760px){.wk-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.wk-row{grid-template-columns:auto minmax(0,1fr);row-gap:3px}.wk-hr{display:none}.wk-tx,.wk-cn,.wk-wide .wk-tx{grid-column:1/-1}.wk-wide .wk-k{flex-direction:row;align-items:center}.wk-cn{border-left:0;padding-left:0}.wk-cn:before{content:'Analystes vs prix · ';font-size:11px;color:var(--text3)}}`;
   if (!document.getElementById('wk-css')) { const s = document.createElement('style'); s.id = 'wk-css'; s.textContent = css2; document.head.appendChild(s); }
   const fr = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ',');
   const nf = (v, d = 2) => v == null ? '–' : v.toFixed(d).replace('.', ',');
@@ -126,7 +127,7 @@
     const dg = await get('market_digest.json'), ctxT = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.context || []) : [];
     if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
       R.push(['Contexte', u > 0 ? '↑ haussier' : u < 0 ? '↓ baissier' : '→ neutre', u > 0 ? 'wk-up' : u < 0 ? 'wk-dn' : 'wk-fl',
-        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`), verdict(nt.ctx, null, true)]); }
+        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`).concat(nt.ctx.length ? [`<span class="wk-l"><b>Analystes :</b> ${verdict(nt.ctx, null, true).replace(/^les analystes voient/, 'ils voient').replace(/<\/?span[^>]*>/g, '')}.</span>`] : []), null, true]); }
     const br = last(P('brent'));
     if (br) { const w = wkPct(P('brent')); R.push(['Pétrole', arrow(w) + ' ' + fr(w) + ' %', wc(w), [`<span class="wk-l"><b>Brent :</b> ${nf(br[1])} $/b${range(P('brent'))}.</span>`], verdict(nt.brent, w)]); }
     const ttf = last(P('ttf'));
@@ -146,8 +147,8 @@
         `<span class="wk-l"><b>Effet :</b> ${Math.abs(d) < 0.5 ? 'quasi nul' : `${fr(0.37 * d)} €/MWh`} sur le coût d’une centrale gaz.</span>`], verdict(nt.eua, w)]); }
     if (!T.length && !R.length) { host.innerHTML = '<div class="fuel-note">Données de marché indisponibles.</div>'; return; }
     host.innerHTML = `<div class="wk"><div class="wk-tiles">${T.join('')}</div>
-      <div><div class="wk-row wk-hr"><span class="wk-hd">Marché</span><span class="wk-hd">7 jours</span><span class="wk-hd">Ce qui s’est passé</span><span class="wk-hd">Les analystes ont-ils vu juste ?</span></div>
-      ${R.map(([k, m, c, ls, v]) => `<div class="wk-row"><span class="wk-k">${k}</span><span class="wk-cm"><span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span><span class="wk-cn">${v}</span></div>`).join('')}</div>
+      <div>${/* context first, across the whole width: the label with its chip under it */ ''}${R.filter(r => r[5]).map(([k, m, c, ls]) => `<div class="wk-row wk-wide"><span class="wk-k">${k}<span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span></div>`).join('')}<div class="wk-row wk-hr"><span class="wk-hd">Marché</span><span class="wk-hd">7 jours</span><span class="wk-hd">Ce qui s’est passé</span><span class="wk-hd">Les analystes ont-ils vu juste ?</span></div>
+      ${R.filter(r => !r[5]).map(([k, m, c, ls, v]) => `<div class="wk-row"><span class="wk-k">${k}</span><span class="wk-cm"><span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span><span class="wk-cn">${v}</span></div>`).join('')}</div>
       <div class="wk-foot">Rouge = prix en hausse, vert = en baisse. Mini-courbes : 60 jours. Dernière colonne : les commentaires de marché publiés par des fournisseurs d’énergie ces 10 derniers jours (rapport quotidien, lettre hebdomadaire) annonçaient-ils une hausse ou une baisse ? On compare au mouvement réel du prix sur 7 jours : ✓ vu juste, ✗ raté.</div></div>`;
   }
 
