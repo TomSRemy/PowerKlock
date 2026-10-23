@@ -1,152 +1,152 @@
 {
-  "updated": "2026-10-22T16:20:38.109759Z",
+  "updated": "2026-10-23T09:40:33.272494Z",
   "countries": {
     "FR": [
       {
         "partner": "DE_LU \u00b7 Germany",
-        "imports": 524,
-        "exports": 561,
-        "net": -37
+        "imports": 0,
+        "exports": 2193,
+        "net": -2193
       },
       {
         "partner": "BE \u00b7 Belgium",
-        "imports": 503,
-        "exports": 392,
-        "net": 111
+        "imports": 41,
+        "exports": 866,
+        "net": -825
       },
       {
         "partner": "ES \u00b7 Spain",
-        "imports": 577,
-        "exports": 1751,
-        "net": -1174
+        "imports": 130,
+        "exports": 2323,
+        "net": -2193
       },
       {
         "partner": "IT_NORD \u00b7 Italy North",
         "imports": 0,
-        "exports": 2344,
-        "net": -2344
+        "exports": 3047,
+        "net": -3047
       },
       {
         "partner": "CH \u00b7 Switzerland",
-        "imports": 21,
-        "exports": 1571,
-        "net": -1550
+        "imports": 0,
+        "exports": 3095,
+        "net": -3095
       },
       {
         "partner": "GB \u00b7 Great Britain",
-        "imports": 174,
-        "exports": 2382,
-        "net": -2208
+        "imports": 0,
+        "exports": 2995,
+        "net": -2995
       }
     ],
     "DE_LU": [
       {
         "partner": "FR \u00b7 France",
-        "imports": 561,
-        "exports": 524,
-        "net": 37
+        "imports": 2193,
+        "exports": 0,
+        "net": 2193
       },
       {
         "partner": "NL \u00b7 Netherlands",
-        "imports": 740,
-        "exports": 1086,
-        "net": -346
+        "imports": 1134,
+        "exports": 251,
+        "net": 883
       },
       {
         "partner": "BE \u00b7 Belgium",
-        "imports": 150,
-        "exports": 524,
-        "net": -374
+        "imports": 1003,
+        "exports": 0,
+        "net": 1003
       },
       {
         "partner": "AT \u00b7 Austria",
-        "imports": 99,
-        "exports": 2243,
-        "net": -2144
+        "imports": 349,
+        "exports": 1937,
+        "net": -1588
       },
       {
         "partner": "CH \u00b7 Switzerland",
-        "imports": 139,
-        "exports": 1179,
-        "net": -1040
+        "imports": 478,
+        "exports": 631,
+        "net": -153
       },
       {
         "partner": "CZ \u00b7 Czechia",
-        "imports": 234,
-        "exports": 1525,
-        "net": -1291
+        "imports": 361,
+        "exports": 1466,
+        "net": -1105
       },
       {
         "partner": "PL \u00b7 Poland",
-        "imports": 0,
-        "exports": 1854,
-        "net": -1854
+        "imports": 120,
+        "exports": 1186,
+        "net": -1066
       },
       {
         "partner": "DK_W \u00b7 Denmark West",
-        "imports": 91,
-        "exports": 1488,
-        "net": -1397
+        "imports": 1017,
+        "exports": 1100,
+        "net": -83
       }
     ],
     "BE": [
       {
         "partner": "FR \u00b7 France",
-        "imports": 392,
-        "exports": 503,
-        "net": -111
+        "imports": 865,
+        "exports": 41,
+        "net": 824
       },
       {
         "partner": "DE_LU \u00b7 Germany",
-        "imports": 524,
-        "exports": 150,
-        "net": 374
+        "imports": 0,
+        "exports": 1003,
+        "net": -1003
       },
       {
         "partner": "NL \u00b7 Netherlands",
-        "imports": 2284,
+        "imports": 1504,
         "exports": 0,
-        "net": 2284
+        "net": 1504
       },
       {
         "partner": "GB \u00b7 Great Britain",
-        "imports": 0,
-        "exports": 936,
-        "net": -936
+        "imports": 113,
+        "exports": 821,
+        "net": -708
       }
     ],
     "ES": [
       {
         "partner": "FR \u00b7 France",
-        "imports": 1751,
-        "exports": 577,
-        "net": 1174
+        "imports": 2260,
+        "exports": 208,
+        "net": 2052
       },
       {
         "partner": "PT \u00b7 Portugal",
         "imports": 0,
-        "exports": 2766,
-        "net": -2766
+        "exports": 2369,
+        "net": -2369
       }
     ],
     "GB": [
       {
         "partner": "FR \u00b7 France",
-        "imports": 2382,
-        "exports": 174,
-        "net": 2208
+        "imports": 2995,
+        "exports": 0,
+        "net": 2995
       },
       {
         "partner": "BE \u00b7 Belgium",
-        "imports": 936,
-        "exports": 0,
-        "net": 936
+        "imports": 821,
+        "exports": 113,
+        "net": 708
       },
       {
         "partner": "NL \u00b7 Netherlands",
-        "imports": 912,
-        "exports": 0,
-        "net": 912
+        "imports": 734,
+        "exports": 392,
+        "net": 342
       }
     ]
   }
