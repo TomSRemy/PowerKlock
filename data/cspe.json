@@ -1,0 +1,54 @@
+{
+ "updated": "2026-10-23T21:25:24Z",
+ "source": "CRE — délibération annuelle sur les charges de service public de l’énergie, annexes (Tableau 1), M€",
+ "years": {
+  "2024": {
+   "observed": {
+    "onshore": -68.9,
+    "offshore": 227.7,
+    "solar": 2408.5,
+    "bio": 394.0,
+    "other": -61.0,
+    "biomethane": 1029.3,
+    "total_power": 2900.3
+   },
+   "observedSrc": "https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250710_2025-180_CSPE_2025-2026_Annexe_3.pdf"
+  },
+  "2025": {
+   "observed": {
+    "onshore": 901.5,
+    "offshore": 655.8,
+    "solar": 3755.7,
+    "bio": 739.0,
+    "other": 129.1,
+    "biomethane": 1151.4,
+    "total_power": 6181.1
+   },
+   "observedSrc": "https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260715_2026-149_CSPE_2026-2027_annexe_3.pdf"
+  },
+  "2026": {
+   "forecast": {
+    "onshore": 1300.1,
+    "offshore": 921.7,
+    "solar": 4388.6,
+    "bio": 848.6,
+    "other": 205.2,
+    "biomethane": 1326.3,
+    "total_power": 7664.2
+   },
+   "forecastSrc": "https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250710_2025-180_CSPE_2025-2026_Annexe_1.pdf"
+  },
+  "2027": {
+   "forecast": {
+    "onshore": 1404.6,
+    "offshore": 1306.7,
+    "solar": 4579.2,
+    "bio": 855.1,
+    "other": 232.9,
+    "biomethane": 1373.3,
+    "total_power": 8378.5
+   },
+   "forecastSrc": "https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260715_2026-149_CSPE_2026-2027_annexe_1.pdf"
+  }
+ }
+}
