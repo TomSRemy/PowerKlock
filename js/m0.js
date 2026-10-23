@@ -5,7 +5,9 @@
 //                              (base) / 4 weeks (wind, solar) after the month
 //   Estimated M0 (PowerKlock) — the CRE method on PowerKlock data, for the
 //                              month to date and months not yet published:
-//                              prices ≥ 0 weighted by RTE national output
+//                              prices ≥ 0 weighted by the output of the parks under
+//                              complément de rémunération (ODRÉ) once published, else
+//                              by RTE national output
 //   Forecast M0              — forward baseload × M0 / mean price ratio of
 //                              the same month over the last three years
 // ════════════════════════════════════════════════════════════════════
@@ -78,7 +80,7 @@ if (window.PKW) {
         ['wind', 'windCap', 'solar', 'solarCap'].map(t => `<td${/Cap/.test(t) ? ' class="m0-cap"' : ''}><b>${f(r[t])}</b><span class="m0-rng">${f(r[t + 'Lo'])}–${f(r[t + 'Hi'])}</span></td>`).join('') + '</tr>';
       host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Forward base</th><th>Base M0</th><th>Wind M0</th><th>Wind capture</th><th>Solar M0</th><th>Solar capture</th></tr></thead><tbody>` +
         (e ? `<tr class="m0-now"><td style="text-align:left">${M0_FMT_MONTH(cur)} <span class="mu-kind">to date · ${e.days} days</span></td><td>${f(e.baseAll)}</td><td>${f(e.base)}</td><td><b>${f(e.wind)}</b></td><td class="m0-cap"><b>${f(e.windCap)}</b></td><td><b>${f(e.solar)}</b></td><td class="m0-cap"><b>${f(e.solarCap)}</b></td></tr>` : '') +
-        (j.forecast || []).map(row).join('') + `</tbody></table></div><div class="fuel-note">€/MWh. Current month: PowerKlock estimate to date with the CRE method (prices ≥ 0, RTE output). Coming months: forward baseload of the month (month contract, else what its quarter or year leaves) × the M0 / mean day-ahead price ratio of the same month over the last three years; range = lowest and highest year. M0 = prices ≥ 0 only (CRE); capture = every step, negative prices included (what an asset producing through negative hours earns on the spot). Forwards of ${j.forwardDate || '–'}.</div>`;
+        (j.forecast || []).map(row).join('') + `</tbody></table></div><div class="fuel-note">€/MWh. Current month: PowerKlock estimate to date with the CRE method (prices ≥ 0, RTE national output until the parks' own output is published). Coming months: forward baseload of the month (month contract, else what its quarter or year leaves) × the M0 / mean day-ahead price ratio of the same month over the last three years; range = lowest and highest year. M0 = prices ≥ 0 only (CRE); capture = every step, negative prices included (what an asset producing through negative hours earns on the spot). Forwards of ${j.forwardDate || '–'}.</div>`;
     },
   });
   PKW.register({
@@ -97,7 +99,7 @@ if (window.PKW) {
         ms.map(m => { const e = est[m] || {}, cell = (cre, es) => cre != null ? `<b>${f(cre)}</b>${gap(cre, es)}` : es != null ? `<span class="m0-est" title="PowerKlock estimate, CRE not published yet">${f(es)} est.</span>` : '–';
           const neg = o.negSteps[m] ? o.negSteps[m].hours : e.negHours;
           return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td class="m0-cap">${f(e.windCap)}</td><td>${cell(o.solar[m], e.solar)}</td><td class="m0-cap">${f(e.solarCap)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
-        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method on RTE éCO2mix output). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.${record ? ' <b>Record of the estimate since 2023</b>, mean gap to the CRE: ' + record + '.' : ''} Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
+        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method, weighted by the output of the parks under complément de rémunération published by ODRÉ, a few cents from the CRE; RTE national output for the latest weeks). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.${record ? ' <b>Record of the estimate since 2023</b>, mean gap to the CRE: ' + record + '.' : ''} Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
     },
   });
 }
