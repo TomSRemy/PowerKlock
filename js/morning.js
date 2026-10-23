@@ -384,6 +384,7 @@ async function renderMorning() {
   if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', { win: '6M' }).then(r => sub('mrn-ttfc-sub', r));
   PKW.draw('fr-fwd-strip', 'mrn-strip', { country: 'FR' }).then(r => sub('mrn-strip-sub', r));
   PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
+  PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
   PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
   PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' });
   PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' });

@@ -475,11 +475,16 @@ window.PKSpot = {
     const sel = document.getElementById('spt-zone'); if (!sel || !window.PKW) return;
     if (!sel.options.length) sel.innerHTML = MU_ZONE.options.map(([c, n]) => `<option value="${c}"${c === 'FR' ? ' selected' : ''}>${n}</option>`).join('');
     const z = sel.value || 'FR', sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
-    PKW.draw('fr-spot-monthly', 'spt-monthly', { zone: z }).then(r => sub('spt-monthly-sub', r));
     PKW.draw('fr-spot-30d', 'spt-30d', { zone: z }).then(r => sub('spt-30d-sub', r));
     const a = document.getElementById('spt-day-latest'), b = document.getElementById('spt-day-prev');
     if (a) PKW.get('fr-spot-day').html(a, { zone: z, day: 'latest' });
     if (b) PKW.get('fr-spot-day').html(b, { zone: z, day: 'previous' });
+  },
+  // spot by month: top of Prices › Day-Ahead › Historical, its own zone (France by default)
+  drawMonthly() {
+    const sel = document.getElementById('spt-m-zone'); if (!sel || !window.PKW) return;
+    if (!sel.options.length) { const src = document.getElementById('spt-zone'); sel.innerHTML = src && src.options.length ? src.innerHTML : '<option value="FR">France</option>'; sel.value = 'FR'; }
+    PKW.draw('fr-spot-monthly', 'spt-monthly', { zone: sel.value || 'FR' }).then(r => { const e = document.getElementById('spt-monthly-sub'); if (e && r && r.sub) e.textContent = r.sub; });
   },
   drawCal() {
     const sel = document.getElementById('cal-country'); if (!sel || !window.PKW) return;
@@ -511,7 +516,7 @@ window.addEventListener('load', () => setTimeout(() => {
     const inner = window.prSelectSubdomain;
     window.prSelectSubdomain = function (d) {
       const r = inner.apply(this, arguments);
-      if (d === 'da') once('da', () => setTimeout(PKSpot.draw, 300));
+      if (d === 'da') once('da', () => setTimeout(() => { PKSpot.draw(); PKSpot.drawMonthly(); }, 300));
       if (d === 'forward') once('fwd', () => setTimeout(PKSpot.drawCal, 300));
       return r;
     };
@@ -523,7 +528,7 @@ window.addEventListener('load', () => setTimeout(() => {
     if (id === 'wxcities') once('wx', () => { setTimeout(PKSpot.outlook, 300); setTimeout(() => window.PKHydro && PKHydro.render(), 400); const sel = document.getElementById('wx-country'); if (sel) sel.addEventListener('change', () => PKSpot.outlook()); });
     if (id === 'prices') {   // the Day-Ahead sub-page can be the one open by default
       const da = document.querySelector('[data-subdomain-panel="da"].active');
-      if (da) once('da', () => setTimeout(PKSpot.draw, 300));
+      if (da) once('da', () => setTimeout(() => { PKSpot.draw(); PKSpot.drawMonthly(); }, 300));
     }
   };
 }, 50));
