@@ -381,12 +381,14 @@
     const p = PKW.params(w.id, it.p);
     if (w.kind === 'html') {
       try { await w.html(body, p); } catch (e) { body.innerHTML = '<div class="pkd-empty-w">Unavailable</div>'; console.warn(e); }
+      hideBoot();
       return;
     }
     const cid = 'pkd-c-' + it.i, kOn = it.k && it.k.on && window.PKFacts;
     body.classList.toggle('kf-on', !!kOn);
     body.innerHTML = (kOn ? '<div class="pkd-kf"></div>' : '') + `<div class="pkd-canvas"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`;
     const res = await PKW.draw(w.id, cid, p);
+    hideBoot();
     if (res && res.sub) inner.querySelector('.pkd-sub').textContent = w.source + ' · ' + res.sub;
     // enriched card: key figures from the chart's own data, min / max marked
     if (kOn) {
@@ -569,23 +571,35 @@
   // ── Dashboards (tabs) ────────────────────────────────────────────
   // a short text under the dashboard's name saying what it shows; empty = a suggestion built from its charts
   function suggestDesc(b) {
-    const ws = b.items.filter(it => it.t === 'w').map(it => PKW.get(it.wid)).filter(Boolean);
-    const secs = b.items.filter(it => it.t === 's' && it.title).map(it => it.title);
-    if (!ws.length) return 'What this dashboard is for, in one or two sentences.';
-    const cats = [...new Set(ws.map(w => (PKW.CATEGORIES.find(c => c[0] === w.category) || [, w.category])[1]))].slice(0, 4);
-    return `${ws.length} chart${ws.length > 1 ? 's' : ''}${secs.length ? ' in ' + secs.length + (secs.length > 1 ? ' sections (' : ' section (') + secs.slice(0, 4).join(', ') + ')' : ''}: ${cats.join(', ').toLowerCase()}. Click to write what it is for.`;
+    // a sentence from the dashboard's own content: its sections, then its charts
+    const its = b.items.slice().sort((x, y) => (x.y - y.y) || (x.x - y.x));
+    const secs = its.filter(it => it.t === 's' && it.title).map(it => it.title);
+    const charts = its.filter(it => it.t === 'w').map(it => { const w = PKW.get(it.wid); return w ? (it.title || autoTitle(w, it)) : null; }).filter(Boolean);
+    if (!charts.length) return '';
+    const list = a => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+    const shown = charts.slice(0, 4).map(t => t.replace(/\s*·\s*/g, ' '));
+    return (secs.length ? `${list(secs)}: ` : '') + list(shown) + (charts.length > 4 ? `, and ${charts.length - 4} more chart${charts.length > 5 ? 's' : ''}` : '') + '.';
   }
   function renderDesc() {
     const page = document.getElementById('page-mydash'); if (!page) return;
     let el = document.getElementById('pkd-desc');
     if (!el) { el = document.createElement('div'); el.id = 'pkd-desc'; el.className = 'pkd-desc'; const g = document.getElementById('pkd-grid'); g.parentElement.insertBefore(el, g); }
-    const b = shared || board(), txt = (b && b.desc) || '';
-    if (shared) { el.contentEditable = 'false'; el.textContent = txt; el.hidden = !txt; return; }
-    el.hidden = false; el.contentEditable = 'plaintext-only'; el.spellcheck = true; el.dataset.ph = suggestDesc(b); el.textContent = txt;
-    el.title = 'What this dashboard shows: click to write it (kept with the dashboard and in its share links)';
-    el.onblur = () => { const v = el.textContent.trim().slice(0, 400); if (v !== (b.desc || '')) { b.desc = v; save(); } };
+    const b = shared || board(), own = (b && b.desc) || '', auto = b ? suggestDesc(b) : '';
+    const txt = own || auto;
+    el.classList.toggle('pkd-desc-auto', !own);
+    el.textContent = txt; el.hidden = !txt;                       // nothing to say: no empty line
+    if (shared) { el.contentEditable = 'false'; el.removeAttribute('title'); return; }
+    el.contentEditable = 'plaintext-only'; el.spellcheck = true;
+    el.title = own ? 'What this dashboard shows: click to edit' : 'Proposed from the charts: click to rewrite it (kept with the dashboard and in its share links)';
+    el.onfocus = () => { if (!b.desc) { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); } };
+    el.onblur = () => { const v = el.textContent.trim().slice(0, 400); if (v && v !== auto && v !== (b.desc || '')) { b.desc = v; save(); } else if (!v && b.desc) { b.desc = ''; save(); } renderDesc(); };
     el.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); } };
   }
+  // shared view: the loading animation leaves once the first chart is drawn (at least 1.2 s, at most 8 s)
+  const bootAt = Date.now();
+  function hideBoot() { const b = document.getElementById('pk-boot'); if (!b || b.dataset.going) return; b.dataset.going = '1';
+    setTimeout(() => { b.classList.add('gone'); setTimeout(() => b.remove(), 600); }, Math.max(0, 1200 - (Date.now() - bootAt))); }
+  setTimeout(hideBoot, 8000);
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
     if (!el || !state) return;
@@ -770,7 +784,7 @@
   async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
   async function encodeBoard(b) {
     const items = b.items.map(it => { const o = Object.assign({}, it); delete o.i; return o; });
-    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || undefined, items }));
+    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, items }));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
   }

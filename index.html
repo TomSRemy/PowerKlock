@@ -1512,6 +1512,18 @@
   .pkd-share-l a { text-decoration: none; white-space: nowrap; }
   body.pk-solo .ticker, body.pk-solo .topbar, body.pk-solo .sidebar, body.pk-solo .mobile-backdrop,
   body.pk-solo #page-mydash .pkd-top { display: none !important; }
+  #pk-boot { position: fixed; inset: 0; z-index: 100000; background: var(--bg, #0a0d12); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; transition: opacity .5s ease, visibility .5s; }
+  #pk-boot.gone { opacity: 0; visibility: hidden; }
+  .pk-boot-w { display: flex; align-items: baseline; font: 700 44px 'Outfit', 'Inter', sans-serif; letter-spacing: .01em; color: #E6EDF3; position: relative; }
+  .pk-boot-b { color: var(--accent, #14D3A9); }
+  .pk-boot-a, .pk-boot-b { opacity: 0; animation: pkBootIn .7s ease forwards; } .pk-boot-b { animation-delay: .25s; }
+  .pk-boot-dot { display: inline-block; width: 11px; height: 11px; margin: 0 5px; border-radius: 50%; background: var(--accent, #14D3A9); box-shadow: 0 0 18px rgba(20,211,169,.7); animation: pkBootDot 1.6s cubic-bezier(.65,0,.35,1) infinite; }
+  .pk-boot-bar { width: 180px; height: 2px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .pk-boot-bar i { display: block; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, var(--accent, #14D3A9), transparent); animation: pkBootBar 1.3s ease-in-out infinite; }
+  @keyframes pkBootIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes pkBootDot { 0% { transform: translate(0, 0) scale(1); } 25% { transform: translate(0, -18px) scale(.8); } 50% { transform: translate(0, 0) scale(1.15); } 62% { transform: translate(0, 0) scale(1); } 100% { transform: translate(0, 0) scale(1); } }
+  @keyframes pkBootBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @media (prefers-reduced-motion: reduce) { .pk-boot-dot, .pk-boot-bar i { animation: none; } }
   body.pk-solo .layout { padding-top: 0; }
   body.pk-solo .page:not(#page-mydash), body.pk-solo #pk-loader, body.pk-solo .pk-status-badge { display: none !important; }
   body.pk-solo #page-mydash { display: block !important; }
@@ -1555,7 +1567,7 @@
   .pkd-section { border-bottom-color: rgba(20,211,169,.35) !important; }
   .pkd-desc { font-size: 13px; color: var(--text2); line-height: 1.5; max-width: 900px; margin: 2px 2px 12px; padding: 4px 6px; border-radius: 6px; outline: none; cursor: text; }
   .pkd-desc:hover, .pkd-desc:focus { background: var(--bg2); }
-  .pkd-desc:empty::before { content: attr(data-ph); color: var(--text4); font-style: italic; }
+  .pkd-desc.pkd-desc-auto { color: var(--text3); }
   body.pk-solo .pkd-desc { cursor: default; font-size: 14px; margin-top: 8px; }
   body.pk-solo .pkd-desc:hover { background: none; }
   .pkd-section .pkd-del { opacity: 0; }
@@ -3139,8 +3151,10 @@
 </style>
 </head>
 <body>
-<script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows */
-if (/^#solo=/.test(location.hash)) document.body.classList.add('pk-solo');</script>
+<script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows;
+   a short animation covers the first seconds until the first chart is drawn */
+if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
+  document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>'); }</script>
 
 <!-- Mobile sidebar backdrop -->
 <div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>
