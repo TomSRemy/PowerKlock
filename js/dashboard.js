@@ -205,13 +205,14 @@
     if (isOpen()) render();
   }
 
-  function toast(msg) {
+  function toast(msg, action, fn) {
     let el = document.getElementById('pkd-toast');
     if (!el) { el = document.createElement('div'); el.id = 'pkd-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
     el.textContent = msg;
+    if (action && fn) { const b = document.createElement('button'); b.type = 'button'; b.className = 'pkd-toast-act'; b.textContent = action; b.addEventListener('click', () => { el.classList.remove('show'); fn(); }); el.appendChild(b); }
     el.classList.add('show');
     clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+    el._t = setTimeout(() => el.classList.remove('show'), action ? 8000 : 2200);
   }
 
   // ── GridStack ────────────────────────────────────────────────────
@@ -610,8 +611,21 @@
     setTimeout(() => { b.classList.add('gone'); setTimeout(() => b.remove(), 600); }, Math.max(0, 1200 - (Date.now() - bootAt))); }
   setTimeout(hideBoot, 8000);
   // a section moves with everything under it, down to the next section: blocks are swapped, each keeps its layout
+  let undoLayout = null;
+  function syncFromGrid(b) {
+    // the positions shown on screen are the truth: the grid compacts cards without always reporting it
+    if (!grid || grid.getColumn() !== COLS) return;
+    grid.engine.nodes.forEach(n => { const it = b.items.find(x => x.i === (n.el && n.el.dataset.i)); if (it) Object.assign(it, { x: n.x, y: n.y, w: n.w, h: n.h }); });
+  }
+  function undoMove() {
+    const b = board(); if (!undoLayout || undoLayout.board !== b.id) return;
+    undoLayout.items.forEach(u => { const it = b.items.find(x => x.i === u.i); if (it) Object.assign(it, { x: u.x, y: u.y, w: u.w, h: u.h }); });
+    undoLayout = null; save(); render(); toast('Section move undone');
+  }
   function moveSection(id, dir) {
-    const b = board(), its = b.items.slice().sort((x, y) => (x.y - y.y) || (x.x - y.x));
+    const b = board(); syncFromGrid(b);
+    undoLayout = { board: b.id, items: b.items.map(it => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h })) };
+    const its = b.items.slice().sort((x, y) => (x.y - y.y) || (x.x - y.x));
     const blocks = []; let cur = { items: [] };
     its.forEach(it => { if (it.t === 's') { if (cur.items.length) blocks.push(cur); cur = { items: [it], sec: it.i }; } else cur.items.push(it); });
     if (cur.items.length) blocks.push(cur);
@@ -622,6 +636,7 @@
     blocks.forEach(bl => { const top = Math.min(...bl.items.map(it => it.y)); let h = 0;
       bl.items.forEach(it => { it.y = y + (it.y - top); h = Math.max(h, it.y + it.h - y); }); y += h; });
     save(); render();
+    toast('Section moved with its ' + (blocks[j].items.length - 1) + ' item' + (blocks[j].items.length > 2 ? 's' : ''), 'Undo', undoMove);
   }
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
