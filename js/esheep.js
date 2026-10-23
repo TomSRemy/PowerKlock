@@ -9,6 +9,8 @@
 */
 (function () {
   'use strict';
+  // no easter eggs on a shared dashboard-only view (#solo=…)
+  if (/^#solo=/.test(location.hash)) return;
 
   let active = false;
   let teardownFns = [];

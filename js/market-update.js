@@ -160,21 +160,38 @@ _muReg({
 
 // ── 5. prices ──
 _muReg({
-  id: 'fr-cal-history', title: 'Calendar forwards', category: 'forwards', page: 'prices', pageCanvas: 'cal-history', source: 'Market data',
-  desc: 'Daily settlements of a market’s baseload calendar contracts (fixed delivery years). UK in GBP.',
-  titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · calendar forwards',
-  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years'], ['all', 'All']] }], defaults: { win: '3M', country: 'FR' },
+  id: 'fr-cal-history', title: 'Forward contracts', category: 'forwards', page: 'prices', pageCanvas: 'cal-history', source: 'Market data',
+  desc: 'Daily settlements of a market’s baseload forward contracts still to deliver: months, quarters, seasons and calendar years, each type shown or hidden. UK in GBP.',
+  titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' · forward contracts',
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years'], ['all', 'All']] },
+    { key: 'load', label: 'Load', options: [['base', 'Baseload'], ['peak', 'Peakload']] },
+    { key: 'kinds', label: 'Products', options: [['year', 'Calendar years'], ['year,season', 'Years and seasons'], ['year,season,quarter', 'Years, seasons, quarters'], ['year,season,quarter,month', 'All products']] }],
+  defaults: { win: '3M', country: 'FR', kinds: 'year', load: 'base' },
   async draw(cid, p) {
-    const c = await _muGet('chain', 'history/fr_market_calchain.json');
-    const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years;
-    if (!yrs) { noDataMsg(cid, 'Forward history not available', ''); return null; }
-    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
-    const dates = [...new Set(Object.values(yrs).flatMap(v => v.dates.filter(d => d >= from)))].sort();
-    const cols = ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B'];
-    const ds = Object.keys(yrs).sort().map((y, i) => { const m = new Map(yrs[y].dates.map((d, k) => [d, yrs[y].values[k]])); return _fuelLineDs('Cal ' + y, dates.map(d => m.has(d) ? m.get(d) : null), cols[i % cols.length], { borderWidth: i ? 1.6 : 2.4, spanGaps: true }); });
-    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(cc === 'UK' ? '£/MWh' : '€/MWh') }, plugins: { legend: _muLegend() } }) }, 'calendar-forwards-' + cc);
-    const k = Object.keys(yrs).sort()[0], v = yrs[k].values, first = v[yrs[k].dates.findIndex(d => d >= from)];
-    return { sub: `Cal ${k}: ${v[v.length - 1].toFixed(2)} ${cc === 'UK' ? '£' : '€'}/MWh, ${first ? ((v[v.length - 1] - first) >= 0 ? '+' : '') + (v[v.length - 1] - first).toFixed(2) : '–'} over ${p.win}` };
+    const C = await _muGet('contracts', 'history/fr_market_contracts.json');
+    const cc = p.country || 'FR', all = C && C[cc];
+    if (!all) { noDataMsg(cid, 'Forward history not available', ''); return null; }
+    const kinds = String(p.kinds || 'year').split(','), today = _muToday();
+    const from = _muAdd(today, -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
+    const ORDER = { month: 0, quarter: 1, season: 2, year: 3 }, CAP = { month: 6, quarter: 6, season: 4, year: 8 };
+    // contracts still to deliver, nearest first, a few of each type
+    const peak = p.load === 'peak', isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
+    // still to deliver (delivery not started), base or peak as chosen
+    const live = Object.entries(all).filter(([k, c]) => c && c.points && kinds.includes(c.kind) && (c.deliveryStart || '') > today && isPeak(k, c) === peak && Object.keys(c.points).some(d => d >= from))
+      .sort((a, b) => ORDER[a[1].kind] - ORDER[b[1].kind] || (a[1].deliveryStart < b[1].deliveryStart ? -1 : 1));
+    const per = {}; const pick = live.filter(([, c]) => (per[c.kind] = (per[c.kind] || 0) + 1) <= CAP[c.kind]);
+    if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
+    const dates = [...new Set(pick.flatMap(([, c]) => Object.keys(c.points).filter(d => d >= from)))].sort();
+    const PAL = { year: ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635'],
+      quarter: ['#22D3EE', '#FB923C', '#C084FC', '#4ADE80', '#F87171', '#FACC15'], month: ['#E6EDF3', '#93C5FD', '#FDA4AF', '#86EFAC', '#FCD34D', '#C4B5FD'] };
+    const n = {}; const lab = (k, c) => (c.marketName || k).replace(/^(FR|GE|DE|NL|UK)\s+/, '').replace(/\s+(base|peak)$/i, '').replace(/\s*\(.*\)$/, '');
+    const ds = pick.map(([k, c]) => { const i = (n[c.kind] = (n[c.kind] || 0) + 1) - 1;
+      return _fuelLineDs(lab(k, c), dates.map(d => c.points[d] != null ? c.points[d] : null), PAL[c.kind][i % PAL[c.kind].length],
+        { borderWidth: c.kind === 'year' ? 2.2 : 1.5, borderDash: c.kind === 'month' ? [3, 3] : c.kind === 'quarter' ? [6, 3] : c.kind === 'season' ? [10, 4] : [], spanGaps: true }); });
+    _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(cc === 'UK' ? '£/MWh' : '€/MWh') }, plugins: { legend: _muLegend() } }) }, 'forward-contracts-' + cc);
+    const y0 = pick.find(([, c]) => c.kind === 'year') || pick[0], pts = y0[1].points, ks = Object.keys(pts).filter(d => d >= from).sort();
+    const last = pts[ks[ks.length - 1]], first = pts[ks[0]], cur = cc === 'UK' ? '£' : '€';
+    return { sub: `${peak ? 'Peakload' : 'Baseload'} · ${pick.length} contracts · ${lab(y0[0], y0[1])}: ${last.toFixed(2)} ${cur}/MWh, ${(last - first >= 0 ? '+' : '') + (last - first).toFixed(2)} over ${p.win} · line style: solid = year, long dash = season, dash = quarter, dots = month · click a product in the legend to hide it` };
   },
 });
 
@@ -352,7 +369,7 @@ if (window.PKW) PKW.register({
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
       { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
     ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#7A93AB', font: { size: 9 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#7A93AB', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,.04)' } } } } });
+      scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } } } } });
   },
 });
 
@@ -373,13 +390,13 @@ if (window.PKW) PKW.register({
   css.textContent = `
   .mu-day{display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0}
   .mu-day-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-  .mu-day-t{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-  .mu-day-avg{font-family:'IBM Plex Mono',monospace;font-size:26px;color:var(--text)} .mu-day-avg small{font-size:11px;color:var(--text3)}
-  .mu-day-chg{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600} .mu-day-chg.up{color:var(--down);background:var(--down-dim)} .mu-day-chg.down{color:var(--up);background:var(--up-dim)}
+  .mu-day-t{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .mu-day-avg{font-family:'IBM Plex Mono',monospace;font-size:28px;margin-top:2px;color:var(--text)} .mu-day-avg small{font-size:11px;color:var(--text3)}
+  .mu-day-chg{font-size:12px;padding:3px 8px;border-radius:999px;font-weight:600} .mu-day-chg.up{color:var(--down);background:var(--down-dim)} .mu-day-chg.down{color:var(--up);background:var(--up-dim)}
   .mu-day-k{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .mu-day-k>div{background:var(--bg3);border:1px solid var(--border);border-left:3px solid;border-radius:6px;padding:8px 10px;font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:2px}
+  .mu-day-k>div{background:var(--bg3);border:1px solid var(--border);border-left:3px solid;border-radius:6px;padding:9px 12px;font-size:13px;color:var(--text2);display:flex;flex-direction:column;gap:2px}
   .mu-day-k .lo{border-left-color:var(--up)} .mu-day-k .hi{border-left-color:var(--down)}
-  .mu-day-k b{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text)} .mu-day-k span{font-size:11px;color:var(--text3)}
+  .mu-day-k b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text)} .mu-day-k span{font-size:12px;color:var(--text3)}
   .mu-day-c{position:relative;flex:1 1 auto;min-height:200px}
   .mu-news{list-style:none;margin:0;padding:0} .mu-news li{padding:7px 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
   .mu-news a{color:var(--text);font-size:12.5px;text-decoration:none} .mu-news a:hover{color:var(--accent)} .mu-news span{font-size:10.5px;color:var(--text3)}
@@ -404,7 +421,9 @@ window.PKSpot = {
     const sel = document.getElementById('cal-country'); if (!sel || !window.PKW) return;
     const c = sel.value || 'FR', sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
     const W = window._muCalWin || (window._muCalWin = { h: '3M', d: '6M' });
-    const hist = () => PKW.draw('fr-cal-history', 'cal-history', { country: c, win: W.h }).then(r => sub('cal-history-sub', r));
+    const kinds = [...document.querySelectorAll('#cal-kinds input:checked')].map(x => x.value).join(',') || 'year';
+    const load = (document.getElementById('cal-load') || {}).value || 'base';
+    const hist = () => PKW.draw('fr-cal-history', 'cal-history', { country: c, win: W.h, kinds, load }).then(r => sub('cal-history-sub', r));
     const drv = () => PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: W.d }).then(r => sub('cal-drivers-sub', r));
     hist(); drv();
     // period buttons in each card's header (the history goes back to 2022)
