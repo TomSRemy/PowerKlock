@@ -62,11 +62,25 @@
   }
 
   // Draw a chart widget into an existing canvas (page or dashboard).
+  // units for the value axes of charts drawn without one (checked over the whole catalogue: an axis never stays unnamed)
+  const UNITS = { 'cb-fr-avg': { y: 'MW' }, 'load-day': { y: 'GW' }, 'go-indic': { y: '€/MWh' }, 'go-cal1': { y: '€/MWh' }, 'go-cal': { y: '€/MWh' },
+    'go-spread': { y: '€/MWh' }, 'go-hist': { y: '€/MWh' }, 'go-wow': { y: '€/MWh' }, 'go-box': { y: '€/MWh' }, 'go-auct-vol': { y: 'MWh' },
+    'cap-compare': { y: 'GW' }, 'fr-fwd-strip': { x: 'delivery period' } };
+  function addUnits(id, canvasId) {
+    const u = UNITS[id], c = u && document.getElementById(canvasId), ch = c && window.Chart && Chart.getChart(c); if (!ch) return;
+    const sc = ch.config.options && ch.config.options.scales; if (!sc) return;
+    let changed = false;
+    Object.entries(u).forEach(([ax, text]) => { const a = sc[ax]; if (!a || (a.title && a.title.display && a.title.text)) return;
+      const tc = (a.ticks && a.ticks.color) || '#7A93AB';
+      a.title = { display: true, text, color: tc, font: { size: 11 } }; changed = true; });
+    if (changed) try { ch.update('none'); } catch (_) {}
+  }
   async function draw(id, canvasId, p) {
     const w = get(id);
     if (!w) return null;
     try {
       const res = await w.draw(canvasId, params(id, p));
+      addUnits(id, canvasId);
       if (w.pageCanvas === canvasId) markStar(w);
       else {   // the same chart drawn elsewhere on a page (France Morning…): a star too, with the settings it was drawn with
         const c = document.getElementById(canvasId);
