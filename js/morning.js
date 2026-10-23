@@ -332,7 +332,7 @@ async function _mrnMoves(k) {
   const s = await _mrnSummary();
   if (s && s.zones && s.zones.FR && s.zones.DE_LU) {
     const fr = s.zones.FR.slice(-1)[0], de = s.zones.DE_LU.find(r => r.d === fr.d);
-    if (fr && de) L.push(`<b>FR − DE</b> on ${_mrnDay(fr.d)}: ${sg(fr.avg - de.avg)} €/MWh (FR ${fr.avg.toFixed(1)}, DE ${de.avg.toFixed(1)}); 30-day FR average ${(() => { if (fr.roll30 != null) return fr.roll30.toFixed(1); const v = s.zones.FR.slice(-30).map(r => r.avg).filter(x => x != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; })()} €/MWh (the summary file leaves its rolling averages blank on the latest days).`);
+    if (fr && de) L.push(`<b>FR − DE</b> on ${_mrnDay(fr.d)}: ${sg(fr.avg - de.avg)} €/MWh (FR ${fr.avg.toFixed(1)}, DE ${de.avg.toFixed(1)}); 30-day FR average ${(() => { if (fr.roll30 != null) return fr.roll30.toFixed(1); const v = s.zones.FR.slice(-30).map(r => r.avg).filter(x => x != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; })()} €/MWh.`);
   }
   const y1 = k['Y+1'];
   if (y1 && y1.varD1Pct != null) L.push(`<b>Cal+1 FR</b> ${y1.value.toFixed(2)} €/MWh, ${sg(y1.varD1Pct, 2)}% on the day and ${sg(y1.varW1Pct || 0, 2)}% on the week (settlement ${y1.date}).`);
