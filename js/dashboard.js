@@ -250,6 +250,18 @@
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
     const host = document.getElementById('pkd-grid'); if (!grid || !host || !host.offsetParent) return;
     const h = cellH(host); if (h !== grid.getCellHeight()) { grid.cellHeight(h); setTimeout(() => host.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); }), 300); } }, 200); });
+  // the layout is locked unless "Edit layout" is on: no card moves by accident; while editing, a card dropped on
+  // another of the same size swaps with it, and every move or resize can be undone
+  let editing = false;
+  function setEditing(on) {
+    editing = !!on && !shared;
+    const page = document.getElementById('page-mydash'); if (page) page.classList.toggle('pkd-editing', editing);
+    const btn = document.getElementById('pkd-edit');
+    if (btn) { btn.textContent = editing ? '✓ Done' : '✎ Edit layout'; btn.classList.toggle('pk-btn-primary', editing); btn.classList.toggle('pk-btn-ghost', !editing); }
+    if (!grid) return;
+    grid.setStatic(!editing);
+    if (!editing) { syncFromGrid(board()); save(); }
+  }
   function render() {
     const host = document.getElementById('pkd-grid');
     if (!host || !window.GridStack) return;
@@ -264,7 +276,7 @@
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
     grid = GridStack.init({
       column: COLS, cellHeight: cellH(host), margin: 6, float: false, animate: true,
-      handle: '.pkd-drag', draggable: { handle: '.pkd-drag', cancel: '.pkd-sec-move, .pkd-ic, [contenteditable="plaintext-only"]' }, resizable: { handles: 'se' }, staticGrid: !!shared,
+      handle: '.pkd-drag', draggable: { handle: '.pkd-drag', cancel: '.pkd-sec-move, .pkd-ic, [contenteditable="plaintext-only"]' }, resizable: { handles: 'se' }, staticGrid: !!shared || !editing,
       columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
     }, host);
     observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
@@ -289,7 +301,11 @@
       });
       save();
     });
+    // in edit mode, each move or resize can be undone (the layout as it was when the card was picked up)
+    grid.on('dragstart resizestart', () => { syncFromGrid(b); snapshot(b); });
+    grid.on('dragstop', () => setTimeout(() => toast('Card moved', 'Undo', undoMove), 50));
     grid.on('resizestop', (_e, el) => {
+      setTimeout(() => toast('Card resized', 'Undo', undoMove), 50);
       const c = el.querySelector('canvas');
       const ch = c && window.Chart && Chart.getChart(c);
       if (ch) ch.resize();
@@ -628,7 +644,7 @@
   function undoMove() {
     const b = board(); if (!undoLayout || undoLayout.board !== b.id) return;
     undoLayout.items.forEach(u => { const it = b.items.find(x => x.i === u.i); if (it) Object.assign(it, { x: u.x, y: u.y, w: u.w, h: u.h }); });
-    undoLayout = null; save(); render(); toast('Section move undone');
+    undoLayout = null; save(); render(); toast('Undone');
   }
   // blocks of the dashboard: what sits before the first section, then each section with every card whose top
   // is at or below it and above the next section (side by side included); sections are made full width
@@ -986,6 +1002,7 @@
       document.getElementById('pkd-add')?.addEventListener('click', openCatalog);
       document.getElementById('pkd-add-empty')?.addEventListener('click', openCatalog);
       document.getElementById('pkd-add-sec')?.addEventListener('click', addSection);
+      document.getElementById('pkd-edit')?.addEventListener('click', () => setEditing(!editing));
       document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
       document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
       document.getElementById('pkd-share')?.addEventListener('click', openShare);

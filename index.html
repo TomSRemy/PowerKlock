@@ -1499,7 +1499,7 @@
   .pkd-shared-t span { font-size: 11.5px; color: var(--text3); }
   .pkd-shared-a { display: flex; gap: 8px; flex-wrap: wrap; }
   .pkd-tab-shared { border-style: dashed !important; }
-  #page-mydash.pkd-viewing #pkd-add-sec, #page-mydash.pkd-viewing #pkd-add-note, #page-mydash.pkd-viewing #pkd-menu,
+  #page-mydash.pkd-viewing #pkd-add-sec, #page-mydash.pkd-viewing #pkd-edit, #page-mydash.pkd-viewing #pkd-add-note, #page-mydash.pkd-viewing #pkd-menu,
   #page-mydash.pkd-viewing #pkd-add, #page-mydash.pkd-viewing .pkd-hint, #page-mydash.pkd-viewing .pkd-del,
   #page-mydash.pkd-viewing .pkd-cfg, #page-mydash.pkd-viewing .pkd-empty .pk-btn-primary { display: none !important; }
   #page-mydash.pkd-viewing .pkd-drag { cursor: default; }
@@ -1541,7 +1541,10 @@
   .pkd-empty-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
   .pkd-item { display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden !important; }
   .pkd-item[data-kind="s"] { background: none; border: none; border-radius: 0; }
-  .pkd-head { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 11px 14px 8px; cursor: grab; flex: none; }
+  .pkd-head { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 11px 14px 8px; cursor: default; flex: none; }
+  #page-mydash.pkd-editing .pkd-head, #page-mydash.pkd-editing .pkd-section { cursor: grab; }
+  #page-mydash.pkd-editing .grid-stack-item-content { outline: 1px dashed rgba(20,211,169,.35); outline-offset: -1px; }
+  #page-mydash:not(.pkd-editing) .pkd-section { cursor: default; }
   .pkd-head:active { cursor: grabbing; }
   .pkd-titles { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .pkd-title { font: 600 14px 'Outfit', 'Inter', sans-serif; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7465,7 +7468,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="pkd-tabs" id="pkd-tabs" role="tablist" aria-label="Dashboards"></div>
         <div class="pkd-tools">
           <span class="pkd-account" id="pkd-account"></span>
-          <button class="pk-btn-ghost" id="pkd-add-sec" type="button" title="Add a full-width section title">+ Section</button>
+          <button class="pk-btn-ghost" id="pkd-edit" type="button" title="Unlock the layout to move and resize cards; Done locks it again">✎ Edit layout</button><button class="pk-btn-ghost" id="pkd-add-sec" type="button" title="Add a full-width section title">+ Section</button>
           <button class="pk-btn-ghost" id="pkd-add-note" type="button" title="Add a text note">+ Note</button>
           <button class="pk-btn-ghost" id="pkd-pptx" type="button" title="Export this dashboard to PowerPoint (one slide per chart)">⤓ PowerPoint</button>
           <button class="pk-btn-ghost" id="pkd-share" type="button" title="Copy a link to this dashboard, or to the dashboard alone">↗ Share</button>
@@ -7473,7 +7476,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <button class="pk-btn-primary" id="pkd-add" type="button">+ Add charts</button>
         </div>
       </div>
-      <div class="pkd-hint">Drag a card by its title bar, resize it from the bottom-right corner. ☆ on any chart of the site adds it here.</div>
+      <div class="pkd-hint">Layout locked: click ✎ Edit layout to move a card by its title bar or resize it from the bottom-right corner (each change can be undone). ☆ on any chart of the site adds it here.</div>
       <div class="pkd-empty" id="pkd-empty" hidden>
         <div class="pkd-empty-title">This dashboard is empty</div>
         <div class="pkd-empty-sub">Pick charts from the catalogue, or click ☆ on any chart of the site.</div>
