@@ -303,6 +303,18 @@
     o.scen = [['Base', 1, 0, 0], ['Cannibalisation +' + volStress + ' %', 1, vs, 0], ['Cannibalisation −' + volStress + ' %', 1, -vs, 0], ['Spot +' + spotStress + ' %', 1 + ss, 0, 0], ['Spot −' + spotStress + ' %', 1 - ss, 0, 0],
       ['Volume +' + volStress + ' %', 1, 0, vs], ['Volume −' + volStress + ' %', 1, 0, -vs], ['Total stress', 1 - ss, vs, -vs], ['Total bull', 1 + ss, -vs, vs]]
       .map(([name, sm, da, va]) => { const base = volume * (1 + va) / 1000 * n, v = sd => base * (sm * o.refP * (1 - (sd + da)) - imb + o.goP - o.ppa); return { name, p10: v(cHi), p50: v(c50), p90: v(cLo) }; });
+    // beyond history: amplified gaps, distribution tails and named stresses (the history has 2022 once and no
+    // 2030 solar fleet): shocks applied on top of the same low / central / high shape discount
+    const sdMax = Math.max(...histSd), sdMed = percentile(histSd, 50), amp = Math.max(0, sdMax - sdMed);
+    const tail = st.method === 'pct' ? percentile(histSd, 99) : sdW + 2.33 * sMid;
+    o.scenX = [['Worst past year, gap doubled', 1, sdMax + amp - c50, 0, 'shape discount = worst past year + (worst − median) again'],
+      ['Tail: P99 of the shape discount', 1, tail - c50, 0, st.method === 'pct' ? '99th percentile of the past discounts' : 'projection + 2.33 σ'],
+      ['Solar fleet doubles (PPE3 high)', 0.85, 0.12, 0, 'spot −15 %, shape discount +12 pts: midday prices sink'],
+      ['Gas crisis like 2022', 1.9, -0.05, 0, 'spot ×1.9, shape discount −5 pts: gas sets the price at all hours'],
+      ['Price collapse, many negative hours', 0.6, 0.10, 0, 'spot −40 %, shape discount +10 pts'],
+      ['Poor weather year', 1, 0, -0.15, 'volume −15 %'],
+      ['Everything at once (extreme)', 0.6, 0.15, -0.15, 'spot −40 %, shape discount +15 pts, volume −15 %']]
+      .map(([name, sm, da, va, how]) => { const base = volume * (1 + va) / 1000 * n, v = sd => base * (sm * o.refP * (1 - (sd + da)) - imb + o.goP - o.ppa); return { name, how, p10: v(cHi), p50: v(c50), p90: v(cLo) }; });
     if (o.mc) o.mcAt = mcEval(o, o.ppa);
     return o;
   }
@@ -574,7 +586,9 @@
     // scenarios
     $('pp-scen').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Scenario · total over ${o.tenor.length} years</th><th>Low k€</th><th>Central k€</th><th>High k€</th></tr></thead><tbody>` +
       o.scen.map(r => `<tr><td style="text-align:left">${r.name}</td>${[r.p10, r.p50, r.p90].map(v => `<td class="${v >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(v)}</td>`).join('')}</tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">${build ? 'Low / high: projected shape discount ± 1.28 σ (P90 / P10 of the projection).' : 'Low / high: 90th / 10th percentile of the historical shape discount.'} Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production. No hedge in this table.</div>`;
+      `<tr class="mu-sep"><td colspan="4" style="text-align:left;color:var(--accent);font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase">Beyond history</td></tr>` +
+      (o.scenX || []).map(r => `<tr><td style="text-align:left" title="${r.how}">${r.name}<div class="fuel-note" style="margin:0">${r.how}</div></td>${[r.p10, r.p50, r.p90].map(v => `<td class="${v >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(v)}</td>`).join('')}</tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">${build ? 'Low / high: projected shape discount ± 1.28 σ (P90 / P10 of the projection).' : 'Low / high: 90th / 10th percentile of the historical shape discount.'} Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production. Beyond history: shocks the past years never showed (amplified gap, 1-in-100 tail, named situations), on the same low / central / high discount. No hedge in this table.</div>`;
     // asset diagnostics
     const ad = $('pp-asset-info');
     if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv !== 'all' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
