@@ -1192,7 +1192,17 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 
   async function loadAsset(f, name) {
     $('pp-status').textContent = 'Reading ' + name + '…';
-    try { const rows = await window.PKLoadCurve.readFile(f); S.asset = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' }); S.years = null; S.assetName = name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false; run(); }
+    try {
+      const rows = await window.PKLoadCurve.readFile(f), a = window.PKLoadCurve.build(rows, { unit: $('pp-unit').value, stamp: 'auto' });
+      // a production curve in negative values (consumption sign convention): read as production
+      let neg = 0, pos = 0; a.slots.forEach(x => x.forEach(v => { if (v < 0) neg++; else if (v > 0) pos++; }));
+      const flipped = neg > pos; if (flipped) a.slots.forEach(x => { for (let q = 0; q < x.length; q++) if (x[q] != null) x[q] = Math.abs(x[q]); });
+      const days = a.slots.size;
+      S.asset = a; S.years = null; S.assetName = name.replace(/\.[^.]+$/, ''); $('pp-asset-clear').hidden = false;
+      await run();
+      const warn = [flipped ? 'values were negative: read as production' : '', days < 330 ? `only ${days} days: a capture rate needs a full year (seasons weigh differently), the national profile prices the missing months poorly — read the result with care` : ''].filter(Boolean).join(' · ');
+      if (warn) $('pp-status').textContent = name + ': ' + warn;
+    }
     catch (e) { $('pp-status').textContent = e.message; }
   }
   function wire() {
