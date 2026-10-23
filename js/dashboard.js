@@ -425,7 +425,7 @@
     window.pkOpenOrUpdate({
       title: inner.querySelector('.pkd-title').textContent,
       subtitle: inner.querySelector('.pkd-sub').textContent,
-      filenameStem: it.wid, source: (PKW.get(it.wid) || {}).source || '',
+      filenameStem: it.wid, source: (PKW.get(it.wid) || {}).source || '', noLogo: true,   // a dashboard's screenshots carry no PowerKlock logo
       storageKey: 'fs:pkd:' + it.wid,
       table: { html: typeof pkAutoTable === 'function' ? pkAutoTable(Chart.getChart(c)) : '' },
       chartSource: { rebuildInto: dst => pkCloneCanvasChart(c, dst) },

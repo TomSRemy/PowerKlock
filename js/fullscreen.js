@@ -156,9 +156,9 @@
             <div class="pk-fs-screenshot-title">${esc(cfg.title || '')}</div>
             ${cfg.subtitle ? `<div class="pk-fs-screenshot-subtitle">${esc(cfg.subtitle)}</div>` : ''}
           </div>
-          <div class="pk-fs-screenshot-logo">
+          ${cfg.noLogo ? '' : `<div class="pk-fs-screenshot-logo">
             <img src="assets/logo-header.png" alt="PowerKlock" class="pk-fs-screenshot-logo-img">
-          </div>
+          </div>`}
         </div>
         <div class="pk-fs-screenshot-chart-wrap">
           <canvas class="pk-fs-screenshot-chart"></canvas>
