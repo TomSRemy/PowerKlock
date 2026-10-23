@@ -129,7 +129,7 @@ function renderNews(items) {
   const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
   let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
     (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
-    (!src || i.source === src) && (!cty || (i.countries || []).includes(cty)) &&
+    (!src || i.source === src) && (!cty || (i.countries || []).includes(cty) || (cty === 'FR' && _newsIsFr(i))) &&   // France: same rule as the France focus
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
   if (newsFilter === 'movers') filtered = filtered.filter(i => (i.impact || 0) >= 3 && Date.now() - i.date < 72 * 3600e3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
@@ -166,7 +166,7 @@ function _newsFillSelects(items) {
   const cnt = {}; items.forEach(i => { cnt[i.source] = (cnt[i.source] || 0) + 1; });
   fill('news-src', Object.keys(cnt).sort((a, b) => a.localeCompare(b)).map(k => [k, k + ' (' + cnt[k] + ')']), 'All sources');
   const CN = { FR: 'France', EU: 'Europe / EU', DE: 'Germany', BE: 'Belgium', ES: 'Spain', IT: 'Italy', NL: 'Netherlands', UK: 'United Kingdom' };
-  const cc = [...new Set(items.flatMap(i => i.countries || []))].sort((a, b) => Object.keys(CN).indexOf(a) - Object.keys(CN).indexOf(b));
+  const cc = [...new Set(['FR', ...items.flatMap(i => i.countries || [])])].sort((a, b) => Object.keys(CN).indexOf(a) - Object.keys(CN).indexOf(b));
   fill('news-cty', cc.map(c => [c, CN[c] || c]), 'All countries');
 }
 

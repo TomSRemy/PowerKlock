@@ -244,7 +244,7 @@
 
   // row height follows the screen width: on a large screen every chart grows in height as well as in width
   //   (64 px up to ~1300 px of grid, then proportional, capped at 120 px)
-  const cellH = () => Math.round(Math.max(CELL_H, Math.min(120, (window.innerWidth - 260) / 20)));   // the menu's width taken off even when hidden: the shared view keeps PowerKlock's proportions
+  const cellH = () => Math.round(Math.max(56, Math.min(96, (window.innerWidth - 260) / 24)));   // 64 px at ~1800 px wide, 72 at 2000   // the menu's width taken off even when hidden: the shared view keeps PowerKlock's proportions
   let resizeT = null;
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
     const host = document.getElementById('pkd-grid'); if (!grid || !host || !host.offsetParent) return;
@@ -315,8 +315,11 @@
     if (it.t === 's') {
       inner.innerHTML = `<div class="pkd-section pkd-drag">
           <h2 class="pkd-section-title" contenteditable="${shared ? 'false' : 'plaintext-only'}" spellcheck="false" data-ph="Section title">${esc(it.title)}</h2>
+          <span class="pkd-sec-move"><button class="pkd-ic pkd-sec-up" title="Move the whole section up (with its charts)" type="button">▲</button><button class="pkd-ic pkd-sec-dn" title="Move the whole section down (with its charts)" type="button">▼</button></span>
           <button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
         </div>`;
+      inner.querySelector('.pkd-sec-up').addEventListener('click', e => { e.stopPropagation(); moveSection(it.i, -1); });
+      inner.querySelector('.pkd-sec-dn').addEventListener('click', e => { e.stopPropagation(); moveSection(it.i, 1); });
       const h = inner.querySelector('.pkd-section-title');
       h.addEventListener('blur', () => { it.title = h.textContent.trim(); save(); });
       h.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); h.blur(); } });
@@ -600,6 +603,20 @@
   function hideBoot() { const b = document.getElementById('pk-boot'); if (!b || b.dataset.going) return; b.dataset.going = '1';
     setTimeout(() => { b.classList.add('gone'); setTimeout(() => b.remove(), 600); }, Math.max(0, 1200 - (Date.now() - bootAt))); }
   setTimeout(hideBoot, 8000);
+  // a section moves with everything under it, down to the next section: blocks are swapped, each keeps its layout
+  function moveSection(id, dir) {
+    const b = board(), its = b.items.slice().sort((x, y) => (x.y - y.y) || (x.x - y.x));
+    const blocks = []; let cur = { items: [] };
+    its.forEach(it => { if (it.t === 's') { if (cur.items.length) blocks.push(cur); cur = { items: [it], sec: it.i }; } else cur.items.push(it); });
+    if (cur.items.length) blocks.push(cur);
+    const k = blocks.findIndex(bl => bl.sec === id), j = k + dir;
+    if (k < 0 || j < 0 || j >= blocks.length || !blocks[j].sec) return;   // never above the charts that sit before the first section
+    [blocks[k], blocks[j]] = [blocks[j], blocks[k]];
+    let y = 0;
+    blocks.forEach(bl => { const top = Math.min(...bl.items.map(it => it.y)); let h = 0;
+      bl.items.forEach(it => { it.y = y + (it.y - top); h = Math.max(h, it.y + it.h - y); }); y += h; });
+    save(); render();
+  }
   function renderTabs() {
     const el = document.getElementById('pkd-tabs');
     if (!el || !state) return;
