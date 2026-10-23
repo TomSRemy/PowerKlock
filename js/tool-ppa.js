@@ -658,7 +658,7 @@
         tooltip: { enabled: true, filter: it => !it.dataset.trend, callbacks: { label: c => c.raw.gw ? ` France PPE3 ${c.raw.yr}: ${c.raw.gw} GW` : ` ${CNAME[c.raw.c]} ${c.raw.yr}: ${c.raw.x.toFixed(1)} ${mode === 'gw' ? 'GW' : '%'} · capture ${c.raw.y.toFixed(1)} %` } } },
         layout: { padding: { right: 24, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed, ' + axName), { type: 'linear', min: 0 }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-countries');
     const fit = ds.filter(d => d.trend && !d.hidden).map(d => `${d.cc} R² ${d.r2.toFixed(2)}`).join(', ');
-    const e = document.getElementById(subId); if (e) e.textContent = `One point per year, 2022 left out · dashed: trend of each country${fit ? ' (' + fit + ')' : ''} · ${st.conv === 'pos' ? 'hours > 0 €' : 'all hours'} · click a country in the legend to hide or show it`;
+    const e = document.getElementById(subId); if (e) e.textContent = `One point per year, 2022 left out · dashed: trend of each country${fit ? ' (' + fit + ')' : ''} · ${st.conv === 'pos' ? 'hours > 0 €' : 'all hours'} · click a country in the legend to hide or show it · Energy-Charts output for every country (France differs from the RTE-based charts by 2–3 points on solar)`;
   }
 
   // hour by hour: price of the hour (% of the month's average) against the solar or wind share of the load that hour,
@@ -753,7 +753,7 @@
       _fuelChart(ids.xcy, { type: 'line', data: { labels: yrs.map(y => D.cc.FR && D.cc.FR.years[y] && !D.cc.FR.years[y].complete ? y + ' YTD' : y), datasets: ds4 }, plugins: i22 >= 0 ? [shadePlugin([i22])] : [],
         options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
           scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-capture-countries-years');
-      setT('xcySub', `${st.conv === 'pos' ? 'Hours > 0 €' : 'All hours'} · shaded: 2022 gas crisis · dashed: year to date · coupled markets move together`);
+      setT('xcySub', `${st.conv === 'pos' ? 'Hours > 0 €' : 'All hours'} · shaded: 2022 gas crisis · dashed: year to date · coupled markets move together · output from Energy-Charts (ENTSO-E) for every country, so France here differs from the RTE-based rate of the other charts (solar 2025: 58.8 % vs 55.9 %)`);
     }
     // negative-price hours: history (YTD annualised, lighter) and projection with the solar build-out
     if (has('negh')) {
