@@ -371,6 +371,7 @@ async function _mrnNews() {
 
 async function renderMorning() {
   _mrnNews();
+  if (window.PKBrief) { const b = document.getElementById('mrn-brief'), m = document.getElementById('mrn-30d'); if (b) PKBrief.brief(b); if (m) PKBrief.next30(m); }
   const upd = document.getElementById('mrn-date');
   if (upd) upd.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
