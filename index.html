@@ -1523,7 +1523,6 @@
   @keyframes pkBootIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @keyframes pkBootDot { 0% { transform: translate(0, 0) scale(1); } 25% { transform: translate(0, -18px) scale(.8); } 50% { transform: translate(0, 0) scale(1.15); } 62% { transform: translate(0, 0) scale(1); } 100% { transform: translate(0, 0) scale(1); } }
   @keyframes pkBootBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
-  @media (prefers-reduced-motion: reduce) { .pk-boot-dot, .pk-boot-bar i { animation: none; } }
   body.pk-solo .layout { padding-top: 0; }
   body.pk-solo .page:not(#page-mydash), body.pk-solo #pk-loader, body.pk-solo .pk-status-badge { display: none !important; }
   body.pk-solo #page-mydash { display: block !important; }
@@ -3151,7 +3150,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
   document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>');
   function pkBall(dot, word) {
     // the dot bounces like a ball in its slot, then, if loading lasts, hops all around the word and drops back in
-    if (!dot || !word || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    if (!dot || !word) return;
     dot.style.animation = 'none';
     var R = 5.5, segs = [], T0 = 0;
     function build() {
