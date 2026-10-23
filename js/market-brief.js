@@ -62,7 +62,7 @@
   .wk-l{display:block} .wk-l b{color:var(--text);font-weight:600}
   .wk-n{font-size:11.5px;color:var(--text3)} .wk-n b{font-weight:600} .wk-ok{color:var(--accent)} .wk-ko{color:#fbbf24}
   .wk-foot{font-size:11px;color:var(--text3)}
-  @container (max-width:760px){.wk-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.wk-row{grid-template-columns:auto minmax(0,1fr);row-gap:3px}.wk-hr{display:none}.wk-tx,.wk-cn{grid-column:1/-1}.wk-cn{border-left:0;padding-left:0}.wk-cn:before{content:'Notes vs prix · ';font-size:11px;color:var(--text3)}}`;
+  @container (max-width:760px){.wk-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.wk-row{grid-template-columns:auto minmax(0,1fr);row-gap:3px}.wk-hr{display:none}.wk-tx,.wk-cn{grid-column:1/-1}.wk-cn{border-left:0;padding-left:0}.wk-cn:before{content:'Analystes vs prix · ';font-size:11px;color:var(--text3)}}`;
   if (!document.getElementById('wk-css')) { const s = document.createElement('style'); s.id = 'wk-css'; s.textContent = css2; document.head.appendChild(s); }
   const fr = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ',');
   const nf = (v, d = 2) => v == null ? '–' : v.toFixed(d).replace('.', ',');
@@ -97,14 +97,15 @@
   }
   // the right-hand column: what the notes said against what the price did
   function verdict(tones, move, isCtx) {
-    if (!tones || !tones.length) return '<span class="wk-n">pas de note reçue cette semaine sur ce marché</span>';
-    const up = tones.filter(t => t > 0).length, dn = tones.filter(t => t < 0).length, n = tones.length;
-    const said = up && dn ? 'partagées' : up ? 'à la hausse' : dn ? 'à la baisse' : 'neutres', who = n > 1 ? `les ${n} notes` : 'la note';
-    if (isCtx) return `<span class="wk-n">${who} ${n > 1 ? 'voient' : 'voit'} un risque ${up > dn ? '<b class="wk-up">haussier</b>' : dn > up ? '<b class="wk-dn">baissier</b>' : 'équilibré'} pour les prix</span>`;
-    if ((up && dn) || (!up && !dn) || move == null || Math.abs(move) < 0.5) return `<span class="wk-n">${who} : ${n > 1 ? 'avis ' : 'ton '}${said} · prix ${move == null ? '–' : fr(move) + ' %'}</span>`;
+    if (!tones || !tones.length) return '<span class="wk-n">pas de commentaire d’analyste reçu cette semaine</span>';
+    const up = tones.filter(t => t > 0).length, dn = tones.filter(t => t < 0).length;
+    if (isCtx) return `<span class="wk-n">les analystes voient un risque ${up > dn ? '<b class="wk-up">haussier</b>' : dn > up ? '<b class="wk-dn">baissier</b>' : 'équilibré'} pour les prix</span>`;
+    const exp = up && dn ? 'avis partagés' : up ? 'hausse attendue' : dn ? 'baisse attendue' : 'pas de sens annoncé';
+    if ((up && dn) || (!up && !dn) || move == null || Math.abs(move) < 0.5) return `<span class="wk-n">Analystes : ${exp} · prix ${move == null ? '–' : fr(move) + ' % sur 7 jours'}</span>`;
     const ok = (up > 0) === (move > 0);
-    return `<span class="wk-n"><b class="${ok ? 'wk-ok' : 'wk-ko'}">${ok ? '✓ cohérent' : '✗ décalé'}</b> · ${who} ${n > 1 ? 'annoncent' : 'annonce'} ${said === 'à la hausse' ? 'une hausse' : 'une baisse'}, le prix a fait ${fr(move)} % sur 7 jours</span>`;
+    return `<span class="wk-n"><b class="${ok ? 'wk-ok' : 'wk-ko'}">${ok ? '✓ vu juste' : '✗ raté'}</b> · analystes : ${exp} ; le prix a fait ${fr(move)} % sur 7 jours</span>`;
   }
+
 
   async function brief(host) {
     const [cs, chain, sum, nt] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), window.pkSummary ? window.pkSummary().catch(() => null) : null, notes()]);
@@ -145,9 +146,9 @@
         `<span class="wk-l"><b>Effet :</b> ${Math.abs(d) < 0.5 ? 'quasi nul' : `${fr(0.37 * d)} €/MWh`} sur le coût d’une centrale gaz.</span>`], verdict(nt.eua, w)]); }
     if (!T.length && !R.length) { host.innerHTML = '<div class="fuel-note">Données de marché indisponibles.</div>'; return; }
     host.innerHTML = `<div class="wk"><div class="wk-tiles">${T.join('')}</div>
-      <div><div class="wk-row wk-hr"><span class="wk-hd">Marché</span><span class="wk-hd">7 jours</span><span class="wk-hd">Ce qui s’est passé</span><span class="wk-hd">Les notes ont-elles vu juste ?</span></div>
+      <div><div class="wk-row wk-hr"><span class="wk-hd">Marché</span><span class="wk-hd">7 jours</span><span class="wk-hd">Ce qui s’est passé</span><span class="wk-hd">Les analystes ont-ils vu juste ?</span></div>
       ${R.map(([k, m, c, ls, v]) => `<div class="wk-row"><span class="wk-k">${k}</span><span class="wk-cm"><span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span><span class="wk-cn">${v}</span></div>`).join('')}</div>
-      <div class="wk-foot">Rouge = prix en hausse, vert = en baisse. Mini-courbes : 60 jours. Dernière colonne : nous lisons les notes de marché reçues ces 10 derniers jours (rapport quotidien d’un fournisseur, note hebdomadaire par e-mail) et regardons si elles annoncent une hausse ou une baisse ; on compare au mouvement réel du prix sur 7 jours. ✓ cohérent = la note va dans le sens du marché, ✗ décalé = le marché a fait l’inverse.</div></div>`;
+      <div class="wk-foot">Rouge = prix en hausse, vert = en baisse. Mini-courbes : 60 jours. Dernière colonne : les commentaires de marché publiés par des fournisseurs d’énergie ces 10 derniers jours (rapport quotidien, lettre hebdomadaire) annonçaient-ils une hausse ou une baisse ? On compare au mouvement réel du prix sur 7 jours : ✓ vu juste, ✗ raté.</div></div>`;
   }
 
   async function next30(host) {
@@ -190,7 +191,7 @@
 
   if (window.PKW) {
     PKW.register({ id: 'market-brief', kind: 'html', title: 'Marchés de l’énergie · la semaine', category: 'intel', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
-      desc: 'La semaine des marchés de l’énergie en un coup d’œil : six prix avec leur variation et leur courbe sur 60 jours, puis un digest par marché (contexte, pétrole, gaz, électricité, carbone) et ce que disaient les notes de marché face au mouvement réel.', html: brief });
+      desc: 'La semaine des marchés de l’énergie en un coup d’œil : six prix avec leur variation et leur courbe sur 60 jours, puis un digest par marché (contexte, pétrole, gaz, électricité, carbone) et ce qu’annonçaient les analystes face au mouvement réel.', html: brief });
     PKW.register({ id: 'next-30-days', kind: 'html', title: 'France power · the next 30 days', category: 'forwards', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
       desc: 'What the coming month looks like for French power: month-ahead forward, weather week by week against normal (temperature, wind, sun), nuclear availability and gas storage, with what each means for prices.', html: next30 });
   }

@@ -51,7 +51,7 @@ function renderNewsSources() {
   const host = document.getElementById('news-sources'); if (!host) return;
   const src = window._newsSources;
   const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
-  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? '🔎 ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
@@ -144,7 +144,7 @@ function renderNews(items) {
   }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsEsc(t)}</span>`).join(' ');
+    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
     const mine = _newsMine(item, kw);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
@@ -170,12 +170,17 @@ function _newsFillSelects(items) {
   fill('news-cty', cc.map(c => [c, CN[c] || c]), 'All countries');
 }
 
-// 👍 / 👎 on each article (signed in): public.news_vote (warehouse migration 015); the news run learns from them
+// line icons in the site's style (no emojis)
+const _NEWS_IC = {"movers": "<polyline points=\"22 7 13.5 15.5 8.5 10.5 2 17\"/><polyline points=\"16 7 22 7 22 13\"/>", "geopolitics": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"2\" y1=\"12\" x2=\"22\" y2=\"12\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z\"/>", "deal": "<rect x=\"2\" y=\"7\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16\"/>", "build": "<path d=\"M2 20h20\"/><path d=\"M5 20V10l7-5 7 5v10\"/><path d=\"M10 20v-5h4v5\"/>", "power": "<polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/>", "gas": "<path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/>", "carbon": "<path d=\"M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z\"/>", "regulation": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/><line x1=\"16\" y1=\"13\" x2=\"8\" y2=\"13\"/><line x1=\"16\" y1=\"17\" x2=\"8\" y2=\"17\"/>", "markets": "<line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/>", "watch": "<circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/>", "up": "<path d=\"M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3\"/>", "down": "<path d=\"M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17\"/>"};
+const _newsIc = k => _NEWS_IC[k] ? `<svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${_NEWS_IC[k]}</svg>` : '';
+window._newsIc = _newsIc;
+
+// useful / not useful on each article (signed in): public.news_vote (warehouse migration 015); the news run learns from them
 //   which sources, subjects and words matter (data/news_prefs.json) and ranks the next articles with it
 const _newsVotes = (() => { try { return JSON.parse(localStorage.getItem('pk-news-votes') || '{}'); } catch (_) { return {}; } })();
 function _newsVoteBtns(link) {
   const v = _newsVotes[link] || 0;
-  return `<button type="button" class="nv${v === 1 ? ' on' : ''}" data-v="1" title="Useful: more like this">👍</button><button type="button" class="nv${v === -1 ? ' on' : ''}" data-v="-1" title="Not useful: fewer like this">👎</button>`;
+  return `<button type="button" class="nv${v === 1 ? ' on' : ''}" data-v="1" title="Useful: more like this">${_newsIc('up')}</button><button type="button" class="nv${v === -1 ? ' on' : ''}" data-v="-1" title="Not useful: fewer like this">${_newsIc('down')}</button>`;
 }
 async function _newsVote(link, vote, box) {
   const item = (newsData || []).find(i => i.link === link); if (!item) return;
@@ -231,11 +236,11 @@ function loadOverview() {
   </tr>`).join('');
   const pct = l => l && l.pct != null ? `${l.pct >= 0 ? 'up' : 'down'} ${Math.abs(l.pct).toFixed(2)}% vs prior close` : '';
   document.getElementById('market-status').innerHTML = `
-    <div style="margin-bottom:10px"><span style="color:var(--accent)">⚡ Power</span><br>
+    <div style="margin-bottom:10px"><span style="color:var(--accent)">${_newsIc('power')}Power</span><br>
     ${fr ? `FR day-ahead at ${fr.today.toFixed(2)} €/MWh. ${fr.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}` : 'Day-ahead prices not loaded.'}</div>
-    <div style="margin-bottom:10px"><span style="color:#C4A57B">⛽ Gas</span><br>
+    <div style="margin-bottom:10px"><span style="color:#C4A57B">${_newsIc('gas')}Gas</span><br>
     ${ttf ? `TTF day-ahead at ${ttf.v.toFixed(2)} €/MWh, ${pct(ttf)}.` : 'Gas data not loaded.'}</div>
-    <div><span style="color:#A87DC4">🌿 Carbon</span><br>
+    <div><span style="color:#A87DC4">${_newsIc('carbon')}Carbon</span><br>
     ${eua ? `EUA ${P.contractLabel('eua')} at ${eua.v.toFixed(2)} €/t, ${pct(eua)}.` : 'Carbon data not loaded.'}</div>
   `;
 }
