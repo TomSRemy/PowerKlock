@@ -6,16 +6,102 @@
    "nuclearCapacity": {
     "actualMW": 40936.77,
     "forecastMW": 49140
+   },
+   "forwardCurve": {
+    "M+1": 180.39,
+    "M+2": 176.04,
+    "M+3": 189.94,
+    "Q+1": 175.16,
+    "Q+2": 73.23,
+    "Q+3": 89.69,
+    "S+1": 81.46,
+    "S+2": 112.51,
+    "Y+1": 112.7,
+    "Y+2": 68.25,
+    "Y+3": 61.18
+   },
+   "generationMix": {
+    "gas": 1,
+    "wind": 12.68,
+    "solar": 2.82,
+    "nuclear": 37.94,
+    "hydro": 2.53,
+    "other": 2.12
    }
   },
   "UK": {
-   "spot": 162.95
+   "spot": 162.95,
+   "forwardCurve": {
+    "M+1": 174.34,
+    "M+2": 172.52,
+    "M+3": 187.6,
+    "Q+1": 177.92,
+    "Q+2": 134.18,
+    "Q+3": 125.69,
+    "S+1": 129.91,
+    "S+2": 129.68,
+    "Y+1": 141.36,
+    "Y+2": 96.66,
+    "Y+3": 78.74
+   },
+   "generationMix": {
+    "gas": 6.66,
+    "wind": 7.34,
+    "solar": 4.14,
+    "nuclear": 4.52,
+    "hydro": 0.52,
+    "biomass": 2.85,
+    "other": 1.14
+   }
   },
   "DE": {
-   "spot": 137.59
+   "spot": 137.59,
+   "forwardCurve": {
+    "M+1": 198.02,
+    "M+2": 191.81,
+    "M+3": 206.25,
+    "Q+1": 193.42,
+    "Q+2": 123.86,
+    "Q+3": 133.06,
+    "S+1": 128.46,
+    "S+2": 147.1,
+    "Y+1": 149.8,
+    "Y+2": 111.63,
+    "Y+3": 94.82
+   },
+   "generationMix": {
+    "gas": 3.61,
+    "wind": 32.86,
+    "solar": 7.57,
+    "nuclear": 0,
+    "coal": 12.23,
+    "hydro": 0.14,
+    "other": 0.31
+   }
   },
   "NL": {
-   "spot": 133.52
+   "spot": 133.52,
+   "forwardCurve": {
+    "M+1": 199.53,
+    "M+2": 195.11,
+    "M+3": 209.9,
+    "Q+1": 195.78,
+    "Q+2": 123.12,
+    "Q+3": 130.49,
+    "S+1": 126.83,
+    "S+2": 147.42,
+    "Y+1": 149.78,
+    "Y+2": 107.99,
+    "Y+3": 94.12
+   },
+   "generationMix": {
+    "gas": 1.56,
+    "wind": 4.14,
+    "solar": 0.57,
+    "nuclear": 0.48,
+    "coal": 2.74,
+    "other": 0.25
+   }
   }
  },
  "marketInsightsHtml": "<p>In France, EDF has pushed back the return of 2.6 GW of Cattenom nuclear capacity by a day and delayed the restart of the 1.5 GW Chooz 2 unit, while the country’s 2026 nuclear output forecast has been cut by 2% due to heat-related curtailments.</p>"
