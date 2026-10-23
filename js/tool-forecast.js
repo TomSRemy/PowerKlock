@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const S = { tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
+  const S = { useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem('pk-fcst') || '{}')); } catch (_) {}
   const save = () => { try { localStorage.setItem('pk-fcst', JSON.stringify(S)); } catch (_) {} };
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -242,7 +242,7 @@
       S[k] = v; vis(); run(); }); });
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
-    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
+    const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const up = $('fc-hist-p50'); if (up) { up.checked = S.useP50; up.addEventListener('change', () => { S.useP50 = up.checked; if (ERA_LAST) buildHistory(); }); } const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
     const sbt = $('fc-hist-send'); if (sbt) sbt.addEventListener('click', sendToPricer);
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
@@ -470,18 +470,23 @@
       const sdModel = EC && regName && EC.stability[S.tech] && EC.stability[S.tech][regName] ? EC.stability[S.tech][regName].sd : 0.05;
       const capOut = S.inj !== '' && +S.inj > 0 ? Math.min(S.mw, +S.inj) : S.mw;
       let P = raw.map((x, i) => x == null ? null : Math.min(capOut, x * (fac ? fac[String(+H.time[i].slice(5, 7))] || 1 : 1)));
-      // 4 the park's evidence
-      let level = 1, how = regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2020–2025)` : 'prior: national factor', wSite = 0;
+      // 4 the park's evidence. Prior level of a single solar park: 0.887 of its region's fleet in the same weather
+      //   (four metered parks, 2024–2026: 0.881–0.892; left out one at a time, the value of the second year came within
+      //   −4.8 … +3.3 %, against +7.5 … +16.4 % at the fleet level and −12.5 … −22 % on the annex P50s)
+      const PRIOR = S.tech === 'solar' ? 0.887 : 1;
+      let level = PRIOR, how = (regName ? `prior: real output of ${regName} vs the same simulation (RTE, 2020–2025)` : 'prior: national factor') + (S.tech === 'solar' ? ', × 0.887 for a single park (four metered parks)' : ''), wSite = 0;
       const sc = siteCal();
+      const p50Level = () => { const yrs = new Set(H.time.map(t => t.slice(0, 4))).size, e = P.reduce((s, x) => s + (x || 0), 0) / yrs / S.mw; return e > 0 ? +S.p50 / e : null; };
       if (LAST_ACT && LAST_ACT.key === siteKey() && sc) {
         const idx = new Map(H.time.map((t, i) => [t, i]));
         let sy = 0, sp = 0; const days = new Set();
         LAST_ACT.act.forEach((y, t) => { const tm = shiftKey(t, (sc.shift || {})[isDST(t) ? 'summer' : 'winter'] || 0); const i = idx.get(tm); if (i == null || P[i] == null) return;
           const p = price(tm); if (p != null && p <= 5) return; if (S.tech === 'solar' && P[i] <= 0 && y <= 0) return; sy += y; sp += P[i]; days.add(tm.slice(0, 10)); });
-        if (sp > 0 && days.size >= 30) { const site = sy / sp; wSite = days.size / (days.size + 180); level = wSite * site + (1 - wSite); how = `park’s metered output (${days.size} days, weight ${Math.round(wSite * 100)} %) pooled with the regional prior`; }
+        if (sp > 0 && days.size >= 30) { const site = sy / sp; wSite = days.size / (days.size + 180); level = wSite * site + (1 - wSite) * PRIOR; how = `park’s metered output (${days.size} days, weight ${Math.round(wSite * 100)} %) pooled with the prior`; }
       } else if (S.tech === 'solar' && S.p50 !== '' && +S.p50 > 0) {
-        const yrs = new Set(H.time.map(t => t.slice(0, 4))).size, e = P.reduce((s, x) => s + (x || 0), 0) / yrs / S.mw;
-        if (e > 0) { level = +S.p50 / e; how = `level set on the P50 entered (${S.p50} kWh/kWc), regional prior for the shape`; }
+        const l = p50Level();
+        if (l && S.useP50) { level = l; how = `level set on the P50 entered (${S.p50} kWh/kWc), regional prior for the shape`; }
+        else if (l) how += ` · the P50 entered (${S.p50} kWh/kWc) would give ${Math.round((l / PRIOR - 1) * 100)} % (not used: the annex P50s of four metered parks were 8–17 % below their real output; tick “level from the P50” to use it)`;
       }
       if (level !== 1) P = P.map(x => x == null ? null : Math.min(capOut, x * level));
       // 5 yearly output, P50 / P90
@@ -509,7 +514,7 @@
         _fuelKpi('Output at prices ≤ 0, last year', capY.length ? (cap[capY[capY.length - 1]].neg / Y[capY[capY.length - 1]] * 100).toFixed(1) : '–', '%', `${Math.round(kNeg * 100)} % of it kept (${kHow})`)].join('')}</div>
         <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Yearly output, ${ys[0]}–${ys[ys.length - 1]}</div><div class="fuel-card-sub">GWh · each weather year replayed on today’s park</div></div><span class="source-badge">ERA5 · RTE</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-y" style="width:100%;height:260px"></canvas></div></div>
         <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate year by year</div><div class="fuel-card-sub">the park’s simulated output on the real day-ahead price of each hour</div></div><span class="source-badge">ERA5 · ENTSO-E</span></div><div style="position:relative;height:260px"><canvas id="fc-hist-c" style="width:100%;height:260px"></canvas></div></div></div>
-        <div class="fuel-note">How the level is set: ${how}. P90 = P50 − 1.28 σ, σ combining the spread of the ${ys.length} weather years and the uncertainty of the correction (${(sdModel * 100).toFixed(1)} % a year, less as the park’s own data weighs more). Capture rate: at prices ≤ 0 the park keeps ${Math.round(kNeg * 100)} % of its output (${kHow}); checked on two metered parks over their second year, output value within 1–3 % when the level comes from 12 months of metering, 9–11 % too high on the regional prior alone.</div>`;
+        <div class="fuel-note">How the level is set: ${how}. P90 = P50 − 1.28 σ, σ combining the spread of the ${ys.length} weather years and the uncertainty of the correction (${(sdModel * 100).toFixed(1)} % a year, less as the park’s own data weighs more). Capture rate: at prices ≤ 0 the park keeps ${Math.round(kNeg * 100)} % of its output (${kHow}); checked on four metered parks over their second year: output value within −0.3 … +7 % with 12 months of metering, −5 … +3 % with none (single-park factor), against +8 … +16 % on the regional prior alone and −12 … −22 % on the annex P50s; the capture rate came out 3–6 points below the real one (the model produces a little more in the cheapest hours).</div>`;
       _fuelChart('fc-hist-y', { type: 'bar', data: { labels: ys, datasets: [
         { label: 'Yearly output (GWh)', data: E.map(x => +(x / 1000).toFixed(2)), backgroundColor: S.tech === 'solar' ? 'rgba(244,196,48,.7)' : 'rgba(20,211,169,.7)', borderRadius: 3 },
         { type: 'line', label: 'P50', data: ys.map(() => +(p50 / 1000).toFixed(2)), borderColor: '#E6EDF3', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
@@ -558,7 +563,7 @@
       const specs = [{ k: 'note', title: 'The park in brief', text: lines.join('\n') }];
       for (const [id, title, sub] of [['fc-hist-y', 'Yearly output', 'GWh · each weather year replayed on today’s park'], ['fc-hist-c', 'Capture rate year by year', 'On the real day-ahead price of each hour']]) {
         const el = $(id) && $(id).closest('.chart-container'); if (el && el.offsetHeight) specs.push({ k: 'card', title, sub, src: 'PowerKlock · ERA5 · RTE · ENTSO-E', r: await PKExport.snap(el) }); }
-      specs.push({ k: 'note', title: 'Method and limits', text: 'Hourly weather of the reanalysis ERA5 at the park since 2005 through the physical model of the production forecast tool, corrected month by month on the real output of the region (RTE, 2020–2025); level from the park’s metering pooled with that prior, or from its P50. P90 = P50 − 1.28 σ (weather years and model uncertainty). Checked on two metered parks over their second year: output value within 1–3 % with 12 months of metering, 9–11 % too high on the regional prior alone. Not included: availability losses beyond those in the metering, degradation, future curtailment rules.' });
+      specs.push({ k: 'note', title: 'Method and limits', text: 'Hourly weather of the reanalysis ERA5 at the park since 2005 through the physical model of the production forecast tool, corrected month by month on the real output of the region (RTE, 2020–2025); a single park at 0.887 of the regional fleet, the park’s metering pooled with that prior, or its P50 when asked. P90 = P50 − 1.28 σ (weather years and model uncertainty). Checked on four metered parks over their second year (ERA5 chain): output value within −0.3 … +7 % with 12 months of metering, within −5 … +3 % with no metering at all (single-park factor, each park left out of its own factor), against +8 … +16 % on the regional prior alone and −12 … −22 % on the annex P50s. Not included: availability losses beyond those in the metering, degradation, future curtailment rules.' });
       await PKExport.deck(`Park sheet · ${S.tech} ${S.mw} MW · ${where}`, specs);
     } catch (e) { const st = $('fc-hist-status'); if (st) st.textContent = 'Park sheet failed: ' + (e.message || e); }
     btn.disabled = false; btn.textContent = lab;
