@@ -263,7 +263,7 @@
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
     grid = GridStack.init({
       column: COLS, cellHeight: cellH(host), margin: 6, float: false, animate: true,
-      handle: '.pkd-drag', resizable: { handles: 'se' }, staticGrid: !!shared,
+      handle: '.pkd-drag', draggable: { handle: '.pkd-drag', cancel: '.pkd-sec-move, .pkd-ic, [contenteditable="plaintext-only"]' }, resizable: { handles: 'se' }, staticGrid: !!shared,
       columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
     }, host);
     observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
@@ -274,6 +274,11 @@
       grid.makeWidget(el);
     });
     grid.batchUpdate(false);
+    { const secs = b.items.filter(x => x.t === 's').sort((x, y) => x.y - y.y), first = secs[0], lastS = secs[secs.length - 1];
+      secs.forEach(sct => { const el = host.querySelector('.grid-stack-item[data-i="' + sct.i + '"]'); if (!el) return;
+        const up = el.querySelector('.pkd-sec-up'), dn = el.querySelector('.pkd-sec-dn');
+        if (up) { up.disabled = sct === first; up.title = sct === first ? 'Already the first section' : 'Move the whole section up (with its charts)'; }
+        if (dn) { dn.disabled = sct === lastS; dn.title = sct === lastS ? 'Already the last section' : 'Move the whole section down (with its charts)'; } }); }
     host.querySelectorAll('.pkd-item[data-kind="w"]').forEach(el => observer.observe(el));
     grid.on('change', (_e, nodes) => {
       if (grid.getColumn() !== COLS) return;   // phone layout is derived, never saved
@@ -318,8 +323,9 @@
           <span class="pkd-sec-move"><button class="pkd-ic pkd-sec-up" title="Move the whole section up (with its charts)" type="button">▲</button><button class="pkd-ic pkd-sec-dn" title="Move the whole section down (with its charts)" type="button">▼</button></span>
           <button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
         </div>`;
-      inner.querySelector('.pkd-sec-up').addEventListener('click', e => { e.stopPropagation(); moveSection(it.i, -1); });
-      inner.querySelector('.pkd-sec-dn').addEventListener('click', e => { e.stopPropagation(); moveSection(it.i, 1); });
+      inner.querySelectorAll('.pkd-sec-move button').forEach(btn => ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => btn.addEventListener(ev, e => e.stopPropagation())));   // a click on an arrow never starts a drag
+      inner.querySelector('.pkd-sec-up').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); moveSection(it.i, -1); });
+      inner.querySelector('.pkd-sec-dn').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); moveSection(it.i, 1); });
       const h = inner.querySelector('.pkd-section-title');
       h.addEventListener('blur', () => { it.title = h.textContent.trim(); save(); });
       h.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); h.blur(); } });
