@@ -342,3 +342,38 @@ async function renderRemit() {
   PKW.draw('remit-unavail', 'remit-unavail', { period: rp });
   PKW.periodButtons('remit-unavail', PKW.PERIOD_PARAM.options, rp, v => { window._remitPeriod = v; PKW.draw('remit-unavail', 'remit-unavail', { period: v }); });
 }
+
+
+// ── France: prices of the activated balancing energy (ENTSO-E A84, data/history/fr_activation.json) ──
+//    what RTE paid for upward energy and received for downward energy, day by day, against the day-ahead
+if (window.PKW) {
+  PKW.register({
+    id: 'fr-activation', title: 'France · mFRR activation prices vs day-ahead', category: 'balancing', page: 'imbalance', pageCanvas: 'imb-fr-act',
+    source: 'ENTSO-E', size: { w: 12, h: 5 },
+    desc: 'Daily average price of the balancing energy RTE activated (mFRR): upward (RTE pays) and downward (RTE is paid), with the most extreme quarter-hour of each side, against the day-ahead baseload. aFRR is not published for France on ENTSO-E.',
+    params: [{ key: 'win', label: 'Window', options: [['30', '30 days'], ['90', '90 days'], ['365', '1 year']] }], defaults: { win: '90' },
+    async draw(cid, p) {
+      const j = await fetchJSON('history/fr_activation.json');
+      const ks = j && j.days ? Object.keys(j.days).sort().slice(-(+(p.win || 90))) : [];
+      if (!ks.length) { noDataMsg(cid, 'Activation prices not available', ''); return null; }
+      const D = k => j.days[k].mfrr || {}, L = k => +k.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+k.slice(5, 7) - 1];
+      _fuelChart(cid, { type: 'line', data: { labels: ks.map(L), datasets: [
+        _fuelLineDs('Upward, highest quarter-hour', ks.map(k => D(k).upMax ?? null), 'rgba(237,105,101,.35)', { borderWidth: 1, borderDash: [3, 3], pointRadius: 0 }),
+        _fuelLineDs('Upward, daily average', ks.map(k => D(k).up ?? null), '#ED6965', { borderWidth: 2, pointRadius: 0 }),
+        _fuelLineDs('Day-ahead baseload', ks.map(k => j.days[k].spot ?? null), '#B8C9D9', { borderWidth: 1.6, pointRadius: 0 }),
+        _fuelLineDs('Downward, daily average', ks.map(k => D(k).down ?? null), '#14D3A9', { borderWidth: 2, pointRadius: 0 }),
+        _fuelLineDs('Downward, lowest quarter-hour', ks.map(k => D(k).downMin ?? null), 'rgba(20,211,169,.35)', { borderWidth: 1, borderDash: [3, 3], pointRadius: 0 }),
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') }, plugins: { legend: { labels: { color: C_TX2, font: { size: 10 }, boxWidth: 14 } } } }) }, 'fr-activation');
+      const mean = a => { const v = a.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+      const up = mean(ks.map(k => D(k).up)), sp = mean(ks.map(k => j.days[k].spot)), dn = mean(ks.map(k => D(k).down));
+      return { sub: `${ks.length} days · upward ${up != null ? up.toFixed(0) : '–'} €/MWh, downward ${dn != null ? dn.toFixed(0) : '–'}, day-ahead ${sp != null ? sp.toFixed(0) : '–'} (averages) · upward energy costs ${up != null && sp ? (up / sp).toFixed(1) : '–'}× the spot` };
+    },
+  });
+  (function () {
+    const go = () => { const c = document.getElementById('imb-fr-act'); if (!c) return;
+      const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect();
+        PKW.draw('fr-activation', 'imb-fr-act', { win: '90' }).then(r => { const e = document.getElementById('imb-fr-act-sub'); if (e && r && r.sub) e.textContent = r.sub; }); } }, { rootMargin: '200px' });
+      io.observe(c); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  })();
+}
