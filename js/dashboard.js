@@ -269,7 +269,7 @@
     }, host);
     observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
     grid.batchUpdate();
-    b.items.forEach(it => {
+    b.items.filter(it => !it.hid).forEach(it => {
       const el = itemEl(it);
       host.appendChild(el);
       grid.makeWidget(el);
@@ -319,11 +319,16 @@
     el.appendChild(inner);
 
     if (it.t === 's') {
-      inner.innerHTML = `<div class="pkd-section pkd-drag">
+      const nHid = board().items.filter(x => x.hid === it.i).length;
+      inner.innerHTML = `<div class="pkd-section pkd-drag${it.c ? ' pkd-sec-closed' : ''}">
+          <button class="pkd-ic pkd-sec-fold" type="button" title="${it.c ? 'Show this section' + (nHid ? ' (' + nHid + ' item' + (nHid > 1 ? 's' : '') + ')' : '') : 'Collapse this section'}" aria-expanded="${!it.c}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
           <h2 class="pkd-section-title" contenteditable="${shared ? 'false' : 'plaintext-only'}" spellcheck="false" data-ph="Section title">${esc(it.title)}</h2>
           <span class="pkd-sec-move"><button class="pkd-ic pkd-sec-up" title="Move the whole section up (with its charts)" type="button">▲</button><button class="pkd-ic pkd-sec-dn" title="Move the whole section down (with its charts)" type="button">▼</button></span>
-          <button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
+          ${it.c && nHid ? `<span class="pkd-sec-n">${nHid} hidden</span>` : ''}<button class="pkd-ic pkd-del" title="Remove section" type="button">✕</button>
         </div>`;
+      const fold = inner.querySelector('.pkd-sec-fold');
+      ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => fold.addEventListener(ev, e => e.stopPropagation()));
+      fold.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); foldSection(it.i); });
       inner.querySelectorAll('.pkd-sec-move button').forEach(btn => ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => btn.addEventListener(ev, e => e.stopPropagation())));   // a click on an arrow never starts a drag
       inner.querySelector('.pkd-sec-up').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); moveSection(it.i, -1); });
       inner.querySelector('.pkd-sec-dn').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); moveSection(it.i, 1); });
@@ -464,8 +469,11 @@
 
   function removeItem(i) {
     const b = board();
+    const freed = b.items.filter(x => x.hid === i);   // a collapsed section removed: its cards come back at the bottom
+    if (freed.length) { const y0 = Math.max(0, ...b.items.filter(x => !x.hid && x.i !== i).map(x => x.y + x.h)); freed.forEach(x => { delete x.hid; x.y = y0 + (x.cy || 0); delete x.cy; }); }
     b.items = b.items.filter(x => x.i !== i);
     save();
+    if (freed.length) { render(); return; }
     const el = document.querySelector('.grid-stack-item[data-i="' + i + '"]');
     if (el && grid) { destroyCharts(el); grid.removeWidget(el); }
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
@@ -629,7 +637,7 @@
     const secs = b.items.filter(it => it.t === 's').sort((x, y) => x.y - y.y);
     secs.forEach(sc => { sc.x = 0; sc.w = COLS; });
     const blocks = [{ items: [] }].concat(secs.map(sc => ({ sec: sc.i, title: sc.title || '', items: [sc] })));
-    b.items.filter(it => it.t !== 's').sort((x, y) => (x.y - y.y) || (x.x - y.x)).forEach(it => {
+    b.items.filter(it => it.t !== 's' && !it.hid).sort((x, y) => (x.y - y.y) || (x.x - y.x)).forEach(it => {
       let k = 0; secs.forEach((sc, j) => { if (sc.y <= it.y) k = j + 1; }); blocks[k].items.push(it); });
     return blocks.filter(bl => bl.items.length);
   }
@@ -640,13 +648,40 @@
       y += Math.max(h, 1); });
   }
   function snapshot(b) { undoLayout = { board: b.id, items: b.items.map(it => ({ i: it.i, x: it.x, y: it.y, w: it.w, h: it.h })) }; }
+  // the page never jumps: the section clicked stays where it was on screen after the grid is rebuilt
+  function scroller(el) { for (let p = el && el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p; } return document.scrollingElement || document.documentElement; }
+  function keepInView(id, fn) {
+    const q = () => document.querySelector('#pkd-grid .grid-stack-item[data-i="' + id + '"]');
+    const host = document.getElementById('pkd-grid'), el0 = q(), sc = scroller(host), top0 = el0 ? el0.getBoundingClientRect().top : null, st = sc.scrollTop;
+    if (host) host.style.minHeight = host.offsetHeight + 'px';   // no collapse of the page while the grid is rebuilt
+    fn();
+    sc.scrollTop = st;
+    const el1 = q(); if (el1 && top0 != null) sc.scrollTop += el1.getBoundingClientRect().top - top0;
+    setTimeout(() => { if (host) host.style.minHeight = ''; }, 400);
+  }
+  // collapse / expand a section: its cards leave the grid (remembered under it, with their places) and what follows moves up
+  function foldSection(id) {
+    const b = board(), sc = b.items.find(x => x.i === id); if (!sc) return;
+    if (!sc.c) {
+      const blocks = blocksOf(b), bl = blocks.find(x => x.sec === id);
+      (bl ? bl.items : []).filter(it => it.t !== 's').forEach(it => { it.hid = id; it.cy = it.y - sc.y; });
+      sc.c = true;
+      stack(blocksOf(b));
+    } else {
+      const blocks = blocksOf(b), bl = blocks.find(x => x.sec === id);
+      b.items.filter(it => it.hid === id).forEach(it => { delete it.hid; it.y = sc.y + Math.max(1, it.cy || 1); delete it.cy; if (bl) bl.items.push(it); });
+      delete sc.c;
+      stack(blocks);
+    }
+    save(); keepInView(id, render);
+  }
   function moveSection(id, dir) {
     const b = board(); snapshot(b);
     const blocks = blocksOf(b);
     const k = blocks.findIndex(bl => bl.sec === id), j = k + dir;
     if (k < 0 || j < 0 || j >= blocks.length || !blocks[j].sec) return;   // never above the charts that sit before the first section
     [blocks[k], blocks[j]] = [blocks[j], blocks[k]];
-    stack(blocks); save(); render();
+    stack(blocks); save(); keepInView(id, render);
     toast('Section moved with its ' + (blocks[j].items.length - 1) + ' item' + (blocks[j].items.length > 2 ? 's' : ''), 'Undo', undoMove);
   }
   // sections numbered "1 · …", "2 · …": put them back in their numbers' order, each with its charts
@@ -655,7 +690,7 @@
     const blocks = blocksOf(b), head = blocks[0] && !blocks[0].sec ? [blocks.shift()] : [];
     const num = t => { const m = String(t || '').match(/^\s*(\d+)/); return m ? +m[1] : 1e9; };
     blocks.sort((a, c) => num(a.title) - num(c.title) || String(a.title).localeCompare(String(c.title)));
-    stack(head.concat(blocks)); save(); render();
+    stack(head.concat(blocks)); save(); keepInView(blocks[0] && blocks[0].sec, render);
     toast('Sections in order: ' + blocks.map(bl => bl.title.trim().split(/\s+/)[0]).join(', '), 'Undo', undoMove);
   }
   function renderTabs() {
@@ -746,7 +781,7 @@
             const j = JSON.parse(txt);
             if (!j || !Array.isArray(j.items)) throw new Error('Not a PowerKlock layout file');
             const id = uid();
-            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), items: j.items.filter(it => it && ['w', 's', 'n'].includes(it.t)).map(it => Object.assign({}, it, { i: uid() })) });
+            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) });
             state.active = id; save(); closeModal(); render();
             toast('Layout imported');
           }).catch(e => toast('Import failed: ' + e.message));
@@ -842,8 +877,15 @@
   const b64u = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
   async function pipe(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+  // fresh ids for a copied layout, the cards of a collapsed section still pointing to it
+  function reid(items) {
+    const m = {}; const out = items.map(it => { const n = uid(); if (it.i) m[it.i] = n; return Object.assign({}, it, { i: n }); });
+    out.forEach(it => { if (it.hid) { if (m[it.hid]) it.hid = m[it.hid]; else { delete it.hid; delete it.cy; } } });
+    return out;
+  }
   async function encodeBoard(b) {
-    const items = b.items.map(it => { const o = Object.assign({}, it); delete o.i; return o; });
+    const used = new Set(b.items.map(it => it.hid).filter(Boolean));   // ids kept only where a collapsed section needs them
+    const items = b.items.map(it => { const o = Object.assign({}, it); if (!used.has(o.i)) delete o.i; return o; });
     const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, items }));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
@@ -854,7 +896,7 @@
     const j = JSON.parse(new TextDecoder().decode(raw));
     if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
     return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code,
-      items: j.items.filter(it => it && ['w', 's', 'n'].includes(it.t)).map(it => Object.assign({}, it, { i: uid() })) };
+      items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) };
   }
   const baseUrl = () => location.origin + location.pathname;
 
@@ -909,7 +951,7 @@
     });
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
       const id = uid();
-      state.boards.push({ id, name: shared.name, desc: shared.desc || '', items: shared.items.map(it => Object.assign({}, it, { i: uid() })) });
+      state.boards.push({ id, name: shared.name, desc: shared.desc || '', items: reid(shared.items) });
       state.active = id;
       closeShared(false); save(); render();
       toast('Added to your dashboards');
