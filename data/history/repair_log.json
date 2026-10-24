@@ -1,0 +1,21 @@
+{
+ "run": "2026-10-24T10:23:26+00:00",
+ "zones": {
+  "DE_LU": {
+   "days_read": 2491,
+   "days_changed": 2439,
+   "largest_change": [
+    109.64,
+    "2021-12-27"
+   ]
+  },
+  "AT": {
+   "days_read": 2491,
+   "days_changed": 2396,
+   "largest_change": [
+    187.35,
+    "2021-12-27"
+   ]
+  }
+ }
+}
