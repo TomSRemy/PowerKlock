@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-24T19:16:11Z",
+ "updated": "2026-10-24T22:06:27Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 18777
+   "sizeKB": 18783
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
