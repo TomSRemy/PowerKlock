@@ -12,6 +12,9 @@ on:
     - cron: '13,43 6-9 * * *'
     - cron: '3,23,53 11-17 * * *'
   workflow_dispatch:       # bouton manuel dans GitHub
+  push:                    # a change to the fetch runs it at once (GitHub's schedule can be hours late)
+    branches: [main]
+    paths: ['scripts/fetch_data.py', 'scripts/heal_price_gaps.py', 'scripts/check_prices_complete.py', '.github/workflows/fetch.yml']
 
 concurrency:
   group: fetch-energy-data
