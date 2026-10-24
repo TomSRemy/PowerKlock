@@ -138,7 +138,7 @@
       '<div class="sidebar-subitems-wrap pk-nav-wrap" data-entry="' + route + '">' +
       group.map(([gr, gl]) => '<a class="sidebar-subitem" href="#' + gr + '" data-route="' + gr + '" data-en="' + gl + '">' + gl + '</a>').join('') + '</div>';
   };
-  const SECTIONS = MENU.concat([['General', FOOT.map(([r, l]) => [r, l, R[r].page])]]);
+  const SECTIONS = MENU;
   SECTIONS.forEach(([sec, items], k) => {
     if (!sec) { h += '<div class="sidebar-section pk-nv-top-sec"><div class="sidebar-section-items">' + items.map(x => item(...x)).join('') + '</div></div>'; return; }
     const id = 'sec-' + slug(sec);
@@ -146,6 +146,7 @@
       '<div class="sidebar-section-label" onclick="toggleSection(\'' + id + '\')">' + sec + ' ' + CHEV + '</div>' +
       '<div class="sidebar-section-items" id="' + id + '-items">' + items.map(x => item(...x)).join('') + '</div></div>';
   });
+  h += '<div class="pk-nv-foot">' + FOOT.map(([r, l]) => '<a class="pk-nv-small" id="nav-' + R[r].page + '" href="#' + r + '" data-route="' + r + '">' + l + '</a>').join('') + '</div>';
   nav.innerHTML = h;
   if (keep) keep.remove();
   nav.classList.add('pk-nv');
@@ -170,6 +171,35 @@
     fitSection(wrap); setTimeout(() => path(wrap), 240);
   }
   if (window.ResizeObserver) new ResizeObserver(() => nav.querySelectorAll('.pk-nav-wrap.open').forEach(path)).observe(nav);
+
+  // a closed group shows its pages beside the menu on hover or keyboard focus: one click from anywhere
+  const fly = document.createElement('div'); fly.className = 'pk-nv-fly'; fly.hidden = true; document.body.appendChild(fly);
+  let flyT = 0, flyFor = null;
+  const hideFly = () => { flyT = setTimeout(() => { fly.hidden = true; flyFor = null; }, 140); };
+  function showFly(head) {
+    clearTimeout(flyT);
+    const wrap = head.nextElementSibling;
+    if (window.innerWidth <= 768 || !wrap || wrap.classList.contains('open') || nav.classList.contains('collapsed') || nav.classList.contains('pk-nv-searching')) { fly.hidden = true; return; }
+    if (flyFor !== head) {
+      fly.innerHTML = '<div class="pk-nv-fly-t">' + head.querySelector('span').textContent + '</div>' + [...wrap.querySelectorAll('.sidebar-subitem')].map(a => '<a href="#' + a.dataset.route + '" data-route="' + a.dataset.route + '">' + a.textContent + '</a>').join('');
+      flyFor = head;
+    }
+    const r = head.getBoundingClientRect();
+    fly.hidden = false;
+    fly.style.left = Math.round(r.right + 4) + 'px';
+    fly.style.top = Math.round(Math.max(8, Math.min(r.top - 4, window.innerHeight - fly.offsetHeight - 8))) + 'px';
+  }
+  nav.querySelectorAll('.pk-nav-group').forEach(hd => {
+    hd.addEventListener('mouseenter', () => showFly(hd));
+    hd.addEventListener('mouseleave', hideFly);
+    hd.addEventListener('focus', () => showFly(hd));
+    hd.addEventListener('blur', hideFly);
+  });
+  fly.addEventListener('mouseenter', () => clearTimeout(flyT));
+  fly.addEventListener('mouseleave', hideFly);
+  fly.addEventListener('click', e => { if (e.target.closest('a[data-route]')) { fly.hidden = true; flyFor = null; } });
+  nav.addEventListener('scroll', () => { fly.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fly.hidden = true; });
 
   // ── search in the menu: filters as you type (French or English names), Enter opens the first page ──
   const q = nav.querySelector('#pk-nv-q'), noq = nav.querySelector('.pk-nv-noq');
@@ -259,14 +289,20 @@
       a.classList.toggle('has-active-subitem', on && grp);            // a group: its header lights, the page is marked below
       if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
+    nav.querySelectorAll('.pk-nv-small').forEach(a => { const on = a.dataset.route === own; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     nav.querySelectorAll('.sidebar-subitem').forEach(a => { const on = a.dataset.route === route; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-    const wrap = nav.querySelector('.pk-nav-wrap[data-entry="' + own + '"]');
-    if (wrap && !wrap.classList.contains('open')) setOpen(wrap, true); else nav.querySelectorAll('.pk-nav-wrap.open').forEach(w => setTimeout(() => path(w), 60));
-    // the section of the page: highlighted, and opened if it was folded
+    // at rest only the page's section and group are unfolded, everything else folds (a search unfolds what it finds)
+    const searching = nav.classList.contains('pk-nv-searching');
+    nav.querySelectorAll('.pk-nav-wrap').forEach(w => { const mine = w.dataset.entry === own; if (mine !== w.classList.contains('open') && (mine || !searching)) setOpen(w, mine); });
+    nav.querySelectorAll('.pk-nav-wrap.open').forEach(w => setTimeout(() => path(w), 60));
     nav.querySelectorAll('.sidebar-section').forEach(sc => {
-      const mine = !!sc.querySelector('.pk-nv-item[aria-current]') && !!sc.querySelector('.sidebar-section-label');
+      const label = sc.querySelector('.sidebar-section-label'); if (!label) return;
+      const mine = !!sc.querySelector('.pk-nv-item[aria-current]');
       sc.classList.toggle('section-active', mine);
-      if (mine && sc.classList.contains('collapsed') && typeof window.toggleSection === 'function') window.toggleSection(sc.id);
+      if (searching) return;
+      const items = sc.querySelector('.sidebar-section-items');
+      if (mine) { sc.classList.remove('collapsed'); if (items) items.style.maxHeight = ''; }
+      else sc.classList.add('collapsed');
     });
     // breadcrumbs inside the pages name the old menu: show the new section
     const e0 = nav.querySelector('.pk-nv-top-sec [data-route="' + own + '"] span');
@@ -402,6 +438,16 @@
   .pk-nv .sidebar-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pk-nv .pk-nav-chev{cursor:pointer;padding:4px;margin-right:-4px;width:19px;height:19px;box-sizing:border-box;border-radius:4px}
   .pk-nv .pk-nav-chev:hover{background:rgba(255,255,255,.08);opacity:1}
+  .pk-nv{display:flex;flex-direction:column}
+  .pk-nv-foot{margin-top:auto;border-top:1px solid var(--border);padding:10px 12px 14px;display:flex;flex-wrap:wrap;gap:2px 4px}
+  .pk-nv-small{font-size:11.5px;color:var(--text3);text-decoration:none;padding:6px 8px;min-height:28px;display:inline-flex;align-items:center;border-radius:5px}
+  .pk-nv-small:hover{color:var(--text);background:var(--bg3)}
+  .pk-nv-small.active{color:var(--accent);background:var(--accent-dim)}
+  .pk-nv-fly{position:fixed;z-index:1200;min-width:200px;padding:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column}
+  .pk-nv-fly[hidden]{display:none}
+  .pk-nv-fly-t{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:4px 10px 6px}
+  .pk-nv-fly a{font-size:12.5px;color:var(--text2);text-decoration:none;padding:6px 10px;border-radius:5px;min-height:28px;display:flex;align-items:center}
+  .pk-nv-fly a:hover{color:var(--text);background:var(--bg3)}
   .pk-nv-search{padding:12px 12px 4px;position:relative}
   .pk-nv-search input{width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font:inherit;font-size:12.5px;padding:7px 10px}
   .pk-nv-search input:focus{outline:none;border-color:var(--accent)}
