@@ -1,20 +1,260 @@
 {
- "run": "2026-10-24T10:27:07+00:00",
+ "run": "2026-10-24T10:56:23+00:00",
  "zones": {
+  "FR": {
+   "days_read": 2490,
+   "days_changed": 39,
+   "largest_change": [
+    1.68,
+    "2025-03-30"
+   ]
+  },
   "DE_LU": {
    "days_read": 2491,
-   "days_changed": 2439,
+   "days_changed": 0,
    "largest_change": [
-    109.64,
-    "2021-12-27"
+    0,
+    ""
+   ]
+  },
+  "BE": {
+   "days_read": 2490,
+   "days_changed": 63,
+   "largest_change": [
+    2.27,
+    "2026-03-29"
+   ]
+  },
+  "NL": {
+   "days_read": 2490,
+   "days_changed": 53,
+   "largest_change": [
+    73.74,
+    "2026-10-10"
+   ]
+  },
+  "ES": {
+   "days_read": 2491,
+   "days_changed": 153,
+   "largest_change": [
+    11.05,
+    "2025-10-27"
+   ]
+  },
+  "PT": {
+   "days_read": 2490,
+   "days_changed": 87,
+   "largest_change": [
+    2.24,
+    "2023-03-26"
+   ]
+  },
+  "IT_NORD": {
+   "days_read": 2490,
+   "days_changed": 94,
+   "largest_change": [
+    1.23,
+    "2025-03-30"
+   ]
+  },
+  "IT_SICI": {
+   "days_read": 2490,
+   "days_changed": 159,
+   "largest_change": [
+    1.81,
+    "2023-10-29"
+   ]
+  },
+  "GB": {
+   "days_read": 367,
+   "days_changed": 367,
+   "largest_change": [
+    0,
+    ""
    ]
   },
   "AT": {
    "days_read": 2491,
-   "days_changed": 2396,
+   "days_changed": 0,
    "largest_change": [
-    187.35,
-    "2021-12-27"
+    0,
+    ""
+   ]
+  },
+  "CH": {
+   "days_read": 2490,
+   "days_changed": 92,
+   "largest_change": [
+    3.42,
+    "2026-10-09"
+   ]
+  },
+  "CZ": {
+   "days_read": 2490,
+   "days_changed": 157,
+   "largest_change": [
+    1.55,
+    "2025-03-30"
+   ]
+  },
+  "SK": {
+   "days_read": 2490,
+   "days_changed": 150,
+   "largest_change": [
+    32.4,
+    "2026-10-10"
+   ]
+  },
+  "HU": {
+   "days_read": 2490,
+   "days_changed": 149,
+   "largest_change": [
+    61.31,
+    "2026-10-10"
+   ]
+  },
+  "RO": {
+   "days_read": 2490,
+   "days_changed": 148,
+   "largest_change": [
+    57.82,
+    "2026-10-10"
+   ]
+  },
+  "HR": {
+   "days_read": 2490,
+   "days_changed": 155,
+   "largest_change": [
+    37.11,
+    "2026-10-10"
+   ]
+  },
+  "SI": {
+   "days_read": 2490,
+   "days_changed": 162,
+   "largest_change": [
+    1.58,
+    "2026-03-29"
+   ]
+  },
+  "RS": {
+   "days_read": 2491,
+   "days_changed": 151,
+   "largest_change": [
+    1.03,
+    "2024-03-31"
+   ]
+  },
+  "GR": {
+   "days_read": 2490,
+   "days_changed": 156,
+   "largest_change": [
+    53.0,
+    "2026-10-10"
+   ]
+  },
+  "BG": {
+   "days_read": 2490,
+   "days_changed": 151,
+   "largest_change": [
+    4.12,
+    "2022-03-27"
+   ]
+  },
+  "DK_W": {
+   "days_read": 2490,
+   "days_changed": 143,
+   "largest_change": [
+    2.58,
+    "2026-03-29"
+   ]
+  },
+  "DK_E": {
+   "days_read": 2490,
+   "days_changed": 151,
+   "largest_change": [
+    3.61,
+    "2022-03-27"
+   ]
+  },
+  "SE": {
+   "days_read": 2490,
+   "days_changed": 144,
+   "largest_change": [
+    2.82,
+    "2022-10-30"
+   ]
+  },
+  "NO_1": {
+   "days_read": 2490,
+   "days_changed": 153,
+   "largest_change": [
+    1.1,
+    "2025-03-30"
+   ]
+  },
+  "FI": {
+   "days_read": 2490,
+   "days_changed": 135,
+   "largest_change": [
+    1.6,
+    "2021-10-31"
+   ]
+  },
+  "LT": {
+   "days_read": 2490,
+   "days_changed": 149,
+   "largest_change": [
+    4.01,
+    "2024-10-27"
+   ]
+  },
+  "LV": {
+   "days_read": 2491,
+   "days_changed": 150,
+   "largest_change": [
+    4.01,
+    "2024-10-27"
+   ]
+  },
+  "EE": {
+   "days_read": 2490,
+   "days_changed": 146,
+   "largest_change": [
+    4.01,
+    "2024-10-27"
+   ]
+  },
+  "PL": {
+   "days_read": 2490,
+   "days_changed": 144,
+   "largest_change": [
+    1.29,
+    "2024-03-31"
+   ]
+  },
+  "ME": {
+   "days_read": 1278,
+   "days_changed": 124,
+   "largest_change": [
+    8.26,
+    "2026-10-09"
+   ]
+  },
+  "MK": {
+   "days_read": 1264,
+   "days_changed": 128,
+   "largest_change": [
+    5.07,
+    "2026-10-09"
+   ]
+  },
+  "MT": {
+   "days_read": 0,
+   "days_changed": 0,
+   "largest_change": [
+    0,
+    ""
    ]
   }
  }
