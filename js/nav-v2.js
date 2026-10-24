@@ -121,46 +121,96 @@
   }));
   FOOT.forEach(([r]) => { owner[r] = r; });
 
-  // ── build ──
+  // ── build: the previous menu's look (sections with a chevron, groups as a tree with the green path), new order ──
   const keep = nav.querySelector('.sidebar-dash-switch');
-  let h = '';
+  const CHEV = '<svg class="sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  const GCHEV = '<svg class="pk-nav-chev" data-fold viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  const slug = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  // the translation (js/i18n.js) leaves form fields alone: the search field gets its words here
+  let lang = 'fr'; try { lang = localStorage.getItem('pk-lang') === 'en' ? 'en' : 'fr'; } catch (_) {}
+  const ph = lang === 'fr' ? 'Rechercher dans le menu…' : 'Search the menu…';
+  let h = '<div class="pk-nv-search"><input type="search" id="pk-nv-q" placeholder="' + ph + '" aria-label="' + ph + '" autocomplete="off"><span class="pk-nv-noq" hidden>No page found · <a href="#" data-allsearch>search everywhere</a></span></div>';
   const used = new Set();
-  MENU.forEach(([sec, items]) => {
-    h += '<div class="sidebar-section pk-nv-sec">' + (sec ? '<div class="sidebar-section-label pk-nv-label">' + sec + '</div>' : '') + '<div class="sidebar-section-items">';
-    items.forEach(([route, label, ic, group]) => {
-      const pid = R[route].page, nid = pid && !used.has(pid) ? (used.add(pid), ' id="nav-' + pid + '"') : '';   // old ids kept: tests and links use them
-      const a = '<a class="sidebar-item pk-nv-item' + (sec ? '' : ' pk-nv-top') + '"' + nid + ' href="#' + route + '" data-route="' + route + '">' + (icon[ic] || '') + '<span>' + label + '</span>' + (group ? '<i class="pk-nv-more" aria-hidden="true"></i>' : '') + '</a>';
-      h += group ? '<div class="pk-nv-grp" data-entry="' + route + '">' + a + '<div class="pk-nv-sub" role="group" aria-label="' + label + '">' +
-        group.map(([gr, gl]) => '<a class="pk-nv-subl" href="#' + gr + '" data-route="' + gr + '">' + gl + '</a>').join('') + '</div></div>' : a;
-    });
-    h += '</div></div>';
+  const item = (route, label, ic, group) => {
+    const pid = R[route].page, nid = pid && !used.has(pid) ? (used.add(pid), ' id="nav-' + pid + '"') : '';   // old ids kept: tests and links use them
+    if (!group) return '<a class="sidebar-item pk-nv-item" ' + nid + ' href="#' + route + '" data-route="' + route + '" data-en="' + label + '">' + (icon[ic] || '') + '<span>' + label + '</span></a>';
+    return '<a class="sidebar-item pk-nav-group pk-nv-item"' + nid + ' href="#' + route + '" data-route="' + route + '" data-en="' + label + '">' + (icon[ic] || '') + '<span>' + label + '</span>' + GCHEV + '</a>' +
+      '<div class="sidebar-subitems-wrap pk-nav-wrap" data-entry="' + route + '">' +
+      group.map(([gr, gl]) => '<a class="sidebar-subitem" href="#' + gr + '" data-route="' + gr + '" data-en="' + gl + '">' + gl + '</a>').join('') + '</div>';
+  };
+  const SECTIONS = MENU.concat([['General', FOOT.map(([r, l]) => [r, l, R[r].page])]]);
+  SECTIONS.forEach(([sec, items], k) => {
+    if (!sec) { h += '<div class="sidebar-section pk-nv-top-sec"><div class="sidebar-section-items">' + items.map(x => item(...x)).join('') + '</div></div>'; return; }
+    const id = 'sec-' + slug(sec);
+    h += '<div class="sidebar-divider"></div><div class="sidebar-section' + (sec === 'General' ? ' collapsed' : '') + '" id="' + id + '">' +
+      '<div class="sidebar-section-label" onclick="toggleSection(\'' + id + '\')">' + sec + ' ' + CHEV + '</div>' +
+      '<div class="sidebar-section-items" id="' + id + '-items">' + items.map(x => item(...x)).join('') + '</div></div>';
   });
-  h += '<div class="pk-nv-foot">' + FOOT.map(([r, l]) => '<a class="pk-nv-small" id="nav-' + R[r].page + '" href="#' + r + '" data-route="' + r + '">' + l + '</a>').join('') + '</div>';
   nav.innerHTML = h;
   if (keep) keep.remove();
   nav.classList.add('pk-nv');
 
-  // desktop: the pages of an entry open as a flyout on hover or keyboard focus, one click away from anywhere
-  const desk = () => window.innerWidth > 768;
-  let flyT = 0;
-  function fly(g, on) {
-    clearTimeout(flyT);
-    if (!on) { flyT = setTimeout(() => g.classList.remove('fly'), 120); return; }
-    nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => { if (x !== g) x.classList.remove('fly'); });
-    if (!desk() || g.classList.contains('open') || nav.classList.contains('collapsed')) return;
-    const r = g.querySelector('.pk-nv-item').getBoundingClientRect(), sub = g.querySelector('.pk-nv-sub');
-    sub.style.left = Math.round(r.right - 2) + 'px';
-    sub.style.top = Math.round(Math.min(r.top - 6, window.innerHeight - 40 * sub.children.length - 20)) + 'px';
-    g.classList.add('fly');
+  // groups: the active one opens by itself, the chevron folds or unfolds any of them; the green path stops at the active page
+  function path(wrap) {
+    const a = wrap.querySelector('.sidebar-subitem.active');
+    if (!a || !wrap.classList.contains('open') || !wrap.offsetHeight) { wrap.style.setProperty('--path-height', '0px'); return; }
+    const top = wrap.getBoundingClientRect().top, r = a.getBoundingClientRect();
+    wrap.style.setProperty('--path-height', (r.top + r.height / 2 - top) + 'px');
   }
-  nav.querySelectorAll('.pk-nv-grp').forEach(g => {
-    g.addEventListener('mouseenter', () => fly(g, true));
-    g.addEventListener('mouseleave', () => fly(g, false));
-    g.addEventListener('focusin', () => fly(g, true));
-    g.addEventListener('focusout', e => { if (!g.contains(e.relatedTarget)) fly(g, false); });
+  function fitSection(el) {   // a section sized when it opened follows a group opening or closing inside it
+    const items = el && el.closest('.sidebar-section-items'), sec = items && items.closest('.sidebar-section');
+    if (!items || !items.style.maxHeight || (sec && sec.classList.contains('collapsed'))) return;
+    items.style.maxHeight = '2400px';
+    setTimeout(() => { if (!sec.classList.contains('collapsed')) items.style.maxHeight = items.scrollHeight + 'px'; }, 260);
+  }
+  function setOpen(wrap, open) {
+    if (!wrap) return;
+    wrap.classList.toggle('open', open);
+    const head = wrap.previousElementSibling; if (head) head.classList.toggle('open', open);
+    fitSection(wrap); setTimeout(() => path(wrap), 240);
+  }
+  if (window.ResizeObserver) new ResizeObserver(() => nav.querySelectorAll('.pk-nav-wrap.open').forEach(path)).observe(nav);
+
+  // ── search in the menu: filters as you type (French or English names), Enter opens the first page ──
+  const q = nav.querySelector('#pk-nv-q'), noq = nav.querySelector('.pk-nv-noq');
+  const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const opened = new Set();
+  function filter() {
+    const v = norm(q.value.trim()); nav.classList.toggle('pk-nv-searching', !!v);
+    let any = false;
+    nav.querySelectorAll('.sidebar-section').forEach(sec => {
+      let secAny = false;
+      sec.querySelectorAll('.pk-nv-item').forEach(a => {
+        const wrap = a.classList.contains('pk-nav-group') ? a.nextElementSibling : null;
+        const hit = t => !v || norm(t.textContent).includes(v) || norm(t.dataset.en).includes(v);
+        const subs = wrap ? [...wrap.querySelectorAll('.sidebar-subitem')] : [];
+        const subHits = subs.filter(hit), self = hit(a);
+        subs.forEach(x => { x.hidden = !!v && !(self || subHits.includes(x)); });
+        a.hidden = !!v && !self && !subHits.length;
+        if (wrap) {
+          if (v && subHits.length && !wrap.classList.contains('open')) { opened.add(wrap); setOpen(wrap, true); }
+          if (!v && opened.has(wrap)) { opened.delete(wrap); if (!wrap.querySelector('.active')) setOpen(wrap, false); }
+        }
+        if (!a.hidden) secAny = true;
+      });
+      sec.hidden = !!v && !secAny; if (secAny) any = true;
+    });
+    nav.querySelectorAll('.sidebar-divider').forEach(d => { d.hidden = !!v; });
+    noq.hidden = !v || any;
+  }
+  q.addEventListener('input', filter);
+  q.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { q.value = ''; filter(); q.blur(); }
+    if (e.key === 'Enter') {
+      const first = [...nav.querySelectorAll('.sidebar-subitem, .pk-nv-item')].find(a => a.offsetParent && !a.hidden && (!a.classList.contains('pk-nav-group') || norm(a.textContent).includes(norm(q.value.trim()))));
+      if (first) { e.preventDefault(); go(first.dataset.route, true); q.value = ''; filter(); }
+    }
   });
-  nav.addEventListener('scroll', () => nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => x.classList.remove('fly')));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => x.classList.remove('fly')); });
+  noq.querySelector('[data-allsearch]').addEventListener('click', e => {   // the site-wide search (pages, sections, charts) with what was typed
+    e.preventDefault(); const t = q.value;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
+    setTimeout(() => { const i = document.querySelector('#pk-search input'); if (i) { i.value = t; i.dispatchEvent(new Event('input', { bubbles: true })); } }, 60);
+  });
 
   // a short message (unknown address)
   function notice(msg) {
@@ -203,15 +253,25 @@
 
   function mark(route) {
     const own = owner[route] || route;
-    nav.querySelectorAll('.pk-nv-item[data-route], .pk-nv-small[data-route]').forEach(a => { const on = a.dataset.route === own; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-    nav.querySelectorAll('.pk-nv-subl').forEach(a => { const on = a.dataset.route === route; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-    nav.querySelectorAll('.pk-nv-grp').forEach(g => g.classList.toggle('open', g.dataset.entry === own));
-    nav.querySelectorAll('.has-active-subitem').forEach(x => x.classList.remove('has-active-subitem'));   // left by the old Prices group code
+    nav.querySelectorAll('.pk-nv-item').forEach(a => {
+      const grp = a.classList.contains('pk-nav-group'), on = a.dataset.route === own;
+      a.classList.toggle('active', on && !grp);                       // a plain entry: the green active style
+      a.classList.toggle('has-active-subitem', on && grp);            // a group: its header lights, the page is marked below
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    nav.querySelectorAll('.sidebar-subitem').forEach(a => { const on = a.dataset.route === route; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    const wrap = nav.querySelector('.pk-nav-wrap[data-entry="' + own + '"]');
+    if (wrap && !wrap.classList.contains('open')) setOpen(wrap, true); else nav.querySelectorAll('.pk-nav-wrap.open').forEach(w => setTimeout(() => path(w), 60));
+    // the section of the page: highlighted, and opened if it was folded
+    nav.querySelectorAll('.sidebar-section').forEach(sc => {
+      const mine = !!sc.querySelector('.pk-nv-item[aria-current]') && !!sc.querySelector('.sidebar-section-label');
+      sc.classList.toggle('section-active', mine);
+      if (mine && sc.classList.contains('collapsed') && typeof window.toggleSection === 'function') window.toggleSection(sc.id);
+    });
     // breadcrumbs inside the pages name the old menu: show the new section
-    const e0 = nav.querySelector('.pk-nv-top[data-route="' + own + '"] span');
+    const e0 = nav.querySelector('.pk-nv-top-sec [data-route="' + own + '"] span');
     const sec = sectionOf[own] || (e0 ? e0.textContent.trim() : null), pg = document.querySelector('.page.active');
     if (sec && pg) pg.querySelectorAll('.pr-breadcrumb-parent').forEach(c => { if (c.textContent !== sec) c.textContent = sec; });
-    nav.querySelectorAll('.sidebar-section').forEach(sc => sc.classList.toggle('section-active', !!sc.querySelector('.sidebar-item.active') && !!sc.querySelector('.pk-nv-label')));
     document.querySelectorAll('.pk-gbar').forEach(g => { g.hidden = g.dataset.entry !== own; });
     document.querySelectorAll('.pk-gbar a').forEach(a => a.classList.toggle('on', a.dataset.route === route));
   }
@@ -268,6 +328,11 @@
 
   // a click on any menu or bar link
   document.addEventListener('click', e => {
+    const fold = e.target.closest('.pk-nav-chev[data-fold]');
+    if (fold && nav.contains(fold)) {   // the chevron of a group folds or unfolds it, without leaving the page
+      e.preventDefault(); e.stopPropagation(); e.pkFold = true;
+      const wrap = fold.closest('.pk-nav-group').nextElementSibling; setOpen(wrap, !wrap.classList.contains('open')); return;
+    }
     const a = e.target.closest('a[data-route]');
     if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // new tab / window: the browser opens the address
     e.preventDefault();
@@ -318,8 +383,8 @@
     const ctl = id => '<label class="pk-zone" title="Zone the pages open on, kept in this browser"><span>Zone</span><select id="' + id + '"><option value="all">Europe</option><option value="FR">France</option></select></label>';
     const host = document.querySelector('.topbar-tabs');
     if (host) host.innerHTML = ctl('pk-zone');
-    const foot = nav.querySelector('.pk-nv-foot');
-    if (foot) foot.insertAdjacentHTML('afterbegin', '<div class="pk-nv-zone">' + ctl('pk-zone-m') + '</div>');
+    const srch = nav.querySelector('.pk-nv-search');   // phones: the top bar has no room, the zone sits in the menu
+    if (srch) srch.insertAdjacentHTML('afterend', '<div class="pk-nv-zone">' + ctl('pk-zone-m') + '</div>');
     const sels = [...document.querySelectorAll('#pk-zone, #pk-zone-m')];
     const sync = () => { if (window.PKScope) sels.forEach(s => { s.value = PKScope.get() === 'FR' ? 'FR' : 'all'; }); };
     sync();
@@ -330,26 +395,22 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  .pk-nv{display:flex;flex-direction:column}
-  .pk-nv .pk-nv-sec{padding:6px 0 2px}
-  .pk-nv .pk-nv-sec:first-child{padding-top:12px}
-  .pk-nv .pk-nv-label{cursor:default;padding:8px 16px 4px}
-  .pk-nv .pk-nv-label:hover{color:var(--text3)}
-  .pk-nv a.sidebar-item{text-decoration:none}
-  .pk-nv .pk-nv-top{font-weight:600;color:var(--text)}
+  .pk-nv a.sidebar-item, .pk-nv a.sidebar-subitem{text-decoration:none}
+  .pk-nv a.sidebar-subitem{display:block}
+  .pk-nv .pk-nv-top-sec{padding-top:6px}
+  .pk-nv .pk-nv-top-sec .sidebar-item{font-weight:600;color:var(--text)}
   .pk-nv .sidebar-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pk-nv-foot{margin-top:auto;border-top:1px solid var(--border);padding:10px 12px 14px;display:flex;flex-wrap:wrap;gap:2px 4px}
-  .pk-nv-small{font-size:11.5px;color:var(--text3);text-decoration:none;padding:6px 8px;min-height:28px;display:inline-flex;align-items:center;border-radius:5px}
-  .pk-nv-small:hover{color:var(--text);background:var(--bg3)}
-  .pk-nv-small.active{color:var(--accent);background:var(--accent-dim)}
-  .pk-nv .pk-nv-more{margin-left:auto;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);opacity:.45;flex:none}
-  .pk-nv-grp.open .pk-nv-more{transform:rotate(45deg)}
-  .pk-nv-sub{display:none}
-  .pk-nv-grp.open .pk-nv-sub{display:flex;flex-direction:column;padding:0 0 4px 42px}
-  .pk-nv-subl{font-size:12.5px;color:var(--text3);text-decoration:none;padding:5px 10px;border-radius:5px;min-height:28px;display:flex;align-items:center}
-  .pk-nv-subl:hover{color:var(--text);background:var(--bg3)}
-  .pk-nv-subl.on{color:var(--accent)}
-  .pk-nv-grp.fly .pk-nv-sub{display:flex;flex-direction:column;position:fixed;z-index:1200;min-width:210px;padding:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .pk-nv .pk-nav-chev{cursor:pointer;padding:4px;margin-right:-4px;width:19px;height:19px;box-sizing:border-box;border-radius:4px}
+  .pk-nv .pk-nav-chev:hover{background:rgba(255,255,255,.08);opacity:1}
+  .pk-nv-search{padding:12px 12px 4px;position:relative}
+  .pk-nv-search input{width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font:inherit;font-size:12.5px;padding:7px 10px}
+  .pk-nv-search input:focus{outline:none;border-color:var(--accent)}
+  .pk-nv-noq{display:block;font-size:11.5px;color:var(--text3);padding:8px 4px 0}
+  .pk-nv-noq[hidden]{display:none}
+  .pk-nv-noq a{color:var(--accent)}
+  .pk-nv.pk-nv-searching .sidebar-section.collapsed .sidebar-section-items{max-height:none!important}
+  .pk-nv.pk-nv-searching .sidebar-section-items{max-height:none!important}
+  [data-theme="light"] .pk-nv .pk-nav-chev:hover{background:rgba(0,0,0,.06)}
   .pk-nv-notice{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:3000;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
   @media (min-width:769px){.pk-gbar{display:none!important}}
   @media (max-width:768px){.page:has(> .pk-gbar:not([hidden])) .pr-breadcrumb{display:none}}
