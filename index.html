@@ -4471,7 +4471,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <script src="js/commodities.js"></script>
 <script src="js/carbon.js"></script>
 <script src="js/carbon-ghg.js"></script>
-<script src="js/prices.js"></script>
+<!-- Prices, split by part (former js/prices.js): loaded in this order -->
+<script src="js/prices/core.js"></script>
+<script src="js/prices/board.js"></script>
+<script src="js/prices/envelope.js"></script>
+<script src="js/prices/compare.js"></script>
+<script src="js/prices/fullscreen.js"></script>
+<script src="js/prices/home.js"></script>
 <script src="js/ticker.js"></script>
 <script src="js/genmix.js"></script>
 <script src="js/genmix-daily.js"></script>
