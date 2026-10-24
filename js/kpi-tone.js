@@ -8,7 +8,7 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const num = s => { const m = String(s).replace(/−/g, '-').match(/([+-]?\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : null; };
+  const num = s => { const m = String(s).replace(/−/g, '-').replace(/(\d)[\u202f\u00a0 ](?=\d{3}\b)/g, '$1').match(/([+-]?\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : null; };
   const sign = (re, up) => card => {
     const leaf = leaves(card).find(e => re.test(e.textContent));
     if (!leaf) return null;
@@ -34,11 +34,11 @@
 
   // [label pattern, rule]
   const RULES = [
-    [/gas storage/i, sign(/[+-]?\d+(?:\.\d+)? pts vs/, 'good')],
+    [/gas storage/i, sign(/[+-]?\d+(?:[.,]\d+)? pts vs/, 'good')],
     [/% ?renewable|avg %ren/i, sign(/[▲▼][^v]*vs/, 'good')],
     [/vs panel avg/i, valueSign('good')],
     [/yoy demand/i, valueSign('bad')],
-    [/^go .*cal|delta wow/i, sign(/[+-]\d+(?:\.\d+)?\s*(?:€|vs last week)/, 'bad')],
+    [/^go .*cal|delta wow/i, sign(/[+-]\d+(?:[.,]\d+)?\s*(?:€|vs last week|vs semaine précédente)/, 'bad')],
     [/^vs last year$/i, valueSign('good')],
     [/vs 5-year same date/i, valueSign('bad')],
     [/(solar|wind) capture/i, ofBase],
@@ -50,7 +50,9 @@
 
   function apply(card) {
     const lab = card.querySelector('.kpi-label'); if (!lab) return;
-    const rule = RULES.find(([re]) => re.test(lab.textContent.trim()));
+    // rules are written on the English label: a French label is read back in English (js/i18n.js)
+    const en = window.pkEN ? window.pkEN(lab.textContent.trim()) : lab.textContent.trim();
+    const rule = RULES.find(([re]) => re.test(en) || re.test(lab.textContent.trim()));
     if (!rule) return;
     let r = null;
     try { r = rule[1](card); } catch (_) {}
