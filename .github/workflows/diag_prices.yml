@@ -1,0 +1,23 @@
+name: Diagnosis of day-ahead documents
+# One-off: what ENTSO-E sends for a zone and a day (scripts/diag_prices.py → data/history/diag_prices.json)
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/diag_prices.py', '.github/workflows/diag_prices.yml']
+  workflow_dispatch:
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q requests==2.33.1
+      - env: { ENTSOE_TOKEN: '${{ secrets.ENTSOE_TOKEN }}' }
+        run: python scripts/diag_prices.py
+      - run: |
+          git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
+          git add data/history/diag_prices.json && git commit -q -m "data: day-ahead documents diagnosis" || exit 0
+          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; sleep 5; done
