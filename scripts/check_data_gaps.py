@@ -143,14 +143,30 @@ def checks():
         age = 999
     if age > 48:
         add('pricecheck', 'stale', f'Second source (Energy-Charts) not consulted for {int(age)} h', 'flagged: holes job, once a day')
+    # a zone repaired after its last comparison: its old differences are not shown, the check is pending
+    rl = load('data/history/repair_log.json') or {}
+    pending = set()
+    for z, r in (rl.get('zones') or {}).items():
+        checked = ((pc.get('zones') or {}).get(z) or {}).get('checked') or pc.get('updated') or ''
+        if r.get('days_changed') and rl.get('run', '') > checked:
+            pending.add(z)
+            add('pricecheck', f'pending:{z}', f"{z}: history repaired on {rl['run'][:16].replace('T', ' ')}, second-source check not run since", 'auto: next daily check')
     for z, info in (pc.get('zones') or {}).items():
+        if z in pending:
+            continue
         for row in info.get('days') or []:
-            add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts", 'auto: asked again to ENTSO-E (last 30 days)')
+            recent = (NOW.date() - date.fromisoformat(row['day'])).days <= 30
+            add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts",
+                'auto: asked again to ENTSO-E' if recent else 'older than 30 days: run the repair_prices workflow for this zone')
     # second sources for France production (RTE vs Energy-Charts), Brent and EUR/USD (FRED): scripts/verify_markets.py
     mc = load('data/history/market_check.json') or {}
     for row in ((mc.get('generation') or {}).get('days') or []):
         add('gencheck', f"{row['day']}:{row['field']}", f"{row['day']}: France {row['field']} {row['rte']} MW (RTE) vs {row['ec']} MW (Energy-Charts), {row['pct']} %", 'auto: RTE month fetched again')
     for k, lab in (('brent', 'Brent'), ('eurusd', 'EUR/USD')):
+        if (mc.get(k) or {}).get('error'):   # a check that compared nothing is a problem, not a pass
+            add('mktcheck', f'{k}:error', f"{lab}: second source not compared ({mc[k]['error']})", 'flagged: market job, next run')
+        if (mc.get(k) or {}).get('stale_since'):
+            add('mktcheck', f'{k}:stale', f"{lab}: same value every day since {mc[k]['stale_since']} while FRED moves (feed stuck?)", 'flagged: check the SEFE cockpit feed')
         for row in ((mc.get(k) or {}).get('days') or [])[-10:]:
             add('mktcheck', f"{row['day']}:{k}", f"{row['day']}: {lab} {row['ours']} here vs {row['ref']} (FRED), {row['pct']} %", 'flagged: market job')
     try:
