@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         if: steps.secret.outputs.ok == 'true'
-        run: pip install -q 'psycopg[binary]>=3.2'
+        run: pip install -q 'psycopg[binary]==3.3.2'
       - name: Evaluate and send
         if: steps.secret.outputs.ok == 'true'
         env:

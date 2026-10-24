@@ -156,6 +156,9 @@
     const issues = window.PK_FEED_ISSUES || [];
     fi.innerHTML = issues.length ? issues.map(i => `<li><b>${i.code}</b> · ${i.date} · ${i.issue} — excluded from tables, KPIs and charts.</li>`).join('')
       : '<li style="color:var(--text3)">No feed problem detected in the data loaded on this page.</li>';
+    // errors met by this browser since the page was opened (js/net.js)
+    const er = window.PK_ERRORS || [];
+    if (er.length) fi.insertAdjacentHTML('beforeend', er.slice(-10).map(e => `<li><b>Error</b> · ${String(e.at).slice(11, 16)} UTC · ${String(e.page).replace(/[<>&"]/g, '')} · ${String(e.msg).replace(/[<>&"]/g, '')} <span style="color:var(--text3)">${String(e.where).replace(/[<>&"]/g, '')}</span></li>`).join(''));
 
     // History depth per zone (daily files, via summary.json)
     const cov = document.getElementById('status-coverage');

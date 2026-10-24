@@ -1158,7 +1158,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
   // ── Excel export ──
   function loadXLSX() {
     if (window.XLSX) return Promise.resolve();
-    return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = res; sc.onerror = () => rej(new Error('Excel library failed to load')); document.head.appendChild(sc); });
+    return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'js/vendor/xlsx.full.min.js'; sc.onload = res; sc.onerror = () => rej(new Error('Excel library failed to load')); document.head.appendChild(sc); });
   }
   async function exportXlsx() {
     const o = S.last; if (!o) return;
@@ -1190,7 +1190,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       add('Percentiles P1-P100', o.pcts.map((p, i) => ({ Percentile: p, 'Annual P&L k€': r2(o.pnlCurve[i]) })));
       add('Scenarios', o.scen.map(r => ({ Scenario: r.name, 'Low k€': r2(r.p10), 'Central k€': r2(r.p50), 'High k€': r2(r.p90) })));
       if (A) add('Monte Carlo', A.years.map(r => ({ Year: r.y, 'Shape disc projected': r4(r.sdTrend), 'Shape disc P50': r4(r.sd50), 'Shape disc P90': r4(r.sd90), 'Capture P50 €/MWh': r2(r.cp50), 'P&L P10 k€': r2(r.p10), 'P&L P50 k€': r2(r.p50), 'P&L P90 k€': r2(r.p90), 'Std k€': r2(r.std) })));
-      XLSX.writeFile(wb, `PowerKlock_PPA_${S.tech}_${o.tenor[0]}-${o.tenor[o.tenor.length - 1]}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      XLSX.writeFile(wb, `PowerKlock_PPA_${S.tech}_${o.tenor[0]}-${o.tenor[o.tenor.length - 1]}_${pkTodayISO()}.xlsx`);
     } catch (e) { console.warn('[ppa] xlsx', e); }
     if (btn) btn.textContent = '⤓ Excel';
   }

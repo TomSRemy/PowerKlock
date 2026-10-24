@@ -595,7 +595,7 @@
   //   (ready to paste in a mail or a chat), saved as PNG on request
   function shotBlob(root) {
     const el = root.querySelector('.pk-fs-screenshot');
-    const ready = window.html2canvas ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+    const ready = window.html2canvas ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'js/vendor/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
     return ready.then(() => new Promise(r => setTimeout(r, 450)))
       .then(() => window.html2canvas(el, { backgroundColor: '#060a0f', scale: 2, logging: false, ignoreElements: e => e.classList && e.classList.contains('pk-fs-screenshot-exit') }))
       .then(cv => new Promise(res => cv.toBlob(res, 'image/png')));

@@ -6,7 +6,7 @@ window._pkGetGifWorkerUrl = window._pkGetGifWorkerUrl || (function () {
   let cached = null;
   return async function () {
     if (cached) return cached;
-    const res = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    const res = await fetch('js/vendor/gif.worker.js');
     if (!res.ok) throw new Error('Failed to fetch gif.worker.js (' + res.status + ')');
     cached = URL.createObjectURL(await res.blob());
     return cached;
@@ -9560,7 +9560,7 @@ window.renderHistMonthlyTable = renderHistMonthlyTable;
 // ════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   // Init date pickers: cap at today
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = pkTodayISO();   // Paris, not UTC
   const dfEl = document.getElementById('ho-date-from');
   const dtEl = document.getElementById('ho-date-to');
   if (dfEl) dfEl.max = todayStr;
@@ -10741,7 +10741,7 @@ function _bdHodShape(zone, summary) {
     return new Promise((resolve, reject) => {
       if (typeof GIF !== 'undefined') { resolve(); return; }
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+      s.src = 'js/vendor/gif.js';
       s.onload = () => resolve();
       s.onerror = () => reject(new Error('Failed to load gif.js'));
       document.head.appendChild(s);
@@ -11448,7 +11448,7 @@ function _bdHodShape(zone, summary) {
   window.histAnnualDownloadGif = async function () {
     if (typeof window.GIF === 'undefined') {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js';
+      script.src = 'js/vendor/gif.js';
       script.onload = () => window.histAnnualDownloadGif();
       script.onerror = () => alert('Failed to load gif.js library');
       document.head.appendChild(script);

@@ -22,6 +22,7 @@ permissions:
 jobs:
   fetch-go-prices:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -44,3 +45,11 @@ jobs:
           git add data/go_prices.csv
           git diff --cached --quiet || git commit -m "auto: update go_prices.csv [$(date +%Y-%m-%d)]"
           git push
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

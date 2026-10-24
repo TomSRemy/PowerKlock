@@ -23,6 +23,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write
     steps:
@@ -86,9 +87,17 @@ jobs:
           git commit -m "data: update $(date -u '+%Y-%m-%d %H:%M UTC')"
           # Retry up to 5 times if main has moved (manual push during this run)
           for i in 1 2 3 4 5; do
-            git pull --rebase origin main && git push && exit 0
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
             echo "Push attempt $i failed, retrying in 5s..."
             sleep 5
           done
           echo "Failed to push after 5 attempts."
           exit 1
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

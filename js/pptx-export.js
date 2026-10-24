@@ -15,8 +15,8 @@
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
-  const LIB = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
-  const H2C = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  const LIB = 'js/vendor/pptxgen.bundle.js';
+  const H2C = 'js/vendor/html2canvas.min.js';
   const KEY = 'pk-pptx-opts';
   const THEMES = {
     dark: { bg: '0A0E13', card: '#0F1419', bd: '1E2D3D', tx: 'FFFFFF', tx2: 'B8C9D9', tx3: '7A93AB' },
@@ -132,7 +132,7 @@
     return specs;
   }
   const fit = (box, ratio) => { let w = box.w, h = box.w / ratio; if (h > box.h) { h = box.h; w = box.h * ratio; } return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h }; };
-  const fileName = board => board.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pptx';
+  const fileName = board => board.name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') + '_' + pkTodayISO() + '.pptx';
   function addNative(pptx, s, native, box, T, F) {
     const opts = { x: box.x, y: box.y, w: box.w, h: box.h, showLegend: true, legendPos: 'b', legendFontFace: F, legendFontSize: 13, legendColor: T.tx2,
       catAxisLabelColor: T.tx3, valAxisLabelColor: T.tx3, catAxisLabelFontSize: 12, valAxisLabelFontSize: 12, valGridLine: { color: T.bd, size: 0.5 }, catGridLine: { style: 'none' },
@@ -197,7 +197,7 @@
   // The template's slides are dropped; new slides use its layouts (Title,
   // Section header, Title only, Title and content), so master, logos,
   // fonts and footers are the template's own and can be re-applied later.
-  const ZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  const ZIP = 'js/vendor/jszip.min.js';
   const NS = { p: 'http://schemas.openxmlformats.org/presentationml/2006/main', r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', ct: 'http://schemas.openxmlformats.org/package/2006/content-types', pr: 'http://schemas.openxmlformats.org/package/2006/relationships' };
   const RT = t => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/' + t;
   const EMU = 914400;

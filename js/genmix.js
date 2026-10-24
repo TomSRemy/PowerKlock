@@ -1417,7 +1417,7 @@ function _gmDownloadChart(zone) {
   const dataUrl = chart.toBase64Image('image/png', 1, bgFill);
   const a = document.createElement('a');
   a.href = dataUrl;
-  a.download = `powerklock_genmix_${zone}_${new Date().toISOString().slice(0,10)}.png`;
+  a.download = `powerklock_genmix_${zone}_${pkTodayISO()}.png`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
