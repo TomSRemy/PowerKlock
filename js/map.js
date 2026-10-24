@@ -570,13 +570,9 @@ mapStyle.textContent = `
 document.head.appendChild(mapStyle);
 
 
-const DATA_BASE = (() => {
-  const loc = window.location.href.toLowerCase();
-  if (loc.includes('github.io') || loc.includes('localhost') || loc.includes('127.0.0.1')) {
-    return './data/';
-  }
-  return null;
-})();
+// the data folder next to the page, wherever the site is served (GitHub Pages, Cloudflare, local server);
+// none when the page is opened as a file
+const DATA_BASE = (() => /^https?:$/.test(window.location.protocol) ? './data/' : null)();
 
 async function fetchJSON(file) {
   if (!DATA_BASE) return null;

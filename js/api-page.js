@@ -9,7 +9,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const SITE = 'https://tomsremy.github.io/PowerKlock/', RAW = 'https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/';
+  const SITE = location.origin + location.pathname.replace(/index\.html$/, ''),   // the address the site is served from
+        RAW = 'https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/';
   let wired = false;
 
   function copyBtn(text) { return `<button type="button" class="pk-btn-ghost api-copy" data-copy="${esc(text)}">Copy</button>`; }
