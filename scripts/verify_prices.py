@@ -18,7 +18,10 @@ DAILY = os.path.join(ROOT, 'data', 'history', 'daily')
 OUT = os.path.join(ROOT, 'data', 'history', 'price_check.json')
 PARIS = ZoneInfo('Europe/Paris')
 EC = {'FR': 'FR', 'DE_LU': 'DE-LU', 'BE': 'BE', 'NL': 'NL', 'ES': 'ES', 'PT': 'PT', 'IT_NORD': 'IT-North', 'CH': 'CH', 'AT': 'AT',
-      'PL': 'PL', 'CZ': 'CZ', 'DK_W': 'DK1', 'DK_E': 'DK2', 'HU': 'HU', 'SI': 'SI', 'FI': 'FI'}
+      'PL': 'PL', 'CZ': 'CZ', 'DK_W': 'DK1', 'DK_E': 'DK2', 'HU': 'HU', 'SI': 'SI', 'FI': 'FI',
+      'BG': 'BG', 'GR': 'GR', 'HR': 'HR', 'RO': 'RO', 'RS': 'RS', 'SK': 'SK', 'ME': 'ME', 'EE': 'EE', 'LT': 'LT', 'LV': 'LV',
+      'NO_1': 'NO1', 'SE': 'SE1', 'IT_SICI': 'IT-Sicily'}
+# not published by Energy-Charts: MK (North Macedonia), GB (no longer on ENTSO-E since 2021), MT
 TOL = 0.5
 
 

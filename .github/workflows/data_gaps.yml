@@ -9,7 +9,7 @@ on:
     - cron: '41 */2 * * *'
   push:
     branches: [main]
-    paths: ['scripts/check_data_gaps.py', '.github/workflows/data_gaps.yml']
+    paths: ['scripts/check_data_gaps.py', 'scripts/verify_prices.py', '.github/workflows/data_gaps.yml']
   workflow_dispatch:
 
 concurrency:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     permissions:
       contents: write
     steps:
@@ -31,7 +31,8 @@ jobs:
         continue-on-error: true
         run: |
           AGE=$(python3 -c "import json,datetime as d;u=json.load(open('data/history/price_check.json'))['updated'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(u)).total_seconds()/3600))" 2>/dev/null || echo 999)
-          if [ "$AGE" -ge 20 ]; then python scripts/verify_prices.py --days 60; else echo "checked ${AGE} h ago"; fi
+          if [ "${{ github.event_name }}" = "push" ]; then python scripts/verify_prices.py --since 2020-01-01      # a change to the check: the whole history again
+          elif [ "$AGE" -ge 20 ]; then python scripts/verify_prices.py --days 60; else echo "checked ${AGE} h ago"; fi
       - run: python scripts/check_data_gaps.py
       - name: Commit and push
         run: |
