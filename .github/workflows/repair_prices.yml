@@ -2,7 +2,8 @@ name: Repair day-ahead price history
 
 # Rebuilds the day-ahead history of some zones from ENTSO-E (scripts/repair_prices.py, a year per
 # request, the European coupling series kept), then compares every zone with the second source
-# (scripts/verify_prices.py → price_check.json). First run: Germany-Luxembourg and Austria since 2020.
+# (scripts/verify_prices.py → price_check.json). Without inputs: every zone since 2020 (clock-change days and
+# the second series fixed everywhere; days already right are not rewritten).
 
 on:
   push:
@@ -10,7 +11,7 @@ on:
     paths: ['scripts/repair_prices.py', '.github/workflows/repair_prices.yml']
   workflow_dispatch:
     inputs:
-      zones: { description: 'Zones (comma separated)', default: 'DE_LU,AT' }
+      zones: { description: 'Zones (comma separated, or ALL)', default: 'ALL' }
       since: { description: 'From (YYYY-MM-DD)', default: '2020-01-01' }
 
 concurrency:
@@ -31,7 +32,7 @@ jobs:
       - name: Rebuild
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-        run: python scripts/repair_prices.py --zones "${{ inputs.zones || 'DE_LU,AT' }}" --from "${{ inputs.since || '2020-01-01' }}"
+        run: python scripts/repair_prices.py --zones "${{ inputs.zones || 'ALL' }}" --from "${{ inputs.since || '2020-01-01' }}"
       - name: Compare with the second source (whole period)
         continue-on-error: true
         run: python scripts/verify_prices.py --since "${{ inputs.since || '2020-01-01' }}"
@@ -40,7 +41,7 @@ jobs:
           git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
           git add data/history/daily data/history/summary.json data/history/repair_log.json data/history/price_check.json
           git diff --staged --quiet && exit 0
-          git commit -q -m "data: day-ahead history repaired (${{ inputs.zones || 'DE_LU,AT' }})"
+          git commit -q -m "data: day-ahead history repaired (${{ inputs.zones || 'ALL' }})"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done
           exit 1
       - name: E-mail on failure
