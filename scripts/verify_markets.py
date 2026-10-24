@@ -4,8 +4,10 @@ Second sources beyond the day-ahead prices (those are in scripts/verify_prices.p
               Energy-Charts (Fraunhofer ISE) public_power, day by day: nuclear, wind, solar, hydro,
               gas, load. A day is flagged when a field differs by more than 3 % and 150 MW on average.
   brent       Brent (SEFE cockpit, ICE front month) against the Brent spot of the US EIA via FRED
-              (DCOILBRENTEU): different instruments, so only a gap above 6 % is flagged (unit error,
-              wrong contract, stale series).
+              (DCOILBRENTEU). Different instruments: the gap is usually within 5 % but the physical spot
+              ran 10 to 25 % above the futures in Apr and Sep-Oct 2026. So only what a second source can
+              prove is flagged: a gap above 30 % (unit error, wrong contract) and a series that stays
+              flat 5 days while FRED moves (stale feed). The monthly mean gap is written as information.
   eurusd      EUR/USD (SEFE cockpit) against the ECB-based FRED series DEXUSEU, tolerance 0.5 %.
 Forwards, TTF, EUA, coal: no free second source.
 
@@ -24,10 +26,10 @@ EC_FIELDS = {'nuclear': ['Nuclear'], 'wind': ['Wind onshore', 'Wind offshore'], 
              'hydro': ['Hydro Run-of-River', 'Hydro water reservoir', 'Hydro pumped storage'], 'gas': ['Fossil gas'], 'load': ['Load']}
 
 
-def get(url, tries=6):
+def get(url, tries=6, headers=UA):
     for k in range(tries):
         try:
-            return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=120).read()
+            return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=120).read()
         except Exception as e:
             if '429' in str(e) or 'timed out' in str(e) or '50' in str(e)[:12]:
                 time.sleep(30 * (k + 1)); continue
@@ -75,7 +77,8 @@ def generation(d0, d1):
 
 
 def fred(series):
-    raw = get(f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}')
+    # FRED leaves requests with a custom User-Agent unanswered: Python's default one is accepted
+    raw = get(f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}', tries=3, headers={})
     if not raw:
         return {}
     out = {}
@@ -87,9 +90,13 @@ def fred(series):
     return out
 
 
-def series_check(key, ref, tol, d0):
+def series_check(key, ref, tol, d0, stale_days=None):
+    if not ref:   # no reference: an error, never "0 agree, 0 differ" that reads as all clear
+        return {'error': 'FRED not reached', 'agree': 0, 'differ': 0, 'days': [], 'tolerance_pct': tol * 100}
     pts = (((load('data/history/commodities_series.json') or {}).get('series') or {}).get(key) or {}).get('points') or []
     agree, diff = 0, []
+    if not any(d >= d0 and d in ref for d, _ in pts):
+        return {'error': 'no common day with FRED in the window', 'agree': 0, 'differ': 0, 'days': [], 'tolerance_pct': tol * 100}
     for d, v in pts:
         if d < d0 or d not in ref or v is None:
             continue
@@ -98,7 +105,18 @@ def series_check(key, ref, tol, d0):
             diff.append({'day': d, 'ours': v, 'ref': r, 'pct': round((v / r - 1) * 100, 1)})
         else:
             agree += 1
-    return {'agree': agree, 'differ': len(diff), 'days': diff[-60:], 'tolerance_pct': tol * 100}
+    out = {'agree': agree, 'differ': len(diff), 'days': diff[-60:], 'tolerance_pct': tol * 100}
+    win = [(d, v) for d, v in pts if d >= d0 and v is not None and d in ref and ref[d]]
+    if win:   # information only: mean gap to the reference over the window
+        out['mean_gap_pct'] = round(sum((v / ref[d] - 1) * 100 for d, v in win) / len(win), 1)
+    if stale_days:   # our value unchanged for stale_days quotes in a row while the reference moved
+        run, start = 1, None
+        for (d0_, v0), (d1_, v1) in zip(win, win[1:]):
+            run = run + 1 if v1 == v0 else 1
+            if run == 1: start = d1_
+            if run >= stale_days and ref[d1_] != ref[win[0][0]]:
+                out['stale_since'] = start; break
+    return out
 
 
 def main():
@@ -109,8 +127,9 @@ def main():
     d0 = d1 - timedelta(days=a.days)
     out = {'updated': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'window': [d0.isoformat(), d1.isoformat()]}
     out['generation'] = generation(d0.isoformat(), d1.isoformat()) or {'error': 'Energy-Charts not reached'}
-    out['brent'] = series_check('brent', fred('DCOILBRENTEU'), 0.06, d0.isoformat())
-    out['eurusd'] = series_check('eurusd', fred('DEXUSEU'), 0.005, d0.isoformat())
+    out['brent'] = series_check('brent', fred('DCOILBRENTEU'), 0.30, d0.isoformat(), stale_days=5)
+    # SEFE's EUR/USD is taken during the day, FRED's at noon New York: up to 0.6 % apart on a busy day
+    out['eurusd'] = series_check('eurusd', fred('DEXUSEU'), 0.01, d0.isoformat(), stale_days=5)
     json.dump(out, open(OUT, 'w'), indent=0)
     for k in ('generation', 'brent', 'eurusd'):
         v = out[k]; print(k, {x: v[x] for x in v if x != 'days'}, (v.get('days') or [])[-3:])

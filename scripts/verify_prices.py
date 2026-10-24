@@ -6,7 +6,8 @@ and scripts/check_data_gaps.py shows the ones that stay different on Data status
 
 Days are market days (CET), as ENTSO-E publishes them for every zone of the European coupling.
 
-    python scripts/verify_prices.py [--days 60 | --since 2020-01-01]
+    python scripts/verify_prices.py [--days 60 | --since 2020-01-01] [--zones BG,RO]
+With --zones only those zones are compared again; the others keep their last result.
 Writes data/history/price_check.json
 """
 import argparse, json, os, sys, time, urllib.request
@@ -43,12 +44,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--days', type=int, default=60)
     ap.add_argument('--since', default=None)
+    ap.add_argument('--zones', default='ALL')
     a = ap.parse_args()
+    only = None if a.zones.upper() == 'ALL' else {z.strip() for z in a.zones.split(',') if z.strip()}
     d1 = date.today() - timedelta(days=1)
     d0 = date.fromisoformat(a.since) if a.since else d1 - timedelta(days=a.days)
     out = {'updated': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'source': 'Energy-Charts (Fraunhofer ISE) day-ahead prices',
            'window': [d0.isoformat(), d1.isoformat()], 'tolerance': TOL, 'zones': {}}
+    if only:   # other zones: their last result is kept, with the date it was made
+        try:
+            prev = json.load(open(OUT))
+            for z, v in (prev.get('zones') or {}).items():
+                if z not in only:
+                    out['zones'][z] = dict(v, checked=v.get('checked') or prev.get('updated'))
+        except Exception:
+            pass
     for z, bzn in EC.items():
+        if only and z not in only:
+            continue
         by = {}
         # a year per request at most
         s = d0
@@ -77,7 +90,7 @@ def main():
                 diff.append({'day': day, 'ours': zz['avg'], 'ec': round(ec, 2)})
             else:
                 agree += 1
-        out['zones'][z] = {'agree': agree, 'differ': len(diff), 'days': diff[-120:], 'explained': known}
+        out['zones'][z] = {'agree': agree, 'differ': len(diff), 'days': diff[-120:], 'explained': known, 'checked': out['updated']}
         print(f'{z:8s} agree {agree:5d}  differ {len(diff):4d}', diff[-3:])
     json.dump(out, open(OUT, 'w'), indent=0)
 

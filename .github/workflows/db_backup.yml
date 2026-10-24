@@ -41,3 +41,15 @@ jobs:
           name: db-backup-${{ github.run_id }}
           path: db.dump.gpg
           retention-days: 90
+      # a failed backup must not go unnoticed: only the e-mail script is checked out (the dump never touches the repository)
+      - uses: actions/checkout@v4
+        if: failure()
+        with: { sparse-checkout: scripts/notify_failure.py, sparse-checkout-cone-mode: false }
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
