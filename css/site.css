@@ -3178,3 +3178,33 @@
 
 /* news vote buttons and line icons */
 .nic{vertical-align:-2px;margin-right:5px;flex:none}.news-vote .nv{color:var(--text2);display:inline-flex;align-items:center;padding:3px 7px}.news-vote .nv:hover{color:var(--accent);border-color:var(--accent)}.news-vote .nv.on{color:var(--accent);border-color:var(--accent);opacity:1}.news-vote .nv .nic{margin:0}.mrn-cat .nic{margin:0}
+
+/* Market analysis, easier to read: roomier key figures, sectioned side panel, labelled forecasts */
+.ma-kpi-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1100px) { .ma-kpi-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ma-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ma-kpi-card { min-width: 0; padding: 12px 14px; gap: 6px; }
+.ma-kpi-label { font-family: Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--tx2); }
+.ma-kpi-spark { width: 64px; height: 18px; }
+.ma-kpi-val { font-size: 24px; }
+.ma-kpi-delta { font-family: Inter, system-ui, sans-serif; font-size: 11.5px; font-weight: 500; }
+.ma-kpi-card.na .ma-kpi-val { font-family: Inter, system-ui, sans-serif; font-size: 15px; font-weight: 500; color: var(--tx3); }
+.ma-lbl-sub { line-height: 1.35; }
+.ma-ht-box { background: var(--bg3); border-radius: 7px; padding: 8px 10px; margin-top: 8px; }
+.ma-ht-box .ma-ht-section { margin-top: 0; font-size: 9.5px; }
+.ma-ht-miss { font-size: 10.5px; color: var(--tx3); margin-top: 4px; font-family: Inter, system-ui, sans-serif; }
+.ma-fc-head2 { margin: 6px 0 10px; }
+.ma-fc-h { font: 600 17px Outfit, Inter, sans-serif; margin: 0; }
+.ma-fc-p { margin: 4px 0 0; font-size: 12.5px; color: var(--tx3); max-width: 90ch; }
+.ma-fc-step { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--tx3); margin: 14px 0 8px; }
+.ma-kpi-card.na .ma-kpi-val { white-space: normal; font-size: 14px; line-height: 1.3; }
+.ma-panel-row { grid-template-columns: 136px 1fr; }
+.ma-panel-label-col { min-width: 0; }
+.ma-panel-label-col .ma-lbl { white-space: normal; line-height: 1.25; }
+/* each series is named at the end of its line (endLabels): the colour keys above the charts are not needed */
+.ma-panel-legend { display: none; }
+.ma-panel-label-col .ma-lbl { text-align: right; }
+.ma-panel-label-col .ma-lbl-sub { text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px; }
+.ma-ht-box .ma-ht-grid { grid-template-columns: 1fr; font-family: Inter, system-ui, sans-serif; font-size: 12px; }
+.ma-ht-box .ma-ht-row .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ma-ht-fc { border: 1px dashed rgba(20,211,169,.35); }

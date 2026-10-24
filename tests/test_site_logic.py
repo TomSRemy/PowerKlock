@@ -76,6 +76,13 @@ def main():
         p.evaluate("history.pushState(null, '', '#nowhere/old'); dispatchEvent(new PopStateEvent('popstate'))"); p.wait_for_timeout(1200)
         check('unknown address: Today and a message', p.evaluate("[location.hash, !!document.querySelector('.pk-nv-notice')]") == ['#today', True])
 
+        # ── menu: a group's name folds and unfolds its pages without leaving the page ──
+        p.evaluate("PKNav.go('markets/spot/negative')"); p.wait_for_timeout(1200)
+        isopen = lambda: p.evaluate("document.querySelector('.pk-nav-wrap[data-entry=\"markets/spot\"]').classList.contains('open')")
+        p.click('.pk-nav-group[data-route="markets/spot"]'); p.wait_for_timeout(400); a1 = isopen()
+        p.click('.pk-nav-group[data-route="markets/spot"]'); p.wait_for_timeout(400); a2 = isopen()
+        check('menu: a group name folds then unfolds, the page stays', (a1, a2, p.evaluate("location.hash")) == (False, True, '#markets/spot/negative'), (a1, a2))
+
         # ── PPA pricer: the four methods give a price, all in a plausible range ──
         p.evaluate("PKNav.go('tools/ppa')"); p.wait_for_timeout(9000)
         vals = p.evaluate("[...document.querySelectorAll('#pp-resbar .pp-rb b')].map(b => parseFloat(b.textContent.replace(/[\\s\\u202f]/g, '').replace(',', '.')))")

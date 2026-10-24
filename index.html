@@ -2220,17 +2220,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px;min-width:0">
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">DA Price</div><div class="ma-lbl-sub">€/MWh</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">Day-ahead price</div><div class="ma-lbl-sub">€/MWh · does it cover a gas plant?</div></div>
           <div class="ma-panel-svg-col" style="height:215px;padding-top:6px"><canvas id="ma-canvas-price" style="width:100%;height:209px"></canvas><div id="ma-legend-price" class="ma-panel-legend"></div></div>
         </div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Residual load</div><div class="ma-lbl-sub">GW · vs nuclear, imports</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">What is left to produce</div><div class="ma-lbl-sub">GW · demand − wind − solar, against nuclear and imports</div></div>
           <div class="ma-panel-svg-col" style="height:190px"><canvas id="ma-canvas-spark" style="width:100%;height:190px"></canvas><div id="ma-legend-resid" class="ma-panel-legend"></div></div>
         </div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Demand vs RES</div><div class="ma-lbl-sub">GW</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">Demand and renewables</div><div class="ma-lbl-sub">GW · wind and solar under demand · dashed = forecast</div></div>
           <div class="ma-panel-svg-col" style="height:190px">
             <canvas id="ma-canvas-loadren" style="width:100%;height:190px"></canvas>
             <!-- Series colours only appeared in the hover tooltip — with the
@@ -2242,7 +2242,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
 
         <div class="ma-panel-row">
-          <div class="ma-panel-label-col"><div class="ma-lbl">Mix supply</div><div class="ma-lbl-sub">GW stacked</div></div>
+          <div class="ma-panel-label-col"><div class="ma-lbl">Who produces</div><div class="ma-lbl-sub">GW, stacked</div></div>
           <div class="ma-panel-svg-col" style="height:210px">
             <canvas id="ma-canvas-mix" style="width:100%;height:210px"></canvas>
             <div id="ma-legend-mix" class="ma-panel-legend"></div>
@@ -2252,12 +2252,14 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <aside id="ma-hover-tooltip" class="ma-hover-tooltip ma-side" aria-live="polite"><div class="ma-ht-time">Hover the charts to read a time slot</div></aside>
       </div>
       <div class="ma-fc-section">
-        <div class="ma-fc-head"><span class="pkf-chip">Forecast</span><span class="ma-fc-title">What comes next</span><span class="ma-fc-sub">grid operators' day-ahead forecasts for today and tomorrow, then the 5-week weather outlook. Not measured data: each card gives the source and the usual error.</span></div>
+        <div class="ma-fc-head2"><h3 class="ma-fc-h">Forecasts</h3><p class="ma-fc-p">What is expected, not measured data. First today and tomorrow, as forecast the day before by the grid operators; then the next 5 weeks, from the weather models. Each card gives its source and its usual error.</p></div>
+        <div class="ma-fc-step">Today and tomorrow · grid operators' forecast</div>
         <div id="ma-fc-tiles" style="margin-bottom:12px"></div>
         <div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">Solar, wind and load · today and tomorrow</div><div class="fuel-card-sub" id="ma-fc-48h-sub">TSO day-ahead forecast</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
           <div style="position:relative;height:300px"><canvas id="ma-fc-48h" style="width:100%;height:300px"></canvas></div>
         </div>
+        <div class="ma-fc-step">Next 5 weeks · weather outlook</div>
         <div class="fuel-grid-2" style="margin-top:14px">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Wind production · next 5 weeks</div><div class="fuel-card-sub" id="ma-fc-wind-sub">Weather ensemble, calibrated on actual output</div></div><span class="source-badge">Open-Meteo GFS</span></div>
