@@ -109,9 +109,12 @@
   // UTILITIES
   // ════════════════════════════════════════════════════════════════
 
+  // French unless the EN / FR button says English (js/i18n.js): dates and the generated sentences
+  const _fr = () => !window.PKI18n || PKI18n.lang !== 'en';
+  const _loc = () => _fr() ? 'fr-FR' : 'en-GB';
   function _fmtDate(d) { return d.toISOString().slice(0, 10); }
   function _dayLabel(d) {
-    return d.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + d.toISOString().slice(8, 10) + '/' + d.toISOString().slice(5, 7);
+    return d.toLocaleDateString(_loc(), { weekday: 'short' }) + ' ' + d.toISOString().slice(8, 10) + '/' + d.toISOString().slice(5, 7);
   }
   function _hexA(hex, a) {
     const h = hex.replace('#', '');
@@ -328,7 +331,7 @@
       }
 
       days.push({
-        date: dateStr, jsDate: dt, dow: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
+        date: dateStr, jsDate: dt, dow: dt.toLocaleDateString(_loc(), { weekday: 'long' }),
         isReal: isReal, price: price, spark: spark, srmc: srmc, nbPrice: nbPrice, wind: wind, solar: solar, load: load,
         mix: mix, carbon: carbon, fc: fc,
         drivers: { ttf: ttf, eua: eua, windSpeed: windSpeed, temp: temp, nucAvail: nucAvail, flux: flux },
@@ -456,7 +459,7 @@
     const windSpeed = f.drivers.windSpeed[i];
     const fossil = f.mix.fossil[i];
     const dt = f.slotDates[i];
-    const dow = dt.toLocaleDateString('en-GB', { weekday: 'long' });
+    const dow = dt.toLocaleDateString(_loc(), { weekday: 'long' });
     const time = String(dt.getHours()).padStart(2, '0') + 'h';
     // Demand: ENTSO-E load when stored, otherwise total generation.
     const totGen = ['nuclear', 'hydro', 'fossil', 'biomass', 'other'].reduce((t, k) => t + (f.mix[k][i] || 0), 0) + (wind || 0) + (solar || 0);
@@ -471,6 +474,34 @@
     const srmc = f.srmc[i], resid = f.resid[i], nucA = f.drivers.nucAvail[i], nbP = f.nbPrice[i], nbN = ZONE_SHORT[data.nbZone] || 'neighbour';
     const parts = [];
     let title, body;
+    const dec = v => _fr() ? String(v).replace('.', ',') : v;   // 12.5 → 12,5
+    const fmt2 = (v, d) => dec(fmt(v, d));
+    if (_fr()) {   // the same sentences in French
+      const nbF = ZONE_SHORT[data.nbZone] || 'voisin';
+      if (moment.kind === 'floor') {
+        title = dowCap + ' ' + time + ' · ' + ((solar || 0) > (wind || 0) ? 'le solaire' : 'l’éolien') + ' fait le prix';
+        if (ok(windSpeed)) parts.push('vent à ' + fmt2(windSpeed) + ' m/s (100 m)');
+        if (ok(wind) || ok(solar)) parts.push(W(fmt2((wind || 0) + (solar || 0)) + ' GW d’éolien et de solaire') + (load != null ? ' pour ' + fmt2(demand) + ' GW de demande (' + renCover + ' %)' : ''));
+        if (ok(resid) && ok(nucA)) parts.push('demande résiduelle de ' + fmt2(resid) + ' GW, ' + (resid < nucA ? 'sous' : 'au-dessus de') + ' ' + fmt2(nucA, 0) + ' GW de nucléaire disponible');
+        body = (parts.length ? parts.join(', ') + ' : ' : '') + 'le gaz sort de l’ordre de mérite' + (ok(srmc) ? ' (coût ' + fmt2(srmc, 0) + ' €)' : '') + ', le prix tombe à <b style="color:#14D3A9">' + fmt2(price, 1) + ' €</b>' + (ok(nbP) ? ' (' + nbF + ' ' + fmt2(nbP, 0) + ' €)' : '') + '.';
+      } else if (moment.kind === 'peak') {
+        title = dowCap + ' ' + time + ' · pic';
+        if (ok(wind)) parts.push('seulement <b style="color:#ED6965">' + fmt2(wind) + ' GW</b> d’éolien' + (ok(windSpeed) ? ' (' + fmt2(windSpeed) + ' m/s)' : ''));
+        if (ok(load)) parts.push('demande à ' + fmt2(demand) + ' GW');
+        if (ok(resid) && ok(nucA)) parts.push('demande résiduelle ' + W(fmt2(resid) + ' GW') + ' pour ' + fmt2(nucA, 0) + ' GW de nucléaire');
+        body = (parts.length ? parts.join(', ') + ' : ' : '') + (ok(fossil) && fossil > 0.5 ? 'les centrales gaz tournent (' + W(fmt2(fossil) + ' GW') + ')' : 'il faut des imports et des centrales flexibles')
+          + (ok(srmc) ? ', prix ' + (price > srmc ? W(fmt2(price - srmc, 0) + ' € au-dessus') : W(fmt2(srmc - price, 0) + ' € en dessous')) + ' du coût d’une centrale gaz (' + fmt2(srmc, 0) + ' €)' : '')
+          + (ok(ttf) && ok(eua) ? '. TTF ' + fmt2(ttf, 0) + ' · EUA ' + fmt2(eua, 0) : '') + '.';
+      } else if (moment.kind === 'cannibalisation') {
+        const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
+        title = dowCap + ' ' + time + ' · courbe en canard';
+        body = 'Le solaire à ' + W(fmt2(solar) + ' GW') + (solarCover ? ' couvre ' + solarCover + ' % de la demande' : '') + ' à midi : cannibalisation classique, prix à <b style="color:#A78BFA">' + fmt2(price, 1) + ' €</b>. Le taux de capture solaire en pâtit.';
+      } else {
+        title = dowCap + ' · creux du week-end';
+        body = (ok(demand) && demand > 0 ? 'Industrie à l’arrêt, demande ' + W(fmt2(demand) + ' GW') + ', ' : 'Industrie à l’arrêt, ') + 'le nucléaire module, l’hydraulique stocke. Pas de tension, prix ' + fmt2(price, 0) + ' €' + (ok(srmc) ? ' pour un coût de centrale gaz de ' + fmt2(srmc, 0) + ' €' : '') + '.';
+      }
+      return { title: title, body: body.charAt(0).toUpperCase() + body.slice(1), price: fmt2(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
+    }
     if (moment.kind === 'floor') {
       title = dowCap + ' ' + time + ' · ' + ((solar || 0) > (wind || 0) ? 'solar' : 'wind') + ' sets the price';
       if (ok(windSpeed)) parts.push('wind at ' + fmt(windSpeed) + ' m/s (100 m)');
@@ -493,7 +524,7 @@
       title = dowCap + ' · weekend lull';
       body = (ok(demand) && demand > 0 ? 'Industry idle, load ' + W(fmt(demand) + ' GW') + ', ' : 'Industry idle, ') + 'nuclear modulating, hydro storing. No system stress, price ' + fmt(price, 0) + ' €' + (ok(srmc) ? ' vs a gas plant cost of ' + fmt(srmc, 0) + ' €' : '') + '.';
     }
-    return { title: title, body: body, price: fmt(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
+    return { title: title, body: body.charAt(0).toUpperCase() + body.slice(1), price: fmt(price, price < 1 ? 2 : 1), spark: fmt(spark, 0) };
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -585,7 +616,7 @@
     return f.slotDates.map((dt, i) => {
       const slotInDay = i % slotsPerDay;
       if (slotInDay === 0) {
-        return dt.toLocaleDateString('en-GB', { weekday: 'short' }) + ' ' + String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
+        return dt.toLocaleDateString(_loc(), { weekday: 'short' }) + ' ' + String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0');
       }
       return '';
     });
@@ -661,7 +692,7 @@
         label: 'Gas plant cost', endLabel: 'Gas plant cost', data: f.srmc,
         borderColor: DRIVER_COLOURS.ttf, borderWidth: 1.3, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false,
       }, {
-        label: (ZONE_SHORT[STATE.data.nbZone] || '') + ' price', endLabel: ZONE_NAME[STATE.data.nbZone] || 'Neighbour', data: f.nbPrice,
+        label: (_fr() ? 'Prix ' : '') + (ZONE_SHORT[STATE.data.nbZone] || '') + (_fr() ? '' : ' price'), endLabel: ZONE_NAME[STATE.data.nbZone] || 'Neighbour', data: f.nbPrice,
         borderColor: 'rgba(127,200,248,0.75)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false, spanGaps: false,
       }],
     }, _commonChartOpts('€/MWh'));
@@ -798,7 +829,7 @@
     if (idx < 0 || idx >= f.price.length) { tip.style.display = 'none'; return; }
 
     const dt = f.slotDates[idx];
-    const dateLbl = dt.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const dateLbl = dt.toLocaleDateString(_loc(), { weekday: 'short', day: '2-digit', month: '2-digit' });
     const timeLbl = String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
 
     const price = f.price[idx];
@@ -856,7 +887,7 @@
           + '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">Day-ahead ' + (ZONE_SHORT[STATE.zone] || '') + '</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
           + '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (has(spark) ? (spark >= 0 ? '+' : '') + fx(spark, 0) : '--') + ' <span class="u">€</span></div></div>'
           + '</div>'
-          + rows([[DRIVER_COLOURS.ttf, 'Gas plant cost', srmc, '€', 0], ['rgba(127,200,248,0.75)', (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' price', nbP, '€', 0]]))
+          + rows([[DRIVER_COLOURS.ttf, 'Gas plant cost', srmc, '€', 0], ['rgba(127,200,248,0.75)', (_fr() ? 'Prix ' + (ZONE_SHORT[STATE.data.nbZone] || 'voisin') : (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' price'), nbP, '€', 0]]))
       + box('Who sets the price', '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + marginal + '</div>')
       + (isFc ? fcBlock : '')
       + box('Generation and demand', rows([
@@ -919,11 +950,11 @@
     const host = document.getElementById('ma-cursor-badges');
     if (!host) return;
     const moments = STATE.cursors;
-    const labels = { floor: 'Floor', peak: 'Peak', cannibalisation: 'Cannibal', weekend: 'Weekend' };
+    const labels = _fr() ? { floor: 'Plancher', peak: 'Pic', cannibalisation: 'Cannibalisation', weekend: 'Week-end' } : { floor: 'Floor', peak: 'Peak', cannibalisation: 'Cannibal', weekend: 'Weekend' };
     host.innerHTML = moments.map(function (m, i) {
       const colour = EPISODE_KIND_COLOURS[m.kind] || '#7A93AB';
       const dt = STATE.data.flat.slotDates[m.idx];
-      const day = dt.toLocaleDateString('en-GB', { weekday: 'short' });
+      const day = dt.toLocaleDateString(_loc(), { weekday: 'short' });
       const time = String(dt.getHours()).padStart(2, '0') + 'h';
       const price = STATE.data.flat.price[m.idx];
       return '<span class="ma-cursor-badge" style="color:' + colour + ';border-color:' + _hexA(colour, 0.4) + ';background:' + _hexA(colour, 0.12) + '">'

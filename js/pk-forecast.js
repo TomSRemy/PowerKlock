@@ -104,7 +104,8 @@
       g.font = '600 9px "IBM Plex Mono", "JetBrains Mono", monospace';
       if (o.from != null && o.from >= 0 && o.from < n) {
         const x0 = Math.max(a.left, ch.scales.x.getPixelForValue(o.from));
-        const t = o.label || 'FORECAST';
+        const tr = x => window.PKI18n && PKI18n.tr ? PKI18n.tr(x) : x;
+        const t = tr(o.label || 'FORECAST');
         const w = g.measureText(t).width + 10;
         if (a.right - x0 > w + 4) {
           g.fillStyle = 'rgba(127,200,248,.18)'; g.fillRect(x0 + 4, a.top + 3, w, 14);
@@ -116,7 +117,7 @@
         g.strokeStyle = 'rgba(184,201,217,.7)'; g.setLineDash([3, 3]); g.lineWidth = 1;
         g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke();
         g.setLineDash([]); g.fillStyle = 'rgba(184,201,217,.9)';
-        const nl = o.nowLabel || 'now', tw = g.measureText(nl).width;
+        const nl = window.PKI18n && PKI18n.tr ? PKI18n.tr(o.nowLabel || 'now') : (o.nowLabel || 'now'), tw = g.measureText(nl).width;
         g.fillText(nl, x - tw - 4, a.bottom - 4);
       }
       g.restore();
