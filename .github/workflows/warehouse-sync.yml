@@ -80,3 +80,12 @@ jobs:
         env:
           WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python warehouse/sync.py ${{ inputs.full && '--full' || '' }}
+
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

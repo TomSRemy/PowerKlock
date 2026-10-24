@@ -56,6 +56,17 @@ jobs:
           if [ -n "$MSG" ] && [ "$(date -u +%H)" = "08" ]; then
             SUBJECT="PowerKlock · stockage : bientôt la limite" BODY="$MSG. Détail sur la page Data status du site. — PowerKlock" python3 scripts/notify_failure.py || true
           fi
+      - name: Keep a newer comparison made while this job ran
+        run: |
+          # The full comparison can take more than an hour. If a price repair (which checks its zones again) or
+          # another check landed meanwhile, this job's result is older: the newer one is kept, never overwritten.
+          git fetch -q origin main
+          for f in data/history/price_check.json data/history/market_check.json; do
+            if ! git diff --quiet ${{ github.sha }} origin/main -- "$f" data/history/repair_log.json; then
+              echo "::notice::$f changed upstream while this job ran: upstream version kept"; git checkout origin/main -- "$f" data/history/repair_log.json
+            fi
+          done
+          python scripts/check_data_gaps.py
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"

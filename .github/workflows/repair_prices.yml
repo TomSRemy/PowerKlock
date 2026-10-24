@@ -33,9 +33,10 @@ jobs:
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: python scripts/repair_prices.py --zones "${{ inputs.zones || 'ALL' }}" --from "${{ inputs.since || '2020-01-01' }}"
-      - name: Compare with the second source (whole period)
-        continue-on-error: true
-        run: python scripts/verify_prices.py --since "${{ inputs.since || '2020-01-01' }}"
+      - name: Compare the repaired zones with the second source
+        continue-on-error: true    # Energy-Charts rate limits: if it does not finish, Data status shows the check as pending
+        timeout-minutes: 60
+        run: python scripts/verify_prices.py --since "${{ inputs.since || '2020-01-01' }}" --zones "${{ inputs.zones || 'ALL' }}"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
