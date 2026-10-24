@@ -182,7 +182,7 @@
 (function () {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const when = s => s ? new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '–';
-  const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices' };
+  const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices', pricecheck: 'Prices vs second source' };
   async function render() {
     const host = document.getElementById('status-gaps'); if (!host) return;
     const j = await fetch(DATA_BASE + 'data_gaps.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).catch(() => null);

@@ -26,11 +26,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Second source for the prices (once a day)
+        continue-on-error: true
+        run: |
+          AGE=$(python3 -c "import json,datetime as d;u=json.load(open('data/history/price_check.json'))['updated'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(u)).total_seconds()/3600))" 2>/dev/null || echo 999)
+          if [ "$AGE" -ge 20 ]; then python scripts/verify_prices.py --days 60; else echo "checked ${AGE} h ago"; fi
       - run: python scripts/check_data_gaps.py
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
-          git add data/data_gaps.json
+          git add data/data_gaps.json data/history/price_check.json 2>/dev/null; git add data/data_gaps.json
           git diff --staged --quiet && exit 0
           git commit -q -m "data: holes check $(date -u '+%Y-%m-%d %H:%M')"
           for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done

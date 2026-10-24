@@ -57,10 +57,39 @@ def main():
             print(f'{d}: {holes} still missing'); continue
         part = es.build_daily_snapshot(d.isoformat(), got, {})
         for z, v in (part.get('zones') or {}).items():
-            zones[z] = v
+            zones.setdefault(z, {}).update(v)   # the prices only: the zone's production arrays stay
         json.dump(snap, open(fp, 'w'), separators=(',', ':'))
         healed += 1
         print(f'{d}: filled {sorted(got)}')
+    # days that differ from the second source (scripts/verify_prices.py → price_check.json), last 30 days:
+    # asked again to ENTSO-E (the publication may have been corrected since, as NL on 10 Oct 2026)
+    chk = {}
+    try:
+        chk = json.load(open(os.path.join(os.path.dirname(DAILY), 'price_check.json'))).get('zones') or {}
+    except Exception:
+        pass
+    for z, info in chk.items():
+        for row in (info.get('days') or [])[-30:]:
+            d = date.fromisoformat(row['day'])
+            if (date.today() - d).days > 30 or calls >= CAP:
+                continue
+            fp = os.path.join(DAILY, d.isoformat() + '.json')
+            if not os.path.exists(fp):
+                continue
+            calls += 1; time.sleep(0.3)
+            try:
+                h = es.fetch_prices_for_date(token, z, d)
+            except Exception:
+                h = None
+            if not h:
+                continue
+            part = (es.build_daily_snapshot(d.isoformat(), {z: h}, {}).get('zones') or {}).get(z)
+            if not part:
+                continue
+            snap = json.load(open(fp)); zz = snap.setdefault('zones', {}).setdefault(z, {})
+            if abs((zz.get('avg') or 0) - part['avg']) >= 0.005:
+                zz.update(part); json.dump(snap, open(fp, 'w'), separators=(',', ':')); healed += 1
+                LOG.append({'day': d.isoformat(), 'zone': z, 'result': 'refetched', 'was': row.get('ours'), 'now': part['avg'], 'second_source': row.get('ec')})
     if calls >= CAP:
         print(f'request cap reached ({CAP}): the rest at the next run')
     if healed:
