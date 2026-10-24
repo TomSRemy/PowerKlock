@@ -176,9 +176,6 @@ def m_weather(t, Y, train, V, n_sims):
     last = train[-1]
     cs, cw = cap_guess('s', Y, last) * 1000, cap_guess('w', Y, last) * 1000
     # demand days of the last past year, by month and day type
-    pool = {}
-    for (iso, m, _, _, _, _) in []:
-        pass
     i_last = yr == last
     dem = {}
     for o_ in np.unique(DAY[i_last]):

@@ -329,8 +329,7 @@
     });
   }
 
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
+  const esc = PK.esc;   // js/pk-core.js
   function itemEl(it) {
     const el = document.createElement('div');
     el.className = 'grid-stack-item';

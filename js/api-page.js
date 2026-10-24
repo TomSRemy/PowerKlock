@@ -8,7 +8,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const SITE = location.origin + location.pathname.replace(/index\.html$/, ''),   // the address the site is served from
         RAW = 'https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/';
   let wired = false;
@@ -85,7 +85,6 @@
   }
   function wire() { if (wired) return; wired = true; data(); charts(); dashboards(); }
   window.addEventListener('load', () => setTimeout(() => {
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'api') wire(); return r; };
+    PK.onPage('api', wire);
   }, 0));
 })();

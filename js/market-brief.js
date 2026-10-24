@@ -16,7 +16,7 @@
   'use strict';
   const cache = {};
   const get = p => cache[p] || (cache[p] = fetch(DATA_BASE + p).then(r => r.ok ? r.json() : null).catch(() => null));
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const sg = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d);
   const pct = (a, b) => a != null && b ? (a / b - 1) * 100 : null;
   const iso = d => d.toISOString().slice(0, 10);
@@ -165,7 +165,7 @@
     // month-ahead forward
     if (fm && fm.months) { const ks = Object.keys(fm.months).sort(), m1 = ks[0], m2 = ks[1], v1 = fm.months[m1], v2 = m2 && fm.months[m2];
       const lbl = k => new Date(k + '-15T12:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-      out.push(sec('📅', `Month ahead · ${lbl(m1)} <b>${(+v1.value).toFixed(2)} €/MWh</b>`, `${v1.peakRatio ? `peak about ${(v1.value * v1.peakRatio).toFixed(0)} €/MWh. ` : ''}${v2 ? `${lbl(m2)} ${(+v2.value).toFixed(2)} €/MWh. ` : ''}Settlements of ${esc(fm.asOf || '')}.`));
+      out.push(sec(PK.icon('calendar', 14), `Month ahead · ${lbl(m1)} <b>${(+v1.value).toFixed(2)} €/MWh</b>`, `${v1.peakRatio ? `peak about ${(v1.value * v1.peakRatio).toFixed(0)} €/MWh. ` : ''}${v2 ? `${lbl(m2)} ${(+v2.value).toFixed(2)} €/MWh. ` : ''}Settlements of ${esc(fm.asOf || '')}.`));
     }
     // weather, week by week against normal
     const F = wx && wx.countries && wx.countries.FR && wx.countries.FR.series;
@@ -185,7 +185,7 @@
           ...[windy ? `wind above normal in ${windy} week${windy > 1 ? 's' : ''} (${weeks.map((w, k) => w.wind > 10 ? 'week ' + (k + 1) : null).filter(Boolean).join(', ')}): lower prices, more negative hours at midday` : null,
             calm ? `wind below normal in ${calm} week${calm > 1 ? 's' : ''} (${weeks.map((w, k) => w.wind < -10 ? 'week ' + (k + 1) : null).filter(Boolean).join(', ')}): more gas burnt, firmer prices` : null].filter(Boolean)];
         if (!windy && !calm) take.push('wind close to normal');
-        out.push(sec('🌤', 'Weather · France, the next 4 weeks against normal', `<div class="mb-wk">${weeks.map((w, k) => `<div><b>Week ${k + 1} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</b>${w.dT == null ? '–' : `<span class="${w.dT < 0 ? 'mb-up' : 'mb-dn'}">${sg(w.dT)} °C</span>`} · wind ${w.wind == null ? '–' : `<span class="${w.wind < 0 ? 'mb-up' : 'mb-dn'}">${sg(w.wind, 0)} %</span>`} · sun ${w.sun == null ? '–' : sg(w.sun, 0) + ' %'}</div>`).join('')}</div><div style="margin-top:5px">${take.join('; ')}.</div>`));
+        out.push(sec(PK.icon('cloud', 14), 'Weather · France, the next 4 weeks against normal', `<div class="mb-wk">${weeks.map((w, k) => `<div><b>Week ${k + 1} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</b>${w.dT == null ? '–' : `<span class="${w.dT < 0 ? 'mb-up' : 'mb-dn'}">${sg(w.dT)} °C</span>`} · wind ${w.wind == null ? '–' : `<span class="${w.wind < 0 ? 'mb-up' : 'mb-dn'}">${sg(w.wind, 0)} %</span>`} · sun ${w.sun == null ? '–' : sg(w.sun, 0) + ' %'}</div>`).join('')}</div><div style="margin-top:5px">${take.join('; ')}.</div>`));
       }
     }
     // nuclear and gas storage
@@ -193,7 +193,7 @@
     const av = last(P('fr_nuc_avail')), fc = last(P('fr_nuc_avail_fc'));
     if (av) out.push(sec('⚛', `Nuclear · France <b>${(av[1] / 1000).toFixed(1)} GW</b> available`, `of 63 GW installed${fc ? `; operator forecast ${(fc[1] / 1000).toFixed(1)} GW (${sg((fc[1] - av[1]) / 1000)} GW): ${fc[1] > av[1] + 2000 ? 'reactors coming back, a weight on winter prices' : fc[1] < av[1] - 2000 ? 'more outages announced, a support for prices' : 'little change announced'}` : ''}.`));
     const st = last(P('agsi'));
-    if (st) { const ly = back(P('agsi'), 365); out.push(sec('🔵', `Gas storage · EU <b>${st[1].toFixed(1)} %</b> full`, `${ly != null ? `${sg(st[1] - ly)} points vs a year ago. ` : ''}${st[1] < 80 ? 'Below the 80 % comfort mark heading into winter: gas, and French power through the gas plants, stay sensitive to cold spells.' : 'Comfortable level for the start of winter.'}`)); }
+    if (st) { const ly = back(P('agsi'), 365); out.push(sec(PK.icon('tank', 14), `Gas storage · EU <b>${st[1].toFixed(1)} %</b> full`, `${ly != null ? `${sg(st[1] - ly)} points vs a year ago. ` : ''}${st[1] < 80 ? 'Below the 80 % comfort mark heading into winter: gas, and French power through the gas plants, stay sensitive to cold spells.' : 'Comfortable level for the start of winter.'}`)); }
     host.innerHTML = out.length ? `<div class="mb">${out.join('')}<div class="mb-note">Weather: ensemble outlook against the 2016–2025 normal (Open-Meteo, RTE fit); forwards: latest settlements; nuclear: operator data.</div></div>` : '<div class="fuel-note">Outlook data not available.</div>';
   }
 

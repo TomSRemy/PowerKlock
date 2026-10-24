@@ -38,5 +38,5 @@
   if (window.PKW) PKW.register({ id: 'cap-ppe3', title: 'France · installed solar and wind vs the PPE3', category: 'renewables', page: 'capacity', pageCanvas: 'cap-ppe', source: 'Energy-Charts · PPE3', size: { w: 6, h: 5 },
     desc: 'Installed solar and onshore wind in France against the PPE3 targets for 2030 and 2035, with the straight path to them and the yearly pace needed vs the recent pace.', draw });
   const show = () => { if (document.getElementById('cap-ppe')) PKW.draw('cap-ppe3', 'cap-ppe', {}).then(r => { const e = document.getElementById('cap-ppe-sub'); if (e && r) e.textContent = r.sub; }); };
-  window.addEventListener('load', () => setTimeout(() => { const inner = window.showPage; if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'capacity') setTimeout(show, 200); return r; }; }, 0));
+  PK.onPage('capacity', () => setTimeout(show, 200));
 })();

@@ -8,11 +8,11 @@
   'use strict';
   let idx = null;
   const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
+  const esc = PK.esc;   // js/pk-core.js
   function build() {
     const out = [];
-    document.querySelectorAll('.sidebar-item[onclick*="showPage"], .sidebar-subitem[data-page]').forEach(el => {
+    if (window.PKNav) PKNav.entries().forEach(e => out.push({ kind: 'Page', label: e.label, sub: e.sub, go: () => PKNav.go(e.route) }));
+    document.querySelectorAll('#sidebar .sidebar-item[onclick*="showPage"], #sidebar .sidebar-subitem[data-page]').forEach(el => {
       const m = el.getAttribute('onclick').match(/showPage\('([^']+)'\)/); if (!m) return;
       const sec = el.closest('.sidebar-section');
       const group = sec ? (sec.querySelector('.sidebar-section-label') || {}).textContent : '';
@@ -27,7 +27,7 @@
       const t = sec.querySelector('.hist-section-title'); if (!t) return;
       const page = sec.closest('.page').id.slice(5), meta = (t.querySelector('.pk-hs-meta') || {}).textContent || '';
       const label = [...t.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(' ').trim(); if (!label) return;
-      const navEl = document.getElementById('nav-' + page), pageName = navEl ? navEl.textContent.trim() : page;
+      const navEl = document.getElementById('nav-' + page), pageName = (window.PKNav && PKNav.pageLabel(page)) || (navEl ? navEl.textContent.trim() : page);
       out.push({ kind: 'Section', label: pageName + ' › ' + label, sub: meta.trim(), go: () => openSection(page, sec) });
     });
     if (window.PKW) PKW.list().forEach(w => {

@@ -73,7 +73,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.secret.outputs.ok == 'true'
-        run: pip install "psycopg[binary]==3.2.*"
+        run: pip install "psycopg[binary]==3.3.2"
 
       - name: Sync
         if: steps.secret.outputs.ok == 'true'

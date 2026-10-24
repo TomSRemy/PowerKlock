@@ -7,7 +7,7 @@
   'use strict';
   if (!window.PKW) return;
 
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const f = (v, dp) => v == null || isNaN(v) ? '–' : Number(v).toFixed(dp == null ? 1 : dp);
   const signed = (v, dp) => v == null || isNaN(v) ? '–' : (v >= 0 ? '+' : '') + Number(v).toFixed(dp == null ? 1 : dp);
 

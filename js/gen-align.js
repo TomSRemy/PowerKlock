@@ -138,6 +138,8 @@
       if (window.pkFrOverlay) { try { aligned = await window.pkFrOverlay(aligned, m[2]); } catch (e) { console.warn('RTE overlay failed', e); } }
       return JSON.stringify(aligned);
     })();
+    // expired entries go: the cache holds the last 5 minutes only, not every day visited in the session
+    for (const [k, v] of memo) if (Date.now() - v.at >= MEMO_MS) memo.delete(k);
     memo.set(m[2], { at: Date.now(), p });
     const body = await p;
     if (body == null) { memo.delete(m[2]); return failed || origFetch(input, init); }

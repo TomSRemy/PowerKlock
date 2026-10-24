@@ -18,7 +18,7 @@
     base_below: { label: 'Baseload below', help: 'Daily baseload below a price.' },
     fwd_fr: { label: 'Cal+1 France: French move', help: 'The part of the day’s French Cal+1 move that gas and CO₂ do not explain (Prices › Forward, analyst read) is above a threshold, up or down.' },
   };
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const zoneList = () => (typeof ZONES !== 'undefined' ? ZONES : []).slice().sort((a, b) => a.name.localeCompare(b.name));
   const zoneName = c => ((typeof ZONES !== 'undefined' ? ZONES : []).find(z => z.code === c) || {}).name || c;
   const flagOf = c => ((typeof ZONES !== 'undefined' ? ZONES : []).find(z => z.code === c) || {}).flag || '';

@@ -29,7 +29,7 @@
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toFixed(1), f2 = v => v == null || !isFinite(v) ? '–' : v.toFixed(2);
   const sg = (v, d) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d == null ? 2 : d);
   const B = s => '<b>' + s + '</b>';
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const day = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
   // value of a [date, value] series on or before a date

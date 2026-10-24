@@ -25,7 +25,7 @@ Usage
 import argparse
 import json
 import os
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from fetch_energy_charts import get, write_json, LICENSE

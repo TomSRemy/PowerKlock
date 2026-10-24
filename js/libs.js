@@ -15099,7 +15099,10 @@ function sortGenericTable(tbodyId, colIndex, thEl) {
 
   const cellText = (row) => (row.children[colIndex] ? row.children[colIndex].textContent : '').trim();
   const asNumber = (s) => {
-    const cleaned = s.replace(/[^\d.\-+]/g, '');
+    // French display (1 234,5): spaces dropped, a decimal comma read as a point
+    let t = s.replace(/[\s\u202f\u00a0]/g, '').replace(/−/g, '-');
+    if (/\d,\d/.test(t) && !/\d\.\d/.test(t)) t = t.replace(/,/g, '.'); else t = t.replace(/,/g, '');
+    const cleaned = t.replace(/[^\d.\-+]/g, '');
     return cleaned === '' || cleaned === '-' || cleaned === '+' ? null : parseFloat(cleaned);
   };
 

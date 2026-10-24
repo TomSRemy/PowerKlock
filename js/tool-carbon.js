@@ -19,7 +19,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const getJSON = path => fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null);
   const XLSX_LIB = 'js/vendor/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
@@ -958,8 +958,7 @@
 
   window.addEventListener('load', () => setTimeout(() => {
     wire();
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'carbonfoot') wire(); return r; };
+    PK.onPage('carbonfoot', wire);
   }, 0));
   window.PKCarbonTool = { load, example, compute: () => compute(), state: S };
   // Shared with the PPA pricer: read a CSV / Excel curve into quarter-hour energy per Paris day

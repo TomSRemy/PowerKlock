@@ -322,8 +322,8 @@ window.PKTtf = {
 };
 window.addEventListener('load', () => setTimeout(() => {
   const sel = document.getElementById('ttf-cal-win'); if (sel) sel.addEventListener('change', () => PKTtf.render());
-  const inner = window.showPage; let done = false;
-  if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'euafwd' && !done) { done = true; setTimeout(() => PKTtf.render(), 200); } return r; };
+  let done = false;
+  PK.onPage('euafwd', () => { if (!done) { done = true; setTimeout(() => PKTtf.render(), 200); } });
 }, 0));
 
 // Daily baseload of a zone: summary.json (long history, 5 zones), monthly
@@ -443,7 +443,7 @@ if (window.PKW) PKW.register({
     if (what === 'movers') list = list.filter(n => (n.impact || 0) >= 3);
     else if (what !== 'all') list = list.filter(n => (n.tags || []).includes(what));
     list.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
-    const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const esc = PK.esc;   // js/pk-core.js
     host.innerHTML = list.length ? '<ul class="mu-news">' + list.map(n => `<li><a href="${/^https?:\/\//.test(n.link || '') ? esc(n.link) : '#'}" target="_blank" rel="noopener">${esc(n.title)}</a><span>${esc(n.source)}${(n.countries || []).length ? ' · ' + esc(n.countries.slice(0, 2).join(' · ')) : ''} · ${new Date(n.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}</span></li>`).join('') + `</ul><div class="fuel-note">${list.length} article${list.length > 1 ? 's' : ''} over the last 7 days, newest first.</div>`
       : '<div class="fuel-note">No article for these filters: change them in the settings (⚙).</div>';
   },
@@ -521,16 +521,14 @@ window.addEventListener('load', () => setTimeout(() => {
       return r;
     };
   }
-  const innerShow = window.showPage;
-  window.showPage = function (id) {
-    innerShow(id);
+  PK.onPage('*', id => {
     if (id === 'load') once('load', () => setTimeout(PKSpot.load, 300));
     if (id === 'wxcities') once('wx', () => { setTimeout(PKSpot.outlook, 300); setTimeout(() => window.PKHydro && PKHydro.render(), 400); const sel = document.getElementById('wx-country'); if (sel) sel.addEventListener('change', () => PKSpot.outlook()); });
     if (id === 'prices') {   // the Day-Ahead sub-page can be the one open by default
       const da = document.querySelector('[data-subdomain-panel="da"].active');
       if (da) once('da', () => setTimeout(() => { PKSpot.draw(); PKSpot.drawMonthly(); }, 300));
     }
-  };
+  });
 }, 50));
 
 // ── Hydro reservoirs (ENTSO-E A72, weekly stored energy) ──

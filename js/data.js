@@ -709,25 +709,8 @@ async function loadPricesForDate(dateStr) {
     } catch(e) { console.warn('Historical fetch failed:', e); }
   }
 
-  // If today and no historical file yet:
-  // - with token: try live ENTSO-E fetch
-  // - without token: load last available
-  if (dateStr === todayStr) {
-    if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-      loadPrices();
-    } else {
-      loadLastAvailable();
-    }
-    return;
-  }
-
-  // ── 2. Real ENTSO-E token
-  if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-    const d  = dateStr.replace(/-/g,'');
-    const d2 = (() => { const n=new Date(dateStr); n.setDate(n.getDate()+1); return n.toISOString().slice(0,10).replace(/-/g,''); })();
-    loadPricesWithDates(d+'0000', d2+'0000');
-    return;
-  }
+  // today and no file yet: the last available day
+  if (dateStr === todayStr) { loadLastAvailable(); return; }
 
   // No data available — load last available date instead
   showNoDataMessage(dateStr);
@@ -754,8 +737,8 @@ function showPricesUnavailable(dateStr) {
 // ══════════════════════════════════════════════════════════════
 // HISTORICAL CHARTS ENGINE
 // Colour tokens (var = window-scoped, accessible across script blocks)
-// IMPORTANT: this block is loaded AFTER hist.js. Any var declared here that
-// shares a name with hist.js will overwrite hist.js. Keep these aligned with
+// IMPORTANT: this block is loaded AFTER js/hist/. Any var declared here that
+// shares a name with js/hist/ will overwrite js/hist/. Keep these aligned with
 // the Daily palette (libs.js C_* family) so up/down/warn read the same way
 // across Daily and Historical charts.
 var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#7A93AB';

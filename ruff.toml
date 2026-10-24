@@ -1,0 +1,5 @@
+# Python lint run by the Site tests workflow: real errors only (undefined names, unused imports and
+# variables, bare except, syntax). The wider rule sets of the code audit are a goal, not a gate.
+line-length = 140
+[lint]
+select = ["F", "E9", "E722"]

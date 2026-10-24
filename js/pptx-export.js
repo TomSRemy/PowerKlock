@@ -201,7 +201,7 @@
   const NS = { p: 'http://schemas.openxmlformats.org/presentationml/2006/main', r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', ct: 'http://schemas.openxmlformats.org/package/2006/content-types', pr: 'http://schemas.openxmlformats.org/package/2006/relationships' };
   const RT = t => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/' + t;
   const EMU = 914400;
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const esc = PK.esc;   // js/pk-core.js
   const parse = s => new DOMParser().parseFromString(s, 'application/xml');
   const ser = d => new XMLSerializer().serializeToString(d);
   const tags = (el, t) => Array.from(el.getElementsByTagName(t));
