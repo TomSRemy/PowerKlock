@@ -709,25 +709,8 @@ async function loadPricesForDate(dateStr) {
     } catch(e) { console.warn('Historical fetch failed:', e); }
   }
 
-  // If today and no historical file yet:
-  // - with token: try live ENTSO-E fetch
-  // - without token: load last available
-  if (dateStr === todayStr) {
-    if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-      loadPrices();
-    } else {
-      loadLastAvailable();
-    }
-    return;
-  }
-
-  // ── 2. Real ENTSO-E token
-  if (ENTSOE_TOKEN && ENTSOE_TOKEN !== 'YOUR_ENTSOE_TOKEN_HERE') {
-    const d  = dateStr.replace(/-/g,'');
-    const d2 = (() => { const n=new Date(dateStr); n.setDate(n.getDate()+1); return n.toISOString().slice(0,10).replace(/-/g,''); })();
-    loadPricesWithDates(d+'0000', d2+'0000');
-    return;
-  }
+  // today and no file yet: the last available day
+  if (dateStr === todayStr) { loadLastAvailable(); return; }
 
   // No data available — load last available date instead
   showNoDataMessage(dateStr);

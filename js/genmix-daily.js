@@ -536,7 +536,7 @@ function _gmdczRenderHeatmap(o) {
                      ['nuclear','wind','solar','hydro','biomass','fossil','other'];
   const FUEL_META = (typeof GM_FUEL_META !== 'undefined') ? GM_FUEL_META : _GMDCZ_META;
   const stats = (typeof _gmStats === 'function') ? _gmStats : null;
-  const hexToRgb = (typeof _hexToRgb === 'function') ? _hexToRgb : (hex => {
+  const hexToRgb = (typeof _gmHexToRgbStr === 'function') ? _gmHexToRgbStr : (hex => {
     const h = hex.replace('#', '');
     return `${parseInt(h.substr(0,2),16)},${parseInt(h.substr(2,2),16)},${parseInt(h.substr(4,2),16)}`;
   });

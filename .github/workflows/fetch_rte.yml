@@ -60,7 +60,7 @@ jobs:
       - name: CRE renewable tender results
         run: python scripts/fetch_cre_tenders.py || echo "::warning::CRE tenders not refreshed"
       - name: Public cost of the support to renewables (CRE deliberation each July, read once a year)
-        run: pip install -q pypdf==6.21.1 && python scripts/fetch_cspe.py || echo "::warning::CSPE not read"
+        run: pip install -q pypdf==6.21.2 && python scripts/fetch_cspe.py || echo "::warning::CSPE not read"
       - name: CRE M0, PowerKlock estimate and forecast
         run: pip install -q openpyxl==3.1.5 && python scripts/fetch_cre_m0.py || echo "::warning::CRE M0 failed"
       - name: France solar / wind capture by day (PPA pricer)

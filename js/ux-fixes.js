@@ -40,7 +40,9 @@
   const NAMES = { 'gm-date-picker-input': 'Date', 'pp-fan-unit': 'Unit' };
   function names(root) {
     Object.entries(NAMES).forEach(([id, n]) => { const e = document.getElementById(id); if (e && !e.getAttribute('aria-label')) e.setAttribute('aria-label', n); });
-    root.querySelectorAll('select:not([aria-label]):not([aria-labelledby]), input:not([type=hidden]):not([aria-label]):not([aria-labelledby])').forEach(e => {
+    // the page on screen only: going through every field of the site at each page cost ~40 ms (profiler)
+    const scope = document.querySelector('.page.active') || document.getElementById('page-mydash') || root;
+    scope.querySelectorAll('select:not([aria-label]):not([aria-labelledby]), input:not([type=hidden]):not([aria-label]):not([aria-labelledby])').forEach(e => {
       if (e.labels && e.labels.length) return;
       const n = e.getAttribute('title') || e.getAttribute('placeholder') || (e.dataset && e.dataset.label);
       if (n) e.setAttribute('aria-label', n);
