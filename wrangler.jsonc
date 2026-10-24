@@ -1,0 +1,13 @@
+// Cloudflare Worker serving the site as static files (Workers static assets).
+// Only the site is published: the folders listed in .assetsignore (git internals,
+// collection scripts, tests, database migrations…) stay out.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "powerklock",
+  "compatibility_date": "2026-10-19",
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": ".",
+    "not_found_handling": "404-page"
+  }
+}
