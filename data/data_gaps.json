@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-24T06:42:46+00:00",
+"updated": "2026-10-24T06:51:09+00:00",
 "open": [
 {
 "id": "prices:2025-09-30",
@@ -7,7 +7,7 @@
 "what": "2025-09-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-01",
@@ -15,7 +15,7 @@
 "what": "2025-10-01: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-02",
@@ -23,7 +23,7 @@
 "what": "2025-10-02: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-03",
@@ -31,7 +31,7 @@
 "what": "2025-10-03: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-04",
@@ -39,7 +39,7 @@
 "what": "2025-10-04: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-05",
@@ -47,7 +47,7 @@
 "what": "2025-10-05: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-06",
@@ -55,7 +55,7 @@
 "what": "2025-10-06: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-07",
@@ -63,7 +63,7 @@
 "what": "2025-10-07: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-08",
@@ -71,7 +71,7 @@
 "what": "2025-10-08: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-09",
@@ -79,7 +79,7 @@
 "what": "2025-10-09: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-10",
@@ -87,7 +87,7 @@
 "what": "2025-10-10: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-11",
@@ -95,7 +95,7 @@
 "what": "2025-10-11: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-12",
@@ -103,7 +103,7 @@
 "what": "2025-10-12: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-13",
@@ -111,7 +111,7 @@
 "what": "2025-10-13: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-14",
@@ -119,7 +119,7 @@
 "what": "2025-10-14: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-15",
@@ -127,7 +127,7 @@
 "what": "2025-10-15: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-16",
@@ -135,7 +135,7 @@
 "what": "2025-10-16: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-17",
@@ -143,7 +143,7 @@
 "what": "2025-10-17: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-18",
@@ -151,7 +151,7 @@
 "what": "2025-10-18: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-19",
@@ -159,7 +159,7 @@
 "what": "2025-10-19: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-20",
@@ -167,7 +167,7 @@
 "what": "2025-10-20: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-21",
@@ -175,7 +175,7 @@
 "what": "2025-10-21: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-22",
@@ -183,7 +183,7 @@
 "what": "2025-10-22: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-23",
@@ -191,7 +191,7 @@
 "what": "2025-10-23: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-24",
@@ -199,7 +199,7 @@
 "what": "2025-10-24: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-25",
@@ -207,7 +207,7 @@
 "what": "2025-10-25: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-26",
@@ -215,7 +215,7 @@
 "what": "2025-10-26: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-27",
@@ -223,7 +223,7 @@
 "what": "2025-10-27: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-28",
@@ -231,7 +231,7 @@
 "what": "2025-10-28: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-29",
@@ -239,7 +239,7 @@
 "what": "2025-10-29: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-30",
@@ -247,7 +247,7 @@
 "what": "2025-10-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-10-31",
@@ -255,7 +255,7 @@
 "what": "2025-10-31: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-01",
@@ -263,7 +263,7 @@
 "what": "2025-11-01: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-02",
@@ -271,7 +271,7 @@
 "what": "2025-11-02: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-03",
@@ -279,7 +279,7 @@
 "what": "2025-11-03: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-04",
@@ -287,7 +287,7 @@
 "what": "2025-11-04: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-05",
@@ -295,7 +295,7 @@
 "what": "2025-11-05: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-06",
@@ -303,7 +303,7 @@
 "what": "2025-11-06: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-07",
@@ -311,7 +311,7 @@
 "what": "2025-11-07: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-08",
@@ -319,7 +319,7 @@
 "what": "2025-11-08: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-09",
@@ -327,7 +327,7 @@
 "what": "2025-11-09: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-10",
@@ -335,7 +335,7 @@
 "what": "2025-11-10: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-11",
@@ -343,7 +343,7 @@
 "what": "2025-11-11: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-12",
@@ -351,7 +351,7 @@
 "what": "2025-11-12: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-13",
@@ -359,7 +359,7 @@
 "what": "2025-11-13: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-14",
@@ -367,7 +367,7 @@
 "what": "2025-11-14: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-15",
@@ -375,7 +375,7 @@
 "what": "2025-11-15: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-16",
@@ -383,7 +383,7 @@
 "what": "2025-11-16: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-17",
@@ -391,7 +391,7 @@
 "what": "2025-11-17: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-18",
@@ -399,7 +399,7 @@
 "what": "2025-11-18: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-19",
@@ -407,7 +407,7 @@
 "what": "2025-11-19: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-20",
@@ -415,7 +415,7 @@
 "what": "2025-11-20: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-21",
@@ -423,7 +423,7 @@
 "what": "2025-11-21: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-22",
@@ -431,7 +431,7 @@
 "what": "2025-11-22: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-23",
@@ -439,7 +439,7 @@
 "what": "2025-11-23: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-24",
@@ -447,7 +447,7 @@
 "what": "2025-11-24: no day-ahead price for NL, PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-25",
@@ -455,7 +455,7 @@
 "what": "2025-11-25: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-26",
@@ -463,7 +463,7 @@
 "what": "2025-11-26: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-27",
@@ -471,7 +471,7 @@
 "what": "2025-11-27: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-28",
@@ -479,7 +479,7 @@
 "what": "2025-11-28: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-29",
@@ -487,7 +487,7 @@
 "what": "2025-11-29: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-11-30",
@@ -495,7 +495,7 @@
 "what": "2025-11-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-01",
@@ -503,7 +503,7 @@
 "what": "2025-12-01: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-02",
@@ -511,7 +511,7 @@
 "what": "2025-12-02: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-03",
@@ -519,7 +519,7 @@
 "what": "2025-12-03: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-04",
@@ -527,7 +527,7 @@
 "what": "2025-12-04: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-05",
@@ -535,7 +535,7 @@
 "what": "2025-12-05: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-06",
@@ -543,7 +543,7 @@
 "what": "2025-12-06: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-07",
@@ -551,7 +551,7 @@
 "what": "2025-12-07: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-08",
@@ -559,7 +559,7 @@
 "what": "2025-12-08: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-09",
@@ -567,7 +567,7 @@
 "what": "2025-12-09: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-10",
@@ -575,7 +575,7 @@
 "what": "2025-12-10: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-11",
@@ -583,7 +583,7 @@
 "what": "2025-12-11: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-12",
@@ -591,7 +591,7 @@
 "what": "2025-12-12: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-13",
@@ -599,7 +599,7 @@
 "what": "2025-12-13: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-14",
@@ -607,7 +607,7 @@
 "what": "2025-12-14: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-15",
@@ -615,7 +615,7 @@
 "what": "2025-12-15: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-16",
@@ -623,7 +623,7 @@
 "what": "2025-12-16: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-17",
@@ -631,7 +631,7 @@
 "what": "2025-12-17: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-18",
@@ -639,7 +639,7 @@
 "what": "2025-12-18: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-19",
@@ -647,7 +647,7 @@
 "what": "2025-12-19: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-20",
@@ -655,7 +655,7 @@
 "what": "2025-12-20: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-21",
@@ -663,7 +663,7 @@
 "what": "2025-12-21: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-22",
@@ -671,7 +671,7 @@
 "what": "2025-12-22: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-23",
@@ -679,7 +679,7 @@
 "what": "2025-12-23: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-24",
@@ -687,7 +687,7 @@
 "what": "2025-12-24: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-25",
@@ -695,7 +695,7 @@
 "what": "2025-12-25: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-26",
@@ -703,7 +703,7 @@
 "what": "2025-12-26: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-27",
@@ -711,7 +711,7 @@
 "what": "2025-12-27: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-28",
@@ -719,7 +719,7 @@
 "what": "2025-12-28: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-29",
@@ -727,7 +727,7 @@
 "what": "2025-12-29: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-30",
@@ -735,7 +735,7 @@
 "what": "2025-12-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2025-12-31",
@@ -743,7 +743,7 @@
 "what": "2025-12-31: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 },
 {
 "id": "prices:2026-10-24",
@@ -751,7 +751,7 @@
 "what": "2026-10-24: no day-ahead price for FR, NL",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T06:42:46+00:00"
+"lastSeen": "2026-10-24T06:51:09+00:00"
 }
 ],
 "resolved": []
