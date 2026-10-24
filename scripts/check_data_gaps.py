@@ -169,6 +169,17 @@ def checks():
             except OSError:
                 pass
     STORAGE['data_mb'] = round(tot / 1e6, 1)
+    # one file over 25 MiB stops the Cloudflare deployment of the whole site: flagged from 20 MB
+    for root, _, files in os.walk(os.path.join(ROOT, 'data')):
+        for f in files:
+            fp = os.path.join(root, f)
+            try:
+                sz = os.path.getsize(fp)
+            except OSError:
+                continue
+            if sz > 20e6:
+                rel = os.path.relpath(fp, ROOT)
+                add('storage', 'file:' + rel, f'{rel} is {sz / 1e6:.1f} MB (Cloudflare refuses files over 25 MiB)', 'flagged: split or compact the file')
     if tot > 0.8 * 1e9:
         add('storage', 'data', f'Data folder {tot / 1e9:.2f} GB (GitHub advises under 1 GB per repository)', 'flagged: move history to R2')
     r2 = os.environ.get('R2_BUCKET') and _r2_size()
