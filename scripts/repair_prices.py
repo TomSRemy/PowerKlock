@@ -9,7 +9,7 @@ the local clock (clock-change days included, scripts/pk_time.py) and replaces th
 each daily file. The zone's production arrays and the other zones are left as they are. Then the
 summary index is rebuilt.
 
-    ENTSOE_TOKEN=… python scripts/repair_prices.py --zones DE_LU,AT --from 2020-01-01
+    ENTSOE_TOKEN=… python scripts/repair_prices.py --zones DE_LU,AT --from 2020-01-01   (--zones ALL: every zone)
 Writes data/history/repair_log.json (days changed, largest change per zone).
 """
 import argparse, json, os, sys, time
@@ -73,7 +73,8 @@ def main():
     token = os.environ.get('ENTSOE_TOKEN') or sys.exit('ENTSOE_TOKEN missing')
     end = date.fromisoformat(a.to) if a.to else date.today() + timedelta(days=1)
     log = {'run': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'zones': {}}
-    for z in a.zones.split(','):
+    zones = list(es.ZONES_EIC) if a.zones.upper() == 'ALL' else a.zones.split(',')
+    for z in zones:
         eic = es.ZONES_EIC.get(z)
         if not eic:
             continue
