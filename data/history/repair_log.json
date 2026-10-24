@@ -1,12 +1,12 @@
 {
- "run": "2026-10-24T10:56:23+00:00",
+ "run": "2026-10-24T13:04:46+00:00",
  "zones": {
   "FR": {
-   "days_read": 2490,
-   "days_changed": 39,
+   "days_read": 2491,
+   "days_changed": 1,
    "largest_change": [
-    1.68,
-    "2025-03-30"
+    0.26,
+    "2025-10-26"
    ]
   },
   "DE_LU": {
@@ -18,59 +18,59 @@
    ]
   },
   "BE": {
-   "days_read": 2490,
-   "days_changed": 63,
+   "days_read": 2491,
+   "days_changed": 1,
    "largest_change": [
-    2.27,
-    "2026-03-29"
+    0.29,
+    "2025-10-26"
    ]
   },
   "NL": {
-   "days_read": 2490,
-   "days_changed": 53,
+   "days_read": 2491,
+   "days_changed": 3,
    "largest_change": [
-    73.74,
-    "2026-10-10"
+    0.4,
+    "2025-10-26"
    ]
   },
   "ES": {
    "days_read": 2491,
-   "days_changed": 153,
+   "days_changed": 33,
    "largest_change": [
     11.05,
     "2025-10-27"
    ]
   },
   "PT": {
-   "days_read": 2490,
-   "days_changed": 87,
+   "days_read": 2491,
+   "days_changed": 1,
    "largest_change": [
-    2.24,
-    "2023-03-26"
+    0.37,
+    "2025-10-26"
    ]
   },
   "IT_NORD": {
-   "days_read": 2490,
-   "days_changed": 94,
+   "days_read": 2491,
+   "days_changed": 1,
    "largest_change": [
-    1.23,
-    "2025-03-30"
+    0.01,
+    "2025-10-26"
    ]
   },
   "IT_SICI": {
-   "days_read": 2490,
-   "days_changed": 159,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.81,
-    "2023-10-29"
+    0,
+    ""
    ]
   },
   "GB": {
    "days_read": 367,
    "days_changed": 367,
    "largest_change": [
-    0,
-    ""
+    8.66,
+    "2020-12-09"
    ]
   },
   "AT": {
@@ -82,160 +82,160 @@
    ]
   },
   "CH": {
-   "days_read": 2490,
-   "days_changed": 92,
+   "days_read": 2491,
+   "days_changed": 1,
    "largest_change": [
-    3.42,
-    "2026-10-09"
+    0.45,
+    "2025-10-26"
    ]
   },
   "CZ": {
-   "days_read": 2490,
-   "days_changed": 157,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.55,
-    "2025-03-30"
+    0,
+    ""
    ]
   },
   "SK": {
-   "days_read": 2490,
-   "days_changed": 150,
+   "days_read": 2491,
+   "days_changed": 34,
    "largest_change": [
     32.4,
     "2026-10-10"
    ]
   },
   "HU": {
-   "days_read": 2490,
-   "days_changed": 149,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    61.31,
-    "2026-10-10"
+    0,
+    ""
    ]
   },
   "RO": {
-   "days_read": 2490,
-   "days_changed": 148,
+   "days_read": 2491,
+   "days_changed": 569,
    "largest_change": [
-    57.82,
-    "2026-10-10"
+    400.27,
+    "2020-12-17"
    ]
   },
   "HR": {
-   "days_read": 2490,
-   "days_changed": 155,
+   "days_read": 2491,
+   "days_changed": 34,
    "largest_change": [
     37.11,
     "2026-10-10"
    ]
   },
   "SI": {
-   "days_read": 2490,
-   "days_changed": 162,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.58,
-    "2026-03-29"
+    0,
+    ""
    ]
   },
   "RS": {
    "days_read": 2491,
-   "days_changed": 151,
+   "days_changed": 33,
    "largest_change": [
-    1.03,
-    "2024-03-31"
+    0,
+    ""
    ]
   },
   "GR": {
-   "days_read": 2490,
-   "days_changed": 156,
+   "days_read": 2491,
+   "days_changed": 34,
    "largest_change": [
     53.0,
     "2026-10-10"
    ]
   },
   "BG": {
-   "days_read": 2490,
-   "days_changed": 151,
+   "days_read": 2491,
+   "days_changed": 786,
    "largest_change": [
-    4.12,
-    "2022-03-27"
+    402.96,
+    "2021-12-22"
    ]
   },
   "DK_W": {
-   "days_read": 2490,
-   "days_changed": 143,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    2.58,
-    "2026-03-29"
+    0,
+    ""
    ]
   },
   "DK_E": {
-   "days_read": 2490,
-   "days_changed": 151,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    3.61,
-    "2022-03-27"
+    0,
+    ""
    ]
   },
   "SE": {
-   "days_read": 2490,
-   "days_changed": 144,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    2.82,
-    "2022-10-30"
+    0,
+    ""
    ]
   },
   "NO_1": {
-   "days_read": 2490,
-   "days_changed": 153,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.1,
-    "2025-03-30"
+    0,
+    ""
    ]
   },
   "FI": {
-   "days_read": 2490,
-   "days_changed": 135,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.6,
-    "2021-10-31"
+    0,
+    ""
    ]
   },
   "LT": {
    "days_read": 2490,
-   "days_changed": 149,
+   "days_changed": 35,
    "largest_change": [
-    4.01,
-    "2024-10-27"
+    0,
+    ""
    ]
   },
   "LV": {
    "days_read": 2491,
-   "days_changed": 150,
+   "days_changed": 35,
    "largest_change": [
-    4.01,
-    "2024-10-27"
+    0,
+    ""
    ]
   },
   "EE": {
-   "days_read": 2490,
-   "days_changed": 146,
+   "days_read": 2491,
+   "days_changed": 35,
    "largest_change": [
-    4.01,
-    "2024-10-27"
+    0,
+    ""
    ]
   },
   "PL": {
-   "days_read": 2490,
-   "days_changed": 144,
+   "days_read": 2491,
+   "days_changed": 33,
    "largest_change": [
-    1.29,
-    "2024-03-31"
+    0,
+    ""
    ]
   },
   "ME": {
    "days_read": 1278,
-   "days_changed": 124,
+   "days_changed": 34,
    "largest_change": [
     8.26,
     "2026-10-09"
@@ -243,7 +243,7 @@
   },
   "MK": {
    "days_read": 1264,
-   "days_changed": 128,
+   "days_changed": 34,
    "largest_change": [
     5.07,
     "2026-10-09"
