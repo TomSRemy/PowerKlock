@@ -518,6 +518,10 @@
   .main::-webkit-scrollbar { width: 6px; }
   .main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
+  /* France Morning (home page): blocks filled when their data arrives keep their room, so the page does not jump (CLS).
+     In the page's CSS, not in js/morning.js: the page is painted before the scripts run */
+  #mrn-kpis{min-height:230px} #mrn-moves{min-height:140px} #mrn-news{min-height:200px} #mrn-brief{min-height:460px} #mrn-30d{min-height:300px}
+  @media (max-width:760px){ #mrn-kpis{min-height:900px} #mrn-moves{min-height:360px} #mrn-news{min-height:560px} #mrn-brief{min-height:1000px} #mrn-30d{min-height:580px} }
   .page { display: none; padding: 20px; }
   .page.active { display: block; }
   .page.active { display: block; }
@@ -3449,6 +3453,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
     </div>
   </nav>
+  <script src="js/nav-v2.js"></script>
 
   <!-- Sidebar collapse handle (sibling to sidebar so it can overflow visually) -->
   <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">

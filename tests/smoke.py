@@ -55,6 +55,7 @@ def main():
     with sync_playwright() as pw:
         b = pw.chromium.launch()
         p = b.new_page(viewport={'width': 1440, 'height': 900})
+        p.add_init_script("try { localStorage.setItem('pk-lang', 'en') } catch (e) {}")   # the checks read English labels
         where = {'v': 'boot'}
         p.on('pageerror', lambda e: errors.append(f"[{where['v']}] JS error: {str(e)[:300]}"))
         p.on('console', lambda m: (m.type == 'error' and not NOISE.search(m.text)) and warnings.append(f"[{where['v']}] console: {m.text[:200]}"))
@@ -109,7 +110,8 @@ def main():
             if pg == 'prices':
                 continue
             where['v'] = pg
-            p.evaluate(f"document.getElementById('nav-{pg}').click()")
+            # pages reached from a group bar (menu v2) have no menu entry of their own
+            p.evaluate(f"(document.getElementById('nav-{pg}') || {{click() {{ showPage('{pg}'); }}}}).click()")
             p.wait_for_timeout(3500)
             fullscreen_buttons(f'#page-{pg}')
             check_views(f'#page-{pg}', pg, 1440)
@@ -155,6 +157,7 @@ def main():
         # Phone width: nothing wider than the screen (separate page: the
         # fullscreen tests leave the desktop window in fullscreen mode)
         ph = b.new_page(viewport={'width': 390, 'height': 844})
+        ph.add_init_script("try { localStorage.setItem('pk-lang', 'en') } catch (e) {}")
         ph.on('pageerror', lambda e: errors.append(f"[phone] JS error: {str(e)[:300]}"))
         ph.goto(f'http://127.0.0.1:{PORT}/index.html')
         ph.wait_for_timeout(5000)
