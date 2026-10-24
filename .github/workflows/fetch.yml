@@ -8,6 +8,9 @@ on:
     - cron: '17 11 * * *'  # day-ahead results (published ~12:45 CET)
     - cron: '47 12 * * *'  # second chance for the day-ahead results
     - cron: '23 16 * * *'  # afternoon
+    # retry slots: they only fetch if a main zone (France first) is missing for the day that should be in
+    - cron: '13,43 6-9 * * *'
+    - cron: '3,23,53 11-17 * * *'
   workflow_dispatch:       # bouton manuel dans GitHub
 
 concurrency:
@@ -28,27 +31,40 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install requests==2.33.1
+      - name: Anything missing? (retry slots only)
+        id: check
+        run: |
+          case "${{ github.event.schedule }}" in
+            '13,43 6-9 * * *'|'3,23,53 11-17 * * *') python scripts/check_prices_complete.py ;;
+            *) echo "run=true" >> "$GITHUB_OUTPUT" ;;
+          esac
       - name: Fetch data from ENTSO-E
+        if: steps.check.outputs.run == 'true'
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
         run: python scripts/fetch_data.py
       # News also refreshed here: GitHub's scheduler can skip or delay the
       # dedicated 3-hourly workflow for hours, this one runs twice a day.
       - name: Fetch news feeds
+        if: steps.check.outputs.run == 'true'
         continue-on-error: true
         run: python scripts/fetch_news.py
       # France day-ahead prices by year for Tools › Carbon footprint
       - name: Build yearly France price files
+        if: steps.check.outputs.run == 'true'
         continue-on-error: true
         run: python scripts/build_fr_prices_year.py
       - name: Data API index
+        if: steps.check.outputs.run == 'true'
         continue-on-error: true
         run: python scripts/build_api_index.py
       # Negative hours by month × hour for Prices › Negative prices
       - name: Build negative-price profile
+        if: steps.check.outputs.run == 'true'
         continue-on-error: true
         run: python scripts/build_neg_profile.py
       - name: Commit and push data files
+        if: steps.check.outputs.run == 'true'
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
