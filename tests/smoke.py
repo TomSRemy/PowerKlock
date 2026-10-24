@@ -130,8 +130,9 @@ def main():
             if pg == 'prices':
                 continue
             where['v'] = pg
-            # pages reached from a group bar (menu v2) have no menu entry of their own
-            p.evaluate(f"(document.getElementById('nav-{pg}') || {{click() {{ showPage('{pg}'); }}}}).click()")
+            # a group's name in the menu folds its pages (it does not open one): pages are opened directly here,
+            # the menu itself is checked by tests/test_site_logic.py and the French pass below
+            p.evaluate(f"showPage('{pg}')")
             p.wait_for_timeout(3500)
             fullscreen_buttons(f'#page-{pg}')
             check_views(f'#page-{pg}', pg, 1440)

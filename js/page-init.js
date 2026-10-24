@@ -205,18 +205,8 @@
     prUpdateActivePath();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Override the Prices sidebar click: show overview by default
-  // ─────────────────────────────────────────────────────────────
-  (function setupPricesClick() {
-    const navPrices = document.getElementById('nav-prices');
-    if (!navPrices) return;
-    // Remove the inline onclick that calls showPage('prices') and replace with a wrapper
-    navPrices.onclick = function(e) {
-      if (typeof window.showPage === 'function') window.showPage('prices');
-      prSelectSubdomain('overview');
-    };
-  })();
+  // (The previous menu's Prices entry opened the overview on click; the menu of js/nav-v2.js now owns the
+  // #nav-prices element, a click on a group's name folds or unfolds it.)
 
   // ─────────────────────────────────────────────────────────────
   // Tab switch (Daily / Historical / Distribution within DA)

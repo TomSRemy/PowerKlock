@@ -364,10 +364,14 @@
 
   // a click on any menu or bar link
   document.addEventListener('click', e => {
-    const fold = e.target.closest('.pk-nav-chev[data-fold]');
-    if (fold && nav.contains(fold)) {   // the chevron of a group folds or unfolds it, without leaving the page
+    // a click anywhere on a group's name folds or unfolds its pages (no need to aim at the chevron); its pages are
+    // opened from the list. A middle click or Ctrl+click still opens the group's first page in a new tab.
+    const head = e.target.closest('.pk-nav-group');
+    if (head && nav.contains(head) && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
       e.preventDefault(); e.stopPropagation(); e.pkFold = true;
-      const wrap = fold.closest('.pk-nav-group').nextElementSibling; setOpen(wrap, !wrap.classList.contains('open')); return;
+      const wrap = head.nextElementSibling; setOpen(wrap, !wrap.classList.contains('open'));
+      fly.hidden = true;
+      return;
     }
     const a = e.target.closest('a[data-route]');
     if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // new tab / window: the browser opens the address

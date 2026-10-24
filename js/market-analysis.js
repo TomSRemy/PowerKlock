@@ -39,13 +39,13 @@
     biomass: 230, fossil: 820, other: 400,
   };
   const FUEL_COLORS = {
-    nuclear: '#7B4B9C', wind: '#14D3A9', solar: '#FBBF24', hydro: '#3FA6B4',
+    nuclear: '#A98BD4', wind: '#14D3A9', solar: '#FBBF24', hydro: '#3FA6B4',
     biomass: '#94D2BD', fossil: '#ED6965', other: '#7A93AB',
   };
   // Stack order from bottom to top (baseload first, marginal on top)
   const FUEL_STACK = ['nuclear', 'hydro', 'wind', 'solar', 'fossil'];
   const FUEL_LABELS = {
-    nuclear: 'Nuc', wind: 'Wind', solar: 'Solar', hydro: 'Hydro',
+    nuclear: 'Nuclear', wind: 'Wind', solar: 'Solar', hydro: 'Hydro',
     biomass: 'Biomass', fossil: 'Fossil', other: 'Other',
   };
 
@@ -57,6 +57,7 @@
   // Neighbour shown on the price panel
   const NEIGHBOUR = { FR: 'DE_LU', DE_LU: 'FR', ES: 'FR', BE: 'FR', NL: 'DE_LU' };
   const ZONE_SHORT = { FR: 'FR', DE_LU: 'DE', ES: 'ES', BE: 'BE', NL: 'NL' };
+  const ZONE_NAME = { FR: 'France', DE_LU: 'Germany', ES: 'Spain', BE: 'Belgium', NL: 'Netherlands' };   // series names at the end of the lines
   // What sets the price in a slot: a reading of price vs the gas-plant cost and the mix
   function _marginal(price, srmc, fossil, wind, solar, load) {
     if (price == null) return { t: '--', c: 'hydro' };
@@ -70,7 +71,7 @@
 
   const DRIVER_COLOURS = {
     ttf: '#F59E0B', eua: '#A78BFA', wind: '#14D3A9',
-    temp: '#ED6965', nuc: '#7B4B9C', flux: '#7A93AB',
+    temp: '#ED6965', nuc: '#A98BD4', flux: '#7A93AB',
   };
 
   // ════════════════════════════════════════════════════════════════
@@ -504,12 +505,12 @@
     if (!host) return;
     const f = STATE.data.flat;
     const drivers = [
-      { id: 'ttf',  label: 'TTF',       series: f.drivers.ttf,       color: DRIVER_COLOURS.ttf,  dec: 1, unit: '€' },
-      { id: 'eua',  label: 'EUA',       series: f.drivers.eua,       color: DRIVER_COLOURS.eua,  dec: 1, unit: '€' },
-      { id: 'wind', label: 'Wind 100 m', series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, dec: 1, unit: 'm/s' },
-      { id: 'temp', label: 'Temp',       series: f.drivers.temp,      color: DRIVER_COLOURS.temp, dec: 1, unit: '°C' },
-      { id: 'nuc',  label: STATE.zone === 'FR' ? 'Nuc avail.' : 'Nuc output', series: f.drivers.nucAvail, color: DRIVER_COLOURS.nuc, dec: 1, unit: 'GW' },
-      { id: 'flux', label: 'Net import', series: f.drivers.flux,      color: DRIVER_COLOURS.flux, dec: 1, unit: 'GW' },
+      { id: 'ttf',  label: 'TTF (gas)',     series: f.drivers.ttf,       color: DRIVER_COLOURS.ttf,  dec: 1, unit: '€/MWh' },
+      { id: 'eua',  label: 'EUA (CO₂)',     series: f.drivers.eua,       color: DRIVER_COLOURS.eua,  dec: 1, unit: '€/t' },
+      { id: 'wind', label: 'Wind at 100 m', series: f.drivers.windSpeed, color: DRIVER_COLOURS.wind, dec: 1, unit: 'm/s', src: 'weather source not responding' },
+      { id: 'temp', label: 'Temperature',   series: f.drivers.temp,      color: DRIVER_COLOURS.temp, dec: 1, unit: '°C', src: 'weather source not responding' },
+      { id: 'nuc',  label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', series: f.drivers.nucAvail, color: DRIVER_COLOURS.nuc, dec: 1, unit: 'GW' },
+      { id: 'flux', label: 'Net imports',   series: f.drivers.flux,      color: DRIVER_COLOURS.flux, dec: 1, unit: 'GW' },
     ];
     const fx = (v, d) => (v == null || isNaN(v)) ? '--' : v.toFixed(d);
 
@@ -522,7 +523,7 @@
       const isFlat = !valid.length || Math.abs(deltaPct) < 1;
       const cls = isFlat ? 'flat' : (delta > 0 ? 'up' : 'down');
       const arrow = isFlat ? '·' : (delta > 0 ? '▲' : '▼');
-      const deltaTxt = !valid.length ? 'no data' : isFlat ? '—' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '%');
+      const deltaTxt = !valid.length ? (d.src || 'not available') : isFlat ? 'stable over the window' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '% over the window');
       const min = valid.length ? Math.min.apply(null, valid) : 0;
       const max = valid.length ? Math.max.apply(null, valid) : 1;
       const range = (max - min) || 1;
@@ -533,12 +534,12 @@
         const y = 15 - ((v - min) / range) * 13;
         const seg = pen + ' ' + x.toFixed(1) + ' ' + y.toFixed(1); pen = 'L'; return seg;
       }).join(' ');
-      html += '<div class="ma-kpi-card" style="--kpi-accent:' + d.color + '">'
+      html += '<div class="ma-kpi-card' + (valid.length ? '' : ' na') + '" style="--kpi-accent:' + d.color + '">'
         + '<div class="ma-kpi-head">'
         +   '<span class="ma-kpi-label">' + d.label + '</span>'
         +   '<svg class="ma-kpi-spark" viewBox="0 0 100 16" preserveAspectRatio="none"><path d="' + pts + '" stroke="' + d.color + '" stroke-width="1.6" fill="none"/></svg>'
         + '</div>'
-        + '<div class="ma-kpi-val">' + fx(vN, d.dec) + '<span class="u">' + d.unit + '</span></div>'
+        + '<div class="ma-kpi-val">' + (valid.length ? fx(vN, d.dec) + '<span class="u">' + d.unit + '</span>' : 'No data') + '</div>'
         + '<div class="ma-kpi-delta ' + cls + '">' + deltaTxt + '</div>'
         + '</div>';
     });
@@ -553,6 +554,26 @@
   // Crosshair is drawn as a single continuous overlay spanning all panels
   // (see _positionCrosshair), so the per-chart plugin is now a no-op.
   const crosshairPlugin = { id: 'maCrosshair' };
+
+  // Every series named at the right of its last point (a band of a stacked chart in its middle): no need to
+  // match colours with a legend. Labels are pushed apart when they would overlap.
+  const endLabels = { id: 'maEndLabels', afterDatasetsDraw(chart) {
+    const o = chart.options.plugins && chart.options.plugins.maEndLabels; if (!o || !o.on) return;
+    const area = chart.chartArea, ctx = chart.ctx, items = [];
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i); if (meta.hidden || ds.pkNoEnd || !ds.label) return;
+      let k = -1; for (let j = ds.data.length - 1; j >= 0; j--) if (ds.data[j] != null && !isNaN(ds.data[j])) { k = j; break; }
+      if (k < 0 || !meta.data[k]) return;
+      let y = meta.data[k].y;
+      if (o.stacked) { const below = i > 0 ? chart.getDatasetMeta(i - 1).data[k] : null; y = (y + (below ? below.y : chart.scales.y.getPixelForValue(0))) / 2; }
+      const txt = ds.endLabel || ds.label;
+      items.push({ y, text: window.PKI18n ? PKI18n.tr(txt) : txt, color: ds.endColor || (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent' ? ds.borderColor : '#B8C9D9') });
+    });
+    items.sort((a, b) => a.y - b.y);
+    let prev = -1e9; ctx.save(); ctx.font = '600 11px Inter, system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    items.forEach(it => { const y = Math.min(Math.max(it.y, prev + 13, area.top + 6), area.bottom - 4); prev = y; ctx.fillStyle = it.color; ctx.fillText(it.text, area.right + 6, y); });
+    ctx.restore();
+  } };
 
   // ════════════════════════════════════════════════════════════════
   // RENDER · MAIN PANELS
@@ -575,9 +596,11 @@
       responsive: true, maintainAspectRatio: false,
       animation: { duration: 0 },
       interaction: { mode: 'index', intersect: false, axis: 'x' },
+      layout: { padding: { right: 118 } },   // room for the series names (endLabels)
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
+        maEndLabels: { on: true },
         pkFcZone: STATE.data && STATE.data.flat ? { from: STATE.data.flat.fcFrom, now: STATE.data.flat.nowIdx } : false,
       },
       scales: {
@@ -615,7 +638,7 @@
     // The side panel (ma-hover-tooltip) is the readout here: no second box on the charts.
     options.plugins.pkHoverReadout = false;
     STATE.charts[canvasId] = new window.Chart(canvas, {
-      type: type, data: data, options: options, plugins: [crosshairPlugin],
+      type: type, data: data, options: options, plugins: [crosshairPlugin, endLabels],
     });
   }
 
@@ -631,31 +654,31 @@
     _mkChart('ma-canvas-price', 'line', {
       labels: labels,
       datasets: [{
-        label: 'DA Price', data: f.price,
+        label: 'DA Price', endLabel: ZONE_NAME[STATE.zone] || STATE.zone, data: f.price,
         borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0,
         tension: 0, spanGaps: false,
       }, {
-        label: 'Gas plant cost', data: f.srmc,
+        label: 'Gas plant cost', endLabel: 'Gas plant cost', data: f.srmc,
         borderColor: DRIVER_COLOURS.ttf, borderWidth: 1.3, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false,
       }, {
-        label: (ZONE_SHORT[STATE.data.nbZone] || '') + ' price', data: f.nbPrice,
+        label: (ZONE_SHORT[STATE.data.nbZone] || '') + ' price', endLabel: ZONE_NAME[STATE.data.nbZone] || 'Neighbour', data: f.nbPrice,
         borderColor: 'rgba(127,200,248,0.75)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false, spanGaps: false,
       }],
     }, _commonChartOpts('€/MWh'));
     _renderPanelLegend('ma-legend-price', [
       { label: ZONE_SHORT[STATE.zone] + ' day-ahead', color: '#E6EDF3' },
-      { label: 'Gas plant cost (CCGT, gas + CO₂): price above = gas in the money', color: DRIVER_COLOURS.ttf },
+      { label: 'Gas plant cost (gas + CO₂): above it, gas plants earn money', color: DRIVER_COLOURS.ttf },
       { label: (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' day-ahead', color: 'rgba(127,200,248,0.75)' },
     ]);
 
     _mkChart('ma-canvas-spark', 'line', {
       labels: labels,
       datasets: [
-        { label: 'Residual load', data: f.resid, borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0, tension: 0, spanGaps: false,
+        { label: 'Residual load', endLabel: 'Residual load', data: f.resid, borderColor: '#E6EDF3', borderWidth: 1.4, pointRadius: 0, tension: 0, spanGaps: false,
           backgroundColor: 'rgba(230,237,243,0.08)', fill: 'origin' },
-        { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', data: f.drivers.nucAvail, borderColor: FUEL_COLORS.nuclear, borderWidth: 1.6, borderDash: [5, 3], pointRadius: 0, tension: 0, fill: false },
-        { label: 'Net import', data: f.drivers.flux, borderColor: DRIVER_COLOURS.flux, borderWidth: 1.2, pointRadius: 0, tension: 0, fill: false },
-      ].concat(_hasFc() ? [{ label: 'Residual load · forecast', data: f.fc.resid, borderColor: '#E6EDF3', borderWidth: 1.3, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false }] : []),
+        { label: STATE.zone === 'FR' ? 'Nuclear available' : 'Nuclear output', endLabel: 'Nuclear avail.', data: f.drivers.nucAvail, borderColor: FUEL_COLORS.nuclear, borderWidth: 1.6, borderDash: [5, 3], pointRadius: 0, tension: 0, fill: false },
+        { label: 'Net import', endLabel: 'Imports', data: f.drivers.flux, borderColor: DRIVER_COLOURS.flux, borderWidth: 1.2, pointRadius: 0, tension: 0, fill: false },
+      ].concat(_hasFc() ? [{ label: 'Residual load · forecast', pkNoEnd: true, data: f.fc.resid, borderColor: '#E6EDF3', borderWidth: 1.3, borderDash: [2, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false }] : []),
     }, _commonChartOpts('GW'));
     _renderPanelLegend('ma-legend-resid', [
       { label: 'Residual load (demand − wind − solar)', color: '#E6EDF3' },
@@ -667,26 +690,26 @@
       labels: labels,
       datasets: [
         {
-          label: 'Solar', data: f.solar,
+          label: 'Solar', endColor: FUEL_COLORS.solar, data: f.solar,
           backgroundColor: _hexA(FUEL_COLORS.solar, 0.45),
           borderColor: 'transparent', borderWidth: 0,
           fill: 'origin', pointRadius: 0, tension: 0, stack: 'ren',
         },
         {
-          label: 'Wind', data: f.wind,
+          label: 'Wind', endColor: FUEL_COLORS.wind, data: f.wind,
           backgroundColor: _hexA(FUEL_COLORS.wind, 0.55),
           borderColor: 'transparent', borderWidth: 0,
           fill: 'origin', pointRadius: 0, tension: 0, stack: 'ren',
         },
         {
-          label: 'Load', data: f.load,
+          label: 'Load', endLabel: 'Demand', data: f.load,
           borderColor: '#fff', borderWidth: 1.5, borderDash: [3, 2],
           pointRadius: 0, tension: 0, fill: false,
         },
       ].concat(_hasFc() ? [
-        { label: 'Solar · forecast', data: f.fc.solar, borderColor: FUEL_COLORS.solar, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
-        { label: 'Wind · forecast', data: f.fc.wind, borderColor: FUEL_COLORS.wind, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
-        { label: 'Load · forecast', data: f.fc.load, borderColor: 'rgba(255,255,255,.75)', borderWidth: 1.2, borderDash: [1, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+        { label: 'Solar · forecast', pkNoEnd: true, data: f.fc.solar, borderColor: FUEL_COLORS.solar, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+        { label: 'Wind · forecast', pkNoEnd: true, data: f.fc.wind, borderColor: FUEL_COLORS.wind, borderWidth: 1.6, borderDash: [6, 4], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
+        { label: 'Load · forecast', pkNoEnd: true, data: f.fc.load, borderColor: 'rgba(255,255,255,.75)', borderWidth: 1.2, borderDash: [1, 3], pointRadius: 0, tension: 0, fill: false, spanGaps: false },
       ] : []),
     }, _commonChartOpts('GW'));
     _renderPanelLegend('ma-legend-loadren', [
@@ -698,7 +721,7 @@
     const stackDatasets = FUEL_STACK.map(function (fuel) {
       const data = (fuel === 'wind' || fuel === 'solar') ? f[fuel] : f.mix[fuel];
       return {
-        label: FUEL_LABELS[fuel], data: data,
+        label: FUEL_LABELS[fuel], endColor: FUEL_COLORS[fuel], data: data,
         backgroundColor: _hexA(FUEL_COLORS[fuel], 0.78),
         borderColor: FUEL_COLORS[fuel], borderWidth: 0,
         fill: true, pointRadius: 0, tension: 0, stack: 'mix',
@@ -707,6 +730,7 @@
     const mixOpts = _commonChartOpts('GW');
     mixOpts.scales.y.stacked = true;
     mixOpts.scales.y.beginAtZero = true;
+    mixOpts.plugins.maEndLabels = { on: true, stacked: true };
     _mkChart('ma-canvas-mix', 'line', { labels: labels, datasets: stackDatasets }, mixOpts);
     _renderPanelLegend('ma-legend-mix', FUEL_STACK.map(function (fuel) {
       return { label: FUEL_LABELS[fuel], color: FUEL_COLORS[fuel] };
@@ -809,46 +833,41 @@
     const fl = f.fc ? f.fc.load[idx] : null, fw = f.fc ? f.fc.wind[idx] : null, fs = f.fc ? f.fc.solar[idx] : null, fr = f.fc ? f.fc.resid[idx] : null;
     const isFc = f.fcFrom >= 0 && idx >= f.fcFrom;
     const fcBlock = (fl != null || fw != null || fs != null)
-      ? '<div class="ma-ht-section">' + (window.PKF ? PKF.chip('Forecast') : 'Forecast') + ' TSO day-ahead</div>'
-        + '<div class="ma-ht-grid">'
-        +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(fl, 1) + ' GW</span></div>'
-        +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.wind) + 'Wind</span><span class="v">' + fx(fw, 1) + ' GW</span></div>'
-        +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.solar) + 'Solar</span><span class="v">' + fx(fs, 1) + ' GW</span></div>'
-        +   '<div class="ma-ht-row"><span class="k">' + dot('#A87DC4') + 'Residual</span><span class="v">' + fx(fr, 1) + ' GW</span></div>'
+      ? '<div class="ma-ht-box ma-ht-fc"><div class="ma-ht-section">' + (window.PKF ? PKF.chip('Forecast') : 'Forecast') + ' <span>TSO day-ahead</span></div><div class="ma-ht-grid">'
+        + [['#E6EDF3', 'Demand', fl], [FUEL_COLORS.wind, 'Wind', fw], [FUEL_COLORS.solar, 'Solar', fs], ['#94a3b8', 'Residual load', fr]].filter(r => r[2] != null && !isNaN(r[2]))
+          .map(r => '<div class="ma-ht-row"><span class="k">' + dot(r[0]) + r[1] + '</span><span class="v">' + fx(r[2], 1) + ' GW</span></div>').join('')
         + '</div>'
-        + (!isFc && wind != null && fw != null ? '<div class="ma-ht-row" style="font-size:10px"><span class="k">Forecast error (wind · solar)</span><span class="v">' + (wind - fw >= 0 ? '+' : '') + fx(wind - fw, 1) + ' · ' + (solar != null && fs != null ? (solar - fs >= 0 ? '+' : '') + fx(solar - fs, 1) : '--') + ' GW</span></div>' : '')
+        + (!isFc && wind != null && fw != null ? '<div class="ma-ht-miss"><span>Forecast error (wind · solar)</span> : ' + (wind - fw >= 0 ? '+' : '') + fx(wind - fw, 1) + ' · ' + (solar != null && fs != null ? (solar - fs >= 0 ? '+' : '') + fx(solar - fs, 1) : '--') + ' GW</div>' : '')
+        + '</div>'
       : '';
+    // rows with a value only; what is missing is said once, at the end of its section
+    const has = v => v != null && !isNaN(v);
+    const rows = (list, missingNote) => {
+      const ok = list.filter(r => has(r[2]));
+      const miss = list.filter(r => !has(r[2])).map(r => r[1]);
+      return (ok.length ? '<div class="ma-ht-grid">' + ok.map(([c, k, v, u, d, cls]) => '<div class="ma-ht-row"><span class="k">' + dot(c) + k + '</span><span class="v' + (cls ? ' ' + cls : '') + '">' + (d === 's' ? (v > 0 ? '+' : '') + fx(v, 1) : fx(v, d)) + ' ' + u + '</span></div>').join('') + '</div>' : '')
+        + (miss.length ? '<div class="ma-ht-miss"><span>' + (missingNote || 'Not available') + '</span> : ' + miss.map(m => '<span>' + m + '</span>').join(', ') + '</div>' : '');   // one text per span: each is translated
+    };
+    const box = (title, body) => body ? '<div class="ma-ht-box"><div class="ma-ht-section">' + title + '</div>' + body + '</div>' : '';
     tip.innerHTML =
       '<div class="ma-ht-time">' + dateLbl + ' · ' + timeLbl + (isFc ? ' ' + (window.PKF ? PKF.chip('Forecast') : '') : '') + '</div>'
+      + box('Prices',
+          '<div class="ma-ht-hero">'
+          + '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">Day-ahead ' + (ZONE_SHORT[STATE.zone] || '') + '</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
+          + '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (has(spark) ? (spark >= 0 ? '+' : '') + fx(spark, 0) : '--') + ' <span class="u">€</span></div></div>'
+          + '</div>'
+          + rows([[DRIVER_COLOURS.ttf, 'Gas plant cost', srmc, '€', 0], ['rgba(127,200,248,0.75)', (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' price', nbP, '€', 0]]))
+      + box('Who sets the price', '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + marginal + '</div>')
       + (isFc ? fcBlock : '')
-      + '<div class="ma-ht-hero">'
-      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">DA Price</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
-      +   '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (spark >= 0 ? '+' : '') + fx(spark, 0) + ' <span class="u">€</span></div></div>'
-      + '</div>'
-      + '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + 'Marginal · ' + marginal + '</div>'
-      + '<div class="ma-ht-grid" style="margin-top:6px">'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.ttf) + 'Gas cost</span><span class="v">' + fx(srmc, 0) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot('rgba(127,200,248,0.75)') + (ZONE_SHORT[STATE.data.nbZone] || 'Nb') + ' price</span><span class="v">' + fx(nbP, 0) + ' €' + (nbP != null && price != null ? ' <span style="opacity:.6">(' + (price - nbP >= 0 ? '+' : '') + (price - nbP).toFixed(0) + ')</span>' : '') + '</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Residual</span><span class="v">' + fx(resid, 1) + ' GW</span></div>'
-      + '</div>'
-      + '<div class="ma-ht-section">Demand &amp; mix</div>'
-      + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">' + dot('#E6EDF3') + 'Load</span><span class="v">' + fx(load, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.wind) + 'Wind</span><span class="v">' + fx(wind, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.solar) + 'Solar</span><span class="v">' + fx(solar, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.nuclear) + 'Nuc</span><span class="v">' + fx(nuc, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.hydro) + 'Hydro</span><span class="v">' + fx(hydro, 1) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(FUEL_COLORS.fossil) + 'Fossil</span><span class="v ' + (fossil > 1 ? 'gas' : '') + '">' + fx(fossil, 1) + ' GW</span></div>'
-      + '</div>'
-      + '<div class="ma-ht-section">Drivers</div>'
-      + '<div class="ma-ht-grid">'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.ttf) + 'TTF</span><span class="v">' + fx(ttf, 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.eua) + 'EUA</span><span class="v">' + fx(eua, 1) + ' €</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.wind) + 'Vent</span><span class="v">' + fx(windS, 0) + ' m/s</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.temp) + 'Temp</span><span class="v">' + fx(temp, 0) + '°C</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.nuc) + 'Nuc dispo</span><span class="v">' + fx(nucA, 0) + ' GW</span></div>'
-      +   '<div class="ma-ht-row"><span class="k">' + dot(DRIVER_COLOURS.flux) + 'Flux</span><span class="v">' + (flux > 0 ? '+' : '') + fx(flux, 1) + ' GW</span></div>'
-      + '</div>'
+      + box('Generation and demand', rows([
+          ['#E6EDF3', 'Demand', load, 'GW', 1], ['#94a3b8', 'Residual load', resid, 'GW', 1],
+          [FUEL_COLORS.nuclear, 'Nuclear', nuc, 'GW', 1], [FUEL_COLORS.hydro, 'Hydro', hydro, 'GW', 1],
+          [FUEL_COLORS.wind, 'Wind', wind, 'GW', 1], [FUEL_COLORS.solar, 'Solar', solar, 'GW', 1],
+          [FUEL_COLORS.fossil, 'Fossil', fossil, 'GW', 1, fossil > 1 ? 'gas' : '']], isFc ? 'Not published yet for this hour' : 'Not available'))
+      + box('Drivers', rows([
+          [DRIVER_COLOURS.ttf, 'TTF', ttf, '€/MWh', 1], [DRIVER_COLOURS.eua, 'EUA', eua, '€/t', 1],
+          [DRIVER_COLOURS.nuc, 'Nuclear available', nucA, 'GW', 0], [DRIVER_COLOURS.flux, 'Net imports', flux, 'GW', 's'],
+          [DRIVER_COLOURS.wind, 'Wind 100 m', windS, 'm/s', 0], [DRIVER_COLOURS.temp, 'Temperature', temp, '°C', 0]], 'No data'))
       + (isFc ? '' : fcBlock);
 
     // Docked in its own column beside the charts (never over them).
