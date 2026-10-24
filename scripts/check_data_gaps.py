@@ -16,6 +16,7 @@ Checks (each issue has a stable id, so it is followed run after run):
   cr          ODRÉ output of the parks under complément de rémunération: months up to M-2
   activation  mFRR activation prices, last 60 days
   pricecheck  days whose day-ahead average differs from Energy-Charts by more than 0.5 €/MWh
+  storage     data folder over 0.8 GB, R2 bucket over 8 of its 10 free GB
 
 Repairs: prices and generation are fetched again by scripts/heal_price_gaps.py and the retry
 slots of the data fetch; the others are flagged here until their job brings them back.
@@ -47,6 +48,24 @@ def bdays_between(a, b):
         n += d.weekday() < 5
         d += timedelta(days=1)
     return n
+
+
+STORAGE = {}
+
+
+def _r2_size():
+    """total bytes in the R2 bucket (S3 API, credentials from the R2_* secrets); None if not reachable"""
+    try:
+        import boto3
+        c = boto3.client('s3', endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
+                         aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'], region_name='auto')
+        n = 0
+        for page in c.get_paginator('list_objects_v2').paginate(Bucket=os.environ['R2_BUCKET']):
+            n += sum(o['Size'] for o in page.get('Contents', []))
+        return n
+    except Exception as e:
+        print('R2 size not read:', e)
+        return None
 
 
 def checks():
@@ -140,6 +159,23 @@ def checks():
         mage = 999
     if mage > 48:
         add('mktcheck', 'stale', f'Second sources for production and markets not consulted for {int(mage)} h', 'flagged: holes job, once a day')
+    # storage: the data folder (GitHub: 1 GB advised for the whole repository) and, once used, the R2 bucket
+    # (10 GB free, then billed): flagged at 80 % of the limit
+    tot = 0
+    for root, _, files in os.walk(os.path.join(ROOT, 'data')):
+        for f in files:
+            try:
+                tot += os.path.getsize(os.path.join(root, f))
+            except OSError:
+                pass
+    STORAGE['data_mb'] = round(tot / 1e6, 1)
+    if tot > 0.8 * 1e9:
+        add('storage', 'data', f'Data folder {tot / 1e9:.2f} GB (GitHub advises under 1 GB per repository)', 'flagged: move history to R2')
+    r2 = os.environ.get('R2_BUCKET') and _r2_size()
+    if r2:
+        STORAGE['r2_gb'] = round(r2 / 1e9, 3)
+        if r2 > 8e9:
+            add('storage', 'r2', f'R2 bucket {r2 / 1e9:.2f} GB of the 10 GB free (billed beyond)', 'flagged: clean old files')
     # activation prices
     act = (load('data/history/fr_activation.json') or {}).get('days') or {}
     if act:
@@ -162,7 +198,7 @@ def main():
         open_.append(i)
     resolved = [dict(i, resolvedAt=now) for i in known.values()] + [r for r in prev.get('resolved', []) if r.get('resolvedAt', '') >= (NOW - timedelta(days=30)).isoformat()]
     open_.sort(key=lambda i: (i['dataset'], i['id']), reverse=False)
-    json.dump({'updated': now, 'open': open_, 'resolved': sorted(resolved, key=lambda r: r['resolvedAt'], reverse=True)[:300]},
+    json.dump({'updated': now, 'storage': STORAGE, 'open': open_, 'resolved': sorted(resolved, key=lambda r: r['resolvedAt'], reverse=True)[:300]},
               open(OUT, 'w'), ensure_ascii=False, indent=0)
     print(f'{len(open_)} open, {len(resolved)} resolved (30 days)')
     for i in open_[:40]:

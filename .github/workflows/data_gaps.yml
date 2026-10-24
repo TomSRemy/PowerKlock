@@ -38,7 +38,24 @@ jobs:
         run: |
           AGE=$(python3 -c "import json,datetime as d;u=json.load(open('data/history/market_check.json'))['updated'];print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(u)).total_seconds()/3600))" 2>/dev/null || echo 999)
           if [ "${{ github.event_name }}" = "push" ] || [ "$AGE" -ge 20 ]; then python scripts/verify_markets.py --days 45; else echo "checked ${AGE} h ago"; fi
-      - run: python scripts/check_data_gaps.py
+      - name: Holes check
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          [ -n "$R2_BUCKET" ] && pip install -q boto3==1.43.118 || true
+          python scripts/check_data_gaps.py
+      - name: Storage alert by e-mail (at most once a day)
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+        run: |
+          MSG=$(python3 -c "import json;d=json.load(open('data/data_gaps.json'));print(' / '.join(i['what'] for i in d['open'] if i['dataset']=='storage'))")
+          if [ -n "$MSG" ] && [ "$(date -u +%H)" = "08" ]; then
+            SUBJECT="PowerKlock · stockage : bientôt la limite" BODY="$MSG. Détail sur la page Data status du site. — PowerKlock" python3 scripts/notify_failure.py || true
+          fi
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"

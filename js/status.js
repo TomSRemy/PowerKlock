@@ -185,7 +185,7 @@
 (function () {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const when = s => s ? new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '–';
-  const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices', pricecheck: 'Prices vs second source', gencheck: 'France production vs second source', mktcheck: 'Brent, EUR/USD vs second source' };
+  const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices', pricecheck: 'Prices vs second source', gencheck: 'France production vs second source', mktcheck: 'Brent, EUR/USD vs second source', storage: 'Storage' };
   async function render() {
     const host = document.getElementById('status-gaps'); if (!host) return;
     const j = await fetch(DATA_BASE + 'data_gaps.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).catch(() => null);
@@ -196,7 +196,7 @@
       L.sort((a, b) => a.id < b.id ? 1 : -1); const sample = L.slice(0, 4).map(i => esc(i.what)).join('<br>') + (L.length > 4 ? `<br><span class="fuel-note">… and ${L.length - 4} more</span>` : '');
       return `<tr><td class="l"><b>${esc(NAME[ds] || ds)}</b></td><td>${L.length}</td><td class="l" style="white-space:normal">${sample}</td><td>${when(since)}</td><td class="l" style="white-space:normal">${esc(rep)}</td></tr>`; });
     const res = (j.resolved || []).slice(0, 12);
-    host.innerHTML = `<div class="fuel-note" style="margin-bottom:8px">Checked ${when(j.updated)} (every 2 hours). ${j.open.length ? `<b style="color:var(--down)">${j.open.length} hole${j.open.length > 1 ? 's' : ''} open</b>` : '<b style="color:var(--up)">No hole</b>'}: a missing day, zone or slot inside a series biases every average and chart built on it.</div>` +
+    host.innerHTML = `<div class="fuel-note" style="margin-bottom:8px">Checked ${when(j.updated)} (every 2 hours)${j.storage && j.storage.data_mb != null ? ` · data ${j.storage.data_mb} MB${j.storage.r2_gb != null ? `, R2 ${j.storage.r2_gb} GB of 10` : ''}` : ''}. ${j.open.length ? `<b style="color:var(--down)">${j.open.length} hole${j.open.length > 1 ? 's' : ''} open</b>` : '<b style="color:var(--up)">No hole</b>'}: a missing day, zone or slot inside a series biases every average and chart built on it.</div>` +
       (rows.length ? `<div style="overflow-x:auto"><table class="status-table"><thead><tr><th class="l">Data</th><th>Holes</th><th class="l">What is missing</th><th>First seen</th><th class="l">Repair</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>` : '') +
       (res.length ? `<div class="table-header" style="margin-top:12px"><span class="table-title">Filled in the last 30 days</span></div><div style="overflow-x:auto"><table class="status-table"><thead><tr><th class="l">Data</th><th class="l">What was missing</th><th>First seen</th><th>Filled</th></tr></thead><tbody>${res.map(i => `<tr><td class="l">${esc(NAME[i.dataset] || i.dataset)}</td><td class="l" style="white-space:normal">${esc(i.what)}</td><td>${when(i.since)}</td><td>${when(i.resolvedAt)}</td></tr>`).join('')}</tbody></table></div>` : '');
   }
