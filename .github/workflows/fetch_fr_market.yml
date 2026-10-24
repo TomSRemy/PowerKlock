@@ -8,6 +8,11 @@ name: Fetch FR Market Data (SEFE)
 on:
   schedule:
     - cron: '30 6 * * *'  # 06:30 UTC = 08:30 CET — after the SEFE daily report refreshes
+    # GitHub starts it hours late on busy mornings (11:54 UTC on 23 Oct): catch-up slots, skipped once today's run is in
+    - cron: '7 7 * * *'
+    - cron: '43 8 * * *'
+    - cron: '19 10 * * *'
+    - cron: '53 12 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -22,21 +27,31 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+      - name: Already fetched today? (catch-up slots only)
+        id: due
+        run: |
+          D=$(python3 -c "import json;print((json.load(open('data/fr_market.json')).get('lastUpdate') or '')[:10])" 2>/dev/null)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "30 6 * * *" ] && [ "$D" = "$(date -u +%F)" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched today already"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies
+        if: steps.due.outputs.run == 'true'
         run: pip install requests==2.33.1
       - name: Fetch FR market data
+        if: steps.due.outputs.run == 'true'
         run: python scripts/fetch_fr_market.py
       - name: Monthly forward over the quoted horizon
+        if: steps.due.outputs.run == 'true'
         run: python scripts/build_forward_monthly.py || echo "::warning::monthly forward not rebuilt"
       - name: Fetch gas / carbon / coal / oil + FR nuclear availability
+        if: steps.due.outputs.run == 'true'
         # Same SEFE public cockpit; failure must not block the FR market commit.
         continue-on-error: true
         run: PYTHONPATH=scripts python scripts/fetch_commodities.py
       - name: Commit and push data files
+        if: steps.due.outputs.run == 'true'
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
