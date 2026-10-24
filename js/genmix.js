@@ -1699,7 +1699,7 @@ function renderGmCompare() {
         // Heatmap cell colour intensity
         const m = GM_FUEL_META[k];
         const opacity = Math.min(0.85, pct / 50);  // 50% share → opaque
-        const bg = `rgba(${_hexToRgb(m.color)},${opacity})`;
+        const bg = `rgba(${_gmHexToRgbStr(m.color)},${opacity})`;
         const txc = opacity > 0.4 ? '#fff' : 'var(--tx2)';
         html += `<td style="padding:8px;text-align:center;background:${bg};color:${txc};font-family:'JetBrains Mono',monospace">${pct.toFixed(1)}%</td>`;
       });
@@ -1764,7 +1764,9 @@ function renderGmCompare() {
 window.renderGmCompare = renderGmCompare;
 
 // ── Hex to RGB ─────
-function _hexToRgb(hex) {
+// "r,g,b" for rgba(). Named apart: a global _hexToRgb here replaced palette.js's (which returns [r, g, b]) and broke
+// the colour picking of charts with more than 8 series (getSeriesColor → _hexToLab gave NaN)
+function _gmHexToRgbStr(hex) {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16);
   const g = parseInt(h.substring(2, 4), 16);

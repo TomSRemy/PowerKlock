@@ -1579,7 +1579,7 @@
     const STACK = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
     const FUEL_META = window.GM_FUEL_META || {};
     const FLAGS = window.FLAG_MAP || {};
-    const hexToRgb = (typeof window._hexToRgb === 'function') ? window._hexToRgb : (hex => {
+    const hexToRgb = (typeof window._gmHexToRgbStr === 'function') ? window._gmHexToRgbStr : (hex => {
       const h = hex.replace('#', '');
       return `${parseInt(h.substr(0, 2), 16)},${parseInt(h.substr(2, 2), 16)},${parseInt(h.substr(4, 2), 16)}`;
     });

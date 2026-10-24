@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install requests==2.33.1 "psycopg[binary]==3.2.*"
+        run: pip install requests==2.33.1 "psycopg[binary]==3.3.2"
       - name: Fetch news feeds
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # optional: sources added from the site

@@ -169,6 +169,30 @@ def main():
             if ph.evaluate("document.documentElement.scrollWidth > 392"):
                 errors.append(f"[phone/{pg}] wider than the screen (390px)")
         ph.close()
+
+        # French, the default language: every address of the menu opens its page without an error,
+        # the browser Back button stays on the site, and no number keeps the English decimal point
+        fr = b.new_page(viewport={'width': 1440, 'height': 900})
+        fr.add_init_script("try { localStorage.setItem('pk-lang', 'fr') } catch (e) {}")
+        fr.on('pageerror', lambda e: errors.append(f"[fr] JS error: {str(e)[:300]}"))
+        fr.goto(f'http://127.0.0.1:{PORT}/index.html')
+        fr.wait_for_timeout(7000)
+        routes = fr.evaluate("[...new Set(PKNav.entries().map(e => e.route))]")
+        for r in routes:
+            fr.evaluate(f"PKNav.go('{r}')")
+            fr.wait_for_timeout(1000)
+            st = fr.evaluate("[location.hash, !!(document.querySelector('.page.active') || document.querySelector('#page-mydash.active'))]")
+            if st[0] != '#' + r or not st[1]:
+                errors.append(f"[fr/{r}] address or page not shown: {st}")
+        fr.go_back(); fr.wait_for_timeout(800)
+        if fr.evaluate("location.hash") != '#' + routes[-2]:
+            errors.append('[fr] browser Back does not go to the previous page')
+        fr.evaluate("PKNav.go('today')"); fr.wait_for_timeout(2500)
+        dots = fr.evaluate(r"(document.querySelector('.page.active').innerText.match(/(^|[^\w.])\d+\.\d+(?![\w.]?\d)/g) || []).length")
+        if dots:
+            errors.append(f"[fr/today] {dots} numbers still with a decimal point")
+        fr.close()
+
         for d in ('france', 'mydash'):
             where['v'] = d
             p.evaluate(f"switchDashboard('{d}', document.querySelector('.nav-tab[data-dash={d}]'))")
