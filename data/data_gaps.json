@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-24T10:15:19+00:00",
+"updated": "2026-10-24T10:22:55+00:00",
 "open": [
 {
 "id": "pricecheck:2026-08-24:AT",
@@ -7,7 +7,7 @@
 "what": "2026-08-24: AT day-ahead 158.83 €/MWh here, 167.19 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-24:DE_LU",
@@ -15,7 +15,7 @@
 "what": "2026-08-24: DE_LU day-ahead 144.93 €/MWh here, 143.18 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-24:PT",
@@ -23,7 +23,7 @@
 "what": "2026-08-24: PT day-ahead 95.03 €/MWh here, 92.21 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-25:AT",
@@ -31,7 +31,7 @@
 "what": "2026-08-25: AT day-ahead 169.55 €/MWh here, 177.64 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-25:DE_LU",
@@ -39,7 +39,7 @@
 "what": "2026-08-25: DE_LU day-ahead 138.12 €/MWh here, 141.43 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-26:AT",
@@ -47,7 +47,7 @@
 "what": "2026-08-26: AT day-ahead 176.36 €/MWh here, 178.19 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-26:DE_LU",
@@ -55,7 +55,7 @@
 "what": "2026-08-26: DE_LU day-ahead 150.5 €/MWh here, 153.65 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-27:AT",
@@ -63,7 +63,7 @@
 "what": "2026-08-27: AT day-ahead 162.03 €/MWh here, 164.98 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-28:AT",
@@ -71,7 +71,7 @@
 "what": "2026-08-28: AT day-ahead 148.6 €/MWh here, 146.05 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-28:DE_LU",
@@ -79,7 +79,7 @@
 "what": "2026-08-28: DE_LU day-ahead 145.49 €/MWh here, 143.55 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-29:AT",
@@ -87,7 +87,7 @@
 "what": "2026-08-29: AT day-ahead 118.94 €/MWh here, 121.76 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-30:AT",
@@ -95,7 +95,7 @@
 "what": "2026-08-30: AT day-ahead 113.03 €/MWh here, 119.46 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-30:DE_LU",
@@ -103,7 +103,7 @@
 "what": "2026-08-30: DE_LU day-ahead 77.0 €/MWh here, 75.63 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-31:AT",
@@ -111,7 +111,7 @@
 "what": "2026-08-31: AT day-ahead 167.96 €/MWh here, 177.99 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-08-31:DE_LU",
@@ -119,7 +119,7 @@
 "what": "2026-08-31: DE_LU day-ahead 109.96 €/MWh here, 111.85 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-01:AT",
@@ -127,7 +127,7 @@
 "what": "2026-09-01: AT day-ahead 166.82 €/MWh here, 170.17 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-01:DE_LU",
@@ -135,7 +135,7 @@
 "what": "2026-09-01: DE_LU day-ahead 142.06 €/MWh here, 143.8 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-02:AT",
@@ -143,7 +143,7 @@
 "what": "2026-09-02: AT day-ahead 187.15 €/MWh here, 190.69 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-02:DE_LU",
@@ -151,7 +151,7 @@
 "what": "2026-09-02: DE_LU day-ahead 167.87 €/MWh here, 163.73 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-04:AT",
@@ -159,7 +159,7 @@
 "what": "2026-09-04: AT day-ahead 170.75 €/MWh here, 163.95 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-04:DE_LU",
@@ -167,7 +167,7 @@
 "what": "2026-09-04: DE_LU day-ahead 95.1 €/MWh here, 88.95 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-05:AT",
@@ -175,7 +175,7 @@
 "what": "2026-09-05: AT day-ahead 133.16 €/MWh here, 130.56 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-05:DE_LU",
@@ -183,7 +183,7 @@
 "what": "2026-09-05: DE_LU day-ahead 49.82 €/MWh here, 42.14 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-06:AT",
@@ -191,7 +191,7 @@
 "what": "2026-09-06: AT day-ahead 119.82 €/MWh here, 116.79 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-06:DE_LU",
@@ -199,7 +199,7 @@
 "what": "2026-09-06: DE_LU day-ahead 105.47 €/MWh here, 107.55 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-07:AT",
@@ -207,7 +207,7 @@
 "what": "2026-09-07: AT day-ahead 184.92 €/MWh here, 186.97 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-07:DE_LU",
@@ -215,7 +215,7 @@
 "what": "2026-09-07: DE_LU day-ahead 149.2 €/MWh here, 155.88 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-08:AT",
@@ -223,7 +223,7 @@
 "what": "2026-09-08: AT day-ahead 191.54 €/MWh here, 179.67 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-09:AT",
@@ -231,7 +231,7 @@
 "what": "2026-09-09: AT day-ahead 185.56 €/MWh here, 182.69 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-09:DE_LU",
@@ -239,7 +239,7 @@
 "what": "2026-09-09: DE_LU day-ahead 146.0 €/MWh here, 143.15 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-10:AT",
@@ -247,7 +247,7 @@
 "what": "2026-09-10: AT day-ahead 207.42 €/MWh here, 204.4 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-10:DE_LU",
@@ -255,7 +255,7 @@
 "what": "2026-09-10: DE_LU day-ahead 196.0 €/MWh here, 191.82 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-11:AT",
@@ -263,7 +263,7 @@
 "what": "2026-09-11: AT day-ahead 210.0 €/MWh here, 209.03 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-12:AT",
@@ -271,7 +271,7 @@
 "what": "2026-09-12: AT day-ahead 155.5 €/MWh here, 150.18 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-12:DE_LU",
@@ -279,7 +279,7 @@
 "what": "2026-09-12: DE_LU day-ahead 141.3 €/MWh here, 137.96 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-13:AT",
@@ -287,7 +287,7 @@
 "what": "2026-09-13: AT day-ahead 151.36 €/MWh here, 162.47 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-13:DE_LU",
@@ -295,7 +295,7 @@
 "what": "2026-09-13: DE_LU day-ahead 148.25 €/MWh here, 166.1 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-14:AT",
@@ -303,7 +303,7 @@
 "what": "2026-09-14: AT day-ahead 220.73 €/MWh here, 246.98 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-14:DE_LU",
@@ -311,7 +311,7 @@
 "what": "2026-09-14: DE_LU day-ahead 221.5 €/MWh here, 256.55 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-15:AT",
@@ -319,7 +319,7 @@
 "what": "2026-09-15: AT day-ahead 192.27 €/MWh here, 189.81 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-16:AT",
@@ -327,7 +327,7 @@
 "what": "2026-09-16: AT day-ahead 187.34 €/MWh here, 183.73 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-16:DE_LU",
@@ -335,7 +335,7 @@
 "what": "2026-09-16: DE_LU day-ahead 183.72 €/MWh here, 182.33 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-17:AT",
@@ -343,7 +343,7 @@
 "what": "2026-09-17: AT day-ahead 185.0 €/MWh here, 189.48 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-17:DE_LU",
@@ -351,7 +351,7 @@
 "what": "2026-09-17: DE_LU day-ahead 139.72 €/MWh here, 142.89 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-18:AT",
@@ -359,7 +359,7 @@
 "what": "2026-09-18: AT day-ahead 169.18 €/MWh here, 162.05 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-18:DE_LU",
@@ -367,7 +367,7 @@
 "what": "2026-09-18: DE_LU day-ahead 128.69 €/MWh here, 120.53 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-19:AT",
@@ -375,7 +375,7 @@
 "what": "2026-09-19: AT day-ahead 131.9 €/MWh here, 145.09 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-19:DE_LU",
@@ -383,7 +383,7 @@
 "what": "2026-09-19: DE_LU day-ahead 44.08 €/MWh here, 42.67 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-20:AT",
@@ -391,7 +391,7 @@
 "what": "2026-09-20: AT day-ahead 110.53 €/MWh here, 117.72 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-20:DE_LU",
@@ -399,7 +399,7 @@
 "what": "2026-09-20: DE_LU day-ahead 44.48 €/MWh here, 21.75 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-21:AT",
@@ -407,7 +407,7 @@
 "what": "2026-09-21: AT day-ahead 161.33 €/MWh here, 137.98 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-21:DE_LU",
@@ -415,7 +415,7 @@
 "what": "2026-09-21: DE_LU day-ahead 129.51 €/MWh here, 96.6 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-22:AT",
@@ -423,7 +423,7 @@
 "what": "2026-09-22: AT day-ahead 203.39 €/MWh here, 221.87 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-22:DE_LU",
@@ -431,7 +431,7 @@
 "what": "2026-09-22: DE_LU day-ahead 240.06 €/MWh here, 226.18 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-23:AT",
@@ -439,7 +439,7 @@
 "what": "2026-09-23: AT day-ahead 196.74 €/MWh here, 187.79 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-23:DE_LU",
@@ -447,7 +447,7 @@
 "what": "2026-09-23: DE_LU day-ahead 189.93 €/MWh here, 180.68 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-24:AT",
@@ -455,7 +455,7 @@
 "what": "2026-09-24: AT day-ahead 196.56 €/MWh here, 211.0 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-24:DE_LU",
@@ -463,7 +463,7 @@
 "what": "2026-09-24: DE_LU day-ahead 130.76 €/MWh here, 138.12 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-25:AT",
@@ -471,7 +471,7 @@
 "what": "2026-09-25: AT day-ahead 203.0 €/MWh here, 197.64 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-25:DE_LU",
@@ -479,7 +479,7 @@
 "what": "2026-09-25: DE_LU day-ahead 182.26 €/MWh here, 176.63 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-26:AT",
@@ -487,7 +487,7 @@
 "what": "2026-09-26: AT day-ahead 155.14 €/MWh here, 153.81 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-27:AT",
@@ -495,7 +495,7 @@
 "what": "2026-09-27: AT day-ahead 131.51 €/MWh here, 121.78 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-27:DE_LU",
@@ -503,7 +503,7 @@
 "what": "2026-09-27: DE_LU day-ahead 114.12 €/MWh here, 111.06 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-28:AT",
@@ -511,7 +511,7 @@
 "what": "2026-09-28: AT day-ahead 204.9 €/MWh here, 174.51 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-28:DE_LU",
@@ -519,7 +519,7 @@
 "what": "2026-09-28: DE_LU day-ahead 197.76 €/MWh here, 195.4 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-29:AT",
@@ -527,7 +527,7 @@
 "what": "2026-09-29: AT day-ahead 166.06 €/MWh here, 180.55 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-29:DE_LU",
@@ -535,7 +535,7 @@
 "what": "2026-09-29: DE_LU day-ahead 163.91 €/MWh here, 165.83 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-30:AT",
@@ -543,7 +543,7 @@
 "what": "2026-09-30: AT day-ahead 160.97 €/MWh here, 155.21 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-09-30:DE_LU",
@@ -551,7 +551,7 @@
 "what": "2026-09-30: DE_LU day-ahead 136.72 €/MWh here, 140.75 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-01:AT",
@@ -559,7 +559,7 @@
 "what": "2026-10-01: AT day-ahead 174.45 €/MWh here, 177.22 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-02:AT",
@@ -567,7 +567,7 @@
 "what": "2026-10-02: AT day-ahead 205.45 €/MWh here, 198.68 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-02:DE_LU",
@@ -575,7 +575,7 @@
 "what": "2026-10-02: DE_LU day-ahead 208.65 €/MWh here, 200.5 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-03:AT",
@@ -583,7 +583,7 @@
 "what": "2026-10-03: AT day-ahead 150.49 €/MWh here, 152.72 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-03:DE_LU",
@@ -591,7 +591,7 @@
 "what": "2026-10-03: DE_LU day-ahead 161.49 €/MWh here, 169.01 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-04:AT",
@@ -599,7 +599,7 @@
 "what": "2026-10-04: AT day-ahead 156.48 €/MWh here, 157.14 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-04:DE_LU",
@@ -607,7 +607,7 @@
 "what": "2026-10-04: DE_LU day-ahead 158.11 €/MWh here, 168.28 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-05:AT",
@@ -615,7 +615,7 @@
 "what": "2026-10-05: AT day-ahead 196.18 €/MWh here, 200.33 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-05:DE_LU",
@@ -623,7 +623,7 @@
 "what": "2026-10-05: DE_LU day-ahead 172.11 €/MWh here, 156.62 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-06:AT",
@@ -631,7 +631,7 @@
 "what": "2026-10-06: AT day-ahead 214.12 €/MWh here, 216.65 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-06:DE_LU",
@@ -639,7 +639,7 @@
 "what": "2026-10-06: DE_LU day-ahead 212.19 €/MWh here, 201.7 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-07:AT",
@@ -647,7 +647,7 @@
 "what": "2026-10-07: AT day-ahead 197.55 €/MWh here, 194.85 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-07:DE_LU",
@@ -655,7 +655,7 @@
 "what": "2026-10-07: DE_LU day-ahead 190.31 €/MWh here, 192.03 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-08:AT",
@@ -663,7 +663,7 @@
 "what": "2026-10-08: AT day-ahead 187.17 €/MWh here, 188.88 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-08:DE_LU",
@@ -671,7 +671,7 @@
 "what": "2026-10-08: DE_LU day-ahead 142.1 €/MWh here, 139.35 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-09:AT",
@@ -679,7 +679,7 @@
 "what": "2026-10-09: AT day-ahead 195.87 €/MWh here, 196.49 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-09:CH",
@@ -687,7 +687,7 @@
 "what": "2026-10-09: CH day-ahead 203.76 €/MWh here, 200.34 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-09:DE_LU",
@@ -695,7 +695,7 @@
 "what": "2026-10-09: DE_LU day-ahead 81.61 €/MWh here, 78.58 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-09:ES",
@@ -703,7 +703,7 @@
 "what": "2026-10-09: ES day-ahead 106.57 €/MWh here, 107.37 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-10:AT",
@@ -711,7 +711,7 @@
 "what": "2026-10-10: AT day-ahead 198.54 €/MWh here, 207.33 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-10:DE_LU",
@@ -719,7 +719,7 @@
 "what": "2026-10-10: DE_LU day-ahead 45.69 €/MWh here, 51.08 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-10:HU",
@@ -727,7 +727,7 @@
 "what": "2026-10-10: HU day-ahead 186.07 €/MWh here, 247.38 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-10:NL",
@@ -735,7 +735,7 @@
 "what": "2026-10-10: NL day-ahead 124.43 €/MWh here, 50.69 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-11:AT",
@@ -743,7 +743,7 @@
 "what": "2026-10-11: AT day-ahead 165.76 €/MWh here, 174.77 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-11:DE_LU",
@@ -751,7 +751,7 @@
 "what": "2026-10-11: DE_LU day-ahead 112.0 €/MWh here, 122.31 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-12:AT",
@@ -759,7 +759,7 @@
 "what": "2026-10-12: AT day-ahead 221.38 €/MWh here, 217.7 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-12:DE_LU",
@@ -767,7 +767,7 @@
 "what": "2026-10-12: DE_LU day-ahead 204.46 €/MWh here, 197.23 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-13:AT",
@@ -775,7 +775,7 @@
 "what": "2026-10-13: AT day-ahead 214.76 €/MWh here, 209.22 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-13:DE_LU",
@@ -783,7 +783,7 @@
 "what": "2026-10-13: DE_LU day-ahead 163.71 €/MWh here, 160.23 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-14:AT",
@@ -791,7 +791,7 @@
 "what": "2026-10-14: AT day-ahead 217.03 €/MWh here, 223.28 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-14:DE_LU",
@@ -799,7 +799,7 @@
 "what": "2026-10-14: DE_LU day-ahead 174.03 €/MWh here, 178.99 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-15:AT",
@@ -807,7 +807,7 @@
 "what": "2026-10-15: AT day-ahead 219.49 €/MWh here, 228.25 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-15:DE_LU",
@@ -815,7 +815,7 @@
 "what": "2026-10-15: DE_LU day-ahead 186.1 €/MWh here, 187.3 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-16:AT",
@@ -823,7 +823,7 @@
 "what": "2026-10-16: AT day-ahead 227.75 €/MWh here, 229.2 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-16:DE_LU",
@@ -831,7 +831,7 @@
 "what": "2026-10-16: DE_LU day-ahead 202.75 €/MWh here, 210.66 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-17:AT",
@@ -839,7 +839,7 @@
 "what": "2026-10-17: AT day-ahead 211.3 €/MWh here, 227.98 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-17:DE_LU",
@@ -847,7 +847,7 @@
 "what": "2026-10-17: DE_LU day-ahead 161.62 €/MWh here, 168.27 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-18:AT",
@@ -855,7 +855,7 @@
 "what": "2026-10-18: AT day-ahead 204.8 €/MWh here, 202.21 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-18:DE_LU",
@@ -863,7 +863,7 @@
 "what": "2026-10-18: DE_LU day-ahead 177.49 €/MWh here, 175.21 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-19:AT",
@@ -871,7 +871,7 @@
 "what": "2026-10-19: AT day-ahead 233.36 €/MWh here, 236.72 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-19:DE_LU",
@@ -879,7 +879,7 @@
 "what": "2026-10-19: DE_LU day-ahead 210.43 €/MWh here, 208.44 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-20:AT",
@@ -887,7 +887,7 @@
 "what": "2026-10-20: AT day-ahead 239.75 €/MWh here, 242.74 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-20:DE_LU",
@@ -895,7 +895,7 @@
 "what": "2026-10-20: DE_LU day-ahead 202.39 €/MWh here, 195.66 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-21:AT",
@@ -903,7 +903,7 @@
 "what": "2026-10-21: AT day-ahead 240.66 €/MWh here, 235.67 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-21:DE_LU",
@@ -911,7 +911,7 @@
 "what": "2026-10-21: DE_LU day-ahead 216.47 €/MWh here, 211.94 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-22:DE_LU",
@@ -919,7 +919,7 @@
 "what": "2026-10-22: DE_LU day-ahead 151.17 €/MWh here, 148.61 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:AT",
@@ -927,7 +927,7 @@
 "what": "2026-10-23: AT day-ahead 225.18 €/MWh here, 218.69 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:DE_LU",
@@ -935,7 +935,7 @@
 "what": "2026-10-23: DE_LU day-ahead 148.19 €/MWh here, 137.59 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T10:15:19+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-09-30",
@@ -943,7 +943,7 @@
 "what": "2025-09-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-01",
@@ -951,7 +951,7 @@
 "what": "2025-10-01: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-02",
@@ -959,7 +959,7 @@
 "what": "2025-10-02: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-03",
@@ -967,7 +967,7 @@
 "what": "2025-10-03: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-04",
@@ -975,7 +975,7 @@
 "what": "2025-10-04: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-05",
@@ -983,7 +983,7 @@
 "what": "2025-10-05: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-06",
@@ -991,7 +991,7 @@
 "what": "2025-10-06: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-07",
@@ -999,7 +999,7 @@
 "what": "2025-10-07: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-08",
@@ -1007,7 +1007,7 @@
 "what": "2025-10-08: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-09",
@@ -1015,7 +1015,7 @@
 "what": "2025-10-09: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-10",
@@ -1023,7 +1023,7 @@
 "what": "2025-10-10: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-11",
@@ -1031,7 +1031,7 @@
 "what": "2025-10-11: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-12",
@@ -1039,7 +1039,7 @@
 "what": "2025-10-12: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-13",
@@ -1047,7 +1047,7 @@
 "what": "2025-10-13: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-14",
@@ -1055,7 +1055,7 @@
 "what": "2025-10-14: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-15",
@@ -1063,7 +1063,7 @@
 "what": "2025-10-15: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-16",
@@ -1071,7 +1071,7 @@
 "what": "2025-10-16: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-17",
@@ -1079,7 +1079,7 @@
 "what": "2025-10-17: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-18",
@@ -1087,7 +1087,7 @@
 "what": "2025-10-18: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-19",
@@ -1095,7 +1095,7 @@
 "what": "2025-10-19: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-20",
@@ -1103,7 +1103,7 @@
 "what": "2025-10-20: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-21",
@@ -1111,7 +1111,7 @@
 "what": "2025-10-21: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-22",
@@ -1119,7 +1119,7 @@
 "what": "2025-10-22: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-23",
@@ -1127,7 +1127,7 @@
 "what": "2025-10-23: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-24",
@@ -1135,7 +1135,7 @@
 "what": "2025-10-24: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-25",
@@ -1143,7 +1143,7 @@
 "what": "2025-10-25: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-26",
@@ -1151,7 +1151,7 @@
 "what": "2025-10-26: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-27",
@@ -1159,7 +1159,7 @@
 "what": "2025-10-27: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-28",
@@ -1167,7 +1167,7 @@
 "what": "2025-10-28: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-29",
@@ -1175,7 +1175,7 @@
 "what": "2025-10-29: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-30",
@@ -1183,7 +1183,7 @@
 "what": "2025-10-30: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-10-31",
@@ -1191,7 +1191,7 @@
 "what": "2025-10-31: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-11-01",
@@ -1199,7 +1199,7 @@
 "what": "2025-11-01: no day-ahead price for PT, IT_NORD, CH, AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 },
 {
 "id": "prices:2025-11-02",
@@ -1207,7 +1207,7 @@
 "what": "2025-11-02: no day-ahead price for AT",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-10-24T06:42:46+00:00",
-"lastSeen": "2026-10-24T10:15:19+00:00"
+"lastSeen": "2026-10-24T10:22:55+00:00"
 }
 ],
 "resolved": [
