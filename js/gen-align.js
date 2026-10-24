@@ -35,12 +35,15 @@
     const [y, m, d] = dateISO.split('-').map(Number);
     return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
   }
+  // the one download of a daily file (raw, before alignment), shared by the day itself and by the next day's
+  // alignment, which needs this day's last hours; refreshed every 5 minutes
   function rawDaily(baseUrl, dateISO) {
-    if (!rawCache.has(dateISO)) {
-      rawCache.set(dateISO, origFetch(baseUrl + dateISO + '.json')
-        .then(r => r.ok ? r.json() : null).catch(() => null));
+    const slot = Math.floor(Date.now() / (5 * 60 * 1000)), hit = rawCache.get(dateISO);
+    if (!hit || hit.slot !== slot) {
+      rawCache.set(dateISO, { slot, p: origFetch(baseUrl + dateISO + '.json?t=' + slot)
+        .then(r => r.ok ? r.json() : null).catch(() => null) });
     }
-    return rawCache.get(dateISO);
+    return rawCache.get(dateISO).p;
   }
 
   // out[i] = arr[i - k]; the first k slots come from the previous UTC day.
@@ -128,11 +131,9 @@
     }
     let failed = null;
     const p = (async () => {
-      const res = await origFetch(input, init);
-      if (!res.ok) { failed = res; return null; }
-      let json;
-      try { json = await res.clone().json(); } catch (_) { failed = res; return null; }
-      if (!rawCache.has(m[2])) rawCache.set(m[2], Promise.resolve(JSON.parse(JSON.stringify(json))));
+      const raw = await rawDaily(m[1], m[2]);
+      if (raw == null) return null;   // missing or unreadable: the caller's own request answers below
+      const json = JSON.parse(JSON.stringify(raw));
       let aligned = await alignDaily(json, m[2], m[1]);
       if (window.pkFrOverlay) { try { aligned = await window.pkFrOverlay(aligned, m[2]); } catch (e) { console.warn('RTE overlay failed', e); } }
       return JSON.stringify(aligned);
