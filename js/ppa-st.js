@@ -14,7 +14,7 @@
   const f2 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(2);
   const f1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const esc = PK.esc;   // js/pk-core.js
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const lab = k => MON[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4);
   const NAMES = { hybrid: 'Blend of 4 methods', weather: 'Weather simulation', regional: 'European price model', regionalMC: 'European model, simulated', fpc: 'Forward shape', step: 'Capacity trend', dashboard: 'Past discount', weather: 'Weather simulation' };

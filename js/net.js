@@ -19,5 +19,5 @@
   const keep = (msg, where) => { if (window.PK_ERRORS.length < 50) window.PK_ERRORS.push({ at: new Date().toISOString(), page: (document.querySelector('.page.active') || {}).id || '', msg: String(msg || '').slice(0, 300), where: String(where || '').slice(0, 200) }); };
   window.addEventListener('error', e => { if (e && e.message) keep(e.message, (e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
   window.addEventListener('unhandledrejection', e => { const r = e && e.reason; if (r && r.name === 'AbortError') return; keep(r && (r.message || r), 'promise'); });
-  window.pkTodayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  window.pkTodayISO = () => window.PK ? PK.today() : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
 })();

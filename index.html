@@ -4510,13 +4510,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 
       <!-- Calendar heatmap -->
       <div style="margin-top:16px">
-        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">📅 Calendar Heatmap — Negative Hours per Day</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Calendar Heatmap — Negative Hours per Day</div>
         <div id="neg-calendar-heatmap" style="overflow-x:auto"></div>
       </div>
 
       <!-- Monthly summary -->
       <div style="margin-top:14px">
-        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">📊 Monthly Summary</div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Monthly Summary</div>
         <div id="neg-monthly-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px"></div>
       </div>
 
@@ -4717,11 +4717,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
                   <th style="width:12%;text-align:left">Zone</th>
                   <th style="width:9%;text-align:right" title="Total instantaneous generation in GW">Total<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
                   <th style="width:9%;text-align:right" title="% renewables = (wind+solar+hydro+biomass) / total">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
-                  <th style="width:8%;text-align:right" title="Wind generation (onshore + offshore)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Wind generation (onshore + offshore)">Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
                   <th style="width:8%;text-align:right" title="Solar PV generation">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
                   <th style="width:8%;text-align:right" title="Nuclear generation">⚛ Nuc<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Hydro (run-of-river + reservoir)">💧 Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
-                  <th style="width:8%;text-align:right" title="Fossil (gas + coal + oil)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Hydro (run-of-river + reservoir)">Hydro<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
+                  <th style="width:8%;text-align:right" title="Fossil (gas + coal + oil)">Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
                   <th style="width:12%;text-align:left" title="Dominant fuel">Dom. fuel</th>
                   <th style="width:9%;text-align:right" title="CO₂ intensity proxy (g CO₂eq / kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
                 </tr>
@@ -4896,9 +4896,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
                     <th style="width:9%;text-align:right" title="Period-average load (GW)">Avg load<br><span style="color:var(--tx3);font-weight:400;font-size:9px">GW</span></th>
                     <th style="width:9%;text-align:right" title="Total energy over the period (TWh)">Energy<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
                     <th style="width:8%;text-align:right" title="% renewables (W+S+H+B) over period">% REN<br><span style="color:var(--tx3);font-weight:400;font-size:9px">share</span></th>
-                    <th style="width:8%;text-align:right" title="Wind energy over period (TWh)">🌬 Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:8%;text-align:right" title="Wind energy over period (TWh)">Wind<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
                     <th style="width:8%;text-align:right" title="Solar energy over period (TWh)">☀ Solar<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
-                    <th style="width:8%;text-align:right" title="Fossil energy over period (TWh)">🔥 Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
+                    <th style="width:8%;text-align:right" title="Fossil energy over period (TWh)">Fossil<br><span style="color:var(--tx3);font-weight:400;font-size:9px">TWh</span></th>
                     <th style="width:11%;text-align:left" title="Dominant fuel over period">Dom. fuel</th>
                     <th style="width:9%;text-align:center" title="Period-weighted CO₂ intensity (g/kWh)">CO₂<br><span style="color:var(--tx3);font-weight:400;font-size:9px">g/kWh</span></th>
                     <th style="width:11%;text-align:right" title="% renewables Y-1 vs same period (delta in pts)">Δ %REN Y-1<br><span style="color:var(--tx3);font-weight:400;font-size:9px">pts</span></th>
@@ -8251,6 +8251,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 </style>
 
+<script src="js/pk-core.js"></script>
 <script src="js/net.js"></script>
 <script src="js/libs.js"></script>
 <script src="js/zoom-reset.js"></script>

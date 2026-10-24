@@ -689,9 +689,7 @@
   }
 
   // ── Utils ────────────────────────────────────────────────────
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
-  }
+  const esc = PK.esc;   // js/pk-core.js
 
   // ── Hot-swap content of an open overlay ──────────────────────
   // Use this instead of close+reopen when a user switches zone, view,

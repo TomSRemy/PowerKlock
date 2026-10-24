@@ -55,7 +55,8 @@
   document.addEventListener('DOMContentLoaded', run);
   window.addEventListener('load', () => {
     soon();
-    ['showPage', 'switchDashboard'].forEach(name => {
+    PK.onPage('*', soon);
+    ['switchDashboard'].forEach(name => {
       const inner = window[name];
       if (typeof inner === 'function') window[name] = function () { const r = inner.apply(this, arguments); soon(); return r; };
     });

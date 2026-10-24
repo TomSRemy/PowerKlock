@@ -59,8 +59,7 @@
   }
   window.addEventListener('load', () => setTimeout(() => {
     const active = document.querySelector('.page.active'); hit(active ? active.id.replace(/^page-/, '') : 'home');
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); hit(id); if (id === 'status') setTimeout(renderStats, 300); return r; };
+    PK.onPage('*', id => { hit(id); if (id === 'status') setTimeout(renderStats, 300); });
   }, 0));
   window.PKVisits = { renderStats };
 })();

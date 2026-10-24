@@ -8,8 +8,7 @@
   'use strict';
   let idx = null;
   const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
+  const esc = PK.esc;   // js/pk-core.js
   function build() {
     const out = [];
     if (window.PKNav) PKNav.entries().forEach(e => out.push({ kind: 'Page', label: e.label, sub: e.sub, go: () => PKNav.go(e.route) }));

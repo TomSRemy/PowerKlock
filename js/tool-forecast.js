@@ -427,8 +427,7 @@
   document.addEventListener('pk-view', () => {});
 
   window.addEventListener('load', () => setTimeout(() => {
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'fcst') wire(); return r; };
+    PK.onPage('fcst', wire);
     if (document.querySelector('#page-fcst.active')) wire();
   }, 0));
   // ════════════════════════════════════════════════════════════════
