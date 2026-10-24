@@ -81,6 +81,17 @@ def fetch(params):
     r.raise_for_status()
     return r.text
 
+def _seq_of(ts, ns):
+    """classificationSequence_AttributeInstanceComponent.position of a TimeSeries (1 when absent)"""
+    for c in ts.iter():
+        if c.tag.split('}')[-1] == 'classificationSequence_AttributeInstanceComponent.position':
+            try:
+                return int((c.text or '1').strip())
+            except ValueError:
+                return 1
+    return 1
+
+
 def parse_prices(xml_text, req_start_str=None, req_end_str=None):
     """
     Parse DA prices.
@@ -162,6 +173,7 @@ def parse_prices(xml_text, req_start_str=None, req_end_str=None):
             if debug:
                 print(f"  TS[{ts_idx}] res={res} start={period_start_str!r} npts={len(points)}")
             candidates.append({
+                'seq': _seq_of(ts, ns),
                 'start': period_start, 'end': period_end,
                 'res_minutes': res_minutes, 'is_15min': (res == 'PT15M'), 'points': points,
             })
@@ -176,7 +188,10 @@ def parse_prices(xml_text, req_start_str=None, req_end_str=None):
         hi = min(c['end'], req_end)
         return max(0, (hi - lo).total_seconds())
 
-    best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
+    # Germany-Luxembourg and Austria carry two day-ahead series for the same day: classification
+    # sequence 1 is the European market coupling (SDAC, the reference price, as SMARD and Energy-Charts
+    # publish it), 2 another auction. Among the periods covering the day best, sequence 1 wins.
+    best = max(candidates, key=lambda c: (overlap_seconds(c), -c['seq'])) if (req_start and req_end) else min(candidates, key=lambda c: c['seq'])
     points = best['points']
 
     # Carry the last explicit value forward through any gap: curveType A03
@@ -192,18 +207,28 @@ def parse_prices(xml_text, req_start_str=None, req_end_str=None):
             out.append(last)
         return out
 
-    # Always output 96 slots (quarter-hourly grid).
+    # Always output 96 slots (quarter-hourly grid) on the zone's local clock.
     # If native resolution is hourly (CH, ME, RS, MK… in PT60M),
     # duplicate each hourly value ×4 to fill the four quarter-hour slots.
-    result = []
-    if best['is_15min']:
-        for slot, price in enumerate(carry_forward(96)):
-            result.append({'hour': slot, 'price': price})
-    else:
-        for hour, price in enumerate(carry_forward(24)):
-            for q in range(4):
-                result.append({'hour': hour * 4 + q, 'price': price})
-    return result
+    from pk_time import local_slots
+    out = _Slots({'hour': k, 'price': v} for k, v in enumerate(local_slots(best, carry_forward)))
+    out.day_prices = [v for v in carry_forward(_day_len(best)) if v is not None]   # every point of the day (92, 96 or 100 quarter-hours)
+    return out
+
+
+class _Slots(list):
+    """the 96 slots, plus .day_prices: all the day's points, for its average (a 25-hour day counts its repeated hour twice)"""
+    day_prices = None
+
+
+def _day_len(best):
+    res = best['res_minutes']; std = 24 * 60 // res
+    if best.get('start') and best.get('end'):
+        n = int(round((best['end'] - best['start']).total_seconds() / 60 / res))
+        if n in (std - 60 // res, std, std + 60 // res):
+            return n
+    return std
+
 
 def strip_ns(tag):
     """Remove XML namespace from tag: {ns}localname → localname"""
@@ -341,7 +366,8 @@ def fetch_prices(offset=0):
             prices = [p['price'] for p in pts if p['price'] is not None]
             if not prices:
                 continue
-            avg    = round(sum(prices)/len(prices), 2)
+            day_p  = getattr(pts, 'day_prices', None) or prices   # all the day's points (clock-change days: 92 or 100)
+            avg    = round(sum(day_p)/len(day_p), 2)
             mn, mx = min(prices), max(prices)
             min_slot = next(p['hour'] for p in pts if p['price'] is not None and p['price']==mn)
             max_slot = next(p['hour'] for p in pts if p['price'] is not None and p['price']==mx)

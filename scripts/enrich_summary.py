@@ -299,6 +299,17 @@ def _parse_dt(s):
     return None
 
 
+def _seq_of(ts, ns):
+    """classificationSequence_AttributeInstanceComponent.position of a TimeSeries (1 when absent)"""
+    for c in ts.iter():
+        if c.tag.split('}')[-1] == 'classificationSequence_AttributeInstanceComponent.position':
+            try:
+                return int((c.text or '1').strip())
+            except ValueError:
+                return 1
+    return 1
+
+
 def _parse_prices_xml(xml_text, req_start=None, req_end=None):
     """Parse an ENTSO-E A44 price document into a 96-slot (15-min grid) list.
 
@@ -357,6 +368,7 @@ def _parse_prices_xml(xml_text, req_start=None, req_end=None):
                 period_end = period_start + timedelta(minutes=res_minutes * max(points.keys()))
 
             candidates.append({
+                'seq': _seq_of(ts, ns),
                 'start': period_start, 'end': period_end,
                 'res_minutes': res_minutes, 'is_15min': is_15min, 'points': points,
             })
@@ -371,7 +383,10 @@ def _parse_prices_xml(xml_text, req_start=None, req_end=None):
         hi = min(c['end'], req_end)
         return max(0, (hi - lo).total_seconds())
 
-    best = max(candidates, key=overlap_seconds) if (req_start and req_end) else candidates[0]
+    # Germany-Luxembourg and Austria carry two day-ahead series for the same day: classification
+    # sequence 1 is the European market coupling (SDAC, the reference price, as SMARD and Energy-Charts
+    # publish it), 2 another auction. Among the periods covering the day best, sequence 1 wins.
+    best = max(candidates, key=lambda c: (overlap_seconds(c), -c['seq'])) if (req_start and req_end) else min(candidates, key=lambda c: c['seq'])
     points = best['points']
 
     # Carry the last explicit value forward through any gap: curveType A03
@@ -387,14 +402,9 @@ def _parse_prices_xml(xml_text, req_start=None, req_end=None):
             out.append(last)
         return out
 
-    if best['is_15min']:
-        return carry_forward(96)
-    else:
-        hourly = carry_forward(24)
-        out = []
-        for v in hourly:
-            out.extend([v] * 4)
-        return out
+    # on the zone's own clock: the clock-change days have 92 or 100 quarter-hours (scripts/pk_time.py)
+    from pk_time import local_slots
+    return local_slots(best, carry_forward)
 
 
 def _parse_generation_xml(xml_text):

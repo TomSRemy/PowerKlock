@@ -138,12 +138,14 @@
   }
 
   function writeLocal() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+    catch (_) { if (!(window.PKAccount && PKAccount.user)) setSync('error'); }   // storage full or blocked: say it, do not pretend it is saved
   }
 
   function save() {
     if (shared) return;
     state.updated = new Date().toISOString();
+    try { const b = board(); if (b) b.updated = state.updated; } catch (_) {}   // per dashboard: the merge at sign-in keeps the newest
     clearTimeout(saveTimer);
     saveTimer = setTimeout(writeLocal, 200);
     if (window.PKAccount && PKAccount.user) {
@@ -163,8 +165,15 @@
     try {
       const row = await PKAccount.load();
       if (row && row.data && Array.isArray(row.data.boards) && row.data.boards.length) {
-        state = row.data;
-        if (seed()) PKAccount.save(state).catch(() => {});
+        // merge, never replace: a dashboard only in this browser is kept, one changed on both sides keeps its newest
+        // version; a copy of this browser's dashboards is kept before (pk-dash-v2-backup)
+        try { localStorage.setItem(LS_KEY + '-backup', JSON.stringify(state)); } catch (_) {}
+        const cloud = row.data, byId = new Map(cloud.boards.map(b => [b.id, b]));
+        let localWins = false;
+        (state && state.boards || []).forEach(b => { const c = byId.get(b.id);
+          if (!c || (b.updated || '') > (c.updated || '')) { byId.set(b.id, b); localWins = true; } });
+        state = Object.assign({}, cloud, { boards: [...byId.values()], active: byId.has(cloud.active) ? cloud.active : (state && state.active) || cloud.active });
+        if (seed() || localWins) PKAccount.save(state).catch(() => {});
         writeLocal();
         if (isOpen()) render();
         setSync('saved');
@@ -781,7 +790,7 @@
         state.active = id; save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-export').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify({ powerklock: 'dashboard', v: 2, name: b.name, items: b.items }, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify({ powerklock: 'dashboard', v: 2, name: b.name, desc: b.desc || '', items: b.items }, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'powerklock-' + b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json';
@@ -797,7 +806,7 @@
             const j = JSON.parse(txt);
             if (!j || !Array.isArray(j.items)) throw new Error('Not a PowerKlock layout file');
             const id = uid();
-            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) });
+            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), desc: String(j.desc || '').slice(0, 400), items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) });
             state.active = id; save(); closeModal(); render();
             toast('Layout imported');
           }).catch(e => toast('Import failed: ' + e.message));
