@@ -9,6 +9,7 @@ from datetime import date, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import enrich_summary as es
 
+LOG = []
 KEY = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'PT', 'IT_NORD', 'CH', 'AT', 'GB']
 DAILY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'history', 'daily')
 
@@ -41,6 +42,17 @@ def main():
                 print(f'{d} {z}: {e}'); h = None
             if h:
                 got[z] = h
+                LOG.append({'day': d.isoformat(), 'zone': z, 'result': 'filled', 'points': len(h)})
+            else:   # what ENTSO-E answered, to see why (no document, other resolution, error)
+                try:
+                    st = date.fromisoformat(d.isoformat())
+                    raw = es._entsoe_fetch(token, {'documentType': 'A44', 'in_Domain': es.ZONES_EIC.get(z), 'out_Domain': es.ZONES_EIC.get(z),
+                                                   'periodStart': st.strftime('%Y%m%d') + '0000', 'periodEnd': (st + timedelta(days=1)).strftime('%Y%m%d') + '0000'})
+                    import re as _re
+                    info = 'resolutions ' + ','.join(sorted(set(_re.findall(r'<resolution>([^<]+)</resolution>', raw or '')))) + ' · ' + (raw or '')[:160].replace('\n', ' ')
+                except Exception as e:
+                    info = 'error: ' + str(e)[:200]
+                LOG.append({'day': d.isoformat(), 'zone': z, 'result': 'empty', 'answer': info})
         if not got:
             print(f'{d}: {holes} still missing'); continue
         part = es.build_daily_snapshot(d.isoformat(), got, {})
@@ -54,6 +66,8 @@ def main():
     if healed:
         es.recalc_summary_from_daily()
     print(f'{healed} day(s) healed')
+    if LOG:
+        json.dump({'run': date.today().isoformat(), 'log': LOG[-200:]}, open(os.path.join(os.path.dirname(DAILY), 'heal_log.json'), 'w'), indent=0)
 
 
 if __name__ == '__main__':
