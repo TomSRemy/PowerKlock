@@ -26,6 +26,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = int(os.environ.get('SMOKE_PORT', '8799'))
+# charts fed live from Open-Meteo in the browser (rate-limited per address): not drawn = a warning, not a failure
+LIVE_CANVASES = {'wx-forecast-canvas', 'hdd-canvas', 'hdd-cum', 'fc-hourly', 'fc-daily'}
 # accepted, with the reason; anything else of the same kind fails the test
 KNOWN_WARNINGS = {
     '[analysis] fullscreen #0: no overlay (custom handler?)',   # Market analysis opens its own full-page view
@@ -119,7 +121,7 @@ def main():
                 # deterministic layout defects fail the test (a known one is listed in KNOWN_WARNINGS with its reason)
                 for c in r['undrawn']:
                     line = f"[{tag}] canvas {c} not drawn"
-                    (warnings if line in KNOWN_WARNINGS else errors).append(line)
+                    (warnings if line in KNOWN_WARNINGS or c in LIVE_CANVASES else errors).append(line)
                 for g in r['gaps']:
                     line = f"[{tag}] empty space under chart {g}"
                     (warnings if line in KNOWN_WARNINGS else errors).append(line)

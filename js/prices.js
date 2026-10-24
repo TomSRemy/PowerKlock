@@ -13,7 +13,7 @@ window.pkParisHour = function() {
 };
 
 // ════════════════════════════════════════════
-// PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
+// PK_FMT — Shared formatting helpers (used by prices.js + js/hist/)
 // Single source of truth for number/delta/neg-hours formatting and
 // semantic color thresholds. Keep in sync with brief decisions.
 // ════════════════════════════════════════════
@@ -1394,7 +1394,7 @@ function buildHourlyDetail(idx, z) {
   `;
 
   // ── Populate the Market Read banner (below the chart, 2-line layout, mirrors Historical drill-down) ──
-  // Uses the shared _buildAnalystBanner('dailyDrill', …) defined in hist.js.
+  // Uses the shared _buildAnalystBanner('dailyDrill', …) defined in js/hist/single-zone.js.
   // The band-stats sentence (P50 / vs median) is later injected by _loadAndApplyRowBand
   // into the #row-market-read-band-${idx} span that lives inside the verdict block.
   (function _renderDrillBanner() {
@@ -3717,7 +3717,7 @@ function renderCCAnalysis(view, data, selected) {
   }
 
   // ── Build the unified amber analyst banner (cc-analyst-banner-anchor) ──
-  // Uses _buildAnalystBanner (defined in hist.js, exposed on window) — same style
+  // Uses _buildAnalystBanner (defined in js/hist/, exposed on window) — same style
   // as Historical chart banners. cc-analysis (legacy gray banner) is left hidden.
   const anchor = document.getElementById('cc-analyst-banner-anchor');
   if (anchor && typeof window._buildAnalystBanner === 'function' && stats.length) {

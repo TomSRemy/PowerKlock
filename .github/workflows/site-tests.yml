@@ -36,7 +36,7 @@ jobs:
       - name: Python lint
         run: pip install -q ruff==0.17.2 && ruff check scripts tests warehouse
       - name: JavaScript syntax
-        run: for f in js/*.js; do node --check "$f" || exit 1; done
+        run: for f in js/*.js js/*/*.js; do case "$f" in js/vendor/*) continue;; esac; node --check "$f" || exit 1; done
       - name: Calculations
         run: python tests/test_calculations.py && python tests/test_prices_dst.py
       - name: Site logic

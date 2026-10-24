@@ -737,8 +737,8 @@ function showPricesUnavailable(dateStr) {
 // ══════════════════════════════════════════════════════════════
 // HISTORICAL CHARTS ENGINE
 // Colour tokens (var = window-scoped, accessible across script blocks)
-// IMPORTANT: this block is loaded AFTER hist.js. Any var declared here that
-// shares a name with hist.js will overwrite hist.js. Keep these aligned with
+// IMPORTANT: this block is loaded AFTER js/hist/. Any var declared here that
+// shares a name with js/hist/ will overwrite js/hist/. Keep these aligned with
 // the Daily palette (libs.js C_* family) so up/down/warn read the same way
 // across Daily and Historical charts.
 var _HIST_TX3  = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#7A93AB';

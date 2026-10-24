@@ -316,7 +316,7 @@ function setLF(val, btn) {
 const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','wxcities','wxhdd','remit'];
 const PAGE_LOADERS = {
   map: () => { if (window.PKMap) setTimeout(() => PKMap.open(), 50); },
-  // Several `hist.js` historical sections only re-render reactively, when the
+  // Several `js/hist/` historical sections only re-render reactively, when the
   // user clicks a window/zone control (setHistWindow/setHistZone) — they were
   // never wired to render once on first page visit, so the chart stayed an
   // empty canvas until the user happened to click a pill button. Each loader

@@ -74,5 +74,11 @@ for f in fp:
         bad.append((f, z['avg'], round(sum(vals) / len(vals), 2)))
 check('FR daily average = mean of its slots (30 last days, clock-change days apart)', not bad, bad[:3])
 
+# ── holes check (scripts/check_data_gaps.py): runs on the repository data, every issue well formed, ids unique ──
+import check_data_gaps as G
+iss = G.checks()
+check('holes check: every issue has id, dataset, what, repair', all(set(i) >= {'id', 'dataset', 'what', 'repair'} for i in iss), iss[:1])
+check('holes check: ids unique', len({i['id'] for i in iss}) == len(iss), len(iss))
+
 print('FAILED' if fails else 'PASSED', f'({len(fails)} failed)')
 sys.exit(1 if fails else 0)

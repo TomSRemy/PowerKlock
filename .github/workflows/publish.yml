@@ -42,7 +42,7 @@ jobs:
           pip install -q playwright==1.48.0 requests==2.33.1 ruff==0.17.2
           python -m playwright install --with-deps chromium
           ruff check scripts tests warehouse
-          for f in js/*.js; do node --check "$f" || exit 1; done
+          for f in js/*.js js/*/*.js; do case "$f" in js/vendor/*) continue;; esac; node --check "$f" || exit 1; done
           python tests/test_calculations.py
           python tests/test_prices_dst.py
           python tests/test_site_logic.py
