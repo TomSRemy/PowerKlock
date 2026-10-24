@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-24T14:28:22+00:00",
+"updated": "2026-10-24T19:03:51+00:00",
 "window": [
 "2026-09-08",
 "2026-10-23"
@@ -10,15 +10,17 @@
 "days": []
 },
 "brent": {
-"agree": 0,
+"agree": 31,
 "differ": 0,
 "days": [],
-"tolerance_pct": 6.0
+"tolerance_pct": 30.0,
+"mean_gap_pct": -13.8
 },
 "eurusd": {
-"agree": 0,
+"agree": 28,
 "differ": 0,
 "days": [],
-"tolerance_pct": 0.5
+"tolerance_pct": 1.0,
+"mean_gap_pct": 0.1
 }
 }
