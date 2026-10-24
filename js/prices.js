@@ -784,7 +784,7 @@ const ZONE_META = {
   'BE':      {cc:'BE', country:'Belgium'},       'NL':      {cc:'NL', country:'Netherlands'},
   'ES':      {cc:'ES', country:'Spain'},         'PT':      {cc:'PT', country:'Portugal'},
   'IT_NORD': {cc:'IT', country:'Italy North'},   'IT_SOUTH':{cc:'IT', country:'Italy South'},
-  'IT_SICI': {cc:'IT', country:'Italy Sicily'},  'AT':      {cc:'AT', country:'Austria'},
+  'IT_SICI': {cc:'IT', country:'Italy South'},  'AT':      {cc:'AT', country:'Austria'},
   'CH':      {cc:'CH', country:'Switzerland'},   'CZ':      {cc:'CZ', country:'Czechia'},
   'SK':      {cc:'SK', country:'Slovakia'},      'HU':      {cc:'HU', country:'Hungary'},
   'PL':      {cc:'PL', country:'Poland'},        'RO':      {cc:'RO', country:'Romania'},

@@ -310,6 +310,27 @@ def _seq_of(ts, ns):
     return 1
 
 
+def _cur_of(ts):
+    """currency_Unit.name of a TimeSeries (EUR when absent)"""
+    for c in ts.iter():
+        if c.tag.split('}')[-1] == 'currency_Unit.name':
+            return (c.text or 'EUR').strip().upper()
+    return 'EUR'
+
+
+def _in_eur(cand):
+    """the period's points converted to euros (scripts/pk_fx.py); unchanged for EUR"""
+    if cand.get('cur', 'EUR') == 'EUR' or not cand.get('start'):
+        return cand
+    from pk_fx import per_eur
+    from datetime import timedelta as _td
+    r = per_eur(cand['cur'], (cand['start'] + _td(hours=12)).date())
+    if not r:
+        print(f"  ⚠ no {cand['cur']}/EUR rate: period left out")
+        return None
+    return dict(cand, points={k: round(v / r, 4) for k, v in cand['points'].items()}, cur='EUR')
+
+
 def _parse_prices_xml(xml_text, req_start=None, req_end=None):
     """Parse an ENTSO-E A44 price document into a 96-slot (15-min grid) list.
 
@@ -368,7 +389,7 @@ def _parse_prices_xml(xml_text, req_start=None, req_end=None):
                 period_end = period_start + timedelta(minutes=res_minutes * max(points.keys()))
 
             candidates.append({
-                'seq': _seq_of(ts, ns),
+                'seq': _seq_of(ts, ns), 'cur': _cur_of(ts),
                 'start': period_start, 'end': period_end,
                 'res_minutes': res_minutes, 'is_15min': is_15min, 'points': points,
             })
@@ -387,6 +408,9 @@ def _parse_prices_xml(xml_text, req_start=None, req_end=None):
     # sequence 1 is the European market coupling (SDAC, the reference price, as SMARD and Energy-Charts
     # publish it), 2 another auction. Among the periods covering the day best, sequence 1 wins.
     best = max(candidates, key=lambda c: (overlap_seconds(c), -c['seq'])) if (req_start and req_end) else min(candidates, key=lambda c: c['seq'])
+    best = _in_eur(best)   # prices published in another currency (BGN, RON…) → euros
+    if best is None:
+        return [None] * 96
     points = best['points']
 
     # Carry the last explicit value forward through any gap: curveType A03

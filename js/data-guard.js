@@ -26,6 +26,8 @@
       else if (i.dataset === 'commodities') re = COM[i.id.split(':')[1]] || 'TTF|EUA|Brent|coal';
       else if (i.dataset === 'forwards') re = 'Cal|forward';
       else if (i.dataset === 'activation') re = 'activation|mFRR|balancing';
+      else if (i.dataset === 'gencheck') re = '(France|French|\\bFR\\b).*?(production|generation|output|nuclear|wind|solar|hydro|gas|load|consumption)|(production|generation|output|nuclear|wind|solar|hydro|load|consumption).*?(France|French|\\bFR\\b)';
+      else if (i.dataset === 'mktcheck') re = /eurusd/.test(i.id) ? 'EUR/USD|EURUSD' : 'Brent|oil';
       else if (i.dataset === 'pricecheck') { const z = (i.id.split(':')[1] || ''); re = ZN[z] || null; if (re) return { day, re: new RegExp(re), what: i.what.replace(/^\d{4}-\d{2}-\d{2}: /, '') + ' (prices being checked)', ds: i.dataset }; }
       return re ? { day, re: new RegExp(re, i.dataset === 'prices' ? '' : 'i'), what: i.what, ds: i.dataset } : null;
     }).filter(Boolean);

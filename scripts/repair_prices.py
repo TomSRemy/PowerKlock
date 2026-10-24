@@ -33,6 +33,7 @@ def periods(xml):
         return out
     for ts in root.findall('.//ns:TimeSeries', NS):
         seq = es._seq_of(ts, NS)
+        cur = es._cur_of(ts)   # BGN, RON… converted to euros below
         for per in ts.findall('ns:Period', NS):
             res = per.findtext('ns:resolution', 'PT60M', NS)
             if res not in ('PT15M', 'PT60M'):
@@ -50,6 +51,10 @@ def periods(xml):
                     pass
             if not pts:
                 continue
+            conv = es._in_eur({'start': st, 'points': pts, 'cur': cur})
+            if conv is None:
+                continue
+            pts = conv['points']
             n = int(round((en - st).total_seconds() / 60 / rm))
 
             def carry(k, pts=pts):

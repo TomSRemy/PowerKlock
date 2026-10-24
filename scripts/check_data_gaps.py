@@ -127,6 +127,19 @@ def checks():
     for z, info in (pc.get('zones') or {}).items():
         for row in info.get('days') or []:
             add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts", 'auto: asked again to ENTSO-E (last 30 days)')
+    # second sources for France production (RTE vs Energy-Charts), Brent and EUR/USD (FRED): scripts/verify_markets.py
+    mc = load('data/history/market_check.json') or {}
+    for row in ((mc.get('generation') or {}).get('days') or []):
+        add('gencheck', f"{row['day']}:{row['field']}", f"{row['day']}: France {row['field']} {row['rte']} MW (RTE) vs {row['ec']} MW (Energy-Charts), {row['pct']} %", 'auto: RTE month fetched again')
+    for k, lab in (('brent', 'Brent'), ('eurusd', 'EUR/USD')):
+        for row in ((mc.get(k) or {}).get('days') or [])[-10:]:
+            add('mktcheck', f"{row['day']}:{k}", f"{row['day']}: {lab} {row['ours']} here vs {row['ref']} (FRED), {row['pct']} %", 'flagged: market job')
+    try:
+        mage = (NOW - datetime.fromisoformat(mc['updated'])).total_seconds() / 3600
+    except Exception:
+        mage = 999
+    if mage > 48:
+        add('mktcheck', 'stale', f'Second sources for production and markets not consulted for {int(mage)} h', 'flagged: holes job, once a day')
     # activation prices
     act = (load('data/history/fr_activation.json') or {}).get('days') or {}
     if act:
