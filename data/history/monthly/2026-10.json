@@ -1449,7 +1449,7 @@
         "negH": 0.0,
         "peakAvg": 38.26,
         "offAvg": 28.98,
-        "renPct": 66.7,
+        "renPct": 66.8,
         "domFuel": "Wind"
       }
     ],
@@ -3943,7 +3943,7 @@
         "negH": 1.0,
         "peakAvg": 69.44,
         "offAvg": 204.95,
-        "renPct": 42.4,
+        "renPct": 43.1,
         "domFuel": "Gas"
       }
     ],
