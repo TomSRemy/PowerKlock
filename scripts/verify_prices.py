@@ -10,7 +10,7 @@ Days are market days (CET), as ENTSO-E publishes them for every zone of the Euro
 With --zones only those zones are compared again; the others keep their last result.
 Writes data/history/price_check.json
 """
-import argparse, json, os, sys, time, urllib.request
+import argparse, json, os, time, urllib.request
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 

@@ -30,7 +30,7 @@ def t_cdf(x, nu):
     """Student t cumulative distribution (Simpson integration of the density)"""
     c = math.gamma((nu + 1) / 2) / (math.sqrt(nu * math.pi) * math.gamma(nu / 2))
     f = lambda u: c * (1 + u * u / nu) ** (-(nu + 1) / 2)
-    a, n = 0.0, 400
+    n = 400
     h = abs(x) / n
     if h == 0:
         return 0.5

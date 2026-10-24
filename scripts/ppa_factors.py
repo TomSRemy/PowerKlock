@@ -20,7 +20,6 @@ Writes data/history/ppa_factors.json
 """
 import json
 import os
-import sys
 
 import numpy as np
 

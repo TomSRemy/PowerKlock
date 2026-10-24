@@ -16,7 +16,6 @@ import sys
 import urllib.parse
 from datetime import date
 
-import numpy as np
 
 import fcst_backtest as FB
 import fcst_national as N

@@ -409,8 +409,6 @@ def fetch_prices(offset=0):
             neg_slot_count = sum(1 for p in pts if p['price'] is not None and p['price'] < 0)
             neg_minutes = neg_slot_count * mins_per_slot   # always integer minutes
             neg_hrs = round(neg_minutes / 60, 2)            # for backward compat (zones in 60-min get whole hours)
-            # We also store the exact minute count to be precise on the frontend
-            neg_min_total = neg_minutes  # not yet wired but kept for future use
 
             # Yesterday for delta
             vs_yday = None
@@ -422,8 +420,8 @@ def fetch_prices(offset=0):
                     valid_y = [p['price'] for p in pts_y if p['price'] is not None]
                     avg_y = sum(valid_y)/len(valid_y) if valid_y else None
                     vs_yday = round(avg - avg_y, 2)
-            except:
-                pass
+            except Exception as e:   # the change on the previous day is optional: say why it is missing
+                print(f'  previous day not read for the day-on-day change: {e}')
 
             # Clean spark spread from the latest TTF / EUA closes (commodities
             # feed); left empty when they are unavailable — never a fixed guess.
@@ -1255,4 +1253,4 @@ if __name__ == '__main__':
     except Exception as _e:
         print(f"[D+1] skipped: {_e}")
 
-    print(f"\nDone. All data files written.")
+    print("\nDone. All data files written.")

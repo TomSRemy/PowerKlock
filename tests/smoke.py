@@ -26,6 +26,10 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = int(os.environ.get('SMOKE_PORT', '8799'))
+# accepted, with the reason; anything else of the same kind fails the test
+KNOWN_WARNINGS = {
+    '[analysis] fullscreen #0: no overlay (custom handler?)',   # Market analysis opens its own full-page view
+}
 LIVE_WIDGETS = {'cb-intraday', 'cb-days', 'cb-fr-avg', 'kpi-fr-load', 'kpi-fr-net', 'kpi-hdd', 'wx-forecast', 'hdd', 'hdd-cum',
                 'imb-intraday', 'imb-days', 'imb-dist', 'load-day'}
 # Messages from third-party endpoints that CI cannot always reach.
@@ -72,7 +76,8 @@ def main():
                 if state.startswith('error'):
                     errors.append(f"[{where['v']}] fullscreen #{k}: {state}")
                 elif state == 'none':
-                    warnings.append(f"[{where['v']}] fullscreen #{k}: no overlay (custom handler?)")
+                    line = f"[{where['v']}] fullscreen #{k}: no overlay (custom handler?)"
+                    (warnings if line in KNOWN_WARNINGS else errors).append(line)
                 p.evaluate("document.getElementById('pk-fs-overlay') && document.getElementById('pk-fs-overlay').remove()")
 
         for s in subs:
@@ -94,17 +99,26 @@ def main():
                     const undrawn = [...root.querySelectorAll('canvas')].filter(c => vis(c) && c.id && !c.closest('.leaflet-container') && !(window.Chart && Chart.getChart(c))
                         && !c.parentElement.querySelector('.no-data-msg')).map(c => c.id);
                     const gaps = [...root.querySelectorAll('.fuel-grid-2 > .chart-container')].filter(vis).map(card => {{
-                        const c = card.querySelector('canvas'); if (!c) return null;
+                        const c = card.querySelector('canvas'); if (!c || !vis(c) || !c.getBoundingClientRect().height) return null;   // a hidden chart is not a gap
                         const g = card.getBoundingClientRect().bottom - c.getBoundingClientRect().bottom; return g > 90 ? (c.id || '?') + ' ' + Math.round(g) + 'px' : null; }}).filter(Boolean);
                     return {{ overflow: document.documentElement.scrollWidth > {width} + 2, undrawn, gaps }};
                 }})()""")
+                if r['undrawn']:
+                    # a chart below the fold is drawn when it comes into view (IntersectionObserver): bring each one there
+                    for c in r['undrawn']:
+                        p.evaluate(f"(document.getElementById('{c}') || {{scrollIntoView(){{}}}}).scrollIntoView({{block: 'center'}})")
+                        p.wait_for_timeout(1500)
+                    r['undrawn'] = [c for c in r['undrawn'] if not p.evaluate(f"!!(window.Chart && Chart.getChart(document.getElementById('{c}')))")]
                 tag = f"{label}{(' › ' + tab) if tab else ''}"
                 if r['overflow']:
                     errors.append(f"[{tag}] wider than the screen ({width}px)")
+                # deterministic layout defects fail the test (a known one is listed in KNOWN_WARNINGS with its reason)
                 for c in r['undrawn']:
-                    warnings.append(f"[{tag}] canvas {c} not drawn")
+                    line = f"[{tag}] canvas {c} not drawn"
+                    (warnings if line in KNOWN_WARNINGS else errors).append(line)
                 for g in r['gaps']:
-                    warnings.append(f"[{tag}] empty space under chart {g}")
+                    line = f"[{tag}] empty space under chart {g}"
+                    (warnings if line in KNOWN_WARNINGS else errors).append(line)
 
         for pg in pages:
             if pg == 'prices':

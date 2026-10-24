@@ -35,13 +35,46 @@ weather, news, PPA and carbon tools, custom dashboards. Static site; data refres
 | `BACKUP_PASSPHRASE` | encryption of the nightly database backup |
 | `OPEN_METEO_API_KEY` | (optional) paid Open-Meteo access |
 
+## Install and run locally
+
+```
+pip install playwright==1.48.0 requests==2.33.1 ruff==0.17.2
+python3 -m playwright install chromium
+python3 -m http.server 8765          # then open http://localhost:8765/index.html
+```
+No build step: edit `index.html` or `js/*.js` and reload. The data in `data/` is the last one committed by the
+workflows (`git pull` to refresh it).
+
 ## Tests
 
 ```
-python3 tests/test_prices_dst.py     # day-ahead readers: clock-change days, two series a day
-python3 -m http.server 8765 &        # then:
-python3 tests/smoke.py               # every page and catalogue chart drawn in a browser (Playwright)
+ruff check scripts tests warehouse   # Python: real errors only (ruff.toml)
+python3 tests/test_calculations.py   # capture rate, currencies, second-source checks, M0 vs the CRE, daily averages
+python3 tests/test_prices_dst.py     # day-ahead readers: clock-change days, two series a day, currencies
+python3 tests/test_site_logic.py     # in a browser: French formats, table sorting, chart colours, navigation, pricer
+python3 tests/smoke.py               # every page, view tab and catalogue chart, in English and in French
 ```
+The test scripts serve the repository themselves (ports 8799 and 8800). All of them run in the Site tests
+workflow on every code change, and before each publication.
+
+## Publish
+
+`main` receives code and data; the site is served from the `site` branch, which only the Publish workflow moves:
+at once when only `data/` changed, after every test when code changed. To switch the hosting to it (once):
+GitHub › Settings › Pages › Branch `site`, `/ (root)`; Cloudflare › Workers & Pages › powerklock › Settings ›
+Build › Branch control › production branch `site`.
+
+## Decisions
+
+- **No build step, plain scripts.** Anyone can edit a file in the browser on GitHub and see it live; no
+  toolchain to keep alive. The price: shared globals between scripts, so a name defined twice replaces the
+  first (the tests check the colour helpers for that reason).
+- **Data in git.** Free hosting, full history, every change reviewable; the limit is the file size Cloudflare
+  accepts (25 MiB per file: `summary.json` is watched by the holes check from 20 MB).
+- **Second sources and a holes check rather than trust.** Every day-ahead day is compared with Energy-Charts,
+  production with Energy-Charts, Brent and EUR/USD with FRED; disagreements show on Data status.
+- **French by default, English source.** The code and the data stay in English; `js/i18n.js` translates labels,
+  computed sentences (templates) and number formats at display time.
 
 ## Disaster recovery
 

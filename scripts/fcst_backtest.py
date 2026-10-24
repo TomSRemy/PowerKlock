@@ -60,7 +60,7 @@ def get(url, tries=6):
         try:
             with urllib.request.urlopen(url, timeout=180) as r:
                 return json.load(r)
-        except Exception as e:  # noqa: BLE001 — rate limits and timeouts: wait and retry
+        except Exception:  # noqa: BLE001 — rate limits and timeouts: wait and retry
             if k == tries - 1:
                 raise
             time.sleep(20 * (k + 1))

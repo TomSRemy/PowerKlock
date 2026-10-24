@@ -1,7 +1,7 @@
 """Diagnosis of a day-ahead document: every TimeSeries ENTSO-E sends for a zone and a day (business type,
 auction, classification sequence, resolution, period, number of points, mean price), to see which one the
 readers keep. Writes data/history/diag_prices.json.   ENTSOE_TOKEN=… python scripts/diag_prices.py"""
-import json, os, re, sys, requests
+import json, os, re, requests
 from datetime import date, timedelta
 CASES = [('DE_LU', '10Y1001A1001A82H', '2026-09-21'), ('DE_LU', '10Y1001A1001A82H', '2026-10-22'), ('NL', '10YNL----------L', '2026-10-10'), ('FR', '10YFR-RTE------C', '2026-09-21')]
 out = []
