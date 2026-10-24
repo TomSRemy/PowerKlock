@@ -1,8 +1,10 @@
 name: Site tests
 
-# Smoke tests (tests/smoke.py) on every code change: every page, every
-# fullscreen button and every dashboard widget must load without error.
-# Data-only commits from the fetch bots do not trigger it.
+# Every code change: Python lint (ruff.toml), JavaScript syntax, the calculations (tests/test_calculations.py,
+# tests/test_prices_dst.py), the site logic value by value (tests/test_site_logic.py), then every page,
+# fullscreen button and dashboard widget in a browser, in English and in French (tests/smoke.py).
+# Data-only commits from the fetch bots do not trigger it. The publish workflow runs the same tests before
+# the site branch moves (.github/workflows/publish.yml).
 
 on:
   pull_request:
@@ -11,7 +13,10 @@ on:
     paths:
       - 'index.html'
       - 'js/**'
+      - 'assets/**'
       - 'tests/**'
+      - 'scripts/**'
+      - 'ruff.toml'
       - '.github/workflows/site-tests.yml'
   workflow_dispatch:
 
@@ -26,9 +31,17 @@ jobs:
           python-version: '3.12'
       - name: Install Playwright
         run: |
-          pip install playwright==1.48.0
+          pip install playwright==1.48.0 requests==2.33.1
           python -m playwright install --with-deps chromium
-      - name: Smoke tests
+      - name: Python lint
+        run: pip install -q ruff==0.17.2 && ruff check scripts tests warehouse
+      - name: JavaScript syntax
+        run: for f in js/*.js; do node --check "$f" || exit 1; done
+      - name: Calculations
+        run: python tests/test_calculations.py && python tests/test_prices_dst.py
+      - name: Site logic
+        run: python tests/test_site_logic.py
+      - name: Smoke tests (English and French)
         run: python tests/smoke.py
 
       - name: E-mail on failure
