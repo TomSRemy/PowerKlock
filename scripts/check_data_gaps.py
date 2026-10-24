@@ -117,6 +117,13 @@ def checks():
         add('cr', m2.strftime('%Y-%m'), f'Parks under complément de rémunération: {m2.strftime("%Y-%m")} not published or not read', 'flagged: RTE job (ODRÉ monthly)')
     # second source: days whose average differs from Energy-Charts (scripts/verify_prices.py)
     pc = load('data/history/price_check.json') or {}
+    # the check itself must keep running: a second source not consulted for 2 days is a hole too
+    try:
+        age = (NOW - datetime.fromisoformat(pc['updated'])).total_seconds() / 3600
+    except Exception:
+        age = 999
+    if age > 48:
+        add('pricecheck', 'stale', f'Second source (Energy-Charts) not consulted for {int(age)} h', 'flagged: holes job, once a day')
     for z, info in (pc.get('zones') or {}).items():
         for row in info.get('days') or []:
             add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts", 'auto: asked again to ENTSO-E (last 30 days)')
