@@ -19,7 +19,7 @@
   const get = (k, path) => cache[k] || (cache[k] = fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null));
   const summary = () => window.pkSummary();
   const profile = () => get('prof', 'history/neg_profile.json');
-  const today = () => (typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString().slice(0, 10));
+  const today = () => pkTodayISO();
   const cy = () => today().slice(0, 4);
   const zname = c => { try { return (ZONE_META[c] && ZONE_META[c].country) || c; } catch (_) { return c; } };
   const winDays = w => ({ '1M': 31, '3M': 92, '1Y': 365, '2Y': 730, '5Y': 1825, all: 99999 }[w] || 365);

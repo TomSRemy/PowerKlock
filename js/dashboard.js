@@ -16,8 +16,8 @@
   const LS_KEY = 'pk-dash-v2';
   const LS_OLD = 'pk-mydash-widgets';
   const COLS = 12, CELL_H = 64;
-  const GS_JS = 'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack-all.min.js';
-  const GS_CSS = 'https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack.min.css';
+  const GS_JS = 'js/vendor/gridstack-all.min.js';
+  const GS_CSS = 'js/vendor/gridstack.min.css';
 
   // ── Templates ────────────────────────────────────────────────────
   // Items reference catalogue ids; ids not (yet) registered are skipped.

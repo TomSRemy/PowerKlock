@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install numpy
+      - run: pip install numpy==2.5.4
       - name: Learn the correction
         run: cd scripts && PK_FC_CACHE=/tmp/fc python era5_calib.py
       - name: Commit and push
@@ -38,7 +38,7 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: ERA5 correction by region"
           for i in 1 2 3 4 5; do
-            git pull -q --rebase origin main && git push && exit 0
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
             sleep 8
           done
           exit 1

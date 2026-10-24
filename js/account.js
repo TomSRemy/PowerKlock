@@ -16,7 +16,7 @@
     url: 'https://xtqeslyjtjrbjpffpixn.supabase.co',
     anonKey: 'sb_publishable_mfgTs1zA6ZT69hU0DhXpnA_YmjpkRQ1',   // publishable key: RLS decides access
   };
-  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js';
+  const SDK = 'js/vendor/supabase.min.js';
   const TABLE = 'user_dashboards';
 
   const configured = !!(CONFIG.url && CONFIG.anonKey);

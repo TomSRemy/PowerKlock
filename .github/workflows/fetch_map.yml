@@ -35,7 +35,15 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: power map $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
-            git pull -q --rebase origin main && git push && exit 0
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
             sleep 8
           done
           exit 1
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

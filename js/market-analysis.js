@@ -1007,7 +1007,10 @@
       });
       const data = await response.json();
       const text = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('\n');
-      out.innerHTML = '<div style="font-family:\'Inter\',sans-serif;font-size:12px;color:#B8C9D9;line-height:1.7">' + (text || 'No response received.') + '</div>';
+      // the model's text is escaped, then only its <b style="color:#…"> highlights are given back
+      const safe = String(text || 'No response received.').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+        .replace(/&lt;b style=&quot;color:(#[0-9A-Fa-f]{3,6})&quot;&gt;/g, '<b style="color:$1">').replace(/&lt;b&gt;/g, '<b>').replace(/&lt;\/b&gt;/g, '</b>');
+      out.innerHTML = '<div style="font-family:\'Inter\',sans-serif;font-size:12px;color:#B8C9D9;line-height:1.7">' + safe + '</div>';
     } catch (err) {
       out.innerHTML = '<div style="color:#ED6965;font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">API error: ' + err.message + '. On a static deployment a serverless proxy is needed to hide the API key.</div>';
     } finally {
