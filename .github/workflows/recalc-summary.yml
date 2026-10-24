@@ -36,5 +36,15 @@ jobs:
             echo "No changes to commit — summary already up to date"
           else
             git commit -m "recalc: refresh summary.json (incl. intraday profiles by Q)"
-            git push
+            # a data job may have pushed meanwhile: rebase on it, then push (5 tries)
+            for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done; exit 1
           fi
+
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

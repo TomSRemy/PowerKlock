@@ -410,7 +410,8 @@ const DP = {
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth(),
   // negDays: map of 'YYYY-MM-DD' → negHours (populated from prices history)
-  negDays: JSON.parse(localStorage.getItem('pk-neg-days') || '{}'),
+  // storage refused (strict private mode, page embedded in Teams or an iframe): start empty instead of stopping the script
+  negDays: (() => { try { return JSON.parse(localStorage.getItem('pk-neg-days') || '{}'); } catch (_) { return {}; } })(),
 };
 
 // Record today's neg hours when prices load
@@ -420,7 +421,7 @@ function dpRecordNegHours(zonesData) {
   const maxNeg = Math.max(...zonesData.map(z => z.negHours || 0));
   if (maxNeg > 0) {
     DP.negDays[key] = maxNeg;
-    localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
+    try { localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays)); } catch (_) {}
   }
 }
 
@@ -439,7 +440,7 @@ async function dpLoadHistoryNegDays() {
       }
     });
     if (changed) {
-      localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays));
+      try { localStorage.setItem('pk-neg-days', JSON.stringify(DP.negDays)); } catch (_) {}
     }
   } catch(e) {}
 }
