@@ -1,0 +1,725 @@
+{
+"run": "2026-10-24",
+"log": [
+{
+"day": "2025-12-01",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-12-01",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-12-01",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-12-01",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-30",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-30",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-30",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-30",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-29",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-29",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-29",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-29",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-28",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-28",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-28",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-28",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-27",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-27",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-27",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-27",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-26",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-26",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-26",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-26",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-25",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-25",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-25",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-25",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-24",
+"zone": "NL",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-24",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-24",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-24",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-24",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-23",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-23",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-23",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-23",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-22",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-22",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-22",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-22",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-21",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-21",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-21",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-21",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-20",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-20",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-20",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-20",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-19",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-19",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-19",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-19",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-18",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-18",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-18",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-18",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-17",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-17",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-17",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-17",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-16",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-16",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-16",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-16",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-15",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-15",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-15",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-15",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-14",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-14",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-14",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-14",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-13",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-13",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-13",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-13",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-12",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-12",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-12",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-12",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-11",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-11",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-11",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-11",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-10",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-10",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-10",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-10",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-09",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-09",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-09",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-09",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-08",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-08",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-08",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-08",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-07",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-07",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-07",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-07",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-06",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-06",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-06",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-06",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-05",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-05",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-05",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-05",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-04",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-04",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-04",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-04",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-03",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-03",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-03",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-03",
+"zone": "AT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-02",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-02",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-11-02",
+"zone": "CH",
+"result": "filled",
+"points": 96
+}
+]
+}
