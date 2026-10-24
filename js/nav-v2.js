@@ -27,6 +27,8 @@
     forward: svg('<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
     m0: svg('<path d="M4 19h16"/><path d="M4 15l5-5 4 3 7-7"/><circle cx="20" cy="6" r="1.5"/>'),
     gas: svg('<path d="M12 2s6 6 6 11a6 6 0 0 1-12 0c0-5 6-11 6-11z"/>'),
+    ppa: svg('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/>'),
+    fcst: svg('<path d="M3 17c3-6 5-6 8-2s5 4 10-6"/><path d="M3 21h18"/><circle cx="17" cy="5" r="2"/>'),
     capacity: svg('<rect x="3" y="12" width="4" height="8"/><rect x="10" y="8" width="4" height="12"/><rect x="17" y="4" width="4" height="16"/>'),
     genmix: svg('<path d="M12 3v9l7 4"/><circle cx="12" cy="12" r="9"/>'),
     load: svg('<path d="M7 7h11l-3-3M17 17H6l3 3"/>'),
@@ -45,6 +47,7 @@
     'markets/forwards': { page: 'prices', sub: 'forward' },
     'markets/fuels': { page: 'eua' },
     'markets/fuels/forwards': { page: 'euafwd' },
+    'markets/fuels/ttf': { page: 'euafwd', tab: 1 },
     'markets/fuels/spreads': { page: 'spark' },
     'markets/go': { page: 'goprices', go: 'eu' },
     'markets/go/auctions': { page: 'goprices', go: 'auctions' },
@@ -79,7 +82,7 @@
     ['Markets', [
       ['markets/spot', 'Power spot', 'prices', [['markets/spot/overview', 'Overview'], ['markets/spot', 'Day-ahead'], ['markets/spot/negative', 'Negative prices'], ['markets/spot/spread', 'Spreads'], ['markets/spot/imbalance', 'Imbalance']]],
       ['markets/forwards', 'Power forwards', 'forward'],
-      ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/spreads', 'Spark & dark spreads']]],
+      ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/ttf', 'TTF forwards'], ['markets/fuels/spreads', 'Spark & dark spreads']]],
       ['markets/go', 'Guarantees of origin', 'goprices', [['markets/go', 'EU prices'], ['markets/go/auctions', 'France auctions']]],
     ]],
     ['Renewables', [
@@ -96,7 +99,7 @@
       ['system/carbon', 'Carbon intensity', 'carbonintensity'],
     ]],
     ['Tools', [
-      ['tools/ppa', 'PPA pricer', 'ppapricer'],
+      ['tools/ppa', 'PPA pricer', 'ppa'],
       ['tools/forecast', 'Production forecast', 'fcst'],
       ['tools/carbon', 'Carbon footprint', 'carbonfoot'],
       ['tools/converter', 'Converter', 'converter'],
@@ -124,9 +127,11 @@
   const used = new Set();
   MENU.forEach(([sec, items]) => {
     h += '<div class="sidebar-section pk-nv-sec">' + (sec ? '<div class="sidebar-section-label pk-nv-label">' + sec + '</div>' : '') + '<div class="sidebar-section-items">';
-    items.forEach(([route, label, ic]) => {
+    items.forEach(([route, label, ic, group]) => {
       const pid = R[route].page, nid = pid && !used.has(pid) ? (used.add(pid), ' id="nav-' + pid + '"') : '';   // old ids kept: tests and links use them
-      h += '<a class="sidebar-item pk-nv-item' + (sec ? '' : ' pk-nv-top') + '"' + nid + ' href="#' + route + '" data-route="' + route + '">' + (icon[ic] || '') + '<span>' + label + '</span></a>';
+      const a = '<a class="sidebar-item pk-nv-item' + (sec ? '' : ' pk-nv-top') + '"' + nid + ' href="#' + route + '" data-route="' + route + '">' + (icon[ic] || '') + '<span>' + label + '</span>' + (group ? '<i class="pk-nv-more" aria-hidden="true"></i>' : '') + '</a>';
+      h += group ? '<div class="pk-nv-grp" data-entry="' + route + '">' + a + '<div class="pk-nv-sub" role="group" aria-label="' + label + '">' +
+        group.map(([gr, gl]) => '<a class="pk-nv-subl" href="#' + gr + '" data-route="' + gr + '">' + gl + '</a>').join('') + '</div></div>' : a;
     });
     h += '</div></div>';
   });
@@ -135,7 +140,36 @@
   if (keep) keep.remove();
   nav.classList.add('pk-nv');
 
-  // group bars at the top of each page of a group
+  // desktop: the pages of an entry open as a flyout on hover or keyboard focus, one click away from anywhere
+  const desk = () => window.innerWidth > 768;
+  let flyT = 0;
+  function fly(g, on) {
+    clearTimeout(flyT);
+    if (!on) { flyT = setTimeout(() => g.classList.remove('fly'), 120); return; }
+    nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => { if (x !== g) x.classList.remove('fly'); });
+    if (!desk() || g.classList.contains('open') || nav.classList.contains('collapsed')) return;
+    const r = g.querySelector('.pk-nv-item').getBoundingClientRect(), sub = g.querySelector('.pk-nv-sub');
+    sub.style.left = Math.round(r.right - 2) + 'px';
+    sub.style.top = Math.round(Math.min(r.top - 6, window.innerHeight - 40 * sub.children.length - 20)) + 'px';
+    g.classList.add('fly');
+  }
+  nav.querySelectorAll('.pk-nv-grp').forEach(g => {
+    g.addEventListener('mouseenter', () => fly(g, true));
+    g.addEventListener('mouseleave', () => fly(g, false));
+    g.addEventListener('focusin', () => fly(g, true));
+    g.addEventListener('focusout', e => { if (!g.contains(e.relatedTarget)) fly(g, false); });
+  });
+  nav.addEventListener('scroll', () => nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => x.classList.remove('fly')));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') nav.querySelectorAll('.pk-nv-grp.fly').forEach(x => x.classList.remove('fly')); });
+
+  // a short message (unknown address)
+  function notice(msg) {
+    const d = document.createElement('div');
+    d.className = 'pk-nv-notice'; d.setAttribute('role', 'status'); d.textContent = msg;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+  }
+
+  // group bars at the top of each page of a group (phones; on a computer the menu shows the pages)
   function placeBars() {
     bars.forEach(b => {
       const pages = new Set(b.group.map(([r]) => R[r].page));
@@ -163,12 +197,16 @@
     if (id === 'prices') { const s = curSub() || 'da'; return { da: 'markets/spot', overview: 'markets/spot/overview', negative: 'markets/spot/negative', 'negative-legacy': 'markets/spot/negative', spread: 'markets/spot/spread', forward: 'markets/forwards' }[s] || 'markets/spot'; }
     if (id === 'goprices') return curGo() === 'auctions' ? 'markets/go/auctions' : 'markets/go';
     if (id === 'renewables') return current === 'renewables/m0' ? 'renewables/m0' : 'renewables/capture';
+    if (id === 'euafwd') return current === 'markets/fuels/ttf' ? 'markets/fuels/ttf' : 'markets/fuels/forwards';
     return Object.keys(R).find(r => R[r].page === id && R[r].tab == null && !R[r].sub && !R[r].go) || null;
   }
 
   function mark(route) {
     const own = owner[route] || route;
-    nav.querySelectorAll('[data-route]').forEach(a => { const on = a.dataset.route === own; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    nav.querySelectorAll('.pk-nv-item[data-route], .pk-nv-small[data-route]').forEach(a => { const on = a.dataset.route === own; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    nav.querySelectorAll('.pk-nv-subl').forEach(a => { const on = a.dataset.route === route; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    nav.querySelectorAll('.pk-nv-grp').forEach(g => g.classList.toggle('open', g.dataset.entry === own));
+    nav.querySelectorAll('.has-active-subitem').forEach(x => x.classList.remove('has-active-subitem'));   // left by the old Prices group code
     // breadcrumbs inside the pages name the old menu: show the new section
     const e0 = nav.querySelector('.pk-nv-top[data-route="' + own + '"] span');
     const sec = sectionOf[own] || (e0 ? e0.textContent.trim() : null), pg = document.querySelector('.page.active');
@@ -238,7 +276,12 @@
     if (nav.contains(a)) setTimeout(() => { if (nav.classList.contains('open') && typeof window.toggleMobileSidebar === 'function') window.toggleMobileSidebar(); }, 120);
   });
 
-  window.addEventListener('popstate', () => { const r = routeOfHash(); if (r) { current = null; go(r, false); } });
+  window.addEventListener('popstate', () => {
+    const r = routeOfHash();
+    if (r) { current = null; go(r, false); return; }
+    // an address typed by hand that is not a page (shared-dashboard and sign-in addresses left alone)
+    if (/^#[a-z]/i.test(location.hash) && !foreignHash()) { notice('Page not found (old or mistyped address): showing Today'); current = null; go('today', false); }
+  });
 
   // the page of the address is shown as soon as the page structure is there (DOMContentLoaded), not once
   // every script and data file has loaded: until then the default page (Prices) stays hidden, so it is
@@ -266,6 +309,7 @@
     document.addEventListener('click', e => { if (e.target.closest('#go-tabs-nav .tab-btn')) setTimeout(() => write(detect(), true), 0); });
     if (document.body.classList.contains('pk-solo') || foreignHash()) { mark(detect()); return; }
     const r = routeOfHash();
+    if (!r && /^#[a-z]/i.test(location.hash)) notice('Page not found (old or mistyped address): showing Today');
     go(r || 'today', false);
   }, 30));
 
@@ -298,6 +342,17 @@
   .pk-nv-small{font-size:11.5px;color:var(--text3);text-decoration:none;padding:6px 8px;min-height:28px;display:inline-flex;align-items:center;border-radius:5px}
   .pk-nv-small:hover{color:var(--text);background:var(--bg3)}
   .pk-nv-small.active{color:var(--accent);background:var(--accent-dim)}
+  .pk-nv .pk-nv-more{margin-left:auto;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);opacity:.45;flex:none}
+  .pk-nv-grp.open .pk-nv-more{transform:rotate(45deg)}
+  .pk-nv-sub{display:none}
+  .pk-nv-grp.open .pk-nv-sub{display:flex;flex-direction:column;padding:0 0 4px 42px}
+  .pk-nv-subl{font-size:12.5px;color:var(--text3);text-decoration:none;padding:5px 10px;border-radius:5px;min-height:28px;display:flex;align-items:center}
+  .pk-nv-subl:hover{color:var(--text);background:var(--bg3)}
+  .pk-nv-subl.on{color:var(--accent)}
+  .pk-nv-grp.fly .pk-nv-sub{display:flex;flex-direction:column;position:fixed;z-index:1200;min-width:210px;padding:6px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .pk-nv-notice{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:3000;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:calc(100vw - 32px)}
+  @media (min-width:769px){.pk-gbar{display:none!important}}
+  @media (max-width:768px){.page:has(> .pk-gbar:not([hidden])) .pr-breadcrumb{display:none}}
   .pk-gbar{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0 0 14px;padding:4px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);width:fit-content;max-width:100%}
   .pk-gbar-t{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:0 8px 0 6px}
   .pk-gbar a{font-size:12.5px;color:var(--text2);text-decoration:none;padding:5px 11px;border-radius:6px;white-space:nowrap}

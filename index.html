@@ -9,6 +9,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PowerKlock — European Energy Intelligence</title>
+<meta name="description" content="Marchés européens de l'électricité, du gaz et du carbone : prix spot et forwards, production, renouvelables, et outils de pricing PPA et M0. Données vérifiées par une deuxième source.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PowerKlock">
+<meta property="og:title" content="PowerKlock · marchés européens de l'énergie">
+<meta property="og:description" content="Prix spot et forwards, production, renouvelables, outils de pricing PPA et M0. Données vérifiées par une deuxième source.">
+<meta property="og:image" content="https://powerklock.powerklock-tool.workers.dev/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
@@ -49,7 +56,7 @@
     --text: #FFFFFF;
     --text2: #B8C9D9;
     --text3: #7A93AB;
-    --text4: #4A6280;
+    --text4: #7088A4;   /* was #4A6280: 2.95:1 on cards, under the 4.5:1 text minimum */
     --text-brand: #14D3A9;
 
     /* ── Energy mix (production sectors) */
@@ -93,8 +100,8 @@
     --accent: #0E9E7E; --accent2: #0B8A6E; --accent-dim: rgba(14,158,126,0.10); --accent-dim-strong: rgba(14,158,126,0.24);
     --up: #0E9E7E; --up-dim: rgba(14,158,126,0.10); --down: #D2453F; --down-dim: rgba(210,69,63,0.10);
     --warn: #C77F00; --highlight: #8A6D00; --kpi-flat: #6B7F95;
-    --text: #13202E; --text2: #34485E; --text3: #5F738A; --text4: #8195AA; --text-brand: #0E9E7E;
-    --tx: #13202E; --tx2: #34485E; --tx3: #5F738A; --tx4: #8195AA; --acc: #0E9E7E; --bd: #D5DEE8; --bd2: #C7D2DE; --dn: #D2453F;
+    --text: #13202E; --text2: #34485E; --text3: #5F738A; --text4: #62758B; --text-brand: #0E9E7E;
+    --tx: #13202E; --tx2: #34485E; --tx3: #5F738A; --tx4: #62758B; --acc: #0E9E7E; --bd: #D5DEE8; --bd2: #C7D2DE; --dn: #D2453F;
     color-scheme: light;
   }
   html[data-theme="light"] body { background: var(--bg); color: var(--text); }
@@ -3454,6 +3461,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
     </div>
   </nav>
   <script src="js/nav-v2.js"></script>
+  <script src="js/ux-fixes.js"></script>
 
   <!-- Sidebar collapse handle (sibling to sidebar so it can overflow visually) -->
   <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">
