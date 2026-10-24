@@ -1,0 +1,110 @@
+[
+ {
+  "zone": "DE_LU",
+  "day": "2026-09-21",
+  "status": 200,
+  "n_series": 2,
+  "series": [
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": "2",
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-09-20T22:00Z",
+    "end": "2026-09-21T22:00Z",
+    "points": 96,
+    "mean_of_points": 129.51
+   },
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": "1",
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-09-20T22:00Z",
+    "end": "2026-09-21T22:00Z",
+    "points": 91,
+    "mean_of_points": 101.91
+   }
+  ],
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>a0afab66c2b340b8b5785342d70e49c1</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+ },
+ {
+  "zone": "DE_LU",
+  "day": "2026-10-22",
+  "status": 200,
+  "n_series": 2,
+  "series": [
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": "2",
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-10-21T22:00Z",
+    "end": "2026-10-22T22:00Z",
+    "points": 95,
+    "mean_of_points": 150.42
+   },
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": "1",
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-10-21T22:00Z",
+    "end": "2026-10-22T22:00Z",
+    "points": 96,
+    "mean_of_points": 148.61
+   }
+  ],
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>23232ac812404d5fa386708c836cd2eb</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+ },
+ {
+  "zone": "NL",
+  "day": "2026-10-10",
+  "status": 200,
+  "n_series": 1,
+  "series": [
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": null,
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-10-09T22:00Z",
+    "end": "2026-10-10T22:00Z",
+    "points": 96,
+    "mean_of_points": 50.69
+   }
+  ],
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>7b8edf87c6214c1faedcaaea7724a3d7</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+ },
+ {
+  "zone": "FR",
+  "day": "2026-09-21",
+  "status": 200,
+  "n_series": 1,
+  "series": [
+   {
+    "businessType": "A62",
+    "auction.type": "A01",
+    "contract": "A01",
+    "classificationSequence": null,
+    "curveType": "A03",
+    "resolution": "PT15M",
+    "start": "2026-09-20T22:00Z",
+    "end": "2026-09-21T22:00Z",
+    "points": 96,
+    "mean_of_points": 142.3
+   }
+  ],
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>04745df4a0da43179d16517f12d8dea4</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+ }
+]
