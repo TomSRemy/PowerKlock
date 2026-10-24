@@ -106,8 +106,13 @@ def build_days(rows, ds_tag):
             if v is None:
                 continue
             arr = day.setdefault(f, [None] * 96)
-            arr[i] = v
+            # the last Sunday of October has the hour 02:00-03:00 twice (same "heure"): the two are averaged
+            cnt = day.setdefault('_n' + f, [0] * 96)
+            arr[i] = v if arr[i] is None or not cnt[i] else (arr[i] * cnt[i] + v) / (cnt[i] + 1)
+            cnt[i] += 1
     for day in days.values():
+        for k in [k for k in day if k.startswith('_n')]:
+            del day[k]
         arrs = [a for k, a in day.items() if isinstance(a, list)]
         if not arrs:
             continue

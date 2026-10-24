@@ -41,9 +41,10 @@ def main():
             continue
         step[d].add(mm)
         k = hh * 4 + mm // 15
-        if 0 <= k < 96:
-            days[d]['wind'][k] = r.get('prod_eolienne_mw')
-            days[d]['solar'][k] = r.get('prod_solaire_mw')
+        if 0 <= k < 96:   # the repeated hour of the last Sunday of October: the two values averaged
+            for f, c in (('wind', 'prod_eolienne_mw'), ('solar', 'prod_solaire_mw')):
+                v, old = r.get(c), days[d][f][k]
+                days[d][f][k] = v if old is None or v is None else (old + v) / 2
     out = {}
     for d, v in sorted(days.items()):
         if step[d] == {0}:   # hourly day: each hour holds its four quarter-hours
