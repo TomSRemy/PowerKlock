@@ -1,0 +1,40 @@
+name: Site notes ⇄ repository
+
+# The notes taken on the site (js/notes.js → public.site_note, team only) are copied every hour
+# to data/site_notes.json, where Claude reads them; Claude's replies (config/note_replies.json)
+# go back to the database. Needs SUPABASE_DB_URL; does nothing without it.
+
+on:
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['config/note_replies.json', 'scripts/notes_sync.py', '.github/workflows/notes_sync.yml']
+
+concurrency: { group: notes-sync, cancel-in-progress: false }
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q "psycopg[binary]==3.3.2"
+      - name: Sync
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python scripts/notes_sync.py
+      - name: Commit the notes when they changed
+        run: |
+          git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
+          [ -f data/site_notes.json ] || exit 0
+          git add data/site_notes.json
+          git diff --staged --quiet && exit 0
+          git commit -q -m "data: site notes $(date -u '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done

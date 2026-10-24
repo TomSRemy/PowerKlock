@@ -80,5 +80,20 @@ iss = G.checks()
 check('holes check: every issue has id, dataset, what, repair', all(set(i) >= {'id', 'dataset', 'what', 'repair'} for i in iss), iss[:1])
 check('holes check: ids unique', len({i['id'] for i in iss}) == len(iss), len(iss))
 
+# ── site notes (scripts/notes_sync.py): replies file read safely, export keeps open + recent, first names only ──
+import datetime as _ndt, tempfile as _tf, pathlib as _pl
+import notes_sync as NS
+with _tf.TemporaryDirectory() as _d:
+    _p = _pl.Path(_d) / 'r.json'
+    _p.write_text(json.dumps({'12': {'status': 'done', 'reply': 'ok'}, 'x': {}, '13': {'status': 'maybe'}, '14': {'reply': 'r'}}))
+    _r = NS.load_replies(_p)
+check('notes: replies keep numeric ids with a known status', _r == {12: {'status': 'done', 'reply': 'ok'}, 14: {'status': 'done', 'reply': 'r'}}, _r)
+_now = _ndt.datetime(2026, 10, 25, tzinfo=_ndt.timezone.utc)
+_row = lambda i, st, days_done=None: {'id': i, 'status': st, 'created_at': _now - _ndt.timedelta(days=90), 'author_email': 'tom.s.remy@example.com',
+                                      'route': 'renewables/capture', 'body': 'b', 'done_at': _now - _ndt.timedelta(days=days_done) if days_done is not None else None}
+_e = NS.export_rows([_row(1, 'done', 10), _row(2, 'open'), _row(3, 'done', 70)], _now)
+check('notes: export keeps open notes and those closed < 60 days, open first', [n['id'] for n in _e['notes']] == [2, 1] and _e['open'] == 1, _e)
+check('notes: no e-mail address in the public file', all('@' not in json.dumps(n) for n in _e['notes']) and _e['notes'][0]['author'] == 'Tom', _e['notes'][0])
+
 print('FAILED' if fails else 'PASSED', f'({len(fails)} failed)')
 sys.exit(1 if fails else 0)
