@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-23T16:38:56Z",
+ "updated": "2026-10-24T07:58:37Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 31560
+   "sizeKB": 18234
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -81,7 +81,7 @@
    "content": "CRE official M0 (annual, monthly base / wind / solar, contractual winter, negative steps, capacity reference), PowerKlock estimate with the CRE method for months not yet published, forecast for the next 14 months.",
    "refresh": "daily",
    "source": "CRE open data (Licence Ouverte) and PowerKlock",
-   "sizeKB": 32
+   "sizeKB": 34
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/hydro_reservoirs.json",
@@ -105,7 +105,7 @@
    "content": "Generation mix, CO₂, renewable share and cross-border flows per country, every hour of a day (last 10 days).",
    "refresh": "every 3 hours",
    "source": "Energy-Charts (Fraunhofer ISE) — CC BY 4.0",
-   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-23.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-24.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/crossborder.json",
