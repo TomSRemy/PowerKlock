@@ -32,7 +32,7 @@
   const hooks = [];
   let ready = false;
   PK.onPage = (id, fn) => { hooks.push([id, fn]); };
-  // called by showPage (js/prices.js) after a page is shown; hooks run from the window load on, as the
+  // called by showPage (js/prices/core.js) after a page is shown; hooks run from the window load on, as the
   // wrappers they replace did (they were installed at load)
   PK.pageShown = id => {
     if (!ready) return;

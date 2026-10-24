@@ -19,7 +19,7 @@ const ISO_TO_ZONE = {
   'XK':'RS', // Kosovo → Serbia proxy
 };
 
-// Approximate [lat, lon] centroid for each bidding zone in ZONES (prices.js)
+// Approximate [lat, lon] centroid for each bidding zone in ZONES (js/prices/core.js)
 // — used to place the price labels drawn on top of the choropleth. Was
 // referenced here but never defined anywhere in the codebase, which threw
 // a ReferenceError every time the map labels needed a (re)draw.
