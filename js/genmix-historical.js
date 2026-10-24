@@ -1829,8 +1829,7 @@
     if (window._genmixData) refresh();
   }
   window.addEventListener('load', () => setTimeout(() => {
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'genmix' && window._gmhDirty) setTimeout(_gmhRenderAll, 50); return r; };
+    PK.onPage('genmix', () => { if (window._gmhDirty) setTimeout(_gmhRenderAll, 50); });
   }, 0));
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _gmhInit);

@@ -16,12 +16,12 @@ window.GM = GM;
 
 // Fuel meta — aligned with Daily DA and Historical
 const GM_FUEL_META = {
-  nuclear: { emoji: '⚛', label: 'Nuclear',  color: '#7B4B9C', co2: 12   },
-  wind:    { emoji: '🌬', label: 'Wind',     color: '#14D3A9', co2: 11   },
-  solar:   { emoji: '☀', label: 'Solar',    color: '#FBBF24', co2: 45   },
-  hydro:   { emoji: '💧', label: 'Hydro',    color: '#3FA6B4', co2: 24   },
-  biomass: { emoji: '🌿', label: 'Biomass',  color: '#94D2BD', co2: 230  },
-  fossil:  { emoji: '🔥', label: 'Fossil',   color: '#ED6965', co2: 650  }, // gas+coal blend, same as js/carbon.js LEGACY_BUCKET
+  nuclear: { emoji: '', label: 'Nuclear',  color: '#7B4B9C', co2: 12   },
+  wind:    { emoji: '', label: 'Wind',     color: '#14D3A9', co2: 11   },
+  solar:   { emoji: '', label: 'Solar',    color: '#FBBF24', co2: 45   },
+  hydro:   { emoji: '', label: 'Hydro',    color: '#3FA6B4', co2: 24   },
+  biomass: { emoji: '', label: 'Biomass',  color: '#94D2BD', co2: 230  },
+  fossil:  { emoji: '', label: 'Fossil',   color: '#ED6965', co2: 650  }, // gas+coal blend, same as js/carbon.js LEGACY_BUCKET
   other:   { emoji: '◇', label: 'Other',    color: '#7A93AB', co2: 400  },
 };
 
@@ -1746,16 +1746,16 @@ function renderGmCompare() {
     const biggestWind  = [...stats].sort((a, b) => (data[b.z]?.wind  || 0) / (b.total || 1) - (data[a.z]?.wind  || 0) / (a.total || 1))[0];
 
     const insights = [
-      { icon: '🌱', txt: `<strong>${greenest.z}</strong> has the highest renewable share at <strong style="color:#14D3A9">${greenest.renPct.toFixed(1)}%</strong>`, color: '#14D3A9' },
-      { icon: '🔥', txt: `<strong>${dirtiest.z}</strong> has the lowest renewable share at <strong style="color:#ED6965">${dirtiest.renPct.toFixed(1)}%</strong>`, color: '#ED6965' },
-      { icon: '✅', txt: `<strong>${lowestCo2.z}</strong> has the lowest CO₂ intensity at <strong style="color:#14D3A9">${Math.round(lowestCo2.co2)} g/kWh</strong>`, color: '#14D3A9' },
-      { icon: '⚠', txt: `<strong>${highestCo2.z}</strong> has the highest CO₂ intensity at <strong style="color:#ED6965">${Math.round(highestCo2.co2)} g/kWh</strong>`, color: '#ED6965' },
-      { icon: '☀', txt: `<strong>${biggestSolar.z}</strong> has the highest solar share at <strong style="color:#FBBF24">${((data[biggestSolar.z]?.solar||0)/biggestSolar.total*100).toFixed(1)}%</strong>`, color: '#FBBF24' },
-      { icon: '⌬', txt: `<strong>${biggestWind.z}</strong> has the highest wind share at <strong style="color:#14D3A9">${((data[biggestWind.z]?.wind||0)/biggestWind.total*100).toFixed(1)}%</strong>`, color: '#14D3A9' },
+      { icon: PK.icon('leaf'), txt: `<strong>${greenest.z}</strong> has the highest renewable share at <strong style="color:#14D3A9">${greenest.renPct.toFixed(1)}%</strong>`, color: '#14D3A9' },
+      { icon: PK.icon('flame'), txt: `<strong>${dirtiest.z}</strong> has the lowest renewable share at <strong style="color:#ED6965">${dirtiest.renPct.toFixed(1)}%</strong>`, color: '#ED6965' },
+      { icon: PK.icon('check'), txt: `<strong>${lowestCo2.z}</strong> has the lowest CO₂ intensity at <strong style="color:#14D3A9">${Math.round(lowestCo2.co2)} g/kWh</strong>`, color: '#14D3A9' },
+      { icon: PK.icon('alert'), txt: `<strong>${highestCo2.z}</strong> has the highest CO₂ intensity at <strong style="color:#ED6965">${Math.round(highestCo2.co2)} g/kWh</strong>`, color: '#ED6965' },
+      { icon: PK.icon('sun'), txt: `<strong>${biggestSolar.z}</strong> has the highest solar share at <strong style="color:#FBBF24">${((data[biggestSolar.z]?.solar||0)/biggestSolar.total*100).toFixed(1)}%</strong>`, color: '#FBBF24' },
+      { icon: PK.icon('wind'), txt: `<strong>${biggestWind.z}</strong> has the highest wind share at <strong style="color:#14D3A9">${((data[biggestWind.z]?.wind||0)/biggestWind.total*100).toFixed(1)}%</strong>`, color: '#14D3A9' },
     ];
     insightsEl.innerHTML = insights.map(i => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-left:3px solid ${i.color};border-radius:4px;font-size:12px;color:var(--tx)">
-        <span style="font-size:14px;flex-shrink:0">${i.icon}</span>
+        <span style="display:inline-flex;flex-shrink:0">${i.icon}</span>
         <span>${i.txt}</span>
       </div>
     `).join('');

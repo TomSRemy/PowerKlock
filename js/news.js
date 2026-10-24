@@ -115,9 +115,7 @@ async function renderNewsAdd() {
   }));
 }
 
-function _newsEsc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+function _newsEsc(s) { return PK.esc(s); }   // js/pk-core.js (name kept: used by morning.js and the news cards)
 
 function renderNews(items) {
   const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
@@ -344,21 +342,11 @@ const PAGE_LOADERS = {
 
 // Weather pages: see js/meteo.js
 
-// Patch showPage to handle new sections
-// showPage patch applied after all scripts load
-window.addEventListener("load", () => { if (typeof showPage === "undefined") return;
-const _origShowPage = showPage;
-window.showPage = function(id) {
-  // Was a full copy-paste of the original page/nav toggling (which had gone
-  // stale — e.g. it never got the dashboard-switcher reset added to prices.js'
-  // showPage, since this duplicate silently shadowed it). Delegate to the
-  // original and only add what this patch actually needs on top: the new
-  // section loaders below.
-  _origShowPage(id);
+// each page's loader, the first time the page is shown
+PK.onPage('*', id => {
   const ldr = PAGE_LOADERS[id];
   if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
-};
-});  // end load listener
+});
 
 const FUELS = [
   {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},

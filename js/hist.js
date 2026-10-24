@@ -1085,21 +1085,13 @@ async function renderHistEUA() {
 
 // Auto-load summary for datepicker neg dots on prices page open
 // Hook into existing showPage via a post-call observer
-document.addEventListener('DOMContentLoaded', () => {
-  const origSP = window.showPage;
-  if (origSP && !window._histHooked) {
-    window._histHooked = true;
-    window.showPage = function(id) {
-      origSP(id);
-      if (id === 'prices') {
-        fetchSummary().then(s => {
-          if (s?.zones?.FR) {
-            s.zones.FR.forEach(d => { if (d.negH > 0) DP.negDays[d.d] = d.negH; });
-          }
-        });
-      }
-    };
-  }
+// negative-price days of France for the date picker, read when Prices is shown
+PK.onPage('prices', () => {
+  fetchSummary().then(s => {
+    if (s?.zones?.FR) {
+      s.zones.FR.forEach(d => { if (d.negH > 0) DP.negDays[d.d] = d.negH; });
+    }
+  });
 });
 
 
@@ -1384,12 +1376,12 @@ const _HO_NAMES = {
 
 // Fuel config aligned with Daily DA (js/prices.js)
 const _HO_FUEL_META = {
-  Nuclear: { emoji: '⚛', label: 'Nuclear', color: '#7B4B9C' },
-  Wind:    { emoji: '🌬', label: 'Wind',    color: '#14D3A9' },
-  Solar:   { emoji: '☀', label: 'Solar',   color: '#FBBF24' },
-  Hydro:   { emoji: '💧', label: 'Hydro',   color: '#3FA6B4' },
-  Biomass: { emoji: '🌿', label: 'Biomass', color: '#94D2BD' },
-  Gas:     { emoji: '🔥', label: 'Fossil',  color: '#ED6965' },
+  Nuclear: { emoji: '', label: 'Nuclear', color: '#7B4B9C' },
+  Wind:    { emoji: '', label: 'Wind',    color: '#14D3A9' },
+  Solar:   { emoji: '', label: 'Solar',   color: '#FBBF24' },
+  Hydro:   { emoji: '', label: 'Hydro',   color: '#3FA6B4' },
+  Biomass: { emoji: '', label: 'Biomass', color: '#94D2BD' },
+  Gas:     { emoji: '', label: 'Fossil',  color: '#ED6965' },
 };
 
 // Track which row is open and chart instance for that detail row
@@ -3180,7 +3172,7 @@ function _openHoRow(zone, series, st) {
             ${window.pkPill({ label: 'All',      active: (window._HO_YPRESET === 'all'),   onClick: `event.stopPropagation();_hoSetYPreset('all')`,      dataAttr: 'data-ho-preset="all"',      title: 'Full Y range — shows all outliers' })}
           </div>
           <button class="pk-btn-ghost" id="ho-detail-reset-btn" onclick="event.stopPropagation();window._hoResetZoom()" title="Reset zoom and Y range to standard">↺ Reset</button>
-          <button class="pk-btn-primary" onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG">📸 PNG</button>
+          <button class="pk-btn-primary" onclick="event.stopPropagation();_downloadHoChart('${zone}')" title="Download chart as PNG">${PK.icon('download')} PNG</button>
         </div>
 
         <!-- Tab-specific chart title block (eyebrow + title + subtitle).
@@ -8433,7 +8425,7 @@ async function renderHistMulti() {
   if (HMZ.tab === 'heatmap') return _hmzRenderHeatmap(perZone, selected);
   if (HMZ.tab === 'bands')   return _hmzRenderBands(perZone, selected, baseline);
   if (HMZ.tab === 'spread')  return _hmzRenderSpread(perZone, selected, baseline);
-  return _hmzPlaceholder('🚧 ' + HMZ.tab + ' · data ready · chart coming next');
+  return _hmzPlaceholder(HMZ.tab + ' · data ready · chart coming next');
 }
 window.renderHistMulti = renderHistMulti;
 
@@ -10180,8 +10172,8 @@ function _bdHodShape(zone, summary) {
       slot.style.gap = '6px';
       slot.innerHTML = `
         <button class="pk-btn-primary" id="histhod-play-btn" onclick="event.stopPropagation();histHodTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
-        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
-        <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
+        <button class="pk-btn-ghost" onclick="event.stopPropagation();histHodDownloadPng()" title="Download current frame as PNG">${PK.icon('download')} PNG</button>
+        <button class="pk-btn-ghost" id="histhod-gif-btn" onclick="event.stopPropagation();histHodDownloadGif()" title="Record animation and download as GIF">${PK.icon('film')} GIF</button>
       `;
     }
 
@@ -11016,8 +11008,8 @@ function _bdHodShape(zone, summary) {
     slot.innerHTML = `
       ${bandsBtn}
       <button class="pk-btn-primary" id="histannual-play-btn" onclick="event.stopPropagation();histAnnualTogglePlay()" title="Cycle through years cumulatively">▶ Play</button>
-      <button class="pk-btn-ghost" onclick="event.stopPropagation();histAnnualDownloadPng()" title="Download current frame as PNG">📸 PNG</button>
-      <button class="pk-btn-ghost" id="histannual-gif-btn" onclick="event.stopPropagation();histAnnualDownloadGif()" title="Record animation and download as GIF">🎬 GIF</button>
+      <button class="pk-btn-ghost" onclick="event.stopPropagation();histAnnualDownloadPng()" title="Download current frame as PNG">${PK.icon('download')} PNG</button>
+      <button class="pk-btn-ghost" id="histannual-gif-btn" onclick="event.stopPropagation();histAnnualDownloadGif()" title="Record animation and download as GIF">${PK.icon('film')} GIF</button>
     `;
   }
 
@@ -11457,7 +11449,7 @@ function _bdHodShape(zone, summary) {
     const btn = document.getElementById('histannual-gif-btn');
     if (btn) { btn.innerHTML = '⏳ Recording'; btn.disabled = true; }
 
-    const originalLabel = '🎬 GIF';
+    const originalLabel = PK.icon('film') + ' GIF';
 
     if (STATE.animTimer) { clearInterval(STATE.animTimer); STATE.animTimer = null; }
     STATE.playing = false;

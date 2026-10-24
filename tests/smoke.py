@@ -108,7 +108,11 @@ def main():
                     for c in r['undrawn']:
                         p.evaluate(f"(document.getElementById('{c}') || {{scrollIntoView(){{}}}}).scrollIntoView({{block: 'center'}})")
                         p.wait_for_timeout(1500)
-                    r['undrawn'] = [c for c in r['undrawn'] if not p.evaluate(f"!!(window.Chart && Chart.getChart(document.getElementById('{c}')))")]
+                    drawn = lambda c: p.evaluate(f"!!(window.Chart && Chart.getChart(document.getElementById('{c}')))")
+                    for _ in range(13):   # some read dozens of daily files: up to 8 s more
+                        if all(drawn(c) for c in r['undrawn']): break
+                        p.wait_for_timeout(500)
+                    r['undrawn'] = [c for c in r['undrawn'] if not drawn(c)]
                 tag = f"{label}{(' › ' + tab) if tab else ''}"
                 if r['overflow']:
                     errors.append(f"[{tag}] wider than the screen ({width}px)")

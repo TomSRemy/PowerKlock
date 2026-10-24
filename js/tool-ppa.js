@@ -373,7 +373,7 @@
   const pc = v => v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + ' %';
   const sgn = v => (v > 0 ? '+' : '') + f0(v);
   const quantFloat = (v, p) => { const r = p * (v.length - 1), lo = Math.floor(r), hi = Math.min(lo + 1, v.length - 1); return v[lo] + (v[hi] - v[lo]) * (r - lo); };
-  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const MODEL_T = { capacity: 'driven by installed capacity (PPE3)', flat: 'flat at the last year used', damped: 'trend halving every year', linear: 'straight line (past-discount formula)' };
 
   // plain-language help on every input (ⓘ next to its label)
@@ -1109,7 +1109,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       ['Forward (weighted)', x => x.refW, 2], ['Shape discount first year', x => x.sd0, 'pc'], ['Shape discount last year', x => x.sd1, 'pc'], ['Chance of loss', x => x.prob, 'pc', 'min'], ['P10 total P&L k€', x => x.p10, 0, 'max'],
       ['Production MWh/yr', x => x.vol, 0], ['Risk accepted %', x => x.alpha, 0], ['Imbalance', x => x.imb, 2], ['GO', x => x.go, 2], ['Margin', x => x.margin, 2]];
     const fmt = (v, d) => v == null || !isFinite(v) ? '–' : d === 'pc' ? (v * 100).toFixed(1) + ' %' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
-    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const esc = PK.esc;   // js/pk-core.js
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp"><thead><tr><th style="text-align:left"></th>${L.map(x => `<th title="${esc(x.at)}">${esc(x.name)}<br><button type="button" class="pp-load" data-id="${x.id}">load</button> <button type="button" class="pp-x" data-id="${x.id}" aria-label="Delete">✕</button></th>`).join('')}</tr></thead><tbody>` +
       rows.map(([lbl, f, d, best]) => { const vals = L.map(x => f(x.out)), ok = vals.filter(v => v != null && isFinite(v)), b = best && ok.length > 1 ? (best === 'max' ? Math.max(...ok) : Math.min(...ok)) : null;
         return `<tr><td style="text-align:left">${lbl}</td>${vals.map(v => `<td class="${b != null && v === b ? 'best' : ''}">${fmt(v, d)}</td>`).join('')}</tr>`; }).join('') +
@@ -1273,8 +1273,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     let cnDone = false;
     const sec = $('hs-renewables-cannib');
     if (sec && window.IntersectionObserver) new IntersectionObserver(es => { if (!cnDone && es.some(e => e.isIntersecting)) { cnDone = true; PKCannib.render(); } }).observe(sec);
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'ppapricer') wire(); return r; };
+    PK.onPage('ppapricer', wire);
   }, 0));
   // ── Site charts: Renewables › Cannibalisation (same engine, PowerKlock data, no asset) ──
   const stFor = p => Object.assign(JSON.parse(JSON.stringify(S0)), { tech: p.tech || 'solar', conv: p.conv || 'pos', model: p.model || 'capacity', noMC: true });

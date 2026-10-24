@@ -6,9 +6,6 @@
 // Calendar date in Europe/Paris (YYYY-MM-DD). Day-ahead delivery days are
 // CET/CEST days, so "today" must not be derived from the UTC date (which
 // lags by 1-2h around midnight).
-window.pkTodayISO = function() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-};
 // Current Europe/Paris wall-clock hour as a fraction (e.g. 14.25 = 14:15).
 window.pkParisHour = function() {
   const [h, m] = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
@@ -205,6 +202,7 @@ function showPage(id) {
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
   if (id === 'analysis' && typeof loadMarketAnalysis === 'function') loadMarketAnalysis();
+  if (window.PK) PK.pageShown(id);   // modules subscribe with PK.onPage(id, fn) (js/pk-core.js)
 }
 
 function switchSection(sec) {
@@ -829,12 +827,12 @@ function renderPricesTableBody() {
   // Fuel config for domFuel
   const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
   const fuelMeta = {
-    nuclear: {emoji:'⚛', label:'Nuclear',  color:C_NUC},
-    wind:    {emoji:'🌬', label:'Wind',     color:C_WIND},
-    solar:   {emoji:'☀', label:'Solar',    color:C_SOLAR},
-    hydro:   {emoji:'💧', label:'Hydro',    color:C_HYD},
-    biomass: {emoji:'🌿', label:'Biomass',  color:C_BIO},
-    fossil:  {emoji:'🔥', label:'Fossil',   color:C_FOS},
+    nuclear: {emoji: '', label:'Nuclear',  color:C_NUC},
+    wind:    {emoji: '', label:'Wind',     color:C_WIND},
+    solar:   {emoji: '', label:'Solar',    color:C_SOLAR},
+    hydro:   {emoji: '', label:'Hydro',    color:C_HYD},
+    biomass: {emoji: '', label:'Biomass',  color:C_BIO},
+    fossil:  {emoji: '', label:'Fossil',   color:C_FOS},
   };
 
   const rows = sorted.map((z, i) => {
@@ -1295,7 +1293,7 @@ function buildHourlyDetail(idx, z) {
       </div>
       <div class="pk-filters-bar-spacer"></div>
       <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button>
-      <button class="pk-btn-primary" onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG">📸 PNG</button>
+      <button class="pk-btn-primary" onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG">${PK.icon('download')} PNG</button>
     </div>
 
     <!-- ═══ Chart ═══ -->
