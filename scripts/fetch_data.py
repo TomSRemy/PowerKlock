@@ -1021,7 +1021,7 @@ def write_json(path, data):
         except (OSError, ValueError):
             pass
     with open(path,'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, separators=(",", ":"))   # compact: summary.json indented passed the 25 MB a file Cloudflare accepts
     print(f"  Wrote {path}")
 
 if __name__ == '__main__':
