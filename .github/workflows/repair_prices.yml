@@ -14,7 +14,7 @@ on:
       since: { description: 'From (YYYY-MM-DD)', default: '2020-01-01' }
 
 concurrency:
-  group: fetch-energy-data      # the same files as the data fetch: one at a time
+  group: repair-prices          # its own queue: GitHub keeps one waiting run per group, a data fetch would replace it
   cancel-in-progress: false
 
 jobs:
