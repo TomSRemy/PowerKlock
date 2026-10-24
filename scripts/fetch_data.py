@@ -92,6 +92,27 @@ def _seq_of(ts, ns):
     return 1
 
 
+def _cur_of(ts):
+    """currency_Unit.name of a TimeSeries (EUR when absent)"""
+    for c in ts.iter():
+        if c.tag.split('}')[-1] == 'currency_Unit.name':
+            return (c.text or 'EUR').strip().upper()
+    return 'EUR'
+
+
+def _in_eur(cand):
+    """the period's points converted to euros (scripts/pk_fx.py); unchanged for EUR"""
+    if cand.get('cur', 'EUR') == 'EUR' or not cand.get('start'):
+        return cand
+    from pk_fx import per_eur
+    from datetime import timedelta as _td
+    r = per_eur(cand['cur'], (cand['start'] + _td(hours=12)).date())
+    if not r:
+        print(f"  ⚠ no {cand['cur']}/EUR rate: period left out")
+        return None
+    return dict(cand, points={k: round(v / r, 4) for k, v in cand['points'].items()}, cur='EUR')
+
+
 def parse_prices(xml_text, req_start_str=None, req_end_str=None):
     """
     Parse DA prices.
@@ -173,7 +194,7 @@ def parse_prices(xml_text, req_start_str=None, req_end_str=None):
             if debug:
                 print(f"  TS[{ts_idx}] res={res} start={period_start_str!r} npts={len(points)}")
             candidates.append({
-                'seq': _seq_of(ts, ns),
+                'seq': _seq_of(ts, ns), 'cur': _cur_of(ts),
                 'start': period_start, 'end': period_end,
                 'res_minutes': res_minutes, 'is_15min': (res == 'PT15M'), 'points': points,
             })
@@ -192,6 +213,9 @@ def parse_prices(xml_text, req_start_str=None, req_end_str=None):
     # sequence 1 is the European market coupling (SDAC, the reference price, as SMARD and Energy-Charts
     # publish it), 2 another auction. Among the periods covering the day best, sequence 1 wins.
     best = max(candidates, key=lambda c: (overlap_seconds(c), -c['seq'])) if (req_start and req_end) else min(candidates, key=lambda c: c['seq'])
+    best = _in_eur(best)   # prices published in another currency (BGN, RON…) → euros
+    if best is None:
+        return []
     points = best['points']
 
     # Carry the last explicit value forward through any gap: curveType A03

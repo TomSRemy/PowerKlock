@@ -47,6 +47,12 @@ jobs:
         run: |
           if [ -n "$FROM" ]; then python scripts/fetch_rte_eco2mix.py --from "$FROM" --to "$TO"
           else python scripts/fetch_rte_eco2mix.py; fi
+      - name: Months the second source disagrees with (Energy-Charts), fetched again
+        continue-on-error: true
+        run: |
+          for M in $(python3 -c "import json;d=json.load(open('data/history/market_check.json'));print(' '.join(sorted({r['day'][:7] for r in (d.get('generation') or {}).get('days') or []})))" 2>/dev/null); do
+            echo "RTE $M fetched again"; python scripts/fetch_rte_eco2mix.py --from "$M" --to "$M" || true
+          done
       - name: Compute M0
         run: python scripts/fetch_rte_m0.py
       - name: Output of the parks under complément de rémunération (ODRÉ, monthly)

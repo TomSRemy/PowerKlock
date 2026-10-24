@@ -69,3 +69,13 @@ import enrich_summary as es
 v = es._parse_prices_xml(x, es._parse_dt('202609202200'), es._parse_dt('202609212200'))
 assert all(p == 100 for p in v), 'backfill reader: sequence 2 kept instead of 1'
 print('ok two series: sequence 1 (SDAC) kept by both readers')
+
+# Bulgaria published in BGN: converted to euros at the fixed rate
+xb = (f'<Publication_MarketDocument xmlns="{NS}"><TimeSeries><currency_Unit.name>BGN</currency_Unit.name>'
+      '<Period><timeInterval><start>2021-10-14T22:00Z</start><end>2021-10-15T22:00Z</end></timeInterval><resolution>PT60M</resolution>'
+      + ''.join(f'<Point><position>{i + 1}</position><price.amount>195.583</price.amount></Point>' for i in range(24)) + '</Period></TimeSeries></Publication_MarketDocument>')
+pts = fd.parse_prices(xb, '202110142200', '202110152200')
+assert all(abs(p['price'] - 100) < 1e-6 for p in pts), pts[:2]
+v = es._parse_prices_xml(xb, es._parse_dt('202110142200'), es._parse_dt('202110152200'))
+assert all(abs(x - 100) < 1e-6 for x in v), v[:2]
+print('ok BGN prices converted to euros by both readers')

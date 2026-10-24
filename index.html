@@ -106,6 +106,8 @@
   html[data-theme="light"] .logo-img { content: url(assets/logo-header-light.png); }
   .pk-theme-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; margin-right: 8px; }
   .pk-guard { position: absolute; top: 2px; left: 4px; z-index: 3; max-width: calc(100% - 90px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 10.5px 'JetBrains Mono', monospace; color: #FBBF24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.45); border-radius: 4px; padding: 1px 7px; cursor: pointer; }
+  .pk-zoom-reset { position: absolute; right: 6px; bottom: 6px; z-index: 4; font: 600 11px 'JetBrains Mono', monospace; color: var(--accent); background: var(--bg2); border: 1px solid var(--accent); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+  .pk-zoom-reset:hover { background: var(--accent-dim); }
   .pk-guard-inline { position: static; display: inline-block; margin: 3px 0 0; max-width: 100%; }
   .pk-guard:hover { background: rgba(251,191,36,.22); }
   .pk-lang-btn { width: auto; padding: 0 8px; font: 600 11px 'JetBrains Mono', monospace; letter-spacing: .04em; }
@@ -8238,6 +8240,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <script src="js/net.js"></script>
 <script src="js/libs.js"></script>
+<script src="js/zoom-reset.js"></script>
 <script src="js/widgets.js"></script>
 <script src="js/gen-align.js"></script>
 <script src="js/fr-rte.js"></script>

@@ -20,7 +20,7 @@ PARIS = ZoneInfo('Europe/Paris')
 EC = {'FR': 'FR', 'DE_LU': 'DE-LU', 'BE': 'BE', 'NL': 'NL', 'ES': 'ES', 'PT': 'PT', 'IT_NORD': 'IT-North', 'CH': 'CH', 'AT': 'AT',
       'PL': 'PL', 'CZ': 'CZ', 'DK_W': 'DK1', 'DK_E': 'DK2', 'HU': 'HU', 'SI': 'SI', 'FI': 'FI',
       'BG': 'BG', 'GR': 'GR', 'HR': 'HR', 'RO': 'RO', 'RS': 'RS', 'SK': 'SK', 'ME': 'ME', 'EE': 'EE', 'LT': 'LT', 'LV': 'LV',
-      'NO_1': 'NO1', 'SE': 'SE1', 'IT_SICI': 'IT-Sicily'}
+      'NO_1': 'NO1', 'SE': 'SE1', 'IT_SICI': 'IT-South'}   # IT_SICI holds Italy South (EIC 10Y1001A1001A788)
 # not published by Energy-Charts: MK (North Macedonia), GB (no longer on ENTSO-E since 2021), MT
 TOL = 0.5
 # differences that are explained, not errors: listed apart, not flagged
