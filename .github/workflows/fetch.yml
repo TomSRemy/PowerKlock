@@ -1,8 +1,13 @@
 name: Fetch Energy Data
 on:
   schedule:
-    - cron: '0 5 * * *'   # 05:00 UTC = 07:00 CET — avant ouverture marchés
-    - cron: '0 12 * * *'  # 12:00 UTC = 14:00 CET — après publication prix DA
+    # GitHub queues scheduled runs, worst on the hour: the '0 5' and '0 12' runs started 4-5 h late every day.
+    # Off-minute slots, more of them (the concurrency group keeps one at a time; a run with nothing new commits nothing):
+    - cron: '7 4 * * *'    # night: yesterday finalised
+    - cron: '37 5 * * *'   # before the market opens (07:37 Paris in summer, 06:37 in winter)
+    - cron: '17 11 * * *'  # day-ahead results (published ~12:45 CET)
+    - cron: '47 12 * * *'  # second chance for the day-ahead results
+    - cron: '23 16 * * *'  # afternoon
   workflow_dispatch:       # bouton manuel dans GitHub
 
 concurrency:
