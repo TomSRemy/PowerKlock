@@ -1266,21 +1266,21 @@
     injectHotspotStyles();
     hotspot = document.createElement('div');
     hotspot.className = 'es-hotspot';
-    hotspot.setAttribute('aria-label', 'eSheep toggle');
+    hotspot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
     hotspot.addEventListener('click', e => { e.stopPropagation(); toggle(); });
     document.body.appendChild(hotspot);
     // Sibling dot next to the eSheep hotspot: launches the Klock Wars game in a new tab
     const gamespot = document.createElement('div');
     gamespot.className = 'es-gamespot';
     gamespot.title = 'Klock Wars';
-    gamespot.setAttribute('aria-label', 'Launch Klock Wars');
+    gamespot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
     gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars.html', '_blank'); });
     document.body.appendChild(gamespot);
     // Sibling dot: launches PowerKlock Volley in a new tab
     const volleyspot = document.createElement('div');
     volleyspot.className = 'es-volleyspot';
     volleyspot.title = 'PowerKlock Volley';
-    volleyspot.setAttribute('aria-label', 'Launch PowerKlock Volley');
+    volleyspot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
     volleyspot.addEventListener('click', e => { e.stopPropagation(); window.open('js/powerklock-volley.html', '_blank'); });
     document.body.appendChild(volleyspot);
     // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
