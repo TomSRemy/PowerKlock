@@ -176,3 +176,28 @@
   setTimeout(run, 8000);
   setInterval(run, 10 * 60e3);
 })();
+
+// ── Holes in the data (scripts/check_data_gaps.py → data/data_gaps.json, every 2 hours) ──
+//    what is missing inside the histories, since when, how it gets repaired, and what came back
+(function () {
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const when = s => s ? new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '–';
+  const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices' };
+  async function render() {
+    const host = document.getElementById('status-gaps'); if (!host) return;
+    const j = await fetch(DATA_BASE + 'data_gaps.json?t=' + Date.now()).then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!j) { host.innerHTML = '<div class="fuel-note">The check has not run yet.</div>'; return; }
+    // group the open holes by dataset and repair, days listed compactly
+    const G = {}; (j.open || []).forEach(i => { const k = i.dataset + '|' + i.repair; (G[k] = G[k] || []).push(i); });
+    const rows = Object.entries(G).map(([k, L]) => { const [ds, rep] = k.split('|'), since = L.reduce((a, i) => i.since < a ? i.since : a, L[0].since);
+      L.sort((a, b) => a.id < b.id ? 1 : -1); const sample = L.slice(0, 4).map(i => esc(i.what)).join('<br>') + (L.length > 4 ? `<br><span class="fuel-note">… and ${L.length - 4} more</span>` : '');
+      return `<tr><td class="l"><b>${esc(NAME[ds] || ds)}</b></td><td>${L.length}</td><td class="l" style="white-space:normal">${sample}</td><td>${when(since)}</td><td class="l" style="white-space:normal">${esc(rep)}</td></tr>`; });
+    const res = (j.resolved || []).slice(0, 12);
+    host.innerHTML = `<div class="fuel-note" style="margin-bottom:8px">Checked ${when(j.updated)} (every 2 hours). ${j.open.length ? `<b style="color:var(--down)">${j.open.length} hole${j.open.length > 1 ? 's' : ''} open</b>` : '<b style="color:var(--up)">No hole</b>'}: a missing day, zone or slot inside a series biases every average and chart built on it.</div>` +
+      (rows.length ? `<div style="overflow-x:auto"><table class="status-table"><thead><tr><th class="l">Data</th><th>Holes</th><th class="l">What is missing</th><th>First seen</th><th class="l">Repair</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>` : '') +
+      (res.length ? `<div class="table-header" style="margin-top:12px"><span class="table-title">Filled in the last 30 days</span></div><div style="overflow-x:auto"><table class="status-table"><thead><tr><th class="l">Data</th><th class="l">What was missing</th><th>First seen</th><th>Filled</th></tr></thead><tbody>${res.map(i => `<tr><td class="l">${esc(NAME[i.dataset] || i.dataset)}</td><td class="l" style="white-space:normal">${esc(i.what)}</td><td>${when(i.since)}</td><td>${when(i.resolvedAt)}</td></tr>`).join('')}</tbody></table></div>` : '');
+  }
+  window.PKGaps = { render };
+  const go = () => { const h = document.getElementById('status-gaps'); if (!h) return; const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); render(); } }); io.observe(h); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
