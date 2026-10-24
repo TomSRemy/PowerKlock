@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try { if (localStorage.getItem('pk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (_) {}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d12">
@@ -85,7 +86,27 @@
     --bd: #1e2d3d;
     --bd2: #243447;
     --dn: #ED6965;
+  }  /* ── Light theme (js/theme.js): the same variables, light values ── */
+  html[data-theme="light"] {
+    --bg-void: #E9EEF3; --bg: #F3F6F9; --bg2: #FFFFFF; --bg3: #F1F4F8; --bg4: #E6ECF2;
+    --border: #D5DEE8; --border2: #C7D2DE; --border3: #8DA3BA;
+    --accent: #0E9E7E; --accent2: #0B8A6E; --accent-dim: rgba(14,158,126,0.10); --accent-dim-strong: rgba(14,158,126,0.24);
+    --up: #0E9E7E; --up-dim: rgba(14,158,126,0.10); --down: #D2453F; --down-dim: rgba(210,69,63,0.10);
+    --warn: #C77F00; --highlight: #8A6D00; --kpi-flat: #6B7F95;
+    --text: #13202E; --text2: #34485E; --text3: #5F738A; --text4: #8195AA; --text-brand: #0E9E7E;
+    --tx: #13202E; --tx2: #34485E; --tx3: #5F738A; --tx4: #8195AA; --acc: #0E9E7E; --bd: #D5DEE8; --bd2: #C7D2DE; --dn: #D2453F;
+    color-scheme: light;
   }
+  html[data-theme="light"] body { background: var(--bg); color: var(--text); }
+  html[data-theme="light"] .sidebar, html[data-theme="light"] .topbar, html[data-theme="light"] .ticker { background: #FFFFFF !important; }
+  html[data-theme="light"] .chart-container, html[data-theme="light"] .fuel-card, html[data-theme="light"] .hist-section, html[data-theme="light"] .table-wrap { box-shadow: 0 1px 2px rgba(19,32,46,.06); }
+  html[data-theme="light"] .kpi-card, html[data-theme="light"] .pr-home-kpi { background: var(--bg2) !important; }
+  html[data-theme="light"] .pk-tool { background: var(--bg2) !important; color: var(--text2) !important; border-color: var(--border) !important; }
+  html[data-theme="light"] .pm-legend { background: rgba(255,255,255,.92) !important; color: var(--text) !important; }
+  html[data-theme="light"] .logo-img { content: url(assets/logo-header-light.png); }
+  .pk-theme-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; margin-right: 8px; }
+  .pk-theme-btn:hover { color: var(--accent); border-color: var(--accent); }
+
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -8290,6 +8311,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="js/capture-forward.js"></script>
 <script src="js/capture-regions.js"></script>
 <script src="js/cap-ppe.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/market-brief.js"></script>
 <script src="js/scope.js"></script>
 <script src="js/views.js"></script>
