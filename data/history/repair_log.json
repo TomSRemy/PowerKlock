@@ -1,12 +1,12 @@
 {
- "run": "2026-10-24T13:04:46+00:00",
+ "run": "2026-10-24T18:11:56+00:00",
  "zones": {
   "FR": {
    "days_read": 2491,
-   "days_changed": 1,
+   "days_changed": 0,
    "largest_change": [
-    0.26,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "DE_LU": {
@@ -19,47 +19,47 @@
   },
   "BE": {
    "days_read": 2491,
-   "days_changed": 1,
+   "days_changed": 0,
    "largest_change": [
-    0.29,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "NL": {
    "days_read": 2491,
-   "days_changed": 3,
+   "days_changed": 0,
    "largest_change": [
-    0.4,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "ES": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
-    11.05,
-    "2025-10-27"
+    0,
+    ""
    ]
   },
   "PT": {
    "days_read": 2491,
-   "days_changed": 1,
+   "days_changed": 0,
    "largest_change": [
-    0.37,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "IT_NORD": {
    "days_read": 2491,
-   "days_changed": 1,
+   "days_changed": 0,
    "largest_change": [
-    0.01,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "IT_SICI": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -67,10 +67,10 @@
   },
   "GB": {
    "days_read": 367,
-   "days_changed": 367,
+   "days_changed": 0,
    "largest_change": [
-    8.66,
-    "2020-12-09"
+    0,
+    ""
    ]
   },
   "AT": {
@@ -83,15 +83,15 @@
   },
   "CH": {
    "days_read": 2491,
-   "days_changed": 1,
+   "days_changed": 0,
    "largest_change": [
-    0.45,
-    "2025-10-26"
+    0,
+    ""
    ]
   },
   "CZ": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -99,15 +99,15 @@
   },
   "SK": {
    "days_read": 2491,
-   "days_changed": 34,
+   "days_changed": 0,
    "largest_change": [
-    32.4,
-    "2026-10-10"
+    0,
+    ""
    ]
   },
   "HU": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -115,23 +115,23 @@
   },
   "RO": {
    "days_read": 2491,
-   "days_changed": 569,
+   "days_changed": 0,
    "largest_change": [
-    400.27,
-    "2020-12-17"
+    0,
+    ""
    ]
   },
   "HR": {
    "days_read": 2491,
-   "days_changed": 34,
+   "days_changed": 0,
    "largest_change": [
-    37.11,
-    "2026-10-10"
+    0,
+    ""
    ]
   },
   "SI": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -139,7 +139,7 @@
   },
   "RS": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -147,23 +147,23 @@
   },
   "GR": {
    "days_read": 2491,
-   "days_changed": 34,
+   "days_changed": 0,
    "largest_change": [
-    53.0,
-    "2026-10-10"
+    0,
+    ""
    ]
   },
   "BG": {
    "days_read": 2491,
-   "days_changed": 786,
+   "days_changed": 0,
    "largest_change": [
-    402.96,
-    "2021-12-22"
+    0,
+    ""
    ]
   },
   "DK_W": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -171,7 +171,7 @@
   },
   "DK_E": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -179,7 +179,7 @@
   },
   "SE": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -187,7 +187,7 @@
   },
   "NO_1": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -195,7 +195,7 @@
   },
   "FI": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -203,7 +203,7 @@
   },
   "LT": {
    "days_read": 2490,
-   "days_changed": 35,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -211,7 +211,7 @@
   },
   "LV": {
    "days_read": 2491,
-   "days_changed": 35,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -219,7 +219,7 @@
   },
   "EE": {
    "days_read": 2491,
-   "days_changed": 35,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -227,7 +227,7 @@
   },
   "PL": {
    "days_read": 2491,
-   "days_changed": 33,
+   "days_changed": 0,
    "largest_change": [
     0,
     ""
@@ -235,18 +235,18 @@
   },
   "ME": {
    "days_read": 1278,
-   "days_changed": 34,
+   "days_changed": 0,
    "largest_change": [
-    8.26,
-    "2026-10-09"
+    0,
+    ""
    ]
   },
   "MK": {
    "days_read": 1264,
-   "days_changed": 34,
+   "days_changed": 0,
    "largest_change": [
-    5.07,
-    "2026-10-09"
+    0,
+    ""
    ]
   },
   "MT": {
