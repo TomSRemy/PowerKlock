@@ -1,12 +1,12 @@
 {
- "updated": "2026-10-24T06:33:05+00:00",
+ "updated": "2026-10-24T10:23:27+00:00",
  "asof": "2026-10-24",
  "notes": 1,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
-   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pourrait augmenter les prix de l'électricité",
+   "text": "La disponibilité nucléaire française est en baisse de 6,4% sur 7 jours, ce qui pousse les prix à la hausse",
    "tone": "up"
   },
   {
@@ -27,15 +27,15 @@
   },
   "gas": {
    "tone": "up",
-   "text": "Marché du gaz reste tendu"
+   "text": "Marché du gaz européen reste tendu"
   },
   "power": {
    "tone": "flat",
-   "text": "Influence des tensions sur le marché du gaz"
+   "text": "Influence des conditions météorologiques"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Débats politiques autour de l'EU ETS"
+   "text": "Débats politiques autour du EU ETS"
   }
  }
 }
