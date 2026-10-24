@@ -89,6 +89,18 @@ def main():
         check('PPA pricer: at least 3 methods priced', len([v for v in vals if v == v]) >= 3, vals)
         check('PPA pricer: prices between 0 and 300 €/MWh', all(0 < v < 300 for v in vals if v == v), vals)
 
+        # ── notes: N opens the panel, a note aimed at a chart is saved (this browser, not signed in) with its context and a pin ──
+        p.evaluate("PKNav.go('renewables/capture')"); p.wait_for_timeout(800)
+        p.evaluate("document.body.focus()"); p.keyboard.press('n'); p.wait_for_timeout(300)
+        check('notes: key N opens the panel', p.locator('#pk-notes').is_visible())
+        p.click('#pk-notes [data-a=aim]')
+        bb = p.locator('#ren-fc').bounding_box(); p.mouse.click(bb['x'] + 40, bb['y'] + 40); p.wait_for_timeout(300)
+        p.fill('#pk-note-txt', 'test note'); p.keyboard.press('Control+Enter'); p.wait_for_timeout(500)
+        n = p.evaluate("PKNotes.list().slice(-1)[0] || {}")
+        check('notes: saved with page, address, element and settings', n.get('route') == 'renewables/capture' and n.get('target_id') == 'ren-fc' and n.get('page') and 'ren-country' in (n.get('settings') or {}), n)
+        check('notes: a pin on the element', p.locator('.pk-note-pin').count() >= 1)
+        p.keyboard.press('Escape')
+
         # ── shared dashboard address left alone ──
         q = b.new_page(); q.goto(url + '#solo=jAAAA'); q.wait_for_timeout(5000)
         check('#solo= address not rewritten', q.evaluate("location.hash").startswith('#solo='), q.evaluate("location.hash"))
