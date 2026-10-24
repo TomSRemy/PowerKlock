@@ -1,23 +1,41 @@
 {
- "updated": "2026-10-23T20:29:44+00:00",
- "asof": "2026-10-23",
+ "updated": "2026-10-24T06:33:05+00:00",
+ "asof": "2026-10-24",
  "notes": 1,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
-   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pousse les prix à la hausse. L'Autorité de sûreté nucléaire a estimé que rien n'empêche de poursuivre l'exploitation du parc électronucléaire au-delà de 60 ans, à condition que des travaux conséquents soient réalisés",
+   "text": "La disponibilité nucléaire en France a baissé de 6,4% en une semaine, ce qui pourrait augmenter les prix de l'électricité",
    "tone": "up"
   },
   {
    "topic": "Golfe",
-   "text": "Les attaques répétées contre les transports maritimes et les infrastructures énergétiques dans la région du Golfe maintiennent la pression sur les prix du pétrole, malgré des flux relativement résilients",
+   "text": "Les attaques répétées contre les transports maritimes et les infrastructures énergétiques dans la région du Golfe maintiennent la pression sur les prix du pétrole",
    "tone": "up"
   },
   {
    "topic": "Norvège",
-   "text": "La baisse des importations de gaz norvégien, couplée à une demande accrue pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz européen",
+   "text": "La baisse des imports de gaz norvégien, couplée à la demande croissante pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz",
    "tone": "up"
   }
- ]
+ ],
+ "outlook": {
+  "oil": {
+   "tone": "up",
+   "text": "Risques de perturbations d'approvisionnement"
+  },
+  "gas": {
+   "tone": "up",
+   "text": "Marché du gaz reste tendu"
+  },
+  "power": {
+   "tone": "flat",
+   "text": "Influence des tensions sur le marché du gaz"
+  },
+  "carbon": {
+   "tone": "flat",
+   "text": "Débats politiques autour de l'EU ETS"
+  }
+ }
 }
