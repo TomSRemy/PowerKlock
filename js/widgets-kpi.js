@@ -33,14 +33,19 @@
     titleFn: p => zoneName(p.zone) + ' · DA base',
     async html(host, p) {
       const data = await PKW.waitFor(() => (typeof pricesData !== 'undefined' && pricesData && pricesData.length) ? pricesData : null);
-      const z = data && data.find(x => x.code === p.zone);
+      let z = data && data.find(x => x.code === p.zone), asOf = '';
+      if (!z || z.today == null) {   // the day's file is there but this zone not yet: its latest published day
+        const j = await fetch(DATA_BASE + 'prices.json').then(r => r.ok ? r.json() : null).catch(() => null);
+        z = j && (j.zones || []).find(x => x.code === p.zone);
+        asOf = z && j.updated ? ' · as of ' + new Date(j.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+      }
       if (!z || z.today == null) return empty(host, 'No price for ' + p.zone + ' yet');
       // Rising power price = red, as on the Prices table.
       tile(host, {
         value: f(z.today, 2), unit: ' €/MWh',
         chg: z.vsYday != null ? (z.vsYday >= 0 ? '▲ ' : '▼ ') + signed(z.vsYday, 2) + ' d/d' : '',
         tone: z.vsYday == null ? null : z.vsYday > 0 ? 'down' : 'up',
-        meta: 'min ' + f(z.min, 1) + ' · max ' + f(z.max, 1) + (z.negHours ? ' · ' + z.negHours + ' h < 0' : ''),
+        meta: 'min ' + f(z.min, 1) + ' · max ' + f(z.max, 1) + (z.negHours ? ' · ' + z.negHours + ' h < 0' : '') + asOf,
       });
     },
   });
