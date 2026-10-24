@@ -18,7 +18,7 @@
   const f2 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(2);
   const f1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
   const f0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString('en-GB');
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const esc = PK.esc;   // js/pk-core.js
   const Y0 = 2017;
   const S = { formula: 'ab', margin: 2, feeMWh: 0.5, feeMonth: 0, imbF: 1.5, imb: null, stop: true, years: 'recent', vol: null };
   let M0 = null, IMB = null, HOURLY = {}, loading = null, LAST = null;

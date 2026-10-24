@@ -1,14 +1,11 @@
 // ════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════
-const ENTSOE_TOKEN = 'YOUR_ENTSOE_TOKEN_HERE'; // Get free at transparency.entsoe.eu
+// Prices come from the data files written by the collection jobs (data/): the browser never calls ENTSO-E.
 
 // Calendar date in Europe/Paris (YYYY-MM-DD). Day-ahead delivery days are
 // CET/CEST days, so "today" must not be derived from the UTC date (which
 // lags by 1-2h around midnight).
-window.pkTodayISO = function() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
-};
 // Current Europe/Paris wall-clock hour as a fraction (e.g. 14.25 = 14:15).
 window.pkParisHour = function() {
   const [h, m] = new Date().toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).split(':').map(Number);
@@ -16,7 +13,7 @@ window.pkParisHour = function() {
 };
 
 // ════════════════════════════════════════════
-// PK_FMT — Shared formatting helpers (used by prices.js + hist.js)
+// PK_FMT — Shared formatting helpers (used by prices.js + js/hist/)
 // Single source of truth for number/delta/neg-hours formatting and
 // semantic color thresholds. Keep in sync with brief decisions.
 // ════════════════════════════════════════════
@@ -205,6 +202,7 @@ function showPage(id) {
   if (id === 'overview') loadOverview();
   if (id === 'converter') { updateConverter(); updateCapacity(); }
   if (id === 'analysis' && typeof loadMarketAnalysis === 'function') loadMarketAnalysis();
+  if (window.PK) PK.pageShown(id);   // modules subscribe with PK.onPage(id, fn) (js/pk-core.js)
 }
 
 function switchSection(sec) {
@@ -288,36 +286,6 @@ function switchDashboard(tab, btn) {
   }
 }
 
-// ════════════════════════════════════════════
-// ENTSOE API HELPER
-// ════════════════════════════════════════════
-async function fetchEntsoe(params) {
-  const base = 'https://web-api.tp.entsoe.eu/api';
-  const url = `${base}?securityToken=${ENTSOE_TOKEN}&${params}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`ENTSO-E ${resp.status}`);
-  return resp.text();
-}
-
-function parseXmlPrices(xml) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, 'text/xml');
-  const points = doc.querySelectorAll('Point');
-  const prices = [];
-  points.forEach(p => {
-    const pos = parseInt(p.querySelector('position')?.textContent || '0');
-    const priceText = p.querySelector('price\\.amount')?.textContent;
-    if (priceText == null || priceText === '') return;
-    const val = parseFloat(priceText);
-    // `if (val)` used to drop this point whenever the price was exactly 0
-    // (0 is falsy in JS) — a legitimate €0.00/MWh slot silently vanished
-    // from the series instead of being recorded. Only skip on a genuine
-    // parse failure (NaN), never on a real zero.
-    if (!isNaN(val)) prices.push({ hour: pos - 1, price: val });
-  });
-  return prices;
-}
-
 function todayStr() {
   const now = new Date();
   const cet = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
@@ -327,268 +295,12 @@ function todayStr() {
   return `${y}${m}${d}`;
 }
 
-function dateParam(offset = 0) {
-  const now = new Date();
-  now.setDate(now.getDate() + offset);
-  const cet = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  const y = cet.getFullYear();
-  const m = String(cet.getMonth() + 1).padStart(2, '0');
-  const d = String(cet.getDate()).padStart(2, '0');
-  return `${y}${m}${d}0000`;
-}
-
-// ════════════════════════════════════════════
-// DEMO DATA (used when no token set)
-// ════════════════════════════════════════════
-// Generate 96-point (15min) hourly profile for demo data
-function gen96(avg, min, max, negSlot) {
-  // Shape: low at night, solar dip midday (duck curve), evening peak
-  const shape96 = [];
-  for (let i = 0; i < 96; i++) {
-    const h = i / 4; // fractional hour
-    let v;
-    if (h < 6)       v = 0.30 + 0.10 * Math.sin(h / 6 * Math.PI);
-    else if (h < 10) v = 0.30 + 0.70 * ((h-6)/4);
-    else if (h < 14) v = 1.00 - 0.30 * Math.sin((h-10)/4 * Math.PI); // solar dip
-    else if (h < 19) v = 0.70 + 0.30 * ((h-14)/5);
-    else if (h < 21) v = 1.00;
-    else             v = 1.00 - 0.70 * ((h-21)/3);
-    shape96.push(v);
-  }
-  const range = max - min;
-  return shape96.map((p, i) => {
-    let val = min + p * range + (Math.random() - 0.5) * range * 0.06;
-    // Inject negative prices in negSlot hours (midday)
-    if (negSlot > 0 && i >= 40 && i < 40 + negSlot * 4) val = min * (0.5 + Math.random() * 0.5);
-    return Math.round(val * 10) / 10;
-  });
-}
-
-let _demoCached = null;
-function getDemoData() {
-  if (_demoCached) return _demoCached;
-  _demoCached = _buildDemoData();
-  return _demoCached;
-}
-function _buildDemoData() {
-  return [
-    { code:'IT_SOUTH', flag:'🇮🇹', name:'Italy South',    today:115.8, vsYday:+12.0, min:54.7,  minHr:10, max:169.1, maxHr:18, negHrs:0, spark:+23.7, hourly: gen96(115.8, 54.7, 169.1, 0) },
-    { code:'IT_NORD',  flag:'🇮🇹', name:'Italy North',    today:115.1, vsYday:+12.7, min:54.7,  minHr:10, max:153.5, maxHr:18, negHrs:0, spark:+23,   hourly: gen96(115.1, 54.7, 153.5, 0) },
-    { code:'HU',       flag:'🇭🇺', name:'Hungary',        today:109.8, vsYday:+4.1,  min:-0.8,  minHr:12, max:249.9, maxHr:18, negHrs:1, spark:+17.7, hourly: gen96(109.8, -0.8, 249.9, 1) },
-    { code:'SI',       flag:'🇸🇮', name:'Slovenia',       today:109.5, vsYday:+6.6,  min:54.7,  minHr:10, max:149.7, maxHr:18, negHrs:0, spark:+17.4, hourly: gen96(109.5, 54.7, 149.7, 0) },
-    { code:'RO',       flag:'🇷🇴', name:'Romania',        today:108.5, vsYday:+17.8, min:12.0,  minHr:11, max:227.3, maxHr:18, negHrs:0, spark:+16.4, hourly: gen96(108.5, 12.0, 227.3, 0) },
-    { code:'HR',       flag:'🇭🇷', name:'Croatia',        today:108.5, vsYday:+7.7,  min:48.7,  minHr:11, max:168.7, maxHr:18, negHrs:0, spark:+16.4, hourly: gen96(108.5, 48.7, 168.7, 0) },
-    { code:'GR',       flag:'🇬🇷', name:'Greece',         today:102.7, vsYday:+21.8, min:0.0,   minHr:7,  max:194.1, maxHr:17, negHrs:2, spark:+10.6, hourly: gen96(102.7, 0.0, 194.1, 2) },
-    { code:'BG',       flag:'🇧🇬', name:'Bulgaria',       today:98.2,  vsYday:+16.7, min:6.9,   minHr:7,  max:194.1, maxHr:17, negHrs:0, spark:+6.1,  hourly: gen96(98.2, 6.9, 194.1, 0) },
-    { code:'CH',       flag:'🇨🇭', name:'Switzerland',    today:94.0,  vsYday:+2.4,  min:40.0,  minHr:13, max:140.0, maxHr:18, negHrs:0, spark:+1.9,  hourly: gen96(94.0, 40.0, 140.0, 0) },
-    { code:'AT',       flag:'🇦🇹', name:'Austria',        today:87.8,  vsYday:-4.3,  min:7.1,   minHr:13, max:137.4, maxHr:18, negHrs:0, spark:-4.3,  hourly: gen96(87.8, 7.1, 137.4, 0) },
-    { code:'LT',       flag:'🇱🇹', name:'Lithuania',      today:87.7,  vsYday:+30.0, min:15.6,  minHr:13, max:174.0, maxHr:18, negHrs:0, spark:-4.4,  hourly: gen96(87.7, 15.6, 174.0, 0) },
-    { code:'PT',       flag:'🇵🇹', name:'Portugal',       today:76.1,  vsYday:+19.2, min:14.2,  minHr:13, max:112.1, maxHr:19, negHrs:0, spark:-16,   hourly: gen96(76.1, 14.2, 112.1, 0) },
-    { code:'ES',       flag:'🇪🇸', name:'Spain',          today:75.5,  vsYday:+18.4, min:16.0,  minHr:13, max:109.0, maxHr:19, negHrs:0, spark:-16.6, hourly: gen96(75.5, 16.0, 109.0, 0) },
-    { code:'DK_W',     flag:'🇩🇰', name:'Denmark West',   today:73.8,  vsYday:-3.0,  min:-15.8, minHr:13, max:145.8, maxHr:18, negHrs:5, spark:-18.3, hourly: gen96(73.8, -15.8, 145.8, 5) },
-    { code:'CZ',       flag:'🇨🇿', name:'Czechia',        today:73.0,  vsYday:-6.4,  min:-29.9, minHr:12, max:136.5, maxHr:18, negHrs:5, spark:-19.1, hourly: gen96(73.0, -29.9, 136.5, 5) },
-    { code:'FI',       flag:'🇫🇮', name:'Finland',        today:67.8,  vsYday:+45.6, min:16.1,  minHr:13, max:127.9, maxHr:18, negHrs:0, spark:-24.3, hourly: gen96(67.8, 16.1, 127.9, 0) },
-    { code:'DE_LU',    flag:'🇩🇪', name:'Germany',        today:63.8,  vsYday:-7.4,  min:-58.1, minHr:11, max:142.8, maxHr:18, negHrs:7, spark:-28.3, hourly: gen96(63.8, -58.1, 142.8, 7) },
-    { code:'NL',       flag:'🇳🇱', name:'Netherlands',    today:57.5,  vsYday:-3.3,  min:-56.8, minHr:11, max:145.6, maxHr:18, negHrs:7, spark:-34.6, hourly: gen96(57.5, -56.8, 145.6, 7) },
-    { code:'BE',       flag:'🇧🇪', name:'Belgium',        today:49.1,  vsYday:-10.8, min:-55.0, minHr:11, max:134.0, maxHr:17, negHrs:6, spark:-43,   hourly: gen96(49.1, -55.0, 134.0, 6) },
-    { code:'SE_3',     flag:'🇸🇪', name:'Sweden N-Mid',   today:40.0,  vsYday:+21.3, min:11.8,  minHr:23, max:104.0, maxHr:5,  negHrs:0, spark:-52.1, hourly: gen96(40.0, 11.8, 104.0, 0) },
-    { code:'NO_2',     flag:'🇳🇴', name:'Norway Central', today:39.8,  vsYday:+12.2, min:8.8,   minHr:22, max:103.7, maxHr:5,  negHrs:0, spark:-52.3, hourly: gen96(39.8, 8.8, 103.7, 0) },
-    { code:'FR',       flag:'🇫🇷', name:'France',         today:1.2,   vsYday:-15.3, min:-48.6, minHr:11, max:36.0,  maxHr:5,  negHrs:7, spark:+2,    hourly: gen96(1.2, -48.6, 36.0, 7),
-      hourlyYday: gen96(16.5, -12.0, 55.0, 3), hourlyJ2: gen96(28.0, -5.0, 70.0, 1) },
-    { code:'GB',       flag:'🇬🇧', name:'Great Britain',  today:88.4,  vsYday:+5.1,  min:42.0,  minHr:13, max:150.0, maxHr:18, negHrs:0, spark:+2,    hourly: gen96(88.4, 42.0, 150.0, 0) },
-  ];
-}
-
-// Fix: define loadPricesWithDates as alias calling loadPrices with date overrides
-async function loadPricesWithDates(periodStart, periodEnd) {
-  // periodStart/periodEnd format: YYYYMMDD0000
-  if (!ENTSOE_TOKEN || ENTSOE_TOKEN === 'YOUR_ENTSOE_TOKEN_HERE') {
-    document.getElementById('prices-updated').textContent = 'Historical data unavailable in demo mode';
-    return;
-  }
-  try {
-    const results = [];
-    const batch = async (zones) => {
-      const promises = zones.map(async zone => {
-        try {
-          const xml = await fetchEntsoe(
-            `documentType=A44&in_Domain=${zone.eic}&out_Domain=${zone.eic}&periodStart=${periodStart}&periodEnd=${periodEnd}`
-          );
-          const prices = parseXmlPrices(xml);
-          if (prices.length === 0) return null;
-          const vals = prices.map(p => p.price);
-          const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
-          const minP = Math.min(...vals), maxP = Math.max(...vals);
-          const minHr = prices.find(p => p.price===minP)?.hour || 0;
-          const maxHr = prices.find(p => p.price===maxP)?.hour || 0;
-          // Count of negative SLOTS isn't hours once data is 15-min resolution
-          // (4 slots = 1h) — convert using the same slot-duration logic the
-          // backend uses, instead of mislabelling a slot count as "negHrs".
-          const negHrs = Math.round(vals.filter(v => v < 0).length * getResolution(vals) / 60 * 100) / 100;
-          const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
-          return { ...zone, today: Math.round(avg*10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
-        } catch { return null; }
-      });
-      return (await Promise.all(promises)).filter(Boolean);
-    };
-    const batchSize = 6;
-    const histDateISO = `${periodStart.slice(0,4)}-${periodStart.slice(4,6)}-${periodStart.slice(6,8)}`;
-    for (let i = 0; i < ZONES.length; i += batchSize) {
-      const batchRes = await batch(ZONES.slice(i, i+batchSize));
-      results.push(...batchRes);
-      pricesData = results.sort((a,b) => b.today - a.today);
-      renderPricesTable(pricesData, histDateISO);
-      updateKPIs(pricesData, histDateISO);
-    }
-
-    // Backfill vsYday from J-1 daily file (files are named by delivery date: J-1 = histDateISO − 1)
-    if (typeof fetchHistoricalDaily === 'function' && histDateISO) {
-      try {
-        const [y,m,d] = histDateISO.split('-').map(Number);
-        const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
-        const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
-        if (yData && yData.zones) {
-          let touched = false;
-          pricesData.forEach(z => {
-            if (z.vsYday != null) return;
-            const y = yData.zones[z.code];
-            if (y && y.avg != null && z.today != null) {
-              z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
-              touched = true;
-            }
-          });
-          if (touched) {
-            renderPricesTable(pricesData, histDateISO);
-            updateKPIs(pricesData, histDateISO);
-          }
-        }
-      } catch (e) { console.warn('vsYday backfill (historical live) failed:', e); }
-    }
-
-    buildTicker(pricesData);
-    document.getElementById('prices-updated').textContent = `Historical · ${periodStart.slice(0,8)}`;
-  } catch(e) {
-    console.error(e);
-    document.getElementById('prices-updated').textContent = 'Error loading historical data';
-  }
-}
-
 // ════════════════════════════════════════════
 // LOAD PRICES
 // ════════════════════════════════════════════
 async function loadPrices() {
-  _demoCached = null;
-  const isDemo = ENTSOE_TOKEN === 'YOUR_ENTSOE_TOKEN_HERE';
-
-  if (isDemo) {
-    // No token — load last available historical data instead of demo
-    if (typeof loadLastAvailable === 'function') {
-      loadLastAvailable();
-    }
-    return;
-  }
-
-  // Real ENTSO-E fetch
-  try {
-    const periodStart = dateParam(0);
-    const periodEnd = dateParam(1);
-    const results = [];
-
-    // Fetch in parallel batches of 6
-    const batch = async (zones) => {
-      const promises = zones.map(async zone => {
-        try {
-          const xml = await fetchEntsoe(
-            `documentType=A44&in_Domain=${zone.eic}&out_Domain=${zone.eic}&periodStart=${periodStart}&periodEnd=${periodEnd}`
-          );
-          const prices = parseXmlPrices(xml);
-          if (prices.length === 0) return null;
-          const vals = prices.map(p => p.price);
-          const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
-          const minP = Math.min(...vals);
-          const maxP = Math.max(...vals);
-          const minHr = prices.find(p => p.price === minP)?.hour || 0;
-          const maxHr = prices.find(p => p.price === maxP)?.hour || 0;
-          // Count of negative SLOTS isn't hours once data is 15-min resolution
-          // (4 slots = 1h) — convert using the same slot-duration logic the
-          // backend uses, instead of mislabelling a slot count as "negHrs".
-          const negHrs = Math.round(vals.filter(v => v < 0).length * getResolution(vals) / 60 * 100) / 100;
-          const hourly = (typeof upsampleHourly === 'function') ? upsampleHourly(vals) : vals;
-          return { ...zone, today: Math.round(avg * 10)/10, min: Math.round(minP*10)/10, minHr, max: Math.round(maxP*10)/10, maxHr, negHrs, hourly, vsYday: null, spark: null };
-        } catch { return null; }
-      });
-      return (await Promise.all(promises)).filter(Boolean);
-    };
-
-    const liveDateISO = `${periodStart.slice(0,4)}-${periodStart.slice(4,6)}-${periodStart.slice(6,8)}`;
-    const batchSize = 6;
-    for (let i = 0; i < ZONES.length; i += batchSize) {
-      const batchResults = await batch(ZONES.slice(i, i + batchSize));
-      results.push(...batchResults);
-      pricesData = results.sort((a,b) => b.today - a.today);
-      renderPricesTable(pricesData, liveDateISO);
-      updateKPIs(pricesData, liveDateISO);
-    }
-
-    // Backfill vsYday for live data: files are named by delivery date: J-1 = liveDateISO − 1
-    if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
-      try {
-        const [y,m,d] = liveDateISO.split('-').map(Number);
-        const j1Auc = new Date(Date.UTC(y, m-1, d));
-        j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
-        const yData = await fetchHistoricalDaily(j1Auc.toISOString().slice(0,10));
-        if (yData && yData.zones) {
-          let touched = false;
-          pricesData.forEach(z => {
-            if (z.vsYday != null) return;
-            const y = yData.zones[z.code];
-            if (y && y.avg != null && z.today != null) {
-              z.vsYday = Math.round((z.today - y.avg) * 100) / 100;
-              touched = true;
-            }
-          });
-          if (touched) {
-            renderPricesTable(pricesData, liveDateISO);
-            updateKPIs(pricesData, liveDateISO);
-          }
-        }
-      } catch (e) { console.warn('vsYday backfill (live) failed:', e); }
-    }
-
-    buildTicker(pricesData);
-    dpRecordNegHours(pricesData);
-    const nowDate = new Date();
-    const now = nowDate.toLocaleTimeString('en-GB', { timeZone: 'Europe/Paris', hour:'2-digit', minute:'2-digit' });
-    const parisNow = new Date(nowDate.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const utcNowB = new Date(nowDate.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const offH = Math.round((parisNow - utcNowB) / 3600000);
-    document.getElementById('prices-updated').textContent = `Updated ${now} ${offH === 1 ? 'CET' : offH === 2 ? 'CEST' : 'UTC' + (offH >= 0 ? '+' : '') + offH}`;
-
-    // Backfill hourlyYday for the single-zone chart overlay (J-1 = today − 1; files are named by delivery date)
-    if (typeof fetchHistoricalDaily === 'function' && liveDateISO) {
-      const [y,m,d] = liveDateISO.split('-').map(Number);
-      const j1Auc = new Date(Date.UTC(y, m-1, d));
-      j1Auc.setUTCDate(j1Auc.getUTCDate() - 1);
-      const j1FileISO = j1Auc.toISOString().slice(0,10);
-      fetchHistoricalDaily(j1FileISO).then(j1 => {
-        if (!j1 || !j1.zones) return;
-        let touched = false;
-        pricesData.forEach(z => {
-          if (j1.zones[z.code] && Array.isArray(j1.zones[z.code].hourly) && j1.zones[z.code].hourly.length) {
-            z.hourlyYday = j1.zones[z.code].hourly;
-            touched = true;
-          }
-        });
-        if (touched && typeof rerenderOpenRowDetail === 'function') rerenderOpenRowDetail();
-      });
-    }
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById('prices-tbody').innerHTML =
-      `<tr class="loading-row"><td colspan="8" style="color:var(--down)">⚠ Could not fetch ENTSO-E data. Check your token or use demo mode.</td></tr>`;
-  }
+  // the latest day-ahead file written by the collection jobs
+  if (typeof loadLastAvailable === 'function') loadLastAvailable();
 }
 
 function updateKPIs(data, dataDateStr) {
@@ -1115,12 +827,12 @@ function renderPricesTableBody() {
   // Fuel config for domFuel
   const fuelOrder = ['nuclear','wind','solar','hydro','biomass','fossil'];
   const fuelMeta = {
-    nuclear: {emoji:'⚛', label:'Nuclear',  color:C_NUC},
-    wind:    {emoji:'🌬', label:'Wind',     color:C_WIND},
-    solar:   {emoji:'☀', label:'Solar',    color:C_SOLAR},
-    hydro:   {emoji:'💧', label:'Hydro',    color:C_HYD},
-    biomass: {emoji:'🌿', label:'Biomass',  color:C_BIO},
-    fossil:  {emoji:'🔥', label:'Fossil',   color:C_FOS},
+    nuclear: {emoji: '', label:'Nuclear',  color:C_NUC},
+    wind:    {emoji: '', label:'Wind',     color:C_WIND},
+    solar:   {emoji: '', label:'Solar',    color:C_SOLAR},
+    hydro:   {emoji: '', label:'Hydro',    color:C_HYD},
+    biomass: {emoji: '', label:'Biomass',  color:C_BIO},
+    fossil:  {emoji: '', label:'Fossil',   color:C_FOS},
   };
 
   const rows = sorted.map((z, i) => {
@@ -1581,7 +1293,7 @@ function buildHourlyDetail(idx, z) {
       </div>
       <div class="pk-filters-bar-spacer"></div>
       <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=_rowCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom to original view">↺ Reset</button>
-      <button class="pk-btn-primary" onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG">📸 PNG</button>
+      <button class="pk-btn-primary" onclick="event.stopPropagation();downloadRowChart(${idx})" title="Download chart as PNG">${PK.icon('download')} PNG</button>
     </div>
 
     <!-- ═══ Chart ═══ -->
@@ -1682,7 +1394,7 @@ function buildHourlyDetail(idx, z) {
   `;
 
   // ── Populate the Market Read banner (below the chart, 2-line layout, mirrors Historical drill-down) ──
-  // Uses the shared _buildAnalystBanner('dailyDrill', …) defined in hist.js.
+  // Uses the shared _buildAnalystBanner('dailyDrill', …) defined in js/hist/single-zone.js.
   // The band-stats sentence (P50 / vs median) is later injected by _loadAndApplyRowBand
   // into the #row-market-read-band-${idx} span that lives inside the verdict block.
   (function _renderDrillBanner() {
@@ -4005,7 +3717,7 @@ function renderCCAnalysis(view, data, selected) {
   }
 
   // ── Build the unified amber analyst banner (cc-analyst-banner-anchor) ──
-  // Uses _buildAnalystBanner (defined in hist.js, exposed on window) — same style
+  // Uses _buildAnalystBanner (defined in js/hist/, exposed on window) — same style
   // as Historical chart banners. cc-analysis (legacy gray banner) is left hidden.
   const anchor = document.getElementById('cc-analyst-banner-anchor');
   if (anchor && typeof window._buildAnalystBanner === 'function' && stats.length) {

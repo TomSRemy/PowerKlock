@@ -183,7 +183,7 @@
 // ── Holes in the data (scripts/check_data_gaps.py → data/data_gaps.json, every 2 hours) ──
 //    what is missing inside the histories, since when, how it gets repaired, and what came back
 (function () {
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const when = s => s ? new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '–';
   const NAME = { prices: 'Day-ahead prices', generation: 'France production by source', rte: 'RTE éCO2mix', commodities: 'Fuels and carbon', forwards: 'Power forwards', cr: 'Parks under CR (ODRÉ)', activation: 'Activation prices', pricecheck: 'Prices vs second source', gencheck: 'France production vs second source', mktcheck: 'Brent, EUR/USD vs second source', storage: 'Storage' };
   async function render() {

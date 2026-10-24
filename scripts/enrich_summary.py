@@ -902,7 +902,7 @@ def recalc_summary_from_daily():
     with open(SUMMARY_PATH, 'w') as f:
         json.dump(summary, f, separators=(',', ':'))
 
-    print(f"\nRecalc done:")
+    print("\nRecalc done:")
     print(f"  Files processed: {stats['files']}")
     print(f"  Entries written: {stats['entries']}")
     print(f"  Peak/off filled: {stats['peak']}")
@@ -1002,13 +1002,13 @@ def fetch_historical(date_from, date_to, zones, with_genmix=False, resume=False,
     total_calls = n_days_active * calls_per_day
     eta_seconds = total_calls * 1.2
 
-    print(f"\n=== Historical fetch plan ===")
+    print("\n=== Historical fetch plan ===")
     print(f"  Zones        : {', '.join(zones)} ({len(zones)})")
     print(f"  Date range   : {date_from} to {date_to} ({n_days} days)")
     if resume:
         print(f"  Active dates : {n_days_active} (after --resume skip)")
     if genmix_only:
-        print(f"  Mode         : PRODUCTION ONLY (genmix arrays merged into existing files, prices preserved)")
+        print("  Mode         : PRODUCTION ONLY (genmix arrays merged into existing files, prices preserved)")
     else:
         print(f"  Genmix       : {'YES (renPct + domFuel)' if with_genmix else 'NO (prices only)'}")
     print(f"  API calls    : {total_calls}")

@@ -46,7 +46,7 @@ def fetch(params, retries=3):
                 continue
             r.raise_for_status()
             return r.text
-        except Exception as e:
+        except Exception:
             if attempt == retries - 1:
                 raise
             time.sleep(5 * (attempt + 1))

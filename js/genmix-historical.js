@@ -1579,7 +1579,7 @@
     const STACK = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
     const FUEL_META = window.GM_FUEL_META || {};
     const FLAGS = window.FLAG_MAP || {};
-    const hexToRgb = (typeof window._hexToRgb === 'function') ? window._hexToRgb : (hex => {
+    const hexToRgb = (typeof window._gmHexToRgbStr === 'function') ? window._gmHexToRgbStr : (hex => {
       const h = hex.replace('#', '');
       return `${parseInt(h.substr(0, 2), 16)},${parseInt(h.substr(2, 2), 16)},${parseInt(h.substr(4, 2), 16)}`;
     });
@@ -1829,8 +1829,7 @@
     if (window._genmixData) refresh();
   }
   window.addEventListener('load', () => setTimeout(() => {
-    const inner = window.showPage;
-    if (typeof inner === 'function') window.showPage = function (id) { const r = inner.apply(this, arguments); if (id === 'genmix' && window._gmhDirty) setTimeout(_gmhRenderAll, 50); return r; };
+    PK.onPage('genmix', () => { if (window._gmhDirty) setTimeout(_gmhRenderAll, 50); });
   }, 0));
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _gmhInit);

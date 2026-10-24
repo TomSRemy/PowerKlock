@@ -347,7 +347,7 @@ async function _mrnMoves(k) {
 }
 
 // ── News digest, short: what moves prices or the renewable business (geopolitics, regulation, deals, new
-// capacity, gas…), last 48 h, highest market impact first (scripts/fetch_news.py; readers' 👍 / 👎 teach the
+// capacity, gas…), last 48 h, highest market impact first (scripts/fetch_news.py; readers' useful / not useful votes teach the
 // ranking); the reader's ★ keywords on the News page come first ──
 const _MRN_CAT = { geopolitics: 1, regulation: 1, deal: 1, build: 1, gas: 1, carbon: 1, markets: 1, power: 1 };   // line icons from js/news.js
 async function _mrnNews() {
@@ -362,7 +362,7 @@ async function _mrnNews() {
       .sort((a, b) => (mine(b) ? 1 : 0) - (mine(a) ? 1 : 0) || (b.impact || 0) - (a.impact || 0) || Date.parse(b.date) - Date.parse(a.date));
     span = lbl; if (pick.length >= 4) break;
   }
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = PK.esc;   // js/pk-core.js
   const cat = i => { const t = (i.tags || []).find(x => _MRN_CAT[x] && x !== 'power') || ((i.tags || []).includes('power') ? 'power' : ''); return t ? `<span class="mrn-cat" title="${t}">${window._newsIc ? _newsIc(t) : ''}</span>` : ''; };
   const vote = i => typeof _newsVoteBtns === 'function' ? `<span class="news-vote mrn-vote" data-link="${esc(i.link)}">${_newsVoteBtns(i.link)}</span>` : '';
   host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">Market movers of the last ${span}: geopolitics, regulation, deals, new capacity, gas${kw.length ? ', and your ★ keywords first' : ''}. Your votes (useful / not useful) teach the selection.</div>` +

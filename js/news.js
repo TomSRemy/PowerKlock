@@ -115,9 +115,7 @@ async function renderNewsAdd() {
   }));
 }
 
-function _newsEsc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+function _newsEsc(s) { return PK.esc(s); }   // js/pk-core.js (name kept: used by morning.js and the news cards)
 
 function renderNews(items) {
   const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
@@ -318,7 +316,7 @@ function setLF(val, btn) {
 const NEW_PAGES = ['renewables','nuclear','imbalance','eua','euafwd','spark','goprices','wxcities','wxhdd','remit'];
 const PAGE_LOADERS = {
   map: () => { if (window.PKMap) setTimeout(() => PKMap.open(), 50); },
-  // Several `hist.js` historical sections only re-render reactively, when the
+  // Several `js/hist/` historical sections only re-render reactively, when the
   // user clicks a window/zone control (setHistWindow/setHistZone) — they were
   // never wired to render once on first page visit, so the chart stayed an
   // empty canvas until the user happened to click a pill button. Each loader
@@ -344,33 +342,12 @@ const PAGE_LOADERS = {
 
 // Weather pages: see js/meteo.js
 
-// Patch showPage to handle new sections
-// showPage patch applied after all scripts load
-window.addEventListener("load", () => { if (typeof showPage === "undefined") return;
-const _origShowPage = showPage;
-window.showPage = function(id) {
-  // Was a full copy-paste of the original page/nav toggling (which had gone
-  // stale — e.g. it never got the dashboard-switcher reset added to prices.js'
-  // showPage, since this duplicate silently shadowed it). Delegate to the
-  // original and only add what this patch actually needs on top: the new
-  // section loaders below.
-  _origShowPage(id);
+// each page's loader, the first time the page is shown
+PK.onPage('*', id => {
   const ldr = PAGE_LOADERS[id];
   if (ldr && !window['_loaded_' + id]) { window['_loaded_' + id] = true; ldr(); }
-};
-});  // end load listener
+});
 
-// ── DEMO DATA
-const GM_DEMO = {
-  FR:{nuclear:38000,wind:5500,solar:11100,hydro:4800,fossil:700,biomass:900,total:61400},
-  DE_LU:{nuclear:0,wind:22000,solar:18000,hydro:2500,fossil:12000,biomass:4000,total:59000},
-  ES:{nuclear:7000,wind:15000,solar:12000,hydro:5000,fossil:4000,biomass:800,total:44000},
-  BE:{nuclear:4500,wind:1800,solar:2500,hydro:100,fossil:2000,biomass:600,total:11700},
-  NL:{nuclear:500,wind:5000,solar:4000,hydro:0,fossil:8000,biomass:500,total:18100},
-  IT_NORD:{nuclear:0,wind:1500,solar:7000,hydro:8000,fossil:9000,biomass:700,total:26500},
-  GB:{nuclear:5000,wind:8000,solar:3000,hydro:1500,fossil:6000,biomass:1200,total:25100},
-  PT:{nuclear:0,wind:4000,solar:3500,hydro:2500,fossil:1500,biomass:400,total:12000},
-};
 const FUELS = [
   {k:'nuclear',l:'Nuclear',c:'#A87DC4'},{k:'wind',l:'Wind',c:'#C4A57B'},
   {k:'solar',l:'Solar',c:'#FBBF24'},{k:'hydro',l:'Hydro',c:'#94D2BD'},
