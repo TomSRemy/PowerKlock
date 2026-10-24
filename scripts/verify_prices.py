@@ -23,6 +23,8 @@ EC = {'FR': 'FR', 'DE_LU': 'DE-LU', 'BE': 'BE', 'NL': 'NL', 'ES': 'ES', 'PT': 'P
       'NO_1': 'NO1', 'SE': 'SE1', 'IT_SICI': 'IT-Sicily'}
 # not published by Energy-Charts: MK (North Macedonia), GB (no longer on ENTSO-E since 2021), MT
 TOL = 0.5
+# differences that are explained, not errors: listed apart, not flagged
+KNOWN = {('AT', '2024-06-26'): 'partial decoupling of the European day-ahead market (SDAC): the two sources keep different auction results'}
 
 
 def ec_prices(bzn, d0, d1):
@@ -58,7 +60,7 @@ def main():
                     by.setdefault(datetime.fromtimestamp(t, PARIS).date().isoformat(), []).append(v)
             s = e + timedelta(days=1)
             time.sleep(8)
-        agree, diff = 0, []
+        agree, diff, known = 0, [], []
         for day, vs in sorted(by.items()):
             if len(vs) < 23:
                 continue
@@ -69,11 +71,13 @@ def main():
             if not isinstance(zz, dict) or zz.get('avg') is None:
                 continue
             ec = sum(vs) / len(vs)
-            if abs(zz['avg'] - ec) > TOL:
+            if abs(zz['avg'] - ec) > TOL and (z, day) in KNOWN:
+                known.append({'day': day, 'ours': zz['avg'], 'ec': round(ec, 2), 'why': KNOWN[(z, day)]})
+            elif abs(zz['avg'] - ec) > TOL:
                 diff.append({'day': day, 'ours': zz['avg'], 'ec': round(ec, 2)})
             else:
                 agree += 1
-        out['zones'][z] = {'agree': agree, 'differ': len(diff), 'days': diff[-120:]}
+        out['zones'][z] = {'agree': agree, 'differ': len(diff), 'days': diff[-120:], 'explained': known}
         print(f'{z:8s} agree {agree:5d}  differ {len(diff):4d}', diff[-3:])
     json.dump(out, open(OUT, 'w'), indent=0)
 
