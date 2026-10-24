@@ -2,12 +2,6 @@
 "run": "2026-10-24",
 "log": [
 {
-"day": "2025-11-02",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-11-01",
 "zone": "PT",
 "result": "filled",
@@ -22,12 +16,6 @@
 {
 "day": "2025-11-01",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-11-01",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -50,12 +38,6 @@
 "points": 96
 },
 {
-"day": "2025-10-31",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-30",
 "zone": "PT",
 "result": "filled",
@@ -70,12 +52,6 @@
 {
 "day": "2025-10-30",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-30",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -98,12 +74,6 @@
 "points": 96
 },
 {
-"day": "2025-10-29",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-28",
 "zone": "PT",
 "result": "filled",
@@ -118,12 +88,6 @@
 {
 "day": "2025-10-28",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-28",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -146,12 +110,6 @@
 "points": 96
 },
 {
-"day": "2025-10-27",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-26",
 "zone": "PT",
 "result": "filled",
@@ -166,12 +124,6 @@
 {
 "day": "2025-10-26",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-26",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -194,12 +146,6 @@
 "points": 96
 },
 {
-"day": "2025-10-25",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-24",
 "zone": "PT",
 "result": "filled",
@@ -214,12 +160,6 @@
 {
 "day": "2025-10-24",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-24",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -242,12 +182,6 @@
 "points": 96
 },
 {
-"day": "2025-10-23",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-22",
 "zone": "PT",
 "result": "filled",
@@ -262,12 +196,6 @@
 {
 "day": "2025-10-22",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-22",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -290,12 +218,6 @@
 "points": 96
 },
 {
-"day": "2025-10-21",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-20",
 "zone": "PT",
 "result": "filled",
@@ -310,12 +232,6 @@
 {
 "day": "2025-10-20",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-20",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -338,12 +254,6 @@
 "points": 96
 },
 {
-"day": "2025-10-19",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-18",
 "zone": "PT",
 "result": "filled",
@@ -358,12 +268,6 @@
 {
 "day": "2025-10-18",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-18",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -386,12 +290,6 @@
 "points": 96
 },
 {
-"day": "2025-10-17",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-16",
 "zone": "PT",
 "result": "filled",
@@ -406,12 +304,6 @@
 {
 "day": "2025-10-16",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-16",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -434,12 +326,6 @@
 "points": 96
 },
 {
-"day": "2025-10-15",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-14",
 "zone": "PT",
 "result": "filled",
@@ -454,12 +340,6 @@
 {
 "day": "2025-10-14",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-14",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -482,12 +362,6 @@
 "points": 96
 },
 {
-"day": "2025-10-13",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-12",
 "zone": "PT",
 "result": "filled",
@@ -502,12 +376,6 @@
 {
 "day": "2025-10-12",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-12",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -530,12 +398,6 @@
 "points": 96
 },
 {
-"day": "2025-10-11",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-10",
 "zone": "PT",
 "result": "filled",
@@ -550,12 +412,6 @@
 {
 "day": "2025-10-10",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-10",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -578,12 +434,6 @@
 "points": 96
 },
 {
-"day": "2025-10-09",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-08",
 "zone": "PT",
 "result": "filled",
@@ -598,12 +448,6 @@
 {
 "day": "2025-10-08",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-08",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -626,12 +470,6 @@
 "points": 96
 },
 {
-"day": "2025-10-07",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-06",
 "zone": "PT",
 "result": "filled",
@@ -646,12 +484,6 @@
 {
 "day": "2025-10-06",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-06",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -674,12 +506,6 @@
 "points": 96
 },
 {
-"day": "2025-10-05",
-"zone": "AT",
-"result": "filled",
-"points": 96
-},
-{
 "day": "2025-10-04",
 "zone": "PT",
 "result": "filled",
@@ -694,12 +520,6 @@
 {
 "day": "2025-10-04",
 "zone": "CH",
-"result": "filled",
-"points": 96
-},
-{
-"day": "2025-10-04",
-"zone": "AT",
 "result": "filled",
 "points": 96
 },
@@ -720,6 +540,92 @@
 "zone": "CH",
 "result": "filled",
 "points": 96
+},
+{
+"day": "2025-10-02",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-10-02",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-10-02",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-10-01",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-10-01",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-10-01",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-09-30",
+"zone": "PT",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-09-30",
+"zone": "IT_NORD",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2025-09-30",
+"zone": "CH",
+"result": "filled",
+"points": 96
+},
+{
+"day": "2026-10-10",
+"zone": "NL",
+"result": "refetched",
+"was": 124.43,
+"now": 50.69,
+"second_source": 50.69
+},
+{
+"day": "2026-10-09",
+"zone": "ES",
+"result": "refetched",
+"was": 106.57,
+"now": 107.37,
+"second_source": 107.37
+},
+{
+"day": "2026-10-09",
+"zone": "CH",
+"result": "refetched",
+"was": 203.76,
+"now": 200.34,
+"second_source": 200.34
+},
+{
+"day": "2026-10-10",
+"zone": "HU",
+"result": "refetched",
+"was": 186.07,
+"now": 247.38,
+"second_source": 247.38
 }
 ]
 }
