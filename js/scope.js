@@ -30,7 +30,7 @@
   }
   function pill() {
     let p = document.getElementById('pk-scope-pill');
-    if (scope !== 'FR') { if (p) p.remove(); return; }
+    if (scope !== 'FR' || document.getElementById('pk-zone')) { if (p) p.remove(); return; }
     if (!p) {
       p = document.createElement('button');
       p.id = 'pk-scope-pill'; p.type = 'button'; p.className = 'pk-scope-pill';
@@ -116,6 +116,12 @@
     get: () => scope,
     zones: () => scope === 'FR' ? FR_ZONES.slice() : null,
     openLegacy() { legacy = true; origSwitch('france'); },
+    // zone choice of the top bar (js/nav-v2.js): switch the scope, stay on the page
+    set(s) {
+      setScope(s === 'FR' ? 'FR' : 'all');
+      const p = document.querySelector('.page.active'), id = p ? p.id.replace('page-', '') : null;
+      if (id && scope === 'FR') { presetPage(id); preset.add('f:' + id); runFiltersFor(id); }
+    },
   };
 
   // ── hook into the existing navigation (after news.js has wrapped showPage) ──
@@ -137,7 +143,7 @@
       if (scope === 'FR') { tabs('france'); presetPage(id); if (!preset.has('f:' + id)) { preset.add('f:' + id); runFiltersFor(id); } }
     };
     applyChrome();
-    if (scope === 'FR') { priceZones(); runFilter('ticker'); window.showPage('morning'); }
+    if (scope === 'FR') { priceZones(); runFilter('ticker'); if (!window.PKNav) window.showPage('morning'); }
   }, 0));
 
   const css = document.createElement('style');

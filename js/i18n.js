@@ -4,13 +4,15 @@
 // dictionary (assets/i18n_fr.json, exact text → French), on the page and on
 // everything drawn later (MutationObserver), and in chart legends and axis
 // titles (Chart.js plugin). Texts computed from the data stay in English for
-// now. The choice is kept in this browser (pk-lang); back to English reloads.
+// now. French by default; the choice is kept in this browser (pk-lang);
+// back to English reloads.
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
   const KEY = 'pk-lang';
   let lang = 'en', D = null;
-  try { lang = localStorage.getItem(KEY) === 'fr' ? 'fr' : 'en'; } catch (_) {}
+  // French by default; a choice made with the EN / FR button is kept in this browser
+  try { lang = localStorage.getItem(KEY) === 'en' ? 'en' : 'fr'; } catch (_) { lang = 'fr'; }
   const norm = s => s.replace(/\s+/g, ' ').trim();
   const tr = s => { if (!D || typeof s !== 'string') return s; const v = D[norm(s)]; return v == null ? s : s.match(/^\s*/)[0] + v + s.match(/\s*$/)[0]; };
   const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE']);
