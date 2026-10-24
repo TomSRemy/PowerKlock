@@ -68,9 +68,8 @@ def _r2_size():
         return None
 
 
-def checks():
-    out = []
-    add = lambda dataset, key, what, repair: out.append({'id': f'{dataset}:{key}', 'dataset': dataset, 'what': what, 'repair': repair})
+def _check_daily_files(add):
+    """day-ahead prices and France production in the daily files, 400 days"""
     # prices and generation, daily files
     last_day = TODAY + timedelta(days=1) if NOW.hour * 60 + NOW.minute >= 13 * 60 + 30 else TODAY
     for k in range(-1, 400):
@@ -93,6 +92,10 @@ def checks():
             size = len(nuc) if isinstance(nuc, list) and len(nuc) in (24, 96) else 96   # hourly files (Energy-Charts history) hold 24 values
             if n < size * 0.92:
                 add('generation', d.isoformat(), f'{d.isoformat()}: France production by source {n}/{size} {"hours" if size == 24 else "quarter-hours"}', 'auto: the next day’s finalisation')
+
+
+def _check_rte(add):
+    """RTE éCO2mix days of this month and the previous one"""
     # RTE éCO2mix
     first = (TODAY.replace(day=1) - timedelta(days=1)).replace(day=1)
     d = first
@@ -106,6 +109,10 @@ def checks():
             if bad:
                 add('rte', d.isoformat(), f'{d.isoformat()}: RTE éCO2mix incomplete ({", ".join(bad)})', 'flagged: RTE job (3 runs a day)')
         d += timedelta(days=1)
+
+
+def _check_commodities(add):
+    """commodity series: last close and business days missing"""
     # commodities
     cs = (load('data/history/commodities_series.json') or {}).get('series') or {}
     for k, lab in (('brent', 'Brent'), ('ttf', 'TTF day-ahead'), ('eua', 'EUA'), ('coal', 'API2 coal'), ('agsi', 'EU gas storage')):
@@ -119,6 +126,10 @@ def checks():
         for a, b in zip(recent, recent[1:]):
             if bdays_between(a, b) - 1 >= 2:
                 add('commodities', f'{k}:{a.isoformat()}', f'{lab}: {bdays_between(a, b) - 1} business days missing after {a.isoformat()}', 'flagged: not refetched (source keeps its history)')
+
+
+def _check_forwards(add):
+    """France calendar forwards: last settlement"""
     # forwards
     ch = ((load('data/history/fr_market_calchain.json') or {}).get('FR') or {}).get('years') or {}
     if ch:
@@ -128,12 +139,20 @@ def checks():
             add('forwards', 'cal1', f'France Cal {y}: last settlement {lastd.isoformat()}', 'flagged: market job (daily)')
     else:
         add('forwards', 'cal1', 'France calendar forwards: no file', 'flagged: market job (daily)')
+
+
+def _check_cr(add):
+    """output of the parks under complément de rémunération"""
     # CR parks' output (ODRÉ, monthly, about six weeks late)
     cr = (load('data/history/cr_production.json') or {}).get('days') or {}
     m2 = (TODAY.replace(day=1) - timedelta(days=40)).replace(day=1)
     months = {k[:7] for k in cr}
     if cr and m2.strftime('%Y-%m') not in months and TODAY.day > 20:
         add('cr', m2.strftime('%Y-%m'), f'Parks under complément de rémunération: {m2.strftime("%Y-%m")} not published or not read', 'flagged: RTE job (ODRÉ monthly)')
+
+
+def _check_price_second_source(add):
+    """day-ahead prices against the second source"""
     # second source: days whose average differs from Energy-Charts (scripts/verify_prices.py)
     pc = load('data/history/price_check.json') or {}
     # the check itself must keep running: a second source not consulted for 2 days is a hole too
@@ -158,6 +177,10 @@ def checks():
             recent = (NOW.date() - date.fromisoformat(row['day'])).days <= 30
             add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts",
                 'auto: asked again to ENTSO-E' if recent else 'older than 30 days: run the repair_prices workflow for this zone')
+
+
+def _check_market_second_sources(add):
+    """production, Brent and EUR/USD against their second sources"""
     # second sources for France production (RTE vs Energy-Charts), Brent and EUR/USD (FRED): scripts/verify_markets.py
     mc = load('data/history/market_check.json') or {}
     for row in ((mc.get('generation') or {}).get('days') or []):
@@ -175,6 +198,10 @@ def checks():
         mage = 999
     if mage > 48:
         add('mktcheck', 'stale', f'Second sources for production and markets not consulted for {int(mage)} h', 'flagged: holes job, once a day')
+
+
+def _check_storage(add):
+    """storage: data folder, large files, R2 bucket"""
     # storage: the data folder (GitHub: 1 GB advised for the whole repository) and, once used, the R2 bucket
     # (10 GB free, then billed): flagged at 80 % of the limit
     tot = 0
@@ -203,6 +230,10 @@ def checks():
         STORAGE['r2_gb'] = round(r2 / 1e9, 3)
         if r2 > 8e9:
             add('storage', 'r2', f'R2 bucket {r2 / 1e9:.2f} GB of the 10 GB free (billed beyond)', 'flagged: clean old files')
+
+
+def _check_activation(add):
+    """mFRR activation prices"""
     # activation prices
     act = (load('data/history/fr_activation.json') or {}).get('days') or {}
     if act:
@@ -210,6 +241,15 @@ def checks():
             d = (TODAY - timedelta(days=k)).isoformat()
             if d >= min(act) and not (act.get(d) or {}).get('mfrr'):
                 add('activation', d, f'{d}: no mFRR activation price', 'auto: the daily job refetches 14 days')
+
+
+def checks():
+    """every hole and disagreement, one function per kind of data (same order as before the split)"""
+    out = []
+    add = lambda dataset, key, what, repair: out.append({'id': f'{dataset}:{key}', 'dataset': dataset, 'what': what, 'repair': repair})
+    for check in (_check_daily_files, _check_rte, _check_commodities, _check_forwards, _check_cr,
+                  _check_price_second_source, _check_market_second_sources, _check_storage, _check_activation):
+        check(add)
     return out
 
 
