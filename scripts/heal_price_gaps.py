@@ -4,7 +4,7 @@ summary index is rebuilt. Runs after every data fetch; does nothing when there i
 
     ENTSOE_TOKEN=… python scripts/heal_price_gaps.py [--days 400]
 """
-import json, os, sys
+import json, os, sys, time
 from datetime import date, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import enrich_summary as es
@@ -18,8 +18,8 @@ def main():
     token = os.environ.get('ENTSOE_TOKEN')
     if not token:
         sys.exit('ENTSOE_TOKEN missing')
-    healed = 0
-    for k in range(1, days + 1):   # yesterday and before: today and tomorrow are the main fetch's job
+    healed, calls, CAP = 0, 0, 120   # at most 120 requests a run, one every 0.3 s: far under ENTSO-E's 400 a minute; a big hole is filled over a few runs
+    for k in range(1, days + 1):   # yesterday and before, newest first: today and tomorrow are the main fetch's job
         d = date.today() - timedelta(days=k)
         fp = os.path.join(DAILY, d.isoformat() + '.json')
         if not os.path.exists(fp):
@@ -32,6 +32,9 @@ def main():
             continue
         got = {}
         for z in holes:
+            if calls >= CAP:
+                break
+            calls += 1; time.sleep(0.3)
             try:
                 h = es.fetch_prices_for_date(token, z, d)
             except Exception as e:
@@ -46,6 +49,8 @@ def main():
         json.dump(snap, open(fp, 'w'), separators=(',', ':'))
         healed += 1
         print(f'{d}: filled {sorted(got)}')
+    if calls >= CAP:
+        print(f'request cap reached ({CAP}): the rest at the next run')
     if healed:
         es.recalc_summary_from_daily()
     print(f'{healed} day(s) healed')
