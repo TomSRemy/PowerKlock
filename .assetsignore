@@ -1,0 +1,20 @@
+# Not published by the Cloudflare Worker (wrangler.jsonc): only the site and its data are
+.git
+.github
+.cache
+.wrangler
+node_modules
+scripts
+tests
+warehouse
+supabase
+docs
+config
+**/__pycache__
+*.py
+*.pyc
+*.md
+wrangler.jsonc
+.assetsignore
+.gitignore
+.env*

@@ -5,3 +5,5 @@ config.local.js
 __pycache__/
 *.pyc
 .cache/
+.wrangler/
+node_modules/
