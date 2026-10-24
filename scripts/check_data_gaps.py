@@ -15,6 +15,7 @@ Checks (each issue has a stable id, so it is followed run after run):
   forwards    France Cal+1 settlement older than 4 business days
   cr          ODRÉ output of the parks under complément de rémunération: months up to M-2
   activation  mFRR activation prices, last 60 days
+  pricecheck  days whose day-ahead average differs from Energy-Charts by more than 0.5 €/MWh
 
 Repairs: prices and generation are fetched again by scripts/heal_price_gaps.py and the retry
 slots of the data fetch; the others are flagged here until their job brings them back.
@@ -114,6 +115,11 @@ def checks():
     months = {k[:7] for k in cr}
     if cr and m2.strftime('%Y-%m') not in months and TODAY.day > 20:
         add('cr', m2.strftime('%Y-%m'), f'Parks under complément de rémunération: {m2.strftime("%Y-%m")} not published or not read', 'flagged: RTE job (ODRÉ monthly)')
+    # second source: days whose average differs from Energy-Charts (scripts/verify_prices.py)
+    pc = load('data/history/price_check.json') or {}
+    for z, info in (pc.get('zones') or {}).items():
+        for row in info.get('days') or []:
+            add('pricecheck', f"{row['day']}:{z}", f"{row['day']}: {z} day-ahead {row['ours']} €/MWh here, {row['ec']} at Energy-Charts", 'auto: asked again to ENTSO-E (last 30 days)')
     # activation prices
     act = (load('data/history/fr_activation.json') or {}).get('days') or {}
     if act:

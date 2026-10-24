@@ -1,0 +1,45 @@
+name: Repair day-ahead price history
+
+# Rebuilds the day-ahead history of some zones from ENTSO-E (scripts/repair_prices.py, a year per
+# request, the European coupling series kept), then compares every zone with the second source
+# (scripts/verify_prices.py → price_check.json). First run: Germany-Luxembourg and Austria since 2020.
+
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/repair_prices.py', '.github/workflows/repair_prices.yml']
+  workflow_dispatch:
+    inputs:
+      zones: { description: 'Zones (comma separated)', default: 'DE_LU,AT' }
+      since: { description: 'From (YYYY-MM-DD)', default: '2020-01-01' }
+
+concurrency:
+  group: fetch-energy-data      # the same files as the data fetch: one at a time
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q requests==2.33.1
+      - name: Rebuild
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/repair_prices.py --zones "${{ inputs.zones || 'DE_LU,AT' }}" --from "${{ inputs.since || '2020-01-01' }}"
+      - name: Compare with the second source (whole period)
+        continue-on-error: true
+        run: python scripts/verify_prices.py --since "${{ inputs.since || '2020-01-01' }}"
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
+          git add data/history/daily data/history/summary.json data/history/repair_log.json data/history/price_check.json
+          git diff --staged --quiet && exit 0
+          git commit -q -m "data: day-ahead history repaired (${{ inputs.zones || 'DE_LU,AT' }})"
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done
+          exit 1
