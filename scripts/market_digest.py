@@ -9,7 +9,7 @@ short topics in its own words: France first (politics, nuclear, regulation,
 weather), then the world events that move European prices. No source is named
 and nothing is quoted, so the file can be public.
 
-Out  data/market_digest.json  {"updated", "asof", "context": [{"topic", "text", "tone"}]}
+Out  data/market_digest.json  {"updated", "asof", "context": [{"topic", "text", "tone"}], "outlook": {market: {"tone", "text"}}}
 Called by scripts/fetch_market_notes.py with the notes it just read; runs alone
 (without the e-mailed note) with: python scripts/market_digest.py
 """
@@ -83,14 +83,17 @@ Règles :
 - Ne répète pas les variations de prix seules (elles sont affichées ailleurs) : explique les causes.
 - tone = "up" si le sujet pousse les prix à la hausse, "down" à la baisse, "flat" sinon.
 
+Ajoute aussi le SENTIMENT POUR LA SEMAINE À VENIR, marché par marché (pétrole, gaz, électricité, carbone) : ce que les notes et l'actualité laissent attendre pour les prochains jours, en une phrase courte (12 mots au plus) avec la raison principale ; tone = "up", "down" ou "flat". Pas de note sur un marché : déduis-le des chiffres et de l'actualité, sans inventer.
+
 Réponds uniquement avec ce JSON, sans texte autour :
-{"context":[{"topic":"France","text":"…","tone":"up"}]}"""
+{"context":[{"topic":"France","text":"…","tone":"up"}],
+ "outlook":{"oil":{"tone":"up","text":"…"},"gas":{"tone":"up","text":"…"},"power":{"tone":"flat","text":"…"},"carbon":{"tone":"flat","text":"…"}}}"""
 
 
 def ask(payload):
     # the Anthropic API when its key and model are set (secret ANTHROPIC_API_KEY, variable DIGEST_MODEL);
     # otherwise the site's AI proxy, whose model writes vaguer French
-    msg = {"max_tokens": 900, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
+    msg = {"max_tokens": 1400, "system": SYSTEM, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
     key, model = os.environ.get("ANTHROPIC_API_KEY"), os.environ.get("DIGEST_MODEL")
     global ENGINE
     if key and model:
@@ -109,12 +112,17 @@ def ask(payload):
         if not m:
             raise ValueError("no JSON in the answer: " + txt[:200])
         out = json.loads(m.group(0))
-    ctx = [c for c in out.get("context", []) if c.get("topic") and c.get("text")][:4]
+    look = {}
+    for k, v in (out.get("outlook") or {}).items():
+        if k in ("oil", "gas", "power", "carbon") and isinstance(v, dict) and v.get("text"):
+            look[k] = {"tone": v.get("tone") if v.get("tone") in ("up", "down", "flat") else "flat", "text": str(v["text"]).strip()}
+    empty = re.compile(r"(?i)(pas d.impact notable|aucun (événement|impact)|rien de notable|pas d.événement)")   # the proxy's model writes them anyway
+    ctx = [c for c in out.get("context", []) if c.get("topic") and c.get("text") and not empty.search(c["text"])][:4]
     for c in ctx:
         c["tone"] = c.get("tone") if c.get("tone") in ("up", "down", "flat") else "flat"
     if not ctx:
         raise ValueError("empty context")
-    return ctx
+    return ctx, look
 
 
 def run(notes=None):
@@ -131,9 +139,9 @@ def run(notes=None):
     mi, d = fm.get("marketInsights") or {}, (fm.get("marketInsightsDate") or fm.get("lastUpdate") or "")[:10]
     if mi and (mi.get("gas") or mi.get("power")):
         payload["notes"].append({"date": d, "kind": "daily energy report", "gas": plain(mi.get("gas"))[:3000], "power": plain(mi.get("power"))[:3000]})
-    ctx = ask(payload)
+    ctx, look = ask(payload)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
-               "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx}, open(OUT, "w"), ensure_ascii=False, indent=1)
+               "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx, "outlook": look}, open(OUT, "w"), ensure_ascii=False, indent=1)
     print("digest:", [c["topic"] for c in ctx])
 
 
