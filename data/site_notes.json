@@ -1,6 +1,99 @@
 {
- "open": 0,
+ "open": 5,
  "notes": [
+  {
+   "id": 6,
+   "status": "open",
+   "created_at": "2026-10-25T10:22+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": null,
+   "target_id": "mrn-news",
+   "target_label": "In the news (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(2)",
+    "pk-zone": "Europe"
+   },
+   "body": "même taille que what moved and why",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 7,
+   "status": "open",
+   "created_at": "2026-10-25T10:23+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "morning",
+    "pk-zone": "Europe"
+   },
+   "body": "TTF forward: pk pas mmeme taille que fr forward ?",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 8,
+   "status": "open",
+   "created_at": "2026-10-25T10:23+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "morning",
+    "pk-zone": "Europe"
+   },
+   "body": "GO a cote de TTf forward ? aucun sens",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 9,
+   "status": "open",
+   "created_at": "2026-10-25T10:24+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-creg",
+   "target_label": "Capture rate by region (chart)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(1) > div:nth-of-type(2)",
+    "pk-zone": "Europe"
+   },
+   "body": "pk que le solaire and capture rate ? Et sur quel horizon de tmps ?",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 10,
+   "status": "open",
+   "created_at": "2026-10-25T10:24+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-30d",
+   "target_label": "The next 4 weeks · France (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > section:nth-of-type(3)",
+    "pk-zone": "Europe"
+   },
+   "body": "il y avait pas une autre arre à droite avant ?",
+   "reply": null,
+   "done_at": null
+  },
   {
    "id": 1,
    "status": "done",
