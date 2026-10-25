@@ -272,9 +272,9 @@ function _mrnDayStats(hr) {
 // everything the spot block, the tiles and the 4-week block need, fetched once
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
-  const [a, b, c, fwd, cs, chain, sum, neg, gos] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv()]);
+  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json')]);
   const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
-  const k = { t, tm, y, cs, P, gos, neg };
+  const k = { t, tm, y, cs, P, gos, neg, look: dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.outlook || {}) : {} };
   const fr = j => j && j.zones && j.zones.FR;
   k.today = _mrnHourly(fr(a)); k.tomorrow = _mrnHourly(fr(b)); k.yday = _mrnHourly(fr(c));
   k.fc = neg && neg.days && neg.days[tm] ? neg.days[tm] : null;
@@ -330,33 +330,34 @@ function _mrnSpot(k) {
       pkFcZone: fc ? { from: 24, now: nowH, label: _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-today-tomorrow');
 }
 
-// ── tiles: France forwards (three calendar years), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
+// ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
 function _mrnTiles(k) {
   const host = document.getElementById('mrn-kpis'); if (!host) return;
   const since = (pts, days) => { const l = _mrnLast(pts); if (!l) return []; const t0 = new Date(l[0] + 'T12:00:00Z'); t0.setUTCDate(t0.getUTCDate() - days); const kk = t0.toISOString().slice(0, 10); return pts.filter(p => p[0] >= kk); };
   const ch7 = pts => { const l = _mrnLast(pts), b = _mrnBack(pts, 7); return l && b ? (l[1] / b - 1) * 100 : null; };
   const tone = (c, inv) => c == null || Math.abs(c) < 0.5 ? '' : (c > 0) !== !!inv ? 'up' : 'down';
   const foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
+  // the week ahead, as in « What moved and why »: the market notes' call, else the direction prices took over 7 days
+  const pill = (key, c) => { const o = key && k.look[key], t = o && o.tone ? o.tone : c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
+    return `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}" title="${_mT('Semaine à venir · ', 'Week ahead · ') + (o && o.tone ? _mT('notes de marché', 'market notes') : _mT('tendance des prix', 'price trend'))}">${t === 'up' ? '↑ ' + _mT('haussier', 'bullish') : t === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>`; };
+  const head = (name, key, c) => `<span class="mrn3-th"><span class="mrn2-tn">${name}</span>${pill(key, c)}</span>`;
   const ago = _mT('il y a 60 j', '60 d ago'), now = _mT('auj.', 'today');
   const T = [];
-  if (k.cals.length) {
-    const cols = ['#14D3A9', '#7FC8F8', '#A87DC4'], W = 200, Hh = 46;
-    // each year on its own scale (the next year can trade far above the following ones): the shape of each move shows, the levels are written
-    const line = (s, col) => { const v = s.map(p => p[1]), a = Math.min(...v), z = Math.max(...v); return '<path d="' + v.map((x, i) => (i ? 'L' : 'M') + (i * W / Math.max(1, v.length - 1)).toFixed(1) + ' ' + (Hh - 3 - (x - a) / ((z - a) || 1) * (Hh - 6)).toFixed(1)).join(' ') + `" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`; };
-    T.push(`<a class="mrn2-tile mrn3-w2" href="#markets/forwards" data-route="markets/forwards"><span class="mrn2-tn">${_mT('Forwards France, base · sur 7 j', 'France forwards, base · on 7 d')}</span>
-      <span class="mrn3-fw">${k.cals.map((c, i) => { const l = _mrnLast(c.pts), cc = ch7(c.pts), tn = tone(cc); return `<span><i style="background:${cols[i]}"></i>Cal ${c.y} <b>${_mN(l[1], 1)}</b> <span class="${tn ? 'mrn-' + tn : ''}">${_mS(cc, 1)} %</span></span>`; }).join('')}</span>
-      <svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" aria-hidden="true">${k.cals.map((c, i) => line(since(c.pts, 60), cols[i])).join('')}</svg>${foot(_mT('60 j, chaque année à son échelle', '60 d, each year on its own scale'), now)}</a>`);
+  if (k.cals.length) {   // the next calendar year; the two after it in the footer
+    const c = k.cals[0], l = _mrnLast(c.pts), cc = ch7(c.pts), tn = tone(cc);
+    const rest = k.cals.slice(1).map(x => x.y + ' ' + _mN(_mrnLast(x.pts)[1], 1)).join(' · ');
+    T.push(`<a class="mrn2-tile" href="#markets/forwards" data-route="markets/forwards" title="${_mT('France, base, dernière cotation', 'France, baseload, last settlement')}">${head('Cal ' + c.y, 'power', cc)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(cc, 1)} % <span class="mrn3-dim">${_mT('sur 7 j', 'on 7 d')}</span></span>${_mrnSpark(since(c.pts, 60).map(p => p[1]), tn)}${foot(rest, now)}</a>`);
   }
-  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf'], ['eua', 'EUA', '€/t', 'markets/fuels'], ['brent', 'Brent', '$/b', 'markets/fuels']].forEach(([key, n, u, r]) => {
+  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas'], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon'], ['brent', 'Brent', '$/b', 'markets/fuels', 'oil']].forEach(([key, n, u, r, mk]) => {
     const pts = k.P(key), l = _mrnLast(pts); if (!l) return;
     const c = ch7(pts), tn = tone(c);
-    T.push(`<a class="mrn2-tile" href="#${r}" data-route="${r}"><span class="mrn2-tn">${n}</span><span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(c, 1)} % <span class="mrn3-dim">${_mT('sur 7 j', 'on 7 d')}</span></span>${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(ago, now)}</a>`);
+    T.push(`<a class="mrn2-tile" href="#${r}" data-route="${r}">${head(n, mk, c)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(c, 1)} % <span class="mrn3-dim">${_mT('sur 7 j', 'on 7 d')}</span></span>${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(ago, now)}</a>`);
   });
   if (k.gos) {
     const y = +_mrnToday().slice(0, 4), g1 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y + 1), g0 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y);
     if (g1.length > 1) {
       const l = g1[g1.length - 1].mid, d = l - g1[g1.length - 2].mid, tn = Math.abs(d) < 1e-6 ? '' : d > 0 ? 'up' : 'down';
-      T.push(`<a class="mrn2-tile" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}"><span class="mrn2-tn">GO Cal ${y + 1}</span><span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? 'Cal ' + y + ' ' + _mN(g0[g0.length - 1].mid, 3) : '', _mT('6 mois', '6 months'))}</a>`);
+      T.push(`<a class="mrn2-tile" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, g1.length > 4 ? (l / g1[g1.length - 5].mid - 1) * 100 : null)}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? 'Cal ' + y + ' ' + _mN(g0[g0.length - 1].mid, 3) : '', _mT('6 mois', '6 months'))}</a>`);
     }
   }
   const nuc = k.P('fr_nuc_avail'), nl = _mrnLast(nuc), fc = _mrnLast(k.P('fr_nuc_avail_fc'));
@@ -546,15 +547,16 @@ document.addEventListener('click', e => {   // the tiles open the page behind th
   .mrn3-chip.real{color:var(--accent);background:var(--accent-dim)} .mrn3-chip.fc{color:#7FC8F8;background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55)} .mrn3-chip.av{color:var(--text2);background:rgba(122,147,171,.14)}
   .mrn3-big{font:600 22px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums} .mrn3-big small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px} .mrn3-big.fc{color:#7FC8F8}
   .mrn3-kv{font-size:12px;color:var(--text3)} .mrn3-kv b{color:var(--text);font-weight:600} .mrn3-kv b.mrn-up{color:var(--down)} .mrn3-kv b.mrn-dn{color:var(--up)}
-  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(7,minmax(0,1fr))}
+  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}
   .mrn3-w2{grid-column:span 2}
-  @media (max-width:1250px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media (max-width:1250px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .mrn3-fw{display:flex;gap:4px 12px;flex-wrap:wrap;font-size:12px;color:var(--text3);margin-top:3px} .mrn3-fw b{color:var(--text);font:600 13.5px 'JetBrains Mono',monospace}
   .mrn3-fw i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle} .mrn3-fw .mrn-up{color:var(--down)} .mrn3-fw .mrn-down{color:var(--up)}
   .mrn2-tile svg{height:40px}
   .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--text3);margin-top:2px}
   .mrn3-dim{color:var(--text3)}
+  .mrn3-th{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
   .mrn-sec{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);font-weight:600;margin:18px 0 8px}
   `;
   document.head.appendChild(css);
