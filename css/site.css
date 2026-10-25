@@ -88,7 +88,7 @@
   html[data-theme="light"] .logo-img { content: url(../assets/logo-header-light.png); }
   .pk-theme-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; margin-right: 8px; }
   .pk-guard { position: absolute; top: 2px; left: 4px; z-index: 3; max-width: calc(100% - 90px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 10.5px 'JetBrains Mono', monospace; color: #FBBF24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.45); border-radius: 4px; padding: 1px 7px; cursor: pointer; }
-  .pk-zoom-reset { position: absolute; right: 6px; bottom: 6px; z-index: 4; font: 600 11px 'JetBrains Mono', monospace; color: var(--accent); background: var(--bg2); border: 1px solid var(--accent); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+  .pk-zoom-reset { position: absolute; left: 50px; top: 6px; z-index: 4; font: 600 11px 'JetBrains Mono', monospace; color: var(--accent); background: var(--bg2); border: 1px solid var(--accent); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
   .pk-zoom-reset:hover { background: var(--accent-dim); }
   .pk-guard-inline { position: static; display: inline-block; margin: 3px 0 0; max-width: 100%; }
   .pk-guard:hover { background: rgba(251,191,36,.22); }
@@ -3311,3 +3311,11 @@ p.mrn-x { margin: 0 0 8px; border-left: 2px solid var(--accent, #14D3A9); paddin
 .mrn-qa:hover { border-color: var(--text3); }
 .mrn-qa.on { border-color: var(--accent, #14D3A9); color: var(--accent, #14D3A9); background: rgba(20,211,169,.1); }
 .mrn-qres { margin: 0; font-size: 13px; color: var(--text2); }
+/* Today tiles: they open their chart, so they look like it */
+a.mrn2-tile { cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
+a.mrn2-tile:hover, a.mrn2-tile:focus-visible { border-color: var(--accent, #14D3A9) !important; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.25); outline: none; }
+a.mrn2-tile .mrn3-tx > span:last-child::after { content: '  ⤢'; color: var(--accent, #14D3A9); opacity: .55; font-size: 12px; }
+a.mrn2-tile:hover .mrn3-tx > span:last-child::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { a.mrn2-tile { transition: none; } a.mrn2-tile:hover { transform: none; } }
+.mrn-i { font-size: 12px; color: var(--accent, #14D3A9); cursor: help; margin-left: 4px; text-transform: none; letter-spacing: 0; }
+.mrn-30d-take { color: var(--text) !important; font-family: inherit !important; font-size: 12.5px !important; }

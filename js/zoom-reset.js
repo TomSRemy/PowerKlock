@@ -12,8 +12,12 @@
     const zoomed = typeof ch.isZoomedOrPanned === 'function' && ch.isZoomedOrPanned();
     let b = host.querySelector(':scope > .pk-zoom-reset');
     if (!zoomed) { if (b) b.remove(); return; }
-    if (b) return;
-    b = document.createElement('button'); b.type = 'button'; b.className = 'pk-zoom-reset'; b.textContent = '↺ Reset zoom'; b.title = 'Back to the full view (or double-click the chart)';
+    // top-left corner of the plot area: clear of the axes, the legend and the chart's own buttons (top right)
+    const place = x => { const a = ch.chartArea; if (!a) return; x.style.left = Math.round(a.left + 8) + 'px'; x.style.top = Math.round(a.top + 6) + 'px'; };
+    if (b) { place(b); return; }
+    const fr = !window.PKI18n || PKI18n.lang !== 'en';
+    b = document.createElement('button'); b.type = 'button'; b.className = 'pk-zoom-reset'; b.textContent = fr ? '↺ Annuler le zoom' : '↺ Reset zoom'; b.title = fr ? 'Revenir à la vue complète (ou double-clic sur le graphique)' : 'Back to the full view (or double-click the chart)';
+    place(b);
     b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); try { ch.resetZoom(); } catch (_) {} });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => b.addEventListener(ev, e => e.stopPropagation()));   // never starts a dashboard drag
     if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
