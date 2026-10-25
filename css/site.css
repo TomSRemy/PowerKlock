@@ -3328,3 +3328,7 @@ a.mrn2-tile:hover .mrn3-tx > span:last-child::after { opacity: 1; }
 .mrn-ao-r > span { flex: 1; min-width: 0; }
 .mrn-ao-r b { font-variant-numeric: tabular-nums; }
 .mrn-ao .mrn3-tx { margin-top: auto; }
+table.mrn-got { table-layout: fixed; width: 100%; }
+table.mrn-got td:not(:first-child), table.mrn-got th:not(:first-child) { text-align: right; }
+table.mrn-got tr.mrn-fwd-g2 th { padding-top: 14px; }
+.mrn-sys-t .mrn3-tx { margin-top: auto; }
