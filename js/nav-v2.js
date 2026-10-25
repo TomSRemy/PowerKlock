@@ -426,7 +426,10 @@
     const srch = nav.querySelector('.pk-nv-search');   // phones: the top bar has no room, the zone sits in the menu
     if (srch) srch.insertAdjacentHTML('afterend', '<div class="pk-nv-zone">' + ctl('pk-zone-m') + '</div>');
     const sels = [...document.querySelectorAll('#pk-zone, #pk-zone-m')];
-    const sync = () => { if (window.PKScope) sels.forEach(s => { s.value = PKScope.get() === 'FR' ? 'FR' : 'all'; }); };
+    const sync = () => { if (window.PKScope) sels.forEach(s => {
+      // js/scope.js loads after this file: its country list replaces the France-only fallback
+      if (PKScope.countries && s.options.length < 3) s.innerHTML = '<option value="all">Europe</option>' + PKScope.countries().map(([k, n]) => '<option value="' + k + '">' + n + '</option>').join('');
+      s.value = PKScope.get() || 'all'; }); };
     sync();
     sels.forEach(sel => sel.addEventListener('change', () => { if (window.PKScope && PKScope.set) PKScope.set(sel.value); sync(); }));
     window.addEventListener('load', () => setTimeout(sync, 50));
