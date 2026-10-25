@@ -611,7 +611,8 @@ async function _mrnWeeks(k, el) {
       `<div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, nu[1] / FLEET * 100).toFixed(1)}%;background:${short ? 'var(--down)' : 'var(--up)'}"></div>${nf ? `<div class="mrn2-mark" style="left:${Math.min(100, nf[1] / FLEET * 100).toFixed(1)}%"></div>` : ''}</div>` +
       `<div class="mrn2-gs">${nf ? _mT('Repère : prévision d’EDF ', 'Mark: EDF forecast ') + _mN(nf[1] / 1000, 1) + ' GW (' + _mS((nu[1] - nf[1]) / 1000, 1) + ' GW)' : ''}${ny != null ? ' · ' + _mS((nu[1] - ny) / 1000, 1) + _mT(' GW vs il y a un an', ' GW vs a year ago') : ''}</div></div>`);
   }
-  if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
+  // the weeks' table on the left, the two gauges stacked on the right: values stay close to their labels
+  if (g.length) html = `<div class="mrn-w4"><div class="mrn-w4-t">${html}</div><div class="mrn2-gauges mrn-gcol">${g.join('')}</div></div>`;
   const why = '';
   const take = [];
   const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
@@ -883,7 +884,7 @@ async function renderMorning() {
     },
     'hs-morning-fund': () => {   // the CATE presentation's supply and demand charts
       [['fr-cal-drivers', 'mrn-drv', { win: '6M', country: 'FR' }], ['gas-storage-years', 'mrn-gsy', {}], ['nuc-monthly-years', 'mrn-nucy', {}], ['hydro-reservoirs', 'mrn-hyd', { country: 'FR' }],
-        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
+        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['fr-load-normal', 'mrn-fload', {}], ['remit-unavail', 'mrn-fremit', { period: '6M' }], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
         .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {

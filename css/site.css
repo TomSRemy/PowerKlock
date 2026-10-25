@@ -3355,3 +3355,8 @@ tr.mrn-wrow[data-tile="idx"] th, tr.mrn-wrow[data-tile="idx"] td { border-top: 1
 .fd-res { border-color: var(--accent, #14D3A9); background: rgba(20,211,169,.08); }
 .fd-op { align-self: center; font: 600 16px 'JetBrains Mono', monospace; color: var(--text3); }
 .mrn-fund-grp { font: 600 11px 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--accent, #14D3A9); margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); }
+.mrn-w4 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px 28px; align-items: center; }
+.mrn-w4-t table.mrn-wtab { margin-bottom: 0; }
+.mrn2-gauges.mrn-gcol { grid-template-columns: 1fr !important; display: grid; gap: 18px; }
+table.mrn-wtab td, table.mrn-wtab thead th:not(:first-child) { text-align: center; }
+@media (max-width: 1000px) { .mrn-w4 { grid-template-columns: 1fr; } }
