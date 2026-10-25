@@ -95,6 +95,9 @@ def main():
                     p.evaluate(f"[...document.querySelectorAll('{scope} .pk-views .tab-btn')][{k}].click()")
                     p.wait_for_timeout(2200)
                 tab = p.evaluate(f"((document.querySelectorAll('{scope} .pk-views .tab-btn')[{k}]) || {{}}).textContent || ''")
+                # folded sections (the morning brief draws theirs when first opened): opened, so their charts are judged too
+                if p.evaluate(f"(() => {{ const h = [...document.querySelectorAll('{scope} .hist-section-strong.collapsed > .hist-section-header')]; h.forEach(x => x.click()); return h.length; }})()"):
+                    p.wait_for_timeout(2500)
                 r = p.evaluate(f"""(() => {{
                     const root = document.querySelector('{scope}');
                     const vis = e => e.offsetParent !== null;
