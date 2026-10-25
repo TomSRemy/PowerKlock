@@ -82,6 +82,17 @@
     if (l) lines.push(l); return lines;
   }
 
+  // ── colours: the site's own (CSS variables), dark by default, light in light mode; series colours by key ──
+  function pal() {
+    const cs = getComputedStyle(document.documentElement), v = (n, f) => (cs.getPropertyValue(n) || '').trim() || f;
+    const light = document.documentElement.getAttribute('data-theme') === 'light';
+    return { light, bg: v('--bg2', '#0f1419'), panel: v('--bg3', '#151c24'), text: v('--text', '#FFFFFF'), text2: v('--text2', '#B8C9D9'), text3: v('--text3', '#7A93AB'),
+      grid: v('--border', '#1e2d3d'), axis: v('--border2', '#243447'), accent: v('--accent', '#14D3A9'), down: v('--down', '#ED6965'),
+      series: light ? { short: '#D2453F', long: '#EC8B86', da: '#5F738A', load: '#13202E', nuc: '#7C4DDB', wind: '#0E8FA3', solar: '#D98A06' }
+        : { short: '#ED6965', long: '#F2A3A0', da: '#B8C9D9', load: '#FFFFFF', nuc: '#B794F6', wind: '#7FC8F8', solar: '#FBBF24' } };
+  }
+  new MutationObserver(() => { if (S.data) draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
   // ── drawing ──
   function nice(lo, hi) {
     const span = hi - lo || 1, step0 = span / 5, p = Math.pow(10, Math.floor(Math.log10(step0))), step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= step0);
@@ -91,32 +102,33 @@
     const cv = document.getElementById('rp-canvas'); if (!cv || !S.data) return;
     const [W, H] = FORMATS[S.fmt]; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
     const c = cv.getContext('2d'), wide = W / H > 1.4, k = W / 1280 * (wide ? 1 : 1.12), P = 48 * k;
-    const ser = S.data[S.mode], t = Math.max(S.from, Math.min(S.to, S.t)), qi = Math.floor(t);
-    c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, W, H);
+    const C = pal(), ser = S.data[S.mode].map(x => Object.assign({}, x, { color: C.series[x.key] || x.color })), t = Math.max(S.from, Math.min(S.to, S.t)), qi = Math.floor(t);
+    c.fillStyle = C.bg; c.fillRect(0, 0, W, H);
     const F = (w, px, fam) => `${w} ${Math.round(px * k)}px ${fam || 'Inter, system-ui, sans-serif'}`;
     // header: brand, date, clock, the headline value
-    c.fillStyle = '#0B1118'; c.font = F(700, 22); c.textBaseline = 'top'; c.fillText('Power', P, P);
-    const bw = c.measureText('Power').width; c.fillStyle = '#14B892'; c.fillText('.Klock', P + bw, P);
+    c.fillStyle = C.text; c.font = F(700, 22); c.textBaseline = 'top'; c.fillText('Power', P, P);
+    const bw = c.measureText('Power').width; c.fillStyle = C.accent; c.fillText('.Klock', P + bw, P);
     const dl = new Date(S.day + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-    c.fillStyle = '#5B6F84'; c.font = F(500, 18); c.fillText(T('France · ', 'France · ') + dl, P, P + 36 * k);
-    c.fillStyle = '#0B1118'; c.font = F(700, 84, "'JetBrains Mono', ui-monospace, monospace"); c.fillText(hh(qi), P, P + 66 * k);
+    c.fillStyle = C.text3; c.font = F(500, 18); c.fillText(T('France · ', 'France · ') + dl, P, P + 36 * k);
+    c.fillStyle = C.text; c.font = F(700, 84, "'JetBrains Mono', ui-monospace, monospace"); c.fillText(hh(qi), P, P + 66 * k);
     const head = ser[0], hv = head && head.v[qi];
     let x0 = P + c.measureText('00:00').width + 36 * k;
     if (head) {
-      c.fillStyle = '#5B6F84'; c.font = F(500, 17); c.fillText(head.name, x0, P + 74 * k);
+      c.fillStyle = C.text3; c.font = F(500, 17); c.fillText(head.name, x0, P + 74 * k);
       c.fillStyle = head.color; c.font = F(700, 42, "'JetBrains Mono', ui-monospace, monospace"); c.fillText(fmtN(hv, 0) + ' ' + unit(), x0, P + 98 * k);
       const ref = S.mode === 'prices' ? ser.find(s => s.key === 'da') : null;
       if (ref && hv != null && ref.v[qi]) {
         const r = hv / ref.v[qi], txt = Math.abs(r) >= 1.5 ? fmtN(r, 1) + T(' × le day-ahead', ' × the day-ahead') : T('day-ahead ', 'day-ahead ') + fmtN(ref.v[qi], 0);
         c.font = F(600, 17); const tw = c.measureText(txt).width + 24 * k, ty = P + 150 * k;
-        c.fillStyle = Math.abs(r) >= 1.5 ? '#FDECEC' : '#EEF2F6'; roundRect(c, x0, ty, tw, 30 * k, 15 * k); c.fill();
-        c.fillStyle = Math.abs(r) >= 1.5 ? '#B3261E' : '#3A4A5A'; c.textBaseline = 'middle'; c.fillText(txt, x0 + 12 * k, ty + 15 * k); c.textBaseline = 'top';
+        const hot = Math.abs(r) >= 1.5;
+        c.fillStyle = hot ? (C.light ? 'rgba(210,69,63,.12)' : 'rgba(237,105,101,.18)') : C.panel; roundRect(c, x0, ty, tw, 30 * k, 15 * k); c.fill();
+        c.fillStyle = hot ? C.down : C.text2; c.textBaseline = 'middle'; c.fillText(txt, x0 + 12 * k, ty + 15 * k); c.textBaseline = 'top';
       }
     }
     // the day's extreme so far
     if (head) {
       let mx = -Infinity, mq = null; for (let q = S.from; q <= qi; q++) { const v = head.v[q]; if (v != null && v > mx) { mx = v; mq = q; } }
-      if (mq != null) { c.fillStyle = '#5B6F84'; c.font = F(500, 16); c.textAlign = 'right'; c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, 0) + ' ' + unit() + T(' à ', ' at ') + hh(mq), W - P, P + 4 * k); c.textAlign = 'left'; }
+      if (mq != null) { c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = 'right'; c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, 0) + ' ' + unit() + T(' à ', ' at ') + hh(mq), W - P, P + 4 * k); c.textAlign = 'left'; }
     }
     // chart and bars
     const top = P + (wide ? 200 : 210) * k, bottom = H - P - 70 * k;
@@ -127,8 +139,8 @@
     const yOf = v => chart.y + chart.h - (v - Y.lo) / (Y.hi - Y.lo) * chart.h, xOf = q => chart.x + (q - S.from) / Math.max(1, S.to - S.from) * chart.w;
     c.font = F(500, 14, "'JetBrains Mono', ui-monospace, monospace"); c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let v = Y.lo; v <= Y.hi + 1e-9; v += Y.step) {
-      c.strokeStyle = Math.abs(v) < 1e-9 ? '#AEB9C4' : '#EDF1F4'; c.lineWidth = 1; c.beginPath(); c.moveTo(chart.x, yOf(v)); c.lineTo(chart.x + chart.w, yOf(v)); c.stroke();
-      c.fillStyle = '#5B6F84'; c.fillText(fmtN(v, 0), chart.x - 10 * k, yOf(v));
+      c.strokeStyle = Math.abs(v) < 1e-9 ? C.text3 : C.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(chart.x, yOf(v)); c.lineTo(chart.x + chart.w, yOf(v)); c.stroke();
+      c.fillStyle = C.text3; c.fillText(fmtN(v, 0), chart.x - 10 * k, yOf(v));
     }
     c.textAlign = 'center'; c.textBaseline = 'top';
     for (let q = Math.ceil(S.from / 16) * 16; q <= S.to; q += 16) c.fillText(hh(q), xOf(q), chart.y + chart.h + 10 * k);
@@ -142,26 +154,26 @@
       c.stroke(); c.setLineDash([]);
     });
     if (head && hv != null) { c.fillStyle = head.color; c.beginPath(); c.arc(xOf(qi), yOf(hv), 6 * k, 0, 2 * Math.PI); c.fill(); }
-    c.strokeStyle = '#0B1118'; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(xOf(t), chart.y); c.lineTo(xOf(t), chart.y + chart.h); c.stroke();
+    c.strokeStyle = C.text2; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(xOf(t), chart.y); c.lineTo(xOf(t), chart.y + chart.h); c.stroke();
     // bars: each series at this quarter-hour
     const n = ser.length, gap = 16 * k, bwid = (bars.w - gap * (n - 1)) / n, base = bars.y + bars.h - 34 * k, tall = bars.h - 70 * k;
     const bmax = Math.max(...vals.map(Math.abs), 1);
-    c.strokeStyle = '#AEB9C4'; c.lineWidth = 1; c.beginPath(); c.moveTo(bars.x, base); c.lineTo(bars.x + bars.w, base); c.stroke();
+    c.strokeStyle = C.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(bars.x, base); c.lineTo(bars.x + bars.w, base); c.stroke();
     ser.forEach((s, i) => {
       const v = s.v[qi], x = bars.x + i * (bwid + gap), h = v == null ? 0 : Math.abs(v) / bmax * tall;
-      c.fillStyle = s.color; c.globalAlpha = s.key === 'long' ? 0.75 : 1;
+      c.fillStyle = s.color; c.globalAlpha = s.key === 'long' && C.light ? 0.75 : 1;
       if (v != null) { if (v >= 0) c.fillRect(x, base - h, bwid, h); else c.fillRect(x, base, bwid, Math.min(h, 30 * k)); }
-      c.globalAlpha = 1; c.fillStyle = '#0B1118'; c.font = F(700, 18, "'JetBrains Mono', ui-monospace, monospace"); c.textAlign = 'center';
+      c.globalAlpha = 1; c.fillStyle = C.text; c.font = F(700, 18, "'JetBrains Mono', ui-monospace, monospace"); c.textAlign = 'center';
       c.textBaseline = 'bottom'; c.fillText(fmtN(v, S.mode === 'prices' ? 0 : 1), x + bwid / 2, (v != null && v >= 0 ? base - h : base) - 6 * k);
-      c.textBaseline = 'top'; c.fillStyle = '#3A4A5A'; c.font = F(500, 14); c.fillText(s.name, x + bwid / 2, base + 8 * k); c.textAlign = 'left';
+      c.textBaseline = 'top'; c.fillStyle = C.text2; c.font = F(500, 14); c.fillText(s.name, x + bwid / 2, base + 8 * k); c.textAlign = 'left';
     });
     // commentary: numbered markers on the moments passed, the caption of the latest one for 3 hours of the day
     (S.events || []).forEach(e => {
       if (e.q > t) return;
       const s = ser.find(x => x.key === e.key) || head, v = s && s.v[e.q]; if (v == null) return;
       const x = xOf(e.q), y = yOf(v) + (v < (Y.lo + Y.hi) / 2 && v < 0 ? 22 : -22) * k;   // a low point gets its marker below
-      c.fillStyle = '#0B1118'; c.beginPath(); c.arc(x, y, 13 * k, 0, 2 * Math.PI); c.fill();
-      c.fillStyle = '#FFFFFF'; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
+      c.fillStyle = C.text; c.beginPath(); c.arc(x, y, 13 * k, 0, 2 * Math.PI); c.fill();
+      c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
     });
     const cur = (S.events || []).filter(e => e.q <= t && t < e.q + 12).pop();
     if (cur) {
@@ -169,17 +181,18 @@
       c.globalAlpha = S.playing ? Math.max(0, a) : 1;
       c.font = F(500, 19); const bw2 = Math.min(chart.w * 0.48, 600 * k), lines = wrap(c, cur.txt, bw2 - 64 * k), bh = (lines.length * 26 + 28) * k;
       const bx = xOf(cur.q) > chart.x + chart.w / 2 ? chart.x + 12 * k : chart.x + chart.w - bw2 - 12 * k, by = chart.y + 8 * k;
-      c.fillStyle = 'rgba(11,17,24,.92)'; roundRect(c, bx, by, bw2, bh, 12 * k); c.fill();
-      c.fillStyle = '#14D3A9'; c.beginPath(); c.arc(bx + 26 * k, by + 28 * k, 13 * k, 0, 2 * Math.PI); c.fill();
-      c.fillStyle = '#0B1118'; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(cur.n), bx + 26 * k, by + 28 * k); c.textAlign = 'left'; c.textBaseline = 'top';
-      c.fillStyle = '#FFFFFF'; c.font = F(500, 19); lines.forEach((l, i) => c.fillText(l, bx + 50 * k, by + 16 * k + i * 26 * k));
+      c.fillStyle = C.panel; roundRect(c, bx, by, bw2, bh, 12 * k); c.fill();
+      c.strokeStyle = C.accent; c.lineWidth = 1.5 * k; c.stroke();
+      c.fillStyle = C.accent; c.beginPath(); c.arc(bx + 26 * k, by + 28 * k, 13 * k, 0, 2 * Math.PI); c.fill();
+      c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(cur.n), bx + 26 * k, by + 28 * k); c.textAlign = 'left'; c.textBaseline = 'top';
+      c.fillStyle = C.text; c.font = F(500, 19); lines.forEach((l, i) => c.fillText(l, bx + 50 * k, by + 16 * k + i * 26 * k));
       c.globalAlpha = 1;
     }
     // footer: progress and source
     const fy = H - P - 22 * k;
-    c.fillStyle = '#E4E9EE'; roundRect(c, P, fy, W - 2 * P, 8 * k, 4 * k); c.fill();
-    c.fillStyle = '#0B1118'; roundRect(c, P, fy, Math.max(8 * k, (W - 2 * P) * (t - S.from) / Math.max(1, S.to - S.from)), 8 * k, 4 * k); c.fill();
-    c.fillStyle = '#5B6F84'; c.font = F(500, 13); c.textBaseline = 'top';
+    c.fillStyle = C.grid; roundRect(c, P, fy, W - 2 * P, 8 * k, 4 * k); c.fill();
+    c.fillStyle = C.accent; roundRect(c, P, fy, Math.max(8 * k, (W - 2 * P) * (t - S.from) / Math.max(1, S.to - S.from)), 8 * k, 4 * k); c.fill();
+    c.fillStyle = C.text3; c.font = F(500, 13); c.textBaseline = 'top';
     c.fillText(S.mode === 'prices' ? T('ENTSO-E · prix des écarts France et day-ahead, au quart d’heure · powerklock', 'ENTSO-E · France imbalance and day-ahead prices, quarter-hourly · powerklock') : T('RTE éCO2mix · production et consommation, au quart d’heure · powerklock', 'RTE éCO2mix · output and consumption, quarter-hourly · powerklock'), P, fy + 16 * k);
     const lab = document.getElementById('rp-time'); if (lab) lab.textContent = hh(qi);
     const sc = document.getElementById('rp-scrub'); if (sc && document.activeElement !== sc) sc.value = String(qi);
@@ -288,8 +301,8 @@
   .rp-wrap{display:flex;flex-direction:column;gap:14px}
   .rp-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .rp-ctl select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 6px;border-radius:4px}
-  .rp-stage{background:#0B1118;border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:center}
-  .rp-stage canvas{max-width:100%;max-height:72vh;width:auto;height:auto;border-radius:8px;background:#fff}
+  .rp-stage{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:center}
+  .rp-stage canvas{max-width:100%;max-height:72vh;width:auto;height:auto;border-radius:8px}
   .rp-bar{display:flex;align-items:center;gap:12px}
   .rp-bar input[type=range]{flex:1;accent-color:#14D3A9}
   .rp-days{display:flex;flex-direction:column;gap:8px}
