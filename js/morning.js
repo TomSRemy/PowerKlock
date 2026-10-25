@@ -371,7 +371,7 @@ function _mrnTileList(k) {
     const rest = k.cals.slice(1).map(x => kv('Cal ' + String(x.y).slice(2), _mN(_mrnLast(x.pts)[1], 1))).join(' · ');
     T.push(`<a class="mrn2-tile" data-tile="cal" href="#markets/forwards" data-route="markets/forwards" title="${_mT('France, base, dernière cotation', 'France, baseload, last settlement')}">${head('Cal ' + c.y, 'power', cc, _mT('Électricité · France', 'Power · France'))}<span class="mrn2-tv">${_mN(l[1], 1)}<small>€/MWh</small></span>${moves(c.pts)}${_mrnSpark(since(c.pts, 60).map(p => p[1]), tn)}${foot(rest, _mT('60 j', '60 d'))}</a>`);
   }
-  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas', _mT('Gaz', 'Gas')], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon', _mT('CO₂', 'CO₂')], ['brent', 'Brent', '$/b', 'markets/fuels', 'oil', _mT('Pétrole', 'Oil')]].forEach(([key, n, u, r, mk, m]) => {
+  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas', _mT('Gaz', 'Gas')], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon', _mT('CO₂', 'CO₂')]].forEach(([key, n, u, r, mk, m]) => {
     const pts = k.P(key), l = _mrnLast(pts); if (!l) return;
     const c = ch7(pts), tn = tone(c);
     T.push(`<a class="mrn2-tile" data-tile="${key}" href="#${r}" data-route="${r}">${head(n, mk, c, m)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span>${moves(pts)}${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(rng60(pts), _mT('60 j', '60 d'))}</a>`);
@@ -641,7 +641,7 @@ const MRN_WIN = {
   nuc: k => ({ name: _mT('Nucléaire disponible', 'Nuclear available'), unit: 'GW', dp: 1, look: null, inv: true, route: 'system/generation/nuclear', page: _mT('Système › Production › Nucléaire', 'System › Generation › Nuclear'),
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
 };
-const MRN_ORDER = ['cal', 'ttf', 'eua', 'brent', 'go', 'nuc'];
+const MRN_ORDER = ['cal', 'ttf', 'eua', 'go', 'nuc'];
 // the window itself is shared with the market pages' tiles (js/pk-tilewin.js)
 function _mrnTileDef(id) {
   const k = MRN.k; if (!k || !MRN_WIN[id] || !window.PKTile) return null;
@@ -702,7 +702,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-brief{border-left:3px solid var(--accent)} .mrn2-brief ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
   .mrn2-brief li{font-size:14.5px;line-height:1.5;color:var(--text2)} .mrn2-brief b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
   .mrn2-brief b.mrn-up,.mrn2 .mrn-up{color:var(--down)} .mrn2-brief b.mrn-dn,.mrn2 .mrn-dn,.mrn2 .mrn-down{color:var(--up)}
-  .mrn2-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .mrn2-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
   .mrn2-tiles-sm{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:12px}
   @media (max-width:1100px){.mrn2-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -734,7 +734,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-chip.real{color:var(--accent);background:var(--accent-dim)} .mrn3-chip.fc{color:#7FC8F8;background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55)} .mrn3-chip.av{color:var(--text2);background:rgba(122,147,171,.14)}
   .mrn3-big{font:600 22px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums} .mrn3-big small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px} .mrn3-big.fc{color:#7FC8F8}
   .mrn3-kv{font-size:12px;color:var(--text3)} .mrn3-kv b{color:var(--text);font-weight:600} .mrn3-kv b.mrn-up{color:var(--down)} .mrn3-kv b.mrn-dn{color:var(--up)}
-  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}
   .mrn3-w2{grid-column:span 2}
   @media (max-width:1250px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -114,10 +114,11 @@
     const cw = document.querySelector('.pk-tw-cw'), cv = document.getElementById('pk-tw-chart'), small = innerWidth < 640;
     const hpx = Math.round(Math.min(small ? 420 : 760, Math.max(small ? 240 : 300, innerHeight * (small ? .45 : .58)))) + 'px';
     cw.style.height = cw.style.maxHeight = hpx; cv.style.height = hpx;
+    cv.dataset.fsTitle = def.name + (def.unit ? ' (' + def.unit + ')' : '');   // the big view's title
     _fuelChart('pk-tw-chart', { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ interaction: { mode: 'index', intersect: false },
       scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: innerWidth > 1600 ? 12.5 : 11 }, maxTicksLimit: innerWidth > 1600 ? 12 : 8, maxRotation: 0, callback: (v, i) => fmt(dates[i]) } }), y: _fuelAxis(def.unit || '', def.yZero ? { beginAtZero: true } : {}),
         y2: _fuelAxis(def.unit2 || '', { position: 'right', display: y2, grid: { display: false } }) },
-      plugins: { legend: { display: false } } }) }, 'tile-' + (def.file || 'chart'));
+      plugins: { legend: { display: false }, zoom: typeof ZOOM_CFG !== 'undefined' ? ZOOM_CFG : undefined } }) }, 'tile-' + (def.file || 'chart'));
   }
 
   let skipPop = false, afterPop = null;
