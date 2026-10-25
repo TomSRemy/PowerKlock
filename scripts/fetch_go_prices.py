@@ -64,7 +64,7 @@ def get_email_body(imap, msg_id):
     mail_date_str = msg.get("Date", "")
     try:
         mail_date = parsedate_to_datetime(mail_date_str).date()
-    except Exception:
+    except (TypeError, ValueError):
         mail_date = date.today()
 
     # Extract text/plain body (skip attachments)

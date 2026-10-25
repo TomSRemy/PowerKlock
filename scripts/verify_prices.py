@@ -57,7 +57,7 @@ def main():
             for z, v in (prev.get('zones') or {}).items():
                 if z not in only:
                     out['zones'][z] = dict(v, checked=v.get('checked') or prev.get('updated'))
-        except Exception:
+        except (OSError, ValueError, AttributeError):
             pass
     for z, bzn in EC.items():
         if only and z not in only:

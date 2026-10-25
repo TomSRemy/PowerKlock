@@ -37,7 +37,7 @@ TODAY = NOW.date()
 def load(rel):
     try:
         return json.load(open(os.path.join(ROOT, rel)))
-    except Exception:
+    except (OSError, ValueError):
         return None
 
 
@@ -158,7 +158,7 @@ def _check_price_second_source(add):
     # the check itself must keep running: a second source not consulted for 2 days is a hole too
     try:
         age = (NOW - datetime.fromisoformat(pc['updated'])).total_seconds() / 3600
-    except Exception:
+    except (KeyError, TypeError, ValueError):
         age = 999
     if age > 48:
         add('pricecheck', 'stale', f'Second source (Energy-Charts) not consulted for {int(age)} h', 'flagged: holes job, once a day')
@@ -194,7 +194,7 @@ def _check_market_second_sources(add):
             add('mktcheck', f"{row['day']}:{k}", f"{row['day']}: {lab} {row['ours']} here vs {row['ref']} (FRED), {row['pct']} %", 'flagged: market job')
     try:
         mage = (NOW - datetime.fromisoformat(mc['updated'])).total_seconds() / 3600
-    except Exception:
+    except (KeyError, TypeError, ValueError):
         mage = 999
     if mage > 48:
         add('mktcheck', 'stale', f'Second sources for production and markets not consulted for {int(mage)} h', 'flagged: holes job, once a day')

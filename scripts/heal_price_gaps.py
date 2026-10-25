@@ -66,7 +66,7 @@ def main():
     chk = {}
     try:
         chk = json.load(open(os.path.join(os.path.dirname(DAILY), 'price_check.json'))).get('zones') or {}
-    except Exception:
+    except (OSError, ValueError):
         pass
     for z, info in chk.items():
         for row in (info.get('days') or [])[-30:]:
@@ -79,7 +79,8 @@ def main():
             calls += 1; time.sleep(0.3)
             try:
                 h = es.fetch_prices_for_date(token, z, d)
-            except Exception:
+            except Exception as e:   # network or ENTSO-E: this day stays as it is, the others go on
+                print(f'  {z} {d}: not asked again ({e})')
                 h = None
             if not h:
                 continue

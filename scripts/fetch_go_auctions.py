@@ -226,7 +226,7 @@ def load_existing():
     if OUT.exists():
         try:
             return json.loads(OUT.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, ValueError):
             pass
     return {"updated": None, "source": "EEX French Auctions for Power Guarantees of Origin",
             "url": URL, "reserve_eur_mwh": None, "auctions": []}
