@@ -44,11 +44,11 @@
       prices: [ib && { key: 'short', name: T('Écarts, déficit', 'Imbalance, deficit'), w: 3.2, v: ib.short },
         ib && !ib.long.every((x, i) => x === ib.short[i]) && { key: 'long', name: T('Écarts, excédent', 'Imbalance, excess'), w: 2.2, v: ib.long },
         da && { key: 'da', name: 'Day-ahead', w: 2.2, dash: [8, 6], v: da }].filter(Boolean),
-      production: [g('load') && { key: 'load', name: T('Consommation', 'Consumption'), w: 2.6, v: g('load') },
+      production: [g('load') && { key: 'load', name: T('Consommation', 'Consumption'), short: T('Conso', 'Load'), w: 2.6, v: g('load') },
         g('nuclear') && { key: 'nuc', name: T('Nucléaire', 'Nuclear'), w: 2.4, v: g('nuclear') },
         g('wind') && { key: 'wind', name: T('Éolien', 'Wind'), w: 2.4, v: g('wind') },
         g('solar') && { key: 'solar', name: T('Solaire', 'Solar'), w: 2.4, v: g('solar') },
-        g('exchanges') && { key: 'exch', name: T('Échanges (import +)', 'Exchanges (import +)'), w: 2.2, v: g('exchanges') }].filter(Boolean),
+        g('exchanges') && { key: 'exch', name: T('Échanges (import +)', 'Exchanges (import +)'), short: T('Échanges', 'Exchanges'), w: 2.2, v: g('exchanges') }].filter(Boolean),
       europe: ZE.map(([z, nm]) => { const a = q96(daily && daily.zones && daily.zones[z] && daily.zones[z].hourly); return a && { key: 'z_' + z, name: nm, w: z === 'FR' ? 3 : 2, v: a }; }).filter(Boolean),
       times: Array.from({ length: 96 }, (_, q) => [day, q * 15]), step: 15,
     };
@@ -272,16 +272,20 @@
       for (let q = from; q <= qi; q++) { const v = head.v[q]; if (v == null) continue; if (v > mx) { mx = v; mq = q; } if (v < mn) { mn = v; nq = q; } }
       const at = q => S.per === 'day' ? lab(q).clock : S.data.step === 1440 ? dfmt(S.data.times[q][0], { day: 'numeric', month: 'short', year: 'numeric' }) : dfmt(S.data.times[q][0], { weekday: 'short', day: 'numeric' }) + ' ' + lab(q).clock;
       if (mq != null) {
-        c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = 'right';
-        c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, dp(head)) + ' ' + unitOf(head) + T(' · ', ' · ') + at(mq), W - P, P + 4 * k);
-        if (mn < 0) c.fillText(T('Plus bas : ', 'Low: ') + fmtN(mn, dp(head)) + ' ' + unitOf(head) + ' · ' + at(nq), W - P, P + 28 * k);
+        c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = wide ? 'right' : 'left';
+        const hiTxt = T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, dp(head)) + ' ' + unitOf(head) + T(' · ', ' · ') + at(mq), loTxt = mn < 0 ? T('Plus bas : ', 'Low: ') + fmtN(mn, dp(head)) + ' ' + unitOf(head) + ' · ' + at(nq) : '';
+        if (wide) { c.fillText(hiTxt, W - P, P + 4 * k); if (loTxt) c.fillText(loTxt, W - P, P + 28 * k); }
+        else { c.font = F(500, 14); c.fillText(hiTxt + (loTxt ? '   ' + loTxt : ''), P, P + 188 * k); }   // square and vertical: one line above the chart
         c.textAlign = 'left';
       }
     }
     // chart and bars
     const top = P + (wide ? 200 : 210) * k, bottom = H - P - 70 * k;
     const chart = wide ? { x: P + 64 * k, y: top, w: (W - 2 * P) * 0.70 - 64 * k, h: bottom - top } : { x: P + 64 * k, y: top, w: W - 2 * P - 64 * k, h: (bottom - top) * 0.72 };
-    const bars = wide ? { x: P + (W - 2 * P) * 0.74, y: top, w: (W - 2 * P) * 0.26, h: bottom - top } : { x: P, y: chart.y + chart.h + 60 * k, w: W - 2 * P, h: bottom - (chart.y + chart.h + 60 * k) };
+    // the right-hand panel (below the chart on square and vertical videos): the bars now, then key figures since the start, then the last event
+    const panel = wide ? { x: P + (W - 2 * P) * 0.74, y: top, w: (W - 2 * P) * 0.26, h: bottom - top } : { x: P, y: chart.y + chart.h + 56 * k, w: W - 2 * P, h: bottom - (chart.y + chart.h + 56 * k) };
+    const bars = wide ? { x: panel.x, y: panel.y, w: panel.w, h: panel.h * 0.46 } : { x: panel.x, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
+    const info = wide ? { x: panel.x, y: panel.y + panel.h * 0.46 + 14 * k, w: panel.w, h: panel.h * 0.54 - 14 * k } : { x: panel.x + panel.w * 0.5 + 12 * k, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
     const vals = ser.flatMap(s => s.v.slice(from, to + 1)).filter(v => v != null);
     if (!vals.length) return;
     // one scale per unit: the first on the left axis, the second on the right one, any further unit on its own scale
@@ -323,8 +327,9 @@
     // bars: each series now; the axis sits where the period's highs and lows leave room for both
     const n = ser.length, gap = 16 * k, bwid = Math.min(160 * k, (bars.w - gap * (n - 1)) / n);
     // each unit its own bar scale; one shared axis line, placed for the deepest negative share
-    const room = bars.h - 96 * k, ext = units.map(u => { const v = ser.filter(s => unitOf(s) === u).flatMap(s => s.v.slice(from, to + 1)).filter(x => x != null); return [Math.max(0, ...v), Math.max(0, ...v.map(x => -x))]; });
-    const negFrac = Math.max(0, ...ext.map(([p, q]) => q / Math.max(1e-9, p + q))), base = bars.y + 30 * k + room * (1 - negFrac), nameY = bars.y + bars.h - 22 * k;
+    // scaled to the highs and lows seen so far: the bars grow with the story instead of staying flat under a later peak
+    const room = bars.h - 76 * k, ext = units.map(u => { const v = ser.filter(s => unitOf(s) === u).flatMap(s => s.v.slice(from, qi + 1)).filter(x => x != null); return [Math.max(1e-9, ...v), Math.max(0, ...v.map(x => -x))]; });
+    const negFrac = Math.max(0, ...ext.map(([p, q]) => q / Math.max(1e-9, p + q))), base = bars.y + 28 * k + room * (1 - negFrac), nameY = bars.y + bars.h - 20 * k;
     c.strokeStyle = C.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(bars.x, base); c.lineTo(bars.x + bars.w, base); c.stroke();
     ser.forEach((s, i) => {
       const [pm, nm0] = ext[gOf(s)], v = s.v[qi], x = bars.x + (bars.w - n * bwid - (n - 1) * gap) / 2 + i * (bwid + gap);
@@ -338,6 +343,26 @@
       const nm = s.short || s.name; let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(nm).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
       c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(nm, x + bwid / 2, nameY); c.textAlign = 'left';
     });
+    // key figures since the start of the period, and the last event passed
+    const figs = figures(ser, from, qi), lastEv = (S.events || []).filter(e => e.q <= t).pop();
+    let iy = info.y;
+    c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(info.x, iy); c.lineTo(info.x + info.w, iy); c.stroke();
+    c.textBaseline = 'top'; c.textAlign = 'left'; c.font = F(600, 12); c.fillStyle = C.text3;
+    c.fillText(T('DEPUIS LE DÉBUT', 'SINCE THE START'), info.x, iy + 10 * k); iy += 32 * k;
+    figs.forEach(([l, v, col]) => {
+      if (iy > info.y + info.h - 26 * k) return;
+      c.font = F(500, 14); c.fillStyle = C.text2; const lw = wrap(c, l, info.w * 0.58);
+      c.fillText(lw[0], info.x, iy);
+      c.font = F(700, 16, MONO); c.fillStyle = col || C.text; c.textAlign = 'right'; c.fillText(v, info.x + info.w, iy - 1 * k); c.textAlign = 'left';
+      iy += 26 * k;
+    });
+    if (lastEv && iy < info.y + info.h - 60 * k) {
+      iy += 8 * k; c.strokeStyle = C.grid; c.beginPath(); c.moveTo(info.x, iy); c.lineTo(info.x + info.w, iy); c.stroke();
+      c.font = F(600, 12); c.fillStyle = C.text3; c.fillText(T('DERNIER ÉVÉNEMENT', 'LAST EVENT'), info.x, iy + 10 * k); iy += 30 * k;
+      const short = lastEv.txt.split(' — ')[0].replace(/^★ /, '');
+      c.font = F(500, 14); c.fillStyle = C.text; const ls = wrap(c, short, info.w);
+      ls.slice(0, Math.max(1, Math.floor((info.y + info.h - iy) / (19 * k)))).forEach((l, i) => c.fillText(l, info.x, iy + i * 19 * k));
+    }
     // commentary: numbered markers on the moments passed, the caption of the latest one for an eighth of the period
     const span = S.per === 'day' ? 12 : Math.max(4, Math.round(N / 8));
     (S.events || []).forEach(e => {
@@ -373,6 +398,44 @@
     const lb = document.getElementById('rp-time'); if (lb) lb.textContent = L.clock;
     const sc = document.getElementById('rp-scrub'); if (sc) { sc.max = String(N - 1); if (document.activeElement !== sc) sc.value = String(qi); }
   }
+  // the right-hand key figures: what the period so far says, by mode
+  function figures(ser, from, qi) {
+    const C = pal(), out = [], val = k => (ser.find(s => s.key === k) || {}).v, seg = a => a ? a.slice(from, qi + 1).filter(x => x != null) : [];
+    const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null, stepH = (S.data.step || 60) / 60;
+    if (S.per === 'long') {
+      ser.filter(s => s.key !== 'cmp').forEach(s => { const a = seg(s.v); if (a.length < 2) return; const ch = a[a.length - 1] - a[0], pc = a[0] ? ch / Math.abs(a[0]) * 100 : null;
+        out.push([s.name, (ch >= 0 ? '+' : '−') + fmtN(Math.abs(ch), Math.abs(a[0]) < 20 ? 2 : 1) + (pc != null ? ' (' + (pc >= 0 ? '+' : '−') + fmtN(Math.abs(pc), 0) + ' %)' : ''), ch >= 0 ? C.down : C.accent]); });
+      const h = ser[0] && seg(ser[0].v); if (h && h.length) out.push([T('Moyenne ', 'Average ') + ser[0].name, fmtN(mean(h), 1) + ' ' + (ser[0].unit || '')]);
+      return out;
+    }
+    if (S.mode === 'prices') {
+      const da = seg(val('da')), sh = seg(val('short')), head = ser[0];
+      if (head) out.push([T('Moyenne ', 'Average ') + head.name, fmtN(mean(seg(head.v)), 0) + ' €/MWh']);
+      if (da.length && sh.length) { const g = seg(val('short')).map((x, i) => x - (seg(val('da'))[i] || 0)); out.push([T('Écarts − day-ahead (moy.)', 'Imbalance − DA (mean)'), (mean(g) >= 0 ? '+' : '−') + fmtN(Math.abs(mean(g)), 0) + ' €', mean(g) > 0 ? C.down : C.accent]); }
+      const base = da.length ? da : seg(head && head.v);
+      out.push([T('Heures à 0 € ou moins', 'Hours at 0 € or below'), fmtN(base.filter(x => x <= 0).length * stepH, stepH < 1 ? 1 : 0) + ' h', base.some(x => x <= 0) ? C.accent : null]);
+      if (base.length) out.push([T('Écart max − min', 'High − low spread'), fmtN(Math.max(...base) - Math.min(...base), 0) + ' €']);
+      return out;
+    }
+    if (S.mode === 'production') {
+      const ld = val('load'), so = val('solar'), wi = val('wind'), nu = val('nuc'), ex = val('exch'), q = qi;
+      if (ld && ld[q]) { if (so && wi) out.push([T('Éolien + solaire maintenant', 'Wind + solar now'), fmtN(((so[q] || 0) + (wi[q] || 0)) / ld[q] * 100, 0) + ' %', C.accent]);
+        if (nu) out.push([T('Nucléaire / conso maintenant', 'Nuclear / load now'), fmtN((nu[q] || 0) / ld[q] * 100, 0) + ' %']); }
+      if (ex && ex[q] != null) out.push([ex[q] < 0 ? T('La France exporte', 'France exports') : T('La France importe', 'France imports'), fmtN(Math.abs(ex[q]), 1) + ' GW', ex[q] < 0 ? C.accent : C.down]);
+      const l2 = seg(ld); if (l2.length) out.push([T('Pointe de conso jusqu’ici', 'Peak load so far'), fmtN(Math.max(...l2), 1) + ' GW']);
+      const s2 = seg(so); if (s2.length) out.push([T('Solaire max jusqu’ici', 'Solar high so far'), fmtN(Math.max(...s2), 1) + ' GW']);
+      return out;
+    }
+    // europe: France against its neighbours now, and on average
+    const now = ser.filter(s => s.key !== 'cmp').map(s => [s.name, s.v[qi]]).filter(x => x[1] != null).sort((a, b) => a[1] - b[1]);
+    const fr = val('z_FR'), de = val('z_DE_LU');
+    if (fr && de && fr[qi] != null && de[qi] != null) out.push([T('France − Allemagne maintenant', 'France − Germany now'), (fr[qi] - de[qi] >= 0 ? '+' : '−') + fmtN(Math.abs(fr[qi] - de[qi]), 1) + ' €', fr[qi] > de[qi] ? C.down : C.accent]);
+    const rk = now.findIndex(x => x[0] === 'France'); if (rk >= 0) out.push([T('Rang France (moins cher = 1)', 'France rank (cheapest = 1)'), (rk + 1) + ' / ' + now.length]);
+    if (now.length) { out.push([T('Le moins cher : ', 'Cheapest: ') + now[0][0], fmtN(now[0][1], 1) + ' €', C.accent]); out.push([T('Le plus cher : ', 'Dearest: ') + now[now.length - 1][0], fmtN(now[now.length - 1][1], 1) + ' €', C.down]); }
+    if (fr) out.push([T('Moyenne France', 'France average'), fmtN(mean(seg(fr)), 1) + ' €/MWh']);
+    return out;
+  }
+
   // the video's opening and closing cards: the reader's title, then their conclusion
   function card(c, W, H, C) {
     const k = W / H > 1.4 ? W / 1280 : W / 1080 * 1.3, P = 64 * k;
