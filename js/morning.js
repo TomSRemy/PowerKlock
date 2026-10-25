@@ -442,44 +442,39 @@ async function _mrnWeeks(k, el) {
     html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
       <span class="mrn2-wk-r"><span>${_mT('Température', 'Temperature')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Vent', 'Wind')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Soleil', 'Sun')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
   }
-  const g = [];
+  // gas storage and next month's forward: two more cards in the same style as the weeks (title, label → value rows, a thin line)
+  const cards = [], row = (l, v) => `<span class="mrn2-wk-r"><span>${l}</span>${v}</span>`;
   const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
-  if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
-  let fwdChart = null;
+  if (st) cards.push(`<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Stocks de gaz UE', 'EU gas storage')}</span>` +
+    row(_mT('Niveau', 'Level'), `<b class="${st[1] < 80 ? 'mrn-up' : ''}">${_mN(st[1], 1)} %</b>`) + row(_mT('Repère 1er nov.', 'Mark 1 Nov'), '<b>90 %</b>') +
+    (ly != null ? row(_mT('Sur un an', 'On a year'), `<b class="${st[1] < ly ? 'mrn-up' : 'mrn-dn'}">${_mS(st[1] - ly, 1)} pts</b>`) : '') +
+    `<span class="mrn2-bar" style="margin-top:4px"><span class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></span><span class="mrn2-mark" style="left:90%"></span></span></div>`);
+  let why = '';
   if (fm && fm.months) {
     const m1 = Object.keys(fm.months).sort()[0], v1 = +fm.months[m1].value, mon = _mrnToday().slice(0, 7), sp = k.spotDays.filter(r => r.d.startsWith(mon)), avg = _mrnMean(sp.map(r => r.avg));
-    const ml = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    // the last 30 days of spot, then next month's forward as a dashed level: the gap reads at a glance (a gauge did not)
+    const ml = (iso, o) => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', Object.assign({ month: 'long', timeZone: 'UTC' }, o || {}));
     const gap = avg != null ? (v1 / avg - 1) * 100 : null, mo = +m1.slice(5, 7), winter = mo >= 11 || mo <= 2;
-    const why = gap == null || Math.abs(gap) < 5 ? '' : gap > 0 ? (winter ? _mT(' : l’hiver arrive (chauffage, moins de soleil)', ': winter is coming (heating, less sun)') : _mT(' : le marché attend plus cher', ': the market expects dearer power'))
-      : (winter ? _mT(' : le marché attend un mois plus doux', ': the market expects a milder month') : _mT(' : le marché attend moins cher (plus de soleil et de vent)', ': the market expects cheaper power (more sun and wind)'));
-    fwdChart = { m1, v1, name: ml(m1) };
-    g.push(`<div class="mrn2-g"><div>${_mT('Forward mois prochain', 'Next month forward')} (${ml(m1)}) <b>${_mN(v1, 1)} €/MWh</b>${gap != null ? ` <b class="${gap > 0 ? 'mrn-up' : 'mrn-dn'}">${_mS(gap, 0)} %</b> ${_mT('vs spot de ', 'vs spot of ')}${ml(mon)}` : ''}</div>` +
-      `<div style="position:relative;height:96px;margin-top:6px"><canvas class="mrn2-fwdc" style="width:100%;height:96px"></canvas></div>` +
-      (avg != null ? `<div class="mrn2-gs">${_mT('Spot de ', 'Spot of ')}${ml(mon)}${_mT(' jusqu’ici ', ' so far ')}${_mN(avg, 1)} €/MWh${why}.</div>` : '') + '</div>');
+    why = gap == null || Math.abs(gap) < 5 ? '' : gap > 0 ? (winter ? _mT('forward du mois prochain au-dessus du spot : l’hiver arrive (chauffage, moins de soleil)', 'next month’s forward above the spot: winter is coming (heating, less sun)') : _mT('forward du mois prochain au-dessus du spot : le marché attend plus cher', 'next month’s forward above the spot: the market expects dearer power'))
+      : (winter ? _mT('forward du mois prochain sous le spot : le marché attend un mois plus doux', 'next month’s forward below the spot: the market expects a milder month') : _mT('forward du mois prochain sous le spot : plus de soleil et de vent attendus', 'next month’s forward below the spot: more sun and wind expected'));
+    // a thin line: the last 30 days of spot, then the forward level (dashed)
+    const last = k.spotDays.slice(-30).map(r => r.avg).filter(v => v != null), all = last.concat([v1]), lo = Math.min(...all), hi = Math.max(...all), W = 100, H = 22;
+    const y = v => (H - 2 - (v - lo) / Math.max(1e-9, hi - lo) * (H - 4)).toFixed(1), xs = i => (i / Math.max(1, last.length - 1) * 66).toFixed(1);
+    const spark = last.length > 1 ? `<svg class="mrn2-wk-sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${last.map((v, i) => xs(i) + ',' + y(v)).join(' ')}" fill="none" stroke="#14D3A9" stroke-width="1.4" vector-effect="non-scaling-stroke"/><line x1="70" x2="100" y1="${y(v1)}" y2="${y(v1)}" stroke="#7FC8F8" stroke-width="1.6" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/></svg>` : '';
+    cards.push(`<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Forward ', 'Forward ')}${ml(m1, { year: 'numeric' })}</span>` +
+      row(_mT('Prix', 'Price'), `<b>${_mN(v1, 1)} €/MWh</b>`) + (avg != null ? row(_mT('Spot ', 'Spot ') + ml(mon, { month: 'short' }) + _mT(' à date', ' to date'), `<b>${_mN(avg, 1)} €/MWh</b>`) : '') +
+      (gap != null ? row(_mT('Écart', 'Gap'), `<b class="${gap > 0 ? 'mrn-up' : 'mrn-dn'}">${_mS(gap, 0)} %</b>`) : '') + spark + '</div>');
   }
-  if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
+  if (cards.length) html = html.replace(/<\/div>$/, cards.join('') + '</div>');   // into the weeks' grid, after the last week
+  if (cards.length && !weeks.length) html += '<div class="mrn2-weeks">' + cards.join('') + '</div>';
   const take = [];
   const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
   if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix plus fermes',
     (cold ? 'colder' : '') + (cold && calm ? ' and calmer' : calm ? 'calmer' : '') + ' than normal in ' + Math.max(cold, calm) + ' week' + (Math.max(cold, calm) > 1 ? 's' : '') + ': more gas burnt, firmer prices'));
   else if (windy) take.push(_mT('plus de vent que la normale sur ' + windy + ' semaine' + (windy > 1 ? 's' : '') + ' : des prix plus bas, plus d’heures négatives à midi', 'windier than normal in ' + windy + ' week' + (windy > 1 ? 's' : '') + ': lower prices, more negative hours at midday'));
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
+  if (why) take.push(why);
   if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
   host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
-  const cv = fwdChart && host.querySelector('.mrn2-fwdc');
-  if (cv && window._fuelChart) {
-    cv.id = cv.id || 'mrn-fwdc-' + Math.random().toString(36).slice(2, 8);
-    const last = k.spotDays.slice(-30), [y, m] = fwdChart.m1.split('-').map(Number), nd = new Date(Date.UTC(y, m, 0)).getUTCDate();
-    const nxt = Array.from({ length: nd }, (_, d) => fwdChart.m1 + '-' + String(d + 1).padStart(2, '0'));
-    const gapDays = [];   // the days between the last spot and next month (rest of this month)
-    for (let d = last.length ? _mrnAdd(last[last.length - 1].d, 1) : nxt[0]; d < nxt[0]; d = _mrnAdd(d, 1)) gapDays.push(d);
-    const lbl = last.map(r => r.d).concat(gapDays, nxt), n0 = last.length + gapDays.length;
-    _fuelChart(cv.id, { type: 'line', data: { labels: lbl.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })), datasets: [
-      _fuelLineDs(_mT('Spot, moyenne du jour', 'Spot, daily average'), last.map(r => r.avg).concat(Array(lbl.length - last.length).fill(null)), '#14D3A9', { borderWidth: 1.6, pointRadius: 0 }),
-      _fuelLineDs('Forward ' + fwdChart.name, Array(n0).fill(null).concat(Array(nd).fill(fwdChart.v1)), '#7FC8F8', { borderWidth: 2, borderDash: [5, 4], pointRadius: 0 })] },
-      options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } }), y: _fuelAxis('', { ticks: { color: C_TX3, font: { size: 9 }, maxTicksLimit: 4 } }) } }) }, 'next-month-forward');
-  }
 }
 
 // ── News digest, short: what moves prices or the renewable business (geopolitics, regulation, deals, new
@@ -714,7 +709,9 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-tc.mrn-up{color:var(--down)} .mrn2-tc.mrn-down{color:var(--up)}
   .mrn2-tile svg{width:100%;height:28px;margin-top:5px;display:block}
   .mrn2 .fuel-grid-2{margin:0} .mrn2>.chart-container{margin:0}
-  .mrn2-weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .mrn2-weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+  .mrn2-wk-sp{display:block;width:100%;height:22px;margin-top:4px}
+  .mrn2-wk .mrn2-bar{display:block;position:relative;height:6px;border-radius:3px;background:var(--border)} .mrn2-wk .mrn2-fill{display:block;height:6px;border-radius:3px} .mrn2-wk .mrn2-mark{position:absolute;top:-3px;width:2px;height:12px;background:var(--text2)}
   .mrn2-wk{background:var(--bg3);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-width:0}
   .mrn2-wk-t{font-size:11px;color:var(--text3)} .mrn2-wk-r{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--text2)} .mrn2-wk-r b{color:var(--text);font-weight:600;white-space:nowrap}
   .mrn2-gauges{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;font-size:12.5px;color:var(--text2)} .mrn2-gauges b{color:var(--text)}
