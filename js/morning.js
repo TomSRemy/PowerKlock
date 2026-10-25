@@ -233,117 +233,171 @@ if (window.PKW) {
   });
 }
 
-// ── key figures ──
-async function _mrnKpis() {
-  const host = document.getElementById('mrn-kpis'); if (!host) return {};
-  const out = {};
+// ── language: the morning reads in French unless the EN / FR button says English ──
+const _mrnFr = () => !window.PKI18n || PKI18n.lang !== 'en';
+const _mT = (fr, en) => _mrnFr() ? fr : en;
+const _mN = (v, d) => v == null || !isFinite(v) ? '–' : v.toFixed(d);   // js/i18n.js writes it the French way (26.3 → 26,3)
+const _mS = (v, d) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + _mN(Math.abs(v), d);
+const _mDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const _mrnSeries = () => _mrnGet('cs', DATA_BASE + 'history/commodities_series.json');
+const _mrnChain = () => _mrnGet('chain', DATA_BASE + 'history/fr_market_calchain.json');
+const _mrnNeg = () => _mrnGet('neg', DATA_BASE + 'neg_forecast.json');
+const _mrnLast = pts => pts && pts.length ? pts[pts.length - 1] : null;
+function _mrnBack(pts, days) {   // value on or before the last date − days
+  if (!pts || !pts.length) return null;
+  const t = new Date(pts[pts.length - 1][0] + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() - days);
+  const k = t.toISOString().slice(0, 10); let v = null; for (const [d, x] of pts) { if (d <= k) v = x; else break; } return v;
+}
+function _mrnSpark(vals, tone) {
+  const s = vals.filter(v => v != null); if (s.length < 2) return '';
+  const W = 100, H = 26, lo = Math.min(...s), hi = Math.max(...s), sx = W / (s.length - 1), sy = v => H - 2 - (v - lo) / ((hi - lo) || 1) * (H - 4);
+  const d = s.map((v, i) => (i ? 'L' : 'M') + (i * sx).toFixed(1) + ' ' + sy(v).toFixed(1)).join(' ');
+  const col = tone === 'up' ? 'var(--down)' : tone === 'down' ? 'var(--up)' : 'var(--text3)';
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d} L ${W} ${H} L 0 ${H} Z" fill="${col}" fill-opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+// everything the key points, the tiles and the 4-week block need, fetched once
+async function _mrnFacts() {
   const { d, prev } = await _mrnSpotDays();
-  const [a, b, fwd, gos, auct] = await Promise.all([_mrnDaily(d), _mrnDaily(prev), _mrnFwd(), _mrnGoCsv(), _mrnAuctions()]);
+  const [a, b, fwd, cs, chain, sum, neg] = await Promise.all([_mrnDaily(d), _mrnDaily(prev), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg()]);
   const fa = a && a.zones && a.zones.FR, fb = b && b.zones && b.zones.FR;
-  // Same KPI card as the rest of the site; a price rise is red (kpi-down), a fall green.
-  const tile = (lbl, val, unit, sub, tone, title) => {
-    const cls = tone === 'up' ? 'kpi-down' : tone === 'down' ? 'kpi-up' : 'kpi-flat';
-    const col = tone === 'up' ? 'var(--down)' : tone === 'down' ? 'var(--up)' : 'var(--text3)';
-    return `<div class="kpi-card ${cls}"${title ? ` title="${title}"` : ''}><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}<span class="kpi-unit">${unit || ''}</span></div><div class="kpi-meta" style="color:${col}">${sub || ''}</div></div>`;
+  const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
+  const k = { d, prev, cs, P };
+  k.spot = { base: fa ? _mrnMean(fa.hourly) : null, baseP: fb ? _mrnMean(fb.hourly) : null, peak: fa ? _mrnPeak(fa.hourly) : null,
+    negH: fa && Array.isArray(fa.hourly) ? fa.hourly.filter(v => v != null && v < 0).length / 4 : null };
+  k.spotHist = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null).slice(-30).map(r => r.avg);
+  k.negExp = neg && neg.days && neg.days[d] ? neg.days[d].expected_hours : null;
+  const yrs = chain && chain.FR && chain.FR.years, ck = yrs && Object.keys(yrs).sort()[0];
+  k.cal = ck ? { y: ck, pts: yrs[ck].dates.map((x, i) => [x, yrs[ck].values[i]]) } : null;
+  const y1 = ((fwd && fwd.forwardCurve) || []).find(r => r.tenor === 'Y+1');
+  if (y1) k.y1 = y1;
+  if (window.PKF) { try { k.fc = await PKF.day('FR', d); } catch (_) { /* no forecast */ } }
+  k.nucCap = fwd && fwd.nuclearCapacity;
+  return k;
+}
+
+// ── key points: three sentences that say what moved and why ──
+function _mrnKeys(k) {
+  const host = document.getElementById('mrn-keys'); if (!host) return;
+  const L = [], B = t => '<b>' + t + '</b>', C = (v, t) => `<b class="${v > 0 ? 'mrn-up' : v < 0 ? 'mrn-dn' : ''}">${t}</b>`;
+  // 1. spot: level, move, what drives it
+  if (k.spot.base != null) {
+    const dlt = k.spot.baseP != null ? k.spot.base - k.spot.baseP : null, why = [];
+    const mx = a => Array.isArray(a) && a.some(v => v != null) ? Math.max(...a.filter(v => v != null)) / 1000 : null;
+    const w = k.fc && mx(k.fc.wind), sol = k.fc && mx(k.fc.solar);
+    if (w != null && w >= 14) why.push(_mT('vent fort (jusqu’à ', 'strong wind (up to ') + B(_mN(w, 0) + ' GW') + ')');
+    else if (w != null && w < 5) why.push(_mT('peu de vent (', 'little wind (') + _mN(w, 1) + ' GW max)');
+    if (sol != null && sol >= 10) why.push(_mT('soleil à midi (', 'midday sun (') + _mN(sol, 0) + ' GW)');
+    const nh = k.spot.negH || k.negExp;
+    if (nh) why.push(B(_mN(nh, nh % 1 ? 1 : 0) + ' h') + _mT(k.spot.negH ? ' de prix négatif' : ' de prix négatif probables', k.spot.negH ? ' of negative prices' : ' of likely negative prices'));
+    if (k.spot.peak != null) why.push(_mT('pointe ', 'peak ') + _mN(k.spot.peak, 0) + ' €');
+    L.push(_mT('Spot France ', 'France spot ') + _mDay(k.d) + ' ' + B(_mN(k.spot.base, 1) + ' €/MWh') + (dlt != null ? ' ' + C(dlt, _mS(dlt, 1) + ' €') + _mT(' sur la veille', ' on the day before') : '') + (why.length ? ' : ' + why.join(', ') : '') + '.');
+  }
+  // 2. forwards: the calendar year and what pulls it
+  if (k.cal && k.cal.pts.length) {
+    const l = _mrnLast(k.cal.pts), w0 = _mrnBack(k.cal.pts, 7), dlt = w0 != null ? l[1] - w0 : null;
+    const ttf = k.P('ttf'), br = k.P('brent'), tL = _mrnLast(ttf), tW = tL && _mrnBack(ttf, 7) ? (tL[1] / _mrnBack(ttf, 7) - 1) * 100 : null;
+    const bL = _mrnLast(br), bW = bL && _mrnBack(br, 7) ? (bL[1] / _mrnBack(br, 7) - 1) * 100 : null;
+    let why = '';
+    if (tW != null && Math.abs(tW) >= 2) why = (tW > 0 ? _mT('le gaz tire l’ensemble', 'gas pulls everything up') : _mT('le gaz détend l’ensemble', 'gas eases everything')) + ' (TTF ' + B(_mN(tL[1], 1) + ' €') + ', ' + _mS(tW, 1) + ' %' + (bW != null && Math.abs(bW) >= 2 ? ' ; Brent ' + B(_mN(bL[1], 0) + ' $') + ', ' + _mS(bW, 1) + ' %' : '') + ')';
+    else if (tL) why = _mT('gaz stable (TTF ', 'gas stable (TTF ') + _mN(tL[1], 1) + ' €) : ' + _mT('un mouvement propre à la France', 'a move of France’s own');
+    L.push('Cal ' + k.cal.y + _mT(' France ', ' France ') + B(_mN(l[1], 1) + ' €/MWh') + (dlt != null ? ', ' + C(dlt, _mS(dlt, 1) + ' €') + _mT(' sur la semaine', ' on the week') : '') + (why ? ' : ' + why : '') + '.');
+  }
+  // 3. supply: nuclear and gas storage
+  const av = _mrnLast(k.P('fr_nuc_avail')), fc = _mrnLast(k.P('fr_nuc_avail_fc')), st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
+  const parts = [];
+  if (av) parts.push(_mT('Nucléaire disponible ', 'Nuclear available ') + B(_mN(av[1] / 1000, 1) + ' GW') + (fc ? (Math.abs(fc[1] - av[1]) > 2000 ? (fc[1] > av[1] ? _mT(', sous la prévision de l’exploitant (', ', below the operator forecast (') : _mT(', au-dessus de la prévision de l’exploitant (', ', above the operator forecast (')) + _mN(fc[1] / 1000, 0) + ' GW)' : '') : ''));
+  if (st) parts.push(_mT('stocks de gaz UE ', 'EU gas storage ') + B(_mN(st[1], 1) + ' %') + (ly != null ? ', ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : '') + (st[1] < 80 ? _mT(', sous le seuil de confort d’avant l’hiver', ', below the pre-winter comfort mark') : ''));
+  if (parts.length) L.push(parts.join(' ; ') + '.');
+  host.innerHTML = L.length ? L.map(x => '<li>' + x.charAt(0).toUpperCase() + x.slice(1) + '</li>').join('') : '<li class="fuel-note">' + _mT('Données en attente…', 'Waiting for data…') + '</li>';
+}
+
+// ── six tiles: spot, calendar year, TTF, EUA, Brent, nuclear; a click opens the page behind ──
+function _mrnTiles(k) {
+  const host = document.getElementById('mrn-kpis'); if (!host) return;
+  const T = [];
+  const tile = (name, v, unit, chg, chgTxt, spark, route, title) => {
+    const tone = chg == null || Math.abs(chg) < 1e-9 ? '' : chg > 0 ? 'up' : 'down';
+    T.push(`<a class="mrn2-tile" href="#${route}" data-route="${route}"${title ? ` title="${PK.esc(title)}"` : ''}><span class="mrn2-tn">${name}</span><span class="mrn2-tv">${v}<small>${unit}</small></span><span class="mrn2-tc ${tone ? 'mrn-' + tone : ''}">${chgTxt}</span>${_mrnSpark(spark, tone)}</a>`);
   };
-  const sg = (v, dp) => v == null || isNaN(v) ? '–' : (v >= 0 ? '+' : '') + v.toFixed(dp == null ? 1 : dp);
-  const toneP = v => v == null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '';   // price up = red (site convention)
-  const tiles = [];
-
-  // Spot
-  const base = fa ? _mrnMean(fa.hourly) : null, baseP = fb ? _mrnMean(fb.hourly) : null, peak = fa ? _mrnPeak(fa.hourly) : null;
-  const negH = fa && Array.isArray(fa.hourly) ? fa.hourly.filter(v => v != null && v < 0).length / 4 : null;
-  out.spot = { d, base, baseP, peak, negH };
-  tiles.push(tile('Spot FR · ' + _mrnDay(d), base == null ? '–' : base.toFixed(1), ' €/MWh',
-    (baseP != null && base != null ? sg(base - baseP) + ' vs ' + _mrnDay(prev) : '') + (peak != null ? ' · peak ' + peak.toFixed(0) : '') + (negH ? ' · ' + negH + ' h < 0' : ''), toneP(base - baseP)));
-
-  // Forwards
-  const fc = (fwd && fwd.forwardCurve) || [];
-  const row = t => fc.find(r => r.tenor === t);
-  [['Y+1', 'Cal+1 FR']].forEach(([t, l]) => {
-    const r = row(t); if (!r) return;
-    out[t] = r;
-    const d1 = r.varD1Pct != null ? r.value - r.value / (1 + r.varD1Pct / 100) : null, w1 = r.varW1Pct != null ? r.value - r.value / (1 + r.varW1Pct / 100) : null;
-    tiles.push(tile(l + ' · ' + (r.contract || '').replace(/^FR\s+/, '').replace(/\s+base$/, ''), r.value.toFixed(2), ' €/MWh', sg(d1, 2) + ' vs D-1 · ' + sg(w1, 2) + ' vs D-7', toneP(d1), 'Settlement ' + r.date));
+  if (k.spot.base != null) { const d = k.spot.baseP != null ? k.spot.base - k.spot.baseP : null;
+    tile(_mT('Spot ', 'Spot ') + _mDay(k.d), _mN(k.spot.base, 1), '€/MWh', d, d == null ? '' : _mS(d, 1) + _mT(' vs veille', ' vs day before'), k.spotHist.concat([k.spot.base]), 'markets/spot', _mT('Moyenne base du jour de livraison · courbe : 30 jours', 'Delivery-day baseload · line: 30 days')); }
+  if (k.cal && k.cal.pts.length) { const l = _mrnLast(k.cal.pts), w0 = _mrnBack(k.cal.pts, 7), d = w0 != null ? l[1] - w0 : null;
+    tile('Cal ' + k.cal.y, _mN(l[1], 1), '€/MWh', d, d == null ? '' : _mS(d, 1) + _mT(' sur 7 j', ' on 7 d'), k.cal.pts.slice(-30).map(p => p[1]), 'markets/forwards', _mT('Calendrier base France · courbe : 30 jours', 'France baseload calendar · line: 30 days')); }
+  [['ttf', 'TTF', '€/MWh', 1, 'markets/fuels/ttf'], ['eua', 'EUA', '€/t', 1, 'markets/fuels'], ['brent', 'Brent', '$/b', 1, 'markets/fuels']].forEach(([key, n, u, dp, r]) => {
+    const pts = k.P(key), l = _mrnLast(pts); if (!l) return;
+    const p = pts.length > 1 ? pts[pts.length - 2][1] : null, d = p != null ? l[1] - p : null;
+    tile(n, _mN(l[1], dp), u, d, d == null ? '' : _mS(d, dp) + _mT(' vs veille', ' vs previous'), pts.slice(-30).map(x => x[1]), r, _mT('Dernière clôture · courbe : 30 jours', 'Last close · line: 30 days'));
   });
+  const nuc = k.P('fr_nuc_avail'), nl = _mrnLast(nuc);
+  if (nl) { const p = _mrnBack(nuc, 7), d = p != null ? (nl[1] - p) / 1000 : null;
+    // more nuclear available pushes prices down: shown green when it rises
+    T.push(`<a class="mrn2-tile" href="#system/generation/nuclear" data-route="system/generation/nuclear" title="${_mT('Puissance nucléaire disponible (RTE) · courbe : 30 jours', 'Nuclear available (RTE) · line: 30 days')}"><span class="mrn2-tn">${_mT('Nucléaire dispo.', 'Nuclear avail.')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span><span class="mrn2-tc ${d == null || Math.abs(d) < 0.3 ? '' : d > 0 ? 'mrn-down' : 'mrn-up'}">${d == null ? '' : _mS(d, 1) + _mT(' sur 7 j', ' on 7 d') + (k.nucCap && k.nucCap.installedMW ? ' · /' + _mN(k.nucCap.installedMW / 1000, 0) : '')}</span>${_mrnSpark(nuc.slice(-30).map(x => x[1]), d == null || Math.abs(d) < 0.3 ? '' : d > 0 ? 'down' : 'up')}</a>`); }
+  host.innerHTML = T.join('');
+}
 
-  // Fuels and carbon
-  if (window.PKC) {
-    try {
-      await PKC.ready;
-      [['ttf', 'TTF day-ahead', ' €/MWh'], ['eua', 'EUA ' + (PKC.contractLabel ? PKC.contractLabel('eua') : ''), ' €/t']].forEach(([k, l, u]) => {
-        const last = PKC.last(k);
-        if (!last) return;
-        out[k] = { v: last.v, d: last.chg };
-        tiles.push(tile(l, last.v.toFixed(2), u, sg(out[k].d, 2) + ' vs previous close', toneP(out[k].d)));
-      });
-    } catch (_) { /* commodities unavailable */ }
-  }
-
-  // Guarantees of origin
-  if (gos) {
-    const y = +_mrnToday().slice(0, 4);
-    [y, y + 1].forEach(yr => {
-      const s = _mrnGoSeries(gos, 'GO AIB Renewable', yr);
-      if (!s.length) return;
+// ── CO₂ and guarantees of origin: small tiles at the top of their folded section ──
+async function _mrnTiles2() {
+  const host = document.getElementById('mrn-kpis2'); if (!host || host.dataset.done) return; host.dataset.done = '1';
+  const [gos, auct] = await Promise.all([_mrnGoCsv(), _mrnAuctions()]);
+  const T = [], t = (n, v, u, sub) => T.push(`<div class="mrn2-tile"><span class="mrn2-tn">${n}</span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span></div>`);
+  if (gos) { const y = +_mrnToday().slice(0, 4);
+    [y, y + 1].forEach(yr => { const s = _mrnGoSeries(gos, 'GO AIB Renewable', yr); if (!s.length) return;
       const l = s[s.length - 1], p = s.length > 1 ? s[s.length - 2] : null;
-      out['go' + yr] = { v: l.mid, d: p ? l.mid - p.mid : null, t: l.t };
-      tiles.push(tile('GO renewable Cal ' + yr, l.mid.toFixed(3), ' €/MWh', sg(out['go' + yr].d, 3) + ' vs last week', toneP(out['go' + yr].d), 'AIB renewable, broker mid'));
-    });
-  }
+      t(_mT('GO renouvelable Cal ', 'GO renewable Cal ') + yr, _mN(l.mid, 3), '€/MWh', p ? _mS(l.mid - p.mid, 3) + _mT(' sur la semaine', ' on the week') : ''); }); }
   if (auct && Array.isArray(auct.auctions) && auct.auctions.length) {
     const last = auct.auctions[auct.auctions.length - 1], bt = last.by_technology || [];
     const vol = bt.reduce((s, x) => s + (x.allocated_mwh || 0), 0), val = bt.reduce((s, x) => s + (x.allocated_mwh || 0) * (x.price_eur_mwh || 0), 0);
-    if (vol) { out.auction = { month: last.auction_month, price: val / vol, vol }; tiles.push(tile('FR GO auction · ' + last.auction_month, (val / vol).toFixed(3), ' €/MWh', (vol / 1e6).toFixed(2) + ' TWh allocated · EEX', '')); }
+    if (vol) t(_mT('Enchère GO France · ', 'France GO auction · ') + last.auction_month, _mN(val / vol, 3), '€/MWh', _mN(vol / 1e6, 2) + _mT(' TWh attribués', ' TWh allocated'));
   }
-
-  // CO₂ and nuclear (RTE, live)
   if (window.pkRte) {
-    const t = _mrnToday();
-    const [R, Ry] = await Promise.all([pkRte.day(t).catch(() => null), pkRte.day(_mrnAdd(t, -1)).catch(() => null)]);
-    const lastIdx = a => Array.isArray(a) ? a.reduce((m, v, i) => v != null ? i : m, -1) : -1;
-    if (R && Array.isArray(R.co2)) {
-      const i = lastIdx(R.co2), yAvg = Ry && _mrnMean(Ry.co2);
-      out.co2 = { now: i >= 0 ? R.co2[i] : null, y: yAvg };
-      tiles.push(tile('CO₂ France now', out.co2.now == null ? '–' : Math.round(out.co2.now), ' g/kWh', 'yesterday ' + (yAvg == null ? '–' : Math.round(yAvg)) + ' g/kWh · RTE'));
-    }
-    if (R && Array.isArray(R.nuclear)) {
-      const i = lastIdx(R.nuclear), cap = fwd && fwd.nuclearCapacity;
-      out.nuc = { now: i >= 0 ? R.nuclear[i] : null, avail: cap && cap.actualMW };
-      tiles.push(tile('Nuclear output now', out.nuc.now == null ? '–' : (out.nuc.now / 1000).toFixed(1), ' GW',
-        cap && cap.actualMW ? 'available ' + (cap.actualMW / 1000).toFixed(1) + ' GW · forecast ' + (cap.forecastMW / 1000).toFixed(1) : 'RTE éCO2mix'));
-    }
+    const td = _mrnToday();
+    const [R, Ry] = await Promise.all([pkRte.day(td).catch(() => null), pkRte.day(_mrnAdd(td, -1)).catch(() => null)]);
+    if (R && Array.isArray(R.co2)) { const i = R.co2.reduce((m, v, j) => v != null ? j : m, -1), yAvg = Ry && _mrnMean(Ry.co2);
+      if (i >= 0) t(_mT('CO₂ France maintenant', 'CO₂ France now'), Math.round(R.co2[i]), 'g/kWh', _mT('hier ', 'yesterday ') + (yAvg == null ? '–' : Math.round(yAvg)) + ' g/kWh'); }
   }
-  host.innerHTML = tiles.join('');
-  return out;
+  host.innerHTML = T.join('');
 }
 
-// ── "What moved" ──
-async function _mrnMoves(k) {
-  const host = document.getElementById('mrn-moves'); if (!host) return;
-  const L = [];
-  const sg = (v, dp) => (v >= 0 ? '+' : '') + v.toFixed(dp == null ? 1 : dp);
-  const word = (v, up, down) => v >= 0 ? up : down;
-  if (k.spot && k.spot.base != null && k.spot.baseP != null) {
-    const d = k.spot.base - k.spot.baseP;
-    L.push(`<b>Spot</b> ${_mrnDay(k.spot.d)}: baseload ${k.spot.base.toFixed(1)} €/MWh, ${word(d, 'up', 'down')} ${Math.abs(d).toFixed(1)} on the previous day` +
-      (k.spot.peak != null ? `, peak ${k.spot.peak.toFixed(1)}` : '') + (k.spot.negH ? `, <span class="mrn-neg">${k.spot.negH} h of negative prices</span>` : '') + '.');
+// ── the next 4 weeks: weather against normal week by week, gas storage and nuclear as gauges, month-ahead forward ──
+async function _mrnWeeks(k) {
+  const host = document.getElementById('mrn-30d'); if (!host) return;
+  const [wx, fm] = await Promise.all([_mrnGet('wx', DATA_BASE + 'weather_outlook.json'), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json')]);
+  const pct = (a, b) => a != null && b ? (a / b - 1) * 100 : null;
+  let html = '';
+  const F = wx && wx.countries && wx.countries.FR && wx.countries.FR.series, weeks = [];
+  if (F && F.temp) {
+    const days = F.temp.days, today = wx.today || _mrnToday(), i0 = days.findIndex(d => d > today);
+    for (let w = 0; w < 4 && i0 >= 0; w++) {
+      const ix = days.map((d, i) => i).filter(i => i >= i0 + w * 7 && i < i0 + (w + 1) * 7); if (!ix.length) break;
+      const avg = (key, f) => { const v = ix.map(i => F[key] && F[key][f] ? F[key][f][i] : null).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+      const tm = avg('temp', 'mean'), tn = avg('temp', 'normal');
+      weeks.push({ from: days[ix[0]], dT: tm != null && tn != null ? tm - tn : null, wind: pct(avg('wind', 'mean'), avg('wind', 'normal')), sun: pct(avg('solar', 'mean'), avg('solar', 'normal')) });
+    }
   }
-  const s = await _mrnSummary();
-  if (s && s.zones && s.zones.FR && s.zones.DE_LU) {
-    const fr = s.zones.FR.slice(-1)[0], de = s.zones.DE_LU.find(r => r.d === fr.d);
-    if (fr && de) L.push(`<b>FR − DE</b> on ${_mrnDay(fr.d)}: ${sg(fr.avg - de.avg)} €/MWh (FR ${fr.avg.toFixed(1)}, DE ${de.avg.toFixed(1)}); 30-day FR average ${(() => { if (fr.roll30 != null) return fr.roll30.toFixed(1); const v = s.zones.FR.slice(-30).map(r => r.avg).filter(x => x != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; })()} €/MWh.`);
+  // colder or calmer than normal = firmer prices (red); milder or windier = softer (green)
+  const cell = (v, eps, unit, d, inv) => v == null ? '–' : Math.abs(v) < eps ? `<b>≈ ${_mT('normal', 'normal')}</b>` : `<b class="${(inv ? v > 0 : v < 0) ? 'mrn-up' : 'mrn-dn'}">${_mS(v, d)} ${unit}</b>`;
+  if (weeks.length) {
+    const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
+    html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
+      <span class="mrn2-wk-r"><span>${_mT('Température', 'Temperature')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Vent', 'Wind')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Soleil', 'Sun')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
   }
-  const y1 = k['Y+1'];
-  if (y1 && y1.varD1Pct != null) L.push(`<b>Cal+1 FR</b> ${y1.value.toFixed(2)} €/MWh, ${sg(y1.varD1Pct, 2)}% on the day and ${sg(y1.varW1Pct || 0, 2)}% on the week (settlement ${y1.date}).`);
-  if (window.PKFwdRead) { try { const r = PKFwdRead.line(await PKFwdRead.compute('1W')); if (r) L.push(r); } catch (_) { /* read unavailable */ } }
-  if (k.ttf && k.eua) L.push(`<b>Fuels</b>: TTF ${k.ttf.v.toFixed(2)} €/MWh (${sg(k.ttf.d || 0, 2)}), EUA ${k.eua.v.toFixed(2)} €/t (${sg(k.eua.d || 0, 2)})` +
-    (window.PKC && k.spot && k.spot.base != null ? `; clean spark on that day's base ${sg(PKC.cleanSpark(k.spot.base, k.ttf.v, k.eua.v))} €/MWh.` : '.'));
-  const y = +_mrnToday().slice(0, 4);
-  if (k['go' + (y + 1)]) { const g = k['go' + (y + 1)]; L.push(`<b>GO</b> renewable Cal ${y + 1} at ${g.v.toFixed(3)} €/MWh (${sg(g.d || 0, 3)} w/w)` + (k.auction ? `; last French state auction (${k.auction.month}) cleared ${k.auction.price.toFixed(3)} €/MWh on ${(k.auction.vol / 1e6).toFixed(2)} TWh.` : '.')); }
-  if (k.nuc && k.nuc.avail) L.push(`<b>Nuclear</b>: ${k.nuc.now != null ? (k.nuc.now / 1000).toFixed(1) + ' GW produced now, ' : ''}${(k.nuc.avail / 1000).toFixed(1)} GW available.`);
-  if (k.co2 && k.co2.now != null) L.push(`<b>CO₂</b>: ${Math.round(k.co2.now)} g/kWh now, ${k.co2.y != null ? Math.round(k.co2.y) : '–'} g/kWh yesterday on average (RTE).`);
-  host.innerHTML = L.length ? '<ul>' + L.map(x => '<li>' + x + '</li>').join('') + '</ul>' : '<div class="fuel-note">Waiting for data…</div>';
+  const g = [];
+  const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
+  if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
+  const av = _mrnLast(k.P('fr_nuc_avail')), fc = _mrnLast(k.P('fr_nuc_avail_fc')), inst = (k.nucCap && k.nucCap.installedMW) || 63000;
+  if (av) g.push(`<div class="mrn2-g"><div>${_mT('Nucléaire disponible', 'Nuclear available')} <b>${_mN(av[1] / 1000, 1)} GW</b> / ${_mN(inst / 1000, 0)}</div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, av[1] / inst * 100).toFixed(1)}%;background:var(--warn)"></div>${fc ? `<div class="mrn2-mark" style="left:${Math.min(100, fc[1] / inst * 100).toFixed(1)}%"></div>` : ''}</div><div class="mrn2-gs">${fc ? _mT('Repère : prévision de l’exploitant ', 'Mark: operator forecast ') + _mN(fc[1] / 1000, 1) + ' GW' : 'RTE'}</div></div>`);
+  if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
+  const take = [];
+  if (fm && fm.months) { const m1 = Object.keys(fm.months).sort()[0], v1 = fm.months[m1];
+    take.push(_mT('Mois prochain (', 'Next month (') + new Date(m1 + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + ') : <b>' + _mN(+v1.value, 1) + ' €/MWh</b>'); }
+  const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
+  if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix plus fermes',
+    (cold ? 'colder' : '') + (cold && calm ? ' and calmer' : calm ? 'calmer' : '') + ' than normal in ' + Math.max(cold, calm) + ' week' + (Math.max(cold, calm) > 1 ? 's' : '') + ': more gas burnt, firmer prices'));
+  else if (windy) take.push(_mT('plus de vent que la normale sur ' + windy + ' semaine' + (windy > 1 ? 's' : '') + ' : des prix plus bas, plus d’heures négatives à midi', 'windier than normal in ' + windy + ' week' + (windy > 1 ? 's' : '') + ': lower prices, more negative hours at midday'));
+  else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
+  if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
+  host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
 }
 
 // ── News digest, short: what moves prices or the renewable business (geopolitics, regulation, deals, new
@@ -370,26 +424,45 @@ async function _mrnNews() {
 }
 
 async function renderMorning() {
-  _mrnNews();
-  if (window.PKBrief) { const b = document.getElementById('mrn-brief'), m = document.getElementById('mrn-30d'); if (b) PKBrief.brief(b); if (m) PKBrief.next30(m); }
   const upd = document.getElementById('mrn-date');
-  if (upd) upd.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
+  if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
-  _mrnKpis().then(_mrnMoves);
-  PKW.draw('fr-spot-next', 'mrn-spot', {}).then(r => sub('mrn-spot-sub', r));
-  if (window.PKF) { PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r)); if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } }
-  const ft = document.getElementById('mrn-fwdt'); if (ft) PKW.get('fr-fwd-table').html(ft, { country: 'FR' });
-  PKW.draw('fr-fwd-products', 'mrn-fwdp', { country: 'FR', win: '3M' }).then(r => sub('mrn-fwdp-sub', r));
-  const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, {});
-  if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', { win: '6M' }).then(r => sub('mrn-ttfc-sub', r));
-  PKW.draw('fr-fwd-strip', 'mrn-strip', { country: 'FR' }).then(r => sub('mrn-strip-sub', r));
-  PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
-  PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
-  PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
-  PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' });
-  PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' });
-  PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' });
+  _mrnFacts().then(k => {
+    _mrnKeys(k); _mrnTiles(k); _mrnWeeks(k);
+    const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('données du ', 'data of ') + _mDay(k.d).replace(/\.$/, '');
+  }).catch(e => console.warn('[morning]', e));
+  if (window.PKBrief) { const b = document.getElementById('mrn-brief'); if (b) PKBrief.brief(b); }
+  _mrnNews();
+  if (window.PKF) { PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r)); }
+  // the folded sections draw when first opened
+  const lazy = {
+    'hs-morning-fc': () => { if (!window.PKF) return; PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } },
+    'hs-morning-2': () => {
+      PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
+      PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
+      const ft = document.getElementById('mrn-fwdt'); if (ft) PKW.get('fr-fwd-table').html(ft, { country: 'FR' });
+      PKW.draw('fr-fwd-products', 'mrn-fwdp', { country: 'FR', win: '3M' }).then(r => sub('mrn-fwdp-sub', r));
+      const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, {});
+      if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', { win: '6M' }).then(r => sub('mrn-ttfc-sub', r));
+      PKW.draw('fr-fwd-strip', 'mrn-strip', { country: 'FR' }).then(r => sub('mrn-strip-sub', r));
+    },
+    'hs-morning-3': () => { _mrnTiles2(); PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r)); PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' }); },
+    'hs-morning-4': () => { PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); },
+  };
+  Object.entries(lazy).forEach(([id, fn]) => {
+    const sec = document.getElementById(id); if (!sec) return;
+    if (!sec.classList.contains('collapsed')) { fn(); return; }
+    if (sec._mrnLazy) { sec._mrnLazy.fn = fn; return; }   // a refresh: the next opening draws the new data
+    const st = sec._mrnLazy = { fn };
+    new MutationObserver((_, ob) => { if (!sec.classList.contains('collapsed')) { ob.disconnect(); sec._mrnLazy = null; requestAnimationFrame(() => st.fn()); } }).observe(sec, { attributes: true, attributeFilter: ['class'] });
+  });
 }
+
+document.addEventListener('click', e => {   // the tiles open the page behind them
+  const a = e.target.closest && e.target.closest('.mrn2-tile[data-route]');
+  if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (window.PKNav) { e.preventDefault(); PKNav.go(a.dataset.route); }
+});
 
 (function () {
   const css = document.createElement('style');
@@ -418,6 +491,35 @@ async function renderMorning() {
   .mrn-fwd-g td{font-size:9.5px!important;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)!important;padding-top:10px!important;font-family:inherit!important}
   .mrn-fwd-note{font-size:10px;color:var(--tx3);margin-top:8px}
   @media (max-width:600px){ .mrn-fwd td,.mrn-fwd th{padding:5px 4px} .mrn-fwd td small{display:block;font-size:9px} .mrn-fwd{font-size:11px} }
+  .mrn2{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+  .mrn2-hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .mrn2-hdr h1{font:600 22px 'Outfit',sans-serif;margin:0;color:var(--text)} .mrn2-hdr h1::first-letter{text-transform:uppercase} .mrn2-upd{font-size:12px;color:var(--text3)}
+  .mrn2-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 18px}
+  .mrn2-lbl{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--text3);font-weight:600;margin:0 0 8px}
+  .mrn2-brief{border-left:3px solid var(--accent)} .mrn2-brief ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+  .mrn2-brief li{font-size:14.5px;line-height:1.5;color:var(--text2)} .mrn2-brief b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+  .mrn2-brief b.mrn-up,.mrn2 .mrn-up{color:var(--down)} .mrn2-brief b.mrn-dn,.mrn2 .mrn-dn,.mrn2 .mrn-down{color:var(--up)}
+  .mrn2-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .mrn2-tiles-sm{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:12px}
+  @media (max-width:1100px){.mrn2-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .mrn2-tile{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;text-decoration:none;color:inherit}
+  a.mrn2-tile:hover{border-color:var(--border3)}
+  .mrn2-tn{font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrn2-tv{font:600 21px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap} .mrn2-tv small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px}
+  .mrn2-tc{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrn2-tc.mrn-up{color:var(--down)} .mrn2-tc.mrn-down{color:var(--up)}
+  .mrn2-tile svg{width:100%;height:28px;margin-top:5px;display:block}
+  .mrn2 .fuel-grid-2{margin:0} .mrn2>.chart-container{margin:0}
+  .mrn2-weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .mrn2-wk{background:var(--bg3);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-width:0}
+  .mrn2-wk-t{font-size:11px;color:var(--text3)} .mrn2-wk-r{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--text2)} .mrn2-wk-r b{color:var(--text);font-weight:600;white-space:nowrap}
+  .mrn2-gauges{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;font-size:12.5px;color:var(--text2)} .mrn2-gauges b{color:var(--text)}
+  .mrn2-bar{height:8px;border-radius:4px;background:var(--bg3);position:relative;margin-top:6px} .mrn2-fill{height:100%;border-radius:4px}
+  .mrn2-mark{position:absolute;top:-4px;width:2px;height:16px;background:var(--text2)} .mrn2-gs{font-size:11.5px;color:var(--text3);margin-top:5px}
+  .mrn2-note{font-size:12.5px;color:var(--text2);margin:10px 0 0} .mrn2-note b{color:var(--text)}
+  @media (max-width:700px){.mrn2-weeks{grid-template-columns:repeat(2,minmax(0,1fr))}.mrn2-gauges{grid-template-columns:1fr}}
+  .mrn-news .mrn-news-more{font-size:11.5px;color:var(--accent);text-decoration:none;margin-left:auto}
   .mrn-sec{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);font-weight:600;margin:18px 0 8px}
   `;
   document.head.appendChild(css);
