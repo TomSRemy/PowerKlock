@@ -522,7 +522,8 @@ function _mrnLearnTiles(T, L) {
 async function _mrnTiles2(el) {
   const host = el || document.getElementById('mrn-kpis2'); if (!host || host.dataset.done) return; host.dataset.done = '1';
   // the power system right now (RTE éCO2mix, latest quarter-hour)
-  const T = [], t = (n, v, u, sub) => T.push(`<div class="mrn2-tile"><span class="mrn2-tn">${n}</span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span></div>`);
+  // same build as the market tiles: what it is above the name, the figure, the comparison, today's curve in the source's colour
+  const T = [], t = (cat, n, v, u, sub, curve, col) => T.push(`<div class="mrn2-tile mrn-sys-t"><span class="mrn3-cat">${cat}</span><span class="mrn3-th"><span class="mrn2-tn">${n}</span></span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span>${curve ? _mrnSpark(curve, col) : ''}<span class="mrn3-tx"><span></span><span>${_mT('aujourd’hui', 'today')}</span></span></div>`);
   if (window.pkRte) {
     const td = _mrnToday();
     const [R, Ry] = await Promise.all([pkRte.day(td).catch(() => null), pkRte.day(_mrnAdd(td, -1)).catch(() => null)]);
@@ -530,13 +531,15 @@ async function _mrnTiles2(el) {
     const vsY = (key, i, d, unit, scale) => { const y = Ry && at(Ry[key], i); const v = at(R[key], i); return y != null && v != null ? _mS((v - y) / (scale || 1), d) + ' ' + unit + _mT(' vs hier même heure', ' vs yesterday same time') : ''; };
     if (li >= 0) {
       const hh = String(Math.floor(li / 4)).padStart(2, '0') + ':' + String(li % 4 * 15).padStart(2, '0');
-      if (at(R.co2, li) != null) t(_mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', _mT('hier en moyenne ', 'yesterday on average ') + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh');
-      if (at(R.load, li) != null) t(_mT('Consommation à ', 'Consumption at ') + hh, _mN(at(R.load, li) / 1000, 1), 'GW', vsY('load', li, 1, 'GW', 1000));
-      if (at(R.nuclear, li) != null) t(_mT('Nucléaire à ', 'Nuclear at ') + hh, _mN(at(R.nuclear, li) / 1000, 1), 'GW', vsY('nuclear', li, 1, 'GW', 1000));
+      const day = (key, f) => Array.isArray(R[key]) ? R[key].slice(0, li + 1).filter((_, j) => j % 4 === 0).map(v => v == null ? null : f ? f(v) : v) : null;
+      if (at(R.co2, li) != null) t(_mT('Carbone', 'Carbon'), _mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', _mT('hier en moyenne ', 'yesterday on average ') + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh', day('co2'), '#94A3B8');
+      if (at(R.load, li) != null) t(_mT('Demande', 'Demand'), _mT('Consommation à ', 'Consumption at ') + hh, _mN(at(R.load, li) / 1000, 1), 'GW', vsY('load', li, 1, 'GW', 1000), day('load'), '#E6EDF3');
+      if (at(R.nuclear, li) != null) t(_mT('Production', 'Generation'), _mT('Nucléaire à ', 'Nuclear at ') + hh, _mN(at(R.nuclear, li) / 1000, 1), 'GW', vsY('nuclear', li, 1, 'GW', 1000), day('nuclear'), '#A98BD4');
       const ws = (at(R.wind, li) || 0) + (at(R.solar, li) || 0), ld = at(R.load, li);
-      t(_mT('Éolien + solaire à ', 'Wind + solar at ') + hh, _mN(ws / 1000, 1), 'GW', ld ? _mN(ws / ld * 100, 0) + _mT(' % de la consommation', ' % of consumption') : '');
+      const wsD = Array.isArray(R.wind) ? R.wind.slice(0, li + 1).map((v, j) => (v || 0) + ((R.solar || [])[j] || 0)).filter((_, j) => j % 4 === 0) : null;
+      t(_mT('Renouvelables', 'Renewables'), _mT('Éolien + solaire à ', 'Wind + solar at ') + hh, _mN(ws / 1000, 1), 'GW', ld ? _mN(ws / ld * 100, 0) + _mT(' % de la consommation', ' % of consumption') : '', wsD, '#14D3A9');
       const ex = at(R.exchanges, li);
-      if (ex != null) t(_mT('Échanges à ', 'Exchanges at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'));
+      if (ex != null) t(_mT('Échanges', 'Exchanges'), _mT('Solde à ', 'Balance at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'), day('exchanges', v => -v), '#7FC8F8');
     }
   }
   host.innerHTML = T.join('');
@@ -652,16 +655,19 @@ async function _mrnGoTable(host) {
   const y = +_mrnToday().slice(0, 4), yrs = [y - 1, y, y + 1, y + 2].map(yy => [yy, _mrnGoSeries(rows || [], 'GO AIB Renewable', yy)]).filter(x => x[1].length);
   if (!yrs.length) { host.innerHTML = '<div class="fuel-note">' + _mT('Prix des GO indisponibles.', 'GO prices not available.') + '</div>'; return; }
   const chg = (a, b) => b == null ? '<td>–</td>' : `<td class="${a - b > 1e-6 ? 'mrn-up' : a - b < -1e-6 ? 'mrn-down' : ''}">${_mS(a - b, 3)}</td>`;
-  let h = `<table class="mrn-fwd"><thead><tr><th>${_mT('Année de production', 'Production year')}</th><th>${_mT('Prix €/MWh', 'Price €/MWh')}</th><th>${_mT('vs S-1', 'vs W-1')}</th><th>${_mT('vs 4 sem.', 'vs 4 wks')}</th></tr></thead><tbody>`;
+  // one table, four columns used by both parts: name · price · change · change (or volume for the auction)
+  let h = `<table class="mrn-fwd mrn-got"><colgroup><col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>${_mT('Année de production', 'Production year')}</th><th>${_mT('Prix €/MWh', 'Price €/MWh')}</th><th>${_mT('vs S-1', 'vs W-1')}</th><th>${_mT('vs 4 sem.', 'vs 4 wks')}</th></tr></thead><tbody>`;
   yrs.forEach(([yy, s]) => { const l = s[s.length - 1].mid, w1 = s.length > 1 ? s[s.length - 2].mid : null, w4 = s.length > 4 ? s[s.length - 5].mid : null;
     h += `<tr><td>Cal ${yy}</td><td class="mrn-fwd-p">${_mN(l, 3)}</td>${chg(l, w1)}${chg(l, w4)}</tr>`; });
-  h += '</tbody></table>';
   const last = yrs[0][1][yrs[0][1].length - 1].t;
-  const a = au && Array.isArray(au.auctions) && au.auctions[au.auctions.length - 1];
+  const AU = au && Array.isArray(au.auctions) ? au.auctions : [], a = AU[AU.length - 1], pa = AU[AU.length - 2];
   if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
-    if (vol) h += `<table class="mrn-fwd" style="margin-top:10px"><thead><tr><th>${_mT('Enchère GO France', 'France GO auction')} (${a.auction_month})</th><th>€/MWh</th><th>TWh</th><th></th></tr></thead><tbody>` +
-      bt.filter(r => r.allocated_mwh).map(r => `<tr><td>${r.technology || ''}</td><td class="mrn-fwd-p">${_mN(r.price_eur_mwh, 3)}</td><td>${_mN(r.allocated_mwh / 1e6, 2)}</td><td></td></tr>`).join('') +
-      `<tr><td><b>${_mT('Moyenne', 'Average')}</b></td><td class="mrn-fwd-p"><b>${_mN(val / vol, 3)}</b></td><td><b>${_mN(vol / 1e6, 2)}</b></td><td></td></tr></tbody></table>`; }
+    const prev = tech => { const r = pa && (pa.by_technology || []).find(x => x.technology === tech); return r ? r.price_eur_mwh : null; };
+    const pv = pa ? (() => { const b2 = pa.by_technology || [], v2 = b2.reduce((x, r) => x + (r.allocated_mwh || 0), 0); return v2 ? b2.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0) / v2 : null; })() : null;
+    if (vol) h += `<tr class="mrn-fwd-g2"><th>${_mT('Enchère GO France', 'France GO auction')} (${a.auction_month})</th><th>€/MWh</th><th>${_mT('vs enchère préc.', 'vs previous')}${pa ? ' (' + pa.auction_month + ')' : ''}</th><th>TWh</th></tr>` +
+      bt.filter(r => r.allocated_mwh).map(r => `<tr><td>${r.technology || ''}</td><td class="mrn-fwd-p">${_mN(r.price_eur_mwh, 3)}</td>${chg(r.price_eur_mwh, prev(r.technology))}<td>${_mN(r.allocated_mwh / 1e6, 2)}</td></tr>`).join('') +
+      `<tr><td><b>${_mT('Moyenne', 'Average')}</b></td><td class="mrn-fwd-p"><b>${_mN(val / vol, 3)}</b></td>${chg(val / vol, pv)}<td><b>${_mN(vol / 1e6, 2)}</b></td></tr>`; }
+  h += '</tbody></table>';
   host.innerHTML = h + `<div class="mrn-fwd-note">${_mT('Moyenne courtier (offre + demande) du ', 'Broker mid (bid + ask) of ')}${last} · ${_mT('hausse en rouge', 'rise in red')}</div>`;
 }
 
@@ -969,7 +975,8 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-brief li{font-size:14.5px;line-height:1.5;color:var(--text2)} .mrn2-brief b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
   .mrn2-brief b.mrn-up,.mrn2 .mrn-up{color:var(--down)} .mrn2-brief b.mrn-dn,.mrn2 .mrn-dn,.mrn2 .mrn-down{color:var(--up)}
   .mrn2-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
-  .mrn2-tiles-sm{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:12px}
+  .mrn2-tiles-sm{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:14px}
+  @media (max-width:1100px){.mrn2-tiles-sm{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:1100px){.mrn2-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .mrn2-tile{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;text-decoration:none;color:inherit}
