@@ -307,7 +307,8 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.id === 'rp-play') { S.playing ? pause() : play(); return; }
       if (t.id === 'rp-export') { record(); return; }
-      if (t.dataset.day) { S.mode = t.dataset.mode || S.mode; controls(); setDay(t.dataset.day); return; }
+      if (t.id === 'rp-full') { const st = document.getElementById('rp-stage'); if (document.fullscreenElement) document.exitFullscreen(); else if (st && st.requestFullscreen) st.requestFullscreen(); return; }
+      if (t.dataset.day) { S.mode = t.dataset.mode || S.mode; controls(); setDay(t.dataset.day); const st = document.getElementById('rp-ctl'); if (st) st.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
       if (t.dataset.mode) { S.mode = t.dataset.mode; controls(); setDay(S.day); return; }
       if (t.dataset.fmt) { S.fmt = t.dataset.fmt; controls(); draw(); return; }
       if (t.dataset.speed) { S.speed = t.dataset.speed; controls(); }
@@ -337,8 +338,10 @@
   .rp-wrap{display:flex;flex-direction:column;gap:14px}
   .rp-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .rp-ctl select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:11px;padding:3px 6px;border-radius:4px}
-  .rp-stage{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;justify-content:center}
-  .rp-stage canvas{max-width:100%;max-height:72vh;width:auto;height:auto;border-radius:8px}
+  .rp-stage{display:flex;justify-content:center;background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .rp-stage canvas{display:block;width:100%;height:auto;max-height:calc(100vh - 270px);object-fit:contain}
+  .rp-ctl{scroll-margin-top:150px}
+  .rp-stage:fullscreen{background:#000;align-items:center;border:0;border-radius:0} .rp-stage:fullscreen canvas{max-height:100vh;width:auto;max-width:100vw;height:100vh}
   .rp-bar{display:flex;align-items:center;gap:12px}
   .rp-bar input[type=range]{flex:1;accent-color:#14D3A9}
   .rp-days{display:flex;flex-direction:column;gap:8px}
