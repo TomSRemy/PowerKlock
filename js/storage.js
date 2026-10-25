@@ -133,8 +133,8 @@ _nucReg({
     const [from, to] = _fuelRange(p);
     const j = _fuelJoin([PKC.asMap('fr_nuc_avail', true), PKC.asMap('fr_nuc_avail_fc', true)], from, to);
     _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
-      _fuelLineDs('Unavailable (actual)', j.cols[0].map(v => v == null ? null : +un(v).toFixed(2)), C_DN, { borderWidth: 2, fill: true, backgroundColor: rgba(C_DN, .12) }),
-      _fuelLineDs('Unavailable (operator forecast)', j.cols[1].map(v => v == null ? null : +un(v).toFixed(2)), '#F4A3A0', { borderDash: [5, 4], borderWidth: 1.3 }),
+      _fuelLineDs('Unavailable (actual)', j.cols[0].map(v => v == null ? null : +un(v).toFixed(2)), C_NUC, { borderWidth: 2, fill: true, backgroundColor: rgba('#7B4B9C', .14) }),   // nuclear is violet across the site
+      _fuelLineDs('Unavailable (operator forecast)', j.cols[1].map(v => v == null ? null : +un(v).toFixed(2)), '#A98BD4', { borderDash: [5, 4], borderWidth: 1.3 }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { beginAtZero: true }) } }) }, 'fr-nuclear-unavailability');
   },
 });

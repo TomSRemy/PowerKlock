@@ -134,5 +134,33 @@
  "34": {
   "status": "done",
   "reply": "Fait : le convertisseur a un tableau « Facteurs de charge mesurés » par pays (solaire, éolien, nucléaire, hydraulique, fossile — Energy-Charts) ou par région française (solaire, éolien — RTE), dernière année ou moyenne 3 ans ; un clic met la valeur dans le calcul. Aussi disponible comme widget de tableau de bord."
+ },
+ "35": {
+  "status": "done",
+  "reply": "Fait : les graphiques forwards électricité et gaz ont le même filtre (années calendaires + mois et trimestre de front, 3 mois) et le même design ; titres « Électricité France · forwards » et « Gaz TTF · forwards »."
+ },
+ "36": {
+  "status": "done",
+  "reply": "Fait : à gauche, taux de capture (mois par mois, en barres) au-dessus des prix de capture à terme, même schéma et mêmes couleurs ; à droite, capture par région solaire au-dessus de l’éolien, une période pour les deux. GO : nouvelle ligne, le graphique et à droite un tableau (prix par année de production, variation semaine et 4 semaines, dernière enchère française)."
+ },
+ "37": {
+  "status": "done",
+  "reply": "Corrigé : les indisponibilités nucléaires sont en violet, comme le nucléaire partout ailleurs (le rouge venait d’un ancien code « baisse »)."
+ },
+ "38": {
+  "status": "done",
+  "reply": "Fait : une barre rouge en haut d’Aujourd’hui dès qu’il y a des heures à 0 € ou moins aujourd’hui ou demain (ou que la prévision en attend), avec les heures, le prix le plus bas, un lien vers le détail et « M’alerter par e-mail »."
+ },
+ "39": {
+  "status": "done",
+  "reply": "Corrigé : les deux tableaux (électricité et TTF) utilisent maintenant le même tableau, même design."
+ },
+ "40": {
+  "status": "done",
+  "reply": "Fait : saisons en dernier dans tous les tableaux forwards ; sur Aujourd’hui, masquées par défaut, une case « Saisons » les affiche (dans les deux tableaux à la fois)."
+ },
+ "41": {
+  "status": "done",
+  "reply": "Fait : nouvelle section repliée « Fondamentaux » dans Expert avec les graphiques de la présentation CATE : Cal+1 et ses moteurs, stocks de gaz année contre année, nucléaire par mois, réservoirs hydrauliques, prévisions température, vent, soleil et précipitations vs normale."
  }
 }

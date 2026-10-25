@@ -3928,6 +3928,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="mrn2-hdr mrn3-hdr"><h1 id="mrn-date">Today</h1><span class="mrn2-upd" id="mrn-upd"></span></div>
       <!-- Quick look (default): one screen, no scrolling -->
       <div class="mrn2" id="mrn-quick">
+        <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
         <div class="mrn3-qrow">
           <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
@@ -3949,11 +3950,12 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <!-- Expert: everything, dense -->
       <div class="mrn2" id="mrn2">
+        <div id="mrn-negal" hidden></div>
+        <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
         <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
           <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
         </section>
-        <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
         <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France</div><div class="fuel-card-sub">Weather against normal, gas storage, month-ahead forward</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
         <div class="mrn3-pair">
         <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved and why</div><div class="fuel-card-sub">The reasons behind the prices above, and the trend for the week ahead</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
@@ -3978,22 +3980,70 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France forwards · price history by product</div><div class="fuel-card-sub" id="mrn-fwdp-sub">3 months</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">France power forwards · price history</div><div class="fuel-card-sub" id="mrn-fwdp-sub">3 months</div></div><span class="source-badge">Market data</span></div>
             <div style="position:relative;height:320px"><canvas id="mrn-fwdp" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France forward prices</div><div class="fuel-card-sub">Baseload, by product, change on the day and the week</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">France power forward prices</div><div class="fuel-card-sub">Baseload, by product, change on the day and the week</div></div><label class="mrn3-sel"><input type="checkbox" class="mrn-fwd-seas"> Seasons</label></div>
             <div class="mrn3-tbl" id="mrn-fwdt"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">TTF forwards · price history by product</div><div class="fuel-card-sub" id="mrn-ttfc-sub">6 months</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF gas forwards · price history</div><div class="fuel-card-sub" id="mrn-ttfc-sub">6 months</div></div><span class="source-badge">Market data</span></div>
             <div style="position:relative;height:320px"><canvas id="mrn-ttfc" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">TTF forward prices</div><div class="fuel-card-sub">By product, change on the day and the week</div></div><span class="source-badge">Market data</span></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF gas forward prices</div><div class="fuel-card-sub">By product, change on the day and the week</div></div><label class="mrn3-sel"><input type="checkbox" class="mrn-fwd-seas"> Seasons</label></div>
             <div class="mrn3-tbl" id="mrn-ttft"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong collapsed" id="hs-morning-fund">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-fund')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Fundamentals<span class="pk-hs-meta">what drives the coming weeks: Cal+1 drivers, gas storage, nuclear, hydro, weather outlook (as in the CATE presentation)</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-fund">
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="mrn-drv-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-drv" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">EU gas storage, year against year</div><div class="fuel-card-sub" id="mrn-gsy-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-gsy" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">French nuclear output by month, year against year</div><div class="fuel-card-sub" id="mrn-nucy-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-nucy" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France hydro reservoirs</div><div class="fuel-card-sub" id="mrn-hyd-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-hyd" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Temperature outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxt-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-wxt" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Wind outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxw-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-wxw" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Solar outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxs-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-wxs" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Precipitation outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxp-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-wxp" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
         </div>
@@ -4005,13 +4055,25 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-morning-3">
         <div class="fuel-grid-2 mrn3-row">
+          <div class="mrn3-col">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France wind & solar capture rates</div><div class="fuel-card-sub" id="mrn-cr-sub">Capture price ÷ baseload, 90 days</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:320px"><canvas id="mrn-cr" style="width:100%;height:320px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">France wind & solar capture rates</div><div class="fuel-card-sub" id="mrn-cr-sub">Capture price ÷ baseload, month by month</div></div><span class="source-badge">RTE éCO2mix</span></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-cr" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="mrn3-sel"><select id="mrn-creg-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select><select id="mrn-creg-per" aria-label="Period"></select></span><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>
-            <div style="position:relative;height:320px"><canvas id="mrn-creg" style="width:100%;height:320px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">France forward capture prices</div><div class="fuel-card-sub" id="mrn-fcap-sub">Solar and wind: what the forwards are worth for their production profile</div></div><span class="source-badge">PowerKlock</span></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-fcap" style="width:100%;height:260px"></canvas></div>
+          </div>
+          </div>
+          <div class="mrn3-col">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Solar · capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="mrn3-sel"><select id="mrn-creg-per" aria-label="Period"></select></span></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-creg" style="width:100%;height:260px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Wind · capture rate by region</div><div class="fuel-card-sub" id="mrn-cregw-sub">Same period</div></div><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-cregw" style="width:100%;height:260px"></canvas></div>
+          </div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
@@ -4020,8 +4082,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:320px"><canvas id="mrn-go" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France forward capture prices</div><div class="fuel-card-sub" id="mrn-fcap-sub">Solar and wind: what the forwards are worth for their production profile</div></div><span class="source-badge">PowerKlock</span></div>
-            <div style="position:relative;height:320px"><canvas id="mrn-fcap" style="width:100%;height:320px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">Guarantees of origin · prices</div><div class="fuel-card-sub">Renewable AIB, broker mid by production year, change on the week and 4 weeks; latest French auction</div></div><span class="source-badge">Commerg · EEX</span></div>
+            <div class="mrn3-tbl" id="mrn-got"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
         </div>
         </div>
