@@ -295,6 +295,15 @@ function renderGOKPIs() {
 // price for that vintage as quoted that week. This is the "forward curve
 // evolution" view — how far the market moves each contract year over time —
 // not a single rolling product's bid/ask band.
+// Decimals that follow the size of the numbers: axis labels as precise as the gap between two ticks
+// (0.5 € steps → one decimal, 1 € steps → none), values in tooltips with two decimals under 10 €, one above.
+function _goTick(v, i, ticks) {
+  const step = ticks && ticks.length > 1 ? Math.abs(ticks[1].value - ticks[0].value) : 1;
+  const d = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
+  return (+v).toFixed(d) + '€';
+}
+function _goNum(v) { return (+v).toFixed(Math.abs(v) >= 10 ? 1 : 2); }
+
 function drawGoIndicChart() {
   const key = Object.keys(GO_SERIES).find(k => GO_SERIES[k].l === goProd) || 'renewable';
   const real = GO_REAL && GO_REAL.byKey[key];
@@ -327,12 +336,12 @@ function drawGoIndicChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend: { display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
+        tooltip: { mode:'index', callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh') } },
         zoom: ZOOM_CFG,
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
       }
     }
   });
@@ -373,12 +382,12 @@ function drawGoCal1Chart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend: { display:false },
-        tooltip: { callbacks:{ label: ctx => 'Y+1: '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
+        tooltip: { callbacks:{ label: ctx => 'Y+1: '+(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh') } },
         zoom: ZOOM_CFG,
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:10} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
       }
     }
   });
@@ -413,12 +422,12 @@ function drawGoCalChart() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh') } },
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh') } },
       },
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3} },
         // Bars start at zero: a truncated axis made a 0.05 € gap look like 3x.
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, beginAtZero:true }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick}, beginAtZero:true }
       }
     }
   });
@@ -443,8 +452,8 @@ function drawGoSpreadChart() {
       pointRadius:0, fill:true, backgroundColor:rgba(C_WARN,.1), tension: 0 }] },
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh')}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'},beginAtZero:true} }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh')}}, zoom:ZOOM_CFG },
+      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:_goTick},beginAtZero:true} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-spread-canvas'); addDownload('go-spread-canvas','go-spread'); },100);
@@ -516,13 +525,13 @@ function drawGoAuctionTechChart() {
         tooltip: { mode:'index', callbacks:{ label: ctx => {
           const v = ctx.raw;
           return v == null ? ctx.dataset.label+': –' :
-            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+v.toFixed(2)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('en-GB')+' MWh';
+            ctx.dataset.yAxisID === 'price' ? ctx.dataset.label+': '+_goNum(v)+' €/GO' : ctx.dataset.label+': '+Math.round(v).toLocaleString('en-GB')+' MWh';
         } } },
       },
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:14, font:{size:9}} },
         vol:   { position:'left',  grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(0)+'k'}, title:{display:true,text:'MWh',color:C_TX3,font:{size:10}} },
-        price: { position:'right', grid:GRID_NONE, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'}, title:{display:true,text:'€/GO',color:C_TX3,font:{size:10}} },
+        price: { position:'right', grid:GRID_NONE, ticks:{color:C_TX3, callback:_goTick}, title:{display:true,text:'€/GO',color:C_TX3,font:{size:10}} },
       }
     }
   });
@@ -594,12 +603,12 @@ function drawGoHist() {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend:{ display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12} },
-        tooltip:{ mode:'index', callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':ctx.raw.toFixed(2)+' €/MWh')} },
+        tooltip:{ mode:'index', callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh')} },
         zoom: ZOOM_CFG,
       },
       scales: {
         x:{ grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y:{ grid:GRID, ticks:{color:C_TX3, callback:v=>v.toFixed(2)+'€'} }
+        y:{ grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
       }
     }
   });
@@ -633,8 +642,8 @@ function drawGoWoW() {
     }]},
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+ctx.raw.toFixed(2)+' €/MWh'}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'}} }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+_goNum(ctx.raw)+' €/MWh'}}, zoom:ZOOM_CFG },
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-wow-canvas'); },100);
@@ -677,8 +686,8 @@ function drawGoBox() {
     ]},
     options: {
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(2)+'–'+ctx.raw[1].toFixed(2):ctx.raw.toFixed(2))+' €/MWh')}} },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:v=>v.toFixed(2)+'€'}, beginAtZero:false} }
+      plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(2)+'–'+ctx.raw[1].toFixed(2):_goNum(ctx.raw))+' €/MWh')}} },
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}, beginAtZero:false} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);

@@ -31,12 +31,12 @@
     SE: ['SE', 'SE_1', 'SE_2', 'SE_3', 'SE_4'], NO: ['NO_1', 'NO_2', 'NO_3', 'NO_4', 'NO_5'] };
   // Display groups (Electricity Maps order), ENTSO-E codes
   const GROUPS = [
-    { k: 'nuclear', label: 'Nuclear', color: '#A78BFA', codes: ['B14'] },
+    { k: 'nuclear', label: 'Nuclear', color: '#7B4B9C', codes: ['B14'] },
     { k: 'wind', label: 'Wind', color: '#14D3A9', codes: ['B18', 'B19'] },
     { k: 'solar', label: 'Solar', color: '#FBBF24', codes: ['B16'] },
-    { k: 'hydro', label: 'Hydro', color: '#3B82F6', codes: ['B11', 'B12', 'B13'] },
+    { k: 'hydro', label: 'Hydro', color: '#3FA6B4', codes: ['B11', 'B12', 'B13'] },
     { k: 'storage', label: 'Hydro storage & batteries', color: '#60A5FA', codes: ['B10', 'B25'] },
-    { k: 'bio', label: 'Biomass & other RES', color: '#84CC16', codes: ['B01', 'B09', 'B15'] },
+    { k: 'bio', label: 'Biomass & other RES', color: '#94D2BD', codes: ['B01', 'B09', 'B15'] },
     { k: 'gas', label: 'Gas', color: '#F97316', codes: ['B04', 'B03'] },
     { k: 'coal', label: 'Coal & lignite', color: '#78716C', codes: ['B02', 'B05', 'B08'] },
     { k: 'oil', label: 'Oil', color: '#B45309', codes: ['B06', 'B07'] },

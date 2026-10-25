@@ -950,15 +950,24 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
       ba.innerHTML = _gmDrillBuildBannerHtml('profile', zone, window._GM_LAST_MIX, window._GM_LAST_ST);
   }
 
-  // Real J-1 (previous stored day, resampled to N)
-  let prev = null;
-  const pd = new Date(cur.ds + 'T00:00:00'); pd.setDate(pd.getDate() - 1);
-  const pj = await _gmFetchDaily(_gmFmtDate(pd));
-  const pzd = pj && pj.zones && pj.zones[zone];
-  if (_gmHasArrays(pzd)) {
-    const pa = _gmDayArrays(pzd);
-    const pTot = _gmTotalGW(pa);
-    prev = new Array(N).fill(0).map((_, i) => pTot[Math.min(pa.N - 1, Math.round(i / (N - 1) * (pa.N - 1)))]);
+  // Overlay picked in the drill (None / vs J-1 / vs 7-day average): previous stored days, resampled to N
+  const ovl = canvasId === 'gm-drill-profile-canvas' ? (window._gmDrillProfileOverlay || 'j-1') : 'j-1';
+  const dayTot = async back => {
+    const pd = new Date(cur.ds + 'T00:00:00'); pd.setDate(pd.getDate() - back);
+    const pj = await _gmFetchDaily(_gmFmtDate(pd));
+    const pzd = pj && pj.zones && pj.zones[zone];
+    if (!_gmHasArrays(pzd)) return null;
+    const pa = _gmDayArrays(pzd), pTot = _gmTotalGW(pa);
+    return new Array(N).fill(0).map((_, i) => pTot[Math.min(pa.N - 1, Math.round(i / (N - 1) * (pa.N - 1)))]);
+  };
+  let prev = null, prevLbl = 'J-1';
+  if (ovl === 'j-1') prev = await dayTot(1);
+  else if (ovl === '7d') {
+    const ds = (await Promise.all([1, 2, 3, 4, 5, 6, 7].map(dayTot))).filter(Boolean);
+    if (ds.length) {
+      prev = new Array(N).fill(0).map((_, i) => { const v = ds.map(d => d[i]).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+      prevLbl = (window.PKI18n && PKI18n.lang !== 'en') ? 'Moyenne 7 j' : '7-day avg';
+    }
   }
 
   const labels = [];
@@ -981,7 +990,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
     borderWidth: 2.5, fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 4,
   });
   if (prev) datasets.push({
-    label: 'J-1', data: prev, borderColor: '#7A93AB', backgroundColor: 'transparent',
+    label: prevLbl, data: prev, borderColor: '#7A93AB', backgroundColor: 'transparent',
     borderWidth: 1.5, borderDash: [4, 3], fill: false, tension: 0, pointRadius: 0, pointHoverRadius: 4,
   });
 

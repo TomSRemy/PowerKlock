@@ -532,8 +532,8 @@ function _gmdczRenderHeatmap(o) {
   if (!zones.length) { host.innerHTML = `<div style="padding:24px;color:var(--tx3)">No data</div>`; return; }
 
   // Need globals from genmix.js (already loaded before genmix-daily.js)
-  const FUEL_ORDER = (typeof GM_FUEL_ORDER !== 'undefined') ? GM_FUEL_ORDER :
-                     ['nuclear','wind','solar','hydro','biomass','fossil','other'];
+  const FUEL_ORDER = (typeof GM_STACK_FUELS !== 'undefined') ? GM_STACK_FUELS :
+                     ['nuclear','hydro','biomass','wind','solar','fossil','other'];
   const FUEL_META = (typeof GM_FUEL_META !== 'undefined') ? GM_FUEL_META : _GMDCZ_META;
   const stats = (typeof _gmStats === 'function') ? _gmStats : null;
   const hexToRgb = (typeof _gmHexToRgbStr === 'function') ? _gmHexToRgbStr : (hex => {

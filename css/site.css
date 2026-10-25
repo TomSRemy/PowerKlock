@@ -3251,3 +3251,6 @@ details.pk-howto > summary { cursor: pointer; font-size: 12px; font-weight: 600;
 details.pk-howto > summary::before { content: 'ⓘ  '; color: var(--accent, #14D3A9); }
 details.pk-howto[open] > summary { margin-bottom: 6px; }
 .gmhcz-rank-row:hover{background:rgba(20,211,169,.07)}
+/* measured load factors: clickable figures */
+.lf-table .lf-cell { cursor: pointer; }
+.lf-table .lf-cell:hover, .lf-table .lf-cell:focus { color: var(--accent, #14D3A9); background: rgba(20,211,169,.07); outline: none; }

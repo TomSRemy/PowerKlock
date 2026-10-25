@@ -10,8 +10,8 @@
 // data/history/rte/fr_daily.json, js/eco2mix.js (exchanges per border).
 // ════════════════════════════════════════════════════════════════════
 const FRS = { day: null, envSeries: 'nuclear', monthlyView: 'twh' };
-const FRS_COLORS = { nuclear: '#A78BFA', hydro: '#3B82F6', hydroPS: '#60A5FA', windOn: '#14D3A9', windOff: '#0EA5E9', wind: '#14D3A9', solar: '#FBBF24',
-  gas: '#F97316', coal: '#78716C', oil: '#B45309', bio: '#84CC16', battery: '#E879F9', pumping: '#1E3A8A', load: '#F8FAFC' };
+const FRS_COLORS = { nuclear: '#7B4B9C', hydro: '#3FA6B4', hydroPS: '#60A5FA', windOn: '#14D3A9', windOff: '#0EA5E9', wind: '#14D3A9', solar: '#FBBF24',
+  gas: '#F97316', coal: '#78716C', oil: '#B45309', bio: '#94D2BD', battery: '#E879F9', pumping: '#1E3A8A', load: '#F8FAFC' };
 const FRS_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function _frsToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }

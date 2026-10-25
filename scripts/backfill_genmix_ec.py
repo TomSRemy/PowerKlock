@@ -50,7 +50,9 @@ def get(cc, a, b):
 
 
 def by_paris_hour(pw):
-    """{(Paris day, hour): {fuel: MW}}"""
+    """{(Paris day, hour): {fuel: MW}}: each production type averaged over its quarter-hours of the
+    hour, then the types of a fuel added up (onshore + offshore wind, the three hydro kinds, the
+    fossil fuels). Averaging the types together, as before, halved wind where there is offshore."""
     ts = pw['unix_seconds']
     acc = {}
     for p in pw['production_types']:
@@ -62,11 +64,11 @@ def by_paris_hour(pw):
                 continue
             loc = datetime.fromtimestamp(t, timezone.utc).astimezone(PARIS)
             k = (loc.date().isoformat(), loc.hour)
-            a = acc.setdefault(k, {}).setdefault(f, [0.0, 0])
+            a = acc.setdefault(k, {}).setdefault(f, {}).setdefault(p['name'], [0.0, 0])
             a[0] += max(0.0, v); a[1] += 1
     out = {}
     for k, fs in acc.items():
-        out[k] = {f: s / n for f, (s, n) in fs.items()}
+        out[k] = {f: sum(s / n for s, n in types.values()) for f, types in fs.items()}
     return out
 
 
@@ -110,7 +112,8 @@ def main():
                             arr[f][h] = arr[f][h - 1] if h and arr[f][h - 1] is not None else 0
                 zd = j['zones'].get(z) or {}
                 j['zones'][z] = zd
-                if any(isinstance(zd.get(f), list) and any(zd[f]) for f in ('nuclear', 'hydro', 'fossil')):
+                # ENTSO-E arrays are kept; Energy-Charts ones written by this script are rewritten
+                if zd.get('genSource') != 'Energy-Charts' and any(isinstance(zd.get(f), list) and any(zd[f]) for f in ('nuclear', 'hydro', 'fossil')):
                     continue
                 for f in FUELS:
                     zd[f] = arr[f]

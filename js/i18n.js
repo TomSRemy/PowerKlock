@@ -73,8 +73,9 @@
   const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'PRE']);
   function walk(root) {
     if (!D || !root) return;
-    if (root.nodeType === 3) { const t = root.nodeValue; if (t && /[A-Za-z]{2}|\d[.,]\d/.test(t)) { const n = tr(t); if (n !== t) root.nodeValue = n; } return; }
-    if (root.nodeType !== 1 || SKIP.has(root.tagName) || root.isContentEditable) return;
+    if (root.nodeType === 3) { if (root.parentNode && root.parentNode.closest && root.parentNode.closest('[translate="no"]')) return; const t = root.nodeValue; if (t && /[A-Za-z]{2}|\d[.,]\d/.test(t)) { const n = tr(t); if (n !== t) root.nodeValue = n; } return; }
+    // translate="no": the brand (Power.Klock) and anything else that must stay as written
+    if (root.nodeType !== 1 || SKIP.has(root.tagName) || root.isContentEditable || root.getAttribute('translate') === 'no') return;
     for (const a of ['title', 'placeholder', 'aria-label']) { const v = root.getAttribute && root.getAttribute(a); if (v) { const n = tr(v); if (n !== v) root.setAttribute(a, n); } }
     if (root.tagName === 'OPTION' || root.tagName === 'OPTGROUP') { if (root.label && root.tagName === 'OPTGROUP') root.label = tr(root.label); }
     for (let c = root.firstChild; c; c = c.nextSibling) walk(c);

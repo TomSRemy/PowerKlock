@@ -395,14 +395,16 @@
     _gmhRenderAll();
   };
   window.gmhToggleZoneChip = function (z) {
+    window._gmhZoneTouched = true;
     const all = _gmhAllBoardZones();
     const set = window._gmhZoneFilter ? new Set(window._gmhZoneFilter) : new Set(all);
     if (set.has(z)) set.delete(z); else set.add(z);
     window.gmhApplyZoneFilter(set);
   };
-  window.gmhSelectAllZones = function () { window.gmhApplyZoneFilter(null); };
-  window.gmhClearZones = function () { window.gmhApplyZoneFilter(new Set()); };
+  window.gmhSelectAllZones = function () { window._gmhZoneTouched = true; window.gmhApplyZoneFilter(null); };
+  window.gmhClearZones = function () { window._gmhZoneTouched = true; window.gmhApplyZoneFilter(new Set()); };
   window.gmhSelectNeighbours = function () {
+    window._gmhZoneTouched = true;
     const all = _gmhAllBoardZones();
     window.gmhApplyZoneFilter(new Set(['FR', 'DE_LU', 'BE', 'NL', 'ES', 'CH', 'IT_NORD', 'GB'].filter(z => all.includes(z))));
   };
@@ -472,6 +474,14 @@
   }
   function _gmhPaintBoard(pdata, period) {
     window._gmhAllZones = Object.keys(pdata); // full list (for the zone filter panel)
+    // the site's zone (top bar) filters the board until the zone panel is used: the archive can take
+    // longer to aggregate than js/scope.js waits, so the board applies it itself when it first paints
+    const sz = window.PKScope && PKScope.zone && PKScope.zone();
+    if (sz && !window._gmhZoneTouched && !window._gmhZoneFilter && pdata[sz]) {
+      window._gmhZoneFilter = new Set([sz]);
+      const lbl = document.getElementById('gm-gf-hist-zones-label');
+      if (lbl) lbl.textContent = `1 / ${window._gmhAllZones.length} zones`;
+    }
     const zoneFilter = window._gmhZoneFilter || null;
     const zones = window._gmhAllZones.filter(z => !zoneFilter || zoneFilter.has(z));
 
@@ -1560,7 +1570,16 @@
           const w = Math.max(2, (Math.abs(v) / max) * 100);
           const isFr = z === 'FR';
           const displayV = metric === 'co2' ? Math.round(v) : v.toFixed(1);
-          return `<div style="display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px">
+          // hover: the zone's four figures over the period, and its gap to France
+          const pz = pdata[z], fr = window.PKI18n && PKI18n.lang !== 'en', NAMES = window.GM_ZONE_NAMES || {};
+          const dFr = pdata.FR && !isFr ? v - _gmhczMetricValue(pdata.FR, metric) : null;
+          const tip = [(NAMES[z] || z) + ' · #' + (i + 1) + ' / ' + sorted.length,
+            (fr ? 'Renouvelables : ' : 'Renewables: ') + (pz.renPct || 0).toFixed(1) + ' %',
+            (fr ? 'Intensité CO₂ : ' : 'CO₂ intensity: ') + Math.round(pz.co2 || 0) + ' g/kWh',
+            (fr ? 'Charge moyenne : ' : 'Average load: ') + (pz.avgLoadGW || 0).toFixed(1) + ' GW',
+            (fr ? 'Énergie : ' : 'Energy: ') + (pz.energyTWh || 0).toFixed(1) + ' TWh']
+            .concat(dFr != null ? [(fr ? 'Écart avec la France : ' : 'Gap to France: ') + (dFr >= 0 ? '+' : '−') + (metric === 'co2' ? Math.round(Math.abs(dFr)) : Math.abs(dFr).toFixed(1)) + unit] : []).join('\n');
+          return `<div class="gmhcz-rank-row" title="${tip.replace(/"/g, '&quot;')}" style="display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:default;border-radius:4px;padding:1px 2px">
             <span style="width:30px;color:var(--tx3)">#${i + 1}</span>
             <span style="width:80px;font-weight:${isFr ? 700 : 600};color:${isFr ? '#fff' : 'var(--tx)'}">${FLAGS[z] || ''} ${z}${isFr ? ' <span style="color:#14D3A9">●</span>' : ''}</span>
             <div style="flex:1;height:18px;background:rgba(255,255,255,0.03);border-radius:3px;position:relative">
@@ -1576,7 +1595,7 @@
     const host = document.getElementById('gmhcz-content');
     if (!host) return;
     host.style.minHeight = '420px';
-    const STACK = ['nuclear', 'wind', 'solar', 'hydro', 'biomass', 'fossil', 'other'];
+    const STACK = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'];
     const FUEL_META = window.GM_FUEL_META || {};
     const FLAGS = window.FLAG_MAP || {};
     const hexToRgb = (typeof window._gmHexToRgbStr === 'function') ? window._gmHexToRgbStr : (hex => {
@@ -1604,7 +1623,7 @@
         const opacity = Math.min(0.85, pct / 50);
         const bg = `rgba(${hexToRgb(m.color)},${opacity})`;
         const tc = opacity > 0.4 ? '#0A1018' : 'var(--tx2)';
-        html += `<td style="padding:8px;text-align:center;background:${bg};color:${tc};font-family:'JetBrains Mono',monospace;font-weight:${opacity > 0.4 ? 700 : 500}">${pct.toFixed(1)}%</td>`;
+        html += `<td title="${z} · ${m.label || k}: ${pct.toFixed(1)} % · ${(p[k] || 0).toFixed(1)} TWh" style="padding:8px;text-align:center;background:${bg};color:${tc};font-family:'JetBrains Mono',monospace;font-weight:${opacity > 0.4 ? 700 : 500}">${pct.toFixed(1)}%</td>`;
       });
       html += `<td style="padding:8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${p.totalTWh.toFixed(1)} TWh</td></tr>`;
     });
