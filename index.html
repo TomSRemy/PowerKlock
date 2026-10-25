@@ -3936,7 +3936,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
         <div class="mrn3-qrow">
-          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
+          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · yesterday, today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
             <div style="position:relative;height:230px"><canvas id="mrn-q-spot" style="width:100%;height:230px"></canvas></div></section>
           <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">One line per market on why its price moved. Read it with the tiles above: the tile gives the figure, the line gives the reason.</p>
             <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
@@ -3960,7 +3960,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="mrn2" id="mrn2">
         <div id="mrn-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
-        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
+        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · yesterday, today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
           <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
         </section>
@@ -3982,18 +3982,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:320px"><canvas id="mrn-sptm" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France vs Germany</div><div class="fuel-card-sub" id="mrn-frde-sub">Daily baseload and FR − DE spread, 30 days</div></div><span class="source-badge">ENTSO-E</span></div>
-            <div style="position:relative;height:320px"><canvas id="mrn-frde" style="width:100%;height:320px"></canvas></div>
-          </div>
-        </div>
-        <div class="fuel-grid-2 mrn3-row">
-          <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France · spot, last 30 days</div><div class="fuel-card-sub" id="mrn-sp30-sub"></div></div><span class="source-badge">ENTSO-E</span></div>
             <div style="position:relative;height:300px"><canvas id="mrn-sp30" style="width:100%;height:300px"></canvas></div>
-          </div>
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Coal and oil</div><div class="fuel-card-sub" id="mrn-coal-sub"></div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-coal" style="width:100%;height:300px"></canvas></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
@@ -4015,6 +4005,12 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div class="fuel-card-head"><div><div class="table-title">TTF gas forward prices</div><div class="fuel-card-sub">By product, change on the day and the week</div></div><label class="mrn3-sel"><input type="checkbox" class="mrn-fwd-seas"> Seasons</label></div>
             <div class="mrn3-tbl" id="mrn-ttft"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
+        <div class="mrn3-row" style="margin-top:14px">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="mrn-drv-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-drv" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
         </div>
         </div>
       </div>
@@ -4075,8 +4071,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:280px"><canvas id="mrn-gsy" style="width:100%;height:280px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="mrn-drv-sub"></div></div></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-drv" style="width:100%;height:280px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">Coal and oil</div><div class="fuel-card-sub" id="mrn-coal-sub"></div></div><span class="source-badge">Market data</span></div>
+            <div style="position:relative;height:300px"><canvas id="mrn-coal" style="width:100%;height:300px"></canvas></div>
           </div>
         </div>
         </div>
