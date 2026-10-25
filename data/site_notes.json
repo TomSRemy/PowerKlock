@@ -1,28 +1,6 @@
 {
- "open": 1,
+ "open": 0,
  "notes": [
-  {
-   "id": 16,
-   "status": "open",
-   "created_at": "2026-10-25T10:43+00:00",
-   "author": "Tom",
-   "route": "markets/spot",
-   "page": "Marchés › Électricité spot › Day-ahead",
-   "tab": "Historique",
-   "target_id": "ho-table",
-   "target_label": "Moy. (graphique)",
-   "settings": {
-    "_page": "prices",
-    "_path": "#ho-table",
-    "pk-zone": "France",
-    "ho-date-to": "",
-    "spt-m-zone": "France",
-    "ho-date-from": ""
-   },
-   "body": "le play ne marche pas partout.\nJe veux que les axex se mettent à jout si on enlèce une année (2022 écranse tout).",
-   "reply": null,
-   "done_at": null
-  },
   {
    "id": 1,
    "status": "done",
@@ -300,6 +278,28 @@
    "body": "Aller a la ligne a chaque nouvelle ligne. \nexemple : \nFrance : XXX \nGolfe: XXX",
    "reply": "Fait : un sujet par ligne dans le contexte (France, Golfe, Norvège…).",
    "done_at": "2026-10-25T10:49+00:00"
+  },
+  {
+   "id": 16,
+   "status": "done",
+   "created_at": "2026-10-25T10:43+00:00",
+   "author": "Tom",
+   "route": "markets/spot",
+   "page": "Marchés › Électricité spot › Day-ahead",
+   "tab": "Historique",
+   "target_id": "ho-table",
+   "target_label": "Moy. (graphique)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#ho-table",
+    "pk-zone": "France",
+    "ho-date-to": "",
+    "spt-m-zone": "France",
+    "ho-date-from": ""
+   },
+   "body": "le play ne marche pas partout.\nJe veux que les axex se mettent à jout si on enlèce une année (2022 écranse tout).",
+   "reply": "Play: le bouton « Par trimestre » perdait son graphique après le premier dessin (il disparaissait au clic) ; corrigé, dans la ligne ouverte et en plein écran. Les trois Play (moyenne annuelle, par trimestre, forme horaire) testés. Axes : sur tous les graphiques du site à échelle fixe, masquer une série dans la légende recale l'axe sur les séries restantes (sans 2022 : 16–145 €/MWh au lieu de 6–362), la réafficher rend l'échelle d'origine. / Play by quarter lost its chart after the first draw (the button vanished on click); fixed, row and fullscreen. Axes: on every pinned chart, hiding a series in the legend refits the axis to what is left; showing it again restores the range.",
+   "done_at": "2026-10-25T12:10+00:00"
   }
  ]
 }

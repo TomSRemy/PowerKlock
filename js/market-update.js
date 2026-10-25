@@ -529,6 +529,11 @@ window.addEventListener('load', () => setTimeout(() => {
       if (da) once('da', () => setTimeout(() => { PKSpot.draw(); PKSpot.drawMonthly(); }, 300));
     }
   });
+  // whatever way the page was opened (menu route, tab, link), each chart draws the first time it shows
+  if ('IntersectionObserver' in window) [['spt-monthly', () => PKSpot.drawMonthly()], ['spt-30d', () => PKSpot.draw()]].forEach(([id, fn]) => {
+    const cv = document.getElementById(id); if (!cv) return;
+    new IntersectionObserver((es, ob) => { if (es.some(e => e.isIntersecting)) { ob.disconnect(); if (!(window.Chart && Chart.getChart(cv))) fn(); } }).observe(cv);
+  });
 }, 50));
 
 // ── Hydro reservoirs (ENTSO-E A72, weekly stored energy) ──

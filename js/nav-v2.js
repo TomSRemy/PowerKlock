@@ -420,19 +420,50 @@
 
   // ── zone choice (replaces the All / France tabs) ──
   function zoneChoice() {
-    const ctl = id => '<label class="pk-zone" title="Zone the pages open on, kept in this browser"><span>Zone</span><select id="' + id + '"><option value="all">Europe</option><option value="FR">France</option></select></label>';
+    // a pill with the flag and the name; a click opens a grid of flags. The select stays (hidden) for the code that reads it.
+    const ctl = id => '<div class="pk-zone" title="Zone the pages open on, kept in this browser"><span class="pk-zone-l">Zone</span><select id="' + id + '" class="pk-zone-sel" tabindex="-1" aria-hidden="true"><option value="all">Europe</option><option value="FR">France</option></select>' +
+      '<button type="button" class="pk-zbtn" aria-haspopup="true" aria-expanded="false"></button><div class="pk-zpop" role="menu" hidden></div></div>';
     const host = document.querySelector('.topbar-tabs');
     if (host) host.innerHTML = ctl('pk-zone');
     const srch = nav.querySelector('.pk-nv-search');   // phones: the top bar has no room, the zone sits in the menu
     if (srch) srch.insertAdjacentHTML('afterend', '<div class="pk-nv-zone">' + ctl('pk-zone-m') + '</div>');
     const sels = [...document.querySelectorAll('#pk-zone, #pk-zone-m')];
-    const sync = () => { if (window.PKScope) sels.forEach(s => {
+    const list = () => [['all', 'Europe']].concat(window.PKScope && PKScope.countries ? PKScope.countries() : [['FR', 'France']]);
+    const item = ([k, n], cur) => '<button type="button" role="menuitemradio" aria-checked="' + (k === cur) + '" class="pk-zitem' + (k === cur ? ' on' : '') + '" data-z="' + k + '">' + zoneFlag(k) + '<span>' + n + '</span></button>';
+    const sync = () => sels.forEach(s => {
       // js/scope.js loads after this file: its country list replaces the France-only fallback
-      if (PKScope.countries && s.options.length < 3) s.innerHTML = '<option value="all">Europe</option>' + PKScope.countries().map(([k, n]) => '<option value="' + k + '">' + n + '</option>').join('');
-      s.value = PKScope.get() || 'all'; }); };
+      if (window.PKScope && PKScope.countries && s.options.length < 3) s.innerHTML = list().map(([k, n]) => '<option value="' + k + '">' + n + '</option>').join('');
+      const cur = (window.PKScope && PKScope.get()) || 'all', box = s.parentNode;
+      s.value = cur;
+      const name = (list().find(x => x[0] === cur) || ['all', 'Europe'])[1];
+      box.querySelector('.pk-zbtn').innerHTML = zoneFlag(cur) + '<span>' + name + '</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+      box.querySelector('.pk-zpop').innerHTML = '<div class="pk-zpop-h">' + item(list()[0], cur) + '</div><div class="pk-zpop-g">' + list().slice(1).map(x => item(x, cur)).join('') + '</div>';
+    });
+    const close = except => sels.forEach(s => { const b = s.parentNode; if (b === except) return; b.querySelector('.pk-zpop').hidden = true; b.querySelector('.pk-zbtn').setAttribute('aria-expanded', 'false'); });
     sync();
-    sels.forEach(sel => sel.addEventListener('change', () => { if (window.PKScope && PKScope.set) PKScope.set(sel.value); sync(); }));
+    sels.forEach(sel => {
+      const box = sel.parentNode, btn = box.querySelector('.pk-zbtn'), pop = box.querySelector('.pk-zpop');
+      sel.addEventListener('change', () => { if (window.PKScope && PKScope.set) PKScope.set(sel.value); sync(); });
+      btn.addEventListener('click', e => { e.stopPropagation(); const open = pop.hidden; close(); pop.hidden = !open; btn.setAttribute('aria-expanded', String(open)); if (open) { const on = pop.querySelector('.on') || pop.querySelector('button'); if (on) on.focus(); } });
+      pop.addEventListener('click', e => { const b = e.target.closest('.pk-zitem'); if (!b) return; e.stopPropagation(); close(); sel.value = b.dataset.z; sel.dispatchEvent(new Event('change', { bubbles: true })); btn.focus(); });
+    });
+    document.addEventListener('click', () => close());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
     window.addEventListener('load', () => setTimeout(sync, 50));
+  }
+  // small flags drawn in SVG (emoji flags do not show on Windows)
+  function zoneFlag(k) {
+    const v = c => c.map((x, i) => '<rect x="' + (i * 6) + '" width="6" height="12" fill="' + x + '"/>').join('');
+    const h = (c, hs) => { let y = 0; return c.map((x, i) => { const r = '<rect y="' + y + '" width="18" height="' + hs[i] + '" fill="' + x + '"/>'; y += hs[i]; return r; }).join(''); };
+    const F = {
+      FR: v(['#0055A4', '#fff', '#EF4135']), BE: v(['#1a1a1a', '#FDDA24', '#EF3340']), IT: v(['#009246', '#fff', '#CE2B37']),
+      DE: h(['#1a1a1a', '#DD0000', '#FFCE00'], [4, 4, 4]), NL: h(['#AE1C28', '#fff', '#21468B'], [4, 4, 4]), AT: h(['#ED2939', '#fff', '#ED2939'], [4, 4, 4]),
+      PL: h(['#fff', '#DC143C'], [6, 6]), ES: h(['#AA151B', '#F1BF00', '#AA151B'], [3, 6, 3]),
+      PT: '<rect width="7" height="12" fill="#046A38"/><rect x="7" width="11" height="12" fill="#DA291C"/><circle cx="7" cy="6" r="2.2" fill="#FFE900"/>',
+      CH: '<rect width="18" height="12" fill="#DA291C"/><rect x="7.6" y="2.5" width="2.8" height="7" fill="#fff"/><rect x="5.5" y="4.6" width="7" height="2.8" fill="#fff"/>',
+      all: '<rect width="18" height="12" fill="#003399"/>' + Array.from({ length: 12 }, (_, i) => '<circle cx="' + (9 + 3.6 * Math.cos(i * Math.PI / 6)).toFixed(2) + '" cy="' + (6 + 3.6 * Math.sin(i * Math.PI / 6)).toFixed(2) + '" r=".55" fill="#FFCC00"/>').join(''),
+    };
+    return '<svg class="pk-zflag" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true">' + (F[k] || '<rect width="18" height="12" fill="#3a4656"/>') + '</svg>';
   }
   zoneChoice();
 
@@ -475,7 +506,20 @@
   .pk-nv-zone{display:none;width:100%;padding:0 4px 8px}
   @media (max-width:768px){.pk-nv-zone{display:block}}
   .pk-zone{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
-  .pk-zone select{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:999px;padding:4px 10px;font-size:12.5px;text-transform:none;letter-spacing:0;cursor:pointer}
+  .pk-zone{position:relative}
+  .pk-zone .pk-zone-sel{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .pk-zbtn{display:inline-flex;align-items:center;gap:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:999px;padding:5px 12px 5px 9px;font:600 12.5px Inter,sans-serif;text-transform:none;letter-spacing:0;cursor:pointer;transition:border-color .15s,background .15s}
+  .pk-zbtn:hover,.pk-zbtn[aria-expanded="true"]{border-color:var(--accent);background:rgba(20,211,169,.08)}
+  .pk-zbtn svg:last-child{opacity:.6;transition:transform .15s} .pk-zbtn[aria-expanded="true"] svg:last-child{transform:rotate(180deg)}
+  .pk-zflag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+  .pk-zpop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:1200;width:340px;max-width:calc(100vw - 32px);background:var(--bg2);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.45);padding:8px;text-transform:none;letter-spacing:0}
+  .pk-zpop[hidden]{display:none}
+  .pk-zpop-h{padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+  .pk-zpop-g{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+  .pk-zitem{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:var(--text2);font:500 13px Inter,sans-serif;text-align:left;cursor:pointer}
+  .pk-zitem:hover,.pk-zitem:focus-visible{background:var(--bg3);color:var(--text);outline:none}
+  .pk-zitem.on{background:rgba(20,211,169,.12);color:var(--accent);font-weight:600}
+  .pk-nv-zone .pk-zpop{left:0;transform:none;width:272px}
   @media (max-width:768px){.pk-gbar{width:auto;flex-wrap:nowrap;overflow-x:auto}.pk-gbar-t{display:none}}
   `;
   document.head.appendChild(css);
