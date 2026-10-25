@@ -25,7 +25,7 @@ ENGINE = None
 def load(p):
     try:
         return json.load(open(os.path.join(ROOT, "data", p)))
-    except Exception:
+    except (OSError, ValueError):
         return None
 
 
@@ -63,7 +63,7 @@ def news():
     for n in it:
         try:
             age = now - datetime.fromisoformat(str(n.get("date")).replace("Z", "+00:00"))
-        except Exception:
+        except (TypeError, ValueError):
             continue
         if age < timedelta(days=4) and set(n.get("tags") or []) & {"geopolitics", "regulation", "gas", "fr", "markets"}:
             keep.append({"title": n.get("title"), "summary": (n.get("snippet") or "")[:300], "tags": n.get("tags")})
@@ -133,7 +133,7 @@ def run(notes=None):
         try:
             if today - datetime.fromisoformat(n["note_date"]).date() <= timedelta(days=10):
                 payload["notes"].append({"date": n["note_date"], "kind": "weekly market note", "sections": n["sections"]})
-        except Exception:
+        except (KeyError, TypeError, ValueError):
             pass
     fm = load("fr_market.json") or {}
     mi, d = fm.get("marketInsights") or {}, (fm.get("marketInsightsDate") or fm.get("lastUpdate") or "")[:10]

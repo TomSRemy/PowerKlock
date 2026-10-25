@@ -31,7 +31,7 @@ def spot(day):
     try:
         h = json.load(open(os.path.join(ROOT, 'data', 'history', 'daily', f'{day}.json')))['zones']['FR'].get('avg')
         return round(h, 2) if h is not None else None
-    except Exception:
+    except (OSError, KeyError, TypeError, ValueError):
         return None
 
 

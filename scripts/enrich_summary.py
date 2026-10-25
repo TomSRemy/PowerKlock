@@ -481,7 +481,7 @@ def _parse_generation_slots_xml(xml_text):
     same approach as fetch_data.parse_generation). Returns {fuel: [96 ints]}."""
     try:
         root = ET.fromstring(xml_text)
-    except Exception:
+    except ET.ParseError:
         return None
     fuels = ['nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other']
     # hourly accumulators per fuel (+ wind split)
@@ -663,7 +663,7 @@ def merge_genmix_into_daily(date_str, genmix_per_zone):
         try:
             with open(fp) as f:
                 snap = json.load(f)
-        except Exception:
+        except (OSError, ValueError):
             snap = {'date': date_str, 'zones': {}}
     else:
         snap = {'date': date_str, 'zones': {}}
@@ -725,7 +725,7 @@ def recalc_summary_from_daily():
             year_int = int(date_str[:4])
             month_int = int(date_str[5:7])
             q_int = _q_of_month(month_int)
-        except Exception:
+        except ValueError:
             year_int = None
             q_int = None
         for code, zdata in daily.get('zones', {}).items():
