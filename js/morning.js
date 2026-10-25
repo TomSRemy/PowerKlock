@@ -374,28 +374,37 @@ function _mrnSpot(k, el) {
   if (!el) _mrnSpotChart(k, 'mrn-spot', true);
 }
 // 48 hours: today, then tomorrow (real, or hatched with the forecast until it is published)
+// ── spot, three days side by side (yesterday, today, tomorrow or its forecast): the day widget of the CATE presentation ──
+function _mrn3Days() {
+  const W = window.PKW && PKW.get('fr-spot-day'); if (!W) return;
+  document.querySelectorAll('[data-3d]').forEach(box => {
+    box.innerHTML = ['yesterday', 'today', 'tomorrow'].map(d => `<section class="chart-container fuel-card mrn-3d-c" data-day="${d}"><div class="mrn-3d-h"></div></section>`).join('');
+    box.querySelectorAll('.mrn-3d-c').forEach(c => W.html(c.querySelector('.mrn-3d-h'), { zone: 'FR', day: c.dataset.day }).catch(() => {}));
+  });
+}
 function _mrnSpotChart(k, cid, prob) {
   if (!document.getElementById(cid) || !window._fuelChart) return;
   // three days: yesterday, today, tomorrow (its price once published around 13:00, our forecast before); for each day its
   // average (dashed), its cheapest and dearest hour (dots), its cheapest and dearest 3-hour window (shaded), and a label on top
   const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
   const yd = (k.yday || []).slice(0, 24), tod = (k.today || []).slice(0, 24), tmr = k.tomorrow ? k.tomorrow.slice(0, 24) : null, fc = !tmr && k.fc ? k.fc.price.slice(0, 24) : null;
-  const days = [k.y, k.t, k.tm], lbl = [];
-  days.forEach(d => { for (let h = 0; h < 24; h++) lbl.push(h === 0 ? _mDay(d) : H(h)); });
-  const pad = a => a.concat(Array(24 - a.length).fill(null)), N24 = Array(24).fill(null);
-  const real = pad(yd).concat(pad(tod), tmr ? pad(tmr) : N24);
+  // a gap of two empty slots between the days, as between separate charts: each day's line and average stop at its edge
+  const GAP = 2, DW = 24 + GAP, TOT = 3 * 24 + 2 * GAP, days = [k.y, k.t, k.tm], lbl = [];
+  days.forEach((d, di) => { for (let h = 0; h < 24; h++) lbl.push(h === 0 ? _mDay(d) : H(h)); if (di < 2) for (let g = 0; g < GAP; g++) lbl.push(''); });
+  const pad = a => a.concat(Array(24 - a.length).fill(null)), N24 = Array(24).fill(null), G = Array(GAP).fill(null), J = (x, y, z) => x.concat(G, y, G, z);
+  const real = J(pad(yd), pad(tod), tmr ? pad(tmr) : N24);
   const ds = [_fuelLineDs(_mT('Prix réel', 'Actual price'), real, '#14D3A9', { borderWidth: 2.2, spanGaps: false, yAxisID: 'y' })];
-  if (fc) ds.push(_fuelLineDs(_mT('Prévision', 'Forecast'), N24.concat(N24, pad(fc)), '#7FC8F8', { borderWidth: 1.8, borderDash: [5, 4], yAxisID: 'y' }));
-  if (prob && fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: N24.concat(N24, pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
-    backgroundColor: N24.concat(N24, pad(k.fc.prob).map(p => p != null && p >= .5 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.3)')), borderWidth: 0, yAxisID: 'y2', order: 5 });
+  if (fc) ds.push(_fuelLineDs(_mT('Prévision', 'Forecast'), J(N24, N24, pad(fc)), '#7FC8F8', { borderWidth: 1.8, borderDash: [5, 4], yAxisID: 'y' }));
+  if (prob && fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: J(N24, N24, pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
+    backgroundColor: J(N24, N24, pad(k.fc.prob).map(p => p != null && p >= .5 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.3)')), borderWidth: 0, yAxisID: 'y2', order: 5 });
   const zero = real.map(v => v != null && v <= 0 ? 100 : null);
   if (zero.some(v => v)) ds.push({ type: 'bar', label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: zero, backgroundColor: 'rgba(20,211,169,.12)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, yAxisID: 'y2', order: 9 });
   // per day: average, extremes, 3-hour windows, label
-  const series = [yd, tod, tmr || fc], ann = {}, avgLine = Array(72).fill(null), lo = Array(72).fill(null), hi = Array(72).fill(null);
+  const series = [yd, tod, tmr || fc], ann = {}, avgLine = Array(TOT).fill(null), lo = Array(TOT).fill(null), hi = Array(TOT).fill(null);
   let prevAvg = null;
   series.forEach((arr, di) => {
     const v = (arr || []).slice(0, 24); if (v.filter(x => x != null).length < 20) { prevAvg = null; return; }
-    const off = di * 24, avg = _mrnMean(v), win = s => { let best = null; for (let h = 0; h <= 21; h++) { const w = v.slice(h, h + 3); if (w.some(x => x == null)) continue; const m = w.reduce((a, b) => a + b, 0) / 3; if (!best || (s < 0 ? m < best.m : m > best.m)) best = { h, m }; } return best; };
+    const off = di * DW, avg = _mrnMean(v), win = s => { let best = null; for (let h = 0; h <= 21; h++) { const w = v.slice(h, h + 3); if (w.some(x => x == null)) continue; const m = w.reduce((a, b) => a + b, 0) / 3; if (!best || (s < 0 ? m < best.m : m > best.m)) best = { h, m }; } return best; };
     for (let h = 0; h < 24; h++) avgLine[off + h] = Math.round(avg * 10) / 10;
     const mn = Math.min(...v.filter(x => x != null)), mx = Math.max(...v.filter(x => x != null)), iMin = v.indexOf(mn), iMax = v.indexOf(mx);
     lo[off + iMin] = mn; hi[off + iMax] = mx;
@@ -412,11 +421,11 @@ function _mrnSpotChart(k, cid, prob) {
   ds.push({ type: 'line', label: _mT('Heure la plus chère', 'Dearest hour'), data: hi, showLine: false, pointRadius: 4.5, pointBackgroundColor: '#ED6965', pointBorderColor: '#0A0F14', pointBorderWidth: 1.5, yAxisID: 'y' });
   const nowH = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Paris' }).format(new Date());
   _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({ layout: { padding: { top: 18 } },
-    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }),
+    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => { const h = i % DW; return h < 24 && h % 6 === 0 ? lbl[i] : ''; } } }),
       y: _fuelAxis('€/MWh'), y2: _fuelAxis('%', { position: 'right', min: 0, max: 100, grid: { display: false }, display: !!(prob && fc) }) },
     plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10.5 }, boxWidth: 12, padding: 10, filter: it => !/^_/.test(it.text) } },
       annotation: { annotations: ann },
-      pkFcZone: !tmr ? { from: 48, now: 24 + nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: 24 + nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-3-days' + (prob ? '' : '-quick'));
+      pkFcZone: !tmr ? { from: 2 * DW, now: DW + nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: DW + nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-3-days' + (prob ? '' : '-quick'));
 }
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
@@ -880,7 +889,7 @@ async function renderMorning() {
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnFacts().then(k => {
     MRN.k = k;
-    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard(); _mrnFund(k);
+    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard(); _mrnFund(k); _mrn3Days();
     _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));

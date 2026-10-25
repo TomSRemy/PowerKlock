@@ -3935,9 +3935,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="mrn2" id="mrn-quick">
         <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
-        <div class="mrn3-qrow">
-          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · yesterday, today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
-            <div style="position:relative;height:230px"><canvas id="mrn-q-spot" style="width:100%;height:230px"></canvas></div></section>
+        <div class="mrn-3d" data-3d></div>
+        <div class="mrn3-qrow" style="grid-template-columns:minmax(0,1fr)">
           <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">One line per market on why its price moved. Read it with the tiles above: the tile gives the figure, the line gives the reason.</p>
             <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
         </div>
@@ -3960,10 +3959,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="mrn2" id="mrn2">
         <div id="mrn-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
-        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · yesterday, today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
-          <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
-          <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
-        </section>
+        <div class="mrn-3d" data-3d></div>
         <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France <span class="mrn-i" id="mrn-30d-i" title="Hist. normal = 2016–2025, at today’s fleet; Open-Meteo forecasts fitted on RTE">ⓘ</span></div><div class="fuel-card-sub mrn-30d-take" id="mrn-30d-sub">Weather against normal, gas storage, nuclear, expected spot</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><p class="fuel-note mrn-x">Weather week by week against the 2016–2025 normal: colder or calmer means more gas burnt and higher prices. The gauges show the gas in storage and the nuclear available; the last row is the PowerKlock index.</p><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
         <div class="mrn3-pair">
         <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved and why</div><div class="fuel-card-sub">The reasons behind the prices above, and the trend for the week ahead</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">The reasons behind this week’s prices, market by market, and the call for the week ahead from the market notes.</p><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
