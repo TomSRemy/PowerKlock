@@ -429,7 +429,7 @@ async function _mrnRenTiles() {
   // the latest CRE tender of each main technology: price kept, volume, when
   const ao = await _mrnGet('aot', DATA_BASE + 'cre_tenders.json').catch(() => null), rows = (ao && ao.rows) || []; MRN.ren.ao = rows;
   const last = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).pop();
-  const AO = [['Photovoltaïque sol', _mT('Solaire sol', 'Ground PV'), '#FBBF24'], ['Photovoltaïque bâtiment', _mT('Solaire toiture', 'Rooftop PV'), '#F59E0B'], ['Éolien terrestre', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9'], ['Neutre', _mT('Techno neutre', 'Tech-neutral'), '#B8C9D9']].map(([t, n, c]) => [last(t), n, c]).filter(x => x[0]);
+  const AO = [['Photovoltaïque sol', _mT('Solaire sol', 'Ground PV'), '#FBBF24'], ['Photovoltaïque bâtiment', _mT('Solaire toiture', 'Rooftop PV'), '#F97316'], ['Éolien terrestre', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9'], ['Neutre', _mT('Techno neutre', 'Tech-neutral'), '#E6EDF3']].map(([t, n, c]) => [last(t), n, c]).filter(x => x[0]);
   if (AO.length) { const mon = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
     T.push(`<a class="mrn2-tile mrn-ao" data-tile="ao" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix moyen pondéré retenu au dernier appel d’offres CRE de chaque filière (complément de rémunération, 20 ans)', 'Weighted average price kept at the latest CRE tender of each technology (contract for difference, 20 years)')}">` +
       `<span class="mrn3-cat">${_mT('Appels d’offres CRE', 'CRE tenders')}</span><span class="mrn3-th"><span class="mrn2-tn">${_mT('Derniers prix retenus', 'Latest prices kept')}</span></span>` +
@@ -889,8 +889,8 @@ const MRN_WIN = {
   // renewables tiles (data in MRN.ren, read by _mrnRenTiles)
   ppas: () => _mrnPpaWin('solar'), ppaw: () => _mrnPpaWin('wind'), m0s: () => _mrnM0Win('solar'), m0w: () => _mrnM0Win('wind'),
   ao: () => { const rows = (MRN.ren && MRN.ren.ao) || [], ser = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).map(r => [r.result, r.price]);
-    return { name: _mT('Appels d’offres CRE · prix retenus', 'CRE tenders · prices kept'), unit: '€/MWh', dp: 2, look: null, route: 'renewables/m0', page: _mT('Renouvelables › Contrat M0', 'Renewables › M0 contract'), range: 'ALL',
-      series: [['aosol', _mT('Solaire sol', 'Ground PV'), '#FBBF24', 'y', true, ser('Photovoltaïque sol')], ['aobat', _mT('Solaire toiture', 'Rooftop PV'), '#F59E0B', 'y', true, ser('Photovoltaïque bâtiment')], ['aowind', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9', 'y', true, ser('Éolien terrestre')], ['aoneu', _mT('Technologie neutre', 'Technology-neutral'), '#B8C9D9', 'y', true, ser('Neutre')]] }; },
+    return { name: _mT('Appels d’offres CRE · prix retenus', 'CRE tenders · prices kept'), unit: '€/MWh', dp: 2, look: null, noMoves: true, why: _mT('Prix moyen pondéré retenu à chaque période d’appel d’offres CRE (complément de rémunération sur 20 ans), par filière. Un point = une période.', 'Weighted average price kept at each CRE tender period (20-year contract for difference), by technology. One point = one period.'), route: 'renewables/m0', page: _mT('Renouvelables › Contrat M0', 'Renewables › M0 contract'), range: 'ALL',
+      series: [['aosol', _mT('Solaire sol', 'Ground PV'), '#FBBF24', 'y', true, ser('Photovoltaïque sol')], ['aobat', _mT('Solaire toiture', 'Rooftop PV'), '#F97316', 'y', true, ser('Photovoltaïque bâtiment')], ['aowind', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9', 'y', true, ser('Éolien terrestre')], ['aoneu', _mT('Techno neutre', 'Tech-neutral'), '#E6EDF3', 'y', true, ser('Neutre')]] }; },
   nuc: k => ({ name: _mT('Nucléaire disponible', 'Nuclear available'), unit: 'GW', dp: 1, look: null, inv: true, route: 'system/generation/nuclear', page: _mT('Système › Production › Nucléaire', 'System › Generation › Nuclear'),
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
 };
@@ -919,7 +919,7 @@ function _mrnTileDef(id) {
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
   const y = +_mrnToday().slice(0, 4);
-  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, range: W.range, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
+  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, range: W.range, noMoves: W.noMoves, why: W.why, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
 }
 document.addEventListener('pk-view', e => {
   if (!e.detail || e.detail.key !== 'morning' || e.detail.index !== 2) return;

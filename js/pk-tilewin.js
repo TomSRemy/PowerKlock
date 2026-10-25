@@ -76,7 +76,7 @@
       return `<span class="${def.neutral ? '' : tn}"><i>${lab}</i>${pct ? S(c, 1) + ' %' : S(c, dp) + (def.unit ? ' ' + def.unit : '')}</span>`; });
     const y1 = s.filter(p => p[0] >= add(l[0], -365)).map(p => p[1]).filter(v => v != null);
     if (y1.length > 2) chg.push(`<span><i>${T('12 mois', '12 months')}</i>min ${N(Math.min(...y1), dp)} · max ${N(Math.max(...y1), dp)}${pct ? '' : ' · ' + T('moy. ', 'avg ') + N(y1.reduce((a, b) => a + b, 0) / y1.length, dp)}</span>`);
-    ov.querySelector('#pk-tw-chg').innerHTML = chg.join('');
+    ov.querySelector('#pk-tw-chg').innerHTML = def.noMoves ? '' : chg.join('');   // noMoves: a series of rare events (tenders) has no weekly or monthly move
     ov.querySelector('#pk-tw-ser').innerHTML = def.series.length > 1 ? def.series.filter(x => x[5] && x[5].length).map(([sid, lab, col]) => `<label><input type="checkbox" data-s="${sid}" ${cur.on[sid] ? 'checked' : ''}><i style="background:${col}"></i>${lab}</label>`).join('') : '';
     let why = def.why;
     if (why == null && y1.length > 2) {   // what to look at, from the numbers: where the value sits in its year, its yearly move
