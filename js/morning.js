@@ -270,6 +270,11 @@ function _mrnDayStats(hr) {
 }
 
 // everything the spot block, the tiles and the 4-week block need, fetched once
+// shared by the dashboard widgets: one fetch for every Today block on a board, kept 10 minutes
+function _mrnFactsP() {
+  if (!MRN.kP || Date.now() - MRN.kAt > 6e5) { MRN.kAt = Date.now(); MRN.kP = _mrnFacts().catch(e => { MRN.kP = null; throw e; }); }
+  return MRN.kP;
+}
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
   const [a, b, c, fwd, cs, chain, sum, neg, gos, dg] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json')]);
@@ -287,8 +292,8 @@ async function _mrnFacts() {
 }
 
 // ── France spot, today and tomorrow: the real price as soon as it is published; before that (about 13:00), the forecast ──
-function _mrnSpot(k) {
-  const host = document.getElementById('mrn-days'); if (!host) return;
+function _mrnSpot(k, el) {
+  const host = el || document.getElementById('mrn-days'); if (!host) return;
   const B = v => '<b>' + v + '</b>', H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
   const card = (title, st, ref, refLbl, chip) => `<div class="mrn3-day"><div class="mrn3-day-h"><span>${title}</span>${chip}</div>
     <div><span class="mrn3-big">${_mN(st.base, 1)}<small>€/MWh base</small></span>${ref != null ? ` <span class="mrn3-kv">${refLbl} <b class="${st.base - ref > 0 ? 'mrn-up' : 'mrn-dn'}">${_mS(st.base - ref, 1)} €</b></span>` : ''}</div>
@@ -310,7 +315,7 @@ function _mrnSpot(k) {
     <div><span class="mrn3-big">${_mN(m7, 1)}<small>€/MWh</small></span>${mp ? ` <span class="mrn3-kv">${_mT('vs 7 jours avant', 'vs the 7 days before')} <b class="${m7 > mp ? 'mrn-up' : 'mrn-dn'}">${_mS((m7 / mp - 1) * 100, 1)} %</b></span>` : ''}</div>
     <div class="mrn3-kv">${_mT('moyenne 30 jours', '30-day average')} ${B(_mN(r30, 1))} €/MWh</div></div>`);
   host.innerHTML = out.join('');
-  _mrnSpotChart(k, 'mrn-spot', true);
+  if (!el) _mrnSpotChart(k, 'mrn-spot', true);
 }
 // 48 hours: today, then tomorrow (real, or hatched with the forecast until it is published)
 function _mrnSpotChart(k, cid, prob) {
@@ -336,7 +341,13 @@ function _mrnSpotChart(k, cid, prob) {
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
 function _mrnTiles(k) {
-  const host = document.getElementById('mrn-kpis'); if (!host) return;
+  const T = _mrnTileList(k);
+  const host = document.getElementById('mrn-kpis'); if (host) host.innerHTML = T.join('');
+  const q = document.getElementById('mrn-q-tiles'); if (q) q.innerHTML = T.join('');
+  _mrnLearnTiles(T, document.getElementById('mrn-l-tiles'));
+}
+// the six tiles as HTML strings (Today and the dashboard widget 'today-tiles')
+function _mrnTileList(k) {
   const since = (pts, days) => { const l = _mrnLast(pts); if (!l) return []; const t0 = new Date(l[0] + 'T12:00:00Z'); t0.setUTCDate(t0.getUTCDate() - days); const kk = t0.toISOString().slice(0, 10); return pts.filter(p => p[0] >= kk); };
   const ch7 = pts => { const l = _mrnLast(pts), b = _mrnBack(pts, 7); return l && b ? (l[1] / b - 1) * 100 : null; };
   const ch1 = pts => pts.length > 1 && pts[pts.length - 2][1] ? (pts[pts.length - 1][1] / pts[pts.length - 2][1] - 1) * 100 : null;
@@ -373,10 +384,11 @@ function _mrnTiles(k) {
   const nuc = k.P('fr_nuc_avail'), nl = _mrnLast(nuc), fc = _mrnLast(k.P('fr_nuc_avail_fc'));
   if (nl) { const c = ch7(nuc), tn = tone(c, true);   // more nuclear available pushes prices down: green when it rises
     T.push(`<a class="mrn2-tile" data-tile="nuc" href="#system/generation/nuclear" data-route="system/generation/nuclear"><span class="mrn2-tn">${_mT('Nucléaire disponible', 'Nuclear available')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span>${moves(nuc, true)}${_mrnSpark(since(nuc, 60).map(p => p[1]), tn)}${foot(fc ? kv(_mT('prévision exploitant', 'operator forecast'), _mN(fc[1] / 1000, 1) + ' GW') : '', _mT('60 j', '60 d'))}</a>`); }
-  host.innerHTML = T.join('');
-  const q = document.getElementById('mrn-q-tiles'); if (q) q.innerHTML = T.join('');
+  return T;
+}
+// Discovery: three tiles, each with a line on what it is
+function _mrnLearnTiles(T, L) {
   const by = id => T.find(x => x.includes('data-tile="' + id + '"')) || '';
-  const L = document.getElementById('mrn-l-tiles');
   if (L) L.innerHTML = [['cal', _mT('Ce que coûte un MWh livré l’an prochain, acheté aujourd’hui. Il suit surtout le gaz.', 'What a MWh delivered next year costs, bought today. It follows gas above all.')],
     ['ttf', _mT('Le prix du gaz européen. Les jours sans vent ni soleil, les centrales au gaz fixent le prix de l’électricité.', 'The European gas price. On days without wind or sun, gas plants set the power price.')],
     ['nuc', _mT('La puissance nucléaire prête à produire. Moins de réacteurs disponibles, c’est plus de gaz appelé et des prix plus hauts.', 'The nuclear capacity ready to run. Fewer reactors available means more gas called and higher prices.')]]
@@ -384,8 +396,8 @@ function _mrnTiles(k) {
 }
 
 // ── CO₂: a small tile at the top of its folded section ──
-async function _mrnTiles2() {
-  const host = document.getElementById('mrn-kpis2'); if (!host || host.dataset.done) return; host.dataset.done = '1';
+async function _mrnTiles2(el) {
+  const host = el || document.getElementById('mrn-kpis2'); if (!host || host.dataset.done) return; host.dataset.done = '1';
   // the power system right now (RTE éCO2mix, latest quarter-hour)
   const T = [], t = (n, v, u, sub) => T.push(`<div class="mrn2-tile"><span class="mrn2-tn">${n}</span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span></div>`);
   if (window.pkRte) {
@@ -408,8 +420,8 @@ async function _mrnTiles2() {
 }
 
 // ── the next 4 weeks: weather against normal week by week, gas storage against its winter mark, month-ahead forward ──
-async function _mrnWeeks(k) {
-  const host = document.getElementById('mrn-30d'); if (!host) return;
+async function _mrnWeeks(k, el) {
+  const host = el || document.getElementById('mrn-30d'); if (!host) return;
   const [wx, fm] = await Promise.all([_mrnGet('wx', DATA_BASE + 'weather_outlook.json'), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json')]);
   const pct = (a, b) => a != null && b ? (a / b - 1) * 100 : null;
   let html = '';
@@ -433,10 +445,18 @@ async function _mrnWeeks(k) {
   const g = [];
   const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
   if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
+  let fwdChart = null;
   if (fm && fm.months) {
     const m1 = Object.keys(fm.months).sort()[0], v1 = +fm.months[m1].value, mon = _mrnToday().slice(0, 7), sp = k.spotDays.filter(r => r.d.startsWith(mon)), avg = _mrnMean(sp.map(r => r.avg));
     const ml = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    g.push(`<div class="mrn2-g"><div>${_mT('Forward mois prochain', 'Next month forward')} (${ml(m1)}) <b>${_mN(v1, 1)} €/MWh</b></div>` + (avg != null ? `<div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, v1 / Math.max(v1, avg) * 100).toFixed(1)}%;background:var(--accent)"></div><div class="mrn2-mark" style="left:${Math.min(100, avg / Math.max(v1, avg) * 100).toFixed(1)}%"></div></div><div class="mrn2-gs">${_mT('Repère : spot de ', 'Mark: spot of ')}${ml(mon)}${_mT(' jusqu’ici ', ' so far ')}${_mN(avg, 1)} €/MWh (${_mS((v1 / avg - 1) * 100, 0)} %)</div>` : '') + '</div>');
+    // the last 30 days of spot, then next month's forward as a dashed level: the gap reads at a glance (a gauge did not)
+    const gap = avg != null ? (v1 / avg - 1) * 100 : null, mo = +m1.slice(5, 7), winter = mo >= 11 || mo <= 2;
+    const why = gap == null || Math.abs(gap) < 5 ? '' : gap > 0 ? (winter ? _mT(' : l’hiver arrive (chauffage, moins de soleil)', ': winter is coming (heating, less sun)') : _mT(' : le marché attend plus cher', ': the market expects dearer power'))
+      : (winter ? _mT(' : le marché attend un mois plus doux', ': the market expects a milder month') : _mT(' : le marché attend moins cher (plus de soleil et de vent)', ': the market expects cheaper power (more sun and wind)'));
+    fwdChart = { m1, v1, name: ml(m1) };
+    g.push(`<div class="mrn2-g"><div>${_mT('Forward mois prochain', 'Next month forward')} (${ml(m1)}) <b>${_mN(v1, 1)} €/MWh</b>${gap != null ? ` <b class="${gap > 0 ? 'mrn-up' : 'mrn-dn'}">${_mS(gap, 0)} %</b> ${_mT('vs spot de ', 'vs spot of ')}${ml(mon)}` : ''}</div>` +
+      `<div style="position:relative;height:96px;margin-top:6px"><canvas class="mrn2-fwdc" style="width:100%;height:96px"></canvas></div>` +
+      (avg != null ? `<div class="mrn2-gs">${_mT('Spot de ', 'Spot of ')}${ml(mon)}${_mT(' jusqu’ici ', ' so far ')}${_mN(avg, 1)} €/MWh${why}.</div>` : '') + '</div>');
   }
   if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
   const take = [];
@@ -447,14 +467,27 @@ async function _mrnWeeks(k) {
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
   if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
   host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
+  const cv = fwdChart && host.querySelector('.mrn2-fwdc');
+  if (cv && window._fuelChart) {
+    cv.id = cv.id || 'mrn-fwdc-' + Math.random().toString(36).slice(2, 8);
+    const last = k.spotDays.slice(-30), [y, m] = fwdChart.m1.split('-').map(Number), nd = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const nxt = Array.from({ length: nd }, (_, d) => fwdChart.m1 + '-' + String(d + 1).padStart(2, '0'));
+    const gapDays = [];   // the days between the last spot and next month (rest of this month)
+    for (let d = last.length ? _mrnAdd(last[last.length - 1].d, 1) : nxt[0]; d < nxt[0]; d = _mrnAdd(d, 1)) gapDays.push(d);
+    const lbl = last.map(r => r.d).concat(gapDays, nxt), n0 = last.length + gapDays.length;
+    _fuelChart(cv.id, { type: 'line', data: { labels: lbl.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })), datasets: [
+      _fuelLineDs(_mT('Spot, moyenne du jour', 'Spot, daily average'), last.map(r => r.avg).concat(Array(lbl.length - last.length).fill(null)), '#14D3A9', { borderWidth: 1.6, pointRadius: 0 }),
+      _fuelLineDs('Forward ' + fwdChart.name, Array(n0).fill(null).concat(Array(nd).fill(fwdChart.v1)), '#7FC8F8', { borderWidth: 2, borderDash: [5, 4], pointRadius: 0 })] },
+      options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } }), y: _fuelAxis('', { ticks: { color: C_TX3, font: { size: 9 }, maxTicksLimit: 4 } }) } }) }, 'next-month-forward');
+  }
 }
 
 // ── News digest, short: what moves prices or the renewable business (geopolitics, regulation, deals, new
 // capacity, gas…), last 48 h, highest market impact first (scripts/fetch_news.py; readers' useful / not useful votes teach the
 // ranking); the reader's ★ keywords on the News page come first ──
 const _MRN_CAT = { geopolitics: 1, regulation: 1, deal: 1, build: 1, gas: 1, carbon: 1, markets: 1, power: 1 };   // line icons from js/news.js
-async function _mrnNews() {
-  const host = document.getElementById('mrn-news'); if (!host) return;
+async function _mrnNews(el) {
+  const host = el || document.getElementById('mrn-news'); if (!host) return;
   const j = await _mrnGet('news', DATA_BASE + 'news.json');
   const items = (j && j.items) || [];
   const kw = typeof _newsKw === 'function' ? _newsKw() : [];
@@ -486,8 +519,8 @@ function _mrnCreg() {
   });
 }
 
-function _mrnQuick(k) {
-  const host = document.getElementById('mrn-q-moved'); if (!host) return;
+function _mrnQuick(k, el) {
+  const host = el || document.getElementById('mrn-q-moved'); if (!host) return;
   const L = [], B = t => '<b>' + t + '</b>';
   const sT = _mrnDayStats(k.today), sY = _mrnDayStats(k.yday), sM = _mrnDayStats(k.tomorrow);
   if (sT) L.push([_mT('Spot', 'Spot'), _mT('aujourd’hui ', 'today ') + B(_mN(sT.base, 1) + ' €') + (sY ? ' (' + _mS(sT.base - sY.base, 1) + ' €)' : '') + (sT.zero ? _mT(`, ${sT.zero} h à 0 €`, `, ${sT.zero} h at 0 €`) : '') +
@@ -506,8 +539,11 @@ function _mrnQuick(k) {
 }
 
 // Discovery: the day in one sentence, today's price explained, what it means, a glossary (the figures are in the tiles)
-function _mrnLearn(k) {
-  const sent = document.getElementById('mrn-l-sent'); if (!sent) return;
+// o (dashboard widgets): { sent, day (canvas id), note, means, gloss } — only the parts given are drawn
+function _mrnLearn(k, o) {
+  const $ = id => document.getElementById(id);
+  o = o || { sent: $('mrn-l-sent'), day: 'mrn-l-day', note: $('mrn-l-day-note'), means: $('mrn-l-means'), gloss: $('mrn-l-gloss') };
+  const sent = o.sent;
   const sT = _mrnDayStats(k.today), sY = _mrnDayStats(k.yday), m30 = _mrnMean(k.spotDays.slice(-30).map(r => r.avg)), B = t => '<b>' + t + '</b>';
   const c = k.cals[0], c7 = c ? (_mrnLast(c.pts)[1] / _mrnBack(c.pts, 7) - 1) * 100 : null, ttf = k.P('ttf'), t7 = ttf.length ? (_mrnLast(ttf)[1] / _mrnBack(ttf, 7) - 1) * 100 : null;
   const av = _mrnLast(k.P('fr_nuc_avail')), fc = _mrnLast(k.P('fr_nuc_avail_fc')), nucLow = av && fc && fc[1] - av[1] > 2000;
@@ -517,17 +553,17 @@ function _mrnLearn(k) {
   let p2 = '';
   if (c && c7 != null) { const why = [t7 != null && Math.abs(t7) >= 2 ? (t7 > 0 ? _mT('le gaz monte', 'gas is rising') : _mT('le gaz baisse', 'gas is falling')) : null, nucLow ? _mT('il y a moins de nucléaire disponible que prévu', 'less nuclear is available than planned') : null].filter(Boolean);
     p2 = _mT('Pour ' + c.y + ', le prix ', 'For ' + c.y + ', the price ') + (c7 > 1 ? _mT('<b class="mrn-up">monte</b>', '<b class="mrn-up">is rising</b>') : c7 < -1 ? _mT('<b class="mrn-dn">baisse</b>', '<b class="mrn-dn">is falling</b>') : _mT('est stable', 'is steady')) + (why.length ? _mT(' parce que ', ' because ') + why.join(_mT(' et qu’', ' and ')) : '') + '.'; }
-  sent.innerHTML = p1 + p2;
+  if (sent) sent.innerHTML = p1 + p2;
   // today hour by hour, coloured: 0 € or below, normal, expensive
   const tod = (k.today || []).slice(0, 24);
-  if (tod.length && window._fuelChart) {
+  if (o.day && tod.length && window._fuelChart) {
     const hi = sT ? sT.base * 1.5 : Infinity, top = Math.max(...tod.filter(v => v != null), 1);
-    _fuelChart('mrn-l-day', { type: 'bar', data: { labels: tod.map((_, h) => _mrnFr() ? h + ' h' : h + ':00'), datasets: [
+    _fuelChart(o.day, { type: 'bar', data: { labels: tod.map((_, h) => _mrnFr() ? h + ' h' : h + ':00'), datasets: [
       { label: _mT('Prix, €/MWh', 'Price, €/MWh'), data: tod.map(v => v == null ? null : Math.round(v * 10) / 10), backgroundColor: tod.map(v => v != null && v > hi ? 'rgba(237,105,101,.8)' : 'rgba(127,200,248,.6)'), borderWidth: 0, order: 1 },
       // the hours at 0 € or below, shaded over the whole height (their bar has no height)
       { label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: tod.map(v => v != null && v <= 0.1 ? top * 1.05 : null), backgroundColor: 'rgba(20,211,169,.22)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, order: 9 }] },
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('€/MWh', { stacked: false }) } }) }, 'today-hours');
-    const n = document.getElementById('mrn-l-day-note');
+    const n = o.note;
     if (n && sT) n.innerHTML = (sT.zero ? _mT(`<b>En vert</b> : ${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme. `, `<b>Green</b>: ${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes. `) : '') +
       _mT(`<b>En rouge</b> : plus de 1,5 fois la moyenne du jour. Le plus cher : ${sT.maxH} h (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', quand le soleil se couche et que la demande monte.' : '.'), `<b>Red</b>: above 1.5 times the day’s average. The most expensive: ${sT.maxH}:00 (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', when the sun sets and demand rises.' : '.'));
   }
@@ -538,14 +574,14 @@ function _mrnLearn(k) {
     [ic('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'), _mT(`<b>Pour un achat d’électricité ${c ? c.y : ''}</b> : ` + (c7 > 1 ? 'le prix monte ; fixer une partie maintenant limite le risque d’une nouvelle hausse.' : c7 < -1 ? 'le prix baisse ; attendre peut payer, mais le risque reste ouvert.' : 'le prix est stable ; c’est le moment de décider sans pression.'), `<b>For a ${c ? c.y : ''} power purchase</b>: ` + (c7 > 1 ? 'the price is rising; fixing part of it now limits the risk of a further rise.' : c7 < -1 ? 'the price is falling; waiting may pay, but the risk stays open.' : 'the price is steady; a good time to decide without pressure.'))],
     [ic('<circle cx="12" cy="12" r="2"/><path d="M12 10V3a9 9 0 0 1 7.8 4.5L13.7 11M10.3 11 4.2 7.5A9 9 0 0 1 12 3M13.7 13l6.1 3.5A9 9 0 0 1 4.2 16.5L10.3 13"/>'), _mT('<b>Le nucléaire</b> fait l’essentiel de la production française : chaque réacteur qui revient fait baisser les prix de l’hiver.', '<b>Nuclear</b> makes most of France’s power: each reactor coming back lowers winter prices.')],
   ];
-  const means = document.getElementById('mrn-l-means'); if (means) means.innerHTML = M.map(([i, t]) => `<div>${i}<span>${t}</span></div>`).join('');
+  const means = o.means; if (means) means.innerHTML = M.map(([i, t]) => `<div>${i}<span>${t}</span></div>`).join('');
   const G = [[_mT('Spot (day-ahead)', 'Spot (day-ahead)'), _mT('Prix fixé la veille, vers 13 h, pour chaque heure du lendemain.', 'Price set the day before, around 13:00, for each hour of the next day.')],
     [_mT('Cal (calendrier)', 'Cal (calendar)'), _mT('Prix d’un MWh livré toute une année, acheté aujourd’hui (Cal 27 = 2027).', 'Price of a MWh delivered over a whole year, bought today (Cal 27 = 2027).')],
     ['TTF', _mT('Prix du gaz européen, coté aux Pays-Bas, en €/MWh.', 'The European gas price, traded in the Netherlands, in €/MWh.')],
     ['EUA', _mT('Prix du droit d’émettre une tonne de CO₂ en Europe.', 'Price of the right to emit one tonne of CO₂ in Europe.')],
     [_mT('GO (garantie d’origine)', 'GO (guarantee of origin)'), _mT('Certificat qui prouve qu’un MWh vient d’une source renouvelable.', 'Certificate proving a MWh comes from a renewable source.')],
     [_mT('Taux de capture', 'Capture rate'), _mT('Ce qu’un parc touche réellement, rapporté au prix moyen de la période.', 'What a park actually earns, against the period’s average price.')]];
-  const gl = document.getElementById('mrn-l-gloss'); if (gl) gl.innerHTML = G.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
+  const gl = o.gloss; if (gl) gl.innerHTML = G.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
 }
 
 async function renderMorning() {
