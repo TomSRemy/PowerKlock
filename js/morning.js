@@ -440,7 +440,7 @@ async function _mrnWeeks(k, el) {
   if (weeks.length) {
     const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
     html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-      <span class="mrn2-wk-r"><span>${_mT('Température', 'Temperature')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolienne', 'Wind output')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire', 'Solar output')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
+      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale)', 'Temp. (vs normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
   }
   // below the weeks, two gauges side by side: EU gas storage against its winter mark, French nuclear available against EDF's forecast
   const g = [];
@@ -462,8 +462,7 @@ async function _mrnWeeks(k, el) {
   else if (windy) take.push(_mT('plus de vent que la normale sur ' + windy + ' semaine' + (windy > 1 ? 's' : '') + ' : des prix plus bas, plus d’heures négatives à midi', 'windier than normal in ' + windy + ' week' + (windy > 1 ? 's' : '') + ': lower prices, more negative hours at midday'));
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
   if (why) take.push(why);
-  const legend = !weeks.length ? '' : '<p class="fuel-note" style="margin:4px 0 0">' + _mT('Lecture : température = écart à la normale en °C ; production éolienne et solaire = production attendue de la semaine face à la normale 2016–2025, au parc actuel (vent et rayonnement prévus par Open-Meteo, calés sur RTE)',
-    'How to read: temperature = gap to normal in °C; wind and solar output = the week’s expected output against the 2016–2025 normal, at today’s fleet (wind and irradiation forecast by Open-Meteo, fitted on RTE)') + '.</p>';
+  const legend = !weeks.length ? '' : '<p class="fuel-note" style="margin:4px 0 0">' + _mT('Normale hist. = 2016–2025, au parc actuel ; prévisions Open-Meteo calées sur RTE', 'Hist. normal = 2016–2025, at today’s fleet; Open-Meteo forecasts fitted on RTE') + '.</p>';
   if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
   html += legend;
   host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
@@ -479,17 +478,29 @@ async function _mrnNews(el) {
   const items = (j && j.items) || [];
   const kw = typeof _newsKw === 'function' ? _newsKw() : [];
   const mine = i => kw.length && typeof _newsMine === 'function' && _newsMine(i, kw);
-  let span = '48 h', pick = [];
-  for (const [h, lbl] of [[48, '48 h'], [120, '5 days']]) {
-    pick = items.filter(i => Date.parse(i.date) >= Date.now() - h * 3600e3 && ((i.impact || 0) >= 2.5 || mine(i)))
-      .sort((a, b) => (mine(b) ? 1 : 0) - (mine(a) ? 1 : 0) || (b.impact || 0) - (a.impact || 0) || Date.parse(b.date) - Date.parse(a.date));
-    span = lbl; if (pick.length >= 4) break;
+  // France first (note of 25 Oct.): French articles with a lower bar, then the main European and world movers
+  // a French-language source is not enough: the article must be about France (its institutions, places, market), not about another country
+  const FR_IN = /\b(france|français|française|hexagone|edf|rte|cre|enedis|engie|totalenergies|arenh|vnu|turpe|ppe|flamanville|penly|gravelines|tricastin|bugey|gouvernement|ministre|assemblée|sénat|décret|journal officiel|appel d’offres|appel d'offres|bretagne|normandie|occitanie|provence|aquitaine|auvergne|hauts-de-france|grand est|île-de-france)\b/i;
+  const FR_OUT = /\b(grecque?|grèce|italie|italien|allemagne|allemand|espagne|espagnol|portugal|belgique|royaume-uni|britannique|chine|chinois|inde|états-unis|américain|japon|australie|afrique|mondial|monde|européen champion|ce pays)\b/i;
+  const isFR = i => { const t = i.title + ' ' + (i.snippet || ''); return ((i.countries || []).includes('FR') || (i.tags || []).includes('fr')) && FR_IN.test(t) && !FR_OUT.test(i.title); };
+  const rank = (a, b) => (mine(b) ? 1 : 0) - (mine(a) ? 1 : 0) || (b.impact || 0) - (a.impact || 0) || Date.parse(b.date) - Date.parse(a.date);
+  let span = 72, fr = [], world = [];
+  for (const h of [72, 120, 240]) {
+    const recent = items.filter(i => Date.parse(i.date) >= Date.now() - h * 3600e3);
+    fr = recent.filter(i => isFR(i) && ((i.impact || 0) >= 1.5 || mine(i))).sort(rank);
+    world = recent.filter(i => !isFR(i) && ((i.impact || 0) >= 3 || mine(i))).sort(rank);
+    span = h; if (fr.length >= 6) break;
   }
   const esc = PK.esc;   // js/pk-core.js
   const cat = i => { const t = (i.tags || []).find(x => _MRN_CAT[x] && x !== 'power') || ((i.tags || []).includes('power') ? 'power' : ''); return t ? `<span class="mrn-cat" title="${t}">${window._newsIc ? _newsIc(t) : ''}</span>` : ''; };
   const vote = i => typeof _newsVoteBtns === 'function' ? `<span class="news-vote mrn-vote" data-link="${esc(i.link)}">${_newsVoteBtns(i.link)}</span>` : '';
-  host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">Market movers of the last ${span}: geopolitics, regulation, deals, new capacity, gas${kw.length ? ', and your ★ keywords first' : ''}. Your votes (useful / not useful) teach the selection.</div>` +
-    (pick.length ? '<ul class="mrn-movers">' + pick.slice(0, 8).map(i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)}${(i.countries || []).length ? ' · ' + esc(i.countries.slice(0, 2).join(' · ')) : ''}</span>${vote(i)}</li>`).join('') + '</ul>' : '<div class="fuel-note">No market-moving article in the last days.</div>');
+  const li = i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)} · ${new Date(i.date).toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' })}</span>${vote(i)}</li>`;
+  const sec = t => `<div class="mrn-sec" style="margin:10px 0 4px">${t}</div>`;
+  host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">${_mT('Ce qui fait bouger le marché depuis ' + (span / 24) + ' jours, la France d’abord : géopolitique, régulation, nucléaire, transactions, nouvelles capacités, gaz', 'What moved the market over the last ' + (span / 24) + ' days, France first: geopolitics, regulation, nuclear, deals, new capacity, gas') +
+    (kw.length ? _mT(', vos mots-clés ★ en tête', ', your ★ keywords first') : '') + _mT('. Vos votes (utile / pas utile) affinent la sélection.', '. Your votes (useful / not useful) teach the selection.')}</div>` +
+    (fr.length ? sec(_mT('France', 'France')) + '<ul class="mrn-movers">' + fr.slice(0, 9).map(li).join('') + '</ul>' : '') +
+    (world.length ? sec(_mT('Europe et monde', 'Europe and world')) + '<ul class="mrn-movers">' + world.slice(0, 4).map(li).join('') + '</ul>' : '') +
+    (!fr.length && !world.length ? '<div class="fuel-note">' + _mT('Aucun article marquant ces derniers jours.', 'No market-moving article in the last days.') + '</div>' : '');
 }
 
 // capture rate by region: solar or wind, over the last full year or several (the choice is the card's own)
