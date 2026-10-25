@@ -315,10 +315,10 @@
       c.fillStyle = C.text; c.beginPath(); c.arc(x, y, 13 * k, 0, 2 * Math.PI); c.fill();
       c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
     });
-    const cur = (S.events || []).filter(e => e.q <= t && t < e.q + span).pop();
+    const cur = S.reading || (S.events || []).filter(e => e.q <= t && t < e.q + span).pop();
     if (cur) {
       const a = Math.min(1, (t - cur.q) / (span / 8), (cur.q + span - t) / (span / 8));
-      c.globalAlpha = S.playing ? Math.max(0, a) : 1;
+      c.globalAlpha = S.playing && S.reading !== cur ? Math.max(0, a) : 1;
       c.font = F(500, 19); const bw2 = Math.min(chart.w * 0.48, 600 * k), lines = wrap(c, cur.txt, bw2 - 64 * k), bh = (lines.length * 26 + 28) * k;
       const bx = xOf(cur.q) > chart.x + chart.w / 2 ? chart.x + 12 * k : chart.x + chart.w - bw2 - 12 * k, by = chart.y + 8 * k;
       c.fillStyle = C.panel; roundRect(c, bx, by, bw2, bh, 12 * k); c.fill();
@@ -343,18 +343,26 @@
   function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
   // ── playback: the whole period in 9, 20 or 40 seconds ──
-  let last = 0, hold = 0;
+  let last = 0, hold = 0, wait = 0;
+  // a caption stops the clock long enough to be read: 1.5 s plus 55 ms a character, 3 to 7 s (also in the video)
+  const readTime = e => Math.max(3, Math.min(7, 1.5 + e.txt.length * 0.055));
   const bounds = () => S.per === 'day' ? [S.from, S.to] : [0, npts() - 1];
   function frame(ts) {
     if (!S.playing) return;
     const [a, b] = bounds(), dt = last ? (ts - last) / 1000 : 0; last = ts;
-    if (S.t < b) S.t = Math.min(b, S.t + dt * (b - a) / DURATION[S.speed]);
+    if (wait > 0) wait -= dt;
+    else if (S.t < b) {
+      const nt = Math.min(b, S.t + dt * (b - a) / DURATION[S.speed]);
+      const e = (S.events || []).find(x => !S.seen.has(x.n) && x.q > S.t - 1e-9 && x.q <= nt);
+      if (e) { S.seen.add(e.n); S.t = e.q + 0.01; wait = readTime(e); S.reading = e; }   // hold on the moment while its text is read
+      else { S.t = nt; S.reading = null; }
+    }
     else if (S.rec) { hold += dt; if (hold > 1.5) { stopRec(); return; } }
     else { S.playing = false; syncBtn(); }
     draw();
     requestAnimationFrame(frame);
   }
-  function play() { const [a, b] = bounds(); if (S.t >= b) S.t = a; S.playing = true; last = 0; hold = 0; syncBtn(); requestAnimationFrame(frame); }
+  function play() { const [a, b] = bounds(); if (S.t >= b) S.t = a; S.seen = new Set((S.events || []).filter(e => e.q < S.t).map(e => e.n)); wait = 0; S.reading = null; S.playing = true; last = 0; hold = 0; syncBtn(); requestAnimationFrame(frame); }
   function pause() { S.playing = false; syncBtn(); }
   function syncBtn() { const b = document.getElementById('rp-play'); if (b) { b.textContent = S.playing ? T('Pause', 'Pause') : T('Lecture', 'Play'); b.setAttribute('aria-pressed', String(S.playing)); } }
 
