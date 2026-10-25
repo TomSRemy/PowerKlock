@@ -176,22 +176,29 @@ window._newsIc = _newsIc;
 // useful / not useful on each article (signed in): public.news_vote (warehouse migration 015); the news run learns from them
 //   which sources, subjects and words matter (data/news_prefs.json) and ranks the next articles with it
 const _newsVotes = (() => { try { return JSON.parse(localStorage.getItem('pk-news-votes') || '{}'); } catch (_) { return {}; } })();
+const _newsT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
 function _newsVoteBtns(link) {
   const v = _newsVotes[link] || 0;
   return `<button type="button" class="nv${v === 1 ? ' on' : ''}" data-v="1" title="Useful: more like this">${_newsIc('up')}</button><button type="button" class="nv${v === -1 ? ' on' : ''}" data-v="-1" title="Not useful: fewer like this">${_newsIc('down')}</button>`;
 }
+let _newsAllP = null;
 async function _newsVote(link, vote, box) {
-  const item = (newsData || []).find(i => i.link === link); if (!item) return;
+  // the article: from the News page's list, else from news.json (Today and the dashboards vote before the News page is opened)
+  let item = (typeof newsData !== 'undefined' && newsData || []).find(i => i.link === link);
+  if (!item) { const j = await (_newsAllP || (_newsAllP = fetch(DATA_BASE + 'news.json').then(r => r.ok ? r.json() : null).catch(() => null))); item = ((j && j.items) || []).find(i => i.link === link); }
+  if (!item) item = { title: link, source: '', tags: [] };
   const cl = window.PKAccount && window.PKAccount.user && window.PKAccount.client && window.PKAccount.client();
-  if (!cl) { box.insertAdjacentHTML('beforeend', '<span class="nv-msg">sign in to vote</span>'); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
+  if (!cl) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">${_newsT('connectez-vous pour voter', 'sign in to vote')}</span>`); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
   const prev = _newsVotes[link] || 0, v = prev === vote ? 0 : vote;
+  // shown at once, put back if the save fails
+  box.querySelectorAll('.nv').forEach(b => b.classList.toggle('on', +b.dataset.v === v));
   try {
     if (v === 0) { const r = await cl.from('news_vote').delete().eq('link', link); if (r.error) throw r.error; }
     else { const r = await cl.from('news_vote').upsert({ link, title: String(item.title).slice(0, 300), source: item.source, tags: item.tags || [], vote: v }, { onConflict: 'user_id,link' }); if (r.error) throw r.error; }
     if (v) _newsVotes[link] = v; else delete _newsVotes[link];
     try { localStorage.setItem('pk-news-votes', JSON.stringify(_newsVotes)); } catch (_) {}
     box.innerHTML = _newsVoteBtns(link);
-  } catch (e) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">not saved: ${_newsEsc(e.message || e)}</span>`); }
+  } catch (e) { box.innerHTML = _newsVoteBtns(link); box.insertAdjacentHTML('beforeend', `<span class="nv-msg">${_newsT('non enregistré : ', 'not saved: ')}${_newsEsc(e.message || e)}</span>`); }
 }
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('.news-vote .nv'); if (!b) return;

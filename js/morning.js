@@ -361,29 +361,31 @@ function _mrnTileList(k) {
   // the week ahead, as in « What moved and why »: the market notes' call, else the direction prices took over 7 days
   const pill = (key, c) => { const o = key && k.look[key], t = o && o.tone ? o.tone : c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
     return `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}" title="${_mT('Semaine à venir · ', 'Week ahead · ') + (o && o.tone ? _mT('notes de marché', 'market notes') : _mT('tendance des prix', 'price trend'))}">${t === 'up' ? '↑ ' + _mT('haussier', 'bullish') : t === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>`; };
-  const head = (name, key, c) => `<span class="mrn3-th"><span class="mrn2-tn">${name}</span>${pill(key, c)}</span>`;
+  // the market above the name, so a tile reads at a glance (power, gas, CO₂…)
+  const cat = t => `<span class="mrn3-cat">${t}</span>`;
+  const head = (name, key, c, m) => (m ? cat(m) : '') + `<span class="mrn3-th"><span class="mrn2-tn">${name}</span>${pill(key, c)}</span>`;
   const ago = _mT('il y a 60 j', '60 d ago'), now = _mT('auj.', 'today');
   const T = [];
   if (k.cals.length) {   // the next calendar year; the two after it in the footer
     const c = k.cals[0], l = _mrnLast(c.pts), cc = ch7(c.pts), tn = tone(cc);
     const rest = k.cals.slice(1).map(x => kv('Cal ' + String(x.y).slice(2), _mN(_mrnLast(x.pts)[1], 1))).join(' · ');
-    T.push(`<a class="mrn2-tile" data-tile="cal" href="#markets/forwards" data-route="markets/forwards" title="${_mT('France, base, dernière cotation', 'France, baseload, last settlement')}">${head('Cal ' + c.y, 'power', cc)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>€/MWh</small></span>${moves(c.pts)}${_mrnSpark(since(c.pts, 60).map(p => p[1]), tn)}${foot(rest, _mT('60 j', '60 d'))}</a>`);
+    T.push(`<a class="mrn2-tile" data-tile="cal" href="#markets/forwards" data-route="markets/forwards" title="${_mT('France, base, dernière cotation', 'France, baseload, last settlement')}">${head('Cal ' + c.y, 'power', cc, _mT('Électricité · France', 'Power · France'))}<span class="mrn2-tv">${_mN(l[1], 1)}<small>€/MWh</small></span>${moves(c.pts)}${_mrnSpark(since(c.pts, 60).map(p => p[1]), tn)}${foot(rest, _mT('60 j', '60 d'))}</a>`);
   }
-  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas'], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon'], ['brent', 'Brent', '$/b', 'markets/fuels', 'oil']].forEach(([key, n, u, r, mk]) => {
+  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas', _mT('Gaz', 'Gas')], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon', _mT('CO₂', 'CO₂')], ['brent', 'Brent', '$/b', 'markets/fuels', 'oil', _mT('Pétrole', 'Oil')]].forEach(([key, n, u, r, mk, m]) => {
     const pts = k.P(key), l = _mrnLast(pts); if (!l) return;
     const c = ch7(pts), tn = tone(c);
-    T.push(`<a class="mrn2-tile" data-tile="${key}" href="#${r}" data-route="${r}">${head(n, mk, c)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span>${moves(pts)}${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(rng60(pts), _mT('60 j', '60 d'))}</a>`);
+    T.push(`<a class="mrn2-tile" data-tile="${key}" href="#${r}" data-route="${r}">${head(n, mk, c, m)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span>${moves(pts)}${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(rng60(pts), _mT('60 j', '60 d'))}</a>`);
   });
   if (k.gos) {
     const y = +_mrnToday().slice(0, 4), g1 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y + 1), g0 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y);
     if (g1.length > 1) {
       const l = g1[g1.length - 1].mid, d = l - g1[g1.length - 2].mid, tn = Math.abs(d) < 1e-6 ? '' : d > 0 ? 'up' : 'down';
-      T.push(`<a class="mrn2-tile" data-tile="go" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, g1.length > 4 ? (l / g1[g1.length - 5].mid - 1) * 100 : null)}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? kv('Cal ' + String(y).slice(2), _mN(g0[g0.length - 1].mid, 3)) : '', _mT('6 mois', '6 months'))}</a>`);
+      T.push(`<a class="mrn2-tile" data-tile="go" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, g1.length > 4 ? (l / g1[g1.length - 5].mid - 1) * 100 : null, _mT('Garanties d’origine', 'Guarantees of origin'))}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? kv('Cal ' + String(y).slice(2), _mN(g0[g0.length - 1].mid, 3)) : '', _mT('6 mois', '6 months'))}</a>`);
     }
   }
   const nuc = k.P('fr_nuc_avail'), nl = _mrnLast(nuc), fc = _mrnLast(k.P('fr_nuc_avail_fc'));
   if (nl) { const c = ch7(nuc), tn = tone(c, true);   // more nuclear available pushes prices down: green when it rises
-    T.push(`<a class="mrn2-tile" data-tile="nuc" href="#system/generation/nuclear" data-route="system/generation/nuclear"><span class="mrn2-tn">${_mT('Nucléaire disponible', 'Nuclear available')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span>${moves(nuc, true)}${_mrnSpark(since(nuc, 60).map(p => p[1]), tn)}${foot(fc ? kv(_mT('prévision exploitant', 'operator forecast'), _mN(fc[1] / 1000, 1) + ' GW') : '', _mT('60 j', '60 d'))}</a>`); }
+    T.push(`<a class="mrn2-tile" data-tile="nuc" href="#system/generation/nuclear" data-route="system/generation/nuclear">${cat(_mT('Production · France', 'Generation · France'))}<span class="mrn2-tn">${_mT('Nucléaire disponible', 'Nuclear available')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span>${moves(nuc, true)}${_mrnSpark(since(nuc, 60).map(p => p[1]), tn)}${foot(fc ? kv(_mT('prévision exploitant', 'operator forecast'), _mN(fc[1] / 1000, 1) + ' GW') : '', _mT('60 j', '60 d'))}</a>`); }
   return T;
 }
 // Discovery: three tiles, each with a line on what it is
@@ -440,25 +442,25 @@ async function _mrnWeeks(k, el) {
   if (weeks.length) {
     const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
     html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale)', 'Temp. (vs normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
+      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale hist.)', 'Temp. (vs hist. normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
   }
   // below the weeks, two gauges side by side: EU gas storage against its winter mark, French nuclear available against EDF's forecast
   const g = [];
   const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
-  if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
+  if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stockages de gaz UE remplis à', 'EU gas storage filled to')} <b>${_mN(st[1], 1)} %</b> <span class="mrn2-gs" style="display:inline">${_mT('de leur capacité', 'of capacity')}</span></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : objectif UE de 90 % au 1er novembre', 'Mark: EU target of 90 % by 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts vs il y a un an', ' pts vs a year ago') : ''}</div></div>`);
   const nu = _mrnLast(k.P('fr_nuc_avail')), nf = _mrnLast(k.P('fr_nuc_avail_fc')), ny = nu ? _mrnBack(k.P('fr_nuc_avail'), 365) : null, FLEET = 63000;
   if (nu) {
     const short = nf && nu[1] < nf[1] - 1000;   // below what EDF announced: tighter supply, firmer prices
-    g.push(`<div class="mrn2-g"><div>${_mT('Nucléaire disponible', 'Nuclear available')} <b>${_mN(nu[1] / 1000, 1)} GW</b> <span class="mrn2-gs" style="display:inline">${_mT('sur 63 GW', 'of 63 GW')}</span></div>` +
+    g.push(`<div class="mrn2-g"><div>${_mT('Nucléaire disponible', 'Nuclear available')} <b>${_mN(nu[1] / 1000, 1)} GW</b> <span class="mrn2-gs" style="display:inline">${_mT('sur 63 GW installés', 'of 63 GW installed')}</span></div>` +
       `<div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, nu[1] / FLEET * 100).toFixed(1)}%;background:${short ? 'var(--down)' : 'var(--up)'}"></div>${nf ? `<div class="mrn2-mark" style="left:${Math.min(100, nf[1] / FLEET * 100).toFixed(1)}%"></div>` : ''}</div>` +
-      `<div class="mrn2-gs">${nf ? _mT('Repère : prévision EDF ', 'Mark: EDF forecast ') + _mN(nf[1] / 1000, 1) + ' GW (' + _mS((nu[1] - nf[1]) / 1000, 1) + ' GW)' : ''}${ny != null ? ' · ' + _mS((nu[1] - ny) / 1000, 1) + _mT(' GW sur un an', ' GW on a year') : ''}</div></div>`);
+      `<div class="mrn2-gs">${nf ? _mT('Repère : prévision d’EDF ', 'Mark: EDF forecast ') + _mN(nf[1] / 1000, 1) + ' GW (' + _mS((nu[1] - nf[1]) / 1000, 1) + ' GW)' : ''}${ny != null ? ' · ' + _mS((nu[1] - ny) / 1000, 1) + _mT(' GW vs il y a un an', ' GW vs a year ago') : ''}</div></div>`);
   }
   if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
   const why = '';
   const take = [];
   const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
-  if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix plus fermes',
-    (cold ? 'colder' : '') + (cold && calm ? ' and calmer' : calm ? 'calmer' : '') + ' than normal in ' + Math.max(cold, calm) + ' week' + (Math.max(cold, calm) > 1 ? 's' : '') + ': more gas burnt, firmer prices'));
+  if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix en hausse',
+    (cold ? 'colder' : '') + (cold && calm ? ' and calmer' : calm ? 'calmer' : '') + ' than normal in ' + Math.max(cold, calm) + ' week' + (Math.max(cold, calm) > 1 ? 's' : '') + ': more gas burnt, higher prices'));
   else if (windy) take.push(_mT('plus de vent que la normale sur ' + windy + ' semaine' + (windy > 1 ? 's' : '') + ' : des prix plus bas, plus d’heures négatives à midi', 'windier than normal in ' + windy + ' week' + (windy > 1 ? 's' : '') + ': lower prices, more negative hours at midday'));
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
   if (why) take.push(why);
@@ -647,7 +649,7 @@ function _mrnTileDef(id) {
   const chip = look && look.tone ? `<span class="wk-chip ${look.tone === 'up' ? 'wk-up' : look.tone === 'down' ? 'wk-dn' : 'wk-fl'}" title="${_mT('Semaine à venir · notes de marché', 'Week ahead · market notes')}">${look.tone === 'up' ? '↑ ' + _mT('haussier', 'bullish') : look.tone === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>` : '';
   let more = '';
   if (id === 'ttf') { const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365); if (st && ly != null) more = _mT(`Stocks de gaz UE ${_mN(st[1], 1)} % contre ${_mN(ly, 1)} % il y a un an.`, `EU gas storage ${_mN(st[1], 1)} % against ${_mN(ly, 1)} % a year ago.`); }
-  if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) more = _mT(`Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix plus fermes.`, `Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
+  if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) more = _mT(`Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix en hausse.`, `Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
   const y = +_mrnToday().slice(0, 4);
