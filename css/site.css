@@ -1525,6 +1525,25 @@
   .pkd-share-l a { text-decoration: none; white-space: nowrap; }
   body.pk-solo .ticker, body.pk-solo .topbar, body.pk-solo .sidebar, body.pk-solo .mobile-backdrop,
   body.pk-solo #page-mydash .pkd-top { display: none !important; }
+  /* launch animation (index.html, first lines of the body) */
+  #pk-intro { position: fixed; inset: 0; z-index: 100001; background: radial-gradient(ellipse at 50% 45%, #0f1c20 0%, #0a0e13 70%); display: flex; align-items: center; justify-content: center; transition: opacity .4s ease, visibility .4s; }
+  #pk-intro.gone { opacity: 0; visibility: hidden; }
+  .pki-w { display: flex; align-items: center; gap: 14px; }
+  .pki-ic { width: 72px; height: 76px; overflow: visible; }
+  .pki-arc { fill: none; stroke: #14D3A9; stroke-width: 9; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: pkiDraw .75s cubic-bezier(.45,0,.25,1) .1s forwards; }
+  .pki-dot { fill: #14D3A9; stroke: #9ff0dc; stroke-width: 3; offset-rotate: 0deg; offset-distance: 0%; opacity: 0; animation: pkiDot .75s cubic-bezier(.45,0,.25,1) .1s forwards; }
+  .pki-bolt { transform-box: fill-box; transform-origin: 50% 60%; opacity: 0; animation: pkiBolt .35s cubic-bezier(.2,1.4,.4,1) .8s forwards; }
+  .pki-ring { fill: none; stroke: #14D3A9; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; animation: pkiRing .7s ease-out .85s forwards; }
+  .pki-t { overflow: hidden; max-width: 0; animation: pkiText .6s cubic-bezier(.3,0,.2,1) 1.05s forwards; }
+  .pki-t span { display: block; white-space: nowrap; font: 500 46px/1 'Outfit', 'Inter', sans-serif; letter-spacing: -.01em; color: #fff; padding: 4px 2px 6px 0; }
+  .pki-t span::before { content: 'Power'; } .pki-t b::before { content: '.'; } .pki-t em::before { content: 'Klock'; }   /* generated text: the French pass (js/i18n.js) cannot translate the name */
+  .pki-t b { color: #14D3A9; font-weight: 500; } .pki-t em { font-style: normal; color: #14D3A9; }
+  @keyframes pkiDraw { to { stroke-dashoffset: 0; } }
+  @keyframes pkiDot { 0% { opacity: 0; offset-distance: 0%; } 12% { opacity: 1; } 100% { opacity: 1; offset-distance: 100%; } }
+  @keyframes pkiBolt { from { opacity: 0; transform: scale(.4) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pkiRing { 0% { opacity: .8; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.6); } }
+  @keyframes pkiText { to { max-width: 330px; } }
+    @media (max-width: 480px) { .pki-ic { width: 54px; height: 57px; } .pki-t span { font-size: 34px; } @keyframes pkiText { to { max-width: 240px; } } }
   #pk-boot { position: fixed; inset: 0; z-index: 100000; background: var(--bg, #0a0d12); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; transition: opacity .5s ease, visibility .5s; }
   #pk-boot.gone { opacity: 0; visibility: hidden; }
   .pk-boot-w { display: flex; align-items: baseline; font: 700 44px 'Outfit', 'Inter', sans-serif; letter-spacing: .01em; color: #E6EDF3; position: relative; }
