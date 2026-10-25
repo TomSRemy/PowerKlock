@@ -1,98 +1,25 @@
 {
- "open": 5,
+ "open": 1,
  "notes": [
   {
-   "id": 11,
+   "id": 16,
    "status": "open",
-   "created_at": "2026-10-25T10:26+00:00",
+   "created_at": "2026-10-25T10:43+00:00",
    "author": "Tom",
-   "route": "today",
-   "page": "Today",
-   "tab": "All",
-   "target_id": "mrn-kpis",
-   "target_label": "mrn-kpis (block)",
+   "route": "markets/spot",
+   "page": "Marchés › Électricité spot › Day-ahead",
+   "tab": "Historique",
+   "target_id": "ho-table",
+   "target_label": "Moy. (graphique)",
    "settings": {
-    "_page": "morning",
-    "_path": "#mrn-kpis",
-    "pk-zone": "Europe"
+    "_page": "prices",
+    "_path": "#ho-table",
+    "pk-zone": "France",
+    "ho-date-to": "",
+    "spt-m-zone": "France",
+    "ho-date-from": ""
    },
-   "body": "données CAl 28 et CAL 29 -> écrir CAR YY et un peu plus gros. Montrer évolution 7 days mais aussi J-1",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 12,
-   "status": "open",
-   "created_at": "2026-10-25T10:27+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Today",
-   "tab": "All",
-   "target_id": "mrn-brief",
-   "target_label": "What moved and why (block)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
-    "pk-zone": "Europe"
-   },
-   "body": "GO: mettre les valeurs bourses mais aussi la valeur GO Auction FRance.",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 13,
-   "status": "open",
-   "created_at": "2026-10-25T10:27+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Today",
-   "tab": "All",
-   "target_id": "hs-morning-4",
-   "target_label": "France production now (chart)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-morning-4",
-    "pk-zone": "Europe"
-   },
-   "body": "il y a de la place pour d'uatres tuiles en haut",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 14,
-   "status": "open",
-   "created_at": "2026-10-25T10:27+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Today",
-   "tab": "All",
-   "target_id": "mrn-spot",
-   "target_label": "France spot · today and tomorrow (chart)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#mrn2 > section:nth-of-type(1)",
-    "pk-zone": "Europe"
-   },
-   "body": "la prév à disparu ?? (quadn prev je veux le fond achuré parce que c'est top)",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 15,
-   "status": "open",
-   "created_at": "2026-10-25T10:37+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Tout",
-   "target_id": "mrn-brief",
-   "target_label": "Ce qui a bougé et pourquoi (bloc)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
-    "pk-zone": "Europe"
-   },
-   "body": "Aller a la ligne a chaque nouvelle ligne. \nexemple : \nFrance : XXX \nGolfe: XXX",
+   "body": "le play ne marche pas partout.\nJe veux que les axex se mettent à jout si on enlèce une année (2022 écranse tout).",
    "reply": null,
    "done_at": null
   },
@@ -278,6 +205,101 @@
    "body": "il y avait pas une autre arre à droite avant ?",
    "reply": "Oui, c’était la jauge du nucléaire (passée dans les tuiles). À la place : le forward du mois prochain face au spot du mois en cours.",
    "done_at": "2026-10-25T10:38+00:00"
+  },
+  {
+   "id": 11,
+   "status": "done",
+   "created_at": "2026-10-25T10:26+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-kpis",
+   "target_label": "mrn-kpis (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn-kpis",
+    "pk-zone": "Europe"
+   },
+   "body": "données CAl 28 et CAL 29 -> écrir CAR YY et un peu plus gros. Montrer évolution 7 days mais aussi J-1",
+   "reply": "Fait : chaque tuile montre la variation à J-1 et sur 7 jours ; en bas de la tuile Cal, « Cal 28 » et « Cal 29 » écrits ainsi, un peu plus gros.",
+   "done_at": "2026-10-25T10:49+00:00"
+  },
+  {
+   "id": 12,
+   "status": "done",
+   "created_at": "2026-10-25T10:27+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-brief",
+   "target_label": "What moved and why (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
+    "pk-zone": "Europe"
+   },
+   "body": "GO: mettre les valeurs bourses mais aussi la valeur GO Auction FRance.",
+   "reply": "Fait : la ligne GO donne les prix courtier (Cal 26, 27, 28 avec leur variation sur la semaine) et la dernière enchère GO France (prix moyen, volume).",
+   "done_at": "2026-10-25T10:49+00:00"
+  },
+  {
+   "id": 13,
+   "status": "done",
+   "created_at": "2026-10-25T10:27+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "hs-morning-4",
+   "target_label": "France production now (chart)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-morning-4",
+    "pk-zone": "Europe"
+   },
+   "body": "il y a de la place pour d'uatres tuiles en haut",
+   "reply": "Fait : en tête de Système électrique, 5 tuiles au dernier quart d’heure RTE : CO₂, consommation, nucléaire, éolien + solaire (part de la consommation), échanges.",
+   "done_at": "2026-10-25T10:49+00:00"
+  },
+  {
+   "id": 14,
+   "status": "done",
+   "created_at": "2026-10-25T10:27+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-spot",
+   "target_label": "France spot · today and tomorrow (chart)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > section:nth-of-type(1)",
+    "pk-zone": "Europe"
+   },
+   "body": "la prév à disparu ?? (quadn prev je veux le fond achuré parce que c'est top)",
+   "reply": "La prévision de demain ne sortait qu’avec le passage de 13 h 30, presque en même temps que le vrai prix. Le modèle tourne maintenant chaque heure de 8 h 30 à 12 h 30. Le fond hachuré reste sur demain tant que le prix n’est pas publié, avec la prévision dès qu’elle existe.",
+   "done_at": "2026-10-25T10:49+00:00"
+  },
+  {
+   "id": 15,
+   "status": "done",
+   "created_at": "2026-10-25T10:37+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Tout",
+   "target_id": "mrn-brief",
+   "target_label": "Ce qui a bougé et pourquoi (bloc)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
+    "pk-zone": "Europe"
+   },
+   "body": "Aller a la ligne a chaque nouvelle ligne. \nexemple : \nFrance : XXX \nGolfe: XXX",
+   "reply": "Fait : un sujet par ligne dans le contexte (France, Golfe, Norvège…).",
+   "done_at": "2026-10-25T10:49+00:00"
   }
  ]
 }
