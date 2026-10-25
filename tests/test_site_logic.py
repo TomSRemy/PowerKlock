@@ -94,9 +94,17 @@ def main():
         t = p.locator('.mrn2-tile[data-tile]').first
         if t.count():
             t.click(); p.wait_for_timeout(800)
-            opened = p.evaluate("!document.getElementById('mrn-win').hidden && !!Chart.getChart(document.getElementById('mrn-win-chart'))")
+            opened = p.evaluate("document.getElementById('pk-tw').hidden === false && !!Chart.getChart(document.getElementById('pk-tw-chart'))")
             p.keyboard.press('Escape'); p.wait_for_timeout(600)
-            check('Today: a tile opens its chart, Esc closes it, the page stays', opened and p.evaluate("[document.getElementById('mrn-win').hidden, location.hash]") == [True, '#today'], opened)
+            check('Today: a tile opens its chart, Esc closes it, the page stays', opened and p.evaluate("[document.getElementById('pk-tw').hidden, location.hash]") == [True, '#today'], opened)
+
+        # ── market pages: the day-ahead FR tile opens its history full size, at least 300 px high ──
+        p.evaluate("PKNav.go('markets/spot')"); p.wait_for_timeout(3500)
+        if p.locator('#kpicard-fr').count() and p.locator('#kpicard-fr').is_visible():
+            p.locator('#kpicard-fr').click(); p.wait_for_timeout(1500)
+            st = p.evaluate("(() => { const ch = Chart.getChart(document.getElementById('pk-tw-chart')); return ch ? [ch.data.datasets[0].data.filter(v => v != null).length, document.querySelector('.pk-tw-cw').getBoundingClientRect().height] : null; })()")
+            p.keyboard.press('Escape'); p.wait_for_timeout(500)
+            check('market tile: the FR day-ahead tile opens a year of history, chart 300 px or more', bool(st) and st[0] > 200 and st[1] >= 300 and p.evaluate("location.hash") == '#markets/spot', st)
 
         # ── notes: N opens the panel, a note aimed at a chart is saved (this browser, not signed in) with its context and a pin ──
         p.evaluate("PKNav.go('renewables/capture')"); p.wait_for_timeout(800)
