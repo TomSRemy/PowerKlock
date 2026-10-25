@@ -109,7 +109,7 @@
   .why4-ctx{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg3, rgba(255,255,255,.02));display:grid;gap:6px;color:var(--text)}
   .why4-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .why4-h .why3-src{margin:0}
-  .why4-n{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+  .why4-n{font:700 13.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--accent, #14D3A9)}   /* the market's name: what the eye looks for first */
   .why4-t .why4-h .wk-chip{margin-left:auto}
   .why4-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;align-items:stretch}
   .why4-t{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}

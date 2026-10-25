@@ -568,8 +568,15 @@ async function _mrnWeeks(k, el) {
   if (weeks.length) {
     const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
     const AW = k.idx && k.idx.ahead ? k.idx.ahead.weeks : [];   // the PowerKlock index, week by week (same weeks: from tomorrow, 7 days)
-    html += '<div class="mrn2-weeks">' + weeks.map((w, wi) => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale hist.)', 'Temp. (vs hist. normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span>${AW[wi] ? `<span class="mrn2-wk-r mrn2-wk-idx" title="${_mT('Indice PowerKlock : spot attendu d’après la couverture prévue et le coût du gaz du jour', 'PowerKlock index: expected spot from the forecast coverage and today’s gas cost')}"><span>${_mT('Spot attendu (indice)', 'Expected spot (index)')}</span><b>${_mN(AW[wi].fair, 0)} €</b></span>` : ''}</div>`).join('') + '</div>';
+    // one table: the weeks in columns, each measure once on the left; a row opens its chart (forecast against normal)
+    const wl = w => _mT('Sem. ', 'Wk ') + wn(w.from) + ' · ' + new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const row = (id, label, f) => `<tr class="mrn-wrow" data-tile="${id}" tabindex="0" title="${_mT('Ouvrir le graphique', 'Open the chart')}"><th>${label} <span class="mrn-wgo">⤢</span></th>${weeks.map((w, wi) => `<td>${f(w, wi)}</td>`).join('')}</tr>`;
+    MRN.wx = F;
+    html += `<table class="mrn-wtab"><thead><tr><th>${_mT('vs normale hist.', 'vs hist. normal')}</th>${weeks.map(w => `<th>${wl(w)}</th>`).join('')}</tr></thead><tbody>` +
+      row('wtemp', _mT('Température', 'Temperature'), w => cell(w.dT, 0.7, '°C', 1)) +
+      row('wwind', _mT('Production éolienne', 'Wind output'), w => cell(w.wind, 8, '%', 0)) +
+      row('wsun', _mT('Production solaire', 'Solar output'), w => cell(w.sun, 8, '%', 0)) +
+      (AW.length ? row('idx', _mT('Spot attendu (indice)', 'Expected spot (index)'), (w, wi) => AW[wi] ? `<b>${_mN(AW[wi].fair, 0)} €</b>` : '–') : '') + '</tbody></table>';
   }
   // below the weeks, two gauges side by side: EU gas storage against its winter mark, French nuclear available against EDF's forecast
   const g = [];
@@ -897,6 +904,10 @@ const MRN_WIN = {
         ...(I.ahead ? [['fairfc', _mT('Spot attendu, prévision, €/MWh (axe droit)', 'Expected spot, forecast, €/MWh (right axis)'), '#F59E0B', 'y2', true, I.ahead.days.map(x => [x.d, Math.round(x.fair * 10) / 10])],
           ['covfc', _mT('Couverture prévue, %', 'Forecast coverage, %'), '#7FC8F8', 'y', true, I.ahead.days.map(x => [x.d, Math.round(x.cov * 10) / 10])]] : []),
         ['spot', _mT('Spot France, €/MWh (axe droit)', 'France spot, €/MWh (right axis)'), '#E6EDF3', 'y2', true, I.rows.filter(x => x.p != null).map(x => [x.d, x.p])]], unit2: '€/MWh' }; },
+  // the 4-week table's rows: forecast (ensemble mean) against the 2016–2025 normal, from data/weather_outlook.json
+  wtemp: () => _mrnWxWin('temp', _mT('Température France', 'France temperature'), '°C', 1, '#FBBF24'),
+  wwind: () => _mrnWxWin('wind', _mT('Production éolienne prévue', 'Expected wind output'), 'GWh/j', 0, '#14D3A9'),
+  wsun: () => _mrnWxWin('solar', _mT('Production solaire prévue', 'Expected solar output'), 'GWh/j', 0, '#FBBF24'),
   // renewables tiles (data in MRN.ren, read by _mrnRenTiles)
   ppas: () => _mrnPpaWin('solar'), ppaw: () => _mrnPpaWin('wind'), m0s: () => _mrnM0Win('solar'), m0w: () => _mrnM0Win('wind'),
   ao: () => { const rows = (MRN.ren && MRN.ren.ao) || [], ser = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).map(r => [r.result, r.price]);
@@ -914,6 +925,14 @@ const MRN_WIN = {
 const MRN_ORDER = ['cal', 'ttf', 'eua', 'brent', 'go', 'idx'];
 const MRN_REN_ORDER = ['ppas', 'ppaw', 'm0s', 'm0w', 'ao'];
 const MRN_SYS_ORDER = ['sco2', 'sload', 'snuc', 'sren', 'sexch'];
+const MRN_WX_ORDER = ['wtemp', 'wwind', 'wsun', 'idx'];
+function _mrnWxWin(key, name, unit, dp, col) {
+  const S = MRN.wx && MRN.wx[key], d = S ? S.days : [], z = arr => d.map((x, i) => [x, arr && arr[i] != null ? Math.round(arr[i] * 10) / 10 : null]).filter(p => p[1] != null);
+  return { name, unit, dp, look: null, pct: false, neutral: true, noMoves: true, route: 'system/weather', page: _mT('Système › Météo', 'System › Weather'), range: 'ALL', mainId: 'fc',
+    why: _mT('Prévision moyenne de l’ensemble GFS (31 membres) face à la normale 2016–2025 ; la bande P10–P90 se coche dans la légende. Production : météo convertie au parc actuel, calée sur RTE.', 'GFS ensemble mean (31 members) against the 2016–2025 normal; tick P10–P90 in the legend. Output: weather converted at today’s fleet, fitted on RTE.'),
+    series: [['fc', _mT('Prévision', 'Forecast'), col, 'y', true, z(S && S.mean)], ['nm', _mT('Normale 2016–2025', 'Normal 2016–2025'), '#B8C9D9', 'y', true, z(S && S.normal)], ['act', _mT('Observé', 'Observed'), '#E6EDF3', 'y', true, z(S && S.actual)],
+      ['p10', 'P10', '#7A93AB', 'y', false, z(S && S.p10)], ['p90', 'P90', '#7A93AB', 'y', false, z(S && S.p90)]] };
+}
 function _mrnSysWin(k, name, unit, dp, defs, route, page) {
   const rows = ((k.rted && k.rted.rows) || []).filter((r, i, a) => r.loadAvg && (i === a.length - 1 || a[i + 1].d !== r.d));
   return { name, unit, dp, look: null, pct: false, neutral: true, route, page, range: '1Y',
@@ -942,17 +961,18 @@ function _mrnTileDef(id) {
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
   const y = +_mrnToday().slice(0, 4);
-  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, range: W.range, noMoves: W.noMoves, why: W.why, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
+  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, neutral: W.neutral, dp: W.dp, inv: W.inv, range: W.range, noMoves: W.noMoves, why: W.why, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: W.mainId || (id === 'go' ? 'go' + (y + 1) : null) };
 }
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('mrn-wrow')) e.target.click(); });
 document.addEventListener('pk-view', e => {
   if (!e.detail || e.detail.key !== 'morning' || e.detail.index !== 2) return;
   ['hs-morning-2', 'hs-morning-3', 'hs-morning-4'].forEach(id => { const s = document.getElementById(id); if (s && !s.dataset.opened) { s.dataset.opened = '1'; s.classList.remove('collapsed'); } });
 });
 document.addEventListener('click', e => {   // a tile opens its chart full size (a modified click still opens the page in a new tab)
-  const a = e.target.closest && e.target.closest('.mrn2-tile[data-route]');
+  const a = e.target.closest && e.target.closest('.mrn2-tile[data-route], .mrn-wrow');
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
   // capture phase, before the menu's handler that opens any [data-route] link as a page
-  const ORD = MRN_REN_ORDER.includes(a.dataset.tile) ? MRN_REN_ORDER : MRN_SYS_ORDER.includes(a.dataset.tile) ? MRN_SYS_ORDER : MRN_ORDER, ids = ORD.filter(i => document.querySelector('.mrn2-tile[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);
+  const ORD = MRN_REN_ORDER.includes(a.dataset.tile) ? MRN_REN_ORDER : MRN_SYS_ORDER.includes(a.dataset.tile) ? MRN_SYS_ORDER : a.closest('.mrn-wtab') ? MRN_WX_ORDER : MRN_ORDER, box = a.closest('.mrn-wtab') || document, ids = ORD.filter(i => box.querySelector('[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);
   if (idx >= 0 && window.PKTile && PKTile.open(_mrnTileDef(a.dataset.tile), { push: true, list: ids.map(i => () => _mrnTileDef(i)), idx, opener: a })) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 

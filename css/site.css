@@ -3332,3 +3332,13 @@ table.mrn-got { table-layout: fixed; width: 100%; }
 table.mrn-got td:not(:first-child), table.mrn-got th:not(:first-child) { text-align: right; }
 table.mrn-got tr.mrn-fwd-g2 th { padding-top: 14px; }
 .mrn-sys-t .mrn3-tx { margin-top: auto; }
+/* Today › 4 weeks: one table, a row opens its chart */
+table.mrn-wtab { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; margin-bottom: 12px; }
+table.mrn-wtab th, table.mrn-wtab td { padding: 7px 10px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); text-align: right; font-variant-numeric: tabular-nums; }
+table.mrn-wtab th:first-child { text-align: left; width: 24%; font-weight: 500; color: var(--text2); }
+table.mrn-wtab thead th { font: 600 11px 'JetBrains Mono', monospace; color: var(--text3); text-transform: none; }
+tr.mrn-wrow { cursor: pointer; }
+tr.mrn-wrow:hover td, tr.mrn-wrow:hover th, tr.mrn-wrow:focus-visible td, tr.mrn-wrow:focus-visible th { background: rgba(20,211,169,.07); outline: none; }
+.mrn-wgo { color: var(--accent, #14D3A9); opacity: .5; font-size: 12px; margin-left: 4px; }
+tr.mrn-wrow:hover .mrn-wgo { opacity: 1; }
+tr.mrn-wrow[data-tile="idx"] th, tr.mrn-wrow[data-tile="idx"] td { border-top: 1px dashed var(--border2, rgba(255,255,255,.15)); }
