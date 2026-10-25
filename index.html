@@ -26,6 +26,29 @@
 <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
+<script>/* launch animation (once per browser session, ~2 s): a dot draws the power arc, the bolt lights up with a ring
+   pulse, then "Power.Klock" is revealed left to right; it leaves as soon as the page is ready. Not on shared links,
+   not for "reduce motion", not for automated browsers (tests) unless the address carries ?intro */
+(function () {
+  var force = /[?&]intro\b/.test(location.search), seen = false;
+  try { seen = sessionStorage.getItem('pk-intro') === '1'; sessionStorage.setItem('pk-intro', '1'); } catch (e) {}
+  if (!force && (seen || /^#(solo|board)=/.test(location.hash) || navigator.webdriver || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches))) return;
+  var A = 'M130.4 59 A68 68 0 1 1 29.6 59', BOLT = '63,11 93,10 88,50 100,51 73,111 77,71 62,69';
+  document.write('<div id="pk-intro" aria-hidden="true"><div class="pki-w"><svg class="pki-ic" viewBox="-6 -4 172 182">' +
+    '<circle class="pki-ring" cx="80" cy="100" r="68"/>' +
+    '<path class="pki-arc" d="' + A + '" pathLength="100"/>' +
+    '<g class="pki-bolt"><polygon points="' + BOLT + '" transform="translate(-10 7)" fill="#fff"/><polygon points="' + BOLT + '" fill="#14D3A9"/></g>' +
+    '<circle class="pki-dot" r="9" style="offset-path:path(\'' + A + '\')"/></svg>' +
+    '<div class="pki-t"><span><b></b><em></em></span></div></div></div>');
+  var t0 = Date.now(), done = false;
+  function go() {
+    if (done) return; done = true;
+    var el = document.getElementById('pk-intro'); if (!el) return;
+    setTimeout(function () { el.classList.add('gone'); setTimeout(function () { el.remove(); }, 450); }, Math.max(0, 1900 - (Date.now() - t0)));
+  }
+  window.addEventListener('load', go);
+  setTimeout(go, 4000);   // a slow network: the page shows what it has
+})();</script>
 <script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows;
    a short animation covers the first seconds until the first chart is drawn */
 if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
