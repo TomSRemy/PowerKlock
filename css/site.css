@@ -3360,3 +3360,9 @@ tr.mrn-wrow[data-tile="idx"] th, tr.mrn-wrow[data-tile="idx"] td { border-top: 1
 .mrn2-gauges.mrn-gcol { grid-template-columns: 1fr !important; display: grid; gap: 18px; }
 table.mrn-wtab td, table.mrn-wtab thead th:not(:first-child) { text-align: center; }
 @media (max-width: 1000px) { .mrn-w4 { grid-template-columns: 1fr; } }
+/* Today: spot, three days side by side */
+.mrn-3d { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.mrn-3d-c { margin: 0 !important; padding: 12px 14px; min-width: 0; }
+.mrn-3d-c .mu-day-c { min-height: 210px; height: 210px; }
+.mu-day-fc { color: #7FC8F8; text-transform: none; }
+@media (max-width: 1100px) { .mrn-3d { grid-template-columns: 1fr; } }
