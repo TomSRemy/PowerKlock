@@ -2919,6 +2919,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <button type="button" class="pk-btn-ghost" id="rp-full">Full screen</button>
           <button type="button" class="pk-btn-ghost" id="rp-export">Export video</button>
         </div>
+        <div class="rp-vid" id="rp-vid"></div>
         <p class="cmp-note" id="rp-note"></p>
         <div class="rp-events" id="rp-events"></div>
         <div class="rp-days" id="rp-days"></div>
@@ -2936,6 +2937,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="chart-container fuel-card" style="margin:0">
             <div class="table-title">On the chart</div>
             <div id="cmp-sel" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+          </div>
+          <div class="chart-container fuel-card" style="margin:0">
+            <div class="table-title">Build a series</div>
+            <div class="fuel-card-sub" style="margin:4px 0 8px">A spread or any formula of the series on the chart</div>
+            <div id="cmp-fx"></div>
           </div>
           <div class="chart-container fuel-card" style="margin:0">
             <label class="table-title" for="cmp-q">Add a series</label>
@@ -2958,6 +2964,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <section class="chart-container fuel-card" style="margin:0">
               <div class="fuel-card-head"><div><div class="table-title">What fits the first series best</div><div class="fuel-card-sub">Every series of the catalogue, ranked</div></div><button type="button" class="pk-btn-ghost" id="cmp-rank-go">Run</button></div>
               <div id="cmp-rank"><p class="cmp-note">Ranks every series of the catalogue by how closely its day-to-day changes follow the first series on the chart.</p></div>
+            </section>
+            <section class="chart-container fuel-card" style="margin:0;grid-column:1/-1">
+              <div class="fuel-card-head"><div><div class="table-title">Links watched every day</div><div class="fuel-card-sub">Correlation of daily changes, last year → last 60 days; a gap of 0.3 is a break</div></div></div>
+              <div id="cmp-watch"></div>
             </section>
             <section class="chart-container fuel-card" style="margin:0">
               <div class="fuel-card-head"><div><div class="table-title">Who moves first</div><div class="fuel-card-sub">First two series, shifted by −5 to +5 days</div></div></div>

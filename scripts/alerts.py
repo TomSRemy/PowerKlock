@@ -12,6 +12,10 @@ Rule kinds
   base_above  daily baseload above `threshold` €/MWh
   base_below  daily baseload below `threshold` €/MWh
   pp1, pp2    RTE signals a PP1 / PP2 peak-period day (France, data/rte_pp.json)
+  ppa_move    the PPA benchmark (solar or wind) moved by `threshold` €/MWh or more over 7 days
+              (data/history/ppa_benchmark.json)
+  corr_break  a watched pair's correlation moved by `threshold` or more between the last year and
+              the last 60 days (data/corr_watch.json, scripts/corr_watch.py)
   fwd_fr      the France-specific part of the day's French Cal+1 move (the part
               gas and CO₂ do not explain, as on Prices › Forward) above
               `threshold` €/MWh in absolute value
@@ -139,11 +143,40 @@ def evaluate(rules, days):
             if r['kind'] == 'fwd_fr' and r['threshold'] is not None and abs(fw['resid']) >= r['threshold']:
                 out.append((r, fw['day'], 'FR', f'Cal {fw["k"]} France {fw["dp"]:+.2f} € on {fmt_day(fw["day"])} to {fw["p"]:.2f} €/MWh: '
                                              f'{fw["resid"]:+.2f} € France-specific, gas and CO₂ explain {fw["fc"]:+.2f} € (pass-through {fw["beta"] * 100:.0f} %).'))
+    # PPA benchmark: the latest run against the one 7 days before
+    if any(r['kind'] == 'ppa_move' for r in rules):
+        b = (_load('history/ppa_benchmark.json') or {}).get('days') or {}
+        ks = sorted(b)
+        if ks and date.fromisoformat(ks[-1]) >= min(days) - timedelta(days=3):
+            last = ks[-1]
+            prev = [k for k in ks if k <= (date.fromisoformat(last) - timedelta(days=7)).isoformat()]
+            if prev:
+                for r in rules:
+                    if r['kind'] != 'ppa_move' or r['threshold'] is None:
+                        continue
+                    for t, name in (('solar', 'solar'), ('wind', 'wind')):
+                        a, c = (b[prev[-1]].get(t) or {}).get('ppa'), (b[last].get(t) or {}).get('ppa')
+                        if a is not None and c is not None and abs(c - a) >= r['threshold']:
+                            out.append((r, date.fromisoformat(last), 'FR', f'PPA benchmark {name} {c:.2f} €/MWh on {fmt_day(date.fromisoformat(last))}, '
+                                                                         f'{c - a:+.2f} € over 7 days (from {a:.2f}).'))
+    # correlation breaks of the watched pairs
+    if any(r['kind'] == 'corr_break' for r in rules):
+        w = _load('corr_watch.json') or {}
+        wd = (w.get('updated') or '')[:10]
+        if wd and date.fromisoformat(wd) >= min(days) - timedelta(days=3):
+            for r in rules:
+                if r['kind'] != 'corr_break':
+                    continue
+                thr = r['threshold'] if r['threshold'] is not None else 0.3
+                for p in w.get('pairs') or []:
+                    if abs(p['delta']) >= thr:
+                        out.append((r, date.fromisoformat(wd), p['a'] + '/' + p['b'], f'Correlation {p["a"]} / {p["b"]}: {p["c365"]:+.2f} over a year, '
+                                                                                f'{p["c60"]:+.2f} over 60 days ({"tightening" if p["delta"] > 0 else "breaking"}).'))
     for d in days:
         zones = day_file(d)
         for r in rules:
             kind = r['kind']
-            if kind == 'fwd_fr':
+            if kind in ('fwd_fr', 'ppa_move', 'corr_break'):
                 continue
             if kind in ('pp1', 'pp2'):
                 e = pp.get(d.isoformat())

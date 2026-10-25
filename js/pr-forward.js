@@ -271,8 +271,10 @@
     var host = document.getElementById('pf-drill-content');
     if (!host) return;
     if (PF.drillTab === 'curve') {
-      host.innerHTML = drillChartBox('pf-drill-chart-curve');
-      PKW.draw('pf-curve', 'pf-drill-chart-curve', { country: cc }).then(function () { addFullscreen('pf-drill-chart-curve'); addDownload('pf-drill-chart-curve', 'pf-drill-chart-curve'); });
+      // today's curve against a week and a month ago, or against any date the reader picks
+      host.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:11px;color:var(--text3);font-family:\'JetBrains Mono\',monospace">Compare with <input type="date" id="pf-curve-vs" value="' + (PF.curveVs || '') + '" onchange="window._pfSetCurveVs(this.value)" style="background:var(--bg);border:1px solid var(--bd);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;color-scheme:dark">' +
+        (PF.curveVs ? '<button class="pk-btn-ghost" onclick="window._pfSetCurveVs(\'\')">1 week / 1 month ago</button>' : '') + '</div>' + drillChartBox('pf-drill-chart-curve');
+      PKW.draw('pf-curve', 'pf-drill-chart-curve', { country: cc, vs: PF.curveVs || '' }).then(function () { addFullscreen('pf-drill-chart-curve'); addDownload('pf-drill-chart-curve', 'pf-drill-chart-curve'); });
       return;
     }
     if (PF.drillTab === 'calall') {
@@ -389,13 +391,25 @@
   reg({
     id: 'pf-curve', title: 'Power forward curve vs 1W / 1M ago', pageCanvas: 'pf-drill-chart-curve',
     desc: 'Baseload forward curve of one market at the latest settlement, a week and a month earlier, tenor by tenor.',
-    params: [COUNTRY_PARAM], defaults: { country: 'FR' },
+    params: [COUNTRY_PARAM], defaults: { country: 'FR', vs: '' },
     draw: function (cid, p) {
       return pfData().then(function () {
         var cs = (PF.series.countries && PF.series.countries[p.country]) || {}, fc = cs.forwardCurve || {}, dates = PF.series.dates || [];
         var snap = PF.snap.countries[p.country] || {}, cur = snap.currency || 'EUR';
         var last = dates[dates.length - 1];
         var back = function (n) { var d = new Date(last + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+        if (p.vs) {   // the curve today against the curve of a date chosen by the reader
+          var labels2 = FORWARD_TENORS.slice(), asOf2 = {};
+          var ds2 = [[last, 'Latest', countryMeta(p.country).colour, 2.4, []], [p.vs, p.vs, '#FBBF24', 2, [6, 4]]].map(function (s) {
+            var vals = FORWARD_TENORS.map(function (t) { var r = valueAt(fc[t] || [], dates, s[0]); if (r) asOf2[s[0]] = r.d; return r ? r.v : null; });
+            return { label: (s[1] === 'Latest' ? 'Latest' : 'On') + ' ' + (asOf2[s[0]] || s[0]), data: vals, borderColor: s[2], backgroundColor: s[2], borderWidth: s[3], borderDash: s[4], pointRadius: 3, tension: 0, fill: false, spanGaps: true };
+          });
+          var o2 = lineOpts(true);
+          o2.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(cur + '/MWh') };
+          mkChart(cid, { type: 'line', data: { labels: labels2, datasets: ds2 }, options: o2 });
+          var y1 = FORWARD_TENORS.indexOf('Y+1'), a = ds2[0].data[y1], b = ds2[1].data[y1];
+          return { sub: countryMeta(p.country).label + ' · tenor by tenor · ' + (asOf2[p.vs] || p.vs) + ' → ' + (asOf2[last] || last) + (a != null && b != null ? ' · Y+1 ' + (a - b >= 0 ? '+' : '') + num(a - b, 2) + ' ' + cur + '/MWh' : '') };
+        }
         // Compared tenor by tenor (rolling products): today's contract in brackets.
         var labels = FORWARD_TENORS.map(function (t) { var r = tenorRow(snap, t); return r ? t + ' · ' + r.contract.replace(/^[A-Z]{2}\s+/, '').replace(/\s+base$/i, '') : t; });
         var series = [[0, 'Latest', countryMeta(p.country).colour, 2.4, []], [7, '1 week ago', '#B8C9D9', 1.4, [5, 4]], [30, '1 month ago', '#7A93AB', 1.2, [2, 3]]];
@@ -624,6 +638,7 @@
   window._pfCloseRow = closeCountryRow;
   window._pfSetDrillTab = function (tab) { PF.drillTab = tab; renderDrillTabs(PF.openCountry); renderDrillContent(PF.openCountry); };
   window._pfSetDrillTenor = function (t) { PF.drillTenor = t; renderDrillContent(PF.openCountry); };
+  window._pfSetCurveVs = function (d) { PF.curveVs = d || ''; renderDrillContent(PF.openCountry); };
   window._pfSetDrillWindow = function (w) { PF.drillWindow = w; PF.drillFrom = PF.drillTo = ''; renderDrillContent(PF.openCountry); };
   window._pfSetDrillRange = function () {
     PF.drillFrom = (document.getElementById('pf-drill-from') || {}).value || '';

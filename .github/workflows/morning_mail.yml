@@ -1,0 +1,32 @@
+name: Morning e-mail
+
+# Today's quick look by e-mail, weekdays 07:00 Paris (scripts/morning_mail.py).
+# Needs the SMTP_* secrets (as the alerts) and MORNING_TO (recipients, comma-separated); without them it only prints.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1-5'    # 05:00 UTC = 07:00 Paris in winter (06:00 UTC in summer, after the morning data)
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  mail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Send
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          MORNING_TO: ${{ secrets.MORNING_TO }}
+        run: |
+          # one mail a day: the run whose UTC hour is 07:00 in Paris
+          if [ "$(TZ=Europe/Paris date +%H)" != "07" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "Not 07:00 in Paris"; exit 0; fi
+          python scripts/morning_mail.py

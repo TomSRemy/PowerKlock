@@ -363,7 +363,8 @@
   }
   window.pkGo = route => go(route, true);
 
-  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/]+)$/); return m && R[m[1]] ? m[1] : null; };
+  // an address may carry settings after the page (#tools/compare?s=…): kept for the page, which reads them once
+  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } return m[1]; };
   const foreignHash = () => /^#(board|solo)=|access_token=|error_description=/.test(location.hash);
 
   // a click on any menu or bar link

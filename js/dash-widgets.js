@@ -41,8 +41,16 @@
         ds.push(_fuelLineDs(t === 'solar' ? _mT('PPA solaire', 'Solar PPA') : _mT('PPA éolien', 'Wind PPA'), days.map(d => j.days[d][t] ? j.days[d][t].ppa : null), COL[t],
           { borderWidth: 2, segment: { borderDash: c => j.days[days[c.p1DataIndex]] && j.days[days[c.p1DataIndex]].rebuilt ? [4, 3] : undefined } }));
       });
-      if (techs.length === 1) ds.push(_fuelLineDs(_mT('Forward base de la période', 'Baseload forward of the tenor'), days.map(d => j.days[d][techs[0]] ? j.days[d][techs[0]].ref : null), '#7A93AB', { borderWidth: 1.2, borderDash: [2, 3] }));
-      _fuelChart(cid, { type: 'line', data: { labels: days, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'ppa-benchmark');
+      if (techs.length === 1) {   // one technology: the Blend of the three model methods and the P10–P90 band of the default one
+        const g = k => days.map(d => j.days[d][techs[0]] && j.days[d][techs[0]][k] != null ? j.days[d][techs[0]][k] : null), col = COL[techs[0]];
+        if (g('hi').some(v => v != null)) {
+          ds.push(_fuelLineDs('P90', g('hi'), col, { borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'transparent' }));
+          ds.push(_fuelLineDs(_mT('Bande P10–P90', 'P10–P90 band'), g('lo'), col, { borderWidth: 0, pointRadius: 0, fill: '-1', backgroundColor: col + '22' }));
+        }
+        if (g('blend').some(v => v != null)) ds.push(_fuelLineDs(_mT('Blend (3 méthodes)', 'Blend (3 methods)'), g('blend'), '#E6EDF3', { borderWidth: 1.4, borderDash: [5, 4] }));
+        ds.push(_fuelLineDs(_mT('Forward base de la période', 'Baseload forward of the tenor'), g('ref'), '#7A93AB', { borderWidth: 1.2, borderDash: [2, 3] }));
+      }
+      _fuelChart(cid, { type: 'line', data: { labels: days, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10, filter: it => it.text !== 'P90' } } } }) }, 'ppa-benchmark');
       const L = j.days[last], wk = all.filter(d => d <= new Date(Date.parse(last) - 7 * 864e5).toISOString().slice(0, 10)).pop();
       const mv = t => wk && j.days[wk][t] && L[t] ? ' (' + _mS(L[t].ppa - j.days[wk][t].ppa, 2) + _mT(' sur 7 j)', ' on 7 d)') : '';
       const reb = days.some(d => j.days[d].rebuilt);
@@ -56,8 +64,31 @@
       const all = Object.keys(j.days).sort(), L = j.days[all[all.length - 1]], P = j.days[all[all.length - 2]] || {}, W = j.days[all[Math.max(0, all.length - 6)]] || {};
       const cell = t => !L[t] ? '' : `<div class="mrn2-tile"><span class="mrn2-tn">${t === 'solar' ? _mT('PPA solaire', 'Solar PPA') : _mT('PPA éolien', 'Wind PPA')} · Cal ${(L.tenor || '').replace(/-/g, '–')}</span><span class="mrn2-tv">${_mN(L[t].ppa, 2)}<small>€/MWh</small></span>` +
         `<span class="mrn2-tc">${P[t] ? _mS(L[t].ppa - P[t].ppa, 2) + ' ' + _mT('J-1', 'D-1') : ''}${W[t] ? ' · ' + _mS(L[t].ppa - W[t].ppa, 2) + ' ' + _mT('5 j ouvrés', '5 runs') : ''}</span>` +
+        (L[t].blend != null ? `<span class="mrn2-tc">Blend <b>${_mN(L[t].blend, 2)}</b>${L[t].lo != null ? ' · P10–P90 <b>' + _mN(L[t].lo, 1) + '–' + _mN(L[t].hi, 1) + '</b>' : ''}</span>` : '') +
         `<span class="mrn3-tx"><span>${_mT('forward', 'forward')} <b>${_mN(L[t].ref, 2)}</b> · PPA ÷ forward <b>${_mN(L[t].ppa / L[t].ref * 100, 0)} %</b></span><span>${all[all.length - 1]}</span></span></div>`;
       host.innerHTML = '<div class="mrn2-tiles" style="grid-template-columns:1fr 1fr">' + cell('solar') + cell('wind') + '</div>';
+    } });
+
+  // ── what moved the PPA benchmark between two dates: forwards, capture (shape and cannibalisation), GO, imbalance ──
+  //    ppa = ref × R + go − imb − margin, R = (ppa − go + imb + margin) ÷ ref (what one forward MWh is worth once shaped)
+  //    Δppa = Δref × R₀ (forwards) + ref₁ × ΔR (capture) + Δgo (GO) − Δimb (imbalance): the four add up exactly
+  R({ id: 'ppa-bridge', title: 'PPA benchmark · what moved it', category: 'renewables', page: 'ppapricer', size: { w: 6, h: 5 },
+    desc: 'The change of the PPA benchmark over a week, a month or a year, split into the part due to the forwards, to the capture (production profile and cannibalisation), to the GO and to the imbalance cost.',
+    params: [{ key: 'tech', label: 'Technology', inTitle: true, options: [['solar', 'Solar'], ['wind', 'Wind']] }, { key: 'win', label: 'Over', options: [['7', '7 days'], ['30', '30 days'], ['365', '1 year']] }], defaults: { tech: 'solar', win: '30' },
+    async draw(cid, p) {
+      const j = await bench(); if (!j || !j.days) { noDataMsg(cid, _mT('Benchmark pas encore calculé', 'Benchmark not computed yet'), ''); return null; }
+      const ks = Object.keys(j.days).sort(), d1 = ks[ks.length - 1], lim = new Date(Date.parse(d1) - (+p.win || 30) * 864e5).toISOString().slice(0, 10), d0 = ks.filter(d => d <= lim).pop() || ks[0];
+      const a = j.days[d0][p.tech], b = j.days[d1][p.tech]; if (!a || !b) return null;
+      const M = 1, Rr = x => (x.ppa - x.go + x.imb + M) / x.ref;   // the pricer's default margin, 1 €/MWh
+      const parts = [[_mT('Forwards', 'Forwards'), (b.ref - a.ref) * Rr(a)], [_mT('Capture', 'Capture'), b.ref * (Rr(b) - Rr(a))], ['GO', b.go - a.go], [_mT('Écarts', 'Imbalance'), -(b.imb - a.imb)]];
+      let run = a.ppa; const bars = [[_mT('Début ', 'Start ') + d0, [0, a.ppa], '#7A93AB']];
+      parts.forEach(([l, v]) => { bars.push([l, [run, run + v], v >= 0 ? '#14D3A9' : '#ED6965']); run += v; });
+      bars.push([_mT('Fin ', 'End ') + d1, [0, b.ppa], COL[p.tech]]);
+      _fuelChart(cid, { type: 'bar', data: { labels: bars.map(x => x[0]), datasets: [{ label: '€/MWh', data: bars.map(x => x[1]), backgroundColor: bars.map(x => x[2]), borderWidth: 0 }] },
+        options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => { const r = c.raw; return Array.isArray(r) ? (c.dataIndex === 0 || c.dataIndex === bars.length - 1 ? _mN(r[1], 2) : _mS(r[1] - r[0], 2)) + ' €/MWh' : ''; } } } },
+          scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: false }) } }) }, 'ppa-bridge');
+      const big = parts.slice().sort((x, y) => Math.abs(y[1]) - Math.abs(x[1]))[0];
+      return { sub: (p.tech === 'solar' ? _mT('Solaire ', 'Solar ') : _mT('Éolien ', 'Wind ')) + _mN(a.ppa, 2) + ' → ' + _mN(b.ppa, 2) + ' €/MWh (' + _mS(b.ppa - a.ppa, 2) + ')' + _mT(' · surtout ', ' · mostly ') + big[0].toLowerCase() + ' ' + _mS(big[1], 2) };
     } });
 
   // ── France imbalance price ──
@@ -152,6 +183,49 @@
       if (g.length) L.push([_mT('Gaz, CO₂, pétrole', 'Gas, CO₂, oil'), g.map(x => x[0] + ' ' + x[1]).join(' · ') + _mT(' en fin de mois.', ' at the end of the month.')]);
       if (j && j.days) { const ks = Object.keys(j.days).sort(), e1 = ks.filter(d => d <= m + '-31').pop(), e0 = ks.filter(d => d <= pm + '-31').pop();
         if (e1 && e0 && e1 !== e0) L.push([_mT('PPA benchmark', 'PPA benchmark'), _mT('solaire ', 'solar ') + B(_mN(j.days[e1].solar.ppa, 2)) + ' (' + _mS(j.days[e1].solar.ppa - j.days[e0].solar.ppa, 2) + ')' + _mT(', éolien ', ', wind ') + B(_mN(j.days[e1].wind.ppa, 2)) + ' (' + _mS(j.days[e1].wind.ppa - j.days[e0].wind.ppa, 2) + ') €/MWh' + _mT(' en fin de mois.', ' at the end of the month.')]); }
-      host.innerHTML = `<p class="mrn2-lbl" style="margin:0 0 6px">${monthName(m, true)}</p><ul class="mrn3-lines">` + L.map(([x, y]) => `<li><b>${x}</b><span>${y}</span></li>`).join('') + '</ul>';
+      host.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 6px"><p class="mrn2-lbl" style="margin:0">${monthName(m, true)}</p>` +
+        (window.PKExport ? `<button type="button" class="pk-btn-ghost" data-month-ppt="${m}">${_mT('PowerPoint du mois', 'Month deck (PowerPoint)')}</button>` : '') + '</div><ul class="mrn3-lines">' + L.map(([x, y]) => `<li><b>${x}</b><span>${y}</span></li>`).join('') + '</ul>';
+    } });
+
+  // ── the monthly review as a PowerPoint in one click: the month written out, then its charts (drawn off screen and
+  //    captured), in the user's own template when one is kept (js/pptx-export.js) ──
+  const DECK = [['fr-spot-monthly', { zone: 'FR' }, 'Spot by month · 12 months'], ['fr-sys-monthly', { view: 'twh', win: '3Y' }, 'France monthly production by source'],
+    ['spark-monthly', { zone: 'FR', period: '1Y' }, 'Spreads · monthly averages'], ['ppa-benchmark', { tech: 'both', win: '1Y' }, 'PPA benchmark · France'], ['neg-cost', {}, 'Hours at 0 € or below · what they cost']];
+  async function monthDeck(btn, m) {
+    const txt = btn.textContent; btn.disabled = true; btn.textContent = _mT('Préparation…', 'Preparing…');
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-12000px;top:0;width:1100px;background:var(--bg2);padding:16px';
+    document.body.appendChild(box);
+    try {
+      const review = btn.closest('.pkd-body, .chart-container, div')?.parentElement?.querySelector('.mrn3-lines');
+      const lines = review ? [...review.querySelectorAll('li')].map(li => li.innerText.replace(/\n/g, ' : ')) : [];
+      const specs = [{ k: 'note', title: _mT('Le mois en revue · ', 'The month in review · ') + monthName(m, true), text: lines.join('\n') }];
+      for (const [wid, p, title] of DECK) {
+        const w = PKW.get(wid); if (!w) continue;
+        const card = document.createElement('div'); card.style.cssText = 'width:1060px;padding:12px;background:var(--bg2)';
+        card.innerHTML = `<div class="table-title" style="margin-bottom:8px">${title}</div>` + (w.kind === 'html' ? '<div class="dk-h"></div>' : `<div style="position:relative;height:460px"><canvas id="dk-${wid}" style="width:100%;height:460px"></canvas></div>`);
+        box.appendChild(card);
+        let sub = '';
+        try { if (w.kind === 'html') await w.html(card.querySelector('.dk-h'), Object.assign({}, w.defaults, p)); else { const r = await PKW.draw(wid, 'dk-' + wid, p); sub = (r && r.sub) || ''; } } catch (_) {}
+        await new Promise(r => setTimeout(r, 400));
+        specs.push({ k: 'card', title: (window.PKI18n && PKI18n.tr ? PKI18n.tr(title) : title), sub, src: w.source || 'PowerKlock', r: await PKExport.snap(card) });
+      }
+      await PKExport.deck(_mT('Revue mensuelle · ', 'Monthly review · ') + monthName(m, true), specs);
+    } catch (e) { console.warn('[month deck]', e); alert(_mT('Export impossible : ', 'Export failed: ') + (e && e.message || e)); }
+    finally { box.remove(); btn.disabled = false; btn.textContent = txt; }
+  }
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-month-ppt]'); if (b) { e.preventDefault(); e.stopPropagation(); monthDeck(b, b.dataset.monthPpt); } }, true);
+
+  // ── imbalance cost of a 10 MW park, solar or wind, month by month (national estimate, scripts/fetch_fr_imbalance_cost.py) ──
+  R({ id: 'imb-park', kind: 'html', title: 'Imbalance cost · 10 MW park', category: 'balancing', page: 'imbalance', source: 'ENTSO-E (A69, A85) · RTE éCO2mix · PowerKlock', size: { w: 6, h: 5 },
+    desc: 'What forecast errors cost a 10 MW solar or wind park each month: the national error settled at the imbalance price, per MWh and in euros for the park\u2019s output.',
+    async html(host) {
+      const j = await get('imbc', 'history/fr_imbalance_cost.json'); const ms = j && j.months ? Object.keys(j.months).sort().slice(-6).reverse() : [];
+      if (!ms.length) { host.innerHTML = '<div class="fuel-note">' + _mT('Coûts d’écart pas encore calculés.', 'Imbalance costs not computed yet.') + '</div>'; return; }
+      const st = await Promise.all(ms.map(monthStats));
+      const cell = (mm, i, k, tk) => { const c = (j.months[mm] || {})[k], o = st[i]; if (!c) return '<td>–</td>'; const mwh = o ? o[tk].all * 10 : null;
+        return `<td><b>${mwh != null ? _mN(c.eurMWh * mwh, 0) + ' €' : '–'}</b><span class="m0-rng">${_mN(c.eurMWh, 2)} €/MWh · ${mwh != null ? _mN(mwh, 0) + ' MWh' : ''}</span></td>`; };
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${_mT('Mois', 'Month')}</th><th>${_mT('Solaire 10 MW', 'Solar 10 MW')}</th><th>${_mT('Éolien 10 MW', 'Wind 10 MW')}</th></tr></thead><tbody>` +
+        ms.map((mm, i) => `<tr><td style="text-align:left">${monthName(mm)}</td>${cell(mm, i, 'solar', 's')}${cell(mm, i, 'wind', 'w')}</tr>`).join('') + '</tbody></table></div>' +
+        `<div class="fuel-note">${_mT('Coût = erreur de la prévision nationale J-1 réglée au prix des écarts, par MWh produit, appliqué à la production d’un parc de 10 MW (production nationale ÷ parc installé). Un parc réel fait mieux ou moins bien selon sa prévision.', 'Cost = the national day-ahead forecast error settled at the imbalance price, per MWh produced, applied to the output of a 10 MW park (national output ÷ installed fleet). A real park does better or worse with its own forecast.')}</div>`;
     } });
 })();
