@@ -802,7 +802,10 @@ async function renderHistOverview() {
 
   updateZoneLabels();
 
-  const selected = getUserZones().filter(z => s.zones[z]);
+  let selected = getUserZones().filter(z => s.zones[z]);
+  // One country picked in the top bar: that country only (its neighbours one click away)
+  const scoped = window.PKScope && PKScope.zone();
+  if (scoped && s.zones[scoped] && !window._HO_SHOW_NB) selected = [scoped];
   if (!selected.length) {
     document.getElementById('ho-table-tbody').innerHTML =
       '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--tx3);font-size:11px">No zone selected</td></tr>';
@@ -840,7 +843,10 @@ async function renderHistOverview() {
   const zonesLabel = document.getElementById('ho-zones-label');
   if (zonesLabel) {
     const cov = _pkCommonDays(seriesByZone);
-    zonesLabel.innerHTML = `${selected.length} zones loaded` + (cov.restricted
+    const nbBtn = scoped && s.zones[scoped]
+      ? ` <button type="button" class="pk-btn-ghost" style="margin-left:8px;padding:2px 9px;font-size:10px" onclick="window._HO_SHOW_NB=!window._HO_SHOW_NB;renderHistOverview()">${window._HO_SHOW_NB ? 'This country only' : '+ neighbours'}</button>`
+      : '';
+    zonesLabel.innerHTML = `${selected.length} zone${selected.length > 1 ? 's' : ''} loaded` + nbBtn + (cov.restricted
       ? ` · <span style="color:var(--warn)" title="Per-zone figures use each zone's own days; history backfill pending for most non-FR zones">coverage differs: ${cov.min}–${cov.max} days per zone</span>`
       : '');
   }
@@ -924,6 +930,10 @@ async function renderHistOverview() {
   // Re-apply open state if we had one (e.g. after re-render from window change)
   if (window._HO_OPEN_ZONE && seriesByZone[window._HO_OPEN_ZONE]) {
     _openHoRow(window._HO_OPEN_ZONE, seriesByZone[window._HO_OPEN_ZONE], stats[window._HO_OPEN_ZONE]);
+  } else if (sortedZones.length === 1 && window._HO_CLOSED_BY_USER !== sortedZones[0]) {
+    // a single zone: its charts open at once (unless the reader closed them)
+    const z = sortedZones[0];
+    _openHoRow(z, seriesByZone[z], stats[z]);
   }
 }
 window.renderHistOverview = renderHistOverview;
@@ -931,6 +941,7 @@ window.renderHistOverview = renderHistOverview;
 // ── Toggle / Open / Close detail row ─────────────────────
 function _toggleHoRow(zone, series, st) {
   if (window._HO_OPEN_ZONE === zone) {
+    window._HO_CLOSED_BY_USER = zone;
     _closeHoRow();
     return;
   }
