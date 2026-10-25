@@ -407,11 +407,16 @@ function _mrnCfCard() {
 }
 function _mrnNegAlert(k) {
   const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
+  // the hours as runs (10–11 h, 12–15 h), so 4 hours never read as a 5-hour span
+  const runs = z => { const out = []; z.forEach(i => { const r = out[out.length - 1]; if (r && i === r[1]) r[1] = i + 1; else out.push([i, i + 1]); });
+    return out.map(([a, b]) => _mrnFr() ? (b - a === 1 ? a + ' h' : a + '–' + b + ' h') : H(a) + '–' + H(b)).join(', '); };
+  let anyNeg = false;
   const one = (hr, lbl) => { if (!hr) return null; const z = hr.map((x, i) => x != null && x <= 0 ? i : -1).filter(i => i >= 0); if (!z.length) return null;
-    const mn = Math.min(...z.map(i => hr[i])); return `${lbl} <b>${z.length} h</b> ${_mT('à 0 € ou moins', 'at 0 € or below')} (${H(z[0])}–${H(z[z.length - 1] + 1)}, min <b>${_mN(mn, 1)} €</b>)`; };
+    const mn = Math.min(...z.map(i => hr[i])); if (mn < 0) anyNeg = true;
+    return `${lbl} <b>${z.length} h</b> ${mn < 0 ? _mT('à 0 € ou moins', 'at 0 € or below') : _mT('à 0 €', 'at 0 €')} (${runs(z)}${mn < 0 ? ', min <b>' + _mN(mn, 1) + ' €</b>' : ''})`; };
   const parts = [one(k.today, _mT('aujourd’hui', 'today')), k.tomorrow ? one(k.tomorrow, _mT('demain', 'tomorrow')) : null].filter(Boolean);
   if (!k.tomorrow && k.fc && k.fc.expected_hours >= 1) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('à 0 € ou moins probables', 'at 0 € or below likely')}`);
-  const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${_mT('Prix négatifs', 'Negative prices')}</b> · ${parts.join(' · ')}</span>` +
+  const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${anyNeg ? _mT('Prix négatifs', 'Negative prices') : _mT('Prix à zéro', 'Prices at zero')}</b> · ${parts.join(' · ')}</span>` +
     `<a href="#markets/spot/negative" data-route="markets/spot/negative">${_mT('détail', 'detail')} ›</a><button type="button" class="pk-btn-ghost mrn-negal-b">${_mT('M’alerter par e-mail', 'E-mail me')}</button></div>` : '';
   ['mrn-q-negal', 'mrn-negal'].forEach(id => { const el = document.getElementById(id); if (!el) return; el.innerHTML = html; el.hidden = !html;
     const b = el.querySelector('.mrn-negal-b'); if (b) b.addEventListener('click', () => { if (window.PKAlerts) PKAlerts.open(); }); });
@@ -548,8 +553,12 @@ async function _mrnWeeks(k, el) {
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
   if (why) take.push(why);
   const legend = !weeks.length ? '' : '<p class="fuel-note" style="margin:4px 0 0">' + _mT('Normale hist. = 2016–2025, au parc actuel ; prévisions Open-Meteo calées sur RTE', 'Hist. normal = 2016–2025, at today’s fleet; Open-Meteo forecasts fitted on RTE') + '.</p>';
-  if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
-  html += legend;
+  // the reading goes in the block's subtitle and the legend in the ⓘ next to its title: nothing under the gauges
+  const sub = document.getElementById('mrn-30d-sub'), info = document.getElementById('mrn-30d-i');
+  if (sub && !el) { if (take.length) sub.textContent = take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.'; }
+  else if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
+  if (info && !el) info.title = _mT('Normale hist. = 2016–2025, au parc actuel ; prévisions Open-Meteo calées sur RTE.', 'Hist. normal = 2016–2025, at today’s fleet; Open-Meteo forecasts fitted on RTE.');
+  else html += legend;
   host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
 }
 
