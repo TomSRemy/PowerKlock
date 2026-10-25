@@ -59,16 +59,9 @@
       options: _fuelOpts({ indexAxis: 'y',
         scales: { x: _fuelAxis('capture rate, %', { min: yMin }), y: { grid: { display: false }, ticks: { color: C_TX2, font: ctx => ({ size: 11, weight: rows[ctx.index] && rows[ctx.index].fr ? '700' : '400' }), autoSkip: false } } },
         plugins: { legend: { display: false }, tooltip: { callbacks: {
-          // in words: what one MWh produced there is worth against the average price, against France, and how much is produced
+          // the region and its capture rate, nothing else
           title: items => rows[items[0].dataIndex].n,
-          label: ctx => {
-            const x = rows[ctx.dataIndex], f = fr(), v = num(ctx.parsed.x, 0), tn = tech === 'solar' ? (f ? 'solaire' : 'solar') : (f ? 'éolien' : 'wind');
-            const out = [f ? ` Un MWh ${tn} produit ici est vendu en moyenne ${v} % du prix moyen du marché` : ` A ${tn} MWh produced here sells on average at ${v} % of the market's average price`,
-              f ? ` (pour 100 €/MWh de prix moyen, il touche ${v} €)` : ` (for a 100 €/MWh average price, it earns ${v} €)`];
-            if (!x.fr) { const d = (x.r.v - N.v) * 100; out.push(f ? ` ${Math.abs(d) < 0.5 ? 'Comme la France entière' : (d > 0 ? 'Mieux' : 'Moins bien') + ' que la France entière de ' + num(Math.abs(d), 1) + ' point' + (Math.abs(d) >= 2 ? 's' : '')} (${num(N.v * 100, 1)} %)` : ` ${Math.abs(d) < 0.5 ? 'Same as France as a whole' : (d > 0 ? 'Better' : 'Worse') + ' than France as a whole by ' + num(Math.abs(d), 1) + ' point(s)'} (${num(N.v * 100, 1)} %)`); }
-            out.push(f ? ` Production ${tn} : ${num(x.r.twh, 1)} TWh` : ` ${tn} output: ${num(x.r.twh, 1)} TWh`);
-            return out;
-          } } } } }) }, 'capture-by-region-' + tech + '-' + key);
+          label: ctx => ' ' + (fr() ? 'Taux de capture : ' : 'Capture rate: ') + num(ctx.parsed.x, 1) + ' %' } } } }) }, 'capture-by-region-' + tech + '-' + key);
     const reg = rows.filter(x => !x.fr), hi = reg[0], lo = reg[reg.length - 1];
     const note = document.getElementById('cn-reg-note');
     const cv = { all: fr() ? 'toutes les heures' : 'all hours', curt: fr() ? 'écrêté aux prix ≤ 0' : 'curtailed at prices ≤ 0', pos: fr() ? 'heures à prix > 0' : 'hours with price > 0' }[c];
