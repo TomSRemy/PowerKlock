@@ -39,7 +39,7 @@
     const labels = ch.data.labels || [];
     if (!w || w === 'all') { if (ch.options.scales.x) { delete ch.options.scales.x.min; delete ch.options.scales.x.max; } ch.update('none'); return; }
     const last = toDate(labels[labels.length - 1]); if (!last) return;
-    const from = new Date(last); from.setUTCMonth(from.getUTCMonth() - { '3M': 3, '1Y': 12, '3Y': 36 }[w]);
+    const from = new Date(last); from.setUTCMonth(from.getUTCMonth() - { '3M': 3, '6M': 6, '1Y': 12, '2Y': 24, '3Y': 36 }[w]);
     const i = labels.findIndex(l => { const d = toDate(l); return d && d >= from; });
     if (i < 0) return;
     ch.options.scales.x = Object.assign(ch.options.scales.x || {}, { min: labels[i], max: labels[labels.length - 1] });
@@ -53,7 +53,7 @@
     if (!a || !b) return;
     const years = (b - a) / 3.156e10;
     if (years < 1.4) return;                          // short series: nothing to zoom
-    const opts = years > 4 ? ['1Y', '3Y', 'all'] : ['3M', '1Y', 'all'];
+    const opts = years > 3.5 ? ['3M', '6M', '1Y', '2Y', '3Y', 'all'] : ['3M', '6M', '1Y', '2Y', 'all'];
     let g = head.querySelector('.pk-auto-period');
     if (!g) {
       g = document.createElement('div'); g.className = 'pk-gf-group pk-auto-period'; g.title = 'Zoom the time axis (the data stays whole)';
