@@ -487,11 +487,13 @@ function _mrnTileList(k) {
   }
   // the PowerKlock index: low-carbon coverage of French demand and the price it implies (see _mrnIndex)
   if (k.idx) { const I = k.idx, L = I.lastP, A = I.ahead, pts = I.rows.map(x => [x.d, x.cov]), c = ch7(pts);
+    // the chip reads against the spot of the last 7 days (where prices are going), the line below against the forward
+    const sp7 = _mrnMean(k.spotDays.slice(-7).map(r => r.avg));
     const M = A && A.month, mon = M ? new Date(M.m + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', timeZone: 'UTC' }) : '';
     const main = A ? `<span class="mrn2-tv">${_mN(A.fair4, 0)}<small>€/MWh</small></span><span class="mrn2-tc">${M ? `${mon} : ${_mT('indice', 'index')} <b>${_mN(M.fair, 0)}</b> vs fwd <b>${_mN(M.fwd, 0)}</b> <b class="${M.fair > M.fwd ? 'mrn-up' : 'mrn-down'}">${_mS(M.fair - M.fwd, 0)}</b>` : _mT('spot attendu sur 4 semaines', 'expected spot over 4 weeks')}</span>`
       : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
-      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot attendu 4 sem.', 'Expected spot 4 wks') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && M ? pill(null, (M.fair / M.fwd - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
+      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot attendu 4 sem.', 'Expected spot 4 wks') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && sp7 ? pill(null, (A.fair4 / sp7 - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
       `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   // Explain: one line under each tile (shown when the switch is on)
   return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
