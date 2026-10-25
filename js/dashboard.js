@@ -24,6 +24,38 @@
   const S = (title) => ({ t: 's', title, w: 12, h: 1 });
   const W = (wid, w, h, p) => ({ t: 'w', wid, w, h, p });
   const TEMPLATES = [
+    // The three Today views (js/today-widgets.js), same blocks and order as the Today page
+    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices.', items: [
+      W('today-spot', 7, 5), W('today-moved', 5, 5),
+      W('today-tiles', 12, 3),
+    ] },
+    { id: 'today-learn', name: 'Today · Discovery', desc: 'Few figures, each explained: the day in one sentence, three prices and what they are, today hour by hour, what it means, a glossary.', items: [
+      W('today-sentence', 12, 2),
+      W('today-tiles-explained', 12, 4),
+      W('today-hours', 6, 6), W('today-means', 6, 6),
+      W('today-glossary', 12, 3),
+    ] },
+    { id: 'today-expert', name: 'Today · Expert', desc: 'Everything, dense: spot with the negative-price chance, the key prices, the next 4 weeks, what moved and why, news, then markets, renewables, the power system and the detailed forecasts.', items: [
+      W('today-spot', 12, 5, { detail: 'yes' }), W('today-days', 12, 2),
+      W('today-tiles', 12, 3),
+      W('today-weeks', 12, 4),
+      W('today-brief', 6, 7), W('today-news', 6, 7),
+      S('Markets'),
+      W('fr-spot-monthly', 6, 5, { zone: 'FR' }), W('fr-de-spread', 6, 5, { win: '30' }),
+      W('fr-fwd-products', 6, 5, { country: 'FR', win: '3M' }), W('fr-fwd-table', 6, 5, { country: 'FR' }),
+      W('ttf-cal-history', 6, 5, { win: '6M' }), W('ttf-fwd-table', 6, 5),
+      S('Renewables'),
+      W('ren-cr', 6, 5, { zone: 'FR', window: '90D' }), W('ren-capture-regions', 6, 5, { tech: 'solar' }),
+      W('go-vintages', 6, 5, { product: 'GO AIB Renewable' }), W('fr-capture-forward', 6, 5),
+      S('Power system'),
+      W('today-system', 12, 2),
+      W('fr-sys-prod', 6, 5, { day: 'latest' }), W('fr-sys-monthly', 6, 5, { view: 'twh', win: '3Y' }),
+      W('remit-unavail', 6, 5, { period: '3M' }), W('fr-load-normal', 6, 5),
+      S('Detailed forecasts'),
+      W('fc-tomorrow', 12, 2, { zone: 'FR' }),
+      W('fc-48h', 6, 5, { zone: 'FR' }), W('fc-neg', 6, 5),
+      W('fc-combined', 6, 5, { tech: 'wind' }), W('fc-combined', 6, 5, { tech: 'solar' }),
+    ] },
     { id: 'spot', name: 'Spot trader · France', desc: 'Prices today and tomorrow, FR fundamentals and flows.', items: [
       S('Today'),
       W('kpi-da', 2, 2, { zone: 'FR' }), W('kpi-da', 2, 2, { zone: 'DE_LU' }), W('kpi-fr-load', 2, 2), W('kpi-fr-net', 2, 2), W('kpi-fr-nuclear', 2, 2), W('kpi-hdd', 2, 2),
