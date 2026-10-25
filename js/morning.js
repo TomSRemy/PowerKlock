@@ -272,7 +272,7 @@ function _mrnDayStats(hr) {
 // everything the spot block, the tiles and the 4-week block need, fetched once
 // shared by the dashboard widgets: one fetch for every Today block on a board, kept 10 minutes
 function _mrnFactsP() {
-  if (!MRN.kP || Date.now() - MRN.kAt > 6e5) { MRN.kAt = Date.now(); MRN.kP = _mrnFacts().catch(e => { MRN.kP = null; throw e; }); }
+  if (!MRN.kP || Date.now() - MRN.kAt > 6e5) { MRN.kAt = Date.now(); MRN.kP = _mrnFacts().then(k => { if (!MRN.k) MRN.k = k; return k; }).catch(e => { MRN.kP = null; throw e; }); }   // the tile window (dashboards) reads MRN.k too
   return MRN.kP;
 }
 async function _mrnFacts() {
