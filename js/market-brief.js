@@ -111,7 +111,7 @@
   .why4-h .why3-src{margin:0}
   .why4-n{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
   .why4-t .why4-h .wk-chip{margin-left:auto}
-  .why4-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:stretch}
+  .why4-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;align-items:stretch}
   .why4-t{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}
   .why4-v{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
   .why4-v small{font-size:11.5px;font-weight:500;color:var(--text3);margin-left:6px}
