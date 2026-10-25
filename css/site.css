@@ -241,14 +241,14 @@
     text-decoration: none;
   }
   .logo-img {
-    height: 28px;
+    height: 22px;
     width: auto;
     display: block;
   }
   .logo-img-icon {
     /* Icon-only version — hidden on desktop, shown on narrow viewports */
     display: none;
-    height: 24px;
+    height: 22px;
     width: auto;
   }
   /* Legacy classes — kept for backward compat if anything else references them */
