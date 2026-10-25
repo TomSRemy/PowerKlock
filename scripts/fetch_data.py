@@ -439,7 +439,7 @@ def fetch_prices(offset=0):
                 ttf, eua = _last('ttf'), _last('eua')
                 if ttf and eua:
                     spark = round(avg - ttf / 0.4913 - eua * 0.202 / 0.4913, 2)
-            except Exception:
+            except (OSError, KeyError, TypeError, ValueError):
                 spark = None
 
             results.append({

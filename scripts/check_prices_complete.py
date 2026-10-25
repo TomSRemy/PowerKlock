@@ -11,7 +11,7 @@ day = (now + timedelta(days=1 if now.hour >= 11 else 0)).date().isoformat()
 path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'history', 'daily', f'{day}.json')
 try:
     zones = json.load(open(path)).get('zones', {})
-except Exception:
+except (OSError, ValueError):
     zones = {}
 missing = [z for z in KEY if not (isinstance(zones.get(z), dict) and zones[z].get('avg') is not None)]
 print(f'{day}: missing {missing}' if missing else f'{day}: complete')
