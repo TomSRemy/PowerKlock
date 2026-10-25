@@ -3831,8 +3831,30 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
         </div>
       </div>
+      <div class="mrn2-hdr mrn3-hdr"><h1 id="mrn-date">Today</h1><span class="mrn2-upd" id="mrn-upd"></span></div>
+      <!-- Quick look (default): one screen, no scrolling -->
+      <div class="mrn2" id="mrn-quick">
+        <div class="mrn3-qrow">
+          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+            <div style="position:relative;height:230px"><canvas id="mrn-q-spot" style="width:100%;height:230px"></canvas></div></section>
+          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles below carry the prices</div></div><span class="source-badge">PowerKlock</span></div>
+            <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
+        </div>
+        <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles"></section>
+      </div>
+      <!-- Discovery: few figures, each explained -->
+      <div class="mrn2" id="mrn-learn">
+        <section class="mrn2-card mrn2-brief"><p class="mrn2-lbl">In one sentence</p><p class="mrn3-sent" id="mrn-l-sent">Loading…</p></section>
+        <section class="mrn3-ltiles" id="mrn-l-tiles"></section>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Today’s price hour by hour</div><div class="fuel-card-sub">France day-ahead, €/MWh</div></div><span class="source-badge">ENTSO-E</span></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-l-day" style="width:100%;height:260px"></canvas></div><div class="fuel-note" id="mrn-l-day-note"></div></div>
+          <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What it means</div><div class="fuel-card-sub">For a solar or wind park, a power purchase, the gas, the nuclear fleet</div></div></div><div class="mrn3-learn" id="mrn-l-means"></div></div>
+        </div>
+        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Glossary</div></div></div><dl class="mrn3-gloss" id="mrn-l-gloss"></dl></section>
+      </div>
+      <!-- Expert: everything, dense -->
       <div class="mrn2" id="mrn2">
-        <div class="mrn2-hdr"><h1 id="mrn-date">Today</h1><span class="mrn2-upd" id="mrn-upd"></span></div>
         <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
           <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
@@ -4463,6 +4485,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <script src="js/net.js"></script>
 <script src="js/libs.js"></script>
 <script src="js/zoom-reset.js"></script>
+<script src="js/legend-refit.js"></script>
 <script src="js/widgets.js"></script>
 <script src="js/gen-align.js"></script>
 <script src="js/fr-rte.js"></script>

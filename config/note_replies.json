@@ -58,5 +58,9 @@
  "15": {
   "status": "done",
   "reply": "Fait : un sujet par ligne dans le contexte (France, Golfe, Norvège…)."
+ },
+ "16": {
+  "status": "done",
+  "reply": "Play: le bouton « Par trimestre » perdait son graphique après le premier dessin (il disparaissait au clic) ; corrigé, dans la ligne ouverte et en plein écran. Les trois Play (moyenne annuelle, par trimestre, forme horaire) testés. Axes : sur tous les graphiques du site à échelle fixe, masquer une série dans la légende recale l'axe sur les séries restantes (sans 2022 : 16–145 €/MWh au lieu de 6–362), la réafficher rend l'échelle d'origine. / Play by quarter lost its chart after the first draw (the button vanished on click); fixed, row and fullscreen. Axes: on every pinned chart, hiding a series in the legend refits the axis to what is left; showing it again restores the range."
  }
 }
