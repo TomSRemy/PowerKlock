@@ -4026,15 +4026,26 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-morning-fund">
         <div class="mrn-fund-calc" id="mrn-fund-calc"></div>
         <div class="chart-container fuel-card" style="margin:12px 0 4px"><div class="fuel-card-head"><div><div class="table-title">Week by week · low-carbon supply against demand</div><div class="fuel-card-sub">Above the white line, no gas needed; under each week, the expected spot and the coverage</div></div><span class="source-badge">PowerKlock · RTE · Open-Meteo</span></div><div style="position:relative;height:280px"><canvas id="mrn-fund-stack" style="width:100%;height:280px"></canvas></div></div>
-        <div class="mrn-fund-grp">Supply · what feeds the low-carbon side</div>
+        <div class="mrn-fund-grp">1 · Demand</div>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Temperature outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxt-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-wxt" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France consumption vs normal</div><div class="fuel-card-sub" id="mrn-fload-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-fload" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
+        <div class="mrn-fund-grp">2 · Low-carbon supply</div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">French nuclear output by month, year against year</div><div class="fuel-card-sub" id="mrn-nucy-sub"></div></div></div>
             <div style="position:relative;height:280px"><canvas id="mrn-nucy" style="width:100%;height:280px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France hydro reservoirs</div><div class="fuel-card-sub" id="mrn-hyd-sub"></div></div></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-hyd" style="width:100%;height:280px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">Nuclear unavailability</div><div class="fuel-card-sub" id="mrn-fremit-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-fremit" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
@@ -4047,18 +4058,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:280px"><canvas id="mrn-wxs" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
-        <div class="mrn-fund-grp">Demand and rain</div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Temperature outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxt-sub"></div></div></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-wxt" style="width:100%;height:280px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">France hydro reservoirs</div><div class="fuel-card-sub" id="mrn-hyd-sub"></div></div></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-hyd" style="width:100%;height:280px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Precipitation outlook vs normal</div><div class="fuel-card-sub" id="mrn-wxp-sub"></div></div></div>
             <div style="position:relative;height:280px"><canvas id="mrn-wxp" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
-        <div class="mrn-fund-grp">Gas cost and prices</div>
+        <div class="mrn-fund-grp">3 · Gas cost and prices</div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">EU gas storage, year against year</div><div class="fuel-card-sub" id="mrn-gsy-sub"></div></div></div>
