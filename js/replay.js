@@ -23,7 +23,9 @@
   const RATIO = { '16:9': 16 / 9, '1:1': 1, '9:16': 9 / 16 };
   const EXPORT = { '16:9': [1920, 1080], '1:1': [1440, 1440], '9:16': [1080, 1920] };   // video sizes
   const DURATION = { slow: 40, normal: 20, fast: 9 };   // seconds for the whole period
-  const S = { per: 'day', day: null, mode: 'prices', prods: null, lfrom: '', lto: '', fmt: '16:9', speed: 'normal', t: 0, from: 0, to: 95, playing: false, data: null, rec: null, events: [] };
+  const S = { per: 'day', day: null, mode: 'prices', prods: null, lfrom: '', lto: '', fmt: '16:9', speed: 'normal', t: 0, from: 0, to: 95, playing: false, data: null, rec: null, events: [],
+    cmp: '', title: '', outro: '', music: false, phase: 'play' };
+  const ZE = [['FR', 'France'], ['DE_LU', T('Allemagne', 'Germany')], ['BE', T('Belgique', 'Belgium')], ['NL', T('Pays-Bas', 'Netherlands')], ['ES', T('Espagne', 'Spain')], ['IT_NORD', T('Italie Nord', 'Italy North')]];
   const fmtN = (v, d) => v == null || !isFinite(v) ? '–' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').replace('.', T(',', '.'));
   const hh = q => String(Math.floor(q / 4)).padStart(2, '0') + ':' + String(q % 4 * 15).padStart(2, '0');
   const q96 = a => !Array.isArray(a) ? null : a.length >= 96 ? a.slice(0, 96) : a.length === 24 ? a.flatMap(x => [x, x, x, x]) : null;
@@ -45,7 +47,9 @@
       production: [g('load') && { key: 'load', name: T('Consommation', 'Consumption'), w: 2.6, v: g('load') },
         g('nuclear') && { key: 'nuc', name: T('Nucléaire', 'Nuclear'), w: 2.4, v: g('nuclear') },
         g('wind') && { key: 'wind', name: T('Éolien', 'Wind'), w: 2.4, v: g('wind') },
-        g('solar') && { key: 'solar', name: T('Solaire', 'Solar'), w: 2.4, v: g('solar') }].filter(Boolean),
+        g('solar') && { key: 'solar', name: T('Solaire', 'Solar'), w: 2.4, v: g('solar') },
+        g('exchanges') && { key: 'exch', name: T('Échanges (import +)', 'Exchanges (import +)'), w: 2.2, v: g('exchanges') }].filter(Boolean),
+      europe: ZE.map(([z, nm]) => { const a = q96(daily && daily.zones && daily.zones[z] && daily.zones[z].hourly); return a && { key: 'z_' + z, name: nm, w: z === 'FR' ? 3 : 2, v: a }; }).filter(Boolean),
       times: Array.from({ length: 96 }, (_, q) => [day, q * 15]), step: 15,
     };
   }
@@ -60,12 +64,20 @@
       const dl = await Promise.all(days.map(loadDay));
       const cat = key => [].concat(...dl.map(x => ((x.prices.find(s => s.key === key) || {}).v) || Array(96).fill(null)));
       const catP = key => [].concat(...dl.map(x => ((x.production.find(s => s.key === key) || {}).v) || Array(96).fill(null)));
+      const catE = key => [].concat(...dl.map(x => ((x.europe.find(s => s.key === key) || {}).v) || Array(96).fill(null)));
       return { prices: [{ key: 'short', name: T('Écarts, déficit', 'Imbalance, deficit'), w: 2.6, v: cat('short') }, { key: 'da', name: 'Day-ahead', w: 2, dash: [8, 6], v: cat('da') }],
+        europe: ZE.map(([z, nm]) => ({ key: 'z_' + z, name: nm, w: z === 'FR' ? 2.6 : 1.8, v: catE('z_' + z) })).filter(x => x.v.some(v => v != null)),
         production: [['load', T('Consommation', 'Consumption')], ['nuc', T('Nucléaire', 'Nuclear')], ['wind', T('Éolien', 'Wind')], ['solar', T('Solaire', 'Solar')]].map(([k, nm]) => ({ key: k, name: nm, w: 2.2, v: catP(k) })),
         times: days.flatMap(d => Array.from({ length: 96 }, (_, q) => [d, q * 15])), step: 15 };
     }
     const h = k => [].concat(...days.map(d => { const a = (H[d] || {})[k] || []; return Array.from({ length: 24 }, (_, i) => a[i] == null ? null : k === 'p' ? a[i] : a[i] / 1000); }));
-    return { prices: [{ key: 'da', name: 'Day-ahead', w: 2.6, v: h('p') }],
+    let europe = [];
+    if (S.mode === 'europe') {   // neighbours' day-ahead from the daily files, hourly
+      const fs = await Promise.all(days.map(d => json('d' + d, `history/daily/${d}.json`)));
+      const hz = (f, z) => { const a = f && f.zones && f.zones[z] && f.zones[z].hourly; if (!Array.isArray(a)) return Array(24).fill(null); const k = Math.max(1, Math.round(a.length / 24)); return Array.from({ length: 24 }, (_, i) => { const v = a.slice(i * k, i * k + k).filter(x => x != null); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; }); };
+      europe = ZE.map(([z, nm]) => ({ key: 'z_' + z, name: nm, w: z === 'FR' ? 2.6 : 1.8, v: [].concat(...fs.map(f => hz(f, z))) })).filter(x => x.v.some(v => v != null));
+    }
+    return { prices: [{ key: 'da', name: 'Day-ahead', w: 2.6, v: h('p') }], europe,
       production: [['load', 'l', T('Consommation', 'Consumption')], ['nuc', 'n', T('Nucléaire', 'Nuclear')], ['wind', 'w', T('Éolien', 'Wind')], ['solar', 's', T('Solaire', 'Solar')]].map(([k, f, nm]) => ({ key: k, name: nm, w: 2.2, v: h(f) })),
       times: days.flatMap(d => Array.from({ length: 24 }, (_, i) => [d, i * 60])), step: 60 };
   }
@@ -83,8 +95,8 @@
     });
     return { long: ser, times: days.map(d => [d, 0]), step: 1440, unit: b100 ? T('base 100', 'base 100') : units[0], b100 };
   }
-  const series = () => S.data ? (S.per === 'long' ? S.data.long : S.data[S.mode]) || [] : [];
-  const unit = () => S.per === 'long' ? (S.data && S.data.unit) || '' : S.mode === 'prices' ? '€/MWh' : 'GW';
+  const series = () => { if (!S.data) return []; const a = (S.per === 'long' ? S.data.long : S.data[S.mode]) || []; return S.data.cmpSer ? a.concat([S.data.cmpSer]) : a; };
+  const unit = () => S.per === 'long' ? (S.data && S.data.unit) || '' : S.mode === 'production' ? 'GW' : '€/MWh';
   const npts = () => S.data && S.data.times ? S.data.times.length : 96;
 
   // labels: the big clock, the date line, the axis ticks
@@ -98,7 +110,7 @@
 
   // ── commentary over several days (the day keeps its own, below) ──
   function eventsLong() {
-    const ser = series(), head = ser[0]; if (!head) return [];
+    const ser = series().filter(x => x.key !== 'cmp'), head = ser[0]; if (!head) return [];
     const v = head.v, E = [], u = S.data.b100 ? '(base 100)' : unit(), d = 1 + (Math.abs(Math.max(...v.filter(x => x != null))) < 20 ? 1 : 0);
     const push = (q, txt, key) => { if (q != null && !E.some(e => Math.abs(e.q - q) < npts() / 12)) E.push({ q, txt, key: key || head.key }); };
     const arg = (a, fn) => { let b = null; a.forEach((x, q) => { if (x != null && (b == null || fn(x, a[b]))) b = q; }); return b; };
@@ -195,8 +207,10 @@
     const light = document.documentElement.getAttribute('data-theme') === 'light';
     return { light, bg: v('--bg2', '#0f1419'), panel: v('--bg3', '#151c24'), text: v('--text', '#FFFFFF'), text2: v('--text2', '#B8C9D9'), text3: v('--text3', '#7A93AB'),
       grid: v('--border', '#1e2d3d'), axis: v('--border2', '#243447'), accent: v('--accent', '#14D3A9'), down: v('--down', '#ED6965'),
-      series: light ? { short: '#D2453F', long: '#EC8B86', da: '#5F738A', load: '#13202E', nuc: '#7C4DDB', wind: '#0E8FA3', solar: '#D98A06', p0: '#0E9E7E', p1: '#D98A06', p2: '#7C4DDB', p3: '#0E8FA3' }
-        : { short: '#ED6965', long: '#F2A3A0', da: '#B8C9D9', load: '#FFFFFF', nuc: '#B794F6', wind: '#7FC8F8', solar: '#FBBF24', p0: '#14D3A9', p1: '#FBBF24', p2: '#B794F6', p3: '#7FC8F8' } };
+      series: light ? { short: '#D2453F', long: '#EC8B86', da: '#5F738A', load: '#13202E', nuc: '#7C4DDB', wind: '#0E8FA3', solar: '#D98A06', exch: '#C2410C', p0: '#0E9E7E', p1: '#D98A06', p2: '#7C4DDB', p3: '#0E8FA3', cmp: '#8DA3BA',
+          z_FR: '#0E9E7E', z_DE_LU: '#13202E', z_BE: '#D98A06', z_NL: '#C2410C', z_ES: '#D2453F', z_IT_NORD: '#7C4DDB' }
+        : { short: '#ED6965', long: '#F2A3A0', da: '#B8C9D9', load: '#FFFFFF', nuc: '#B794F6', wind: '#7FC8F8', solar: '#FBBF24', exch: '#FB923C', p0: '#14D3A9', p1: '#FBBF24', p2: '#B794F6', p3: '#7FC8F8', cmp: '#7A93AB',
+          z_FR: '#14D3A9', z_DE_LU: '#FFFFFF', z_BE: '#FBBF24', z_NL: '#FB923C', z_ES: '#ED6965', z_IT_NORD: '#B794F6' } };
   }
   new MutationObserver(() => { if (S.data) draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
@@ -225,8 +239,9 @@
     size();
     const W = cv.width, H = cv.height;
     const c = cv.getContext('2d'), wide = W / H > 1.4, k = wide ? W / 1280 : W / 1080 * 1.3, P = 48 * k;   // square and vertical: bigger text, read on a phone
-    const C = pal(), raw = series(), N = npts(), daOnly = S.per !== 'long' && S.mode === 'prices' && raw.length === 1;
-    const ser = raw.map(x => Object.assign({}, x, { color: daOnly ? C.accent : C.series[x.key] || C.accent }, daOnly ? { dash: null, w: 3 } : {}));
+    const C = pal(), raw = series(), N = npts(), daOnly = S.per !== 'long' && S.mode === 'prices' && raw.filter(x => x.key !== 'cmp').length === 1;
+    if (S.phase !== 'play') { card(c, W, H, C); return; }
+    const ser = raw.map(x => Object.assign({}, x, { color: daOnly && x.key !== 'cmp' ? C.accent : C.series[x.key] || C.accent }, daOnly && x.key !== 'cmp' ? { dash: null, w: 3 } : {}));
     const from = S.per === 'day' ? S.from : 0, to = S.per === 'day' ? S.to : N - 1;
     const t = Math.max(from, Math.min(to, S.t)), qi = Math.floor(t), L = lab(qi);
     const dp = S.per === 'long' ? (S.data.b100 ? 0 : 1) : S.mode === 'prices' ? 0 : 1;
@@ -300,11 +315,12 @@
       const v = s.v[qi], x = bars.x + (bars.w - n * bwid - (n - 1) * gap) / 2 + i * (bwid + gap), h = v == null ? 0 : Math.abs(v) * scale;
       c.fillStyle = s.color; c.globalAlpha = s.key === 'long' && C.light ? 0.75 : 1;
       if (v != null) c.fillRect(x, v >= 0 ? base - h : base, bwid, h);
-      c.globalAlpha = 1; c.fillStyle = C.text; c.font = F(700, 18, MONO); c.textAlign = 'center';
+      c.globalAlpha = 1; c.fillStyle = C.text; c.textAlign = 'center';
+      let vs = 18; const vt = fmtN(v, dp); c.font = F(700, vs, MONO); while (vs > 9 && c.measureText(vt).width > bwid + gap * 0.7) { vs--; c.font = F(700, vs, MONO); }   // the value fitted to its bar
       if (v != null && v < 0) { c.textBaseline = 'top'; c.fillText(fmtN(v, dp), x + bwid / 2, base + h + 6 * k); }
       else { c.textBaseline = 'bottom'; c.fillText(fmtN(v, dp), x + bwid / 2, base - h - 6 * k); }
-      let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(s.name).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
-      c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(s.name, x + bwid / 2, nameY); c.textAlign = 'left';
+      const nm = s.short || s.name; let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(nm).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
+      c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(nm, x + bwid / 2, nameY); c.textAlign = 'left';
     });
     // commentary: numbered markers on the moments passed, the caption of the latest one for an eighth of the period
     const span = S.per === 'day' ? 12 : Math.max(4, Math.round(N / 8));
@@ -334,11 +350,34 @@
     c.fillStyle = C.accent; roundRect(c, P, fy, Math.max(8 * k, (W - 2 * P) * (t - from) / Math.max(1, to - from)), 8 * k, 4 * k); c.fill();
     c.fillStyle = C.text3; c.font = F(500, 13); c.textBaseline = 'top';
     const src = S.per === 'long' ? T('Sources : ENTSO-E, RTE, données de marché' + (S.data.b100 ? ' · base 100 au premier jour' : '') + ' · powerklock', 'Sources: ENTSO-E, RTE, market data' + (S.data.b100 ? ' · base 100 on the first day' : '') + ' · powerklock')
+      : S.mode === 'europe' ? T('ENTSO-E · prix day-ahead européens · powerklock', 'ENTSO-E · European day-ahead prices · powerklock')
       : S.mode === 'prices' ? (daOnly ? T('ENTSO-E · prix day-ahead France · powerklock', 'ENTSO-E · France day-ahead price · powerklock') : T('ENTSO-E · prix des écarts France et day-ahead, au quart d’heure · powerklock', 'ENTSO-E · France imbalance and day-ahead prices, quarter-hourly · powerklock'))
         : T('RTE éCO2mix · production et consommation · powerklock', 'RTE éCO2mix · output and consumption · powerklock');
     c.fillText(src, P, fy + 16 * k);
     const lb = document.getElementById('rp-time'); if (lb) lb.textContent = L.clock;
     const sc = document.getElementById('rp-scrub'); if (sc) { sc.max = String(N - 1); if (document.activeElement !== sc) sc.value = String(qi); }
+  }
+  // the video's opening and closing cards: the reader's title, then their conclusion
+  function card(c, W, H, C) {
+    const k = W / H > 1.4 ? W / 1280 : W / 1080 * 1.3, P = 64 * k;
+    c.fillStyle = C.bg; c.fillRect(0, 0, W, H);
+    c.textBaseline = 'top'; c.font = `700 ${Math.round(26 * k)}px Inter, system-ui, sans-serif`;
+    const bw = c.measureText('Power').width, lx = (W - bw - c.measureText('.Klock').width) / 2;
+    c.fillStyle = C.text; c.fillText('Power', lx, P); c.fillStyle = C.accent; c.fillText('.Klock', lx + bw, P);
+    const txt = S.phase === 'intro' ? S.title : S.outro, big = S.phase === 'intro' ? 54 : 40;
+    c.font = `700 ${Math.round(big * k)}px Inter, system-ui, sans-serif`; c.fillStyle = C.text; c.textAlign = 'center';
+    const lines = wrap(c, txt || '', W - 2 * P * 1.5), lh = big * 1.25 * k, y0 = H / 2 - lines.length * lh / 2;
+    lines.forEach((l, i) => c.fillText(l, W / 2, y0 + i * lh));
+    c.font = `500 ${Math.round(20 * k)}px Inter, system-ui, sans-serif`; c.fillStyle = C.text3;
+    const sub = S.phase === 'intro' ? periodName() : T('powerklock · données ENTSO-E, RTE, marché', 'powerklock · ENTSO-E, RTE and market data');
+    c.fillText(sub, W / 2, y0 + lines.length * lh + 24 * k);
+    c.fillStyle = C.accent; c.fillRect(W / 2 - 40 * k, y0 - 30 * k, 80 * k, 4 * k);
+    c.textAlign = 'left';
+  }
+  function periodName() {
+    if (!S.data || !S.data.times || !S.data.times.length) return '';
+    const a = S.data.times[0][0], b = S.data.times[S.data.times.length - 1][0], f = d => dfmt(d, { day: 'numeric', month: 'long', year: 'numeric' });
+    return T('France · ', 'France · ') + (a === b ? dfmt(a, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : f(a) + ' → ' + f(b));
   }
   function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
@@ -350,6 +389,8 @@
   function frame(ts) {
     if (!S.playing) return;
     const [a, b] = bounds(), dt = last ? (ts - last) / 1000 : 0; last = ts;
+    if (S.phase === 'intro') { hold += dt; if (hold > 2.8) { S.phase = 'play'; hold = 0; } draw(); requestAnimationFrame(frame); return; }
+    if (S.phase === 'outro') { hold += dt; if (hold > 3.5) { S.phase = 'play'; stopRec(); return; } draw(); requestAnimationFrame(frame); return; }
     if (wait > 0) wait -= dt;
     else if (S.t < b) {
       const nt = Math.min(b, S.t + dt * (b - a) / DURATION[S.speed]);
@@ -357,7 +398,7 @@
       if (e) { S.seen.add(e.n); S.t = e.q + 0.01; wait = readTime(e); S.reading = e; }   // hold on the moment while its text is read
       else { S.t = nt; S.reading = null; }
     }
-    else if (S.rec) { hold += dt; if (hold > 1.5) { stopRec(); return; } }
+    else if (S.rec) { hold += dt; if (hold > 1.5) { if (S.outro) { S.phase = 'outro'; hold = 0; } else { stopRec(); return; } } }
     else { S.playing = false; syncBtn(); }
     draw();
     requestAnimationFrame(frame);
@@ -370,12 +411,17 @@
   function record() {
     const cv = document.getElementById('rp-canvas'); if (!cv || !cv.captureStream || !window.MediaRecorder) { alert(T('Ce navigateur ne sait pas enregistrer de vidéo.', 'This browser cannot record video.')); return; }
     const type = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x));
-    S.rec = true; size(); S.t = bounds()[0]; draw();
-    const rec = new MediaRecorder(cv.captureStream(60), { mimeType: type, videoBitsPerSecond: 16e6 }), parts = [];
+    S.rec = true; size(); S.t = bounds()[0]; S.phase = S.title ? 'intro' : 'play'; draw();
+    const stream = cv.captureStream(60), audio = S.music ? music() : null;
+    if (audio) audio.stream.getAudioTracks().forEach(tr => stream.addTrack(tr));
+    const atype = audio ? ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm'].find(x => MediaRecorder.isTypeSupported(x)) : null;
+    const mime = atype || type;
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 16e6 }), parts = [];
+    S.audio = audio;
     rec.ondataavailable = e => { if (e.data.size) parts.push(e.data); };
     rec.onstop = () => {
-      const blob = new Blob(parts, { type }), a = document.createElement('a'), tag = S.per === 'long' ? 'long' : S.mode + '-' + S.per;
-      a.href = URL.createObjectURL(blob); a.download = `powerklock-${tag}-${S.per === 'long' ? (S.lfrom || 'start') : S.day}-${S.fmt.replace(':', 'x')}.${/mp4/.test(type) ? 'mp4' : 'webm'}`; a.click();
+      const blob = new Blob(parts, { type: mime }), a = document.createElement('a'), tag = S.per === 'long' ? 'long' : S.mode + '-' + S.per;
+      a.href = URL.createObjectURL(blob); a.download = `powerklock-${tag}-${S.per === 'long' ? (S.lfrom || 'start') : S.day}-${S.fmt.replace(':', 'x')}.${/mp4/.test(mime) ? 'mp4' : 'webm'}`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       const b = document.getElementById('rp-export'); if (b) { b.disabled = false; b.textContent = T('Exporter en vidéo', 'Export video'); }
       draw();
@@ -384,7 +430,22 @@
     const b = document.getElementById('rp-export'); if (b) { b.disabled = true; b.textContent = T('Enregistrement…', 'Recording…'); }
     play();
   }
-  function stopRec() { S.playing = false; syncBtn(); if (S.rec) { const r = S.rec; S.rec = null; r.stop(); } }
+  function stopRec() { S.playing = false; S.phase = 'play'; syncBtn(); if (S.audio) { S.audio.stop(); S.audio = null; } if (S.rec) { const r = S.rec; S.rec = null; r.stop(); } }
+  // background music, made here (no recording, no rights): a slow four-chord pad, fading in and out
+  function music() {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    const ctx = new AC(), dest = ctx.createMediaStreamDestination(), out = ctx.createGain(), lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1400; out.gain.value = 0; lp.connect(out); out.connect(dest);
+    const now = ctx.currentTime; out.gain.linearRampToValueAtTime(0.16, now + 2);
+    const chords = [[220, 261.63, 329.63], [174.61, 220, 261.63], [261.63, 329.63, 392], [196, 246.94, 293.66]];   // Am F C G
+    const len = 4, total = 180, oscs = [];
+    for (let t = 0; t < total; t += len) chords[(t / len) % 4].forEach(f => [1, 2].forEach(m => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = m === 1 ? 'sine' : 'triangle'; o.frequency.value = f * (m === 1 ? 1 : 0.5);
+      g.gain.setValueAtTime(0, now + t); g.gain.linearRampToValueAtTime(m === 1 ? 0.12 : 0.05, now + t + 1.2); g.gain.linearRampToValueAtTime(0, now + t + len + 0.4);
+      o.connect(g); g.connect(lp); o.start(now + t); o.stop(now + t + len + 0.5); oscs.push(o);
+    }));
+    return { stream: dest.stream, stop: () => { const n = ctx.currentTime; out.gain.cancelScheduledValues(n); out.gain.setValueAtTime(out.gain.value, n); out.gain.linearRampToValueAtTime(0, n + 0.8); setTimeout(() => ctx.close(), 1200); } };
+  }
 
   // ── notable days and periods ──
   async function notable() {
@@ -413,9 +474,14 @@
       const to = S.lto || new Date().toISOString().slice(0, 10), from = S.lfrom || addDays(to, -365);
       S.data = await loadLong(S.prods, from, to);
     }
+    if (S.data && S.per !== 'long' && S.cmp) {   // the same period from another date, as a dashed line
+      const c2 = S.per === 'day' ? await loadDay(S.cmp) : S.per === 'week' ? await loadDays(S.cmp, 7) : await (async () => { const m = S.cmp.slice(0, 7) + '-01', [y, mm] = m.split('-').map(Number); return loadDays(m, new Date(Date.UTC(y, mm, 0)).getUTCDate()); })();
+      const h0 = (S.data[S.mode] || [])[0], h2 = h0 && ((c2[S.mode] || []).find(x => x.key === h0.key) || (c2[S.mode] || [])[0]), n = npts();
+      if (h2) S.data.cmpSer = { key: 'cmp', short: dfmt(S.cmp, S.per === 'day' ? { day: 'numeric', month: 'short', year: 'numeric' } : { month: 'short', year: 'numeric' }), name: h0.name + ' · ' + dfmt(S.cmp, S.per === 'day' ? { day: 'numeric', month: 'short', year: 'numeric' } : { month: 'short', year: 'numeric' }), w: 2, dash: [6, 5], v: Array.from({ length: n }, (_, i) => h2.v[i] == null ? null : h2.v[i]) };
+    }
     const ser = series(), empty = !ser.length || !ser.some(s => s.v.some(v => v != null));
     if (note) note.textContent = empty ? (S.per === 'long' ? T('Pas de données pour ces produits sur la période.', 'No data for these products in this period.') : S.mode === 'prices' ? T('Pas de prix pour cette période.', 'No prices for this period.') : T('Pas de données RTE pour cette période.', 'No RTE data for this period.')) : '';
-    S.events = empty ? [] : S.per === 'day' ? events(S.data, S.mode) : eventsLong();
+    S.events = empty ? [] : S.per === 'day' && S.mode !== 'europe' ? events(S.data, S.mode) : eventsLong();
     if (S.per === 'day' && !empty) {   // a historic day: its story as a starred caption
       const h = HIST.find(x => x.d === S.day && x.mode === S.mode), sv = h && (S.data[S.mode].find(x => x.key === h.key) || {}).v;
       if (h && sv) {
@@ -435,7 +501,8 @@
     let h = '<div class="cmp-grp">' + [['day', T('Jour', 'Day')], ['week', T('Semaine', 'Week')], ['month', T('Mois', 'Month')], ['long', T('Longue période', 'Long period')]].map(([v, t]) => pill('per', v, t, S.per === v)).join('') + '</div>';
     if (S.per !== 'long') {
       h += `<label class="cmp-dates">${S.per === 'week' ? T('Du', 'From') : S.per === 'month' ? T('Mois de', 'Month of') : T('Jour', 'Day')} <input type="date" id="rp-date" value="${S.day || ''}"></label>` +
-        '<div class="cmp-grp">' + pill('mode', 'prices', T('Prix', 'Prices'), S.mode === 'prices') + pill('mode', 'production', T('Production', 'Production'), S.mode === 'production') + '</div>';
+        '<div class="cmp-grp">' + pill('mode', 'prices', T('Prix', 'Prices'), S.mode === 'prices') + pill('mode', 'production', T('Production', 'Production'), S.mode === 'production') + pill('mode', 'europe', T('Europe', 'Europe'), S.mode === 'europe') + '</div>' +
+        `<label class="cmp-dates">${T('Comparer avec', 'Compare with')} <input type="date" id="rp-cmp" value="${S.cmp || ''}"></label>`;
     } else if (window.PKCompare) {
       h += '<div class="cmp-grp">' + (S.prods || []).map((id, i) => `<span class="cmp-chip" style="padding:4px 8px"><i style="background:${['#14D3A9', '#FBBF24', '#B794F6', '#7FC8F8'][i]}"></i><span>${PKCompare.label(id)}</span><button type="button" data-delp="${id}" aria-label="${T('Retirer', 'Remove')}">×</button></span>`).join('') + '</div>';
       if ((S.prods || []).length < 4) h += `<select id="rp-addp" aria-label="${T('Ajouter un produit', 'Add a product')}"><option value="">${T('+ Ajouter un produit', '+ Add a product')}</option>` + PKCompare.groups().map(([g, n, ids]) => `<optgroup label="${n}">` + ids.filter(id => !(S.prods || []).includes(id)).map(id => `<option value="${id}">${PKCompare.label(id)}</option>`).join('') + '</optgroup>').join('') + '</select>';
@@ -445,7 +512,16 @@
       '<div class="cmp-grp">' + [['slow', T('Lent', 'Slow')], ['normal', T('Normal', 'Normal')], ['fast', T('Rapide', 'Fast')]].map(([v, t]) => pill('speed', v, t, S.speed === v)).join('') + '</div>';
     if (S.per === 'day') h += `<label class="cmp-dates">${T('De', 'From')} <select id="rp-from">${Array.from({ length: 24 }, (_, x) => `<option value="${x * 4}"${S.from === x * 4 ? ' selected' : ''}>${String(x).padStart(2, '0')}:00</option>`).join('')}</select> ${T('à', 'to')} <select id="rp-to">${Array.from({ length: 24 }, (_, x) => `<option value="${x * 4 + 3}"${S.to === x * 4 + 3 ? ' selected' : ''}>${String(x + 1).padStart(2, '0')}:00</option>`).join('')}</select></label>`;
     b.innerHTML = h;
+    const v = document.getElementById('rp-vid');
+    if (v && !v.dataset.done) {
+      v.dataset.done = '1';
+      v.innerHTML = `<b class="rp-vt">${T('Vidéo', 'Video')}</b><input type="text" id="rp-title" class="cmp-search" maxlength="90" placeholder="${T('Titre en ouverture (facultatif) : « Ce matin, l’équilibrage a explosé »', 'Opening title (optional): “This morning, balancing went wild”')}">` +
+        `<input type="text" id="rp-outro" class="cmp-search" maxlength="160" placeholder="${T('Conclusion en fin de vidéo (facultatif)', 'Closing line (optional)')}">` +
+        `<label class="cmp-it" style="white-space:nowrap"><input type="checkbox" id="rp-music"><span>${T('Musique', 'Music')}</span></label><button type="button" class="cmp-pill" id="rp-link">${T('Copier le lien', 'Copy link')}</button>`;
+    }
   }
+  const shareURL = () => location.origin + location.pathname + '#system/replay?' + new URLSearchParams(Object.assign({ per: S.per, fmt: S.fmt, sp: S.speed },
+    S.per === 'long' ? { pr: (S.prods || []).join(';'), lf: S.lfrom, lt: S.lto } : { day: S.day, mode: S.mode }, S.cmp ? { cmp: S.cmp } : {}, S.per === 'day' && (S.from || S.to !== 95) ? { h0: S.from, h1: S.to } : {})).toString();
   function bind() {
     const root = document.getElementById('rp-root'); if (!root || root.dataset.bound) return; root.dataset.bound = '1';
     const top = () => { const st = document.getElementById('rp-ctl'); if (st) st.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
@@ -453,6 +529,7 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.id === 'rp-play') { S.playing ? pause() : play(); return; }
       if (t.id === 'rp-export') { record(); return; }
+      if (t.id === 'rp-link') { const url = shareURL(); (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => { t.textContent = T('Lien copié ✓', 'Link copied ✓'); setTimeout(() => { t.textContent = T('Copier le lien', 'Copy link'); }, 2000); }).catch(() => prompt(T('Lien à copier', 'Link to copy'), url)); return; }
       if (t.id === 'rp-full') { const st = document.getElementById('rp-stage'); if (document.fullscreenElement) document.exitFullscreen(); else if (st && st.requestFullscreen) st.requestFullscreen(); return; }
       if (t.dataset.hper) { const x = HPER[+t.dataset.hper]; S.per = x.per; if (x.per === 'long') { S.prods = x.ids.slice(); S.lfrom = x.from; S.lto = x.to; } else { S.day = x.day; S.mode = x.mode; } controls(); reload(); top(); return; }
       if (t.dataset.day) { S.per = 'day'; S.day = t.dataset.day; S.mode = t.dataset.mode || S.mode; S.from = 0; S.to = 95; controls(); reload(); top(); return; }
@@ -466,6 +543,10 @@
     root.addEventListener('change', e => {
       const t = e.target;
       if (t.id === 'rp-date' && t.value) { S.day = t.value; reload(); }
+      if (t.id === 'rp-cmp') { S.cmp = t.value || ''; reload(); }
+      if (t.id === 'rp-title') S.title = t.value.trim();
+      if (t.id === 'rp-outro') S.outro = t.value.trim();
+      if (t.id === 'rp-music') S.music = t.checked;
       if (t.id === 'rp-addp' && t.value) { S.prods = (S.prods || []).concat([t.value]).slice(0, 4); controls(); reload(); }
       if (t.id === 'rp-lfrom' || t.id === 'rp-lto') { S.lfrom = document.getElementById('rp-lfrom').value; S.lto = document.getElementById('rp-lto').value; reload(); }
       if (t.id === 'rp-from' || t.id === 'rp-to') { S.from = +document.getElementById('rp-from').value; S.to = Math.max(S.from + 3, +document.getElementById('rp-to').value); S.t = S.to; draw(); }
@@ -477,6 +558,12 @@
   }
   async function init() {
     bind();
+    const HP = window.pkHashParams && window.pkHashRoute === 'system/replay' ? window.pkHashParams : null;
+    if (HP && !S.fromLink) {   // a shared link: its period, products and format
+      S.fromLink = true; S.per = HP.per || S.per; S.fmt = HP.fmt || S.fmt; S.speed = HP.sp || S.speed; S.cmp = HP.cmp || '';
+      if (S.per === 'long') { S.prods = (HP.pr || '').split(';').filter(Boolean); S.lfrom = HP.lf || ''; S.lto = HP.lt || ''; } else { S.day = HP.day || S.day; S.mode = HP.mode || S.mode; }
+      if (HP.h0 != null) { S.from = +HP.h0; S.to = +HP.h1; }
+    }
     if (!S.prods) S.prods = ['cal:FR:' + (new Date().getUTCFullYear() + 1), 'c:ttf', 'c:eua'];
     if (!S.day) {   // default: the latest day with imbalance prices, else yesterday
       const m = new Date().toISOString().slice(0, 7), f = await json('imb' + m, `history/fr_imbalance_price/${m}.json`);
@@ -498,6 +585,7 @@
   .rp-stage:fullscreen{background:#000;align-items:center;border:0;border-radius:0}
   .rp-bar{display:flex;align-items:center;gap:12px}
   .rp-bar input[type=range]{flex:1;accent-color:#14D3A9}
+  .rp-vid{display:flex;flex-wrap:wrap;gap:10px;align-items:center} .rp-vid .cmp-search{flex:1 1 260px} .rp-vt{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
   .rp-days{display:flex;flex-direction:column;gap:8px}
   .rp-events{display:flex;flex-direction:column;gap:6px}
   .rp-ev{display:grid;grid-template-columns:26px 90px minmax(0,1fr);gap:10px;align-items:start;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text2);font:13px Inter,sans-serif;cursor:pointer}

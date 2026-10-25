@@ -24,7 +24,7 @@
   // ── the catalogue: id → { label, group, unit, load() → Map(date → value) } ──
   const CAT = new Map();
   const add = (id, label, group, unit, load) => CAT.set(id, { id, label, group, unit, load });
-  const G = { spot: ['Électricité · spot', 'Power · spot'], fwd: ['Électricité · forwards', 'Power · forwards'], fuel: ['Gaz, carbone, pétrole, change', 'Gas, carbon, oil, FX'],
+  const G = { expr: ['Vos formules', 'Your formulas'], spot: ['Électricité · spot', 'Power · spot'], fwd: ['Électricité · forwards', 'Power · forwards'], fuel: ['Gaz, carbone, pétrole, change', 'Gas, carbon, oil, FX'],
     sys: ['Système France', 'France system'], ren: ['Renouvelables et PPA', 'Renewables and PPA'], bal: ['Équilibrage', 'Balancing'] };
   const ZN = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', PT: 'Portugal', IT_NORD: 'Italy North', CH: 'Switzerland', AT: 'Austria', PL: 'Poland' };
   Object.entries(ZN).forEach(([z, n]) => add('spot:' + z, 'Spot ' + n, 'spot', '€/MWh', async () => {
@@ -91,29 +91,58 @@
     return m;
   });
 
+  // balancing energy prices (ENTSO-E A84, daily means) and the weather archive (ERA5, France, last 13 months)
+  [['up', 'France mFRR activation price, up', 'France mFRR, prix d’activation à la hausse'], ['down', 'France mFRR activation price, down', 'France mFRR, prix d’activation à la baisse']].forEach(([k, l, f]) =>
+    add('mfrr:' + k, l, 'bal', '€/MWh', async () => { const j = await json('act', 'history/fr_activation.json'); return new Map(Object.entries((j && j.days) || {}).filter(([, v]) => v.mfrr && v.mfrr[k] != null).map(([d, v]) => [d, v.mfrr[k]])); }));
+  [['solar', 'France sunshine (ERA5)', 'W/m²'], ['wind', 'France wind speed (ERA5)', 'm/s']].forEach(([k, l, u]) =>
+    add('wx:' + k, l, 'sys', u, async () => { const j = await json('wxa', 'history/weather_archive.json'), r = j && j.countries && j.countries.FR && j.countries.FR.recent && j.countries.FR.recent[k]; return new Map(r ? r.days.map((d, i) => [d, r.values[i]]).filter(x => x[1] != null) : []); }));
+  // a series written as a formula of others (A, B, C… = the series on the chart when it was made), e.g. A − B, A − 2*B − C
+  function addExpr(f, ids) {
+    const id = 'expr:' + f + '|' + ids.join(',');
+    if (CAT.has(id)) return id;
+    const units = [...new Set(ids.map(x => (CAT.get(x) || {}).unit))];
+    const code = f.replace(/[A-H]/g, ch => 'v[' + (ch.charCodeAt(0) - 65) + ']');
+    let fn; try { fn = new Function('v', 'return ' + code + ';'); } catch (_) { return null; }   // only letters A–H, digits and + − * / ( ) . reach here (checked)
+    const lbl = f.replace(/[A-H]/g, ch => { const x = ids[ch.charCodeAt(0) - 65]; return x ? '[' + label(x) + ']' : ch; });
+    CAT.set(id, { id, label: lbl, group: 'expr', unit: units.length === 1 ? units[0] : '', load: async from => {
+      const ms = await Promise.all(ids.map(x => series(x))), m = new Map();
+      [...ms[0].keys()].forEach(d => { const v = ms.map(mm => mm.get(d)); if (v.every(x => x != null)) { const r = fn(v); if (isFinite(r)) m.set(d, r); } });
+      return m;
+    } });
+    return id;
+  }
   const FR_WORDS = [['Great Britain', 'Grande-Bretagne'], ['Germany', 'Allemagne'], ['Netherlands', 'Pays-Bas'], ['Belgium', 'Belgique'], ['Spain', 'Espagne'], ['Italy North', 'Italie Nord'],
     ['Switzerland', 'Suisse'], ['Austria', 'Autriche'], ['Poland', 'Pologne'], [' (rolling)', ' (glissant)'], ['Gas storage', 'Stocks de gaz'], ['EU gas storage', 'Stocks de gaz UE'], ['Gas ', 'Gaz '], ['LNG ', 'GNL '],
     ['Coal ', 'Charbon '], ['France nuclear available', 'Nucléaire disponible France'], ['France consumption', 'Consommation France'], ['France nuclear output', 'Production nucléaire France'],
     ['France wind output', 'Production éolienne France'], ['France solar output', 'Production solaire France'], ['France residual load (load − wind − solar)', 'Charge résiduelle France (conso − éolien − solaire)'],
     ['France hours at 0 € or below', 'Heures à 0 € ou moins, France'], ['France solar capture rate', 'Taux de capture solaire France'], ['France wind capture rate', 'Taux de capture éolien France'],
     ['GO renewable, next production year', 'GO renouvelable, année de production suivante'], ['PPA benchmark solar', 'Benchmark PPA solaire'], ['PPA benchmark wind', 'Benchmark PPA éolien'],
-    ['France imbalance price (deficit), daily mean', 'Prix des écarts France (déficit), moyenne du jour']];
+    ['France imbalance price (deficit), daily mean', 'Prix des écarts France (déficit), moyenne du jour'], ['France mFRR activation price, up', 'France mFRR, prix d’activation à la hausse'],
+    ['France mFRR activation price, down', 'France mFRR, prix d’activation à la baisse'], ['France sunshine (ERA5)', 'Ensoleillement France (ERA5)'], ['France wind speed (ERA5)', 'Vent France (ERA5)']];
   const label = id => { const c = CAT.get(id); if (!c) return id; let l = c.label; if (T(1, 0)) FR_WORDS.forEach(([e, f]) => { l = l.split(e).join(f); }); return l; };
   // the market a series belongs to: forwards of one country and the PPA benchmark (built from the French Cal) move by construction together
   const family = id => { const m = /^(?:fwd|cal):([A-Z]+):/.exec(id); return m ? m[1] : id.startsWith('ppa:') ? 'FR' : null; };
 
   // ── state ──
   const S = Object.assign({ sel: ['cal:FR:' + (y0 + 1), 'c:ttf', 'c:eua'], per: '1Y', from: '', to: '', scale: 'auto', type: 'auto', q: '' }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch (_) { return {}; } })());
+  // a shared link (#tools/compare?s=…&p=…&sc=…&ty=…&f=…&t=…) wins over what this browser remembers
+  // a list of series in a link or a card: ';' between series (a formula holds ',' inside); an old list with ',' still reads
+  const splitSel = str => !str ? [] : str.includes(';') || !str.includes('expr:') ? str.split(str.includes(';') ? ';' : ',').filter(Boolean) : str.split(';');
+  const HP = window.pkHashParams && window.pkHashRoute === 'tools/compare' ? window.pkHashParams : null;
+  if (HP) { S.sel = splitSel(HP.s || ''); S.per = HP.p || S.per; S.scale = HP.sc || 'auto'; S.type = HP.ty || 'auto'; S.from = HP.f || ''; S.to = HP.t || ''; }
+  (S.sel || []).forEach(id => { const m = /^expr:([A-H0-9+\-*/(). ]+)\|(.+)$/.exec(id); if (m) addExpr(m[1], m[2].split(',')); });
   S.sel = (S.sel || []).filter(id => CAT.has(id)).slice(0, 8);
   const save = () => { try { localStorage.setItem(LS, JSON.stringify({ sel: S.sel, per: S.per, scale: S.scale, type: S.type })); } catch (_) {} };
-  const range = () => {
-    const to = S.to || today();
-    const days = { '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, '5Y': 1827 }[S.per];
-    return [S.from || (days ? back(to, days) : '2016-01-01'), to];
+  const shareParams = () => 's=' + encodeURIComponent(S.sel.join(';')) + '&p=' + S.per + '&sc=' + S.scale + '&ty=' + S.type + (S.from ? '&f=' + S.from : '') + (S.to ? '&t=' + S.to : '');
+  const rangeOf = st => {
+    const to = st.to || today();
+    const days = { '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, '5Y': 1827 }[st.per];
+    return [st.from || (days ? back(to, days) : '2016-01-01'), to];
   };
+  const range = () => rangeOf(S);
   const memo = {};
-  async function series(id) {
-    const [from] = range(), k = id + '|' + (CAT.get(id).group === 'sys' || id.startsWith('fr:') || id.startsWith('imb') ? from.slice(0, 4) : '');
+  async function series(id, st) {
+    const [from] = rangeOf(st || S), k = id + '|' + (CAT.get(id).group === 'sys' || id.startsWith('fr:') || id.startsWith('imb') ? from.slice(0, 4) : '');
     if (!memo[k]) memo[k] = CAT.get(id).load(from).catch(() => new Map());
     return memo[k];
   }
@@ -136,37 +165,28 @@
   const strength = r => { const a = Math.abs(r || 0); return a >= 0.7 ? T('très lié', 'tightly linked') : a >= 0.5 ? T('lié', 'linked') : a >= 0.3 ? T('un peu lié', 'loosely linked') : T('peu ou pas lié', 'little or no link'); };
 
   // ── auto choice: which scale and which chart ──
-  function decide(units) {
+  function decide(units, st) {
+    st = st || S;
     const u = [...new Set(units)];
-    let scale = S.scale, why;
+    let scale = st.scale, why;
     if (scale === 'auto') {
       if (u.length === 1) { scale = 'raw'; why = T('même unité (' + u[0] + ') → un seul axe, valeurs réelles', 'one unit (' + u[0] + ') → one axis, actual values'); }
       else if (u.length === 2) { scale = 'dual'; why = T('deux unités → deux axes, valeurs réelles', 'two units → two axes, actual values'); }
       else { scale = 'b100'; why = T(u.length + ' unités différentes → base 100 au début de la période', u.length + ' different units → base 100 at the start of the period'); }
     }
-    let type = S.type;
+    let type = st.type;
     if (type === 'auto') { type = 'line'; why += T(' · courbes (séries quotidiennes)', ' · lines (daily series)'); }
     return { scale, type, why };
   }
 
-  // ── render ──
-  let busy = 0;
-  async function render() {
-    const host = document.getElementById('cmp-root'); if (!host) return;
-    const my = ++busy;
-    drawBar(); drawPicker();
-    const sel = S.sel;
-    const main = document.getElementById('cmp-main-sub'), note = document.getElementById('cmp-auto');
-    if (!sel.length) { if (main) main.textContent = T('Choisissez une ou plusieurs séries à gauche.', 'Pick one or more series on the left.'); return; }
-    if (main) main.textContent = T('Chargement…', 'Loading…');
-    const maps = await Promise.all(sel.map(series)); if (my !== busy) return;
-    const [from, to] = range();
+  // ── build: the chart of a selection (the page and the dashboard card share it) ──
+  async function build(sel, st) {
+    const maps = await Promise.all(sel.map(id => series(id, st)));
+    const [from, to] = rangeOf(st);
     const units = sel.map(id => CAT.get(id).unit);
-    const D = decide(units);
-    if (note) note.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5z"/></svg>' + (S.scale === 'auto' && S.type === 'auto' ? T('Choix auto : ', 'Auto: ') : '') + esc(D.why || T('votre choix', 'your choice'));
-    // dates of the window (union), values per series
+    const D = decide(units, st);
     const all = [...new Set(maps.flatMap(m => [...m.keys()]))].filter(d => d >= from && d <= to).sort();
-    if (!all.length) { if (main) main.textContent = T('Pas de données sur la période.', 'No data in this window.'); return; }
+    if (!all.length) return { empty: true, why: D.why, maps, from, to };
     const raw = maps.map(m => all.map(d => m.has(d) ? m.get(d) : null));
     const first = a => a.find(x => x != null), stats = a => { const v = a.filter(x => x != null); const mu = v.reduce((s, x) => s + x, 0) / v.length; return [mu, Math.sqrt(v.reduce((s, x) => s + (x - mu) ** 2, 0) / v.length) || 1]; };
     const tr = raw.map(a => {
@@ -177,7 +197,7 @@
     });
     const yTitle = { b100: T('base 100', 'base 100'), pct: T('% depuis le début', '% since start'), z: T('écarts-types', 'standard deviations') }[D.scale] || units[0];
     const u2 = [...new Set(units)][1];
-    let cfg;
+    let cfg, sub;
     if (D.type === 'scatter' && sel.length >= 2) {
       const A = aligned(maps.slice(0, 2), from, to);
       const pts = A.ds.map((d, i) => ({ x: A.v[0][i], y: A.v[1][i], d }));
@@ -190,24 +210,43 @@
         options: _fuelOpts({ scales: { x: Object.assign(_fuelAxis(label(sel[0]) + ', ' + units[0]), { type: 'linear' }), y: _fuelAxis(label(sel[1]) + ', ' + units[1]) },
           plugins: { tooltip: { callbacks: { label: c => c.raw && c.raw.d ? c.raw.d + ' · ' + N(c.raw.x, 2) + ' / ' + N(c.raw.y, 2) : '' } } } }) };
       const r = dcorr(maps[0], maps[1], from, to);
-      if (main) main.textContent = T(`Pente : +1 ${units[0]} sur ${label(sel[0])} ↔ ${N(b, 2)} ${units[1]} sur ${label(sel[1])} · corrélation des niveaux ${fmtR(r && r.lvl)}, des variations journalières ${fmtR(r && r.r)} · ${n} jours`,
+      sub = T(`Pente : +1 ${units[0]} sur ${label(sel[0])} ↔ ${N(b, 2)} ${units[1]} sur ${label(sel[1])} · corrélation des niveaux ${fmtR(r && r.lvl)}, des variations journalières ${fmtR(r && r.r)} · ${n} jours`,
         `Slope: +1 ${units[0]} on ${label(sel[0])} ↔ ${N(b, 2)} ${units[1]} on ${label(sel[1])} · correlation of levels ${fmtR(r && r.lvl)}, of daily changes ${fmtR(r && r.r)} · ${n} days`);
     } else if (D.type === 'bar') {
       const months = [...new Set(all.map(d => d.slice(0, 7)))];
       const ds = tr.map((a, i) => ({ type: 'bar', label: label(sel[i]), data: months.map(m => mean(a.filter((x, j) => all[j].startsWith(m)))), backgroundColor: COLORS[i % 8], borderWidth: 0,
         yAxisID: D.scale === 'dual' && units[i] === u2 ? 'y2' : 'y' }));
       cfg = { type: 'bar', data: { labels: months, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis(), y: _fuelAxis(yTitle) }, D.scale === 'dual' ? { y2: _fuelAxis(u2, { position: 'right', grid: { display: false } }) } : {}) }) };
-      if (main) main.textContent = T('Moyennes mensuelles', 'Monthly averages') + ' · ' + months[0] + ' → ' + months[months.length - 1];
+      sub = T('Moyennes mensuelles', 'Monthly averages') + ' · ' + months[0] + ' → ' + months[months.length - 1];
     } else {
       const ds = tr.map((a, i) => _fuelLineDs(label(sel[i]) + (D.scale === 'raw' || D.scale === 'dual' ? ' (' + units[i] + ')' : ''), a, COLORS[i % 8],
         { borderWidth: i === 0 ? 2.4 : 1.8, yAxisID: D.scale === 'dual' && units[i] === u2 ? 'y2' : 'y' }));
       cfg = { type: 'line', data: { labels: all, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis(), y: _fuelAxis(yTitle) }, D.scale === 'dual' ? { y2: _fuelAxis(u2, { position: 'right', grid: { display: false } }) } : {}) }) };
       // headline: where each series ends against where it started
       const moves = raw.map((a, i) => { const f = first(a), l = [...a].reverse().find(x => x != null); return f && l ? label(sel[i]) + ' ' + (l / f >= 1 ? '×' + N(l / f, 2) : (l / f - 1) * 100 > -100 ? N((l / f - 1) * 100, 0) + ' %' : '') : null; }).filter(Boolean);
-      if (main) main.textContent = all[0] + ' → ' + all[all.length - 1] + ' · ' + moves.join(' · ');
+      sub = all[0] + ' → ' + all[all.length - 1] + ' · ' + moves.join(' · ');
     }
-    _fuelChart('cmp-chart', cfg, 'comparator');
-    analyse(maps, from, to);
+    return { cfg, sub, why: D.why, maps, from, to, all, raw };
+  }
+
+  // ── render ──
+  let busy = 0, LAST = null;
+  async function render() {
+    const host = document.getElementById('cmp-root'); if (!host) return;
+    const my = ++busy;
+    drawBar(); drawPicker();
+    const sel = S.sel;
+    const main = document.getElementById('cmp-main-sub'), note = document.getElementById('cmp-auto');
+    if (!sel.length) { if (main) main.textContent = T('Choisissez une ou plusieurs séries à gauche.', 'Pick one or more series on the left.'); return; }
+    if (main) main.textContent = T('Chargement…', 'Loading…');
+    const B = await build(sel, S); if (my !== busy) return;
+    if (note) note.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.5 5.5L20 11l-5.5 2.5L12 19l-2.5-5.5L4 11l5.5-2.5z"/></svg>' + (S.scale === 'auto' && S.type === 'auto' ? T('Choix auto : ', 'Auto: ') : '') + esc(B.why || T('votre choix', 'your choice'));
+    if (B.empty) { if (main) main.textContent = T('Pas de données sur la période.', 'No data in this window.'); return; }
+    if (main) main.textContent = B.sub;
+    LAST = B;
+    _fuelChart('cmp-chart', B.cfg, 'comparator');
+    analyse(B.maps, B.from, B.to);
+    watch();
   }
 
   // ── analyses ──
@@ -277,12 +316,16 @@
     const b = document.getElementById('cmp-bar'); if (!b) return;
     b.innerHTML = '<div class="cmp-grp" role="group" aria-label="Period">' + [['3M', '3M'], ['6M', '6M'], ['1Y', T('1A', '1Y')], ['3Y', T('3A', '3Y')], ['5Y', T('5A', '5Y')], ['All', T('Tout', 'All')]].map(([v, t]) => pill('per', v, t, !S.from && S.per === v)).join('') + '</div>' +
       '<div class="cmp-grp" role="group" aria-label="Scale">' + [['auto', T('Auto', 'Auto')], ['raw', T('Valeurs', 'Values')], ['b100', 'Base 100'], ['pct', '%'], ['z', T('Écart à la moyenne', 'Z-score')]].map(([v, t]) => pill('scale', v, t, S.scale === v)).join('') + '</div>' +
-      '<div class="cmp-grp" role="group" aria-label="Chart">' + [['auto', T('Auto', 'Auto')], ['line', T('Courbes', 'Lines')], ['bar', T('Barres mensuelles', 'Monthly bars')], ['scatter', T('Nuage X–Y', 'X–Y scatter')]].map(([v, t]) => pill('type', v, t, S.type === v)).join('') + '</div>';
+      '<div class="cmp-grp" role="group" aria-label="Chart">' + [['auto', T('Auto', 'Auto')], ['line', T('Courbes', 'Lines')], ['bar', T('Barres mensuelles', 'Monthly bars')], ['scatter', T('Nuage X–Y', 'X–Y scatter')]].map(([v, t]) => pill('type', v, t, S.type === v)).join('') + '</div>' +
+      '<div class="cmp-grp" style="margin-left:auto">' + `<button type="button" class="cmp-pill" id="cmp-link">${T('Copier le lien', 'Copy link')}</button><button type="button" class="cmp-pill" id="cmp-csv">CSV</button><button type="button" class="cmp-pill" id="cmp-dash">${T('+ Tableau de bord', '+ Dashboard')}</button>` + '</div>';
   }
   function drawPicker() {
     const sel = document.getElementById('cmp-sel'), cat = document.getElementById('cmp-cat'); if (!sel || !cat) return;
     sel.innerHTML = S.sel.map((id, i) => `<div class="cmp-chip"><i style="background:${COLORS[i % 8]}"></i><span>${esc(label(id))}</span><em>${esc(CAT.get(id).unit)}</em><button type="button" data-del="${id}" aria-label="${T('Retirer', 'Remove')} ${esc(label(id))}">×</button></div>`).join('') ||
       '<p class="cmp-note">' + T('Aucune série.', 'No series yet.') + '</p>';
+    const fx = document.getElementById('cmp-fx');
+    if (fx) fx.innerHTML = S.sel.length ? `<div class="cmp-note" style="margin:0 0 6px">${S.sel.map((id, i) => `<b>${String.fromCharCode(65 + i)}</b> = ${esc(label(id))}`).join(' · ')}</div>` +
+      `<div style="display:flex;gap:6px"><input type="text" id="cmp-fx-in" class="cmp-search" placeholder="${T('ex. A − B, A − 2*B − C', 'e.g. A − B, A − 2*B − C')}" aria-label="${T('Formule', 'Formula')}"><button type="button" class="cmp-pill" id="cmp-fx-add">${T('Ajouter', 'Add')}</button></div>` : '';
     const q = (S.q || '').toLowerCase();
     cat.innerHTML = Object.entries(G).map(([g, n]) => {
       const items = [...CAT.values()].filter(c => c.group === g && (!q || label(c.id).toLowerCase().includes(q) || c.id.toLowerCase().includes(q)));
@@ -292,8 +335,18 @@
   function bind() {
     const root = document.getElementById('cmp-root'); if (!root || root.dataset.bound) return; root.dataset.bound = '1';
     root.addEventListener('click', e => {
-      const t = e.target.closest('[data-per],[data-scale],[data-type],[data-del],[data-add],#cmp-rank-go'); if (!t) return;
+      const t = e.target.closest('[data-per],[data-scale],[data-type],[data-del],[data-add],[data-pair],#cmp-rank-go,#cmp-link,#cmp-csv,#cmp-dash,#cmp-fx-add'); if (!t) return;
+      if (t.dataset.pair) { S.sel = t.dataset.pair.split(';').filter(id => CAT.has(id)); S.per = '1Y'; S.from = S.to = ''; save(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
       if (t.id === 'cmp-rank-go') { rank(); return; }
+      if (t.id === 'cmp-link') { const url = location.origin + location.pathname + '#tools/compare?' + shareParams(); (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => { t.textContent = T('Lien copié ✓', 'Link copied ✓'); setTimeout(() => { t.textContent = T('Copier le lien', 'Copy link'); }, 2000); }).catch(() => prompt(T('Lien à copier', 'Link to copy'), url)); return; }
+      if (t.id === 'cmp-csv') { csv(); return; }
+      if (t.id === 'cmp-dash') { if (window.PKDash && PKDash.addCard) { PKDash.addCard('compare-chart', { s: S.sel.join(';'), per: S.per, scale: S.scale, type: S.type }); t.textContent = T('Ajouté ✓', 'Added ✓'); setTimeout(() => { t.textContent = T('+ Tableau de bord', '+ Dashboard'); }, 2000); } return; }
+      if (t.id === 'cmp-fx-add') {
+        const inp = document.getElementById('cmp-fx-in'), f = (inp && inp.value || '').toUpperCase().replace(/−/g, '-').replace(/×/g, '*').replace(/\s+/g, '');
+        const bad = !/^[A-H0-9+\-*/().]+$/.test(f) || [...f.matchAll(/[A-H]/g)].some(m => m[0].charCodeAt(0) - 65 >= S.sel.length);
+        if (bad || !f) { if (inp) { inp.setCustomValidity(T('Lettres A à ' + String.fromCharCode(64 + S.sel.length) + ', chiffres et + − * / ( )', 'Letters A to ' + String.fromCharCode(64 + S.sel.length) + ', digits and + − * / ( )')); inp.reportValidity(); } return; }
+        const id = addExpr(f, S.sel.slice()); if (id && !S.sel.includes(id) && S.sel.length < 8) S.sel.push(id); save(); render(); return;
+      }
       if (t.dataset.per) { S.per = t.dataset.per; S.from = S.to = ''; const f = document.getElementById('cmp-from'), g = document.getElementById('cmp-to'); if (f) f.value = ''; if (g) g.value = ''; }
       if (t.dataset.scale) S.scale = t.dataset.scale;
       if (t.dataset.type) S.type = t.dataset.type;
@@ -309,6 +362,37 @@
     });
     const q = document.getElementById('cmp-q'); if (q) q.addEventListener('input', () => { S.q = q.value; drawPicker(); });
   }
+  // links watched every day (scripts/corr_watch.py): a click puts the pair on the chart
+  async function watch() {
+    const host = document.getElementById('cmp-watch'); if (!host || host.dataset.done) return;
+    const j = await json('watch', 'corr_watch.json'); if (!j || !j.pairs) { host.innerHTML = '<p class="cmp-note">–</p>'; return; }
+    host.dataset.done = '1';
+    host.innerHTML = '<div class="cmp-watch">' + j.pairs.map(r => `<button type="button" class="cmp-wt${r.break ? ' brk' : ''}" data-pair="${r.a};${r.b}"><span>${esc(label(r.a))} / ${esc(label(r.b))}</span><b>${fmtR(r.c365)} → ${fmtR(r.c60)}</b>` +
+      `<em>${r.break ? (r.delta > 0 ? T('le lien se resserre', 'tightening') : T('le lien se casse', 'breaking')) : Math.abs(r.delta) >= 0.15 ? (r.delta > 0 ? T('se resserre un peu', 'tightening a little') : T('se relâche un peu', 'loosening a little')) : T('stable', 'steady')}</em></button>`).join('') + '</div>' +
+      '<p class="cmp-note">' + T('Mis à jour chaque jour à 14 h 15 UTC. Une alerte « rupture de corrélation » prévient par e-mail (menu Alertes).', 'Updated daily at 14:15 UTC. A “correlation break” alert can e-mail you (Alerts menu).') + '</p>';
+  }
+
+  // CSV of the series on the chart, aligned on dates (the window shown)
+  function csv() {
+    if (!LAST || !LAST.all) return;
+    const head = ['date'].concat(S.sel.map(id => '"' + label(id).replace(/"/g, '""') + ' (' + (CAT.get(id).unit || '') + ')"'));
+    const rows = LAST.all.map((d, i) => [d].concat(LAST.raw.map(a => a[i] == null ? '' : a[i])).join(';'));
+    const blob = new Blob(['\ufeff' + head.join(';') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'powerklock-comparator-' + LAST.from + '-' + LAST.to + '.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  // the chart as a dashboard card: the series, period, scale and chart type saved with it
+  if (window.PKW) PKW.register({ id: 'compare-chart', title: 'Comparator', category: 'intel', page: 'compare', source: 'PowerKlock', size: { w: 6, h: 5 },
+    desc: 'A chart of the Comparator, saved with its series, period, scale and chart type.',
+    params: [{ key: 'per', label: 'Period', options: [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['5Y', '5Y'], ['All', 'All']] }], defaults: { s: 'c:ttf;c:eua', per: '1Y', scale: 'auto', type: 'auto' },
+    titleFn: p => splitSel(p.s || '').filter(id => CAT.has(id) || /^expr:/.test(id)).slice(0, 3).map(id => { const m = /^expr:([^|]+)\|(.+)$/.exec(id); if (m) addExpr(m[1], m[2].split(',')); return label(id); }).join(' · '),
+    async draw(cid, p) {
+      splitSel(p.s || '').forEach(id => { const m = /^expr:([^|]+)\|(.+)$/.exec(id); if (m) addExpr(m[1], m[2].split(',')); });
+      const sel = splitSel(p.s || '').filter(id => CAT.has(id)); if (!sel.length) return null;
+      const B = await build(sel, { per: p.per || '1Y', from: '', to: '', scale: p.scale || 'auto', type: p.type || 'auto' });
+      if (B.empty) { noDataMsg(cid, T('Pas de données sur la période', 'No data in this window'), ''); return null; }
+      _fuelChart(cid, B.cfg, 'comparator'); return { sub: B.sub };
+    } });
+
   // also used by Replay (js/replay.js): any daily series of the catalogue, its label, unit and group
   window.PKCompare = { render: () => { bind(); render(); }, catalogue: () => [...CAT.keys()], label, unit: id => (CAT.get(id) || {}).unit, group: id => (CAT.get(id) || {}).group,
     groups: () => Object.entries(G).map(([g, n]) => [g, T(n[0], n[1]), [...CAT.values()].filter(c => c.group === g).map(c => c.id)]), load: id => CAT.has(id) ? CAT.get(id).load('2016-01-01').catch(() => new Map()) : Promise.resolve(new Map()) };
@@ -342,6 +426,10 @@
   .cmp-lagb{display:block;width:100%;border-radius:3px 3px 0 0;min-height:2px} .cmp-lagc em{font:10px 'JetBrains Mono',monospace;color:var(--text3);font-style:normal}
   .cmp-rk{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 44px;gap:10px;align-items:center;width:100%;background:none;border:0;padding:5px 2px;color:var(--text);font:12.5px Inter,sans-serif;text-align:left;cursor:pointer;border-radius:6px}
   .cmp-rk:hover{background:var(--bg3)} .cmp-rkb{height:8px;border-radius:4px;background:var(--bg3);overflow:hidden} .cmp-rkb i{display:block;height:8px} .cmp-rk b{font:600 12px 'JetBrains Mono',monospace;text-align:right}
+.cmp-watch{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+  .cmp-wt{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text2);font:12.5px Inter,sans-serif;cursor:pointer}
+  .cmp-wt:hover{border-color:var(--accent)} .cmp-wt b{font:600 13px 'JetBrains Mono',monospace;color:var(--text)} .cmp-wt em{font-style:normal;font-size:11.5px;color:var(--text3)}
+  .cmp-wt.brk{border-color:var(--down)} .cmp-wt.brk em{color:var(--down);font-weight:600}
   .cmp-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px} @media (max-width:1100px){.cmp-grid2{grid-template-columns:1fr}}
   `;
   document.head.appendChild(css);

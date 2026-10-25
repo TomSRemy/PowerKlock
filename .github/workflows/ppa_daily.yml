@@ -1,4 +1,4 @@
-name: PPA benchmark (daily)
+name: PPA benchmark and correlation watch (daily)
 
 # The site's PPA pricer run every day with its default settings, French solar and wind
 # → data/history/ppa_benchmark.json (scripts/ppa_daily.py). After the last forward refresh (12:53 UTC).
@@ -27,15 +27,17 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install playwright==1.48.0
+          pip install playwright==1.48.0 numpy==2.5.4
           python -m playwright install --with-deps chromium
       - name: Price the day
         run: python scripts/ppa_daily.py
+      - name: Correlation breaks (Comparator, alerts)
+        run: python scripts/corr_watch.py || echo "::warning::correlation watch failed"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/ppa_benchmark.json
+          git add data/history/ppa_benchmark.json data/corr_watch.json
           if git diff --staged --quiet; then
             echo "No change — skipping commit."
             exit 0

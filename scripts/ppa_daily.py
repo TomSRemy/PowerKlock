@@ -9,9 +9,11 @@ the capture rates and the GO.
 
 Writes data/history/ppa_benchmark.json:
   {"updated", "note", "days": {"2026-10-25": {"tenor": "2027-2028-2029",
-     "solar": {"ppa", "build", "pct", "fpc", "ref", "go", "imb"}, "wind": {…}}, …}}
+     "solar": {"ppa", "build", "pct", "fpc", "wx", "blend", "lo", "hi", "ref", "go", "imb"}, "wind": {…}}, …}}
   (€/MWh; ppa = the pricer's default method, build = capacity trend, pct = past discount,
-   fpc = forward shape, ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance)
+   fpc = forward shape, wx = weather simulation, blend = mean of build, fpc and wx,
+   lo / hi = the default method's price at 10 % and 90 % of its 10,000 simulated futures (P10–P90),
+   ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance)
 
     python scripts/ppa_daily.py            # today (Paris), overwrites the day if run again
     python scripts/ppa_daily.py --rebuild 365
@@ -51,6 +53,18 @@ def run(rebuild=None):
             p.goto(f'http://127.0.0.1:{PORT}/index.html#tools/ppa')
             p.wait_for_function('window.PKPpa && PKPpa.state', timeout=90000)
             p.wait_for_timeout(5000)
+            # the blend of the three model methods and the P10–P90 band of the default one (its Monte Carlo)
+            p.evaluate("""() => { window.extra = o => {
+                const r = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
+                const m = [o.ppaBuild, o.ppaFpc, o.ppaWx].filter(v => v != null && isFinite(v));
+                let lo = null, hi = null;
+                if (o.mc && o.mc.Us && o.mc.Us.length) {
+                  const u = Float64Array.from(o.mc.Us).sort(), q = a => u[Math.min(u.length - 1, Math.max(0, Math.round(a * (u.length - 1))))];
+                  const adj = - o.refW * (o.add || 0) / 100 - o.imb + o.goW - o.margin;
+                  lo = q(0.10) + adj; hi = q(0.90) + adj;
+                }
+                return { wx: r(o.ppaWx), blend: m.length ? r(m.reduce((a, b) => a + b, 0) / m.length) : null, lo: r(lo), hi: r(hi) };
+              }; }""")
             for name, over in CASES.items():
                 got[name] = p.evaluate("""async over => {
                     const S = PKPpa.state, keep = {};
@@ -59,8 +73,8 @@ def run(rebuild=None):
                     const o = await PKPpa.compute();
                     Object.assign(S, keep);
                     const r = v => v == null || !isFinite(v) ? null : Math.round(v * 100) / 100;
-                    return { ppa: r(o.ppa), build: r(o.ppaBuild), pct: r(o.ppaPct), fpc: r(o.ppaFpc), ref: r(o.refP),
-                             go: r(o.goP), imb: r(o.imb), tenor: (o.tenor || []).join('-') };
+                    return Object.assign(extra(o), { ppa: r(o.ppa), build: r(o.ppaBuild), pct: r(o.ppaPct), fpc: r(o.ppaFpc), ref: r(o.refP),
+                             go: r(o.goP), imb: r(o.imb), tenor: (o.tenor || []).join('-') });
                 }""", over)
             if rebuild:
                 got['rebuilt'] = p.evaluate("""async days => {
@@ -72,7 +86,7 @@ def run(rebuild=None):
                         S.tech = tech; S.fwd = fwd;
                         const o = await PKPpa.compute();
                         S.tech = keep.tech; S.fwd = keep.fwd;
-                        out[d][tech] = { ppa: r(o.ppa), build: r(o.ppaBuild), pct: r(o.ppaPct), fpc: r(o.ppaFpc), ref: r(o.refP), go: r(o.goP), imb: r(o.imb) };
+                        out[d][tech] = Object.assign(extra(o), { ppa: r(o.ppa), build: r(o.ppaBuild), pct: r(o.ppaPct), fpc: r(o.ppaFpc), ref: r(o.refP), go: r(o.goP), imb: r(o.imb) });
                       }
                     }
                     return out;

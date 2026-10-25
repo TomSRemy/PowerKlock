@@ -68,12 +68,13 @@
       W('ren-fc', 12, 5),
       S('Imbalance'),
       W('fr-imb-price', 6, 5, { view: 'day' }), W('fr-imb-price', 6, 5, { view: '30d' }),
-      W('fr-activation', 12, 5, { win: '90' }),
+      W('imb-park', 6, 5), W('fr-activation', 6, 5, { win: '90' }),
     ] },
     { id: 'orig', name: 'Origination and support scheme · France', desc: 'PPA price recalculated every day, forwards and forward capture, capture rates by technology and region, hours at 0 € or below, M0 and CRE tenders, guarantees of origin.', items: [
       S('PPA price'),
       W('ppa-today', 6, 3), W('kpi-da', 3, 3, { zone: 'FR' }), W('kpi-go', 3, 3),
       W('ppa-benchmark', 6, 5, { tech: 'both', win: '6M' }), W('pf-curve', 6, 5, { country: 'FR' }),
+      W('ppa-bridge', 6, 5, { tech: 'solar', win: '30' }), W('ppa-bridge', 6, 5, { tech: 'wind', win: '30' }),
       W('fr-capture-forward', 6, 5), W('fr-capture-forward-table', 6, 5),
       S('Value of solar and wind'),
       W('ren-cr', 6, 5, { zone: 'FR', window: '1Y' }), W('ren-capture-regions', 6, 5, { tech: 'solar' }),
@@ -1116,7 +1117,13 @@
   // for the API page: the reader's dashboards and the link that shows one alone (a copy of its layout at that moment)
   function boards() { if (!state) init(); return state.boards.map(b => ({ id: b.id, name: b.name, n: b.items.filter(i => i.t === 'w').length })); }
   async function soloLink(id, site) { if (!state) init(); const b = state.boards.find(x => x.id === id); return b ? (site || baseUrl()) + '#solo=' + await encodeBoard(b) : null; }
-  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addSection, addNote, TEMPLATES, boards, soloLink };
+  // a card added from another page with its own settings (always a new card, never a toggle)
+  function addCard(wid, p) {
+    const w = PKW.get(wid), b = board(); if (!w) return;
+    b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h }, p ? { p } : {}));
+    toast('Added to “' + b.name + '”'); save(); if (isOpen()) render();
+  }
+  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
