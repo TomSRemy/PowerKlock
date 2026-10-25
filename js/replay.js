@@ -86,17 +86,17 @@
     if (!window.PKCompare) return { long: [], times: [], step: 1440 };
     const maps = await Promise.all(ids.map(id => PKCompare.load(id)));
     const days = [...new Set(maps.flatMap(m => [...m.keys()]))].filter(d => d >= from && d <= to).sort();
-    const units = [...new Set(ids.map(id => PKCompare.unit(id)))], b100 = units.length > 1;
+    const units = [...new Set(ids.map(id => PKCompare.unit(id)))];
     const ser = ids.map((id, i) => {
       let v = days.map(d => maps[i].has(d) ? maps[i].get(d) : null);
       for (let j = 1; j < v.length; j++) if (v[j] == null) v[j] = v[j - 1];   // weekends and holidays: last quote carried
-      if (b100) { const f = v.find(x => x != null); v = v.map(x => x == null || !f ? null : x / f * 100); }
-      return { key: 'p' + i, id, name: PKCompare.label(id), w: i === 0 ? 3 : 2.2, v };
+      return { key: 'p' + i, id, name: PKCompare.label(id), unit: PKCompare.unit(id), w: i === 0 ? 3 : 2.2, v };
     });
-    return { long: ser, times: days.map(d => [d, 0]), step: 1440, unit: b100 ? T('base 100', 'base 100') : units[0], b100 };
+    return { long: ser, times: days.map(d => [d, 0]), step: 1440, unit: units[0], multi: units.length > 1 };
   }
   const series = () => { if (!S.data) return []; const a = (S.per === 'long' ? S.data.long : S.data[S.mode]) || []; return S.data.cmpSer ? a.concat([S.data.cmpSer]) : a; };
-  const unit = () => S.per === 'long' ? (S.data && S.data.unit) || '' : S.mode === 'production' ? 'GW' : '€/MWh';
+  const unit = () => S.per === 'long' ? ((series()[0] || {}).unit || (S.data && S.data.unit) || '') : S.mode === 'production' ? 'GW' : '€/MWh';
+  const unitOf = s => s.unit || unit();
   const npts = () => S.data && S.data.times ? S.data.times.length : 96;
 
   // labels: the big clock, the date line, the axis ticks
@@ -111,7 +111,7 @@
   // ── commentary over several days (the day keeps its own, below) ──
   function eventsLong() {
     const ser = series().filter(x => x.key !== 'cmp'), head = ser[0]; if (!head) return [];
-    const v = head.v, E = [], u = S.data.b100 ? '(base 100)' : unit(), d = 1 + (Math.abs(Math.max(...v.filter(x => x != null))) < 20 ? 1 : 0);
+    const v = head.v, E = [], u = unitOf(head), d = 1 + (Math.abs(Math.max(...v.filter(x => x != null))) < 20 ? 1 : 0);
     const push = (q, txt, key) => { if (q != null && !E.some(e => Math.abs(e.q - q) < npts() / 12)) E.push({ q, txt, key: key || head.key }); };
     const arg = (a, fn) => { let b = null; a.forEach((x, q) => { if (x != null && (b == null || fn(x, a[b]))) b = q; }); return b; };
     const when = q => S.data.step === 1440 ? dfmt(S.data.times[q][0], { day: 'numeric', month: 'long', year: 'numeric' }) : dfmt(S.data.times[q][0], { weekday: 'long', day: 'numeric', month: 'long' }) + T(' à ', ' at ') + lab(q).clock;
@@ -125,7 +125,7 @@
       const neg = v.map(x => x != null && x <= 0), f = neg.indexOf(true), nh = neg.filter(Boolean).length * S.data.step / 60;
       if (f >= 0) push(f, T(`Premier prix à 0 € ou moins le ${when(f)}. Au total, ${fmtN(nh, 0)} heures à 0 € ou moins sur la période.`, `First price at 0 € or below on ${when(f)}. In all, ${fmtN(nh, 0)} hours at 0 € or below over the period.`));
     }
-    if (S.per === 'long' && ser.length > 1) {   // where the first two series part ways the most (base 100 or same unit)
+    if (S.per === 'long' && ser.length > 1 && unitOf(ser[1]) === u) {   // where the first two series part ways the most (same unit only)
       const b = ser[1].v; let g = null; v.forEach((x, q) => { if (x != null && b[q] != null && (g == null || Math.abs(x - b[q]) > Math.abs(v[g] - b[g]))) g = q; });
       if (g != null) push(g, T(`${head.name} et ${ser[1].name} s’écartent le plus : ${fmtN(v[g], d)} contre ${fmtN(b[g], d)} ${u} (${when(g)}).`, `${head.name} and ${ser[1].name} part ways the most: ${fmtN(v[g], d)} against ${fmtN(b[g], d)} ${u} (${when(g)}).`), ser[1].key);
     }
@@ -212,6 +212,9 @@
         : { short: '#ED6965', long: '#F2A3A0', da: '#B8C9D9', load: '#FFFFFF', nuc: '#B794F6', wind: '#7FC8F8', solar: '#FBBF24', exch: '#FB923C', p0: '#14D3A9', p1: '#FBBF24', p2: '#B794F6', p3: '#7FC8F8', cmp: '#7A93AB',
           z_FR: '#14D3A9', z_DE_LU: '#FFFFFF', z_BE: '#FBBF24', z_NL: '#FB923C', z_ES: '#ED6965', z_IT_NORD: '#B794F6' } };
   }
+  // the site's logo (icon only), dark and light versions
+  const LOGO = {}; ['logo-icon.png', 'logo-icon-light.png'].forEach(f => { const im = new Image(); im.onload = () => { if (S.data) draw(); }; im.src = 'assets/' + f; LOGO[f] = im; });
+  const logo = C => { const im = LOGO[C.light ? 'logo-icon-light.png' : 'logo-icon.png']; return im && im.complete && im.naturalWidth ? im : null; };
   new MutationObserver(() => { if (S.data) draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   // canvas size: the screen's own pixels (sharp at any size), or the video size while recording
@@ -244,19 +247,19 @@
     const ser = raw.map(x => Object.assign({}, x, { color: daOnly && x.key !== 'cmp' ? C.accent : C.series[x.key] || C.accent }, daOnly && x.key !== 'cmp' ? { dash: null, w: 3 } : {}));
     const from = S.per === 'day' ? S.from : 0, to = S.per === 'day' ? S.to : N - 1;
     const t = Math.max(from, Math.min(to, S.t)), qi = Math.floor(t), L = lab(qi);
-    const dp = S.per === 'long' ? (S.data.b100 ? 0 : 1) : S.mode === 'prices' ? 0 : 1;
+    const dp0 = S.per === 'long' ? 1 : S.mode === 'prices' ? 0 : 1;
+    const dpOf = s => S.per === 'long' ? (Math.max(...s.v.filter(x => x != null).map(Math.abs)) < 20 ? 2 : 1) : dp0, dp = head0 => head0 ? dpOf(head0) : dp0;
     c.fillStyle = C.bg; c.fillRect(0, 0, W, H);
     const F = (w, px, fam) => `${w} ${Math.round(px * k)}px ${fam || 'Inter, system-ui, sans-serif'}`, MONO = "'JetBrains Mono', ui-monospace, monospace";
     c.textBaseline = 'top';
-    c.fillStyle = C.text; c.font = F(700, 22); c.fillText('Power', P, P);
-    const bw = c.measureText('Power').width; c.fillStyle = C.accent; c.fillText('.Klock', P + bw, P);
-    c.fillStyle = C.text3; c.font = F(500, 18); c.fillText(T('France · ', 'France · ') + L.date, P, P + 36 * k);
+    const lg = logo(C); if (lg) c.drawImage(lg, P, P - 4 * k, 34 * k, 34 * k);   // the logo alone, no name
+    c.fillStyle = C.text3; c.font = F(500, 18); c.fillText(T('France · ', 'France · ') + L.date, P + (lg ? 44 * k : 0), P + 4 * k);
     c.fillStyle = C.text; c.font = F(700, S.data.step === 1440 ? 66 : 84, MONO); c.fillText(L.clock, P, P + (S.data.step === 1440 ? 74 : 66) * k);
     const head = ser[0], hv = head && head.v[qi];
     const x0 = P + c.measureText(L.clock).width + 36 * k;
     if (head) {
       c.fillStyle = C.text3; c.font = F(500, 17); c.fillText(head.name, x0, P + 74 * k);
-      c.fillStyle = head.color; c.font = F(700, 42, MONO); c.fillText(fmtN(hv, dp) + ' ' + unit(), x0, P + 98 * k);
+      c.fillStyle = head.color; c.font = F(700, 42, MONO); c.fillText(fmtN(hv, dp(head)) + ' ' + unitOf(head), x0, P + 98 * k);
       const ref = S.per !== 'long' && S.mode === 'prices' && !daOnly ? ser.find(s => s.key === 'da') : null;
       if (ref && hv != null && ref.v[qi]) {
         const r = hv / ref.v[qi], hot = Math.abs(r) >= 1.5, txt = hot ? fmtN(r, 1) + T(' × le day-ahead', ' × the day-ahead') : T('day-ahead ', 'day-ahead ') + fmtN(ref.v[qi], 0);
@@ -270,8 +273,8 @@
       const at = q => S.per === 'day' ? lab(q).clock : S.data.step === 1440 ? dfmt(S.data.times[q][0], { day: 'numeric', month: 'short', year: 'numeric' }) : dfmt(S.data.times[q][0], { weekday: 'short', day: 'numeric' }) + ' ' + lab(q).clock;
       if (mq != null) {
         c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = 'right';
-        c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, dp) + ' ' + unit() + T(' · ', ' · ') + at(mq), W - P, P + 4 * k);
-        if (mn < 0) c.fillText(T('Plus bas : ', 'Low: ') + fmtN(mn, dp) + ' ' + unit() + ' · ' + at(nq), W - P, P + 28 * k);
+        c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, dp(head)) + ' ' + unitOf(head) + T(' · ', ' · ') + at(mq), W - P, P + 4 * k);
+        if (mn < 0) c.fillText(T('Plus bas : ', 'Low: ') + fmtN(mn, dp(head)) + ' ' + unitOf(head) + ' · ' + at(nq), W - P, P + 28 * k);
         c.textAlign = 'left';
       }
     }
@@ -281,12 +284,22 @@
     const bars = wide ? { x: P + (W - 2 * P) * 0.74, y: top, w: (W - 2 * P) * 0.26, h: bottom - top } : { x: P, y: chart.y + chart.h + 60 * k, w: W - 2 * P, h: bottom - (chart.y + chart.h + 60 * k) };
     const vals = ser.flatMap(s => s.v.slice(from, to + 1)).filter(v => v != null);
     if (!vals.length) return;
-    const Y = nice(Math.min(S.per === 'long' ? Math.min(...vals) : 0, ...vals), Math.max(...vals));
-    const yOf = v => chart.y + chart.h - (v - Y.lo) / (Y.hi - Y.lo) * chart.h, xOf = q => chart.x + (q - from) / Math.max(1, to - from) * chart.w;
+    // one scale per unit: the first on the left axis, the second on the right one, any further unit on its own scale
+    const units = [...new Set(ser.map(unitOf))], gOf = s => Math.max(0, units.indexOf(unitOf(s)));
+    const YS = units.map(u => { const v = ser.filter(s => unitOf(s) === u).flatMap(s => s.v.slice(from, to + 1)).filter(x => x != null); return v.length ? nice(Math.min(S.per === 'long' ? Math.min(...v) : 0, ...v), Math.max(...v)) : nice(0, 1); });
+    const Y = YS[0], yOfG = (v, g) => { const y = YS[g] || Y; return chart.y + chart.h - (v - y.lo) / (y.hi - y.lo) * chart.h; };
+    const yOf = v => yOfG(v, 0), xOf = q => chart.x + (q - from) / Math.max(1, to - from) * chart.w;
     c.font = F(500, 14, MONO); c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let v = Y.lo; v <= Y.hi + 1e-9; v += Y.step) {
       c.strokeStyle = Math.abs(v) < 1e-9 ? C.text3 : C.grid; c.lineWidth = Math.max(1, k * 0.8); c.beginPath(); c.moveTo(chart.x, yOf(v)); c.lineTo(chart.x + chart.w, yOf(v)); c.stroke();
-      c.fillStyle = C.text3; c.fillText(fmtN(v, Y.step < 1 ? 1 : 0), chart.x - 10 * k, yOf(v));
+      c.fillStyle = units.length > 1 ? (ser.find(s => gOf(s) === 0) || {}).color || C.text3 : C.text3; c.fillText(fmtN(v, Y.step < 1 ? 1 : 0), chart.x - 10 * k, yOf(v));
+    }
+    if (units.length > 1) {   // the axes name their unit; the second unit gets the right-hand axis
+      c.textBaseline = 'bottom'; c.font = F(600, 13); c.fillStyle = (ser.find(s => gOf(s) === 0) || {}).color || C.text3; c.fillText(units[0], chart.x - 10 * k, chart.y - 8 * k);
+      const Y2 = YS[1], col2 = (ser.find(s => gOf(s) === 1) || {}).color || C.text3; c.textAlign = 'left'; c.fillStyle = col2; c.fillText(units[1], chart.x + chart.w + 10 * k, chart.y - 8 * k);
+      c.font = F(500, 14, MONO); c.textBaseline = 'middle';
+      for (let v = Y2.lo; v <= Y2.hi + 1e-9; v += Y2.step) c.fillText(fmtN(v, Y2.step < 1 ? 1 : 0), chart.x + chart.w + 10 * k, yOfG(v, 1));
+      c.textAlign = 'right';
     }
     // x ticks: hours on a day, day starts over a week or a month, months over a long period
     c.textAlign = 'center'; c.textBaseline = 'top';
@@ -297,28 +310,31 @@
     ticks.forEach(q => c.fillText(lab(q).tick, xOf(q), chart.y + chart.h + 10 * k));
     c.textAlign = 'left';
     ser.slice().reverse().forEach(s => {
+      const g = gOf(s), yv = v => yOfG(v, g);
       c.strokeStyle = s.color; c.lineWidth = s.w * k * (N > 400 ? 0.8 : 1); c.setLineDash((s.dash || []).map(x => x * k)); c.lineJoin = 'round'; c.beginPath();
       let pen = false;
-      for (let q = from; q <= qi; q++) { const v = s.v[q]; if (v == null) { pen = false; continue; } pen ? c.lineTo(xOf(q), yOf(v)) : c.moveTo(xOf(q), yOf(v)); pen = true; }
+      for (let q = from; q <= qi; q++) { const v = s.v[q]; if (v == null) { pen = false; continue; } pen ? c.lineTo(xOf(q), yv(v)) : c.moveTo(xOf(q), yv(v)); pen = true; }
       const a = s.v[qi], b = s.v[Math.min(qi + 1, N - 1)];
-      if (pen && a != null && b != null && t > qi) c.lineTo(xOf(t), yOf(a + (b - a) * (t - qi)));
+      if (pen && a != null && b != null && t > qi) c.lineTo(xOf(t), yv(a + (b - a) * (t - qi)));
       c.stroke(); c.setLineDash([]);
     });
-    if (head && hv != null) { c.fillStyle = head.color; c.beginPath(); c.arc(xOf(qi), yOf(hv), 6 * k, 0, 2 * Math.PI); c.fill(); }
+    if (head && hv != null) { c.fillStyle = head.color; c.beginPath(); c.arc(xOf(qi), yOfG(hv, gOf(head)), 6 * k, 0, 2 * Math.PI); c.fill(); }
     c.strokeStyle = C.text2; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(xOf(t), chart.y); c.lineTo(xOf(t), chart.y + chart.h); c.stroke();
     // bars: each series now; the axis sits where the period's highs and lows leave room for both
     const n = ser.length, gap = 16 * k, bwid = Math.min(160 * k, (bars.w - gap * (n - 1)) / n);
-    const posMax = Math.max(0, ...vals), negMax = Math.max(0, ...vals.map(v => -v)), room = bars.h - 96 * k;
-    const scale = room / Math.max(1e-9, posMax + negMax), base = bars.y + 30 * k + posMax * scale, nameY = bars.y + bars.h - 22 * k;
+    // each unit its own bar scale; one shared axis line, placed for the deepest negative share
+    const room = bars.h - 96 * k, ext = units.map(u => { const v = ser.filter(s => unitOf(s) === u).flatMap(s => s.v.slice(from, to + 1)).filter(x => x != null); return [Math.max(0, ...v), Math.max(0, ...v.map(x => -x))]; });
+    const negFrac = Math.max(0, ...ext.map(([p, q]) => q / Math.max(1e-9, p + q))), base = bars.y + 30 * k + room * (1 - negFrac), nameY = bars.y + bars.h - 22 * k;
     c.strokeStyle = C.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(bars.x, base); c.lineTo(bars.x + bars.w, base); c.stroke();
     ser.forEach((s, i) => {
-      const v = s.v[qi], x = bars.x + (bars.w - n * bwid - (n - 1) * gap) / 2 + i * (bwid + gap), h = v == null ? 0 : Math.abs(v) * scale;
+      const [pm, nm0] = ext[gOf(s)], v = s.v[qi], x = bars.x + (bars.w - n * bwid - (n - 1) * gap) / 2 + i * (bwid + gap);
+      const h = v == null ? 0 : v >= 0 ? v / Math.max(1e-9, pm) * room * (1 - negFrac) : -v / Math.max(1e-9, nm0) * room * negFrac;
       c.fillStyle = s.color; c.globalAlpha = s.key === 'long' && C.light ? 0.75 : 1;
       if (v != null) c.fillRect(x, v >= 0 ? base - h : base, bwid, h);
       c.globalAlpha = 1; c.fillStyle = C.text; c.textAlign = 'center';
-      let vs = 18; const vt = fmtN(v, dp); c.font = F(700, vs, MONO); while (vs > 9 && c.measureText(vt).width > bwid + gap * 0.7) { vs--; c.font = F(700, vs, MONO); }   // the value fitted to its bar
-      if (v != null && v < 0) { c.textBaseline = 'top'; c.fillText(fmtN(v, dp), x + bwid / 2, base + h + 6 * k); }
-      else { c.textBaseline = 'bottom'; c.fillText(fmtN(v, dp), x + bwid / 2, base - h - 6 * k); }
+      let vs = 18; const vt = fmtN(v, dpOf(s)) + (units.length > 1 ? ' ' + unitOf(s) : ''); c.font = F(700, vs, MONO); while (vs > 9 && c.measureText(vt).width > bwid + gap * 0.7) { vs--; c.font = F(700, vs, MONO); }   // the value fitted to its bar
+      if (v != null && v < 0) { c.textBaseline = 'top'; c.fillText(vt, x + bwid / 2, base + h + 6 * k); }
+      else { c.textBaseline = 'bottom'; c.fillText(vt, x + bwid / 2, base - h - 6 * k); }
       const nm = s.short || s.name; let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(nm).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
       c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(nm, x + bwid / 2, nameY); c.textAlign = 'left';
     });
@@ -327,7 +343,7 @@
     (S.events || []).forEach(e => {
       if (e.q > t) return;
       const s = ser.find(x => x.key === e.key) || head, v = s && s.v[e.q]; if (v == null) return;
-      const x = xOf(e.q), y = yOf(v) + (v < (Y.lo + Y.hi) / 2 && v < 0 ? 22 : -22) * k;
+      const x = xOf(e.q), y = yOfG(v, gOf(s)) + (v < (Y.lo + Y.hi) / 2 && v < 0 ? 22 : -22) * k;
       c.fillStyle = C.text; c.beginPath(); c.arc(x, y, 13 * k, 0, 2 * Math.PI); c.fill();
       c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
     });
@@ -349,7 +365,7 @@
     c.fillStyle = C.grid; roundRect(c, P, fy, W - 2 * P, 8 * k, 4 * k); c.fill();
     c.fillStyle = C.accent; roundRect(c, P, fy, Math.max(8 * k, (W - 2 * P) * (t - from) / Math.max(1, to - from)), 8 * k, 4 * k); c.fill();
     c.fillStyle = C.text3; c.font = F(500, 13); c.textBaseline = 'top';
-    const src = S.per === 'long' ? T('Sources : ENTSO-E, RTE, données de marché' + (S.data.b100 ? ' · base 100 au premier jour' : '') + ' · powerklock', 'Sources: ENTSO-E, RTE, market data' + (S.data.b100 ? ' · base 100 on the first day' : '') + ' · powerklock')
+    const src = S.per === 'long' ? T('Sources : ENTSO-E, RTE, données de marché' + (units.length > 2 ? ' · chaque unité sur sa propre échelle' : '') + ' · powerklock', 'Sources: ENTSO-E, RTE, market data' + (units.length > 2 ? ' · each unit on its own scale' : '') + ' · powerklock')
       : S.mode === 'europe' ? T('ENTSO-E · prix day-ahead européens · powerklock', 'ENTSO-E · European day-ahead prices · powerklock')
       : S.mode === 'prices' ? (daOnly ? T('ENTSO-E · prix day-ahead France · powerklock', 'ENTSO-E · France day-ahead price · powerklock') : T('ENTSO-E · prix des écarts France et day-ahead, au quart d’heure · powerklock', 'ENTSO-E · France imbalance and day-ahead prices, quarter-hourly · powerklock'))
         : T('RTE éCO2mix · production et consommation · powerklock', 'RTE éCO2mix · output and consumption · powerklock');
@@ -361,9 +377,8 @@
   function card(c, W, H, C) {
     const k = W / H > 1.4 ? W / 1280 : W / 1080 * 1.3, P = 64 * k;
     c.fillStyle = C.bg; c.fillRect(0, 0, W, H);
-    c.textBaseline = 'top'; c.font = `700 ${Math.round(26 * k)}px Inter, system-ui, sans-serif`;
-    const bw = c.measureText('Power').width, lx = (W - bw - c.measureText('.Klock').width) / 2;
-    c.fillStyle = C.text; c.fillText('Power', lx, P); c.fillStyle = C.accent; c.fillText('.Klock', lx + bw, P);
+    c.textBaseline = 'top';
+    const lg = logo(C); if (lg) c.drawImage(lg, (W - 64 * k) / 2, P, 64 * k, 64 * k);
     const txt = S.phase === 'intro' ? S.title : S.outro, big = S.phase === 'intro' ? 54 : 40;
     c.font = `700 ${Math.round(big * k)}px Inter, system-ui, sans-serif`; c.fillStyle = C.text; c.textAlign = 'center';
     const lines = wrap(c, txt || '', W - 2 * P * 1.5), lh = big * 1.25 * k, y0 = H / 2 - lines.length * lh / 2;
@@ -493,8 +508,21 @@
         if (q != null) S.events = S.events.filter(e => Math.abs(e.q - q) >= 8).concat([{ q, key: h.key, txt: '★ ' + T(h.fr, h.en) }]).sort((a, b) => a.q - b.q).slice(0, 5).map((e, i) => Object.assign(e, { n: i + 1 }));
       }
     }
+    // political and market events of the period (data/market_events.json): they explain the moves, so they come first
+    const ME = !empty && await json('mevents', 'market_events.json');
+    if (ME && ME.events && S.data.times.length) {
+      const d0 = S.data.times[0][0], d1 = S.data.times[S.data.times.length - 1][0], cat = c => (ME.categories || {})[c] || [c, c];
+      const pol = ME.events.filter(e => e.d >= d0 && e.d <= d1).map(e => {
+        const q = S.data.times.findIndex(t => t[0] >= e.d);
+        return { q: Math.max(0, q), key: (series()[0] || {}).key, pol: true, txt: T(cat(e.cat)[0], cat(e.cat)[1]) + ' · ' + T(e.fr, e.en) + ' — ' + T(e.why_fr, e.why_en) + (e.src ? ' (' + e.src + ')' : '') };
+      });
+      if (pol.length) {
+        const gap = S.per === 'day' ? 8 : Math.max(2, npts() / 25);
+        S.events = pol.concat(S.events.filter(a => !pol.some(b => Math.abs(a.q - b.q) < gap))).sort((a, b) => a.q - b.q).slice(0, 8).map((e, i) => Object.assign(e, { n: i + 1 }));
+      }
+    }
     const ev = document.getElementById('rp-events');
-    if (ev) ev.innerHTML = S.events.map(e => `<button type="button" class="rp-ev" data-q="${e.q}"><b>${e.n}</b><span class="cmp-dates">${S.per === 'day' ? hh(e.q) : lab(e.q).tick}</span><span>${e.txt}</span></button>`).join('');
+    if (ev) ev.innerHTML = S.events.map(e => `<button type="button" class="rp-ev" data-q="${e.q}"><b>${e.n}</b><span class="cmp-dates">${S.per === 'day' ? hh(e.q) : lab(e.q).tick}</span><span>${e.pol ? '<i class="rp-pol">◆</i> ' : ''}${e.txt}</span></button>`).join('');
     S.t = bounds()[1]; draw();
   }
 
@@ -595,7 +623,7 @@
   .rp-days{display:flex;flex-direction:column;gap:8px}
   .rp-events{display:flex;flex-direction:column;gap:6px}
   .rp-ev{display:grid;grid-template-columns:26px 90px minmax(0,1fr);gap:10px;align-items:start;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text2);font:13px Inter,sans-serif;cursor:pointer}
-  .rp-ev:hover{border-color:var(--accent)} .rp-ev b{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#0B1118;align-items:center;justify-content:center;font-size:12px}
+  .rp-ev:hover{border-color:var(--accent)} .rp-pol{font-style:normal;color:var(--accent)} .rp-ev b{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#0B1118;align-items:center;justify-content:center;font-size:12px}
   .rp-dg{display:flex;flex-wrap:wrap;gap:6px;align-items:center} .rp-dg b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-right:4px}
   `;
   document.head.appendChild(css);

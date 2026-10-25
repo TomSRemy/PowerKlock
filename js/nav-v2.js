@@ -22,6 +22,8 @@
   nav.querySelectorAll('.sidebar-item[id^="nav-"]').forEach(el => { const s = el.querySelector('svg'); if (s) icon[el.id.slice(4)] = s.outerHTML; });
   const svg = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + d + '</svg>';
   Object.assign(icon, {
+    replay: svg('<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>'),
+    compare: svg('<path d="M3 20h18"/><path d="M4 16l5-6 4 3 7-8"/><path d="M4 12l5 2 4-5 7 3" stroke-dasharray="2 2"/>'),
     today: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
     dashboards: svg('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
     forward: svg('<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
