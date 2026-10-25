@@ -2010,11 +2010,21 @@ function _hszQAnimRefreshButton() {
   else btn.innerHTML = '▶ Play';
 }
 
+// The Play button and the timer run after the drill-down has restored
+// _HSZ_TARGET (canvasId back to null): draw again on the target saved at the
+// last render, otherwise the button vanished and nothing moved.
+function _hszQAnimRender() {
+  const saved = _HSZ_Q_ANIM.ctx, prev = { ..._HSZ_TARGET };
+  if (saved && !_HSZ_TARGET.canvasId) Object.assign(_HSZ_TARGET, saved);
+  try { _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday); }
+  finally { Object.assign(_HSZ_TARGET, prev); }
+}
+
 function _hszQAnimTogglePlay() {
   if (_HSZ_Q_ANIM.playing) {
     _hszQAnimStop();
     // Redraw with all years visible (steady state)
-    _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+    _hszQAnimRender();
     return;
   }
   // Start (or replay) the animation
@@ -2022,17 +2032,19 @@ function _hszQAnimTogglePlay() {
   _HSZ_Q_ANIM.ended = false;
   _HSZ_Q_ANIM.visibleCount = 1; // first year already visible at T=0
   _hszQAnimRefreshButton();
-  _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+  _hszQAnimRender();
 
   _HSZ_Q_ANIM.timer = setInterval(() => {
+    // Drill-down closed or another mode drawn: stop quietly.
+    if (!document.getElementById('hsz-q-play-btn')) { _hszQAnimStop(); return; }
     _HSZ_Q_ANIM.visibleCount += 1;
     if (_HSZ_Q_ANIM.visibleCount >= _HSZ_Q_ANIM.years.length) {
       _HSZ_Q_ANIM.visibleCount = _HSZ_Q_ANIM.years.length;
-      _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+      _hszQAnimRender();
       _hszQAnimEnd();
       return;
     }
-    _hszRenderHourlyQuarter(_HSZ_Q_ANIM.zone, _HSZ_Q_ANIM.intraday);
+    _hszQAnimRender();
   }, _HSZ_Q_ANIM_INTERVAL_MS);
 }
 
@@ -2047,7 +2059,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   const zoneChanged = (_HSZ_Q_ANIM.zone !== zone) || (_HSZ_Q_ANIM.intraday !== intraday);
   _HSZ_Q_ANIM.zone = zone;
   _HSZ_Q_ANIM.intraday = intraday;
-  _HSZ_Q_ANIM.ctx = ctx;
+  if (ctx.canvasId) _HSZ_Q_ANIM.ctx = { ...ctx };   // a copy: the drill-down resets the live target after drawing
   // Build full year list from intraday data
   const allYears = Object.keys(intraday).filter(k => /^\d{4}$/.test(k)).sort();
   _HSZ_Q_ANIM.years = allYears;
