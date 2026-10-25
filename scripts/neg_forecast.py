@@ -224,6 +224,10 @@ def main():
         'days_with_negatives': len(days_neg),
         'caught': round(sum(1 for _, p, a in days_neg if p >= 1) / len(days_neg), 3) if days_neg else None,
         'false_alarms': round(sum(1 for _, p, a in daily if p >= 1 and a == 0) / max(1, sum(1 for _, p, a in daily if p >= 1)), 3),
+        # the alarm threshold (expected negative hours in the day) against days caught and false alarms
+        'thresholds': [{'t': t, 'caught': round(sum(1 for _, p, a in days_neg if p >= t) / len(days_neg), 3) if days_neg else None,
+                        'false_alarms': round(sum(1 for _, p, a in daily if p >= t and a == 0) / max(1, sum(1 for _, p, a in daily if p >= t)), 3)}
+                       for t in (0.5, 1, 1.5, 2, 3, 4)],
     }
     monthly = {}
     for d, p, a in daily:
