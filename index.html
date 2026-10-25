@@ -3833,20 +3833,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="mrn2" id="mrn2">
         <div class="mrn2-hdr"><h1 id="mrn-date">Today</h1><span class="mrn2-upd" id="mrn-upd"></span></div>
-        <section class="mrn2-card mrn2-brief"><p class="mrn2-lbl">Key points this morning</p><ol id="mrn-keys"><li class="fuel-note">Loading…</li></ol></section>
-        <section class="mrn2-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
-        <div class="fuel-grid-2 pk-stack">
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Tomorrow hour by hour · France price <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-neg-sub">Day-ahead price and chance of a negative price</div></div><span class="source-badge">PowerKlock · ENTSO-E</span></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-neg" style="width:100%;height:280px"></canvas></div>
-          </div>
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">What sets the price · wind, solar and demand <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fc-sub">TSO day-ahead forecast, today and tomorrow</div></div><span class="source-badge">ENTSO-E</span></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-fc" style="width:100%;height:280px"></canvas></div>
-          </div>
-        </div>
-        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France</div><div class="fuel-card-sub">Weather against normal, gas storage, nuclear, month-ahead forward</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
-        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Marchés de l’énergie · la semaine</div><div class="fuel-card-sub">Ce qui a bougé sur le pétrole, le gaz, l’électricité et le carbone, et ce qui est attendu</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
+        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+          <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+          <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
+        </section>
+        <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
+        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved and why</div><div class="fuel-card-sub">The reasons behind the prices above, and the trend for the week ahead</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
+        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France</div><div class="fuel-card-sub">Weather against normal, gas storage, month-ahead forward</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
         <section class="chart-container fuel-card mrn-news"><div class="fuel-card-head"><div><div class="table-title">In the news</div></div><a href="#intel/news" class="mrn-news-more">all news ›</a></div><div id="mrn-news"><div class="fuel-note">Loading…</div></div></section>
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-fc">
@@ -3856,6 +3849,16 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-morning-fc">
 <div id="mrn-fc-tiles" style="margin-bottom:12px"></div>
+<div class="fuel-grid-2 pk-stack" style="margin-bottom:12px">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France · price and chance of a negative price <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-neg-sub">Day-ahead price and chance of a negative price</div></div><span class="source-badge">PowerKlock · ENTSO-E</span></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-neg" style="width:100%;height:280px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France · wind, solar and demand <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fc-sub">TSO day-ahead forecast, today and tomorrow</div></div><span class="source-badge">ENTSO-E</span></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-fc" style="width:100%;height:280px"></canvas></div>
+          </div>
+        </div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card">
           <div class="fuel-card-head"><div><div class="table-title">France · wind, PowerKlock vs TSO <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fcc-sub">Combined forecast with its P10–P90 band</div></div><span class="source-badge">PowerKlock model</span></div>
           <div style="position:relative;height:260px"><canvas id="mrn-fcc" style="width:100%;height:260px"></canvas></div>

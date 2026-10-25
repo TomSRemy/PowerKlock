@@ -85,9 +85,11 @@ Règles :
 
 Ajoute aussi le SENTIMENT POUR LA SEMAINE À VENIR, marché par marché (pétrole, gaz, électricité, carbone) : ce que les notes et l'actualité laissent attendre pour les prochains jours, en une phrase courte (12 mots au plus) avec la raison principale ; tone = "up", "down" ou "flat". Pas de note sur un marché : déduis-le des chiffres et de l'actualité, sans inventer.
 
+Le site est en français et en anglais : donne chaque texte aussi en anglais (champs topic_en et text_en), même sens, mêmes chiffres.
+
 Réponds uniquement avec ce JSON, sans texte autour :
-{"context":[{"topic":"France","text":"…","tone":"up"}],
- "outlook":{"oil":{"tone":"up","text":"…"},"gas":{"tone":"up","text":"…"},"power":{"tone":"flat","text":"…"},"carbon":{"tone":"flat","text":"…"}}}"""
+{"context":[{"topic":"France","topic_en":"France","text":"…","text_en":"…","tone":"up"}],
+ "outlook":{"oil":{"tone":"up","text":"…","text_en":"…"},"gas":{"tone":"up","text":"…","text_en":"…"},"power":{"tone":"flat","text":"…","text_en":"…"},"carbon":{"tone":"flat","text":"…","text_en":"…"}}}"""
 
 
 def ask(payload):
@@ -115,11 +117,14 @@ def ask(payload):
     look = {}
     for k, v in (out.get("outlook") or {}).items():
         if k in ("oil", "gas", "power", "carbon") and isinstance(v, dict) and v.get("text"):
-            look[k] = {"tone": v.get("tone") if v.get("tone") in ("up", "down", "flat") else "flat", "text": str(v["text"]).strip()}
+            look[k] = {"tone": v.get("tone") if v.get("tone") in ("up", "down", "flat") else "flat", "text": str(v["text"]).strip(),
+                       "text_en": str(v.get("text_en") or "").strip() or None}
     empty = re.compile(r"(?i)(pas d.impact notable|aucun (événement|impact)|rien de notable|pas d.événement)")   # the proxy's model writes them anyway
     ctx = [c for c in out.get("context", []) if c.get("topic") and c.get("text") and not empty.search(c["text"])][:4]
     for c in ctx:
         c["tone"] = c.get("tone") if c.get("tone") in ("up", "down", "flat") else "flat"
+        c["topic_en"] = str(c.get("topic_en") or "").strip() or None
+        c["text_en"] = str(c.get("text_en") or "").strip() or None
     if not ctx:
         raise ValueError("empty context")
     return ctx, look
@@ -142,7 +147,21 @@ def run(notes=None):
     ctx, look = ask(payload)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
                "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx, "outlook": look}, open(OUT, "w"), ensure_ascii=False, indent=1)
+    remember(today.isoformat(), look)
     print("digest:", [c["topic"] for c in ctx])
+
+
+HIST = os.path.join(ROOT, "data", "history", "digest_outlook.json")
+
+
+def remember(day, look):
+    """the week-ahead call of each day ({day: {market: tone}}), so the site can score it against what prices did"""
+    try:
+        h = json.load(open(HIST))
+    except (OSError, ValueError):
+        h = {}
+    h[day] = {k: v["tone"] for k, v in look.items()}
+    json.dump(dict(sorted(h.items())[-400:]), open(HIST, "w"), indent=0)
 
 
 if __name__ == "__main__":

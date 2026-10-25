@@ -93,73 +93,107 @@
   }
 
 
-  // the week as one card per market: its prices (value, 7-day move, 60-day line) with what explains them, then what the
-  // market notes and the news expect for the coming week; the context (France first) across the top
+  // ── What moved and why: per market, the trend for the week ahead (bubble + its source), what happened and why, without
+  //    the levels the tiles above already show; then whether the market notes' calls came true (data/history/digest_outlook.json)
   const css3 = `
-  .wk2{container-type:inline-size;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.45;color:var(--text2)}
-  .wk2-ctx{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;gap:3px}
-  .wk2-ctx-h{display:flex;align-items:center;gap:8px;font:600 10px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
-  .wk2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .wk2-m{border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;min-width:0}
-  .wk2-mh{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .wk2-mn{font:600 11px 'JetBrains Mono',monospace;color:var(--text);text-transform:uppercase;letter-spacing:.06em}
-  .wk2-q{display:grid;grid-template-columns:minmax(0,1fr) auto 74px;align-items:center;column-gap:10px;padding:2px 0}
-  .wk2-qn{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wk2-qn small{display:block;font-weight:400;font-size:10.5px;color:var(--text3)}
-  .wk2-qv{text-align:right;font:600 15px 'JetBrains Mono',monospace;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}.wk2-qv small{font-size:10px;font-weight:400;color:var(--text3)}
-  .wk2-qv .wk-chip{display:block;margin-top:2px;text-align:right;background:none;padding:0}
-  .wk2-q .wk-sp{height:28px;margin:0}
-  .wk2-l{font-size:12px;border-top:1px dashed var(--border);padding-top:6px;display:flex;flex-direction:column;gap:3px}.wk2-l b{color:var(--text);font-weight:600}
-  .wk2-o{font-size:11.5px;color:var(--text3);margin-top:auto;border-top:1px solid var(--border);padding-top:6px}.wk2-o b{color:var(--text2);font-weight:600}
-  @container (max-width:640px){.wk2-grid{grid-template-columns:1fr}}`;
-  if (!document.getElementById('wk2-css')) { const s = document.createElement('style'); s.id = 'wk2-css'; s.textContent = css3; document.head.appendChild(s); }
+  .why3{display:flex;flex-direction:column;font-size:13px;line-height:1.5;color:var(--text2)}
+  .why3-r{display:grid;grid-template-columns:118px 116px minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid var(--border);align-items:baseline}
+  .why3-r:last-of-type{border-bottom:0}
+  .why3-k{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+  .why3-b .wk-chip{font-size:10.5px} .why3-src{display:block;font-size:10px;color:var(--text3);margin-top:2px}
+  .why3 b{color:var(--text);font-weight:600}
+  .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:2px} .why3-next b{color:var(--text2)}
+  .why3-an{margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12.5px} .why3-an .wk-ok{color:var(--accent)} .why3-an .wk-ko{color:#fbbf24}
+  @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}}`;
+  if (!document.getElementById('why3-css')) { const st = document.createElement('style'); st.id = 'why3-css'; st.textContent = css3; document.head.appendChild(st); }
+  const isFr = () => !window.PKI18n || PKI18n.lang !== 'en';
+  const T = (fr, en) => isFr() ? fr : en;
+  const n1 = (v, d = 1) => v == null || !isFinite(v) ? '–' : v.toFixed(d);   // js/i18n.js writes it the French way
+  const s1 = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d);
+  const pos60 = pts => { const s = since(pts, 60).map(p => p[1]); if (s.length < 10) return null; const v = s[s.length - 1], lo = Math.min(...s), hi = Math.max(...s), r = (v - lo) / ((hi - lo) || 1);
+    return v >= hi - 1e-9 ? T('au plus haut sur 60 jours', 'at a 60-day high') : v <= lo + 1e-9 ? T('au plus bas sur 60 jours', 'at a 60-day low') : r > 0.85 ? T('près du plus haut sur 60 jours', 'near its 60-day high') : r < 0.15 ? T('près du plus bas sur 60 jours', 'near its 60-day low') : null; };
+  const wk = pts => { const l = last(pts); return l ? pct(l[1], back(pts, 7)) : null; };
+  const goCsv = () => cache.go || (cache.go = fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''));
+  function goSeries(txt, year) {
+    const rows = txt.trim().split(/\r?\n/), head = (rows.shift() || '').split(','), ix = k => head.indexOf(k);
+    return rows.map(l => l.split(',')).filter(c => c[ix('product')] === 'GO AIB Renewable' && c[ix('year')] === String(year)).map(c => {
+      const b = parseFloat(c[ix('bid')]), a = parseFloat(c[ix('ask')]); return [c[ix('mail_date')], isFinite(b) && isFinite(a) ? (a + b) / 2 : isFinite(b) ? b : isFinite(a) ? a : null]; })
+      .filter(x => x[1] != null).sort((x, y) => x[0].localeCompare(y[0]));
+  }
 
   async function brief(host) {
-    const [cs, chain, sum, nt] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), window.pkSummary ? window.pkSummary().catch(() => null) : null, notes()]);
+    const [cs, chain, sum, nt, dg, hist, go, auct] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'),
+      window.pkSummary ? window.pkSummary().catch(() => null) : null, notes(), get('market_digest.json'), get('history/digest_outlook.json'), goCsv(), get('go_auctions.json')]);
     const S = cs && cs.series || {}, P = k => (S[k] || {}).points || [];
-    const yrs = chain && chain.FR && chain.FR.years, ck = yrs && Object.keys(yrs).sort()[0];
-    const calP = ck ? yrs[ck].dates.map((d, i) => [d, yrs[ck].values[i]]) : [];
-    const spotP = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null).map(r => [r.d, r.avg]);
-    const wkPct = pts => { const l = last(pts); return l ? pct(l[1], back(pts, 7)) : null; };
-    const mean = a => a.length ? a.reduce((x, p) => x + p[1], 0) / a.length : null;
-    // one price line: name (and where it sits in its 60-day range), value, 7-day move, 60-day line
-    const quote = (name, pts, u, spot) => {
-      if (!pts.length) return '';
-      const l = last(pts), prev7 = since(pts, 13).slice(0, -7);
-      const w = spot ? pct(mean(since(pts, 6)), mean(prev7)) : wkPct(pts), c = wc(w);
-      const rg = spot ? '' : range(pts).replace(/^, /, ''), v = spot ? mean(since(pts, 6)) : l[1];
-      return `<div class="wk2-q" title="${spot ? 'Moyenne des 7 derniers jours contre les 7 précédents' : 'Variation sur 7 jours'} · mini-courbe : 60 jours"><span class="wk2-qn">${name}<small>${spot ? 'moyenne 7 jours' : rg}</small></span>
-        <span class="wk2-qv">${nf(v, v >= 100 ? 1 : 2)} <small>${u}</small><span class="wk-chip ${c}">${c === 'wk-fl' ? '→ stable' : arrow(w) + ' ' + fr(w) + ' %'}</span></span>${spark(since(pts, 60), c)}</div>`;
-    };
-    const dg = await get('market_digest.json'), fresh = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5;
-    const ctxT = fresh ? (dg.context || []) : [], OL = fresh ? (dg.outlook || {}) : {};
-    // the week ahead, market by market: [chip, text]
-    const look = (k, tones) => { const o = OL[k];
-      if (o && o.text) return [`<span class="wk-chip ${o.tone === 'up' ? 'wk-up' : o.tone === 'down' ? 'wk-dn' : 'wk-fl'}">${o.tone === 'up' ? '↑ haussier' : o.tone === 'down' ? '↓ baissier' : '→ neutre'}</span>`, esc(o.text.replace(/\.?\s*$/, '.'))];
-      const up = (tones || []).filter(t => t > 0).length, dn = (tones || []).filter(t => t < 0).length;
-      return !up && !dn ? ['', 'pas de signal pour la semaine à venir.'] : [`<span class="wk-chip ${up > dn ? 'wk-up' : dn > up ? 'wk-dn' : 'wk-fl'}">${up > dn ? '↑ haussier' : dn > up ? '↓ baissier' : '→ partagé'}</span>`, 'd’après les commentaires de marché reçus.']; };
-    const M = [];   // [name, quotes html, lines[], [chip, text]]
-    if (P('brent').length) M.push(['Pétrole', quote('Brent', P('brent'), '$/b'), [], look('oil', nt.brent)]);
-    if (P('ttf').length) { const st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
-      M.push(['Gaz', quote('TTF', P('ttf'), '€/MWh'), st ? [`<span><b>Stocks UE :</b> ${nf(st[1], 1)} %${ly != null ? `, ${fr(st[1] - ly)} pts sur un an${st[1] < ly ? ' : moins de marge pour l’hiver, un soutien aux prix' : ' : marge confortable pour l’hiver'}` : ''}.</span>`] : [], look('gas', nt.ttf)]); }
-    if (calP.length || spotP.length) {
-      const lines = [];
-      if (calP.length) { const l = last(calP), w0 = back(calP, 7), dFR = w0 != null ? l[1] - w0 : null;
-        const ty = cs && cs.calYears && cs.calYears.ttf && cs.calYears.ttf[ck], tP = ty ? ty.dates.map((d, i) => [d, ty.values[i]]) : null, dT = tP ? last(tP)[1] - back(tP, 7) : null, gas = dT != null ? dT * 2 : null;
-        if (dFR != null) lines.push(`<span><b>Cal ${ck} :</b> ${fr(dFR, 2)} €/MWh sur 7 jours.</span>`);
-        if (gas != null && dFR != null) lines.push(`<span><b>Part du gaz :</b> le gaz Cal ${ck} (${fr(dT, 2)} €/MWh) pèse ≈ ${fr(gas)} €/MWh sur le coût d’une centrale gaz : ${Math.abs(dFR - gas) < 1 ? 'le mouvement français vient surtout du gaz' : dFR - gas > 0 ? 'la France monte plus que le gaz seul (nucléaire, demande)' : 'la France monte moins que le gaz seul (nucléaire, demande plus détendus)'}.</span>`); }
-      if (spotP.length) { const neg = ((sum.zones.FR) || []).slice(-7).reduce((a, r) => a + (r.negH || 0), 0), ls = last(spotP);
-        lines.push(`<span><b>Spot :</b> ${nf(ls[1], 1)} €/MWh le ${new Date(ls[0] + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '')}${neg ? `, ${nf(neg, neg % 1 ? 1 : 0)} h de prix négatifs sur 7 jours` : ''}.</span>`); }
-      M.push(['Électricité France', quote(ck ? 'Cal ' + ck : 'Cal+1', calP, '€/MWh') + quote('Spot', spotP, '€/MWh', true), lines, look('power', nt.cal)]); }
-    if (P('eua').length) { const eua = last(P('eua')), d = eua[1] - (back(P('eua'), 7) || eua[1]);
-      M.push(['Carbone et charbon', quote('EUA', P('eua'), '€/t') + quote('Charbon API2', P('coal'), '$/t'), [`<span><b>Effet du CO₂ :</b> ${Math.abs(d) < 0.5 ? 'quasi nul' : `${fr(0.37 * d)} €/MWh`} sur le coût d’une centrale gaz.</span>`], look('carbon', nt.eua)]); }
-    if (!M.length) { host.innerHTML = '<div class="fuel-note">Données de marché indisponibles.</div>'; return; }
-    let ctx = '';
+    const fresh = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5, ctxT = fresh ? (dg.context || []) : [], OL = fresh ? (dg.outlook || {}) : {};
+    const NOTE = T('notes de marché', 'market notes'), PRICE = T('tendance des prix', 'price trend');
+    const chip = t => `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}">${t === 'up' ? '↑ ' + T('haussier', 'bullish') : t === 'down' ? '↓ ' + T('baissier', 'bearish') : '→ ' + T('neutre', 'neutral')}</span>`;
+    const byPrice = c => c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
+    const txt = o => o ? esc(String((isFr() ? o.text : (o.text_en || o.text)) || '').replace(/\.?\s*$/, '.')) : '';
+    // the bubble: the notes' call for the week ahead when there is one, else the direction prices took over 7 days
+    const look = (key, tones, move) => { const o = OL[key];
+      if (o && o.tone) return [o.tone, NOTE, o];
+      const up = (tones || []).filter(x => x > 0).length, dn = (tones || []).filter(x => x < 0).length;
+      if (up || dn) return [up > dn ? 'up' : dn > up ? 'down' : 'flat', NOTE, null];
+      return [byPrice(move), PRICE, null]; };
+    const R = [];   // [label, [tone, source, outlook], text]
     if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
-      ctx = `<div class="wk2-ctx"><div class="wk2-ctx-h">Contexte <span class="wk-chip ${u > 0 ? 'wk-up' : u < 0 ? 'wk-dn' : 'wk-fl'}">${u > 0 ? '↑ haussier' : u < 0 ? '↓ baissier' : '→ neutre'}</span></div>` +
-        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`).join('') +
-        (nt.ctx.length ? `<span class="wk-l"><b>Analystes :</b> ${verdict(nt.ctx, null, true).replace(/^.*les analystes voient/, 'ils voient').replace(/<\/?span[^>]*>/g, '')}.</span>` : '') + '</div>'; }
-    host.innerHTML = `<div class="wk wk2">${ctx}<div class="wk2-grid">${M.map(([n, q, ls, [chip, txt]]) => `<div class="wk2-m"><div class="wk2-mh"><span class="wk2-mn">${n}</span>${chip}</div>${q}${ls.length ? `<div class="wk2-l">${ls.join('')}</div>` : ''}<div class="wk2-o"><b>Semaine à venir :</b> ${txt}</div></div>`).join('')}</div>
-      <div class="wk-foot">Rouge = prix en hausse, vert = en baisse ; mini-courbes sur 60 jours. « Semaine à venir » : ce que les commentaires de marché des fournisseurs d’énergie et l’actualité laissent attendre.</div></div>`;
+      R.push([T('Contexte', 'Context'), [u > 0 ? 'up' : u < 0 ? 'down' : 'flat', NOTE, null],
+        ctxT.map(c => `<b>${esc(isFr() ? c.topic : (c.topic_en || c.topic))}</b> : ${esc(String((isFr() ? c.text : (c.text_en || c.text)) || '').replace(/\.?\s*$/, '.'))}`).join(' ')]); }
+    // power: the next calendar year against what gas alone would add, the two following years, the spot's direction
+    const yrs = chain && chain.FR && chain.FR.years, ys = yrs ? Object.keys(yrs).sort().slice(0, 3) : [];
+    if (ys.length) {
+      const pts = y => yrs[y].dates.map((d, i) => [d, yrs[y].values[i]]), p1 = pts(ys[0]), l = last(p1), w0 = back(p1, 7), dFR = w0 != null ? l[1] - w0 : null;
+      const ty = cs && cs.calYears && cs.calYears.ttf && cs.calYears.ttf[ys[0]], tP = ty ? ty.dates.map((d, i) => [d, ty.values[i]]) : null, dT = tP ? last(tP)[1] - back(tP, 7) : null, gas = dT != null ? dT * 2 : null;
+      const parts = [];
+      if (gas != null && dFR != null) parts.push(T(`Sur le Cal ${ys[0]}, le gaz seul pèserait <b>≈ ${s1(gas)} €</b> sur la semaine : `, `On Cal ${ys[0]}, gas alone would weigh <b>≈ ${s1(gas)} €</b> on the week: `) +
+        (Math.abs(dFR - gas) < 1 ? T('le mouvement français vient du gaz.', 'the French move comes from gas.') : dFR - gas > 0 ? T('la France monte plus que le gaz seul (nucléaire, demande).', 'France rises more than gas alone (nuclear, demand).') : T('la France monte moins que le gaz seul (nucléaire et demande détendus).', 'France rises less than gas alone (nuclear and demand relaxed).')));
+      if (ys.length > 1) { const w1 = wk(p1), wl = ys.slice(1).map(y => wk(pts(y))).filter(v => v != null);
+        if (wl.length && w1 != null) parts.push(Math.max(...wl.map(Math.abs)) < Math.abs(w1) / 2 ? T(`Les années ${ys.slice(1).join(' et ')} bougent beaucoup moins.`, `${ys.slice(1).join(' and ')} move much less.`) : T(`Les années ${ys.slice(1).join(' et ')} suivent.`, `${ys.slice(1).join(' and ')} follow.`)); }
+      const sp = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null), a7 = sp.slice(-7), b7 = sp.slice(-14, -7);
+      if (a7.length && b7.length) { const m = a7.reduce((x, r) => x + r.avg, 0) / a7.length, mb = b7.reduce((x, r) => x + r.avg, 0) / b7.length;
+        parts.push(m < mb * 0.9 ? T('Le spot recule sur la semaine.', 'Spot eases over the week.') : m > mb * 1.1 ? T('Le spot monte sur la semaine.', 'Spot rises over the week.') : T('Le spot reste stable sur la semaine.', 'Spot holds over the week.')); }
+      R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' ')]);
+    }
+    const ttf = P('ttf'), st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
+    if (ttf.length) { const ps = pos60(ttf), parts = [];
+      if (ps) parts.push(T('TTF ', 'TTF ') + ps + '.');
+      if (st && ly != null) parts.push(T(`Stocks UE <b>${s1(st[1] - ly)} pts</b> sur un an`, `EU storage <b>${s1(st[1] - ly)} pts</b> on a year`) + (st[1] < ly ? T(' : moins de marge pour l’hiver, un soutien aux prix.', ': less margin for winter, a support for prices.') : T(' : marge confortable pour l’hiver.', ': comfortable margin for winter.')));
+      R.push([T('Gaz', 'Gas'), look('gas', nt.ttf, wk(ttf)), parts.join(' ')]); }
+    const br = P('brent');
+    if (br.length) { const ps = pos60(br); R.push([T('Pétrole', 'Oil'), look('oil', nt.brent, wk(br)), ps ? 'Brent ' + ps + '.' : '']); }
+    const eua = P('eua'), coal = P('coal');
+    if (eua.length) { const e = last(eua), d = e[1] - (back(eua, 7) || e[1]), parts = [];
+      parts.push(T(`EUA : <b>${Math.abs(d) < 0.5 ? T('effet quasi nul', '') : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' sur le coût d’une centrale gaz'} sur la semaine.`, `EUA: <b>${Math.abs(d) < 0.5 ? 'almost no effect' : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' on a gas plant’s cost'} over the week.`));
+      const c = last(coal); if (c) { const ps = pos60(coal); parts.push(T(`Charbon API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`, `Coal API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`) + (ps ? ', ' + ps : '') + '.'); }
+      R.push([T('Carbone, charbon', 'Carbon, coal'), look('carbon', nt.eua, wk(eua)), parts.join(' ')]); }
+    if (go) {
+      const y = new Date().getUTCFullYear(), g = goSeries(go, y + 1), parts = [];
+      if (g.length > 2) { let k = 0; const sgn = Math.sign(g[g.length - 1][1] - g[g.length - 2][1]); for (let i = g.length - 1; i > 0 && Math.sign(g[i][1] - g[i - 1][1]) === sgn && sgn; i--) k++;
+        if (sgn) parts.push(T(`${k} semaine${k > 1 ? 's' : ''} de ${sgn < 0 ? 'baisse' : 'hausse'} sur le Cal ${y + 1}.`, `${k} week${k > 1 ? 's' : ''} ${sgn < 0 ? 'down' : 'up'} on Cal ${y + 1}.`)); }
+      const a = auct && Array.isArray(auct.auctions) && auct.auctions[auct.auctions.length - 1];
+      if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
+        if (vol) parts.push(T(`Dernière enchère de l’État (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `Last state auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
+      const c4 = g.length > 4 ? (g[g.length - 1][1] / g[g.length - 5][1] - 1) * 100 : null;
+      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.join(' ')]);
+    }
+    if (!R.length) { host.innerHTML = `<div class="fuel-note">${T('Données de marché indisponibles.', 'Market data not available.')}</div>`; return; }
+    // the notes' record: each day's call against what the price did over the following 7 days (right: up and +1 % or more,
+    // down and −1 % or less, flat and within ±2 %), one call per week
+    let an = '';
+    const H = hist || {}, MK = { oil: P('brent'), gas: ttf, carbon: eua, power: ys.length ? yrs[ys[0]].dates.map((d, i) => [d, yrs[ys[0]].values[i]]) : [] };
+    const after = (pts, d, days) => { const i = pts.findIndex(p => p[0] >= d); if (i < 0) return null; const t0 = new Date(d + 'T12:00:00Z'); t0.setUTCDate(t0.getUTCDate() + days); const k = iso(t0); const j = pts.findIndex(p => p[0] >= k); return j < 0 ? null : (pts[j][1] / pts[i][1] - 1) * 100; };
+    const weeks = {}; Object.keys(H).sort().forEach(d => { const t0 = new Date(d + 'T12:00:00Z'); weeks[t0.getUTCFullYear() + '-' + Math.floor((t0 - Date.UTC(t0.getUTCFullYear(), 0, 1)) / 6048e5)] = d; });
+    let ok = 0, all = 0, lastLine = '';
+    Object.values(weeks).forEach(d => Object.entries(H[d]).forEach(([m, tone]) => { const c = MK[m] && after(MK[m], d, 7); if (c == null) return;
+      const right = tone === 'up' ? c >= 1 : tone === 'down' ? c <= -1 : Math.abs(c) <= 2; all++; if (right) ok++;
+      lastLine = T(`le ${new Date(d + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}, ${{ oil: 'pétrole', gas: 'gaz', power: 'électricité', carbon: 'carbone' }[m]} ${tone === 'up' ? 'en hausse' : tone === 'down' ? 'en baisse' : 'stable'} : <b class="${right ? 'wk-ok' : 'wk-ko'}">${right ? '✓ vu juste' : '✗ raté'}</b> (${s1(c)} %)`,
+        `on ${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}, ${m} ${tone === 'up' ? 'up' : tone === 'down' ? 'down' : 'flat'}: <b class="${right ? 'wk-ok' : 'wk-ko'}">${right ? '✓ right' : '✗ wrong'}</b> (${s1(c)} %)`); }));
+    const first = Object.keys(H).sort()[0];
+    an = all >= 6 ? T(`<b>Les notes de marché ont-elles vu juste ?</b> ${ok} fois sur ${all} sur ${Object.keys(weeks).length} semaines ; dernier appel jugé : ${lastLine}.`, `<b>Did the market notes get it right?</b> ${ok} times out of ${all} over ${Object.keys(weeks).length} weeks; last call judged: ${lastLine}.`)
+      : first ? T(`<b>Les notes de marché ont-elles vu juste ?</b> Bilan dès que 3 semaines d’appels auront été comparées aux prix (suivi depuis le ${new Date(first + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`,
+        `<b>Did the market notes get it right?</b> The score shows once 3 weeks of calls can be checked against prices (tracked since ${new Date(first + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`) : '';
+    host.innerHTML = `<div class="why3">${R.map(([k, [tone, src, o], text]) => `<div class="why3-r"><span class="why3-k">${k}</span><span class="why3-b">${chip(tone)}<span class="why3-src">${src}</span></span><span>${text}${o ? `<span class="why3-next"><b>${T('Semaine à venir', 'Week ahead')} :</b> ${txt(o)}</span>` : ''}</span></div>`).join('')}${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
   }
 
   async function next30(host) {
@@ -201,8 +235,8 @@
   }
 
   if (window.PKW) {
-    PKW.register({ id: 'market-brief', kind: 'html', title: 'Marchés de l’énergie · la semaine', category: 'intel', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
-      desc: 'Ce qui a bougé cette semaine sur le pétrole, le gaz, le carbone et l’électricité, et pourquoi : les prix et leur tendance, le contexte en France et dans le monde, et si les analystes avaient vu juste.', html: brief });
+    PKW.register({ id: 'market-brief', kind: 'html', title: 'Energy markets · what moved and why', category: 'intel', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
+      desc: 'Power, gas, oil, carbon, coal and guarantees of origin: what moved this week and why, the trend for the week ahead (market notes, or prices without a note), and whether the notes’ calls came true.', html: brief });
     PKW.register({ id: 'next-30-days', kind: 'html', title: 'France power · the next 30 days', category: 'forwards', page: 'morning', source: 'PowerKlock', size: { w: 6, h: 8 },
       desc: 'What the coming month looks like for French power: month-ahead forward, weather week by week against normal (temperature, wind, sun), nuclear availability and gas storage, with what each means for prices.', html: next30 });
   }
