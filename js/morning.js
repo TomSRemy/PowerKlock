@@ -376,23 +376,47 @@ function _mrnSpot(k, el) {
 // 48 hours: today, then tomorrow (real, or hatched with the forecast until it is published)
 function _mrnSpotChart(k, cid, prob) {
   if (!document.getElementById(cid) || !window._fuelChart) return;
+  // three days: yesterday, today, tomorrow (its price once published around 13:00, our forecast before); for each day its
+  // average (dashed), its cheapest and dearest hour (dots), its cheapest and dearest 3-hour window (shaded), and a label on top
   const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
-  const tod = (k.today || []).slice(0, 24), tmr = k.tomorrow ? k.tomorrow.slice(0, 24) : null, fc = !tmr && k.fc ? k.fc.price.slice(0, 24) : null;
-  const lbl = [];
-  [k.t, k.tm].forEach(d => { for (let h = 0; h < 24; h++) lbl.push(h === 0 ? _mDay(d) : H(h)); });
-  const pad = a => a.concat(Array(24 - a.length).fill(null));
-  const ds = [_fuelLineDs(_mT('Prix réel', 'Actual price'), pad(tod).concat(tmr ? pad(tmr) : Array(24).fill(null)), '#14D3A9', { borderWidth: 2.2, spanGaps: false, yAxisID: 'y' })];
-  if (fc) ds.push(_fuelLineDs(_mT('Prévision', 'Forecast'), Array(24).fill(null).concat(pad(fc)), '#7FC8F8', { borderWidth: 1.8, borderDash: [5, 4], yAxisID: 'y' }));
-  if (prob && fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: Array(24).fill(null).concat(pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
-    backgroundColor: Array(24).fill(null).concat(pad(k.fc.prob).map(p => p != null && p >= .5 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.3)')), borderWidth: 0, yAxisID: 'y2', order: 5 });
-  const zero = pad(tod).concat(tmr ? pad(tmr) : Array(24).fill(null)).map(v => v != null && v <= 0 ? 100 : null);
+  const yd = (k.yday || []).slice(0, 24), tod = (k.today || []).slice(0, 24), tmr = k.tomorrow ? k.tomorrow.slice(0, 24) : null, fc = !tmr && k.fc ? k.fc.price.slice(0, 24) : null;
+  const days = [k.y, k.t, k.tm], lbl = [];
+  days.forEach(d => { for (let h = 0; h < 24; h++) lbl.push(h === 0 ? _mDay(d) : H(h)); });
+  const pad = a => a.concat(Array(24 - a.length).fill(null)), N24 = Array(24).fill(null);
+  const real = pad(yd).concat(pad(tod), tmr ? pad(tmr) : N24);
+  const ds = [_fuelLineDs(_mT('Prix réel', 'Actual price'), real, '#14D3A9', { borderWidth: 2.2, spanGaps: false, yAxisID: 'y' })];
+  if (fc) ds.push(_fuelLineDs(_mT('Prévision', 'Forecast'), N24.concat(N24, pad(fc)), '#7FC8F8', { borderWidth: 1.8, borderDash: [5, 4], yAxisID: 'y' }));
+  if (prob && fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: N24.concat(N24, pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
+    backgroundColor: N24.concat(N24, pad(k.fc.prob).map(p => p != null && p >= .5 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.3)')), borderWidth: 0, yAxisID: 'y2', order: 5 });
+  const zero = real.map(v => v != null && v <= 0 ? 100 : null);
   if (zero.some(v => v)) ds.push({ type: 'bar', label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: zero, backgroundColor: 'rgba(20,211,169,.12)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, yAxisID: 'y2', order: 9 });
+  // per day: average, extremes, 3-hour windows, label
+  const series = [yd, tod, tmr || fc], ann = {}, avgLine = Array(72).fill(null), lo = Array(72).fill(null), hi = Array(72).fill(null);
+  let prevAvg = null;
+  series.forEach((arr, di) => {
+    const v = (arr || []).slice(0, 24); if (v.filter(x => x != null).length < 20) { prevAvg = null; return; }
+    const off = di * 24, avg = _mrnMean(v), win = s => { let best = null; for (let h = 0; h <= 21; h++) { const w = v.slice(h, h + 3); if (w.some(x => x == null)) continue; const m = w.reduce((a, b) => a + b, 0) / 3; if (!best || (s < 0 ? m < best.m : m > best.m)) best = { h, m }; } return best; };
+    for (let h = 0; h < 24; h++) avgLine[off + h] = Math.round(avg * 10) / 10;
+    const mn = Math.min(...v.filter(x => x != null)), mx = Math.max(...v.filter(x => x != null)), iMin = v.indexOf(mn), iMax = v.indexOf(mx);
+    lo[off + iMin] = mn; hi[off + iMax] = mx;
+    const t = win(-1), p = win(1), isFc = di === 2 && !tmr;
+    if (t) ann['t' + di] = { type: 'box', xMin: off + t.h - .5, xMax: off + t.h + 2.5, yScaleID: 'y', backgroundColor: 'rgba(20,211,169,.10)', borderWidth: 0, drawTime: 'beforeDatasetsDraw' };
+    if (p) ann['p' + di] = { type: 'box', xMin: off + p.h - .5, xMax: off + p.h + 2.5, yScaleID: 'y', backgroundColor: 'rgba(237,105,101,.10)', borderWidth: 0, drawTime: 'beforeDatasetsDraw' };
+    const ch = prevAvg ? (avg / prevAvg - 1) * 100 : null;
+    ann['l' + di] = { type: 'label', xValue: off + 11.5, yValue: (ctx) => ctx.chart.scales.y.max, yAdjust: 10, position: { y: 'start' }, color: C_TX2, font: { size: 10.5, family: "'JetBrains Mono', monospace" },
+      content: (`${_mDay(days[di])}${isFc ? _mT(' (prévision)', ' (forecast)') : ''} · ${_mN(avg, 1)} €${ch == null ? '' : ' (' + _mS(ch, 0) + ' %)'}`).replace(/(\d)\.(\d)/g, _mrnFr() ? '$1,$2' : '$1.$2') };   // drawn on the canvas: French decimals here
+    prevAvg = avg;
+  });
+  ds.push(_fuelLineDs(_mT('Moyenne du jour', 'Day average'), avgLine, 'rgba(184,201,217,.7)', { borderWidth: 1.1, borderDash: [4, 4], pointRadius: 0, yAxisID: 'y', spanGaps: false }));
+  ds.push({ type: 'line', label: _mT('Heure la moins chère', 'Cheapest hour'), data: lo, showLine: false, pointRadius: 4.5, pointBackgroundColor: '#14D3A9', pointBorderColor: '#0A0F14', pointBorderWidth: 1.5, yAxisID: 'y' });
+  ds.push({ type: 'line', label: _mT('Heure la plus chère', 'Dearest hour'), data: hi, showLine: false, pointRadius: 4.5, pointBackgroundColor: '#ED6965', pointBorderColor: '#0A0F14', pointBorderWidth: 1.5, yAxisID: 'y' });
   const nowH = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Paris' }).format(new Date());
-  _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({
+  _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({ layout: { padding: { top: 18 } },
     scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }),
       y: _fuelAxis('€/MWh'), y2: _fuelAxis('%', { position: 'right', min: 0, max: 100, grid: { display: false }, display: !!(prob && fc) }) },
-    plugins: { legend: { display: !!prob, position: 'bottom', labels: { color: C_TX2, font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
-      pkFcZone: !tmr ? { from: 24, now: nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-today-tomorrow' + (prob ? '' : '-quick'));
+    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10.5 }, boxWidth: 12, padding: 10, filter: it => !/^_/.test(it.text) } },
+      annotation: { annotations: ann },
+      pkFcZone: !tmr ? { from: 48, now: 24 + nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: 24 + nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-3-days' + (prob ? '' : '-quick'));
 }
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
@@ -867,10 +891,9 @@ async function renderMorning() {
     'hs-morning-fc': () => { if (!window.PKF) return; PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r)); PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } },
     'hs-morning-2': () => {
       PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
-      PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
       // the CATE presentation's price charts not shown elsewhere on Today
       if (PKW.get('fr-spot-30d')) PKW.draw('fr-spot-30d', 'mrn-sp30', {}).then(r => sub('mrn-sp30-sub', r));
-      if (PKW.get('fuel-coal-oil')) PKW.draw('fuel-coal-oil', 'mrn-coal', {}).then(r => sub('mrn-coal-sub', r));
+      if (PKW.get('fr-cal-drivers')) PKW.draw('fr-cal-drivers', 'mrn-drv', { win: '6M', country: 'FR' }).then(r => sub('mrn-drv-sub', r));
       // power and gas side by side with the same chart and the same table: calendar years, front month and front quarter, 3 months;
       // the tables without seasons unless asked (one box ticks both)
       const fp = { win: '3M', kinds: 'year,quarter,month', front: 1 };
@@ -883,8 +906,8 @@ async function renderMorning() {
       tables();
     },
     'hs-morning-fund': () => {   // the CATE presentation's supply and demand charts
-      [['fr-cal-drivers', 'mrn-drv', { win: '6M', country: 'FR' }], ['gas-storage-years', 'mrn-gsy', {}], ['nuc-monthly-years', 'mrn-nucy', {}], ['hydro-reservoirs', 'mrn-hyd', { country: 'FR' }],
-        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['fr-load-normal', 'mrn-fload', {}], ['remit-unavail', 'mrn-fremit', { period: '6M' }], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
+      [['gas-storage-years', 'mrn-gsy', {}], ['nuc-monthly-years', 'mrn-nucy', {}], ['hydro-reservoirs', 'mrn-hyd', { country: 'FR' }],
+        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['fr-load-normal', 'mrn-fload', {}], ['remit-unavail', 'mrn-fremit', { period: '6M' }], ['fuel-coal-oil', 'mrn-coal', {}], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
         .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {
