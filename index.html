@@ -2902,6 +2902,74 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
     </div>
 
+    <div class="page" id="page-replay">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power system</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Replay a day</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge">France · ENTSO-E · RTE éCO2mix · quarter-hourly</span></div>
+        </div>
+      </div>
+      <div class="rp-wrap" id="rp-root">
+        <div class="rp-ctl" id="rp-ctl"></div>
+        <div class="rp-days" id="rp-days"></div>
+        <div class="rp-stage"><canvas id="rp-canvas" width="1280" height="720" aria-label="Replay of the day"></canvas></div>
+        <div class="rp-bar">
+          <button type="button" class="pk-btn-primary" id="rp-play" aria-pressed="false">Play</button>
+          <span class="cmp-dates" id="rp-time">--:--</span>
+          <input type="range" id="rp-scrub" min="0" max="95" value="95" aria-label="Time of day">
+          <button type="button" class="pk-btn-ghost" id="rp-export">Export video</button>
+        </div>
+        <p class="cmp-note" id="rp-note"></p>
+        <div class="rp-events" id="rp-events"></div>
+      </div>
+    </div>
+    <div class="page" id="page-compare">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Comparator</span></div>
+          <div class="pr-tabs-bar-filters"><span class="cmp-dates">From <input type="date" id="cmp-from" aria-label="From"> To <input type="date" id="cmp-to" aria-label="To"></span></div>
+        </div>
+      </div>
+      <div class="cmp-wrap" id="cmp-root">
+        <aside class="cmp-side">
+          <div class="chart-container fuel-card" style="margin:0">
+            <div class="table-title">On the chart</div>
+            <div id="cmp-sel" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+          </div>
+          <div class="chart-container fuel-card" style="margin:0">
+            <label class="table-title" for="cmp-q">Add a series</label>
+            <input type="search" id="cmp-q" class="cmp-search" placeholder="Cal, TTF, capture, nuclear…" style="margin:8px 0 10px">
+            <div class="cmp-cat" id="cmp-cat"></div>
+          </div>
+        </aside>
+        <div class="cmp-mainc">
+          <div class="cmp-bar" id="cmp-bar"></div>
+          <section class="chart-container fuel-card" style="margin:0">
+            <div class="fuel-card-head"><div><div class="table-title">Comparison</div><div class="fuel-card-sub" id="cmp-main-sub"></div></div><span class="source-badge">PowerKlock</span></div>
+            <div class="cmp-auto" id="cmp-auto"></div>
+            <div style="position:relative;height:420px;margin-top:10px"><canvas id="cmp-chart" style="width:100%;height:420px"></canvas></div>
+          </section>
+          <div class="cmp-grid2">
+            <section class="chart-container fuel-card" style="margin:0">
+              <div class="fuel-card-head"><div><div class="table-title">What moves together</div><div class="fuel-card-sub">Correlation matrix of the series on the chart</div></div></div>
+              <div id="cmp-matrix"></div>
+            </section>
+            <section class="chart-container fuel-card" style="margin:0">
+              <div class="fuel-card-head"><div><div class="table-title">What fits the first series best</div><div class="fuel-card-sub">Every series of the catalogue, ranked</div></div><button type="button" class="pk-btn-ghost" id="cmp-rank-go">Run</button></div>
+              <div id="cmp-rank"><p class="cmp-note">Ranks every series of the catalogue by how closely its day-to-day changes follow the first series on the chart.</p></div>
+            </section>
+            <section class="chart-container fuel-card" style="margin:0">
+              <div class="fuel-card-head"><div><div class="table-title">Who moves first</div><div class="fuel-card-sub">First two series, shifted by −5 to +5 days</div></div></div>
+              <div id="cmp-lag"></div>
+            </section>
+            <section class="chart-container fuel-card" style="margin:0">
+              <div class="fuel-card-head"><div><div class="table-title">The link over time</div><div class="fuel-card-sub">First two series, 60-day rolling correlation</div></div></div>
+              <div id="cmp-roll"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="page" id="page-converter">
       <div class="page-header">
         <div>
@@ -4592,6 +4660,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <script src="js/market-brief.js"></script>
 <script src="js/today-widgets.js"></script>
 <script src="js/dash-widgets.js"></script>
+<script src="js/compare.js"></script>
+<script src="js/replay.js"></script>
 <script src="js/scope.js"></script>
 <script src="js/views.js"></script>
 <script src="js/pptx-export.js"></script>
