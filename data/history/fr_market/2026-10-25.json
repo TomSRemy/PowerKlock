@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-25",
+ "countries": {
+  "FR": {
+   "spot": 35.46
+  },
+  "UK": {
+   "spot": 18.23
+  },
+  "DE": {
+   "spot": 14.9
+  },
+  "NL": {
+   "spot": 33.16
+  }
+ },
+ "marketInsightsHtml": "<p>La disponibilité du nucléaire français se resserre encore.</p>",
+ "marketInsights": {
+  "gas": "<p>Gas prices are higher again this morning, with the NBP front-month opening at 223.96 p/therm and reaching a high of 230.63 p/therm so far, its strongest level of the week. That follows a volatile session on Thursday, when the contract opened at 214.63 p/therm, ranged between 214.56 and 225.28 p/therm, and closed at 222.83 p/therm. The TTF front-month has also pushed higher, opening at &euro;90.50/MWh and hitting &euro;99.295/MWh. On Thursday it opened at &euro;87.395/MWh, swung between a high of &euro;99.57/MWh and a low of &euro;81.164/MWh, and closed at &euro;90.565/MWh.&nbsp;</p>\n<p>Geopolitics remains the main source of support. The most recent developments are that the US has ordered non-emergency government employees and their families out of Saudi Arabia as Houthi attacks escalate, and the US and Israeli militaries have reportedly drawn up plans for renewed strikes on Iran after the 3 November midterms.&nbsp;</p>\n<p>Storage remains a concern. EU stocks are 74.62% full, still below the revised November target of 80% and approximately 15 percentage points below the five-year norm, with France at 87.21%, Germany at 61.09% and the Netherlands at 64.93%. Injections have all but stalled, with the latest gas day adding just 0.01 percentage points, against the 0.41 a day needed to reach the target.&nbsp;</p>\n<p>Today&rsquo;s temperature forecasts show conditions holding steady through the weekend before a sharp rise across the region around Tuesday and Wednesday of next week, which should temper heating demand. Temperatures are then expected to fall back from the start of November, which could lift demand again and offer some support to prices.</p>",
+  "power": "<p>Power prices are higher again this morning, with the UK front-month baseload reaching a high of &pound;180/MWh so far, its strongest level of the week. That follows a steady session on Thursday, when the contract moved within a narrow range of &pound;172.30 to &pound;176.41/MWh and closed at &pound;175.50/MWh. German front-month baseload has also pushed higher, reaching &euro;206.45/MWh so far today, after closing Thursday at &euro;199.42/MWh.&nbsp;</p>\n<p>Contracts rose on Thursday as Middle East supply risk lifted gas, with early-November contracts gaining fastest on forecasts for lower wind and colder weather. Reports that the US and Israel are planning renewed strikes on Iran after the 3 November midterms added to the risk, while President Trump said Washington was not negotiating with Tehran, reviving the threat of disruption to LNG shipments through the Strait of Hormuz.&nbsp;</p>\n<p>French nuclear availability is tightening further. Unavailability for the rest of October was revised up to an average of 20.7 GW, up 500 MW on the previous schedule and around 6 GW higher than at the same point last year, with new outages and extensions also added into November. The 1.3 GW Cattenom 2 reactor is due to disconnect fully from Friday until at least 26 October, while the 1.5 GW Chooz 2 reactor is not scheduled to return until at least 1 November, having been offline since early July.&nbsp;</p>\n<p>Brent crude started the week around $107/bbl and fell on Tuesday on hopes of US-Iran diplomacy. It then climbed above $114/bbl today, close to the four-year high of $114.44 set on 4 May. Houthi attacks on Saudi targets, including the Red Sea port of Yanbu, an oil field and an airport, have raised supply risks across the Middle East.</p>"
+ }
+}
