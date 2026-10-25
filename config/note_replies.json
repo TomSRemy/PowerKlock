@@ -38,5 +38,25 @@
  "10": {
   "status": "done",
   "reply": "Oui, c’était la jauge du nucléaire (passée dans les tuiles). À la place : le forward du mois prochain face au spot du mois en cours."
+ },
+ "11": {
+  "status": "done",
+  "reply": "Fait : chaque tuile montre la variation à J-1 et sur 7 jours ; en bas de la tuile Cal, « Cal 28 » et « Cal 29 » écrits ainsi, un peu plus gros."
+ },
+ "12": {
+  "status": "done",
+  "reply": "Fait : la ligne GO donne les prix courtier (Cal 26, 27, 28 avec leur variation sur la semaine) et la dernière enchère GO France (prix moyen, volume)."
+ },
+ "13": {
+  "status": "done",
+  "reply": "Fait : en tête de Système électrique, 5 tuiles au dernier quart d’heure RTE : CO₂, consommation, nucléaire, éolien + solaire (part de la consommation), échanges."
+ },
+ "14": {
+  "status": "done",
+  "reply": "La prévision de demain ne sortait qu’avec le passage de 13 h 30, presque en même temps que le vrai prix. Le modèle tourne maintenant chaque heure de 8 h 30 à 12 h 30. Le fond hachuré reste sur demain tant que le prix n’est pas publié, avec la prévision dès qu’elle existe."
+ },
+ "15": {
+  "status": "done",
+  "reply": "Fait : un sujet par ligne dans le contexte (France, Golfe, Norvège…)."
  }
 }

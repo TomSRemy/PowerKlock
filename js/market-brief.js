@@ -104,6 +104,7 @@
   .why3-k .why3-src{text-transform:none;letter-spacing:0;font-family:Inter,sans-serif;font-weight:400;margin-top:0}
   .why3-b .wk-chip{font-size:10.5px} .why3-src{display:block;font-size:10px;color:var(--text3);margin-top:2px}
   .why3 b{color:var(--text);font-weight:600}
+  .why3-line{display:block} .why3-line+.why3-line{margin-top:4px}
   .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:2px} .why3-next b{color:var(--text2)}
   .why3-an{margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12.5px} .why3-an .wk-ok{color:var(--accent)} .why3-an .wk-ko{color:#fbbf24}
   @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}.why3-k{flex-direction:row;align-items:center;flex-wrap:wrap}}`;
@@ -141,7 +142,7 @@
     const R = [];   // [label, [tone, source, outlook], text]
     if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
       R.push([T('Contexte', 'Context'), [u > 0 ? 'up' : u < 0 ? 'down' : 'flat', NOTE, null],
-        ctxT.map(c => `<b>${esc(isFr() ? c.topic : (c.topic_en || c.topic))}</b> : ${esc(String((isFr() ? c.text : (c.text_en || c.text)) || '').replace(/\.?\s*$/, '.'))}`).join(' ')]); }
+        ctxT.map(c => `<span class="why3-line"><b>${esc(isFr() ? c.topic : (c.topic_en || c.topic))}</b> : ${esc(String((isFr() ? c.text : (c.text_en || c.text)) || '').replace(/\.?\s*$/, '.'))}</span>`).join('')]); }
     // power: the next calendar year against what gas alone would add, the two following years, the spot's direction
     const yrs = chain && chain.FR && chain.FR.years, ys = yrs ? Object.keys(yrs).sort().slice(0, 3) : [];
     if (ys.length) {
@@ -171,11 +172,14 @@
       R.push([T('Carbone, charbon', 'Carbon, coal'), look('carbon', nt.eua, wk(eua)), parts.join(' ')]); }
     if (go) {
       const y = new Date().getUTCFullYear(), g = goSeries(go, y + 1), parts = [];
+      // broker prices (weekly mid), the production years quoted
+      const yrsGo = [y, y + 1, y + 2].map(yy => [yy, goSeries(go, yy)]).filter(x => x[1].length);
+      if (yrsGo.length) parts.push(T('Courtier : ', 'Broker: ') + yrsGo.map(([yy, s]) => { const l = s[s.length - 1], p = s.length > 1 ? s[s.length - 2][1] : null; return `Cal ${String(yy).slice(2)} <b>${n1(l[1], 3)} €/MWh</b>${p != null ? ' (' + s1(l[1] - p, 3) + ')' : ''}`; }).join(' · ') + T(' sur la semaine.', ' on the week.'));
       if (g.length > 2) { let k = 0; const sgn = Math.sign(g[g.length - 1][1] - g[g.length - 2][1]); for (let i = g.length - 1; i > 0 && Math.sign(g[i][1] - g[i - 1][1]) === sgn && sgn; i--) k++;
         if (sgn) parts.push(T(`${k} semaine${k > 1 ? 's' : ''} de ${sgn < 0 ? 'baisse' : 'hausse'} sur le Cal ${y + 1}.`, `${k} week${k > 1 ? 's' : ''} ${sgn < 0 ? 'down' : 'up'} on Cal ${y + 1}.`)); }
       const a = auct && Array.isArray(auct.auctions) && auct.auctions[auct.auctions.length - 1];
       if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
-        if (vol) parts.push(T(`Dernière enchère de l’État (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `Last state auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
+        if (vol) parts.push(T(`Enchère GO France (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `France GO auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
       const c4 = g.length > 4 ? (g[g.length - 1][1] / g[g.length - 5][1] - 1) * 100 : null;
       if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.join(' ')]);
     }
