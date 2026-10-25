@@ -310,24 +310,28 @@ function _mrnSpot(k) {
     <div><span class="mrn3-big">${_mN(m7, 1)}<small>€/MWh</small></span>${mp ? ` <span class="mrn3-kv">${_mT('vs 7 jours avant', 'vs the 7 days before')} <b class="${m7 > mp ? 'mrn-up' : 'mrn-dn'}">${_mS((m7 / mp - 1) * 100, 1)} %</b></span>` : ''}</div>
     <div class="mrn3-kv">${_mT('moyenne 30 jours', '30-day average')} ${B(_mN(r30, 1))} €/MWh</div></div>`);
   host.innerHTML = out.join('');
-  // 48 hours: today, then tomorrow (real or forecast)
-  const cid = 'mrn-spot'; if (!document.getElementById(cid) || !window._fuelChart) return;
+  _mrnSpotChart(k, 'mrn-spot', true);
+}
+// 48 hours: today, then tomorrow (real, or hatched with the forecast until it is published)
+function _mrnSpotChart(k, cid, prob) {
+  if (!document.getElementById(cid) || !window._fuelChart) return;
+  const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
   const tod = (k.today || []).slice(0, 24), tmr = k.tomorrow ? k.tomorrow.slice(0, 24) : null, fc = !tmr && k.fc ? k.fc.price.slice(0, 24) : null;
   const lbl = [];
   [k.t, k.tm].forEach(d => { for (let h = 0; h < 24; h++) lbl.push(h === 0 ? _mDay(d) : H(h)); });
   const pad = a => a.concat(Array(24 - a.length).fill(null));
   const ds = [_fuelLineDs(_mT('Prix réel', 'Actual price'), pad(tod).concat(tmr ? pad(tmr) : Array(24).fill(null)), '#14D3A9', { borderWidth: 2.2, spanGaps: false, yAxisID: 'y' })];
   if (fc) ds.push(_fuelLineDs(_mT('Prévision', 'Forecast'), Array(24).fill(null).concat(pad(fc)), '#7FC8F8', { borderWidth: 1.8, borderDash: [5, 4], yAxisID: 'y' }));
-  if (fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: Array(24).fill(null).concat(pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
+  if (prob && fc && k.fc.prob) ds.push({ type: 'bar', label: _mT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: Array(24).fill(null).concat(pad(k.fc.prob.map(p => p == null ? null : Math.round(p * 100)))),
     backgroundColor: Array(24).fill(null).concat(pad(k.fc.prob).map(p => p != null && p >= .5 ? 'rgba(237,105,101,.55)' : 'rgba(127,200,248,.3)')), borderWidth: 0, yAxisID: 'y2', order: 5 });
   const zero = pad(tod).concat(tmr ? pad(tmr) : Array(24).fill(null)).map(v => v != null && v <= 0 ? 100 : null);
   if (zero.some(v => v)) ds.push({ type: 'bar', label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: zero, backgroundColor: 'rgba(20,211,169,.12)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, yAxisID: 'y2', order: 9 });
   const nowH = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Paris' }).format(new Date());
   _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: ds }, options: _fuelOpts({
     scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }),
-      y: _fuelAxis('€/MWh'), y2: _fuelAxis('%', { position: 'right', min: 0, max: 100, grid: { display: false }, display: !!fc }) },
-    plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
-      pkFcZone: !tmr ? { from: 24, now: nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-today-tomorrow');
+      y: _fuelAxis('€/MWh'), y2: _fuelAxis('%', { position: 'right', min: 0, max: 100, grid: { display: false }, display: !!(prob && fc) }) },
+    plugins: { legend: { display: !!prob, position: 'bottom', labels: { color: C_TX2, font: { size: 10.5 }, boxWidth: 12, padding: 10 } },
+      pkFcZone: !tmr ? { from: 24, now: nowH, label: fc ? _mT('PRÉVISION · PRIX PUBLIÉ VERS 13 H', 'FORECAST · PRICE OUT AROUND 13:00') : _mT('DEMAIN · PRIX PUBLIÉ VERS 13 H', 'TOMORROW · PRICE OUT AROUND 13:00'), nowLabel: _mT('maintenant', 'now') } : { from: -1, now: nowH, nowLabel: _mT('maintenant', 'now') } } }) }, 'spot-today-tomorrow' + (prob ? '' : '-quick'));
 }
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
@@ -370,6 +374,13 @@ function _mrnTiles(k) {
   if (nl) { const c = ch7(nuc), tn = tone(c, true);   // more nuclear available pushes prices down: green when it rises
     T.push(`<a class="mrn2-tile" data-tile="nuc" href="#system/generation/nuclear" data-route="system/generation/nuclear"><span class="mrn2-tn">${_mT('Nucléaire disponible', 'Nuclear available')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span>${moves(nuc, true)}${_mrnSpark(since(nuc, 60).map(p => p[1]), tn)}${foot(fc ? kv(_mT('prévision exploitant', 'operator forecast'), _mN(fc[1] / 1000, 1) + ' GW') : '', _mT('60 j', '60 d'))}</a>`); }
   host.innerHTML = T.join('');
+  const q = document.getElementById('mrn-q-tiles'); if (q) q.innerHTML = T.join('');
+  const by = id => T.find(x => x.includes('data-tile="' + id + '"')) || '';
+  const L = document.getElementById('mrn-l-tiles');
+  if (L) L.innerHTML = [['cal', _mT('Ce que coûte un MWh livré l’an prochain, acheté aujourd’hui. Il suit surtout le gaz.', 'What a MWh delivered next year costs, bought today. It follows gas above all.')],
+    ['ttf', _mT('Le prix du gaz européen. Les jours sans vent ni soleil, les centrales au gaz fixent le prix de l’électricité.', 'The European gas price. On days without wind or sun, gas plants set the power price.')],
+    ['nuc', _mT('La puissance nucléaire prête à produire. Moins de réacteurs disponibles, c’est plus de gaz appelé et des prix plus hauts.', 'The nuclear capacity ready to run. Fewer reactors available means more gas called and higher prices.')]]
+    .map(([id, t]) => by(id) ? `<div class="mrn3-lt">${by(id)}<p>${t}</p></div>` : '').join('');
 }
 
 // ── CO₂: a small tile at the top of its folded section ──
@@ -475,6 +486,68 @@ function _mrnCreg() {
   });
 }
 
+function _mrnQuick(k) {
+  const host = document.getElementById('mrn-q-moved'); if (!host) return;
+  const L = [], B = t => '<b>' + t + '</b>';
+  const sT = _mrnDayStats(k.today), sY = _mrnDayStats(k.yday), sM = _mrnDayStats(k.tomorrow);
+  if (sT) L.push([_mT('Spot', 'Spot'), _mT('aujourd’hui ', 'today ') + B(_mN(sT.base, 1) + ' €') + (sY ? ' (' + _mS(sT.base - sY.base, 1) + ' €)' : '') + (sT.zero ? _mT(`, ${sT.zero} h à 0 €`, `, ${sT.zero} h at 0 €`) : '') +
+    (sM ? _mT(' ; demain ', '; tomorrow ') + B(_mN(sM.base, 1) + ' €') : k.fc && k.fc.price ? _mT(' ; demain prévu ≈ ', '; tomorrow forecast ≈ ') + _mN(_mrnMean(k.fc.price), 0) + ' €' : '') + '.']);
+  const c = k.cals[0], ty = k.cs && k.cs.calYears && k.cs.calYears.ttf && c && k.cs.calYears.ttf[c.y];
+  if (c && ty) { const tP = ty.dates.map((d, i) => [d, ty.values[i]]), dT = _mrnLast(tP)[1] - _mrnBack(tP, 7), dF = _mrnLast(c.pts)[1] - _mrnBack(c.pts, 7);
+    L.push([_mT('Forwards', 'Forwards'), (Math.abs(dF - 2 * dT) < 1 ? _mT('le Cal ' + c.y + ' suit le gaz', 'Cal ' + c.y + ' follows gas') : dF > 2 * dT ? _mT('le Cal ' + c.y + ' monte plus que le gaz', 'Cal ' + c.y + ' rises more than gas') : _mT('le Cal ' + c.y + ' monte moins que le gaz', 'Cal ' + c.y + ' rises less than gas')) +
+      _mT(' : le gaz seul pèserait ', ': gas alone would weigh ') + B('≈ ' + _mS(2 * dT, 1) + ' €') + _mT(' sur la semaine.', ' on the week.')]); }
+  const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365);
+  if (st && ly != null) L.push([_mT('Gaz', 'Gas'), _mT('stocks UE ', 'EU storage ') + B(_mS(st[1] - ly, 1) + ' pts') + _mT(' sur un an', ' on a year') + (st[1] < ly ? _mT(' : peu de marge avant l’hiver.', ': little margin before winter.') : '.')]);
+  const br = k.P('brent'), v60 = br.filter(p => p[0] >= _mrnAdd(_mrnLast(br)[0], -60)).map(p => p[1]), lb = _mrnLast(br);
+  if (lb && v60.length > 10) L.push([_mT('Pétrole', 'Oil'), lb[1] >= Math.max(...v60) - 1e-9 ? _mT('Brent au plus haut sur 60 jours.', 'Brent at a 60-day high.') : lb[1] <= Math.min(...v60) + 1e-9 ? _mT('Brent au plus bas sur 60 jours.', 'Brent at a 60-day low.') : _mT('Brent dans sa fourchette de 60 jours.', 'Brent within its 60-day range.')]);
+  const av = _mrnLast(k.P('fr_nuc_avail')), fc = _mrnLast(k.P('fr_nuc_avail_fc'));
+  if (av && fc) { const g = (fc[1] - av[1]) / 1000; L.push([_mT('Nucléaire', 'Nuclear'), Math.abs(g) < 1 ? _mT('conforme à la prévision de l’exploitant.', 'in line with the operator forecast.') : B(_mN(Math.abs(g), 1) + ' GW') + (g > 0 ? _mT(' sous la prévision de l’exploitant.', ' below the operator forecast.') : _mT(' au-dessus de la prévision de l’exploitant.', ' above the operator forecast.'))]); }
+  host.innerHTML = L.map(([a, b]) => `<li><b>${a}</b><span>${b}</span></li>`).join('');
+}
+
+// Discovery: the day in one sentence, today's price explained, what it means, a glossary (the figures are in the tiles)
+function _mrnLearn(k) {
+  const sent = document.getElementById('mrn-l-sent'); if (!sent) return;
+  const sT = _mrnDayStats(k.today), sY = _mrnDayStats(k.yday), m30 = _mrnMean(k.spotDays.slice(-30).map(r => r.avg)), B = t => '<b>' + t + '</b>';
+  const c = k.cals[0], c7 = c ? (_mrnLast(c.pts)[1] / _mrnBack(c.pts, 7) - 1) * 100 : null, ttf = k.P('ttf'), t7 = ttf.length ? (_mrnLast(ttf)[1] / _mrnBack(ttf, 7) - 1) * 100 : null;
+  const av = _mrnLast(k.P('fr_nuc_avail')), fc = _mrnLast(k.P('fr_nuc_avail_fc')), nucLow = av && fc && fc[1] - av[1] > 2000;
+  let p1 = '';
+  if (sT && m30) { const lvl = sT.base < m30 * .7 ? _mT('<b class="mrn-dn">bon marché</b>', '<b class="mrn-dn">cheap</b>') : sT.base > m30 * 1.3 ? _mT('<b class="mrn-up">chère</b>', '<b class="mrn-up">expensive</b>') : _mT('dans la moyenne du mois', 'close to the month’s average');
+    p1 = _mT('L’électricité est ', 'Power is ') + lvl + _mT(' aujourd’hui (', ' today (') + B(_mN(sT.base, 0) + ' €/MWh') + (sY ? _mT(' contre ', ' against ') + _mN(sY.base, 0) + _mT(' € hier', ' € yesterday') : '') + ')' + (sT.zero >= 2 ? _mT(', avec des heures à 0 € quand le vent et le soleil dépassent la consommation', ', with hours at 0 € when wind and sun exceed consumption') : '') + '. '; }
+  let p2 = '';
+  if (c && c7 != null) { const why = [t7 != null && Math.abs(t7) >= 2 ? (t7 > 0 ? _mT('le gaz monte', 'gas is rising') : _mT('le gaz baisse', 'gas is falling')) : null, nucLow ? _mT('il y a moins de nucléaire disponible que prévu', 'less nuclear is available than planned') : null].filter(Boolean);
+    p2 = _mT('Pour ' + c.y + ', le prix ', 'For ' + c.y + ', the price ') + (c7 > 1 ? _mT('<b class="mrn-up">monte</b>', '<b class="mrn-up">is rising</b>') : c7 < -1 ? _mT('<b class="mrn-dn">baisse</b>', '<b class="mrn-dn">is falling</b>') : _mT('est stable', 'is steady')) + (why.length ? _mT(' parce que ', ' because ') + why.join(_mT(' et qu’', ' and ')) : '') + '.'; }
+  sent.innerHTML = p1 + p2;
+  // today hour by hour, coloured: 0 € or below, normal, expensive
+  const tod = (k.today || []).slice(0, 24);
+  if (tod.length && window._fuelChart) {
+    const hi = sT ? sT.base * 1.5 : Infinity, top = Math.max(...tod.filter(v => v != null), 1);
+    _fuelChart('mrn-l-day', { type: 'bar', data: { labels: tod.map((_, h) => _mrnFr() ? h + ' h' : h + ':00'), datasets: [
+      { label: _mT('Prix, €/MWh', 'Price, €/MWh'), data: tod.map(v => v == null ? null : Math.round(v * 10) / 10), backgroundColor: tod.map(v => v != null && v > hi ? 'rgba(237,105,101,.8)' : 'rgba(127,200,248,.6)'), borderWidth: 0, order: 1 },
+      // the hours at 0 € or below, shaded over the whole height (their bar has no height)
+      { label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: tod.map(v => v != null && v <= 0.1 ? top * 1.05 : null), backgroundColor: 'rgba(20,211,169,.22)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, order: 9 }] },
+      options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('€/MWh', { stacked: false }) } }) }, 'today-hours');
+    const n = document.getElementById('mrn-l-day-note');
+    if (n && sT) n.innerHTML = (sT.zero ? _mT(`<b>En vert</b> : ${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme. `, `<b>Green</b>: ${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes. `) : '') +
+      _mT(`<b>En rouge</b> : plus de 1,5 fois la moyenne du jour. Le plus cher : ${sT.maxH} h (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', quand le soleil se couche et que la demande monte.' : '.'), `<b>Red</b>: above 1.5 times the day’s average. The most expensive: ${sT.maxH}:00 (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', when the sun sets and demand rises.' : '.'));
+  }
+  const ic = d => `<i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg></i>`;
+  const M = [
+    [ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5"/>'), _mT('<b>Pour un parc solaire</b> : les heures de midi sont souvent les moins chères ; le prix capté reste sous la moyenne. Un contrat qui arrête la production aux prix négatifs protège.', '<b>For a solar park</b>: midday hours are often the cheapest; the captured price stays below the average. A contract that stops output at negative prices protects.')],
+    [ic('<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>'), _mT('<b>Pour un parc éolien</b> : les jours de vent fort, tout le parc produit en même temps et le prix baisse ; l’éolien capte un peu moins que la moyenne.', '<b>For a wind park</b>: on windy days the whole fleet produces at once and the price falls; wind captures a little less than the average.')],
+    [ic('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'), _mT(`<b>Pour un achat d’électricité ${c ? c.y : ''}</b> : ` + (c7 > 1 ? 'le prix monte ; fixer une partie maintenant limite le risque d’une nouvelle hausse.' : c7 < -1 ? 'le prix baisse ; attendre peut payer, mais le risque reste ouvert.' : 'le prix est stable ; c’est le moment de décider sans pression.'), `<b>For a ${c ? c.y : ''} power purchase</b>: ` + (c7 > 1 ? 'the price is rising; fixing part of it now limits the risk of a further rise.' : c7 < -1 ? 'the price is falling; waiting may pay, but the risk stays open.' : 'the price is steady; a good time to decide without pressure.'))],
+    [ic('<circle cx="12" cy="12" r="2"/><path d="M12 10V3a9 9 0 0 1 7.8 4.5L13.7 11M10.3 11 4.2 7.5A9 9 0 0 1 12 3M13.7 13l6.1 3.5A9 9 0 0 1 4.2 16.5L10.3 13"/>'), _mT('<b>Le nucléaire</b> fait l’essentiel de la production française : chaque réacteur qui revient fait baisser les prix de l’hiver.', '<b>Nuclear</b> makes most of France’s power: each reactor coming back lowers winter prices.')],
+  ];
+  const means = document.getElementById('mrn-l-means'); if (means) means.innerHTML = M.map(([i, t]) => `<div>${i}<span>${t}</span></div>`).join('');
+  const G = [[_mT('Spot (day-ahead)', 'Spot (day-ahead)'), _mT('Prix fixé la veille, vers 13 h, pour chaque heure du lendemain.', 'Price set the day before, around 13:00, for each hour of the next day.')],
+    [_mT('Cal (calendrier)', 'Cal (calendar)'), _mT('Prix d’un MWh livré toute une année, acheté aujourd’hui (Cal 27 = 2027).', 'Price of a MWh delivered over a whole year, bought today (Cal 27 = 2027).')],
+    ['TTF', _mT('Prix du gaz européen, coté aux Pays-Bas, en €/MWh.', 'The European gas price, traded in the Netherlands, in €/MWh.')],
+    ['EUA', _mT('Prix du droit d’émettre une tonne de CO₂ en Europe.', 'Price of the right to emit one tonne of CO₂ in Europe.')],
+    [_mT('GO (garantie d’origine)', 'GO (guarantee of origin)'), _mT('Certificat qui prouve qu’un MWh vient d’une source renouvelable.', 'Certificate proving a MWh comes from a renewable source.')],
+    [_mT('Taux de capture', 'Capture rate'), _mT('Ce qu’un parc touche réellement, rapporté au prix moyen de la période.', 'What a park actually earns, against the period’s average price.')]];
+  const gl = document.getElementById('mrn-l-gloss'); if (gl) gl.innerHTML = G.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
+}
+
 async function renderMorning() {
   const upd = document.getElementById('mrn-date');
   if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
@@ -482,6 +555,7 @@ async function renderMorning() {
   _mrnFacts().then(k => {
     MRN.k = k;
     _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k);
+    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k);
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
   if (window.PKBrief) { const b = document.getElementById('mrn-brief'); if (b) PKBrief.brief(b); }
@@ -545,6 +619,10 @@ function _mrnTileDef(id) {
   const y = +_mrnToday().slice(0, 4);
   return { name: W.name, unit: W.unit, dp: W.dp, inv: W.inv, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
 }
+document.addEventListener('pk-view', e => {
+  if (!e.detail || e.detail.key !== 'morning' || e.detail.index !== 2) return;
+  ['hs-morning-2', 'hs-morning-3', 'hs-morning-4'].forEach(id => { const s = document.getElementById(id); if (s && !s.dataset.opened) { s.dataset.opened = '1'; s.classList.remove('collapsed'); } });
+});
 document.addEventListener('click', e => {   // a tile opens its chart full size (a modified click still opens the page in a new tab)
   const a = e.target.closest && e.target.closest('.mrn2-tile[data-route]');
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -635,6 +713,17 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   @media (max-width:1100px){.mrn3-pair{grid-template-columns:1fr}}
   .mrn3-row{margin-bottom:12px}
   .mrn3-row:last-child{margin-bottom:0}
+  .mrn3-hdr{margin:0 0 14px}
+  .mrn3-qrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px} .mrn3-qrow>section{margin:0;min-width:0}
+  @media (max-width:1000px){.mrn3-qrow{grid-template-columns:1fr}}
+  .mrn3-lines{margin:0;padding:0;list-style:none} .mrn3-lines li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--text2)}
+  .mrn3-lines li:last-child{border-bottom:0} .mrn3-lines li>b:first-child{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--text)} .mrn3-lines b{color:var(--text);font-weight:600}
+  .mrn3-sent{font-size:16px;line-height:1.6;color:var(--text2);margin:0} .mrn3-sent b{color:var(--text)} .mrn3-sent b.mrn-up{color:var(--down)} .mrn3-sent b.mrn-dn{color:var(--up)}
+  .mrn3-ltiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px} @media (max-width:900px){.mrn3-ltiles{grid-template-columns:1fr}}
+  .mrn3-lt{display:flex;flex-direction:column;gap:6px} .mrn3-lt p{margin:0 4px;font-size:13px;color:var(--text2);line-height:1.5}
+  .mrn3-learn{display:flex;flex-direction:column;gap:12px;font-size:13.5px;color:var(--text2);line-height:1.5} .mrn3-learn>div{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px} .mrn3-learn i{color:var(--accent);display:flex} .mrn3-learn b{color:var(--text)}
+  .mrn3-gloss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px;margin:0;font-size:13px} .mrn3-gloss dt{color:var(--text);font-weight:600} .mrn3-gloss dd{margin:2px 0 0;color:var(--text2)}
+  @media (max-width:900px){.mrn3-gloss{grid-template-columns:1fr}}
   .mrn-sec{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);font-weight:600;margin:18px 0 8px}
   `;
   document.head.appendChild(css);
