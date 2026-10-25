@@ -63,6 +63,15 @@
   R({ id: 'today-news', kind: 'html', title: 'In the news · market movers', size: { w: 6, h: 7 }, source: 'News feeds · PowerKlock',
     desc: 'Last 48 hours, highest market impact first (geopolitics, regulation, deals, new capacity, gas); your ★ keywords first.',
     async html(host) { host.innerHTML = '<div></div>'; return _mrnNews(host.firstChild); } });
+  R({ id: 'today-fund', kind: 'html', title: 'Fundamentals · the PowerKlock index', size: { w: 12, h: 7 }, source: 'PowerKlock · RTE · Open-Meteo',
+    desc: 'The index as a calculation (expected demand against low-carbon supply, coverage, gas plant cost, expected spot against the last 7 days and the forward), then week by week the low-carbon supply stacked against demand.',
+    html: withK((host, k) => { const cid = nid('fund'); host.innerHTML = `<div class="mrn-fund-calc"></div><div style="position:relative;height:calc(100% - 120px);min-height:200px;margin-top:10px"><canvas id="${cid}" style="width:100%;height:100%"></canvas></div>`; _mrnFund(k, host.firstChild, cid); }) });
+  R({ id: 'today-rtiles', kind: 'html', title: 'Renewables · PPA benchmark, M0, tenders', size: { w: 12, h: 3 }, source: 'PowerKlock · RTE · CRE',
+    desc: 'PowerKlock PPA benchmark solar and wind over 3 years, the latest M0 solar and wind, the latest CRE tender prices; a click opens each one full size.',
+    async html(host) { host.innerHTML = '<div class="mrn2-tiles mrn3-tiles mrn-rtiles"></div>'; return _mrnRenTiles(host.firstChild); } });
+  R({ id: 'today-gotable', kind: 'html', title: 'Guarantees of origin · prices', size: { w: 6, h: 5 }, source: 'Commerg · EEX',
+    desc: 'Renewable AIB broker mid by production year with the change on the week and 4 weeks, and the latest French auction against the previous one.',
+    async html(host) { host.innerHTML = '<div class="mrn3-tbl"></div>'; return _mrnGoTable(host.firstChild); } });
   R({ id: 'today-system', kind: 'html', title: 'Power system now · France', size: { w: 12, h: 2 }, source: 'RTE éCO2mix',
     desc: 'Latest quarter-hour: CO₂, consumption, nuclear, wind + solar, exchanges, against yesterday.',
     async html(host) { host.innerHTML = '<div class="mrn2-tiles mrn2-tiles-sm"></div>'; return _mrnTiles2(host.firstChild); } });

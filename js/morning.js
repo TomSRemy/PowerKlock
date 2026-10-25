@@ -430,8 +430,8 @@ function _mrnSpotChart(k, cid, prob) {
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
 // ── Fundamentals: the PowerKlock index as a calculation, then week by week the low-carbon supply against demand ──
-function _mrnFund(k) {
-  const calc = document.getElementById('mrn-fund-calc'), A = k.idx && k.idx.ahead; if (!calc) return;
+function _mrnFund(k, calcEl, cid) {
+  const calc = calcEl || document.getElementById('mrn-fund-calc'), A = k.idx && k.idx.ahead; if (!calc) return; cid = cid || 'mrn-fund-stack';
   if (!A || !A.weeks.length) { calc.innerHTML = '<div class="fuel-note">' + _mT('Indice indisponible.', 'Index not available.') + '</div>'; return; }
   const W = A.weeks.slice(0, 4), m = f => W.reduce((a, w) => a + w[f], 0) / W.length, G = v => _mN(v / 1000, 1), sp7 = _mrnMean(k.spotDays.slice(-7).map(r => r.avg)), M = A.month;
   const ttf = _mrnLast(k.P('ttf')), eua = _mrnLast(k.P('eua'));
@@ -446,7 +446,8 @@ function _mrnFund(k) {
   const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
   const L = W.map(w => _mT('Sem. ', 'Wk ') + wn(w.from)), g = f => W.map(w => Math.round(w[f] / 100) / 10);
   const bar = (lab, f, c) => ({ type: 'bar', label: lab, data: g(f), backgroundColor: c, stack: 's', borderWidth: 0, borderRadius: 2, order: 2, barPercentage: .62 });
-  _fuelChart('mrn-fund-stack', { type: 'bar', data: { labels: L, datasets: [bar(_mT('Nucléaire', 'Nuclear'), 'nuc', '#7B4B9C'), bar(_mT('Hydraulique', 'Hydro'), 'hydro', '#3FA6B4'), bar(_mT('Bioénergies', 'Bioenergy'), 'bio', '#94D2BD'), bar(_mT('Éolien', 'Wind'), 'wind', '#14D3A9'), bar(_mT('Solaire', 'Solar'), 'solar', '#FBBF24'),
+  if (!document.getElementById(cid)) return;
+  _fuelChart(cid, { type: 'bar', data: { labels: L, datasets: [bar(_mT('Nucléaire', 'Nuclear'), 'nuc', '#7B4B9C'), bar(_mT('Hydraulique', 'Hydro'), 'hydro', '#3FA6B4'), bar(_mT('Bioénergies', 'Bioenergy'), 'bio', '#94D2BD'), bar(_mT('Éolien', 'Wind'), 'wind', '#14D3A9'), bar(_mT('Solaire', 'Solar'), 'solar', '#FBBF24'),
     { type: 'line', label: _mT('Demande prévue', 'Expected demand'), data: g('load'), borderColor: '#E6EDF3', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#E6EDF3', tension: 0, order: 1, stack: 'd' }] },
     options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
       scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX2, font: { size: 11 }, callback: (v, i) => [L[i], _mN(W[i].fair, 0) + ' € · ' + _mN(W[i].cov, 0) + ' %'] } }), y: _fuelAxis('GW', { stacked: true, beginAtZero: true }) } }) }, 'fundamentals-stack');
@@ -463,8 +464,8 @@ function _mrnCfCard() {
       : `<span class="mrn3-dim">${_mT('Votre courbe Enedis, CSV ou Excel : émissions, coût au spot et ce que vous pourriez gagner, en 30 secondes, sans rien envoyer.', 'Your Enedis, CSV or Excel curve: emissions, spot cost and what you could save, in 30 seconds, nothing sent.')}</span>`) + go;
 }
 // ── Renewables tiles: the PPA benchmark (3 calendar years, PowerKlock pricer) and the latest M0, solar and wind ──
-async function _mrnRenTiles() {
-  const host = document.getElementById('mrn-rtiles'); if (!host) return;
+async function _mrnRenTiles(el) {
+  const host = el || document.getElementById('mrn-rtiles'); if (!host) return;
   const [bm, m0] = await Promise.all([_mrnGet('ppab', DATA_BASE + 'history/ppa_benchmark.json').catch(() => null), _mrnGet('m0', DATA_BASE + 'm0.json').catch(() => null)]);
   MRN.ren = { bm, m0 };
   const T = [], foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
