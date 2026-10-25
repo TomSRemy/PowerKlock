@@ -8,7 +8,7 @@ name: Fetch forecasts (solar, wind, load · today and tomorrow)
 on:
   schedule:
     - cron: '15 6 * * *'     # morning: today + error over 30 days
-    - cron: '30 11 * * *'    # tomorrow's forecasts usually out before the day-ahead auction
+    - cron: '30 7,8,9,10,11 * * *'   # tomorrow's forecasts: from the morning on, so the price forecast shows before the 13:00 auction
     - cron: '30 16 * * *'
     - cron: '30 19 * * *'    # late publishers
   workflow_dispatch:
