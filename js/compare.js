@@ -309,7 +309,9 @@
     });
     const q = document.getElementById('cmp-q'); if (q) q.addEventListener('input', () => { S.q = q.value; drawPicker(); });
   }
-  window.PKCompare = { render: () => { bind(); render(); }, catalogue: () => [...CAT.keys()] };
+  // also used by Replay (js/replay.js): any daily series of the catalogue, its label, unit and group
+  window.PKCompare = { render: () => { bind(); render(); }, catalogue: () => [...CAT.keys()], label, unit: id => (CAT.get(id) || {}).unit, group: id => (CAT.get(id) || {}).group,
+    groups: () => Object.entries(G).map(([g, n]) => [g, T(n[0], n[1]), [...CAT.values()].filter(c => c.group === g).map(c => c.id)]), load: id => CAT.has(id) ? CAT.get(id).load('2016-01-01').catch(() => new Map()) : Promise.resolve(new Map()) };
   if (window.PK && PK.onPage) PK.onPage('compare', () => { bind(); render(); });
 
   const css = document.createElement('style');
