@@ -3265,3 +3265,4 @@ details.pk-howto[open] > summary { margin-bottom: 6px; }
 .mrn-negal > span:nth-child(2) { flex: 1 1 320px; }
 .mrn-negal a { color: var(--accent, #14D3A9); font-weight: 600; text-decoration: none; font-size: 12px; }
 .mrn-negal .pk-btn-ghost { padding: 4px 10px; font-size: 11px; }
+.mrn2-wk-idx { border-top: 1px dashed var(--border, rgba(255,255,255,.1)); padding-top: 4px; margin-top: 2px; }

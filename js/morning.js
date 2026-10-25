@@ -294,6 +294,34 @@ function _mrnIndex(rted, P) {
   const pm = fit.reduce((s, x) => s + x.p, 0) / fit.length, ss = fit.reduce((s, x) => s + (x.p - pm) ** 2, 0), sr = fit.reduce((s, x) => s + (x.p - x.fair) ** 2, 0);
   return { rows: D, last: D[D.length - 1], lastP: fit[fit.length - 1], mae, r2: 1 - sr / ss, A, B, Wk };
 }
+// ── the same index, ahead: the coverage of the coming weeks from the weather outlook and the price it implies ──
+// consumption = the usual level of those calendar days (2023–2025) − 2.4 GW per °C above normal (heating season, RTE's
+// usual sensitivity); wind and solar = the ensemble mean of the outlook (GWh/day at today's fleet); hydro and bioenergy =
+// their usual level; nuclear = the availability of the last day × the usual output ratio (0.92). Gas and CO₂ at today's
+// prices. Read against the forward of the month: above it, the fundamentals say dearer than the market.
+function _mrnAhead(I, rted, P, wxo, fmo) {
+  const F = wxo && wxo.countries && wxo.countries.FR && wxo.countries.FR.series; if (!F || !F.temp || !F.temp.days) return null;
+  const rows = rted.rows, today = _mrnToday(), y0 = +today.slice(0, 4) - 3;
+  const norm = {}; rows.forEach(x => { const y = +x.d.slice(0, 4); if (y < y0 || x.d >= today.slice(0, 4) + '-01-01' && y >= +today.slice(0, 4) || !x.loadAvg) return;
+    const k = x.d.slice(5), o = norm[k] || (norm[k] = { n: 0, load: 0, hydro: 0, bio: 0 }); o.n++; o.load += x.loadAvg; o.hydro += x.hydroAvg || 0; o.bio += x.bioAvg || 0; });
+  const nl = _mrnLast(P('fr_nuc_avail')), ttf = _mrnLast(P('ttf')), eua = _mrnLast(P('eua')); if (!nl || !ttf || !eua) return null;
+  const srmc = ttf[1] / 0.55 + 0.37 * eua[1], nuc = nl[1] * 0.92;
+  const days = F.temp.days, V = (s, i) => F[s] && F[s].mean ? F[s].mean[i] : null, N = (s, i) => F[s] && F[s].normal ? F[s].normal[i] : null;
+  const out = [];
+  days.forEach((d, i) => { if (d <= today) return; const o = norm[d.slice(5)]; if (!o || !o.n) return;
+    const t = V('temp', i), tn = N('temp', i), w = V('wind', i), so = V('solar', i); if (t == null || w == null || so == null) return;
+    const load = o.load / o.n - (tn != null && tn < 16 ? 2400 * (t - tn) : 0);
+    const cov = (nuc + o.hydro / o.n + o.bio / o.n + w / 24 * 1000 + so / 24 * 1000) / load * 100;
+    const wd = new Date(d + 'T12:00:00Z').getUTCDay(), we = wd === 0 || wd === 6 ? 1 : 0;
+    out.push({ d, cov, fair: srmc / (1 + Math.exp(-(I.A - I.B * (cov - 100)))) * (1 - I.Wk * we) }); });
+  if (!out.length) return null;
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const weeks = []; for (let i = 0; i < out.length; i += 7) { const w = out.slice(i, i + 7); if (w.length >= 4) weeks.push({ from: w[0].d, fair: mean(w.map(x => x.fair)), cov: mean(w.map(x => x.cov)) }); }
+  // the month after this one, as far as the outlook reaches, against its forward
+  const nm = Object.keys((fmo && fmo.months) || {}).sort()[0], inM = nm ? out.filter(x => x.d.startsWith(nm)) : [];
+  return { days: out, weeks, fair4: mean(out.slice(0, 28).map(x => x.fair)), cov4: mean(out.slice(0, 28).map(x => x.cov)),
+    month: nm && inM.length >= 10 ? { m: nm, fair: mean(inM.map(x => x.fair)), n: inM.length, fwd: +fmo.months[nm].value } : null, srmc, nuc };
+}
 // everything the spot block, the tiles and the 4-week block need, fetched once
 // shared by the dashboard widgets: one fetch for every Today block on a board, kept 10 minutes
 function _mrnFactsP() {
@@ -302,7 +330,7 @@ function _mrnFactsP() {
 }
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
-  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null)]);
+  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted, wxo, fmo] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null), _mrnGet('wx', DATA_BASE + 'weather_outlook.json').catch(() => null), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json').catch(() => null)]);
   const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
   const k = { t, tm, y, cs, P, gos, neg, look: dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.outlook || {}) : {} };
   const fr = j => j && j.zones && j.zones.FR;
@@ -313,7 +341,7 @@ async function _mrnFacts() {
   const yrs = chain && chain.FR && chain.FR.years;
   k.cals = yrs ? Object.keys(yrs).sort().slice(0, 3).map(yy => ({ y: yy, pts: yrs[yy].dates.map((x, i) => [x, yrs[yy].values[i]]) })) : [];
   k.nucCap = fwd && fwd.nuclearCapacity;
-  try { k.idx = _mrnIndex(rted, P); } catch (e) { k.idx = null; }
+  try { k.idx = _mrnIndex(rted, P); if (k.idx) k.idx.ahead = _mrnAhead(k.idx, rted, P, wxo, fmo); } catch (e) { console.warn('[index]', e); k.idx = k.idx || null; }
   return k;
 }
 
@@ -423,12 +451,13 @@ function _mrnTileList(k) {
     }
   }
   // the PowerKlock index: low-carbon coverage of French demand and the price it implies (see _mrnIndex)
-  if (k.idx) { const I = k.idx, L = I.lastP, pts = I.rows.map(x => [x.d, x.cov]), c = ch7(pts), gap = L.p - L.fair;
-    T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Couverture bas carbone = (nucléaire + hydraulique + éolien + solaire + bioénergies) ÷ consommation. Prix implicite = coût d’une centrale gaz × une courbe de la couverture, ajustée sur 3 ans', 'Low-carbon coverage = (nuclear + hydro + wind + solar + bioenergy) ÷ consumption. Implied price = a gas plant’s cost × a curve of the coverage, fitted on 3 years')}">` +
-      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${_mT('Couv. bas carbone', 'Low-carbon cover')}</span>${pill(null, c == null ? null : -c)}</span>` +
-      `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span>` +
-      `<span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b> · spot <b class="${gap > 0 ? 'mrn-up' : 'mrn-down'}">${_mS(gap, 1)} €</b></span>` +
-      `${_mrnSpark(since(pts, 60).map(p => p[1]), c == null ? '' : c > 0 ? 'down' : 'up')}${foot(kv(_mT('écart habituel ±', 'usual gap ±'), _mN(I.mae, 0) + ' €'), _mT('60 j', '60 d'))}</a>`); }
+  if (k.idx) { const I = k.idx, L = I.lastP, A = I.ahead, pts = I.rows.map(x => [x.d, x.cov]), c = ch7(pts);
+    const M = A && A.month, mon = M ? new Date(M.m + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', timeZone: 'UTC' }) : '';
+    const main = A ? `<span class="mrn2-tv">${_mN(A.fair4, 0)}<small>€/MWh</small></span><span class="mrn2-tc">${M ? `${mon} : ${_mT('indice', 'index')} <b>${_mN(M.fair, 0)}</b> vs fwd <b>${_mN(M.fwd, 0)}</b> <b class="${M.fair > M.fwd ? 'mrn-up' : 'mrn-down'}">${_mS(M.fair - M.fwd, 0)}</b>` : _mT('spot attendu sur 4 semaines', 'expected spot over 4 weeks')}</span>`
+      : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
+    T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
+      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot attendu 4 sem.', 'Expected spot 4 wks') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && M ? pill(null, (M.fair / M.fwd - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
+      `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   return T;
 }
 // Discovery: three tiles, each with a line on what it is
@@ -484,8 +513,9 @@ async function _mrnWeeks(k, el) {
   const cell = (v, eps, unit, d, inv) => v == null ? '–' : Math.abs(v) < eps ? `<b>≈ ${_mT('normal', 'normal')}</b>` : `<b class="${(inv ? v > 0 : v < 0) ? 'mrn-up' : 'mrn-dn'}">${_mS(v, d)} ${unit}</b>`;
   if (weeks.length) {
     const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
-    html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale hist.)', 'Temp. (vs hist. normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
+    const AW = k.idx && k.idx.ahead ? k.idx.ahead.weeks : [];   // the PowerKlock index, week by week (same weeks: from tomorrow, 7 days)
+    html += '<div class="mrn2-weeks">' + weeks.map((w, wi) => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
+      <span class="mrn2-wk-r"><span>${_mT('Temp. (vs normale hist.)', 'Temp. (vs hist. normal)')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolien (vs normale hist.)', 'Wind output (vs hist. normal)')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire (vs normale hist.)', 'Solar output (vs hist. normal)')}</span>${cell(w.sun, 8, '%', 0)}</span>${AW[wi] ? `<span class="mrn2-wk-r mrn2-wk-idx" title="${_mT('Indice PowerKlock : spot attendu d’après la couverture prévue et le coût du gaz du jour', 'PowerKlock index: expected spot from the forecast coverage and today’s gas cost')}"><span>${_mT('Spot attendu (indice)', 'Expected spot (index)')}</span><b>${_mN(AW[wi].fair, 0)} €</b></span>` : ''}</div>`).join('') + '</div>';
   }
   // below the weeks, two gauges side by side: EU gas storage against its winter mark, French nuclear available against EDF's forecast
   const g = [];
@@ -716,6 +746,8 @@ const MRN_WIN = {
     return { name: _mT('Indice PowerKlock · couverture bas carbone', 'PowerKlock index · low-carbon coverage'), unit: '%', dp: 0, look: null, pct: false, route: 'tools/compare', page: _mT('Outils › Comparateur', 'Tools › Comparator'),
       series: [['idx', _mT('Couverture bas carbone, %', 'Low-carbon coverage, %'), '#14D3A9', 'y', true, I.rows.map(x => [x.d, Math.round(x.cov * 10) / 10])],
         ['fair', _mT('Prix implicite, €/MWh (axe droit)', 'Implied price, €/MWh (right axis)'), '#FBBF24', 'y2', true, I.rows.map(x => [x.d, Math.round(x.fair * 10) / 10])],
+        ...(I.ahead ? [['fairfc', _mT('Spot attendu, prévision, €/MWh (axe droit)', 'Expected spot, forecast, €/MWh (right axis)'), '#F59E0B', 'y2', true, I.ahead.days.map(x => [x.d, Math.round(x.fair * 10) / 10])],
+          ['covfc', _mT('Couverture prévue, %', 'Forecast coverage, %'), '#7FC8F8', 'y', true, I.ahead.days.map(x => [x.d, Math.round(x.cov * 10) / 10])]] : []),
         ['spot', _mT('Spot France, €/MWh (axe droit)', 'France spot, €/MWh (right axis)'), '#E6EDF3', 'y2', true, I.rows.filter(x => x.p != null).map(x => [x.d, x.p])]], unit2: '€/MWh' }; },
   nuc: k => ({ name: _mT('Nucléaire disponible', 'Nuclear available'), unit: 'GW', dp: 1, look: null, inv: true, route: 'system/generation/nuclear', page: _mT('Système › Production › Nucléaire', 'System › Generation › Nuclear'),
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
@@ -729,7 +761,7 @@ function _mrnTileDef(id) {
   let more = '';
   if (id === 'ttf') { const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365); if (st && ly != null) more = _mT(`Stocks de gaz UE ${_mN(st[1], 1)} % contre ${_mN(ly, 1)} % il y a un an.`, `EU gas storage ${_mN(st[1], 1)} % against ${_mN(ly, 1)} % a year ago.`); }
   if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) more = _mT(`Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix en hausse.`, `Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
-  if (id === 'idx' && k.idx) more = _mT(`Au-dessus de 100 %, la France couvre sa consommation sans gaz et exporte : les prix décrochent. En dessous, les centrales au gaz fixent le prix. La courbe explique ${_mN(k.idx.r2 * 100, 0)} % des variations du spot sur 3 ans (écart moyen ± ${_mN(k.idx.mae, 0)} €) : un spot au-dessus du prix implicite = marché plus tendu que ne le disent la production et la consommation (imports, prix voisins, prévisions).`,
+  if (id === 'idx' && k.idx) more = (k.idx.ahead && k.idx.ahead.month ? _mT(`Prévision : ${_mN(k.idx.ahead.fair4, 0)} €/MWh en moyenne sur 4 semaines, ${_mN(k.idx.ahead.month.fair, 0)} € sur ${k.idx.ahead.month.n} jours de ${k.idx.ahead.month.m} contre un forward à ${_mN(k.idx.ahead.month.fwd, 0)} € (météo de l’ensemble GFS, nucléaire au niveau du dernier jour, gaz et CO₂ du jour). `, `Forecast: ${_mN(k.idx.ahead.fair4, 0)} €/MWh on average over 4 weeks, ${_mN(k.idx.ahead.month.fair, 0)} € over ${k.idx.ahead.month.n} days of ${k.idx.ahead.month.m} against a forward at ${_mN(k.idx.ahead.month.fwd, 0)} € (GFS ensemble weather, nuclear at the last day's level, today's gas and CO₂). `) : '') + _mT(`Au-dessus de 100 %, la France couvre sa consommation sans gaz et exporte : les prix décrochent. En dessous, les centrales au gaz fixent le prix. La courbe explique ${_mN(k.idx.r2 * 100, 0)} % des variations du spot sur 3 ans (écart moyen ± ${_mN(k.idx.mae, 0)} €) : un spot au-dessus du prix implicite = marché plus tendu que ne le disent la production et la consommation (imports, prix voisins, prévisions).`,
     `Above 100 %, France covers its demand without gas and exports: prices drop. Below, gas plants set the price. The curve explains ${_mN(k.idx.r2 * 100, 0)} % of the spot's moves over 3 years (mean gap ± ${_mN(k.idx.mae, 0)} €): a spot above the implied price = a market tighter than production and demand say (imports, neighbours' prices, forecasts).`);
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
