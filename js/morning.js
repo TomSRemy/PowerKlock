@@ -495,96 +495,25 @@ const MRN_WIN = {
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
 };
 const MRN_ORDER = ['cal', 'ttf', 'eua', 'brent', 'go', 'nuc'];
-let _mrnW = null;   // { id, range, on }
-function _mrnWinEl() {
-  let ov = document.getElementById('mrn-win'); if (ov) return ov;
-  ov = document.createElement('div'); ov.id = 'mrn-win'; ov.hidden = true;
-  ov.innerHTML = `<div class="mrn-win" role="dialog" aria-modal="true" aria-labelledby="mrn-win-n"><div class="mrn-win-h"><div><div class="mrn-win-n" id="mrn-win-n"></div><div class="mrn-win-v" id="mrn-win-v"></div></div><button type="button" class="mrn-win-x" id="mrn-win-x">×</button></div>
-    <div class="mrn-win-chg" id="mrn-win-chg"></div><div class="mrn-win-ctl"><div class="mrn-win-rng" id="mrn-win-rng"></div><div class="mrn-win-ser" id="mrn-win-ser"></div></div>
-    <div class="mrn-win-cw"><canvas id="mrn-win-chart"></canvas></div><div class="mrn-win-why" id="mrn-win-why"></div><div class="mrn-win-f"><span id="mrn-win-keys"></span><a href="#" id="mrn-win-full"></a></div></div>`;
-  document.body.appendChild(ov);
-  ov.addEventListener('click', e => { if (e.target === ov) _mrnWinClose(); });
-  ov.querySelector('#mrn-win-x').addEventListener('click', () => _mrnWinClose());
-  ov.querySelector('#mrn-win-rng').addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b) return; _mrnW.range = b.dataset.r; _mrnWinDraw(); });
-  ov.querySelector('#mrn-win-ser').addEventListener('change', e => { const c = e.target.closest('[data-s]'); if (!c) return; _mrnW.on[c.dataset.s] = c.checked; _mrnWinDraw(); });
-  ov.querySelector('#mrn-win-full').addEventListener('click', e => { e.preventDefault(); _mrnWinClose(MRN_WIN[_mrnW.id](MRN.k).route); });
-  return ov;
-}
-function _mrnWinOpen(id, push) {
-  const k = MRN.k; if (!k || !MRN_WIN[id]) return false;
-  const W = MRN_WIN[id](k), main = W.series[0] && W.series.find(x => x[0] !== 'nucfc' && x[4]) ; if (!main || !main[5].length) return false;
-  const prev = _mrnW; _mrnW = { id, range: prev ? prev.range : '1Y', on: Object.fromEntries(W.series.map(x => [x[0], x[4]])) };
-  const ov = _mrnWinEl(), s = (id === 'go' ? W.series.find(x => x[0] === 'go' + (+_mrnToday().slice(0, 4) + 1)) || main : main)[5], l = _mrnLast(s);
-  const look = W.look && k.look && k.look[W.look];
+// the window itself is shared with the market pages' tiles (js/pk-tilewin.js)
+function _mrnTileDef(id) {
+  const k = MRN.k; if (!k || !MRN_WIN[id] || !window.PKTile) return null;
+  const W = MRN_WIN[id](k), look = W.look && k.look && k.look[W.look];
   const chip = look && look.tone ? `<span class="wk-chip ${look.tone === 'up' ? 'wk-up' : look.tone === 'down' ? 'wk-dn' : 'wk-fl'}" title="${_mT('Semaine à venir · notes de marché', 'Week ahead · market notes')}">${look.tone === 'up' ? '↑ ' + _mT('haussier', 'bullish') : look.tone === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>` : '';
-  ov.querySelector('#mrn-win-n').textContent = W.name + ' · ' + _mT('dernière valeur ', 'last value ') + _mDay(l[0]);
-  ov.querySelector('#mrn-win-v').innerHTML = `${_mN(l[1], W.dp)}<small>${W.unit}</small> ${chip}`;
-  const chg = [[_mT('1 sem.', '1 wk'), 7], [_mT('1 mois', '1 month'), 30], [_mT('1 an', '1 year'), 365]].map(([lab, d]) => { const b = _mrnBack(s, d); if (b == null || !b) return ''; const c = (l[1] / b - 1) * 100, tn = Math.abs(c) < .5 ? '' : (c > 0) !== !!W.inv ? 'mrn-up' : 'mrn-dn'; return `<span class="${tn}"><i>${lab}</i>${_mS(c, 1)} %</span>`; });
-  const y1 = s.filter(p => p[0] >= _mrnAdd(l[0], -365)).map(p => p[1]);
-  if (y1.length > 2) chg.push(`<span><i>${_mT('12 mois', '12 months')}</i>min ${_mN(Math.min(...y1), W.dp)} · max ${_mN(Math.max(...y1), W.dp)}</span>`);
-  ov.querySelector('#mrn-win-chg').innerHTML = chg.join('');
-  ov.querySelector('#mrn-win-ser').innerHTML = W.series.length > 1 ? W.series.map(([sid, lab, col]) => `<label><input type="checkbox" data-s="${sid}" ${_mrnW.on[sid] ? 'checked' : ''}><i style="background:${col}"></i>${lab}</label>`).join('') : '';
-  // what to look at, from the numbers
-  const y1c = _mrnBack(s, 365) ? (l[1] / _mrnBack(s, 365) - 1) * 100 : null, lo = Math.min(...y1), hi = Math.max(...y1), at = (l[1] - lo) / ((hi - lo) || 1);
-  let why = (at > .9 ? _mT('Près du plus haut des 12 derniers mois', 'Near its 12-month high') : at < .1 ? _mT('Près du plus bas des 12 derniers mois', 'Near its 12-month low') : _mT('Dans sa fourchette des 12 derniers mois', 'Within its 12-month range')) + (y1c != null ? _mT(` ; ${_mS(y1c, 0)} % sur un an.`, `; ${_mS(y1c, 0)} % on a year.`) : '.');
-  if (id === 'ttf') { const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365); if (st && ly != null) why += _mT(` Stocks de gaz UE ${_mN(st[1], 1)} % contre ${_mN(ly, 1)} % il y a un an.`, ` EU gas storage ${_mN(st[1], 1)} % against ${_mN(ly, 1)} % a year ago.`); }
-  if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) why += _mT(` Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix plus fermes.`, ` Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
-  if (id === 'cal' && W.series.length > 1) why += _mT(' Coche « Gaz TTF » pour voir le gaz sur la même période.', ' Tick “TTF gas” to see gas over the same period.');
-  if (id === 'go') why = _mT('Prix moyen courtier, une cotation par semaine. ', 'Broker mid, one quote a week. ') + why;
-  ov.querySelector('#mrn-win-why').textContent = why;
-  ov.querySelector('#mrn-win-keys').innerHTML = _mT('Fermer : <kbd>×</kbd> <kbd>Échap</kbd>, un clic à côté ou le bouton retour · <kbd>←</kbd> <kbd>→</kbd> tuile précédente / suivante', 'Close: <kbd>×</kbd> <kbd>Esc</kbd>, a click outside or Back · <kbd>←</kbd> <kbd>→</kbd> previous / next tile');
-  ov.querySelector('#mrn-win-full').textContent = _mT('Page complète : ', 'Full page: ') + W.page + ' ›';
-  ov.querySelector('#mrn-win-x').setAttribute('aria-label', _mT('Fermer', 'Close'));
-  const wasHidden = ov.hidden; ov.hidden = false; document.documentElement.classList.add('mrn-win-open');
-  if (push && wasHidden) history.pushState(Object.assign({}, history.state, { mrnWin: id }), '', location.href);
-  _mrnWinDraw();
-  if (wasHidden) ov.querySelector('#mrn-win-x').focus();
-  return true;
+  let more = '';
+  if (id === 'ttf') { const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365); if (st && ly != null) more = _mT(`Stocks de gaz UE ${_mN(st[1], 1)} % contre ${_mN(ly, 1)} % il y a un an.`, `EU gas storage ${_mN(st[1], 1)} % against ${_mN(ly, 1)} % a year ago.`); }
+  if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) more = _mT(`Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix plus fermes.`, `Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
+  if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
+  if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
+  const y = +_mrnToday().slice(0, 4);
+  return { name: W.name, unit: W.unit, dp: W.dp, inv: W.inv, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
 }
-function _mrnWinDraw() {
-  const k = MRN.k, W = MRN_WIN[_mrnW.id](k), list = W.series.filter(x => _mrnW.on[x[0]] && x[5].length);
-  { const rs = [['1M', _mT('1 mois', '1 month')], ['6M', _mT('6 mois', '6 months')], ['1Y', _mT('1 an', '1 year')], ['3Y', _mT('3 ans', '3 years')], ['ALL', _mT('Tout', 'All')]];
-    document.getElementById('mrn-win-rng').innerHTML = rs.map(([r, l]) => `<button type="button" data-r="${r}" class="${_mrnW.range === r ? 'on' : ''}">${l}</button>`).join(''); }
-  if (!list.length) return;
-  const end = list.map(x => _mrnLast(x[5])[0]).sort().pop(), from = _mrnAdd(end, -({ '1M': 31, '6M': 183, '1Y': 366, '3Y': 1096, ALL: 99999 }[_mrnW.range]));
-  const dates = [...new Set(list.flatMap(x => x[5].filter(p => p[0] >= from).map(p => p[0])))].sort();
-  const ds = list.map(([sid, lab, col, ax, , pts]) => { const m = new Map(pts); return _fuelLineDs(lab, dates.map(d => m.has(d) ? Math.round(m.get(d) * 1000) / 1000 : null), col,
-    { borderWidth: sid === W.series[0][0] ? 2.2 : 1.6, spanGaps: true, yAxisID: ax, pointRadius: pts.length < 120 ? 2 : 0, borderDash: ax === 'y2' || sid === 'nucfc' ? [5, 4] : [] }); });
-  const y2 = list.some(x => x[3] === 'y2');
-  const fmt = d => new Date(d + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', _mrnW.range === '1M' ? { day: 'numeric', month: 'short', timeZone: 'UTC' } : { month: 'short', year: '2-digit', timeZone: 'UTC' });
-  _fuelChart('mrn-win-chart', { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ interaction: { mode: 'index', intersect: false },
-    scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10.5 }, maxTicksLimit: 8, maxRotation: 0, callback: (v, i) => fmt(dates[i]) } }), y: _fuelAxis(W.unit),
-      y2: _fuelAxis('', { position: 'right', display: y2, grid: { display: false } }) },
-    plugins: { legend: { display: false } } }) }, 'today-' + _mrnW.id);
-}
-// then: a page to open once the window's history entry is gone (the « Full page » link)
-function _mrnWinClose(then) {
-  const ov = document.getElementById('mrn-win'); if (!ov || ov.hidden) return;
-  ov.hidden = true; document.documentElement.classList.remove('mrn-win-open');
-  const id = _mrnW && _mrnW.id; _mrnW = null;
-  if (history.state && history.state.mrnWin) { MRN.skipPop = true; MRN.afterPop = then || null; history.back(); }
-  else if (then && window.PKNav) PKNav.go(then);
-  const t = id && document.querySelector('.mrn2-tile[data-tile="' + id + '"]'); if (t && !then) t.focus();
-}
-// Back closes the window and nothing else (capture: before the menu's own handler would show the page again)
-window.addEventListener('popstate', e => {
-  if (MRN.skipPop) { MRN.skipPop = false; e.stopImmediatePropagation(); const r = MRN.afterPop; MRN.afterPop = null; if (r && window.PKNav) setTimeout(() => PKNav.go(r), 0); return; }
-  const ov = document.getElementById('mrn-win');
-  if (ov && !ov.hidden) { ov.hidden = true; document.documentElement.classList.remove('mrn-win-open'); _mrnW = null; e.stopImmediatePropagation(); }
-}, true);
-document.addEventListener('keydown', e => {
-  const ov = document.getElementById('mrn-win'); if (!ov || ov.hidden) return;
-  if (e.key === 'Escape') { e.preventDefault(); _mrnWinClose(); return; }
-  if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) {
-    const ids = MRN_ORDER.filter(i => document.querySelector('.mrn2-tile[data-tile="' + i + '"]')), i = ids.indexOf(_mrnW.id);
-    _mrnWinOpen(ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length], false); e.preventDefault();
-  }
-});
 document.addEventListener('click', e => {   // a tile opens its chart full size (a modified click still opens the page in a new tab)
   const a = e.target.closest && e.target.closest('.mrn2-tile[data-route]');
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
   // capture phase, before the menu's handler that opens any [data-route] link as a page
-  if (a.dataset.tile && _mrnWinOpen(a.dataset.tile, true)) { e.preventDefault(); e.stopPropagation(); }
+  const ids = MRN_ORDER.filter(i => document.querySelector('.mrn2-tile[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);
+  if (idx >= 0 && window.PKTile && PKTile.open(_mrnTileDef(a.dataset.tile), { push: true, list: ids.map(i => () => _mrnTileDef(i)), idx, opener: a })) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 
 (function () {
@@ -662,23 +591,6 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--text3);margin-top:2px}
   .mrn3-dim{color:var(--text3)}
   .mrn3-th{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
-  #mrn-win{position:fixed;inset:0;z-index:2000;background:rgba(0,8,16,.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:24px}
-  #mrn-win[hidden]{display:none}
-  html.mrn-win-open{overflow:hidden}
-  .mrn-win{width:min(1100px,100%);max-height:calc(100vh - 48px);overflow:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:16px 20px 14px;display:flex;flex-direction:column;gap:12px}
-  .mrn-win-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .mrn-win-n{font-size:12px;color:var(--text3)} .mrn-win-v{font:600 28px 'Outfit',sans-serif;color:var(--text);display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums} .mrn-win-v small{font:500 13px Inter,sans-serif;color:var(--text3);margin-left:-4px}
-  .mrn-win-x{background:none;border:1px solid var(--border2);color:var(--text2);border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;flex:none} .mrn-win-x:hover{border-color:var(--accent);color:var(--text)}
-  .mrn-win-chg{display:flex;gap:8px;flex-wrap:wrap} .mrn-win-chg span{font:600 12px 'JetBrains Mono',monospace;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 8px}
-  .mrn-win-chg span i{font:500 11px Inter,sans-serif;font-style:normal;color:var(--text3);margin-right:6px} .mrn-win-chg .mrn-up{color:var(--down)} .mrn-win-chg .mrn-dn{color:var(--up)}
-  .mrn-win-ctl{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
-  .mrn-win-rng{display:flex;gap:4px} .mrn-win-rng button{font:500 12px Inter,sans-serif;background:var(--bg3);color:var(--text3);border:1px solid var(--border2);border-radius:999px;padding:3px 11px;cursor:pointer} .mrn-win-rng button.on{color:var(--accent);border-color:var(--accent)}
-  .mrn-win-ser{display:flex;gap:6px;flex-wrap:wrap} .mrn-win-ser label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;cursor:pointer} .mrn-win-ser i{width:12px;height:3px;border-radius:2px;display:inline-block}
-  .mrn-win-cw{position:relative;height:min(380px,48vh)}
-  .mrn-win-why{font-size:13px;color:var(--text2);border-top:1px solid var(--border);padding-top:10px}
-  .mrn-win-f{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--text3)} .mrn-win-f a{color:var(--accent);text-decoration:none;font-weight:600}
-  .mrn-win-f kbd{font:500 11px 'JetBrains Mono',monospace;border:1px solid var(--border2);border-radius:4px;padding:0 5px;color:var(--text2)}
-  @media (max-width:640px){#mrn-win{padding:8px}.mrn-win{padding:12px}.mrn-win-f span{display:none}}
   .mrn-sec{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);font-weight:600;margin:18px 0 8px}
   `;
   document.head.appendChild(css);
