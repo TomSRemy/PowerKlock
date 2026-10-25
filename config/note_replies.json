@@ -1,22 +1,42 @@
 {
-  "1": {
-    "status": "done",
-    "reply": "Fait : « Ce qui a bougé et pourquoi » et « Dans l’actualité » sont côte à côte (3/5 – 2/5 de la largeur) ; l’un sous l’autre sur un écran de moins de 1 100 px."
-  },
-  "2": {
-    "status": "done",
-    "reply": "Fait : les sections repliées suivent le site — Marchés, Renouvelables, Système électrique — et « Prévisions détaillées » est tout en bas."
-  },
-  "3": {
-    "status": "done",
-    "reply": "Fait : le spot par mois est à côté de France vs Allemagne ; deux graphiques par ligne dans toutes les sections."
-  },
-  "4": {
-    "status": "done",
-    "reply": "Fait : « Production en ce moment » a l’historique à droite (production par mois, 3 ans) ; dessous, indisponibilités nucléaires à côté de la consommation face à la normale."
-  },
-  "5": {
-    "status": "done",
-    "reply": "Proposition en ligne. Gardés : spot par mois, France vs Allemagne, forwards France (historique + tableau), TTF calendrier, GO, taux de capture. Ajoutés : capture par région, production par mois, consommation vs normale. Retirés de Today (toujours sur leurs pages) : forwards sur le calendrier de livraison, tableau des forwards TTF. Dis-moi ce qui manque ou ce qui est de trop."
-  }
+ "1": {
+  "status": "done",
+  "reply": "Fait : « Ce qui a bougé et pourquoi » et « Dans l’actualité » sont côte à côte (3/5 – 2/5 de la largeur) ; l’un sous l’autre sur un écran de moins de 1 100 px."
+ },
+ "2": {
+  "status": "done",
+  "reply": "Fait : les sections repliées suivent le site — Marchés, Renouvelables, Système électrique — et « Prévisions détaillées » est tout en bas."
+ },
+ "3": {
+  "status": "done",
+  "reply": "Fait : le spot par mois est à côté de France vs Allemagne ; deux graphiques par ligne dans toutes les sections."
+ },
+ "4": {
+  "status": "done",
+  "reply": "Fait : « Production en ce moment » a l’historique à droite (production par mois, 3 ans) ; dessous, indisponibilités nucléaires à côté de la consommation face à la normale."
+ },
+ "5": {
+  "status": "done",
+  "reply": "Proposition en ligne. Gardés : spot par mois, France vs Allemagne, forwards France (historique + tableau), TTF calendrier, GO, taux de capture. Ajoutés : capture par région, production par mois, consommation vs normale. Retirés de Today (toujours sur leurs pages) : forwards sur le calendrier de livraison, tableau des forwards TTF. Dis-moi ce qui manque ou ce qui est de trop."
+ },
+ "6": {
+  "status": "done",
+  "reply": "Fait : « Dans l’actualité » et « Ce qui a bougé et pourquoi » ont la même largeur (moitié-moitié)."
+ },
+ "7": {
+  "status": "done",
+  "reply": "Fait : le TTF a la même ligne que la France : historique par produit + tableau des prix (jour, semaine), même hauteur."
+ },
+ "8": {
+  "status": "done",
+  "reply": "Fait : les GO sont passées dans Renouvelables, à côté des prix de capture à terme."
+ },
+ "9": {
+  "status": "done",
+  "reply": "Fait : deux sélecteurs sur la carte — solaire ou éolien, et la période (dernière année complète, 3 ans, 5 ans). Le sous-titre dit ce qui est affiché."
+ },
+ "10": {
+  "status": "done",
+  "reply": "Oui, c’était la jauge du nucléaire (passée dans les tuiles). À la place : le forward du mois prochain face au spot du mois en cours."
+ }
 }

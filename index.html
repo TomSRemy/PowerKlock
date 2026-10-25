@@ -3846,60 +3846,68 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-2">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-2')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Markets<span class="pk-hs-meta">spot by month, France vs Germany, forwards, TTF, guarantees of origin</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Markets<span class="pk-hs-meta">spot by month, France vs Germany, power and gas forwards</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-2">
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France · spot by month, 12 months</div><div class="fuel-card-sub" id="mrn-sptm-sub">Monthly average baseload against the 12-month mean</div></div><span class="source-badge">ENTSO-E</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-sptm" style="width:100%;height:300px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-sptm" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France vs Germany</div><div class="fuel-card-sub" id="mrn-frde-sub">Daily baseload and FR − DE spread, 30 days</div></div><span class="source-badge">ENTSO-E</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-frde" style="width:100%;height:300px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-frde" style="width:100%;height:320px"></canvas></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France forwards · price history by product</div><div class="fuel-card-sub" id="mrn-fwdp-sub">3 months</div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-fwdp" style="width:100%;height:300px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-fwdp" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France forward prices</div><div class="fuel-card-sub">Baseload, by product, change on the day and the week</div></div><span class="source-badge">Market data</span></div>
-            <div id="mrn-fwdt"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+            <div class="mrn3-tbl" id="mrn-fwdt"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">TTF calendar forwards</div><div class="fuel-card-sub" id="mrn-ttfc-sub">6 months</div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-ttfc" style="width:100%;height:300px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF forwards · price history by product</div><div class="fuel-card-sub" id="mrn-ttfc-sub">6 months</div></div><span class="source-badge">Market data</span></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-ttfc" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Guarantees of origin · renewable</div><div class="fuel-card-sub" id="mrn-go-sub">Weekly mid, current and next production years</div></div><span class="source-badge">Commerg</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-go" style="width:100%;height:300px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">TTF forward prices</div><div class="fuel-card-sub">By product, change on the day and the week</div></div><span class="source-badge">Market data</span></div>
+            <div class="mrn3-tbl" id="mrn-ttft"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
         </div>
-
         </div>
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-3">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-3')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15"/><path d="M5 19 13 11"/></svg>Renewables<span class="pk-hs-meta">capture rates, by technology and by region</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15"/><path d="M5 19 13 11"/></svg>Renewables<span class="pk-hs-meta">capture rates, by region, guarantees of origin, forward capture prices</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-3">
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France wind & solar capture rates</div><div class="fuel-card-sub" id="mrn-cr-sub">Capture price ÷ baseload, 90 days</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-cr" style="width:100%;height:300px"></canvas></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-cr" style="width:100%;height:320px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-creg" style="width:100%;height:300px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">Capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="mrn3-sel"><select id="mrn-creg-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select><select id="mrn-creg-per" aria-label="Period"></select></span><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-creg" style="width:100%;height:320px"></canvas></div>
           </div>
         </div>
-
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Guarantees of origin · renewable</div><div class="fuel-card-sub" id="mrn-go-sub">Weekly mid, current and next production years</div></div><span class="source-badge">Commerg</span></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-go" style="width:100%;height:320px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France forward capture prices</div><div class="fuel-card-sub" id="mrn-fcap-sub">Solar and wind: what the forwards are worth for their production profile</div></div><span class="source-badge">PowerKlock</span></div>
+            <div style="position:relative;height:320px"><canvas id="mrn-fcap" style="width:100%;height:320px"></canvas></div>
+          </div>
+        </div>
         </div>
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-4">

@@ -406,10 +406,13 @@ async function _mrnWeeks(k) {
   const g = [];
   const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
   if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
+  if (fm && fm.months) {
+    const m1 = Object.keys(fm.months).sort()[0], v1 = +fm.months[m1].value, mon = _mrnToday().slice(0, 7), sp = k.spotDays.filter(r => r.d.startsWith(mon)), avg = _mrnMean(sp.map(r => r.avg));
+    const ml = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    g.push(`<div class="mrn2-g"><div>${_mT('Forward mois prochain', 'Next month forward')} (${ml(m1)}) <b>${_mN(v1, 1)} €/MWh</b></div>` + (avg != null ? `<div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, v1 / Math.max(v1, avg) * 100).toFixed(1)}%;background:var(--accent)"></div><div class="mrn2-mark" style="left:${Math.min(100, avg / Math.max(v1, avg) * 100).toFixed(1)}%"></div></div><div class="mrn2-gs">${_mT('Repère : spot de ', 'Mark: spot of ')}${ml(mon)}${_mT(' jusqu’ici ', ' so far ')}${_mN(avg, 1)} €/MWh (${_mS((v1 / avg - 1) * 100, 0)} %)</div>` : '') + '</div>');
+  }
   if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
   const take = [];
-  if (fm && fm.months) { const m1 = Object.keys(fm.months).sort()[0], v1 = fm.months[m1];
-    take.push(_mT('Mois prochain (', 'Next month (') + new Date(m1 + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) + ') : <b>' + _mN(+v1.value, 1) + ' €/MWh</b>'); }
   const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
   if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix plus fermes',
     (cold ? 'colder' : '') + (cold && calm ? ' and calmer' : calm ? 'calmer' : '') + ' than normal in ' + Math.max(cold, calm) + ' week' + (Math.max(cold, calm) > 1 ? 's' : '') + ': more gas burnt, firmer prices'));
@@ -442,6 +445,20 @@ async function _mrnNews() {
     (pick.length ? '<ul class="mrn-movers">' + pick.slice(0, 8).map(i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)}${(i.countries || []).length ? ' · ' + esc(i.countries.slice(0, 2).join(' · ')) : ''}</span>${vote(i)}</li>`).join('') + '</ul>' : '<div class="fuel-note">No market-moving article in the last days.</div>');
 }
 
+// capture rate by region: solar or wind, over the last full year or several (the choice is the card's own)
+function _mrnCreg() {
+  const t = document.getElementById('mrn-creg-tech'), per = document.getElementById('mrn-creg-per'); if (!t || !per || !PKW.get('ren-capture-regions')) return;
+  const y = +_mrnToday().slice(0, 4) - 1;
+  if (!per.options.length) {
+    per.innerHTML = [[String(y), _mT('Année ', 'Year ') + y], [(y - 2) + '-' + y, (y - 2) + '–' + y + _mT(' (3 ans)', ' (3 years)')], [(y - 4) + '-' + y, (y - 4) + '–' + y + _mT(' (5 ans)', ' (5 years)')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    t.addEventListener('change', _mrnCreg); per.addEventListener('change', _mrnCreg);
+  }
+  PKW.draw('ren-capture-regions', 'mrn-creg', { tech: t.value, year: per.value }).then(() => {
+    const e = document.getElementById('mrn-creg-sub');
+    if (e) e.textContent = (t.value === 'solar' ? _mT('Solaire', 'Solar') : _mT('Éolien', 'Wind')) + ' · ' + per.options[per.selectedIndex].text + _mT(' · production de chaque région au prix day-ahead français, classée, avec la France', ' · each region’s output on the French day-ahead price, ranked, with France');
+  });
+}
+
 async function renderMorning() {
   const upd = document.getElementById('mrn-date');
   if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
@@ -462,9 +479,14 @@ async function renderMorning() {
       PKW.draw('fr-fwd-products', 'mrn-fwdp', { country: 'FR', win: '3M' }).then(r => sub('mrn-fwdp-sub', r));
       const ft = document.getElementById('mrn-fwdt'); if (ft) PKW.get('fr-fwd-table').html(ft, { country: 'FR' });
       if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', { win: '6M' }).then(r => sub('mrn-ttfc-sub', r));
-      PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
+      const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, {});
     },
-    'hs-morning-3': () => { PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' }); if (PKW.get('ren-capture-regions')) PKW.draw('ren-capture-regions', 'mrn-creg', {}).then(r => sub('mrn-creg-sub', r)); },
+    'hs-morning-3': () => {
+      PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' });
+      _mrnCreg();
+      PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
+      if (PKW.get('fr-capture-forward')) PKW.draw('fr-capture-forward', 'mrn-fcap', {}).then(r => sub('mrn-fcap-sub', r));
+    },
     'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: '3Y' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); if (PKW.get('fr-load-normal')) PKW.draw('fr-load-normal', 'mrn-loadn', {}); },
   };
   Object.entries(lazy).forEach(([id, fn]) => {
@@ -590,7 +612,9 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--text3);margin-top:2px}
   .mrn3-dim{color:var(--text3)}
   .mrn3-th{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
-  .mrn3-pair{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;align-items:start}
+  .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
+  .mrn3-tbl{height:320px;overflow:auto}
+  .mrn3-sel{display:flex;gap:6px;margin-left:auto;margin-right:8px} .mrn3-sel select{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:3px 6px;font-size:12px}
   .mrn3-pair>section{margin:0;min-width:0}
   @media (max-width:1100px){.mrn3-pair{grid-template-columns:1fr}}
   .mrn3-row{margin-bottom:12px}
