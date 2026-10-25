@@ -836,6 +836,9 @@ async function renderMorning() {
     'hs-morning-2': () => {
       PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
       PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
+      // the CATE presentation's price charts not shown elsewhere on Today
+      if (PKW.get('fr-spot-30d')) PKW.draw('fr-spot-30d', 'mrn-sp30', {}).then(r => sub('mrn-sp30-sub', r));
+      if (PKW.get('fuel-coal-oil')) PKW.draw('fuel-coal-oil', 'mrn-coal', {}).then(r => sub('mrn-coal-sub', r));
       // power and gas side by side with the same chart and the same table: calendar years, front month and front quarter, 3 months;
       // the tables without seasons unless asked (one box ticks both)
       const fp = { win: '3M', kinds: 'year,quarter,month', front: 1 };
