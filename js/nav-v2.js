@@ -107,12 +107,12 @@
       ['tools/ppa', 'PPA pricer', 'ppa'],
       ['tools/forecast', 'Production forecast', 'fcst'],
       ['tools/carbon', 'Carbon footprint', 'carbonfoot'],
+      ['intel/analysis', 'Market analysis', 'analysis'],   // a tool more than news (note 19); its address stays
       ['tools/compare', 'Comparator', 'compare'],
       ['tools/converter', 'Converter', 'converter'],
     ]],
     ['Intelligence', [
       ['intel/news', 'News', 'news'],
-      ['intel/analysis', 'Market analysis', 'analysis'],
     ]],
   ];
   const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology']];

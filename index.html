@@ -2239,7 +2239,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
              opens the whole group (not addFullscreen() per-canvas, which
              would isolate one panel and break the sync). -->
         <button class="pk-btn-ghost" onclick="maFullscreenPanels()" title="Fullscreen (all 4 synced panels)">⛶ Fullscreen</button>
-      </div><div id="ma-cursor-badges" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap"></div><div id="ma-drivers-strip" class="ma-drivers-strip"></div><div class="ma-layout">
+      </div><div id="ma-cursor-badges" hidden></div><div style="margin:0 0 12px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">Key moments of the window · numbered on the price chart (click = position the crosshair)</div>
+        <div id="ma-episodes" class="ma-episodes-top"></div>
+      </div><div id="ma-drivers-strip" class="ma-drivers-strip"></div><div class="ma-layout">
       <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px;min-width:0">
 
         <div class="ma-panel-row">
@@ -2293,16 +2296,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:260px"><canvas id="ma-fc-solar" style="width:100%;height:260px"></canvas></div>
           </div>
         </div>
-      </div><div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--bd)">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:10px">↓ Key moments detected (click = position the crosshair)</div>
-        <div id="ma-episodes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
       </div><div class="chart-container" style="padding:14px 16px;margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--acc);text-transform:uppercase;font-weight:700">✦ Causal market read</span>
-            <span style="font-size:10px;color:var(--tx3)">— Claude reads the chain weather → mix → marginal → price</span>
+            <span style="font-size:10px;color:var(--tx3)">— written from the data of the window: weather → mix → marginal plant → price</span>
           </div>
-          <button class="pk-btn-primary" id="ma-ai-btn" onclick="maGenerateAI()">✦ Generate causal market read</button>
+          <button class="pk-btn-ghost" id="ma-ai-btn" onclick="maGenerateAI()">✦ AI version (optional)</button>
         </div>
         <div id="ma-ai-content">
           <div style="color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px">Click to generate a causal synthesis, desk-note style.</div>

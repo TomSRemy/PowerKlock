@@ -695,7 +695,16 @@
         label: (_fr() ? 'Prix ' : '') + (ZONE_SHORT[STATE.data.nbZone] || '') + (_fr() ? '' : ' price'), endLabel: ZONE_NAME[STATE.data.nbZone] || 'Neighbour', data: f.nbPrice,
         borderColor: 'rgba(127,200,248,0.75)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false, spanGaps: false,
       }],
-    }, _commonChartOpts('€/MWh'));
+    }, (function () {   // the key moments, numbered on the price chart (same numbers as the cards above)
+      const o = _commonChartOpts('€/MWh'), ann = {};
+      (STATE.cursors || []).forEach(function (m, i) {
+        const col = EPISODE_KIND_COLOURS[m.kind] || '#7A93AB';
+        ann['km' + i] = { type: 'line', xMin: m.idx, xMax: m.idx, borderColor: _hexA(col, 0.6), borderWidth: 1, borderDash: [3, 3],
+          label: { display: true, content: String(i + 1), position: 'start', backgroundColor: col, color: '#0B1118', font: { size: 10, weight: 'bold' }, padding: { x: 5, y: 2 }, borderRadius: 8 } };
+      });
+      o.plugins = Object.assign({}, o.plugins, { annotation: { annotations: ann } });
+      return o;
+    })());
     _renderPanelLegend('ma-legend-price', [
       { label: ZONE_SHORT[STATE.zone] + ' day-ahead', color: '#E6EDF3' },
       { label: 'Gas plant cost (gas + CO₂): above it, gas plants earn money', color: DRIVER_COLOURS.ttf },
@@ -917,6 +926,7 @@
   // RENDER · EPISODES + CURSOR BADGES
   // ════════════════════════════════════════════════════════════════
 
+  (function () { const st = document.createElement('style'); st.textContent = '.ma-episodes-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}.ma-episodes-top .ma-episode-card{cursor:pointer}'; document.head.appendChild(st); })();
   function _renderEpisodes() {
     const host = document.getElementById('ma-episodes');
     if (!host) return;
@@ -1026,6 +1036,37 @@
     };
   }
 
+  // the market read written from the window's data (no AI): who set the price, coupling, residual load vs nuclear, renewables, commodities
+  function _ruleRead() {
+    const out = document.getElementById('ma-ai-content'); if (!out || !STATE.data) return;
+    const f = STATE.data.flat, fr = _fr(), T2 = (a, b) => fr ? a : b, B = (t, c) => '<b style="color:' + (c || '#fff') + '">' + t + '</b>';
+    const n = (v, d) => { if (v == null || isNaN(v)) return '–'; let t = (+v).toFixed(d); if (/^-0(\.0+)?$/.test(t)) t = t.slice(1); return fr ? t.replace('.', ',') : t; };
+    const ZN = z => fr ? ({ FR: 'France', DE_LU: 'Allemagne', BE: 'Belgique', NL: 'Pays-Bas', ES: 'Espagne', PT: 'Portugal', IT_NORD: 'Italie Nord', CH: 'Suisse', AT: 'Autriche', PL: 'Pologne' }[z] || ZONE_NAME[z] || z) : (ZONE_NAME[z] || z);
+    const pc = v => Math.abs(v) < 0.5 ? T2('stable', 'steady') : (v >= 0 ? '+' : '−') + n(Math.abs(v), 0) + ' %';
+    const idx = f.price.map((p, i) => p != null ? i : -1).filter(i => i >= 0); if (!idx.length) { out.innerHTML = ''; return; }
+    const P = idx.map(i => f.price[i]), avg = _avg(P), hi = idx.reduce((a, i) => f.price[i] > f.price[a] ? i : a, idx[0]), lo = idx.reduce((a, i) => f.price[i] < f.price[a] ? i : a, idx[0]);
+    const when = i => { const d = f.slotDates[i]; return d.toLocaleDateString(_loc(), { weekday: 'short', day: 'numeric' }) + ' ' + String(d.getHours()).padStart(2, '0') + (fr ? ' h' : ':00'); };
+    const S = [];
+    S.push(T2('Sur la fenêtre, le day-ahead ', 'Over the window, the day-ahead ') + ZN(STATE.zone) + T2(' a fait ', ' averaged ') + B(n(avg, 1) + ' €/MWh') + T2(' en moyenne, de ', ', from ') + B(n(f.price[lo], 0) + ' €', '#14D3A9') + ' (' + when(lo) + ')' + T2(' à ', ' to ') + B(n(f.price[hi], 0) + ' €', '#ED6965') + ' (' + when(hi) + ').');
+    const gs = idx.filter(i => f.srmc[i] != null), gasSet = gs.filter(i => f.price[i] >= f.srmc[i] - 5).length;
+    if (gs.length) { const sh = gasSet / gs.length * 100;
+      S.push(sh >= 40 ? T2('Le gaz a fixé le prix ', 'Gas set the price ') + B(n(sh, 0) + ' %') + T2(' du temps (prix au niveau du coût d’une centrale gaz) : le TTF et le CO₂ comptent directement.', ' of the time (price at a gas plant’s cost): TTF and CO₂ matter directly.')
+        : T2('Le prix n’a atteint le coût d’une centrale gaz que ', 'The price reached a gas plant’s cost only ') + B(n(sh, 0) + ' %') + T2(' du temps : nucléaire, hydraulique et renouvelables fixent le prix, l’histoire est physique plus que gazière.', ' of the time: nuclear, hydro and renewables set it, the story is physical rather than gas.')); }
+    const nb = idx.filter(i => f.nbPrice[i] != null);
+    if (nb.length) { const cp = nb.filter(i => Math.abs(f.price[i] - f.nbPrice[i]) < 1).length / nb.length * 100, gap = _avg(nb.map(i => f.price[i] - f.nbPrice[i]));
+      S.push(T2('Couplage avec ', 'Coupling with ') + (STATE.data.nbZone ? ZN(STATE.data.nbZone) : T2('le voisin', 'the neighbour')) + ' : ' + B(n(cp, 0) + ' %') + T2(' des heures au même prix ; écart moyen ', ' of hours at the same price; mean gap ') + B((gap >= 0 ? '+' : '') + n(gap, 1) + ' €') + '.'); }
+    const rn = idx.filter(i => f.resid[i] != null && f.drivers.nucAvail[i] != null);
+    if (rn.length) { const over = rn.filter(i => f.resid[i] > f.drivers.nucAvail[i]).length / rn.length * 100;
+      S.push(T2('La charge résiduelle (conso − éolien − solaire) a dépassé le nucléaire disponible ', 'Residual load (demand − wind − solar) exceeded available nuclear ') + B(n(over, 0) + ' %', over > 30 ? '#ED6965' : '#14D3A9') + T2(' des heures : ', ' of hours: ') + (over > 30 ? T2('il a fallu des imports ou du gaz, d’où les pointes.', 'imports or gas were needed, hence the peaks.') : T2('le nucléaire et les renouvelables ont suffi la plupart du temps.', 'nuclear and renewables were enough most of the time.'))); }
+    const neg = P.filter(p => p <= 0).length, w = _avg(idx.map(i => f.wind[i])), so = _avg(idx.map(i => f.solar[i]));
+    S.push(T2('Éolien ', 'Wind ') + B(n(w, 1) + ' GW') + T2(' et solaire ', ' and solar ') + B(n(so, 1) + ' GW') + T2(' en moyenne', ' on average') + (neg ? T2(' ; ', '; ') + B(neg + T2(' créneaux à 0 € ou moins', ' slots at 0 € or below'), '#14D3A9') : '') + '.');
+    const ttf = f.drivers.ttf.filter(v => v != null), eua = f.drivers.eua.filter(v => v != null);
+    if (ttf.length > 1 && eua.length > 1) { const dt = (ttf[ttf.length - 1] / ttf[0] - 1) * 100, de = (eua[eua.length - 1] / eua[0] - 1) * 100;
+      S.push(Math.abs(dt) < 3 && Math.abs(de) < 3 ? T2('TTF et CO₂ stables : les mouvements de prix viennent de la météo et de la disponibilité, pas des combustibles.', 'TTF and CO₂ steady: price moves come from weather and availability, not fuels.')
+        : T2('Combustibles : TTF ', 'Fuels: TTF ') + B(pc(dt)) + T2(', CO₂ ', ', CO₂ ') + B(pc(de)) + T2(' sur la fenêtre.', ' over the window.')); }
+    out.innerHTML = '<div style="font-family:Inter,sans-serif;font-size:12.5px;color:var(--tx2);line-height:1.75">' + S.join(' ') + '</div>';
+  }
+
   window.maGenerateAI = async function () {
     if (STATE.aiBusy) return;
     const out = document.getElementById('ma-ai-content');
@@ -1065,7 +1106,7 @@
       out.innerHTML = '<div style="color:#ED6965;font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">API error: ' + err.message + '. On a static deployment a serverless proxy is needed to hide the API key.</div>';
     } finally {
       STATE.aiBusy = false;
-      if (btn) { btn.disabled = false; btn.innerHTML = '✦ Generate causal market read'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '✦ ' + (_fr() ? 'Version IA (facultatif)' : 'AI version (optional)'); }
     }
   };
 
@@ -1107,6 +1148,7 @@
     _renderPanels();
     _renderEpisodes();
     _renderCursorBadges();
+    _ruleRead();
     _clearHover();   // side panel starts on the latest slot
   }
 
