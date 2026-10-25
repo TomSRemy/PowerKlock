@@ -269,6 +269,31 @@ function _mrnDayStats(hr) {
   return { base: _mrnMean(hr), peak: _mrnMean(hr.slice(8, 20)), min: mn, minH: hr.indexOf(mn), max: mx, maxH: hr.indexOf(mx), zero: hr.filter(x => x != null && x <= 0).length };
 }
 
+// ── PowerKlock index: low-carbon coverage and the price it implies ──
+// coverage = (nuclear + hydro + wind + solar + bioenergy) ÷ consumption, day by day (RTE éCO2mix). Above 100 %, France
+// covers its demand without gas and exports: prices fall towards the neighbours' or below; under 100 %, gas plants set the price.
+// Implied price = what a gas plant costs to run (TTF ÷ 0.55 + 0.37 × EUA) × a curve of the coverage, fitted on the last
+// three years (least absolute error): the benchmark the day's spot is read against.
+function _mrnIndex(rted, P) {
+  const rows = rted && rted.rows; if (!rows || !rows.length) return null;
+  const ttf = P('ttf'), eua = P('eua'); if (!ttf.length || !eua.length) return null;
+  const at = (pts, d) => { let lo = 0, hi = pts.length - 1, r = null; while (lo <= hi) { const m = (lo + hi) >> 1; if (pts[m][0] <= d) { r = pts[m][1]; lo = m + 1; } else hi = m - 1; } return r; };
+  const seen = new Set(), from = _mrnAdd(_mrnToday(), -1096), D = [];
+  rows.forEach(x => { if (seen.has(x.d) || x.d < from || !x.loadAvg) return; seen.add(x.d);
+    const cov = ((x.nuclearAvg || 0) + (x.hydroAvg || 0) + (x.windAvg || 0) + (x.solarAvg || 0) + (x.bioAvg || 0)) / x.loadAvg * 100;
+    const g = at(ttf, x.d), e = at(eua, x.d); if (g == null || e == null) return;
+    const wd = new Date(x.d + 'T12:00:00Z').getUTCDay();
+    D.push({ d: x.d, cov, srmc: g / 0.55 + 0.37 * e, p: x.base, we: wd === 0 || wd === 6 ? 1 : 0 }); });
+  const fit = D.filter(x => x.p != null); if (fit.length < 200) return null;
+  // weekends: lower demand than the coverage alone says (w = their discount)
+  const f = (x, a, b, w) => x.srmc / (1 + Math.exp(-(a - b * (x.cov - 100)))) * (1 - w * x.we);
+  let best = [Infinity, 0, 0, 0];
+  for (let a = -2; a <= 7; a += 0.25) for (let b = 0.04; b <= 0.4; b += 0.01) for (const w of [0, 0.1, 0.2, 0.3]) { let s = 0; for (const x of fit) s += Math.abs(f(x, a, b, w) - x.p); if (s < best[0]) best = [s, a, b, w]; }
+  const [, A, B, Wk] = best, mae = best[0] / fit.length;
+  D.forEach(x => { x.fair = f(x, A, B, Wk); });
+  const pm = fit.reduce((s, x) => s + x.p, 0) / fit.length, ss = fit.reduce((s, x) => s + (x.p - pm) ** 2, 0), sr = fit.reduce((s, x) => s + (x.p - x.fair) ** 2, 0);
+  return { rows: D, last: D[D.length - 1], lastP: fit[fit.length - 1], mae, r2: 1 - sr / ss, A, B, Wk };
+}
 // everything the spot block, the tiles and the 4-week block need, fetched once
 // shared by the dashboard widgets: one fetch for every Today block on a board, kept 10 minutes
 function _mrnFactsP() {
@@ -277,7 +302,7 @@ function _mrnFactsP() {
 }
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
-  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json')]);
+  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null)]);
   const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
   const k = { t, tm, y, cs, P, gos, neg, look: dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.outlook || {}) : {} };
   const fr = j => j && j.zones && j.zones.FR;
@@ -288,6 +313,7 @@ async function _mrnFacts() {
   const yrs = chain && chain.FR && chain.FR.years;
   k.cals = yrs ? Object.keys(yrs).sort().slice(0, 3).map(yy => ({ y: yy, pts: yrs[yy].dates.map((x, i) => [x, yrs[yy].values[i]]) })) : [];
   k.nucCap = fwd && fwd.nuclearCapacity;
+  try { k.idx = _mrnIndex(rted, P); } catch (e) { k.idx = null; }
   return k;
 }
 
@@ -340,6 +366,19 @@ function _mrnSpotChart(k, cid, prob) {
 }
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
+// ── negative prices: a bar at the top of Today when today or tomorrow has hours at 0 € or below (or the forecast expects some),
+//    with the hours, the lowest price and a way to get the e-mail alert ──
+function _mrnNegAlert(k) {
+  const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
+  const one = (hr, lbl) => { if (!hr) return null; const z = hr.map((x, i) => x != null && x <= 0 ? i : -1).filter(i => i >= 0); if (!z.length) return null;
+    const mn = Math.min(...z.map(i => hr[i])); return `${lbl} <b>${z.length} h</b> ${_mT('à 0 € ou moins', 'at 0 € or below')} (${H(z[0])}–${H(z[z.length - 1] + 1)}, min <b>${_mN(mn, 1)} €</b>)`; };
+  const parts = [one(k.today, _mT('aujourd’hui', 'today')), k.tomorrow ? one(k.tomorrow, _mT('demain', 'tomorrow')) : null].filter(Boolean);
+  if (!k.tomorrow && k.fc && k.fc.expected_hours >= 1) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('à 0 € ou moins probables', 'at 0 € or below likely')}`);
+  const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${_mT('Prix négatifs', 'Negative prices')}</b> · ${parts.join(' · ')}</span>` +
+    `<a href="#markets/spot/negative" data-route="markets/spot/negative">${_mT('détail', 'detail')} ›</a><button type="button" class="pk-btn-ghost mrn-negal-b">${_mT('M’alerter par e-mail', 'E-mail me')}</button></div>` : '';
+  ['mrn-q-negal', 'mrn-negal'].forEach(id => { const el = document.getElementById(id); if (!el) return; el.innerHTML = html; el.hidden = !html;
+    const b = el.querySelector('.mrn-negal-b'); if (b) b.addEventListener('click', () => { if (window.PKAlerts) PKAlerts.open(); }); });
+}
 function _mrnTiles(k) {
   const T = _mrnTileList(k);
   const host = document.getElementById('mrn-kpis'); if (host) host.innerHTML = T.join('');
@@ -371,7 +410,7 @@ function _mrnTileList(k) {
     const rest = k.cals.slice(1).map(x => kv('Cal ' + String(x.y).slice(2), _mN(_mrnLast(x.pts)[1], 1))).join(' · ');
     T.push(`<a class="mrn2-tile" data-tile="cal" href="#markets/forwards" data-route="markets/forwards" title="${_mT('France, base, dernière cotation', 'France, baseload, last settlement')}">${head('Cal ' + c.y, 'power', cc, _mT('Électricité · France', 'Power · France'))}<span class="mrn2-tv">${_mN(l[1], 1)}<small>€/MWh</small></span>${moves(c.pts)}${_mrnSpark(since(c.pts, 60).map(p => p[1]), tn)}${foot(rest, _mT('60 j', '60 d'))}</a>`);
   }
-  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas', _mT('Gaz', 'Gas')], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon', _mT('CO₂', 'CO₂')]].forEach(([key, n, u, r, mk, m]) => {
+  [['ttf', 'TTF', '€/MWh', 'markets/fuels/ttf', 'gas', _mT('Gaz', 'Gas')], ['eua', 'EUA', '€/t', 'markets/fuels', 'carbon', _mT('CO₂', 'CO₂')], ['brent', 'Brent', '$/b', 'markets/fuels', 'oil', _mT('Pétrole', 'Oil')]].forEach(([key, n, u, r, mk, m]) => {
     const pts = k.P(key), l = _mrnLast(pts); if (!l) return;
     const c = ch7(pts), tn = tone(c);
     T.push(`<a class="mrn2-tile" data-tile="${key}" href="#${r}" data-route="${r}">${head(n, mk, c, m)}<span class="mrn2-tv">${_mN(l[1], 1)}<small>${u}</small></span>${moves(pts)}${_mrnSpark(since(pts, 60).map(p => p[1]), tn)}${foot(rng60(pts), _mT('60 j', '60 d'))}</a>`);
@@ -383,9 +422,13 @@ function _mrnTileList(k) {
       T.push(`<a class="mrn2-tile" data-tile="go" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, g1.length > 4 ? (l / g1[g1.length - 5].mid - 1) * 100 : null, _mT('Garanties d’origine', 'Guarantees of origin'))}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? kv('Cal ' + String(y).slice(2), _mN(g0[g0.length - 1].mid, 3)) : '', _mT('6 mois', '6 months'))}</a>`);
     }
   }
-  const nuc = k.P('fr_nuc_avail'), nl = _mrnLast(nuc), fc = _mrnLast(k.P('fr_nuc_avail_fc'));
-  if (nl) { const c = ch7(nuc), tn = tone(c, true);   // more nuclear available pushes prices down: green when it rises
-    T.push(`<a class="mrn2-tile" data-tile="nuc" href="#system/generation/nuclear" data-route="system/generation/nuclear">${cat(_mT('Production · France', 'Generation · France'))}<span class="mrn2-tn">${_mT('Nucléaire disponible', 'Nuclear available')}</span><span class="mrn2-tv">${_mN(nl[1] / 1000, 1)}<small>GW</small></span>${moves(nuc, true)}${_mrnSpark(since(nuc, 60).map(p => p[1]), tn)}${foot(fc ? kv(_mT('prévision exploitant', 'operator forecast'), _mN(fc[1] / 1000, 1) + ' GW') : '', _mT('60 j', '60 d'))}</a>`); }
+  // the PowerKlock index: low-carbon coverage of French demand and the price it implies (see _mrnIndex)
+  if (k.idx) { const I = k.idx, L = I.lastP, pts = I.rows.map(x => [x.d, x.cov]), c = ch7(pts), gap = L.p - L.fair;
+    T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Couverture bas carbone = (nucléaire + hydraulique + éolien + solaire + bioénergies) ÷ consommation. Prix implicite = coût d’une centrale gaz × une courbe de la couverture, ajustée sur 3 ans', 'Low-carbon coverage = (nuclear + hydro + wind + solar + bioenergy) ÷ consumption. Implied price = a gas plant’s cost × a curve of the coverage, fitted on 3 years')}">` +
+      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${_mT('Couv. bas carbone', 'Low-carbon cover')}</span>${pill(null, c == null ? null : -c)}</span>` +
+      `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span>` +
+      `<span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b> · spot <b class="${gap > 0 ? 'mrn-up' : 'mrn-down'}">${_mS(gap, 1)} €</b></span>` +
+      `${_mrnSpark(since(pts, 60).map(p => p[1]), c == null ? '' : c > 0 ? 'down' : 'up')}${foot(kv(_mT('écart habituel ±', 'usual gap ±'), _mN(I.mae, 0) + ' €'), _mT('60 j', '60 d'))}</a>`); }
   return T;
 }
 // Discovery: three tiles, each with a line on what it is
@@ -393,7 +436,7 @@ function _mrnLearnTiles(T, L) {
   const by = id => T.find(x => x.includes('data-tile="' + id + '"')) || '';
   if (L) L.innerHTML = [['cal', _mT('Ce que coûte un MWh livré l’an prochain, acheté aujourd’hui. Il suit surtout le gaz.', 'What a MWh delivered next year costs, bought today. It follows gas above all.')],
     ['ttf', _mT('Le prix du gaz européen. Les jours sans vent ni soleil, les centrales au gaz fixent le prix de l’électricité.', 'The European gas price. On days without wind or sun, gas plants set the power price.')],
-    ['nuc', _mT('La puissance nucléaire prête à produire. Moins de réacteurs disponibles, c’est plus de gaz appelé et des prix plus hauts.', 'The nuclear capacity ready to run. Fewer reactors available means more gas called and higher prices.')]]
+    ['idx', _mT('La part de la consommation couverte par le nucléaire, l’hydraulique et les renouvelables. Au-dessus de 100 %, la France n’a pas besoin du gaz : les prix baissent.', 'The share of demand covered by nuclear, hydro and renewables. Above 100 %, France needs no gas: prices fall.')]]
     .map(([id, t]) => by(id) ? `<div class="mrn3-lt">${by(id)}<p>${t}</p></div>` : '').join('');
 }
 
@@ -507,16 +550,35 @@ async function _mrnNews(el) {
 
 // capture rate by region: solar or wind, over the last full year or several (the choice is the card's own)
 function _mrnCreg() {
-  const t = document.getElementById('mrn-creg-tech'), per = document.getElementById('mrn-creg-per'); if (!t || !per || !PKW.get('ren-capture-regions')) return;
+  // solar above, wind below, one period for both
+  const per = document.getElementById('mrn-creg-per'); if (!per || !PKW.get('ren-capture-regions')) return;
   const y = +_mrnToday().slice(0, 4) - 1;
   if (!per.options.length) {
     per.innerHTML = [[String(y), _mT('Année ', 'Year ') + y], [(y - 2) + '-' + y, (y - 2) + '–' + y + _mT(' (3 ans)', ' (3 years)')], [(y - 4) + '-' + y, (y - 4) + '–' + y + _mT(' (5 ans)', ' (5 years)')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
-    t.addEventListener('change', _mrnCreg); per.addEventListener('change', _mrnCreg);
+    per.addEventListener('change', _mrnCreg);
   }
-  PKW.draw('ren-capture-regions', 'mrn-creg', { tech: t.value, year: per.value }).then(() => {
-    const e = document.getElementById('mrn-creg-sub');
-    if (e) e.textContent = (t.value === 'solar' ? _mT('Solaire', 'Solar') : _mT('Éolien', 'Wind')) + ' · ' + per.options[per.selectedIndex].text + _mT(' · production de chaque région au prix day-ahead français, classée, avec la France', ' · each region’s output on the French day-ahead price, ranked, with France');
-  });
+  const lbl = per.options[per.selectedIndex].text;
+  PKW.draw('ren-capture-regions', 'mrn-creg', { tech: 'solar', year: per.value }).then(() => { const e = document.getElementById('mrn-creg-sub'); if (e) e.textContent = lbl + _mT(' · production de chaque région au prix spot français, classée, avec la France', ' · each region’s output on the French day-ahead price, ranked, with France'); });
+  PKW.draw('ren-capture-regions', 'mrn-cregw', { tech: 'wind', year: per.value }).then(() => { const e = document.getElementById('mrn-cregw-sub'); if (e) e.textContent = lbl + _mT(' · même lecture, éolien', ' · same reading, wind'); });
+}
+// guarantees of origin next to their chart: broker mid by production year, week and 4-week moves, the last French auction
+async function _mrnGoTable(host) {
+  if (!host) return;
+  const [rows, au] = await Promise.all([_mrnGoCsv(), _mrnAuctions()]);
+  const y = +_mrnToday().slice(0, 4), yrs = [y - 1, y, y + 1, y + 2].map(yy => [yy, _mrnGoSeries(rows || [], 'GO AIB Renewable', yy)]).filter(x => x[1].length);
+  if (!yrs.length) { host.innerHTML = '<div class="fuel-note">' + _mT('Prix des GO indisponibles.', 'GO prices not available.') + '</div>'; return; }
+  const chg = (a, b) => b == null ? '<td>–</td>' : `<td class="${a - b > 1e-6 ? 'mrn-up' : a - b < -1e-6 ? 'mrn-down' : ''}">${_mS(a - b, 3)}</td>`;
+  let h = `<table class="mrn-fwd"><thead><tr><th>${_mT('Année de production', 'Production year')}</th><th>${_mT('Prix €/MWh', 'Price €/MWh')}</th><th>${_mT('vs S-1', 'vs W-1')}</th><th>${_mT('vs 4 sem.', 'vs 4 wks')}</th></tr></thead><tbody>`;
+  yrs.forEach(([yy, s]) => { const l = s[s.length - 1].mid, w1 = s.length > 1 ? s[s.length - 2].mid : null, w4 = s.length > 4 ? s[s.length - 5].mid : null;
+    h += `<tr><td>Cal ${yy}</td><td class="mrn-fwd-p">${_mN(l, 3)}</td>${chg(l, w1)}${chg(l, w4)}</tr>`; });
+  h += '</tbody></table>';
+  const last = yrs[0][1][yrs[0][1].length - 1].t;
+  const a = au && Array.isArray(au.auctions) && au.auctions[au.auctions.length - 1];
+  if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
+    if (vol) h += `<table class="mrn-fwd" style="margin-top:10px"><thead><tr><th>${_mT('Enchère GO France', 'France GO auction')} (${a.auction_month})</th><th>€/MWh</th><th>TWh</th><th></th></tr></thead><tbody>` +
+      bt.filter(r => r.allocated_mwh).map(r => `<tr><td>${r.technology || ''}</td><td class="mrn-fwd-p">${_mN(r.price_eur_mwh, 3)}</td><td>${_mN(r.allocated_mwh / 1e6, 2)}</td><td></td></tr>`).join('') +
+      `<tr><td><b>${_mT('Moyenne', 'Average')}</b></td><td class="mrn-fwd-p"><b>${_mN(val / vol, 3)}</b></td><td><b>${_mN(vol / 1e6, 2)}</b></td><td></td></tr></tbody></table>`; }
+  host.innerHTML = h + `<div class="mrn-fwd-note">${_mT('Moyenne courtier (offre + demande) du ', 'Broker mid (bid + ask) of ')}${last} · ${_mT('hausse en rouge', 'rise in red')}</div>`;
 }
 
 function _mrnQuick(k, el) {
@@ -590,7 +652,7 @@ async function renderMorning() {
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnFacts().then(k => {
     MRN.k = k;
-    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k);
+    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k);
     _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k);
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
@@ -602,15 +664,27 @@ async function renderMorning() {
     'hs-morning-2': () => {
       PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
       PKW.draw('fr-de-spread', 'mrn-frde', { win: '30' }).then(r => sub('mrn-frde-sub', r));
-      PKW.draw('fr-fwd-products', 'mrn-fwdp', { country: 'FR', win: '3M' }).then(r => sub('mrn-fwdp-sub', r));
-      const ft = document.getElementById('mrn-fwdt'); if (ft) PKW.get('fr-fwd-table').html(ft, { country: 'FR' });
-      if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', { win: '6M' }).then(r => sub('mrn-ttfc-sub', r));
-      const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, {});
+      // power and gas side by side with the same chart and the same table: calendar years, front month and front quarter, 3 months;
+      // the tables without seasons unless asked (one box ticks both)
+      const fp = { win: '3M', kinds: 'year,quarter,month', front: 1 };
+      PKW.draw('fr-cal-history', 'mrn-fwdp', Object.assign({ country: 'FR' }, fp)).then(r => sub('mrn-fwdp-sub', r));
+      if (PKW.get('ttf-cal-history')) PKW.draw('ttf-cal-history', 'mrn-ttfc', fp).then(r => sub('mrn-ttfc-sub', r));
+      const tables = () => { const seasons = [...document.querySelectorAll('.mrn-fwd-seas')].some(x => x.checked) ? 'yes' : 'no';
+        const ft = document.getElementById('mrn-fwdt'); if (ft && PKW.get('power-fwd-table')) PKW.get('power-fwd-table').html(ft, { country: 'FR', seasons });
+        const tt = document.getElementById('mrn-ttft'); if (tt && PKW.get('ttf-fwd-table')) PKW.get('ttf-fwd-table').html(tt, { seasons }); };
+      document.querySelectorAll('.mrn-fwd-seas').forEach(b => { if (b.dataset.w) return; b.dataset.w = '1'; b.addEventListener('change', () => { document.querySelectorAll('.mrn-fwd-seas').forEach(x => { x.checked = b.checked; }); tables(); }); });
+      tables();
+    },
+    'hs-morning-fund': () => {   // the CATE presentation's supply and demand charts
+      [['fr-cal-drivers', 'mrn-drv', { win: '6M', country: 'FR' }], ['gas-storage-years', 'mrn-gsy', {}], ['nuc-monthly-years', 'mrn-nucy', {}], ['hydro-reservoirs', 'mrn-hyd', { country: 'FR' }],
+        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
+        .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {
-      PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '90D' });
+      PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '1Y', style: 'bar' });
       _mrnCreg();
       PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
+      _mrnGoTable(document.getElementById('mrn-got'));
       if (PKW.get('fr-capture-forward')) PKW.draw('fr-capture-forward', 'mrn-fcap', {}).then(r => sub('mrn-fcap-sub', r));
     },
     'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: '3Y' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); if (PKW.get('fr-load-normal')) PKW.draw('fr-load-normal', 'mrn-loadn', {}); },
@@ -638,10 +712,15 @@ const MRN_WIN = {
   go: k => { const y = +_mrnToday().slice(0, 4), g = yy => k.gos ? _mrnGoSeries(k.gos, 'GO AIB Renewable', yy).map(r => [r.t, r.mid]) : [];
     return { name: 'GO ' + (y + 1), unit: '€/MWh', dp: 3, look: null, route: 'markets/go', page: _mT('Marchés › Garanties d’origine', 'Markets › Guarantees of origin'), weekly: true,
       series: [y, y + 1, y + 2].map((yy, i) => ['go' + yy, 'Cal ' + yy, ['#7FC8F8', '#14D3A9', '#A87DC4'][i], 'y', true, g(yy)]).filter(x => x[5].length) }; },
+  idx: k => { const I = k.idx; if (!I) return { name: '', series: [] };
+    return { name: _mT('Indice PowerKlock · couverture bas carbone', 'PowerKlock index · low-carbon coverage'), unit: '%', dp: 0, look: null, pct: false, route: 'tools/compare', page: _mT('Outils › Comparateur', 'Tools › Comparator'),
+      series: [['idx', _mT('Couverture bas carbone, %', 'Low-carbon coverage, %'), '#14D3A9', 'y', true, I.rows.map(x => [x.d, Math.round(x.cov * 10) / 10])],
+        ['fair', _mT('Prix implicite, €/MWh (axe droit)', 'Implied price, €/MWh (right axis)'), '#FBBF24', 'y2', true, I.rows.map(x => [x.d, Math.round(x.fair * 10) / 10])],
+        ['spot', _mT('Spot France, €/MWh (axe droit)', 'France spot, €/MWh (right axis)'), '#E6EDF3', 'y2', true, I.rows.filter(x => x.p != null).map(x => [x.d, x.p])]], unit2: '€/MWh' }; },
   nuc: k => ({ name: _mT('Nucléaire disponible', 'Nuclear available'), unit: 'GW', dp: 1, look: null, inv: true, route: 'system/generation/nuclear', page: _mT('Système › Production › Nucléaire', 'System › Generation › Nuclear'),
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
 };
-const MRN_ORDER = ['cal', 'ttf', 'eua', 'go', 'nuc'];
+const MRN_ORDER = ['cal', 'ttf', 'eua', 'brent', 'go', 'idx'];
 // the window itself is shared with the market pages' tiles (js/pk-tilewin.js)
 function _mrnTileDef(id) {
   const k = MRN.k; if (!k || !MRN_WIN[id] || !window.PKTile) return null;
@@ -650,10 +729,12 @@ function _mrnTileDef(id) {
   let more = '';
   if (id === 'ttf') { const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365); if (st && ly != null) more = _mT(`Stocks de gaz UE ${_mN(st[1], 1)} % contre ${_mN(ly, 1)} % il y a un an.`, `EU gas storage ${_mN(st[1], 1)} % against ${_mN(ly, 1)} % a year ago.`); }
   if (id === 'nuc') { const fc = _mrnLast(k.P('fr_nuc_avail_fc')); if (fc) more = _mT(`Prévision de l’exploitant : ${_mN(fc[1] / 1000, 1)} GW. Moins de nucléaire, c’est plus de gaz appelé et des prix en hausse.`, `Operator forecast: ${_mN(fc[1] / 1000, 1)} GW. Less nuclear means more gas called and firmer prices.`); }
+  if (id === 'idx' && k.idx) more = _mT(`Au-dessus de 100 %, la France couvre sa consommation sans gaz et exporte : les prix décrochent. En dessous, les centrales au gaz fixent le prix. La courbe explique ${_mN(k.idx.r2 * 100, 0)} % des variations du spot sur 3 ans (écart moyen ± ${_mN(k.idx.mae, 0)} €) : un spot au-dessus du prix implicite = marché plus tendu que ne le disent la production et la consommation (imports, prix voisins, prévisions).`,
+    `Above 100 %, France covers its demand without gas and exports: prices drop. Below, gas plants set the price. The curve explains ${_mN(k.idx.r2 * 100, 0)} % of the spot's moves over 3 years (mean gap ± ${_mN(k.idx.mae, 0)} €): a spot above the implied price = a market tighter than production and demand say (imports, neighbours' prices, forecasts).`);
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
   const y = +_mrnToday().slice(0, 4);
-  return { name: W.name, unit: W.unit, dp: W.dp, inv: W.inv, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
+  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
 }
 document.addEventListener('pk-view', e => {
   if (!e.detail || e.detail.key !== 'morning' || e.detail.index !== 2) return;
@@ -702,7 +783,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-brief{border-left:3px solid var(--accent)} .mrn2-brief ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
   .mrn2-brief li{font-size:14.5px;line-height:1.5;color:var(--text2)} .mrn2-brief b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
   .mrn2-brief b.mrn-up,.mrn2 .mrn-up{color:var(--down)} .mrn2-brief b.mrn-dn,.mrn2 .mrn-dn,.mrn2 .mrn-down{color:var(--up)}
-  .mrn2-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+  .mrn2-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
   .mrn2-tiles-sm{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:12px}
   @media (max-width:1100px){.mrn2-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -734,7 +815,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-chip.real{color:var(--accent);background:var(--accent-dim)} .mrn3-chip.fc{color:#7FC8F8;background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55)} .mrn3-chip.av{color:var(--text2);background:rgba(122,147,171,.14)}
   .mrn3-big{font:600 22px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums} .mrn3-big small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px} .mrn3-big.fc{color:#7FC8F8}
   .mrn3-kv{font-size:12px;color:var(--text3)} .mrn3-kv b{color:var(--text);font-weight:600} .mrn3-kv b.mrn-up{color:var(--down)} .mrn3-kv b.mrn-dn{color:var(--up)}
-  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}
   .mrn3-w2{grid-column:span 2}
   @media (max-width:1250px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles.mrn3-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}

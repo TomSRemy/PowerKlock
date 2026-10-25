@@ -163,16 +163,17 @@ async function _muContracts(cc) {
   if (cc === 'TTF') { const j = await _muGet('ttfc', 'history/ttf_contracts.json'); return j && j.TTF; }
   const C = await _muGet('contracts', 'history/fr_market_contracts.json'); return C && C[cc];
 }
-const _MU_KIND = { month: 0, quarter: 1, season: 2, year: 3 };
+const _MU_KIND = { month: 0, quarter: 1, year: 2, season: 3 };   // seasons last in tables and legends
 // the liquid products: delivery not started, quoted in the last 7 days; base or peak; nearest first within each type
 // set 'liquid': the exchange's standard strip only (3 months, 3 quarters, 2 seasons, 3 calendar years), as traded on EEX / ICE Endex
 const _MU_STRIP = { month: 3, quarter: 3, season: 2, year: 3 };
-function _muLiquid(all, kinds, peak, set) {
+function _muLiquid(all, kinds, peak, set, cap) {
+  const strip = Object.assign({}, _MU_STRIP, cap || {});
   const today = _muToday(), fresh = _muAdd(today, -7), isPeak = (k, c) => /peak/i.test(k + ' ' + (c.marketName || ''));
   return Object.entries(all || {}).filter(([k, c]) => c && c.points && (!kinds || kinds.includes(c.kind)) && (c.deliveryStart || '') > today && isPeak(k, c) === !!peak
       && Object.keys(c.points).some(d => d >= fresh))
     .sort((a, b) => _MU_KIND[a[1].kind] - _MU_KIND[b[1].kind] || (a[1].deliveryStart < b[1].deliveryStart ? -1 : 1))
-    .filter(function ([, c]) { if (set !== 'liquid') return true; this[c.kind] = (this[c.kind] || 0) + 1; return this[c.kind] <= _MU_STRIP[c.kind]; }, {});
+    .filter(function ([, c]) { if (set !== 'liquid') return true; this[c.kind] = (this[c.kind] || 0) + 1; return this[c.kind] <= strip[c.kind]; }, {});
 }
 const _muCLabel = (k, c) => (c.marketName || k).replace(/^(FR|GE|DE|NL|UK|TTF)\s+/i, '').replace(/\s+(base|peak)$/i, '').replace(/\s*\(.*\)$/, '');
 // last settlement, change vs the previous one and vs a week before, from a contract's own history
@@ -189,12 +190,13 @@ function _muCTable(rows, unit, note) {
     rows.map((r, i) => `<tr${i && rows[i - 1].kind !== r.kind ? ' class="mu-sep"' : ''}><td style="text-align:left">${r.label} <span class="mu-kind">${KN[r.kind]}</span></td><td><b>${r.s.v.toFixed(2)}</b></td>${chg(r.s.d1, r.s.p1)}${chg(r.s.w1, r.s.pw)}</tr>`).join('') +
     `</tbody></table></div><div class="fuel-note">${rows.length} products · settlements of ${last}. ${note || ''}A rise is shown red (cost up for a buyer).</div>`;
 }
-const _muCRows = (all, kinds, peak, set) => _muLiquid(all, kinds, peak, set).map(([k, c]) => ({ label: _muCLabel(k, c), kind: c.kind, s: _muCStats(c) }));
+const _muCRows = (all, kinds, peak, set, cap) => _muLiquid(all, kinds, peak, set, cap).map(([k, c]) => ({ label: _muCLabel(k, c), kind: c.kind, s: _muCStats(c) }));
 // the chart: every liquid product of the chosen types over the window
 function _muCChart(cid, all, p, unit, tag) {
   const kinds = String(p.kinds || 'year,season,quarter,month').split(','), today = _muToday(), peak = p.load === 'peak';
   const from = _muAdd(today, -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096, all: 20000 }[p.win] || 92));
-  const pick = _muLiquid(all, kinds, peak, p.set || 'liquid').filter(([, c]) => Object.keys(c.points).some(d => d >= from));
+  // p.front: one front month and one front quarter next to the calendar years (Today)
+  const pick = _muLiquid(all, kinds, peak, p.set || 'liquid', p.front ? { month: 1, quarter: 1 } : null).filter(([, c]) => Object.keys(c.points).some(d => d >= from));
   if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
   const dates = [...new Set(pick.flatMap(([, c]) => Object.keys(c.points).filter(d => d >= from)))].sort();
   const PAL = { year: ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635', '#FB7185', '#38BDF8'],
@@ -268,7 +270,7 @@ _muReg({
   desc: 'Every liquid TTF gas forward product (months, quarters, seasons, calendar years quoted in the last 7 days): settlement, change vs the previous day and vs a week before.',
   params: [{ key: 'set', label: 'Products', options: [['liquid', 'Liquid (exchange strip)'], ['all', 'All quoted']] }], defaults: { set: 'liquid' },
   async html(host, p) {
-    const all = await _muContracts('TTF'), rows = all ? _muCRows(all, null, false, (p && p.set) || 'liquid') : [];
+    const all = await _muContracts('TTF'), rows = all ? _muCRows(all, p && p.seasons === 'no' ? ['month', 'quarter', 'year'] : null, false, (p && p.set) || 'liquid') : [];
     if (rows.length) { host.innerHTML = _muCTable(rows, '€/MWh'); return; }
     const snap = _muTtfRows(await _muGet('com', 'commodities.json'));   // contract history missing: the day's strip
     if (!snap.length) { host.innerHTML = '<div class="fuel-note">TTF forwards not available.</div>'; return; }
@@ -282,7 +284,7 @@ _muReg({
   params: [MU_FWD, { key: 'set', label: 'Products', options: [['liquid', 'Liquid (exchange strip)'], ['all', 'All quoted']] }], defaults: { country: 'FR', set: 'liquid' },
   titleFn: p => (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' power forwards · table',
   async html(host, p) {
-    const cc = (p && p.country) || 'FR', all = await _muContracts(cc), rows = all ? _muCRows(all, null, false, (p && p.set) || 'liquid') : [];
+    const cc = (p && p.country) || 'FR', all = await _muContracts(cc), rows = all ? _muCRows(all, p && p.seasons === 'no' ? ['month', 'quarter', 'year'] : null, false, (p && p.set) || 'liquid') : [];
     if (!rows.length) { host.innerHTML = '<div class="fuel-note">Power forwards not available for this market.</div>'; return; }
     host.innerHTML = _muCTable(rows, cc === 'UK' ? '£/MWh' : '€/MWh', 'Baseload. ');
   },

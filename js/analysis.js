@@ -239,9 +239,19 @@ _renReg({
   async draw(cid, p) {
     let rows = p.rows || await _renRows(p.zone, p.window);
     if (!rows.length) { noDataMsg(cid, 'No generation history for ' + p.zone + ' in this window', ''); return null; }
-    const nDays = rows.length, monthly = nDays > REN_MONTHLY_FROM;
+    const nDays = rows.length, monthly = nDays > REN_MONTHLY_FROM || p.style === 'bar';
     if (monthly) rows = _renMonthly(rows);
     const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+    if (p.style === 'bar') {   // month by month as bars, the same look as the forward capture prices (Today › Expert)
+      const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      _fuelChart(cid, { type: 'bar', data: { labels: rows.map(r => MON[+String(r.d).slice(5, 7) - 1] + ' ' + String(r.d).slice(2, 4)), datasets: [
+        { label: 'Wind capture rate', data: rows.map(r => r1(r.st.wCR)), backgroundColor: 'rgba(20,211,169,.75)', borderRadius: 3 },
+        { label: 'Solar capture rate', data: rows.map(r => r1(r.st.sCR)), backgroundColor: 'rgba(251,191,36,.80)', borderRadius: 3 },
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload', { beginAtZero: true }) },
+        plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } },
+          annotation: { annotations: { par: { type: 'line', yMin: 100, yMax: 100, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [4, 4] } } } } }) }, 'capture-rates-monthly-' + p.zone);
+      return { sub: 'Capture price ÷ baseload, month by month' };
+    }
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
       _fuelLineDs(monthly ? 'Wind CR (monthly)' : 'Wind CR', rows.map(r => r1(r.st.wCR)), C_WON, { pointRadius: 2, spanGaps: false }),
       _fuelLineDs(monthly ? 'Solar CR (monthly)' : 'Solar CR', rows.map(r => r1(r.st.sCR)), C_SOL, { pointRadius: 2, spanGaps: false }),
