@@ -40,6 +40,21 @@
   }
   const unit = () => S.mode === 'prices' ? '€/MWh' : 'GW';
 
+  // ── historical days (records since 2016, from data/history/fr_hourly): a button each and their story as the first caption,
+  //    placed at the series' high (pick 'max') or low ('min') of the day ──
+  const HIST = [
+    { d: '2022-04-04', mode: 'prices', key: 'da', pick: 'max', tag: ['2 988 €', '2,988 €'], fr: 'Record absolu : 2 988 €/MWh, presque le plafond de 3 000 €. Vague de froid tardive et nucléaire très bas : la France importe au prix fort.', en: 'All-time high: 2,988 €/MWh, close to the 3,000 € cap. A late cold snap and very low nuclear: France imports at any price.' },
+    { d: '2022-08-30', mode: 'prices', key: 'da', pick: 'max', tag: ['744 € de moyenne', '744 € average'], fr: 'La journée la plus chère jamais vue : 744 €/MWh en moyenne. Crise du gaz et réacteurs arrêtés pour corrosion.', en: 'The most expensive day ever: 744 €/MWh on average. Gas crisis and reactors stopped for corrosion.' },
+    { d: '2022-09-03', mode: 'production', key: 'nuc', pick: 'min', tag: ['nucléaire 19 GW', 'nuclear 19 GW'], fr: 'Nucléaire au plus bas : environ 19 GW, moins de la moitié d’un jour normal. La France vit à l’import.', en: 'Nuclear at its lowest: about 19 GW, less than half a normal day. France lives on imports.' },
+    { d: '2016-11-07', mode: 'prices', key: 'da', pick: 'max', tag: ['874 € à 18 h', '874 € at 18:00'], fr: 'Pointe du soir à 874 €/MWh : des réacteurs à l’arrêt pour contrôles de sûreté à l’entrée de l’hiver.', en: 'Evening peak at 874 €/MWh: reactors offline for safety checks as winter starts.' },
+    { d: '2018-02-28', mode: 'production', key: 'load', pick: 'max', tag: ['conso 96 GW', 'load 96 GW'], fr: 'Record de consommation : 96 GW pendant la vague de froid « Moscou-Paris ».', en: 'Consumption record: 96 GW during the “Moscow-Paris” cold wave.' },
+    { d: '2026-05-01', mode: 'prices', key: 'da', pick: 'min', tag: ['−497 €', '−497 €'], fr: 'Le prix le plus bas jamais vu : −497 €/MWh. Jour férié, plein soleil, consommation faible : produire coûte.', en: 'The lowest price ever: −497 €/MWh. Bank holiday, full sun, low demand: producing costs money.' },
+    { d: '2024-04-09', mode: 'prices', key: 'da', pick: 'min', tag: ['19 h négatives', '19 negative hours'], fr: '19 heures sur 24 à 0 € ou moins : le record. Vent et soleil dépassent la demande presque toute la journée.', en: '19 hours out of 24 at 0 € or below: the record. Wind and sun exceed demand almost all day.' },
+    { d: '2026-08-07', mode: 'production', key: 'solar', pick: 'max', tag: ['solaire 25 GW', 'solar 25 GW'], fr: 'Record solaire : 25 GW, le parc français n’a jamais autant produit.', en: 'Solar record: 25 GW, the French fleet’s highest output ever.' },
+    { d: '2025-12-13', mode: 'production', key: 'wind', pick: 'min', tag: ['zéro vent', 'no wind'], fr: 'Zéro vent : l’éolien tombe à 0 GW sur tout le pays, en plein hiver.', en: 'No wind: wind output falls to 0 GW across the country, in midwinter.' },
+    { d: '2026-08-06', mode: 'prices', key: 'short', pick: 'max', tag: ['écarts 1 474 €', 'imbalance 1,474 €'], fr: 'Le plus gros pic du prix des écarts collecté : 1 474 €/MWh.', en: 'The biggest imbalance price spike collected: 1,474 €/MWh.' },
+  ];
+
   // ── commentary: the day's notable moments, found in the data, written as a market note would ──
   function events(D, mode) {
     const E = [], by = k => (D[mode].find(s => s.key === k) || {}).v, at = (a, q) => a ? a[q] : null;
@@ -101,8 +116,9 @@
   function draw() {
     const cv = document.getElementById('rp-canvas'); if (!cv || !S.data) return;
     const [W, H] = FORMATS[S.fmt]; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    const c = cv.getContext('2d'), wide = W / H > 1.4, k = W / 1280 * (wide ? 1 : 1.12), P = 48 * k;
-    const C = pal(), ser = S.data[S.mode].map(x => Object.assign({}, x, { color: C.series[x.key] || x.color })), t = Math.max(S.from, Math.min(S.to, S.t)), qi = Math.floor(t);
+    const c = cv.getContext('2d'), wide = W / H > 1.4, k = wide ? W / 1280 : W / 1080 * 1.3, P = 48 * k;   // square and vertical: bigger text, read on a phone
+    const C = pal(), daOnly = S.mode === 'prices' && S.data.prices.length === 1;   // before August 2026: the day-ahead alone, drawn as the main line
+    const ser = S.data[S.mode].map(x => Object.assign({}, x, { color: daOnly ? C.accent : C.series[x.key] || x.color }, daOnly ? { dash: null, w: 3.2 } : {})), t = Math.max(S.from, Math.min(S.to, S.t)), qi = Math.floor(t);
     c.fillStyle = C.bg; c.fillRect(0, 0, W, H);
     const F = (w, px, fam) => `${w} ${Math.round(px * k)}px ${fam || 'Inter, system-ui, sans-serif'}`;
     // header: brand, date, clock, the headline value
@@ -116,7 +132,7 @@
     if (head) {
       c.fillStyle = C.text3; c.font = F(500, 17); c.fillText(head.name, x0, P + 74 * k);
       c.fillStyle = head.color; c.font = F(700, 42, "'JetBrains Mono', ui-monospace, monospace"); c.fillText(fmtN(hv, 0) + ' ' + unit(), x0, P + 98 * k);
-      const ref = S.mode === 'prices' ? ser.find(s => s.key === 'da') : null;
+      const ref = S.mode === 'prices' && !daOnly ? ser.find(s => s.key === 'da') : null;
       if (ref && hv != null && ref.v[qi]) {
         const r = hv / ref.v[qi], txt = Math.abs(r) >= 1.5 ? fmtN(r, 1) + T(' × le day-ahead', ' × the day-ahead') : T('day-ahead ', 'day-ahead ') + fmtN(ref.v[qi], 0);
         c.font = F(600, 17); const tw = c.measureText(txt).width + 24 * k, ty = P + 150 * k;
@@ -127,12 +143,18 @@
     }
     // the day's extreme so far
     if (head) {
-      let mx = -Infinity, mq = null; for (let q = S.from; q <= qi; q++) { const v = head.v[q]; if (v != null && v > mx) { mx = v; mq = q; } }
-      if (mq != null) { c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = 'right'; c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, 0) + ' ' + unit() + T(' à ', ' at ') + hh(mq), W - P, P + 4 * k); c.textAlign = 'left'; }
+      let mx = -Infinity, mq = null, mn = Infinity, nq = null;
+      for (let q = S.from; q <= qi; q++) { const v = head.v[q]; if (v == null) continue; if (v > mx) { mx = v; mq = q; } if (v < mn) { mn = v; nq = q; } }
+      if (mq != null) {
+        c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = 'right';
+        c.fillText(T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, 0) + ' ' + unit() + T(' à ', ' at ') + hh(mq), W - P, P + 4 * k);
+        if (mn < 0) c.fillText(T('Plus bas : ', 'Low: ') + fmtN(mn, 0) + ' ' + unit() + T(' à ', ' at ') + hh(nq), W - P, P + 28 * k);   // a negative day: the low tells the story
+        c.textAlign = 'left';
+      }
     }
     // chart and bars
     const top = P + (wide ? 200 : 210) * k, bottom = H - P - 70 * k;
-    const chart = wide ? { x: P + 56 * k, y: top, w: (W - 2 * P) * 0.70 - 56 * k, h: bottom - top } : { x: P + 56 * k, y: top, w: W - 2 * P - 56 * k, h: (bottom - top) * 0.62 };
+    const chart = wide ? { x: P + 56 * k, y: top, w: (W - 2 * P) * 0.70 - 56 * k, h: bottom - top } : { x: P + 56 * k, y: top, w: W - 2 * P - 56 * k, h: (bottom - top) * 0.72 };
     const bars = wide ? { x: P + (W - 2 * P) * 0.74, y: top, w: (W - 2 * P) * 0.26, h: bottom - top } : { x: P, y: chart.y + chart.h + 60 * k, w: W - 2 * P, h: bottom - (chart.y + chart.h + 60 * k) };
     const vals = ser.flatMap(s => s.v.slice(S.from, S.to + 1)).filter(v => v != null);
     const Y = nice(Math.min(0, ...vals), Math.max(...vals));
@@ -156,16 +178,21 @@
     if (head && hv != null) { c.fillStyle = head.color; c.beginPath(); c.arc(xOf(qi), yOf(hv), 6 * k, 0, 2 * Math.PI); c.fill(); }
     c.strokeStyle = C.text2; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(xOf(t), chart.y); c.lineTo(xOf(t), chart.y + chart.h); c.stroke();
     // bars: each series at this quarter-hour
-    const n = ser.length, gap = 16 * k, bwid = (bars.w - gap * (n - 1)) / n, base = bars.y + bars.h - 34 * k, tall = bars.h - 70 * k;
-    const bmax = Math.max(...vals.map(Math.abs), 1);
+    // bars: each series at this quarter-hour; the axis sits where the day's highs and lows leave room for both
+    const n = ser.length, gap = 16 * k, bwid = Math.min(160 * k, (bars.w - gap * (n - 1)) / n);
+    const posMax = Math.max(0, ...vals), negMax = Math.max(0, ...vals.map(v => -v)), room = bars.h - 96 * k;
+    const scale = room / Math.max(1, posMax + negMax), base = bars.y + 30 * k + posMax * scale, nameY = bars.y + bars.h - 22 * k;
     c.strokeStyle = C.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(bars.x, base); c.lineTo(bars.x + bars.w, base); c.stroke();
     ser.forEach((s, i) => {
-      const v = s.v[qi], x = bars.x + i * (bwid + gap), h = v == null ? 0 : Math.abs(v) / bmax * tall;
+      const v = s.v[qi], x = bars.x + (bars.w - n * bwid - (n - 1) * gap) / 2 + i * (bwid + gap), h = v == null ? 0 : Math.abs(v) * scale;
       c.fillStyle = s.color; c.globalAlpha = s.key === 'long' && C.light ? 0.75 : 1;
-      if (v != null) { if (v >= 0) c.fillRect(x, base - h, bwid, h); else c.fillRect(x, base, bwid, Math.min(h, 30 * k)); }
+      if (v != null) c.fillRect(x, v >= 0 ? base - h : base, bwid, h);
       c.globalAlpha = 1; c.fillStyle = C.text; c.font = F(700, 18, "'JetBrains Mono', ui-monospace, monospace"); c.textAlign = 'center';
-      c.textBaseline = 'bottom'; c.fillText(fmtN(v, S.mode === 'prices' ? 0 : 1), x + bwid / 2, (v != null && v >= 0 ? base - h : base) - 6 * k);
-      c.textBaseline = 'top'; c.fillStyle = C.text2; c.font = F(500, 14); c.fillText(s.name, x + bwid / 2, base + 8 * k); c.textAlign = 'left';
+      if (v != null && v < 0) { c.textBaseline = 'top'; c.fillText(fmtN(v, S.mode === 'prices' ? 0 : 1), x + bwid / 2, base + h + 6 * k); }
+      else { c.textBaseline = 'bottom'; c.fillText(fmtN(v, S.mode === 'prices' ? 0 : 1), x + bwid / 2, base - h - 6 * k); }
+      // the name under the bars, its size fitted to the bar
+      let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(s.name).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
+      c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(s.name, x + bwid / 2, nameY); c.textAlign = 'left';
     });
     // commentary: numbered markers on the moments passed, the caption of the latest one for 3 hours of the day
     (S.events || []).forEach(e => {
@@ -193,7 +220,7 @@
     c.fillStyle = C.grid; roundRect(c, P, fy, W - 2 * P, 8 * k, 4 * k); c.fill();
     c.fillStyle = C.accent; roundRect(c, P, fy, Math.max(8 * k, (W - 2 * P) * (t - S.from) / Math.max(1, S.to - S.from)), 8 * k, 4 * k); c.fill();
     c.fillStyle = C.text3; c.font = F(500, 13); c.textBaseline = 'top';
-    c.fillText(S.mode === 'prices' ? T('ENTSO-E · prix des écarts France et day-ahead, au quart d’heure · powerklock', 'ENTSO-E · France imbalance and day-ahead prices, quarter-hourly · powerklock') : T('RTE éCO2mix · production et consommation, au quart d’heure · powerklock', 'RTE éCO2mix · output and consumption, quarter-hourly · powerklock'), P, fy + 16 * k);
+    c.fillText(S.mode === 'prices' ? (daOnly ? T('ENTSO-E · prix day-ahead France · powerklock', 'ENTSO-E · France day-ahead price · powerklock') : T('ENTSO-E · prix des écarts France et day-ahead, au quart d’heure · powerklock', 'ENTSO-E · France imbalance and day-ahead prices, quarter-hourly · powerklock')) : T('RTE éCO2mix · production et consommation, au quart d’heure · powerklock', 'RTE éCO2mix · output and consumption, quarter-hourly · powerklock'), P, fy + 16 * k);
     const lab = document.getElementById('rp-time'); if (lab) lab.textContent = hh(qi);
     const sc = document.getElementById('rp-scrub'); if (sc && document.activeElement !== sc) sc.value = String(qi);
   }
@@ -242,7 +269,8 @@
     const neg = Object.entries((h && h.days) || {}).filter(([d]) => d >= new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10))
       .map(([d, v]) => [d, (v.p || []).filter(x => x != null && x <= 0).length]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 4);
     const lbl = d => new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' });
-    host.innerHTML = (spikes.length ? `<div class="rp-dg"><b>${T('Pics du prix des écarts', 'Imbalance price spikes')}</b>` + spikes.map(([d, v]) => `<button type="button" class="cmp-pill" data-day="${d}" data-mode="prices">${lbl(d)} · ${fmtN(v, 0)} €</button>`).join('') + '</div>' : '') +
+    const ylbl = d => new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    host.innerHTML = `<div class="rp-dg"><b>${T('Jours historiques', 'Historic days')}</b>` + HIST.map(x => `<button type="button" class="cmp-pill" data-day="${x.d}" data-mode="${x.mode}" title="${T(x.fr, x.en).replace(/"/g, '&quot;')}">${ylbl(x.d)} · ${T(x.tag[0], x.tag[1])}</button>`).join('') + '</div>' + (spikes.length ? `<div class="rp-dg"><b>${T('Pics du prix des écarts', 'Imbalance price spikes')}</b>` + spikes.map(([d, v]) => `<button type="button" class="cmp-pill" data-day="${d}" data-mode="prices">${lbl(d)} · ${fmtN(v, 0)} €</button>`).join('') + '</div>' : '') +
       (neg.length ? `<div class="rp-dg"><b>${T('Heures à 0 € ou moins', 'Hours at 0 € or below')}</b>` + neg.map(([d, n]) => `<button type="button" class="cmp-pill" data-day="${d}" data-mode="production">${lbl(d)} · ${n} h</button>`).join('') + '</div>' : '');
   }
 
@@ -252,6 +280,14 @@
     const note = document.getElementById('rp-note');
     if (note) note.textContent = !S.data[S.mode].length ? (S.mode === 'prices' ? T('Pas de prix des écarts pour ce jour (collecte depuis août 2026). Essayez Production.', 'No imbalance prices for this day (collected since August 2026). Try Production.') : T('Pas de données RTE pour ce jour.', 'No RTE data for this day.')) : '';
     S.events = S.data[S.mode].length ? events(S.data, S.mode) : [];
+    const h = HIST.find(x => x.d === S.day && x.mode === S.mode), sv = h && (S.data[S.mode].find(x => x.key === h.key) || {}).v;
+    if (h && sv) {
+      let q = null; sv.forEach((v, i) => { if (v != null && (q == null || (h.pick === 'min' ? v < sv[q] : v > sv[q]))) q = i; });
+      if (q != null) {
+        S.events = S.events.filter(e => Math.abs(e.q - q) >= 8).concat([{ q, key: h.key, txt: '★ ' + T(h.fr, h.en) }])
+          .sort((a, b) => a.q - b.q).slice(0, 5).map((e, i) => Object.assign(e, { n: i + 1 }));
+      }
+    }
     const ev = document.getElementById('rp-events');
     if (ev) ev.innerHTML = S.events.map(e => `<button type="button" class="rp-ev" data-q="${e.q}"><b>${e.n}</b><span class="cmp-dates">${hh(e.q)}</span><span>${e.txt}</span></button>`).join('');
     S.t = S.to; draw();
