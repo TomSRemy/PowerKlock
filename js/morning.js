@@ -252,7 +252,8 @@ function _mrnSpark(vals, tone) {
   const s = vals.filter(v => v != null); if (s.length < 2) return '';
   const W = 100, H = 26, lo = Math.min(...s), hi = Math.max(...s), sx = W / (s.length - 1), sy = v => H - 2 - (v - lo) / ((hi - lo) || 1) * (H - 4);
   const d = s.map((v, i) => (i ? 'L' : 'M') + (i * sx).toFixed(1) + ' ' + sy(v).toFixed(1)).join(' ');
-  const col = tone === 'up' ? 'var(--down)' : tone === 'down' ? 'var(--up)' : 'var(--text3)';
+  // tone: 'up' / 'down' (price colours) or a colour of its own (a technology: solar yellow, wind teal)
+  const col = tone === 'up' ? 'var(--down)' : tone === 'down' ? 'var(--up)' : tone && /^(#|var\()/.test(tone) ? tone : 'var(--text3)';
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d} L ${W} ${H} L 0 ${H} Z" fill="${col}" fill-opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
@@ -412,18 +413,27 @@ async function _mrnRenTiles() {
   const T = [], foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
   const days = bm && bm.days ? Object.keys(bm.days).sort() : [];
   if (days.length) { const L = bm.days[days[days.length - 1]], W = bm.days[days[Math.max(0, days.length - 6)]] || {}, ser = t => days.slice(-60).map(d => bm.days[d][t] && bm.days[d][t].ppa).filter(v => v != null);
-    [['solar', _mT('PPA solaire', 'Solar PPA'), 'up'], ['wind', _mT('PPA éolien', 'Wind PPA'), 'up']].forEach(([t, n]) => { const x = L[t]; if (!x) return; const d = W[t] ? x.ppa - W[t].ppa : null;
+    [['solar', _mT('PPA solaire', 'Solar PPA'), '#FBBF24'], ['wind', _mT('PPA éolien', 'Wind PPA'), '#14D3A9']].forEach(([t, n, tc]) => { const x = L[t]; if (!x) return; const d = W[t] ? x.ppa - W[t].ppa : null;
       T.push(`<a class="mrn2-tile" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts)', 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance)')}">` +
         `<span class="mrn3-cat">${_mT('Benchmark PowerKlock', 'PowerKlock benchmark')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${(L.tenor || '').replace(/-/g, '–')}</span></span>` +
         `<span class="mrn2-tv">${_mN(x.ppa, 2)}<small>€/MWh</small></span><span class="mrn2-tc">${d == null ? '' : `<span class="${d > 0 ? 'mrn-up' : d < 0 ? 'mrn-down' : ''}">${_mS(d, 2)} €</span> <span class="mrn3-dim">${_mT('5 j ouvrés', '5 runs')}</span> · `}${_mT('forward', 'forward')} <b>${_mN(x.ref, 1)}</b></span>` +
-        _mrnSpark(ser(t), d == null ? '' : d > 0 ? 'up' : 'down') + foot(x.lo != null ? 'P10–P90 <b>' + _mN(x.lo, 0) + '–' + _mN(x.hi, 0) + '</b>' : '', _mT('60 j', '60 d')) + '</a>'); }); }
+        _mrnSpark(ser(t), tc) + foot(x.lo != null ? 'P10–P90 <b>' + _mN(x.lo, 0) + '–' + _mN(x.hi, 0) + '</b>' : '', _mT('60 j', '60 d')) + '</a>'); }); }
   const ms = m0 && m0.months ? m0.months.filter(m => m.complete !== false && m.solarM0 != null) : [];
   if (ms.length > 1) { const L = ms[ms.length - 1], P = ms[ms.length - 2], mon = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-    [['solarM0', 'solarRatio', _mT('M0 solaire', 'Solar M0')], ['windM0', 'windRatio', _mT('M0 éolien', 'Wind M0')]].forEach(([k, r, n]) => { const d = L[k] - P[k];
+    [['solarM0', 'solarRatio', _mT('M0 solaire', 'Solar M0'), '#FBBF24'], ['windM0', 'windRatio', _mT('M0 éolien', 'Wind M0'), '#14D3A9']].forEach(([k, r, n, tc]) => { const d = L[k] - P[k];
       T.push(`<a class="mrn2-tile" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix de marché de référence du complément de rémunération : prix spot moyen pondéré par la production nationale du mois (recalculé par PowerKlock)', 'Reference market price of the contract for difference: the month’s spot weighted by national output (recomputed by PowerKlock)')}">` +
         `<span class="mrn3-cat">${_mT('Complément de rémunération', 'Contract for difference')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${mon(L.month)}</span></span>` +
         `<span class="mrn2-tv">${_mN(L[k], 2)}<small>€/MWh</small></span><span class="mrn2-tc"><span class="${d > 0 ? 'mrn-up' : 'mrn-down'}">${_mS(d, 2)} €</span> <span class="mrn3-dim">vs ${mon(P.month)}</span> · ${_mN(L[r] * 100, 0)} % ${_mT('du prix base', 'of baseload')}</span>` +
-        _mrnSpark(ms.slice(-12).map(m => m[k]), d > 0 ? 'up' : 'down') + foot(_mT('base ', 'baseload ') + '<b>' + _mN(L.base, 1) + '</b>', _mT('12 mois', '12 months')) + '</a>'); }); }
+        _mrnSpark(ms.slice(-12).map(m => m[k]), tc) + foot(_mT('base ', 'baseload ') + '<b>' + _mN(L.base, 1) + '</b>', _mT('12 mois', '12 months')) + '</a>'); }); }
+  // the latest CRE tender of each main technology: price kept, volume, when
+  const ao = await _mrnGet('aot', DATA_BASE + 'cre_tenders.json').catch(() => null), rows = (ao && ao.rows) || [];
+  const last = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).pop();
+  const AO = [['Photovoltaïque sol', _mT('Solaire sol', 'Ground PV'), '#FBBF24'], ['Photovoltaïque bâtiment', _mT('Solaire toiture', 'Rooftop PV'), '#F59E0B'], ['Éolien terrestre', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9']].map(([t, n, c]) => [last(t), n, c]).filter(x => x[0]);
+  if (AO.length) { const mon = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+    T.push(`<a class="mrn2-tile mrn-ao" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix moyen pondéré retenu au dernier appel d’offres CRE de chaque filière (complément de rémunération, 20 ans)', 'Weighted average price kept at the latest CRE tender of each technology (contract for difference, 20 years)')}">` +
+      `<span class="mrn3-cat">${_mT('Appels d’offres CRE', 'CRE tenders')}</span><span class="mrn3-th"><span class="mrn2-tn">${_mT('Derniers prix retenus', 'Latest prices kept')}</span></span>` +
+      AO.map(([r, n, c]) => `<span class="mrn-ao-r"><i style="background:${c}"></i><span>${n} <span class="mrn3-dim">${r.period || ''} · ${mon(r.result)}</span></span><b>${_mN(r.price, 2)} €</b></span>`).join('') +
+      `<span class="mrn3-tx"><span>${AO.map(([r]) => _mN(r.kept_mw, 0)).join(' / ')} MW</span><span>${_mT('€/MWh', '€/MWh')}</span></span></a>`); }
   host.innerHTML = T.join('') || '';
 }
 function _mrnNegAlert(k) {

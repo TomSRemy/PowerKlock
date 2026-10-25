@@ -3321,3 +3321,10 @@ a.mrn2-tile:hover .mrn3-tx > span:last-child::after { opacity: 1; }
 .mrn-30d-take { color: var(--text) !important; font-family: inherit !important; font-size: 12.5px !important; }
 .mrn2-tiles.mrn3-tiles.mrn-rtiles { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; }
 @media (max-width: 900px) { .mrn2-tiles.mrn3-tiles.mrn-rtiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mrn2-tiles.mrn3-tiles.mrn-rtiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1250px) { .mrn2-tiles.mrn3-tiles.mrn-rtiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.mrn-ao-r { display: flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 0; }
+.mrn-ao-r i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.mrn-ao-r > span { flex: 1; min-width: 0; }
+.mrn-ao-r b { font-variant-numeric: tabular-nums; }
+.mrn-ao .mrn3-tx { margin-top: auto; }
