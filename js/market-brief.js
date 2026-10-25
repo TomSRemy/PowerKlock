@@ -146,7 +146,7 @@
     const NOTE = T('notes de marché', 'market notes'), PRICE = T('tendance des prix', 'price trend');
     const chip = t => `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}">${t === 'up' ? '↑ ' + T('haussier', 'bullish') : t === 'down' ? '↓ ' + T('baissier', 'bearish') : '→ ' + T('neutre', 'neutral')}</span>`;
     const byPrice = c => c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
-    const txt = o => o ? esc(String((isFr() ? o.text : (o.text_en || o.text)) || '').replace(/\.?\s*$/, '.')) : '';
+    const txt = o => { if (!o) return ''; const t = String((isFr() ? o.text : (o.text_en || o.text)) || '').replace(/\.?\s*$/, '.'); return esc(t.charAt(0).toUpperCase() + t.slice(1)); };
     // the bubble: the notes' call for the week ahead when there is one, else the direction prices took over 7 days
     const look = (key, tones, move) => { const o = OL[key];
       if (o && o.tone) return [o.tone, NOTE, o];
@@ -181,7 +181,14 @@
           : gap < 0 ? T(`<b>${gw(-gap)} GW</b> sous la prévision de l’exploitant (${gw(nf[1])} GW) : plus de gaz appelé, un soutien aux prix.`, `<b>${gw(-gap)} GW</b> below the operator’s forecast (${gw(nf[1])} GW): more gas called, a support for prices.`)
           : T(`<b>${gw(gap)} GW</b> au-dessus de la prévision de l’exploitant (${gw(nf[1])} GW) : moins de gaz appelé, des prix détendus.`, `<b>${gw(gap)} GW</b> above the operator’s forecast (${gw(nf[1])} GW): less gas called, softer prices.`)); }
       const mv = w != null && w ? (nl[1] / w - 1) * 100 : null;
-      R.push([T('Nucléaire', 'Nuclear'), look('nuclear', null, mv == null ? null : -mv), parts.join(' '), `${gw(nl[1])} GW<small>${T('sur 63', 'of 63')}</small>`]); }
+      // the week ahead, from the history: how availability usually moves over the next 7 days at this time of year (last 5 years),
+      // and what is still missing against the operator's forecast
+      const md = nl[0].slice(5), y0 = +nl[0].slice(0, 4), chg = [];
+      for (let yy = y0 - 5; yy < y0; yy++) { const a = nu.find(p => p[0] >= yy + '-' + md), d7 = a && nu.find(p => p[0] >= iso(new Date(Date.parse(a[0] + 'T12:00:00Z') + 7 * 864e5))); if (a && d7 && a[1] != null && d7[1] != null) chg.push(d7[1] - a[1]); }
+      const avg = chg.length >= 3 ? chg.reduce((x, y) => x + y, 0) / chg.length : null, miss = nf ? nf[1] - nl[1] : null;
+      const nxt = avg == null ? null : { text: `${Math.abs(avg) < 500 ? 'à cette période, la disponibilité bouge peu d’une semaine à l’autre' : `à cette période, le nucléaire disponible ${avg > 0 ? 'gagne' : 'perd'} en moyenne ${n1(Math.abs(avg) / 1000)} GW en 7 jours (${y0 - chg.length}–${y0 - 1})`}${miss != null && miss > 1000 ? `, et ${n1(miss / 1000)} GW annoncés par l’exploitant ne sont pas encore là : leur retour pèserait sur les prix, leur retard les soutiendrait` : ''}.`,
+        text_en: `${Math.abs(avg) < 500 ? 'at this time of year availability moves little from one week to the next' : `at this time of year nuclear availability ${avg > 0 ? 'gains' : 'loses'} ${n1(Math.abs(avg) / 1000)} GW in 7 days on average (${y0 - chg.length}–${y0 - 1})`}${miss != null && miss > 1000 ? `, and ${n1(miss / 1000)} GW announced by the operator are not back yet: their return would weigh on prices, a delay would support them` : ''}.` };
+      R.push([T('Nucléaire', 'Nuclear'), ((l2) => [l2[0], l2[1], l2[2] || nxt])(look('nuclear', null, mv == null ? null : -mv)), parts.join(' '), `${gw(nl[1])} GW<small>${T('sur 63', 'of 63')}</small>`]); }
     const ttf = P('ttf'), st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
     if (ttf.length) { const ps = pos60(ttf), parts = [];
       if (ps) parts.push(T('TTF ', 'TTF ') + ps + '.');
@@ -194,6 +201,7 @@
       parts.push(T(`EUA : <b>${Math.abs(d) < 0.5 ? T('effet quasi nul', '') : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' sur le coût d’une centrale gaz'} sur la semaine.`, `EUA: <b>${Math.abs(d) < 0.5 ? 'almost no effect' : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' on a gas plant’s cost'} over the week.`));
       const c = last(coal); if (c) { const ps = pos60(coal); parts.push(T(`Charbon API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`, `Coal API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`) + (ps ? ', ' + ps : '') + '.'); }
       R.push([T('Carbone, charbon', 'Carbon, coal'), look('carbon', nt.eua, wk(eua)), parts.join(' '), `EUA ${n1(e[1])} €<small>${s1(wk(eua))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
+    const val0 = a => { const bt = a.by_technology || [], v = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0); return v ? bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0) / v : null; };
     if (go) {
       const y = new Date().getUTCFullYear(), g = goSeries(go, y + 1), parts = [];
       // broker prices (weekly mid), the production years quoted
@@ -205,7 +213,11 @@
       if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
         if (vol) parts.push(T(`Enchère GO France (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `France GO auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
       const c4 = g.length > 4 ? (g[g.length - 1][1] / g[g.length - 5][1] - 1) * 100 : null;
-      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.map(x => `<span class="why3-line">${x}</span>`).join(''), g.length ? `Cal ${String(y + 1).slice(2)} ${n1(g[g.length - 1][1], 3)} €<small>${g.length > 1 ? s1(g[g.length - 1][1] - g[g.length - 2][1], 3) + ' ' + T('sur la sem.', 'on the week') : ''}</small>` : '']);   // one fact per line
+      // the week ahead for GO: the broker trend over 4 weeks and the next French state auction (EEX, monthly)
+      const nm = new Date(); nm.setUTCMonth(nm.getUTCMonth() + 1); const mo = nm.toLocaleDateString(isFr() ? 'fr-FR' : 'en-GB', { month: 'long', timeZone: 'UTC' });
+      const goNext = { text: `${c4 == null ? '' : Math.abs(c4) < 2 ? 'prix courtier stable sur 4 semaines' : `prix courtier ${c4 > 0 ? 'en hausse' : 'en baisse'} de ${n1(Math.abs(c4))} % sur 4 semaines`}${a ? `${c4 == null ? '' : ' ; '}prochaine enchère d’État française en ${mo} (dernière : ${n1(val0(a), 3)} €/MWh), un repère pour le marché` : ''}.`,
+        text_en: `${c4 == null ? '' : Math.abs(c4) < 2 ? 'broker price flat over 4 weeks' : `broker price ${c4 > 0 ? 'up' : 'down'} ${n1(Math.abs(c4))} % over 4 weeks`}${a ? `${c4 == null ? '' : '; '}next French state auction in ${mo} (last: ${n1(val0(a), 3)} €/MWh), a reference for the market` : ''}.` };
+      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, goNext], parts.map(x => `<span class="why3-line">${x}</span>`).join(''), g.length ? `Cal ${String(y + 1).slice(2)} ${n1(g[g.length - 1][1], 3)} €<small>${g.length > 1 ? s1(g[g.length - 1][1] - g[g.length - 2][1], 3) + ' ' + T('sur la sem.', 'on the week') : ''}</small>` : '']);   // one fact per line
     }
     if (!R.length) { host.innerHTML = `<div class="fuel-note">${T('Données de marché indisponibles.', 'Market data not available.')}</div>`; return; }
     // the notes' record: each day's call against what the price did over the following 7 days (right: up and +1 % or more,

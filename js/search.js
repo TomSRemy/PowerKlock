@@ -33,10 +33,31 @@
     if (window.PKW) PKW.list().forEach(w => {
       out.push({ kind: 'Chart', label: w.title, sub: [w.source, w.desc].filter(Boolean).join(' · '), w, go: () => openChart(w) });
     });
-    out.forEach(o => { o.key = norm(o.label + ' ' + o.sub); });
-    return out;
+    // every card on every page by the title it shows (French when the site is in French), so what you read is what you find
+    const seen = new Set(out.map(o => norm(o.label)));
+    document.querySelectorAll('.page[id^="page-"] .chart-container .table-title, .page[id^="page-"] .fuel-card .table-title').forEach(t => {
+      const label = t.textContent.replace(/\s+/g, ' ').trim(); if (!label || label.length < 4 || seen.has(norm(label))) return; seen.add(norm(label));
+      const card = t.closest('.chart-container, .fuel-card'), page = t.closest('.page').id.slice(5);
+      const pageName = (window.PKNav && PKNav.pageLabel(page)) || page, sub = ((card && card.querySelector('.fuel-card-sub')) || {}).textContent || '';
+      out.push({ kind: 'Chart', label, sub: pageName + (sub ? ' · ' + sub.trim() : ''), go: () => openCard(page, card) });
+    });
+    // labels in both languages: the English the code is written in and the French shown on screen
+    const fr = s => (window.PKI18n && PKI18n.tr ? PKI18n.tr(s) : s);
+    out.forEach(o => { o.labelFr = fr(o.label); o.key = norm(o.label + ' ' + o.labelFr + ' ' + o.sub + ' ' + fr(o.sub)); o.lk = norm(o.label + ' ' + o.labelFr); });
+    // one result per title (a chart of the catalogue and its card on the page read the same)
+    const once = new Set();
+    return out.filter(o => { const k = o.kind[0] + norm(o.labelFr); if (once.has(k)) return false; once.add(k); return true; });
   }
 
+  function openCard(page, card) {
+    window.showPage(page);
+    setTimeout(() => {
+      const sec = card && card.closest('.hist-section-strong');
+      if (sec && sec.style.display === 'none') { for (const t of sec.closest('.page').querySelectorAll('.pk-views .tab-btn')) { t.click(); if (sec.style.display !== 'none') break; } }
+      if (sec && sec.classList.contains('collapsed') && typeof toggleStrongSection === 'function') toggleStrongSection(sec.id);
+      setTimeout(() => { if (!card) return; card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('pk-found'); setTimeout(() => card.classList.remove('pk-found'), 2200); }, 300);
+    }, 450);
+  }
   function openSection(page, sec) {
     window.showPage(page);
     setTimeout(() => {
@@ -49,7 +70,8 @@
     prevision: 'forecast', previsions: 'forecast', consommation: 'consumption', carbone: 'carbon', parc: 'park', production: 'output', capacite: 'capacity', echanges: 'flows',
     stockage: 'storage', hydraulique: 'hydro', meteo: 'weather', garanties: 'guarantees', origine: 'origin', facture: 'bill', fourniture: 'supply', ecarts: 'imbalance',
     desequilibre: 'imbalance', interconnexion: 'flows', marche: 'market', actualites: 'news', alerte: 'alert', alertes: 'alerts', cannibalisation: 'cannibalisation',
-    complement: 'complément', remuneration: 'complément', agregation: 'aggregation', taux: 'rate', cout: 'cost', couts: 'cost', fixe: 'fixed', regions: 'regions', region: 'region' };
+    complement: 'complément', remuneration: 'complément', agregation: 'aggregation', taux: 'rate', cout: 'cost', couts: 'cost', fixe: 'fixed', regions: 'regions', region: 'region',
+    ao: 'tender', aos: 'tender', appel: 'tender', appels: 'tender', offre: 'tender', offres: 'tender', cre: 'cre', spot: 'spot', terme: 'forward', jour: 'day', nucleaire: 'nuclear', indispo: 'unavailability', indisponibilites: 'unavailability', reservoirs: 'reservoirs', stocks: 'storage', go: 'go', ppa: 'ppa', m0: 'm0', capture: 'capture', convertisseur: 'converter', comparateur: 'comparator', rejouer: 'replay' };
   const tr = q => norm(q).split(/\s+/).filter(Boolean).map(w => FR[w] || w).join(' ');
   function openChart(w) {
     if (!w.page) return;
@@ -75,12 +97,20 @@
     }, 450);
   }
 
+  // one typo allowed on words of 5 letters or more (a letter missing, extra or wrong)
+  const near = (w, key) => { if (w.length < 5) return false; for (const t of key.split(/[^a-z0-9]+/)) { if (Math.abs(t.length - w.length) > 1) continue;
+    let i = 0, j = 0, e = 0; while (i < w.length && j < t.length) { if (w[i] === t[j]) { i++; j++; continue; } if (++e > 1) break; if (w.length > t.length) i++; else if (t.length > w.length) j++; else { i++; j++; } }
+    if (e + (w.length - i) + (t.length - j) <= 1) return true; } return false; };
   function score(o, q) {
     if (!q) return 0;
-    const words = norm(tr(q)).split(/\s+/).filter(Boolean);
-    let s = 0;
-    for (const w of words) { const i = o.key.indexOf(w); if (i < 0) return -1; s += i === 0 ? 3 : norm(o.label).includes(w) ? 2 : 1; }
-    return s + (o.kind === 'Page' ? 1 : o.kind === 'Section' ? 0.5 : 0);
+    const raw = norm(q).split(/\s+/).filter(w => w && !['de', 'du', 'des', 'la', 'le', 'les', 'l', 'd', 'et', 'en', 'a', 'the', 'of', 'and'].includes(w));
+    if (!raw.length) return 0;
+    let s = 0, hit = 0;
+    for (const w0 of raw) { const ws = [w0, FR[w0]].filter(Boolean); let best = 0;
+      for (const w of ws) { const i = o.key.indexOf(w); if (i >= 0) best = Math.max(best, o.lk.includes(w) ? (o.lk.startsWith(w) ? 4 : 3) : 1); else if (near(w, o.key)) best = Math.max(best, 0.8); }
+      if (best) { hit++; s += best; } }
+    if (hit < Math.ceil(raw.length * (raw.length > 2 ? 0.6 : 1))) return -1;   // every word for one or two words, most of them beyond
+    return s + hit * 2 + (o.kind === 'Page' ? 1 : o.kind === 'Section' ? 0.5 : 0);
   }
 
   function close() { const m = document.getElementById('pk-search'); if (m) m.remove(); }
@@ -89,7 +119,7 @@
     close();
     const bg = document.createElement('div');
     bg.id = 'pk-search';
-    bg.innerHTML = `<div class="pk-s-box" role="dialog" aria-label="Search"><input type="search" placeholder="Search a page or a chart…  (e.g. capture, nuclear, spark, forward)" aria-label="Search">
+    bg.innerHTML = `<div class="pk-s-box" role="dialog" aria-label="Search"><input type="search" placeholder="${window.PKI18n && PKI18n.lang !== 'en' ? 'Chercher une page ou un graphique… (ex. capture, nucléaire, appels d’offres, forward)' : 'Search a page or a chart…  (e.g. capture, nuclear, tenders, forward)'}" aria-label="Search">
       <div class="pk-s-list" role="listbox"></div><div class="pk-s-foot">↑↓ to move · Enter to open · Esc to close</div></div>`;
     document.body.appendChild(bg);
     const input = bg.querySelector('input'), list = bg.querySelector('.pk-s-list');
@@ -98,7 +128,7 @@
       const q = input.value.trim();
       res = q ? idx.map(o => [o, score(o, q)]).filter(x => x[1] >= 0).sort((a, b) => b[1] - a[1]).slice(0, 12).map(x => x[0]) : idx.filter(o => o.kind === 'Page').slice(0, 12);
       sel = Math.min(sel, Math.max(0, res.length - 1));
-      list.innerHTML = res.map((o, i) => `<div class="pk-s-row${i === sel ? ' on' : ''}" data-i="${i}" role="option"><span class="pk-s-k ${o.kind.toLowerCase()}">${o.kind}</span><span class="pk-s-l">${esc(o.label)}</span><span class="pk-s-sub">${esc(o.sub)}</span></div>`).join('') || '<div class="pk-s-empty">No match</div>';
+      list.innerHTML = res.map((o, i) => `<div class="pk-s-row${i === sel ? ' on' : ''}" data-i="${i}" role="option"><span class="pk-s-k ${o.kind.toLowerCase()}">${o.kind}</span><span class="pk-s-l">${esc(o.labelFr || o.label)}</span><span class="pk-s-sub">${esc(o.sub)}</span></div>`).join('') || '<div class="pk-s-empty">No match</div>';
       list.querySelectorAll('.pk-s-row').forEach(r => r.addEventListener('click', () => go(+r.dataset.i)));
     };
     const go = i => { const o = res[i]; if (!o) return; close(); o.go(); };

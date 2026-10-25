@@ -410,27 +410,28 @@ function _mrnCfCard() {
 async function _mrnRenTiles() {
   const host = document.getElementById('mrn-rtiles'); if (!host) return;
   const [bm, m0] = await Promise.all([_mrnGet('ppab', DATA_BASE + 'history/ppa_benchmark.json').catch(() => null), _mrnGet('m0', DATA_BASE + 'm0.json').catch(() => null)]);
+  MRN.ren = { bm, m0 };
   const T = [], foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
   const days = bm && bm.days ? Object.keys(bm.days).sort() : [];
   if (days.length) { const L = bm.days[days[days.length - 1]], W = bm.days[days[Math.max(0, days.length - 6)]] || {}, ser = t => days.slice(-60).map(d => bm.days[d][t] && bm.days[d][t].ppa).filter(v => v != null);
     [['solar', _mT('PPA solaire', 'Solar PPA'), '#FBBF24'], ['wind', _mT('PPA éolien', 'Wind PPA'), '#14D3A9']].forEach(([t, n, tc]) => { const x = L[t]; if (!x) return; const d = W[t] ? x.ppa - W[t].ppa : null;
-      T.push(`<a class="mrn2-tile" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts)', 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance)')}">` +
+      T.push(`<a class="mrn2-tile" data-tile="ppa${t === 'solar' ? 's' : 'w'}" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts)', 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance)')}">` +
         `<span class="mrn3-cat">${_mT('Benchmark PowerKlock', 'PowerKlock benchmark')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${(L.tenor || '').replace(/-/g, '–')}</span></span>` +
         `<span class="mrn2-tv">${_mN(x.ppa, 2)}<small>€/MWh</small></span><span class="mrn2-tc">${d == null ? '' : `<span class="${d > 0 ? 'mrn-up' : d < 0 ? 'mrn-down' : ''}">${_mS(d, 2)} €</span> <span class="mrn3-dim">${_mT('5 j ouvrés', '5 runs')}</span> · `}${_mT('forward', 'forward')} <b>${_mN(x.ref, 1)}</b></span>` +
         _mrnSpark(ser(t), tc) + foot(x.lo != null ? 'P10–P90 <b>' + _mN(x.lo, 0) + '–' + _mN(x.hi, 0) + '</b>' : '', _mT('60 j', '60 d')) + '</a>'); }); }
   const ms = m0 && m0.months ? m0.months.filter(m => m.complete !== false && m.solarM0 != null) : [];
   if (ms.length > 1) { const L = ms[ms.length - 1], P = ms[ms.length - 2], mon = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
     [['solarM0', 'solarRatio', _mT('M0 solaire', 'Solar M0'), '#FBBF24'], ['windM0', 'windRatio', _mT('M0 éolien', 'Wind M0'), '#14D3A9']].forEach(([k, r, n, tc]) => { const d = L[k] - P[k];
-      T.push(`<a class="mrn2-tile" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix de marché de référence du complément de rémunération : prix spot moyen pondéré par la production nationale du mois (recalculé par PowerKlock)', 'Reference market price of the contract for difference: the month’s spot weighted by national output (recomputed by PowerKlock)')}">` +
+      T.push(`<a class="mrn2-tile" data-tile="m0${k === 'solarM0' ? 's' : 'w'}" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix de marché de référence du complément de rémunération : prix spot moyen pondéré par la production nationale du mois (recalculé par PowerKlock)', 'Reference market price of the contract for difference: the month’s spot weighted by national output (recomputed by PowerKlock)')}">` +
         `<span class="mrn3-cat">${_mT('Complément de rémunération', 'Contract for difference')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${mon(L.month)}</span></span>` +
         `<span class="mrn2-tv">${_mN(L[k], 2)}<small>€/MWh</small></span><span class="mrn2-tc"><span class="${d > 0 ? 'mrn-up' : 'mrn-down'}">${_mS(d, 2)} €</span> <span class="mrn3-dim">vs ${mon(P.month)}</span> · ${_mN(L[r] * 100, 0)} % ${_mT('du prix base', 'of baseload')}</span>` +
         _mrnSpark(ms.slice(-12).map(m => m[k]), tc) + foot(_mT('base ', 'baseload ') + '<b>' + _mN(L.base, 1) + '</b>', _mT('12 mois', '12 months')) + '</a>'); }); }
   // the latest CRE tender of each main technology: price kept, volume, when
-  const ao = await _mrnGet('aot', DATA_BASE + 'cre_tenders.json').catch(() => null), rows = (ao && ao.rows) || [];
+  const ao = await _mrnGet('aot', DATA_BASE + 'cre_tenders.json').catch(() => null), rows = (ao && ao.rows) || []; MRN.ren.ao = rows;
   const last = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).pop();
   const AO = [['Photovoltaïque sol', _mT('Solaire sol', 'Ground PV'), '#FBBF24'], ['Photovoltaïque bâtiment', _mT('Solaire toiture', 'Rooftop PV'), '#F59E0B'], ['Éolien terrestre', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9']].map(([t, n, c]) => [last(t), n, c]).filter(x => x[0]);
   if (AO.length) { const mon = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-    T.push(`<a class="mrn2-tile mrn-ao" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix moyen pondéré retenu au dernier appel d’offres CRE de chaque filière (complément de rémunération, 20 ans)', 'Weighted average price kept at the latest CRE tender of each technology (contract for difference, 20 years)')}">` +
+    T.push(`<a class="mrn2-tile mrn-ao" data-tile="ao" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix moyen pondéré retenu au dernier appel d’offres CRE de chaque filière (complément de rémunération, 20 ans)', 'Weighted average price kept at the latest CRE tender of each technology (contract for difference, 20 years)')}">` +
       `<span class="mrn3-cat">${_mT('Appels d’offres CRE', 'CRE tenders')}</span><span class="mrn3-th"><span class="mrn2-tn">${_mT('Derniers prix retenus', 'Latest prices kept')}</span></span>` +
       AO.map(([r, n, c]) => `<span class="mrn-ao-r"><i style="background:${c}"></i><span>${n} <span class="mrn3-dim">${r.period || ''} · ${mon(r.result)}</span></span><b>${_mN(r.price, 2)} €</b></span>`).join('') +
       `<span class="mrn3-tx"><span>${AO.map(([r]) => _mN(r.kept_mw, 0)).join(' / ')} MW</span><span>${_mT('€/MWh', '€/MWh')}</span></span></a>`); }
@@ -884,10 +885,26 @@ const MRN_WIN = {
         ...(I.ahead ? [['fairfc', _mT('Spot attendu, prévision, €/MWh (axe droit)', 'Expected spot, forecast, €/MWh (right axis)'), '#F59E0B', 'y2', true, I.ahead.days.map(x => [x.d, Math.round(x.fair * 10) / 10])],
           ['covfc', _mT('Couverture prévue, %', 'Forecast coverage, %'), '#7FC8F8', 'y', true, I.ahead.days.map(x => [x.d, Math.round(x.cov * 10) / 10])]] : []),
         ['spot', _mT('Spot France, €/MWh (axe droit)', 'France spot, €/MWh (right axis)'), '#E6EDF3', 'y2', true, I.rows.filter(x => x.p != null).map(x => [x.d, x.p])]], unit2: '€/MWh' }; },
+  // renewables tiles (data in MRN.ren, read by _mrnRenTiles)
+  ppas: () => _mrnPpaWin('solar'), ppaw: () => _mrnPpaWin('wind'), m0s: () => _mrnM0Win('solar'), m0w: () => _mrnM0Win('wind'),
+  ao: () => { const rows = (MRN.ren && MRN.ren.ao) || [], ser = t => rows.filter(r => r.tech === t && r.price != null && r.result).sort((a, b) => a.result.localeCompare(b.result)).map(r => [r.result, r.price]);
+    return { name: _mT('Appels d’offres CRE · prix retenus', 'CRE tenders · prices kept'), unit: '€/MWh', dp: 2, look: null, route: 'renewables/m0', page: _mT('Renouvelables › Contrat M0', 'Renewables › M0 contract'), range: 'ALL',
+      series: [['aosol', _mT('Solaire sol', 'Ground PV'), '#FBBF24', 'y', true, ser('Photovoltaïque sol')], ['aobat', _mT('Solaire toiture', 'Rooftop PV'), '#F59E0B', 'y', true, ser('Photovoltaïque bâtiment')], ['aowind', _mT('Éolien terrestre', 'Onshore wind'), '#14D3A9', 'y', true, ser('Éolien terrestre')]] }; },
   nuc: k => ({ name: _mT('Nucléaire disponible', 'Nuclear available'), unit: 'GW', dp: 1, look: null, inv: true, route: 'system/generation/nuclear', page: _mT('Système › Production › Nucléaire', 'System › Generation › Nuclear'),
     series: [['nuc', _mT('Disponible', 'Available'), '#A98BD4', 'y', true, k.P('fr_nuc_avail').map(p => [p[0], p[1] / 1000])], ['nucfc', _mT('Prévision de l’exploitant', 'Operator forecast'), '#B8C9D9', 'y', true, k.P('fr_nuc_avail_fc').map(p => [p[0], p[1] / 1000])]] }),
 };
 const MRN_ORDER = ['cal', 'ttf', 'eua', 'brent', 'go', 'idx'];
+const MRN_REN_ORDER = ['ppas', 'ppaw', 'm0s', 'm0w', 'ao'];
+function _mrnPpaWin(t) {
+  const bm = MRN.ren && MRN.ren.bm, ds = bm && bm.days ? Object.keys(bm.days).sort() : [], g = k => ds.map(d => [d, bm.days[d][t] && bm.days[d][t][k]]).filter(p => p[1] != null);
+  return { name: t === 'solar' ? _mT('PPA solaire · benchmark PowerKlock', 'Solar PPA · PowerKlock benchmark') : _mT('PPA éolien · benchmark PowerKlock', 'Wind PPA · PowerKlock benchmark'), unit: '€/MWh', dp: 2, look: null, route: 'tools/ppa', page: _mT('Outils › Pricer PPA', 'Tools › PPA pricer'),
+    series: [['ppa', 'PPA', t === 'solar' ? '#FBBF24' : '#14D3A9', 'y', true, g('ppa')], ['ref', _mT('Forward base', 'Forward baseload'), '#B8C9D9', 'y', true, g('ref')], ['lo', 'P10', '#7A93AB', 'y', false, g('lo')], ['hi', 'P90', '#7A93AB', 'y', false, g('hi')]] };
+}
+function _mrnM0Win(t) {
+  const ms = ((MRN.ren && MRN.ren.m0 && MRN.ren.m0.months) || []).filter(m => m.complete !== false), k = t === 'solar' ? 'solarM0' : 'windM0';
+  return { name: t === 'solar' ? _mT('M0 solaire', 'Solar M0') : _mT('M0 éolien', 'Wind M0'), unit: '€/MWh', dp: 2, look: null, route: 'renewables/m0', page: _mT('Renouvelables › Contrat M0', 'Renewables › M0 contract'), range: '3Y',
+    series: [['m0', 'M0', t === 'solar' ? '#FBBF24' : '#14D3A9', 'y', true, ms.map(m => [m.month + '-15', m[k]])], ['base', _mT('Prix base du mois', 'Month baseload'), '#B8C9D9', 'y', true, ms.map(m => [m.month + '-15', m.base])]] };
+}
 // the window itself is shared with the market pages' tiles (js/pk-tilewin.js)
 function _mrnTileDef(id) {
   const k = MRN.k; if (!k || !MRN_WIN[id] || !window.PKTile) return null;
@@ -901,7 +918,7 @@ function _mrnTileDef(id) {
   if (id === 'cal') more = _mT('Coche « Gaz TTF » pour voir le gaz sur la même période.', 'Tick “TTF gas” to see gas over the same period.');
   if (id === 'go') more = _mT('Prix moyen courtier, une cotation par semaine.', 'Broker mid, one quote a week.');
   const y = +_mrnToday().slice(0, 4);
-  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
+  return { name: W.name, unit: W.unit, unit2: W.unit2, pct: W.pct, dp: W.dp, inv: W.inv, range: W.range, chip, route: W.route, page: W.page, series: W.series, whyMore: more, file: 'today-' + id, mainId: id === 'go' ? 'go' + (y + 1) : null };
 }
 document.addEventListener('pk-view', e => {
   if (!e.detail || e.detail.key !== 'morning' || e.detail.index !== 2) return;
@@ -911,7 +928,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   const a = e.target.closest && e.target.closest('.mrn2-tile[data-route]');
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
   // capture phase, before the menu's handler that opens any [data-route] link as a page
-  const ids = MRN_ORDER.filter(i => document.querySelector('.mrn2-tile[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);
+  const ORD = MRN_REN_ORDER.includes(a.dataset.tile) ? MRN_REN_ORDER : MRN_ORDER, ids = ORD.filter(i => document.querySelector('.mrn2-tile[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);
   if (idx >= 0 && window.PKTile && PKTile.open(_mrnTileDef(a.dataset.tile), { push: true, list: ids.map(i => () => _mrnTileDef(i)), idx, opener: a })) { e.preventDefault(); e.stopPropagation(); }
 }, true);
 
