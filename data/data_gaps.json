@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-24T22:39:36+00:00",
+"updated": "2026-10-25T00:30:54+00:00",
 "storage": {
 "data_mb": 176.5
 },
@@ -10,7 +10,7 @@
 "what": "2021-09-29: BG day-ahead 147.21 €/MWh here, 148.13 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2021-12-03:BG",
@@ -18,7 +18,7 @@
 "what": "2021-12-03: BG day-ahead 221.96 €/MWh here, 221.01 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2021-12-04:BG",
@@ -26,7 +26,7 @@
 "what": "2021-12-04: BG day-ahead 212.52 €/MWh here, 211.97 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2021-12-17:BG",
@@ -34,7 +34,7 @@
 "what": "2021-12-17: BG day-ahead 300.33 €/MWh here, 299.37 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-06-07:ES",
@@ -42,7 +42,7 @@
 "what": "2026-06-07: ES day-ahead 53.08 €/MWh here, 51.84 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-06-08:ES",
@@ -50,7 +50,7 @@
 "what": "2026-06-08: ES day-ahead 60.98 €/MWh here, 58.08 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-06-10:ES",
@@ -58,7 +58,7 @@
 "what": "2026-06-10: ES day-ahead 44.32 €/MWh here, 38.96 at Energy-Charts",
 "repair": "older than 30 days: run the repair_prices workflow for this zone",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:EE",
@@ -66,7 +66,7 @@
 "what": "2026-10-23: EE day-ahead 105.78 €/MWh here, 106.8 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:GR",
@@ -74,7 +74,7 @@
 "what": "2026-10-23: GR day-ahead 225.8 €/MWh here, 225.18 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:LT",
@@ -82,7 +82,7 @@
 "what": "2026-10-23: LT day-ahead 157.98 €/MWh here, 161.27 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 },
 {
 "id": "pricecheck:2026-10-23:LV",
@@ -90,7 +90,7 @@
 "what": "2026-10-23: LV day-ahead 157.98 €/MWh here, 161.27 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E",
 "since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T22:39:36+00:00"
+"lastSeen": "2026-10-25T00:30:54+00:00"
 }
 ],
 "resolved": [
