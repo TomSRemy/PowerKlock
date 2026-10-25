@@ -2781,6 +2781,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-cf-input">
+          <div class="cf-steps" id="cf-steps"><span class="cf-step on" data-s="1">1 · Your curve</span><span class="cf-step" data-s="2">2 · Your contracts</span><span class="cf-step" data-s="3">3 · Result</span></div>
           <div class="pp-group-t">1 · Your load curve</div>
           <div class="cf-grid">
             <label class="cf-drop" id="cf-drop">
@@ -2795,11 +2796,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
               <div class="cf-samples">Test curves: <a href="data/samples/test_load_curve_industrial_2025.csv" download>industrial site 2025</a> · <a href="data/samples/test_enedis_shop_2026H1.csv" download>shop, Enedis format</a></div>
             </div>
           </div>
+          <details class="pk-howto" id="cf-format"><summary>File format · detected automatically, change it only if the result looks wrong</summary>
           <div class="cf-form">
             <label class="cf-field"><span>Values are</span><select id="cf-unit"><option value="auto">Detect</option><option value="kwh">kWh per step</option><option value="mwh">MWh per step</option><option value="kw">kW (average power)</option><option value="w">W (average power, Enedis)</option></select></label>
             <label class="cf-field"><span>Timestamps mark</span><select id="cf-stamp"><option value="auto">Detect</option><option value="start">Start of each step</option><option value="end">End of each step (Enedis)</option></select></label>
           </div>
-          <div class="pp-group-t">2 · Your contracts <em class="cf-opt">optional — for the market-based Scope 2 and the coverage</em></div>
+          </details>
+          <details class="cf-contracts" id="cf-contracts"><summary><span class="pp-group-t" style="display:inline">2 · Your contracts</span> <em class="cf-opt">optional — guarantees of origin, a PPA, your supplier's factor: open only if you have one</em></summary>
           <div class="cf-form">
             <label class="cf-field"><span>Guarantees of origin cancelled</span><span class="cf-in"><input type="number" id="cf-go" min="0" step="any" value="0" placeholder=""><em>MWh</em></span></label>
             <label class="cf-field"><span>Renewable PPA volume</span><span class="cf-in"><input type="number" id="cf-ppa" min="0" step="any" value="0"><em>MWh</em><select id="cf-ppa-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select></span></label>
@@ -2807,7 +2810,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <label class="cf-field"><span>Residual mix · source <a href="https://www.aib-net.org/facts/european-residual-mix" target="_blank" rel="noopener" class="cf-link">AIB ↗</a></span><span class="cf-in"><select id="cf-rm-country" aria-label="Residual mix country"><option value="FR">France (AIB)</option><option value="BE">Belgium (AIB)</option><option value="other">Other: enter</option></select><input type="number" id="cf-residual" min="0" step="any" placeholder="override"><em>g/kWh</em></span></label>
             <label class="cf-field"><span>Your reporting factor (location)</span><span class="cf-in"><input type="number" id="cf-annual" min="0" step="any" value="" placeholder="e.g. your carbon database"><em>g/kWh</em></span></label>
           </div>
+          </details>
           <div class="cf-status" id="cf-status" role="status">No curve loaded yet: drop a file or try the example.</div>
+          <button type="button" class="pk-btn-primary" id="cf-see" hidden>See the result →</button>
         </div>
       </div>
       <div id="cf-results" hidden>
@@ -2817,8 +2822,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-cf-ov">
-<div class="kpi-strip fuel-kpis" id="cf-kpis"></div>
-<div class="cf-words" id="cf-words"></div>
+<div class="cf-sum" id="cf-sum"><div class="cf-big" id="cf-big"></div><p class="cf-sentence" id="cf-sentence"></p><div class="cf-sum-f"><button type="button" class="pk-btn-ghost" id="cf-ppt">Client sheet (PowerPoint)</button></div></div>
+<details class="pk-howto"><summary>The detail in figures and sentences</summary><div class="kpi-strip fuel-kpis" id="cf-kpis"></div><div class="cf-words" id="cf-words"></div></details>
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Month by month</div><div class="fuel-card-sub">Consumption, location-based emissions and energy cost on the spot</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="cf-monthly-ov" style="width:100%;height:320px"></canvas></div></div>
         </div>
       </div>
@@ -3925,22 +3930,25 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
         </div>
       </div>
-      <div class="mrn2-hdr mrn3-hdr"><h1 id="mrn-date">Today</h1><span class="mrn2-upd" id="mrn-upd"></span></div>
+      <div class="mrn2-hdr mrn3-hdr"><h1 id="mrn-date">Today</h1><span class="mrn-xbtn-w"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure on what it is and why it moves">ⓘ Explain</button><span class="mrn2-upd" id="mrn-upd"></span></span></div>
       <!-- Quick look (default): one screen, no scrolling -->
       <div class="mrn2" id="mrn-quick">
         <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
         <div class="mrn3-qrow">
-          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub" id="mrn-q-spot-sub">Day-ahead price hour by hour</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
             <div style="position:relative;height:230px"><canvas id="mrn-q-spot" style="width:100%;height:230px"></canvas></div></section>
-          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div>
+          <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">One line per market on why its price moved. Read it with the tiles above: the tile gives the figure, the line gives the reason.</p>
             <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
         </div>
       </div>
       <!-- Discovery: few figures, each explained -->
       <div class="mrn2" id="mrn-learn">
-        <section class="mrn2-card mrn2-brief"><p class="mrn2-lbl">In one sentence</p><p class="mrn3-sent" id="mrn-l-sent">Loading…</p></section>
-        <section class="mrn3-ltiles" id="mrn-l-tiles"></section>
+        <div class="mrn-disc">
+          <section class="chart-container fuel-card mrn-story" id="mrn-story"><div class="fuel-note">Loading…</div></section>
+          <section class="chart-container fuel-card mrn-quiz" id="mrn-quiz"><div class="fuel-note">Loading…</div></section>
+        </div>
+        <section class="mrn2-card mrn2-brief" hidden><p class="mrn2-lbl">In one sentence</p><p class="mrn3-sent" id="mrn-l-sent"></p></section>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Today’s price hour by hour</div><div class="fuel-card-sub">France day-ahead, €/MWh</div></div><span class="source-badge">ENTSO-E</span></div>
             <div style="position:relative;height:260px"><canvas id="mrn-l-day" style="width:100%;height:260px"></canvas></div><div class="fuel-note" id="mrn-l-day-note"></div></div>
@@ -3952,16 +3960,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="mrn2" id="mrn2">
         <div id="mrn-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-kpis"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
-        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+        <section class="chart-container fuel-card mrn3-spot"><div class="fuel-card-head"><div><div class="table-title">France spot · today and tomorrow</div><div class="fuel-card-sub">Day-ahead price hour by hour: the real price as soon as it is published (around 13:00), the forecast until then</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div><p class="fuel-note mrn-x">The day-ahead price, set the day before around 13:00 for each hour. Low at midday when solar floods in, high in the evening when demand peaks and the sun sets; green bands = hours at 0 € or below.</p>
           <div class="mrn3-days" id="mrn-days"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           <div style="position:relative;height:260px"><canvas id="mrn-spot" style="width:100%;height:260px"></canvas></div>
         </section>
-        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France</div><div class="fuel-card-sub">Weather against normal, gas storage, month-ahead forward</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
+        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The next 4 weeks · France</div><div class="fuel-card-sub">Weather against normal, gas storage, month-ahead forward</div></div><span class="source-badge">Open-Meteo · AGSI · RTE</span></div><p class="fuel-note mrn-x">Weather week by week against the 2016–2025 normal: colder or calmer means more gas burnt and higher prices. The gauges show the gas in storage and the nuclear available; the last row is the PowerKlock index.</p><div id="mrn-30d"><div class="fuel-note">Loading…</div></div></section>
         <div class="mrn3-pair">
-        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved and why</div><div class="fuel-card-sub">The reasons behind the prices above, and the trend for the week ahead</div></div><span class="source-badge">PowerKlock</span></div><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
+        <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved and why</div><div class="fuel-card-sub">The reasons behind the prices above, and the trend for the week ahead</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">The reasons behind this week’s prices, market by market, and the call for the week ahead from the market notes.</p><div id="mrn-brief"><div class="fuel-note">Loading…</div></div></section>
         <section class="chart-container fuel-card mrn-news"><div class="fuel-card-head"><div><div class="table-title">In the news</div></div><a href="#intel/news" class="mrn-news-more">all news ›</a></div><div id="mrn-news"><div class="fuel-note">Loading…</div></div></section>
         </div>
       </div>
+      <section class="mrn-cfcard" id="mrn-cf"></section>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-2">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-2')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Markets<span class="pk-hs-meta">spot by month, France vs Germany, power and gas forwards</span></div>

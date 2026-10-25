@@ -396,6 +396,15 @@ function _mrnSpotChart(k, cid, prob) {
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
 // ── negative prices: a bar at the top of Today when today or tomorrow has hours at 0 € or below (or the forecast expects some),
 //    with the hours, the lowest price and a way to get the e-mail alert ──
+// ── your site: the last carbon footprint computed in this browser (Tools › Carbon footprint), or the way in ──
+function _mrnCfCard() {
+  const el = document.getElementById('mrn-cf'); if (!el) return;
+  let L = null; try { L = JSON.parse(localStorage.getItem('pk-cf-last') || 'null'); } catch (_) { L = null; }
+  const go = `<a class="pk-btn-ghost" href="#tools/carbon" data-route="tools/carbon">${L ? _mT('Ouvrir l’outil ›', 'Open the tool ›') : _mT('Déposer une courbe ›', 'Drop a curve ›')}</a>`;
+  el.innerHTML = `<span class="mrn3-cat">${_mT('Votre site', 'Your site')}</span><b>${_mT('Empreinte de votre consommation', 'Your consumption footprint')}</b>` +
+    (L ? `<span>${L.meta ? L.meta + ' · ' : ''}<b>${_mN(L.mwh, 0)} MWh/an</b> · <b>${_mN((L.emL || 0) / 1e6, 1)} t CO₂</b> (${_mN(L.ciH, 1)} g/kWh) · ${_mT('profil', 'profile')} <b>${_mN(L.costAvg, 1)} €/MWh</b>${L.shape != null ? ' (' + _mS(L.shape, 1) + ' % ' + _mT('vs base', 'vs baseload') + ')' : ''}${L.gain ? ' · ' + _mT('gain possible ', 'possible saving ') + '<b>' + _mN(L.gain / 1000, 1) + ' k€/an</b>' : ''} <span class="mrn3-dim">· ${_mT('calculé le ', 'computed on ')}${L.at}</span></span>`
+      : `<span class="mrn3-dim">${_mT('Votre courbe Enedis, CSV ou Excel : émissions, coût au spot et ce que vous pourriez gagner, en 30 secondes, sans rien envoyer.', 'Your Enedis, CSV or Excel curve: emissions, spot cost and what you could save, in 30 seconds, nothing sent.')}</span>`) + go;
+}
 function _mrnNegAlert(k) {
   const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
   const one = (hr, lbl) => { if (!hr) return null; const z = hr.map((x, i) => x != null && x <= 0 ? i : -1).filter(i => i >= 0); if (!z.length) return null;
@@ -458,7 +467,8 @@ function _mrnTileList(k) {
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
       cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot attendu 4 sem.', 'Expected spot 4 wks') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && M ? pill(null, (M.fair / M.fwd - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
       `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
-  return T;
+  // Explain: one line under each tile (shown when the switch is on)
+  return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
 }
 // Discovery: three tiles, each with a line on what it is
 function _mrnLearnTiles(T, L) {
@@ -632,6 +642,88 @@ function _mrnQuick(k, el) {
 
 // Discovery: the day in one sentence, today's price explained, what it means, a glossary (the figures are in the tiles)
 // o (dashboard widgets): { sent, day (canvas id), note, means, gloss } — only the parts given are drawn
+// ══ Discovery: the day's story in five cards, and a daily quiz checked against the real price ══
+function _mrnStory(k) {
+  const host = document.getElementById('mrn-story'); if (!host) return;
+  const B = t => '<b>' + t + '</b>', sT = _mrnDayStats(k.today), sM = _mrnDayStats(k.tomorrow), cards = [];
+  const nl = _mrnLast(k.P('fr_nuc_avail')), nf = _mrnLast(k.P('fr_nuc_avail_fc')), ttf = k.P('ttf'), tl = _mrnLast(ttf), t7 = tl ? (tl[1] / _mrnBack(ttf, 7) - 1) * 100 : null;
+  // 1 · the day ahead
+  if (sM && sT) { const x = sM.base / Math.max(1, sT.base);
+    cards.push([_mT('Demain', 'Tomorrow'), _mT(`Demain, l’électricité coûtera ${B(_mN(sM.base, 0) + ' €/MWh')} en moyenne`, `Tomorrow, power will cost ${B(_mN(sM.base, 0) + ' €/MWh')} on average`),
+      (x > 1.5 ? _mT(`${_mN(x, 1)} fois plus qu’aujourd’hui (${_mN(sT.base, 0)} €). `, `${_mN(x, 1)} times today (${_mN(sT.base, 0)} €). `) : x < 0.67 ? _mT(`Bien moins qu’aujourd’hui (${_mN(sT.base, 0)} €). `, `Much less than today (${_mN(sT.base, 0)} €). `) : _mT(`Proche d’aujourd’hui (${_mN(sT.base, 0)} €). `, `Close to today (${_mN(sT.base, 0)} €). `)) +
+      (sM.zero ? _mT(`${sM.zero} heures à 0 € ou moins : le soleil et le vent produiront plus que la France ne consomme. `, `${sM.zero} hours at 0 € or below: sun and wind will produce more than France uses. `) : '') +
+      _mT(`L’heure la plus chère : ${sM.maxH} h (${_mN(sM.max, 0)} €), quand la demande monte et le soleil se couche.`, `The dearest hour: ${sM.maxH}:00 (${_mN(sM.max, 0)} €), when demand rises and the sun sets.`)]); }
+  else if (sT) cards.push([_mT('Aujourd’hui', 'Today'), _mT(`Aujourd’hui, l’électricité coûte ${B(_mN(sT.base, 0) + ' €/MWh')} en moyenne`, `Today, power costs ${B(_mN(sT.base, 0) + ' €/MWh')} on average`),
+    (k.fc && k.fc.price ? _mT(`Le prix de demain sort vers 13 h ; notre prévision : environ ${_mN(_mrnMean(k.fc.price.filter(v => v != null)), 0)} €. `, `Tomorrow's price comes out around 13:00; our forecast: about ${_mN(_mrnMean(k.fc.price.filter(v => v != null)), 0)} €. `) : '') + (sT.zero ? _mT(`${sT.zero} h à 0 € ou moins aujourd’hui.`, `${sT.zero} h at 0 € or below today.`) : '')]);
+  // 2 · gas
+  if (tl) cards.push([_mT('Le gaz', 'Gas'), _mT(`Le gaz européen est à ${B(_mN(tl[1], 1) + ' €/MWh')}`, `European gas is at ${B(_mN(tl[1], 1) + ' €/MWh')}`) + (t7 != null ? ` (${_mS(t7, 1)} % ${_mT('sur 7 jours', 'over 7 days')})` : ''),
+    _mT(`Quand le vent et le soleil manquent, ce sont les centrales au gaz qui fixent le prix de l’électricité : à ce niveau, une centrale coûte environ ${_mN(tl[1] / 0.55, 0)} € par MWh produit, avant le CO₂.`, `When wind and sun are short, gas plants set the power price: at this level a plant costs about ${_mN(tl[1] / 0.55, 0)} € per MWh produced, before CO₂.`)]);
+  // 3 · nuclear
+  if (nl) cards.push([_mT('Le nucléaire', 'Nuclear'), _mT(`${B(_mN(nl[1] / 1000, 1) + ' GW')} de nucléaire disponibles sur 63`, `${B(_mN(nl[1] / 1000, 1) + ' GW')} of nuclear available out of 63`),
+    (nf ? (nf[1] - nl[1] > 1500 ? _mT(`C’est ${_mN((nf[1] - nl[1]) / 1000, 1)} GW de moins que ce qu’EDF annonçait : il faut plus de gaz, ce qui pousse les prix vers le haut. `, `That is ${_mN((nf[1] - nl[1]) / 1000, 1)} GW less than EDF announced: more gas is needed, which pushes prices up. `) : _mT('En ligne avec ce qu’EDF annonçait. ', 'In line with what EDF announced. ')) : '') +
+    _mT('Le nucléaire fait les deux tiers de l’électricité française : chaque réacteur compte.', 'Nuclear makes two thirds of French power: every reactor counts.')]);
+  // 4 · the year ahead
+  const c = k.cals[0]; if (c) { const l = _mrnLast(c.pts), c7 = (l[1] / _mrnBack(c.pts, 7) - 1) * 100;
+    cards.push([_mT('L’an prochain', 'Next year'), _mT(`Un MWh livré toute l’année ${c.y} se paie ${B(_mN(l[1], 1) + ' €')} aujourd’hui`, `A MWh delivered all through ${c.y} costs ${B(_mN(l[1], 1) + ' €')} today`),
+      _mT(`${_mS(c7, 1)} % sur la semaine. C’est le prix auquel les entreprises et les fournisseurs se couvrent ; il suit surtout le gaz de l’an prochain.`, `${_mS(c7, 1)} % on the week. It is the price companies and suppliers hedge at; it follows next year's gas above all.`)]); }
+  // 5 · the weeks ahead (PowerKlock index)
+  const A = k.idx && k.idx.ahead; if (A) cards.push([_mT('Les semaines à venir', 'The weeks ahead'), _mT(`Les fondamentaux annoncent ${B(_mN(A.fair4, 0) + ' €/MWh')} en moyenne sur 4 semaines`, `The fundamentals point to ${B(_mN(A.fair4, 0) + ' €/MWh')} on average over 4 weeks`),
+    _mT(`D’après la météo prévue, le nucléaire disponible et le prix du gaz (indice PowerKlock).`, `From the weather outlook, the nuclear available and the gas price (PowerKlock index).`) + (A.month ? _mT(` Le marché cote ${A.month.m} à ${_mN(A.month.fwd, 0)} € : ${A.month.fair > A.month.fwd ? 'les fondamentaux disent plus cher' : 'les fondamentaux disent moins cher'}.`, ` The market prices ${A.month.m} at ${_mN(A.month.fwd, 0)} €: ${A.month.fair > A.month.fwd ? 'the fundamentals say dearer' : 'the fundamentals say cheaper'}.`) : '')]);
+  if (!cards.length) { host.innerHTML = '<div class="fuel-note">' + _mT('Données indisponibles.', 'Data not available.') + '</div>'; return; }
+  let i = 0;
+  const draw = () => { const [lbl, t, x] = cards[i];
+    host.innerHTML = `<div class="mrn-story-h"><span class="mrn3-cat">${_mT('L’histoire du jour', 'The day’s story')} · ${i + 1} / ${cards.length} · ${lbl}</span><span class="mrn-dots">${cards.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</span></div>` +
+      `<h3 class="mrn-story-t">${t}</h3><p class="mrn-story-p">${x}</p><div class="mrn-story-n"><button type="button" class="pk-btn-ghost" data-d="-1" ${i ? '' : 'disabled'}>‹ ${_mT('Précédent', 'Previous')}</button><button type="button" class="pk-btn-primary" data-d="1" ${i < cards.length - 1 ? '' : 'disabled'}>${i < cards.length - 1 ? _mT('Suivant : ', 'Next: ') + cards[i + 1][0] + ' ›' : _mT('Fin', 'End')}</button></div>`;
+    host.querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => { i = Math.max(0, Math.min(cards.length - 1, i + +b.dataset.d)); draw(); })); };
+  draw();
+}
+function _mrnQuiz(k) {
+  const host = document.getElementById('mrn-quiz'); if (!host) return;
+  let st = {}; try { st = JSON.parse(localStorage.getItem('pk-quiz') || '{}') || {}; } catch (_) { st = {}; }
+  const save = () => { try { localStorage.setItem('pk-quiz', JSON.stringify(st)); } catch (_) {} };
+  // the real day averages known on this page
+  const base = {}; k.spotDays.forEach(r => { base[r.d] = r.avg; });
+  const sT = _mrnDayStats(k.today), sM = _mrnDayStats(k.tomorrow), sY = _mrnDayStats(k.yday), neg = {};
+  if (sY) { base[k.y] = sY.base; neg[k.y] = sY.zero; } if (sT) { base[k.t] = sT.base; neg[k.t] = sT.zero; } if (sM) { base[k.tm] = sM.base; neg[k.tm] = sM.zero; }
+  // the day to guess: tomorrow until its price is out, then the day after; the reference is the day before it
+  const target = sM ? _mrnAdd(k.tm, 1) : k.tm, ref = sM ? k.tm : k.t, refB = base[ref];
+  const dir = (b, r) => b > r * 1.1 ? 'up' : b < r * 0.9 ? 'down' : 'flat';
+  // score: every answer whose day is now known
+  let ok = 0, n = 0; const done = [];
+  Object.entries(st).forEach(([d, a]) => { if (base[d] == null || a.ref == null) return;
+    const r1 = dir(base[d], a.ref) === a.q1; n++; if (r1) ok++;
+    let r2 = null; if (neg[d] != null && a.q2) { r2 = (neg[d] > 0 ? 'yes' : 'no') === a.q2; n++; if (r2) ok++; }
+    done.push([d, r1, r2]); });
+  done.sort((a, b) => b[0].localeCompare(a[0]));
+  const A = st[target] || {}, dayName = new Date(target + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const opt = (q, v, l) => `<button type="button" class="mrn-qa${A[q] === v ? ' on' : ''}" data-q="${q}" data-v="${v}">${l}</button>`;
+  const last = done[0];
+  host.innerHTML = `<span class="mrn3-cat">${_mT('Le quiz du jour', 'Today’s quiz')}</span>` +
+    (refB == null ? `<p class="fuel-note">${_mT('Le prix de référence manque : revenez plus tard.', 'The reference price is missing: come back later.')}</p>` :
+    `<h3 class="mrn-story-t">${_mT('Le ' + dayName + ', l’électricité sera…', 'On ' + dayName + ', power will be…')}</h3><div class="mrn-qrow">${opt('q1', 'up', _mT('plus chère (+10 % ou plus)', 'dearer (+10 % or more)'))}${opt('q1', 'flat', _mT('à peu près pareille', 'about the same'))}${opt('q1', 'down', _mT('moins chère (−10 % ou plus)', 'cheaper (−10 % or more)'))}</div>` +
+    `<p class="fuel-note">${_mT('par rapport au ', 'against ')}${new Date(ref + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', timeZone: 'UTC' })} : ${_mN(refB, 0)} €/MWh</p>` +
+    `<h3 class="mrn-story-t" style="font-size:14px">${_mT('Y aura-t-il au moins une heure à 0 € ou moins ?', 'Will there be at least one hour at 0 € or below?')}</h3><div class="mrn-qrow">${opt('q2', 'yes', _mT('oui', 'yes'))}${opt('q2', 'no', _mT('non', 'no'))}</div>`) +
+    `<p class="mrn-qres">${A.q1 ? _mT('Réponse enregistrée : vérifiée dès que le prix sort (vers 13 h la veille). ', 'Answer saved: checked as soon as the price is out (around 13:00 the day before). ') : ''}` +
+    (last ? _mT(`Dernier résultat (${last[0]}) : prix ${last[1] ? '✓' : '✗'}${last[2] == null ? '' : ', heures négatives ' + (last[2] ? '✓' : '✗')}. `, `Last result (${last[0]}): price ${last[1] ? '✓' : '✗'}${last[2] == null ? '' : ', negative hours ' + (last[2] ? '✓' : '✗')}. `) : '') +
+    (n ? _mT(`Votre score : <b>${ok} / ${n}</b>.`, `Your score: <b>${ok} / ${n}</b>.`) : _mT('Votre score apparaîtra ici.', 'Your score will show here.')) + `</p><p class="fuel-note">${_mT('Gardé dans ce navigateur seulement.', 'Kept in this browser only.')}</p>`;
+  host.querySelectorAll('.mrn-qa').forEach(b => b.addEventListener('click', () => { const a = st[target] || (st[target] = { ref: refB }); a[b.dataset.q] = b.dataset.v; a.ref = refB; save(); _mrnQuiz(k); }));
+}
+// ══ Explain: a line under each figure of Quick look and Expert, on what it is and why it moves ══
+const MRN_EX = {
+  cal: ['Le prix d’un MWh livré toute l’année prochaine, acheté aujourd’hui. Il suit surtout le gaz de l’an prochain.', 'The price of a MWh delivered all next year, bought today. It follows next year’s gas above all.'],
+  ttf: ['Le prix du gaz européen. Les jours sans vent ni soleil, les centrales au gaz fixent le prix de l’électricité.', 'The European gas price. On days without wind or sun, gas plants set the power price.'],
+  eua: ['Le prix du droit d’émettre une tonne de CO₂. Il s’ajoute au coût des centrales au gaz et au charbon (≈ 0,37 t par MWh pour le gaz).', 'The price of the right to emit a tonne of CO₂. It adds to the cost of gas and coal plants (≈ 0.37 t per MWh for gas).'],
+  brent: ['Le pétrole. Peu utilisé pour produire l’électricité, mais il entraîne le gaz et signale les tensions géopolitiques.', 'Oil. Little used to make power, but it pulls gas along and signals geopolitical stress.'],
+  go: ['Le prix d’un certificat qui prouve qu’un MWh est renouvelable. Un revenu en plus pour les parcs, un coût pour ceux qui veulent de l’électricité verte.', 'The price of a certificate proving a MWh is renewable. Extra income for parks, a cost for green buyers.'],
+  idx: ['Le spot attendu sur 4 semaines d’après la météo, le nucléaire et le gaz. Au-dessus du forward : les fondamentaux disent plus cher que le marché.', 'The expected spot over 4 weeks from the weather, nuclear and gas. Above the forward: the fundamentals say dearer than the market.'],
+};
+function _mrnExplain(on) {
+  const b = document.getElementById('mrn-xbtn');
+  if (on == null) { try { on = localStorage.getItem('pk-explain') === '1'; } catch (_) { on = false; } }
+  document.body.classList.toggle('mrn-explain', !!on);
+  if (b) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.classList.toggle('on', !!on); b.textContent = 'ⓘ ' + _mT('Expliquer', 'Explain');
+    if (!b.dataset.w) { b.dataset.w = '1'; b.addEventListener('click', () => { const v = !document.body.classList.contains('mrn-explain'); try { localStorage.setItem('pk-explain', v ? '1' : '0'); } catch (_) {} _mrnExplain(v); }); } }
+}
 function _mrnLearn(k, o) {
   const $ = id => document.getElementById(id);
   o = o || { sent: $('mrn-l-sent'), day: 'mrn-l-day', note: $('mrn-l-day-note'), means: $('mrn-l-means'), gloss: $('mrn-l-gloss') };
@@ -682,8 +774,8 @@ async function renderMorning() {
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnFacts().then(k => {
     MRN.k = k;
-    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k);
-    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k);
+    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard();
+    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
   if (window.PKBrief) { const b = document.getElementById('mrn-brief'); if (b) PKBrief.brief(b); }

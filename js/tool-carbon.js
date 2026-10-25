@@ -454,6 +454,37 @@
     ].filter(Boolean);
     $('cf-words').innerHTML = `<ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>`;
   }
+  // ── the summary: four figures in large, one sentence that ties them, kept for Today (this browser only) ──
+  function summary(o, timing, shape) {
+    const big = $('cf-big'); if (!big) return;
+    const yr = 365 / Math.max(1, o.days.length), fx = o.flexAuto, gain = fx && fx.moved ? fx.save * yr : null, small = (o.emLocation || 0) < 1e6;
+    const eL = em(o.emLocation, small), eM = em(o.emMarket, small);
+    const K = (n, v, u, sub) => `<div class="cf-k"><span class="cf-k-n">${n}</span><span class="cf-k-v">${v}<small>${u}</small></span><span class="cf-k-s">${sub}</span></div>`;
+    big.innerHTML = [
+      K(_c('Émissions (location-based)', 'Emissions (location-based)'), eL[0], eL[1], `${f1(o.ciHourly)} g/kWh${timing == null ? '' : ` · <b class="${timing <= 0 ? 'cf-dn' : 'cf-up'}">${timing > 0 ? '+' : ''}${timing.toFixed(1)} %</b> ${_c('vs moyenne France', 'vs French average')}`}`),
+      K(_c('Émissions (market-based)', 'Emissions (market-based)'), eM[0], eM[1], o.factorRest == null ? _c('il faut un facteur de mix résiduel', 'needs a residual mix factor') : esc(o.factorRestSrc)),
+      K(_c('Coût de votre profil au spot', 'Your profile on the spot'), Math.abs(o.cost) >= 1000 ? f1(o.cost / 1000) : f0(o.cost), Math.abs(o.cost) >= 1000 ? 'k€' : '€', shape == null ? '' : `<b class="${shape > 0 ? 'cf-up' : 'cf-dn'}">${shape > 0 ? '+' : ''}${shape.toFixed(1)} %</b> ${_c('vs prix base', 'vs baseload')} · ${f2(o.costAvg)} €/MWh`),
+      K(_c('Ce que vous pourriez gagner', 'What you could save'), gain == null ? '–' : Math.abs(gain) >= 1000 ? f1(gain / 1000) : f0(gain), gain != null && Math.abs(gain) >= 1000 ? _c('k€/an', 'k€/yr') : _c('€/an', '€/yr'), _c(`en décalant ${S.settings.flexPct || 10} % de chaque jour vers les heures les moins chères`, `moving ${S.settings.flexPct || 10} % of each day to the cheapest hours`)),
+    ].join('');
+    // one sentence: volume and when, cost against baseload, carbon against France, the solar hint
+    const wd = o.wk.nwd && o.wk.nwe ? (o.wk.wd.reduce((a, b) => a + b, 0) / o.wk.nwd) / Math.max(1e-9, o.wk.we.reduce((a, b) => a + b, 0) / o.wk.nwe) : 1;
+    const when = wd > 1.4 ? _c('surtout en semaine', 'mostly on weekdays') : _c('aussi bien en semaine que le week-end', 'on weekdays and weekends alike');
+    const pvA = o.pvAuto, pv = pvA && pvA.prod ? _c(` Un toit solaire de ${f0(o.pvHint)} kWc couvrirait ${pc(pvA.self / o.E)} de vos besoins.`, ` A ${f0(o.pvHint)} kWp solar roof would cover ${pc(pvA.self / o.E)} of your needs.`) : '';
+    const yE = o.E / 1000 * yr;
+    $('cf-sentence').innerHTML = _c(`Vous consommez <b>${f0(yE)} MWh par an</b>, ${when} : ${shape == null ? '' : shape > 0 ? 'un peu plus cher que le prix base' : 'moins cher que le prix base'}${timing == null ? '' : ', ' + (timing <= 0 ? 'moins carboné que la moyenne française' : 'plus carboné que la moyenne française')}.${pv}`,
+      `You use <b>${f0(yE)} MWh a year</b>, ${when}: ${shape == null ? '' : shape > 0 ? 'a little dearer than baseload' : 'cheaper than baseload'}${timing == null ? '' : ', ' + (timing <= 0 ? 'cleaner than the French average' : 'more carbon-intensive than the French average')}.${pv}`);
+    try { localStorage.setItem('pk-cf-last', JSON.stringify({ at: new Date().toISOString().slice(0, 10), meta: S.meta, mwh: yE, ciH: o.ciHourly, timing, emL: o.emLocation, emM: o.emMarket, costAvg: o.costAvg, shape, gain })); } catch (_) {}
+  }
+  // the client sheet: the summary as one PowerPoint slide (js/export.js)
+  async function clientSheet(btn) {
+    const box = $('cf-sum'); if (!box || !window.PKExport) return;
+    const t = btn.textContent; btn.disabled = true; btn.textContent = _c('Préparation…', 'Preparing…');
+    try { await PKExport.deck(_c('Empreinte de votre consommation · ', 'Your consumption footprint · ') + (S.meta || ''), [{ k: 'card', title: _c('Empreinte de votre consommation', 'Your consumption footprint'), sub: S.meta || '', src: 'PowerKlock · RTE éCO2mix · ENTSO-E · AIB', r: await PKExport.snap(box) }]); }
+    catch (e) { console.warn('[carbon] sheet', e); }
+    finally { btn.disabled = false; btn.textContent = t; }
+  }
+  // the three steps at the top of « Your data »
+  function steps(n) { document.querySelectorAll('#cf-steps .cf-step').forEach(e => { const k = +e.dataset.s; e.classList.toggle('on', k === n); e.classList.toggle('done', k < n); }); }
   function renderOverview(o) {
     const timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null, small = (o.emLocation || 0) < 1e6;
     const eL = em(o.emLocation, small), eM = em(o.emMarket, small), shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null;
@@ -466,6 +497,7 @@
       _fuelKpi('Renewable coverage', o.coverage ? Math.round(o.coverage * 100) : '0', '%', o.hourly != null ? _c(`heure par heure ${pc(o.hourly)}`, `hour by hour ${pc(o.hourly)}`) : 'GOs + PPA, annual volume', o.coverage >= 0.999 ? 'up' : ''),
     ].join('');
     words(o);
+    summary(o, timing, shape);
     const ms = Object.keys(o.monthly).sort();
     _fuelChart('cf-monthly-ov', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
       { label: 'Consumption (MWh)', data: ms.map(m => +(o.monthly[m].E / 1000).toFixed(2)), backgroundColor: 'rgba(127,200,248,.55)', borderRadius: 3, yAxisID: 'y' },
@@ -884,6 +916,7 @@
     // charts drawn in hidden view tabs get their size when shown
     document.querySelectorAll('#cf-results canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); });
     sumbar(o);
+    steps(3); const see = $('cf-see'); if (see) see.hidden = false;
     // first result: open the Overview (the inputs stay one click away)
     if (!S.shown) { S.shown = true; const t = tabBtn('Overview'); if (t) t.click(); }
   }
@@ -954,6 +987,9 @@
     drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
     [['cf-ex-metric', 'metric'], ['cf-ex-grid', 'grid']].forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', () => { EX[k] = e.value; if (S.res) { renderExplore(S.res); $('cf-ex-detail').innerHTML = `<div class="fuel-note">${_c('Cliquez une case de la matrice, un mois ou une heure, ou un jour du calendrier ci-dessous.', 'Click a cell of the matrix, a month or an hour, or a day of the calendar below.')}</div>`; } }); });
     $('cf-example').addEventListener('click', () => load(example(), _c('Exemple : immeuble de bureaux, 2025', 'Example: office building, 2025')));
+    const see = $('cf-see'); if (see) see.addEventListener('click', () => { const t = tabBtn('Overview'); if (t) t.click(); });
+    const ppt = $('cf-ppt'); if (ppt) ppt.addEventListener('click', () => clientSheet(ppt));
+    const ct = $('cf-contracts'); if (ct) { if (+S.settings.go || +S.settings.ppa || S.settings.supplier) ct.open = true; ct.addEventListener('toggle', () => { if (ct.open) steps(2); }); }
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
     $('cf-xlsx').addEventListener('click', exportXlsx);
