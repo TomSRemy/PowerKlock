@@ -842,7 +842,7 @@ function _openHoRow(zone, series, st) {
           </div>
           <div class="pk-section-header-actions">
             <button class="pk-btn-primary" onclick="event.stopPropagation();_openHoFullscreen('${zone}')" title="Open in fullscreen">⛶ Fullscreen</button>
-            <button class="pk-btn-ghost" onclick="event.stopPropagation();_closeHoRow()" title="Close detail">✕ Close</button>
+            <button class="pk-btn-ghost" onclick="event.stopPropagation();window._HO_CLOSED_BY_USER=window._HO_OPEN_ZONE;_closeHoRow()" title="Close detail">✕ Close</button>
           </div>
         </div>
 

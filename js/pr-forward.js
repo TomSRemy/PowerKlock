@@ -276,9 +276,22 @@
       return;
     }
     if (PF.drillTab === 'calall') {
-      host.innerHTML = windowBar('calall') + drillChartBox('pf-drill-chart-calall');
+      // every contract family on one tab: years, quarters, months, seasons (one line per contract still to deliver)
+      var cell = function (id, title) {
+        return '<div class="chart-container fuel-card" style="margin:0;min-width:0"><div class="fuel-card-head"><div><div class="table-title">' + title + '</div><div class="fuel-card-sub" id="' + id + '-sub"></div></div></div>' + drillChartBox(id, 260) + '</div>';
+      };
+      host.innerHTML = windowBar('calall') + '<div class="fuel-grid-2" style="gap:12px">' +
+        cell('pf-drill-chart-calall', 'Calendar years') + cell('pf-drill-chart-q', 'Quarters') +
+        cell('pf-drill-chart-m', 'Months') + cell('pf-drill-chart-s', 'Seasons') + '</div>';
       renderDrillWindowButtons();
-      PKW.draw('pf-cals', 'pf-drill-chart-calall', { country: cc, win: PF.drillWindow, from: PF.drillFrom, to: PF.drillTo }).then(function () { addFullscreen('pf-drill-chart-calall'); addDownload('pf-drill-chart-calall', 'pf-drill-chart-calall'); });
+      var w = { country: cc, win: PF.drillWindow, from: PF.drillFrom, to: PF.drillTo };
+      [['pf-cals', 'pf-drill-chart-calall', {}], ['pf-contracts', 'pf-drill-chart-q', { kind: 'quarter' }],
+        ['pf-contracts', 'pf-drill-chart-m', { kind: 'month' }], ['pf-contracts', 'pf-drill-chart-s', { kind: 'season' }]].forEach(function (c) {
+        PKW.draw(c[0], c[1], Object.assign({}, w, c[2])).then(function (r) {
+          var sub = document.getElementById(c[1] + '-sub'); if (sub && r && r.sub) sub.textContent = r.sub;
+          addFullscreen(c[1]); addDownload(c[1], c[1]);
+        });
+      });
       return;
     }
     host.innerHTML = '<div class="hist-window-btns" id="pf-drill-tenor-btns"></div>' +
@@ -438,6 +451,41 @@
         var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
         return { sub: countryMeta(p.country).label };
+      });
+    },
+  });
+
+  // quarters, months and seasons: dated contracts (data/history/fr_market_contracts.json), baseload only,
+  // those still to be delivered (front ones first), one line each
+  var contractsLoad = null;
+  var KIND_N = { month: 6, quarter: 5, season: 4 };
+  var KIND_NAME = { month: 'months', quarter: 'quarters', season: 'seasons' };
+  reg({
+    id: 'pf-contracts', title: 'Power forward · dated contracts', pageCanvas: 'pf-drill-chart-q',
+    desc: 'Price history of the next quarters, months or seasons of one market (baseload), one line per contract.',
+    params: [COUNTRY_PARAM, { key: 'kind', label: 'Contracts', inTitle: true, options: [['quarter', 'Quarters'], ['month', 'Months'], ['season', 'Seasons']] }, WIN_PARAM],
+    defaults: { country: 'FR', kind: 'quarter', win: '1Y' },
+    draw: function (cid, p) {
+      if (!contractsLoad) contractsLoad = fetch('data/history/fr_market_contracts.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { contractsLoad = null; return null; });
+      return Promise.all([pfData(), contractsLoad]).then(function (res) {
+        var C = (res[1] && res[1][p.country]) || {}, kind = p.kind || 'quarter';
+        var today = new Date().toISOString().slice(0, 10);
+        var list = Object.keys(C).map(function (k) { return Object.assign({ key: k }, C[k]); })
+          .filter(function (c) { return c.kind === kind && !/peak/i.test(c.marketName || '') && (c.deliveryEnd || '') >= today && c.points && Object.keys(c.points).length; })
+          .sort(function (a, b) { return a.deliveryStart < b.deliveryStart ? -1 : 1; })
+          .slice(0, KIND_N[kind] || 6);
+        var set = {};
+        list.forEach(function (c) { Object.keys(c.points).forEach(function (d) { set[d] = true; }); });
+        var all = Object.keys(set).sort(), rg = rangeOf(all, p), dates = all.slice(rg[0], rg[1]);
+        var ds = list.map(function (c, i) {
+          return { label: c.key.replace(/^(.*?)(\d{4})$/, '$1 $2'), data: dates.map(function (d) { return c.points[d] != null ? c.points[d] : null; }),
+            borderColor: PALETTE[i % PALETTE.length], borderWidth: 1.5, pointRadius: 0, tension: 0, fill: false, spanGaps: true };
+        }).filter(function (d) { return d.data.some(function (v) { return v != null; }); });
+        if (!ds.length) { noDataMsg(cid, 'No ' + (KIND_NAME[kind] || kind) + ' quoted for ' + countryMeta(p.country).label + ' in this window', ''); return null; }
+        var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
+        var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
+        return { sub: 'next ' + ds.length + ' ' + (KIND_NAME[kind] || kind) + ' · baseload' };
       });
     },
   });
