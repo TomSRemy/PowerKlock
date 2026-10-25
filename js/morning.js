@@ -440,32 +440,21 @@ async function _mrnWeeks(k, el) {
   if (weeks.length) {
     const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
     html += '<div class="mrn2-weeks">' + weeks.map(w => `<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Sem. ', 'Wk ')}${wn(w.from)} · ${new Date(w.from + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>
-      <span class="mrn2-wk-r"><span>${_mT('Température', 'Temperature')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Vent', 'Wind')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Soleil', 'Sun')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
+      <span class="mrn2-wk-r"><span>${_mT('Température', 'Temperature')}</span>${cell(w.dT, 0.7, '°C', 1)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. éolienne', 'Wind output')}</span>${cell(w.wind, 8, '%', 0)}</span><span class="mrn2-wk-r"><span>${_mT('Prod. solaire', 'Solar output')}</span>${cell(w.sun, 8, '%', 0)}</span></div>`).join('') + '</div>';
   }
-  // gas storage and next month's forward: two more cards in the same style as the weeks (title, label → value rows, a thin line)
-  const cards = [], row = (l, v) => `<span class="mrn2-wk-r"><span>${l}</span>${v}</span>`;
+  // below the weeks, two gauges side by side: EU gas storage against its winter mark, French nuclear available against EDF's forecast
+  const g = [];
   const st = _mrnLast(k.P('agsi')), ly = st ? _mrnBack(k.P('agsi'), 365) : null;
-  if (st) cards.push(`<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Stocks de gaz UE', 'EU gas storage')}</span>` +
-    row(_mT('Niveau', 'Level'), `<b class="${st[1] < 80 ? 'mrn-up' : ''}">${_mN(st[1], 1)} %</b>`) + row(_mT('Repère 1er nov.', 'Mark 1 Nov'), '<b>90 %</b>') +
-    (ly != null ? row(_mT('Sur un an', 'On a year'), `<b class="${st[1] < ly ? 'mrn-up' : 'mrn-dn'}">${_mS(st[1] - ly, 1)} pts</b>`) : '') +
-    `<span class="mrn2-bar" style="margin-top:4px"><span class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></span><span class="mrn2-mark" style="left:90%"></span></span></div>`);
-  let why = '';
-  if (fm && fm.months) {
-    const m1 = Object.keys(fm.months).sort()[0], v1 = +fm.months[m1].value, mon = _mrnToday().slice(0, 7), sp = k.spotDays.filter(r => r.d.startsWith(mon)), avg = _mrnMean(sp.map(r => r.avg));
-    const ml = (iso, o) => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', Object.assign({ month: 'long', timeZone: 'UTC' }, o || {}));
-    const gap = avg != null ? (v1 / avg - 1) * 100 : null, mo = +m1.slice(5, 7), winter = mo >= 11 || mo <= 2;
-    why = gap == null || Math.abs(gap) < 5 ? '' : gap > 0 ? (winter ? _mT('forward du mois prochain au-dessus du spot : l’hiver arrive (chauffage, moins de soleil)', 'next month’s forward above the spot: winter is coming (heating, less sun)') : _mT('forward du mois prochain au-dessus du spot : le marché attend plus cher', 'next month’s forward above the spot: the market expects dearer power'))
-      : (winter ? _mT('forward du mois prochain sous le spot : le marché attend un mois plus doux', 'next month’s forward below the spot: the market expects a milder month') : _mT('forward du mois prochain sous le spot : plus de soleil et de vent attendus', 'next month’s forward below the spot: more sun and wind expected'));
-    // a thin line: the last 30 days of spot, then the forward level (dashed)
-    const last = k.spotDays.slice(-30).map(r => r.avg).filter(v => v != null), all = last.concat([v1]), lo = Math.min(...all), hi = Math.max(...all), W = 100, H = 22;
-    const y = v => (H - 2 - (v - lo) / Math.max(1e-9, hi - lo) * (H - 4)).toFixed(1), xs = i => (i / Math.max(1, last.length - 1) * 66).toFixed(1);
-    const spark = last.length > 1 ? `<svg class="mrn2-wk-sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${last.map((v, i) => xs(i) + ',' + y(v)).join(' ')}" fill="none" stroke="#14D3A9" stroke-width="1.4" vector-effect="non-scaling-stroke"/><line x1="70" x2="100" y1="${y(v1)}" y2="${y(v1)}" stroke="#7FC8F8" stroke-width="1.6" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/></svg>` : '';
-    cards.push(`<div class="mrn2-wk"><span class="mrn2-wk-t">${_mT('Forward ', 'Forward ')}${ml(m1, { year: 'numeric' })}</span>` +
-      row(_mT('Prix', 'Price'), `<b>${_mN(v1, 1)} €/MWh</b>`) + (avg != null ? row(_mT('Spot ', 'Spot ') + ml(mon, { month: 'short' }) + _mT(' à date', ' to date'), `<b>${_mN(avg, 1)} €/MWh</b>`) : '') +
-      (gap != null ? row(_mT('Écart', 'Gap'), `<b class="${gap > 0 ? 'mrn-up' : 'mrn-dn'}">${_mS(gap, 0)} %</b>`) : '') + spark + '</div>');
+  if (st) g.push(`<div class="mrn2-g"><div>${_mT('Stocks de gaz UE', 'EU gas storage')} <b>${_mN(st[1], 1)} %</b></div><div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, st[1])}%;background:${st[1] < 80 ? 'var(--down)' : 'var(--up)'}"></div><div class="mrn2-mark" style="left:90%"></div></div><div class="mrn2-gs">${_mT('Repère : 90 % au 1er novembre', 'Mark: 90 % on 1 November')}${ly != null ? ' · ' + _mS(st[1] - ly, 1) + _mT(' pts sur un an', ' pts on a year') : ''}</div></div>`);
+  const nu = _mrnLast(k.P('fr_nuc_avail')), nf = _mrnLast(k.P('fr_nuc_avail_fc')), ny = nu ? _mrnBack(k.P('fr_nuc_avail'), 365) : null, FLEET = 63000;
+  if (nu) {
+    const short = nf && nu[1] < nf[1] - 1000;   // below what EDF announced: tighter supply, firmer prices
+    g.push(`<div class="mrn2-g"><div>${_mT('Nucléaire disponible', 'Nuclear available')} <b>${_mN(nu[1] / 1000, 1)} GW</b> <span class="mrn2-gs" style="display:inline">${_mT('sur 63 GW', 'of 63 GW')}</span></div>` +
+      `<div class="mrn2-bar"><div class="mrn2-fill" style="width:${Math.min(100, nu[1] / FLEET * 100).toFixed(1)}%;background:${short ? 'var(--down)' : 'var(--up)'}"></div>${nf ? `<div class="mrn2-mark" style="left:${Math.min(100, nf[1] / FLEET * 100).toFixed(1)}%"></div>` : ''}</div>` +
+      `<div class="mrn2-gs">${nf ? _mT('Repère : prévision EDF ', 'Mark: EDF forecast ') + _mN(nf[1] / 1000, 1) + ' GW (' + _mS((nu[1] - nf[1]) / 1000, 1) + ' GW)' : ''}${ny != null ? ' · ' + _mS((nu[1] - ny) / 1000, 1) + _mT(' GW sur un an', ' GW on a year') : ''}</div></div>`);
   }
-  if (cards.length) html = html.replace(/<\/div>$/, cards.join('') + '</div>');   // into the weeks' grid, after the last week
-  if (cards.length && !weeks.length) html += '<div class="mrn2-weeks">' + cards.join('') + '</div>';
+  if (g.length) html += '<div class="mrn2-gauges">' + g.join('') + '</div>';
+  const why = '';
   const take = [];
   const cold = weeks.filter(w => w.dT != null && w.dT < -1).length, calm = weeks.filter(w => w.wind != null && w.wind < -10).length, windy = weeks.filter(w => w.wind != null && w.wind > 10).length;
   if (cold || calm) take.push(_mT((cold ? 'plus froid' : '') + (cold && calm ? ' et ' : '') + (calm ? 'moins de vent' : '') + ' que la normale sur ' + Math.max(cold, calm) + ' semaine' + (Math.max(cold, calm) > 1 ? 's' : '') + ' : plus de gaz brûlé, des prix plus fermes',
@@ -473,7 +462,10 @@ async function _mrnWeeks(k, el) {
   else if (windy) take.push(_mT('plus de vent que la normale sur ' + windy + ' semaine' + (windy > 1 ? 's' : '') + ' : des prix plus bas, plus d’heures négatives à midi', 'windier than normal in ' + windy + ' week' + (windy > 1 ? 's' : '') + ': lower prices, more negative hours at midday'));
   else if (weeks.length) take.push(_mT('météo proche de la normale', 'weather close to normal'));
   if (why) take.push(why);
+  const legend = !weeks.length ? '' : '<p class="fuel-note" style="margin:4px 0 0">' + _mT('Lecture : température = écart à la normale en °C ; production éolienne et solaire = production attendue de la semaine face à la normale 2016–2025, au parc actuel (vent et rayonnement prévus par Open-Meteo, calés sur RTE)',
+    'How to read: temperature = gap to normal in °C; wind and solar output = the week’s expected output against the 2016–2025 normal, at today’s fleet (wind and irradiation forecast by Open-Meteo, fitted on RTE)') + '.</p>';
   if (take.length) html += '<p class="mrn2-note">' + take.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('. ') + '.</p>';
+  html += legend;
   host.innerHTML = html || '<div class="fuel-note">' + _mT('Prévisions indisponibles.', 'Outlook not available.') + '</div>';
 }
 
@@ -709,7 +701,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-tc.mrn-up{color:var(--down)} .mrn2-tc.mrn-down{color:var(--up)}
   .mrn2-tile svg{width:100%;height:28px;margin-top:5px;display:block}
   .mrn2 .fuel-grid-2{margin:0} .mrn2>.chart-container{margin:0}
-  .mrn2-weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+  .mrn2-weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
   .mrn2-wk-sp{display:block;width:100%;height:22px;margin-top:4px}
   .mrn2-wk .mrn2-bar{display:block;position:relative;height:6px;border-radius:3px;background:var(--border)} .mrn2-wk .mrn2-fill{display:block;height:6px;border-radius:3px} .mrn2-wk .mrn2-mark{position:absolute;top:-3px;width:2px;height:12px;background:var(--text2)}
   .mrn2-wk{background:var(--bg3);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-width:0}
