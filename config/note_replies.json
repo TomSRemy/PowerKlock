@@ -1,2 +1,22 @@
 {
+ "1": {
+  "status": "done",
+  "reply": "Fait : « Ce qui a bougé et pourquoi » et « Dans l’actualité » sont côte à côte (3/5 – 2/5 de la largeur) ; l’un sous l’autre sur un écran de moins de 1 100 px."
+ },
+ "2": {
+  "status": "done",
+  "reply": "Fait : les sections repliées suivent le site — Marchés, Renouvelables, Système électrique — et « Prévisions détaillées » est tout en bas."
+ },
+ "3": {
+  "status": "done",
+  "reply": "Fait : le spot par mois est à côté de France vs Allemagne ; deux graphiques par ligne dans toutes les sections."
+ },
+ "4": {
+  "status": "done",
+  "reply": "Fait : « Production en ce moment » a l’historique à droite (production par mois, 3 ans) ; dessous, indisponibilités nucléaires à côté de la consommation face à la normale."
+ },
+ "5": {
+  "status": "done",
+  "reply": "Proposition en ligne. Gardés : spot par mois, France vs Allemagne, forwards France (historique + tableau), TTF calendrier, GO, taux de capture. Ajoutés : capture par région, production par mois, consommation vs normale. Retirés de Today (toujours sur leurs pages) : forwards sur le calendrier de livraison, tableau des forwards TTF. Dis-moi ce qui manque ou ce qui est de trop."
+ }
 }
