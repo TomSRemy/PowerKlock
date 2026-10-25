@@ -431,13 +431,13 @@ function _mrnNegAlert(k) {
   // the hours as runs (10–11 h, 12–15 h), so 4 hours never read as a 5-hour span
   const runs = z => { const out = []; z.forEach(i => { const r = out[out.length - 1]; if (r && i === r[1]) r[1] = i + 1; else out.push([i, i + 1]); });
     return out.map(([a, b]) => _mrnFr() ? (b - a === 1 ? a + ' h' : a + '–' + b + ' h') : H(a) + '–' + H(b)).join(', '); };
-  let anyNeg = false;
-  const one = (hr, lbl) => { if (!hr) return null; const z = hr.map((x, i) => x != null && x <= 0 ? i : -1).filter(i => i >= 0); if (!z.length) return null;
-    const mn = Math.min(...z.map(i => hr[i])); if (mn < 0) anyNeg = true;
-    return `${lbl} <b>${z.length} h</b> ${mn < 0 ? _mT('à 0 € ou moins', 'at 0 € or below') : _mT('à 0 €', 'at 0 €')} (${runs(z)}${mn < 0 ? ', min <b>' + _mN(mn, 1) + ' €</b>' : ''})`; };
+  // negative prices only: hours at exactly 0 € do not count
+  const one = (hr, lbl) => { if (!hr) return null; const z = hr.map((x, i) => x != null && x < 0 ? i : -1).filter(i => i >= 0); if (!z.length) return null;
+    const mn = Math.min(...z.map(i => hr[i]));
+    return `${lbl} <b>${z.length} h</b> ${_mT('sous 0 €', 'below 0 €')} (${runs(z)}, min <b>${_mN(mn, 1)} €</b>)`; };
   const parts = [one(k.today, _mT('aujourd’hui', 'today')), k.tomorrow ? one(k.tomorrow, _mT('demain', 'tomorrow')) : null].filter(Boolean);
-  if (!k.tomorrow && k.fc && k.fc.expected_hours >= 1) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('à 0 € ou moins probables', 'at 0 € or below likely')}`);
-  const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${anyNeg ? _mT('Prix négatifs', 'Negative prices') : _mT('Prix à zéro', 'Prices at zero')}</b> · ${parts.join(' · ')}</span>` +
+  if (!k.tomorrow && k.fc && k.fc.expected_hours >= 1) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('de prix négatifs probables', 'of negative prices likely')}`);
+  const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${_mT('Prix négatifs', 'Negative prices')}</b> · ${parts.join(' · ')}</span>` +
     `<a href="#markets/spot/negative" data-route="markets/spot/negative">${_mT('détail', 'detail')} ›</a><button type="button" class="pk-btn-ghost mrn-negal-b">${_mT('M’alerter par e-mail', 'E-mail me')}</button></div>` : '';
   ['mrn-q-negal', 'mrn-negal'].forEach(id => { const el = document.getElementById(id); if (!el) return; el.innerHTML = html; el.hidden = !html;
     const b = el.querySelector('.mrn-negal-b'); if (b) b.addEventListener('click', () => { if (window.PKAlerts) PKAlerts.open(); }); });
