@@ -26,6 +26,11 @@ Writes data/history/fr_imbalance_cost.json:
 
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py              # last 2 months (24 if no file yet)
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py --months 24
+    ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py --prices 4      # only the imbalance prices of the last 4 days
+
+Also keeps the imbalance prices themselves (Paris days, 96 quarter-hours, €/MWh) in
+data/history/fr_imbalance_price/YYYY-MM.json: {"days": {"2026-10-24": {"long": [96], "short": [96]}}}
+(long = price for an excess, short = for a deficit; the same values under a single price).
 """
 import io
 import json
@@ -193,6 +198,43 @@ def imbalance(p0, p1):
     return long_, short_
 
 
+PRICE_DIR = os.path.join(ROOT, 'data', 'history', 'fr_imbalance_price')
+
+
+def save_prices(lg, sh):
+    """merge quarter-hour prices into the monthly files, by Paris day"""
+    days = {}
+    for side, ser in (('long', lg), ('short', sh)):
+        for t, v in ser.items():
+            loc = t.astimezone(PARIS)
+            d = loc.date().isoformat()
+            i = loc.hour * 4 + loc.minute // 15
+            day = days.setdefault(d, {'long': [None] * 96, 'short': [None] * 96})
+            if i < 96:
+                day[side][i] = round(v, 2)
+    by_month = {}
+    for d, v in days.items():
+        if sum(x is not None for x in v['long']) >= 80:   # a full day only (DST days keep 92 or 100 slots folded on 96)
+            by_month.setdefault(d[:7], {})[d] = v
+    os.makedirs(PRICE_DIR, exist_ok=True)
+    for m, dd in by_month.items():
+        path = os.path.join(PRICE_DIR, m + '.json')
+        j = load(path) or {'days': {}}
+        j['days'].update(dd)
+        j['days'] = dict(sorted(j['days'].items()))
+        j['source'] = 'ENTSO-E imbalance prices France (A85), Paris time, 15 min, EUR/MWh'
+        with open(path, 'w') as f:
+            json.dump(j, f, separators=(',', ':'))
+    return sum(len(v) for v in by_month.values())
+
+
+def recent_prices(n):
+    end = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+    start = datetime.combine(date.today() - timedelta(days=n), datetime.min.time(), PARIS).astimezone(timezone.utc)
+    lg, sh = imbalance(start.strftime('%Y%m%d%H%M'), end.strftime('%Y%m%d%H%M'))
+    print(f'imbalance prices: {save_prices(lg, sh)} days written')
+
+
 def months_back(n):
     d = date.today().replace(day=1)
     out = []
@@ -217,6 +259,7 @@ def month_cost(m):
     p0, p1 = a.strftime('%Y%m%d%H%M'), b.strftime('%Y%m%d%H%M')
     fc_s, fc_w = forecast(p0, p1)
     lg, sh = imbalance(p0, p1)
+    save_prices(lg, sh)
     rte = load(os.path.join(ROOT, 'data', 'history', 'rte', m.strftime('%Y-%m') + '.json')) or {}
     acc = {k: {'cost': 0.0, 'mwh': 0.0, 'err': 0.0, 'n': 0} for k in ('solar', 'wind')}
     d = m
@@ -259,6 +302,9 @@ def month_cost(m):
 def main():
     if not os.environ.get('ENTSOE_TOKEN'):
         sys.exit('ENTSOE_TOKEN is not set.')
+    if '--prices' in sys.argv:
+        recent_prices(int(sys.argv[sys.argv.index('--prices') + 1]))
+        return
     prev = load(OUT) or {'months': {}}
     n = int(sys.argv[sys.argv.index('--months') + 1]) if '--months' in sys.argv else (2 if prev['months'] else 24)
     prev['diag'] = {}
