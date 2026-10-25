@@ -20,6 +20,10 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const esc = PK.esc;   // js/pk-core.js
+  // French or English for the sentences built here (fixed labels go through assets/i18n_fr.json)
+  const _c = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+  // a tab of the page by its English name, whatever the language shown
+  const tabBtn = name => [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => (window.pkEN ? pkEN(b.textContent) : b.textContent) === name || b.textContent === name);
   const getJSON = path => fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null);
   const XLSX_LIB = 'js/vendor/xlsx.full.min.js';
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
@@ -94,7 +98,7 @@
       if (!t || v == null) continue;
       pts.push({ t, k: Date.UTC(t.y, t.m - 1, t.d, t.hh, t.mi) / 60000, v });
     }
-    if (pts.length < 4) throw new Error('No timestamp + value rows found. Expected two columns: date-time and a value (consumption or production).');
+    if (pts.length < 4) throw new Error(_c('Aucune ligne date + valeur trouvée. Attendu : deux colonnes, une date-heure et une valeur (consommation ou production).', 'No timestamp + value rows found. Expected two columns: date-time and a value (consumption or production).'));
     pts.sort((a, b) => a.k - b.k);
     const diffs = []; for (let i = 1; i < pts.length; i++) { const d = pts[i].k - pts[i - 1].k; if (d > 0) diffs.push(d); }
     diffs.sort((a, b) => a - b);
@@ -117,7 +121,7 @@
 
   function loadXLSX() {
     if (window.XLSX) return Promise.resolve();
-    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = XLSX_LIB; s.onload = res; s.onerror = () => rej(new Error('Excel reader failed to load')); document.head.appendChild(s); });
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = XLSX_LIB; s.onload = res; s.onerror = () => rej(new Error(_c('Le lecteur Excel n’a pas pu se charger', 'Excel reader failed to load'))); document.head.appendChild(s); });
   }
   async function readFile(file) {
     if (/\.xlsx?$/i.test(file.name)) {
@@ -293,12 +297,12 @@
     const tab = RM[st.rmCountry], tabYears = tab ? Object.keys(tab).sort() : [];
     const rmYear = tab ? (tabYears.includes(year) ? year : tabYears.filter(y => y <= year).pop() || tabYears[tabYears.length - 1]) : null;
     o.rmCI = typed != null ? typed : tab ? tab[rmYear] : null;
-    o.rmLabel = typed != null ? 'residual mix factor entered' : tab ? `AIB residual mix ${st.rmCountry === 'FR' ? 'France' : 'Belgium'} ${rmYear}${rmYear !== year ? ' (latest published)' : ''}` : null;
+    o.rmLabel = typed != null ? _c('facteur de mix résiduel saisi', 'residual mix factor entered') : tab ? _c(`mix résiduel AIB ${st.rmCountry === 'FR' ? 'France' : 'Belgique'} ${rmYear}${rmYear !== year ? ' (dernier publié)' : ''}`, `AIB residual mix ${st.rmCountry === 'FR' ? 'France' : 'Belgium'} ${rmYear}${rmYear !== year ? ' (latest published)' : ''}`) : null;
     const goMWh = +st.go || 0, supplier = st.supplier === '' ? null : +st.supplier;
     o.goMWh = goMWh; o.ppaMWh = ppaMWh;
     o.covered = Math.min(o.E / 1000, goMWh + ppaMWh); o.coverage = o.E ? o.covered / (o.E / 1000) : 0;
     o.factorRest = supplier != null && isFinite(supplier) ? supplier : o.rmCI;
-    o.factorRestSrc = supplier != null && isFinite(supplier) ? 'supplier-specific factor' : o.rmLabel || 'residual mix';
+    o.factorRestSrc = supplier != null && isFinite(supplier) ? _c('facteur propre au fournisseur', 'supplier-specific factor') : o.rmLabel || _c('mix résiduel', 'residual mix');
     o.emMarket = o.factorRest != null ? (o.E / 1000 - o.covered) * 1000 * o.factorRest : null;
     o.hourly = ppaMWh ? o.ppa.match / o.E : null;
     o.costAvg = o.Ep ? o.cost / (o.Ep / 1000) : null;
@@ -435,12 +439,18 @@
     const per = `${o.days[0]} → ${o.days[o.days.length - 1]}`, timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null;
     const shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null, fx = o.flexAuto, pvA = o.pvAuto;
     const li = [
-      `Over ${per} you consumed <b>${MWh(o.E)}</b>: an average of <b>${f0(o.avgKW)} kW</b>, a peak of <b>${f0(o.peak.v)} kW</b> (${o.peak.at}) and a base load of <b>${f0(o.baseKW)} kW</b> (typical night-time minimum). <b>${pc(o.offHours / o.E)}</b> of it falls outside working hours (nights and weekends).`,
-      `Location-based, it emitted <b>${em(o.emLocation, o.emLocation < 1e6).join(' ')}</b> (${f1(o.ciHourly)} g/kWh).${timing == null ? '' : ` You consume when the grid is <b>${timing <= 0 ? 'cleaner' : 'more carbon-intensive'}</b> than the national average: ${timing > 0 ? '+' : ''}${timing.toFixed(1)} % vs ${f1(o.ciAnnual)} g/kWh.`}`,
-      o.emMarket != null ? `Market-based (GHG Protocol Scope 2)${o.covered ? `, with ${f0(o.covered)} MWh covered by guarantees of origin or a PPA` : ''}: <b>${em(o.emMarket, o.emMarket < 1e6).join(' ')}</b>.` : 'Market-based: enter the residual mix factor (or keep France) to get it.',
-      shape == null ? '' : `On the day-ahead market your profile costs <b>${f2(o.costAvg)} €/MWh</b>, ${Math.abs(shape).toFixed(1)} % ${shape > 0 ? 'above' : 'below'} baseload (${f2(o.baseAvg)} €/MWh): <b>${eur(o.cost)}</b> of energy over the period.`,
-      fx.moved ? `Moving ${S.settings.flexPct || 10} % of each day's consumption to the cheapest hours (same day, no new peak) would save about <b>${eur(fx.save)}</b> and change emissions by <b>${fx.dCO2 > 0 ? '+' : ''}${f0(fx.dCO2 / 1000)} kg CO₂</b> — see Cost & flexibility.` : '',
-      pvA.prod ? `A solar installation of <b>${f0(o.pvHint)} kWp</b> (sized on your average load) would produce ${MWh(pvA.prod)}, cover <b>${pc(pvA.self / o.E)}</b> of your consumption and be <b>${pc(pvA.self / pvA.prod)}</b> self-consumed — see Solar & coverage.` : '',
+      _c(`Du ${o.days[0]} au ${o.days[o.days.length - 1]}, vous avez consommé <b>${MWh(o.E)}</b> : <b>${f0(o.avgKW)} kW</b> en moyenne, une pointe de <b>${f0(o.peak.v)} kW</b> (${o.peak.at}) et un talon de <b>${f0(o.baseKW)} kW</b> (minimum habituel de la nuit). <b>${pc(o.offHours / o.E)}</b> tombe hors des heures ouvrées (nuits et week-ends).`,
+        `Over ${per} you consumed <b>${MWh(o.E)}</b>: an average of <b>${f0(o.avgKW)} kW</b>, a peak of <b>${f0(o.peak.v)} kW</b> (${o.peak.at}) and a base load of <b>${f0(o.baseKW)} kW</b> (typical night-time minimum). <b>${pc(o.offHours / o.E)}</b> of it falls outside working hours (nights and weekends).`),
+      _c(`En méthode « location-based », cela représente <b>${em(o.emLocation, o.emLocation < 1e6).join(' ')}</b> (${f1(o.ciHourly)} g/kWh).${timing == null ? '' : ` Vous consommez quand le réseau est <b>${timing <= 0 ? 'moins carboné' : 'plus carboné'}</b> que la moyenne nationale : ${timing > 0 ? '+' : ''}${timing.toFixed(1)} % vs ${f1(o.ciAnnual)} g/kWh.`}`,
+        `Location-based, it emitted <b>${em(o.emLocation, o.emLocation < 1e6).join(' ')}</b> (${f1(o.ciHourly)} g/kWh).${timing == null ? '' : ` You consume when the grid is <b>${timing <= 0 ? 'cleaner' : 'more carbon-intensive'}</b> than the national average: ${timing > 0 ? '+' : ''}${timing.toFixed(1)} % vs ${f1(o.ciAnnual)} g/kWh.`}`),
+      o.emMarket != null ? _c(`En méthode « market-based » (GHG Protocol Scope 2)${o.covered ? `, avec ${f0(o.covered)} MWh couverts par des garanties d’origine ou un PPA` : ''} : <b>${em(o.emMarket, o.emMarket < 1e6).join(' ')}</b>.`,
+        `Market-based (GHG Protocol Scope 2)${o.covered ? `, with ${f0(o.covered)} MWh covered by guarantees of origin or a PPA` : ''}: <b>${em(o.emMarket, o.emMarket < 1e6).join(' ')}</b>.`) : _c('Market-based : indiquez le facteur du mix résiduel (ou gardez France) pour l’obtenir.', 'Market-based: enter the residual mix factor (or keep France) to get it.'),
+      shape == null ? '' : _c(`Sur le marché spot, votre profil coûte <b>${f2(o.costAvg)} €/MWh</b>, ${Math.abs(shape).toFixed(1)} % ${shape > 0 ? 'au-dessus' : 'en dessous'} du prix base (${f2(o.baseAvg)} €/MWh) : <b>${eur(o.cost)}</b> d’énergie sur la période.`,
+        `On the day-ahead market your profile costs <b>${f2(o.costAvg)} €/MWh</b>, ${Math.abs(shape).toFixed(1)} % ${shape > 0 ? 'above' : 'below'} baseload (${f2(o.baseAvg)} €/MWh): <b>${eur(o.cost)}</b> of energy over the period.`),
+      fx.moved ? _c(`Décaler ${S.settings.flexPct || 10} % de la consommation de chaque jour vers les heures les moins chères (même jour, sans nouvelle pointe) ferait économiser environ <b>${eur(fx.save)}</b> et changerait les émissions de <b>${fx.dCO2 > 0 ? '+' : ''}${f0(fx.dCO2 / 1000)} kg CO₂</b> — voir Coût & flexibilité.`,
+        `Moving ${S.settings.flexPct || 10} % of each day's consumption to the cheapest hours (same day, no new peak) would save about <b>${eur(fx.save)}</b> and change emissions by <b>${fx.dCO2 > 0 ? '+' : ''}${f0(fx.dCO2 / 1000)} kg CO₂</b> — see Cost & flexibility.`) : '',
+      pvA.prod ? _c(`Une installation solaire de <b>${f0(o.pvHint)} kWc</b> (dimensionnée sur votre puissance moyenne) produirait ${MWh(pvA.prod)}, couvrirait <b>${pc(pvA.self / o.E)}</b> de votre consommation et serait autoconsommée à <b>${pc(pvA.self / pvA.prod)}</b> — voir Solaire & couverture.`,
+        `A solar installation of <b>${f0(o.pvHint)} kWp</b> (sized on your average load) would produce ${MWh(pvA.prod)}, cover <b>${pc(pvA.self / o.E)}</b> of your consumption and be <b>${pc(pvA.self / pvA.prod)}</b> self-consumed — see Solar & coverage.`) : '',
     ].filter(Boolean);
     $('cf-words').innerHTML = `<ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>`;
   }
@@ -448,12 +458,12 @@
     const timing = o.ciAnnual && o.ciHourly ? (o.ciHourly / o.ciAnnual - 1) * 100 : null, small = (o.emLocation || 0) < 1e6;
     const eL = em(o.emLocation, small), eM = em(o.emMarket, small), shape = o.costAvg != null && o.baseAvg ? (o.costAvg / o.baseAvg - 1) * 100 : null;
     $('cf-kpis').innerHTML = [
-      _fuelKpi('Consumption', o.E < 100000 ? f2(o.E / 1000) : f1(o.E / 1000), 'MWh', `${o.days.length} days · average ${f0(o.avgKW)} kW`),
-      _fuelKpi('Peak power', f0(o.peak.v), 'kW', `base ${f0(o.baseKW)} kW · load factor ${pc(o.loadFactor)}`),
-      _fuelKpi('Location-based', eL[0], eL[1], `${f1(o.ciHourly)} g/kWh · timing ${timing == null ? '–' : (timing > 0 ? '+' : '') + timing.toFixed(1) + ' %'}`, timing == null ? '' : timing <= 0 ? 'up' : 'down'),
-      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? 'needs a residual mix factor' : `${f1(o.emMarket / o.E)} g/kWh`),
-      _fuelKpi('Spot cost', f2(o.costAvg), '€/MWh', shape == null ? '' : `${shape > 0 ? '+' : ''}${shape.toFixed(1)} % vs baseload · ${eur(o.cost)}`, shape == null ? '' : shape > 0 ? 'down' : 'up'),
-      _fuelKpi('Renewable coverage', o.coverage ? Math.round(o.coverage * 100) : '0', '%', o.hourly != null ? `hour by hour ${pc(o.hourly)}` : 'GOs + PPA, annual volume', o.coverage >= 0.999 ? 'up' : ''),
+      _fuelKpi('Consumption', o.E < 100000 ? f2(o.E / 1000) : f1(o.E / 1000), 'MWh', _c(`${o.days.length} jours · moyenne ${f0(o.avgKW)} kW`, `${o.days.length} days · average ${f0(o.avgKW)} kW`)),
+      _fuelKpi('Peak power', f0(o.peak.v), 'kW', _c(`talon ${f0(o.baseKW)} kW · facteur de charge ${pc(o.loadFactor)}`, `base ${f0(o.baseKW)} kW · load factor ${pc(o.loadFactor)}`)),
+      _fuelKpi('Location-based', eL[0], eL[1], `${f1(o.ciHourly)} g/kWh · ${_c('moment', 'timing')} ${timing == null ? '–' : (timing > 0 ? '+' : '') + timing.toFixed(1) + ' %'}`, timing == null ? '' : timing <= 0 ? 'up' : 'down'),
+      _fuelKpi('Market-based', eM[0], eM[1], o.factorRest == null ? _c('il faut un facteur de mix résiduel', 'needs a residual mix factor') : `${f1(o.emMarket / o.E)} g/kWh`),
+      _fuelKpi('Spot cost', f2(o.costAvg), '€/MWh', shape == null ? '' : `${shape > 0 ? '+' : ''}${shape.toFixed(1)} % ${_c('vs base', 'vs baseload')} · ${eur(o.cost)}`, shape == null ? '' : shape > 0 ? 'down' : 'up'),
+      _fuelKpi('Renewable coverage', o.coverage ? Math.round(o.coverage * 100) : '0', '%', o.hourly != null ? _c(`heure par heure ${pc(o.hourly)}`, `hour by hour ${pc(o.hourly)}`) : 'GOs + PPA, annual volume', o.coverage >= 0.999 ? 'up' : ''),
     ].join('');
     words(o);
     const ms = Object.keys(o.monthly).sort();
@@ -477,11 +487,12 @@
     const L = o.duration.map((_, i) => Math.round(i / (o.duration.length - 1) * 100) + ' %');
     _fuelChart('cf-duration', { type: 'line', data: { labels: L, datasets: [
       { label: 'Power, sorted from the highest quarter-hour', data: o.duration.map(v => Math.round(v)), borderColor: '#7FC8F8', backgroundColor: 'rgba(127,200,248,.15)', fill: 'origin', borderWidth: 2, pointRadius: 0 },
-      { label: `Peak ${f0(o.peak.v)} kW`, data: L.map(() => Math.round(o.peak.v)), borderColor: '#ED6965', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
-      { label: `95 % of the time below ${f0(o.p95)} kW`, data: L.map(() => Math.round(o.p95)), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
-      { label: `Base load ${f0(o.baseKW)} kW`, data: L.map(() => Math.round(o.baseKW)), borderColor: '#14D3A9', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: _c(`Pointe ${f0(o.peak.v)} kW`, `Peak ${f0(o.peak.v)} kW`), data: L.map(() => Math.round(o.peak.v)), borderColor: '#ED6965', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: _c(`95 % du temps sous ${f0(o.p95)} kW`, `95 % of the time below ${f0(o.p95)} kW`), data: L.map(() => Math.round(o.p95)), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
+      { label: _c(`Talon ${f0(o.baseKW)} kW`, `Base load ${f0(o.baseKW)} kW`), data: L.map(() => Math.round(o.baseKW)), borderColor: '#14D3A9', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0, fill: false },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: 'share of the time', color: C_TX3, font: { size: 10 } } }), y: _fuelAxis('kW', { beginAtZero: true }) } }) }, 'carbon-load-duration');
-    $('cf-duration-note').textContent = `The gap between the peak (${f0(o.peak.v)} kW) and the level exceeded only 5 % of the time (${f0(o.p95)} kW) shows how much the contracted power could be lowered by trimming rare peaks. Load factor ${pc(o.loadFactor)}: average ÷ peak.`;
+    $('cf-duration-note').textContent = _c(`L’écart entre la pointe (${f0(o.peak.v)} kW) et le niveau dépassé seulement 5 % du temps (${f0(o.p95)} kW) montre de combien la puissance souscrite pourrait baisser en écrêtant les pointes rares. Facteur de charge ${pc(o.loadFactor)} : moyenne ÷ pointe.`,
+      `The gap between the peak (${f0(o.peak.v)} kW) and the level exceeded only 5 % of the time (${f0(o.p95)} kW) shows how much the contracted power could be lowered by trimming rare peaks. Load factor ${pc(o.loadFactor)}: average ÷ peak.`);
   }
 
   // ── Carbon ────────────────────────────────────────────────────────
@@ -522,36 +533,36 @@
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'carbon-cost-hours');
     const cp = o.capacity, ce = $('cf-cap-kpis');
     if (ce) ce.innerHTML = cp ? [
-      _fuelKpi('Capacity cost', eur(cp.cost), '', `${f1(cp.mw * 1000)} kW average in the peak windows × 18,647 €/MW (winter 2026-27)`),
+      _fuelKpi('Capacity cost', eur(cp.cost), '', _c(`${f1(cp.mw * 1000)} kW en moyenne sur les plages de pointe × 18 647 €/MW (hiver 2026-27)`, `${f1(cp.mw * 1000)} kW average in the peak windows × 18,647 €/MW (winter 2026-27)`)),
       _fuelKpi('Peak vs average', cp.avgMW ? (cp.mw / cp.avgMW * 100).toFixed(0) : '–', '%', 'your load in the peak windows ÷ your average load', cp.mw > cp.avgMW ? 'down' : 'up'),
-      _fuelKpi('Saving per kW cut', f1(CAP_PRICE / 1000), '€', `each kW less in the ${cp.days.length} peak days' windows, every winter`),
-    ].join('') + `<div class="fuel-note" style="grid-column:1/-1">Peak windows: 07:00–10:00 and 17:00–20:00 on RTE's winter peak days (up to 22 per winter, announced the day before). RTE's own list is not public here: the ${cp.days.length} weekdays of highest national consumption in your data stand in for them (${cp.days.slice(0, 6).join(', ')}${cp.days.length > 6 ? '…' : ''}).</div>` : '<div class="fuel-note" style="grid-column:1/-1">No winter weekday (November to March) in your data: the capacity cost needs one.</div>';
+      _fuelKpi('Saving per kW cut', f1(CAP_PRICE / 1000), '€', _c(`chaque kW de moins sur les plages des ${cp.days.length} jours de pointe, chaque hiver`, `each kW less in the ${cp.days.length} peak days' windows, every winter`)),
+    ].join('') + `<div class="fuel-note" style="grid-column:1/-1">${_c(`Plages de pointe : 07h–10h et 17h–20h les jours de pointe d’hiver de RTE (jusqu’à 22 par hiver, annoncés la veille). La liste de RTE n’est pas publique ici : les ${cp.days.length} jours ouvrés de plus forte consommation nationale dans vos données en tiennent lieu`, `Peak windows: 07:00–10:00 and 17:00–20:00 on RTE's winter peak days (up to 22 per winter, announced the day before). RTE's own list is not public here: the ${cp.days.length} weekdays of highest national consumption in your data stand in for them`)} (${cp.days.slice(0, 6).join(', ')}${cp.days.length > 6 ? '…' : ''}).</div>` : `<div class="fuel-note" style="grid-column:1/-1">${_c('Aucun jour ouvré d’hiver (novembre à mars) dans vos données : le coût de capacité en a besoin.', 'No winter weekday (November to March) in your data: the capacity cost needs one.')}</div>`;
     renderFixed(o);
     const fx = o.flex, pct = +S.settings.flexPct || 0;
     $('cf-flex-kpis').innerHTML = [
-      _fuelKpi('Energy moved', MWh(fx.moved), '', `${pct} % of each day, same day, no new peak`),
-      _fuelKpi('Saving on the spot', eur(fx.save), '', o.cost ? `${(fx.save / o.cost * 100).toFixed(1)} % of the energy cost` : '', fx.save > 0 ? 'up' : ''),
-      _fuelKpi('Emissions change', (fx.dCO2 > 0 ? '+' : '') + f0(fx.dCO2 / 1000), 'kg CO₂', o.em ? `${(fx.dCO2 / o.em * 100).toFixed(1)} % location-based` : '', fx.dCO2 < 0 ? 'up' : fx.dCO2 > 0 ? 'down' : ''),
+      _fuelKpi('Energy moved', MWh(fx.moved), '', _c(`${pct} % de chaque jour, même jour, sans nouvelle pointe`, `${pct} % of each day, same day, no new peak`)),
+      _fuelKpi('Saving on the spot', eur(fx.save), '', o.cost ? _c(`${(fx.save / o.cost * 100).toFixed(1)} % du coût de l’énergie`, `${(fx.save / o.cost * 100).toFixed(1)} % of the energy cost`) : '', fx.save > 0 ? 'up' : ''),
+      _fuelKpi('Emissions change', (fx.dCO2 > 0 ? '+' : '') + f0(fx.dCO2 / 1000), 'kg CO₂', o.em ? `${(fx.dCO2 / o.em * 100).toFixed(1)} % ${_c('en location-based', 'location-based')}` : '', fx.dCO2 < 0 ? 'up' : fx.dCO2 > 0 ? 'down' : ''),
     ].join('');
     _fuelChart('cf-flex', { type: 'line', data: { labels: HRS, datasets: [
       { label: 'Today: average kWh per hour', data: fx.before.map(v => Math.round(v)), borderColor: 'rgba(127,200,248,.8)', borderWidth: 2, pointRadius: 0, tension: .3, fill: false },
-      { label: `After moving ${pct} %`, data: fx.after.map(v => Math.round(v)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: { target: 0, above: 'rgba(20,211,169,.15)', below: 'rgba(237,105,101,.15)' } },
+      { label: _c(`Après décalage de ${pct} %`, `After moving ${pct} %`), data: fx.after.map(v => Math.round(v)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: { target: 0, above: 'rgba(20,211,169,.15)', below: 'rgba(237,105,101,.15)' } },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh per hour', { beginAtZero: true }) } }) }, 'carbon-flexibility');
   }
 
   // ── Solar & coverage ──────────────────────────────────────────────
   function renderSolar(o) {
     const pv = o.pv, kwp = +S.settings.pvKwp || 0;
-    $('cf-pv-hint').textContent = `Suggested starting point: ${f0(o.pvHint)} kWp (your average load). France: about 1,000 kWh/kWp/yr in the north to 1,400 in the south.`;
+    $('cf-pv-hint').textContent = _c(`Point de départ suggéré : ${f0(o.pvHint)} kWc (votre puissance moyenne). France : environ 1 000 kWh/kWc/an au nord à 1 400 au sud.`, `Suggested starting point: ${f0(o.pvHint)} kWp (your average load). France: about 1,000 kWh/kWp/yr in the north to 1,400 in the south.`);
     if (!kwp) {
       $('cf-pv-kpis').innerHTML = '<div class="fuel-note" style="grid-column:1/-1">Enter a size in kWp to simulate an installation on your site.</div>';
       ['cf-pv-day', 'cf-pv-m'].forEach(id => noDataMsg(id, 'Enter an installation size (kWp)', 'The production follows the national solar profile of the same days (RTE)'));
     } else {
       $('cf-pv-kpis').innerHTML = [
-        _fuelKpi('Production', MWh(pv.prod), '', `${f0(kwp)} kWp × ${f0(+S.settings.pvYield || 1150)} kWh/kWp/yr`),
-        _fuelKpi('Self-consumed', pc(pv.prod ? pv.self / pv.prod : null), '', MWh(pv.self) + ' used on site'),
+        _fuelKpi('Production', MWh(pv.prod), '', _c(`${f0(kwp)} kWc × ${f0(+S.settings.pvYield || 1150)} kWh/kWc/an`, `${f0(kwp)} kWp × ${f0(+S.settings.pvYield || 1150)} kWh/kWp/yr`)),
+        _fuelKpi('Self-consumed', pc(pv.prod ? pv.self / pv.prod : null), '', MWh(pv.self) + _c(' utilisés sur site', ' used on site')),
         _fuelKpi('Coverage of your needs', pc(o.E ? pv.self / o.E : null), '', 'self-sufficiency'),
-        _fuelKpi('Spot value', eur(pv.valSelf), '', `avoided purchases · surplus worth ${eur(pv.valSurplus)}`, 'up'),
+        _fuelKpi('Spot value', eur(pv.valSelf), '', _c(`achats évités · surplus valant ${eur(pv.valSurplus)}`, `avoided purchases · surplus worth ${eur(pv.valSurplus)}`), 'up'),
         _fuelKpi('CO₂ avoided', em(pv.co2, pv.co2 < 1e6).join(' '), '', 'location-based, on self-consumption', 'up'),
       ].join('');
       _fuelChart('cf-pv-day', { type: 'line', data: { labels: HRS, datasets: [
@@ -570,9 +581,10 @@
     if (o.ppaMWh) {
       _fuelChart('cf-ppa-chart', { type: 'bar', data: { labels: HRS, datasets: [
         { label: 'Your consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0 },
-        { type: 'line', label: `${S.settings.ppaTech === 'wind' ? 'Wind' : 'Solar'} PPA output (kWh per hour)`, data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+        { type: 'line', label: S.settings.ppaTech === 'wind' ? _c('Production du PPA éolien (kWh par heure)', 'Wind PPA output (kWh per hour)') : _c('Production du PPA solaire (kWh par heure)', 'Solar PPA output (kWh per hour)'), data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
       ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }) } }) }, 'carbon-ppa-hours');
-      $('cf-ppa-note').textContent = `Annual volume coverage ${pc(o.coverage)}; hour by hour only ${pc(o.hourly)} of your consumption is matched by the PPA output at the same time (24/7 view), ${MWh(o.ppa.surplus)} of PPA output exceed your needs at the time they are produced.`;
+      $('cf-ppa-note').textContent = _c(`Couverture en volume annuel ${pc(o.coverage)} ; heure par heure, seulement ${pc(o.hourly)} de votre consommation est couverte par la production du PPA au même moment (vue 24/7), ${MWh(o.ppa.surplus)} de production du PPA dépassent vos besoins au moment où ils sont produits.`,
+        `Annual volume coverage ${pc(o.coverage)}; hour by hour only ${pc(o.hourly)} of your consumption is matched by the PPA output at the same time (24/7 view), ${MWh(o.ppa.surplus)} of PPA output exceed your needs at the time they are produced.`);
     } else { noDataMsg('cf-ppa-chart', 'No PPA volume entered', 'Enter a renewable PPA volume in “Your contracts” to see its hour-by-hour coverage'); $('cf-ppa-note').textContent = ''; }
   }
 
@@ -607,9 +619,9 @@
     const col = v => { if (v == null) return 'transparent'; const x = hi > lo ? (v - lo) / (hi - lo) : 0.5; const [a, b] = pal; const c = a.map((ai, i) => Math.round(ai + (b[i] - ai) * x)); return `rgba(${c[0]},${c[1]},${c[2]},${(0.18 + 0.82 * x).toFixed(2)})`; };
     const fmt = v => v == null ? '' : Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-GB') : v.toFixed(Math.abs(v) >= 10 ? 0 : 1);
     const lab = EX.grid === 'mh' ? MON : DOW;
-    host.innerHTML = `<div class="cf-hm cf-ex"><table><thead><tr><th></th>${HRS.map((h, i) => `<th data-h="${i}" title="Click: every ${h} of the period">${i % 3 ? '' : h}</th>`).join('')}</tr></thead><tbody>` +
-      V.map((row, a) => row.every(v => v == null) ? '' : `<tr><th data-a="${a}" title="Click: the whole of ${lab[a]}">${lab[a]}</th>${row.map((v, h) => `<td data-a="${a}" data-h="${h}" style="background:${col(v)}" title="${lab[a]} ${HRS[h]}: ${v == null ? '–' : fmt(v) + ' ' + unit} · click for the detail">${fmt(v)}</td>`).join('')}</tr>`).join('') +
-      `</tbody></table></div><div class="cf-hm-leg"><span>${fmt(lo)} ${unit}</span><i style="background:linear-gradient(90deg,${col(lo)},${col(hi)})"></i><span>${fmt(hi)} ${unit}</span><span style="margin-left:auto">${name} · click a cell, a ${EX.grid === 'mh' ? 'month' : 'day of the week'}, an hour, or a day of the calendar</span></div>`;
+    host.innerHTML = `<div class="cf-hm cf-ex"><table><thead><tr><th></th>${HRS.map((h, i) => `<th data-h="${i}" title="${_c(`Clic : toutes les ${h} de la période`, `Click: every ${h} of the period`)}">${i % 3 ? '' : h}</th>`).join('')}</tr></thead><tbody>` +
+      V.map((row, a) => row.every(v => v == null) ? '' : `<tr><th data-a="${a}" title="${_c(`Clic : tout ${lab[a]}`, `Click: the whole of ${lab[a]}`)}">${lab[a]}</th>${row.map((v, h) => `<td data-a="${a}" data-h="${h}" style="background:${col(v)}" title="${lab[a]} ${HRS[h]}: ${v == null ? '–' : fmt(v) + ' ' + unit} · ${_c('clic pour le détail', 'click for the detail')}">${fmt(v)}</td>`).join('')}</tr>`).join('') +
+      `</tbody></table></div><div class="cf-hm-leg"><span>${fmt(lo)} ${unit}</span><i style="background:linear-gradient(90deg,${col(lo)},${col(hi)})"></i><span>${fmt(hi)} ${unit}</span><span style="margin-left:auto">${name} · ${_c(`cliquez une case, un ${EX.grid === 'mh' ? 'mois' : 'jour de la semaine'}, une heure ou un jour du calendrier`, `click a cell, a ${EX.grid === 'mh' ? 'month' : 'day of the week'}, an hour, or a day of the calendar`)}</span></div>`;
     host.querySelectorAll('td[data-a], th[data-a], th[data-h]').forEach(el => el.addEventListener('click', () => {
       host.querySelectorAll('.cf-ex-on').forEach(x => x.classList.remove('cf-ex-on')); el.classList.add('cf-ex-on');
       const a = el.dataset.a != null ? +el.dataset.a : null, h = el.dataset.h != null ? +el.dataset.h : null;
@@ -621,7 +633,7 @@
     const lab = EX.grid === 'mh' ? MON : DOW, inRow = (d) => a == null || exKey(EX.grid, d, 0)[0] === a;
     const pred = (d, q) => inRow(d) && (h == null || (q >> 2) === h);
     const c = exAgg(o, pred);
-    const title = a != null && h != null ? `${lab[a]} · ${HRS[h]}` : a != null ? `${EX.grid === 'mh' ? 'Month' : 'Every'} ${lab[a]}` : `Every ${HRS[h]}`;
+    const title = a != null && h != null ? `${lab[a]} · ${HRS[h]}` : a != null ? `${EX.grid === 'mh' ? _c('Mois', 'Month') : _c('Tous les', 'Every')} ${lab[a]}` : `${_c('Toutes les', 'Every')} ${HRS[h]}`;
     const ciMine = c.E && c.cin ? c.em / c.E : null, pAvg = c.pn ? c.p / c.pn : null;
     const mixT = Object.values(c.mix).reduce((s, x) => s + x, 0) || 1;
     let shift = '';
@@ -630,14 +642,14 @@
       const best = (f) => hrs.map((x, k) => x && f(x) != null ? [k, f(x)] : null).filter(Boolean).sort((u, v) => u[1] - v[1])[0];
       const bc = best(x => x.cin ? x.ci / x.cin : null), bp = best(x => x.pn ? x.p / x.pn : null), mv = c.E * (S.settings.flexPct || 10) / 100;
       const gCI = c.cin && bc ? mv * (c.ci / c.cin - bc[1]) / 1000 : null, gP = pAvg != null && bp ? mv / 1000 * (pAvg - bp[1]) : null;
-      shift = `<div class="cf-ex-tip"><b>Moving ${S.settings.flexPct || 10} % of it</b> (${MWh(mv)})<br>to ${HRS[bc ? bc[0] : 0]}, the cleanest hour of the same ${a != null ? 'days' : 'period'}: <b>${gCI == null ? '–' : Math.abs(gCI) < 1 ? '≈ 0 kg CO₂' : (gCI >= 0 ? '−' : '+') + f0(Math.abs(gCI)) + ' kg CO₂'}</b><br>to ${HRS[bp ? bp[0] : 0]}, the cheapest: <b>${gP == null ? '–' : Math.abs(gP) < 1 ? '≈ 0 €' : (gP >= 0 ? '−' : '+') + eur(Math.abs(gP))}</b><div style="color:var(--text3);font-size:10px;margin-top:4px">At the average conditions of those hours; a real shift also depends on what the process allows.</div></div>`;
+      shift = `<div class="cf-ex-tip"><b>${_c('En décaler', 'Moving')} ${S.settings.flexPct || 10} %${_c('', ' of it')}</b> (${MWh(mv)})<br>${_c('vers', 'to')} ${HRS[bc ? bc[0] : 0]}, ${a != null ? _c('l’heure la moins carbonée des mêmes jours', 'the cleanest hour of the same days') : _c('l’heure la moins carbonée de la période', 'the cleanest hour of the same period')} : <b>${gCI == null ? '–' : Math.abs(gCI) < 1 ? '≈ 0 kg CO₂' : (gCI >= 0 ? '−' : '+') + f0(Math.abs(gCI)) + ' kg CO₂'}</b><br>${_c('vers', 'to')} ${HRS[bp ? bp[0] : 0]}, ${_c('la moins chère', 'the cheapest')} : <b>${gP == null ? '–' : Math.abs(gP) < 1 ? '≈ 0 €' : (gP >= 0 ? '−' : '+') + eur(Math.abs(gP))}</b><div style="color:var(--text3);font-size:10px;margin-top:4px">${_c('Aux conditions moyennes de ces heures ; un vrai décalage dépend aussi de ce que le procédé permet.', 'At the average conditions of those hours; a real shift also depends on what the process allows.')}</div></div>`;
     }
     box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${title}</div>
-      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(c.E)}</b><span>${c.n ? f0(c.E / (c.n / 4)) + ' kW on average' : ''} · ${pc(o.E ? c.E / o.E : null)} of the total</span>
-      <span>Grid intensity</span><b>${c.cin ? f0(c.ci / c.cin) + ' g/kWh' : '–'}</b><span>${ciMine != null && o.ciHourly ? (ciMine > o.ciHourly ? '+' : '') + Math.round((ciMine / o.ciHourly - 1) * 100) + ' % vs your average' : ''}</span>
-      <span>Your emissions</span><b>${em(c.em, c.em < 1e6).join(' ')}</b><span>${pc(o.em ? c.em / o.em : null)} of the total</span>
-      <span>Day-ahead price</span><b>${pAvg == null ? '–' : f2(pAvg) + ' €/MWh'}</b><span>${pAvg != null && o.costAvg ? (pAvg > o.costAvg ? '+' : '') + Math.round((pAvg / o.costAvg - 1) * 100) + ' % vs your average' : ''}</span>
-      <span>Your spot cost</span><b>${c.Ep ? eur(c.cost) : '–'}</b><span>${c.days.size} days</span></div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(c.E)}</b><span>${c.n ? f0(c.E / (c.n / 4)) + _c(' kW en moyenne', ' kW on average') : ''} · ${pc(o.E ? c.E / o.E : null)} ${_c('du total', 'of the total')}</span>
+      <span>Grid intensity</span><b>${c.cin ? f0(c.ci / c.cin) + ' g/kWh' : '–'}</b><span>${ciMine != null && o.ciHourly ? (ciMine > o.ciHourly ? '+' : '') + Math.round((ciMine / o.ciHourly - 1) * 100) + _c(' % vs votre moyenne', ' % vs your average') : ''}</span>
+      <span>Your emissions</span><b>${em(c.em, c.em < 1e6).join(' ')}</b><span>${pc(o.em ? c.em / o.em : null)} ${_c('du total', 'of the total')}</span>
+      <span>Day-ahead price</span><b>${pAvg == null ? '–' : f2(pAvg) + ' €/MWh'}</b><span>${pAvg != null && o.costAvg ? (pAvg > o.costAvg ? '+' : '') + Math.round((pAvg / o.costAvg - 1) * 100) + _c(' % vs votre moyenne', ' % vs your average') : ''}</span>
+      <span>Your spot cost</span><b>${c.Ep ? eur(c.cost) : '–'}</b><span>${c.days.size} ${_c('jours', 'days')}</span></div>
       <div class="cf-ex-mix">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.005).map(([k, n, colr]) => `<i style="flex:${(c.mix[k] / mixT).toFixed(3)};background:${colr}" title="${n} ${pc(c.mix[k] / mixT)}"></i>`).join('')}</div>
       <div class="cf-ex-mixl">${MIX.filter(([k]) => (c.mix[k] || 0) / mixT > 0.02).map(([k, n, colr]) => `<span><i style="background:${colr}"></i>${n} ${pc(c.mix[k] / mixT)}</span>`).join('')}</div>${shift}`;
   }
@@ -645,8 +657,8 @@
     const box = $('cf-ex-detail'), row = o.rows.find(x => x.d === d); if (!box || !row) return;
     const { e, r, p } = row, L = [...Array(96).keys()].map(q => q % 4 ? '' : HRS[q >> 2]);
     const E = e.reduce((s, x) => s + (x || 0), 0), emD = e.reduce((s, x, q) => s + (x || 0) * (r && r.co2 && r.co2[q] != null ? r.co2[q] : 0), 0);
-    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
-      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(E)}</b><span>peak ${f0(Math.max(...e.map(x => (x || 0) * 4)))} kW</span><span>Emissions</span><b>${em(emD, emD < 1e6).join(' ')}</b><span>${E ? f0(emD / E) + ' g/kWh' : ''}</span></div>
+    box.innerHTML = `<div class="table-title" style="margin-bottom:6px">${new Date(d + 'T12:00:00Z').toLocaleDateString(_c('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      <div class="cf-ex-kv"><span>Consumption</span><b>${MWh(E)}</b><span>${_c('pointe', 'peak')} ${f0(Math.max(...e.map(x => (x || 0) * 4)))} kW</span><span>Emissions</span><b>${em(emD, emD < 1e6).join(' ')}</b><span>${E ? f0(emD / E) + ' g/kWh' : ''}</span></div>
       <div style="position:relative;height:200px"><canvas id="cf-ex-day" style="width:100%;height:200px"></canvas></div>`;
     _fuelChart('cf-ex-day', { type: 'bar', data: { labels: L, datasets: [
       { label: 'Your power (kW)', data: e.map(x => Math.round((x || 0) * 4)), backgroundColor: 'rgba(127,200,248,.5)', yAxisID: 'y' },
@@ -667,12 +679,12 @@
     let html = '<div class="cf-cal">' + '<i style="visibility:hidden"></i>'.repeat(pad);
     for (let t = new Date(first); t <= new Date(days[days.length - 1].d + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + 1)) {
       const d = t.toISOString().slice(0, 10), x = byDay.get(d);
-      html += x ? `<i data-d="${d}" style="background:${col(x.ci)};cursor:pointer" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh · click for the day"></i>` : `<i title="${d} · no data"></i>`;
+      html += x ? `<i data-d="${d}" style="background:${col(x.ci)};cursor:pointer" title="${d} · ${f0(x.ci)} g/kWh · ${f1(x.E / 1000)} MWh · ${_c('clic pour le jour', 'click for the day')}"></i>` : `<i title="${d} · ${_c('pas de données', 'no data')}"></i>`;
     }
     const best = days.slice().sort((a, b) => a.ci - b.ci)[0], worst = days.slice().sort((a, b) => b.ci - a.ci)[0];
-    host.innerHTML = html + '</div><div class="cf-cal-leg">cleaner ' + COLS.map(c => `<i style="background:${c}"></i>`).join('') + ` dirtier · quintiles of your days: ${cuts.map(c => f0(c)).join(' / ')} g/kWh</div>`;
+    host.innerHTML = html + '</div><div class="cf-cal-leg">' + _c('moins carboné ', 'cleaner ') + COLS.map(c => `<i style="background:${c}"></i>`).join('') + _c(` plus carboné · quintiles de vos jours : `, ` dirtier · quintiles of your days: `) + `${cuts.map(c => f0(c)).join(' / ')} g/kWh</div>`;
     host.querySelectorAll('i[data-d]').forEach(el => el.addEventListener('click', () => { exDay(o, el.dataset.d); const b = $('cf-ex-detail'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }));
-    $('cf-cal-sub').textContent = `One square per day (weeks in columns, Monday on top) · greenest ${best.d} (${f0(best.ci)} g/kWh), most carbon-intensive ${worst.d} (${f0(worst.ci)} g/kWh)`;
+    $('cf-cal-sub').textContent = _c(`Un carré par jour (semaines en colonnes, lundi en haut) · le plus vert ${best.d} (${f0(best.ci)} g/kWh), le plus carboné ${worst.d} (${f0(worst.ci)} g/kWh)`, `One square per day (weeks in columns, Monday on top) · greenest ${best.d} (${f0(best.ci)} g/kWh), most carbon-intensive ${worst.d} (${f0(worst.ci)} g/kWh)`);
   }
   function render247(o) {
     const host = $('cf-247'); if (!host) return;
@@ -681,24 +693,25 @@
       _fuelKpi('24/7 score', o.E ? (Math.min(1, matched / o.E) * 100).toFixed(1) : '–', '%', 'consumption matched hour by hour by your PPA and on-site solar'),
       _fuelKpi('Annual matching', o.E ? (annual / o.E * 100).toFixed(1) : '–', '%', 'the same contracts counted over the year (GO included), the usual claim'),
       _fuelKpi('Gap', o.E ? ((annual - Math.min(annual, matched)) / o.E * 100).toFixed(1) : '–', 'pts', 'what annual matching claims beyond hour-by-hour reality'),
-    ].join('') + '<div class="fuel-note" style="grid-column:1/-1">24/7 matching, as Google and the 24/7 Carbon-Free Energy Compact count it: an hour is covered only by renewable production of that same hour. Guarantees of origin are yearly certificates: they count in annual matching, not in 24/7.</div>';
+    ].join('') + '<div class="fuel-note" style="grid-column:1/-1">' + _c('Couverture 24/7, telle que Google et le 24/7 Carbon-Free Energy Compact la comptent : une heure n’est couverte que par de la production renouvelable de cette même heure. Les garanties d’origine sont des certificats annuels : elles comptent dans la couverture annuelle, pas en 24/7.', '24/7 matching, as Google and the 24/7 Carbon-Free Energy Compact count it: an hour is covered only by renewable production of that same hour. Guarantees of origin are yearly certificates: they count in annual matching, not in 24/7.') + '</div>';
   }
 
   function renderFixed(o) {
     const host = $('cf-fix'); if (!host) return;
     const x = o.fixed;
-    if (!x) { host.innerHTML = '<div class="fuel-note">Forward prices not available: the fixed price cannot be computed.</div>'; return; }
-    if (x.missing) { host.innerHTML = `<div class="fuel-note">No forward price or price history for ${esc(x.missing)}: pick another period.</div>`; return; }
-    const lbl = { cal1: 'Cal ' + x.months[0].k.slice(0, 4), cal2: 'Cal ' + x.months[0].k.slice(0, 4), next12: 'next 12 months' }[x.period];
+    if (!x) { host.innerHTML = `<div class="fuel-note">${_c('Prix à terme indisponibles : le prix fixe ne peut pas être calculé.', 'Forward prices not available: the fixed price cannot be computed.')}</div>`; return; }
+    if (x.missing) { host.innerHTML = `<div class="fuel-note">${_c(`Pas de prix à terme ou d’historique de prix pour ${esc(x.missing)} : choisissez une autre période.`, `No forward price or price history for ${esc(x.missing)}: pick another period.`)}</div>`; return; }
+    const lbl = { cal1: 'Cal ' + x.months[0].k.slice(0, 4), cal2: 'Cal ' + x.months[0].k.slice(0, 4), next12: _c('12 prochains mois', 'next 12 months') }[x.period];
     const pct1 = v => (v * 100).toFixed(1) + ' %';
     host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">` + [
-      _fuelKpi('Fixed price · energy', f2(x.energy), '€/MWh', `${lbl} · range ${f2(x.lo)}–${f2(x.hi)} with each history year`),
-      _fuelKpi('Your profile factor', pct1(x.factor), '', `vs the forward baseload weighted by your volume (${f2(x.base)} €/MWh) · measured on ${x.histYears.join(' and ')}${x.realised ? ' · ' + pct1(x.realised) + ' in your own period' : ''}`, x.factor > 1 ? 'down' : 'up'),
-      _fuelKpi('Capacity', x.cap == null ? '–' : f2(x.cap), '€/MWh', x.cap == null ? 'needs a winter weekday in your data' : 'winter peak days, spread over the year'),
-      _fuelKpi('Energy + capacity', f2(x.total), '€/MWh', `≈ ${eur(x.total * x.E / 1000)} for ${f1(x.E / 1000)} MWh`),
+      _fuelKpi('Fixed price · energy', f2(x.energy), '€/MWh', _c(`${lbl} · fourchette ${f2(x.lo)}–${f2(x.hi)} selon l’année d’historique`, `${lbl} · range ${f2(x.lo)}–${f2(x.hi)} with each history year`)),
+      _fuelKpi('Your profile factor', pct1(x.factor), '', _c(`vs le prix à terme base pondéré par votre volume (${f2(x.base)} €/MWh) · mesuré sur ${x.histYears.join(' et ')}${x.realised ? ' · ' + pct1(x.realised) + ' sur votre propre période' : ''}`, `vs the forward baseload weighted by your volume (${f2(x.base)} €/MWh) · measured on ${x.histYears.join(' and ')}${x.realised ? ' · ' + pct1(x.realised) + ' in your own period' : ''}`), x.factor > 1 ? 'down' : 'up'),
+      _fuelKpi('Capacity', x.cap == null ? '–' : f2(x.cap), '€/MWh', x.cap == null ? _c('il faut un jour ouvré d’hiver dans vos données', 'needs a winter weekday in your data') : 'winter peak days, spread over the year'),
+      _fuelKpi('Energy + capacity', f2(x.total), '€/MWh', _c(`≈ ${eur(x.total * x.E / 1000)} pour ${f1(x.E / 1000)} MWh`, `≈ ${eur(x.total * x.E / 1000)} for ${f1(x.E / 1000)} MWh`)),
     ].join('') + `</div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Volume MWh</th><th>Forward base €/MWh</th><th style="text-align:left">Contract</th><th>Profile factor</th><th>Your price €/MWh</th></tr></thead><tbody>` +
       x.months.map(r => `<tr><td style="text-align:left">${MON[+r.k.slice(5) - 1]} ${r.k.slice(0, 4)}</td><td>${f1(r.E / 1000)}</td><td>${f2(r.F)}</td><td style="text-align:left;color:var(--tx3)">${esc(r.from || '')}</td><td>${pct1(r.fac)}</td><td><b>${f2(r.F * r.fac)}</b></td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">How it is computed: each month's baseload forward (latest settlement, ${esc(x.asOf || '')}; a month without its own contract takes its quarter, season or year shaped by day-ahead ratios) × your profile factor for that month, i.e. what your average working day and weekend would have cost on the French day-ahead market in ${x.histYears.join(' and ')} divided by the baseload (the range uses each year alone). Volume = your average days repeated over the delivery calendar. Capacity = the winter peak-day cost above spread over the volume. <b>Not included</b>: grid fees (TURPE), taxes (excise, CTA, VAT), guarantees of origin, the supplier's margin and its volume and shape risk premium (often 1 to 5 €/MWh).</div>`;
+      `</tbody></table></div><div class="fuel-note">${_c(`Calcul : le prix à terme base de chaque mois (dernier règlement, ${esc(x.asOf || '')} ; un mois sans contrat propre prend son trimestre, sa saison ou son année, profilé par les ratios du spot) × votre facteur de profil de ce mois, c’est-à-dire ce que votre jour ouvré moyen et votre week-end moyen auraient coûté sur le spot français en ${x.histYears.join(' et ')}, divisé par le prix base (la fourchette prend chaque année seule). Volume = vos jours moyens répétés sur le calendrier de livraison. Capacité = le coût des jours de pointe d’hiver ci-dessus, réparti sur le volume. <b>Non inclus</b> : TURPE, taxes (accise, CTA, TVA), garanties d’origine, la marge du fournisseur et sa prime de risque volume et profil (souvent 1 à 5 €/MWh).`,
+        `How it is computed: each month's baseload forward (latest settlement, ${esc(x.asOf || '')}; a month without its own contract takes its quarter, season or year shaped by day-ahead ratios) × your profile factor for that month, i.e. what your average working day and weekend would have cost on the French day-ahead market in ${x.histYears.join(' and ')} divided by the baseload (the range uses each year alone). Volume = your average days repeated over the delivery calendar. Capacity = the winter peak-day cost above spread over the volume. <b>Not included</b>: grid fees (TURPE), taxes (excise, CTA, VAT), guarantees of origin, the supplier's margin and its volume and shape risk premium (often 1 to 5 €/MWh).`)}</div>`;
     renderBill(o);
   }
 
@@ -722,7 +735,7 @@
     ] }, options: _fuelOpts({ plugins: { legend: legend(), tooltip: { callbacks: { label: t => ` ${t.dataset.label}: ${f1(t.raw)} kWh` } } },
       scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('kWh per hour (average day)', { stacked: true, beginAtZero: true }) } }) }, 'carbon-acc-average-day');
     const S = v => v.reduce((a, b) => a + (b || 0), 0), sc = S(c), sx = S(x), sg = S(g);
-    const sub = $('cf-accday-sub'); if (sub) sub.textContent = `Average day · ACC covers ${pc(sc ? sx / sc : 0)} of your consumption · ${pc(sg ? sx / sg : 0)} of your share self-consumed, ${f1(S(sur))} kWh a day surplus`;
+    const sub = $('cf-accday-sub'); if (sub) sub.textContent = _c(`Jour moyen · l’ACC couvre ${pc(sc ? sx / sc : 0)} de votre consommation · ${pc(sg ? sx / sg : 0)} de votre part autoconsommée, ${f1(S(sur))} kWh de surplus par jour`, `Average day · ACC covers ${pc(sc ? sx / sc : 0)} of your consumption · ${pc(sg ? sx / sg : 0)} of your share self-consumed, ${f1(S(sur))} kWh a day surplus`);
   }
 
   // ── The whole bill, before VAT: supplier only vs with ACC ─────────
@@ -754,8 +767,8 @@
     row(BE ? 'Energy (fixed price, French forwards)' : 'Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh vs ${f2(x.energy)} for all your consumption (profile factor ${(A.fixed.factor * 100).toFixed(1)} % vs ${(x.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
     const capB = A && A.capR != null && o.capacity && o.capacity.cost ? capEur * A.capR / o.capacity.cost : capEur;
     if (!BE) row('Capacity', capEur, A ? capB : null, A ? `winter peak days; with ACC on your load left in the 07–10h and 17–20h windows (${pc(o.capacity && o.capacity.cost ? 1 - capB / capEur : 0)} lower)` : 'winter peak days, 07–10h and 17–20h');
-    if (BE) row('Green certificates (regional quota)', n(st.gc) * E, A ? n(st.gc) * Er : null, has(st.gc) ? `${f2(n(st.gc))} €/MWh on the energy the supplier sells (${reg})` : `enter the cost from your supplier's tariff card (${reg}: quota × certificate price; Wallonia's is the highest)`);
-    else row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`);
+    if (BE) row('Green certificates (regional quota)', n(st.gc) * E, A ? n(st.gc) * Er : null, has(st.gc) ? _c(`${f2(n(st.gc))} €/MWh sur l’énergie vendue par le fournisseur (${reg})`, `${f2(n(st.gc))} €/MWh on the energy the supplier sells (${reg})`) : `enter the cost from your supplier's tariff card (${reg}: quota × certificate price; Wallonia's is the highest)`);
+    else row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, _c(`${f2(n(st.cee))} €/MWh sur l’énergie vendue par le fournisseur`, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`));
     if (n(st.goP)) row('Guarantees of origin', n(st.goP) * E, A ? n(st.goP) * Er : null, `${f2(n(st.goP))} €/MWh`);
     row('Supplier margin', n(st.margin) * E, A ? n(st.margin) * Er : null, `${f2(n(st.margin))} €/MWh`);
     if (A) {
@@ -782,16 +795,16 @@
     const supB = A ? lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.b, 0) / (Er || 1) : null;
     const k = v => v == null ? '–' : eur(v);
     host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(${A ? 3 : 2},1fr);margin-bottom:10px">` + [
-      _fuelKpi('All-in · supplier only', f2(per(tA, E)), '€/MWh', `${k(tA)} a year before VAT${turpeIn ? '' : ' · grid fees not entered'}`),
+      _fuelKpi('All-in · supplier only', f2(per(tA, E)), '€/MWh', _c(`${k(tA)} par an HT${turpeIn ? '' : ' · TURPE non saisi'}`, `${k(tA)} a year before VAT${turpeIn ? '' : ' · grid fees not entered'}`)),
       _fuelKpi('Volume', f1(E), 'MWh', 'over the delivery period'),
-      ...(A ? [_fuelKpi('All-in · with ACC', f2(per(tB, E)), '€/MWh', `${k(tB)} a year before VAT`, tB < tA ? 'up' : 'down'),
-        _fuelKpi('ACC covers', pc(A.share), '', `${f0(A.kwc)} kWc × ${Math.round(A.key * 100)} % · ${tB < tA ? 'saving' : 'extra cost'} ${k(Math.abs(tA - tB))} a year`, tB < tA ? 'up' : 'down'),
-        _fuelKpi('Supplier price · complement', f2(supB), '€/MWh', `vs ${f2(supA)} €/MWh to supply all your consumption (+${f2(supB - supA)}): fewer, dearer hours and the ACC volume risk`, 'down'),
-        _fuelKpi('Break-even ACC price', Ea ? f2(n(st.accPrice) + (tA - tB) / Ea) : '–', '€/MWh', 'above it, the ACC costs you more than supplier only')] : []),
-    ].join('') + `</div><div class="chart-container fuel-card" style="margin-bottom:12px"><div class="fuel-card-head"><div><div class="table-title">What your bill is made of</div><div class="fuel-card-sub">€/MWh of your total consumption, before VAT · each block of the bill${A ? ', supplier only vs with ACC' : ''}</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:${A ? 230 : 160}px"><canvas id="cf-bill-chart" style="width:100%;height:${A ? 230 : 160}px"></canvas></div></div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Component</th><th>Supplier only · €/MWh</th><th>k€</th>${A ? '<th>With ACC · €/MWh</th><th>k€</th>' : ''}<th style="text-align:left">Basis</th></tr></thead><tbody>` +
+      ...(A ? [_fuelKpi('All-in · with ACC', f2(per(tB, E)), '€/MWh', _c(`${k(tB)} par an HT`, `${k(tB)} a year before VAT`), tB < tA ? 'up' : 'down'),
+        _fuelKpi('ACC covers', pc(A.share), '', `${f0(A.kwc)} kWc × ${Math.round(A.key * 100)} % · ${tB < tA ? _c('économie', 'saving') : _c('surcoût', 'extra cost')} ${k(Math.abs(tA - tB))} ${_c('par an', 'a year')}`, tB < tA ? 'up' : 'down'),
+        _fuelKpi('Supplier price · complement', f2(supB), '€/MWh', _c(`vs ${f2(supA)} €/MWh pour fournir toute votre consommation (+${f2(supB - supA)}) : moins d’heures, plus chères, et le risque de volume de l’ACC`, `vs ${f2(supA)} €/MWh to supply all your consumption (+${f2(supB - supA)}): fewer, dearer hours and the ACC volume risk`), 'down'),
+        _fuelKpi('Break-even ACC price', Ea ? f2(n(st.accPrice) + (tA - tB) / Ea) : '–', '€/MWh', _c('au-dessus, l’ACC vous coûte plus que le fournisseur seul', 'above it, the ACC costs you more than supplier only'))] : []),
+    ].join('') + `</div><div class="chart-container fuel-card" style="margin-bottom:12px"><div class="fuel-card-head"><div><div class="table-title">What your bill is made of</div><div class="fuel-card-sub">${_c('€/MWh de votre consommation totale, HT · chaque bloc de la facture', '€/MWh of your total consumption, before VAT · each block of the bill')}${A ? _c(', fournisseur seul vs avec ACC', ', supplier only vs with ACC') : ''}</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:${A ? 230 : 160}px"><canvas id="cf-bill-chart" style="width:100%;height:${A ? 230 : 160}px"></canvas></div></div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Component</th><th>Supplier only · €/MWh</th><th>k€</th>${A ? '<th>With ACC · €/MWh</th><th>k€</th>' : ''}<th style="text-align:left">Basis</th></tr></thead><tbody>` +
       lines.map(l => `<tr><td style="text-align:left">${l.label}</td><td>${f2(per(l.a, E))}</td><td>${f1(l.a / 1000)}</td>${A ? `<td>${f2(per(l.b, E))}</td><td>${f1(l.b / 1000)}</td>` : ''}<td style="text-align:left;white-space:normal;color:var(--tx3)">${l.note}</td></tr>`).join('') +
-      `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">€/MWh of your total consumption · VAT ${BE ? 21 : 20} % on top (recoverable for most businesses)</td></tr></tbody></table></div>` +
-      `<div class="fuel-note">${A ? `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. ` : ''}${BE ? `Belgium (${reg}): energy priced on the French forwards (Belgian forwards are not in PowerKlock; the two markets are coupled and usually within a few €/MWh: adjust the margin if your offer differs). No capacity block (the Belgian capacity mechanism is paid through the grid tariffs). Energy sharing (partage d'énergie / energiedelen): the shared energy pays the excise and the energy contribution like any other; grid fees are your DSO's, reduced in some regions for local sharing: enter that rate as the ACC grid rate. Excise bands and green certificates are indicative: check your supplier's tariff card.` : `Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.`}</div>`;
+      `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">${_c(`€/MWh de votre consommation totale · TVA ${BE ? 21 : 20} % en sus (récupérable pour la plupart des entreprises)`, `€/MWh of your total consumption · VAT ${BE ? 21 : 20} % on top (recoverable for most businesses)`)}</td></tr></tbody></table></div>` +
+      `<div class="fuel-note">${A ? _c(`ACC : ${f1(A.prod / 1000)} MWh produits pour vous sur la période de vos données, ${pc(A.self / (A.prod || 1))} consommés sur site quart d’heure par quart d’heure, ${f1(A.surplus / 1000)} MWh de surplus (vendus par le producteur, hors de votre facture). Sans les heures solaires, le reste de votre fourniture coûte plus cher au MWh : c’est l’écart à garder en tête. `, `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. `) : ''}${BE ? _c(`Belgique (${reg}) : énergie valorisée sur les prix à terme français (les prix à terme belges ne sont pas dans PowerKlock ; les deux marchés sont couplés et en général à quelques €/MWh : ajustez la marge si votre offre diffère). Pas de bloc capacité (le mécanisme de capacité belge passe par les tarifs réseau). Partage d’énergie : l’énergie partagée paie l’accise et la cotisation énergie comme toute autre ; les frais de réseau sont ceux de votre GRD, réduits dans certaines régions pour le partage local : saisissez ce tarif comme tarif réseau ACC. Tranches d’accise et certificats verts indicatifs : vérifiez la grille de votre fournisseur.`, `Belgium (${reg}): energy priced on the French forwards (Belgian forwards are not in PowerKlock; the two markets are coupled and usually within a few €/MWh: adjust the margin if your offer differs). No capacity block (the Belgian capacity mechanism is paid through the grid tariffs). Energy sharing (partage d'énergie / energiedelen): the shared energy pays the excise and the energy contribution like any other; grid fees are your DSO's, reduced in some regions for local sharing: enter that rate as the ACC grid rate. Excise bands and green certificates are indicative: check your supplier's tariff card.`) : _c(`Exonération d’accise pour l’ACC : chaque installation renouvelable de moins de 1 MW (avec deux parcs, vérifiez la lecture du seuil pour le vôtre), consommation par les participants (CIBS L. 312-79 et L. 312-87, loi de finances 2025 art. 75, confirmée par le Conseil d’État le 30 mars 2026). CEE : environ 10 €/MWh en période 6 (2026-2030) ; appliqués ici à l’énergie du fournisseur seulement. Taux d’accise réduits (électro-intensifs, certaines activités) et TURPE dépendent de votre contrat : saisissez ce que montre votre facture.`, `Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.`)}</div>`;
     // stacked bar: one bar per scenario, one block per component, totals at the end
     const COL = { 'Energy (fixed price)': '#7FC8F8', 'Energy (fixed price, French forwards)': '#7FC8F8', 'Capacity': '#A87DC4', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
       'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155',
@@ -817,7 +830,7 @@
       ['Location-based · quarter-hourly (RTE éCO2mix)', t(o.emLocation), o.ciHourly, 'Consumption × French grid intensity at the same quarter-hour. The most precise view of the physical impact of your consumption timing.'],
       ['Location-based · period average', t(o.emAnnualMethod), o.ciAnnual, 'Consumption × national consumption-weighted intensity over the same period: the usual location-based figure when hourly data are not used.'],
       ...(o.emAnnualFactor != null ? [['Location-based · your reporting factor', t(o.emAnnualFactor), +S.settings.annualFactor, 'Consumption × the annual factor you entered (e.g. the factor of your carbon accounting database), for consistency with your other reports.']] : []),
-      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'at the ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'needs a residual mix factor'}.`],
+      ['Market-based', t(o.emMarket), o.emMarket != null ? o.emMarket / o.E : null, _c(`Garanties d’origine et volume du PPA (${f1(o.covered)} MWh) à 0 g ; le reste (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'au ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'demande un facteur de mix résiduel'}.`, `Guarantees of origin and PPA volume (${f1(o.covered)} MWh) at 0 g; the rest (${f1(o.E / 1000 - o.covered)} MWh) ${o.factorRest != null ? 'at the ' + esc(o.factorRestSrc) + ' (' + f1(o.factorRest) + ' g/kWh)' : 'needs a residual mix factor'}.`)],
     ];
     $('cf-report').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">GHG Protocol · Scope 2 · ${esc(o.days[0])} → ${esc(o.days[o.days.length - 1])}</th><th>t CO₂</th><th>g CO₂/kWh</th><th style="text-align:left">How it is computed</th></tr></thead><tbody>` +
       rows.map(r => `<tr><td style="text-align:left"><b>${r[0]}</b></td><td>${f2(r[1])}</td><td>${f1(r[2])}</td><td style="text-align:left;white-space:normal;color:var(--text2);min-width:280px">${r[3]}</td></tr>`).join('') + `</tbody></table></div>`;
@@ -828,12 +841,12 @@
       ['E1-5', 'of which from nuclear sources', f1(o.mix.nuclear / 1000) + ' MWh', 'Physical mix of the grid at the time of consumption (RTE); report per your accounting policy'],
       ['E1-6', 'Gross Scope 2 · location-based', f2(t(o.emLocation)) + ' t CO₂', 'Quarter-hourly method (or the period average / your reporting factor above)'],
       ['E1-6', 'Gross Scope 2 · market-based', o.emMarket == null ? '–' : f2(t(o.emMarket)) + ' t CO₂', 'Contractual instruments, then residual mix'],
-      ['E1-6', 'Intensity', o.emMarket == null ? '–' : f1(o.emMarket / o.E) + ' g CO₂/kWh (market) · ' + f1(o.ciHourly) + ' (location)', 'Per kWh consumed; divide by your revenue for the ESRS intensity per net revenue'],
+      ['E1-6', 'Intensity', o.emMarket == null ? '–' : f1(o.emMarket / o.E) + _c(' g CO₂/kWh (market-based) · ', ' g CO₂/kWh (market) · ') + f1(o.ciHourly) + _c(' (location-based)', ' (location)'), 'Per kWh consumed; divide by your revenue for the ESRS intensity per net revenue'],
     ];
     $('cf-esrs').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">ESRS</th><th style="text-align:left">Datapoint</th><th>Value</th><th style="text-align:left">Note</th></tr></thead><tbody>` +
       esrs.map(r => `<tr><td style="text-align:left">${r[0]}</td><td style="text-align:left"><b>${r[1]}</b></td><td>${r[2]}</td><td style="text-align:left;white-space:normal;color:var(--text2)">${r[3]}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">CSRD (ESRS E1): energy consumption and mix (E1-5), gross Scope 2 emissions location- and market-based (E1-6). France, Bilan GES: these figures feed the item “indirect emissions from electricity consumption” (Scope 2). Grid factors here are RTE's direct emissions of French generation (no imports, no upstream): most carbon databases add an upstream share — enter your database's annual factor in “Your contracts” to report with it. Residual mix: AIB European Residual Mix (France and Belgium quoted; other countries entered).</div>`;
-    $('cf-quality').innerHTML = `<div class="fuel-note">File: ${esc(S.meta)} · ${S.cons.info.rows.toLocaleString('en-GB')} rows · ${S.cons.info.step}-minute steps · ${o.days.length} days (${o.days[0]} → ${o.days[o.days.length - 1]}) · ${o.missing ? f1(o.missing / 1000) + ' MWh on quarter-hours without RTE data (counted at the period average)' : 'every quarter-hour matched with RTE data'}. Your file is processed in this browser only: nothing is sent or stored.</div>`;
+      `</tbody></table></div><div class="fuel-note">${_c('CSRD (ESRS E1) : consommation et mix énergétiques (E1-5), émissions brutes de Scope 2 location- et market-based (E1-6). France, Bilan GES : ces chiffres alimentent le poste « émissions indirectes liées à la consommation d’électricité » (Scope 2). Les facteurs réseau sont ici les émissions directes de la production française selon RTE (sans imports ni amont) : la plupart des bases carbone ajoutent une part amont — saisissez le facteur annuel de votre base dans « Vos contrats » pour déclarer avec. Mix résiduel : AIB European Residual Mix (France et Belgique cités ; autres pays à saisir).', 'CSRD (ESRS E1): energy consumption and mix (E1-5), gross Scope 2 emissions location- and market-based (E1-6). France, Bilan GES: these figures feed the item “indirect emissions from electricity consumption” (Scope 2). Grid factors here are RTE\'s direct emissions of French generation (no imports, no upstream): most carbon databases add an upstream share — enter your database\'s annual factor in “Your contracts” to report with it. Residual mix: AIB European Residual Mix (France and Belgium quoted; other countries entered).')}</div>`;
+    $('cf-quality').innerHTML = `<div class="fuel-note">${_c('Fichier', 'File')} : ${esc(S.meta)} · ${S.cons.info.rows.toLocaleString('en-GB')} ${_c('lignes', 'rows')} · ${_c('pas de', 'steps of')} ${S.cons.info.step} min · ${o.days.length} ${_c('jours', 'days')} (${o.days[0]} → ${o.days[o.days.length - 1]}) · ${o.missing ? f1(o.missing / 1000) + _c(' MWh sur des quarts d’heure sans données RTE (comptés à la moyenne de la période)', ' MWh on quarter-hours without RTE data (counted at the period average)') : _c('chaque quart d’heure apparié aux données RTE', 'every quarter-hour matched with RTE data')}. ${_c('Votre fichier est traité dans ce navigateur seulement : rien n’est envoyé ni stocké.', 'Your file is processed in this browser only: nothing is sent or stored.')}</div>`;
   }
 
   // one line on every tab but the inputs: what is loaded, with a way back to edit it
@@ -841,18 +854,18 @@
     const el = $('cf-sumbar'); if (!el || !o) return;
     const st = S.settings;
     el.innerHTML = `<span><b>${esc(S.meta || 'Your curve')}</b></span><span>${o.days[0]} → ${o.days[o.days.length - 1]}</span><span><b>${f1(o.E / 1000)}</b> MWh</span>` +
-      (+st.go ? `<span>GO ${f1(+st.go)} MWh</span>` : '') + (+st.ppa ? `<span>${st.ppaTech === 'wind' ? 'Wind' : 'Solar'} PPA ${f1(+st.ppa)} MWh</span>` : '') +
-      (+st.pvKwp ? `<span>Solar on site ${f0(+st.pvKwp)} kWp</span>` : '') + `<button type="button" class="cf-edit">Edit data</button>`;
-    el.querySelector('.cf-edit').addEventListener('click', () => { const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Your data'); if (t) t.click(); });
+      (+st.go ? `<span>GO ${f1(+st.go)} MWh</span>` : '') + (+st.ppa ? `<span>${st.ppaTech === 'wind' ? _c('PPA éolien', 'Wind PPA') : _c('PPA solaire', 'Solar PPA')} ${f1(+st.ppa)} MWh</span>` : '') +
+      (+st.pvKwp ? `<span>${_c('Solaire sur site', 'Solar on site')} ${f0(+st.pvKwp)} ${_c('kWc', 'kWp')}</span>` : '') + `<button type="button" class="cf-edit">${_c('Modifier les données', 'Edit data')}</button>`;
+    el.querySelector('.cf-edit').addEventListener('click', () => { const t = tabBtn('Your data'); if (t) t.click(); });
     sumVis();
   }
   function sumVis() {
     const el = $('cf-sumbar'), act = document.querySelector('#page-carbonfoot .pk-views .tab-btn.active');
     if (!el) return;
-    el.hidden = !act || act.textContent === 'Your data';
+    el.hidden = !act || act === tabBtn('Your data');
     if (!S.res && !el.hidden) {
-      el.innerHTML = '<span>No consumption loaded yet: load your curve (or try the example) in <b>Your data</b>.</span><button type="button" class="cf-edit">Load data</button>';
-      el.querySelector('.cf-edit').addEventListener('click', () => { const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Your data'); if (t) t.click(); });
+      el.innerHTML = _c('<span>Aucune consommation chargée : chargez votre courbe (ou essayez l’exemple) dans <b>Vos données</b>.</span><button type="button" class="cf-edit">Charger des données</button>', '<span>No consumption loaded yet: load your curve (or try the example) in <b>Your data</b>.</span><button type="button" class="cf-edit">Load data</button>');
+      el.querySelector('.cf-edit').addEventListener('click', () => { const t = tabBtn('Your data'); if (t) t.click(); });
     }
   }
   document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'carbonfoot') sumVis(); });
@@ -860,18 +873,19 @@
   async function run() {
     if (!S.cons) return;
     $('cf-results').hidden = false;
-    $('cf-status').textContent = 'Computing…';
+    $('cf-status').textContent = _c('Calcul…', 'Computing…');
     let o;
-    try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = 'Computation failed: ' + e.message; return; }
+    try { o = await compute(); } catch (e) { console.warn(e); $('cf-status').textContent = _c('Le calcul a échoué : ', 'Computation failed: ') + e.message; return; }
     S.res = o;
     [renderOverview, renderConsumption, renderCarbon, renderCost, renderSolar, renderReport, renderCalendar, render247, renderExplore].forEach(fn => { try { fn(o); } catch (e) { console.warn('[carbon]', fn.name, e); } });
     const i = S.cons.info;
-    $('cf-status').textContent = `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`;
+    $('cf-status').textContent = _c(`${S.meta} · ${i.rows.toLocaleString('en-GB')} lignes · pas de ${i.step} min · valeurs lues en ${{ kwh: 'kWh par pas', mwh: 'MWh par pas', kw: 'kW (puissance moyenne)', w: 'W (puissance moyenne)' }[i.unit]}, horodatage ${i.stamp === 'end' ? 'à la fin' : 'au début'} de chaque pas`,
+      `${S.meta} · ${i.rows.toLocaleString('en-GB')} rows · ${i.step}-min steps · values read as ${{ kwh: 'kWh per step', mwh: 'MWh per step', kw: 'kW (average power)', w: 'W (average power)' }[i.unit]}, timestamps at the ${i.stamp} of each step`);
     // charts drawn in hidden view tabs get their size when shown
     document.querySelectorAll('#cf-results canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); });
     sumbar(o);
     // first result: open the Overview (the inputs stay one click away)
-    if (!S.shown) { S.shown = true; const t = [...document.querySelectorAll('#page-carbonfoot .pk-views .tab-btn')].find(b => b.textContent === 'Overview'); if (t) t.click(); }
+    if (!S.shown) { S.shown = true; const t = tabBtn('Overview'); if (t) t.click(); }
   }
 
   async function load(rows, name) {
@@ -883,7 +897,7 @@
       S.flipped = neg > pos;
       if (S.flipped) S.cons.slots.forEach(a => { for (let q = 0; q < a.length; q++) if (a[q] != null) a[q] = Math.abs(a[q]); });
       await run();
-      if (S.flipped) $('cf-status').textContent += ' · values were negative (export sign convention?): read as consumption';
+      if (S.flipped) $('cf-status').textContent += _c(' · valeurs négatives (convention de signe d’export ?) : lues comme consommation', ' · values were negative (export sign convention?): read as consumption');
     } catch (e) { $('cf-status').textContent = e.message; }
   }
 
@@ -933,13 +947,13 @@
     const page = $('page-carbonfoot'); if (!page || page.dataset.wired) return;
     page.dataset.wired = '1';
     const file = $('cf-file'), drop = $('cf-drop');
-    const read = async f => { $('cf-status').textContent = 'Reading ' + f.name + '…'; try { await load(await readFile(f), f.name); } catch (e) { $('cf-status').textContent = e.message; } };
+    const read = async f => { $('cf-status').textContent = _c('Lecture de ', 'Reading ') + f.name + '…'; try { await load(await readFile(f), f.name); } catch (e) { $('cf-status').textContent = e.message; } };
     file.addEventListener('change', async () => { const f = file.files[0]; if (f) await read(f); file.value = ''; });
     ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
     drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) read(f); });
-    [['cf-ex-metric', 'metric'], ['cf-ex-grid', 'grid']].forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', () => { EX[k] = e.value; if (S.res) { renderExplore(S.res); $('cf-ex-detail').innerHTML = '<div class="fuel-note">Click a cell of the matrix, a month or an hour, or a day of the calendar below.</div>'; } }); });
-    $('cf-example').addEventListener('click', () => load(example(), 'Example: office building, 2025'));
+    [['cf-ex-metric', 'metric'], ['cf-ex-grid', 'grid']].forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', () => { EX[k] = e.value; if (S.res) { renderExplore(S.res); $('cf-ex-detail').innerHTML = `<div class="fuel-note">${_c('Cliquez une case de la matrice, un mois ou une heure, ou un jour du calendrier ci-dessous.', 'Click a cell of the matrix, a month or an hour, or a day of the calendar below.')}</div>`; } }); });
+    $('cf-example').addEventListener('click', () => load(example(), _c('Exemple : immeuble de bureaux, 2025', 'Example: office building, 2025')));
     $('cf-template').addEventListener('click', template);
     $('cf-export').addEventListener('click', exportCSV);
     $('cf-xlsx').addEventListener('click', exportXlsx);
@@ -948,7 +962,7 @@
     const beUI = () => { const be = /^BE/.test(S.settings.country || 'FR'), lab = (id, fr, bel) => { const e = $(id); const sp = e && e.closest('.cf-field') && e.closest('.cf-field').querySelector('span'); if (sp) sp.textContent = be ? bel : fr; };
       document.querySelectorAll('#page-carbonfoot .cf-be').forEach(e => { e.hidden = !be; });
       ['cf-fix-cee', 'cf-fix-conn', 'cf-fix-net'].forEach(id => { const f = $(id) && $(id).closest('.cf-field'); if (f) f.hidden = be; });
-      lab('cf-fix-turpe', 'TURPE variable part', 'Grid fees, variable (DSO card)'); lab('cf-fix-turpefix', 'TURPE fixed part', 'Grid fees, fixed'); };
+      lab('cf-fix-turpe', _c('TURPE part variable', 'TURPE variable part'), _c('Frais de réseau, variable (grille du GRD)', 'Grid fees, variable (DSO card)')); lab('cf-fix-turpefix', _c('TURPE part fixe', 'TURPE fixed part'), _c('Frais de réseau, fixe', 'Grid fees, fixed')); };
     const cty = $('cf-fix-country'); if (cty) { cty.value = S.settings.country || 'FR'; cty.addEventListener('change', () => setTimeout(beUI, 0)); setTimeout(beUI, 0); }
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);

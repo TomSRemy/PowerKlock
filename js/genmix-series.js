@@ -49,6 +49,11 @@
       zs.innerHTML = Object.entries(ZONES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
       zs.value = S.zone; zs.addEventListener('change', () => { S.zone = zs.value; render(); });
     }
+    // one zone filter per page: with a country picked in the top bar, the section follows it and its own
+    // selector is hidden; in Europe the selector picks the zone
+    const sz = window.PKScope && PKScope.zone && PKScope.zone();
+    if (zs) zs.parentNode.style.display = sz && ZONES[sz] ? 'none' : '';
+    if (sz && ZONES[sz]) { S.zone = sz; if (zs) zs.value = sz; }
     await draw(S.zone, PAGE, true);
     if (window.PKW && PKW.star) [['genmix-hist-daily', 'gms-daily'], ['genmix-hist-avgday', 'gms-profile'], ['genmix-hist-shares', 'gms-share']].forEach(([w, c]) => PKW.star(w, c));
     ['gms-daily', 'gms-profile', 'gms-share'].forEach(id => { if (typeof addFullscreen === 'function') addFullscreen(id); });
@@ -98,6 +103,8 @@
   const wrap = name => { const f = window[name]; if (typeof f === 'function' && !f._gms) { window[name] = function () { const r = f.apply(this, arguments); setTimeout(render, 50); return r; }; window[name]._gms = true; } };
   window.addEventListener('load', () => setTimeout(() => {
     wrap('gmhSetPeriod'); wrap('gmhSetCustomRange');
+    // and the zone of the top bar
+    document.addEventListener('change', e => { if (e.target && /^pk-zone/.test(e.target.id)) setTimeout(render, 80); });
     const sec = $('hs-gms');
     if (sec && window.IntersectionObserver) new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) render(); }).observe(sec);
     if (window.PKW) {

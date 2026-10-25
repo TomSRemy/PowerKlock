@@ -39,7 +39,7 @@
     biomass: 230, fossil: 820, other: 400,
   };
   const FUEL_COLORS = {
-    nuclear: '#A98BD4', wind: '#14D3A9', solar: '#FBBF24', hydro: '#3FA6B4',
+    nuclear: '#7B4B9C', wind: '#14D3A9', solar: '#FBBF24', hydro: '#3FA6B4',
     biomass: '#94D2BD', fossil: '#ED6965', other: '#7A93AB',
   };
   // Stack order from bottom to top (baseload first, marginal on top)

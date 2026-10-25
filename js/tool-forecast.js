@@ -247,6 +247,10 @@
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
     if (pasteBox) pasteBox.addEventListener('change', () => { const m = pasteBox.value.match(/(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)/); if (m) { S.lat = +m[1].replace(',', '.'); S.lon = +m[2].replace(',', '.'); $('fc-lat').value = S.lat; $('fc-lon').value = S.lon; pasteBox.value = ''; run(); } });
+    // Solar / Wind tabs of the top bar: they drive the (hidden) technology selector
+    const tt = $('fc-tech-tabs'), syncTabs = () => tt && tt.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tech));
+    if (tt) tt.addEventListener('click', e => { const b = e.target.closest('.tab-btn'); const t = $('fc-tech'); if (!b || !t || b.dataset.tab === S.tech) return; t.value = b.dataset.tab; t.dispatchEvent(new Event('change')); syncTabs(); });
+    syncTabs();
     vis(); calInfo(); run(); backtest();
   }
   function calInfo() {
@@ -388,7 +392,7 @@
     if (!j) { host.innerHTML = '<div class="fuel-note">Backtest not available.</div>'; return; }
     host.dataset.done = '1';
     const keys = Object.keys(j.results), vs = Object.keys(STEP);
-    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Fleet tested</th>${vs.map(v => `<th>${STEP[v]}</th>`).join('')}</tr></thead><tbody>` +
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Regional fleet tested</th>${vs.map(v => `<th>${STEP[v]}</th>`).join('')}</tr></thead><tbody>` +
       keys.map(k => { const [t, reg] = k.split('|'), r = j.results[k], best = Math.min(...vs.map(v => r[v] ? r[v].nmae : 9));
         return `<tr><td style="text-align:left">${t === 'solar' ? 'Solar' : 'Wind'} · ${reg}</td>${vs.map(v => r[v] ? `<td${r[v].nmae === best ? ' style="font-weight:700;color:var(--acc)"' : ''}>${(r[v].nmae * 100).toFixed(1)}</td>` : '<td>–</td>').join('')}</tr>`; }).join('') +
       `</tbody></table></div><div class="fuel-note">Steps, each adding to the previous one: Tool = the first version at one point · Grid = averaged over 9 points of the region · + bias = monthly scale factor · + shape = solar correction by month × hour, wind empirical power curve · + MOS = regression on several forecast variables · + price = curtailment at day-ahead prices ≤ 0 · + models = Météo-France, ICON and GFS next to the best model, recent months weighing more. Hourly error in % of installed capacity (solar: daylight hours), ${j.period[0]} → ${j.period[1]}, each month predicted with the forecast issued the day before and corrections learned only on the months before it. The tool for a single site uses the steps that carry over to one site: several weather models, the monthly French solar correction, curtailment at negative prices, and the calibration on the site’s own output.</div>`;

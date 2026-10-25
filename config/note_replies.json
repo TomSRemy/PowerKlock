@@ -62,5 +62,77 @@
  "16": {
   "status": "done",
   "reply": "Play: le bouton « Par trimestre » perdait son graphique après le premier dessin (il disparaissait au clic) ; corrigé, dans la ligne ouverte et en plein écran. Les trois Play (moyenne annuelle, par trimestre, forme horaire) testés. Axes : sur tous les graphiques du site à échelle fixe, masquer une série dans la légende recale l'axe sur les séries restantes (sans 2022 : 16–145 €/MWh au lieu de 6–362), la réafficher rend l'échelle d'origine. / Play by quarter lost its chart after the first draw (the button vanished on click); fixed, row and fullscreen. Axes: on every pinned chart, hiding a series in the legend refits the axis to what is left; showing it again restores the range."
+ },
+ "17": {
+  "status": "done",
+  "reply": "Fait : les moments clés sont en haut, numérotés sur le graphique des prix et tirés des données affichées. La lecture du marché est maintenant écrite à partir des données, sans IA (le bouton IA reste en option)."
+ },
+ "18": {
+  "status": "done",
+  "reply": "Corrigé : en français, l’outil cherchait ses onglets par leur nom anglais, donc « Modifier les données » et l’ouverture de la vue d’ensemble ne marchaient pas. Tout l’outil est aussi traduit (phrases calculées, tableaux, graphiques, facture)."
+ },
+ "19": {
+  "status": "done",
+  "reply": "Fait : Analyse de marché est passée dans Outils."
+ },
+ "20": {
+  "status": "done",
+  "reply": "Je n’arrive pas à le reproduire : tout le panneau reste en français chez moi. Si ça revient, dites-moi quelle phrase passe en anglais et je la corrige."
+ },
+ "21": {
+  "status": "done",
+  "reply": "Fait : taux de capture par région, solaire à gauche et éolien à droite, une seule période pour les deux."
+ },
+ "22": {
+  "status": "done",
+  "reply": "Survol clarifié : une ligne par chiffre, nommée — taux de capture (% du prix base), écart avec la France en points, production en TWh."
+ },
+ "23": {
+  "status": "done",
+  "reply": "Fait : « Comment lire ces graphiques » est replié sur une ligne, ouvert d’un clic ; le profil journalier prend toute la largeur."
+ },
+ "24": {
+  "status": "done",
+  "reply": "Corrigé : le choix Superposition (aucune / vs J-1 / vs moyenne 7 j) était ignoré, la courbe J-1 s’affichait toujours. Il change maintenant le graphique."
+ },
+ "25": {
+  "status": "done",
+  "reply": "Fait : le tableau historique suit le pays choisi en haut à droite (le filtre ne s’appliquait pas quand l’archive mettait du temps à charger). Cohérence : même ordre d’empilement partout (nucléaire, hydraulique, biomasse, éolien, solaire, fossile, autres) et mêmes couleurs sur Analyse de marché, Système France et la carte. Et un vrai bug trouvé en vérifiant : dans l’historique, l’éolien était la moyenne de l’éolien terrestre et en mer au lieu de leur somme (France 2025 : ~24 TWh au lieu de ~49), même chose pour l’hydraulique et le fossile ; historique 2020 → aujourd’hui recalculé."
+ },
+ "26": {
+  "status": "done",
+  "reply": "Fait : le classement multi-zones affiche au survol les quatre chiffres de la zone (renouvelables, CO₂, charge, énergie) et l’écart avec la France ; la heatmap donne % et TWh par case."
+ },
+ "27": {
+  "status": "done",
+  "reply": "Fait : un seul filtre — avec un pays choisi en haut à droite, la section le suit et son propre sélecteur disparaît ; en Europe, le sélecteur de zone reste."
+ },
+ "28": {
+  "status": "done",
+  "reply": "Fait : les axes des graphiques GO prennent autant de décimales que l’écart entre deux graduations (1 € → 0, 0,5 € → 1) ; au survol, 2 décimales sous 10 €, 1 au-dessus."
+ },
+ "29": {
+  "status": "open",
+  "reply": "D’accord, à refaire : je propose un parcours en 3 étapes (déposer la courbe → 4 chiffres clés en grand → détails par onglet) et un accès depuis Aujourd’hui et le menu Outils. Je vous montre une maquette avant de coder."
+ },
+ "30": {
+  "status": "open",
+  "reply": "Noté : je vous propose 2-3 directions pour la vue Découverte (ou la retirer) avant de toucher au code."
+ },
+ "31": {
+  "status": "done",
+  "reply": "La vue montre la technologie choisie. Il y a maintenant deux onglets Solaire / Éolien en haut de la page : l’éolien est dans le sien."
+ },
+ "32": {
+  "status": "done",
+  "reply": "Explication ajoutée au-dessus : chaque ligne est un parc régional entier (mesuré par RTE), prévu la veille ; chaque colonne ajoute une amélioration du modèle ; le chiffre est l’erreur horaire moyenne en % de la capacité, plus bas = mieux, le meilleur en vert."
+ },
+ "33": {
+  "status": "done",
+  "reply": "Fait : onglets Solaire et Éolien dans la barre du haut."
+ },
+ "34": {
+  "status": "done",
+  "reply": "Fait : le convertisseur a un tableau « Facteurs de charge mesurés » par pays (solaire, éolien, nucléaire, hydraulique, fossile — Energy-Charts) ou par région française (solaire, éolien — RTE), dernière année ou moyenne 3 ans ; un clic met la valeur dans le calcul. Aussi disponible comme widget de tableau de bord."
  }
 }

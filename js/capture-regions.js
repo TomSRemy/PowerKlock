@@ -3,7 +3,7 @@
 //   data/history/fr_regional_capture.json: each region's solar and wind output
 //   (RTE éCO2mix regional) valued at the French day-ahead price of each step,
 //   ÷ baseload. One technology at a time, ranked best → worst, France as its
-//   own bar. Over several years: each year's rate weighted by the region's
+//   own bar; solar and wind side by side on the page. Over several years: each year's rate weighted by the region's
 //   output that year (TWh), full years only.
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -37,15 +37,14 @@
   async function draw(cid, p) {
     const j = await load(); if (!j) { noDataMsg(cid, 'No regional capture data', ''); return null; }
     const { ys, full } = years(j);
-    const sel = document.getElementById('cn-reg-year'), tsel = document.getElementById('cn-reg-tech');
+    const sel = document.getElementById('cn-reg-year');
     if (sel && !sel.options.length) {
       sel.innerHTML = periods(ys, full).map(o => `<option value="${o.key}">${o.label}</option>`).join('');
       sel.value = full[full.length - 1] || ys[ys.length - 1];
-      sel.addEventListener('change', () => draw('cn-reg', {}));
-      if (tsel) tsel.addEventListener('change', () => draw('cn-reg', {}));
+      sel.addEventListener('change', page);
     }
     const key = (p && p.year) || (sel ? sel.value : full[full.length - 1]), c = (p && p.conv) || conv();
-    const tech = (p && p.tech) || (tsel && tsel.value) || 'solar';
+    const tech = (p && p.tech) || (cid === 'cn-reg-w' ? 'wind' : 'solar');
     const yrs = span(String(key), ys);
     const N = rate(y => j.national[y], yrs, tech, c);
     const rows = Object.values(j.regions).map(r => ({ n: r.name, r: rate(y => r.years[y], yrs, tech, c) })).filter(x => x.r);
@@ -60,8 +59,11 @@
       options: _fuelOpts({ indexAxis: 'y',
         scales: { x: _fuelAxis('capture rate, %', { min: yMin }), y: { grid: { display: false }, ticks: { color: C_TX2, font: ctx => ({ size: 11, weight: rows[ctx.index] && rows[ctx.index].fr ? '700' : '400' }), autoSkip: false } } },
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => {
-          const x = rows[ctx.dataIndex], d = x.fr ? '' : ' · ' + (x.r.v >= N.v ? '+' : '') + num((x.r.v - N.v) * 100, 1) + ' pts vs France';
-          return ' ' + num(ctx.parsed.x, 1) + ' %' + d + ' · ' + num(x.r.twh, 1) + ' TWh';
+          // one line per figure, each named: the rate, the gap to France in points, the output behind it
+          const x = rows[ctx.dataIndex], f = fr(), out = [' ' + (f ? 'Taux de capture : ' : 'Capture rate: ') + num(ctx.parsed.x, 1) + ' %' + (f ? ' du prix base' : ' of the baseload price')];
+          if (!x.fr) out.push(' ' + (f ? 'Écart avec la France : ' : 'Gap to France: ') + (x.r.v >= N.v ? '+' : '−') + num(Math.abs(x.r.v - N.v) * 100, 1) + (f ? ' point(s)' : ' point(s)'));
+          out.push(' ' + (f ? 'Production : ' : 'Output: ') + num(x.r.twh, 1) + ' TWh');
+          return out;
         } } } } }) }, 'capture-by-region-' + tech + '-' + key);
     const reg = rows.filter(x => !x.fr), hi = reg[0], lo = reg[reg.length - 1];
     const note = document.getElementById('cn-reg-note');
@@ -72,10 +74,13 @@
       ? `${per} : ${tn} capte de ${num(pt(lo.r.v), 1)} % (${lo.n}) à ${num(pt(hi.r.v), 1)} % (${hi.n}), France ${num(pt(N.v), 1)} % — un écart de ${num(pt(hi.r.v) - pt(lo.r.v), 1)} points que le taux national cache. Même prix français partout : l'écart vient seulement du moment où chaque région produit.${yrs.length > 1 ? ' Plusieurs années : moyenne des taux annuels pondérée par la production de chaque année.' : ''} Convention : ${cv}.`
       : `${per}: ${tn} captures from ${num(pt(lo.r.v), 1)} % (${lo.n}) to ${num(pt(hi.r.v), 1)} % (${hi.n}), France ${num(pt(N.v), 1)} % — a ${num(pt(hi.r.v) - pt(lo.r.v), 1)}-point spread the national rate hides. Same French price everywhere: the gap comes only from when each region produces.${yrs.length > 1 ? ' Several years: yearly rates weighted by each year’s output.' : ''} Convention: ${cv}.`) : '';
     if (note && cid === 'cn-reg') note.textContent = txt;
+    if (note && cid === 'cn-reg-w') note.textContent += (note.textContent ? ' ' : '') + txt.replace(/ (Same French price|Même prix français).*$/, '');
     return { sub: txt };
   }
+  // the page: solar on the left, wind on the right, one note
+  const page = () => draw('cn-reg', {}).then(() => draw('cn-reg-w', {}));
   if (window.PKW) PKW.register({ id: 'ren-capture-regions', title: 'France · capture rate by region', category: 'renewables', page: 'renewables', pageCanvas: 'cn-reg', source: 'RTE éCO2mix · ENTSO-E', size: { w: 6, h: 5 },
     desc: 'Solar or wind capture rate of each French region over a year or several (its output on the French day-ahead price ÷ baseload), ranked, with France.', draw });
-  document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'renewables' && /Cannibalisation/.test(e.detail.label)) setTimeout(() => draw('cn-reg', {}), 100); });
-  document.addEventListener('change', e => { if (e.target && e.target.id === 'cn-conv' && document.getElementById('cn-reg') && document.getElementById('cn-reg').offsetParent) draw('cn-reg', {}); });
+  document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'renewables' && /Cannibalisation/.test(e.detail.label)) setTimeout(page, 100); });
+  document.addEventListener('change', e => { if (e.target && e.target.id === 'cn-conv' && document.getElementById('cn-reg') && document.getElementById('cn-reg').offsetParent) page(); });
 })();
