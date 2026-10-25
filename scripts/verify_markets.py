@@ -40,7 +40,7 @@ def get(url, tries=6, headers=UA):
 def load(rel):
     try:
         return json.load(open(os.path.join(ROOT, rel)))
-    except Exception:
+    except (OSError, ValueError):
         return None
 
 

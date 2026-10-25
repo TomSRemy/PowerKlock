@@ -180,7 +180,8 @@ def write_ttf_contracts(h):
             m.update({"marketCode": code, "marketNameCode": m["marketName"] + " " + code})
             try:
                 series = fetch_chart_series(h, [m], BACKFILL_DAYS)
-            except Exception:
+            except Exception as e:   # one contract of the chain: the others go on
+                print(f"  {code}: history not read ({e})")
                 series = []
             if not series:
                 break
