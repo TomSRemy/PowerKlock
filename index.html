@@ -4063,15 +4063,16 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-3">
+        <div class="mrn2-tiles mrn3-tiles mrn-rtiles" id="mrn-rtiles"></div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="mrn3-col">
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Rolling capture rate</div><div class="fuel-card-sub" id="mrn-cr-sub">Last 30, 90 and 365 days and calendar years · 100 % = no cannibalisation</div></div><span class="mrn3-sel"><select id="mrn-cr-tech" aria-label="Technology"><option value="solar">Solar</option><option value="wind">Wind</option></select></span></div>
+            <div class="fuel-card-head"><div><div class="table-title">Solar · rolling capture rate</div><div class="fuel-card-sub" id="mrn-cr-sub">Last 30, 90 and 365 days and calendar years · 100 % = no cannibalisation</div></div></div>
             <div style="position:relative;height:260px"><canvas id="mrn-cr" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France forward capture prices</div><div class="fuel-card-sub" id="mrn-fcap-sub">Solar and wind: what the forwards are worth for their production profile</div></div><span class="source-badge">PowerKlock</span></div>
-            <div style="position:relative;height:260px"><canvas id="mrn-fcap" style="width:100%;height:260px"></canvas></div>
+            <div class="fuel-card-head"><div><div class="table-title">Wind · rolling capture rate</div><div class="fuel-card-sub" id="mrn-crw-sub">Same reading, wind</div></div></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-crw" style="width:100%;height:260px"></canvas></div>
           </div>
           </div>
           <div class="mrn3-col">

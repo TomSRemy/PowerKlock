@@ -405,6 +405,27 @@ function _mrnCfCard() {
     (L ? `<span>${L.meta ? L.meta + ' · ' : ''}<b>${_mN(L.mwh, 0)} MWh/an</b> · <b>${_mN((L.emL || 0) / 1e6, 1)} t CO₂</b> (${_mN(L.ciH, 1)} g/kWh) · ${_mT('profil', 'profile')} <b>${_mN(L.costAvg, 1)} €/MWh</b>${L.shape != null ? ' (' + _mS(L.shape, 1) + ' % ' + _mT('vs base', 'vs baseload') + ')' : ''}${L.gain ? ' · ' + _mT('gain possible ', 'possible saving ') + '<b>' + _mN(L.gain / 1000, 1) + ' k€/an</b>' : ''} <span class="mrn3-dim">· ${_mT('calculé le ', 'computed on ')}${L.at}</span></span>`
       : `<span class="mrn3-dim">${_mT('Votre courbe Enedis, CSV ou Excel : émissions, coût au spot et ce que vous pourriez gagner, en 30 secondes, sans rien envoyer.', 'Your Enedis, CSV or Excel curve: emissions, spot cost and what you could save, in 30 seconds, nothing sent.')}</span>`) + go;
 }
+// ── Renewables tiles: the PPA benchmark (3 calendar years, PowerKlock pricer) and the latest M0, solar and wind ──
+async function _mrnRenTiles() {
+  const host = document.getElementById('mrn-rtiles'); if (!host) return;
+  const [bm, m0] = await Promise.all([_mrnGet('ppab', DATA_BASE + 'history/ppa_benchmark.json').catch(() => null), _mrnGet('m0', DATA_BASE + 'm0.json').catch(() => null)]);
+  const T = [], foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
+  const days = bm && bm.days ? Object.keys(bm.days).sort() : [];
+  if (days.length) { const L = bm.days[days[days.length - 1]], W = bm.days[days[Math.max(0, days.length - 6)]] || {}, ser = t => days.slice(-60).map(d => bm.days[d][t] && bm.days[d][t].ppa).filter(v => v != null);
+    [['solar', _mT('PPA solaire', 'Solar PPA'), 'up'], ['wind', _mT('PPA éolien', 'Wind PPA'), 'up']].forEach(([t, n]) => { const x = L[t]; if (!x) return; const d = W[t] ? x.ppa - W[t].ppa : null;
+      T.push(`<a class="mrn2-tile" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts)', 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance)')}">` +
+        `<span class="mrn3-cat">${_mT('Benchmark PowerKlock', 'PowerKlock benchmark')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${(L.tenor || '').replace(/-/g, '–')}</span></span>` +
+        `<span class="mrn2-tv">${_mN(x.ppa, 2)}<small>€/MWh</small></span><span class="mrn2-tc">${d == null ? '' : `<span class="${d > 0 ? 'mrn-up' : d < 0 ? 'mrn-down' : ''}">${_mS(d, 2)} €</span> <span class="mrn3-dim">${_mT('5 j ouvrés', '5 runs')}</span> · `}${_mT('forward', 'forward')} <b>${_mN(x.ref, 1)}</b></span>` +
+        _mrnSpark(ser(t), d == null ? '' : d > 0 ? 'up' : 'down') + foot(x.lo != null ? 'P10–P90 <b>' + _mN(x.lo, 0) + '–' + _mN(x.hi, 0) + '</b>' : '', _mT('60 j', '60 d')) + '</a>'); }); }
+  const ms = m0 && m0.months ? m0.months.filter(m => m.complete !== false && m.solarM0 != null) : [];
+  if (ms.length > 1) { const L = ms[ms.length - 1], P = ms[ms.length - 2], mon = iso => new Date(iso + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+    [['solarM0', 'solarRatio', _mT('M0 solaire', 'Solar M0')], ['windM0', 'windRatio', _mT('M0 éolien', 'Wind M0')]].forEach(([k, r, n]) => { const d = L[k] - P[k];
+      T.push(`<a class="mrn2-tile" href="#renewables/m0" data-route="renewables/m0" title="${_mT('Prix de marché de référence du complément de rémunération : prix spot moyen pondéré par la production nationale du mois (recalculé par PowerKlock)', 'Reference market price of the contract for difference: the month’s spot weighted by national output (recomputed by PowerKlock)')}">` +
+        `<span class="mrn3-cat">${_mT('Complément de rémunération', 'Contract for difference')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${mon(L.month)}</span></span>` +
+        `<span class="mrn2-tv">${_mN(L[k], 2)}<small>€/MWh</small></span><span class="mrn2-tc"><span class="${d > 0 ? 'mrn-up' : 'mrn-down'}">${_mS(d, 2)} €</span> <span class="mrn3-dim">vs ${mon(P.month)}</span> · ${_mN(L[r] * 100, 0)} % ${_mT('du prix base', 'of baseload')}</span>` +
+        _mrnSpark(ms.slice(-12).map(m => m[k]), d > 0 ? 'up' : 'down') + foot(_mT('base ', 'baseload ') + '<b>' + _mN(L.base, 1) + '</b>', _mT('12 mois', '12 months')) + '</a>'); }); }
+  host.innerHTML = T.join('') || '';
+}
 function _mrnNegAlert(k) {
   const H = h => _mrnFr() ? h + ' h' : String(h).padStart(2, '0') + ':00';
   // the hours as runs (10–11 h, 12–15 h), so 4 hours never read as a 5-hour span
@@ -812,13 +833,12 @@ async function renderMorning() {
         .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {
-      // the rolling capture rate of Renewables › Cannibalisation, solar or wind
-      const crT = document.getElementById('mrn-cr-tech'), crDraw = () => { if (PKW.get('cannib-rolling')) PKW.draw('cannib-rolling', 'mrn-cr', { tech: crT ? crT.value : 'solar' }).then(r => sub('mrn-cr-sub', r)); };
-      if (crT && !crT.dataset.w) { crT.dataset.w = '1'; crT.addEventListener('change', crDraw); } crDraw();
+      // the rolling capture rate of Renewables › Cannibalisation: solar above, wind below
+      if (PKW.get('cannib-rolling')) { PKW.draw('cannib-rolling', 'mrn-cr', { tech: 'solar' }).then(r => sub('mrn-cr-sub', r)); PKW.draw('cannib-rolling', 'mrn-crw', { tech: 'wind' }).then(r => sub('mrn-crw-sub', r)); }
+      _mrnRenTiles();
       _mrnCreg();
       PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
       _mrnGoTable(document.getElementById('mrn-got'));
-      if (PKW.get('fr-capture-forward')) PKW.draw('fr-capture-forward', 'mrn-fcap', {}).then(r => sub('mrn-fcap-sub', r));
     },
     'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: '3Y' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); if (PKW.get('fr-load-normal')) PKW.draw('fr-load-normal', 'mrn-loadn', {}); },
   };
