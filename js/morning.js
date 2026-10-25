@@ -510,7 +510,8 @@ function _mrnNegAlert(k) {
     const mn = Math.min(...z.map(i => hr[i]));
     return `${lbl} <b>${z.length} h</b> ${_mT('sous 0 €', 'below 0 €')} (${runs(z)}, min <b>${_mN(mn, 1)} €</b>)`; };
   const parts = [one(k.today, _mT('aujourd’hui', 'today')), k.tomorrow ? one(k.tomorrow, _mT('demain', 'tomorrow')) : null].filter(Boolean);
-  if (!k.tomorrow && k.fc && k.fc.expected_hours >= 1) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('de prix négatifs probables', 'of negative prices likely')}`);
+  // forecast alarm from 2 expected hours: 79 % of negative days caught, 30 % false alarms (1 h: 88 % and 42 %; neg_forecast.json skill.thresholds)
+  if (!k.tomorrow && k.fc && k.fc.expected_hours >= 2) parts.push(`${_mT('demain (prévision)', 'tomorrow (forecast)')} <b>≈ ${_mN(k.fc.expected_hours, 0)} h</b> ${_mT('de prix négatifs probables', 'of negative prices likely')}`);
   const html = parts.length ? `<div class="mrn-negal" role="status"><span class="mrn-negal-i">⚠</span><span><b>${_mT('Prix négatifs', 'Negative prices')}</b> · ${parts.join(' · ')}</span>` +
     `<a href="#markets/spot/negative" data-route="markets/spot/negative">${_mT('détail', 'detail')} ›</a><button type="button" class="pk-btn-ghost mrn-negal-b">${_mT('M’alerter par e-mail', 'E-mail me')}</button></div>` : '';
   ['mrn-q-negal', 'mrn-negal'].forEach(id => { const el = document.getElementById(id); if (!el) return; el.innerHTML = html; el.hidden = !html;
