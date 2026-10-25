@@ -383,8 +383,11 @@
 
   // ── playback: the whole period in 9, 20 or 40 seconds ──
   let last = 0, hold = 0, wait = 0;
-  // a caption stops the clock long enough to be read: 1.5 s plus 55 ms a character, 3 to 7 s (also in the video)
-  const readTime = e => Math.max(3, Math.min(7, 1.5 + e.txt.length * 0.055));
+  // a caption stops the clock to be read (also in the video): about 1 s plus 30 ms a character, 2 to 4.5 s,
+  // times the reader's setting (none, short, normal, long), kept in this browser
+  const PAUSE = { off: 0, short: 0.6, normal: 1, long: 1.6 };
+  try { S.pause = localStorage.getItem('pk-replay-pause') || 'short'; } catch (_) { S.pause = 'short'; }
+  const readTime = e => Math.max(2, Math.min(4.5, 1 + e.txt.length * 0.03)) * (PAUSE[S.pause] != null ? PAUSE[S.pause] : 0.6);
   const bounds = () => S.per === 'day' ? [S.from, S.to] : [0, npts() - 1];
   function frame(ts) {
     if (!S.playing) return;
@@ -395,7 +398,8 @@
     else if (S.t < b) {
       const nt = Math.min(b, S.t + dt * (b - a) / DURATION[S.speed]);
       const e = (S.events || []).find(x => !S.seen.has(x.n) && x.q > S.t - 1e-9 && x.q <= nt);
-      if (e) { S.seen.add(e.n); S.t = e.q + 0.01; wait = readTime(e); S.reading = e; }   // hold on the moment while its text is read
+      if (e && readTime(e) > 0) { S.seen.add(e.n); S.t = e.q + 0.01; wait = readTime(e); S.reading = e; }
+      else if (e) { S.seen.add(e.n); S.t = nt; S.reading = null; }   // hold on the moment while its text is read
       else { S.t = nt; S.reading = null; }
     }
     else if (S.rec) { hold += dt; if (hold > 1.5) { if (S.outro) { S.phase = 'outro'; hold = 0; } else { stopRec(); return; } } }
@@ -509,7 +513,8 @@
       h += `<label class="cmp-dates">${T('Du', 'From')} <input type="date" id="rp-lfrom" value="${S.lfrom}"> ${T('au', 'to')} <input type="date" id="rp-lto" value="${S.lto}"></label>`;
     }
     h += '<div class="cmp-grp">' + Object.keys(RATIO).map(f => pill('fmt', f, f, S.fmt === f)).join('') + '</div>' +
-      '<div class="cmp-grp">' + [['slow', T('Lent', 'Slow')], ['normal', T('Normal', 'Normal')], ['fast', T('Rapide', 'Fast')]].map(([v, t]) => pill('speed', v, t, S.speed === v)).join('') + '</div>';
+      '<div class="cmp-grp">' + [['slow', T('Lent', 'Slow')], ['normal', T('Normal', 'Normal')], ['fast', T('Rapide', 'Fast')]].map(([v, t]) => pill('speed', v, t, S.speed === v)).join('') + '</div>' +
+      `<div class="cmp-grp" role="group" aria-label="${T('Pause sur les commentaires', 'Pause on comments')}"><span class="cmp-dates">${T('Pause commentaires', 'Comment pause')}</span>` + [['off', T('Aucune', 'None')], ['short', T('Courte', 'Short')], ['normal', T('Normale', 'Normal')], ['long', T('Longue', 'Long')]].map(([v, t]) => pill('pause', v, t, S.pause === v)).join('') + '</div>';
     if (S.per === 'day') h += `<label class="cmp-dates">${T('De', 'From')} <select id="rp-from">${Array.from({ length: 24 }, (_, x) => `<option value="${x * 4}"${S.from === x * 4 ? ' selected' : ''}>${String(x).padStart(2, '0')}:00</option>`).join('')}</select> ${T('à', 'to')} <select id="rp-to">${Array.from({ length: 24 }, (_, x) => `<option value="${x * 4 + 3}"${S.to === x * 4 + 3 ? ' selected' : ''}>${String(x + 1).padStart(2, '0')}:00</option>`).join('')}</select></label>`;
     b.innerHTML = h;
     const v = document.getElementById('rp-vid');
@@ -520,7 +525,7 @@
         `<label class="cmp-it" style="white-space:nowrap"><input type="checkbox" id="rp-music"><span>${T('Musique', 'Music')}</span></label><button type="button" class="cmp-pill" id="rp-link">${T('Copier le lien', 'Copy link')}</button>`;
     }
   }
-  const shareURL = () => location.origin + location.pathname + '#system/replay?' + new URLSearchParams(Object.assign({ per: S.per, fmt: S.fmt, sp: S.speed },
+  const shareURL = () => location.origin + location.pathname + '#system/replay?' + new URLSearchParams(Object.assign({ per: S.per, fmt: S.fmt, sp: S.speed, pz: S.pause },
     S.per === 'long' ? { pr: (S.prods || []).join(';'), lf: S.lfrom, lt: S.lto } : { day: S.day, mode: S.mode }, S.cmp ? { cmp: S.cmp } : {}, S.per === 'day' && (S.from || S.to !== 95) ? { h0: S.from, h1: S.to } : {})).toString();
   function bind() {
     const root = document.getElementById('rp-root'); if (!root || root.dataset.bound) return; root.dataset.bound = '1';
@@ -538,6 +543,7 @@
       if (t.dataset.delp) { S.prods = S.prods.filter(x => x !== t.dataset.delp); controls(); reload(); return; }
       if (t.dataset.fmt) { S.fmt = t.dataset.fmt; controls(); draw(); return; }
       if (t.dataset.speed) { S.speed = t.dataset.speed; controls(); return; }
+      if (t.dataset.pause) { S.pause = t.dataset.pause; try { localStorage.setItem('pk-replay-pause', S.pause); } catch (_) {} controls(); return; }
       if (t.dataset.q) { pause(); const [a, b] = bounds(); S.t = Math.max(a, Math.min(b, +t.dataset.q + (S.per === 'day' ? 2 : Math.max(1, npts() / 40)))); draw(); }
     });
     root.addEventListener('change', e => {
@@ -560,7 +566,7 @@
     bind();
     const HP = window.pkHashParams && window.pkHashRoute === 'system/replay' ? window.pkHashParams : null;
     if (HP && !S.fromLink) {   // a shared link: its period, products and format
-      S.fromLink = true; S.per = HP.per || S.per; S.fmt = HP.fmt || S.fmt; S.speed = HP.sp || S.speed; S.cmp = HP.cmp || '';
+      S.fromLink = true; S.per = HP.per || S.per; S.fmt = HP.fmt || S.fmt; S.speed = HP.sp || S.speed; S.cmp = HP.cmp || ''; if (HP.pz) S.pause = HP.pz;
       if (S.per === 'long') { S.prods = (HP.pr || '').split(';').filter(Boolean); S.lfrom = HP.lf || ''; S.lto = HP.lt || ''; } else { S.day = HP.day || S.day; S.mode = HP.mode || S.mode; }
       if (HP.h0 != null) { S.from = +HP.h0; S.to = +HP.h1; }
     }
