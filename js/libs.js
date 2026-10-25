@@ -14602,6 +14602,8 @@
 
   function isActive(chart) {
     if (SKIP_TYPES.has(chart.config.type)) return false;
+    // horizontal bars keep Chart.js's own tooltip: the readout reads the x axis as the category (row number shown as the value)
+    if (chart.options && chart.options.indexAxis === 'y') return false;
     const o = chart.options.plugins && chart.options.plugins.pkHoverReadout;
     return o !== false;
   }
@@ -14787,6 +14789,7 @@
     config.options = config.options || {};
     const opts = config.options;
     if (opts.plugins && opts.plugins.pkHoverReadout === false) return config;
+    if (opts.indexAxis === 'y') return config;   // horizontal bars: the normal tooltip (see isActive)
     opts.plugins = opts.plugins || {};
     opts.plugins.tooltip = Object.assign({}, opts.plugins.tooltip, { enabled: false });
     return config;

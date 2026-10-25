@@ -61,7 +61,8 @@ function _fuelXAxis() { const small = window.innerWidth < 700; return { grid: GR
 function _fuelOpts(extra) {
   return Object.assign({
     responsive: true, maintainAspectRatio: false, animation: false,
-    interaction: { mode: 'index', intersect: false },
+    // horizontal bars (indexAxis 'y'): the hover follows the bar under the pointer, not the pointer's x
+    interaction: extra && extra.indexAxis === 'y' ? { mode: 'index', axis: 'y', intersect: false } : { mode: 'index', intersect: false },
     plugins: {
       legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } },
       zoom: ZOOM_CFG,

@@ -812,7 +812,9 @@ async function renderMorning() {
         .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {
-      PKW.draw('ren-cr', 'mrn-cr', { zone: 'FR', window: '1Y', style: 'bar' });
+      // the rolling capture rate of Renewables › Cannibalisation, solar or wind
+      const crT = document.getElementById('mrn-cr-tech'), crDraw = () => { if (PKW.get('cannib-rolling')) PKW.draw('cannib-rolling', 'mrn-cr', { tech: crT ? crT.value : 'solar' }).then(r => sub('mrn-cr-sub', r)); };
+      if (crT && !crT.dataset.w) { crT.dataset.w = '1'; crT.addEventListener('change', crDraw); } crDraw();
       _mrnCreg();
       PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
       _mrnGoTable(document.getElementById('mrn-got'));
