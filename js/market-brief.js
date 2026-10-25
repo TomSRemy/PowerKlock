@@ -39,31 +39,16 @@
   const cls = v => v == null ? '' : v >= 0 ? 'mb-up' : 'mb-dn';   // a price up is shown in red, as on the forward tables
   const sec = (ic, head, body) => `<div class="mb-sec"><span class="mb-ic">${ic}</span><div class="mb-h">${head}</div><div class="mb-t">${body}</div></div>`;
 
-  // ── the week, in French, in the dashboard's style: six tiles (price, 7-day move, 60-day line), then a digest,
-  //    one line per market with one sub-line per topic, and on the right what the market notes received said
-  //    (rising or easing tone) against what the price really did over the same week
+  // ── the week, in French: shared pieces (chips, mini-curves, the tone of the market notes received)
   const css2 = `
-  .wk{container-type:inline-size;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.45;color:var(--text2)}
-  .wk-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-  .wk-tile{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 9px;min-width:0}
-  .wk-tn{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .wk-tv{font:600 17px 'JetBrains Mono',monospace;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .wk-tv small{font-size:10px;color:var(--text3);font-weight:400}
-  .wk-tc{font:600 11px 'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+  .wk{display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.45;color:var(--text2)}
   .wk-sp{display:block;width:100%;height:24px;margin-top:3px}
   .wk-up{color:var(--down)} .wk-dn{color:var(--up)} .wk-fl{color:var(--text3)}
-  .wk-row{display:grid;grid-template-columns:92px 84px minmax(0,1fr) 230px;column-gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border)}
-  .wk-row:last-child{border-bottom:0} .wk-row.wk-hr{padding:2px 0 5px}
-  .wk-wide .wk-k{display:flex;flex-direction:column;align-items:flex-start;gap:6px} .wk-wide .wk-tx{grid-column:2/-1}
-  .wk-hd{font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
-  .wk-cn{border-left:1px solid var(--border);padding-left:12px;align-self:stretch}
-  .wk-k{font:600 11px 'JetBrains Mono',monospace;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
   .wk-chip{display:inline-block;font:600 10.5px 'JetBrains Mono',monospace;border-radius:4px;padding:1px 6px;white-space:nowrap}
   .wk-chip.wk-up{background:rgba(237,105,101,.14)} .wk-chip.wk-dn{background:rgba(20,211,169,.14)} .wk-chip.wk-fl{background:rgba(122,147,171,.14)}
   .wk-l{display:block} .wk-l b{color:var(--text);font-weight:600}
   .wk-n{font-size:11.5px;color:var(--text3)} .wk-n b{font-weight:600} .wk-ok{color:var(--accent)} .wk-ko{color:#fbbf24}
-  .wk-foot{font-size:11px;color:var(--text3)}
-  @container (max-width:760px){.wk-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.wk-row{grid-template-columns:auto minmax(0,1fr);row-gap:3px}.wk-hr{display:none}.wk-tx,.wk-cn,.wk-wide .wk-tx{grid-column:1/-1}.wk-wide .wk-k{flex-direction:row;align-items:center}.wk-cn{border-left:0;padding-left:0}.wk-cn:before{content:'Semaine à venir · ';font-size:11px;color:var(--text3)}}`;
+  .wk-foot{font-size:11px;color:var(--text3)}`;
   if (!document.getElementById('wk-css')) { const s = document.createElement('style'); s.id = 'wk-css'; s.textContent = css2; document.head.appendChild(s); }
   const fr = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ',');
   const nf = (v, d = 2) => v == null ? '–' : v.toFixed(d).replace('.', ',');
@@ -108,6 +93,26 @@
   }
 
 
+  // the week as one card per market: its prices (value, 7-day move, 60-day line) with what explains them, then what the
+  // market notes and the news expect for the coming week; the context (France first) across the top
+  const css3 = `
+  .wk2{container-type:inline-size;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.45;color:var(--text2)}
+  .wk2-ctx{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;gap:3px}
+  .wk2-ctx-h{display:flex;align-items:center;gap:8px;font:600 10px 'JetBrains Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+  .wk2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .wk2-m{border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;min-width:0}
+  .wk2-mh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .wk2-mn{font:600 11px 'JetBrains Mono',monospace;color:var(--text);text-transform:uppercase;letter-spacing:.06em}
+  .wk2-q{display:grid;grid-template-columns:minmax(0,1fr) auto 74px;align-items:center;column-gap:10px;padding:2px 0}
+  .wk2-qn{color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wk2-qn small{display:block;font-weight:400;font-size:10.5px;color:var(--text3)}
+  .wk2-qv{text-align:right;font:600 15px 'JetBrains Mono',monospace;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}.wk2-qv small{font-size:10px;font-weight:400;color:var(--text3)}
+  .wk2-qv .wk-chip{display:block;margin-top:2px;text-align:right;background:none;padding:0}
+  .wk2-q .wk-sp{height:28px;margin:0}
+  .wk2-l{font-size:12px;border-top:1px dashed var(--border);padding-top:6px;display:flex;flex-direction:column;gap:3px}.wk2-l b{color:var(--text);font-weight:600}
+  .wk2-o{font-size:11.5px;color:var(--text3);margin-top:auto;border-top:1px solid var(--border);padding-top:6px}.wk2-o b{color:var(--text2);font-weight:600}
+  @container (max-width:640px){.wk2-grid{grid-template-columns:1fr}}`;
+  if (!document.getElementById('wk2-css')) { const s = document.createElement('style'); s.id = 'wk2-css'; s.textContent = css3; document.head.appendChild(s); }
+
   async function brief(host) {
     const [cs, chain, sum, nt] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'), window.pkSummary ? window.pkSummary().catch(() => null) : null, notes()]);
     const S = cs && cs.series || {}, P = k => (S[k] || {}).points || [];
@@ -115,48 +120,46 @@
     const calP = ck ? yrs[ck].dates.map((d, i) => [d, yrs[ck].values[i]]) : [];
     const spotP = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null).map(r => [r.d, r.avg]);
     const wkPct = pts => { const l = last(pts); return l ? pct(l[1], back(pts, 7)) : null; };
-    // tiles
-    const T = [['Brent', P('brent'), '$/b'], ['TTF', P('ttf'), '€/MWh'], ['EUA', P('eua'), '€/t'], ['Charbon API2', P('coal'), '$/t'], ['Spot France', spotP, '€/MWh', true], [ck ? 'Cal ' + String(ck).slice(-2) + ' France' : 'Cal+1 France', calP, '€/MWh']]
-      .filter(t => t[1].length).map(([k, pts, u, spot]) => {
-        const l = last(pts), w = spot ? pct(since(pts, 6).reduce((a, p) => a + p[1], 0) / since(pts, 6).length, since(pts, 13).slice(0, -7).reduce((a, p) => a + p[1], 0) / Math.max(1, since(pts, 13).slice(0, -7).length)) : wkPct(pts), c = wc(w);
-        return `<div class="wk-tile" title="${spot ? 'Moyenne des 7 derniers jours contre les 7 précédents' : 'Variation sur 7 jours'}"><div class="wk-tn">${k}</div><div class="wk-tv">${nf(l[1], l[1] >= 100 ? 1 : 2)} <small>${u}</small></div><div class="wk-tc ${c}">${c === 'wk-fl' ? '→ stable' : arrow(w) + ' ' + fr(w) + ' %'}${spot ? ' <span class="wk-fl" style="font-weight:400">moy. 7 j</span>' : ''}</div>${spark(since(pts, 60), c)}</div>`; });
-    // digest rows: [key, chip move, chip class, lines[], notes column]
-    const R = [];
-    // context: a short French text per topic, France first, written each morning and evening from the market notes,
-    // the news and the week's prices (scripts/market_digest.py), never a list of articles
-    const dg = await get('market_digest.json'), ctxT = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.context || []) : [];
-    // the right column: the sentiment for the week ahead, market by market (written with the context from the notes
-    // and the news); without it, the direction the notes lean to
-    const OL = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.outlook || {}) : {};
+    const mean = a => a.length ? a.reduce((x, p) => x + p[1], 0) / a.length : null;
+    // one price line: name (and where it sits in its 60-day range), value, 7-day move, 60-day line
+    const quote = (name, pts, u, spot) => {
+      if (!pts.length) return '';
+      const l = last(pts), prev7 = since(pts, 13).slice(0, -7);
+      const w = spot ? pct(mean(since(pts, 6)), mean(prev7)) : wkPct(pts), c = wc(w);
+      const rg = spot ? '' : range(pts).replace(/^, /, ''), v = spot ? mean(since(pts, 6)) : l[1];
+      return `<div class="wk2-q" title="${spot ? 'Moyenne des 7 derniers jours contre les 7 précédents' : 'Variation sur 7 jours'} · mini-courbe : 60 jours"><span class="wk2-qn">${name}<small>${spot ? 'moyenne 7 jours' : rg}</small></span>
+        <span class="wk2-qv">${nf(v, v >= 100 ? 1 : 2)} <small>${u}</small><span class="wk-chip ${c}">${c === 'wk-fl' ? '→ stable' : arrow(w) + ' ' + fr(w) + ' %'}</span></span>${spark(since(pts, 60), c)}</div>`;
+    };
+    const dg = await get('market_digest.json'), fresh = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5;
+    const ctxT = fresh ? (dg.context || []) : [], OL = fresh ? (dg.outlook || {}) : {};
+    // the week ahead, market by market: [chip, text]
     const look = (k, tones) => { const o = OL[k];
-      if (o && o.text) return `<span class="wk-n"><span class="wk-chip ${o.tone === 'up' ? 'wk-up' : o.tone === 'down' ? 'wk-dn' : 'wk-fl'}">${o.tone === 'up' ? '↑ haussier' : o.tone === 'down' ? '↓ baissier' : '→ neutre'}</span> ${esc(o.text.replace(/\.?\s*$/, '.'))}</span>`;
+      if (o && o.text) return [`<span class="wk-chip ${o.tone === 'up' ? 'wk-up' : o.tone === 'down' ? 'wk-dn' : 'wk-fl'}">${o.tone === 'up' ? '↑ haussier' : o.tone === 'down' ? '↓ baissier' : '→ neutre'}</span>`, esc(o.text.replace(/\.?\s*$/, '.'))];
       const up = (tones || []).filter(t => t > 0).length, dn = (tones || []).filter(t => t < 0).length;
-      return !up && !dn ? '<span class="wk-n">pas de signal pour la semaine à venir</span>' : `<span class="wk-n"><span class="wk-chip ${up > dn ? 'wk-up' : dn > up ? 'wk-dn' : 'wk-fl'}">${up > dn ? '↑ haussier' : dn > up ? '↓ baissier' : '→ partagé'}</span> d’après les commentaires de marché reçus.</span>`; };
+      return !up && !dn ? ['', 'pas de signal pour la semaine à venir.'] : [`<span class="wk-chip ${up > dn ? 'wk-up' : dn > up ? 'wk-dn' : 'wk-fl'}">${up > dn ? '↑ haussier' : dn > up ? '↓ baissier' : '→ partagé'}</span>`, 'd’après les commentaires de marché reçus.']; };
+    const M = [];   // [name, quotes html, lines[], [chip, text]]
+    if (P('brent').length) M.push(['Pétrole', quote('Brent', P('brent'), '$/b'), [], look('oil', nt.brent)]);
+    if (P('ttf').length) { const st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
+      M.push(['Gaz', quote('TTF', P('ttf'), '€/MWh'), st ? [`<span><b>Stocks UE :</b> ${nf(st[1], 1)} %${ly != null ? `, ${fr(st[1] - ly)} pts sur un an${st[1] < ly ? ' : moins de marge pour l’hiver, un soutien aux prix' : ' : marge confortable pour l’hiver'}` : ''}.</span>`] : [], look('gas', nt.ttf)]); }
+    if (calP.length || spotP.length) {
+      const lines = [];
+      if (calP.length) { const l = last(calP), w0 = back(calP, 7), dFR = w0 != null ? l[1] - w0 : null;
+        const ty = cs && cs.calYears && cs.calYears.ttf && cs.calYears.ttf[ck], tP = ty ? ty.dates.map((d, i) => [d, ty.values[i]]) : null, dT = tP ? last(tP)[1] - back(tP, 7) : null, gas = dT != null ? dT * 2 : null;
+        if (dFR != null) lines.push(`<span><b>Cal ${ck} :</b> ${fr(dFR, 2)} €/MWh sur 7 jours.</span>`);
+        if (gas != null && dFR != null) lines.push(`<span><b>Part du gaz :</b> le gaz Cal ${ck} (${fr(dT, 2)} €/MWh) pèse ≈ ${fr(gas)} €/MWh sur le coût d’une centrale gaz : ${Math.abs(dFR - gas) < 1 ? 'le mouvement français vient surtout du gaz' : dFR - gas > 0 ? 'la France monte plus que le gaz seul (nucléaire, demande)' : 'la France monte moins que le gaz seul (nucléaire, demande plus détendus)'}.</span>`); }
+      if (spotP.length) { const neg = ((sum.zones.FR) || []).slice(-7).reduce((a, r) => a + (r.negH || 0), 0), ls = last(spotP);
+        lines.push(`<span><b>Spot :</b> ${nf(ls[1], 1)} €/MWh le ${new Date(ls[0] + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '')}${neg ? `, ${nf(neg, neg % 1 ? 1 : 0)} h de prix négatifs sur 7 jours` : ''}.</span>`); }
+      M.push(['Électricité France', quote(ck ? 'Cal ' + ck : 'Cal+1', calP, '€/MWh') + quote('Spot', spotP, '€/MWh', true), lines, look('power', nt.cal)]); }
+    if (P('eua').length) { const eua = last(P('eua')), d = eua[1] - (back(P('eua'), 7) || eua[1]);
+      M.push(['Carbone et charbon', quote('EUA', P('eua'), '€/t') + quote('Charbon API2', P('coal'), '$/t'), [`<span><b>Effet du CO₂ :</b> ${Math.abs(d) < 0.5 ? 'quasi nul' : `${fr(0.37 * d)} €/MWh`} sur le coût d’une centrale gaz.</span>`], look('carbon', nt.eua)]); }
+    if (!M.length) { host.innerHTML = '<div class="fuel-note">Données de marché indisponibles.</div>'; return; }
+    let ctx = '';
     if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
-      R.push(['Contexte', u > 0 ? '↑ haussier' : u < 0 ? '↓ baissier' : '→ neutre', u > 0 ? 'wk-up' : u < 0 ? 'wk-dn' : 'wk-fl',
-        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`).concat(nt.ctx.length ? [`<span class="wk-l"><b>Analystes :</b> ${verdict(nt.ctx, null, true).replace(/^les analystes voient/, 'ils voient').replace(/<\/?span[^>]*>/g, '')}.</span>`] : []), null, true]); }
-    const br = last(P('brent'));
-    if (br) { const w = wkPct(P('brent')); R.push(['Pétrole', arrow(w) + ' ' + fr(w) + ' %', wc(w), [`<span class="wk-l"><b>Brent :</b> ${nf(br[1])} $/b${range(P('brent'))}.</span>`], look('oil', nt.brent)]); }
-    const ttf = last(P('ttf'));
-    if (ttf) { const w = wkPct(P('ttf')), st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
-      R.push(['Gaz', arrow(w) + ' ' + fr(w) + ' %', wc(w), [`<span class="wk-l"><b>TTF :</b> ${nf(ttf[1])} €/MWh${range(P('ttf'))}.</span>`,
-        st ? `<span class="wk-l"><b>Stocks UE :</b> ${nf(st[1], 1)} %${ly != null ? `, ${fr(st[1] - ly)} pts sur un an${st[1] < ly ? ' : moins de marge pour l’hiver, un soutien aux prix' : ' : marge confortable pour l’hiver'}` : ''}.</span>` : ''].filter(Boolean), look('gas', nt.ttf)]); }
-    if (calP.length) { const l = last(calP), w0 = back(calP, 7), dFR = w0 != null ? l[1] - w0 : null, wP = pct(l[1], w0);
-      const ty = cs && cs.calYears && cs.calYears.ttf && cs.calYears.ttf[ck], tP = ty ? ty.dates.map((d, i) => [d, ty.values[i]]) : null, dT = tP ? last(tP)[1] - back(tP, 7) : null, gas = dT != null ? dT * 2 : null;
-      const lines = [`<span class="wk-l"><b>Cal ${ck} France :</b> ${nf(l[1])} €/MWh, ${fr(dFR, 2)} € sur 7 jours${range(calP)}.</span>`];
-      if (gas != null) lines.push(`<span class="wk-l"><b>Part du gaz :</b> le gaz Cal ${ck} (${fr(dT, 2)} €/MWh) pèse ≈ ${fr(gas)} €/MWh sur le coût d’une centrale gaz : ${Math.abs(dFR - gas) < 1 ? 'le mouvement français vient surtout du gaz' : dFR - gas > 0 ? 'la France monte plus que le gaz seul (nucléaire, demande)' : 'la France monte moins que le gaz seul (nucléaire, demande plus détendus)'}.</span>`);
-      const sp = since(spotP, 6); if (sp.length) { const neg = ((sum.zones.FR) || []).slice(-7).reduce((a, r) => a + (r.negH || 0), 0), ls = last(spotP);
-        lines.push(`<span class="wk-l"><b>Spot :</b> ${nf(sp.reduce((a, p) => a + p[1], 0) / sp.length, 1)} €/MWh en moyenne sur 7 jours, ${nf(ls[1], 1)} €/MWh le ${new Date(ls[0] + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\.$/, '')}${neg ? `, ${nf(neg, neg % 1 ? 1 : 0)} h de prix négatifs` : ''}.</span>`); }
-      R.push(['Électricité', arrow(wP) + ' ' + fr(dFR, 1) + ' €', wc(wP), lines, look('power', nt.cal)]); }
-    const eua = last(P('eua'));
-    if (eua) { const w = wkPct(P('eua')), d = eua[1] - (back(P('eua'), 7) || eua[1]);
-      R.push(['Carbone', arrow(w) + ' ' + fr(w) + ' %', wc(w), [`<span class="wk-l"><b>EUA :</b> ${nf(eua[1])} €/t${range(P('eua'))}.</span>`,
-        `<span class="wk-l"><b>Effet :</b> ${Math.abs(d) < 0.5 ? 'quasi nul' : `${fr(0.37 * d)} €/MWh`} sur le coût d’une centrale gaz.</span>`], look('carbon', nt.eua)]); }
-    if (!T.length && !R.length) { host.innerHTML = '<div class="fuel-note">Données de marché indisponibles.</div>'; return; }
-    host.innerHTML = `<div class="wk"><div class="wk-tiles">${T.join('')}</div>
-      <div>${/* context first, across the whole width: the label with its chip under it */ ''}${R.filter(r => r[5]).map(([k, m, c, ls]) => `<div class="wk-row wk-wide"><span class="wk-k">${k}<span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span></div>`).join('')}<div class="wk-row wk-hr"><span class="wk-hd">Marché</span><span class="wk-hd">7 jours</span><span class="wk-hd">Ce qui s’est passé</span><span class="wk-hd">Sentiment · semaine à venir</span></div>
-      ${R.filter(r => !r[5]).map(([k, m, c, ls, v]) => `<div class="wk-row"><span class="wk-k">${k}</span><span class="wk-cm"><span class="wk-chip ${c}">${m}</span></span><span class="wk-tx">${ls.join('')}</span><span class="wk-cn">${v}</span></div>`).join('')}</div>
-      <div class="wk-foot">Rouge = prix en hausse, vert = en baisse. Mini-courbes : 60 jours. Dernière colonne : ce que les commentaires de marché des fournisseurs d’énergie et l’actualité laissent attendre pour les prochains jours.</div></div>`;
+      ctx = `<div class="wk2-ctx"><div class="wk2-ctx-h">Contexte <span class="wk-chip ${u > 0 ? 'wk-up' : u < 0 ? 'wk-dn' : 'wk-fl'}">${u > 0 ? '↑ haussier' : u < 0 ? '↓ baissier' : '→ neutre'}</span></div>` +
+        ctxT.map(c => `<span class="wk-l"><b>${esc(c.topic)} :</b> ${esc(c.text.replace(/\.?\s*$/, '.'))}</span>`).join('') +
+        (nt.ctx.length ? `<span class="wk-l"><b>Analystes :</b> ${verdict(nt.ctx, null, true).replace(/^.*les analystes voient/, 'ils voient').replace(/<\/?span[^>]*>/g, '')}.</span>` : '') + '</div>'; }
+    host.innerHTML = `<div class="wk wk2">${ctx}<div class="wk2-grid">${M.map(([n, q, ls, [chip, txt]]) => `<div class="wk2-m"><div class="wk2-mh"><span class="wk2-mn">${n}</span>${chip}</div>${q}${ls.length ? `<div class="wk2-l">${ls.join('')}</div>` : ''}<div class="wk2-o"><b>Semaine à venir :</b> ${txt}</div></div>`).join('')}</div>
+      <div class="wk-foot">Rouge = prix en hausse, vert = en baisse ; mini-courbes sur 60 jours. « Semaine à venir » : ce que les commentaires de marché des fournisseurs d’énergie et l’actualité laissent attendre.</div></div>`;
   }
 
   async function next30(host) {
