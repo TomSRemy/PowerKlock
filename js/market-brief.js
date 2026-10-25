@@ -105,6 +105,20 @@
   .why3-b .wk-chip{font-size:10.5px} .why3-src{display:block;font-size:10px;color:var(--text3);margin-top:2px}
   .why3 b{color:var(--text);font-weight:600}
   .why3-line{display:block} .why3-line+.why3-line{margin-top:4px}
+  .why4{gap:12px}
+  .why4-ctx{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg3, rgba(255,255,255,.02));display:grid;gap:6px;color:var(--text)}
+  .why4-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .why4-h .why3-src{margin:0}
+  .why4-n{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+  .why4-t .why4-h .wk-chip{margin-left:auto}
+  .why4-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:stretch}
+  .why4-t{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .why4-v{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .why4-v small{font-size:11.5px;font-weight:500;color:var(--text3);margin-left:6px}
+  .why4-x{flex:1}
+  .why4-next{margin-top:auto;min-height:5.4em;font-size:12px;line-height:1.45;color:var(--text2);background:var(--bg3, rgba(255,255,255,.03));border-radius:8px;padding:7px 9px}
+  .why4-next.none{color:var(--text3);font-style:italic}
+  .why4-t > .why3-src{margin-top:2px}
   .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border, rgba(255,255,255,.08))} .why3-next b{color:var(--text2)}
   .why3-an{margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12.5px} .why3-an .wk-ok{color:var(--accent)} .why3-an .wk-ko{color:#fbbf24}
   @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}.why3-k{flex-direction:row;align-items:center;flex-wrap:wrap}}`;
@@ -156,7 +170,7 @@
       const sp = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null), a7 = sp.slice(-7), b7 = sp.slice(-14, -7);
       if (a7.length && b7.length) { const m = a7.reduce((x, r) => x + r.avg, 0) / a7.length, mb = b7.reduce((x, r) => x + r.avg, 0) / b7.length;
         parts.push(m < mb * 0.9 ? T('Le spot recule sur la semaine.', 'Spot eases over the week.') : m > mb * 1.1 ? T('Le spot monte sur la semaine.', 'Spot rises over the week.') : T('Le spot reste stable sur la semaine.', 'Spot holds over the week.')); }
-      R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' ')]);
+      R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' '), `Cal ${String(ys[0]).slice(2)} ${n1(l[1])} €<small>${s1(wk(p1))} % ${T('sur 7 j', 'on 7 d')}</small>`]);
     }
     // French nuclear: available now, against the operator's forecast, a week and a year ago (less nuclear = more gas called)
     const nu = P('fr_nuc_avail'), nl = last(nu), nf = last(P('fr_nuc_avail_fc'));
@@ -167,19 +181,19 @@
           : gap < 0 ? T(`<b>${gw(-gap)} GW</b> sous la prévision de l’exploitant (${gw(nf[1])} GW) : plus de gaz appelé, un soutien aux prix.`, `<b>${gw(-gap)} GW</b> below the operator’s forecast (${gw(nf[1])} GW): more gas called, a support for prices.`)
           : T(`<b>${gw(gap)} GW</b> au-dessus de la prévision de l’exploitant (${gw(nf[1])} GW) : moins de gaz appelé, des prix détendus.`, `<b>${gw(gap)} GW</b> above the operator’s forecast (${gw(nf[1])} GW): less gas called, softer prices.`)); }
       const mv = w != null && w ? (nl[1] / w - 1) * 100 : null;
-      R.push([T('Nucléaire', 'Nuclear'), look('nuclear', null, mv == null ? null : -mv), parts.join(' ')]); }
+      R.push([T('Nucléaire', 'Nuclear'), look('nuclear', null, mv == null ? null : -mv), parts.join(' '), `${gw(nl[1])} GW<small>${T('sur 63', 'of 63')}</small>`]); }
     const ttf = P('ttf'), st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
     if (ttf.length) { const ps = pos60(ttf), parts = [];
       if (ps) parts.push(T('TTF ', 'TTF ') + ps + '.');
       if (st && ly != null) parts.push(T(`Stocks UE <b>${s1(st[1] - ly)} pts</b> sur un an`, `EU storage <b>${s1(st[1] - ly)} pts</b> on a year`) + (st[1] < ly ? T(' : moins de marge pour l’hiver, un soutien aux prix.', ': less margin for winter, a support for prices.') : T(' : marge confortable pour l’hiver.', ': comfortable margin for winter.')));
-      R.push([T('Gaz', 'Gas'), look('gas', nt.ttf, wk(ttf)), parts.join(' ')]); }
+      R.push([T('Gaz', 'Gas'), look('gas', nt.ttf, wk(ttf)), parts.join(' '), `TTF ${n1(last(ttf)[1])} €<small>${s1(wk(ttf))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
     const br = P('brent');
-    if (br.length) { const ps = pos60(br); R.push([T('Pétrole', 'Oil'), look('oil', nt.brent, wk(br)), ps ? 'Brent ' + ps + '.' : '']); }
+    if (br.length) { const ps = pos60(br); R.push([T('Pétrole', 'Oil'), look('oil', nt.brent, wk(br)), ps ? 'Brent ' + ps + '.' : '', `Brent ${n1(last(br)[1])} $<small>${s1(wk(br))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
     const eua = P('eua'), coal = P('coal');
     if (eua.length) { const e = last(eua), d = e[1] - (back(eua, 7) || e[1]), parts = [];
       parts.push(T(`EUA : <b>${Math.abs(d) < 0.5 ? T('effet quasi nul', '') : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' sur le coût d’une centrale gaz'} sur la semaine.`, `EUA: <b>${Math.abs(d) < 0.5 ? 'almost no effect' : s1(0.37 * d) + ' €'}</b>${Math.abs(d) < 0.5 ? '' : ' on a gas plant’s cost'} over the week.`));
       const c = last(coal); if (c) { const ps = pos60(coal); parts.push(T(`Charbon API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`, `Coal API2 <b>${n1(c[1])} $/t</b> (${s1(wk(coal))} %)`) + (ps ? ', ' + ps : '') + '.'); }
-      R.push([T('Carbone, charbon', 'Carbon, coal'), look('carbon', nt.eua, wk(eua)), parts.join(' ')]); }
+      R.push([T('Carbone, charbon', 'Carbon, coal'), look('carbon', nt.eua, wk(eua)), parts.join(' '), `EUA ${n1(e[1])} €<small>${s1(wk(eua))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
     if (go) {
       const y = new Date().getUTCFullYear(), g = goSeries(go, y + 1), parts = [];
       // broker prices (weekly mid), the production years quoted
@@ -191,7 +205,7 @@
       if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
         if (vol) parts.push(T(`Enchère GO France (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `France GO auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
       const c4 = g.length > 4 ? (g[g.length - 1][1] / g[g.length - 5][1] - 1) * 100 : null;
-      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.map(x => `<span class="why3-line">${x}</span>`).join('')]);   // one fact per line
+      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.map(x => `<span class="why3-line">${x}</span>`).join(''), g.length ? `Cal ${String(y + 1).slice(2)} ${n1(g[g.length - 1][1], 3)} €<small>${g.length > 1 ? s1(g[g.length - 1][1] - g[g.length - 2][1], 3) + ' ' + T('sur la sem.', 'on the week') : ''}</small>` : '']);   // one fact per line
     }
     if (!R.length) { host.innerHTML = `<div class="fuel-note">${T('Données de marché indisponibles.', 'Market data not available.')}</div>`; return; }
     // the notes' record: each day's call against what the price did over the following 7 days (right: up and +1 % or more,
@@ -209,7 +223,16 @@
     an = all >= 6 ? T(`<b>Les notes de marché ont-elles vu juste ?</b> ${ok} fois sur ${all} sur ${Object.keys(weeks).length} semaines ; dernier appel jugé : ${lastLine}.`, `<b>Did the market notes get it right?</b> ${ok} times out of ${all} over ${Object.keys(weeks).length} weeks; last call judged: ${lastLine}.`)
       : first ? T(`<b>Les notes de marché ont-elles vu juste ?</b> Bilan dès que 3 semaines d’appels auront été comparées aux prix (suivi depuis le ${new Date(first + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`,
         `<b>Did the market notes get it right?</b> The score shows once 3 weeks of calls can be checked against prices (tracked since ${new Date(first + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`) : '';
-    host.innerHTML = `<div class="why3">${R.map(([k, [tone, src, o], text]) => `<div class="why3-r"><span class="why3-k">${k}${chip(tone)}<span class="why3-src">${src}</span></span><span>${text}${o ? `<span class="why3-next"><b>${T('Semaine à venir', 'Week ahead')} :</b> ${txt(o)}</span>` : ''}</span></div>`).join('')}${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
+    // the context in full on top, then one tile per market: name and call, the key figure, today's text, and the week ahead
+    // in a box pinned to the bottom of the tile, the same height in every tile (an empty box says there is no call)
+    const ctxR = R.filter(r => r[0] === T('Contexte', 'Context')), mk = R.filter(r => r[0] !== T('Contexte', 'Context'));
+    const ctx = ctxR.map(([k, [tone, src], text]) => `<div class="why4-ctx"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}<span class="why3-src">${src}</span></div><div>${text}</div></div>`).join('');
+    host.innerHTML = `<div class="why3 why4">${ctx}<div class="why4-g">${mk.map(([k, [tone, src, o], text, fig]) => `<div class="why4-t"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}</div>` +
+      (fig ? `<div class="why4-v">${fig}</div>` : '') + `<div class="why4-x">${text}</div>` +
+      `<div class="why4-next${o ? '' : ' none'}">${o ? `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${txt(o)}` : `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${T('pas de note cette semaine', 'no call this week')}`}</div><span class="why3-src">${src}</span></div>`).join('')}</div>${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
+    // every « week ahead » box the height of the tallest, so they line up at the bottom of all the tiles
+    const eq = () => { const bx = [...host.querySelectorAll('.why4-next')]; bx.forEach(b => { b.style.minHeight = ''; }); const h = Math.max(...bx.map(b => b.offsetHeight)); if (h > 0) bx.forEach(b => { b.style.minHeight = h + 'px'; }); };
+    requestAnimationFrame(eq); if (!host.dataset.eq) { host.dataset.eq = '1'; window.addEventListener('resize', () => requestAnimationFrame(eq)); }
   }
 
   async function next30(host) {
