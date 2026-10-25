@@ -97,14 +97,16 @@
   //    the levels the tiles above already show; then whether the market notes' calls came true (data/history/digest_outlook.json)
   const css3 = `
   .why3{display:flex;flex-direction:column;font-size:13px;line-height:1.5;color:var(--text2)}
-  .why3-r{display:grid;grid-template-columns:118px 116px minmax(0,1fr);gap:12px;padding:8px 0;border-bottom:1px solid var(--border);align-items:baseline}
+  .why3-r{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;padding:8px 0;border-bottom:1px solid var(--border);align-items:baseline}
   .why3-r:last-of-type{border-bottom:0}
-  .why3-k{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+  .why3-k{display:flex;flex-direction:column;align-items:flex-start;gap:4px;font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--text)}
+  .why3-k .wk-chip{text-transform:none;letter-spacing:0}
+  .why3-k .why3-src{text-transform:none;letter-spacing:0;font-family:Inter,sans-serif;font-weight:400;margin-top:0}
   .why3-b .wk-chip{font-size:10.5px} .why3-src{display:block;font-size:10px;color:var(--text3);margin-top:2px}
   .why3 b{color:var(--text);font-weight:600}
   .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:2px} .why3-next b{color:var(--text2)}
   .why3-an{margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12.5px} .why3-an .wk-ok{color:var(--accent)} .why3-an .wk-ko{color:#fbbf24}
-  @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}}`;
+  @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}.why3-k{flex-direction:row;align-items:center;flex-wrap:wrap}}`;
   if (!document.getElementById('why3-css')) { const st = document.createElement('style'); st.id = 'why3-css'; st.textContent = css3; document.head.appendChild(st); }
   const isFr = () => !window.PKI18n || PKI18n.lang !== 'en';
   const T = (fr, en) => isFr() ? fr : en;
@@ -193,7 +195,7 @@
     an = all >= 6 ? T(`<b>Les notes de marché ont-elles vu juste ?</b> ${ok} fois sur ${all} sur ${Object.keys(weeks).length} semaines ; dernier appel jugé : ${lastLine}.`, `<b>Did the market notes get it right?</b> ${ok} times out of ${all} over ${Object.keys(weeks).length} weeks; last call judged: ${lastLine}.`)
       : first ? T(`<b>Les notes de marché ont-elles vu juste ?</b> Bilan dès que 3 semaines d’appels auront été comparées aux prix (suivi depuis le ${new Date(first + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`,
         `<b>Did the market notes get it right?</b> The score shows once 3 weeks of calls can be checked against prices (tracked since ${new Date(first + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}).`) : '';
-    host.innerHTML = `<div class="why3">${R.map(([k, [tone, src, o], text]) => `<div class="why3-r"><span class="why3-k">${k}</span><span class="why3-b">${chip(tone)}<span class="why3-src">${src}</span></span><span>${text}${o ? `<span class="why3-next"><b>${T('Semaine à venir', 'Week ahead')} :</b> ${txt(o)}</span>` : ''}</span></div>`).join('')}${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
+    host.innerHTML = `<div class="why3">${R.map(([k, [tone, src, o], text]) => `<div class="why3-r"><span class="why3-k">${k}${chip(tone)}<span class="why3-src">${src}</span></span><span>${text}${o ? `<span class="why3-next"><b>${T('Semaine à venir', 'Week ahead')} :</b> ${txt(o)}</span>` : ''}</span></div>`).join('')}${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
   }
 
   async function next30(host) {
