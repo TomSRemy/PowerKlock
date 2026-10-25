@@ -2,95 +2,97 @@
  "open": 5,
  "notes": [
   {
-   "id": 6,
+   "id": 11,
    "status": "open",
-   "created_at": "2026-10-25T10:22+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Today",
-   "tab": null,
-   "target_id": "mrn-news",
-   "target_label": "In the news (block)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(2)",
-    "pk-zone": "Europe"
-   },
-   "body": "même taille que what moved and why",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 7,
-   "status": "open",
-   "created_at": "2026-10-25T10:23+00:00",
+   "created_at": "2026-10-25T10:26+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Today",
    "tab": "All",
-   "target_id": null,
-   "target_label": null,
+   "target_id": "mrn-kpis",
+   "target_label": "mrn-kpis (block)",
    "settings": {
     "_page": "morning",
+    "_path": "#mrn-kpis",
     "pk-zone": "Europe"
    },
-   "body": "TTF forward: pk pas mmeme taille que fr forward ?",
+   "body": "données CAl 28 et CAL 29 -> écrir CAR YY et un peu plus gros. Montrer évolution 7 days mais aussi J-1",
    "reply": null,
    "done_at": null
   },
   {
-   "id": 8,
+   "id": 12,
    "status": "open",
-   "created_at": "2026-10-25T10:23+00:00",
+   "created_at": "2026-10-25T10:27+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Today",
    "tab": "All",
-   "target_id": null,
-   "target_label": null,
+   "target_id": "mrn-brief",
+   "target_label": "What moved and why (block)",
    "settings": {
     "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
     "pk-zone": "Europe"
    },
-   "body": "GO a cote de TTf forward ? aucun sens",
+   "body": "GO: mettre les valeurs bourses mais aussi la valeur GO Auction FRance.",
    "reply": null,
    "done_at": null
   },
   {
-   "id": 9,
+   "id": 13,
    "status": "open",
-   "created_at": "2026-10-25T10:24+00:00",
+   "created_at": "2026-10-25T10:27+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Today",
    "tab": "All",
-   "target_id": "mrn-creg",
-   "target_label": "Capture rate by region (chart)",
+   "target_id": "hs-morning-4",
+   "target_label": "France production now (chart)",
    "settings": {
     "_page": "morning",
-    "_path": "#hs-body-morning-3 > div:nth-of-type(1) > div:nth-of-type(2)",
+    "_path": "#hs-morning-4",
     "pk-zone": "Europe"
    },
-   "body": "pk que le solaire and capture rate ? Et sur quel horizon de tmps ?",
+   "body": "il y a de la place pour d'uatres tuiles en haut",
    "reply": null,
    "done_at": null
   },
   {
-   "id": 10,
+   "id": 14,
    "status": "open",
-   "created_at": "2026-10-25T10:24+00:00",
+   "created_at": "2026-10-25T10:27+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Today",
    "tab": "All",
-   "target_id": "mrn-30d",
-   "target_label": "The next 4 weeks · France (block)",
+   "target_id": "mrn-spot",
+   "target_label": "France spot · today and tomorrow (chart)",
    "settings": {
     "_page": "morning",
-    "_path": "#mrn2 > section:nth-of-type(3)",
+    "_path": "#mrn2 > section:nth-of-type(1)",
     "pk-zone": "Europe"
    },
-   "body": "il y avait pas une autre arre à droite avant ?",
+   "body": "la prév à disparu ?? (quadn prev je veux le fond achuré parce que c'est top)",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 15,
+   "status": "open",
+   "created_at": "2026-10-25T10:37+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Tout",
+   "target_id": "mrn-brief",
+   "target_label": "Ce qui a bougé et pourquoi (bloc)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(1)",
+    "pk-zone": "Europe"
+   },
+   "body": "Aller a la ligne a chaque nouvelle ligne. \nexemple : \nFrance : XXX \nGolfe: XXX",
    "reply": null,
    "done_at": null
   },
@@ -183,6 +185,99 @@
    "body": "Il faut reréflchir aux graphs. Mettre le splus importants.",
    "reply": "Proposition en ligne. Gardés : spot par mois, France vs Allemagne, forwards France (historique + tableau), TTF calendrier, GO, taux de capture. Ajoutés : capture par région, production par mois, consommation vs normale. Retirés de Today (toujours sur leurs pages) : forwards sur le calendrier de livraison, tableau des forwards TTF. Dis-moi ce qui manque ou ce qui est de trop.",
    "done_at": "2026-10-25T10:10+00:00"
+  },
+  {
+   "id": 6,
+   "status": "done",
+   "created_at": "2026-10-25T10:22+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": null,
+   "target_id": "mrn-news",
+   "target_label": "In the news (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(2)",
+    "pk-zone": "Europe"
+   },
+   "body": "même taille que what moved and why",
+   "reply": "Fait : « Dans l’actualité » et « Ce qui a bougé et pourquoi » ont la même largeur (moitié-moitié).",
+   "done_at": "2026-10-25T10:38+00:00"
+  },
+  {
+   "id": 7,
+   "status": "done",
+   "created_at": "2026-10-25T10:23+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "morning",
+    "pk-zone": "Europe"
+   },
+   "body": "TTF forward: pk pas mmeme taille que fr forward ?",
+   "reply": "Fait : le TTF a la même ligne que la France : historique par produit + tableau des prix (jour, semaine), même hauteur.",
+   "done_at": "2026-10-25T10:38+00:00"
+  },
+  {
+   "id": 8,
+   "status": "done",
+   "created_at": "2026-10-25T10:23+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "morning",
+    "pk-zone": "Europe"
+   },
+   "body": "GO a cote de TTf forward ? aucun sens",
+   "reply": "Fait : les GO sont passées dans Renouvelables, à côté des prix de capture à terme.",
+   "done_at": "2026-10-25T10:38+00:00"
+  },
+  {
+   "id": 9,
+   "status": "done",
+   "created_at": "2026-10-25T10:24+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-creg",
+   "target_label": "Capture rate by region (chart)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(1) > div:nth-of-type(2)",
+    "pk-zone": "Europe"
+   },
+   "body": "pk que le solaire and capture rate ? Et sur quel horizon de tmps ?",
+   "reply": "Fait : deux sélecteurs sur la carte — solaire ou éolien, et la période (dernière année complète, 3 ans, 5 ans). Le sous-titre dit ce qui est affiché.",
+   "done_at": "2026-10-25T10:38+00:00"
+  },
+  {
+   "id": 10,
+   "status": "done",
+   "created_at": "2026-10-25T10:24+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Today",
+   "tab": "All",
+   "target_id": "mrn-30d",
+   "target_label": "The next 4 weeks · France (block)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > section:nth-of-type(3)",
+    "pk-zone": "Europe"
+   },
+   "body": "il y avait pas une autre arre à droite avant ?",
+   "reply": "Oui, c’était la jauge du nucléaire (passée dans les tuiles). À la place : le forward du mois prochain face au spot du mois en cours.",
+   "done_at": "2026-10-25T10:38+00:00"
   }
  ]
 }
