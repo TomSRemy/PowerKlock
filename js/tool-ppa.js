@@ -827,7 +827,7 @@
       { label: '30 days', data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
       { label: '90 days', data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
       { label: '365 days', data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
-      { label: 'Calendar year', data: annualPts, pointStyle: 'rect', pointHoverRadius: 9, pointRadius: 7, backgroundColor: '#F43F5E', borderColor: '#FFFFFF', borderWidth: 2, showLine: false },   // rose with a white edge: stands out from the solar (yellow) and wind (teal) lines; violet is nuclear
+      { label: 'Calendar year', data: annualPts, pointStyle: 'rect', pointHoverRadius: 8, pointRadius: 6, backgroundColor: 'rgba(241,245,249,.18)', borderColor: '#F1F5F9', borderWidth: 2, showLine: false },   // an outlined square: visible over the solar (yellow) and wind (teal) lines without shouting
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-rolling-capture-rate');
     if (has('rollEur')) _fuelChart(ids.rollEur, { type: 'line', data: { labels: L, datasets: [
       { label: 'Baseload, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].base != null ? Math.round(R.w365[i].base * 10) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.8, pointRadius: 0, fill: false },
