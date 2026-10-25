@@ -626,8 +626,9 @@ async function _mrnNews(el) {
   const sec = t => `<div class="mrn-sec" style="margin:10px 0 4px">${t}</div>`;
   host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">${_mT('Ce qui fait bouger le marché depuis ' + (span / 24) + ' jours, la France d’abord : géopolitique, régulation, nucléaire, transactions, nouvelles capacités, gaz', 'What moved the market over the last ' + (span / 24) + ' days, France first: geopolitics, regulation, nuclear, deals, new capacity, gas') +
     (kw.length ? _mT(', vos mots-clés ★ en tête', ', your ★ keywords first') : '') + _mT('. Vos votes (utile / pas utile) affinent la sélection.', '. Your votes (useful / not useful) teach the selection.')}</div>` +
-    (fr.length ? sec(_mT('France', 'France')) + '<ul class="mrn-movers">' + fr.slice(0, 9).map(li).join('') + '</ul>' : '') +
-    (world.length ? sec(_mT('Europe et monde', 'Europe and world')) + '<ul class="mrn-movers">' + world.slice(0, 4).map(li).join('') + '</ul>' : '') +
+    // France on the left, Europe and world on the right (one column below the tablet width)
+    '<div class="mrn-news-cols">' + (fr.length ? '<div>' + sec(_mT('France', 'France')) + '<ul class="mrn-movers">' + fr.slice(0, 8).map(li).join('') + '</ul></div>' : '') +
+    (world.length ? '<div>' + sec(_mT('Europe et monde', 'Europe and world')) + '<ul class="mrn-movers">' + world.slice(0, 8).map(li).join('') + '</ul></div>' : '') + '</div>' +
     (!fr.length && !world.length ? '<div class="fuel-note">' + _mT('Aucun article marquant ces derniers jours.', 'No market-moving article in the last days.') + '</div>' : '');
 }
 
@@ -1009,7 +1010,9 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap} .mrn3-tx>span:first-child{overflow:hidden;text-overflow:ellipsis} .mrn3-tx b{color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
   .mrn3-dim{color:var(--text3)}
   .mrn3-th{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
-  .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
+  .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}   /* what moved, full width (its tiles in one row), then the news, full width */
+  .mrn-news-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px}
+  @media (max-width:1100px){.mrn-news-cols{grid-template-columns:1fr}}
   .mrn3-tbl{height:320px;overflow:auto}
   .mrn3-sel{display:flex;gap:6px;margin-left:auto;margin-right:8px} .mrn3-sel select{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:3px 6px;font-size:12px}
   .mrn3-pair>section{margin:0;min-width:0}
