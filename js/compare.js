@@ -172,7 +172,7 @@
     if (scale === 'auto') {
       if (u.length === 1) { scale = 'raw'; why = T('même unité (' + u[0] + ') → un seul axe, valeurs réelles', 'one unit (' + u[0] + ') → one axis, actual values'); }
       else if (u.length === 2) { scale = 'dual'; why = T('deux unités → deux axes, valeurs réelles', 'two units → two axes, actual values'); }
-      else { scale = 'b100'; why = T(u.length + ' unités différentes → base 100 au début de la période', u.length + ' different units → base 100 at the start of the period'); }
+      else { scale = 'multi'; why = T(u.length + ' unités → un axe par unité, valeurs réelles', u.length + ' units → one axis per unit, actual values'); }
     }
     let type = st.type;
     if (type === 'auto') { type = 'line'; why += T(' · courbes (séries quotidiennes)', ' · lines (daily series)'); }
@@ -196,7 +196,11 @@
       return a;
     });
     const yTitle = { b100: T('base 100', 'base 100'), pct: T('% depuis le début', '% since start'), z: T('écarts-types', 'standard deviations') }[D.scale] || units[0];
-    const u2 = [...new Set(units)][1];
+    const u2 = [...new Set(units)][1], UN = [...new Set(units)];
+    // the value axes: one (raw, base 100…), two (dual) or one per unit (multi), each named by its unit
+    const axisOf = i => D.scale === 'dual' ? (units[i] === u2 ? 'y2' : 'y') : D.scale === 'multi' ? (UN.indexOf(units[i]) ? 'y' + (UN.indexOf(units[i]) + 1) : 'y') : 'y';
+    const yScales = () => D.scale === 'multi' ? Object.assign({ y: _fuelAxis(UN[0]) }, ...UN.slice(1).map((u, j) => ({ ['y' + (j + 2)]: _fuelAxis(u, { position: j % 2 ? 'left' : 'right', grid: { display: false } }) })))
+      : Object.assign({ y: _fuelAxis(yTitle) }, D.scale === 'dual' ? { y2: _fuelAxis(u2, { position: 'right', grid: { display: false } }) } : {});
     let cfg, sub;
     if (D.type === 'scatter' && sel.length >= 2) {
       const A = aligned(maps.slice(0, 2), from, to);
@@ -214,19 +218,28 @@
         `Slope: +1 ${units[0]} on ${label(sel[0])} ↔ ${N(b, 2)} ${units[1]} on ${label(sel[1])} · correlation of levels ${fmtR(r && r.lvl)}, of daily changes ${fmtR(r && r.r)} · ${n} days`);
     } else if (D.type === 'bar') {
       const months = [...new Set(all.map(d => d.slice(0, 7)))];
-      const ds = tr.map((a, i) => ({ type: 'bar', label: label(sel[i]), data: months.map(m => mean(a.filter((x, j) => all[j].startsWith(m)))), backgroundColor: COLORS[i % 8], borderWidth: 0,
-        yAxisID: D.scale === 'dual' && units[i] === u2 ? 'y2' : 'y' }));
-      cfg = { type: 'bar', data: { labels: months, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis(), y: _fuelAxis(yTitle) }, D.scale === 'dual' ? { y2: _fuelAxis(u2, { position: 'right', grid: { display: false } }) } : {}) }) };
+      const ds = tr.map((a, i) => ({ type: 'bar', label: label(sel[i]), data: months.map(m => mean(a.filter((x, j) => all[j].startsWith(m)))), backgroundColor: COLORS[i % 8], borderWidth: 0, yAxisID: axisOf(i) }));
+      cfg = { type: 'bar', data: { labels: months, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis() }, yScales()) }) };
       sub = T('Moyennes mensuelles', 'Monthly averages') + ' · ' + months[0] + ' → ' + months[months.length - 1];
     } else {
-      const ds = tr.map((a, i) => _fuelLineDs(label(sel[i]) + (D.scale === 'raw' || D.scale === 'dual' ? ' (' + units[i] + ')' : ''), a, COLORS[i % 8],
-        { borderWidth: i === 0 ? 2.4 : 1.8, yAxisID: D.scale === 'dual' && units[i] === u2 ? 'y2' : 'y' }));
-      cfg = { type: 'line', data: { labels: all, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis(), y: _fuelAxis(yTitle) }, D.scale === 'dual' ? { y2: _fuelAxis(u2, { position: 'right', grid: { display: false } }) } : {}) }) };
+      const ds = tr.map((a, i) => _fuelLineDs(label(sel[i]) + (D.scale === 'raw' || D.scale === 'dual' || D.scale === 'multi' ? ' (' + units[i] + ')' : ''), a, COLORS[i % 8],
+        { borderWidth: i === 0 ? 2.4 : 1.8, yAxisID: axisOf(i) }));
+      cfg = { type: 'line', data: { labels: all, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis() }, yScales()) }) };
       // headline: where each series ends against where it started
       const moves = raw.map((a, i) => { const f = first(a), l = [...a].reverse().find(x => x != null); return f && l ? label(sel[i]) + ' ' + (l / f >= 1 ? '×' + N(l / f, 2) : (l / f - 1) * 100 > -100 ? N((l / f - 1) * 100, 0) + ' %' : '') : null; }).filter(Boolean);
       sub = all[0] + ' → ' + all[all.length - 1] + ' · ' + moves.join(' · ');
     }
-    return { cfg, sub, why: D.why, maps, from, to, all, raw };
+    // political and market events of the window (data/market_events.json): a dashed line each, numbered
+    const ME = st.events !== false && D.type === 'line' ? await json('mevents', 'market_events.json') : null;
+    const evs = ME && ME.events ? ME.events.filter(e => e.d >= all[0] && e.d <= all[all.length - 1]) : [];
+    if (evs.length && cfg.options) {
+      const ann = {};
+      evs.forEach((e, i) => { const x = all.find(d => d >= e.d); if (!x) return;
+        ann['ev' + i] = { type: 'line', xMin: x, xMax: x, borderColor: 'rgba(122,147,171,.7)', borderWidth: 1, borderDash: [4, 4],
+          label: { display: true, content: String(i + 1), position: 'start', backgroundColor: 'rgba(122,147,171,.9)', color: '#0B1118', font: { size: 10, weight: 'bold' }, padding: { x: 5, y: 2 }, borderRadius: 8 } }; });
+      cfg.options.plugins = Object.assign({}, cfg.options.plugins, { annotation: { annotations: ann } });
+    }
+    return { cfg, sub, why: D.why, maps, from, to, all, raw, evs, cats: ME ? ME.categories || {} : {} };
   }
 
   // ── render ──
@@ -245,6 +258,9 @@
     if (main) main.textContent = B.sub;
     LAST = B;
     _fuelChart('cmp-chart', B.cfg, 'comparator');
+    const EV = document.getElementById('cmp-events');
+    if (EV) EV.innerHTML = B.evs && B.evs.length ? '<ol class="cmp-evs">' + B.evs.map(e => { const c = B.cats[e.cat] || [e.cat, e.cat];
+      return `<li><span class="cmp-dates">${e.d}</span><b>${esc(T(c[0], c[1]))} · ${esc(T(e.fr, e.en))}</b><span>${esc(T(e.why_fr, e.why_en))}${e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.src || 'source')}</a>` : ''}</span></li>`; }).join('') + '</ol>' : '';
     analyse(B.maps, B.from, B.to);
     watch();
   }
@@ -430,6 +446,8 @@
   .cmp-wt{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text2);font:12.5px Inter,sans-serif;cursor:pointer}
   .cmp-wt:hover{border-color:var(--accent)} .cmp-wt b{font:600 13px 'JetBrains Mono',monospace;color:var(--text)} .cmp-wt em{font-style:normal;font-size:11.5px;color:var(--text3)}
   .cmp-wt.brk{border-color:var(--down)} .cmp-wt.brk em{color:var(--down);font-weight:600}
+.cmp-evs{margin:10px 0 0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--text2)} .cmp-evs li{padding-left:4px}
+  .cmp-evs b{color:var(--text);font-weight:600;margin:0 6px} .cmp-evs a{color:var(--accent)}
   .cmp-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px} @media (max-width:1100px){.cmp-grid2{grid-template-columns:1fr}}
   `;
   document.head.appendChild(css);
