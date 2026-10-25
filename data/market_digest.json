@@ -1,41 +1,44 @@
 {
- "updated": "2026-10-25T07:10:39+00:00",
+ "updated": "2026-10-25T07:27:29+00:00",
  "asof": "2026-10-25",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec une indisponibilité révisée à 20,7 GW pour le reste d'octobre, et des sorties et extensions de réacteurs ajoutées en novembre. Cela pousse les prix à la hausse.",
+   "topic_en": "France",
+   "text": "La disponibilité nucléaire en France est en baisse, avec une disponibilité révisée à 40,9 GW pour le reste d'octobre, ce qui pousse les prix à la hausse. La consommation d'électricité est également influencée par les conditions météorologiques.",
+   "text_en": "French nuclear availability is decreasing, with a revised availability of 40.9 GW for the rest of October, pushing prices up. Electricity consumption is also influenced by weather conditions.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
-   "text": "Les tensions dans le Golfe, avec des attaques de la part des Houthis, maintiennent la pression sur les prix du pétrole et du gaz, en raison des risques de perturbation de l'approvisionnement.",
-   "tone": "up"
-  },
-  {
-   "topic": "Norvège",
-   "text": "La baisse des imports de gaz norvégien, couplée à une demande accrue pour le chauffage et la production d'électricité, crée une pression supplémentaire sur le marché du gaz.",
+   "topic_en": "Gulf",
+   "text": "Les tensions dans le Golfe persistent, avec des attaques de la part des Houthis contre des cibles saoudiennes, ce qui maintient les prix du pétrole à un niveau élevé.",
+   "text_en": "Tensions in the Gulf persist, with Houthi attacks on Saudi targets, keeping oil prices at a high level.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Risques de perturbation de l'approvisionnement"
+   "text": "Les prix du pétrole devraient rester élevés en raison des tensions dans le Golfe",
+   "text_en": "Oil prices are expected to remain high due to Gulf tensions"
   },
   "gas": {
    "tone": "up",
-   "text": "Tensions dans le Golfe"
+   "text": "Les prix du gaz devraient augmenter en raison de la baisse des imports norvégiens et de la hausse de la demande",
+   "text_en": "Gas prices are expected to rise due to decreased Norwegian imports and increased demand"
   },
   "power": {
    "tone": "up",
-   "text": "Baisse de disponibilité nucléaire en France"
+   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de la disponibilité nucléaire et des conditions météorologiques",
+   "text_en": "Power prices are expected to rise due to decreased nuclear availability and weather conditions"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Pas de facteur notable"
+   "text": "Les prix du carbone devraient rester stables",
+   "text_en": "Carbon prices are expected to remain stable"
   }
  }
 }
