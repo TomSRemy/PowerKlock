@@ -502,8 +502,8 @@
 
   /* France Morning (home page): blocks filled when their data arrives keep their room, so the page does not jump (CLS).
      In the page's CSS, not in js/morning.js: the page is painted before the scripts run */
-  #mrn-kpis{min-height:112px} #mrn-keys{min-height:84px} #mrn-news{min-height:200px} #mrn-brief{min-height:540px} #mrn-30d{min-height:200px}
-  @media (max-width:760px){ #mrn-kpis{min-height:350px} #mrn-keys{min-height:220px} #mrn-news{min-height:560px} #mrn-brief{min-height:1300px} #mrn-30d{min-height:420px} }
+  #mrn-days{min-height:96px} #mrn-kpis{min-height:126px} #mrn-news{min-height:200px} #mrn-brief{min-height:300px} #mrn-30d{min-height:170px}
+  @media (max-width:760px){ #mrn-days{min-height:300px} #mrn-kpis{min-height:420px} #mrn-news{min-height:560px} #mrn-brief{min-height:700px} #mrn-30d{min-height:400px} }
   .page { display: none; padding: 20px; }
   .page.active { display: block; }
   .page.active { display: block; }
