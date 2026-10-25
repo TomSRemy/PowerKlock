@@ -2911,16 +2911,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="rp-wrap" id="rp-root">
         <div class="rp-ctl" id="rp-ctl"></div>
-        <div class="rp-days" id="rp-days"></div>
-        <div class="rp-stage"><canvas id="rp-canvas" width="1280" height="720" aria-label="Replay of the day"></canvas></div>
+        <div class="rp-stage" id="rp-stage"><canvas id="rp-canvas" width="1280" height="720" aria-label="Replay of the day"></canvas></div>
         <div class="rp-bar">
           <button type="button" class="pk-btn-primary" id="rp-play" aria-pressed="false">Play</button>
           <span class="cmp-dates" id="rp-time">--:--</span>
           <input type="range" id="rp-scrub" min="0" max="95" value="95" aria-label="Time of day">
+          <button type="button" class="pk-btn-ghost" id="rp-full">Full screen</button>
           <button type="button" class="pk-btn-ghost" id="rp-export">Export video</button>
         </div>
         <p class="cmp-note" id="rp-note"></p>
         <div class="rp-events" id="rp-events"></div>
+        <div class="rp-days" id="rp-days"></div>
       </div>
     </div>
     <div class="page" id="page-compare">
