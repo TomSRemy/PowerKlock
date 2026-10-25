@@ -34,15 +34,21 @@ jobs:
         with:
           python-version: '3.12'
       - name: Fetch
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}   # France load forecast for tomorrow before Energy-Charts serves it
         run: |
           if [ "${{ github.event.schedule }}" = "15 6 * * *" ] || [ "${{ inputs.accuracy }}" = "true" ]; then
             python scripts/fetch_forecast.py --accuracy
           else
             python scripts/fetch_forecast.py
           fi
-      - name: Negative prices, today and tomorrow
-        run: pip install -q numpy==2.5.4 && python scripts/neg_forecast.py || echo "::warning::negative-price forecast failed"
+      # our solar and wind first (tomorrow runs on weather alone until the TSO publishes, late afternoon), then the
+      # price model on them, then our forecast again with the fresh chance of a negative price
       - name: PowerKlock combined solar and wind forecast (France)
+        run: pip install -q numpy==2.5.4 && cd scripts && python fcst_live.py || echo "::warning::combined forecast failed"
+      - name: Negative prices, today and tomorrow
+        run: python scripts/neg_forecast.py || echo "::warning::negative-price forecast failed"
+      - name: Combined forecast, second pass
         run: cd scripts && python fcst_live.py || echo "::warning::combined forecast failed"
       - name: Commit and push
         run: |
