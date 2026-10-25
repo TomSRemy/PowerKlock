@@ -210,18 +210,18 @@ def walk(rows, tech, wts):
     return rows
 
 
-def band(rows, tech):
-    """P10 / P90 of the error of the combined forecast, by level of the forecast (5 bins), walk-forward errors"""
-    rr = [r for r in rows if r.get('stack') is not None and (tech != 'solar' or r['cs'] > 0)]
+def band(rows, tech, key='stack'):
+    """P10 / P90 of the error of the combined forecast (or another model `key`), by level of the forecast (5 bins), walk-forward errors"""
+    rr = [r for r in rows if r.get(key) is not None and (tech != 'solar' or r['cs'] > 0)]
     edges = [0, 0.05, 0.15, 0.3, 0.5, 1.01]
     out = []
     for a, b in zip(edges, edges[1:]):
-        e = np.array([r['y'] - r['stack'] for r in rr if a <= r['stack'] < b])
+        e = np.array([r['y'] - r[key] for r in rr if a <= r[key] < b])
         if len(e) < 50:
             out.append([a, b, 0.0, 0.0]); continue
         out.append([a, b, round(float(np.quantile(e, 0.1)), 4), round(float(np.quantile(e, 0.9)), 4)])
     def cover(r):
-        q = next(x for x in out if x[0] <= r['stack'] < x[1]); return r['stack'] + q[2] <= r['y'] <= r['stack'] + q[3]
+        q = next(x for x in out if x[0] <= r[key] < x[1]); return r[key] + q[2] <= r['y'] <= r[key] + q[3]
     return out, round(float(np.mean([cover(r) for r in rr])), 3)
 
 
@@ -261,6 +261,10 @@ def main():
         q, cov = band(rows, tech)
         out['live'][tech] = {'beta': [round(float(x), 6) for x in fit(tr, tech, wts, 'stack', now)], 'points': list(POINTS), 'weights': [round(float(x), 5) for x in wts],
                              'models': list(M_SOLAR if tech == 'solar' else M_WIND), 'band': q, 'coverage': cov, 'fitted_to': last}
+        # weather only (no TSO input): what runs for tomorrow before the TSO forecasts are published (late afternoon)
+        q3, cov3 = band(rows, tech, 'n3')
+        out['live'][tech]['n3'] = {'beta': [round(float(x), 6) for x in fit(tr, tech, wts, 'n3', now)], 'band': q3, 'coverage': cov3,
+                                   'nmae': round(res['n3']['nmae'] * 100, 2)}
         print(tech, 'band', q, 'coverage', cov)
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))

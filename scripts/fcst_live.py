@@ -8,6 +8,10 @@ of data/forecast.json. Walk-forward since 2024, it beats the TSO forecast alone:
 2.6 vs 2.9 % of installed capacity. Band = P10 / P90 of its past errors at the same level (80 % of the hours
 fell inside it).
 
+Before the TSO publishes tomorrow's forecast (late afternoon), tomorrow runs on the weather-only variant
+("n3", same physics, no TSO input; walk-forward: solar 4.0 vs TSO 4.3 %, wind 3.1 vs 2.9 %), flagged
+"weatherOnly", so the price model can run in the morning; the evening runs take the TSO input back.
+
 The day-ahead price enters the model (curtailment at negative prices); before the auction, the chance of
 a negative price (data/neg_forecast.json) stands in for it.
 
@@ -16,7 +20,8 @@ Writes data/fr_fc_combined.json        python scripts/fcst_live.py
 import json
 import os
 import urllib.parse
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
@@ -50,7 +55,8 @@ def main():
     nat = load('data/history/fcst_national.json'); fc = load('data/forecast.json')
     if not nat or 'live' not in nat or not fc:
         raise SystemExit('model or TSO forecast missing')
-    days = sorted(fc['zones']['FR']['days'])
+    today = datetime.now(ZoneInfo('Europe/Paris')).date()
+    days = sorted(set(fc['zones']['FR']['days']) | {today.isoformat(), (today + timedelta(days=1)).isoformat()})
     neg = (load('data/neg_forecast.json') or {}).get('days', {})
     prices = {}
     for y in {d[:4] for d in days}:
@@ -72,16 +78,21 @@ def main():
         r_ = nat['results'][tech]
         out['skill'][tech] = {'combined': round(r_['stack']['nmae'] * 100, 2), 'tso': round(r_['ent']['nmae'] * 100, 2), 'coverage': L['coverage']}
         for d in days:
-            z = fc['zones']['FR']['days'][d]
+            z = fc['zones']['FR']['days'].get(d) or {}
             ent = hourly(z.get(tech))
+            weather_only = False
             C = cap('solarGW' if tech == 'solar' else 'windGW', date.fromisoformat(d)) * 1000
             pr = prices.get(d) or [None] * 24
             np_ = (neg.get(d) or {}).get('prob') or [None] * 24
             mid, lo, hi = [], [], []
             for h in range(24):
                 t = f'{d}T{h:02d}:00'
-                if t not in T or ent[h] is None:
+                if t not in T:
                     mid.append(None); lo.append(None); hi.append(None); continue
+                kind = 'stack' if ent[h] is not None else 'n3'   # no TSO forecast for that hour yet: weather only
+                if kind == 'n3' and 'n3' not in L:
+                    mid.append(None); lo.append(None); hi.append(None); continue
+                weather_only = weather_only or kind == 'n3'
                 i = T.index(t)
                 M = []
                 for m in models:
@@ -103,14 +114,17 @@ def main():
                 per = M @ wts
                 cs = FB.clear_sky_ghi(t, 46.5)
                 r = {'m': int(d[5:7]), 'mu': float(per.mean()), 'sd': float(per.std()), 'n0': float(per[0]), 'cs': cs, 'M': M,
-                     'p': pr[h] if pr and h < len(pr) else None, 'negp': None, 'ent': ent[h] / C}
+                     'p': pr[h] if pr and h < len(pr) else None, 'negp': None, 'ent': ent[h] / C if ent[h] is not None else 0.0}
                 if r['p'] is None and np_[h] is not None:
                     r['negp'] = np_[h]
-                y = 0.0 if tech == 'solar' and cs <= 0 else float(min(1.0, max(0.0, np.array(N.feats(r, tech, wts, 'stack')) @ beta)))
-                q = next((b for b in L['band'] if b[0] <= y < b[1]), L['band'][-1])
+                bk, bd = (beta, L['band']) if kind == 'stack' else (np.array(L['n3']['beta']), L['n3']['band'])
+                y = 0.0 if tech == 'solar' and cs <= 0 else float(min(1.0, max(0.0, np.array(N.feats(r, tech, wts, kind)) @ bk)))
+                q = next((b for b in bd if b[0] <= y < b[1]), bd[-1])
                 mid.append(round(y * C)); lo.append(round(max(0.0, y + q[2]) * C)); hi.append(round(min(1.0, y + q[3]) * C))
             o = out['days'].setdefault(d, {})
             o[tech] = {'mid': mid, 'p10': lo, 'p90': hi, 'tso': [None if x is None else round(x) for x in ent]}
+            if weather_only:
+                o[tech]['weatherOnly'] = True
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
     print({d: {t: round(sum(x or 0 for x in v[t]['mid']) / 1000, 1) for t in v} for d, v in out['days'].items()}, out['skill'])

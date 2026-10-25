@@ -18,6 +18,10 @@ Writes
                                      per zone and day (the archive behind the
                                      accuracy figures)
 
+France, tomorrow, before Energy-Charts has it: the TSO load forecast straight from ENTSO-E (A65,
+published around 10:00, needs ENTSOE_TOKEN); wind and solar come in the late afternoon only, so the
+morning price model uses PowerKlock's weather forecast for them (scripts/fcst_live.py, neg_forecast.py).
+
 Usage
   python scripts/fetch_forecast.py               # yesterday, today and tomorrow (once published)
   python scripts/fetch_forecast.py --accuracy    # + the last 30 days, actuals and error
@@ -25,6 +29,8 @@ Usage
 import argparse
 import json
 import os
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -57,6 +63,46 @@ def paris_days(unix, values):
             if i + k < 96:
                 arr[i + k] = v if arr[i + k] is None else arr[i + k]
     return out
+
+
+def entsoe_load(day):
+    """France day-ahead load forecast (ENTSO-E A65) for a Paris day → [96] MW, or None"""
+    tok = os.environ.get('ENTSOE_TOKEN')
+    if not tok:
+        return None
+    a = datetime(day.year, day.month, day.day, tzinfo=PARIS).astimezone(timezone.utc)
+    b = (datetime(day.year, day.month, day.day, tzinfo=PARIS) + timedelta(days=1)).astimezone(timezone.utc)
+    url = ('https://web-api.tp.entsoe.eu/api?securityToken=' + tok + '&documentType=A65&processType=A01'
+           '&outBiddingZone_Domain=10YFR-RTE------C&periodStart=' + a.strftime('%Y%m%d%H%M') + '&periodEnd=' + b.strftime('%Y%m%d%H%M'))
+    try:
+        root = ET.fromstring(urllib.request.urlopen(url, timeout=60).read())
+    except Exception as e:
+        print('ENTSO-E load:', e)
+        return None
+    loc = lambda e: e.tag.split('}')[-1]
+    unix, vals = [], []
+    for per in (e for e in root.iter() if loc(e) == 'Period'):
+        st = res = None
+        for e in per.iter():
+            if loc(e) == 'start' and st is None:
+                st = datetime.strptime(e.text.strip(), '%Y-%m-%dT%H:%MZ').replace(tzinfo=timezone.utc)
+            elif loc(e) == 'resolution':
+                res = e.text.strip()
+        step = {'PT15M': 15, 'PT30M': 30, 'PT60M': 60}.get(res, 60)
+        for pt in (e for e in per if loc(e) == 'Point'):
+            pos = q = None
+            for c in pt:
+                if loc(c) == 'position':
+                    pos = int(c.text)
+                elif loc(c) == 'quantity':
+                    q = float(c.text)
+            if pos is not None and q is not None:
+                for k in range(step // 15):   # spread on quarter-hours
+                    unix.append((st + timedelta(minutes=step * (pos - 1) + 15 * k)).timestamp()); vals.append(q)
+    if not unix:
+        return None
+    arr = paris_days(unix, vals).get(day.isoformat())
+    return [None if x is None else round(x) for x in arr] if arr and sum(x is not None for x in arr) >= 80 else None
 
 
 def add(a, b):
@@ -202,6 +248,13 @@ def main():
                 print(f'{zone}: accuracy error {e}')
         else:
             archive(zone, fc, {})
+        if zone == 'FR':   # tomorrow's load before Energy-Charts serves it
+            tm = today + timedelta(days=1)
+            row = fc.get(tm.isoformat()) or {}
+            if not row.get('load'):
+                ld = entsoe_load(tm)
+                if ld:
+                    fc[tm.isoformat()] = {'solar': row.get('solar'), 'wind': row.get('wind'), 'load': ld, 'loadFrom': 'ENTSO-E A65'}
         acc = accuracy(zone, today) or prev.get('accuracy') or {}
         days = {d: v for d, v in fc.items() if d >= today.isoformat() or d == (today - timedelta(days=1)).isoformat()}
         out['zones'][zone] = {'days': days, 'accuracy': acc, 'last_day': max(days) if days else None}

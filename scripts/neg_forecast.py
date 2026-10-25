@@ -246,8 +246,18 @@ def main():
     def hr(a):
         step = len(a) // 24 or 1
         return [None if not [x for x in a[h * step:(h + 1) * step] if x is not None] else sum(x for x in a[h * step:(h + 1) * step] if x is not None) / len([x for x in a[h * step:(h + 1) * step] if x is not None]) for h in range(24)]
+    # tomorrow in the morning: the TSO load is out (ENTSO-E), wind and solar only late afternoon → PowerKlock's weather
+    # forecast for them (data/fr_fc_combined.json, scripts/fcst_live.py), flagged in the output
+    try:
+        comb = json.load(open(os.path.join(ROOT, 'data', 'fr_fc_combined.json'))).get('days', {})
+    except (OSError, ValueError):
+        comb = {}
     for d in sorted(fr):
-        z = fr[d]
+        z = dict(fr[d]); src = 'tso'
+        for k in ('solar', 'wind'):
+            mid = ((comb.get(d) or {}).get(k) or {}).get('mid')
+            if not z.get(k) and mid and sum(x is not None for x in mid) >= 20:
+                z[k] = mid; src = 'weather'
         if not all(k in z and z[k] for k in ('solar', 'wind', 'load')):
             continue
         s_, w_, l_ = hr(z['solar']), hr(z['wind']), hr(z['load'])
@@ -258,7 +268,7 @@ def main():
         pr = [None if None in (s_[h], w_[h], l_[h]) or not l_[h] else round(float(predict(b, np.array([feats(d, h, s_[h], w_[h], l_[h], nav, de)]))[0]), 3) for h in range(24)]
         pp = [None if None in (s_[h], w_[h], l_[h]) else price_feats(hist, PF[1], d, h, s_[h], w_[h], l_[h], nav, de) for h in range(24)]
         price = [None if f is None else round(float(np.array(f) @ PF[0]), 1) for f in pp]
-        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav), 'price': price,
+        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav), 'price': price, 'inputs': src,
                        'actual': rawp.get(d)}
     out = {'updated': fc.get('updated'), 'method': __doc__.split('\n\n')[1].replace('\n', ' '),
            'source': 'RTE éCO2mix (history) · ENTSO-E day-ahead forecasts via Energy-Charts · ENTSO-E day-ahead prices',
