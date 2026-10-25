@@ -27,6 +27,7 @@
   'use strict';
 
   const CATEGORIES = [
+    ['today', 'Today'],
     ['kpi', 'Key figures'],
     ['prices', 'Day-ahead prices'],
     ['france', 'France'],
