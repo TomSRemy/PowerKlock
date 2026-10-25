@@ -14789,7 +14789,13 @@
     config.options = config.options || {};
     const opts = config.options;
     if (opts.plugins && opts.plugins.pkHoverReadout === false) return config;
-    if (opts.indexAxis === 'y') return config;   // horizontal bars: the normal tooltip (see isActive)
+    if (opts.indexAxis === 'y') {   // horizontal bars: Chart.js's tooltip (see isActive), dressed like the site's readout box
+      opts.plugins = opts.plugins || {};
+      opts.plugins.tooltip = Object.assign({ enabled: true, backgroundColor: BAND_BG, borderColor: BAND_BORDER, borderWidth: 1, cornerRadius: 4, padding: 9, caretSize: 0,
+        titleFont: { family: "'JetBrains Mono', monospace", size: 11, weight: '600' }, titleColor: TX2, titleMarginBottom: 6,
+        bodyFont: { family: "'JetBrains Mono', monospace", size: 11 }, bodyColor: '#FFFFFF', boxWidth: 8, boxHeight: 8, boxPadding: 7, usePointStyle: false }, opts.plugins.tooltip || {});
+      return config;
+    }
     opts.plugins = opts.plugins || {};
     opts.plugins.tooltip = Object.assign({}, opts.plugins.tooltip, { enabled: false });
     return config;
