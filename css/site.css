@@ -3344,3 +3344,14 @@ tr.mrn-wrow:hover td, tr.mrn-wrow:hover th, tr.mrn-wrow:focus-visible td, tr.mrn
 .mrn-wgo { color: var(--accent, #14D3A9); opacity: .5; font-size: 12px; margin-left: 4px; }
 tr.mrn-wrow:hover .mrn-wgo { opacity: 1; }
 tr.mrn-wrow[data-tile="idx"] th, tr.mrn-wrow[data-tile="idx"] td { border-top: 1px dashed var(--border2, rgba(255,255,255,.15)); }
+/* Today › Fundamentals: the index as a calculation */
+.mrn-fund-calc { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+.fd-t { flex: 1 1 150px; border: 1px solid var(--border, rgba(255,255,255,.08)); border-radius: 10px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; background: var(--bg2, rgba(255,255,255,.02)); }
+.fd-n { font-size: 11.5px; color: var(--text3); }
+.fd-v { font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fd-v small { font-size: 12px; color: var(--text3); font-weight: 500; margin-left: 3px; }
+.fd-s { font-size: 11.5px; color: var(--text2); }
+.fd-s i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin: 0 2px 0 4px; }
+.fd-res { border-color: var(--accent, #14D3A9); background: rgba(20,211,169,.08); }
+.fd-op { align-self: center; font: 600 16px 'JetBrains Mono', monospace; color: var(--text3); }
+.mrn-fund-grp { font: 600 11px 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--accent, #14D3A9); margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); }

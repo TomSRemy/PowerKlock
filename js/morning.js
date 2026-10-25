@@ -314,10 +314,10 @@ function _mrnAhead(I, rted, P, wxo, fmo) {
     const load = o.load / o.n - (tn != null && tn < 16 ? 2400 * (t - tn) : 0);
     const cov = (nuc + o.hydro / o.n + o.bio / o.n + w / 24 * 1000 + so / 24 * 1000) / load * 100;
     const wd = new Date(d + 'T12:00:00Z').getUTCDay(), we = wd === 0 || wd === 6 ? 1 : 0;
-    out.push({ d, cov, fair: srmc / (1 + Math.exp(-(I.A - I.B * (cov - 100)))) * (1 - I.Wk * we) }); });
+    out.push({ d, cov, fair: srmc / (1 + Math.exp(-(I.A - I.B * (cov - 100)))) * (1 - I.Wk * we), load, nuc, hydro: o.hydro / o.n, bio: o.bio / o.n, wind: w / 24 * 1000, solar: so / 24 * 1000 }); });
   if (!out.length) return null;
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
-  const weeks = []; for (let i = 0; i < out.length; i += 7) { const w = out.slice(i, i + 7); if (w.length >= 4) weeks.push({ from: w[0].d, fair: mean(w.map(x => x.fair)), cov: mean(w.map(x => x.cov)) }); }
+  const weeks = []; for (let i = 0; i < out.length; i += 7) { const w = out.slice(i, i + 7); if (w.length >= 4) weeks.push(Object.assign({ from: w[0].d }, ...['fair', 'cov', 'load', 'nuc', 'hydro', 'bio', 'wind', 'solar'].map(k => ({ [k]: mean(w.map(x => x[k])) })))); }
   // the month after this one, as far as the outlook reaches, against its forward
   const nm = Object.keys((fmo && fmo.months) || {}).sort()[0], inM = nm ? out.filter(x => x.d.startsWith(nm)) : [];
   return { days: out, weeks, fair4: mean(out.slice(0, 28).map(x => x.fair)), cov4: mean(out.slice(0, 28).map(x => x.cov)),
@@ -396,6 +396,28 @@ function _mrnSpotChart(k, cid, prob) {
 }
 
 // ── tiles: France Cal+1 (Cal+2 and +3 in its footer), TTF, EUA, Brent, renewable GO, nuclear available; a click opens the page behind ──
+// ── Fundamentals: the PowerKlock index as a calculation, then week by week the low-carbon supply against demand ──
+function _mrnFund(k) {
+  const calc = document.getElementById('mrn-fund-calc'), A = k.idx && k.idx.ahead; if (!calc) return;
+  if (!A || !A.weeks.length) { calc.innerHTML = '<div class="fuel-note">' + _mT('Indice indisponible.', 'Index not available.') + '</div>'; return; }
+  const W = A.weeks.slice(0, 4), m = f => W.reduce((a, w) => a + w[f], 0) / W.length, G = v => _mN(v / 1000, 1), sp7 = _mrnMean(k.spotDays.slice(-7).map(r => r.avg)), M = A.month;
+  const ttf = _mrnLast(k.P('ttf')), eua = _mrnLast(k.P('eua'));
+  const supply = m('nuc') + m('hydro') + m('bio') + m('wind') + m('solar');
+  const term = (n, v, u, s, cls) => `<div class="fd-t${cls ? ' ' + cls : ''}"><span class="fd-n">${n}</span><span class="fd-v">${v}<small>${u}</small></span><span class="fd-s">${s}</span></div>`, op = o => `<span class="fd-op">${o}</span>`;
+  calc.innerHTML = term(_mT('Demande prévue', 'Expected demand'), G(m('load')), 'GW', _mT('normale 2023–25, corrigée de la température', 'normal 2023–25, temperature-corrected')) + op('vs') +
+    term(_mT('Offre bas carbone', 'Low-carbon supply'), G(supply), 'GW', `<i style="background:#A98BD4"></i>${G(m('nuc'))} <i style="background:#3FA6B4"></i>${G(m('hydro'))} <i style="background:#14D3A9"></i>${G(m('wind'))} <i style="background:#FBBF24"></i>${G(m('solar'))} <i style="background:#94D2BD"></i>${G(m('bio'))}`) + op('=') +
+    term(_mT('Couverture', 'Coverage'), _mN(A.cov4, 0), '%', A.cov4 >= 100 ? _mT('au-dessus de 100 % : peu de gaz appelé', 'above 100 %: little gas needed') : _mT('sous 100 % : le gaz fixe le prix', 'below 100 %: gas sets the price')) + op('×') +
+    term(_mT('Coût d’une centrale gaz', 'Gas plant cost'), _mN(A.srmc, 0), '€/MWh', `TTF ${ttf ? _mN(ttf[1], 1) : '–'} ÷ 0,55 + 0,37 × EUA ${eua ? _mN(eua[1], 1) : '–'}`) + op('→') +
+    term(_mT('Spot attendu, 4 sem.', 'Expected spot, 4 wks'), _mN(A.fair4, 0), '€/MWh', (sp7 ? _mT('vs ', 'vs ') + _mN(sp7, 0) + _mT(' € les 7 derniers jours', ' € the last 7 days') : '') + (M ? ' · ' + _mT('forward ', 'forward ') + M.m.slice(5) + '/' + M.m.slice(2, 4) + ' ' + _mN(M.fwd, 0) + ' €' : ''), 'fd-res');
+  if (!window._fuelChart) return;
+  const wn = iso => { const t = new Date(iso + 'T12:00:00Z'), j = new Date(Date.UTC(t.getUTCFullYear(), 0, 4)); return 1 + Math.round(((t - j) / 864e5 - 3 + ((j.getUTCDay() + 6) % 7)) / 7); };
+  const L = W.map(w => _mT('Sem. ', 'Wk ') + wn(w.from)), g = f => W.map(w => Math.round(w[f] / 100) / 10);
+  const bar = (lab, f, c) => ({ type: 'bar', label: lab, data: g(f), backgroundColor: c, stack: 's', borderWidth: 0, borderRadius: 2, order: 2, barPercentage: .62 });
+  _fuelChart('mrn-fund-stack', { type: 'bar', data: { labels: L, datasets: [bar(_mT('Nucléaire', 'Nuclear'), 'nuc', '#7B4B9C'), bar(_mT('Hydraulique', 'Hydro'), 'hydro', '#3FA6B4'), bar(_mT('Bioénergies', 'Bioenergy'), 'bio', '#94D2BD'), bar(_mT('Éolien', 'Wind'), 'wind', '#14D3A9'), bar(_mT('Solaire', 'Solar'), 'solar', '#FBBF24'),
+    { type: 'line', label: _mT('Demande prévue', 'Expected demand'), data: g('load'), borderColor: '#E6EDF3', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#E6EDF3', tension: 0, order: 1, stack: 'd' }] },
+    options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
+      scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX2, font: { size: 11 }, callback: (v, i) => [L[i], _mN(W[i].fair, 0) + ' € · ' + _mN(W[i].cov, 0) + ' %'] } }), y: _fuelAxis('GW', { stacked: true, beginAtZero: true }) } }) }, 'fundamentals-stack');
+}
 // ── negative prices: a bar at the top of Today when today or tomorrow has hours at 0 € or below (or the forecast expects some),
 //    with the hours, the lowest price and a way to get the e-mail alert ──
 // ── your site: the last carbon footprint computed in this browser (Tools › Carbon footprint), or the way in ──
@@ -833,7 +855,7 @@ async function renderMorning() {
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnFacts().then(k => {
     MRN.k = k;
-    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard();
+    _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard(); _mrnFund(k);
     _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
