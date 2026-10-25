@@ -16,7 +16,7 @@
     "pk-zone": "France"
    },
    "body": "l'outil empreinte carbone est aps très sexy pour un utilisateur. Pas easy access.",
-   "reply": "D’accord, à refaire : je propose un parcours en 3 étapes (déposer la courbe → 4 chiffres clés en grand → détails par onglet) et un accès depuis Aujourd’hui et le menu Outils. Je vous montre une maquette avant de coder.",
+   "reply": "Maquette prête (parcours en 3 étapes, 4 chiffres clés, accès depuis Aujourd’hui) : lien envoyé dans la conversation. J’attends votre choix pour coder.",
    "done_at": null
   },
   {
@@ -34,7 +34,7 @@
     "pk-zone": "France"
    },
    "body": "pas convaincu pas cette vue",
-   "reply": "Noté : je vous propose 2-3 directions pour la vue Découverte (ou la retirer) avant de toucher au code.",
+   "reply": "Trois pistes en maquette (histoire du jour, bouton « Expliquer », quiz) ; je recommande le bouton « Expliquer » qui remplace Découverte. J’attends votre choix.",
    "done_at": null
   },
   {
