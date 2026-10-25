@@ -1,9 +1,9 @@
 {
- "open": 5,
+ "open": 0,
  "notes": [
   {
    "id": 1,
-   "status": "open",
+   "status": "done",
    "created_at": "2026-10-25T09:37+00:00",
    "author": "Tom",
    "route": "today",
@@ -16,12 +16,12 @@
     "pk-zone": "Europe"
    },
    "body": "Mettre in the news et what moved and why l'un a cote de l'autre pour gagner de la place.",
-   "reply": null,
-   "done_at": null
+   "reply": "Fait : « Ce qui a bougé et pourquoi » et « Dans l’actualité » sont côte à côte (3/5 – 2/5 de la largeur) ; l’un sous l’autre sur un écran de moins de 1 100 px.",
+   "done_at": "2026-10-25T10:10+00:00"
   },
   {
    "id": 2,
-   "status": "open",
+   "status": "done",
    "created_at": "2026-10-25T09:38+00:00",
    "author": "Tom",
    "route": "today",
@@ -34,12 +34,12 @@
     "pk-zone": "Europe"
    },
    "body": "DEtailes forecast : va en bas de la page. \nfaire plutot une section par section du site 5Market, renewable, power system ... ?",
-   "reply": null,
-   "done_at": null
+   "reply": "Fait : les sections repliées suivent le site — Marchés, Renouvelables, Système électrique — et « Prévisions détaillées » est tout en bas.",
+   "done_at": "2026-10-25T10:10+00:00"
   },
   {
    "id": 3,
-   "status": "open",
+   "status": "done",
    "created_at": "2026-10-25T09:39+00:00",
    "author": "Tom",
    "route": "today",
@@ -52,12 +52,12 @@
     "pk-zone": "Europe"
    },
    "body": "France spot by mointh : très utils mais on peut mettre deux grpahs sur la même ligne peut être ?",
-   "reply": null,
-   "done_at": null
+   "reply": "Fait : le spot par mois est à côté de France vs Allemagne ; deux graphiques par ligne dans toutes les sections.",
+   "done_at": "2026-10-25T10:10+00:00"
   },
   {
    "id": 4,
-   "status": "open",
+   "status": "done",
    "created_at": "2026-10-25T09:39+00:00",
    "author": "Tom",
    "route": "today",
@@ -70,12 +70,12 @@
     "pk-zone": "Europe"
    },
    "body": "System : productiin nos c'et bien mais pk psa mettre un historique justa à droit (drux graphs par ligne)",
-   "reply": null,
-   "done_at": null
+   "reply": "Fait : « Production en ce moment » a l’historique à droite (production par mois, 3 ans) ; dessous, indisponibilités nucléaires à côté de la consommation face à la normale.",
+   "done_at": "2026-10-25T10:10+00:00"
   },
   {
    "id": 5,
-   "status": "open",
+   "status": "done",
    "created_at": "2026-10-25T09:40+00:00",
    "author": "Tom",
    "route": "today",
@@ -88,8 +88,8 @@
     "pk-zone": "Europe"
    },
    "body": "Il faut reréflchir aux graphs. Mettre le splus importants.",
-   "reply": null,
-   "done_at": null
+   "reply": "Proposition en ligne. Gardés : spot par mois, France vs Allemagne, forwards France (historique + tableau), TTF calendrier, GO, taux de capture. Ajoutés : capture par région, production par mois, consommation vs normale. Retirés de Today (toujours sur leurs pages) : forwards sur le calendrier de livraison, tableau des forwards TTF. Dis-moi ce qui manque ou ce qui est de trop.",
+   "done_at": "2026-10-25T10:10+00:00"
   }
  ]
 }
