@@ -105,7 +105,7 @@
   .why3-b .wk-chip{font-size:10.5px} .why3-src{display:block;font-size:10px;color:var(--text3);margin-top:2px}
   .why3 b{color:var(--text);font-weight:600}
   .why3-line{display:block} .why3-line+.why3-line{margin-top:4px}
-  .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:2px} .why3-next b{color:var(--text2)}
+  .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border, rgba(255,255,255,.08))} .why3-next b{color:var(--text2)}
   .why3-an{margin-top:8px;background:var(--bg3);border-radius:8px;padding:8px 12px;font-size:12.5px} .why3-an .wk-ok{color:var(--accent)} .why3-an .wk-ko{color:#fbbf24}
   @media (max-width:700px){.why3-r{grid-template-columns:1fr;gap:3px}.why3-k{flex-direction:row;align-items:center;flex-wrap:wrap}}`;
   if (!document.getElementById('why3-css')) { const st = document.createElement('style'); st.id = 'why3-css'; st.textContent = css3; document.head.appendChild(st); }
@@ -158,6 +158,16 @@
         parts.push(m < mb * 0.9 ? T('Le spot recule sur la semaine.', 'Spot eases over the week.') : m > mb * 1.1 ? T('Le spot monte sur la semaine.', 'Spot rises over the week.') : T('Le spot reste stable sur la semaine.', 'Spot holds over the week.')); }
       R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' ')]);
     }
+    // French nuclear: available now, against the operator's forecast, a week and a year ago (less nuclear = more gas called)
+    const nu = P('fr_nuc_avail'), nl = last(nu), nf = last(P('fr_nuc_avail_fc'));
+    if (nl) { const w = back(nu, 7), yb = back(nu, 365), gw = v => n1(v / 1000), parts = [];
+      parts.push(T(`Disponible <b>${gw(nl[1])} GW</b>`, `Available <b>${gw(nl[1])} GW</b>`) + (w != null ? T(` (${s1((nl[1] - w) / 1000)} GW sur la semaine`, ` (${s1((nl[1] - w) / 1000)} GW on the week`) + (yb != null ? T(`, ${s1((nl[1] - yb) / 1000)} GW sur un an)`, `, ${s1((nl[1] - yb) / 1000)} GW on a year)`) : ')') : '') + '.');
+      if (nf) { const gap = nl[1] - nf[1];
+        parts.push(Math.abs(gap) < 1000 ? T(`En ligne avec la prévision de l’exploitant (${gw(nf[1])} GW).`, `In line with the operator’s forecast (${gw(nf[1])} GW).`)
+          : gap < 0 ? T(`<b>${gw(-gap)} GW</b> sous la prévision de l’exploitant (${gw(nf[1])} GW) : plus de gaz appelé, un soutien aux prix.`, `<b>${gw(-gap)} GW</b> below the operator’s forecast (${gw(nf[1])} GW): more gas called, a support for prices.`)
+          : T(`<b>${gw(gap)} GW</b> au-dessus de la prévision de l’exploitant (${gw(nf[1])} GW) : moins de gaz appelé, des prix détendus.`, `<b>${gw(gap)} GW</b> above the operator’s forecast (${gw(nf[1])} GW): less gas called, softer prices.`)); }
+      const mv = w != null && w ? (nl[1] / w - 1) * 100 : null;
+      R.push([T('Nucléaire', 'Nuclear'), look('nuclear', null, mv == null ? null : -mv), parts.join(' ')]); }
     const ttf = P('ttf'), st = last(P('agsi')), ly = st ? back(P('agsi'), 365) : null;
     if (ttf.length) { const ps = pos60(ttf), parts = [];
       if (ps) parts.push(T('TTF ', 'TTF ') + ps + '.');
@@ -181,7 +191,7 @@
       if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
         if (vol) parts.push(T(`Enchère GO France (${a.auction_month}) : <b>${n1(val / vol, 3)} €/MWh</b> sur ${n1(vol / 1e6, 2)} TWh.`, `France GO auction (${a.auction_month}): <b>${n1(val / vol, 3)} €/MWh</b> on ${n1(vol / 1e6, 2)} TWh.`)); }
       const c4 = g.length > 4 ? (g[g.length - 1][1] / g[g.length - 5][1] - 1) * 100 : null;
-      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.join(' ')]);
+      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, null], parts.map(x => `<span class="why3-line">${x}</span>`).join('')]);   // one fact per line
     }
     if (!R.length) { host.innerHTML = `<div class="fuel-note">${T('Données de marché indisponibles.', 'Market data not available.')}</div>`; return; }
     // the notes' record: each day's call against what the price did over the following 7 days (right: up and +1 % or more,
