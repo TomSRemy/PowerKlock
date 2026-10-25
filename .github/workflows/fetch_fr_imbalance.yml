@@ -7,6 +7,7 @@ name: FR imbalance cost (solar, wind)
 on:
   schedule:
     - cron: '30 6 * * 1'     # Mondays 06:30 UTC: the last two months again
+    - cron: '20 9 * * *'     # every day 09:20 UTC: the imbalance prices of the last 4 days only
   push:                      # first run (24 months) as soon as the script lands
     branches: [main]
     paths: ['scripts/fetch_fr_imbalance_cost.py', '.github/workflows/fetch_fr_imbalance.yml']
@@ -34,12 +35,17 @@ jobs:
       - name: Imbalance cost
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-        run: python scripts/fetch_fr_imbalance_cost.py
+        run: |
+          if [ "${{ github.event.schedule }}" = "20 9 * * *" ]; then
+            python scripts/fetch_fr_imbalance_cost.py --prices 4
+          else
+            python scripts/fetch_fr_imbalance_cost.py
+          fi
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/fr_imbalance_cost.json
+          git add data/history/fr_imbalance_cost.json data/history/fr_imbalance_price
           if git diff --staged --quiet; then
             echo "No change — skipping commit."
             exit 0

@@ -24,25 +24,109 @@
   const S = (title) => ({ t: 's', title, w: 12, h: 1 });
   const W = (wid, w, h, p) => ({ t: 'w', wid, w, h, p });
   const TEMPLATES = [
-    { id: 'spot', name: 'Spot trader · France', desc: 'Prices today and tomorrow, FR fundamentals and flows.', items: [
-      S('Today'),
-      W('kpi-da', 2, 2, { zone: 'FR' }), W('kpi-da', 2, 2, { zone: 'DE_LU' }), W('kpi-fr-load', 2, 2), W('kpi-fr-net', 2, 2), W('kpi-fr-nuclear', 2, 2), W('kpi-hdd', 2, 2),
-      W('da-intraday', 8, 5), W('cb-fr-avg', 4, 5),
-      S('France fundamentals'),
-      W('load-day', 6, 5, { zone: 'FR' }), W('ren-intraday', 6, 5),
-      W('cb-intraday', 12, 5),
+    // The three Today views (js/today-widgets.js), same blocks and order as the Today page
+    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices.', items: [
+      W('today-spot', 7, 5), W('today-moved', 5, 5),
+      W('today-tiles', 12, 3),
     ] },
-    { id: 'fund', name: 'Fundamentals', desc: 'Fuels, carbon, spreads, nuclear and weather.', items: [
-      S('Fuels & carbon'),
-      W('kpi-fuel', 3, 2, { c: 'eua' }), W('kpi-fuel', 3, 2, { c: 'ttf' }), W('kpi-fuel', 3, 2, { c: 'coal' }), W('kpi-fuel', 3, 2, { c: 'brent' }),
-      W('fuel-eua-ttf', 6, 5), W('fuel-switch', 6, 5),
-      W('fuel-storage', 6, 5), W('spark-daily', 6, 5),
-      S('Supply & weather'),
-      W('nuc-hist', 6, 5), W('hdd', 6, 5),
-      S('Forwards'),
-      W('fwd-power', 6, 5), W('fwdc-ttf', 6, 5),
+    { id: 'today-learn', name: 'Today · Discovery', desc: 'Few figures, each explained: the day in one sentence, three prices and what they are, today hour by hour, what it means, a glossary.', items: [
+      W('today-sentence', 12, 2),
+      W('today-tiles-explained', 12, 4),
+      W('today-hours', 6, 6), W('today-means', 6, 6),
+      W('today-glossary', 12, 3),
     ] },
-    { id: 'mu', name: 'Market update', desc: 'The market update, in the order of the internal presentation: renewables outlook vs normal, nuclear, gas storage, temperature and demand, news, forwards and spot (France by default; zone and market can be changed per chart).', items: [
+    { id: 'today-expert', name: 'Today · Expert', desc: 'Everything, dense: spot with the negative-price chance, the key prices, the next 4 weeks, what moved and why, news, then markets, renewables, the power system and the detailed forecasts.', items: [
+      W('today-spot', 12, 5, { detail: 'yes' }), W('today-days', 12, 2),
+      W('today-tiles', 12, 3),
+      W('today-weeks', 12, 4),
+      W('today-brief', 6, 7), W('today-news', 6, 7),
+      S('Markets'),
+      W('fr-spot-monthly', 6, 5, { zone: 'FR' }), W('fr-de-spread', 6, 5, { win: '30' }),
+      W('fr-fwd-products', 6, 5, { country: 'FR', win: '3M' }), W('fr-fwd-table', 6, 5, { country: 'FR' }),
+      W('ttf-cal-history', 6, 5, { win: '6M' }), W('ttf-fwd-table', 6, 5),
+      S('Renewables'),
+      W('ren-cr', 6, 5, { zone: 'FR', window: '90D' }), W('ren-capture-regions', 6, 5, { tech: 'solar' }),
+      W('go-vintages', 6, 5, { product: 'GO AIB Renewable' }), W('fr-capture-forward', 6, 5),
+      S('Power system'),
+      W('today-system', 12, 2),
+      W('fr-sys-prod', 6, 5, { day: 'latest' }), W('fr-sys-monthly', 6, 5, { view: 'twh', win: '3Y' }),
+      W('remit-unavail', 6, 5, { period: '3M' }), W('fr-load-normal', 6, 5),
+      S('Detailed forecasts'),
+      W('fc-tomorrow', 12, 2, { zone: 'FR' }),
+      W('fc-48h', 6, 5, { zone: 'FR' }), W('fc-neg', 6, 5),
+      W('fc-combined', 6, 5, { tech: 'wind' }), W('fc-combined', 6, 5, { tech: 'solar' }),
+    ] },
+    // Business dashboards (agreed 2026-10-25): operations, origination + support scheme, hedging, negative prices,
+    // winter, monthly review, Europe, the internal market presentation
+    { id: 'ops', name: 'Aggregator operations · today and tomorrow', desc: 'How much the parks will produce, at what price, with what imbalance risk: spot and negative-price chance, production forecasts, imbalance and activation prices.', items: [
+      S('Today and tomorrow'),
+      W('today-spot', 12, 5, { detail: 'yes' }),
+      W('fc-neg', 6, 5), W('fc-48h', 6, 5, { zone: 'FR' }),
+      S('Production forecasts'),
+      W('fc-combined', 6, 5, { tech: 'solar' }), W('fc-combined', 6, 5, { tech: 'wind' }),
+      W('fc-tomorrow', 6, 2, { zone: 'FR' }), W('today-system', 6, 2),
+      W('ren-fc', 12, 5),
+      S('Imbalance'),
+      W('fr-imb-price', 6, 5, { view: 'day' }), W('fr-imb-price', 6, 5, { view: '30d' }),
+      W('fr-activation', 12, 5, { win: '90' }),
+    ] },
+    { id: 'orig', name: 'Origination and support scheme · France', desc: 'PPA price recalculated every day, forwards and forward capture, capture rates by technology and region, hours at 0 € or below, M0 and CRE tenders, guarantees of origin.', items: [
+      S('PPA price'),
+      W('ppa-today', 6, 3), W('kpi-da', 3, 3, { zone: 'FR' }), W('kpi-go', 3, 3),
+      W('ppa-benchmark', 6, 5, { tech: 'both', win: '6M' }), W('pf-curve', 6, 5, { country: 'FR' }),
+      W('fr-capture-forward', 6, 5), W('fr-capture-forward-table', 6, 5),
+      S('Value of solar and wind'),
+      W('ren-cr', 6, 5, { zone: 'FR', window: '1Y' }), W('ren-capture-regions', 6, 5, { tech: 'solar' }),
+      W('neg-cost', 6, 6), W('fr-reg-lf', 6, 6),
+      S('Support scheme · M0'),
+      W('fr-m0-official', 12, 6), W('fr-m0-forecast', 12, 6),
+      W('cre-tenders', 6, 5), W('cspe-enr', 6, 5),
+      S('Guarantees of origin'),
+      W('go-vintages', 12, 5, { product: 'GO AIB Renewable' }),
+    ] },
+    { id: 'hedge', name: 'Hedging and risk · weekly', desc: 'Whether to fix now: Cal+1 and its drivers, every contract (years, quarters, months, seasons), gas, carbon, nuclear and the weather ahead, and the PPA benchmark.', items: [
+      S('Cal+1'),
+      W('fr-fwd-read', 12, 4), W('fr-cal-drivers', 6, 5, { country: 'FR', win: '6M' }), W('ppa-benchmark', 6, 5, { tech: 'both', win: '1Y' }),
+      S('Contracts'),
+      W('pf-cals', 6, 5, { country: 'FR', win: '1Y' }), W('pf-contracts', 6, 5, { country: 'FR', kind: 'quarter', win: '1Y' }),
+      W('pf-contracts', 6, 5, { country: 'FR', kind: 'month', win: '6M' }), W('pf-contracts', 6, 5, { country: 'FR', kind: 'season', win: '1Y' }),
+      W('fr-fwd-strip', 12, 5, { country: 'FR' }),
+      S('Drivers'),
+      W('fuel-eua-ttf', 6, 5), W('gas-storage-years', 6, 5),
+      W('nuc-season', 6, 5), W('wx-outlook', 6, 5, { series: 'temp' }),
+    ] },
+    { id: 'negflex', name: 'Negative prices and flexibility', desc: 'When the price goes to zero or below, what it costs a park and who earns from it: negative hours by month and hour, across zones, tomorrow\u2019s chance, storage and battery spreads.', items: [
+      W('neg-zone', 6, 5, { zone: 'FR', view: 'month', win: '1Y' }), W('neg-zone-heatmap', 6, 5, { zone: 'FR' }),
+      W('fc-neg', 6, 6), W('neg-cost', 6, 6),
+      W('neg-crosszone', 12, 5, { view: 'year', win: '1Y' }),
+      W('ren-intraday', 6, 5), W('fr-sys-flex', 6, 5),
+      W('bess-spreads', 12, 5), W('da-heatmap', 12, 5, { zone: 'FR' }),
+    ] },
+    { id: 'winter', name: 'Winter · security of supply', desc: 'Enough power this winter? Nuclear availability and outages, hydro reservoirs, gas storage, heating degree days, consumption, capacity guarantees and exchanges.', items: [
+      W('nuc-season', 6, 5), W('remit-unavail', 6, 5, { period: '3M' }),
+      W('hydro-reservoirs', 6, 5, { country: 'FR' }), W('gas-storage-years', 6, 5),
+      W('hdd-cum', 6, 5), W('fr-load-normal', 6, 5),
+      W('fr-capacity-gc', 6, 5), W('cb-fr-avg', 6, 5),
+      W('wx-outlook', 12, 5, { series: 'temp' }),
+    ] },
+    { id: 'monthly', name: 'Monthly review', desc: 'The last month written out, then the month in charts: spot, production, spreads, M0, capacity against the PPE3, GO, CO₂ and the PPA benchmark. Exports to PowerPoint.', items: [
+      W('month-review', 12, 5),
+      W('fr-spot-monthly', 6, 5, { zone: 'FR' }), W('fr-sys-monthly', 6, 5, { view: 'twh', win: '3Y' }),
+      W('spark-monthly', 6, 5, { zone: 'FR', period: '1Y' }), W('ppa-benchmark', 6, 5, { tech: 'both', win: '1Y' }),
+      W('fr-m0-official', 12, 6),
+      W('cap-ppe3', 6, 5), W('go-vintages', 6, 5, { product: 'GO AIB Renewable' }),
+      W('fr-sys-co2', 6, 6), W('neg-cost', 6, 6),
+    ] },
+    { id: 'europe', name: 'Europe compared', desc: 'France against its neighbours: generation mix, forwards by market, France–Germany spread, negative prices and installed capacity across zones.', items: [
+      W('gm-crosszone', 12, 5),
+      W('pf-compare', 6, 5, { tenor: 'Y+1', win: '1Y' }), W('fr-de-spread', 6, 5, { win: '30' }),
+      W('neg-crosszone', 6, 5, { view: 'year', win: '1Y' }), W('cap-compare', 6, 5),
+      W('da-intraday', 12, 5),
+    ] },
+    { id: 'mu', name: 'Market update · CATE presentation', desc: 'The market update in the order of the internal presentation, opened by a market introduction (key prices, what moved and why, the next 30 days); then renewables outlook vs normal, nuclear, gas storage, temperature and demand, news, forwards and spot.', items: [
+      S('0 · Market introduction'),
+      W('today-tiles', 12, 3),
+      W('today-brief', 6, 7), W('next-30-days', 6, 7),
       S('1 · Supply'),
       W('wx-outlook', 6, 5, { series: 'precip' }), W('wx-outlook', 6, 5, { series: 'solar' }),
       W('wx-outlook', 6, 5, { series: 'wind' }), W('nuc-monthly-years', 6, 5),
@@ -56,25 +140,6 @@
       W('ttf-cal-history', 6, 5, { win: '6M' }), W('ttf-fwd-table', 6, 5),
       W('fr-spot-monthly', 6, 5), W('fr-spot-30d', 6, 5),
       W('fr-spot-day', 6, 7, { day: 'latest' }), W('fr-spot-day', 6, 7, { day: 'previous' }),
-    ] },
-    { id: 'orig', name: 'Origination · France', desc: 'PPA and GO pricing: forwards, capture rates, regional load factors, capacity, guarantees of origin.', items: [
-      S('Prices & forwards'),
-      W('kpi-da', 3, 2, { zone: 'FR' }), W('kpi-fuel', 3, 2, { c: 'eua' }), W('kpi-go', 3, 2), W('kpi-fr-nuclear', 3, 2),
-      W('pf-curve', 6, 5, { country: 'FR' }), W('pf-history', 6, 5, { country: 'FR', tenor: 'Y+1', win: '3Y' }),
-      S('Value of renewables'),
-      W('ren-cr', 6, 5, { zone: 'FR', window: '1Y' }), W('ren-daily', 6, 5, { zone: 'FR', window: '1Y' }),
-      W('fr-m0', 12, 5, { tech: 'solar', view: 'price', win: '2Y' }), W('fr-m0-forecast', 12, 6),
-      S('Regions & capacity'),
-      W('fr-reg-lf', 6, 5), W('cap-history', 6, 5, { country: 'FR' }),
-      S('Guarantees of origin'),
-      W('go-cal1', 6, 5), W('go-cal', 6, 5),
-    ] },
-    { id: 'flex', name: 'Flexibility / BESS', desc: 'Intraday shape, battery spreads, negative prices, imbalance.', items: [
-      S('Price shape'),
-      W('da-intraday', 12, 5),
-      W('bess-spreads', 6, 5), W('ren-cr', 6, 5),
-      S('Balancing'),
-      W('imb-intraday', 12, 5),
     ] },
   ];
 
@@ -119,7 +184,7 @@
       }
     } catch (_) {}
     const id = uid();
-    return { v: 2, active: id, boards: [{ id, name: 'My Dashboard', items: items && items.length ? items : fromTemplate('spot') }] };
+    return { v: 2, active: id, boards: [{ id, name: 'My Dashboard', items: items && items.length ? items : fromTemplate('today-quick') }] };
   }
 
   // Built-in boards: added once to every user's dashboards (then theirs to

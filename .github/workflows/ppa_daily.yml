@@ -1,0 +1,58 @@
+name: PPA benchmark (daily)
+
+# The site's PPA pricer run every day with its default settings, French solar and wind
+# → data/history/ppa_benchmark.json (scripts/ppa_daily.py). After the last forward refresh (12:53 UTC).
+
+on:
+  schedule:
+    - cron: '15 14 * * *'    # 14:15 UTC every day
+  workflow_dispatch:
+
+concurrency:
+  group: ppa-daily
+  cancel-in-progress: false
+
+jobs:
+  price:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install playwright==1.48.0
+          python -m playwright install --with-deps chromium
+      - name: Price the day
+        run: python scripts/ppa_daily.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/ppa_benchmark.json
+          if git diff --staged --quiet; then
+            echo "No change — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: PPA benchmark $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          exit 1
+
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
