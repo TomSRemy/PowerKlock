@@ -55,10 +55,10 @@
 .es-sflash{position:fixed;inset:0;z-index:${Z_FX};pointer-events:none;background:rgba(255,255,120,.22);animation:esSfOut .4s ease forwards}
 .es-wstreak{position:fixed;height:2px;pointer-events:none;z-index:${Z_FX};border-radius:1px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.7),transparent);animation:esWL linear forwards}
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
-.es-hotspot{position:fixed!important;left:210px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot{position:fixed!important;left:168px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
 @media (max-width:768px){.es-hotspot{left:98px!important;top:calc(var(--ticker-h, 0px) + 24px)!important;width:10px!important;height:10px!important}}
-.es-dotsbar{position:fixed;left:262px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
+.es-dotsbar{position:fixed;left:220px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 @media (max-width:768px){.es-dotsbar{left:16px;top:auto;bottom:calc(16px + env(safe-area-inset-bottom, 0px))}}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
 .es-dot.spawn:hover{background:#38bdf8}
@@ -67,6 +67,9 @@
 .es-dot.close:hover{background:#ef4444}
 .es-dotsbar-label{font-size:9px;color:#2a3f54;letter-spacing:.1em;margin-right:2px}
 .es-p-in{animation:esPIn .35s ease forwards}.es-p-out{animation:esPOut .35s ease forwards}
+@keyframes esDust{0%{transform:translate(0,0) scale(.6);opacity:.8}100%{transform:translate(var(--dx),-10px) scale(1.6);opacity:0}}
+.es-land{animation:esLand .26s ease-out!important;transform-origin:center bottom}
+@keyframes esLand{0%{transform:scaleY(.78) scaleX(1.16)}55%{transform:scaleY(1.06) scaleX(.96)}100%{transform:none}}
 @keyframes esFtUp{0%{transform:translateY(0) scale(.7);opacity:0}12%{transform:translateY(-4px) scale(1.05);opacity:1}75%{opacity:1}100%{transform:translateY(-38px) scale(.88);opacity:0}}
 @keyframes esPIn{from{opacity:1;transform:scaleY(1)}to{opacity:0;transform:scaleY(.05) translateY(20px)}}
 @keyframes esPOut{from{opacity:0;transform:scaleY(.05) translateY(-15px)}to{opacity:1;transform:scaleY(1)}}
@@ -430,6 +433,21 @@
   const POSE_MAP = { [ST.WALK]: 'W-walk', [ST.RUN]: 'W-run', [ST.FALL]: 'W-fall', [ST.SLEEP]: 'W-sleep', [ST.YAWN]: 'W-yawn', [ST.NOD]: 'W-nod', [ST.SCRATCH]: 'W-scratch', [ST.STARE]: 'W-stare', [ST.DANCE]: 'W-dance', [ST.HANG]: 'W-hang' };
 
   function surfs() { return [{ x: 0, y: gnd(), w: viewW(), isGround: true }, ...PLATS.map(p => ({ x: p.x, y: p.y, w: p.w, isGround: false }))]; }
+  // the surface right under a sheep's feet (ground or platform), or null: a sheep that stands on nothing falls
+  function under(s) {
+    const footY = s.y + SZ * 2 - FOOT_OFFSET;
+    return surfs().find(sf => Math.abs(footY - sf.y) <= 6 && s.x + SZ * 2 > sf.x + 2 && s.x < sf.x + sf.w - 2) || null;
+  }
+  function fall(s) { clearZzz(s); s.surf = null; s.vy = .5; s.vx = 0; go(s, ST.FALL); }
+  // landing: a short squash and a puff of dust
+  function land(s) {
+    const sv = s.el.querySelector('svg'); if (sv) { sv.classList.remove('es-land'); void sv.offsetWidth; sv.classList.add('es-land'); setTimeout(() => sv.classList.remove('es-land'), 260); }
+    for (let i = 0; i < 4; i++) {
+      const d = document.createElement('div'), dx = (i - 1.5) * 12;
+      d.style.cssText = `position:fixed;z-index:${Z_FX};pointer-events:none;left:${s.x + SZ + dx}px;top:${s.y + SZ * 2 - FOOT_OFFSET - 6}px;width:8px;height:8px;border-radius:50%;background:rgba(200,190,170,.55);animation:esDust .45s ease-out forwards;--dx:${dx * .9}px`;
+      document.body.appendChild(d); setTimeout(() => d.remove(), 500);
+    }
+  }
 
   function mkSVG(s, state) {
     let inner;
@@ -447,7 +465,7 @@
     return `<svg viewBox="-10 -5 180 215" width="${SZ*2}" height="${SZ*2}" overflow="visible" class="${cls}" style="--fx:${s.dir}">${inner}</svg>`;
   }
   function rdr(s, state) { s.el.innerHTML = mkSVG(s, state); }
-  function pos(s) { s.el.style.left = s.x + 'px'; s.el.style.top = s.y + 'px'; }
+  function pos(s) { s.el.style.left = s.x + 'px'; s.el.style.top = s.y + 'px'; s.el.dataset.st = s.state; }
   function xfm(s) {
     if (s.state === ST.RUN) { s.el.style.transform = `scaleX(${s.dir})`; }
     else { s.el.style.transform = ''; s.el.querySelectorAll('svg').forEach(sv => sv.style.setProperty('--fx', s.dir)); }
@@ -679,7 +697,7 @@
   }
 
   function tick(s) {
-    if (!s.alive || s.grabbed || s.state === ST.PIPE) return;
+    if ((!s.alive && s.state !== 'ko') || s.grabbed || s.state === ST.PIPE) return;   // a sheep killed by the second strike still drops while its ghost rises
     const W = viewW(), RIGHT = W - SZ * 2;
     const ss = surfs();
     s.tick++; if (s.timer > 0) s.timer--;
@@ -689,18 +707,25 @@
       return;
     }
     switch (s.state) {
+      case 'ko': {   // knocked out: drops if it was in the air, stays where it lands
+        const u = under(s);
+        if (!u) { s.vy = Math.min(s.vy + G, 18); s.y += s.vy; const footY = s.y + SZ * 2 - FOOT_OFFSET; const sf = surfs().find(f => s.vy >= 0 && footY >= f.y - 4 && footY <= f.y + 32 && s.x + SZ * 2 > f.x + 2 && s.x < f.x + f.w - 2); if (sf) { s.y = sf.y - SZ * 2 + FOOT_OFFSET; s.vy = 0; s.surf = sf; } }
+        break;
+      }
       case ST.FALL: {
         s.vy = Math.min(s.vy + G, 18);
         s.x += s.vx; s.y += s.vy; s.vx *= .97;
         if (s.x < 0) { s.x = 0; s.vx = Math.abs(s.vx) * .5; }
         if (s.x > RIGHT) { s.x = RIGHT; s.vx = -Math.abs(s.vx) * .5; }
         if (s.y < topMargin()) { s.y = topMargin(); s.vy = Math.abs(s.vy) * .3; }
+        if (s.y + SZ * 2 - FOOT_OFFSET > gnd() + 40) { s.y = gnd() - SZ * 2 + FOOT_OFFSET; s.vy = 0; }
         for (const sf of ss) {
           // Foot position is at s.y + SZ*2 - FOOT_OFFSET (closer to bottom of sprite, where feet are drawn)
           const footY = s.y + SZ * 2 - FOOT_OFFSET;
           if (s.vy >= 0 && footY >= sf.y - 4 && footY <= sf.y + 32 && s.x + SZ * 2 > sf.x + 2 && s.x < sf.x + sf.w - 2) {
+            const hard = s.vy > 6;
             s.y = sf.y - SZ * 2 + FOOT_OFFSET; s.vy = 0; s.vx = 0; s.surf = sf;
-            go(s, ST.WALK); s.timer = 80 + Math.floor(Math.random() * 120); s.dir = Math.random() < .5 ? 1 : -1; xfm(s); break;
+            go(s, ST.WALK); s.timer = 80 + Math.floor(Math.random() * 120); s.dir = Math.random() < .5 ? 1 : -1; xfm(s); if (hard) land(s); break;
           }
         }
         for (let pi = 0; pi < ALL_PIPES.length; pi++) {
@@ -729,6 +754,7 @@
       }
       case ST.WALK:
       case ST.RUN: {
+        if (!s.surf || (s.surf.isGround && Math.abs(s.y + SZ * 2 - FOOT_OFFSET - gnd()) > 6)) { const u = under(s); if (u) { s.surf = u; s.y = u.y - SZ * 2 + FOOT_OFFSET; } else { fall(s); break; } }
         const crowdedNow = isCrowded(s);
         const spd = s.state === ST.RUN ? (crowdedNow ? 2.8 : 1.8) : (crowdedNow ? 1.8 : 0.9);
         if (s.surf && !s.surf.isGround) {
@@ -776,12 +802,13 @@
         if (s.timer <= 0) { go(s, ST.FALL); s.surf = null; s.vy = 1; s.vx = (Math.random() - .5) * 2; ft(s, 'Bêê !'); }
         break;
       }
-      case ST.SLEEP: { if (s.timer <= 0) { clearZzz(s); go(s, ST.WALK); s.timer = 60 + Math.floor(Math.random() * 80); } break; }
+      case ST.SLEEP: { if (s.tick % 10 === 0 && !under(s)) { fall(s); break; } if (s.timer <= 0) { clearZzz(s); go(s, ST.WALK); s.timer = 60 + Math.floor(Math.random() * 80); } break; }
       case ST.STARE:
       case ST.YAWN:
       case ST.NOD:
       case ST.DANCE:
       case ST.SCRATCH: {
+        if (s.tick % 10 === 0 && !under(s)) { fall(s); break; }
         if (s.state === ST.DANCE && s.tick % 20 === 0) ft(s, ['🎵', '🎶', '♪'][Math.floor(Math.random() * 3)], '#fbbf24');
         if (s.timer <= 0) { clearZzz(s); go(s, ST.WALK); s.timer = 60 + Math.floor(Math.random() * 80); }
         break;
@@ -879,6 +906,8 @@
         // Recover after 2s — sheep gets back up but stays black
         setTimeout(() => {
           if (!s.el || !s.alive) return;
+          s.surf = under(s);
+          if (!s.surf) { fall(s); return; }
           s.state = ST.WALK;
           s.timer = 60 + Math.floor(Math.random() * 60);
           rdr(s, ST.WALK);
@@ -1194,9 +1223,12 @@
   }
 
   // ── LOOP ──
-  function loop() {
-    allSheep.forEach(s => { if (!s.alive) return; tick(s); });
-    socialTick();
+  let lastT = 0, acc = 0;
+  function loop(now) {
+    now = now || performance.now();
+    acc += Math.min(100, lastT ? now - lastT : 16.7); lastT = now;
+    let n = 0;
+    while (acc >= 16.67 && n < 6) { allSheep.forEach(s => { if (!s.alive && s.state !== 'ko') return; tick(s); }); socialTick(); acc -= 16.67; n++; }
     rafId = requestAnimationFrame(loop);
   }
 
@@ -1246,7 +1278,7 @@
     if (autoWindTimer) { clearTimeout(autoWindTimer); autoWindTimer = null; }
     if (tornadoTimer) { clearTimeout(tornadoTimer); tornadoTimer = null; }
     tornadoActive = false;
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; } lastT = 0; acc = 0;
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
     allSheep.forEach(s => { s.alive = false; clearZzz(s); if (s.el) s.el.remove(); });
@@ -1302,11 +1334,11 @@
     const s = document.createElement('style');
     s.id = HOTSPOT_STYLE_ID;
     s.textContent = `
-.es-hotspot{position:fixed!important;left:210px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-hotspot{position:fixed!important;left:168px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-.es-gamespot{position:fixed!important;left:226px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483646!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-gamespot{position:fixed!important;left:184px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483646!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-gamespot:hover{background:rgba(20,211,169,.7)!important;transform:scale(1.4)!important}
-.es-volleyspot{position:fixed!important;left:242px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483645!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
+.es-volleyspot{position:fixed!important;left:200px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483645!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
 .es-volleyspot:hover{background:rgba(237,105,101,.8)!important;transform:scale(1.4)!important}
 @media (max-width:768px){.es-hotspot,.es-gamespot,.es-volleyspot{top:calc(var(--ticker-h, 0px) + 24px)!important;width:10px!important;height:10px!important}.es-hotspot{left:98px!important}.es-gamespot{left:116px!important}.es-volleyspot{left:134px!important}}
 `;

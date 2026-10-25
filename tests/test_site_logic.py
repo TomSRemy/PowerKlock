@@ -89,6 +89,15 @@ def main():
         check('PPA pricer: at least 3 methods priced', len([v for v in vals if v == v]) >= 3, vals)
         check('PPA pricer: prices between 0 and 300 €/MWh', all(0 < v < 300 for v in vals if v == v), vals)
 
+        # ── Today: a tile opens its chart full size over the page; Esc closes it and the page stays ──
+        p.evaluate("PKNav.go('today')"); p.wait_for_timeout(4000)
+        t = p.locator('.mrn2-tile[data-tile]').first
+        if t.count():
+            t.click(); p.wait_for_timeout(800)
+            opened = p.evaluate("!document.getElementById('mrn-win').hidden && !!Chart.getChart(document.getElementById('mrn-win-chart'))")
+            p.keyboard.press('Escape'); p.wait_for_timeout(600)
+            check('Today: a tile opens its chart, Esc closes it, the page stays', opened and p.evaluate("[document.getElementById('mrn-win').hidden, location.hash]") == [True, '#today'], opened)
+
         # ── notes: N opens the panel, a note aimed at a chart is saved (this browser, not signed in) with its context and a pin ──
         p.evaluate("PKNav.go('renewables/capture')"); p.wait_for_timeout(800)
         p.evaluate("document.body.focus()"); p.keyboard.press('n'); p.wait_for_timeout(300)
