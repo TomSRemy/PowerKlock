@@ -253,17 +253,17 @@
     const F = (w, px, fam) => `${w} ${Math.round(px * k)}px ${fam || 'Inter, system-ui, sans-serif'}`, MONO = "'JetBrains Mono', ui-monospace, monospace";
     c.textBaseline = 'top';
     const lg = logo(C); if (lg) c.drawImage(lg, P, P - 4 * k, 34 * k, 34 * k);   // the logo alone, no name
-    c.fillStyle = C.text3; c.font = F(500, 18); c.fillText(T('France · ', 'France · ') + L.date, P + (lg ? 44 * k : 0), P + 4 * k);
-    c.fillStyle = C.text; c.font = F(700, S.data.step === 1440 ? 66 : 84, MONO); c.fillText(L.clock, P, P + (S.data.step === 1440 ? 74 : 66) * k);
+    c.fillStyle = C.text3; c.font = F(500, 16); c.fillText(T('France · ', 'France · ') + L.date, P + (lg ? 44 * k : 0), P + 4 * k);
+    c.fillStyle = C.text; c.font = F(700, S.data.step === 1440 ? 56 : 70, MONO); c.fillText(L.clock, P, P + (S.data.step === 1440 ? 70 : 62) * k);
     const head = ser[0], hv = head && head.v[qi];
     const x0 = P + c.measureText(L.clock).width + 36 * k;
     if (head) {
-      c.fillStyle = C.text3; c.font = F(500, 17); c.fillText(head.name, x0, P + 74 * k);
-      c.fillStyle = head.color; c.font = F(700, 42, MONO); c.fillText(fmtN(hv, dp(head)) + ' ' + unitOf(head), x0, P + 98 * k);
+      c.fillStyle = C.text3; c.font = F(500, 15); c.fillText(head.name, x0, P + 68 * k);
+      c.fillStyle = head.color; c.font = F(700, 34, MONO); c.fillText(fmtN(hv, dp(head)) + ' ' + unitOf(head), x0, P + 89 * k);
       const ref = S.per !== 'long' && S.mode === 'prices' && !daOnly ? ser.find(s => s.key === 'da') : null;
       if (ref && hv != null && ref.v[qi]) {
         const r = hv / ref.v[qi], hot = Math.abs(r) >= 1.5, txt = hot ? fmtN(r, 1) + T(' × le day-ahead', ' × the day-ahead') : T('day-ahead ', 'day-ahead ') + fmtN(ref.v[qi], 0);
-        c.font = F(600, 17); const tw = c.measureText(txt).width + 24 * k, ty = P + 150 * k;
+        c.font = F(600, 14); const tw = c.measureText(txt).width + 22 * k, ty = P + 134 * k;
         c.fillStyle = hot ? (C.light ? 'rgba(210,69,63,.12)' : 'rgba(237,105,101,.18)') : C.panel; roundRect(c, x0, ty, tw, 30 * k, 15 * k); c.fill();
         c.fillStyle = hot ? C.down : C.text2; c.textBaseline = 'middle'; c.fillText(txt, x0 + 12 * k, ty + 15 * k); c.textBaseline = 'top';
       }
@@ -272,10 +272,10 @@
       for (let q = from; q <= qi; q++) { const v = head.v[q]; if (v == null) continue; if (v > mx) { mx = v; mq = q; } if (v < mn) { mn = v; nq = q; } }
       const at = q => S.per === 'day' ? lab(q).clock : S.data.step === 1440 ? dfmt(S.data.times[q][0], { day: 'numeric', month: 'short', year: 'numeric' }) : dfmt(S.data.times[q][0], { weekday: 'short', day: 'numeric' }) + ' ' + lab(q).clock;
       if (mq != null) {
-        c.fillStyle = C.text3; c.font = F(500, 16); c.textAlign = wide ? 'right' : 'left';
+        c.fillStyle = C.text3; c.font = F(500, 14); c.textAlign = wide ? 'right' : 'left';
         const hiTxt = T('Plus haut jusqu’ici : ', 'High so far: ') + fmtN(mx, dp(head)) + ' ' + unitOf(head) + T(' · ', ' · ') + at(mq), loTxt = mn < 0 ? T('Plus bas : ', 'Low: ') + fmtN(mn, dp(head)) + ' ' + unitOf(head) + ' · ' + at(nq) : '';
-        if (wide) { c.fillText(hiTxt, W - P, P + 4 * k); if (loTxt) c.fillText(loTxt, W - P, P + 28 * k); }
-        else { c.font = F(500, 14); c.fillText(hiTxt + (loTxt ? '   ' + loTxt : ''), P, P + 188 * k); }   // square and vertical: one line above the chart
+        if (wide) { c.fillText(hiTxt, W - P, P + 4 * k); if (loTxt) c.fillText(loTxt, W - P, P + 24 * k); }
+        else { c.font = F(500, 13); c.fillText(hiTxt + (loTxt ? '   ' + loTxt : ''), P, P + 188 * k); }   // square and vertical: one line above the chart
         c.textAlign = 'left';
       }
     }
@@ -284,8 +284,8 @@
     const chart = wide ? { x: P + 64 * k, y: top, w: (W - 2 * P) * 0.70 - 64 * k, h: bottom - top } : { x: P + 64 * k, y: top, w: W - 2 * P - 64 * k, h: (bottom - top) * 0.72 };
     // the right-hand panel (below the chart on square and vertical videos): the bars now, then key figures since the start, then the last event
     const panel = wide ? { x: P + (W - 2 * P) * 0.74, y: top, w: (W - 2 * P) * 0.26, h: bottom - top } : { x: P, y: chart.y + chart.h + 56 * k, w: W - 2 * P, h: bottom - (chart.y + chart.h + 56 * k) };
-    const bars = wide ? { x: panel.x, y: panel.y, w: panel.w, h: panel.h * 0.46 } : { x: panel.x, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
-    const info = wide ? { x: panel.x, y: panel.y + panel.h * 0.46 + 14 * k, w: panel.w, h: panel.h * 0.54 - 14 * k } : { x: panel.x + panel.w * 0.5 + 12 * k, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
+    const bars = wide ? { x: panel.x, y: panel.y, w: panel.w, h: panel.h * 0.30 } : { x: panel.x, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
+    const info = wide ? { x: panel.x, y: panel.y + panel.h * 0.30 + 12 * k, w: panel.w, h: panel.h * 0.70 - 12 * k } : { x: panel.x + panel.w * 0.5 + 12 * k, y: panel.y, w: panel.w * 0.5 - 12 * k, h: panel.h };
     const vals = ser.flatMap(s => s.v.slice(from, to + 1)).filter(v => v != null);
     if (!vals.length) return;
     // one scale per unit: the first on the left axis, the second on the right one, any further unit on its own scale
@@ -293,7 +293,7 @@
     const YS = units.map(u => { const v = ser.filter(s => unitOf(s) === u).flatMap(s => s.v.slice(from, to + 1)).filter(x => x != null); return v.length ? nice(Math.min(S.per === 'long' ? Math.min(...v) : 0, ...v), Math.max(...v)) : nice(0, 1); });
     const Y = YS[0], yOfG = (v, g) => { const y = YS[g] || Y; return chart.y + chart.h - (v - y.lo) / (y.hi - y.lo) * chart.h; };
     const yOf = v => yOfG(v, 0), xOf = q => chart.x + (q - from) / Math.max(1, to - from) * chart.w;
-    c.font = F(500, 14, MONO); c.textAlign = 'right'; c.textBaseline = 'middle';
+    c.font = F(500, 12, MONO); c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let v = Y.lo; v <= Y.hi + 1e-9; v += Y.step) {
       c.strokeStyle = Math.abs(v) < 1e-9 ? C.text3 : C.grid; c.lineWidth = Math.max(1, k * 0.8); c.beginPath(); c.moveTo(chart.x, yOf(v)); c.lineTo(chart.x + chart.w, yOf(v)); c.stroke();
       c.fillStyle = units.length > 1 ? (ser.find(s => gOf(s) === 0) || {}).color || C.text3 : C.text3; c.fillText(fmtN(v, Y.step < 1 ? 1 : 0), chart.x - 10 * k, yOf(v));
@@ -301,7 +301,7 @@
     if (units.length > 1) {   // the axes name their unit; the second unit gets the right-hand axis
       c.textBaseline = 'bottom'; c.font = F(600, 13); c.fillStyle = (ser.find(s => gOf(s) === 0) || {}).color || C.text3; c.fillText(units[0], chart.x - 10 * k, chart.y - 8 * k);
       const Y2 = YS[1], col2 = (ser.find(s => gOf(s) === 1) || {}).color || C.text3; c.textAlign = 'left'; c.fillStyle = col2; c.fillText(units[1], chart.x + chart.w + 10 * k, chart.y - 8 * k);
-      c.font = F(500, 14, MONO); c.textBaseline = 'middle';
+      c.font = F(500, 12, MONO); c.textBaseline = 'middle';
       for (let v = Y2.lo; v <= Y2.hi + 1e-9; v += Y2.step) c.fillText(fmtN(v, Y2.step < 1 ? 1 : 0), chart.x + chart.w + 10 * k, yOfG(v, 1));
       c.textAlign = 'right';
     }
@@ -337,53 +337,44 @@
       c.fillStyle = s.color; c.globalAlpha = s.key === 'long' && C.light ? 0.75 : 1;
       if (v != null) c.fillRect(x, v >= 0 ? base - h : base, bwid, h);
       c.globalAlpha = 1; c.fillStyle = C.text; c.textAlign = 'center';
-      let vs = 18; const vt = fmtN(v, dpOf(s)) + (units.length > 1 ? ' ' + unitOf(s) : ''); c.font = F(700, vs, MONO); while (vs > 9 && c.measureText(vt).width > bwid + gap * 0.7) { vs--; c.font = F(700, vs, MONO); }   // the value fitted to its bar
+      let vs = 15; const vt = fmtN(v, dpOf(s)) + (units.length > 1 ? ' ' + unitOf(s) : ''); c.font = F(700, vs, MONO); while (vs > 9 && c.measureText(vt).width > bwid + gap * 0.7) { vs--; c.font = F(700, vs, MONO); }   // the value fitted to its bar
       if (v != null && v < 0) { c.textBaseline = 'top'; c.fillText(vt, x + bwid / 2, base + h + 6 * k); }
       else { c.textBaseline = 'bottom'; c.fillText(vt, x + bwid / 2, base - h - 6 * k); }
-      const nm = s.short || s.name; let fs = 14; c.font = F(500, fs); while (fs > 9 && c.measureText(nm).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
+      const nm = s.short || s.name; let fs = 12; c.font = F(500, fs); while (fs > 9 && c.measureText(nm).width > bwid + gap * 0.6) { fs--; c.font = F(500, fs); }
       c.textBaseline = 'top'; c.fillStyle = C.text2; c.fillText(nm, x + bwid / 2, nameY); c.textAlign = 'left';
     });
-    // key figures since the start of the period, and the last event passed
-    const figs = figures(ser, from, qi), lastEv = (S.events || []).filter(e => e.q <= t).pop();
-    let iy = info.y;
-    c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(info.x, iy); c.lineTo(info.x + info.w, iy); c.stroke();
-    c.textBaseline = 'top'; c.textAlign = 'left'; c.font = F(600, 12); c.fillStyle = C.text3;
-    c.fillText(T('DEPUIS LE DÉBUT', 'SINCE THE START'), info.x, iy + 10 * k); iy += 32 * k;
-    figs.forEach(([l, v, col]) => {
-      if (iy > info.y + info.h - 26 * k) return;
-      c.font = F(500, 14); c.fillStyle = C.text2; const lw = wrap(c, l, info.w * 0.58);
-      c.fillText(lw[0], info.x, iy);
-      c.font = F(700, 16, MONO); c.fillStyle = col || C.text; c.textAlign = 'right'; c.fillText(v, info.x + info.w, iy - 1 * k); c.textAlign = 'left';
-      iy += 26 * k;
-    });
-    if (lastEv && iy < info.y + info.h - 60 * k) {
-      iy += 8 * k; c.strokeStyle = C.grid; c.beginPath(); c.moveTo(info.x, iy); c.lineTo(info.x + info.w, iy); c.stroke();
-      c.font = F(600, 12); c.fillStyle = C.text3; c.fillText(T('DERNIER ÉVÉNEMENT', 'LAST EVENT'), info.x, iy + 10 * k); iy += 30 * k;
-      const short = lastEv.txt.split(' — ')[0].replace(/^★ /, '');
-      c.font = F(500, 14); c.fillStyle = C.text; const ls = wrap(c, short, info.w);
-      ls.slice(0, Math.max(1, Math.floor((info.y + info.h - iy) / (19 * k)))).forEach((l, i) => c.fillText(l, info.x, iy + i * 19 * k));
-    }
-    // commentary: numbered markers on the moments passed, the caption of the latest one for an eighth of the period
-    const span = S.per === 'day' ? 12 : Math.max(4, Math.round(N / 8));
-    (S.events || []).forEach(e => {
-      if (e.q > t) return;
+    // numbered markers on the moments passed (the latest in the accent colour)
+    const passed = (S.events || []).filter(e => e.q <= t), lastEv = passed[passed.length - 1], prevEv = passed[passed.length - 2];
+    passed.forEach(e => {
       const s = ser.find(x => x.key === e.key) || head, v = s && s.v[e.q]; if (v == null) return;
-      const x = xOf(e.q), y = yOfG(v, gOf(s)) + (v < (Y.lo + Y.hi) / 2 && v < 0 ? 22 : -22) * k;
-      c.fillStyle = C.text; c.beginPath(); c.arc(x, y, 13 * k, 0, 2 * Math.PI); c.fill();
-      c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
+      const x = xOf(e.q), y = yOfG(v, gOf(s)) + (v < (Y.lo + Y.hi) / 2 && v < 0 ? 20 : -20) * k;
+      c.fillStyle = e === lastEv ? C.accent : C.text; c.beginPath(); c.arc(x, y, 11 * k, 0, 2 * Math.PI); c.fill();
+      c.fillStyle = C.bg; c.font = F(700, 12); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.n), x, y); c.textAlign = 'left'; c.textBaseline = 'top';
     });
-    const cur = S.reading || (S.events || []).filter(e => e.q <= t && t < e.q + span).pop();
-    if (cur) {
-      const a = Math.min(1, (t - cur.q) / (span / 8), (cur.q + span - t) / (span / 8));
-      c.globalAlpha = S.playing && S.reading !== cur ? Math.max(0, a) : 1;
-      c.font = F(500, 19); const bw2 = Math.min(chart.w * 0.48, 600 * k), lines = wrap(c, cur.txt, bw2 - 64 * k), bh = (lines.length * 26 + 28) * k;
-      const bx = xOf(cur.q) > chart.x + chart.w / 2 ? chart.x + 12 * k : chart.x + chart.w - bw2 - 12 * k, by = chart.y + 8 * k;
-      c.fillStyle = C.panel; roundRect(c, bx, by, bw2, bh, 12 * k); c.fill();
-      c.strokeStyle = C.accent; c.lineWidth = 1.5 * k; c.stroke();
-      c.fillStyle = C.accent; c.beginPath(); c.arc(bx + 26 * k, by + 28 * k, 13 * k, 0, 2 * Math.PI); c.fill();
-      c.fillStyle = C.bg; c.font = F(700, 14); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(cur.n), bx + 26 * k, by + 28 * k); c.textAlign = 'left'; c.textBaseline = 'top';
-      c.fillStyle = C.text; c.font = F(500, 19); lines.forEach((l, i) => c.fillText(l, bx + 50 * k, by + 16 * k + i * 26 * k));
-      c.globalAlpha = 1;
+    // the panel: key figures since the start, then the comments; the latest stays in full until the next one, nothing over the chart
+    const figs = figures(ser, from, qi).slice(0, 3), bottomI = info.y + info.h;
+    let iy = info.y;
+    const sec = txt => { c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(info.x, iy); c.lineTo(info.x + info.w, iy); c.stroke(); c.font = F(600, 11); c.fillStyle = C.text3; c.fillText(txt, info.x, iy + 9 * k); iy += 28 * k; };
+    c.textBaseline = 'top'; c.textAlign = 'left';
+    sec(T('DEPUIS LE DÉBUT', 'SINCE THE START'));
+    figs.forEach(([l, v, col]) => {
+      c.font = F(500, 13); c.fillStyle = C.text2; c.fillText(wrap(c, l, info.w * 0.56)[0], info.x, iy);
+      c.font = F(700, 14, MONO); c.fillStyle = col || C.text; c.textAlign = 'right'; c.fillText(v, info.x + info.w, iy); c.textAlign = 'left';
+      iy += 22 * k;
+    });
+    if (lastEv && iy < bottomI - 50 * k) {
+      iy += 6 * k; sec(T('COMMENTAIRE', 'COMMENT'));
+      c.fillStyle = C.accent; c.beginPath(); c.arc(info.x + 10 * k, iy + 9 * k, 10 * k, 0, 2 * Math.PI); c.fill();
+      c.fillStyle = C.bg; c.font = F(700, 11); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(lastEv.n), info.x + 10 * k, iy + 9 * k); c.textAlign = 'left'; c.textBaseline = 'top';
+      c.font = F(500, 13); c.fillStyle = C.text;
+      const lh = 18 * k, room = Math.floor((bottomI - iy) / lh), lines = wrap(c, lastEv.txt.replace(/^★ /, ''), info.w - 28 * k);
+      const shown = lines.slice(0, Math.max(1, room)); if (lines.length > shown.length) shown[shown.length - 1] = shown[shown.length - 1].replace(/\s*\S*$/, ' …');
+      shown.forEach((l, i) => c.fillText(l, info.x + 28 * k, iy + i * lh));
+      iy += shown.length * lh + 8 * k;
+      if (prevEv && iy < bottomI - 14 * k) {   // the one before, as a title only
+        c.font = F(500, 12); c.fillStyle = C.text3;
+        c.fillText(wrap(c, prevEv.n + ' · ' + prevEv.txt.replace(/^★ /, '').split(/ — |[:.]/)[0], info.w)[0], info.x, iy);
+      }
     }
     // footer: progress and source
     const fy = H - P - 22 * k;
@@ -464,7 +455,7 @@
   // a caption stops the clock to be read (also in the video): about 1 s plus 30 ms a character, 2 to 4.5 s,
   // times the reader's setting (none, short, normal, long), kept in this browser
   const PAUSE = { off: 0, short: 0.6, normal: 1, long: 1.6 };
-  try { S.pause = localStorage.getItem('pk-replay-pause') || 'short'; } catch (_) { S.pause = 'short'; }
+  try { S.pause = localStorage.getItem('pk-replay-pause') || 'off'; } catch (_) { S.pause = 'off'; }   // the comment stays in the panel: no need to stop
   const readTime = e => Math.max(2, Math.min(4.5, 1 + e.txt.length * 0.03)) * (PAUSE[S.pause] != null ? PAUSE[S.pause] : 0.6);
   const bounds = () => S.per === 'day' ? [S.from, S.to] : [0, npts() - 1];
   function frame(ts) {
