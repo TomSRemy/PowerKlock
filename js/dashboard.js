@@ -15,7 +15,17 @@
 
   const LS_KEY = 'pk-dash-v2';
   const LS_OLD = 'pk-mydash-widgets';
-  const COLS = 12, CELL_H = 64;
+  // a fine grid (since 25 Oct. 2026): 24 columns and half-height rows, so a card can be sized twice as precisely.
+  // Templates, widget sizes and older saved dashboards are in the coarse 12-column units: fine() doubles them once.
+  const COLS = 24, CELL_H = 32, FINE = 2;
+  // GridStack 10 ships the CSS for 12 columns only: the 24-column widths and offsets, written once
+  (function () {
+    if (document.getElementById('pkd-gs24')) return;
+    let css = '.gs-24>.grid-stack-item{width:4.1667%}';
+    for (let i = 1; i <= 24; i++) css += `.gs-24>.grid-stack-item[gs-w="${i}"]{width:${(i / 24 * 100).toFixed(4)}%}` + (i < 24 ? `.gs-24>.grid-stack-item[gs-x="${i}"]{left:${(i / 24 * 100).toFixed(4)}%}` : '');
+    const st = document.createElement('style'); st.id = 'pkd-gs24'; st.textContent = css; document.head.appendChild(st);
+  })();
+  const fine = b => { if (!b || b.grid === FINE) return b; (b.items || []).forEach(it => ['x', 'y', 'w', 'h'].forEach(k => { if (it[k] != null) it[k] *= FINE; })); b.grid = FINE; return b; };
   const GS_JS = 'js/vendor/gridstack-all.min.js';
   const GS_CSS = 'js/vendor/gridstack.min.css';
 
@@ -153,7 +163,7 @@
   // A dashboard opened from a shared link: shown as is, never saved unless
   // the viewer adds it to their own dashboards.
   let shared = null;           // { id: 'shared', name, items, code }
-  function board() { return shared || state.boards.find(b => b.id === state.active) || state.boards[0]; }
+  function board() { return fine(shared || state.boards.find(b => b.id === state.active) || state.boards[0]); }
 
   function fromTemplate(tid) {
     const t = TEMPLATES.find(x => x.id === tid) || TEMPLATES[0];
@@ -273,7 +283,7 @@
     } else {
       const w = PKW.get(wid);
       if (!w) return;
-      b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h }, p ? { p } : {}));
+      b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE }, p ? { p } : {}));
       toast('Added to “' + b.name + '”');
     }
     save();
@@ -320,7 +330,7 @@
 
   // row height follows the screen width: on a large screen every chart grows in height as well as in width
   //   (64 px up to ~1300 px of grid, then proportional, capped at 120 px)
-  const cellH = () => Math.round(Math.max(56, Math.min(96, (window.innerWidth - 260) / 24)));   // 64 px at ~1800 px wide, 72 at 2000   // the menu's width taken off even when hidden: the shared view keeps PowerKlock's proportions
+  const cellH = () => Math.round(Math.max(28, Math.min(48, (window.innerWidth - 260) / 48)));   // half the former row height (fine grid)   // 64 px at ~1800 px wide, 72 at 2000   // the menu's width taken off even when hidden: the shared view keeps PowerKlock's proportions
   let resizeT = null;
   window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
     const host = document.getElementById('pkd-grid'); if (!grid || !host || !host.offsetParent) return;
@@ -352,7 +362,7 @@
     grid = GridStack.init({
       column: COLS, cellHeight: cellH(host), margin: 6, float: false, animate: true,
       handle: '.pkd-drag', draggable: { handle: '.pkd-drag', cancel: '.pkd-sec-move, .pkd-ic, [contenteditable="plaintext-only"]' }, resizable: { handles: 'se' }, staticGrid: !!shared || !editing,
-      columnOpts: { breakpoints: [{ w: 760, c: 1 }] },
+      columnOpts: { breakpoints: [{ w: 760, c: 1 }], columnMax: COLS },
     }, host);
     observer = new IntersectionObserver(onVisible, { rootMargin: '200px' });
     grid.batchUpdate();
@@ -400,9 +410,9 @@
     const el = document.createElement('div');
     el.className = 'grid-stack-item';
     el.dataset.i = it.i;
-    const pos = { x: it.x, y: it.y, w: it.w || 6, h: it.h || 4 };
+    const pos = { x: it.x, y: it.y, w: it.w || 12, h: it.h || 8 };
     Object.keys(pos).forEach(k => { if (pos[k] != null) el.setAttribute('gs-' + k, pos[k]); });
-    if (it.t === 's') { el.setAttribute('gs-w', COLS); el.setAttribute('gs-h', 1); el.setAttribute('gs-no-resize', 'true'); }
+    if (it.t === 's') { el.setAttribute('gs-w', COLS); el.setAttribute('gs-h', FINE); el.setAttribute('gs-no-resize', 'true'); }
     const inner = document.createElement('div');
     inner.className = 'grid-stack-item-content pkd-item';
     inner.dataset.kind = it.t;
@@ -552,10 +562,10 @@
   function addWidget(wid) {
     const w = PKW.get(wid);
     if (!w) return;
-    addItem({ t: 'w', wid, w: w.size.w, h: w.size.h });
+    addItem({ t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE });
   }
-  function addSection() { addItem({ t: 's', title: '', w: COLS, h: 1 }); }
-  function addNote() { addItem({ t: 'n', title: 'Note', text: '', w: 4, h: 3 }); }
+  function addSection() { addItem({ t: 's', title: '', w: COLS, h: FINE }); }
+  function addNote() { addItem({ t: 'n', title: 'Note', text: '', w: 4 * FINE, h: 3 * FINE }); }
 
   function removeItem(i) {
     const b = board();
@@ -669,7 +679,7 @@
     }).join('') : '<div class="pkd-empty-w">No chart matches “' + esc(catQuery) + '”.</div>';
     root.querySelectorAll('.pkd-add').forEach(b => b.addEventListener('click', () => {
       const w = PKW.get(b.dataset.w);
-      board().items.push({ i: uid(), t: 'w', wid: w.id, w: w.size.w, h: w.size.h });
+      board().items.push({ i: uid(), t: 'w', wid: w.id, w: w.size.w * FINE, h: w.size.h * FINE });
       save();
       drawCatalog(root);
       toast('Added “' + w.title + '”');
@@ -845,17 +855,17 @@
         ev.preventDefault();
         b.name = root.querySelector('#pkd-board-name').value.trim() || b.name;
         const tpl = root.querySelector('#pkd-board-tpl').value;
-        if (tpl) b.items = fromTemplate(tpl);
+        if (tpl) { b.items = fromTemplate(tpl); delete b.grid; fine(b); }
         save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-order').addEventListener('click', () => { closeModal(); orderSections(); });
       root.querySelector('#pkd-board-dup').addEventListener('click', () => {
         const id = uid();
-        state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
+        state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', grid: b.grid, items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
         state.active = id; save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-export').addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify({ powerklock: 'dashboard', v: 2, name: b.name, desc: b.desc || '', items: b.items }, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify({ powerklock: 'dashboard', v: 2, grid: b.grid, name: b.name, desc: b.desc || '', items: b.items }, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'powerklock-' + b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json';
@@ -871,7 +881,7 @@
             const j = JSON.parse(txt);
             if (!j || !Array.isArray(j.items)) throw new Error('Not a PowerKlock layout file');
             const id = uid();
-            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), desc: String(j.desc || '').slice(0, 400), items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) });
+            state.boards.push({ id, name: String(j.name || 'Imported').slice(0, 40), desc: String(j.desc || '').slice(0, 400), grid: j.grid === FINE ? FINE : undefined, items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) });
             state.active = id; save(); closeModal(); render();
             toast('Layout imported');
           }).catch(e => toast('Import failed: ' + e.message));
@@ -976,7 +986,7 @@
   async function encodeBoard(b) {
     const used = new Set(b.items.map(it => it.hid).filter(Boolean));   // ids kept only where a collapsed section needs them
     const items = b.items.map(it => { const o = Object.assign({}, it); if (!used.has(o.i)) delete o.i; return o; });
-    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, items }));
+    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, g: b.grid, items }));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
   }
@@ -985,7 +995,7 @@
     const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
     const j = JSON.parse(new TextDecoder().decode(raw));
     if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
-    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code,
+    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code, grid: j.g === FINE ? FINE : undefined,
       items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) };
   }
   const baseUrl = () => location.origin + location.pathname;
@@ -1041,7 +1051,7 @@
     });
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
       const id = uid();
-      state.boards.push({ id, name: shared.name, desc: shared.desc || '', items: reid(shared.items) });
+      state.boards.push({ id, name: shared.name, desc: shared.desc || '', grid: shared.grid, items: reid(shared.items) });
       state.active = id;
       closeShared(false); save(); render();
       toast('Added to your dashboards');
@@ -1120,7 +1130,7 @@
   // a card added from another page with its own settings (always a new card, never a toggle)
   function addCard(wid, p) {
     const w = PKW.get(wid), b = board(); if (!w) return;
-    b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w, h: w.size.h }, p ? { p } : {}));
+    b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE }, p ? { p } : {}));
     toast('Added to “' + b.name + '”'); save(); if (isOpen()) render();
   }
   window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink };

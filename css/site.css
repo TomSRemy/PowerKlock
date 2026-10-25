@@ -3227,3 +3227,27 @@
 .ma-ht-box .ma-ht-grid { grid-template-columns: 1fr; font-family: Inter, system-ui, sans-serif; font-size: 12px; }
 .ma-ht-box .ma-ht-row .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ma-ht-fc { border: 1px dashed rgba(20,211,169,.35); }
+
+/* ── Dashboards: the content follows the card's size (fine grid, 25 Oct. 2026) ── */
+.pkd-body { container-type: inline-size; container-name: pkd; }
+.pkd-kpi { container-type: inline-size; }
+.pkd-kpi .pkd-kpi-v { font-size: clamp(18px, 16cqi, 40px); }
+.pkd-kpi .pkd-kpi-m { font-size: clamp(10px, 5cqi, 13px); }
+.pkd-body .mrn2-tile { container-type: inline-size; }
+.pkd-body .mrn2-tile .mrn2-tv { font-size: clamp(16px, 17cqi, 30px); }
+.pkd-body .mrn2-tile .mrn2-tn, .pkd-body .mrn2-tile .mrn2-tc, .pkd-body .mrn2-tile .mrn3-tx { font-size: clamp(9.5px, 7cqi, 12.5px); }
+.pkd-body .mrn2-tiles { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.pkd-body .mrn3-lines li, .pkd-body .mrn3-sent, .pkd-body .mrn3-learn, .pkd-body .mrn-movers { font-size: clamp(11px, 2.4cqi, 14px); }
+.pkd-body .fuel-table { font-size: clamp(10px, 1.8cqi, 13px); }
+.pkd-body .mrn2-weeks { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pkd-body .mrn2-gauges { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+@container pkd (max-width: 360px) {
+  .mrn3-lines li { grid-template-columns: 70px minmax(0, 1fr); }
+  .fuel-note { font-size: 11px; }
+}
+/* "How to read" boxes: one line, opened on demand */
+details.pk-howto { margin-top: 10px; border: 1px solid var(--border, rgba(255,255,255,.08)); border-radius: 10px; padding: 8px 12px; background: var(--bg2, transparent); }
+details.pk-howto > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text2); list-style: none; }
+details.pk-howto > summary::before { content: 'ⓘ  '; color: var(--accent, #14D3A9); }
+details.pk-howto[open] > summary { margin-bottom: 6px; }
+.gmhcz-rank-row:hover{background:rgba(20,211,169,.07)}
