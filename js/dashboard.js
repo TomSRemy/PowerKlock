@@ -1065,11 +1065,28 @@
     if (redraw) render();
   }
 
+  // A shared dashboard is a closed room: no link leads to another page of the site. Links inside the site lose their
+  // address (the tiles still open their chart in the window, which stays on the dashboard); links to articles elsewhere
+  // keep opening in a new tab. Done on everything drawn later too, and any click on an internal address is stopped.
+  function sealLinks() {
+    const seal = root => root.querySelectorAll('a[href^="#"], [data-route]').forEach(a => {
+      a.removeAttribute('data-route');
+      if (a.tagName === 'A' && /^#/.test(a.getAttribute('href') || '')) { a.removeAttribute('href'); a.classList.add('pk-sealed'); }
+    });
+    seal(document);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) seal(n.parentNode || n); }))).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a');
+      if (a && (a.classList.contains('pk-sealed') || /^#/.test(a.getAttribute('href') || '')) && !a.closest('.mrn2-tile, .mrn-wrow')) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
+    window.addEventListener('hashchange', () => { if (!/^#solo=/.test(location.hash)) history.back(); });   // no way out by the address either
+  }
+
   async function openFromLink() {
     const m = location.hash.match(/^#(board|solo)=([zj][A-Za-z0-9_-]+)$/);
     if (!m) return;
     try { shared = await decodeBoard(m[2]); } catch (e) { console.warn('[PKDash] shared link', e); toast('This dashboard link is damaged or incomplete'); return; }
-    if (m[1] === 'solo') document.body.classList.add('pk-solo');
+    if (m[1] === 'solo') { document.body.classList.add('pk-solo'); sealLinks(); }
     const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
     if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
     else open();

@@ -969,7 +969,7 @@ document.addEventListener('pk-view', e => {
   ['hs-morning-2', 'hs-morning-3', 'hs-morning-4'].forEach(id => { const s = document.getElementById(id); if (s && !s.dataset.opened) { s.dataset.opened = '1'; s.classList.remove('collapsed'); } });
 });
 document.addEventListener('click', e => {   // a tile opens its chart full size (a modified click still opens the page in a new tab)
-  const a = e.target.closest && e.target.closest('.mrn2-tile[data-route], .mrn-wrow');
+  const a = e.target.closest && e.target.closest('.mrn2-tile[data-tile], .mrn-wrow');
   if (!a || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
   // capture phase, before the menu's handler that opens any [data-route] link as a page
   const ORD = MRN_REN_ORDER.includes(a.dataset.tile) ? MRN_REN_ORDER : MRN_SYS_ORDER.includes(a.dataset.tile) ? MRN_SYS_ORDER : a.closest('.mrn-wtab') ? MRN_WX_ORDER : MRN_ORDER, box = a.closest('.mrn-wtab') || document, ids = ORD.filter(i => box.querySelector('[data-tile="' + i + '"]')), idx = ids.indexOf(a.dataset.tile);

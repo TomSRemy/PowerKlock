@@ -1557,6 +1557,8 @@
   @keyframes pkBootBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
   body.pk-solo .layout { padding-top: 0; }
   body.pk-solo .page:not(#page-mydash), body.pk-solo #pk-loader, body.pk-solo .pk-status-badge { display: none !important; }
+  body.pk-solo #pk-tw-full, body.pk-solo .mrn-news-more, body.pk-solo a.pk-sealed:not(.mrn2-tile) { display: none !important; }   /* links to the rest of the site: gone */
+  body.pk-solo a.mrn2-tile { cursor: pointer; }
   body.pk-solo #page-mydash { display: block !important; }
   body.pk-solo .pkd-actions > :not(.pkd-fs), body.pk-solo .pkw-star, body.pk-solo .grid-stack-item > .ui-resizable-se { display: none !important; }   /* fullscreen stays */   /* read-only: nothing to edit, nowhere else to go */
   body.pk-solo .es-gamespot, body.pk-solo [class^="es-"], body.pk-solo [class*=" es-"] { display: none !important; }
