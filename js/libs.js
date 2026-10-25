@@ -14967,7 +14967,7 @@ function addFullscreen(canvasId, content) {
       const cfg = (typeof content === 'function') ? (content() || {}) : (content || {});
       const titleEl = cv.closest('.chart-container')?.querySelector('.table-title, .fuel-card-head .table-title');
       window.pkOpenOrUpdate({
-        title: cfg.title || (titleEl ? [...titleEl.childNodes].filter(n => !(n.classList && n.classList.contains('pkf-chip'))).map(n => n.textContent).join('').trim() : canvasId),
+        title: cfg.title || cv.dataset.fsTitle || (titleEl ? [...titleEl.childNodes].filter(n => !(n.classList && n.classList.contains('pkf-chip'))).map(n => n.textContent).join('').trim() : canvasId),
         subtitle: cfg.subtitle || ((cv.closest('.chart-container')?.querySelector('.fuel-card-sub') || {}).textContent || '').trim(),
         source: cfg.source || ((cv.closest('.chart-container')?.querySelector('.source-badge') || {}).textContent || '').trim(),
         filenameStem: canvasId,
@@ -15022,6 +15022,8 @@ function pkCloneCanvasChart(srcCanvas, dstCanvas) {
       sc.ticks = Object.assign({}, sc.ticks, { font: Object.assign({}, sc.ticks?.font, { size: 13 }) });
     });
     cfg.options.plugins = cfg.options.plugins || {};
+    // drag to zoom in the big view, even when the small chart had no zoom (Reset sets it back)
+    if (typeof ZOOM_CFG !== 'undefined') cfg.options.plugins.zoom = ZOOM_CFG;
     if (cfg.options.plugins.legend?.labels) {
       cfg.options.plugins.legend.labels.font = Object.assign({}, cfg.options.plugins.legend.labels.font, { size: 13 });
     }
@@ -15046,8 +15048,10 @@ function pkAutoTable(chart) {
   const rows = labels.map((lbl, i) => {
     const cells = datasets.map(d => `<td style="text-align:right">${fmt(d.data[i])}</td>`).join('');
     return `<tr><td style="text-align:left;color:var(--text3)">${lbl}</td>${cells}</tr>`;
-  }).join('');
-  return `<table style="width:100%;font-size:11px;border-collapse:collapse"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  });
+  // dates: the most recent first
+  if (labels.length > 1 && /^\d{4}-\d{2}/.test(String(labels[0])) && String(labels[0]) < String(labels[labels.length - 1])) rows.reverse();
+  return `<table style="width:100%;font-size:11px;border-collapse:collapse"><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
 }
 
 // Download PNG helper
