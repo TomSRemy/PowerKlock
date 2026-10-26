@@ -49,6 +49,18 @@ def main():
         i = bisect.bisect_right(keys, d) - 1
         return pts[i][1] if i >= 0 else None
 
+    # Germany: wind + solar share of generation (Energy-Charts, data/history/genmix_daily) — on windy German days
+    # French prices fall below what French coverage alone says
+    de = {}
+    for yy in range(2020, date.today().year + 1):
+        try:
+            g = load(os.path.join('genmix_daily', f'{yy}.json'))['zones']['DE_LU']
+        except (OSError, KeyError):
+            continue
+        for i, dd in enumerate(g['days']):
+            tot = sum((g[f][i] or 0) for f in ('nuclear', 'hydro', 'biomass', 'wind', 'solar', 'fossil', 'other'))
+            if tot:
+                de[dd] = ((g['wind'][i] or 0) + (g['solar'][i] or 0)) / tot * 100
     ms = load('fr_market_series.json')
     fwd_pts = [(d, v) for d, v in zip(ms['dates'], ms['forwardCurve']['M+1']) if v is not None]
     fk = [x[0] for x in fwd_pts]
@@ -94,6 +106,13 @@ def main():
             d += timedelta(days=7)
             continue
         _, a, b, w = fit(train)
+        trd = [x for x in days if y0 <= x < D and x in de and srmc(x)]
+        dm = sum(de[x] for x in trd) / len(trd) if trd else 0
+        ga = np.array([(de[x] - dm) * srmc(x) / 100 for x in trd]); gy = np.array([rows[x]['base'] - curve(low_carbon(rows[x]) / rows[x]['loadAvg'] * 100, srmc(x), a, b, w, 1 if weekend(x) else 0) for x in trd])
+        kde = float(np.dot(ga - ga.mean(), gy - gy.mean()) / np.dot(ga - ga.mean(), ga - ga.mean())) if len(trd) > 200 else 0.0
+        denorm = {}
+        for x in trd:
+            o2 = denorm.setdefault(x[5:], [0, 0]); o2[0] += de[x]; o2[1] += 1
         # normals of the calendar day over the three years before (consumption, hydro, bio, wind, solar)
         norm = {}
         for x in days:
@@ -108,7 +127,7 @@ def main():
         if len(ahead) < 25 or not s0:
             d += timedelta(days=7)
             continue
-        perf, nrm, real = [], [], []
+        perf, nrm, real, perfD, nrmD = [], [], [], [], []
         for x in ahead:
             o = norm.get(x[5:])
             if not o or not o[0]:
@@ -119,6 +138,8 @@ def main():
             cov_n = (nuc + hy + bi + o[4] / n + o[5] / n) / (o[1] / n) * 100
             we = 1 if weekend(x) else 0
             perf.append((x, curve(cov_p, s0, a, b, w, we))); nrm.append((x, curve(cov_n, s0, a, b, w, we))); real.append((x, r['base']))
+            dn = denorm.get(x[5:]); dnv = dn[0] / dn[1] if dn and dn[1] else dm
+            perfD.append((x, perf[-1][1] + kde * ((de.get(x, dnv)) - dm) * s0 / 100)); nrmD.append((x, nrm[-1][1] + kde * (dnv - dm) * s0 / 100))
         m = lambda v: sum(t[1] for t in v) / len(v)
         past = [x for x in days if x < D][-14:]
         res14 = []
@@ -127,6 +148,12 @@ def main():
             if sx:
                 res14.append(rows[x]['base'] - curve(low_carbon(rows[x]) / rows[x]['loadAvg'] * 100, sx, a, b, w, 1 if weekend(x) else 0))
         corr = sum(res14) / len(res14) if res14 else 0
+        res14d = []
+        for x in past:
+            sx = srmc(x)
+            if sx and x in de:
+                res14d.append(rows[x]['base'] - curve(low_carbon(rows[x]) / rows[x]['loadAvg'] * 100, sx, a, b, w, 1 if weekend(x) else 0) - kde * (de[x] - dm) * sx / 100)
+        corrD = sum(res14d) / len(res14d) if res14d else 0
         last7 = [rows[x]['base'] for x in days if x < D][-7:]
         # the next calendar month: its forward on day D against what it did
         nm = (d.replace(day=1) + timedelta(days=32)).replace(day=1)
@@ -136,7 +163,7 @@ def main():
         nmm = [v for x, v in nrm if x.startswith(mk)]
         fi = bisect.bisect_right(fk, prev) - 1
         fw = fwd_pts[fi][1] if fi >= 0 and (date.fromisoformat(prev) - date.fromisoformat(fk[fi])).days <= 5 else None
-        out.append({'d': D, 'a': round(a, 2), 'b': round(b, 3), 'w': w, 'real4': round(m(real), 2), 'perf4': round(m(perf), 2), 'norm4': round(m(nrm), 2), 'corr': round(corr, 2), 'perfC': round(m(perf) + corr, 2), 'normC': round(m(nrm) + corr, 2), 'perfH': round(m(perf) + corr / 2, 2), 'normH': round(m(nrm) + corr / 2, 2), 'naive': round(sum(last7) / len(last7), 2),
+        out.append({'d': D, 'a': round(a, 2), 'b': round(b, 3), 'w': w, 'real4': round(m(real), 2), 'perf4': round(m(perf), 2), 'norm4': round(m(nrm), 2), 'corr': round(corr, 2), 'perfC': round(m(perf) + corr, 2), 'normC': round(m(nrm) + corr, 2), 'perfH': round(m(perf) + corr / 2, 2), 'normH': round(m(nrm) + corr / 2, 2), 'kde': round(kde, 3), 'perfD': round(m(perfD), 2), 'normD': round(m(nrmD), 2), 'perfDC': round(m(perfD) + corrD, 2), 'normDC': round(m(nrmD) + corrD, 2), 'naive': round(sum(last7) / len(last7), 2),
                     'month': mk, 'realM': round(sum(rm) / len(rm), 2) if len(rm) > 20 else None, 'fwdM': fw,
                     'perfM': round(sum(pm) / len(pm), 2) if len(pm) >= 10 else None, 'normM': round(sum(nmm) / len(nmm), 2) if len(nmm) >= 10 else None, 'nM': len(pm),
                     'perfMC': round(sum(pm) / len(pm) + corr, 2) if len(pm) >= 10 else None, 'normMC': round(sum(nmm) / len(nmm) + corr, 2) if len(nmm) >= 10 else None})
@@ -160,6 +187,7 @@ def main():
     summ = {
         'points': len(out), 'from': out[0]['d'] if out else None, 'to': out[-1]['d'] if out else None,
         'next28': {'mae_perfect': mae('perf4', 'real4'), 'mae_normal': mae('norm4', 'real4'), 'mae_naive': mae('naive', 'real4'),
+                   'mae_perfect_de': mae('perfD', 'real4'), 'mae_normal_de': mae('normD', 'real4'), 'mae_perfect_de_corrected': mae('perfDC', 'real4'), 'mae_normal_de_corrected': mae('normDC', 'real4'),
                    'mae_perfect_corrected': mae('perfC', 'real4'), 'mae_normal_corrected': mae('normC', 'real4'), 'mae_perfect_half': mae('perfH', 'real4'), 'mae_normal_half': mae('normH', 'real4'),
                    'bias_perfect': bias('perf4', 'real4'), 'bias_normal': bias('norm4', 'real4')},
         'next_month': {'mae_forward': mae('fwdM', 'realM'), 'mae_perfect': mae('perfM', 'realM'), 'mae_normal': mae('normM', 'realM'), 'mae_perfect_corrected': mae('perfMC', 'realM'), 'mae_normal_corrected': mae('normMC', 'realM'),
