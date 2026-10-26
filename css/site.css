@@ -3422,7 +3422,7 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 @media (max-width: 600px) { .reg-it { grid-template-columns: 1fr; gap: 4px; } }
 
 /* Bilan électrique (js/bilan.js) */
-.bl-wrap { max-width: 1240px; display: grid; gap: 16px; padding: 6px 0 30px; }
+.bl-wrap { max-width: none; display: grid; gap: 16px; padding: 6px 0 30px; }
 .bl-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
 .bl-h1 { margin: 0; font: 600 24px 'Outfit', sans-serif; color: var(--text); } .bl-sub { margin: 4px 0 0; font-size: 13px; color: var(--text3); }
 .bl-yrs { display: flex; gap: 5px; flex-wrap: wrap; } .bl-y { font-size: 12.5px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; } .bl-y.on { border-color: var(--accent); color: var(--accent); }
