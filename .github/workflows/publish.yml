@@ -11,10 +11,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      after:
+        description: 'run that started this one (ignored when looking for a run still going)'
+        required: false
+        default: ''
 
-concurrency:
-  group: publish
-  cancel-in-progress: false   # one run at a time, the newest waiting push replaces older waiting ones
+# One run at a time, without GitHub's concurrency group (it cancels the waiting run whenever a newer push
+# arrives, and every cancelled run sends an e-mail). Instead: a run that starts while an older one is still
+# going ends at once, successfully; the older one, when it finishes, starts a new run if main has moved,
+# so the newest version is always published, one after the other.
 
 jobs:
   publish:
@@ -22,10 +28,27 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: write
+      actions: write     # to start the next run when main moved during this one
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Another publish still running?
+        id: busy
+        run: |
+          me=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .created_at)
+          older=$(gh run list -R "${{ github.repository }}" --workflow publish.yml --limit 30 --json databaseId,status,createdAt \
+            --jq "[.[] | select(.databaseId != ${{ github.run_id }} and (.databaseId | tostring) != \"${{ github.event.inputs.after }}\" and (.status == \"in_progress\" or .status == \"queued\") and .createdAt < \"$me\")] | length")
+          if [ "${older:-0}" -gt 0 ]; then
+            echo "busy=yes" >> "$GITHUB_OUTPUT"
+            echo "::notice::An older publish is running; it will start a new run for this commit when it ends."
+          else
+            echo "busy=no" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.busy.outputs.busy == 'no'
         with: { fetch-depth: 1 }
       - name: Code changed since the published version?
+        if: steps.busy.outputs.busy == 'no'
         id: diff
         run: |
           git fetch -q --depth=1 origin site || true
@@ -50,11 +73,25 @@ jobs:
           python tests/test_consistency.py
           python tests/smoke.py
       - name: Move the site branch
+        if: steps.busy.outputs.busy == 'no'
         run: |
-          # `site` is written only here and always equals a tested main: replaced, not merged
+          # `site` is written only here and always equals a tested main: replaced, not merged.
+          # Never move it back: if it already holds a newer commit than this one, leave it.
+          git fetch -q --depth=1 origin site || true
+          if git rev-parse -q --verify origin/site >/dev/null \
+             && [ "$(git log -1 --format=%ct origin/site)" -gt "$(git log -1 --format=%ct HEAD)" ]; then
+            echo "::notice::site already holds a newer commit"; exit 0
+          fi
           for i in 1 2 3; do git push -q --force origin HEAD:refs/heads/site && exit 0; sleep 5; done; exit 1
+      - name: Main moved during this run? Start the next one
+        if: always() && steps.busy.outputs.busy == 'no'
+        run: |
+          head=$(git ls-remote "https://github.com/${{ github.repository }}" refs/heads/main | cut -f1)
+          if [ -n "$head" ] && [ "$head" != "$GITHUB_SHA" ]; then
+            gh workflow run publish.yml -R "${{ github.repository }}" --ref main -f after=${{ github.run_id }} && echo "::notice::next run started for $head"
+          fi
       - name: E-mail on failure
-        if: failure()
+        if: failure() && steps.busy.outputs.busy == 'no'
         env:
           GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
