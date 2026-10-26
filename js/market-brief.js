@@ -112,11 +112,12 @@
   .why4-n{font:700 13.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--accent, #14D3A9)}   /* the market's name: what the eye looks for first */
   .why4-t .why4-h .wk-chip{margin-left:auto}
   .why4-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;align-items:stretch}
-  .why4-t{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;min-width:0}
-  .why4-v{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .why4-t{border:1px solid var(--border2, rgba(255,255,255,.12));border-top:3px solid var(--text3);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;min-width:0;background:var(--bg2, rgba(255,255,255,.035));box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 4px 14px rgba(0,0,0,.25)}
+  .why4-t.up{border-top-color:#ED6965} .why4-t.down{border-top-color:#14D3A9} .why4-t.flat{border-top-color:#6F8499}   /* the direction at a glance: rising prices red, as on the rest of the site */
+  .why4-v{font-size:19px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
   .why4-v small{font-size:11.5px;font-weight:500;color:var(--text3);margin-left:6px}
-  .why4-x{flex:1}
-  .why4-next{margin-top:auto;min-height:5.4em;font-size:12px;line-height:1.45;color:var(--text2);background:var(--bg3, rgba(255,255,255,.03));border-radius:8px;padding:7px 9px}
+  .why4-x{flex:1;font-size:13.5px;line-height:1.55;color:var(--text)}
+  .why4-next{margin-top:auto;min-height:5.4em;font-size:12.5px;line-height:1.5;color:var(--text2);background:rgba(0,0,0,.22);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
   .why4-next.none{color:var(--text3);font-style:italic}
   .why4-t > .why3-src{margin-top:2px}
   .why3-next{display:block;font-size:12px;color:var(--text3);margin-top:8px;padding-top:6px;border-top:1px dashed var(--border, rgba(255,255,255,.08))} .why3-next b{color:var(--text2)}
@@ -239,7 +240,7 @@
     // in a box pinned to the bottom of the tile, the same height in every tile (an empty box says there is no call)
     const ctxR = R.filter(r => r[0] === T('Contexte', 'Context')), mk = R.filter(r => r[0] !== T('Contexte', 'Context'));
     const ctx = ctxR.map(([k, [tone, src], text]) => `<div class="why4-ctx"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}<span class="why3-src">${src}</span></div><div>${text}</div></div>`).join('');
-    host.innerHTML = `<div class="why3 why4">${ctx}<div class="why4-g">${mk.map(([k, [tone, src, o], text, fig]) => `<div class="why4-t"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}</div>` +
+    host.innerHTML = `<div class="why3 why4">${ctx}<div class="why4-g">${mk.map(([k, [tone, src, o], text, fig]) => `<div class="why4-t ${tone === 'up' ? 'up' : tone === 'down' ? 'down' : 'flat'}"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}</div>` +
       (fig ? `<div class="why4-v">${fig}</div>` : '') + `<div class="why4-x">${text}</div>` +
       `<div class="why4-next${o ? '' : ' none'}">${o ? `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${txt(o)}` : `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${T('pas de note cette semaine', 'no call this week')}`}</div><span class="why3-src">${src}</span></div>`).join('')}</div>${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
     // every « week ahead » box the height of the tallest, so they line up at the bottom of all the tiles

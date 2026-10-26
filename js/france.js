@@ -391,13 +391,13 @@
 
       var prices = fr.hourly || [];
       var po = peakOffpeak(prices);
-      var base = mean(prices);
+      var base = fr.avg != null ? fr.avg : mean(prices);   // published average: a 25-hour day counts the repeated hour the 96-slot series leaves out
       var nh = negHours(prices);
       var mn = Math.min.apply(null, clean(prices));
       var mx = Math.max.apply(null, clean(prices));
       var ratio = (base && po.peak !== null) ? po.peak / base : null;
 
-      var basePrev = frPrev ? mean(frPrev.hourly || []) : null;
+      var basePrev = frPrev ? (frPrev.avg != null ? frPrev.avg : mean(frPrev.hourly || [])) : null;
       var delta = (base !== null && basePrev !== null) ? base - basePrev : null;
 
       // Capture rate du jour, filiere par filiere
