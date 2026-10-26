@@ -4,7 +4,7 @@ would see it, and an e-mail goes out when something breaks or comes back (not ev
 Checks
   1. the site answers (Cloudflare address; GitHub Pages if Cloudflare is down or behind a login)
   2. data on time, with the hour it is expected (Paris):
-       today's day-ahead prices · tomorrow's after 13:30 · the PowerKlock forecast for tomorrow from 10:00 ·
+       today's day-ahead prices · tomorrow's after 15:30 · the PowerKlock forecast for tomorrow from 10:00 ·
        news within 12 h · market closes within 4 days · RTE French system within 2 days · TSO forecasts within 12 h
   3. in a browser: Today and Day-ahead open without a script error and show prices
 State (problems already reported) lives in monitor_state.json, kept between runs by the workflow's cache.
@@ -65,10 +65,10 @@ else:
         problems['prix-jour'] = f'prix day-ahead du {today} absents'
     else:
         ok.append(f'prix du jour : FR {j["zones"]["FR"]["avg"]} €/MWh')
-    if paris.hour * 60 + paris.minute >= 13 * 60 + 30:
+    if paris.hour * 60 + paris.minute >= 15 * 60 + 30:   # the auction closes at 12:00; all zones reach ENTSO-E between 14:30 and 17:40 (Oct 2026)
         j, _ = get(base, f'data/history/daily/{tomorrow}.json')
         if not (j and (j.get('zones') or {}).get('FR', {}).get('avg') is not None):
-            problems['prix-demain'] = f'prix day-ahead du {tomorrow} absents à {paris:%H:%M} (publiés vers 13 h)'
+            problems['prix-demain'] = f'prix day-ahead du {tomorrow} absents à {paris:%H:%M} (enchère à 12 h, d’habitude en ligne avant 15 h 30)'
         else:
             ok.append('prix de demain publiés')
     if paris.hour >= 10:
