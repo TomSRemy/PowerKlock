@@ -4,7 +4,7 @@ day so the current year reads "to date" and every past year is complete.
 Per year (2015 → this year), and for this year also the same period of the year before:
   consumption, peak, production by source, low-carbon share, net exports, exports by border (physical, from 2020),
   direct CO₂ (tonnes and g/kWh), spot (average, negative hours, hours above 100 €, highest day), installed capacity
-Per month: production by source, consumption, spot average, negative hours (for the monthly charts)
+Per month, every year: production by source, consumption, spot average, negative hours (for the monthly charts)
 Sources: RTE éCO2mix daily (history/rte/fr_daily.json), day-ahead history (history/summary.json, France),
 Energy-Charts physical flows (history/flows), installed capacity (history/capacity.json).
 Checked on 2025 against RTE's Bilan électrique 2025: nuclear 373.0 TWh (RTE 373.0), production 545.8 (547.5),
@@ -120,7 +120,7 @@ def main():
     cur = {'year': y0, 'to': last, 'now': years.get(str(y0)), 'prev_same_period': agg(y0 - 1, cut), 'prev_borders_same_period': borders(y0 - 1, cut)}
     out = {'updated': datetime.now(ZoneInfo('Europe/Paris')).isoformat(timespec='minutes'), 'to': last,
            'source': 'RTE éCO2mix (production, consumption, exchanges, CO₂), ENTSO-E day-ahead, Energy-Charts (flows by border, capacity)',
-           'current': cur, 'years': years, 'months': {str(y): months(y) for y in (y0 - 1, y0)},
+           'current': cur, 'years': years, 'months': {str(y): months(y) for y in range(2015, y0 + 1)},   # every year: its monthly charts and the events they show
            'check_2025': {'note': 'PowerKlock vs RTE Bilan électrique 2025', 'nuclear': [r1(years.get('2025', {}).get('by_source', {}).get('nuclear')), 373.0],
                           'production': [years.get('2025', {}).get('production'), 547.5], 'net_export': [years.get('2025', {}).get('net_export'), 92.3],
                           'spot': [years.get('2025', {}).get('spot', {}).get('avg'), 61.0], 'neg_h': [years.get('2025', {}).get('spot', {}).get('neg_h'), 513]}}
