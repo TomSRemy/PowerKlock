@@ -7,10 +7,12 @@ name: Fetch forecasts (solar, wind, load · today and tomorrow)
 
 on:
   schedule:
-    - cron: '15 6 * * *'     # morning: today + error over 30 days
-    - cron: '30 7,8,9,10,11 * * *'   # tomorrow's forecasts: from the morning on, so the price forecast shows before the 13:00 auction
-    - cron: '30 16 * * *'
-    - cron: '30 19 * * *'    # late publishers
+    # off the :00/:15/:30 marks, where GitHub delays or drops scheduled runs most (26 Oct 2026: no morning run at all)
+    - cron: '13 6 * * *'     # morning: today + error over 30 days
+    - cron: '43 6 * * *'     # tomorrow's forecasts: from early morning on, so the price forecast shows well before the 13:00 auction
+    - cron: '7,37 7-11 * * *'
+    - cron: '41 16 * * *'
+    - cron: '47 19 * * *'    # late publishers
   workflow_dispatch:
     inputs:
       accuracy:
@@ -37,7 +39,7 @@ jobs:
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}   # France load forecast for tomorrow before Energy-Charts serves it
         run: |
-          if [ "${{ github.event.schedule }}" = "15 6 * * *" ] || [ "${{ inputs.accuracy }}" = "true" ]; then
+          if [ "${{ github.event.schedule }}" = "13 6 * * *" ] || [ "${{ inputs.accuracy }}" = "true" ]; then
             python scripts/fetch_forecast.py --accuracy
           else
             python scripts/fetch_forecast.py

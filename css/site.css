@@ -3363,7 +3363,7 @@ table.mrn-wtab td, table.mrn-wtab thead th:not(:first-child) { text-align: cente
 /* Today: spot, three days side by side */
 .mrn-3d { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .mrn-3d-c { margin: 0 !important; padding: 12px 14px; min-width: 0; }
-.mrn-3d-c .mu-day-c { min-height: 210px; height: 210px; }
+.mrn-3d-c .mu-day-c { min-height: 250px; height: 250px; }
 .mrn-3d .chart-container.mrn-3d-c:has(> .pk-tool-float) > .mrn-3d-h.mrn-3d-h { padding-right: 0 !important; }
 .mrn-3d-h .mu-day-h { padding-right: 34px; }
 .mu-day-fc { color: #7FC8F8; text-transform: none; }
@@ -3373,3 +3373,9 @@ table.mrn-wtab td, table.mrn-wtab thead th:not(:first-child) { text-align: cente
 /* Methodology: one article per language */
 html[lang="fr"] .pk-en-only{display:none !important}
 html:not([lang="fr"]) .pk-fr-only{display:none !important}
+
+/* Dashboard showing the Expert view of Today itself (mirror board): no grid, no layout tools */
+#page-mydash.pkd-is-mirror #pkd-grid, #page-mydash.pkd-is-mirror #pkd-empty,
+#page-mydash.pkd-is-mirror #pkd-edit, #page-mydash.pkd-is-mirror #pkd-add, #page-mydash.pkd-is-mirror #pkd-add-sec,
+#page-mydash.pkd-is-mirror #pkd-add-note, #page-mydash.pkd-is-mirror .pkd-hint { display: none !important; }
+.pkd-mirror { margin-top: 10px; }
