@@ -4411,17 +4411,27 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 
     <div class="page" id="page-methodology">
       <div class="meth-wrap">
-        <aside class="meth-nav">
+        <aside class="meth-nav pk-en-only">
           <div class="meth-nav-title">Methodology</div>
           <a href="#meth-prices" class="meth-nav-link">Prices</a>
           <a href="#meth-bands" class="meth-nav-sublink">→ Cross-zone Bands</a>
           <a href="#meth-drill" class="meth-nav-sublink">→ Drill-down envelope</a>
+          <a href="#meth-index" class="meth-nav-link">PowerKlock index</a>
           <a href="#meth-genmix" class="meth-nav-link">Generation &amp; renewables</a>
           <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
           <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
-        <article class="meth-body">
+        <aside class="meth-nav pk-fr-only" translate="no">
+          <div class="meth-nav-title">Méthodologie</div>
+          <a href="#meth-prices-fr" class="meth-nav-link">Prix</a>
+          <a href="#meth-index-fr" class="meth-nav-link">Indice PowerKlock</a>
+          <a href="#meth-genmix-fr" class="meth-nav-link">Production et renouvelables</a>
+          <a href="#meth-cb-fr" class="meth-nav-link">Échanges, écarts, indisponibilités</a>
+          <a href="#meth-eua-fr" class="meth-nav-link">Carbone, combustibles et spreads</a>
+          <a href="#meth-general-fr" class="meth-nav-link">Termes généraux</a>
+        </aside>
+        <article class="meth-body pk-en-only">
           <h1 class="meth-h1">Methodology &amp; definitions</h1>
           <p class="meth-lead">This page documents the calculations and statistical methods used across PowerKlock. Each section indicates where the term applies inside the dashboard.</p>
 
@@ -4507,6 +4517,18 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             </div>
           </section>
 
+          <section id="meth-index" class="meth-section">
+            <h2 class="meth-h2">PowerKlock index</h2>
+            <p class="meth-tag">Used in: <strong>Today (PowerKlock index tile, 4-week table, Fundamentals section)</strong>.</p>
+            <p class="meth-p"><strong>Low-carbon coverage</strong> = (nuclear + hydro + wind + solar + bioenergy) ÷ consumption, each day (RTE éCO2mix). Above 100 %, France covers its demand without gas and exports; below, gas plants set the price.</p>
+            <p class="meth-p"><strong>Implied price</strong> = cost of a gas plant × a logistic curve of coverage, with a weekend discount:</p>
+            <pre class="meth-code">gas cost = TTF ÷ 0.55 + 0.37 × EUA
+price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 − w × weekend)</pre>
+            <p class="meth-p">a, b and w are refitted daily on the last three years (least absolute error). The implied price explains about 62 % of daily spot variation (average gap ± €20).</p>
+            <p class="meth-p"><strong>Expected spot over 4 weeks</strong>: the same curve applied to expected coverage — normal consumption for the same days (2023–2025) adjusted by 2.4 GW per °C of deviation in the heating season, forecast wind and solar (GFS ensemble mean, current fleet), hydro and bioenergy at their normal, nuclear at the last day × 0.92 — at today’s gas cost, plus the index’s average gap over the last 14 days (what it does not see, such as neighbouring prices, persists for a few weeks).</p>
+            <p class="meth-p"><strong>Backtest</strong> (every Monday 2024–2026, using only what was known that day; <code>scripts/backtest_index.py</code>): average error €16–20 over 4 weeks depending on weather quality, against €23 for the month-ahead forward, biased +€10. When the index differs from the forward by more than €10, the month proved it right 8 to 9 times out of 10 (only 17 months tested).</p>
+          </section>
+
           <section id="meth-genmix" class="meth-section">
             <h2 class="meth-h2">Generation, load &amp; renewables</h2>
             <h3 class="meth-h3">Sources</h3>
@@ -4564,6 +4586,150 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div class="meth-block">
               <h3 class="meth-h3">Time zone</h3>
               <p class="meth-p">All times are CET / CEST as published by ENTSO-E Transparency. Slot times in the breakdown table (00:00, 00:15, …) are local delivery-time clock readings, with daylight-saving transitions handled by the source data.</p>
+            </div>
+          </section>
+        </article>
+        <article class="meth-body pk-fr-only" lang="fr">
+          <h1 class="meth-h1">Méthodologie et définitions</h1>
+          <p class="meth-lead">Cette page documente les calculs et les méthodes statistiques utilisés dans PowerKlock. Chaque section indique où le terme s’applique sur le site.</p>
+
+          <section id="meth-prices-fr" class="meth-section">
+            <h2 class="meth-h2">Prix</h2>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Bandes multi-zones · vue Z-score</h3>
+              <p class="meth-tag">Utilisé dans : <strong>Marchés › Électricité spot › Quotidien › Analyse multi-zones › vue Bandes</strong>.</p>
+              <p class="meth-p">La vue Z-score ramène chaque zone sélectionnée sur une même échelle sans unité, pour que les anomalies ressortent quel que soit le niveau de prix. Une zone dont les prix évoluent entre 10 et 30 € et une autre entre 80 et 150 € deviennent directement comparables.</p>
+              <h4 class="meth-h4">Référence par créneau</h4>
+              <p class="meth-p">Pour chaque zone <code>Z</code> et chaque créneau de 15 minutes <code>s</code> (00:00, 00:15, … 23:45), on rassemble les prix de ce créneau sur les <code>N</code> derniers jours (7 j / 1 mois / 3 mois / 6 mois / depuis janvier / 1 an, 1 mois par défaut) :</p>
+              <pre class="meth-code">prix_s = [p₁, p₂, ..., p_N]</pre>
+              <p class="meth-p">On calcule ensuite la médiane et l’écart-type robuste du créneau :</p>
+              <pre class="meth-code">médiane_s = P50(prix_s)
+σ_s       = (P75(prix_s) − P25(prix_s)) / 1,349</pre>
+              <h4 class="meth-h4">Pourquoi un écart-type robuste</h4>
+              <p class="meth-p">Un écart-type classique élève chaque écart au carré : un seul pic (+500 €/MWh lors d’une tension d’approvisionnement) ou un prix très négatif (−50 €/MWh lors d’un surplus solaire) gonfle σ de façon disproportionnée. Après deux ou trois événements de ce type sur 30 jours, une journée « tendue mais normale » paraît calme (Z ≈ 0,5σ) alors qu’elle ne l’est pas.</p>
+              <p class="meth-p">L’écart interquartile (P75 − P25) ignore tout ce qui sort des 50 % centraux de la distribution. Le diviser par 1,349 donne exactement l’écart-type classique quand la distribution est normale : les seuils habituels (|Z| &gt; 2 = anomalie, |Z| &gt; 3 = extrême) restent valables. Il reste simplement stable quand la distribution a des queues épaisses, ce qui est la règle pour les prix de l’électricité.</p>
+              <h4 class="meth-h4">Z-score</h4>
+              <pre class="meth-code">Z_s = (aujourd’hui_s − médiane_s) / σ_s</pre>
+              <p class="meth-p">Pour le prix du jour au créneau <code>s</code>, <code>Z_s</code> indique à combien d’écarts-types robustes de la médiane historique il se situe.</p>
+              <h4 class="meth-h4">Seuils</h4>
+              <table class="meth-table">
+                <thead><tr><th>|Z|</th><th>Lecture</th><th>Signal visuel</th></tr></thead>
+                <tbody>
+                  <tr><td>&lt; 1</td><td>Dans la bande habituelle</td><td>—</td></tr>
+                  <tr><td>1 → 2</td><td>Au-dessus de la variabilité normale</td><td>—</td></tr>
+                  <tr><td>2 → 3</td><td>Anomalie statistique</td><td>Ligne surlignée</td></tr>
+                  <tr><td>&gt; 3</td><td>Valeur extrême</td><td>Ligne surlignée, citée dans la lecture du marché</td></tr>
+                </tbody>
+              </table>
+              <h4 class="meth-h4">Z-score du jour (colonne « Z » du tableau)</h4>
+              <p class="meth-p">Le tableau donne un Z par jour qui résume les 96 Z des créneaux de la zone : la moyenne des <code>Z_s</code> sur les créneaux valides. Un seul chiffre pour dire à quel point toute la journée s’écarte de sa référence.</p>
+              <h4 class="meth-h4">Exemple</h4>
+              <p class="meth-p">Créneau 12:00, 30 derniers jours : 28 valeurs entre 30 et 70 €, plus deux extrêmes (−20 € et 180 €).</p>
+              <ul class="meth-list">
+                <li><code>médiane_s</code> = 50 €/MWh</li>
+                <li>σ classique = 45 €/MWh (dominé par les deux extrêmes)</li>
+                <li>σ robuste (écart interquartile / 1,349) = 12 €/MWh</li>
+                <li>Si le prix de 12:00 aujourd’hui est 75 €/MWh :
+                  <ul><li>Z classique = (75 − 50) / 45 = 0,55 → « rien à signaler »</li><li>Z robuste = (75 − 50) / 12 = 2,08 → anomalie</li></ul>
+                </li>
+              </ul>
+              <p class="meth-p">C’est le score robuste qui compte ici : 75 €/MWh à midi est vraiment inhabituel dans un régime dominé par le solaire.</p>
+            </div>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Bandes multi-zones · colonne « position 30 j »</h3>
+              <p class="meth-tag">Utilisé dans : <strong>Marchés › Électricité spot › Quotidien › Analyse multi-zones › tableau des bandes</strong>.</p>
+              <p class="meth-p">La colonne « position 30 j » place la valeur du jour de chaque zone dans la distribution de ses N derniers jours (la période choisie pour le graphique). Le visuel est une boîte à moustaches horizontale :</p>
+              <ul class="meth-list">
+                <li>Les moustaches vont du minimum au maximum observés</li>
+                <li>La boîte bleue couvre l’écart interquartile (P25 à P75, les 50 % de jours centraux)</li>
+                <li>Le trait vertical dans la boîte est la médiane (P50)</li>
+                <li>Le point coloré est le prix du jour</li>
+              </ul>
+              <p class="meth-p">Un point dans la boîte est « dans la norme » ; un point au bout d’une moustache signifie que le jour est au niveau ou au-delà de l’extrême des 30 jours. La colonne « Pctile » donne la même information en rang centile (P10 = premier décile, P50 = médiane, P90 = dernier décile).</p>
+            </div>
+
+            <div class="meth-block">
+              <h3 class="meth-h3">Détail d’une zone · enveloppe historique</h3>
+              <p class="meth-tag">Utilisé dans : <strong>Marchés › Électricité spot › Quotidien › tableau day-ahead › détail d’une ligne › choix de bande</strong>.</p>
+              <p class="meth-p">La même distribution par créneau est calculée pour la zone ouverte, puis tracée en trois couches sur la courbe du jour :</p>
+              <ul class="meth-list">
+                <li><strong>Étendue 0–100 %</strong> : remplissage léger de P0 à P100 (toute l’étendue historique, créneau par créneau)</li>
+                <li><strong>Habituel 10–90 %</strong> : remplissage plus marqué de P10 à P90 (la bande habituelle)</li>
+                <li><strong>Médiane</strong> : ligne pointillée à P50</li>
+              </ul>
+              <p class="meth-p">Une courbe du jour hors de la bande 10–90 % signifie que la journée s’écarte de sa référence récente à ce créneau. La phrase « Aujourd’hui vs bande » de la lecture du marché donne le centile du jour, l’écart à la médiane et le créneau le plus éloigné.</p>
+            </div>
+          </section>
+
+          <section id="meth-index-fr" class="meth-section">
+            <h2 class="meth-h2">Indice PowerKlock</h2>
+            <p class="meth-tag">Utilisé dans : <strong>Aujourd’hui (tuile « Indice PowerKlock », tableau des 4 semaines, section Fondamentaux)</strong>.</p>
+            <p class="meth-p"><strong>Couverture bas carbone</strong> = (nucléaire + hydraulique + éolien + solaire + bioénergies) ÷ consommation, chaque jour (RTE éCO2mix). Au-dessus de 100 %, la France couvre sa consommation sans gaz et exporte ; en dessous, les centrales au gaz fixent le prix.</p>
+            <p class="meth-p"><strong>Prix implicite</strong> = coût d’une centrale gaz × une courbe logistique de la couverture, avec une décote le week-end :</p>
+            <pre class="meth-code">coût gaz = TTF ÷ 0,55 + 0,37 × EUA
+prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (1 − w × week-end)</pre>
+            <p class="meth-p">a, b et w sont ajustés chaque jour sur les trois dernières années (erreur absolue minimale). Le prix implicite explique environ 62 % des variations du spot quotidien (écart moyen ± 20 €).</p>
+            <p class="meth-p"><strong>Spot attendu sur 4 semaines</strong> : la même courbe appliquée à la couverture prévue — consommation normale des mêmes jours (2023–2025) corrigée de 2,4 GW par °C d’écart à la normale en saison de chauffe, éolien et solaire prévus (moyenne de l’ensemble GFS, au parc actuel), hydraulique et bioénergies à leur normale, nucléaire au niveau du dernier jour × 0,92 — au coût du gaz du jour, plus l’écart moyen de l’indice sur les 14 derniers jours (ce qu’il ne voit pas, comme les prix des voisins, persiste quelques semaines).</p>
+            <p class="meth-p"><strong>Backtest</strong> (chaque lundi de 2024 à 2026, avec seulement ce qui était connu ce jour-là ; <code>scripts/backtest_index.py</code>) : erreur moyenne de 16 à 20 € sur 4 semaines selon la qualité de la météo, contre 23 € pour le forward du mois, biaisé de +10 €. Quand l’indice s’écarte du forward de plus de 10 €, le mois lui a donné raison 8 à 9 fois sur 10 (17 mois testés seulement).</p>
+          </section>
+
+          <section id="meth-genmix-fr" class="meth-section">
+            <h2 class="meth-h2">Production, consommation et renouvelables</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">La production réelle par filière (ENTSO-E A75), les prévisions éolien et solaire de la veille (A69) et la consommation (A65, réelle et prévue) sont récupérées chaque jour et stockées dans <code>data/history/daily/</code>. Pour la France, on utilise RTE éCO2mix (temps réel et consolidé, via les données ouvertes ODRÉ) pour la production par filière, la consommation, les prévisions et les échanges : RTE publie la journée complète toutes les 15 minutes avec un historique depuis 2012, alors que les données françaises par filière d’ENTSO-E arrivent tard et avec des trous. L’historique consolidé avant septembre 2026 est à la demi-heure et ne sépare pas l’éolien terrestre et en mer ; les chiffres ENTSO-E restent disponibles pour comparaison.</p>
+            <h3 class="meth-h3">Alignement horaire</h3>
+            <p class="meth-p">Les séries de production et de consommation sont demandées sur une journée UTC puis réalignées dans le navigateur sur les créneaux de livraison CET/CEST (créneau 0 = 00:00 à Paris), pour coller aux prix day-ahead. Les créneaux pas encore publiés par ENTSO-E apparaissent vides, jamais à zéro.</p>
+            <h3 class="meth-h3">Prix et taux de capture</h3>
+            <p class="meth-p">Prix capté = Σ(production × prix) ÷ Σ(production) sur les créneaux du jour de livraison ; taux de capture = prix capté ÷ prix base (moyenne simple des prix des mêmes jours). Sur plusieurs jours, les chiffres sont pondérés par la production et n’utilisent que les jours qui ont des données de production ; le nombre de jours est toujours indiqué.</p>
+            <h3 class="meth-h3">Facteurs de charge mesurés</h3>
+            <p class="meth-p">Par pays : production de l’année ÷ puissance installée (moyenne des fins d’année avant et après, Energy-Charts), années complètes seulement. Par région française : facteur de charge publié par RTE, moyenne des quarts d’heure de l’année.</p>
+            <h3 class="meth-h3">Intensité carbone</h3>
+            <p class="meth-p">Intensité moyenne (attributionnelle) en cycle de vie : Σ(production × facteur d’émission) ÷ Σ(production), avec les facteurs médians GIEC / ADEME par filière. Les imports ne sont pas inclus.</p>
+          </section>
+
+          <section id="meth-cb-fr" class="meth-section">
+            <h2 class="meth-h2">Échanges, écarts et indisponibilités</h2>
+            <p class="meth-p"><strong>France :</strong> échanges commerciaux par frontière issus de RTE éCO2mix (15 minutes ; convention RTE, négatif = export). <strong>Autres zones :</strong> flux physiques ENTSO-E A11, moyenne du jour par voisin.</p>
+            <p class="meth-p"><strong>Écarts :</strong> prix d’écart unique et déséquilibre du système belges, données ouvertes Elia (aujourd’hui en quasi temps réel, jours précédents validés) ; prix d’écart et d’activation mFRR français ENTSO-E.</p>
+            <p class="meth-p"><strong>Disponibilité nucléaire et indisponibilités :</strong> capacité nucléaire française disponible (réelle et prévue par l’exploitant) publiée chaque jour ; indisponibilité = 63,0 GW installés (57 réacteurs dont Flamanville 3) − disponible. Les messages d’indisponibilité par réacteur renvoient aux plateformes officielles d’informations privilégiées.</p>
+            <h3 class="meth-h3">Météo et degrés-jours</h3>
+            <p class="meth-p">Prévisions Open-Meteo et archive ERA5, pondérées par la population des principaux centres de consommation de chaque pays. DJU chauffage = max(0, 18 °C − moyenne du jour), DJU climatisation = max(0, moyenne du jour − 21 °C) ; normale = moyenne du même jour calendaire 2016–2025.</p>
+            <h3 class="meth-h3">Profondeur d’historique</h3>
+            <p class="meth-p">La France a un historique day-ahead depuis 2015 ; la plupart des autres zones ne sont complètes que depuis octobre 2026 (rattrapage en cours). Les comparaisons multi-zones portent sur les jours communs à toutes les zones choisies, et les années incomplètes sont exclues des totaux annuels.</p>
+          </section>
+
+          <section id="meth-eua-fr" class="meth-section">
+            <h2 class="meth-h2">Carbone, combustibles et spreads</h2>
+            <h3 class="meth-h3">Sources</h3>
+            <p class="meth-p">Gaz (TTF, PEG, THE, NBP day-ahead ; JKM premier mois), EUA échéance décembre, charbon API2 (CIF ARA, première année calendaire), Brent premier mois, EUR/USD et GBP/USD, stocks de gaz UE (GIE AGSI) et capacité nucléaire française disponible : clôtures quotidiennes mises à jour chaque jour de bourse (<code>data/commodities.json</code>). La date affichée est la date de cotation.</p>
+            <p class="meth-p">Les historiques EUA et charbon sont ceux d’un seul contrat de référence (par exemple EUA Déc-26, API2 Cal-27), pas une série continue reconstituée : les points anciens intègrent le portage du contrat.</p>
+            <h3 class="meth-h3">Clean spark et clean dark spreads</h3>
+            <p class="meth-p"><strong>CSS</strong> = électricité − TTF ÷ 49,13 % − EUA × 0,411 tCO₂/MWh (CCGT, 0,202 tCO₂/MWh<sub>th</sub>). <strong>CDS</strong> = électricité − API2 (converti au cours EUR/USD) ÷ (6,978 MWh/t × 36 %) − EUA × 0,947 tCO₂/MWh (charbon, 0,341 tCO₂/MWh<sub>th</sub>). Les spreads day-ahead utilisent le TTF day-ahead coté la veille de la livraison ; les spreads à terme utilisent l’électricité et le TTF de la même échéance et l’EUA de décembre de l’année de livraison. Pointe = 08:00–20:00.</p>
+            <h3 class="meth-h3">Prix de bascule charbon-gaz</h3>
+            <p class="meth-p">Le prix de l’EUA auquel une centrale gaz et une centrale charbon ont le même coût de court terme : (coût combustible gaz − coût combustible charbon) ÷ (0,947 − 0,411). Au-dessus, le gaz est moins cher que le charbon dans l’ordre de préséance.</p>
+            <h3 class="meth-h3">Garanties d’origine</h3>
+            <p class="meth-p">Indications de prix AIB hebdomadaires (offre et demande par année de production) de Commerg, et résultats mensuels des enchères françaises publiés par EEX.</p>
+          </section>
+
+          <section id="meth-general-fr" class="meth-section">
+            <h2 class="meth-h2">Termes généraux</h2>
+            <div class="meth-block">
+              <h3 class="meth-h3">Date d’enchère et date de livraison</h3>
+              <p class="meth-p">Les prix day-ahead sont fixés la veille de la livraison (l’enchère EPEX / Nord Pool ferme à 12:00 CET le jour J-1 pour une livraison le jour J). Partout dans PowerKlock, les dates désignent la <strong>date de livraison</strong> (un jour calendaire CET/CEST). Les fichiers d’historique de <code>data/history/daily/</code> sont nommés par date de livraison.</p>
+            </div>
+            <div class="meth-block">
+              <h3 class="meth-h3">Pointe et hors pointe</h3>
+              <p class="meth-p">Convention européenne : pointe = 08:00–20:00 (12 heures), hors pointe = 00:00–08:00 et 20:00–24:00 (12 heures). Un ratio pointe / hors pointe inférieur à 1 est un « profil inversé » (souvent dû au solaire de midi qui sature le marché). Un ratio autour de 1,30 signifie que la pointe coûte environ 30 % de plus que le hors pointe.</p>
+            </div>
+            <div class="meth-block">
+              <h3 class="meth-h3">J-1, J, J+1</h3>
+              <p class="meth-p">J = aujourd’hui (le jour de livraison affiché), J-1 = le jour de livraison précédent, J+1 = demain. Dans les légendes, J-1 apparaît sous le nom du jour précédent (par exemple « mer. 20 mai »).</p>
+            </div>
+            <div class="meth-block">
+              <h3 class="meth-h3">Fuseau horaire</h3>
+              <p class="meth-p">Toutes les heures sont en CET / CEST, comme publiées par ENTSO-E Transparency. Les créneaux du tableau détaillé (00:00, 00:15, …) sont des heures locales de livraison ; les changements d’heure sont gérés par les données sources.</p>
             </div>
           </section>
         </article>

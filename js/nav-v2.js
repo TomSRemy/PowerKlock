@@ -545,3 +545,12 @@
     pageLabel: id => pageLabel[id] || null,   // menu name of a page (quick search)
   };
 })();
+
+// Methodology menu: scroll to the section instead of letting the router read "#meth-…" as a page
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('.meth-nav a[href^="#meth-"]');
+  if (!a) return;
+  e.preventDefault(); e.stopPropagation();
+  const t = document.getElementById(a.getAttribute('href').slice(1));
+  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}, true);
