@@ -397,7 +397,14 @@ async function renderSpark() {
   await PKC.ready;
   const dateISO = window._currentPriceDate || pkTodayISO();
   const refs = PKC.refsFor(dateISO);
-  const rows = (typeof pricesData !== 'undefined' && pricesData) ? pricesData.filter(z => z.today != null) : [];
+  let rows = (typeof pricesData !== 'undefined' && pricesData) ? pricesData.filter(z => z.today != null) : [];
+  // opened from a direct link: the spot page has not loaded the prices, so read the delivery day's file here
+  if (!rows.length && typeof fetchHistoricalDaily === 'function') {
+    const zn = c => (window.GM_ZONE_NAMES || {})[c] || (typeof _GMD_ZONE_NAMES !== 'undefined' && _GMD_ZONE_NAMES[c]) || '';
+    let d = await fetchHistoricalDaily(dateISO);
+    if (!d || !Object.keys(d.zones || {}).length) d = await fetchHistoricalDaily(_prevDateISO(dateISO));
+    rows = d ? Object.entries(d.zones).filter(([, z]) => z.avg != null).map(([code, z]) => ({ code, name: zn(code), today: z.avg, hourly: z.hourly })) : [];
+  }
   const gasC = refs.ttf != null ? PKC.gasCost(refs.ttf) : null, co2G = refs.eua != null ? refs.eua * PKC.FUEL.gasCO2 : null;
   const coalC = (refs.coal != null && refs.eurusd) ? PKC.coalCost(refs.coal, refs.eurusd) + (refs.eua || 0) * PKC.FUEL.coalCO2 : null;
 
@@ -431,7 +438,7 @@ async function renderSpark() {
     `<td style="color:${col(r.cssB)};font-weight:600">${_fuelSigned(r.cssB)}</td><td style="color:${col(r.cssP)};font-weight:600">${_fuelSigned(r.cssP)}</td>` +
     `<td style="color:var(--text3)">${_fuelFmt(coalC)}</td><td style="color:${col(r.cdsB)};font-weight:600">${_fuelSigned(r.cdsB)}</td>` +
     `<td class="l" style="color:var(--text2);text-align:left">${merit(r)}</td></tr>`).join('')
-    : '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">Day-ahead prices not loaded yet.</td></tr>';
+    : '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">' + ((!window.PKI18n || PKI18n.lang !== 'en') ? 'Prix day-ahead indisponibles pour ce jour.' : 'No day-ahead prices for this day.') + '</td></tr>';
 
   const by = c => data.find(r => r.z.code === c);
   const fr = by('FR'), de = by('DE_LU');

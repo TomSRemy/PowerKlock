@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <script>try { if (localStorage.getItem('pk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (_) {}</script>
 <meta charset="UTF-8">
@@ -108,6 +108,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileSidebar()"></div>
 
 <!-- TICKER -->
+<a class="pk-skip" href="javascript:void(0)" onclick="var m=document.querySelector('main.main');m.setAttribute('tabindex','-1');m.focus();">Aller au contenu</a>
 <div class="ticker">
   <div class="dd-wrap">
     <button class="dd-btn" id="dd-btn" onclick="toggleTickerMenu()">
@@ -4079,25 +4080,23 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-morning-3">
         <div class="mrn2-tiles mrn3-tiles mrn-rtiles" id="mrn-rtiles"></div>
         <div class="fuel-grid-2 mrn3-row">
-          <div class="mrn3-col">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Solar · rolling capture rate</div><div class="fuel-card-sub" id="mrn-cr-sub">Last 30, 90 and 365 days and calendar years · 100 % = no cannibalisation</div></div></div>
             <div style="position:relative;height:260px"><canvas id="mrn-cr" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Wind · rolling capture rate</div><div class="fuel-card-sub" id="mrn-crw-sub">Same reading, wind</div></div></div>
-            <div style="position:relative;height:260px"><canvas id="mrn-crw" style="width:100%;height:260px"></canvas></div>
-          </div>
-          </div>
-          <div class="mrn3-col">
-          <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Solar · capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="mrn3-sel"><select id="mrn-creg-per" aria-label="Period"></select></span></div>
             <div style="position:relative;height:260px"><canvas id="mrn-creg" style="width:100%;height:260px"></canvas></div>
+          </div>
+        </div>
+        <div class="fuel-grid-2 mrn3-row">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Wind · rolling capture rate</div><div class="fuel-card-sub" id="mrn-crw-sub">Same reading, wind</div></div></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-crw" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Wind · capture rate by region</div><div class="fuel-card-sub" id="mrn-cregw-sub">Same period</div></div><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>
             <div style="position:relative;height:260px"><canvas id="mrn-cregw" style="width:100%;height:260px"></canvas></div>
-          </div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
@@ -4599,7 +4598,7 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             </div>
           </section>
         </article>
-        <article class="meth-body pk-fr-only" lang="fr">
+        <article class="meth-body pk-fr-only" lang="fr" translate="no">
           <h1 class="meth-h1">Méthodologie et définitions</h1>
           <p class="meth-lead">Cette page documente les calculs et les méthodes statistiques utilisés dans PowerKlock. Chaque section indique où le terme s’applique sur le site.</p>
 
@@ -4843,6 +4842,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/net.js"></script>
 <script src="js/libs.js"></script>
 <script src="js/zoom-reset.js"></script>
+<script src="js/align-rows.js"></script>
 <script src="js/legend-refit.js"></script>
 <script src="js/widgets.js"></script>
 <script src="js/gen-align.js"></script>

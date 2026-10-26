@@ -314,6 +314,9 @@
     const e0 = nav.querySelector('.pk-nv-top-sec [data-route="' + own + '"] span');
     const sec = sectionOf[own] || (e0 ? e0.textContent.trim() : null), pg = document.querySelector('.page.active');
     if (sec && pg) pg.querySelectorAll('.pr-breadcrumb-parent').forEach(c => { if (c.textContent !== sec) c.textContent = sec; });
+    // the page's own name after it, when the page only repeated the section ("Renouvelables › Renouvelables")
+    const it = nav.querySelector('.pk-nv-item[aria-current]'), itName = it && (it.querySelector('span') || it).textContent.trim();
+    if (sec && pg && itName) pg.querySelectorAll('.pr-breadcrumb-current').forEach(c => { if (c.textContent.trim() === sec || c.dataset.pkAuto) { c.textContent = itName; c.dataset.pkAuto = '1'; } });
     document.querySelectorAll('.pk-gbar').forEach(g => { g.hidden = g.dataset.entry !== own; });
     document.querySelectorAll('.pk-gbar a').forEach(a => a.classList.toggle('on', a.dataset.route === route));
   }

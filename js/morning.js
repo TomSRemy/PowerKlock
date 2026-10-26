@@ -443,8 +443,8 @@ function _mrnFund(k, calcEl, cid) {
   const term = (n, v, u, s, cls) => `<div class="fd-t${cls ? ' ' + cls : ''}"><span class="fd-n">${n}</span><span class="fd-v">${v}<small>${u}</small></span><span class="fd-s">${s}</span></div>`, op = o => `<span class="fd-op">${o}</span>`;
   calc.innerHTML = term(_mT('Demande prévue', 'Expected demand'), G(m('load')), 'GW', _mT('normale 2023–25, corrigée de la température', 'normal 2023–25, temperature-corrected')) + op('vs') +
     term(_mT('Offre bas carbone', 'Low-carbon supply'), G(supply), 'GW', `<i style="background:#A98BD4"></i>${G(m('nuc'))} <i style="background:#3FA6B4"></i>${G(m('hydro'))} <i style="background:#14D3A9"></i>${G(m('wind'))} <i style="background:#FBBF24"></i>${G(m('solar'))} <i style="background:#94D2BD"></i>${G(m('bio'))}`) + op('=') +
-    term(_mT('Couverture', 'Coverage'), _mN(A.cov4, 0), '%', A.cov4 >= 100 ? _mT('au-dessus de 100 % : peu de gaz appelé', 'above 100 %: little gas needed') : _mT('sous 100 % : le gaz fixe le prix', 'below 100 %: gas sets the price')) + op('×') +
-    term(_mT('Coût d’une centrale gaz', 'Gas plant cost'), _mN(A.srmc, 0), '€/MWh', `TTF ${ttf ? _mN(ttf[1], 1) : '–'} ÷ 0,55 + 0,37 × EUA ${eua ? _mN(eua[1], 1) : '–'}`) + op('+') +
+    term(_mT('Couverture moy. 4 sem.', 'Coverage, 4-week average'), _mN(A.cov4, 0), '%', A.cov4 >= 100 ? _mT('au-dessus de 100 % : peu de gaz appelé', 'above 100 %: little gas needed') : _mT('sous 100 % : le gaz fixe le prix', 'below 100 %: gas sets the price')) + op('×') +
+    term(_mT('Coût d’une centrale gaz (rendement 55 %)', 'Gas plant cost (55 % efficiency)'), _mN(A.srmc, 0), '€/MWh', `TTF ${ttf ? _mN(ttf[1], 1) : '–'} ÷ ${_mT('0,55', '0.55')} + ${_mT('0,37', '0.37')} × EUA ${eua ? _mN(eua[1], 1) : '–'}`) + op('+') +
     term(_mT('Correction récente', 'Recent correction'), _mS(A.corr, 0), '€', _mT('écart moyen de l’indice sur 14 jours (voisins, imports)', 'the index’s mean error over 14 days (neighbours, imports)')) + op('→') +
     term(_mT('Spot attendu, 4 sem.', 'Expected spot, 4 wks'), _mN(A.fair4, 0), '€/MWh', (sp7 ? _mT('vs ', 'vs ') + _mN(sp7, 0) + _mT(' € les 7 derniers jours', ' € the last 7 days') : '') + (M ? ' · ' + _mT('forward ', 'forward ') + M.m.slice(5) + '/' + M.m.slice(2, 4) + ' ' + _mN(M.fwd, 0) + ' €' : ''), 'fd-res') +
     `<p class="fd-bt">${_mT('Backtest 2024–26 (walk-forward) : erreur moyenne 16 à 20 € sur 4 semaines, contre 23 € pour le forward du mois ; quand l’indice s’écarte du forward de plus de 10 €, le mois lui donne raison 8 à 9 fois sur 10 (17 mois testés).', 'Backtest 2024–26 (walk-forward): mean error 16 to 20 € over 4 weeks, against 23 € for the month-ahead forward; when the index differs from the forward by more than 10 €, the month proves it right 8 to 9 times out of 10 (17 months tested).')}</p>`;
@@ -568,7 +568,7 @@ function _mrnTileList(k) {
     const main = A ? `<span class="mrn2-tv">${_mN(A.fair4, 0)}<small>€/MWh</small></span><span class="mrn2-tc">${M ? `${mon} : ${_mT('indice', 'index')} <b>${_mN(M.fair, 0)}</b> vs fwd <b>${_mN(M.fwd, 0)}</b> <b class="${M.fair > M.fwd ? 'mrn-up' : 'mrn-down'}">${_mS(M.fair - M.fwd, 0)}</b>` : _mT('spot attendu sur 4 semaines', 'expected spot over 4 weeks')}</span>`
       : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
-      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot attendu 4 sem.', 'Expected spot 4 wks') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && sp7 ? pill(null, (A.fair4 / sp7 - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
+      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn">${A ? _mT('Spot à 4 sem. vs 7 derniers jours', 'Spot in 4 wks vs last 7 days') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && sp7 ? pill(null, (A.fair4 / sp7 - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
       `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   // Explain: one line under each tile (shown when the switch is on)
   return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
@@ -838,7 +838,7 @@ const MRN_EX = {
   eua: ['Le prix du droit d’émettre une tonne de CO₂. Il s’ajoute au coût des centrales au gaz et au charbon (≈ 0,37 t par MWh pour le gaz).', 'The price of the right to emit a tonne of CO₂. It adds to the cost of gas and coal plants (≈ 0.37 t per MWh for gas).'],
   brent: ['Le pétrole. Peu utilisé pour produire l’électricité, mais il entraîne le gaz et signale les tensions géopolitiques.', 'Oil. Little used to make power, but it pulls gas along and signals geopolitical stress.'],
   go: ['Le prix d’un certificat qui prouve qu’un MWh est renouvelable. Un revenu en plus pour les parcs, un coût pour ceux qui veulent de l’électricité verte.', 'The price of a certificate proving a MWh is renewable. Extra income for parks, a cost for green buyers.'],
-  idx: ['Le spot attendu sur 4 semaines d’après la météo, le nucléaire et le gaz. Au-dessus du forward : les fondamentaux disent plus cher que le marché.', 'The expected spot over 4 weeks from the weather, nuclear and gas. Above the forward: the fundamentals say dearer than the market.'],
+  idx: ['Le spot attendu sur 4 semaines d’après la météo, le nucléaire et le gaz. « Haussier » : plus cher que le spot des 7 derniers jours. La ligne du mois le compare au forward : en dessous, les fondamentaux disent moins cher que le marché.', 'The expected spot over 4 weeks from the weather, nuclear and gas. “Bullish”: dearer than the spot of the last 7 days. The month line compares it with the forward: below it, the fundamentals say cheaper than the market.'],
 };
 function _mrnExplain(on) {
   const b = document.getElementById('mrn-xbtn');
@@ -1085,8 +1085,8 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .mrn2-tile{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;text-decoration:none;color:inherit}
   a.mrn2-tile:hover{border-color:var(--border3)}
-  .mrn2-tn{font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mrn2-tv{font:600 21px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap} .mrn2-tv small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px}
+  .mrn2-tn{font-size:11.5px;color:var(--text3);overflow-wrap:anywhere}   /* never cut: the line wraps */
+  .mrn2-tv{font:600 21px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px} .mrn2-tv small{font:500 11px Inter,sans-serif;color:var(--text3)}
   .mrn2-tc{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mrn2-tc.mrn-up{color:var(--down)} .mrn2-tc.mrn-down{color:var(--up)}
   .mrn2-tile svg{width:100%;height:28px;margin-top:5px;display:block}
@@ -1120,7 +1120,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn2-tile svg{height:40px}
   .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap} .mrn3-tx>span:first-child{overflow:hidden;text-overflow:ellipsis} .mrn3-tx b{color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
   .mrn3-dim{color:var(--text3)}
-  .mrn3-th{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
+  .mrn3-th{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
   .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}   /* what moved, full width (its tiles in one row), then the news, full width */
   .mrn-news-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px}
   @media (max-width:1100px){.mrn-news-cols{grid-template-columns:1fr}}

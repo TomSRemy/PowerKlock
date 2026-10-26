@@ -422,7 +422,21 @@ if (window.PKW) PKW.register({
     let q = J && J.zones && J.zones[Z] && J.zones[Z].hourly; const qp = P && P.zones && P.zones[Z] && P.zones[Z].hourly;
     // tomorrow before the auction (about 13:00): France only, the PowerKlock forecast, said as such
     if (!q && Z === 'FR' && p.day === 'tomorrow') { const nf = await _muGet('negf', 'neg_forecast.json'); const f = nf && nf.days && nf.days[d]; if (f && f.price && f.price.filter(v => v != null).length >= 20) { q = f.price.slice(0, 24); fcast = true; } }
-    if (!q) { const _dd = o => new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), Object.assign({ timeZone: 'UTC' }, o)); host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · <span class="mu-day-dl">${_dd({ weekday: 'long', day: 'numeric', month: 'long' })}</span><span class="mu-day-ds">${_dd({ weekday: 'short', day: 'numeric', month: 'short' })}</span></div></div></div><div class="fuel-note" style="padding:30px 0;text-align:center">${T('Prix publié vers 13 h la veille ; la prévision PowerKlock arrive dans la matinée.', 'Price published around 13:00 the day before; the PowerKlock forecast comes in the morning.')}</div></div>`; return; }
+    if (!q) { const _dd = o => new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), Object.assign({ timeZone: 'UTC' }, o)); host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · <span class="mu-day-dl">${_dd({ weekday: 'long', day: 'numeric', month: 'long' })}</span><span class="mu-day-ds">${_dd({ weekday: 'short', day: 'numeric', month: 'short' })}</span></div></div></div><div class="fuel-note mu-day-why" style="padding:26px 6px;text-align:center"></div></div>`;
+      // three different cases, three messages: not published yet (and how the forecast is doing), late, or a failed load
+      const why = host.querySelector('.mu-day-why'), now = new Date(), parisH = +now.toLocaleString('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Europe/Paris' });
+      if (d > t) {
+        const nf = Z === 'FR' ? await _muGet('negf', 'neg_forecast.json') : null, upd = nf && nf.updated ? new Date(nf.updated) : null;
+        const when = upd ? upd.toLocaleString(T('fr-FR', 'en-GB'), { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : null;
+        const fc = Z !== 'FR' ? '' : parisH >= 10 ? T(`<br>Prévision PowerKlock en retard aujourd’hui${when ? ' (dernière mise à jour ' + when + ')' : ''}.`, `<br>PowerKlock forecast late today${when ? ' (last update ' + when + ')' : ''}.`)
+          : T('<br>La prévision PowerKlock arrive dans la matinée.', '<br>The PowerKlock forecast comes in the morning.');
+        why.innerHTML = parisH < 13 ? T('Pas encore publié : prix connu vers 13 h.', 'Not published yet: price known around 13:00.') + fc
+          : T('Prix en cours de publication (attendu vers 13 h, en retard).', 'Price being published (due around 13:00, late).') + fc;
+      } else {
+        why.innerHTML = T('Chargement impossible.', 'Could not load.') + ` <button type="button" class="pk-btn-ghost mu-day-retry" style="margin-left:6px">${T('Réessayer', 'Retry')}</button>`;
+        why.querySelector('.mu-day-retry').addEventListener('click', () => { delete MU.cache['d' + d]; PKW.get('fr-spot-day').html(host, p); });
+      }
+      return; }
     const per = q.length / 24, h = Array.from({ length: 24 }, (_, i) => _muMean(q.slice(i * per, (i + 1) * per)));
     // the day's average as published (a 25-hour day counts its repeated hour, which the 96-slot series leaves out)
     const zd = !fcast && J && J.zones && J.zones[Z], zp = P && P.zones && P.zones[Z];
