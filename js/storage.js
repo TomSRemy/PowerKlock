@@ -124,7 +124,7 @@ _nucReg({
 });
 
 _nucReg({
-  id: 'remit-unavail', title: 'France · nuclear unavailability', page: 'remit', pageCanvas: 'remit-unavail', category: 'balancing',
+  id: 'remit-unavail', title: 'France · nuclear unavailability', page: 'nuclear', pageCanvas: 'remit-unavail', category: 'balancing',
   desc: 'Unavailable French nuclear capacity, actual and operator forecast (GW).',
   params: [PKW.PERIOD_PARAM], defaults: { period: '6M' },
   async draw(cid, p) {
@@ -331,14 +331,16 @@ async function renderRemit() {
   const prevYears = [1, 2, 3, 4, 5].map(k => PKC.valueOn('fr_nuc_avail', (+last[0].slice(0, 4) - k) + last[0].slice(4), true)).filter(v => v != null);
   const avg5 = prevYears.length ? prevYears.reduce((a, b) => a + b, 0) / prevYears.length : null;
   const fcLast = fc[fc.length - 1];
-  document.getElementById('remit-upd').textContent = 'Operator data · ' + _fuelDate(last[0]);
-  document.getElementById('remit-kpis').innerHTML =
-    _fuelKpi('FR nuclear unavailable', un(last[1]).toFixed(1), 'GW', _fuelDate(last[0]), 'down') +
-    _fuelKpi('Share of fleet', ((I - last[1]) / I * 100).toFixed(1), '%', 'of 63.0 GW installed') +
-    _fuelKpi('vs 5-year same date', avg5 == null ? '–' : _fuelSigned(un(last[1]) - un(avg5), 1), 'GW', avg5 == null ? '' : `5y avg ${un(avg5).toFixed(1)} GW unavailable`, avg5 == null ? null : (last[1] >= avg5 ? 'up' : 'down')) +
-    _fuelKpi('Operator forecast', fcLast ? un(fcLast[1]).toFixed(1) : '–', 'GW', fcLast ? 'unavailable, as of ' + _fuelDate(fcLast[0]) : '') +
-    _fuelKpi('180-day max', Math.max(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable') +
-    _fuelKpi('180-day min', Math.min(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', 'unavailable');
+  const T = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+  const upd = document.getElementById('remit-upd'); if (upd) upd.textContent = T('Données exploitant · ', 'Operator data · ') + _fuelDate(last[0]);
+  const kp = document.getElementById('remit-kpis'); if (!kp) return;
+  kp.innerHTML =
+    _fuelKpi(T('Nucléaire FR indisponible', 'FR nuclear unavailable'), un(last[1]).toFixed(1), 'GW', _fuelDate(last[0]), 'down') +
+    _fuelKpi(T('Part du parc', 'Share of fleet'), ((I - last[1]) / I * 100).toFixed(1), '%', T('sur 63,0 GW installés', 'of 63.0 GW installed')) +
+    _fuelKpi(T('vs même date sur 5 ans', 'vs 5-year same date'), avg5 == null ? '–' : _fuelSigned(un(last[1]) - un(avg5), 1), 'GW', avg5 == null ? '' : T(`moyenne 5 ans : ${un(avg5).toFixed(1)} GW indisponibles`, `5y avg ${un(avg5).toFixed(1)} GW unavailable`), avg5 == null ? null : (last[1] >= avg5 ? 'up' : 'down')) +
+    _fuelKpi(T('Prévision de l’exploitant', 'Operator forecast'), fcLast ? un(fcLast[1]).toFixed(1) : '–', 'GW', fcLast ? T('indisponibles, au ', 'unavailable, as of ') + _fuelDate(fcLast[0]) : '') +
+    _fuelKpi(T('Max sur 180 jours', '180-day max'), Math.max(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', T('indisponibles', 'unavailable')) +
+    _fuelKpi(T('Min sur 180 jours', '180-day min'), Math.min(...av.slice(-180).map(p => un(p[1]))).toFixed(1), 'GW', T('indisponibles', 'unavailable'));
   const rp = window._remitPeriod || '6M';
   PKW.draw('remit-unavail', 'remit-unavail', { period: rp });
   PKW.periodButtons('remit-unavail', PKW.PERIOD_PARAM.options, rp, v => { window._remitPeriod = v; PKW.draw('remit-unavail', 'remit-unavail', { period: v }); });
