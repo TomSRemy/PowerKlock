@@ -3444,3 +3444,4 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 .bl-p { margin: 0; color: var(--text2); font-size: 13.5px; line-height: 1.55; max-width: 100ch; } .bl-tot td { font-weight: 600; color: var(--text); }
 .bl-why summary { cursor: pointer; color: var(--accent); font-size: 13px; } .bl-why ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text2); font-size: 13px; line-height: 1.5; } .bl-why b { color: var(--text); }
 .bl-rmgrid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; } @media (max-width: 1300px) { .bl-rmgrid { grid-template-columns: 1fr; } }
+.reg-k { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; } .reg-chip span { color: var(--text3); font-size: 11px; margin-left: 2px; }

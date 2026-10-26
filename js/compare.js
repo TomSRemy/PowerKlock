@@ -229,8 +229,8 @@
       const moves = raw.map((a, i) => { const f = first(a), l = [...a].reverse().find(x => x != null); return f && l ? label(sel[i]) + ' ' + (l / f >= 1 ? '×' + N(l / f, 2) : (l / f - 1) * 100 > -100 ? N((l / f - 1) * 100, 0) + ' %' : '') : null; }).filter(Boolean);
       sub = all[0] + ' → ' + all[all.length - 1] + ' · ' + moves.join(' · ');
     }
-    // political and market events of the window (data/market_events.json): a dashed line each, numbered
-    const ME = st.events !== false && D.type === 'line' ? await json('mevents', 'market_events.json') : null;
+    // political and market events of the window (data/events.json, js/regulatory.js): a dashed line each, numbered
+    const ME = st.events !== false && D.type === 'line' && window.PKReg ? await PKReg.marketEvents() : null;
     const evs = ME && ME.events ? ME.events.filter(e => e.d >= all[0] && e.d <= all[all.length - 1]) : [];
     if (evs.length && cfg.options) {
       const ann = {};

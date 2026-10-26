@@ -15017,6 +15017,7 @@ function pkFsError(canvasId, e) {
 function pkCloneCanvasChart(srcCanvas, dstCanvas) {
   const src = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(srcCanvas) : null;
   if (!src) return null;
+  if (srcCanvas.dataset.pkw) dstCanvas.dataset.pkw = srcCanvas.dataset.pkw;   // the events of js/regulatory.js follow the chart into the big view
   try {
     // a deep copy that keeps functions (coloured segments, tick and tooltip callbacks), unlike JSON
     const seen = new WeakMap();
