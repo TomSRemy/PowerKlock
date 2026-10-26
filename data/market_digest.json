@@ -1,44 +1,44 @@
 {
- "updated": "2026-10-25T07:27:29+00:00",
- "asof": "2026-10-25",
+ "updated": "2026-10-26T13:22:03+00:00",
+ "asof": "2026-10-26",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec une disponibilité révisée à 40,9 GW pour le reste d'octobre, ce qui pousse les prix à la hausse. La consommation d'électricité est également influencée par les conditions météorologiques.",
-   "text_en": "French nuclear availability is decreasing, with a revised availability of 40.9 GW for the rest of October, pushing prices up. Electricity consumption is also influenced by weather conditions.",
+   "text": "La disponibilité nucléaire en France est en baisse, avec une indisponibilité révisée à 20,7 GW pour le reste d'octobre. Les prix de l'électricité pourraient augmenter en raison de cette baisse de disponibilité et de la demande accrue pour le chauffage et la production d'électricité à partir du gaz.",
+   "text_en": "Nuclear availability in France is decreasing, with revised unavailability of 20.7 GW for the rest of October. Electricity prices could rise due to this decrease in availability and increased demand for heating and electricity generation from gas.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe persistent, avec des attaques de la part des Houthis contre des cibles saoudiennes, ce qui maintient les prix du pétrole à un niveau élevé.",
-   "text_en": "Tensions in the Gulf persist, with Houthi attacks on Saudi targets, keeping oil prices at a high level.",
+   "text": "La situation géopolitique dans la région du Golfe reste tendue, avec des attaques répétées contre les transports maritimes et les infrastructures énergétiques. Cela pourrait entraîner des perturbations d'approvisionnement et faire augmenter les prix du pétrole.",
+   "text_en": "The geopolitical situation in the Gulf region remains tense, with repeated attacks on maritime transport and energy infrastructure. This could lead to supply disruptions and increase oil prices.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient rester élevés en raison des tensions dans le Golfe",
-   "text_en": "Oil prices are expected to remain high due to Gulf tensions"
+   "text": "Les prix du pétrole devraient rester élevés en raison des tensions géopolitiques dans la région du Golfe.",
+   "text_en": "Oil prices are expected to remain high due to geopolitical tensions in the Gulf region."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient augmenter en raison de la baisse des imports norvégiens et de la hausse de la demande",
-   "text_en": "Gas prices are expected to rise due to decreased Norwegian imports and increased demand"
+   "text": "Les prix du gaz devraient continuer à augmenter en raison de la forte demande pour le chauffage et la production d'électricité à partir du gaz.",
+   "text_en": "Gas prices are expected to continue rising due to strong demand for heating and electricity generation from gas."
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de la disponibilité nucléaire et des conditions météorologiques",
-   "text_en": "Power prices are expected to rise due to decreased nuclear availability and weather conditions"
+   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de disponibilité nucléaire en France et de la demande accrue pour le chauffage et la production d'électricité à partir du gaz.",
+   "text_en": "Electricity prices are expected to rise due to the decrease in nuclear availability in France and increased demand for heating and electricity generation from gas."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables",
-   "text_en": "Carbon prices are expected to remain stable"
+   "text": "Les prix des quotas de carbone devraient rester stables en raison de l'attention portée aux débats politiques entourant le système d'échange de quotas d'émission de l'UE.",
+   "text_en": "Carbon prices are expected to remain stable due to attention being paid to political debates surrounding the EU Emissions Trading System."
   }
  }
 }
