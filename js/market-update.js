@@ -398,7 +398,7 @@ function _muSyncDays(Z) {
   const vals = all.flatMap(ch => ch.data.datasets[0].data.filter(v => v != null));
   let lo = Math.min(0, ...vals), hi = Math.max(...vals);
   const step = hi - lo > 200 ? 50 : hi - lo > 80 ? 20 : 10;
-  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  lo = Math.floor(lo / step) * step; hi = Math.ceil((hi + (hi - lo) * 0.2) / step) * step;   // room above the curve for the band labels
   all.forEach(ch => { ch.options.scales.y.min = lo; ch.options.scales.y.max = hi; ch.update('none'); });
 }
 
@@ -435,8 +435,15 @@ if (window.PKW) PKW.register({
       <div class="mu-day-k"><div class="lo"><b>${T('Min', 'Min')}</b> ${n2(h[lo])} € ${T('à', 'at')} ${lo} h</div>
       <div class="hi"><b>${T('Max', 'Max')}</b> ${n2(h[hi])} € ${T('à', 'at')} ${hi} h</div></div>
       <div class="mu-day-c"><canvas id="${cid}"></canvas></div></div>`;
+    // the cheapest and the dearest 3 hours of the day, each band labelled with its start and end
     const bands = { id: 'muBands', beforeDatasetsDraw(ch) { const a = ch.chartArea, x = ch.scales.x, g = ch.ctx;
-      [[wl, 'rgba(20,211,169,.12)', T('CREUX', 'TROUGH')], [wh, 'rgba(237,105,101,.12)', T('POINTE', 'PEAK')]].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = t === 'PEAK' ? '#D64545' : '#0E9F7E'; g.font = '600 10px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 4, a.top + 12); g.restore(); }); } };
+      [[wl, 'rgba(20,211,169,.12)', '#0E9F7E', T('MOINS CHER', 'CHEAPEST')], [wh, 'rgba(237,105,101,.12)', '#D64545', T('PLUS CHER', 'DEAREST')]].forEach(([s, c, tc, t]) => {
+        const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)), hrs = s + ' h – ' + (s + 3) + ' h';
+        g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+        g.fillStyle = tc; g.font = '600 10px "IBM Plex Mono", monospace';
+        const w = Math.max(g.measureText(t).width, g.measureText(hrs).width) / 2, tx = Math.min(a.right - w, Math.max(a.left + w, (x0 + x1) / 2));   // centred on the band, kept inside the chart
+        g.textAlign = 'center';
+        g.fillText(t, tx, a.top + 12); g.font = '10px "IBM Plex Mono", monospace'; g.fillText(hrs, tx, a.top + 24); g.restore(); }); } };
     const dayCh = new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
       { label: fcast ? T('Prévision', 'Forecast') : T('Prix', 'Price'), data: h.map(v => Math.round(v * 100) / 100), borderColor: fcast ? '#8A9BAD' : '#14D3A9', borderDash: fcast ? [5, 4] : [], borderWidth: 2.2, tension: .35, fill: false,
         segment: { borderColor: c => (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? '#ED6965' : undefined },   // below 0 €: the line turns red
