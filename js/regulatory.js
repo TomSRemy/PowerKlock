@@ -20,6 +20,7 @@
     'cannib-rolling': ['neg', 'enr'], 'cannib-rolling-eur': ['neg', 'enr'], 'hist-neg': ['neg'], 'neg-cost': ['neg'], 'negflex': ['neg'], 'ren-cr': ['neg', 'enr'],
     'fr-m0-official': ['m0'], 'fr-m0-forecast': ['m0'], 'cre-tenders': ['m0', 'enr'],
     'fr-imb-price': ['balancing'], 'fr-activation': ['balancing'], 'imb-days': ['balancing'],
+    'bilan-prod': ['enr', 'nuclear'], 'bilan-spot': ['spot', 'neg', 'nuclear'],
     'nuc-hist': ['nuclear'], 'remit-unavail': ['nuclear'], 'cap-history': ['capacity', 'enr'], 'go-vintages': ['enr'],
   };
   let DATA = null, P = null;

@@ -19,6 +19,7 @@ fi
 echo "▸ Calculations";       python3 tests/test_calculations.py >/dev/null && python3 tests/test_prices_dst.py >/dev/null
 if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^data/'; then echo "data only: browser tests skipped"; exit 0; fi
 echo "▸ Site logic";         python3 tests/test_site_logic.py | tail -1 && python3 tests/test_ppa_frozen.py | tail -1
+echo "▸ Same figures everywhere, page weight"; python3 tests/test_consistency.py | tail -1
 echo "▸ Smoke tests (about 10 minutes)"; python3 tests/smoke.py | tail -3
 echo "$sig" > "$stamp"
 echo "✓ all the checks of Site tests pass: safe to push"

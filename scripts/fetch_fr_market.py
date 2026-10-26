@@ -702,6 +702,13 @@ def write_cal_chain():
 # what we get, contract by contract, builds dated histories that survive the
 # roll: a contract that enters delivery is no longer quoted, but stays here.
 OUT_CONTRACTS = Path("data/history/fr_market_contracts.json")
+
+
+def write_split(out):
+    """One file per country next to the full one (fr_market_contracts_FR.json…): a page that shows France does not
+    download the four countries (4.7 MB → about 1)."""
+    for cc, v in out.items():
+        OUT_CONTRACTS.with_name(f"fr_market_contracts_{cc}.json").write_text(json.dumps({cc: v}, ensure_ascii=False, separators=(",", ":")))
 _MON = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
 
 
@@ -828,6 +835,7 @@ def write_peak():
             c["lastSeen"] = date.today().isoformat()
             got.append(label)
     OUT_CONTRACTS.write_text(json.dumps(out, separators=(",", ":")))
+    write_split(out)
     print(f"  FR peak: {len(got)} contracts ({', '.join(got[:8])}…)")
 
 
@@ -902,6 +910,7 @@ def write_contracts():
             c["points"] = dict(sorted(c["points"].items()))
     OUT_CONTRACTS.parent.mkdir(parents=True, exist_ok=True)
     OUT_CONTRACTS.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+    write_split(out)
     print(f"Wrote {OUT_CONTRACTS}: " + ", ".join(f"{cc} {len(v)}" for cc, v in out.items()))
     OUT_ROLLING.write_text(json.dumps({"note": "Rolling series of the cockpit (type Relative): on day d, M+k = calendar month(d)+k, Q+k = quarter(d)+k; when that contract no longer trades the value is the next contract's.",
                                        "series": rolling_out}, ensure_ascii=False, separators=(",", ":")))

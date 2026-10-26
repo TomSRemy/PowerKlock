@@ -40,7 +40,7 @@ jobs:
       - name: Calculations
         run: python tests/test_calculations.py && python tests/test_prices_dst.py
       - name: Site logic
-        run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py
+        run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
       - name: Smoke tests (English and French)
         run: python tests/smoke.py
 

@@ -2313,6 +2313,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>    </div>
 
     <!-- ── PAGE: NEWS ── -->
+    <div class="page" id="page-bilan">
+      <div class="pr-tabs-sticky"><div class="pr-tabs-bar"><div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Power system</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Yearly review</span></div></div></div>
+      <div class="bl-wrap" id="bilan-host"><div class="fuel-note">Loading…</div></div>
+    </div>
+
     <div class="page" id="page-regulation">
       <div class="pr-tabs-sticky"><div class="pr-tabs-bar"><div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Regulatory watch</span></div></div></div>
       <div class="reg-wrap"><h1 class="reg-h1">Regulatory watch</h1><p class="reg-lead">The rules that move French and European power prices: market design, nuclear, renewable support, balancing, capacity, carbon. Upcoming first, then the history since 2010.</p><div id="reg-host"><div class="fuel-note">Loading…</div></div></div>
@@ -4887,6 +4892,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/zoom-reset.js"></script>
 <script src="js/align-rows.js"></script>
 <script src="js/regulatory.js"></script>
+<script src="js/bilan.js"></script>
 <script src="js/legend-refit.js"></script>
 <script src="js/widgets.js"></script>
 <script src="js/gen-align.js"></script>

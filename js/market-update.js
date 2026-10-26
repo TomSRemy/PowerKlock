@@ -164,6 +164,8 @@ _muReg({
 // ── forward contracts, contract by contract (power: fr_market_contracts.json, TTF: ttf_contracts.json) ──
 async function _muContracts(cc) {
   if (cc === 'TTF') { const j = await _muGet('ttfc', 'history/ttf_contracts.json'); return j && j.TTF; }
+  // one country's file when it exists (≈1 MB), the four countries otherwise
+  const one = await _muGet('contracts-' + cc, 'history/fr_market_contracts_' + cc + '.json'); if (one && one[cc]) return one[cc];
   const C = await _muGet('contracts', 'history/fr_market_contracts.json'); return C && C[cc];
 }
 const _MU_KIND = { month: 0, quarter: 1, year: 2, season: 3 };   // seasons last in tables and legends
@@ -335,7 +337,7 @@ window.addEventListener('load', () => setTimeout(() => {
 // files (every zone since 2025) and the daily files of the last days.
 async function _muZoneDaily(zone) {
   const rows = new Map();
-  const s = await window.pkSummary();
+  const s = await (zone === 'FR' && window.pkSummaryFR ? window.pkSummaryFR() : window.pkSummary());   // France: the light file (0.4 MB, not 19)
   ((s && s.zones && s.zones[zone]) || []).forEach(r => { if (r.avg != null) rows.set(r.d, r.avg); });
   const t = _muToday();
   const months = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1 - i, 1)); months.push(d.toISOString().slice(0, 7)); }

@@ -47,6 +47,7 @@ jobs:
           python tests/test_prices_dst.py
           python tests/test_site_logic.py
           python tests/test_ppa_frozen.py
+          python tests/test_consistency.py
           python tests/smoke.py
       - name: Move the site branch
         run: |
