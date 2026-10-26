@@ -3379,3 +3379,12 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 #page-mydash.pkd-is-mirror #pkd-edit, #page-mydash.pkd-is-mirror #pkd-add, #page-mydash.pkd-is-mirror #pkd-add-sec,
 #page-mydash.pkd-is-mirror #pkd-add-note, #page-mydash.pkd-is-mirror .pkd-hint { display: none !important; }
 .pkd-mirror { margin-top: 10px; }
+/* the three spot days: one header line whatever the width, so the three charts start at the same height */
+.mrn-3d-c { container-type: inline-size; }
+.mrn-3d .mu-day-h { flex-wrap: nowrap; min-width: 0; }
+.mrn-3d .mu-day-h > div:first-child { min-width: 0; }
+.mrn-3d .mu-day-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrn-3d .mu-day-chg { white-space: nowrap; flex-shrink: 0; }
+@container (max-width: 400px) { .mu-day-vs { display: none; } .mrn-3d .mu-day-k > div { font-size: 11.5px; padding: 4px 7px; } }
+.mu-day-ds { display: none; }
+@container (max-width: 400px) { .mu-day-dl { display: none; } .mu-day-ds { display: inline; } }
