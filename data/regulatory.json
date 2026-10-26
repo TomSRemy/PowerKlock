@@ -1,0 +1,742 @@
+{
+ "updated": "2026-10-26",
+ "about": "Regulatory milestones of the French and European power markets, past and upcoming. Each item has a date checked against its source. tags = the charts it is drawn on (spot, fwd, neg, m0, balancing, nuclear, capacity, co2, go, enr). precision: day (default) or month.",
+ "themes": {
+  "marche": [
+   "Marché et prix",
+   "Market and prices"
+  ],
+  "nucleaire": [
+   "Nucléaire",
+   "Nuclear"
+  ],
+  "enr": [
+   "Renouvelables et soutien",
+   "Renewables and support"
+  ],
+  "equilibrage": [
+   "Équilibrage et flexibilité",
+   "Balancing and flexibility"
+  ],
+  "capacite": [
+   "Capacité",
+   "Capacity"
+  ],
+  "carbone": [
+   "Carbone",
+   "Carbon"
+  ],
+  "reseau": [
+   "Réseaux et tarifs",
+   "Grids and tariffs"
+  ],
+  "planification": [
+   "Planification",
+   "Planning"
+  ]
+ },
+ "items": [
+  {
+   "id": "nome",
+   "date": "2010-12-07",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "fwd",
+    "nuclear"
+   ],
+   "title": [
+    "Loi NOME : création de l’ARENH",
+    "NOME law: ARENH created"
+   ],
+   "text": [
+    "Les fournisseurs alternatifs peuvent acheter jusqu’à 100 TWh par an de nucléaire historique d’EDF à prix régulé.",
+    "Alternative suppliers may buy up to 100 TWh a year of EDF’s historical nuclear output at a regulated price."
+   ],
+   "source": [
+    "CRE",
+    "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ]
+  },
+  {
+   "id": "arenh-start",
+   "date": "2011-07-01",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "fwd",
+    "nuclear"
+   ],
+   "title": [
+    "Début de l’ARENH à 40 €/MWh",
+    "ARENH starts at 40 €/MWh"
+   ],
+   "text": [
+    "42 €/MWh à partir du 1er janvier 2012, prix inchangé jusqu’à la fin du dispositif.",
+    "42 €/MWh from 1 January 2012, unchanged until the end of the scheme."
+   ],
+   "source": [
+    "CRE",
+    "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ]
+  },
+  {
+   "id": "ltecv",
+   "date": "2015-08-17",
+   "scope": "FR",
+   "theme": "planification",
+   "tags": [
+    "m0",
+    "enr"
+   ],
+   "title": [
+    "Loi de transition énergétique (LTECV)",
+    "Energy transition law (LTECV)"
+   ],
+   "text": [
+    "Crée la programmation pluriannuelle de l’énergie et le complément de rémunération des renouvelables.",
+    "Creates the multi-year energy plan (PPE) and the contract for difference for renewables."
+   ],
+   "source": [
+    "Légifrance",
+    "https://legifrance.gouv.fr/loda/id/JORFTEXT000031044385"
+   ]
+  },
+  {
+   "id": "cr-decree",
+   "date": "2016-05-29",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "m0",
+    "enr"
+   ],
+   "title": [
+    "Complément de rémunération en vigueur",
+    "Contract for difference in force"
+   ],
+   "text": [
+    "Décret n° 2016-682 : les producteurs vendent sur le marché et touchent une prime calculée sur le M0. S’applique aux projets depuis le 1er janvier 2016.",
+    "Decree 2016-682: producers sell on the market and receive a premium computed on the M0. Applies to projects since 1 January 2016."
+   ],
+   "source": [
+    "Actu-Environnement",
+    "https://www.actu-environnement.com/ae/news/energies-renouvelables-complement-remuneration-enfin-publies-26897.php4"
+   ]
+  },
+  {
+   "id": "capa-2017",
+   "date": "2017-01-01",
+   "scope": "FR",
+   "theme": "capacite",
+   "tags": [
+    "capacity",
+    "spot"
+   ],
+   "title": [
+    "Mécanisme de capacité : première année de livraison",
+    "Capacity mechanism: first delivery year"
+   ],
+   "text": [
+    "Les fournisseurs doivent détenir des garanties de capacité couvrant la consommation de leurs clients en pointe.",
+    "Suppliers must hold capacity guarantees covering their customers’ peak demand."
+   ],
+   "source": [
+    "RTE",
+    "https://www.services-rte.com/en/learn-more-about-our-services/capacity-mechanism-AL-2017-2026.html"
+   ]
+  },
+  {
+   "id": "cep",
+   "date": "2019-06-05",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot"
+   ],
+   "title": [
+    "Paquet Énergie propre : règlement 2019/943",
+    "Clean Energy Package: Regulation 2019/943"
+   ],
+   "text": [
+    "Règles du marché intérieur : 70 % des capacités d’interconnexion ouvertes aux échanges, limites aux mécanismes de capacité.",
+    "Internal market rules: 70 % of cross-border capacity open to trade, limits on capacity mechanisms."
+   ],
+   "source": [
+    "EUR-Lex",
+    "https://eur-lex.europa.eu/eli/reg/2019/943/oj"
+   ]
+  },
+  {
+   "id": "lec",
+   "date": "2019-11-08",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "fwd",
+    "nuclear"
+   ],
+   "title": [
+    "Loi énergie-climat",
+    "Energy-climate law"
+   ],
+   "text": [
+    "Neutralité carbone en 2050 ; le plafond de l’ARENH peut passer de 100 à 150 TWh.",
+    "Carbon neutrality by 2050; the ARENH cap may rise from 100 to 150 TWh."
+   ],
+   "source": [
+    "Ministère de la Transition écologique",
+    "https://www.ecologie.gouv.fr/politiques-publiques/loi-energie-climat"
+   ]
+  },
+  {
+   "id": "core-fb",
+   "date": "2022-06-08",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot"
+   ],
+   "title": [
+    "Couplage flow-based de la région Core",
+    "Core flow-based market coupling"
+   ],
+   "text": [
+    "Les capacités entre 13 pays (dont la France et l’Allemagne) sont calculées en flow-based pour le day-ahead.",
+    "Day-ahead capacities between 13 countries (France and Germany included) are computed flow-based."
+   ],
+   "source": [
+    "JAO",
+    "https://www.jao.eu/news/core-flow-based-market-coupling-project-go-live"
+   ]
+  },
+  {
+   "id": "cap-180",
+   "date": "2022-10-06",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd"
+   ],
+   "title": [
+    "Plafonnement des revenus inframarginaux à 180 €/MWh",
+    "Inframarginal revenue cap at 180 €/MWh"
+   ],
+   "text": [
+    "Règlement d’urgence 2022/1854. En France, la contribution sur la rente inframarginale court jusqu’à fin 2024.",
+    "Emergency Regulation 2022/1854. In France, the inframarginal rent levy runs until the end of 2024."
+   ],
+   "source": [
+    "EUR-Lex",
+    "https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32022R1854"
+   ]
+  },
+  {
+   "id": "ets-2023",
+   "date": "2023-05-10",
+   "scope": "EU",
+   "theme": "carbone",
+   "tags": [
+    "co2",
+    "fwd"
+   ],
+   "title": [
+    "Révision du marché carbone (Fit for 55)",
+    "Carbon market revision (Fit for 55)"
+   ],
+   "text": [
+    "Directive 2023/959 : objectif −62 % en 2030 sur le périmètre ETS, fin progressive des quotas gratuits, création de l’ETS2.",
+    "Directive 2023/959: −62 % by 2030 in the ETS scope, phase-out of free allowances, ETS2 created."
+   ],
+   "source": [
+    "EUR-Lex",
+    "https://eur-lex.europa.eu/eli/dir/2023/959/oj"
+   ]
+  },
+  {
+   "id": "ida",
+   "date": "2024-06-13",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "balancing"
+   ],
+   "title": [
+    "Enchères intrajournalières européennes (IDA)",
+    "European intraday auctions (IDA)"
+   ],
+   "text": [
+    "Trois enchères par jour fixent le prix des capacités transfrontalières en infrajournalier.",
+    "Three auctions a day price cross-border capacity in intraday."
+   ],
+   "source": [
+    "EPEX SPOT",
+    "https://www.epexspot.com/en/news/confirmation-go-live-date-intraday-auctions-idas-13-june-2024"
+   ]
+  },
+  {
+   "id": "emd",
+   "date": "2024-07-16",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "fwd",
+    "m0",
+    "enr"
+   ],
+   "title": [
+    "Réforme du marché européen de l’électricité en vigueur",
+    "EU electricity market design reform in force"
+   ],
+   "text": [
+    "Règlement 2024/1747 : contrats pour différence bidirectionnels, PPA facilités, liquidité des marchés à terme.",
+    "Regulation 2024/1747: two-way contracts for difference, easier PPAs, forward market liquidity."
+   ],
+   "source": [
+    "EUR-Lex",
+    "https://eur-lex.europa.eu/eli/reg/2024/1747/oj/eng"
+   ]
+  },
+  {
+   "id": "fla3",
+   "date": "2024-12-21",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "nuclear",
+    "spot"
+   ],
+   "title": [
+    "Flamanville 3 couplé au réseau",
+    "Flamanville 3 connected to the grid"
+   ],
+   "text": [
+    "Le 57e réacteur français (1,6 GW) produit ses premiers MWh.",
+    "France’s 57th reactor (1.6 GW) produces its first MWh."
+   ],
+   "source": [
+    "EDF",
+    "https://www.edf.fr/en/the-edf-group/dedicated-sections/journalists/all-press-releases/update-on-the-flamanville-epr-the-reactor-produces-its-first-electrons-on-the-national-electricity-grid"
+   ]
+  },
+  {
+   "id": "picasso",
+   "date": "2025-04-01",
+   "precision": "month",
+   "scope": "FR",
+   "theme": "equilibrage",
+   "tags": [
+    "balancing"
+   ],
+   "title": [
+    "RTE rejoint PICASSO (aFRR)",
+    "RTE joins PICASSO (aFRR)"
+   ],
+   "text": [
+    "La réserve secondaire française s’échange avec une vingtaine de gestionnaires de réseau européens.",
+    "French secondary reserve energy is exchanged with about twenty European grid operators."
+   ],
+   "source": [
+    "RTE",
+    "https://www.services-rte.com/en/news/rte-accesses-the-european-picasso-platform-for-automated-frequency-restoration-reserve-afrr-energy-exchange.html"
+   ]
+  },
+  {
+   "id": "ddadue",
+   "date": "2025-04-30",
+   "scope": "FR",
+   "theme": "equilibrage",
+   "tags": [
+    "balancing",
+    "neg",
+    "enr"
+   ],
+   "title": [
+    "Loi DDADUE : renouvelables au mécanisme d’ajustement",
+    "DDADUE law: renewables in the balancing mechanism"
+   ],
+   "text": [
+    "Les installations de plus de 10 MW (seuil fixé par filière) doivent participer au mécanisme d’ajustement, à partir du 31 décembre 2025.",
+    "Plants above 10 MW (threshold set per technology) must take part in the balancing mechanism from 31 December 2025."
+   ],
+   "source": [
+    "Seban Avocats",
+    "https://www.seban-associes.avocat.fr/loi-ddadue-du-30-avril-2025-les-dispositions-relatives-au-droit-de-lenergie/"
+   ]
+  },
+  {
+   "id": "turpe7",
+   "date": "2025-08-01",
+   "scope": "FR",
+   "theme": "reseau",
+   "tags": [
+    "neg"
+   ],
+   "title": [
+    "TURPE 7 en vigueur",
+    "TURPE 7 network tariff in force"
+   ],
+   "text": [
+    "Tarif de réseau pour quatre ans ; à partir de novembre 2025, des heures creuses en milieu de journée (11 h–17 h) remplacent progressivement une partie des heures creuses de nuit.",
+    "Network tariff for four years; from November 2025, midday off-peak hours (11:00–17:00) progressively replace part of the night ones."
+   ],
+   "source": [
+    "CRE",
+    "https://www.cre.fr/actualites/toute-lactualite/la-cre-publie-ses-decisions-finales-sur-le-tarif-dutilisation-des-reseaux-publics-delectricite-turpe-7.html"
+   ]
+  },
+  {
+   "id": "mtu15",
+   "date": "2025-10-01",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "neg"
+   ],
+   "title": [
+    "Day-ahead au quart d’heure",
+    "Day-ahead in 15-minute steps"
+   ],
+   "text": [
+    "L’enchère day-ahead européenne fixe un prix par quart d’heure (enchère du 30 septembre pour livraison le 1er octobre).",
+    "The European day-ahead auction sets one price per quarter-hour (auction of 30 September for delivery on 1 October)."
+   ],
+   "source": [
+    "EPEX SPOT",
+    "https://www.epexspot.com/en/news/successful-implementation-15-minute-market-time-unit-mtu-sdac"
+   ]
+  },
+  {
+   "id": "neg-oa",
+   "date": "2025-12-25",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "enr",
+    "m0"
+   ],
+   "title": [
+    "Prix négatifs : arrêt des parcs sous obligation d’achat",
+    "Negative prices: curtailment of feed-in-tariff plants"
+   ],
+   "text": [
+    "Arrêté du 22 décembre 2025 (loi de finances 2025) : l’acheteur obligé peut faire arrêter les grands parcs en période de prix négatifs, contre compensation.",
+    "Order of 22 December 2025 (2025 budget law): the obliged buyer may stop large plants during negative prices, against compensation."
+   ],
+   "source": [
+    "Bird & Bird",
+    "https://www.twobirds.com/fr/insights/2026/france/droit-de-l-energie-nouveaux-textes-parus-fin-2025"
+   ]
+  },
+  {
+   "id": "arenh-end",
+   "date": "2025-12-31",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "fwd",
+    "nuclear"
+   ],
+   "title": [
+    "Fin de l’ARENH",
+    "End of ARENH"
+   ],
+   "text": [
+    "Dernier jour de livraison de l’accès régulé au nucléaire historique.",
+    "Last delivery day of regulated access to historical nuclear."
+   ],
+   "source": [
+    "CRE",
+    "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ]
+  },
+  {
+   "id": "vnu",
+   "date": "2026-01-01",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "fwd",
+    "nuclear",
+    "spot"
+   ],
+   "title": [
+    "Versement nucléaire universel (VNU)",
+    "Universal nuclear payment (VNU)"
+   ],
+   "text": [
+    "Remplace l’ARENH : au-delà d’un revenu nucléaire de 78 €/MWh, 50 % de l’excédent revient aux consommateurs, 90 % au-delà d’environ 110 €/MWh.",
+    "Replaces ARENH: above a nuclear revenue of 78 €/MWh, 50 % of the excess goes back to consumers, 90 % above about 110 €/MWh."
+   ],
+   "source": [
+    "Enercoop",
+    "https://www.enercoop.fr/blog/actualites/nationale/le-versement-nucleaire-universel"
+   ]
+  },
+  {
+   "id": "cbam",
+   "date": "2026-01-01",
+   "scope": "EU",
+   "theme": "carbone",
+   "tags": [
+    "co2"
+   ],
+   "title": [
+    "Mécanisme d’ajustement carbone aux frontières (phase définitive)",
+    "Carbon border adjustment (definitive phase)"
+   ],
+   "text": [
+    "Les importations d’acier, ciment, aluminium, engrais, hydrogène et électricité paient le carbone qu’elles contiennent.",
+    "Imports of steel, cement, aluminium, fertilisers, hydrogen and electricity pay for their embedded carbon."
+   ],
+   "source": [
+    "Commission européenne",
+    "https://link.europa.eu/4CdngF"
+   ]
+  },
+  {
+   "id": "ppe3",
+   "date": "2026-02-13",
+   "scope": "FR",
+   "theme": "planification",
+   "tags": [
+    "enr",
+    "capacity",
+    "m0"
+   ],
+   "title": [
+    "PPE 3 publiée",
+    "PPE 3 published"
+   ],
+   "text": [
+    "Décret n° 2026-76 du 12 février 2026 : feuille de route 2026–2035 (objectifs solaire, éolien, nucléaire, appels d’offres).",
+    "Decree 2026-76 of 12 February 2026: 2026–2035 roadmap (solar, wind and nuclear targets, tenders)."
+   ],
+   "source": [
+    "Gossement Avocats",
+    "https://www.gossement-avocats.com/blog/programmation-pluriannuelle-de-lenergie-le-decret-n-2026-76-du-12-fevrier-2026-a-ete-publie-au-journal-officiel-voici-ce-quil-faut-en-retenir/"
+   ]
+  },
+  {
+   "id": "eu-2040",
+   "date": "2026-03-05",
+   "scope": "EU",
+   "theme": "carbone",
+   "tags": [
+    "co2",
+    "fwd"
+   ],
+   "title": [
+    "Objectif climat 2040 adopté, ETS2 repoussé",
+    "2040 climate target adopted, ETS2 postponed"
+   ],
+   "text": [
+    "−90 % d’émissions nettes en 2040 par rapport à 1990 ; le marché carbone des bâtiments et du transport (ETS2) démarre en 2028 au lieu de 2027.",
+    "−90 % net emissions by 2040 versus 1990; the carbon market for buildings and transport (ETS2) starts in 2028 instead of 2027."
+   ],
+   "source": [
+    "ICAP",
+    "https://icapcarbonaction.com/en/news/eu-officially-adopts-2040-climate-target-postpones-ets-2-one-year"
+   ]
+  },
+  {
+   "id": "mari",
+   "date": "2026-04-15",
+   "scope": "FR",
+   "theme": "equilibrage",
+   "tags": [
+    "balancing"
+   ],
+   "title": [
+    "RTE rejoint MARI (mFRR)",
+    "RTE joins MARI (mFRR)"
+   ],
+   "text": [
+    "La réserve tertiaire manuelle s’échange sur la plateforme européenne.",
+    "Manual tertiary reserve energy is exchanged on the European platform."
+   ],
+   "source": [
+    "ENTSO-E",
+    "https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/Network%20codes%20documents/NC%20EB/2026/260416%20Communication%20note%20RTE%20go-live.pdf"
+   ]
+  },
+  {
+   "id": "capa-auction",
+   "date": "2026-07-06",
+   "scope": "FR",
+   "theme": "capacite",
+   "tags": [
+    "capacity"
+   ],
+   "title": [
+    "Première enchère de capacité centralisée",
+    "First centralised capacity auction"
+   ],
+   "text": [
+    "Pour l’hiver 2026-2027 : 28 183 €/MW pour les capacités nouvelles, 15 000 €/MW pour les existantes.",
+    "For winter 2026-2027: 28,183 €/MW for new capacity, 15,000 €/MW for existing capacity."
+   ],
+   "source": [
+    "Elmy",
+    "https://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-capacite-2026/"
+   ]
+  },
+  {
+   "id": "neg-1mw",
+   "date": "2026-07-24",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "enr"
+   ],
+   "title": [
+    "Prix négatifs : seuil d’arrêt abaissé vers 1 MW",
+    "Negative prices: curtailment threshold lowered to 1 MW"
+   ],
+   "text": [
+    "Arrêté du 20 juillet 2026 : les parcs solaires et éoliens terrestres sous contrat public pourront être arrêtés à partir de 5 MW le 1er décembre 2026, puis 1 MW le 1er mars 2027.",
+    "Order of 20 July 2026: solar and onshore wind plants under public contract can be stopped from 5 MW on 1 December 2026, then 1 MW on 1 March 2027."
+   ],
+   "source": [
+    "pv magazine",
+    "https://www.pv-magazine.fr/2026/07/28/prix-negatifs-le-seuil-des-arrets-de-production-des-centrales-photovoltaiques-abaisse-a-1-mw/"
+   ]
+  },
+  {
+   "id": "capa-new",
+   "date": "2026-11-01",
+   "scope": "FR",
+   "theme": "capacite",
+   "tags": [
+    "capacity",
+    "fwd"
+   ],
+   "title": [
+    "Nouveau mécanisme de capacité : RTE acheteur unique",
+    "New capacity mechanism: RTE sole buyer"
+   ],
+   "text": [
+    "Décret du 18 mars 2026 : enchères centralisées organisées par RTE, première période de livraison l’hiver 2026-2027.",
+    "Decree of 18 March 2026: centralised auctions run by RTE, first delivery period winter 2026-2027."
+   ],
+   "source": [
+    "Elmy",
+    "https://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-capacite-2026/"
+   ]
+  },
+  {
+   "id": "neg-5mw",
+   "date": "2026-12-01",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "enr"
+   ],
+   "title": [
+    "Arrêt aux prix négatifs dès 5 MW",
+    "Curtailment at negative prices from 5 MW"
+   ],
+   "text": [
+    "Solaire et éolien terrestre sous obligation d’achat ou complément de rémunération (avant : 10 MW).",
+    "Solar and onshore wind under feed-in tariff or contract for difference (before: 10 MW)."
+   ],
+   "source": [
+    "Les Énergies renouvelables",
+    "https://www.les-energies-renouvelables.eu/article/actualites/reglementations/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-le-solaire-et-leolien-1401/"
+   ]
+  },
+  {
+   "id": "cbam-cert",
+   "date": "2027-02-01",
+   "scope": "EU",
+   "theme": "carbone",
+   "tags": [
+    "co2"
+   ],
+   "title": [
+    "Vente des certificats CBAM",
+    "CBAM certificate sales start"
+   ],
+   "text": [
+    "Les importateurs achètent les certificats couvrant leurs importations de 2026.",
+    "Importers buy the certificates covering their 2026 imports."
+   ],
+   "source": [
+    "Commission européenne",
+    "https://link.europa.eu/4CdngF"
+   ]
+  },
+  {
+   "id": "neg-1mw-apply",
+   "date": "2027-03-01",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "enr"
+   ],
+   "title": [
+    "Arrêt aux prix négatifs dès 1 MW",
+    "Curtailment at negative prices from 1 MW"
+   ],
+   "text": [
+    "Seuil final pour le solaire et l’éolien terrestre sous contrat public.",
+    "Final threshold for solar and onshore wind under public contract."
+   ],
+   "source": [
+    "Les Énergies renouvelables",
+    "https://www.les-energies-renouvelables.eu/article/actualites/reglementations/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-le-solaire-et-leolien-1401/"
+   ]
+  },
+  {
+   "id": "cfd-2way",
+   "date": "2027-07-17",
+   "scope": "EU",
+   "theme": "enr",
+   "tags": [
+    "m0",
+    "enr",
+    "fwd"
+   ],
+   "title": [
+    "Contrats pour différence bidirectionnels obligatoires",
+    "Two-way contracts for difference mandatory"
+   ],
+   "text": [
+    "Tout nouveau soutien public à l’éolien, au solaire, à la géothermie, à l’hydraulique au fil de l’eau et au nucléaire prend la forme d’un CfD bidirectionnel.",
+    "Any new public support for wind, solar, geothermal, run-of-river hydro and nuclear takes the form of a two-way CfD."
+   ],
+   "source": [
+    "EUR-Lex",
+    "https://eur-lex.europa.eu/eli/reg/2024/1747/oj/eng"
+   ]
+  },
+  {
+   "id": "ets2",
+   "date": "2028-01-01",
+   "scope": "EU",
+   "theme": "carbone",
+   "tags": [
+    "co2"
+   ],
+   "title": [
+    "Démarrage de l’ETS2 (bâtiments, transport)",
+    "ETS2 starts (buildings, transport)"
+   ],
+   "text": [
+    "Prix du carbone sur les carburants et le chauffage ; les enchères de quotas commencent dès 2027.",
+    "Carbon price on road fuels and heating; allowance auctions start in 2027."
+   ],
+   "source": [
+    "ICAP",
+    "https://icapcarbonaction.com/en/news/eu-officially-adopts-2040-climate-target-postpones-ets-2-one-year"
+   ]
+  }
+ ]
+}

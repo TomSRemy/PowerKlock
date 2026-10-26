@@ -80,6 +80,7 @@
     const w = get(id);
     if (!w) return null;
     try {
+      { const cv = document.getElementById(canvasId); if (cv) cv.dataset.pkw = id; }   // which widget a canvas shows (regulatory milestones, js/regulatory.js)
       const res = await w.draw(canvasId, params(id, p));
       addUnits(id, canvasId);
       if (w.pageCanvas === canvasId) markStar(w);
