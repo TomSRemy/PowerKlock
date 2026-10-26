@@ -53,10 +53,15 @@ def main():
             return None
         prod = sum(t[k] for k in SRC)
         p = [px[d] for d in sorted(px) if d[:4] == str(year) and (not upto or d[5:] <= upto) and d <= last]
+        # the production mix the way EEX publishes it (the residual-mix files): pumped-storage output left out, it is
+        # stored energy, not primary production
+        ps = sum((r.get('hydroPSAvg') or 0) * 24 / 1e6 for r in rows if r['d'][:4] == str(year) and (not upto or r['d'][5:] <= upto) and r['d'] <= last)
+        prod_x = prod - ps
+        mix_eex_way = {k: r1(100 * (t[k] - (ps if k == 'hydro' else 0)) / prod_x, 2) for k in SRC} if prod_x > 0 else None
         out = {'days': days, 'load': r1(t['load']), 'peak_gw': r1(peak / 1000), 'peak_day': peak_d, 'production': r1(prod),
                'by_source': {k: r1(t[k], 2) for k in SRC}, 'low_carbon_pct': r1(100 * (prod - sum(t[k] for k in FOSSIL)) / prod) if prod else None,
                'net_export': r1(-t['exch']), 'export_days_pct': r1(100 * t['export_days'] / days),
-               'co2_mt': r1(co2_t / 1e6, 2), 'co2_g_kwh': r1(co2_t / (prod * 1e6) * 1e3) if prod else None}
+               'co2_mt': r1(co2_t / 1e6, 2), 'pumped_storage_twh': r1(ps, 2), 'production_ex_ps': r1(prod_x), 'mix_ex_ps': mix_eex_way, 'co2_g_kwh': r1(co2_t / (prod * 1e6) * 1e3) if prod else None}
         if p:
             mx = max(p, key=lambda r: r['avg'])
             out['spot'] = {'avg': r1(sum(r['avg'] for r in p) / len(p), 2), 'neg_h': r1(sum(r.get('negH') or 0 for r in p), 0), 'high_h': r1(sum(r.get('highH') or 0 for r in p), 0),
