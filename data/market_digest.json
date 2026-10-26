@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-26T13:22:03+00:00",
+ "updated": "2026-10-26T21:07:26+00:00",
  "asof": "2026-10-26",
  "notes": 2,
  "engine": "proxy",
@@ -7,38 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec une indisponibilité révisée à 20,7 GW pour le reste d'octobre. Les prix de l'électricité pourraient augmenter en raison de cette baisse de disponibilité et de la demande accrue pour le chauffage et la production d'électricité à partir du gaz.",
-   "text_en": "Nuclear availability in France is decreasing, with revised unavailability of 20.7 GW for the rest of October. Electricity prices could rise due to this decrease in availability and increased demand for heating and electricity generation from gas.",
+   "text": "La disponibilité nucléaire en France est en baisse, avec une disponibilité de 40936,77 MW, en baisse de 6,4% sur 7 jours. Cela pousse les prix à la hausse.",
+   "text_en": "French nuclear availability is down, with a capacity of 40936.77 MW, down 6.4% over 7 days. This pushes prices up.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "La situation géopolitique dans la région du Golfe reste tendue, avec des attaques répétées contre les transports maritimes et les infrastructures énergétiques. Cela pourrait entraîner des perturbations d'approvisionnement et faire augmenter les prix du pétrole.",
-   "text_en": "The geopolitical situation in the Gulf region remains tense, with repeated attacks on maritime transport and energy infrastructure. This could lead to supply disruptions and increase oil prices.",
+   "text": "Les tensions dans le Golfe persistent, avec des attaques contre les infrastructures énergétiques, ce qui maintient les prix du pétrole à un niveau élevé.",
+   "text_en": "Tensions in the Gulf persist, with attacks on energy infrastructure, keeping oil prices high.",
+   "tone": "up"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "Les sorties de gaz norvégien sont en baisse en raison d'arrêts imprévus, ce qui contribue à la tension sur le marché du gaz européen.",
+   "text_en": "Norwegian gas exports are down due to unplanned outages, contributing to tightness in the European gas market.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient rester élevés en raison des tensions géopolitiques dans la région du Golfe.",
-   "text_en": "Oil prices are expected to remain high due to geopolitical tensions in the Gulf region."
+   "text": "Les prix du pétrole devraient rester élevés en raison des tensions persistantes dans le Golfe.",
+   "text_en": "Oil prices are expected to remain high due to ongoing tensions in the Gulf."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient continuer à augmenter en raison de la forte demande pour le chauffage et la production d'électricité à partir du gaz.",
-   "text_en": "Gas prices are expected to continue rising due to strong demand for heating and electricity generation from gas."
+   "text": "Les prix du gaz devraient rester élevés en raison de la tension sur le marché européen.",
+   "text_en": "Gas prices are expected to remain high due to tightness in the European market."
   },
   "power": {
-   "tone": "up",
-   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de disponibilité nucléaire en France et de la demande accrue pour le chauffage et la production d'électricité à partir du gaz.",
-   "text_en": "Electricity prices are expected to rise due to the decrease in nuclear availability in France and increased demand for heating and electricity generation from gas."
+   "tone": "flat",
+   "text": "Les prix de l'électricité devraient rester stables, influencés par les conditions météorologiques et la disponibilité nucléaire.",
+   "text_en": "Power prices are expected to remain stable, influenced by weather conditions and nuclear availability."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix des quotas de carbone devraient rester stables en raison de l'attention portée aux débats politiques entourant le système d'échange de quotas d'émission de l'UE.",
-   "text_en": "Carbon prices are expected to remain stable due to attention being paid to political debates surrounding the EU Emissions Trading System."
+   "text": "Les prix du carbone devraient rester stables, sans événement notable à venir.",
+   "text_en": "Carbon prices are expected to remain stable, with no notable events upcoming."
   }
  }
 }
