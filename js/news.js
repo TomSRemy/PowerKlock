@@ -329,7 +329,7 @@ const PAGE_LOADERS = {
   // empty canvas until the user happened to click a pill button. Each loader
   // below now also fires that first render.
   renewables: () => { loadRenewables(); if (window.PKCaptureFwd) setTimeout(PKCaptureFwd.render, 300); },
-  nuclear:    () => { drawNuclear(); if (window.PKW) PKW.draw('nuc-monthly-years', 'nuc-monthly', {}).then(r => { const e = document.getElementById('nuc-monthly-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
+  nuclear:    () => { drawNuclear(); if (typeof renderRemit === 'function') renderRemit(); if (window.PKW) PKW.draw('nuc-monthly-years', 'nuc-monthly', {}).then(r => { const e = document.getElementById('nuc-monthly-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
   imbalance:  () => drawImbalance(),
   analysis:   () => { if (typeof loadMarketAnalysis === 'function') loadMarketAnalysis(); },
   carbonintensity: () => { if (typeof initCarbon === 'function') initCarbon(); },
