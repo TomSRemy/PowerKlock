@@ -1,0 +1,50 @@
+name: FR unit outages (REMIT)
+
+# Outage messages of French power plants, unit by unit (ENTSO-E A80 and A77: planned and forced,
+# start, expected end, capacity left, reason) → data/history/fr_outages.json (scripts/fetch_fr_outages.py),
+# for Power system › Generation › Outages & REMIT.
+
+on:
+  schedule:
+    - cron: '19 * * * *'     # every hour, off the round minutes
+  push:
+    branches: [main]
+    paths: ['scripts/fetch_fr_outages.py', '.github/workflows/fetch_fr_outages.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-fr-outages
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests==2.33.1
+      - name: Unit outages
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/fetch_fr_outages.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/fr_outages.json 2>/dev/null || exit 0
+          git diff --staged --quiet && exit 0
+          git commit -q -m "data: FR unit outages $(date -u '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

@@ -337,7 +337,7 @@ const PAGE_LOADERS = {
   euafwd:     () => drawEUAFwd(),
   spark:      () => typeof renderSpark!=="undefined"&&renderSpark(),
   goprices:   () => typeof renderGO!=="undefined"&&renderGO(),
-  remit:      () => renderRemit(),
+  remit:      () => { if (window.PKRemitUnits) PKRemitUnits.render(); },
   wxcities:   () => { if (typeof loadWeather === 'function') loadWeather(); },
   wxhdd:      () => typeof renderHDD!=="undefined"&&renderHDD(),
   status:     () => { if (window.PKStatus) PKStatus.renderStatusPage(); },
