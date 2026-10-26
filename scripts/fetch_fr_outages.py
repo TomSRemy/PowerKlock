@@ -4,7 +4,7 @@
 ENTSO-E A80 (unavailability of generation units) and A77 (production units): every outage message
 published by the operators, with the unit, planned or forced, start, expected end, the capacity left
 available and the reason. The latest revision of each message is kept; cancelled and withdrawn ones
-are dropped. Window: the last 90 days and the next 365.
+are dropped. Window: the last 60 days and the next 300 (ENTSO-E answers at most one year per request).
 
 Writes data/history/fr_outages.json:
   {"updated", "source", "diag": [...],
@@ -86,13 +86,17 @@ def parse(xml_text):
 
 def main():
     now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-    p0, p1 = now - timedelta(days=90), now + timedelta(days=365)
+    p0, p1 = now - timedelta(days=60), now + timedelta(days=300)
     rows = []
     for doc in ('A80', 'A77'):
         for bt in ('A53', 'A54'):
             for off in range(0, 4800, 200):   # ENTSO-E answers at most 200 messages per request
-                xml = fetch({'documentType': doc, 'businessType': bt, 'biddingZone_Domain': FR,
-                             'periodStart': p0.strftime('%Y%m%d%H%M'), 'periodEnd': p1.strftime('%Y%m%d%H%M'), 'offset': off})
+                try:
+                    xml = fetch({'documentType': doc, 'businessType': bt, 'biddingZone_Domain': FR,
+                                 'periodStart': p0.strftime('%Y%m%d%H%M'), 'periodEnd': p1.strftime('%Y%m%d%H%M'), 'offset': off})
+                except Exception as e:   # one refused request must not lose the others; the reason is kept in diag
+                    DIAG.append(f'{doc} {bt} offset {off}: {str(e)[:160]}')
+                    break
                 got = parse(xml)
                 rows += got
                 if len(set(r['id'] for r in got)) < 200:
@@ -110,10 +114,15 @@ def main():
         r.pop('status', None)
     ev.sort(key=lambda r: (r['start'], r['unit']))
     if not ev:
-        DIAG.append('no outage kept: previous file left as it was')
+        DIAG.append('no outage kept')
         print('\n'.join(DIAG))
-        if os.path.exists(OUT):
-            return
+        if os.path.exists(OUT):   # keep the last good list, with today's diagnosis
+            old = json.load(open(OUT))
+            if old.get('events'):
+                old['diag'] = DIAG[-40:]
+                with open(OUT, 'w') as f:
+                    json.dump(old, f, ensure_ascii=False, separators=(',', ':'))
+                return
     out = {'updated': now.strftime('%Y-%m-%dT%H:%MZ'),
            'source': 'ENTSO-E Transparency Platform, unavailability of generation and production units (A80, A77), France',
            'diag': DIAG[-40:], 'events': ev}
