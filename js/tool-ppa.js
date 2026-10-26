@@ -684,7 +684,7 @@
     const tech = st.tech === 'solar' ? 'solar' : 'wind', cv = D.hc.curves[tech] && D.hc.curves[tech][mode];
     if (!cv) return;
     const ds = Object.keys(cv).filter(c => CNAME[c]).map(c => ({ label: CNAME[c], data: cv[c].map(([x, y, n]) => ({ x, y, n })), borderColor: CCOL[c], backgroundColor: CCOL[c],
-      borderWidth: c === 'FR' ? 2.8 : 1.6, pointRadius: c === 'FR' ? 3.5 : 2.5, tension: 0.25, fill: false }));
+      borderWidth: c === 'FR' ? 2.8 : 1.6, pointRadius: c === 'FR' ? 3.5 : 2.5, tension: 0, fill: false }));
     _fuelChart(cid, { type: 'line', data: { datasets: ds }, options: _fuelOpts({ interaction: { mode: 'nearest', intersect: false },
       plugins: { pkHoverReadout: false, legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } },
         tooltip: { enabled: true, callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.y.toFixed(0)} % of the month's average price at ${c.raw.x - D.hc.bin / 2}–${c.raw.x + D.hc.bin / 2} % ${tech} (${c.raw.n} hours)` } } },
@@ -761,7 +761,7 @@
       const key = st.tech === 'solar' ? (st.conv === 'pos' ? 'solarRatePos' : 'solarRate') : (st.conv === 'pos' ? 'windRatePos' : 'windRate');
       const yrs = [...new Set(Object.values(D.cc).flatMap(d => Object.keys(d.years)))].sort();
       const ds4 = Object.keys(CNAME).filter(c => D.cc[c]).map(c => ({ label: CNAME[c], data: yrs.map(y => { const f = D.cc[c].years[y]; return f && f[key] ? pc1(f[key]) : null; }),
-        borderColor: CCOL[c], backgroundColor: CCOL[c], borderWidth: c === 'FR' ? 2.8 : 1.5, pointRadius: yrs.map(y => D.cc[c].years[y] && !D.cc[c].years[y].complete ? 2 : 3.5), borderDash: c === 'FR' ? undefined : [], tension: 0.2, fill: false, spanGaps: true,
+        borderColor: CCOL[c], backgroundColor: CCOL[c], borderWidth: c === 'FR' ? 2.8 : 1.5, pointRadius: yrs.map(y => D.cc[c].years[y] && !D.cc[c].years[y].complete ? 2 : 3.5), borderDash: c === 'FR' ? undefined : [], tension: 0, fill: false, spanGaps: true,
         segment: { borderDash: g => D.cc[c].years[yrs[g.p1DataIndex]] && !D.cc[c].years[yrs[g.p1DataIndex]].complete ? [4, 4] : undefined } }));
       const i22 = yrs.indexOf('2022');
       _fuelChart(ids.xcy, { type: 'line', data: { labels: yrs.map(y => D.cc.FR && D.cc.FR.years[y] && !D.cc.FR.years[y].complete ? y + ' YTD' : y), datasets: ds4 }, plugins: i22 >= 0 ? [shadePlugin([i22])] : [],

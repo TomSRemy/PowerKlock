@@ -78,6 +78,7 @@
     'status': { page: 'status' },
     'api': { page: 'api' },
     'methodology': { page: 'methodology' },
+    'about': { page: 'about' },
   };
 
   // the menu: [section, [[route, label, icon, group bar?]]]
@@ -115,7 +116,7 @@
       ['intel/news', 'News', 'news'],
     ]],
   ];
-  const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology']];
+  const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology'], ['about', 'About']];
 
   // route → menu entry it belongs to, and the group bar it shows
   const owner = {}, bars = [], sectionOf = {}, pageLabel = {};
@@ -252,7 +253,7 @@
   function notice(msg) {
     const d = document.createElement('div');
     d.className = 'pk-nv-notice'; d.setAttribute('role', 'status'); d.textContent = msg;
-    document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+    document.body.appendChild(d); setTimeout(() => d.remove(), 8000);
   }
 
   // group bars at the top of each page of a group (phones; on a computer the menu shows the pages)
@@ -321,15 +322,32 @@
     document.querySelectorAll('.pk-gbar a').forEach(a => a.classList.toggle('on', a.dataset.route === route));
   }
 
+  // the tab or view open on the page (Quotidien / Historique, Coup d’œil / Découverte / Expert…) goes in the address as
+  // ?v=<n>, so a link reopens it and Back returns to the previous tab. Pages that write their own settings in the
+  // address (comparator, replay) and routes that are themselves tabs (Renewables › M0) keep their addresses.
+  const OWN_PARAMS = new Set(['tools/compare', 'system/replay']);
+  function viewTabs() {
+    const pg = document.querySelector('.page.active'); if (!pg) return [];
+    const bar = [...pg.querySelectorAll('.pr-tabs-bar .pk-views, .pr-tabs-bar .tabs-nav')].find(b => b.offsetParent !== null);
+    return bar ? [...bar.querySelectorAll('.tab-btn')] : [];
+  }
+  // pages reached by several addresses that are themselves tabs (GO › Auctions, Fuels › TTF, Renewables › M0) keep those
+  const TAB_PAGES = new Set(Object.values(R).filter(t => t.page && !t.sub && !t.dash).map(t => t.page).filter((p, i, a) => a.indexOf(p) !== i).concat(['goprices', 'euafwd']));
+  const viewOf = route => { if (!route || OWN_PARAMS.has(route) || !R[route] || R[route].tab != null || R[route].go || TAB_PAGES.has(R[route].page) || /^renewables\//.test(route)) return 0;
+    const t = viewTabs(); const i = t.findIndex(b => b.classList.contains('active')); return i > 0 ? i : 0; };
   function write(route, push) {
     if (document.body.classList.contains('pk-solo')) return;   // shared dashboard: its #solo= address stays
-    if (!route || route === current) { if (route) mark(route); return; }
-    current = route; mark(route);
-    const url = location.pathname + location.search + '#' + route;
+    if (!route) return;
+    const v = viewOf(route), full = route + (v ? '?v=' + v : '');
+    if (full === current || (route === current && !v && !/[?]v=/.test(location.hash))) { mark(route); return; }
+    if (OWN_PARAMS.has(route) && route === (current || '').split('?')[0]) { mark(route); return; }
+    current = full; mark(route);
+    const url = location.pathname + location.search + '#' + (OWN_PARAMS.has(route) && location.hash.startsWith('#' + route + '?') ? location.hash.slice(1) : full);
     try { if (push) history.pushState({ pk: route }, '', url); else history.replaceState({ pk: route }, '', url); } catch (_) {}
     // page title from the menu as shown (French or English)
     const own = owner[route] || route, e = nav.querySelector('[data-route="' + own + '"]'), g = document.querySelector('.pk-gbar:not([hidden]) a[data-route="' + route + '"]');
     document.title = 'PowerKlock · ' + ((e ? e.textContent.trim() : labelOf(route)) + (g && route !== own ? ' · ' + g.textContent.trim() : ''));
+    if (window.pkEnsureH1) setTimeout(window.pkEnsureH1, 300);   // every page has a heading of level 1
   }
   function labelOf(route) {
     for (const [, items] of MENU) for (const [r, l, , g] of items) {
@@ -363,13 +381,19 @@
       }
     } finally { silent = false; }
     current = null;
+    const pv = window.pkHashRoute === route && window.pkHashParams && +window.pkHashParams.v;
+    if (pv) delete window.pkHashParams.v;   // read once: a later click on the menu opens the page's first view
+    if (pv > 0 && !OWN_PARAMS.has(route)) {   // the view named in the address
+      setTimeout(() => { silent = true; try { const b = viewTabs()[pv]; if (b && !b.classList.contains('active')) b.click(); } finally { silent = false; } current = null; write(route, false); }, 80);
+      return true;
+    }
     write(route, push);
     return true;
   }
   window.pkGo = route => go(route, true);
 
   // an address may carry settings after the page (#tools/compare?s=…): kept for the page, which reads them once
-  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } return m[1]; };
+  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } else if (window.pkHashParams) delete window.pkHashParams.v; return m[1]; };
   const foreignHash = () => /^#(board|solo)=|access_token=|error_description=/.test(location.hash);
 
   // a click on any menu or bar link
@@ -393,9 +417,15 @@
 
   window.addEventListener('popstate', () => {
     const r = routeOfHash();
-    if (r) { current = null; go(r, false); return; }
+    if (r) {
+      const want = window.pkHashRoute === r && window.pkHashParams && +window.pkHashParams.v || 0;
+      current = null; go(r, false);
+      // Back to an address without a view: the page's first tab again (go() handles an address with one)
+      if (!want && !OWN_PARAMS.has(r)) setTimeout(() => { const b = viewTabs()[0]; if (b && !b.classList.contains('active')) { silent = true; try { b.click(); } finally { silent = false; } } current = null; write(r, false); }, 80);
+      return;
+    }
     // an address typed by hand that is not a page (shared-dashboard and sign-in addresses left alone)
-    if (/^#[a-z]/i.test(location.hash) && !foreignHash()) { notice('Page not found (old or mistyped address): showing Today'); current = null; go('today', false); }
+    if (/^#[a-z]/i.test(location.hash) && !foreignHash()) { notice((!window.PKI18n || PKI18n.lang !== 'en') ? 'Page introuvable (adresse ancienne ou mal tapée) : voici Aujourd’hui. Le menu et la recherche mènent à toutes les pages.' : 'Page not found (old or mistyped address): showing Today. The menu and the search lead to every page.'); current = null; go('today', false); }
   });
 
   // the page of the address is shown as soon as the page structure is there (DOMContentLoaded), not once
@@ -421,10 +451,10 @@
     // any navigation from elsewhere (search, links inside pages, tabs) writes the address too
     const wrap = name => { const f = window[name]; if (typeof f !== 'function') return; window[name] = function () { const r = f.apply(this, arguments); if (!silent) setTimeout(() => write(detect(), true), 0); return r; }; };
     wrap('showPage'); wrap('prSelectSubdomain'); wrap('switchDashboard');
-    document.addEventListener('click', e => { if (e.target.closest('#go-tabs-nav .tab-btn')) setTimeout(() => write(detect(), true), 0); });
+    document.addEventListener('click', e => { if (e.target.closest('#go-tabs-nav .tab-btn') || (e.target.closest('.page.active .pr-tabs-bar .tab-btn') && !silent)) setTimeout(() => write(detect(), true), 0); });
     if (document.body.classList.contains('pk-solo') || foreignHash()) { mark(detect()); return; }
     const r = routeOfHash();
-    if (!r && /^#[a-z]/i.test(location.hash)) notice('Page not found (old or mistyped address): showing Today');
+    if (!r && /^#[a-z]/i.test(location.hash)) notice((!window.PKI18n || PKI18n.lang !== 'en') ? 'Page introuvable (adresse ancienne ou mal tapée) : voici Aujourd’hui. Le menu et la recherche mènent à toutes les pages.' : 'Page not found (old or mistyped address): showing Today. The menu and the search lead to every page.');
     go(r || 'today', false);
   }, 30));
 
@@ -557,3 +587,6 @@ document.addEventListener('click', e => {
   const t = document.getElementById(a.getAttribute('href').slice(1));
   if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }, true);
+
+// About: the report button opens the site's note box
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.pk-about-note') && window.PKNotes) PKNotes.open(); });

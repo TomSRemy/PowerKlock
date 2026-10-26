@@ -372,6 +372,7 @@
     const best = withCo2.slice().sort((a, b) => a.co2 - b.co2)[0], worst = withCo2.slice().sort((a, b) => b.co2 - a.co2)[0];
     const pr = list.filter(s => s.price != null).sort((a, b) => b.price - a.price);
     const k = (lbl, val, sub) => `<div class="kpi-card kpi-flat pm-kpi"><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}</div><div class="kpi-meta">${sub}</div></div>`;
+    const T = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en, nC = n => n + (n === 1 ? T(' pays', ' country') : T(' pays', ' countries'));
     if (METRICS[S.metric].market) {
       const h = S.avg ? null : S.hour;
       const val = s => h != null ? s.price : s.base;
@@ -382,17 +383,18 @@
       Object.keys(S.data.E).forEach(key => { const [a, b] = key.split('|'); const x = S.snaps[a], y = S.snaps[b]; if (!x || !y || val(x) == null || val(y) == null) return;
         const d = Math.abs(val(x) - val(y)); if (!best || d > best.d) best = { a, b, d }; });
       host.innerHTML =
-        k(h != null ? 'Average price' : 'Average baseload', avgP == null ? '–' : avgP.toFixed(1) + '<small> €/MWh</small>', P.length + ' countries, simple mean') +
-        k('Cheapest → most expensive', P.length ? val(P[0]).toFixed(0) + ' → ' + val(P[P.length - 1]).toFixed(0) + '<small> €/MWh</small>' : '–', P.length ? flag(P[0].c) + ' ' + NAMES[P[0].c] + ' · ' + flag(P[P.length - 1].c) + ' ' + NAMES[P[P.length - 1].c] : '') +
-        k(h != null ? 'Negative prices now' : 'Countries with negative hours', negN + '<small> countries</small>', h != null ? 'at ' + String(h).padStart(2, '0') + ':00' : 'day-ahead, this day') +
-        k('Widest border spread', best ? best.d.toFixed(1) + '<small> €/MWh</small>' : '–', best ? flag(best.a) + ' ' + best.a + ' ↔ ' + flag(best.b) + ' ' + best.b + ' · congestion' : '');
+        k(h != null ? T('Prix moyen', 'Average price') : T('Base moyenne', 'Average baseload'), avgP == null ? '–' : T(avgP.toFixed(1).replace('.', ','), avgP.toFixed(1)) + '<small> €/MWh</small>', nC(P.length) + T(', moyenne simple', ', simple mean')) +
+        k(T('Le moins cher → le plus cher', 'Cheapest → most expensive'), P.length ? val(P[0]).toFixed(0) + ' → ' + val(P[P.length - 1]).toFixed(0) + '<small> €/MWh</small>' : '–', P.length ? flag(P[0].c) + ' ' + NAMES[P[0].c] + ' · ' + flag(P[P.length - 1].c) + ' ' + NAMES[P[P.length - 1].c] : '') +
+        k(h != null ? T('Prix négatifs à cette heure', 'Negative prices now') : T('Pays avec des heures négatives', 'Countries with negative hours'), negN + '<small> ' + T('pays', negN === 1 ? 'country' : 'countries') + '</small>', h != null ? T('à ', 'at ') + String(h).padStart(2, '0') + ':00' : T('day-ahead, ce jour', 'day-ahead, this day')) +
+        k(T('Plus grand écart à une frontière', 'Widest border spread'), best ? best.d.toFixed(1) + '<small> €/MWh</small>' : '–', best ? flag(best.a) + ' ' + best.a + ' ↔ ' + flag(best.b) + ' ' + best.b + ' · ' + T('congestion', 'congestion') : '');
       return;
     }
     host.innerHTML =
-      k('Europe average', eu == null ? '–' : Math.round(eu) + '<small> g/kWh</small>', withCo2.length + ' countries, weighted by generation') +
-      k('Cleanest', best ? flag(best.c) + ' ' + Math.round(best.co2) + '<small> g/kWh</small>' : '–', best ? NAMES[best.c] : '') +
-      k('Most carbon-intensive', worst ? flag(worst.c) + ' ' + Math.round(worst.co2) + '<small> g/kWh</small>' : '–', worst ? NAMES[worst.c] : '') +
-      k('Price range', pr.length ? Math.round(pr[pr.length - 1].price) + ' → ' + Math.round(pr[0].price) + '<small> €/MWh</small>' : '–',
+      (withCo2.length > 1 ? k(T('Moyenne Europe', 'Europe average'), eu == null ? '–' : Math.round(eu) + '<small> g/kWh</small>', nC(withCo2.length) + T(', pondéré par la production', ', weighted by generation')) +
+      k(T('Le plus bas carbone', 'Cleanest'), best ? flag(best.c) + ' ' + Math.round(best.co2) + '<small> g/kWh</small>' : '–', best ? NAMES[best.c] : '') +
+      k(T('Le plus carboné', 'Most carbon-intensive'), worst ? flag(worst.c) + ' ' + Math.round(worst.co2) + '<small> g/kWh</small>' : '–', worst ? NAMES[worst.c] : '')
+      : k(T('Intensité carbone', 'Carbon intensity'), best ? flag(best.c) + ' ' + Math.round(best.co2) + '<small> g/kWh</small>' : '–', best ? NAMES[best.c] : '')) +   // one country in view: one card, not cleanest and dirtiest at once
+      k(T('Écart de prix', 'Price range'), pr.length ? Math.round(pr[pr.length - 1].price) + ' → ' + Math.round(pr[0].price) + '<small> €/MWh</small>' : '–',
         pr.length ? flag(pr[pr.length - 1].c) + ' ' + pr[pr.length - 1].c + ' · ' + flag(pr[0].c) + ' ' + pr[0].c : '');
   }
   const LEG_NOTES = {

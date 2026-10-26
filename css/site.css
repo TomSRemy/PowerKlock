@@ -3400,3 +3400,4 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 #prices-table th { white-space: normal; line-height: 1.25; overflow-wrap: anywhere; vertical-align: bottom; }
 #prices-table.pk-noren th:nth-child(10), #prices-table.pk-noren tr.zone-row > td:nth-child(10),
 #prices-table.pk-nodom th:nth-child(11), #prices-table.pk-nodom tr.zone-row > td:nth-child(11) { display: none; }
+.pk-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -79,6 +79,18 @@ window.pkSummary = function () {
   }
   return window.__pkSummaryP;
 };
+// France only, price fields only (summary_fr.json, ≈0.4 MB): what Today needs on first load. The full history is
+// used instead when a page has already downloaded it; the full file when the light one is missing.
+window.pkSummaryFR = function () {
+  if (window.__pkSummaryP) return window.__pkSummaryP;
+  if (!window.__pkSummaryFrP) {
+    const base = typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : './data/';
+    const v = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+    window.__pkSummaryFrP = fetch(base + 'history/summary_fr.json?v=' + v).then(r => r.ok ? r.json() : null).catch(() => null)
+      .then(s => s && s.zones && s.zones.FR ? s : window.pkSummary());
+  }
+  return window.__pkSummaryFrP;
+};
 async function fetchSummary() {
   if (HIST.summary) return HIST.summary;
   const s = await window.pkSummary();

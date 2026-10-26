@@ -335,7 +335,7 @@ function _mrnFactsP() {
 }
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
-  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted, wxo, fmo] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), _mrnSummary().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null), _mrnGet('wx', DATA_BASE + 'weather_outlook.json').catch(() => null), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json').catch(() => null)]);
+  const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted, wxo, fmo] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), (window.pkSummaryFR || _mrnSummary)().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null), _mrnGet('wx', DATA_BASE + 'weather_outlook.json').catch(() => null), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json').catch(() => null)]);
   const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
   const k = { t, tm, y, cs, P, gos, neg, look: dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5 ? (dg.outlook || {}) : {} };
   const fr = j => j && j.zones && j.zones.FR;
@@ -891,7 +891,21 @@ function _mrnLearn(k, o) {
   const gl = o.gloss; if (gl) gl.innerHTML = G.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
 }
 
+// first visit: say what the site is for and where to start (Discovery), until the reader closes it or opens a view
+function _mrnFirstVisit() {
+  const el = document.getElementById('mrn-first'); if (!el) return;
+  let seen = false; try { seen = localStorage.getItem('pk-first-done') === '1'; } catch (_) {}
+  if (seen || document.body.classList.contains('pk-solo')) { el.hidden = true; return; }
+  const done = () => { el.hidden = true; try { localStorage.setItem('pk-first-done', '1'); } catch (_) {} };
+  el.innerHTML = `<span>${_mT('<b>Première visite ?</b> Commencez par <b>Découverte</b> : le marché du jour en quelques chiffres, chacun expliqué. <b>Coup d’œil</b> résume tout en un écran, <b>Expert</b> montre tout.', '<b>First visit?</b> Start with <b>Discovery</b>: today’s market in a few figures, each one explained. <b>Quick look</b> sums it up on one screen, <b>Expert</b> shows everything.')}</span>` +
+    `<button type="button" class="pk-btn-primary" id="mrn-first-go">${_mT('Ouvrir Découverte', 'Open Discovery')}</button><button type="button" class="pkd-ic" id="mrn-first-x" title="${_mT('Masquer', 'Hide')}" aria-label="${_mT('Masquer', 'Hide')}">✕</button>`;
+  el.setAttribute('translate', 'no'); el.hidden = false;
+  el.querySelector('#mrn-first-x').addEventListener('click', done);
+  el.querySelector('#mrn-first-go').addEventListener('click', () => { done(); const b = [...document.querySelectorAll('#page-morning .pk-views .tab-btn')][1]; if (b) b.click(); });
+  document.querySelectorAll('#page-morning .pk-views .tab-btn').forEach(b => b.addEventListener('click', done, { once: true }));
+}
 async function renderMorning() {
+  _mrnFirstVisit();
   const upd = document.getElementById('mrn-date');
   if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
@@ -1130,7 +1144,8 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   @media (max-width:1100px){.mrn3-pair{grid-template-columns:1fr}}
   .mrn3-row{margin-bottom:12px}
   .mrn3-row:last-child{margin-bottom:0}
-  .mrn3-hdr{margin:0 0 14px}
+  .mrn3-hdr{margin:0 0 14px} .mrn-hdr-l{min-width:0;flex:1 1 420px} .mrn-promise{margin:4px 0 0;font-size:13.5px;color:var(--text2);max-width:80ch}
+  .mrn-first{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:10px 14px;border:1px solid var(--accent, #14D3A9);border-radius:10px;background:rgba(20,211,169,.07);font-size:13.5px;color:var(--text)} .mrn-first > span{flex:1 1 300px} .mrn-first[hidden]{display:none}
   .mrn3-qrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px} .mrn3-qrow>section{margin:0;min-width:0}
   @media (max-width:1000px){.mrn3-qrow{grid-template-columns:1fr}}
   .mrn3-lines{margin:0;padding:0;list-style:none} .mrn3-lines li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--text2)}

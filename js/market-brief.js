@@ -141,7 +141,7 @@
 
   async function brief(host) {
     const [cs, chain, sum, nt, dg, hist, go, auct] = await Promise.all([get('history/commodities_series.json'), get('history/fr_market_calchain.json'),
-      window.pkSummary ? window.pkSummary().catch(() => null) : null, notes(), get('market_digest.json'), get('history/digest_outlook.json'), goCsv(), get('go_auctions.json')]);
+      (window.pkSummaryFR || window.pkSummary) ? (window.pkSummaryFR || window.pkSummary)().catch(() => null) : null, notes(), get('market_digest.json'), get('history/digest_outlook.json'), goCsv(), get('go_auctions.json')]);
     const S = cs && cs.series || {}, P = k => (S[k] || {}).points || [];
     const fresh = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5, ctxT = fresh ? (dg.context || []) : [], OL = fresh ? (dg.outlook || {}) : {};
     const NOTE = T('notes de marché', 'market notes'), PRICE = T('tendance des prix', 'price trend');
