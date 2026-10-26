@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-26",
+ "countries": {
+  "FR": {
+   "spot": 161.53
+  },
+  "UK": {
+   "spot": 109.96
+  },
+  "DE": {
+   "spot": 155.12
+  },
+  "NL": {
+   "spot": 157.63
+  }
+ },
+ "marketInsightsHtml": "<p>La charge de base allemande du 26 novembre a grimpé de 9,30 € à 206,90 €/MWh, la France de novembre a gagné 10,75 € pour atteindre un record de 190,75 €/MWh et la Grande-Bretagne de novembre a augmenté de 5,75 £ à 180,25 £/MWh. À l’inverse, le spot du week-end s’est effondré sur les plus bas de l’Atlantique avec le Day-Ahead allemand à 30,12 €/MWh, la France à 48,76 €/MWh et le N2EX britannique à 31,14 £/MWh.</p><p>L'indisponibilité nucléaire française de novembre a été ajustée à 14,1 GW, même si l'amélioration du débit de la Meuse a avancé le retour des deux unités de 1,5 GW à Chooz à fin octobre.</p>",
+ "marketInsights": {
+  "gas": "<p>European natural gas extended its rally this morning as physical supply risks and geopolitics compound.</p>\n<p>Dutch TTF front-month, November 26, broke resistance to trade around &euro;97/MWh, following Friday&rsquo;s settle at &euro;92.80/MWh (+3.24%). In the UK, NBP Day-Ahead settled up 3.76p at 223.75p/th, while November 26 added 6.83p to 228.23p/th.</p>\n<p>Persian Gulf LNG flows remain severely crippled, running around 80% below pre-war levels amid ongoing blockades in the Strait of Hormuz. Regional conflict widened over the weekend as Houthis targeted King Khalid International Airport in Riyadh, while markets await US policy moves after Trump noted post-midterm decisions will dictate diplomacy or fresh strikes on Iran.</p>\n<p>Prompt physical supply is further tightened by unplanned Norwegian outages at Troll (13 mcm/d) and &Aring;sgard, cutting Dutch border flows to 11 mcm/d.</p>\n<p>Aggregate EU storage stands at 74.62% capacity (846.4 TWh), with Germany lagging at 61.48% (set to miss its 70% 1 November target), the Netherlands at 65.24%, and the UK at 40.15%. Stock draws began early between 19&ndash;21 October, though a brief mid-week warming pulse should temporarily curb space-heating demand before chillier weather returns into November.</p>",
+  "power": "<p>Forward power curves tracked gas higher on Friday, while spot contracts crashed over the weekend under storm force winds.</p>\n<p>German November 26 baseload climbed &euro;9.30 to &euro;206.90/MWh, French November gained &euro;10.75 to a record &euro;190.75/MWh, and UK November rose &pound;5.75 to &pound;180.25/MWh. Conversely, weekend spot collapsed on Atlantic lows with German Day-Ahead cleared at &euro;30.12/MWh, France at &euro;48.76/MWh, and UK N2EX at &pound;31.14/MWh.</p>\n<p>Renewable generation faces an imminent slump as an amplifying high pressure ridge from Thursday brings a stagnant, low wind pattern. German wind output is forecast to plunge by over 50% into Week 45 down to around 15.6 GW, well below seasonal norms.</p>\n<p>Supply margins remain constrained by nuclear and hydro deficits. French November nuclear unavailability was adjusted up to 14.1 GW, though improved Meuse river flows brought forward the return of both 1.5 GW units at Chooz to late October. In the Nordics, Swedish Ringhals 3 maintenance was extended by a week, while southern Norwegian hydro reserves sit at multi-decade lows of 52.9%, lifting November import rights on the North Sea Link to &euro;36.25/MWh. In Great Britain, NESO projects a 5.9 GW (9.5%) de-rated margin, relying on firm interconnector imports. Thermal generation margins remain heavily tilted toward coal, with German 40% coal dark spreads holding a wide lead over clean sparks (&euro;85.43/MWh dark vs. &euro;3.75/MWh spark).</p>"
+ }
+}

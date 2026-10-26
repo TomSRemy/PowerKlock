@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-10-25T11:50:55.904105+00:00",
+ "lastUpdate": "2026-10-26T13:21:58.481079+00:00",
  "spot": {
-  "value": 35.46,
+  "value": 161.53,
   "unit": "EUR/MWh",
-  "date": "2026-10-25"
+  "date": "2026-10-26"
  },
  "forwardCurve": [
   {
@@ -119,33 +119,32 @@
  ],
  "forwardCurveDate": "2026-10-23",
  "nuclearCapacity": {
-  "actualMW": 40936.77,
   "forecastMW": 48230
  },
- "nuclearCapacityDate": "2026-10-22",
+ "nuclearCapacityDate": null,
  "generationMix": {
-  "gas": 1,
-  "wind": 12.68,
-  "solar": 2.82,
-  "nuclear": 37.94,
-  "hydro": 2.53,
-  "other": 2.12
+  "gas": null,
+  "wind": null,
+  "solar": null,
+  "nuclear": null,
+  "hydro": null,
+  "other": null
  },
- "generationMixDate": "2026-10-22",
- "marketInsightsHtml": "<p>La disponibilité du nucléaire français se resserre encore.</p>",
+ "generationMixDate": null,
+ "marketInsightsHtml": "<p>La charge de base allemande du 26 novembre a grimpé de 9,30 € à 206,90 €/MWh, la France de novembre a gagné 10,75 € pour atteindre un record de 190,75 €/MWh et la Grande-Bretagne de novembre a augmenté de 5,75 £ à 180,25 £/MWh. À l’inverse, le spot du week-end s’est effondré sur les plus bas de l’Atlantique avec le Day-Ahead allemand à 30,12 €/MWh, la France à 48,76 €/MWh et le N2EX britannique à 31,14 £/MWh.</p><p>L'indisponibilité nucléaire française de novembre a été ajustée à 14,1 GW, même si l'amélioration du débit de la Meuse a avancé le retour des deux unités de 1,5 GW à Chooz à fin octobre.</p>",
  "marketInsights": {
-  "gas": "<p>Gas prices are higher again this morning, with the NBP front-month opening at 223.96 p/therm and reaching a high of 230.63 p/therm so far, its strongest level of the week. That follows a volatile session on Thursday, when the contract opened at 214.63 p/therm, ranged between 214.56 and 225.28 p/therm, and closed at 222.83 p/therm. The TTF front-month has also pushed higher, opening at &euro;90.50/MWh and hitting &euro;99.295/MWh. On Thursday it opened at &euro;87.395/MWh, swung between a high of &euro;99.57/MWh and a low of &euro;81.164/MWh, and closed at &euro;90.565/MWh.&nbsp;</p>\n<p>Geopolitics remains the main source of support. The most recent developments are that the US has ordered non-emergency government employees and their families out of Saudi Arabia as Houthi attacks escalate, and the US and Israeli militaries have reportedly drawn up plans for renewed strikes on Iran after the 3 November midterms.&nbsp;</p>\n<p>Storage remains a concern. EU stocks are 74.62% full, still below the revised November target of 80% and approximately 15 percentage points below the five-year norm, with France at 87.21%, Germany at 61.09% and the Netherlands at 64.93%. Injections have all but stalled, with the latest gas day adding just 0.01 percentage points, against the 0.41 a day needed to reach the target.&nbsp;</p>\n<p>Today&rsquo;s temperature forecasts show conditions holding steady through the weekend before a sharp rise across the region around Tuesday and Wednesday of next week, which should temper heating demand. Temperatures are then expected to fall back from the start of November, which could lift demand again and offer some support to prices.</p>",
-  "power": "<p>Power prices are higher again this morning, with the UK front-month baseload reaching a high of &pound;180/MWh so far, its strongest level of the week. That follows a steady session on Thursday, when the contract moved within a narrow range of &pound;172.30 to &pound;176.41/MWh and closed at &pound;175.50/MWh. German front-month baseload has also pushed higher, reaching &euro;206.45/MWh so far today, after closing Thursday at &euro;199.42/MWh.&nbsp;</p>\n<p>Contracts rose on Thursday as Middle East supply risk lifted gas, with early-November contracts gaining fastest on forecasts for lower wind and colder weather. Reports that the US and Israel are planning renewed strikes on Iran after the 3 November midterms added to the risk, while President Trump said Washington was not negotiating with Tehran, reviving the threat of disruption to LNG shipments through the Strait of Hormuz.&nbsp;</p>\n<p>French nuclear availability is tightening further. Unavailability for the rest of October was revised up to an average of 20.7 GW, up 500 MW on the previous schedule and around 6 GW higher than at the same point last year, with new outages and extensions also added into November. The 1.3 GW Cattenom 2 reactor is due to disconnect fully from Friday until at least 26 October, while the 1.5 GW Chooz 2 reactor is not scheduled to return until at least 1 November, having been offline since early July.&nbsp;</p>\n<p>Brent crude started the week around $107/bbl and fell on Tuesday on hopes of US-Iran diplomacy. It then climbed above $114/bbl today, close to the four-year high of $114.44 set on 4 May. Houthi attacks on Saudi targets, including the Red Sea port of Yanbu, an oil field and an airport, have raised supply risks across the Middle East.</p>"
+  "gas": "<p>European natural gas extended its rally this morning as physical supply risks and geopolitics compound.</p>\n<p>Dutch TTF front-month, November 26, broke resistance to trade around &euro;97/MWh, following Friday&rsquo;s settle at &euro;92.80/MWh (+3.24%). In the UK, NBP Day-Ahead settled up 3.76p at 223.75p/th, while November 26 added 6.83p to 228.23p/th.</p>\n<p>Persian Gulf LNG flows remain severely crippled, running around 80% below pre-war levels amid ongoing blockades in the Strait of Hormuz. Regional conflict widened over the weekend as Houthis targeted King Khalid International Airport in Riyadh, while markets await US policy moves after Trump noted post-midterm decisions will dictate diplomacy or fresh strikes on Iran.</p>\n<p>Prompt physical supply is further tightened by unplanned Norwegian outages at Troll (13 mcm/d) and &Aring;sgard, cutting Dutch border flows to 11 mcm/d.</p>\n<p>Aggregate EU storage stands at 74.62% capacity (846.4 TWh), with Germany lagging at 61.48% (set to miss its 70% 1 November target), the Netherlands at 65.24%, and the UK at 40.15%. Stock draws began early between 19&ndash;21 October, though a brief mid-week warming pulse should temporarily curb space-heating demand before chillier weather returns into November.</p>",
+  "power": "<p>Forward power curves tracked gas higher on Friday, while spot contracts crashed over the weekend under storm force winds.</p>\n<p>German November 26 baseload climbed &euro;9.30 to &euro;206.90/MWh, French November gained &euro;10.75 to a record &euro;190.75/MWh, and UK November rose &pound;5.75 to &pound;180.25/MWh. Conversely, weekend spot collapsed on Atlantic lows with German Day-Ahead cleared at &euro;30.12/MWh, France at &euro;48.76/MWh, and UK N2EX at &pound;31.14/MWh.</p>\n<p>Renewable generation faces an imminent slump as an amplifying high pressure ridge from Thursday brings a stagnant, low wind pattern. German wind output is forecast to plunge by over 50% into Week 45 down to around 15.6 GW, well below seasonal norms.</p>\n<p>Supply margins remain constrained by nuclear and hydro deficits. French November nuclear unavailability was adjusted up to 14.1 GW, though improved Meuse river flows brought forward the return of both 1.5 GW units at Chooz to late October. In the Nordics, Swedish Ringhals 3 maintenance was extended by a week, while southern Norwegian hydro reserves sit at multi-decade lows of 52.9%, lifting November import rights on the North Sea Link to &euro;36.25/MWh. In Great Britain, NESO projects a 5.9 GW (9.5%) de-rated margin, relying on firm interconnector imports. Thermal generation margins remain heavily tilted toward coal, with German 40% coal dark spreads holding a wide lead over clean sparks (&euro;85.43/MWh dark vs. &euro;3.75/MWh spark).</p>"
  },
- "marketInsightsDate": "2026-10-25",
+ "marketInsightsDate": "2026-10-26",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 35.46,
+    "value": 161.53,
     "unit": "EUR/MWh",
-    "date": "2026-10-25"
+    "date": "2026-10-26"
    },
    "forwardCurve": [
     {
@@ -261,27 +260,26 @@
    ],
    "forwardCurveDate": "2026-10-23",
    "nuclearCapacity": {
-    "actualMW": 40936.77,
     "forecastMW": 48230
    },
-   "nuclearCapacityDate": "2026-10-22",
+   "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 1,
-    "wind": 12.68,
-    "solar": 2.82,
-    "nuclear": 37.94,
-    "hydro": 2.53,
-    "other": 2.12
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-22"
+   "generationMixDate": null
   },
   "UK": {
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 18.23,
+    "value": 109.96,
     "unit": "GBP/MWh",
-    "date": "2026-10-25"
+    "date": "2026-10-26"
    },
    "forwardCurve": [
     {
@@ -331,7 +329,7 @@
      "unit": "GBP/MWh",
      "value": 137.76,
      "date": "2026-10-23",
-     "varD1Pct": 2.67,
+     "varD1Pct": 2.66,
      "varW1Pct": 4.36
     },
     {
@@ -399,23 +397,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 6.66,
-    "wind": 7.34,
-    "solar": 4.14,
-    "nuclear": 4.52,
-    "hydro": 0.52,
-    "biomass": 2.85,
-    "other": 1.14
+    "gas": 3.41,
+    "wind": 10.6,
+    "solar": 4.1,
+    "nuclear": 5.06,
+    "hydro": 0.48,
+    "biomass": 0.86,
+    "other": 1.05
    },
-   "generationMixDate": "2026-10-22"
+   "generationMixDate": "2026-10-25"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 14.9,
+    "value": 155.12,
     "unit": "EUR/MWh",
-    "date": "2026-10-25"
+    "date": "2026-10-26"
    },
    "forwardCurve": [
     {
@@ -533,23 +531,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 3.61,
-    "wind": 32.86,
-    "solar": 7.57,
-    "nuclear": 0,
-    "coal": 12.23,
-    "hydro": 0.14,
-    "other": 0.31
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-22"
+   "generationMixDate": null
   },
   "NL": {
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 33.16,
+    "value": 157.63,
     "unit": "EUR/MWh",
-    "date": "2026-10-25"
+    "date": "2026-10-26"
    },
    "forwardCurve": [
     {
@@ -667,14 +665,14 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 1.56,
-    "wind": 4.14,
-    "solar": 0.57,
-    "nuclear": 0.48,
-    "coal": 2.74,
-    "other": 0.25
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-22"
+   "generationMixDate": null
   }
  }
 }
