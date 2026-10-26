@@ -1,5 +1,5 @@
 {
- "open": 2,
+ "open": 14,
  "notes": [
   {
    "id": 29,
@@ -35,6 +35,258 @@
    },
    "body": "pas convaincu pas cette vue",
    "reply": "Trois pistes en maquette (histoire du jour, bouton « Expliquer », quiz) ; je recommande le bouton « Expliquer » qui remplace Découverte. J’attends votre choix.",
+   "done_at": null
+  },
+  {
+   "id": 42,
+   "status": "open",
+   "created_at": "2026-10-26T21:16+00:00",
+   "author": "Tom",
+   "route": "dashboards",
+   "page": "Mes tableaux de bord",
+   "tab": "Le marché de l'énergie Aujourd'hui · Tout",
+   "target_id": "mrn-brief",
+   "target_label": "Ce qui a bougé et pourquoi (bloc)",
+   "settings": {
+    "_page": "mydash",
+    "_path": "#mrn2 > div:nth-of-type(3) > section:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2025"
+   },
+   "body": "CAl 27 et le prix très procje. On mélange les deux un peu. \nAdapter la couleur du titre en fonction de l'évolution",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 43,
+   "status": "open",
+   "created_at": "2026-10-26T21:20+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · Tout",
+   "target_id": "mrn-go",
+   "target_label": "Garanties d'origine · renouvelables (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(4) > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2025"
+   },
+   "body": "les événements s'affichent que aund on passe au dessus du petit triangle et du coup derrière la souris...pas top",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 44,
+   "status": "open",
+   "created_at": "2026-10-26T21:23+00:00",
+   "author": "Tom",
+   "route": "system/carbon",
+   "page": "Système électrique › Intensité carbone",
+   "tab": null,
+   "target_id": "carb-chart-0",
+   "target_label": "Zone (graphique)",
+   "settings": {
+    "_page": "carbonintensity",
+    "_path": "#carb-board-section > div:nth-of-type(2) > table:nth-of-type(1)",
+    "pk-zone": "France",
+    "carb-date-to": "",
+    "carb-date-from": ""
+   },
+   "body": "il faut retravailler cette page elle apporte pas grand chose",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 45,
+   "status": "open",
+   "created_at": "2026-10-26T21:39+00:00",
+   "author": "Tom",
+   "route": "markets/go/auctions",
+   "page": "Marchés › Garanties d'origine › Enchères France",
+   "tab": "Enchères France",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "goprices",
+    "pk-zone": "France"
+   },
+   "body": "tableau de données ici aussi",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 46,
+   "status": "open",
+   "created_at": "2026-10-26T21:41+00:00",
+   "author": "Tom",
+   "route": "markets/fuels",
+   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
+   "tab": "Gaz",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "eua",
+    "fuel-to": "",
+    "pk-zone": "France",
+    "fuel-from": ""
+   },
+   "body": "quelle différence entre stock haz ue et ctock gaz ue par année ?",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 47,
+   "status": "open",
+   "created_at": "2026-10-26T21:41+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Cotations",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "euafwd",
+    "pk-zone": "France"
+   },
+   "body": "est-ce que cotations et forward TTF devraient pas être dans le même ?",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 48,
+   "status": "open",
+   "created_at": "2026-10-26T21:42+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Curves",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "euafwd",
+    "pk-zone": "France"
+   },
+   "body": "Un seule page TTf est pas suffisante ?",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 49,
+   "status": "open",
+   "created_at": "2026-10-26T21:43+00:00",
+   "author": "Tom",
+   "route": "renewables/capture",
+   "page": "Renouvelables › Capture & cannibalisation",
+   "tab": "Quotidien",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "renewables",
+    "pk-zone": "France",
+    "ren-country": "France"
+   },
+   "body": "je colorends pas les sous section. En haut ? dans le menu ? pk pas tout ? pk en haut si dans le menus et inversement ? A rationaliser",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 50,
+   "status": "open",
+   "created_at": "2026-10-26T21:58+00:00",
+   "author": "Tom",
+   "route": "tools/carbon",
+   "page": "Outils › Empreinte carbone",
+   "tab": "Carbone",
+   "target_id": "cf-cal-sub",
+   "target_label": "Calendrier des jours verts (bloc)",
+   "settings": {
+    "_page": "carbonfoot",
+    "_path": "#hs-body-cf-carbon > div:nth-of-type(3)",
+    "pk-zone": "France",
+    "cf-ex-grid": "mois × heure",
+    "cf-ex-metric": "Intensité carbone du réseau"
+   },
+   "body": "je sais pas trop ce que je regarde. Mais c'est beau",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 51,
+   "status": "open",
+   "created_at": "2026-10-26T22:00+00:00",
+   "author": "Tom",
+   "route": "tools/carbon",
+   "page": "Outils › Empreinte carbone",
+   "tab": "Coût & flexibilité",
+   "target_id": "cf-bill-chart",
+   "target_label": "De quoi est faite votre facture (graphique)",
+   "settings": {
+    "_page": "carbonfoot",
+    "_path": "#cf-bill > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "cf-fix-gc": "",
+    "cf-fix-go": "0",
+    "cf-acc-key": "100",
+    "cf-acc-kwc": "2000",
+    "cf-acc-pmo": "7.5",
+    "cf-fix-cee": "10",
+    "cf-fix-net": "Distribution · CTA 15 %",
+    "cf-acc-risk": "",
+    "cf-accday-m": "Année entière",
+    "cf-fix-conn": "≤ 36 kVA · 30,62 €/MWh",
+    "cf-flex-pct": "10",
+    "cf-acc-price": "80",
+    "cf-acc-turpe": "",
+    "cf-acc-yield": "1150",
+    "cf-fix-turpe": "",
+    "cf-flex-goal": "Le moins cher",
+    "cf-fix-margin": "2",
+    "cf-fix-period": "Année calendaire suivante",
+    "cf-fix-country": "France",
+    "cf-fix-turpefix": ""
+   },
+   "body": "différenence complément et prix ACC pas clair",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 52,
+   "status": "open",
+   "created_at": "2026-10-26T22:04+00:00",
+   "author": "Tom",
+   "route": "intel/analysis",
+   "page": "Outils › Analyse de marché",
+   "tab": null,
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "analysis",
+    "ma-zone": "France",
+    "pk-zone": "France"
+   },
+   "body": "quand je passe ma souris, le tableau a droit passe bruèvement en anglais avant dpetre traduit. Bug d'affichage pas beau.",
+   "reply": null,
+   "done_at": null
+  },
+  {
+   "id": 53,
+   "status": "open",
+   "created_at": "2026-10-26T22:05+00:00",
+   "author": "Tom",
+   "route": "intel/analysis",
+   "page": "Outils › Analyse de marché",
+   "tab": null,
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "analysis",
+    "ma-zone": "France",
+    "pk-zone": "France"
+   },
+   "body": "le tuiles sont un peu bloqué à droit. Et si on pouvait avoir le graph en grand en appuyant dessus comme dans aujourd'hui ce serait top.",
+   "reply": null,
    "done_at": null
   },
   {
