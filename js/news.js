@@ -345,6 +345,7 @@ const PAGE_LOADERS = {
   regions:    () => { if (typeof renderRegions === 'function') renderRegions(); },
   frsystem:   () => { if (typeof renderFrSystem === 'function') renderFrSystem(); },
   morning:    () => { if (typeof renderMorning === 'function') renderMorning(); },
+  regulation: () => { if (window.PKReg) PKReg.render(); },
 };
 
 // Weather pages: see js/meteo.js

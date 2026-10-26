@@ -74,6 +74,7 @@
     'tools/compare': { page: 'compare' },
     'tools/converter': { page: 'converter' },
     'intel/news': { page: 'news' },
+    'intel/regulation': { page: 'regulation' },
     'intel/analysis': { page: 'analysis' },
     'status': { page: 'status' },
     'api': { page: 'api' },
@@ -114,6 +115,7 @@
     ]],
     ['Intelligence', [
       ['intel/news', 'News', 'news'],
+      ['intel/regulation', 'Regulatory watch', 'news'],
     ]],
   ];
   const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology'], ['about', 'About']];
