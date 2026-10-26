@@ -6,6 +6,9 @@ name: PPA benchmark and correlation watch (daily)
 on:
   schedule:
     - cron: '15 14 * * *'    # 14:15 UTC every day
+  push:                        # a change to this job runs it once, so a fix is checked the same day
+    branches: [main]
+    paths: ['.github/workflows/ppa_daily.yml']
   workflow_dispatch:
 
 concurrency:
@@ -24,7 +27,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'   # numpy 2.5 needs Python 3.12 or later
       - name: Install dependencies
         run: |
           pip install playwright==1.48.0 numpy==2.5.4
