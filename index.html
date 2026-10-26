@@ -4001,23 +4001,21 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div class="fuel-card-head"><div><div class="table-title">TTF gas forward prices</div><div class="fuel-card-sub">By product, change on the day and the week</div></div><label class="mrn3-sel"><input type="checkbox" class="mrn-fwd-seas"> Seasons</label></div>
             <div class="mrn3-tbl" id="mrn-ttft"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
           </div>
-        <div class="mrn3-row" style="margin-top:14px">
+        </div>
+        <div class="mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="mrn-drv-sub"></div></div></div>
             <div style="position:relative;height:280px"><canvas id="mrn-drv" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
         </div>
-        </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-morning-fund">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-fund')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Fundamentals<span class="pk-hs-meta">the PowerKlock index: demand against low-carbon supply, the gas cost, and what feeds them</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Fundamentals<span class="pk-hs-meta">what drives the PowerKlock index: demand, low-carbon supply, the gas cost</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-fund">
-        <div class="mrn-fund-calc" id="mrn-fund-calc"></div>
-        <div class="chart-container fuel-card" style="margin:12px 0 4px"><div class="fuel-card-head"><div><div class="table-title">Week by week · low-carbon supply against demand</div><div class="fuel-card-sub">Above the white line, no gas needed; under each week, the expected spot and the coverage</div></div><span class="source-badge">PowerKlock · RTE · Open-Meteo</span></div><div style="position:relative;height:280px"><canvas id="mrn-fund-stack" style="width:100%;height:280px"></canvas></div></div>
         <div class="mrn-fund-grp">1 · Demand</div>
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
@@ -4146,19 +4144,32 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-morning-fc">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-fc')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z"/></svg>Detailed forecasts<span class="pk-hs-meta">price and negative hours, wind, solar and demand, PowerKlock against the grid operators</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z"/></svg>Detailed forecasts<span class="pk-hs-meta">the grid operator’s forecast: wind, solar and demand, today and tomorrow (ours are in PowerKlock · calculations)</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-morning-fc">
 <div id="mrn-fc-tiles" style="margin-bottom:12px"></div>
-        <div class="fuel-grid-2 mrn3-row">
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France · price and chance of a negative price <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-neg-sub">Day-ahead price and chance of a negative price, today and tomorrow</div></div><span class="source-badge">PowerKlock · ENTSO-E</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-neg" style="width:100%;height:300px"></canvas></div>
-          </div>
+        <div class="mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France · wind, solar and demand <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-fc-sub">TSO day-ahead forecast, today and tomorrow</div></div><span class="source-badge">ENTSO-E</span></div>
             <div style="position:relative;height:300px"><canvas id="mrn-fc" style="width:100%;height:300px"></canvas></div>
+          </div>
+        </div>
+
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong collapsed" id="hs-morning-idx">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-morning-idx')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 15v-4M12 15V7M17 15v-6"/></svg>PowerKlock · calculations<span class="pk-hs-meta">our own figures: the index week by week and its backtest, the price and negative-price forecast, solar and wind against the TSO</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-morning-idx">
+        <div class="mrn-fund-calc" id="mrn-fund-calc"></div>
+        <div class="chart-container fuel-card" style="margin:12px 0 0"><div class="fuel-card-head"><div><div class="table-title">Week by week · low-carbon supply against demand</div><div class="fuel-card-sub">Above the white line, no gas needed; under each week, the expected spot and the coverage</div></div><span class="source-badge">PowerKlock · RTE · Open-Meteo</span></div><div style="position:relative;height:280px"><canvas id="mrn-fund-stack" style="width:100%;height:280px"></canvas></div></div>
+        <div class="mrn3-row" style="margin-top:12px">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">France · price and chance of a negative price <span class="pkf-chip">Forecast</span></div><div class="fuel-card-sub" id="mrn-neg-sub">Day-ahead price and chance of a negative price, today and tomorrow</div></div><span class="source-badge">PowerKlock · ENTSO-E</span></div>
+            <div style="position:relative;height:300px"><canvas id="mrn-neg" style="width:100%;height:300px"></canvas></div>
           </div>
         </div>
         <div class="fuel-grid-2 mrn3-row">
@@ -4171,7 +4182,6 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div style="position:relative;height:300px"><canvas id="mrn-fcs" style="width:100%;height:300px"></canvas></div>
           </div>
         </div>
-
         </div>
       </div>
 <div class="fuel-note">Spot: ENTSO-E day-ahead (delivery day, Paris). Forwards: daily settlements of the market data feed (d/d and w/w changes as published). GO: AIB broker mids (Commerg) and French state auctions (EEX). CO₂, nuclear output and production: RTE éCO2mix, live. Rising prices in red, as elsewhere on the site. <a href="#" onclick="PKScope.openLegacy(); return false;" style="color:var(--tx3);text-decoration:underline">Previous France dashboard</a> (to be retired).</div>

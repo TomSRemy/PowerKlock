@@ -905,7 +905,7 @@ async function renderMorning() {
   _mrnNews();
   // the folded sections draw when first opened
   const lazy = {
-    'hs-morning-fc': () => { if (!window.PKF) return; PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r)); PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } },
+    'hs-morning-fc': () => { if (!window.PKF) return; PKW.draw('fc-48h', 'mrn-fc', { zone: 'FR' }).then(r => sub('mrn-fc-sub', r)); PKF.tiles(document.getElementById('mrn-fc-tiles'), 'FR'); },
     'hs-morning-2': () => {
       PKW.draw('fr-spot-monthly', 'mrn-sptm', { zone: 'FR' }).then(r => sub('mrn-sptm-sub', r));
       // the CATE presentation's price charts not shown elsewhere on Today
@@ -935,6 +935,10 @@ async function renderMorning() {
       PKW.draw('go-vintages', 'mrn-go', { product: 'GO AIB Renewable' }).then(r => sub('mrn-go-sub', r));
       _mrnGoTable(document.getElementById('mrn-got'));
     },
+    // PowerKlock's own figures, folded at the end: the index calculation, the price and negative-price forecast, solar and wind against the TSO
+    'hs-morning-idx': () => { if (MRN.k) _mrnFund(MRN.k);
+      if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r));
+      if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } },
     'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: '3Y' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); if (PKW.get('fr-load-normal')) PKW.draw('fr-load-normal', 'mrn-loadn', {}); },
   };
   Object.entries(lazy).forEach(([id, fn]) => {
