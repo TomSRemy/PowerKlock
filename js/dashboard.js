@@ -176,7 +176,9 @@
   function board() {
     const b = fine(shared || state.boards.find(b => b.id === state.active) || state.boards[0]);
     // boards made from the Expert template before it became a mirror (and links shared then) become one
-    if (b && b.mirror === undefined && ['today-brief', 'today-fund', 'today-weeks'].every(w => (b.items || []).some(it => it.wid === w))) b.mirror = 'today-expert';
+    // (exactly the template's charts, nothing added or removed: a board the user composed stays a grid)
+    if (b && b.mirror === undefined) { const sig = a => a.filter(it => it.t === 'w').map(it => it.wid).sort().join(',');
+      const t = TEMPLATES.find(x => x.id === 'today-expert'); if (t && (b.items || []).length && (sig(b.items) === sig(t.items.filter(it => PKW.get(it.wid) || it.t !== 'w')) || b.desc === t.desc || /^The Expert view of Today, block for block/.test(b.desc || ''))) b.mirror = 'today-expert'; }
     return b;
   }
 
