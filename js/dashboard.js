@@ -45,7 +45,7 @@
       W('today-hours', 6, 6), W('today-means', 6, 6),
       W('today-glossary', 12, 3),
     ] },
-    { id: 'today-expert', name: 'Today · Expert', desc: 'The Expert view of Today, block for block: the key prices, the spot over three days, the next 4 weeks, what moved and why, the news, then markets, fundamentals (the PowerKlock index), renewables, the power system and the detailed forecasts.', items: [
+    { id: 'today-expert', mirror: 'today-expert', name: 'Today · Expert', desc: 'The Expert view of Today, block for block: the key prices, the spot over three days, the next 4 weeks, what moved and why, the news, then markets, fundamentals (the PowerKlock index), renewables, the power system and the detailed forecasts.', items: [
       W('today-tiles', 12, 3),
       W('fr-spot-day', 4, 7, { zone: 'FR', day: 'yesterday' }), W('fr-spot-day', 4, 7, { zone: 'FR', day: 'today' }), W('fr-spot-day', 4, 7, { zone: 'FR', day: 'tomorrow' }),
       W('today-weeks', 12, 4),
@@ -173,7 +173,53 @@
   // A dashboard opened from a shared link: shown as is, never saved unless
   // the viewer adds it to their own dashboards.
   let shared = null;           // { id: 'shared', name, items, code }
-  function board() { return fine(shared || state.boards.find(b => b.id === state.active) || state.boards[0]); }
+  function board() {
+    const b = fine(shared || state.boards.find(b => b.id === state.active) || state.boards[0]);
+    // boards made from the Expert template before it became a mirror (and links shared then) become one
+    if (b && b.mirror === undefined && ['today-brief', 'today-fund', 'today-weeks'].every(w => (b.items || []).some(it => it.wid === w))) b.mirror = 'today-expert';
+    return b;
+  }
+
+  // A mirror board shows a page of the site itself rather than a grid of cards: the Expert view of Today, block for block,
+  // at the same sizes, so the dashboard is the page and stays so when Today changes. The page's blocks are moved into the
+  // dashboard while it is open and put back as soon as it is left (another board, another page). The cards of the
+  // template stay in the board for the PowerPoint export.
+  const MIRRORS = {
+    'today-expert': { page: 'page-morning', ids: ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc'],
+      hide: ['mrn-quick', 'mrn-learn'], draw: () => { if (typeof renderMorning === 'function' && !(window.MRN && MRN.k)) renderMorning(); } },
+  };
+  const mirrorOf = tid => { const t = TEMPLATES.find(x => x.id === tid); return t && t.mirror || undefined; };
+  let mirrored = null;   // { key, moved: [[node, placeholder, display]] }
+  function unmirror() {
+    if (!mirrored) return;
+    mirrored.moved.forEach(([n, ph, disp]) => { ph.replaceWith(n); n.style.display = disp; });
+    const page = document.getElementById('page-mydash'); if (page) page.classList.remove('pkd-is-mirror');
+    const box = document.getElementById('pkd-mirror'); if (box) box.remove();
+    mirrored = null;
+  }
+  function mirror(key) {
+    const m = MIRRORS[key]; if (!m) return false;
+    if (mirrored && mirrored.key === key) return true;
+    unmirror();
+    const grid = document.getElementById('pkd-grid'); if (!grid) return false;
+    const box = document.createElement('div'); box.id = 'pkd-mirror'; box.className = 'pkd-mirror';
+    grid.after(box);
+    const moved = [];
+    m.ids.forEach(id => { const n = document.getElementById(id); if (!n) return;
+      const ph = document.createComment('pkd-mirror ' + id); n.replaceWith(ph); moved.push([n, ph, n.style.display]);
+      n.style.display = ''; n.classList.remove('collapsed');
+      n.querySelectorAll('.hist-section-header, .hist-section-body').forEach(x => x.classList.add('open'));
+      box.appendChild(n); });
+    mirrored = { key, moved };
+    document.getElementById('page-mydash').classList.add('pkd-is-mirror');
+    m.draw();
+    requestAnimationFrame(() => box.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); }));
+    // the page itself comes back: put its blocks back first
+    const src = document.getElementById(m.page);
+    if (src && !src._pkdMirrorWatch) { src._pkdMirrorWatch = true;
+      new MutationObserver(() => { if (src.classList.contains('active')) unmirror(); }).observe(src, { attributes: true, attributeFilter: ['class'] }); }
+    return true;
+  }
 
   function fromTemplate(tid) {
     const t = TEMPLATES.find(x => x.id === tid) || TEMPLATES[0];
@@ -368,6 +414,8 @@
     destroyCharts(host);
     host.innerHTML = '';
     const b = board();
+    if (b.mirror && mirror(b.mirror)) { document.getElementById('pkd-empty').hidden = true; return; }
+    unmirror();
     document.getElementById('pkd-empty').hidden = b.items.length > 0;
     grid = GridStack.init({
       column: COLS, cellHeight: cellH(host), margin: 6, float: false, animate: true,
@@ -835,7 +883,7 @@
         ev.preventDefault();
         const tpl = root.querySelector('input[name=tpl]:checked').value;
         const id = uid();
-        state.boards.push({ id, name: root.querySelector('#pkd-new-name').value.trim() || 'Dashboard', desc: tpl ? ((TEMPLATES.find(t => t.id === tpl) || {}).desc || '') : '', items: tpl ? fromTemplate(tpl) : [] });
+        state.boards.push({ id, name: root.querySelector('#pkd-new-name').value.trim() || 'Dashboard', desc: tpl ? ((TEMPLATES.find(t => t.id === tpl) || {}).desc || '') : '', items: tpl ? fromTemplate(tpl) : [], mirror: mirrorOf(tpl) });
         state.active = id;
         save(); closeModal(); render();
       });
@@ -865,13 +913,13 @@
         ev.preventDefault();
         b.name = root.querySelector('#pkd-board-name').value.trim() || b.name;
         const tpl = root.querySelector('#pkd-board-tpl').value;
-        if (tpl) { b.items = fromTemplate(tpl); delete b.grid; fine(b); }
+        if (tpl) { b.items = fromTemplate(tpl); delete b.grid; fine(b); b.mirror = mirrorOf(tpl); }
         save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-order').addEventListener('click', () => { closeModal(); orderSections(); });
       root.querySelector('#pkd-board-dup').addEventListener('click', () => {
         const id = uid();
-        state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', grid: b.grid, items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
+        state.boards.push({ id, name: b.name + ' (copy)', desc: b.desc || '', grid: b.grid, mirror: b.mirror, items: JSON.parse(JSON.stringify(b.items)).map(it => Object.assign(it, { i: uid() })) });
         state.active = id; save(); closeModal(); render();
       });
       root.querySelector('#pkd-board-export').addEventListener('click', () => {
@@ -996,7 +1044,7 @@
   async function encodeBoard(b) {
     const used = new Set(b.items.map(it => it.hid).filter(Boolean));   // ids kept only where a collapsed section needs them
     const items = b.items.map(it => { const o = Object.assign({}, it); if (!used.has(o.i)) delete o.i; return o; });
-    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, g: b.grid, items }));
+    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, g: b.grid, m: b.mirror || undefined, items }));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
   }
@@ -1005,7 +1053,7 @@
     const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
     const j = JSON.parse(new TextDecoder().decode(raw));
     if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
-    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code, grid: j.g === FINE ? FINE : undefined,
+    return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code, grid: j.g === FINE ? FINE : undefined, mirror: MIRRORS[j.m] ? j.m : undefined,
       items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) };
   }
   const baseUrl = () => location.origin + location.pathname;
@@ -1061,7 +1109,7 @@
     });
     bar.querySelector('#pkd-shared-add')?.addEventListener('click', () => {
       const id = uid();
-      state.boards.push({ id, name: shared.name, desc: shared.desc || '', grid: shared.grid, items: reid(shared.items) });
+      state.boards.push({ id, name: shared.name, desc: shared.desc || '', grid: shared.grid, mirror: shared.mirror, items: reid(shared.items) });
       state.active = id;
       closeShared(false); save(); render();
       toast('Added to your dashboards');

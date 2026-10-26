@@ -22,11 +22,11 @@
       const day = (i.id.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
       let re = null;
       if (i.dataset === 'prices') { const zs = (i.what.match(/for (.+)$/) || [])[1]; re = zs ? zs.split(/,\s*/).map(z => ZN[z.trim()]).filter(Boolean).join('|') : '[Dd]ay-ahead|[Ss]pot'; }
-      else if (i.dataset === 'generation' || i.dataset === 'rte') re = '(France|French|\\bFR\\b).*?(production|generation|output|load|consumption|nuclear|wind|solar|capture)|(production|generation|output|load|consumption|nuclear|wind|solar|capture).*?(France|French|\\bFR\\b)';
+      else if (i.dataset === 'generation' || i.dataset === 'rte') re = '(France|French|\\bFR\\b).*?(production|generation|output|\\bload\\b|consumption|consommation|nuclear|nucl[ée]aire|wind|[ée]olien|solar|solaire|capture)|(production|generation|output|\\bload\\b|consumption|consommation|nuclear|nucl[ée]aire|wind|[ée]olien|solar|solaire|capture).*?(France|French|\\bFR\\b)';
       else if (i.dataset === 'commodities') re = COM[i.id.split(':')[1]] || 'TTF|EUA|Brent|coal';
       else if (i.dataset === 'forwards') re = 'Cal|forward';
       else if (i.dataset === 'activation') re = 'activation|mFRR|balancing';
-      else if (i.dataset === 'gencheck') re = '(France|French|\\bFR\\b).*?(production|generation|output|nuclear|wind|solar|hydro|gas|load|consumption)|(production|generation|output|nuclear|wind|solar|hydro|load|consumption).*?(France|French|\\bFR\\b)';
+      else if (i.dataset === 'gencheck') re = '(France|French|\\bFR\\b).*?(production|generation|output|nuclear|nucl[ée]aire|wind|[ée]olien|solar|solaire|hydro|\\bload\\b|consumption|consommation|gas)|(production|generation|output|nuclear|nucl[ée]aire|wind|[ée]olien|solar|solaire|hydro|\\bload\\b|consumption|consommation).*?(France|French|\\bFR\\b)';
       else if (i.dataset === 'mktcheck') re = /eurusd/.test(i.id) ? 'EUR/USD|EURUSD' : 'Brent|oil';
       else if (i.dataset === 'pricecheck') { const z = (i.id.split(':')[1] || ''); re = ZN[z] || null; if (re) return { day, re: new RegExp(re), what: i.what.replace(/^\d{4}-\d{2}-\d{2}: /, '') + ' (prices being checked)', ds: i.dataset }; }
       return re ? { day, re: new RegExp(re, i.dataset === 'prices' ? '' : 'i'), what: i.what, ds: i.dataset } : null;
@@ -57,11 +57,13 @@
     let b = (card || host).querySelector('.pk-guard[data-for="' + key + '"]');
     if (!list.length) { if (b) b.remove(); return; }
     if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'pk-guard' + (title ? ' pk-guard-inline' : ''); b.dataset.for = key;
-      b.addEventListener('click', e => { e.stopPropagation(); if (typeof showPage === 'function') showPage('status'); });
+      b.addEventListener('click', e => { e.stopPropagation(); if (document.body.classList.contains('pk-solo')) return; if (typeof showPage === 'function') showPage('status'); });   // a shared dashboard never leads elsewhere
       if (title) title.insertAdjacentElement('afterend', b);
       else { if (getComputedStyle(host).position === 'static') host.style.position = 'relative'; host.appendChild(b); } }
-    b.textContent = '⚠ incomplete data · ' + (list.length === 1 ? list[0].what.replace(/^\d{4}-\d{2}-\d{2}: /, list[0].day ? list[0].day.slice(5) + ' · ' : '') : list.length + ' gaps in this period');
-    b.title = 'This chart covers data that is missing:\n' + list.slice(0, 12).map(h => '· ' + h.what).join('\n') + (list.length > 12 ? '\n…' : '') + '\nAverages and totals over this period are biased until it is filled (checked every 2 hours). Click for Data status.';
+    const fr = !window.PKI18n || PKI18n.lang !== 'en', T = (f, e) => fr ? f : e;
+    const what = h => fr ? h.what.replace(/RTE éCO2mix incomplete/, 'RTE éCO2mix incomplet').replace(/\bnuclear\b/, 'nucléaire').replace(/\bwind\b/, 'éolien').replace(/\bsolar\b/, 'solaire').replace(/\bload\b/, 'consommation') : h.what;
+    b.textContent = T('⚠ données incomplètes · ', '⚠ incomplete data · ') + (list.length === 1 ? what(list[0]).replace(/^\d{4}-\d{2}-\d{2}: /, list[0].day ? list[0].day.slice(5) + ' · ' : '') : list.length + T(' trous sur la période', ' gaps in this period'));
+    b.title = T('Ce graphique couvre des données manquantes :\n', 'This chart covers data that is missing:\n') + list.slice(0, 12).map(h => '· ' + what(h)).join('\n') + (list.length > 12 ? '\n…' : '') + T('\nMoyennes et totaux sur la période biaisés tant que ce n’est pas comblé (vérifié toutes les 2 heures). Clic : état des données.', '\nAverages and totals over this period are biased until it is filled (checked every 2 hours). Click for Data status.');
   }
   function check(ch) {
     if (!holes.length) return badge(ch, []);

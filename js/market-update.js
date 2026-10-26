@@ -390,6 +390,18 @@ _muReg({
 });
 
 // Day card: average, change, cheapest / most expensive hour and 3-hour windows, curve with bands.
+// Day charts of one zone shown together (Today's three days, a dashboard) share one price axis, so they read as a continuous run
+function _muSyncDays(Z) {
+  if (!window.Chart) return;
+  const all = [...document.querySelectorAll('.mu-day-c canvas')].map(c => Chart.getChart(c)).filter(ch => ch && ch.$muZone === Z && ch.canvas.isConnected);
+  if (all.length < 2) return;
+  const vals = all.flatMap(ch => ch.data.datasets[0].data.filter(v => v != null));
+  let lo = Math.min(0, ...vals), hi = Math.max(...vals);
+  const step = hi - lo > 200 ? 50 : hi - lo > 80 ? 20 : 10;
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  all.forEach(ch => { ch.options.scales.y.min = lo; ch.options.scales.y.max = hi; ch.update('none'); });
+}
+
 if (window.PKW) PKW.register({
   id: 'fr-spot-day', kind: 'html', title: 'Spot · day profile', category: 'prices', page: 'prices', source: 'ENTSO-E', size: { w: 6, h: 7 },
   desc: 'One delivery day of day-ahead prices of a zone: average and change, cheapest and most expensive hour, cheapest and dearest 3-hour windows.',
@@ -410,7 +422,7 @@ if (window.PKW) PKW.register({
     let q = J && J.zones && J.zones[Z] && J.zones[Z].hourly; const qp = P && P.zones && P.zones[Z] && P.zones[Z].hourly;
     // tomorrow before the auction (about 13:00): France only, the PowerKlock forecast, said as such
     if (!q && Z === 'FR' && p.day === 'tomorrow') { const nf = await _muGet('negf', 'neg_forecast.json'); const f = nf && nf.days && nf.days[d]; if (f && f.price && f.price.filter(v => v != null).length >= 20) { q = f.price.slice(0, 24); fcast = true; } }
-    if (!q) { host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · ${new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}</div></div></div><div class="fuel-note" style="padding:30px 0;text-align:center">${T('Prix publié vers 13 h la veille ; la prévision PowerKlock arrive à partir de 8 h 30.', 'Price published around 13:00 the day before; the PowerKlock forecast comes from 8:30.')}</div></div>`; return; }
+    if (!q) { host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · ${new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}</div></div></div><div class="fuel-note" style="padding:30px 0;text-align:center">${T('Prix publié vers 13 h la veille ; la prévision PowerKlock arrive dans la matinée.', 'Price published around 13:00 the day before; the PowerKlock forecast comes in the morning.')}</div></div>`; return; }
     const per = q.length / 24, h = Array.from({ length: 24 }, (_, i) => _muMean(q.slice(i * per, (i + 1) * per)));
     const avg = _muMean(q), avgP = qp ? _muMean(qp) : null, chg = avgP ? (avg / avgP - 1) * 100 : null;
     let lo = 0, hi = 0; h.forEach((v, i) => { if (v < h[lo]) lo = i; if (v > h[hi]) hi = i; });
@@ -425,13 +437,14 @@ if (window.PKW) PKW.register({
       <div class="mu-day-c"><canvas id="${cid}"></canvas></div></div>`;
     const bands = { id: 'muBands', beforeDatasetsDraw(ch) { const a = ch.chartArea, x = ch.scales.x, g = ch.ctx;
       [[wl, 'rgba(20,211,169,.12)', T('CREUX', 'TROUGH')], [wh, 'rgba(237,105,101,.12)', T('POINTE', 'PEAK')]].forEach(([s, c, t]) => { const x0 = x.getPixelForValue(s), x1 = x.getPixelForValue(Math.min(23, s + 3)); g.save(); g.fillStyle = c; g.fillRect(x0, a.top, x1 - x0, a.bottom - a.top); g.fillStyle = t === 'PEAK' ? '#D64545' : '#0E9F7E'; g.font = '600 10px "IBM Plex Mono", monospace'; g.fillText(t, x0 + 4, a.top + 12); g.restore(); }); } };
-    new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
+    const dayCh = new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
       { label: fcast ? T('Prévision', 'Forecast') : T('Prix', 'Price'), data: h.map(v => Math.round(v * 100) / 100), borderColor: fcast ? '#8A9BAD' : '#14D3A9', borderDash: fcast ? [5, 4] : [], borderWidth: 2.2, tension: .35, fill: false,
         segment: { borderColor: c => (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? '#ED6965' : undefined },   // below 0 €: the line turns red
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => fcast ? '#8A9BAD' : i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
       { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
     ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: T('heure (Paris)', 'hour (Paris)'), color: '#7A93AB', font: { size: 11 } } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 11 } } } } } });
+    dayCh.$muZone = Z; _muSyncDays(Z);
   },
 });
 
