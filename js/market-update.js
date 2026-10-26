@@ -445,12 +445,15 @@ if (window.PKW) PKW.register({
     const win = sign => { let b = 0, bv = null; for (let i = 0; i <= 21; i++) { const m = (h[i] + h[i + 1] + h[i + 2]) / 3; if (bv == null || sign * m > sign * bv) { bv = m; b = i; } } return b; };
     const wl = win(-1), wh = win(1);
     const cid = 'mu-day-' + Math.random().toString(36).slice(2, 8);
+    // the two clock-change days: 25 hours (last Sunday of October) and 23 (last Sunday of March)
+    const dd = new Date(d + 'T12:00:00Z'), lastSun = dd.getUTCDay() === 0 && dd.getUTCDate() > 24, dst = lastSun && dd.getUTCMonth() === 9 ? 25 : lastSun && dd.getUTCMonth() === 2 ? 23 : 0;
+    const dstNote = dst ? `<div class="fuel-note mu-day-dst">${dst === 25 ? T('Journée de 25 h (passage à l’heure d’hiver) : l’heure 2 h–3 h, jouée deux fois, compte dans la moyenne mais n’est tracée qu’une fois.', '25-hour day (end of summer time): the hour 2–3 am, played twice, counts in the average but is drawn once.') : T('Journée de 23 h (passage à l’heure d’été) : il n’y a pas d’heure 2 h–3 h.', '23-hour day (start of summer time): there is no 2–3 am hour.')}</div>` : '';
     const dl = new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }), n2 = v => T(v.toFixed(2).replace('.', ','), v.toFixed(2));
     host.innerHTML = `<div class="mu-day${fcast ? ' mu-day-grey' : ''}"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · <span class="mu-day-dl">${dl}</span><span class="mu-day-ds">${new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>${fcast ? ' · <span class="mu-day-fc">' + T('prévision', 'forecast') + '</span>' : ''}</div><div class="mu-day-avg">${n2(avg)}<small> €/MWh</small></div></div>
       ${chg == null ? '' : `<span class="mu-day-chg ${chg >= 0 ? 'up' : 'down'}">${chg >= 0 ? '▲' : '▼'} ${chg >= 0 ? '+' : ''}${T(chg.toFixed(1).replace('.', ','), chg.toFixed(1))} %<span class="mu-day-vs"> ${T('vs veille', 'vs previous day')}</span></span>`}</div>
       <div class="mu-day-k"><div class="lo"><b>${T('Min', 'Min')}</b> ${n2(h[lo])} € ${T('à', 'at')} ${lo} h</div>
       <div class="hi"><b>${T('Max', 'Max')}</b> ${n2(h[hi])} € ${T('à', 'at')} ${hi} h</div></div>
-      <div class="mu-day-c"><canvas id="${cid}"></canvas></div></div>`;
+      <div class="mu-day-c"><canvas id="${cid}"></canvas></div>${dstNote}</div>`;
     // the cheapest and the dearest 3 hours of the day, each band labelled with its start and end
     const bands = { id: 'muBands', beforeDatasetsDraw(ch) { const a = ch.chartArea, x = ch.scales.x, g = ch.ctx;
       [[wl, 'rgba(20,211,169,.12)', '#0E9F7E', T('MOINS CHER', 'CHEAPEST')], [wh, 'rgba(237,105,101,.12)', '#D64545', T('PLUS CHER', 'DEAREST')]].forEach(([s, c, tc, t]) => {
@@ -459,9 +462,11 @@ if (window.PKW) PKW.register({
         g.fillStyle = tc; g.font = '600 10px "IBM Plex Mono", monospace';
         const w = Math.max(g.measureText(t).width, g.measureText(hrs).width) / 2, tx = Math.min(a.right - w, Math.max(a.left + w, (x0 + x1) / 2));   // centred on the band, kept inside the chart
         g.textAlign = 'center';
-        g.fillText(t, tx, a.top + 12); g.font = '10px "IBM Plex Mono", monospace'; g.fillText(hrs, tx, a.top + 24); g.restore(); }); } };
+        g.fillText(t, tx, a.top + 12); g.font = '10px "IBM Plex Mono", monospace'; g.fillText(hrs, tx, a.top + 24); g.restore(); });
+      // the dotted line says what it is
+      const yA = ch.scales.y.getPixelForValue(avg); if (yA > a.top + 30 && yA < a.bottom - 4) { g.save(); g.fillStyle = '#7FC8F8'; g.font = '10px "IBM Plex Mono", monospace'; g.textAlign = 'right'; g.fillText(T('moyenne ', 'average ') + n2(avg), a.right - 2, yA - 4); g.restore(); } } };
     const dayCh = new Chart(document.getElementById(cid), { type: 'line', data: { labels: h.map((_, i) => String(i).padStart(2, '0') + 'h'), datasets: [
-      { label: fcast ? T('Prévision', 'Forecast') : T('Prix', 'Price'), data: h.map(v => Math.round(v * 100) / 100), borderColor: fcast ? '#8A9BAD' : '#14D3A9', borderDash: fcast ? [5, 4] : [], borderWidth: 2.2, tension: .35, fill: false,
+      { label: fcast ? T('Prévision', 'Forecast') : T('Prix', 'Price'), data: h.map(v => Math.round(v * 100) / 100), borderColor: fcast ? '#8A9BAD' : '#14D3A9', borderDash: fcast ? [5, 4] : [], borderWidth: 2.2, tension: 0, fill: false,   // straight between hours: a smoothed curve invents values
         segment: { borderColor: c => (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? '#ED6965' : undefined },   // below 0 €: the line turns red
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => fcast ? '#8A9BAD' : i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
       { label: T('Moyenne', 'Average'), data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },

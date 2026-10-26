@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Blocks a push that would turn "Site tests" red (and stop "Publish"). Bypass only for an emergency: git push --no-verify
+exec scripts/check_before_push.sh

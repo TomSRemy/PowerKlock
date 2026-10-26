@@ -901,6 +901,8 @@ def recalc_summary_from_daily():
     os.makedirs(os.path.dirname(SUMMARY_PATH), exist_ok=True)
     with open(SUMMARY_PATH, 'w') as f:
         json.dump(summary, f, separators=(',', ':'))
+    from summary_lite import write_lite   # Today's light copy (France, prices only)
+    write_lite(summary, os.path.join(os.path.dirname(SUMMARY_PATH), 'summary_fr.json'))
 
     print("\nRecalc done:")
     print(f"  Files processed: {stats['files']}")

@@ -39,3 +39,21 @@
   });
   window.PKAlign = align;
 })();
+
+// Accessibility: every chart is described for screen readers by its card's title and subtitle (role img +
+// aria-label), and every page has one h1 (visually hidden when the page shows its name another way).
+(function () {
+  'use strict';
+  if (!window.Chart || !Chart.register) return;
+  const label = cv => { const card = cv.closest('.chart-container, .pkd-item, .fuel-card'); if (!card) return '';
+    const t = card.querySelector('.table-title, .pkd-title, .mu-day-t'), sub = card.querySelector('.fuel-card-sub, .pkd-sub');
+    return [t && t.textContent, sub && sub.textContent].filter(Boolean).map(x => x.replace(/\s+/g, ' ').trim()).join(' · ').slice(0, 300); };
+  try { Chart.register({ id: 'pkA11y', afterRender(ch) { const cv = ch.canvas; if (!cv || cv.dataset.pkA11y === '1') return; const l = label(cv);
+    if (l) { cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', l); cv.dataset.pkA11y = '1'; } } }); } catch (_) {}
+})();
+function pkEnsureH1() {
+  const pg = document.querySelector('.page.active'); if (!pg || pg.querySelector('h1')) return;
+  const name = (pg.querySelector('.pr-breadcrumb-current') || {}).textContent || document.title.replace(/^PowerKlock · /, '');
+  const h = document.createElement('h1'); h.className = 'pk-sr'; h.textContent = name.trim(); pg.prepend(h);
+}
+window.addEventListener('load', () => { setTimeout(pkEnsureH1, 500); window.addEventListener('hashchange', () => setTimeout(pkEnsureH1, 500)); });

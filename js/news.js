@@ -31,7 +31,7 @@ function _newsKw() { try { return (localStorage.getItem('pk-news-kw') || '').spl
 function _newsMine(i, kw) { if (!kw.length) return false; const t = (i.title + ' ' + i.snippet).toLowerCase(); return kw.some(k => t.includes(k)); }
 // France focus: French sources (tag fr) and articles about France; kept in this browser
 const _NEWS_FR = /\b(France|French|Fran[cç]ais\w*|fran[cç]ais\w*|hexagone|Paris|EDF|Engie|TotalEnergies|Flamanville|Bugey|Gravelines|ARENH|Enedis|Elengy|Ademe|ADEME|PPE ?3?|PPE3)\b|\b(RTE|CRE|DGEC)\b/;
-function _newsFr() { try { return localStorage.getItem('pk-news-fr') === '1'; } catch (_) { return false; } }
+function _newsFr() { try { const v = localStorage.getItem('pk-news-fr'); return v == null ? (!window.PKI18n || PKI18n.lang !== 'en') : v === '1'; } catch (_) { return false; } }   // French site: France first by default
 function _newsIsFr(i) { return (i.tags || []).includes('fr') || _NEWS_FR.test(i.title + ' ' + i.snippet); }
 function _newsWireKw() {
   const fr = document.getElementById('news-fr');

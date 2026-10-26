@@ -569,6 +569,8 @@ Modes:
     summary_path = os.path.join(args.out, 'history', 'summary.json')
     with open(summary_path, 'w') as f:
         json.dump({'zones': all_time}, f, separators=(',', ':'))
+    from summary_lite import write_lite   # Today's light copy (France, prices only)
+    write_lite({'zones': all_time}, os.path.join(args.out, 'history', 'summary_fr.json'))
     print(f"  Wrote {summary_path}")
 
     print(f"\nDone. {total_days} days processed.")

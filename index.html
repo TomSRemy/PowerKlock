@@ -3473,7 +3473,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
 <div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title" id="spark-table-title">Spreads by zone</span><span class="source-badge" id="spark-refs"></span></div>
-        <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th>Gas cost</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
+        <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th title="TTF ÷ 49.1 % (CCGT efficiency)">Gas cost (CCGT 49.1 %)</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
       </div>
         </div>
       </div>
@@ -3931,7 +3931,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
         </div>
       </div>
-      <div class="mrn2-hdr mrn3-hdr"><h1 id="mrn-date">Today</h1><span class="mrn-xbtn-w"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure on what it is and why it moves">ⓘ Explain</button><span class="mrn2-upd" id="mrn-upd"></span></span></div>
+      <div class="mrn2-hdr mrn3-hdr"><div class="mrn-hdr-l"><h1 id="mrn-date">Today</h1><p class="mrn-promise">The morning brief on electricity markets: spot and forwards in France and Europe, fundamentals, PPA and M0 tools. Free, from public sources checked every day.</p></div><span class="mrn-xbtn-w"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure on what it is and why it moves">ⓘ Explain</button><span class="mrn2-upd" id="mrn-upd"></span></span></div>
+      <div class="mrn-first" id="mrn-first" hidden></div>
       <!-- Quick look (default): one screen, no scrolling -->
       <div class="mrn2" id="mrn-quick">
         <div id="mrn-q-negal" hidden></div>
@@ -4415,6 +4416,43 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
       </div>
         </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-about">
+      <div class="meth-wrap pk-about">
+        <article class="meth-body pk-fr-only" lang="fr" translate="no">
+          <h1 class="meth-h1">À propos de PowerKlock</h1>
+          <p class="meth-lead">PowerKlock est le point du matin des marchés de l’électricité, en France et en Europe : les prix du jour et pourquoi ils bougent, les forwards, les fondamentaux (nucléaire, météo, gaz), et des outils pour chiffrer un PPA ou le complément de rémunération (M0).</p>
+          <section class="meth-section"><h2 class="meth-h2">Pour qui</h2>
+            <p class="meth-p">Les professionnels de l’énergie (origination, achats, analyse, producteurs d’EnR) qui veulent en un écran ce qui leur prend d’habitude cinq sources. Et les curieux : la vue <b>Découverte</b> et le bouton <b>Expliquer</b> donnent le sens de chaque chiffre.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">D’où viennent les chiffres</h2>
+            <p class="meth-p">Uniquement des sources publiques : ENTSO-E Transparency (prix day-ahead, production, consommation), RTE éCO2mix via ODRÉ (France), Energy-Charts (Fraunhofer ISE), EEX et AIB pour les garanties d’origine, la CRE pour les appels d’offres et le M0, GIE AGSI pour les stocks de gaz, Open-Meteo pour la météo. La licence de chaque jeu de données est indiquée sur la page API.</p>
+            <p class="meth-p">Les données sont récupérées automatiquement plusieurs fois par jour. La page <b>État des données</b> montre la fraîcheur de chaque source, les trous détectés et leur réparation ; les prix sont recoupés avec une deuxième source.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">Ce que PowerKlock calcule lui-même</h2>
+            <p class="meth-p">L’indice PowerKlock (spot attendu sur 4 semaines), la prévision du prix de demain et des heures négatives, la prévision solaire et éolienne, le prix de PPA de référence, le M0 estimé avant la CRE. Chaque calcul est décrit dans <b>Méthodologie</b>, avec son backtest et ses limites. Ce sont des estimations, pas des conseils d’investissement.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">Réutiliser les chiffres</h2>
+            <p class="meth-p">Les graphiques s’exportent en PNG, CSV ou PowerPoint, et l’API est ouverte sans clé. Pour citer un chiffre : « PowerKlock, d’après » la source indiquée sous le graphique.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">Une erreur, une idée ?</h2>
+            <p class="meth-p">Un chiffre qui semble faux, une page qui ne s’affiche pas, un graphique qui manque : dites-le, la note arrive directement à l’équipe et elle est traitée.</p>
+            <p><button type="button" class="pk-btn-primary pk-about-note">Signaler une erreur ou suggérer</button></p></section>
+        </article>
+        <article class="meth-body pk-en-only" lang="en" translate="no">
+          <h1 class="meth-h1">About PowerKlock</h1>
+          <p class="meth-lead">PowerKlock is the morning brief on electricity markets in France and Europe: today’s prices and why they move, forwards, fundamentals (nuclear, weather, gas), and tools to price a PPA or the French contract for difference (M0).</p>
+          <section class="meth-section"><h2 class="meth-h2">Who it is for</h2>
+            <p class="meth-p">Energy professionals (origination, procurement, analysts, renewable producers) who want on one screen what usually takes five sources. And the curious: the <b>Discovery</b> view and the <b>Explain</b> button give the meaning of each figure.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">Where the figures come from</h2>
+            <p class="meth-p">Public sources only: ENTSO-E Transparency (day-ahead prices, generation, load), RTE éCO2mix via ODRÉ (France), Energy-Charts (Fraunhofer ISE), EEX and AIB for guarantees of origin, CRE for tenders and M0, GIE AGSI for gas storage, Open-Meteo for weather. The licence of each dataset is on the API page.</p>
+            <p class="meth-p">Data is fetched automatically several times a day. The <b>Data status</b> page shows each source’s freshness, the gaps found and their repair; prices are cross-checked against a second source.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">What PowerKlock computes itself</h2>
+            <p class="meth-p">The PowerKlock index (expected spot over 4 weeks), tomorrow’s price and negative-hour forecast, the solar and wind forecast, the reference PPA price, the M0 estimated before CRE publishes it. Each is described in <b>Methodology</b>, with its backtest and limits. These are estimates, not investment advice.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">Reusing the figures</h2>
+            <p class="meth-p">Charts export to PNG, CSV or PowerPoint, and the API is open without a key. To cite a figure: “PowerKlock, from” the source shown under the chart.</p></section>
+          <section class="meth-section"><h2 class="meth-h2">An error, an idea?</h2>
+            <p class="meth-p">A figure that looks wrong, a page that does not load, a missing chart: say so, the note goes straight to the team and gets handled.</p>
+            <p><button type="button" class="pk-btn-primary pk-about-note">Report an error or suggest</button></p></section>
+        </article>
       </div>
     </div>
 

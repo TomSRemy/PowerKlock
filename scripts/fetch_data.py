@@ -1232,6 +1232,8 @@ if __name__ == '__main__':
         summary['zones'][code].append(entry)
         summary['zones'][code].sort(key=lambda x: x['d'])
     write_json(summary_path, summary)
+    from summary_lite import write_lite   # Today's light copy (France, prices only)
+    write_lite(summary)
 
     # ── Next delivery day (D+1): prices only, written once the auction is out.
     # The 05:00 UTC run of D+1 rewrites this file with generation data too.

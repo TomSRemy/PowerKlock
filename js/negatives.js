@@ -118,6 +118,18 @@
       card('Deepest print', dp.z ? n2(dp.v, 2) : '–', '€/MWh', dp.z ? flag(dp.z) + ' ' + dp.z + (dp.hr ? ' · ' + dp.hr : '') : 'none', dp.z, true, true) +
       card('Longest run', lr.z ? n2(lr.h, 2) : '–', 'h', lr.z ? flag(lr.z) + ' ' + lr.z : 'none', lr.h > 0, true, true) +
       card('Most neg hours', most ? n2(most.negHours, 2) : '–', 'h', most ? flag(most.code) + ' ' + most.code : 'none', most, true, true);
+    // a day without any negative price: say it in one line, fold the table of dashes and open the history instead
+    var fr2 = !window.PKI18n || PKI18n.lang !== 'en', wrap = document.getElementById('neg-table-wrap'), sec = document.getElementById('neg-board-none');
+    if (z.length && !inNeg.length) {
+      var lf = lastNeg('FR').replace(/^none today · last /, '').replace(/^none today$/, '');
+      if (!sec) { sec = document.createElement('div'); sec.id = 'neg-board-none'; sec.className = 'fuel-note'; sec.style.cssText = 'padding:12px 14px;margin:10px 0;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text2)'; el.after(sec); }
+      sec.setAttribute('translate', 'no');
+      sec.innerHTML = (fr2 ? 'Aucun prix négatif aujourd’hui dans les ' + z.length + ' zones.' + (lf ? ' Dernier en France : ' + lf + '.' : '') + ' L’historique sur un an est plus bas.'
+        : 'No negative price today in the ' + z.length + ' zones.' + (lf ? ' Last in France: ' + lf + '.' : '') + ' The one-year history is below.') +
+        ' <button type="button" class="pk-btn-ghost" id="neg-board-hist">' + (fr2 ? 'Voir l’historique ↓' : 'See the history ↓') + '</button>';
+      sec.querySelector('#neg-board-hist').onclick = function () { var h = document.getElementById('hs-hist-neg') || document.getElementById('neg-s-cc'); if (h) { if (h.classList.contains('collapsed') && window.toggleStrongSection) toggleStrongSection(h.id); h.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+      if (wrap) wrap.hidden = true;
+    } else { if (sec) sec.remove(); if (wrap) wrap.hidden = false; }
   }
 
   function spark(hourly) {

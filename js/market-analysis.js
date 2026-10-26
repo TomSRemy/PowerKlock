@@ -490,7 +490,7 @@
         if (ok(load)) parts.push('demande à ' + fmt2(demand) + ' GW');
         if (ok(resid) && ok(nucA)) parts.push('demande résiduelle ' + W(fmt2(resid) + ' GW') + ' pour ' + fmt2(nucA, 0) + ' GW de nucléaire');
         body = (parts.length ? parts.join(', ') + ' : ' : '') + (ok(fossil) && fossil > 0.5 ? 'les centrales gaz tournent (' + W(fmt2(fossil) + ' GW') + ')' : 'il faut des imports et des centrales flexibles')
-          + (ok(srmc) ? ', prix ' + (price > srmc ? W(fmt2(price - srmc, 0) + ' € au-dessus') : W(fmt2(srmc - price, 0) + ' € en dessous')) + ' du coût d’une centrale gaz (' + fmt2(srmc, 0) + ' €)' : '')
+          + (ok(srmc) ? ', prix ' + (price > srmc ? W(fmt2(price - srmc, 0) + ' € au-dessus') : W(fmt2(srmc - price, 0) + ' € en dessous')) + ' du coût d’une centrale gaz (CCGT 49,1 %, ' + fmt2(srmc, 0) + ' €)' : '')
           + (ok(ttf) && ok(eua) ? '. TTF ' + fmt2(ttf, 0) + ' · EUA ' + fmt2(eua, 0) : '') + '.';
       } else if (moment.kind === 'cannibalisation') {
         const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
@@ -514,7 +514,7 @@
       if (ok(load)) parts.push('demand at ' + fmt(demand) + ' GW');
       if (ok(resid) && ok(nucA)) parts.push('residual load ' + W(fmt(resid) + ' GW') + ' vs ' + fmt(nucA, 0) + ' GW of nuclear');
       body = (parts.length ? parts.join(', ') + ': ' : '') + (ok(fossil) && fossil > 0.5 ? 'gas plants run (' + W(fmt(fossil) + ' GW') + ')' : 'imports and flexible plants are needed')
-        + (ok(srmc) ? ', price ' + (price > srmc ? W(fmt(price - srmc, 0) + ' € above') : W(fmt(srmc - price, 0) + ' € below')) + ' the gas plant cost (' + fmt(srmc, 0) + ' €)' : '')
+        + (ok(srmc) ? ', price ' + (price > srmc ? W(fmt(price - srmc, 0) + ' € above') : W(fmt(srmc - price, 0) + ' € below')) + ' the gas plant cost (CCGT 49.1 %, ' + fmt(srmc, 0) + ' €)' : '')
         + (ok(ttf) && ok(eua) ? '. TTF ' + fmt(ttf, 0) + ' · EUA ' + fmt(eua, 0) : '') + '.';
     } else if (moment.kind === 'cannibalisation') {
       const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
@@ -894,7 +894,7 @@
       + box('Prices',
           '<div class="ma-ht-hero">'
           + '<div class="ma-ht-hero-cell" style="border-left-color:' + priceColor + '"><div class="lab">Day-ahead ' + (ZONE_SHORT[STATE.zone] || '') + '</div><div class="big" style="color:' + priceColor + '">' + fx(price, price < 1 ? 2 : 1) + ' <span class="u">€</span></div></div>'
-          + '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost</div><div class="big" style="color:' + sparkColor + '">' + (has(spark) ? (spark >= 0 ? '+' : '') + fx(spark, 0) : '--') + ' <span class="u">€</span></div></div>'
+          + '<div class="ma-ht-hero-cell" style="border-left-color:' + sparkColor + '"><div class="lab">vs gas plant cost (CCGT 49.1 %)</div><div class="big" style="color:' + sparkColor + '">' + (has(spark) ? (spark >= 0 ? '+' : '') + fx(spark, 0) : '--') + ' <span class="u">€</span></div></div>'
           + '</div>'
           + rows([[DRIVER_COLOURS.ttf, 'Gas plant cost', srmc, '€', 0], ['rgba(127,200,248,0.75)', (_fr() ? 'Prix ' + (ZONE_SHORT[STATE.data.nbZone] || 'voisin') : (ZONE_SHORT[STATE.data.nbZone] || 'Neighbour') + ' price'), nbP, '€', 0]]))
       + box('Who sets the price', '<div class="ma-ht-marginal" style="background:' + _hexA(mgColor, 0.15) + ';color:' + mgColor + '">' + dot(mgColor) + marginal + '</div>')
