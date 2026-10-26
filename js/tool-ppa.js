@@ -822,13 +822,24 @@
     // rolling capture
     const R = rolling(st), step = 3, idx = R.days.map((_, i) => i).filter(i => i % step === 0 || i === R.days.length - 1);
     const L = idx.map(i => R.days[i]);
-    const annualPts = L.map(d => { const y = +d.slice(0, 4); return d.slice(5) >= '07-01' && d.slice(5) < '07-04' && natM.has(y) ? pc1(natM.get(y).cpPct) : null; });
+    // the calendar-year value as a flat step over its year, so every hover reads the year it falls in; vertical lines on
+    // 1 January (on a short window, on the first of each month), never on random days
+    const fr = !window.PKI18n || PKI18n.lang !== 'en', TT = (f, e) => fr ? f : e;
+    const calY = L.map(d => { const y = +d.slice(0, 4); return natM.has(y) && natM.get(y).cpPct != null ? pc1(natM.get(y).cpPct) : null; });
+    const MSH = fr ? ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const xCal = Object.assign(_fuelXAxis(), { ticks: Object.assign(_fuelXAxis().ticks, { autoSkip: false, maxTicksLimit: undefined, callback(v, i) {
+      const k = typeof v === 'number' ? v : i, d = L[k], p = L[k - 1]; if (!d || !p) return null;
+      const span = ((this.max ?? L.length - 1) - (this.min ?? 0)) * step;
+      if (span > 540) return d.slice(0, 4) !== p.slice(0, 4) ? d.slice(0, 4) : null;   // one line per calendar year
+      const every = span > 200 ? 3 : 1;   // one line per quarter, or per month on a short window
+      return d.slice(5, 7) !== p.slice(5, 7) && (+d.slice(5, 7) - 1) % every === 0 ? MSH[+d.slice(5, 7) - 1] + ' ' + d.slice(2, 4) : null; } }) });
     if (has('rollPct')) _fuelChart(ids.rollPct, { type: 'line', data: { labels: L, datasets: [
-      { label: '30 days', data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
-      { label: '90 days', data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
-      { label: '365 days', data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
-      { label: 'Calendar year', data: annualPts, pointStyle: 'rect', pointHoverRadius: 8, pointRadius: 6, backgroundColor: 'rgba(241,245,249,.18)', borderColor: '#F1F5F9', borderWidth: 2, showLine: false },   // an outlined square: visible over the solar (yellow) and wind (teal) lines without shouting
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-rolling-capture-rate');
+      { label: TT('30 jours', '30 days'), data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
+      { label: TT('90 jours', '90 days'), data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
+      { label: TT('365 jours', '365 days'), data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
+      { label: TT('Année civile', 'Calendar year'), data: calY, stepped: 'before', borderColor: 'rgba(241,245,249,.75)', borderDash: [1, 3], borderWidth: 1.6, pointRadius: 0, fill: false,
+        segment: { borderColor: c => L[c.p0DataIndex].slice(0, 4) !== L[c.p1DataIndex].slice(0, 4) ? 'transparent' : undefined } },   // no riser between two years
+    ] }, options: _fuelOpts({ scales: { x: xCal, y: _fuelAxis(TT('taux de capture, % du baseload', 'capture rate, % of baseload')) } }) }, 'ppa-rolling-capture-rate');
     if (has('rollEur')) _fuelChart(ids.rollEur, { type: 'line', data: { labels: L, datasets: [
       { label: 'Baseload, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].base != null ? Math.round(R.w365[i].base * 10) / 10 : null), borderColor: '#B8C9D9', borderWidth: 1.8, pointRadius: 0, fill: false },
       { label: tech + ' captured price, 365 days', data: idx.map(i => R.w365[i] && R.w365[i].cp != null ? Math.round(R.w365[i].cp * 10) / 10 : null), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: { target: 0, above: 'rgba(20,211,169,.12)', below: 'rgba(237,105,101,.18)' } },
