@@ -213,7 +213,9 @@ function _muCChart(cid, all, p, unit, tag) {
   _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(unit) }, plugins: { legend: _muLegend() } }) }, tag);
   const y0 = pick.find(([, c]) => c.kind === 'year') || pick[0], pts = y0[1].points, ks = Object.keys(pts).filter(d => d >= from).sort();
   const last = pts[ks[ks.length - 1]], first = pts[ks[0]];
-  return { sub: `${peak ? 'Peakload' : 'Baseload'} · ${(p.set || 'liquid') === 'liquid' ? 'liquid strip (as traded on the exchange)' : 'all quoted products'}, ${pick.length} contracts · ${_muCLabel(y0[0], y0[1])}: ${last.toFixed(2)} ${unit}, ${(last - first >= 0 ? '+' : '') + (last - first).toFixed(2)} over ${p.win} · solid = year, long dash = season, dash = quarter, dots = month · click a product in the legend to hide it` };
+  const nf = v => _muT(v.toFixed(2).replace('.', ','), v.toFixed(2)), dv = last - first, liq = (p.set || 'liquid') === 'liquid';
+  return { sub: _muT(`${peak ? 'Pointe' : 'Base'} · ${pick.length} contrats ${liq ? 'liquides' : 'cotés'} · ${_muCLabel(y0[0], y0[1])} : ${nf(last)} ${unit} (${dv >= 0 ? '+' : '−'}${nf(Math.abs(dv))} sur ${p.win.replace('M', ' mois').replace('Y', ' an')})`,
+    `${peak ? 'Peakload' : 'Baseload'} · ${pick.length} ${liq ? 'liquid' : 'quoted'} contracts · ${_muCLabel(y0[0], y0[1])}: ${nf(last)} ${unit} (${dv >= 0 ? '+' : '−'}${nf(Math.abs(dv))} over ${p.win})`) };
 }
 
 // ── 5. prices ──

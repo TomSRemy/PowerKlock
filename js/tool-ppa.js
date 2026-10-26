@@ -837,7 +837,7 @@
       { label: TT('30 jours', '30 days'), data: idx.map(i => R.w30[i] && pc1(R.w30[i].pct)), borderColor: 'rgba(127,200,248,.55)', borderDash: [2, 2], borderWidth: 1, pointRadius: 0, fill: false },
       { label: TT('90 jours', '90 days'), data: idx.map(i => R.w90[i] && pc1(R.w90[i].pct)), borderColor: '#7FC8F8', borderDash: [6, 3], borderWidth: 1.4, pointRadius: 0, fill: false },
       { label: TT('365 jours', '365 days'), data: idx.map(i => R.w365[i] && pc1(R.w365[i].pct)), borderColor: tc, borderWidth: 2.4, pointRadius: 0, fill: false },
-      { label: TT('Année civile', 'Calendar year'), data: calY, stepped: 'before', borderColor: 'rgba(241,245,249,.75)', borderDash: [1, 3], borderWidth: 1.6, pointRadius: 0, fill: false,
+      { label: TT('Année civile', 'Calendar year'), data: calY, stepped: 'before', borderColor: '#E04FBF', borderDash: [8, 4], borderWidth: 2.6, pointRadius: 0, fill: false,
         segment: { borderColor: c => L[c.p0DataIndex].slice(0, 4) !== L[c.p1DataIndex].slice(0, 4) ? 'transparent' : undefined } },   // no riser between two years
     ] }, options: _fuelOpts({ scales: { x: xCal, y: _fuelAxis(TT('taux de capture, % du baseload', 'capture rate, % of baseload')) } }) }, 'ppa-rolling-capture-rate');
     if (has('rollEur')) _fuelChart(ids.rollEur, { type: 'line', data: { labels: L, datasets: [
