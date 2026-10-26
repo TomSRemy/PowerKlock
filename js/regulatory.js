@@ -93,13 +93,14 @@
     if (x.min != null && (i < x.min || i > x.max)) return null;
     return x.getPixelForValue(i);
   }
+  const BLOCK_CHARTS = new Set(['bilan-prod', 'bilan-spot']);   // framed blocks only on the yearly review (the RTE-style page); elsewhere a discreet dashed line
   const eligible = ch => { const id = ch.canvas && ch.canvas.dataset.pkw, tags = id && WIDGET_TAGS[id];
     return tags && DATA && !ch.$pkRegOff ? DATA.items.filter(it => (it.tags || []).some(g => tags.includes(g))) : []; };
   const plugin = {
     id: 'pkReg',
     beforeInit(ch) {   // room above the plot for the blocks, decided once from the container's size and the dates
       const box = ch.canvas && ch.canvas.parentElement, w = box ? box.clientWidth : 0, h = box ? box.clientHeight : 0;
-      const want = w >= 600 && h >= 220 && eligible(ch).some(it => it.importance >= 2 && idxOf(ch, it.date) != null);
+      const want = BLOCK_CHARTS.has(ch.canvas && ch.canvas.dataset.pkw) && w >= 420 && h >= 200 && eligible(ch).some(it => it.importance >= 2 && idxOf(ch, it.date) != null);
       ch.$pkRegBlocks = want; if (!want) return;
       const o = ch.config.options = ch.config.options || {}, l = o.layout = o.layout || {}, pd = l.padding;
       l.padding = typeof pd === 'object' && pd ? Object.assign({}, pd, { top: (pd.top || 0) + ROWS * (BLOCK_H + GAP) + 8 }) : { top: (pd || 0) + ROWS * (BLOCK_H + GAP) + 8, right: pd || 0, bottom: pd || 0, left: pd || 0 };
@@ -111,9 +112,9 @@
       // which get a block: importance first, then the most recent; greedy rows from left to right
       const placed = [], rows = Array.from({ length: ROWS }, () => []);
       if (ch.$pkRegBlocks) {
-        g.save(); g.font = '600 10.5px "Outfit", "Inter", sans-serif';
+        g.save(); g.font = '500 10.5px "Outfit", "Inter", sans-serif';
         ms.filter(m => m.it.importance >= 2).sort((p, q) => q.it.importance - p.it.importance || q.it.date.localeCompare(p.it.date)).forEach(m => {
-          const txt = L(m.it.short || m.it.title), w = Math.min(200, Math.max(g.measureText(txt).width, 60) + 16);
+          const txt = L(m.it.short || m.it.title), w = Math.min(190, Math.max(g.measureText(txt).width, 60) + 26);
           const x0 = Math.max(a.left, Math.min(a.right - w, m.x - w / 2));
           for (let r = 0; r < ROWS; r++) { if (rows[r].every(o => x0 + w + 4 < o[0] || x0 > o[1] + 4)) { rows[r].push([x0, x0 + w]); placed.push(Object.assign({ x0, w, r, txt }, m)); return; } }
         });
@@ -122,19 +123,20 @@
       g.save(); g.lineWidth = 1;
       ms.forEach(({ it, x }) => {   // the dashed line at each date, through the plot
         const fut = it.date > up, col = KC[it.kind] || '#B8C9D9';
-        g.strokeStyle = fut ? 'rgba(251,191,36,.75)' : col + '99'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke(); g.setLineDash([]);
+        g.strokeStyle = fut ? 'rgba(251,191,36,.6)' : 'rgba(184,201,217,.35)'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke(); g.setLineDash([]);
         if (!placed.find(p => p.it === it)) { g.fillStyle = col; g.beginPath(); g.moveTo(x - 4, a.top); g.lineTo(x + 4, a.top); g.lineTo(x, a.top + 7); g.closePath(); g.fill(); }
       });
       const top0 = a.top - ROWS * (BLOCK_H + GAP) - 4;
-      placed.forEach(p => {   // the blocks: frame, label, date, and the leader line down to the plot
-        const col = KC[p.it.kind] || '#B8C9D9', y = top0 + p.r * (BLOCK_H + GAP), cx = Math.max(p.x0 + 6, Math.min(p.x0 + p.w - 6, p.x));
-        g.strokeStyle = col; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, y + BLOCK_H); g.lineTo(p.x, a.top); g.stroke();
-        g.fillStyle = 'rgba(10,15,20,.92)'; g.beginPath(); if (g.roundRect) g.roundRect(p.x0, y, p.w, BLOCK_H, 5); else g.rect(p.x0, y, p.w, BLOCK_H); g.fill(); g.stroke();
-        g.fillStyle = col; g.fillRect(p.x0, y + 4, 3, BLOCK_H - 8);
-        g.fillStyle = '#E6EDF3'; g.textAlign = 'left'; g.font = '600 10.5px "Outfit", "Inter", sans-serif';
-        let t = p.txt; while (t.length > 4 && g.measureText(t).width > p.w - 14) t = t.slice(0, -2); if (t !== p.txt) t = t.replace(/\s*\S?$/, '') + '…';
-        g.fillText(t, p.x0 + 8, y + 13);
-        g.fillStyle = '#7A93AB'; g.font = '9.5px "JetBrains Mono", monospace'; g.fillText(fmt(p.it).replace(/^1er |^1 /, ''), p.x0 + 8, y + 26);
+      placed.forEach(p => {   // the blocks, sober: a dark card, a thin neutral border, a dot of the kind's colour, a thin leader to the date
+        const col = KC[p.it.kind] || '#B8C9D9', y = top0 + p.r * (BLOCK_H + GAP), cx = Math.max(p.x0 + 10, Math.min(p.x0 + p.w - 10, p.x));
+        g.strokeStyle = 'rgba(184,201,217,.45)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx, y + BLOCK_H); g.lineTo(p.x, a.top - 4); g.stroke();
+        g.fillStyle = 'rgba(184,201,217,.6)'; g.beginPath(); g.moveTo(p.x - 3.5, a.top - 6); g.lineTo(p.x + 3.5, a.top - 6); g.lineTo(p.x, a.top - 1); g.closePath(); g.fill();
+        g.fillStyle = 'rgba(21,32,41,.96)'; g.strokeStyle = 'rgba(184,201,217,.28)'; g.beginPath(); if (g.roundRect) g.roundRect(p.x0, y, p.w, BLOCK_H, 6); else g.rect(p.x0, y, p.w, BLOCK_H); g.fill(); g.stroke();
+        g.fillStyle = col; g.beginPath(); g.arc(p.x0 + 9, y + 11, 3, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#E6EDF3'; g.textAlign = 'left'; g.font = '500 10.5px "Outfit", "Inter", sans-serif';
+        let t = p.txt; while (t.length > 4 && g.measureText(t).width > p.w - 22) t = t.slice(0, -2); if (t !== p.txt) t = t.replace(/\s*\S?$/, '') + '…';
+        g.fillText(t, p.x0 + 17, y + 14);
+        g.fillStyle = '#7A93AB'; g.font = '9.5px "JetBrains Mono", monospace'; g.fillText(fmt(p.it).replace(/^1er |^1 /, ''), p.x0 + 17, y + 26);
       });
       ch.$pkRegPlaced = placed;
       const h = ch.$pkRegHover; if (h) {   // the event under the pointer, its full title
