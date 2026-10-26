@@ -98,6 +98,7 @@
     const wrap = document.createElement('div');
     wrap.id = OVERLAY_ID;
     wrap.className = 'pk-fs';
+    const _fsT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
     wrap.innerHTML = `
       <div class="pk-fs-header">
         <div class="pk-fs-titles">
@@ -105,13 +106,13 @@
           ${cfg.subtitle ? `<div class="pk-fs-subtitle">${esc(cfg.subtitle)}</div>` : ''}
         </div>
         <div class="pk-fs-actions">
-          ${(cfg.table || cfg.kpis) ? `<button class="pk-fs-btn" data-act="autofit" title="Auto-fit KPI and table to natural size">⇆ Auto-fit</button>` : ''}
-          <button class="pk-fs-btn" data-act="reset" title="Reset zoom">↺ Reset</button>
-          <button class="pk-fs-btn" data-act="png" title="Download PNG">⤓ PNG</button>
-          ${typeof cfg.onCSV === 'function' ? `<button class="pk-fs-btn" data-act="csv" title="Download CSV">⤓ CSV</button>` : ''}
-          <button class="pk-fs-btn" data-act="screenshot" title="Screenshot mode (clean view for sharing)">▢ Screenshot</button>
+          ${(cfg.table || cfg.kpis) ? `<button class="pk-fs-btn" data-act="autofit" title="${_fsT('Ajuster le tableau et les chiffres à leur taille', 'Auto-fit KPI and table to natural size')}">⇆ ${_fsT('Ajuster', 'Auto-fit')}</button>` : ''}
+          <button class="pk-fs-btn" data-act="reset" title="${_fsT('Annuler le zoom', 'Reset zoom')}">↺ ${_fsT('Réinitialiser', 'Reset')}</button>
+          <button class="pk-fs-btn" data-act="png" title="${_fsT('Télécharger en PNG', 'Download PNG')}">⤓ PNG</button>
+          ${typeof cfg.onCSV === 'function' ? `<button class="pk-fs-btn" data-act="csv" title="${_fsT('Télécharger en CSV', 'Download CSV')}">⤓ CSV</button>` : ''}
+          <button class="pk-fs-btn" data-act="screenshot" title="${_fsT('Mode capture (vue épurée à partager)', 'Screenshot mode (clean view for sharing)')}">▢ ${_fsT('Capture', 'Screenshot')}</button>
           <div class="pk-fs-sep"></div>
-          <button class="pk-fs-btn pk-fs-btn-close" data-act="close" title="Close (ESC)">✕ ESC</button>
+          <button class="pk-fs-btn pk-fs-btn-close" data-act="close" title="${_fsT('Fermer (Échap)', 'Close (ESC)')}">✕ ESC</button>
         </div>
       </div>
 

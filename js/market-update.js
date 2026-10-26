@@ -399,7 +399,7 @@ function _muSyncDays(Z) {
   let lo = Math.min(0, ...vals), hi = Math.max(...vals);
   const step = hi - lo > 200 ? 50 : hi - lo > 80 ? 20 : 10;
   lo = Math.floor(lo / step) * step; hi = Math.ceil((hi + (hi - lo) * 0.2) / step) * step;   // room above the curve for the band labels
-  all.forEach(ch => { ch.options.scales.y.min = lo; ch.options.scales.y.max = hi; ch.update('none'); });
+  all.forEach(ch => { ch.options.scales.y.min = lo; ch.options.scales.y.max = hi; ch.$pkFitAlone = ['y']; ch.update('none'); });
 }
 
 if (window.PKW) PKW.register({
@@ -448,10 +448,10 @@ if (window.PKW) PKW.register({
       { label: fcast ? T('Prévision', 'Forecast') : T('Prix', 'Price'), data: h.map(v => Math.round(v * 100) / 100), borderColor: fcast ? '#8A9BAD' : '#14D3A9', borderDash: fcast ? [5, 4] : [], borderWidth: 2.2, tension: .35, fill: false,
         segment: { borderColor: c => (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? '#ED6965' : undefined },   // below 0 €: the line turns red
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => fcast ? '#8A9BAD' : i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
-      { label: 'Average', data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
+      { label: T('Moyenne', 'Average'), data: h.map(() => Math.round(avg * 100) / 100), borderColor: '#7FC8F8', borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
     ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: T('heure (Paris)', 'hour (Paris)'), color: '#7A93AB', font: { size: 11 } } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 11 } } } } } });
-    dayCh.$muZone = Z; _muSyncDays(Z);
+    dayCh.$muZone = Z; dayCh.canvas.dataset.fsTitle = _muZoneName(Z) + ' · ' + dl + (fcast ? ' · ' + T('prévision', 'forecast') : ''); _muSyncDays(Z);
   },
 });
 

@@ -15018,10 +15018,17 @@ function pkCloneCanvasChart(srcCanvas, dstCanvas) {
   const src = (typeof Chart !== 'undefined' && Chart.getChart) ? Chart.getChart(srcCanvas) : null;
   if (!src) return null;
   try {
+    // a deep copy that keeps functions (coloured segments, tick and tooltip callbacks), unlike JSON
+    const seen = new WeakMap();
+    const dc = v => { if (v === null || typeof v !== 'object') return v; if (seen.has(v)) return seen.get(v);
+      if (Array.isArray(v)) { const a = []; seen.set(v, a); v.forEach(x => a.push(dc(x))); return a; }
+      if (Object.getPrototypeOf(v) !== Object.prototype && Object.getPrototypeOf(v) !== null) return v;   // canvas gradients, dates…: shared
+      const o = {}; seen.set(v, o); Object.keys(v).forEach(k => { o[k] = dc(v[k]); }); return o; };
     const cfg = {
       type: src.config.type,
-      data: JSON.parse(JSON.stringify(src.config.data)),
-      options: JSON.parse(JSON.stringify(src.config.options || {})),
+      data: dc(src.config.data),
+      options: dc(src.config.options || {}),
+      plugins: (src.config.plugins || []).slice(),   // the chart's own drawings (bands, labels)
     };
     cfg.options.maintainAspectRatio = false;
     cfg.options.responsive = true;
@@ -15030,6 +15037,8 @@ function pkCloneCanvasChart(srcCanvas, dstCanvas) {
       const sc = cfg.options.scales[k];
       sc.ticks = Object.assign({}, sc.ticks, { font: Object.assign({}, sc.ticks?.font, { size: 13 }) });
     });
+    // an axis fixed only to line up with neighbouring charts (the three spot days) fits its own data when enlarged
+    (src.$pkFitAlone || []).forEach(k => { if (cfg.options.scales[k]) { delete cfg.options.scales[k].min; delete cfg.options.scales[k].max; } });
     cfg.options.plugins = cfg.options.plugins || {};
     // drag to zoom in the big view, even when the small chart had no zoom (Reset sets it back)
     if (typeof ZOOM_CFG !== 'undefined') cfg.options.plugins.zoom = ZOOM_CFG;
