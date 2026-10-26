@@ -16,12 +16,13 @@
     ['bio', ['Bioénergies', 'Bioenergy'], '#9BC46A'], ['gas', ['Gaz', 'Gas'], '#F07B6B'], ['coal', ['Charbon', 'Coal'], '#8D7B6A'], ['oil', ['Fioul', 'Oil'], '#B07A5A']];
   const BORDER = { GB: ['Grande-Bretagne', 'Great Britain'], CH: ['Suisse', 'Switzerland'], IT: ['Italie', 'Italy'], DE: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], ES: ['Espagne', 'Spain'] };
   const L = a => T(a[0], a[1]);
-  let D = null, year = null;
+  let D = null, RM = null, year = null;
   const MON = () => T(['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
   async function render() {
     const host = document.getElementById('bilan-host'); if (!host) return;
     if (!D) D = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'history/bilan.json').then(r => r.ok ? r.json() : null).catch(() => null);
+    if (!RM) RM = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'residual_mix.json').then(r => r.ok ? r.json() : null).catch(() => null);
     if (!D) { host.innerHTML = '<div class="fuel-note">' + T('Bilan indisponible.', 'Review not available.') + '</div>'; return; }
     const cur = D.current, y0 = String(cur.year);
     if (!year) year = y0;
@@ -65,10 +66,12 @@
         <section class="bl-blk"><div class="bl-t"><h2>${T('Émissions de la production', 'Emissions from production')}</h2><span class="bl-src">RTE · ${T('émissions directes', 'direct emissions')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-co2"></canvas></div></section>
         <section class="bl-blk"><div class="bl-t"><h2>${T('Capacités installées', 'Installed capacity')}</h2><span class="bl-src">Energy-Charts · GW ${T('fin d’année', 'end of year')}</span></div><div id="bl-cap"></div></section>
       </div>
+      <section class="bl-blk" id="bl-rm"></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Jalons réglementaires de l’année', 'Regulatory milestones of the year')}</h2><a class="bl-src" href="#intel/regulation" data-route="intel/regulation">${T('Veille réglementaire ›', 'Regulatory watch ›')}</a></div><ul class="bl-reg" id="bl-reg"></ul></section>
       <p class="bl-foot">${T('Méthode : sommes des données quotidiennes de RTE (éCO2mix consolidé puis temps réel) et des prix day-ahead ENTSO-E. Vérifié sur 2025 contre le Bilan électrique de RTE : nucléaire ', 'Method: sums of RTE’s daily data (éCO2mix consolidated then real time) and ENTSO-E day-ahead prices. Checked on 2025 against RTE’s Bilan électrique: nuclear ')}${N(D.check_2025.nuclear[0], 1)} TWh (RTE ${N(D.check_2025.nuclear[1], 1)}), ${T('production', 'production')} ${N(D.check_2025.production[0], 1)} (${N(D.check_2025.production[1], 1)}), ${T('solde exportateur', 'net exports')} ${N(D.check_2025.net_export[0], 1)} (${N(D.check_2025.net_export[1], 1)}), spot ${N(D.check_2025.spot[0], 1)} € (${N(D.check_2025.spot[1], 0)}), ${T('heures négatives', 'negative hours')} ${N(D.check_2025.neg_h[0], 0)} (${N(D.check_2025.neg_h[1], 0)}). ${T('La consommation est brute (RTE publie aussi une consommation corrigée de la météo) ; toutes les bioénergies comptent comme bas carbone ; les heures au-dessus de 100 € sont comptées sur les pas publiés (heure, puis quart d’heure depuis octobre 2025), RTE en compte 1 807 en 2025 contre 1 580 ici. Les émissions sont le taux de CO₂ d’éCO2mix appliqué à la production : 10,0 Mt en 2025, RTE publie 10,9 Mt dans son bilan (périmètre plus large).', 'Consumption is raw (RTE also publishes a weather-corrected figure); all bioenergy counts as low-carbon; hours above 100 € are counted on the published steps (hour, then quarter-hour since October 2025), RTE counts 1,807 in 2025 against 1,580 here. Emissions are éCO2mix’s CO₂ rate applied to production: 10.0 Mt in 2025, RTE’s review gives 10.9 Mt (wider scope).')}</p>`;
     host.querySelectorAll('.bl-y').forEach(b => b.addEventListener('click', () => { year = b.dataset.y; render(); }));
     charts(A, B, live, vs);
+    residual();
   }
 
   function opts(extra) { return Object.assign({ responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10, font: { size: 11 } } } },
@@ -128,6 +131,42 @@
     const reg = document.getElementById('bl-reg');
     if (reg && window.PKReg) PKReg.load().then(j => { const its = ((j && j.items) || []).filter(it => it.date.slice(0, 4) === year);
       reg.innerHTML = its.length ? its.map(it => `<li><span>${new Date(it.date + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span><a href="#intel/regulation?m=${esc(it.id)}">${esc(L(it.title))}</a></li>`).join('') : `<li class="bl-note">${T('Aucun jalon recensé cette année.', 'No milestone listed this year.')}</li>`; });
+  }
+  // Production, supplier and residual mixes (EEX, keeper of the guarantee-of-origin registry) next to RTE's production
+  // mix as PowerKlock computes it: where they differ and why
+  function residual() {
+    const el = document.getElementById('bl-rm'); if (!el || !RM) { if (el) el.hidden = true; return; }
+    const ys = Object.keys(RM.years).sort(), y = RM.years[year] ? year : ys[ys.length - 1], E = RM.years[y], P = (D.years[y] || {}).mix_ex_ps, ex = E.eex || {};
+    const rows = [['nuclear', ['Nucléaire', 'Nuclear']], ['hydro', ['Hydraulique (hors STEP)', 'Hydro (excl. pumped storage)']], ['wind', ['Éolien', 'Wind']], ['solar', ['Solaire', 'Solar']], ['bio', ['Biomasse', 'Biomass']],
+      ['gas', ['Gaz', 'Gas']], ['coal', ['Charbon', 'Coal']], ['oil', ['Fioul', 'Oil']]];
+    const ren = m => m ? ['hydro', 'wind', 'solar', 'bio'].reduce((a, k) => a + (m[k] || 0), 0) : null;
+    const cell = (v, d = 2) => v == null ? '–' : N(v, d) + ' %';
+    el.hidden = false;
+    el.innerHTML = `<div class="bl-t"><h2>${T('Mix de production, de fourniture et mix résiduel', 'Production, supplier and residual mix')} ${y}</h2><a class="bl-src" href="${esc(E.file || RM.page)}" target="_blank" rel="noopener">EEX · ${T('registre des garanties d’origine', 'guarantee-of-origin registry')} ↗</a></div>
+      ${y !== year ? `<p class="bl-note">${T(`EEX publie le mix d’une année en juin de l’année suivante : voici ${y}.`, `EEX publishes a year’s mix in June of the next year: here is ${y}.`)}</p>` : ''}
+      <p class="bl-p">${ex.go_cancelled_twh != null ? T(`${N(ex.go_cancelled_twh, 1)} TWh de garanties d’origine annulées en France pour des offres vertes (${N(ex.go_issued_twh, 1)} TWh émises${ex.go_expired_twh != null ? ', ' + N(ex.go_expired_twh, 1) + ' TWh expirées' : ''}) : la part renouvelable passe de ${N(E.production.renewable, 1)} % dans la production à ${N(E.residual.renewable, 1)} % dans l’électricité vendue sans garantie (mix résiduel), et le nucléaire de ${N(E.production.nuclear, 1)} % à ${N(E.residual.nuclear, 1)} %.`,
+        `${N(ex.go_cancelled_twh, 1)} TWh of guarantees of origin cancelled in France for green offers (${N(ex.go_issued_twh, 1)} TWh issued${ex.go_expired_twh != null ? ', ' + N(ex.go_expired_twh, 1) + ' TWh expired' : ''}): the renewable share goes from ${N(E.production.renewable, 1)} % in production to ${N(E.residual.renewable, 1)} % in electricity sold without a guarantee (residual mix), nuclear from ${N(E.production.nuclear, 1)} % to ${N(E.residual.nuclear, 1)} %.`)
+        : T(`La part renouvelable passe de ${N(E.production.renewable, 1)} % dans la production à ${N(E.residual.renewable, 1)} % dans le mix résiduel.`, `The renewable share goes from ${N(E.production.renewable, 1)} % in production to ${N(E.residual.renewable, 1)} % in the residual mix.`)}</p>
+      <div class="bl-rmgrid"><div style="overflow-x:auto;min-width:0"><table class="bl-tab"><thead><tr><th>${T('Filière', 'Source')}</th><th>${T('Production RTE<br>(PowerKlock)', 'RTE production<br>(PowerKlock)')}</th><th>${T('Production<br>EEX', 'EEX<br>production')}</th><th>${T('Écart', 'Gap')}</th><th>${T('Fourniture<br>EEX', 'EEX<br>supplier')}</th><th>${T('Résiduel<br>EEX', 'EEX<br>residual')}</th></tr></thead><tbody>` +
+        rows.map(([k, n]) => { const a = P && P[k], b = E.production[k], g = a != null && b != null ? a - b : null;
+          return `<tr><td>${L(n)}</td><td>${cell(a)}</td><td>${cell(b)}</td><td class="${g != null && Math.abs(g) > 0.3 ? 'bl-up' : ''}">${g == null ? '–' : S(g, 2, ' pt')}</td><td>${cell(E.supplier[k])}</td><td>${cell(E.residual[k])}</td></tr>`; }).join('') +
+        `<tr class="bl-tot"><td>${T('Renouvelable', 'Renewable')}</td><td>${cell(ren(P), 1)}</td><td>${cell(E.production.renewable, 1)}</td><td></td><td>${cell(E.supplier.renewable, 1)}</td><td>${cell(E.residual.renewable, 1)}</td></tr>
+         <tr><td>CO₂ (g/kWh)</td><td>${N((D.years[y] || {}).co2_g_kwh, 1)}</td><td>${N(E.production.co2_g_kwh, 1)}</td><td></td><td>${N(E.supplier.co2_g_kwh, 1)}</td><td>${N(E.residual.co2_g_kwh, 1)}</td></tr></tbody></table></div>
+      <div class="bl-c" style="height:240px"><canvas id="bl-rmc"></canvas></div></div>
+      <details class="bl-why"><summary>${T('D’où viennent les écarts entre RTE et EEX ?', 'Where do the gaps between RTE and EEX come from?')}</summary><ul>
+        <li>${T('<b>Même source.</b> EEX calcule le mix de production avec les données de RTE, que PowerKlock utilise aussi.', '<b>Same source.</b> EEX computes the production mix from RTE’s data, which PowerKlock also uses.')}</li>
+        <li>${T('<b>Le pompage-turbinage (STEP) est exclu par EEX</b> : c’est de l’énergie stockée, pas produite. Inclus, l’hydraulique gagnerait environ 1 point (6,7 TWh en 2025) ; hors STEP, les deux mix concordent à 0,2 point près par filière.', '<b>Pumped storage is excluded by EEX</b>: it is stored energy, not production. Included, hydro would gain about 1 point (6.7 TWh in 2025); without it the two mixes agree within 0.2 point per source.')}</li>
+        <li>${T(`<b>Données définitives contre provisoires.</b> EEX part des données consolidées de RTE (${N(ex.production_twh, 1)} TWh en ${y}) ; PowerKlock somme les données quotidiennes, dont les derniers mois sont encore provisoires (${N((D.years[y] || {}).production_ex_ps, 1)} TWh hors STEP).`, `<b>Final against provisional data.</b> EEX starts from RTE’s consolidated data (${N(ex.production_twh, 1)} TWh in ${y}); PowerKlock sums the daily data, whose last months are still provisional (${N((D.years[y] || {}).production_ex_ps, 1)} TWh excluding pumped storage).`)}</li>
+        <li>${T('<b>Fioul : seul écart notable restant</b> (0,15 % ici, 0,29 % chez EEX en 2025), sans doute un classement différent de quelques centrales (turbines à combustion, cogénérations au fioul). À vérifier.', '<b>Oil: the only notable gap left</b> (0.15 % here, 0.29 % at EEX in 2025), probably a different classification of a few plants (combustion turbines, oil-fired cogeneration). To be checked.')}</li>
+        <li>${T('<b>Le CO₂ n’est pas calculé pareil.</b> Les volumes concordent, l’écart vient des facteurs d’émission : EEX applique des facteurs par filière (méthode européenne de l’AIB), éCO2mix des facteurs par centrale (dont la cogénération). Hypothèse à confirmer auprès d’EEX.', '<b>CO₂ is not computed the same way.</b> Volumes agree; the gap comes from the emission factors: EEX applies factors per source (the AIB’s European method), éCO2mix factors per plant (cogeneration included). A hypothesis to confirm with EEX.')}</li>
+        <li>${T('<b>Mix de fourniture</b> = production corrigée des échanges physiques hors de la zone AIB et des garanties d’origine émises, expirées et annulées. <b>Mix résiduel</b> = mix de fourniture moins les garanties annulées en France pour les offres vertes, calculé du 1er avril au 31 mars suivant : c’est le mix que doivent afficher les fournisseurs pour l’électricité achetée sans garantie.', '<b>Supplier mix</b> = production corrected for physical exchanges outside the AIB area and for guarantees of origin issued, expired and cancelled. <b>Residual mix</b> = supplier mix minus guarantees cancelled in France for green offers, computed from 1 April to the next 31 March: the mix suppliers must show for electricity bought without a guarantee.')}</li></ul></details>`;
+    const yy = ys.filter(k => RM.years[k].production.renewable != null);
+    mk('bl-rmc', { type: 'line', data: { labels: yy, datasets: [
+      { label: T('Renouvelable · production', 'Renewable · production'), data: yy.map(k => RM.years[k].production.renewable), borderColor: '#14D3A9', borderWidth: 2.2, pointRadius: 2, tension: 0 },
+      { label: T('Renouvelable · mix résiduel', 'Renewable · residual mix'), data: yy.map(k => RM.years[k].residual.renewable), borderColor: '#14D3A9', borderDash: [4, 3], borderWidth: 1.6, pointRadius: 2, tension: 0 },
+      { label: T('GO annulées en France (TWh)', 'GOs cancelled in France (TWh)'), type: 'bar', data: yy.map(k => (RM.years[k].eex || {}).go_cancelled_twh ?? null), backgroundColor: 'rgba(251,191,36,.35)', yAxisID: 'y1' }] },
+      options: opts({ scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: '%', color: '#7A93AB' } },
+        y1: { position: 'right', ticks: { color: '#FBBF24' }, grid: { display: false }, title: { display: true, text: 'TWh', color: '#FBBF24' } } } }) });
   }
   window.PKBilan = { render };
 })();
