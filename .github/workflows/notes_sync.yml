@@ -7,6 +7,10 @@ name: Site notes ⇄ repository
 on:
   schedule:
     - cron: '41 * * * *'
+  # GitHub skips scheduled runs on busy days: also after the hourly news job
+  workflow_run:
+    workflows: ['Fetch Energy News']
+    types: [completed]
   workflow_dispatch:
   push:
     branches: [main]
