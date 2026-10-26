@@ -118,7 +118,8 @@ _nucReg({
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { suggestedMin: 25 }) } }) }, 'fr-nuclear-modulation');
     const mod = rows.map(r => r.avail - r.out).filter(v => v > 0);
     const m = (mod.reduce((a, b) => a + b, 0) / (mod.length || 1)).toFixed(1);
-    return { sub: `mean modulation ${m} GW · ${rows.length} days`, modSub: `Daily average output vs available capacity (GW) · mean modulation ${m} GW over ${rows.length} days` };
+    const fr = !window.PKI18n || PKI18n.lang !== 'en';
+    return { sub: fr ? `modulation moyenne ${m} GW · ${rows.length} jours` : `mean modulation ${m} GW · ${rows.length} days`, modSub: fr ? `Production moyenne du jour vs capacité disponible (GW) · modulation moyenne ${m} GW sur ${rows.length} jours` : `Daily average output vs available capacity (GW) · mean modulation ${m} GW over ${rows.length} days` };
   },
 });
 
