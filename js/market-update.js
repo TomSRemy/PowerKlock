@@ -424,7 +424,9 @@ if (window.PKW) PKW.register({
     if (!q && Z === 'FR' && p.day === 'tomorrow') { const nf = await _muGet('negf', 'neg_forecast.json'); const f = nf && nf.days && nf.days[d]; if (f && f.price && f.price.filter(v => v != null).length >= 20) { q = f.price.slice(0, 24); fcast = true; } }
     if (!q) { host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · ${new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}</div></div></div><div class="fuel-note" style="padding:30px 0;text-align:center">${T('Prix publié vers 13 h la veille ; la prévision PowerKlock arrive dans la matinée.', 'Price published around 13:00 the day before; the PowerKlock forecast comes in the morning.')}</div></div>`; return; }
     const per = q.length / 24, h = Array.from({ length: 24 }, (_, i) => _muMean(q.slice(i * per, (i + 1) * per)));
-    const avg = _muMean(q), avgP = qp ? _muMean(qp) : null, chg = avgP ? (avg / avgP - 1) * 100 : null;
+    // the day's average as published (a 25-hour day counts its repeated hour, which the 96-slot series leaves out)
+    const zd = !fcast && J && J.zones && J.zones[Z], zp = P && P.zones && P.zones[Z];
+    const avg = zd && zd.avg != null ? zd.avg : _muMean(q), avgP = zp && zp.avg != null ? zp.avg : qp ? _muMean(qp) : null, chg = avgP ? (avg / avgP - 1) * 100 : null;
     let lo = 0, hi = 0; h.forEach((v, i) => { if (v < h[lo]) lo = i; if (v > h[hi]) hi = i; });
     const win = sign => { let b = 0, bv = null; for (let i = 0; i <= 21; i++) { const m = (h[i] + h[i + 1] + h[i + 2]) / 3; if (bv == null || sign * m > sign * bv) { bv = m; b = i; } } return b; };
     const wl = win(-1), wh = win(1);

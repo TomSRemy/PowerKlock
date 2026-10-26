@@ -45,7 +45,7 @@
       W('today-hours', 6, 6), W('today-means', 6, 6),
       W('today-glossary', 12, 3),
     ] },
-    { id: 'today-expert', mirror: 'today-expert', name: 'Today · Expert', desc: 'The Expert view of Today, block for block: the key prices, the spot over three days, the next 4 weeks, what moved and why, the news, then markets, fundamentals (the PowerKlock index), renewables, the power system and the detailed forecasts.', items: [
+    { id: 'today-expert', mirror: 'today-expert', name: 'Today · Expert', desc: "The French power market this morning, as on the Expert view of Today. At the top: the key prices (power, gas, CO₂, oil, guarantees of origin, PowerKlock index), the spot of yesterday, today and tomorrow, the next 4 weeks, what moved and why, and the news. Below, one section per subject: Markets (spot, power and gas forwards, Cal+1 drivers), Fundamentals (demand, low-carbon supply, gas cost), Renewables (capture rates, guarantees of origin), Power system (production, nuclear outages, consumption), Detailed forecasts (the grid operator's) and, folded at the end, PowerKlock · calculations (the index and our own forecasts).", items: [
       W('today-tiles', 12, 3),
       W('fr-spot-day', 4, 7, { zone: 'FR', day: 'yesterday' }), W('fr-spot-day', 4, 7, { zone: 'FR', day: 'today' }), W('fr-spot-day', 4, 7, { zone: 'FR', day: 'tomorrow' }),
       W('today-weeks', 12, 4),
@@ -192,6 +192,7 @@
   let mirrored = null;   // { key, moved: [[node, placeholder, display]] }
   function unmirror() {
     if (!mirrored) return;
+    if (mirrored.io) mirrored.io.disconnect();
     mirrored.moved.forEach(([n, ph, disp]) => { ph.replaceWith(n); n.style.display = disp; });
     const page = document.getElementById('page-mydash'); if (page) page.classList.remove('pkd-is-mirror');
     const box = document.getElementById('pkd-mirror'); if (box) box.remove();
@@ -207,10 +208,16 @@
     const moved = [];
     m.ids.forEach(id => { const n = document.getElementById(id); if (!n) return;
       const ph = document.createComment('pkd-mirror ' + id); n.replaceWith(ph); moved.push([n, ph, n.style.display]);
-      n.style.display = ''; n.classList.remove('collapsed');
+      n.style.display = '';
       n.querySelectorAll('.hist-section-header, .hist-section-body').forEach(x => x.classList.add('open'));
       box.appendChild(n); });
-    mirrored = { key, moved };
+    // the folded sections open one after the other as the reader scrolls near them (the first screen loads alone, fast);
+    // the last one, PowerKlock · calculations, stays folded as on Today
+    const secs = moved.map(m => m[0]).filter(n => n.classList.contains('hist-section-strong') && n.classList.contains('collapsed') && n.id !== 'hs-morning-idx');
+    const io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; io.unobserve(e.target);
+      e.target.classList.remove('collapsed'); const nx = secs[secs.indexOf(e.target) + 1]; if (nx) setTimeout(() => io.observe(nx), 400); }), { rootMargin: '0px 0px 500px 0px' });
+    if (secs[0]) io.observe(secs[0]);
+    mirrored = { key, moved, io };
     document.getElementById('page-mydash').classList.add('pkd-is-mirror');
     m.draw();
     requestAnimationFrame(() => box.querySelectorAll('canvas').forEach(c => { const ch = window.Chart && Chart.getChart(c); if (ch) ch.resize(); }));
