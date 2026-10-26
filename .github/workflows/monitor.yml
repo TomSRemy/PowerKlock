@@ -1,0 +1,58 @@
+name: Live site monitor
+
+# Every hour, the published site is checked as a visitor sees it (scripts/monitor_live.py): site up, data on time,
+# Today and Day-ahead showing prices without a script error. An e-mail when a problem appears or is solved.
+on:
+  schedule:
+    - cron: '23 * * * *'   # off the round minutes, where GitHub delays scheduled runs
+  # GitHub skips scheduled runs on busy days: the monitor also runs after the frequent data jobs
+  workflow_run:
+    workflows: ['Fetch Energy Data', 'Fetch Energy News', 'Alerts (e-mail)', 'Warehouse sync (Supabase)']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write     # to relaunch a late data job
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1, sparse-checkout: scripts }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install
+        run: |
+          pip install -q playwright==1.48.0 requests==2.33.1
+          python -m playwright install --with-deps chromium
+      - name: Problems already reported
+        uses: actions/cache/restore@v4
+        with:
+          path: monitor_state.json
+          key: monitor-state-${{ github.run_id }}
+          restore-keys: monitor-state-
+      - name: Check the live site
+        run: python scripts/monitor_live.py
+      - name: Relaunch the late data jobs
+        if: env.HEAL != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: for w in $HEAL; do gh workflow run "$w" --ref main || echo "::warning::could not relaunch $w"; done
+      - name: Remember what was reported
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: monitor_state.json
+          key: monitor-state-${{ github.run_id }}
+      - name: E-mail when something changed
+        if: env.MONITOR_ALERT == '1'
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+        run: python3 scripts/notify_failure.py || true

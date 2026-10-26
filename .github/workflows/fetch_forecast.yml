@@ -13,6 +13,11 @@ on:
     - cron: '7,37 7-11 * * *'
     - cron: '41 16 * * *'
     - cron: '47 19 * * *'    # late publishers
+  # GitHub's scheduler skips runs on busy days (26 Oct 2026: none at all from 22:56 to 14:00): the forecast also runs
+  # after the frequent data jobs finish (events are not skipped), when it is due — see the "Due?" step
+  workflow_run:
+    workflows: ['Fetch Energy Data', 'Fetch Energy News', 'Alerts (e-mail)']
+    types: [completed]
   workflow_dispatch:
     inputs:
       accuracy:
@@ -32,10 +37,27 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      # after another job: run only if the forecast is due (tomorrow missing from 7:00 Paris, or older than 3 h)
+      - name: Due?
+        id: due
+        run: |
+          if [ "${{ github.event_name }}" != "workflow_run" ]; then echo "run=yes" >> "$GITHUB_OUTPUT"; exit 0; fi
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, datetime as dt
+          from zoneinfo import ZoneInfo
+          now = dt.datetime.now(ZoneInfo('Europe/Paris')); tm = (now.date() + dt.timedelta(days=1)).isoformat()
+          try: j = json.load(open('data/neg_forecast.json'))
+          except Exception: j = {}
+          upd = j.get('updated'); age = (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(upd.replace('Z', '+00:00'))).total_seconds() / 3600 if upd else 99
+          due = (now.hour >= 7 and tm not in (j.get('days') or {})) or age > 3
+          print('run=' + ('yes' if due and 6 <= now.hour <= 22 else 'no'))
+          PY
       - uses: actions/setup-python@v5
+        if: steps.due.outputs.run == 'yes'
         with:
           python-version: '3.12'
       - name: Fetch
+        if: steps.due.outputs.run == 'yes'
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}   # France load forecast for tomorrow before Energy-Charts serves it
         run: |
@@ -47,12 +69,16 @@ jobs:
       # our solar and wind first (tomorrow runs on weather alone until the TSO publishes, late afternoon), then the
       # price model on them, then our forecast again with the fresh chance of a negative price
       - name: PowerKlock combined solar and wind forecast (France)
+        if: steps.due.outputs.run == 'yes'
         run: pip install -q numpy==2.5.4 && cd scripts && python fcst_live.py || echo "::warning::combined forecast failed"
       - name: Negative prices, today and tomorrow
+        if: steps.due.outputs.run == 'yes'
         run: python scripts/neg_forecast.py || echo "::warning::negative-price forecast failed"
       - name: Combined forecast, second pass
+        if: steps.due.outputs.run == 'yes'
         run: cd scripts && python fcst_live.py || echo "::warning::combined forecast failed"
       - name: Commit and push
+        if: steps.due.outputs.run == 'yes'
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
