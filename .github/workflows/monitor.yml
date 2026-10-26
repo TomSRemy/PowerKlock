@@ -5,15 +5,16 @@ name: Live site monitor
 on:
   schedule:
     - cron: '23 * * * *'   # off the round minutes, where GitHub delays scheduled runs
-  # GitHub skips scheduled runs on busy days: the monitor also runs after the frequent data jobs
+  # GitHub skips scheduled runs on busy days: the monitor also runs after the hourly news job.
+  # One trigger only: with several, runs collided and GitHub e-mailed every cancelled one.
   workflow_run:
-    workflows: ['Fetch Energy Data', 'Fetch Energy News', 'Alerts (e-mail)', 'Warehouse sync (Supabase)']
+    workflows: ['Fetch Energy News']
     types: [completed]
   workflow_dispatch:
 
 concurrency:
   group: monitor
-  cancel-in-progress: true
+  cancel-in-progress: false   # a second trigger waits instead of cancelling the run in progress
 
 jobs:
   monitor:
