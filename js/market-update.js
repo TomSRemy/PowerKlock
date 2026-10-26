@@ -14,6 +14,8 @@
 const MU = { cache: {} };
 const MU_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function _muGet(key, path) { if (!MU.cache[key]) MU.cache[key] = fetch(DATA_BASE + path).then(r => r.ok ? r.json() : null).catch(() => null); return MU.cache[key]; }
+// French or English for the sentences built here
+const _muT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
 function _muToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }
 function _muAdd(iso, n) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
 const _muDay = iso => +iso.slice(8) + ' ' + MU_MON[+iso.slice(5, 7) - 1];
@@ -81,7 +83,7 @@ _muReg({
     const fut = days.map((d, i) => d > _muToday() ? i : -1).filter(i => i >= 0);
     const fm = _muMean(fut.map(i => sl(s.mean)[i])), nm = _muMean(fut.map(i => sl(s.normal)[i]));
     const dev = fm != null && nm ? (p.series === 'temp' ? (fm - nm).toFixed(1) + ' °C' : ((fm / nm - 1) * 100).toFixed(0) + ' %') : '';
-    return { sub: `Next ${fut.length} days: ${fm == null ? '–' : fm.toFixed(1)} ${s.unit} vs normal ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · updated ${j.updated.slice(0, 10)}` };
+    return { sub: _muT(`${fut.length} prochains jours : ${fm == null ? '–' : fm.toFixed(1)} ${s.unit.replace('/day', '/jour')} vs normale ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · mis à jour le ${j.updated.slice(0, 10)}`, `Next ${fut.length} days: ${fm == null ? '–' : fm.toFixed(1)} ${s.unit} vs normal ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · updated ${j.updated.slice(0, 10)}`) };
   },
 });
 
@@ -130,7 +132,7 @@ _muReg({
         grid: { color: c => lbl[c.index] ? 'rgba(26,45,63,.5)' : 'transparent', drawTicks: false } }), y: _fuelAxis('% full', { min: 0, max: 100 }) },
       plugins: { legend: _muLegend() } }) }, 'gas-storage-years');
     const last = pts[pts.length - 1], ly = pts.filter(([d]) => d.startsWith(String(y - 1)) && d.slice(5) <= last[0].slice(5)).slice(-1)[0];
-    return { sub: `${last[1].toFixed(1)} % on ${last[0]}` + (ly ? ` · ${(last[1] - ly[1] >= 0 ? '+' : '')}${(last[1] - ly[1]).toFixed(1)} pts vs ${y - 1}` : '') };
+    return { sub: `${last[1].toFixed(1)} % ${_muT('au', 'on')} ${last[0]}` + (ly ? ` · ${(last[1] - ly[1] >= 0 ? '+' : '')}${(last[1] - ly[1]).toFixed(1)} pts vs ${y - 1}` : '') };
   },
 });
 
@@ -154,7 +156,8 @@ _muReg({
       { label: 'Daily consumption', data: act, borderColor: 'rgba(127,200,248,.35)', borderWidth: 1, pointRadius: 0, tension: .2, fill: false },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('GWh/day') }, plugins: { legend: _muLegend() } }) }, 'consumption-vs-normal');
     const a7 = roll7[roll7.length - 1], n7 = _muMean(nv.slice(-7));
-    return { sub: `Last 7 days ${a7 ? a7.toFixed(0) : '–'} GWh/day, ${n7 ? ((a7 / n7 - 1) * 100 >= 0 ? '+' : '') + ((a7 / n7 - 1) * 100).toFixed(1) + ' %' : ''} vs normal` };
+    const dv = n7 ? ((a7 / n7 - 1) * 100 >= 0 ? '+' : '') + ((a7 / n7 - 1) * 100).toFixed(1) + ' %' : '';
+    return { sub: _muT(`7 derniers jours : ${a7 ? a7.toFixed(0) : '–'} GWh/jour, ${dv} vs normale`, `Last 7 days ${a7 ? a7.toFixed(0) : '–'} GWh/day, ${dv} vs normal`) };
   },
 });
 
@@ -574,7 +577,7 @@ _muReg({
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 13, maxRotation: 0 } }), y: _fuelAxis(unit, { beginAtZero: true }) },
       plugins: { legend: _muLegend() } }) }, 'hydro-reservoirs-' + (p.country || 'FR'));
     const last = c.weeks[c.weeks.length - 1], li = wk(last[0]), lv = last[1] / div, mv = mean[li];
-    return { sub: `${lv.toFixed(big ? 1 : 0)} ${unit} in the week of ${last[0]}` + (mv ? ` · ${lv >= mv ? '+' : ''}${((lv / mv - 1) * 100).toFixed(0)} % vs ${r1} mean` : '') };
+    return { sub: _muT(`${lv.toFixed(big ? 1 : 0)} ${unit} la semaine du ${last[0]}`, `${lv.toFixed(big ? 1 : 0)} ${unit} in the week of ${last[0]}`) + (mv ? ` · ${lv >= mv ? '+' : ''}${((lv / mv - 1) * 100).toFixed(0)} % ${_muT('vs moyenne', 'vs')} ${r1}${_muT('', ' mean')}` : '') };
   },
 });
 window.PKHydro = {
