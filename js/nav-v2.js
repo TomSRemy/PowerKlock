@@ -117,7 +117,7 @@
     ]],
     ['Intelligence', [
       ['intel/news', 'News', 'news'],
-      ['intel/regulation', 'Regulatory watch', 'news'],
+      ['intel/regulation', 'Events and changes', 'news'],
     ]],
   ];
   const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology'], ['about', 'About']];

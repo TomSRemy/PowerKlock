@@ -563,7 +563,7 @@
       }
     }
     // political and market events of the period (data/market_events.json): they explain the moves, so they come first
-    const ME = !empty && await json('mevents', 'market_events.json');
+    const ME = !empty && window.PKReg && await PKReg.marketEvents();   // data/events.json
     if (ME && ME.events && S.data.times.length) {
       const d0 = S.data.times[0][0], d1 = S.data.times[S.data.times.length - 1][0], cat = c => (ME.categories || {})[c] || [c, c];
       const pol = ME.events.filter(e => e.d >= d0 && e.d <= d1).map(e => {

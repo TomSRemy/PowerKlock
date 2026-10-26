@@ -1,6 +1,36 @@
 {
  "updated": "2026-10-26",
- "about": "Regulatory milestones of the French and European power markets, past and upcoming. Each item has a date checked against its source. tags = the charts it is drawn on (spot, fwd, neg, m0, balancing, nuclear, capacity, co2, go, enr). precision: day (default) or month.",
+ "about": "Events that explain the French and European power markets, past and upcoming: regulation, market, gas and geopolitics, nuclear, grid, weather. Each date is checked against its source. kind: reg | marche | gaz | geo | nucleaire | reseau | meteo. importance 1-3: 3 = shown as an explanatory block on the charts first. short: the block text. tags: the charts it concerns.",
+ "kinds": {
+  "reg": [
+   "Réglementation",
+   "Regulation"
+  ],
+  "marche": [
+   "Marché",
+   "Market"
+  ],
+  "gaz": [
+   "Gaz",
+   "Gas"
+  ],
+  "geo": [
+   "Géopolitique",
+   "Geopolitics"
+  ],
+  "nucleaire": [
+   "Nucléaire",
+   "Nuclear"
+  ],
+  "reseau": [
+   "Réseau",
+   "Grid"
+  ],
+  "meteo": [
+   "Météo",
+   "Weather"
+  ]
+ },
  "themes": {
   "marche": [
    "Marché et prix",
@@ -56,6 +86,12 @@
    "source": [
     "CRE",
     "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Loi NOME : ARENH",
+    "NOME law: ARENH"
    ]
   },
   {
@@ -78,6 +114,12 @@
    "source": [
     "CRE",
     "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "ARENH à 40 €",
+    "ARENH at 40 €"
    ]
   },
   {
@@ -100,6 +142,12 @@
    "source": [
     "Légifrance",
     "https://legifrance.gouv.fr/loda/id/JORFTEXT000031044385"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Loi transition énergétique",
+    "Energy transition law"
    ]
   },
   {
@@ -122,6 +170,41 @@
    "source": [
     "Actu-Environnement",
     "https://www.actu-environnement.com/ae/news/energies-renouvelables-complement-remuneration-enfin-publies-26897.php4"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Complément de rémunération",
+    "Contract for difference"
+   ]
+  },
+  {
+   "id": "carbon-2016",
+   "date": "2016-10-18",
+   "kind": "nucleaire",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "nuclear",
+    "spot",
+    "fwd"
+   ],
+   "importance": 2,
+   "short": [
+    "Nucléaire : anomalies carbone",
+    "Nuclear: carbon anomalies"
+   ],
+   "title": [
+    "Anomalies de carbone : arrêts de réacteurs",
+    "Carbon anomalies: reactors stopped"
+   ],
+   "text": [
+    "Des excès de carbone dans l’acier de générateurs de vapeur obligent EDF à arrêter et contrôler une douzaine de réacteurs à l’automne : le spot de l’hiver 2016-2017 flambe.",
+    "Excess carbon in steam-generator steel forces EDF to stop and inspect a dozen reactors in the autumn: the 2016-17 winter spot soars."
+   ],
+   "source": [
+    "franceinfo",
+    "https://www.franceinfo.fr/environnement/energie/nucleaire/centrales-nucleaires-21-reacteurs-a-l-arret-a-cause-d-un-exces-de-carbone_1879923.html"
    ]
   },
   {
@@ -144,6 +227,12 @@
    "source": [
     "RTE",
     "https://www.services-rte.com/en/learn-more-about-our-services/capacity-mechanism-AL-2017-2026.html"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Mécanisme de capacité",
+    "Capacity mechanism"
    ]
   },
   {
@@ -165,6 +254,12 @@
    "source": [
     "EUR-Lex",
     "https://eur-lex.europa.eu/eli/reg/2019/943/oj"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "Paquet Énergie propre",
+    "Clean Energy Package"
    ]
   },
   {
@@ -187,6 +282,183 @@
    "source": [
     "Ministère de la Transition écologique",
     "https://www.ecologie.gouv.fr/politiques-publiques/loi-energie-climat"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Loi énergie-climat",
+    "Energy-climate law"
+   ]
+  },
+  {
+   "id": "covid",
+   "date": "2020-03-17",
+   "kind": "marche",
+   "scope": "FR",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "neg"
+   ],
+   "importance": 2,
+   "short": [
+    "Confinement : conso −15 %",
+    "Lockdown: demand −15 %"
+   ],
+   "title": [
+    "Premier confinement",
+    "First lockdown"
+   ],
+   "text": [
+    "La consommation chute de 15 à 20 % ; le spot tombe vers 20 €/MWh et les prix négatifs se multiplient au printemps.",
+    "Demand falls 15 to 20 %; spot drops towards 20 €/MWh and negative prices multiply in the spring."
+   ],
+   "source": [
+    "RTE",
+    "https://assets.rte-france.com/prod/public/2020-09/Impacts-crise-sanitaire-COVID-19-systeme-electrique.pdf"
+   ]
+  },
+  {
+   "id": "grid-split",
+   "date": "2021-01-08",
+   "kind": "reseau",
+   "scope": "FR",
+   "theme": "equilibrage",
+   "tags": [
+    "balancing"
+   ],
+   "importance": 1,
+   "short": [
+    "Réseau européen scindé",
+    "European grid split"
+   ],
+   "title": [
+    "Le réseau continental se sépare en deux",
+    "Continental grid splits in two"
+   ],
+   "text": [
+    "Une cascade de déclenchements depuis la Croatie sépare le réseau européen en deux zones pendant une heure ; pas de coupure majeure pour les consommateurs.",
+    "A cascade of trips from Croatia splits the European grid into two areas for an hour; no major outage for consumers."
+   ],
+   "source": [
+    "ENTSO-E",
+    "https://www.entsoe.eu/news/2021/07/15/final-report-on-the-separation-of-the-continental-europe-power-system-on-8-january-2021/"
+   ]
+  },
+  {
+   "id": "gas-2021",
+   "date": "2021-10-05",
+   "kind": "gaz",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd",
+    "co2"
+   ],
+   "importance": 2,
+   "short": [
+    "Record du gaz",
+    "Gas record"
+   ],
+   "title": [
+    "Le gaz européen bat des records",
+    "European gas hits record highs"
+   ],
+   "text": [
+    "Stocks bas après l’hiver, reprise post-Covid et Gazprom qui ne vend pas au-delà de ses contrats : le TTF s’envole et entraîne l’électricité, fixée par les centrales au gaz.",
+    "Low storage after winter, the post-Covid rebound and Gazprom selling nothing beyond its contracts: TTF soars and pulls power, priced by gas plants, with it."
+   ],
+   "source": [
+    "CNBC",
+    "https://www.cnbc.com/2021/10/05/gas-price-surges-to-a-record-high-in-europe-on-supply-concerns-.html"
+   ]
+  },
+  {
+   "id": "edf-2022",
+   "date": "2022-01-13",
+   "kind": "nucleaire",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "nuclear",
+    "spot",
+    "fwd"
+   ],
+   "importance": 3,
+   "short": [
+    "EDF abaisse son nucléaire",
+    "EDF cuts nuclear outlook"
+   ],
+   "title": [
+    "EDF abaisse sa production nucléaire attendue",
+    "EDF lowers its expected nuclear output"
+   ],
+   "text": [
+    "Défauts près des soudures (corrosion sous contrainte) à Civaux, Chooz et Penly : estimation 2022 abaissée à 300-330 TWh, les forwards France s’envolent.",
+    "Defects near welds (stress corrosion) at Civaux, Chooz and Penly: 2022 estimate cut to 300-330 TWh, French forwards soar."
+   ],
+   "source": [
+    "EDF",
+    "https://www.edf.fr/en/the-edf-group/dedicated-sections/journalists/all-press-releases/edf-updates-its-nuclear-output-estimate-in-france-for-2022"
+   ]
+  },
+  {
+   "id": "ukraine",
+   "date": "2022-02-24",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd",
+    "co2"
+   ],
+   "importance": 3,
+   "short": [
+    "Invasion de l’Ukraine",
+    "Invasion of Ukraine"
+   ],
+   "title": [
+    "La Russie envahit l’Ukraine",
+    "Russia invades Ukraine"
+   ],
+   "text": [
+    "Risque sur 40 % du gaz importé par l’UE : gaz, électricité et charbon s’envolent.",
+    "Risk on 40 % of the EU’s gas imports: gas, power and coal soar."
+   ],
+   "source": [
+    "Bruegel",
+    "https://www.bruegel.org/analysis/end-russian-gas-transit-ukraine-and-options-eu"
+   ]
+  },
+  {
+   "id": "ttf-345",
+   "date": "2022-03-07",
+   "kind": "gaz",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd",
+    "co2"
+   ],
+   "importance": 2,
+   "short": [
+    "TTF à 345 €",
+    "TTF at 345 €"
+   ],
+   "title": [
+    "Le TTF touche 345 €/MWh en séance",
+    "TTF hits 345 €/MWh intraday"
+   ],
+   "text": [
+    "Pic du gaz après la menace russe de couper l’approvisionnement en contre-sanction.",
+    "Gas peak after Russia threatens to cut supply as a counter-sanction."
+   ],
+   "source": [
+    "Anadolu Agency",
+    "https://www.aa.com.tr/en/energy/finance/natural-gas-prices-hit-new-record-at-345-per-megawatt-hour/34788"
    ]
   },
   {
@@ -208,6 +480,181 @@
    "source": [
     "JAO",
     "https://www.jao.eu/news/core-flow-based-market-coupling-project-go-live"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Flow-based Core",
+    "Core flow-based"
+   ]
+  },
+  {
+   "id": "ns-40",
+   "date": "2022-06-14",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd"
+   ],
+   "importance": 1,
+   "short": [
+    "Nord Stream −40 %",
+    "Nord Stream −40 %"
+   ],
+   "title": [
+    "Gazprom réduit Nord Stream de 40 %",
+    "Gazprom cuts Nord Stream by 40 %"
+   ],
+   "text": [
+    "Officiellement faute d’une turbine en réparation : début de la baisse des livraisons russes par Nord Stream.",
+    "Officially for lack of a turbine under repair: start of the cut in Russian deliveries through Nord Stream."
+   ],
+   "source": [
+    "Wikipedia (synthèse sourcée)",
+    "https://en.wikipedia.org/wiki/2022%E2%80%932023_Russia%E2%80%93European_Union_gas_dispute"
+   ]
+  },
+  {
+   "id": "heat-2022",
+   "date": "2022-07-15",
+   "kind": "meteo",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "nuclear",
+    "spot"
+   ],
+   "importance": 2,
+   "short": [
+    "Canicule : nucléaire bridé",
+    "Heatwave: nuclear curbed"
+   ],
+   "title": [
+    "Canicule et sécheresse 2022",
+    "2022 heatwave and drought"
+   ],
+   "text": [
+    "Rivières trop chaudes : dérogations de rejets thermiques à Bugey, Saint-Alban, Golfech et Blayais ; l’hydraulique est au plus bas. Le nucléaire 2022 sera le plus faible depuis 1988.",
+    "Rivers too warm: thermal-discharge waivers at Bugey, Saint-Alban, Golfech and Blayais; hydro at its lowest. 2022 nuclear will be the lowest since 1988."
+   ],
+   "source": [
+    "ASN",
+    "https://reglementation-controle.asnr.fr/information/archives-des-actualites/modification-temporaire-des-rejets-thermiques-accordee-a-golfech-saint-alban-blayais-et-bugey"
+   ]
+  },
+  {
+   "id": "ns-20",
+   "date": "2022-07-27",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd"
+   ],
+   "importance": 1,
+   "short": [
+    "Nord Stream à 20 %",
+    "Nord Stream at 20 %"
+   ],
+   "title": [
+    "Nord Stream réduit à 20 % de sa capacité",
+    "Nord Stream cut to 20 % of capacity"
+   ],
+   "text": [
+    "Nouvelle turbine arrêtée : l’Europe se prépare à un hiver sans gaz russe.",
+    "Another turbine stopped: Europe prepares for a winter without Russian gas."
+   ],
+   "source": [
+    "Washington Times (AP)",
+    "https://www.washingtontimes.com/news/2022/jul/25/gazprom-says-its-cutting-gas-nord-stream-to-20-of-/"
+   ]
+  },
+  {
+   "id": "cal23-1000",
+   "date": "2022-08-26",
+   "kind": "marche",
+   "scope": "FR",
+   "theme": "marche",
+   "tags": [
+    "fwd",
+    "spot",
+    "nuclear"
+   ],
+   "importance": 3,
+   "short": [
+    "Cal 23 France > 1 000 €",
+    "French Cal 23 > 1,000 €"
+   ],
+   "title": [
+    "Le Cal 2023 France dépasse 1 000 €/MWh",
+    "French Cal 2023 passes 1,000 €/MWh"
+   ],
+   "text": [
+    "Gaz au plus haut et nucléaire au plus bas : le contrat 2023 dépasse 1 000 €/MWh pour la première fois.",
+    "Gas at its highest and nuclear at its lowest: the 2023 contract passes 1,000 €/MWh for the first time."
+   ],
+   "source": [
+    "France 24",
+    "https://www.france24.com/en/economy/20220826-europe-s-electricity-prices-hit-record-high-as-supply-cuts-begin-to-bite"
+   ]
+  },
+  {
+   "id": "ns-stop",
+   "date": "2022-09-02",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd"
+   ],
+   "importance": 2,
+   "short": [
+    "Nord Stream 1 à l’arrêt",
+    "Nord Stream 1 shut"
+   ],
+   "title": [
+    "Gazprom arrête Nord Stream 1",
+    "Gazprom shuts Nord Stream 1"
+   ],
+   "text": [
+    "Arrêt « indéfini » officiellement pour une fuite d’huile sur une turbine.",
+    "“Indefinite” shutdown, officially for an oil leak on a turbine."
+   ],
+   "source": [
+    "CNN",
+    "https://www.cnn.com/2022/09/02/energy/nord-stream-1-pipeline-turned-off/index.html"
+   ]
+  },
+  {
+   "id": "ns-sabotage",
+   "date": "2022-09-26",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd"
+   ],
+   "importance": 1,
+   "short": [
+    "Sabotage de Nord Stream",
+    "Nord Stream sabotage"
+   ],
+   "title": [
+    "Sabotage des gazoducs Nord Stream",
+    "Nord Stream pipelines sabotaged"
+   ],
+   "text": [
+    "Des explosions endommagent Nord Stream 1 et 2 : le retour du gaz russe par la Baltique devient impossible.",
+    "Explosions damage Nord Stream 1 and 2: a return of Russian gas through the Baltic becomes impossible."
+   ],
+   "source": [
+    "Wikipedia (synthèse sourcée)",
+    "https://en.wikipedia.org/wiki/Nord_Stream_pipelines_sabotage"
    ]
   },
   {
@@ -230,6 +677,67 @@
    "source": [
     "EUR-Lex",
     "https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32022R1854"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Plafond 180 €/MWh",
+    "180 €/MWh revenue cap"
+   ]
+  },
+  {
+   "id": "gas-cap",
+   "date": "2022-12-19",
+   "kind": "reg",
+   "scope": "FR",
+   "theme": "marche",
+   "tags": [
+    "co2",
+    "fwd"
+   ],
+   "importance": 2,
+   "short": [
+    "Plafond du prix du gaz",
+    "Gas price cap"
+   ],
+   "title": [
+    "L’UE plafonne le prix du gaz",
+    "EU caps the gas price"
+   ],
+   "text": [
+    "Mécanisme de correction du marché : plafond du TTF mois prochain à 180 €/MWh sous conditions (règlement 2022/2578).",
+    "Market correction mechanism: front-month TTF capped at 180 €/MWh under conditions (Regulation 2022/2578)."
+   ],
+   "source": [
+    "Conseil de l’UE",
+    "https://www.consilium.europa.eu/en/press/press-releases/2022/12/19/council-agrees-on-temporary-mechanism-to-limit-excessive-gas-prices/"
+   ]
+  },
+  {
+   "id": "de-nuclear",
+   "date": "2023-04-15",
+   "kind": "nucleaire",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "spot"
+   ],
+   "importance": 1,
+   "short": [
+    "Fin du nucléaire allemand",
+    "End of German nuclear"
+   ],
+   "title": [
+    "L’Allemagne ferme ses derniers réacteurs",
+    "Germany closes its last reactors"
+   ],
+   "text": [
+    "Isar 2, Emsland et Neckarwestheim 2 s’arrêtent : l’Allemagne importe davantage, dont de France.",
+    "Isar 2, Emsland and Neckarwestheim 2 stop: Germany imports more, including from France."
+   ],
+   "source": [
+    "CNBC",
+    "https://www.cnbc.com/2023/04/18/germany-shuts-down-last-nuclear-power-plants-some-scientists-aghast.html"
    ]
   },
   {
@@ -252,6 +760,12 @@
    "source": [
     "EUR-Lex",
     "https://eur-lex.europa.eu/eli/dir/2023/959/oj"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Réforme ETS",
+    "ETS reform"
    ]
   },
   {
@@ -274,6 +788,12 @@
    "source": [
     "EPEX SPOT",
     "https://www.epexspot.com/en/news/confirmation-go-live-date-intraday-auctions-idas-13-june-2024"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "Enchères intraday",
+    "Intraday auctions"
    ]
   },
   {
@@ -297,6 +817,12 @@
    "source": [
     "EUR-Lex",
     "https://eur-lex.europa.eu/eli/reg/2024/1747/oj/eng"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "Réforme du marché UE",
+    "EU market reform"
    ]
   },
   {
@@ -319,6 +845,40 @@
    "source": [
     "EDF",
     "https://www.edf.fr/en/the-edf-group/dedicated-sections/journalists/all-press-releases/update-on-the-flamanville-epr-the-reactor-produces-its-first-electrons-on-the-national-electricity-grid"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Flamanville 3 couplé",
+    "Flamanville 3 on grid"
+   ]
+  },
+  {
+   "id": "ua-transit",
+   "date": "2025-01-01",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "co2",
+    "fwd"
+   ],
+   "importance": 1,
+   "short": [
+    "Fin du transit russe via l’Ukraine",
+    "End of transit via Ukraine"
+   ],
+   "title": [
+    "Fin du transit du gaz russe par l’Ukraine",
+    "End of Russian gas transit through Ukraine"
+   ],
+   "text": [
+    "Environ 5 % du gaz de l’UE en moins, surtout pour l’Autriche et la Slovaquie.",
+    "About 5 % less gas for the EU, mainly for Austria and Slovakia."
+   ],
+   "source": [
+    "Oxford Institute for Energy Studies",
+    "https://www.oxfordenergy.org/publications/the-end-of-russian-gas-transit-via-ukraine-immediate-impact-and-implications-for-the-european-gas-market-in-2025/"
    ]
   },
   {
@@ -341,6 +901,40 @@
    "source": [
     "RTE",
     "https://www.services-rte.com/en/news/rte-accesses-the-european-picasso-platform-for-automated-frequency-restoration-reserve-afrr-energy-exchange.html"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "RTE dans PICASSO",
+    "RTE joins PICASSO"
+   ]
+  },
+  {
+   "id": "iberia",
+   "date": "2025-04-28",
+   "kind": "reseau",
+   "scope": "FR",
+   "theme": "equilibrage",
+   "tags": [
+    "balancing",
+    "spot"
+   ],
+   "importance": 2,
+   "short": [
+    "Black-out ibérique",
+    "Iberian blackout"
+   ],
+   "title": [
+    "Black-out en Espagne et au Portugal",
+    "Blackout in Spain and Portugal"
+   ],
+   "text": [
+    "Une surtension en cascade coupe toute la péninsule ibérique : le pilotage de la tension par les renouvelables et le réglage du réseau reviennent au centre du débat.",
+    "A cascading overvoltage cuts the whole Iberian peninsula: voltage control by renewables and grid settings back at the centre of the debate."
+   ],
+   "source": [
+    "ENTSO-E",
+    "https://www.entsoe.eu/news/2025/10/03/28-april-blackout-in-spain-and-portugal-expert-panel-releases-comprehensive-factual-report/"
    ]
   },
   {
@@ -364,6 +958,40 @@
    "source": [
     "Seban Avocats",
     "https://www.seban-associes.avocat.fr/loi-ddadue-du-30-avril-2025-les-dispositions-relatives-au-droit-de-lenergie/"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Loi DDADUE : EnR à l’ajustement",
+    "DDADUE: RES in balancing"
+   ]
+  },
+  {
+   "id": "heat-2025",
+   "date": "2025-06-29",
+   "kind": "meteo",
+   "scope": "FR",
+   "theme": "nucleaire",
+   "tags": [
+    "nuclear",
+    "spot"
+   ],
+   "importance": 1,
+   "short": [
+    "Canicule : Golfech à l’arrêt",
+    "Heatwave: Golfech stopped"
+   ],
+   "title": [
+    "Canicule : Golfech à l’arrêt",
+    "Heatwave: Golfech stopped"
+   ],
+   "text": [
+    "La Garonne trop chaude : les deux réacteurs de Golfech s’arrêtent fin juin, d’autres sites baissent leur puissance.",
+    "The Garonne too warm: both Golfech reactors stop at the end of June, other sites reduce output."
+   ],
+   "source": [
+    "Connaissance des Énergies (AFP)",
+    "https://www.connaissancedesenergies.org/afp/canicule-la-centrale-nucleaire-de-golfech-larret-en-raison-de-la-temperature-de-la-garonne-250630"
    ]
   },
   {
@@ -385,6 +1013,12 @@
    "source": [
     "CRE",
     "https://www.cre.fr/actualites/toute-lactualite/la-cre-publie-ses-decisions-finales-sur-le-tarif-dutilisation-des-reseaux-publics-delectricite-turpe-7.html"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "TURPE 7",
+    "TURPE 7"
    ]
   },
   {
@@ -407,6 +1041,12 @@
    "source": [
     "EPEX SPOT",
     "https://www.epexspot.com/en/news/successful-implementation-15-minute-market-time-unit-mtu-sdac"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "Day-ahead au 1/4 h",
+    "15-min day-ahead"
    ]
   },
   {
@@ -430,6 +1070,12 @@
    "source": [
     "Bird & Bird",
     "https://www.twobirds.com/fr/insights/2026/france/droit-de-l-energie-nouveaux-textes-parus-fin-2025"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "Arrêt OA aux prix < 0",
+    "FiT curtailed at < 0 €"
    ]
   },
   {
@@ -452,6 +1098,12 @@
    "source": [
     "CRE",
     "https://www.cre.fr/electricite/marche-de-gros-de-lelectricite/acces-regule-a-lelectricite-nucleaire-historique-arenh.html"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "Fin de l’ARENH",
+    "End of ARENH"
    ]
   },
   {
@@ -475,6 +1127,12 @@
    "source": [
     "Enercoop",
     "https://www.enercoop.fr/blog/actualites/nationale/le-versement-nucleaire-universel"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "VNU remplace l’ARENH",
+    "VNU replaces ARENH"
    ]
   },
   {
@@ -496,6 +1154,12 @@
    "source": [
     "Commission européenne",
     "https://link.europa.eu/4CdngF"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "CBAM définitif",
+    "CBAM definitive"
    ]
   },
   {
@@ -519,6 +1183,12 @@
    "source": [
     "Gossement Avocats",
     "https://www.gossement-avocats.com/blog/programmation-pluriannuelle-de-lenergie-le-decret-n-2026-76-du-12-fevrier-2026-a-ete-publie-au-journal-officiel-voici-ce-quil-faut-en-retenir/"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "PPE 3 publiée",
+    "PPE 3 published"
    ]
   },
   {
@@ -541,6 +1211,12 @@
    "source": [
     "ICAP",
     "https://icapcarbonaction.com/en/news/eu-officially-adopts-2040-climate-target-postpones-ets-2-one-year"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Objectif 2040, ETS2 repoussé",
+    "2040 target, ETS2 delayed"
    ]
   },
   {
@@ -562,6 +1238,12 @@
    "source": [
     "ENTSO-E",
     "https://eepublicdownloads.blob.core.windows.net/public-cdn-container/clean-documents/Network%20codes%20documents/NC%20EB/2026/260416%20Communication%20note%20RTE%20go-live.pdf"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "RTE dans MARI",
+    "RTE joins MARI"
    ]
   },
   {
@@ -583,6 +1265,12 @@
    "source": [
     "Elmy",
     "https://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-capacite-2026/"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "1re enchère de capacité",
+    "1st capacity auction"
    ]
   },
   {
@@ -605,6 +1293,41 @@
    "source": [
     "pv magazine",
     "https://www.pv-magazine.fr/2026/07/28/prix-negatifs-le-seuil-des-arrets-de-production-des-centrales-photovoltaiques-abaisse-a-1-mw/"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Seuil prix < 0 → 1 MW",
+    "Negative-price cap → 1 MW"
+   ]
+  },
+  {
+   "id": "hormuz",
+   "date": "2026-09-30",
+   "kind": "geo",
+   "scope": "EU",
+   "theme": "marche",
+   "tags": [
+    "spot",
+    "fwd",
+    "co2"
+   ],
+   "importance": 3,
+   "short": [
+    "« Crise d’Ormuz »",
+    "“Hormuz crisis”"
+   ],
+   "title": [
+    "La presse parle d’une « crise d’Ormuz »",
+    "Press reports a “Hormuz crisis”"
+   ],
+   "text": [
+    "Le détroit d’Ormuz voit passer une grande part du pétrole et du GNL du Golfe : Brent et gaz montent fortement à l’automne 2026, et le Cal 2027 France suit.",
+    "A large share of Gulf oil and LNG goes through the Strait of Hormuz: Brent and gas rise sharply in autumn 2026, and French Cal 2027 follows."
+   ],
+   "source": [
+    "Carbon Brief, 30 sept. 2026",
+    "https://www.carbonbrief.org/analysis-wind-and-solar-save-uk-from-gas-imports-worth-5-9bn-during-hormuz-crisis"
    ]
   },
   {
@@ -627,6 +1350,12 @@
    "source": [
     "Elmy",
     "https://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-capacite-2026/"
+   ],
+   "kind": "reg",
+   "importance": 3,
+   "short": [
+    "RTE acheteur unique capacité",
+    "RTE sole capacity buyer"
    ]
   },
   {
@@ -649,6 +1378,12 @@
    "source": [
     "Les Énergies renouvelables",
     "https://www.les-energies-renouvelables.eu/article/actualites/reglementations/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-le-solaire-et-leolien-1401/"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Arrêt prix < 0 dès 5 MW",
+    "Stop at < 0 € from 5 MW"
    ]
   },
   {
@@ -670,6 +1405,12 @@
    "source": [
     "Commission européenne",
     "https://link.europa.eu/4CdngF"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "Certificats CBAM",
+    "CBAM certificates"
    ]
   },
   {
@@ -692,6 +1433,12 @@
    "source": [
     "Les Énergies renouvelables",
     "https://www.les-energies-renouvelables.eu/article/actualites/reglementations/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-le-solaire-et-leolien-1401/"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "Arrêt prix < 0 dès 1 MW",
+    "Stop at < 0 € from 1 MW"
    ]
   },
   {
@@ -715,6 +1462,12 @@
    "source": [
     "EUR-Lex",
     "https://eur-lex.europa.eu/eli/reg/2024/1747/oj/eng"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "CfD bidirectionnels",
+    "Two-way CfDs"
    ]
   },
   {
@@ -736,6 +1489,12 @@
    "source": [
     "ICAP",
     "https://icapcarbonaction.com/en/news/eu-officially-adopts-2040-climate-target-postpones-ets-2-one-year"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "ETS2 démarre",
+    "ETS2 starts"
    ]
   }
  ]
