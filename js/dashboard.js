@@ -185,8 +185,8 @@
   // dashboard while it is open and put back as soon as it is left (another board, another page). The cards of the
   // template stay in the board for the PowerPoint export.
   const MIRRORS = {
-    'today-expert': { page: 'page-morning', ids: ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc'],
-      hide: ['mrn-quick', 'mrn-learn'], draw: () => { if (typeof renderMorning === 'function' && !(window.MRN && MRN.k)) renderMorning(); } },
+    'today-expert': { page: 'page-morning', ids: ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx'],
+      hide: ['mrn-quick', 'mrn-learn'], draw: () => { if (typeof renderMorning === 'function' && !(typeof MRN !== 'undefined' && MRN.k)) renderMorning(); } },
   };
   const mirrorOf = tid => { const t = TEMPLATES.find(x => x.id === tid); return t && t.mirror || undefined; };
   let mirrored = null;   // { key, moved: [[node, placeholder, display]] }
