@@ -41,18 +41,19 @@
   const RE_DAY = new RegExp('\\b(' + DAYS + '),? (?=\\d)', 'g'), RE_MON = new RegExp('(?<=\\d )\\b(' + MONS + ')\\b|\\b(' + MONS + ')\\b(?= \\d)', 'g');
   const fmtText = s => {
     if (/\d,\d{3}/.test(s)) s = s.replace(RE_TH, (m, p, i, d) => p + i.replace(/,/g, '\u202f') + (d ? ',' + d.slice(1) : ''));
-    if (/\d\.\d/.test(s)) s = s.replace(RE_DEC, '$1$2,$3');
+    // decimals get a comma, but not version numbers (CC BY 4.0, Etalab 2.0, v1.2)
+    if (/\d\.\d/.test(s)) s = s.replace(RE_DEC, (m, p1, a, b, off, str) => /(?:\bBY|Etalab|\bv|version|HTTP\/?)\s?$/i.test(str.slice(Math.max(0, off - 12), off + p1.length)) ? m : p1 + a + ',' + b);
     if (/[A-Z][a-z]{2}/.test(s)) s = s.replace(RE_DAY, (m, d) => DAY[d] + ' ').replace(RE_MON, (m, a, b) => MON[a || b]);
     return s;
   };
 
   function template(s) {
     const vals = [];
-    const key = s.replace(TOK, (m, d, m1, m2, n) => { if (d) { vals.push(['d', d]); return '{d}'; } if (m1 || m2) { vals.push(['m', m1 || m2]); return '{m}'; } vals.push(['n', n]); return '{n}'; });
+    const key = s.replace(TOK, (m, d, m1, m2, n, off, str) => { if (d) { vals.push(['d', d]); return '{d}'; } if (m1 || m2) { vals.push(['m', m1 || m2]); return '{m}'; } vals.push([/(?:\bBY|Etalab|\bv|version)\s?$/i.test(str.slice(Math.max(0, off - 10), off)) ? 'raw' : 'n', n]); return '{n}'; });   // a version number (CC BY 4.0) is kept as written
     if (!vals.length || !T) return null;
     const fr = T[key]; if (fr == null) return null;
     let i = 0;
-    return fr.replace(/\{([nmd])\}/g, () => { const v = vals[i++]; if (!v) return ''; return v[0] === 'n' ? fmtNum(v[1]) : v[0] === 'm' ? MON[v[1]] : DAY[v[1]]; });
+    return fr.replace(/\{([nmd])\}/g, () => { const v = vals[i++]; if (!v) return ''; return v[0] === 'n' ? fmtNum(v[1]) : v[0] === 'raw' ? v[1] : v[0] === 'm' ? MON[v[1]] : DAY[v[1]]; });
   }
 
   const OUT = new Set();   // strings this script wrote: never translated twice (1,234 must not become 1 234 once more)
@@ -101,8 +102,8 @@
   window.pkEN = s => { if (!EN || typeof s !== 'string') return s; const v = EN.get(norm(s)); return v == null ? s : v; };
   async function start() {
     button();
+    document.documentElement.lang = lang === 'fr' ? 'fr' : 'en';   // the page is declared French (the default); English when chosen
     if (lang !== 'fr') return;
-    document.documentElement.lang = 'fr';
     const get = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
     [D, T] = await Promise.all([get('assets/i18n_fr.json'), get('assets/i18n_fr_tpl.json')]);
     if (!D) return;

@@ -173,7 +173,7 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (maxDir) {
     renderChg('kpi-max-chg', maxDir);
     const zone = document.getElementById('kpi-max-zone');
-    if (zone) zone.textContent = ctx.maxZ ? `${ctx.maxZ.flag} ${ctx.maxZ.name}` : '--';
+    if (zone) zone.textContent = ctx.maxZ ? `${ctx.maxZ.flag} ${window.PKI18n ? PKI18n.tr(ctx.maxZ.name) : ctx.maxZ.name}` : '--';
   }
 
   // Min — compare today's min-zone with the SAME zone's J-1 avg
@@ -182,7 +182,7 @@ async function applyVsYesterdayColours(displayDate, today, ctx) {
   if (minDir) {
     renderChg('kpi-min-chg', minDir);
     const zone = document.getElementById('kpi-min-zone');
-    if (zone) zone.textContent = ctx.minZ ? `${ctx.minZ.flag} ${ctx.minZ.name}` : '--';
+    if (zone) zone.textContent = ctx.minZ ? `${ctx.minZ.flag} ${window.PKI18n ? PKI18n.tr(ctx.minZ.name) : ctx.minZ.name}` : '--';
   }
 }
 
@@ -526,7 +526,7 @@ function renderPricesTableBody() {
   if (!tbody) return;
 
   const negFmt = (h) => {
-    if (!h || h <= 0) return '<span style="color:var(--tx3)">–</span>';
+    if (!h || h <= 0) return '<span style="color:var(--tx3)">0</span>';   // no negative hour is a value, not a gap
     return `<span style="color:${PK_FMT.negColor(h, {lightThreshold:0, heavyThreshold:6})};font-weight:600">${PK_FMT.negHours(h)}</span>`;
   };
 
@@ -621,6 +621,9 @@ function renderPricesTableBody() {
   });
 
   tbody.innerHTML = rows.map(r=>r.html).join('');
+  // columns with nothing to show for any zone (renewable share and main fuel before the generation data is in) are hidden
+  const tbl = document.getElementById('prices-table');
+  if (tbl) { tbl.classList.toggle('pk-noren', sorted.every(z => z.renPct == null)); tbl.classList.toggle('pk-nodom', sorted.every(z => !z.domFuel)); }
 }
 
 // Smooth sparkline using Catmull-Rom → cubic Bezier conversion

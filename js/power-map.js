@@ -146,13 +146,15 @@
       });
       // negative quarter-hours averaged over the country's zones, in hours
       const negH = arrs.reduce((s, a) => s + a.filter(x => x != null && x < 0).length * 24 / a.length, 0) / arrs.length;
-      return { hourly, negH };
+      // the published daily average (a 25-hour day counts its repeated hour, which the 96-slot series leaves out)
+      const avgs = PRICE_ZONES[c].map(z => zones[z] && zones[z].avg).filter(v => v != null);
+      return { hourly, negH, avg: avgs.length === arrs.length && avgs.length ? avgs.reduce((s, x) => s + x, 0) / avgs.length : null };
     };
     Object.keys(PRICE_ZONES).forEach(c => {
       const t = toHourly(pricesF, c); if (!t) return;
       const d = (C[c] = C[c] || { gen: {} });
-      d.price = t.hourly; d.negH = Math.round(t.negH * 4) / 4;
-      const pv = toHourly(prevF, c); if (pv) d.pricePrev = pv.hourly;
+      d.price = t.hourly; d.priceAvg = t.avg; d.negH = Math.round(t.negH * 4) / 4;
+      const pv = toHourly(prevF, c); if (pv) { d.pricePrev = pv.hourly; d.pricePrevAvg = pv.avg; }
     });
     // Forward Y+1 baseload (FR, DE, NL, GB converted from GBP)
     const F = fwdF && fwdF.countries || {};
@@ -192,14 +194,14 @@
     if (P) {
       const pv = P.map((v, i) => [v, i]).filter(x => x[0] != null);
       const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
-      out.base = mean(pv.map(x => x[0]));
+      out.base = d.priceAvg != null ? d.priceAvg : mean(pv.map(x => x[0]));
       out.peak = mean(pv.filter(x => x[1] >= 8 && x[1] < 20).map(x => x[0]));
       out.min = pv.length ? Math.min(...pv.map(x => x[0])) : null;
       out.max = pv.length ? Math.max(...pv.map(x => x[0])) : null;
       const srt = pv.map(x => x[0]).sort((a, b) => a - b);
       out.tb2 = srt.length >= 4 ? (srt[srt.length - 1] + srt[srt.length - 2] - srt[0] - srt[1]) / 2 : null;
       out.negH = d.negH;
-      if (Array.isArray(d.pricePrev)) { const b0 = mean(d.pricePrev.filter(x => x != null)); out.delta = b0 != null && out.base != null ? out.base - b0 : null; out.basePrev = b0; }
+      if (Array.isArray(d.pricePrev)) { const b0 = d.pricePrevAvg != null ? d.pricePrevAvg : mean(d.pricePrev.filter(x => x != null)); out.delta = b0 != null && out.base != null ? out.base - b0 : null; out.basePrev = b0; }
       // capture prices over the hours where both output and price exist
       const capture = codes => {
         let sw = 0, sp = 0, bs = [];
