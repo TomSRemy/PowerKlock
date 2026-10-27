@@ -14,6 +14,9 @@ Writes data/history/calendar_days.json
     start/end are Europe/Paris calendar dates, half-open [start, end): the night before the return to
     school rolls over to midnight Paris time, so `end` is the first school day back, not the last day off.
     python scripts/fetch_calendar_days.py
+
+A research input for now (scripts/ppa_calendar_skeleton.py), read by no page and run by no workflow: both
+sources publish every year ahead, so a yearly job is enough if a live page ever uses it.
 """
 import json
 from datetime import datetime
