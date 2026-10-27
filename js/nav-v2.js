@@ -69,6 +69,7 @@
     'system/carbon': { page: 'carbonintensity' },
     'system/replay': { page: 'replay' },
     'tools/ppa': { page: 'ppapricer' },
+    'tools/bess': { page: 'bess' },
     'tools/forecast': { page: 'fcst' },
     'tools/carbon': { page: 'carbonfoot' },
     'tools/compare': { page: 'compare' },
@@ -109,6 +110,7 @@
     ]],
     ['Tools', [
       ['tools/ppa', 'PPA pricer', 'ppa'],
+      ['tools/bess', 'BESS', 'bess'],
       ['tools/forecast', 'Production forecast', 'fcst'],
       ['tools/carbon', 'Carbon footprint', 'carbonfoot'],
       ['intel/analysis', 'Market analysis', 'analysis'],   // a tool more than news (note 19); its address stays

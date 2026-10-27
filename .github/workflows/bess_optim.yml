@@ -1,0 +1,59 @@
+name: BESS day-ahead value
+
+# What 1 MW of battery (1 h, 2 h, 4 h) earns on the French day-ahead market, from the prices already in the repository
+# (scripts/bess_optim.py) → data/history/bess_da.json. No outside source: it runs after the price jobs.
+# Everything is recomputed each time (about a minute): the file keeps 120 days of detail and the monthly history.
+
+on:
+  schedule:
+    - cron: '40 14 * * *'    # every day 14:40 UTC (next-day prices are out around 13:00 CET)
+  push:
+    branches: [main]
+    paths: ['scripts/bess_optim.py', '.github/workflows/bess_optim.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: bess-optim
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install numpy==2.2.6 scipy==1.15.3
+      - name: Optimise
+        run: python scripts/bess_optim.py --full
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/bess_da.json
+          if git diff --staged --quiet; then
+            echo "No change — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: battery day-ahead value $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          exit 1
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
