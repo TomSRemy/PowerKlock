@@ -69,6 +69,26 @@
       host.innerHTML = '<div class="mrn2-tiles" style="grid-template-columns:1fr 1fr">' + cell('solar') + cell('wind') + '</div>';
     } });
 
+  // ── PowerKlock BESS index: forward (day-ahead value over the Cal strip) and realised best market (scripts/bess_optim.py) ──
+  R({ id: 'bess-index', title: 'BESS index · France', category: 'prices', page: 'bess', size: { w: 6, h: 5 },
+    desc: 'The PowerKlock BESS index of a 1 MW, 2 h battery, recalculated every day: the forward index (day-ahead value over the Cal strip of the PPA benchmark) and the realised value of the best market of each day (day-ahead, FCR, aFRR), in k€ per MW per year.',
+    params: [{ key: 'win', label: 'Period', options: [['6M', '6M'], ['1Y', '1Y'], ['2Y', '2Y'], ['all', 'All']] }], defaults: { win: '1Y' },
+    async draw(cid, p) {
+      const j = await get('bessidx', 'history/bess_index.json'); if (!j || !j.forward) { noDataMsg(cid, _mT('Indice pas encore calculé', 'Index not computed yet'), ''); return null; }
+      const F = Object.keys(j.forward).sort(), last = F[F.length - 1], n = { '6M': 183, '1Y': 366, '2Y': 731 }[p.win];
+      const from = n ? new Date(Date.parse(last) - n * 864e5).toISOString().slice(0, 10) : '';
+      const days = F.filter(d => d >= from);
+      // realised best market: 30-day rolling mean, annualised
+      const RK = Object.keys(j.realised).sort().filter(d => j.realised[d].best != null);
+      const roll = days.map(d => { const w = RK.filter(x => x <= d).slice(-30); return w.length >= 20 && w[w.length - 1] >= new Date(Date.parse(d) - 5 * 864e5).toISOString().slice(0, 10) ? +(w.reduce((a, x) => a + j.realised[x].best, 0) / w.length * 0.365).toFixed(1) : null; });
+      _fuelChart(cid, { type: 'line', data: { labels: days, datasets: [
+        _fuelLineDs(_mT('Indice forward', 'Forward index'), days.map(d => j.forward[d].v), '#A87DC4', { borderWidth: 2 }),
+        _fuelLineDs(_mT('Réalisé, meilleur marché (30 j glissants)', 'Realised, best market (rolling 30 d)'), roll, '#8D99AE', { borderWidth: 1.5, borderDash: [5, 3] }),
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(_mT('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } } } }) }, 'bess-index');
+      const L = j.forward[last], wk = F.filter(d => d <= new Date(Date.parse(last) - 7 * 864e5).toISOString().slice(0, 10)).pop();
+      const st = j.strip.split('-');
+      return { sub: _mT('Batterie 1 MW, 2 h · forward ', '1 MW, 2 h battery · forward ') + _mN(L.v, 1) + _mT(' k€/MW/an', ' k€/MW/yr') + (wk ? ' (' + _mS(L.v - j.forward[wk].v, 1) + _mT(' sur 7 j)', ' on 7 d)') : '') + ' · Cal ' + st[0] + '–' + st[st.length - 1] };
+    } });
   // ── what moved the PPA benchmark between two dates: forwards, capture (shape and cannibalisation), GO, imbalance ──
   //    ppa = ref × R + go − imb − margin, R = (ppa − go + imb + margin) ÷ ref (what one forward MWh is worth once shaped)
   //    Δppa = Δref × R₀ (forwards) + ref₁ × ΔR (capture) + Δgo (GO) − Δimb (imbalance): the four add up exactly
