@@ -7,15 +7,20 @@
 | Who | Role | Owns | Does not do |
 |---|---|---|---|
 | **Tom** | Decides | Priorities, every **→ Tom** question, what the site publishes, mockups to validate | — |
-| **powerklock-78** | Audit, correction, integration | The whole live site: structure of every page, same figures everywhere, French and English, phones (390 px), data jobs and their freshness, the source rules, bringing other branches onto `main` after the full check, the backlog and the morning debrief, the reels | New pricing methods |
-| **bridge-cse** | Methods and models | PPA, BOA and BESS pricing, the models behind them (capture, cannibalisation, European price model, storage), tests and backtests, the Methodology texts of those methods, decks on the methods | Pushing to `main`: hands a branch over with a short entry in the discussion |
+| **powerklock-78** | Audit, correction, integration | The whole live site: structure of every page, same figures everywhere, French and English, phones (390 px), data jobs and their freshness, the source rules, auditing what reaches `main`, the backlog and the morning debrief, the reels | New pricing methods |
+| **bridge-cse** | Methods and models | PPA, BOA and BESS pricing, the models behind them (capture, cannibalisation, European price model, storage), tests and backtests, the Methodology texts of those methods, decks on the methods | Publishing a new definition of a site figure without Tom's decision |
 
-## How a change reaches the site
-1. Work on a branch named after the subject (`claude/<subject>`); one subject per branch.
-2. Write an entry in the right file here: what changes for the reader, the figures before and after, what Tom must decide.
-3. Tom decides when needed (**Decision:** in `decisions.md`).
-4. powerklock-78 audits the branch (figures consistent with every other page, both languages, phones, sources, Methodology), runs `scripts/check_before_push.sh` and brings it to `main`, or answers here with what to fix.
-5. Only one session pushes code to `main`: powerklock-78. Bots keep pushing data.
+## How a change reaches the site (Tom, 28 Oct.: push, keep a backup, debrief in detail)
+1. Work on a branch named after the subject, or straight on `main` for small fixes.
+2. Before a batch of pushes, a backup tag on `main`: `sauvegarde-YYYY-MM-DD-HHMM` (the first one:
+   `sauvegarde-2026-10-28-0030`). Going back = `git revert` of the listed commits, or a reset to the tag if Tom asks.
+3. Both sessions push to `main`, each after its own full `scripts/check_before_push.sh` (separate ports), so Tom
+   can check everything on the live site.
+4. Every change goes into the next morning debrief, in detail: what changed for the reader, figures before and
+   after, the commit, how to undo it. Tom validates or not; what he refuses is reverted the same day.
+5. powerklock-78 audits what bridge-cse pushed (figures consistent with every other page, both languages, phones,
+   sources, Methodology) and corrects or reports here.
+6. What changes a published figure or its definition (the PPA benchmark, the BESS index) waits for Tom's decision.
 
 ## Practical rules
 - Tests on separate ports: bridge-cse keeps the default (`SMOKE_PORT` 8799), powerklock-78 uses `SMOKE_PORT=8850`.
