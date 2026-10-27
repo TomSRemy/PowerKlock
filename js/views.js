@@ -2,7 +2,8 @@
 // PAGE VIEWS — the Prices › Day-Ahead model everywhere: the sticky bar
 // carries view tabs (Daily / Historical / …) and only the sections of the
 // chosen view are shown, instead of every section stacked on the page.
-// Each entry: page id (or "page:subdomain") → [[tab label, [section ids]]].
+// Each entry: page id (or "page:subdomain") → [[tab label, [section ids], group?]]. Tabs of the same group
+// sit under one tab, as a row of sub-tabs (the PPA pricer's methods).
 // The last view chosen on a page is kept for the browser session.
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -25,7 +26,12 @@
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
     remit: [['Outages', ['hs-remit-u']], ['Platforms', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],
-    ppapricer: [['Compare', ['hs-pp-cmp']], ['Short-term (monthly)', ['hs-pp-st']], ['M0-indexed (complément)', ['hs-pp-cr']], ['Past discount', ['hs-pp-price', 'hs-pp-pctrisk']], ['Capacity trend', ['hs-pp-price', 'hs-pp-mkt', 'hs-pp-mc', 'hs-pp-pctrisk']], ['Forward shape', ['hs-pp-price', 'hs-pp-fpc']], ['Weather simulation', ['hs-pp-price', 'hs-pp-wx']], ['Market context', ['hs-pp-roll']], ['Methodology', ['hs-pp-doc']]],
+    // the PPA pricer: inputs and the price, the park, one tab per method (grouped under Methods), the comparison
+    ppapricer: [['Inputs & price', ['hs-pp-in', 'hs-pp-sum']], ['The park', ['hs-pp-park']],
+      ['Past discount', ['hs-pp-price', 'hs-pp-pctrisk'], 'Methods'], ['Capacity trend', ['hs-pp-price', 'hs-pp-mkt', 'hs-pp-mc', 'hs-pp-pctrisk'], 'Methods'],
+      ['Forward shape', ['hs-pp-price', 'hs-pp-fpc'], 'Methods'], ['Weather simulation', ['hs-pp-price', 'hs-pp-wx'], 'Methods'],
+      ['Short-term (monthly)', ['hs-pp-st'], 'Methods'], ['M0-indexed (complément)', ['hs-pp-cr'], 'Methods'], ['Methodology', ['hs-pp-doc'], 'Methods'],
+      ['Compare & price', ['hs-pp-cmp', 'hs-pp-roll']]],
     bess: [['Index', ['hs-bess-idx']], ['Europe', ['hs-bess-eu']], ['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Reserves', ['hs-bess-res']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']]],
     carbonfoot: [['Your data', ['hs-cf-input']], ['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
   };
@@ -42,19 +48,36 @@
     if (present.length < 2) return;
     const sep = document.createElement('div'); sep.className = 'pr-tabs-separator';
     const nav = document.createElement('div'); nav.className = 'tabs-nav pk-views'; nav.setAttribute('role', 'tablist');
-    present.forEach(([label], i) => {
+    const subnav = document.createElement('div'); subnav.className = 'tabs-nav pk-views pk-subviews'; subnav.setAttribute('role', 'tablist');
+    const top = [], groups = {};   // top-level buttons: a plain tab, or the first tab of a group standing for the group
+    present.forEach(([label, , group], i) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'tab-btn'; b.textContent = label; b.setAttribute('role', 'tab');
       b.addEventListener('click', () => show(i));
-      nav.appendChild(b);
+      if (!group) { nav.appendChild(b); top.push({ b, idx: [i] }); return; }
+      subnav.appendChild(b);
+      if (!groups[group]) {
+        const g = document.createElement('button');
+        g.type = 'button'; g.className = 'tab-btn'; g.textContent = group; g.setAttribute('role', 'tab');
+        groups[group] = { b: g, idx: [], last: i };
+        g.addEventListener('click', () => show(groups[group].last));
+        nav.appendChild(g); top.push(groups[group]);
+      }
+      groups[group].idx.push(i); b.dataset.sub = '1';
     });
     crumb.after(sep); sep.after(nav);
+    if (subnav.children.length) { bar.after(subnav); subnav.hidden = true; }
+    const subs = [...subnav.children];
     function show(i) {
       const on = new Set(present[i][1]);
       present.forEach(([, ids]) => ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = on.has(id) ? '' : 'none'; }));
       // a page can follow the view (the PPA pricer prices with the method of the tab)
       root.dispatchEvent(new CustomEvent('pk-view', { bubbles: true, detail: { key, label: present[i][0], index: i } }));
-      nav.querySelectorAll('.tab-btn').forEach((b, k) => { b.classList.toggle('active', k === i); b.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
+      top.forEach(t => { const a = t.idx.includes(i); t.b.classList.toggle('active', a); t.b.setAttribute('aria-selected', a ? 'true' : 'false'); });
+      const g = present[i][2];
+      if (g) groups[g].last = i;
+      subnav.hidden = !g;
+      subs.forEach(b => { const a = b.textContent === present[i][0] || (window.pkEN && pkEN(b.textContent) === present[i][0]); b.classList.toggle('active', a); b.setAttribute('aria-selected', a ? 'true' : 'false'); });
       try { sessionStorage.setItem(KEY + key, String(i)); } catch (_) {}
       // charts drawn while hidden have no size: resize them once visible
       requestAnimationFrame(() => present[i][1].forEach(id => {

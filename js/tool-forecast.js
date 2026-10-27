@@ -543,7 +543,7 @@
     const st = window.PKPpa.state;
     st.asset = { slots, info: { rows: slots.size * 24, step: 60, unit: 'kwh', stamp: 'start' } };
     st.assetName = `Park ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)} (synthetic ${[...slots.keys()][0].slice(0, 4)}–${[...slots.keys()].pop().slice(0, 4)})`;
-    st.tech = S.tech; st.years = null; st.volume = Math.round(ERA_LAST.p50); st.mw = S.mw;
+    st.tech = S.tech; st.years = null; st.volume = Math.round(ERA_LAST.p50); st.mw = S.mw; st.loc = { lat: +S.lat, lon: +S.lon };
     showPage('ppapricer'); setTimeout(() => { try { const e = document.getElementById('pp-tech'); if (e) e.value = S.tech; const c = document.getElementById('pp-asset-clear'); if (c) c.hidden = false; window.PKPpa.run(); } catch (_) {} }, 300);
   }
 

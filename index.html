@@ -2532,13 +2532,48 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="cf-status" id="pp-status" role="status"></div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-sum">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-sum')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>PPA price<span class="pk-hs-meta">Average of the methods ticked · the key charts</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-sum">
+<div class="pp-band" id="pp-band"></div>
+<div class="pp-grid3"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">From the market price to the PPA price</div><div class="fuel-card-sub" id="pp-sum-wf-sub">€/MWh · average of the methods ticked</div></div><span class="source-badge">PowerKlock</span></div>
+<div style="position:relative;height:300px"><canvas id="pp-sum-wf" style="width:100%;height:300px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Capture: past and projection, with percentiles</div><div class="fuel-card-sub" id="pp-fan-sub">Blend of 4 methods</div></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="pp-fan-unit" class="pk-select" style="font-size:11px"><option value="value">€/MWh produced</option><option value="rate">Capture rate %</option></select>
+<select id="pp-fan-p" class="pk-select" style="font-size:11px" title="Exceedance: P90 = 90 % chance the realised value is above the line (cautious)"><option value="50">P50 · central</option><option value="60">P60</option><option value="70">P70</option><option value="75" selected>P75</option><option value="80">P80</option><option value="90">P90 · cautious</option></select></div></div>
+<div style="position:relative;height:320px"><canvas id="pp-fan" style="width:100%;height:320px"></canvas></div>
+<div id="pp-fan-table" style="margin-top:8px"></div>
+<div class="fuel-note">The realised years are measured (national profile × French day-ahead). The projection is the blend of 4 methods; its spread adds the weather (European model simulated) and the error the blend made on past years (Student t, few years of replay), widening with the horizon. A percentile here is a <b>projection</b> read with a level of caution: P75 = 3 chances in 4 that the realised value is higher. The Past discount method instead takes a percentile of past years without projecting them, which is why it stays too high on solar.</div></div>
+
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-pp-park">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-park')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M3 10h18M9 4v12M15 4v12M12 16v4M8 20h8"/></svg>The park<span class="pk-hs-meta">Characteristics, location and production profile</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-pp-park">
+<div class="kpi-strip fuel-kpis" id="pp-park-tiles"></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The park at a glance</div><div class="fuel-card-sub" id="pp-park-schema-sub"></div></div></div><div id="pp-park-schema"></div>
+<div class="table-title" style="margin-top:14px">Production paid by delivery year</div><div class="fuel-card-sub">MWh per year · after degradation and hours at prices ≤ 0</div>
+<div style="position:relative;height:250px"><canvas id="pp-park-years" style="width:100%;height:250px"></canvas></div></div>
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Location</div><div class="fuel-card-sub" id="pp-park-map-sub"></div></div></div><div id="pp-park-map"></div></div></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · national</div><div class="fuel-card-sub" id="pp-prof-nat-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-nat" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · asset</div><div class="fuel-card-sub" id="pp-prof-asset-sub">Same view for the uploaded asset</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-asset" style="width:100%;height:300px"></canvas></div></div></div>
+<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Monthly production</div><div class="fuel-card-sub" id="pp-monthly-sub">Bars = asset GWh per month · dashed = national average MW</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-monthly" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Annual production</div><div class="fuel-card-sub" id="pp-annual-sub">Asset GWh per year</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-annual" style="width:100%;height:300px"></canvas></div></div></div>
+
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-pp-cmp">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-cmp')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>The methods compared<span class="pk-hs-meta">Same inputs, each method on its own tab</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-pp-cmp">
-<details class="pp-guide" id="pp-guide" open><summary class="pp-guide-t">Start here · how to use the pricer</summary>
+<details class="pp-guide" id="pp-guide"><summary class="pp-guide-t">Start here · how to use the pricer</summary>
 <ol><li><b>Set the inputs at the top.</b> Technology, delivery years and, if you have it, your asset’s production curve (CSV or Excel). Every field is already filled from market data: type a value to change it, click ↺ to go back to the automatic one, hover ⓘ for what it means.</li>
 <li><b>Check the forward prices</b> (step 2 of the inputs). They are market quotes; a year without a quote is highlighted and must be entered by you.</li>
 <li><b>Read the prices below.</b> The PPA price is what you could pay the producer per MWh delivered. The four methods use the same inputs; when they agree, the price is robust; when they differ, open their tabs to see why.</li>
@@ -2555,14 +2590,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <dt>Imbalance</dt><dd>The cost of producing more or less than forecast, paid to the grid operator.</dd>
 <dt>Hours ≤ 0 €</dt><dd>Hours with a zero or negative price; under the PPA Dashboard convention their production is not paid.</dd>
 </dl></details></details>
-<div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Capture: past and projection, with percentiles</div><div class="fuel-card-sub" id="pp-fan-sub">Blend of 4 methods</div></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="pp-fan-unit" class="pk-select" style="font-size:11px"><option value="value">€/MWh produced</option><option value="rate">Capture rate %</option></select>
-<select id="pp-fan-p" class="pk-select" style="font-size:11px" title="Exceedance: P90 = 90 % chance the realised value is above the line (cautious)"><option value="50">P50 · central</option><option value="60">P60</option><option value="70">P70</option><option value="75" selected>P75</option><option value="80">P80</option><option value="90">P90 · cautious</option></select></div></div>
-<div style="position:relative;height:320px"><canvas id="pp-fan" style="width:100%;height:320px"></canvas></div>
-<div id="pp-fan-table" style="margin-top:8px"></div>
-<div class="fuel-note">The realised years are measured (national profile × French day-ahead). The projection is the blend of 4 methods; its spread adds the weather (European model simulated) and the error the blend made on past years (Student t, few years of replay), widening with the horizon. A percentile here is a <b>projection</b> read with a level of caution: P75 = 3 chances in 4 that the realised value is higher. The Past discount method instead takes a percentile of past years without projecting them, which is why it stays too high on solar.</div></div>
 <div class="kpi-strip fuel-kpis pp-k5" id="pp-cmp-kpis"></div>
-<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">PPA price by method</div><div class="fuel-card-sub">€/MWh · thin bar = the price for 10 % to 50 % risk accepted</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-price" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture value by delivery year</div><div class="fuel-card-sub">€/MWh · what each method expects one MWh to earn</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-cmp-years" style="width:100%;height:300px"></canvas></div></div></div>
 <div class="pp-group-t" style="margin-top:16px">Which method was right in the past? · historical replay</div>
 <div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate: predicted at the start of each year vs actual</div><div class="fuel-card-sub">National profile · each method only sees the years before (2022 left out)</div></div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:300px"><canvas id="pp-bt-chart" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Average error by method</div><div class="fuel-card-sub">Capture rate points, |predicted − actual|</div></div></div><div id="pp-bt-table"></div></div></div>
 <div class="chart-container fuel-card" style="margin-top:14px"><div class="fuel-card-head"><div><div class="table-title">Side by side</div><div class="fuel-card-sub">The building blocks of each method</div></div></div><div id="pp-compare"></div></div>
@@ -2619,7 +2647,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 </div>
         </div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-pp-fpc">
+      <div class="hist-section hist-section-strong collapsed" id="hs-pp-fpc">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-fpc')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M6 15c2-6 4-6 6 0s4 6 6 0"/></svg>Forward shape · details<span class="pk-hs-meta">Hourly forward curve, the asset profile priced on it, cannibalisation measured on history</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2641,8 +2669,6 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="fuel-grid-2" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate per year · France and its neighbours</div><div class="fuel-card-sub" id="pp-xcy-sub"></div></div><span class="source-badge">Energy-Charts</span></div><div style="position:relative;height:360px"><canvas id="pp-xcy" style="width:100%;height:360px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Capture rate vs installed capacity · France and its neighbours</div><div class="fuel-card-sub" id="pp-xc-sub"></div></div><select class="country-select" id="pp-xc-axis" aria-label="Installed capacity as" title="How installed capacity is counted"><option value="gw">GW installed</option><option value="load">% of average load</option><option value="share">% of the installed fleet</option></select></div><div style="position:relative;height:360px"><canvas id="pp-xc" style="width:100%;height:360px"></canvas></div></div></div>
 <div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Price vs solar or wind share, hour by hour · France and its neighbours</div><div class="fuel-card-sub" id="pp-hc-sub"></div></div><select class="country-select" id="pp-hc-mode" aria-label="Share counted on" title="Whose solar or wind share"><option value="regional">Share of the coupled region</option><option value="own">Share of the country alone</option></select></div><div style="position:relative;height:380px"><canvas id="pp-hc" style="width:100%;height:380px"></canvas></div></div></div>
 <div class="fuel-grid-2 pk-stack" style="margin-top:14px"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Hours at zero or negative prices · history and projection</div><div class="fuel-card-sub" id="pp-negh-sub"></div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div><div style="position:relative;height:340px"><canvas id="pp-negh" style="width:100%;height:340px"></canvas></div></div></div>
-<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · national</div><div class="fuel-card-sub" id="pp-prof-nat-sub"></div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-nat" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Daily profile · asset</div><div class="fuel-card-sub" id="pp-prof-asset-sub">Same view for the uploaded asset</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-prof-asset" style="width:100%;height:300px"></canvas></div></div></div>
-<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Monthly production</div><div class="fuel-card-sub" id="pp-monthly-sub">Bars = asset GWh per month · dashed = national average MW</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:300px"><canvas id="pp-monthly" style="width:100%;height:300px"></canvas></div></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Annual production</div><div class="fuel-card-sub" id="pp-annual-sub">Asset GWh per year</div></div><span class="source-badge">Your curve</span></div><div style="position:relative;height:300px"><canvas id="pp-annual" style="width:100%;height:300px"></canvas></div></div></div>
         </div>
       </div>
       <div class="hist-section hist-section-strong collapsed" id="hs-pp-mc">
@@ -2682,7 +2708,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 </div>
         </div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-pp-wx">
+      <div class="hist-section hist-section-strong collapsed" id="hs-pp-wx">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-wx')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Monte Carlo weather · details<span class="pk-hs-meta">Simulated weather → production → hourly prices</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2703,7 +2729,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div style="height:14px"></div><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Rolling captured price vs baseload</div><div class="fuel-card-sub" id="pp-roll-eur-sub">Gap between baseload and captured price = shape discount in €/MWh</div></div><span class="source-badge">RTE · ENTSO-E</span></div><div style="position:relative;height:320px"><canvas id="pp-roll-eur" style="width:100%;height:320px"></canvas></div></div>
         </div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-pp-doc">
+      <div class="hist-section hist-section-strong collapsed" id="hs-pp-doc">
         <div class="hist-section-header" onclick="toggleStrongSection('hs-pp-doc')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></svg>Methodology<span class="pk-hs-meta">Formulas, data, assumptions and proposed updates</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
