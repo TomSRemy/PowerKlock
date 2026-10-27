@@ -3186,6 +3186,10 @@
     font: 600 22px 'JetBrains Mono', monospace !important; letter-spacing: -0.02em; line-height: 1.1;
     color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
   }
+  /* a narrow card: the unit goes under the number instead of the figure being cut (night audit, 27 Oct) */
+  .kpi-card .kpi-value { white-space: normal; overflow: visible; }
+  .kpi-card .kpi-value .kpi-unit { display: inline-block; white-space: nowrap; }
+  @media (max-width: 600px) { .kpi-card .kpi-value { font-size: 17px !important; } }
   .kpi-card .kpi-unit, .pr-home-kpi-unit, .ma-kpi-val .u { font: 400 12px 'JetBrains Mono', monospace !important; color: var(--text3) !important; margin-left: 3px; }
   .kpi-card .kpi-meta, .kpi-card .kpi-chg, .kpi-card .kpi-delta, .pr-home-kpi-meta, .ma-kpi-delta {
     font: 400 11px 'JetBrains Mono', monospace !important; margin-top: 5px; line-height: 1.35;
