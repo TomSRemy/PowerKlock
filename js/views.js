@@ -33,6 +33,8 @@
       ['Short-term (monthly)', ['hs-pp-st'], 'Methods'], ['M0-indexed (complément)', ['hs-pp-cr'], 'Methods'], ['Methodology', ['hs-pp-doc'], 'Methods'],
       ['Compare & price', ['hs-pp-cmp', 'hs-pp-roll']]],
     bess: [['Index', ['hs-bess-idx']], ['Europe', ['hs-bess-eu']], ['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Reserves', ['hs-bess-res']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']]],
+    boa: [['Inputs & result', ['hs-bess-boa-in']], ['The battery', ['hs-bess-boa-batt']], ['Contract structures', ['hs-bess-boa-out']]],
+    fcst: [['Site & forecast', ['hs-fc-in', 'hs-fc-out']], ['Price this park', ['hs-fc-price']], ['How good is it', ['hs-fc-bt']]],
     carbonfoot: [['Your data', ['hs-cf-input']], ['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
   };
   const KEY = 'pk-view-';

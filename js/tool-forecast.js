@@ -229,6 +229,29 @@
       `</tbody></table></div><div class="fuel-note">Zone ${S.zone} · forecast production × the hourly day-ahead price of the zone. Hours at zero or negative prices: output there is paid nothing or costs money, the hours to curtail under a contract that allows it.</div>`;
   }
 
+  // ── the map of the site: Europe's outlines (data/geo/europe.json), the park as a dot; a click moves it ──
+  let GEO = null;
+  const MAP = { x0: -10.5, x1: 21, y0: 36, y1: 56.5, W: 520 };
+  const mapK = Math.cos(47 * Math.PI / 180);
+  const mapH = () => MAP.W * (MAP.y1 - MAP.y0) / ((MAP.x1 - MAP.x0) * mapK);
+  function drawMap() {
+    const host = $('fc-map'); if (!host) return;
+    if (!GEO) { fetch(DATA_BASE + 'geo/europe.json').then(r => r.ok ? r.json() : null).then(j => { if (j) { GEO = j; drawMap(); } }).catch(() => {}); return; }
+    const W = MAP.W, H = mapH(), sx = v => (v - MAP.x0) / (MAP.x1 - MAP.x0) * W, sy = v => H - (v - MAP.y0) / (MAP.y1 - MAP.y0) * H;
+    const ring = r => 'M' + r.map(([a, b]) => sx(a).toFixed(1) + ',' + sy(b).toFixed(1)).join('L') + 'Z';
+    const paths = GEO.features.map(f => { const P = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+      return `<path d="${P.map(p => ring(p[0])).join('')}" fill="${f.properties.iso === 'FR' ? 'var(--bg3)' : 'var(--bg2)'}" stroke="var(--text3)" stroke-width="0.7" stroke-opacity=".6"/>`; }).join('');
+    const px = sx(+S.lon), py = sy(+S.lat);
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H.toFixed(0)}" style="width:100%;height:auto;display:block;cursor:crosshair">${paths}` +
+      `<circle cx="${px}" cy="${py}" r="13" fill="#14D3A933"/><circle cx="${px}" cy="${py}" r="5" fill="#14D3A9" stroke="#0B0F14" stroke-width="1.5"/></svg>`;
+    const svg = host.querySelector('svg');
+    svg.addEventListener('click', e => {
+      const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+      S.lat = +(MAP.y0 + (H - y) / H * (MAP.y1 - MAP.y0)).toFixed(3); S.lon = +(MAP.x0 + x / W * (MAP.x1 - MAP.x0)).toFixed(3);
+      const la = $('fc-lat'), lo = $('fc-lon'); if (la) la.value = S.lat; if (lo) lo.value = S.lon;
+      drawMap(); run();
+    });
+  }
   function wire() {
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
     const ids = { 'fc-inj': 'inj', 'fc-p50': 'p50', 'fc-tech': 'tech', 'fc-lat': 'lat', 'fc-lon': 'lon', 'fc-mw': 'mw', 'fc-tilt': 'tilt', 'fc-az': 'az', 'fc-loss-s': 'lossS', 'fc-hub': 'hub', 'fc-cls': 'cls', 'fc-loss-w': 'lossW', 'fc-zone': 'zone' };
@@ -251,7 +274,8 @@
     const tt = $('fc-tech-tabs'), syncTabs = () => tt && tt.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tech));
     if (tt) tt.addEventListener('click', e => { const b = e.target.closest('.tab-btn'); const t = $('fc-tech'); if (!b || !t || b.dataset.tab === S.tech) return; t.value = b.dataset.tab; t.dispatchEvent(new Event('change')); syncTabs(); });
     syncTabs();
-    vis(); calInfo(); run(); backtest();
+    vis(); calInfo(); run(); backtest(); drawMap();
+    ['fc-lat', 'fc-lon'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => setTimeout(drawMap, 0)); });
   }
   function calInfo() {
     const el = $('fc-calinfo'); if (!el) return;

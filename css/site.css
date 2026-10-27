@@ -3572,3 +3572,6 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 .pp-grid3 > .chart-container { min-width:0; margin:0; }
 .pk-subviews[hidden] { display:none !important; }
 #page-ppapricer .pp-steps .pp-asset-row > span:first-child { white-space:normal; }
+
+/* forecast tool: the map of the site */
+.fc-map-card { max-width:560px; margin:12px 0; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
