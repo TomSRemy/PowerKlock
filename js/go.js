@@ -565,6 +565,23 @@ function drawGoAuctionVolChart() {
     }
   });
   setTimeout(()=>{ addFullscreen('go-auct-vol-canvas'); addDownload('go-auct-vol-canvas','go-auctions-volume'); },100);
+  drawGoAuctionTable();
+}
+// the auctions as a table, newest first (note 45): price and volume of each technology, the total and the share allocated
+function drawGoAuctionTable() {
+  const el = document.getElementById('go-auct-table'); if (!el || !GO_AUCTIONS) return;
+  const fr = !window.PKI18n || PKI18n.lang !== 'en', T = (f, e) => fr ? f : e;
+  const nf = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString(fr ? 'fr-FR' : 'en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const techs = ['Wind', 'Solar', 'Hydro', 'Thermal'].filter(t => GO_AUCTIONS.auctions.some(a => (a.by_technology || []).some(x => x.technology === t)));
+  const TN = { Wind: T('Éolien', 'Wind'), Solar: T('Solaire', 'Solar'), Hydro: T('Hydraulique', 'Hydro'), Thermal: T('Thermique', 'Thermal') };
+  const head = '<thead><tr><th style="text-align:left">' + T('Enchère', 'Auction') + '</th>' + techs.map(t => '<th>' + TN[t] + ' €/MWh</th><th>' + TN[t] + ' GWh</th>').join('') + '<th>' + T('Total GWh', 'Total GWh') + '</th><th>' + T('Prix moyen €/MWh', 'Average €/MWh') + '</th><th>' + T('Part allouée', 'Share allocated') + '</th></tr></thead>';
+  const rows = GO_AUCTIONS.auctions.slice().reverse().map(a => {
+    const bt = a.by_technology || [], g = t => bt.find(x => x.technology === t);
+    const vol = bt.reduce((s, x) => s + (x.allocated_mwh || 0), 0), off = bt.reduce((s, x) => s + (x.offered_mwh || 0), 0), val = bt.reduce((s, x) => s + (x.allocated_mwh || 0) * (x.price_eur_mwh || 0), 0);
+    return '<tr><td class="l" style="text-align:left;font-weight:600">' + a.auction_month + '</td>' + techs.map(t => { const x = g(t); return '<td>' + (x ? nf(x.price_eur_mwh, 3) : '–') + '</td><td>' + (x ? nf((x.allocated_mwh || 0) / 1000, 0) : '–') + '</td>'; }).join('') +
+      '<td>' + nf(vol / 1000, 0) + '</td><td>' + (vol ? nf(val / vol, 3) : '–') + '</td><td>' + (off ? nf(vol / off * 100, 0) + ' %' : '–') + '</td></tr>';
+  });
+  el.innerHTML = head + '<tbody>' + rows.join('') + '</tbody>';
 }
 
 // ── GO HISTORY PAGE
