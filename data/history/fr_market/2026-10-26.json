@@ -2,16 +2,102 @@
  "date": "2026-10-26",
  "countries": {
   "FR": {
-   "spot": 161.53
+   "spot": 161.53,
+   "forwardCurve": {
+    "M+1": 208.25,
+    "M+2": 194.13,
+    "M+3": 207.86,
+    "Q+1": 189.76,
+    "Q+2": 79.54,
+    "Q+3": 96.35,
+    "S+1": 87.94,
+    "S+2": 118.25,
+    "Y+1": 121.35,
+    "Y+2": 70.77,
+    "Y+3": 62.96
+   },
+   "generationMix": {
+    "gas": 1.06,
+    "wind": 8.93,
+    "solar": 2.49,
+    "nuclear": 36.88,
+    "hydro": 2.77,
+    "other": 2.65
+   }
   },
   "UK": {
-   "spot": 109.96
+   "spot": 109.96,
+   "forwardCurve": {
+    "M+1": 189.6,
+    "M+2": 185.34,
+    "M+3": 200.01,
+    "Q+1": 189.9,
+    "Q+2": 139.51,
+    "Q+3": 128.93,
+    "S+1": 134.19,
+    "S+2": 134.27,
+    "Y+1": 147.1,
+    "Y+2": 100.61,
+    "Y+3": 81.02
+   },
+   "generationMix": {
+    "gas": 5.58,
+    "wind": 14.78,
+    "solar": 0.66,
+    "nuclear": 5.08,
+    "hydro": 0.65,
+    "biomass": 3.07,
+    "other": 1.19
+   }
   },
   "DE": {
-   "spot": 155.12
+   "spot": 155.12,
+   "forwardCurve": {
+    "M+1": 220.04,
+    "M+2": 206.82,
+    "M+3": 222.67,
+    "Q+1": 206.97,
+    "Q+2": 130.72,
+    "Q+3": 139.91,
+    "S+1": 135.32,
+    "S+2": 152.62,
+    "Y+1": 157.98,
+    "Y+2": 115.61,
+    "Y+3": 97.77
+   },
+   "generationMix": {
+    "gas": 4.18,
+    "wind": 34.4,
+    "solar": 6.36,
+    "nuclear": 0,
+    "coal": 8.14,
+    "hydro": 0.15,
+    "other": 0.38
+   }
   },
   "NL": {
-   "spot": 157.63
+   "spot": 157.63,
+   "forwardCurve": {
+    "M+1": 221.55,
+    "M+2": 209.63,
+    "M+3": 223.75,
+    "Q+1": 205.75,
+    "Q+2": 129.93,
+    "Q+3": 139.01,
+    "S+1": 134.49,
+    "S+2": 156.6,
+    "Y+1": 158.09,
+    "Y+2": 114.04,
+    "Y+3": 97
+   },
+   "generationMix": {
+    "gas": 1.68,
+    "wind": 4.62,
+    "solar": 0.42,
+    "nuclear": 0.48,
+    "coal": 2.28,
+    "other": 0.26
+   }
   }
  },
  "marketInsightsHtml": "<p>La charge de base allemande du 26 novembre a grimpé de 9,30 € à 206,90 €/MWh, la France de novembre a gagné 10,75 € pour atteindre un record de 190,75 €/MWh et la Grande-Bretagne de novembre a augmenté de 5,75 £ à 180,25 £/MWh. À l’inverse, le spot du week-end s’est effondré sur les plus bas de l’Atlantique avec le Day-Ahead allemand à 30,12 €/MWh, la France à 48,76 €/MWh et le N2EX britannique à 31,14 £/MWh.</p><p>L'indisponibilité nucléaire française de novembre a été ajustée à 14,1 GW, même si l'amélioration du débit de la Meuse a avancé le retour des deux unités de 1,5 GW à Chooz à fin octobre.</p>",
