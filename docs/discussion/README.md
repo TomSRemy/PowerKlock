@@ -15,4 +15,6 @@ methods, before anything reaches the site. This branch (`discussion`) is never p
 ## Subjects
 - [pricer.md](pricer.md) — the PPA pricer: which price the site publishes, the methods, the European model, tests
 - [tools.md](tools.md) — how the tools read and work day to day (PPA, BOA, forecast, carbon, comparator, converter)
+- [roles.md](roles.md) — who does what, how a change reaches the site
+- [site.md](site.md) — the whole site: pages, figures, data, languages, phones
 - [decisions.md](decisions.md) — decisions taken, dated
