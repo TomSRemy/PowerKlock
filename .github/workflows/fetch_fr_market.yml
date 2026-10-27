@@ -8,11 +8,14 @@ name: Fetch FR Market Data (SEFE)
 on:
   schedule:
     - cron: '30 6 * * *'  # 06:30 UTC = 08:30 CET — after the SEFE daily report refreshes
-    # GitHub starts it hours late on busy mornings (11:54 UTC on 23 Oct): catch-up slots, skipped once today's run is in
+    # then again through the day: SEFE corrects and completes its cockpit after the morning, and GitHub often starts
+    # the morning run hours late (11:54 UTC on 23 Oct, not at all before 10:37 on 27 Oct). Each run commits only a change.
     - cron: '7 7 * * *'
     - cron: '43 8 * * *'
     - cron: '19 10 * * *'
     - cron: '53 12 * * *'
+    - cron: '37 15 * * *'
+    - cron: '23 17 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -28,11 +31,11 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Already fetched today? (catch-up slots only)
+      - name: Fetched less than an hour ago? (a late run catching up with the next slot)
         id: due
         run: |
-          D=$(python3 -c "import json;print((json.load(open('data/fr_market.json')).get('lastUpdate') or '')[:10])" 2>/dev/null)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "30 6 * * *" ] && [ "$D" = "$(date -u +%F)" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched today already"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+          AGE=$(python3 -c "import json,datetime as d;t=json.load(open('data/fr_market.json')).get('lastUpdate');print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(t)).total_seconds()//60) if t else 9999)" 2>/dev/null || echo 9999)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 60 ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched $AGE min ago"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
