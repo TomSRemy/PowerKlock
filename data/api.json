@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-27T14:57:07Z",
+ "updated": "2026-10-27T21:02:02Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
