@@ -52,7 +52,7 @@
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
-    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json')]);
+    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
@@ -70,13 +70,68 @@
     const imbCost = {};
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN };
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
+      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null };
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
     Object.entries(negH).forEach(([y, e]) => { e.ann = e.h * (+y % 4 ? 365 : 366) / e.d; if (e.d < 20) delete negH[y]; });
     D.negH = negH;
     return D;
+  }
+
+  const FRDOC = () => !window.PKI18n || PKI18n.lang !== 'en';
+  // the methodology of the European price model, in the page's language
+  function euDoc(o) {
+    const caps = o.eu ? o.eu.map(x => `${x.y} ${pc(x.capture)}`).join(', ') : null;
+    return FRDOC() ? `<h4>Modèle européen</h4>
+<ol>
+<li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance.</li>
+<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le rapport forward du mois ÷ Cal : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
+<li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
+<li><b>Limites.</b> Aucune croissance du stockage ni de la demande flexible n’est modélisée et les voisins progressent à leur rythme récent : à partir de 2028 environ, la région sature à midi dans tous les scénarios et la capacité française ne fait presque plus bouger cette méthode. Pricée 1, 2 et 3 ans à l’avance sur 2024–2026, elle tient mieux que les méthodes de tendance à 3 ans (scripts/ppa_horizon_test.py).</li>
+</ol>` : `<h4>European price model</h4>
+<ol>
+<li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend.</li>
+<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by the month’s forward ÷ Cal ratio: ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
+<li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
+<li><b>Limits.</b> No growth of storage or flexible demand is modelled and the neighbours grow at their recent pace: from about 2028 the region is saturated at midday in every scenario and France’s own capacity barely moves this method. Priced 1, 2 and 3 years ahead on 2024–2026, it holds better than the trend methods at 3 years (scripts/ppa_horizon_test.py).</li>
+</ol>`;
+  }
+
+  // European price model, year by year on the tenor: capture of each month (data/history/ppa_forecast.json,
+  // 'regional') weighted by its output (× its paid share when curtailed at prices ≤ 0) and by the month's
+  // forward ÷ Cal ratio, so that × the Cal forward it gives the value of one MWh. The asset's own monthly
+  // shape and its capture gap to the national profile (last three complete years) when its curve is used.
+  // null when a month of the tenor has no forecast (the test bench forecasts up to 2030).
+  function euYears(o, st) {
+    const conv = st.conv === 'all' ? 'all' : 'curt';
+    const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
+    const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech], ratio = D.fwRatio;
+    if (!f || !nat || !ratio) return null;
+    let sh = m => nat[m], gap = 0;
+    if (o.useAsset && st.asset && st.asset.slots) {
+      const acc = Array(13).fill(0);
+      st.asset.slots.forEach((row, d) => { const m = +String(d).slice(5, 7); row.forEach(v => { if (v) acc[m] += v; }); });
+      const tot = acc.reduce((a, b) => a + b, 0);
+      if (tot > 0 && acc.slice(1).every(v => v > 0)) sh = m => acc[m] / tot;
+      const natY = new Map((o.nat || []).map(x => [x.year, x]));
+      const ys = (o.ast || []).filter(x => x.complete && x.cpPct != null && natY.has(x.year) && natY.get(x.year).cpPct != null).slice(-3);
+      if (ys.length) gap = mean(ys.map(x => x.cpPct - natY.get(x.year).cpPct));
+    }
+    const out = [];
+    for (const y of o.tenor) {
+      let num = 0, den = 0;
+      for (let m = 1; m <= 12; m++) {
+        const e = f[`${y}-${String(m).padStart(2, '0')}`];
+        if (!e || e.regional == null || ratio[m] == null) return null;
+        const w = sh(m) * (conv === 'curt' ? e.paid : 1);
+        num += w * ratio[m] * (e.regional + gap); den += w;
+      }
+      if (!(den > 0)) return null;
+      out.push({ y, capture: num / den });
+    }
+    return out;
   }
 
   // Column indexes of a day row for the technology and convention:
@@ -272,6 +327,11 @@
     }
     o.premium = fair - o.qU;
     o.ppaBuild = o.qU - refW * add / 100 - imb + goW - margin;
+    // European price model: the test bench's monthly capture rates (scripts/ppa_lab.py), with this pricer's Cal
+    // forwards, the capacity trend's risk premium, costs, GO and margin, so the methods compare like for like
+    o.eu = euYears(o, st);
+    o.euFair = o.eu ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.eu[i].capture, 0) : null;
+    o.ppaEu = o.eu ? o.euFair - o.premium - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     if (!st.noMC && window.PKFpc) { try { o.m3 = await PKFpc.compute(o, st, D); } catch (e) { console.warn('[ppa] fpc', e); o.m3 = null; } }
@@ -452,10 +512,12 @@
 
   // ── Tab 1 · the price band: the methods with a box to tick, their average, and the step from the market price ──
   // default = the site's benchmark (scripts/ppa_daily.py): average of the three model methods, the past discount left out
-  const INC0 = { pct: false, build: true, fpc: true, wx: true };
+  // the past discount is shown as a reference only (review of 27 Oct 2026): it never enters the price
+  const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: true };
   let INC = Object.assign({}, INC0);
   try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
-  const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation' };
+  INC.pct = false;
+  const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation', eu: 'European price model' };
   function methodVals(o) {
     if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
     const wxc = !o.m4 && S.wxLast && S.wxLast.fp === fp() ? S.wxLast : null;
@@ -464,6 +526,7 @@
       { k: 'build', v: o.ppaBuild, fair: o.fair, ref: o.refW },
       { k: 'fpc', v: o.ppaFpc, fair: o.m3 ? o.m3.fair : null, ref: o.m3 ? o.m3.refW : null },
       { k: 'wx', v: o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, fair: o.m4 ? o.m4.fair : wxc ? wxc.fair : null, ref: o.m4 ? o.m4.refW : wxc ? wxc.ref : null },
+      { k: 'eu', v: o.ppaEu, fair: o.euFair, ref: o.refW },
     ];
   }
   function renderBand(o) {
@@ -471,8 +534,8 @@
     const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? mean(use.map(m => m.v)) : null;
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.v == null ? 'computed on its tab' : m.k === 'pct' ? 'risks entered by hand' : '€/MWh'}</span></label>`).join('')}</div>`;
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null || m.k === 'pct' ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null || m.k === 'pct' ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div>`;
     host.querySelectorAll('[data-inc]').forEach(c => c.addEventListener('change', () => {
       INC[c.dataset.inc] = c.checked; try { localStorage.setItem('pk-pp-inc', JSON.stringify(INC)); } catch (_) {}
       renderBand(S.last); renderSumWf(S.last);
@@ -541,20 +604,21 @@
   // inputs fingerprint: a price computed on other inputs is never shown as current
   function fp() { const c = Object.assign({}, S, { method: null, view: null, last: null, wxLast: null, asset: S.asset ? S.assetName + ':' + (S.asset.slots ? S.asset.slots.length : 0) : null }); return JSON.stringify(c); }
   // the four prices, always in sight; the replay says which method was closest in the past (information, not a recommendation)
-  const RB = [['pct', 'Past discount', 'Past discount', 'dashboard'], ['build', 'Capacity trend', 'Capacity trend', 'step'], ['fpc', 'Forward shape', 'Forward shape', 'fpc'], ['wx', 'Weather simulation', 'Weather simulation', 'weather']];
+  const RB = [['pct', 'Past discount', 'Past discount', 'dashboard'], ['build', 'Capacity trend', 'Capacity trend', 'step'], ['fpc', 'Forward shape', 'Forward shape', 'fpc'], ['wx', 'Weather simulation', 'Weather simulation', 'weather'], ['eu', 'European price model', 'Short-term (monthly)', null]];
   function renderResBar(o) {
     const host = $('pp-resbar'); if (!host || !o) return;
     if (o.m4) S.wxLast = { ppa: o.ppaWx, fp: fp() };
     const wx = o.m4 ? o.ppaWx : S.wxLast && S.wxLast.fp === fp() ? S.wxLast.ppa : null;
-    const val = { pct: o.ppaPct, build: o.ppaBuild, fpc: o.ppaFpc, wx };
+    const val = { pct: o.ppaPct, build: o.ppaBuild, fpc: o.ppaFpc, wx, eu: o.ppaEu };
     const cur = S.view === 'compare' ? null : S.method;
     let rel = '';
-    if (BT && BT.rows) { const rs = BT.rows.filter(r => r.tech === S.tech && r.year !== 2022), m = {}; RB.forEach(r => { if (rs.length) m[r[3]] = mean(rs.map(x => Math.abs(x[r[3]] - x.actual))); }); const best = RB.filter(r => m[r[3]] != null).sort((a, b) => m[a[3]] - m[b[3]])[0];
+    if (BT && BT.rows) { const rs = BT.rows.filter(r => r.tech === S.tech && r.year !== 2022), m = {}; RB.forEach(r => { if (rs.length && r[3]) m[r[3]] = mean(rs.map(x => Math.abs(x[r[3]] - x.actual))); }); const best = RB.filter(r => m[r[3]] != null).sort((a, b) => m[a[3]] - m[b[3]])[0];
       if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <a href="#" data-rb-tab="Compare">see the replay</a></span>`; }
     else if (!BT) get('history/ppa_backtest.json').then(j => { if (j) { BT = j; renderResBar(S.last); } });
-    host.innerHTML = `<span class="lbl">PPA price · €/MWh</span>` + RB.map(([k, l, tab]) => `<button type="button" class="pp-rb${cur === k ? ' on' : ''}" data-rb-tab="${tab}" title="Open the ${l} tab">${l} ${val[k] != null ? '<b>' + f2(val[k]) + '</b>' : '<span class="na">open its tab</span>'}</button>`).join('') + rel;
+    host.innerHTML = `<span class="lbl">PPA price · €/MWh</span>` + RB.map(([k, l, tab]) => `<button type="button" class="pp-rb${cur === k ? ' on' : ''}" data-rb-tab="${tab}" title="Open the ${l} tab">${l} ${val[k] != null ? '<b>' + f2(val[k]) + '</b>' : `<span class="na">${k === 'eu' ? 'no forecast past 2030' : 'open its tab'}</span>`}</button>`).join('') + rel;
+    // tabs are found by their English label: in French their text is translated (pkEN gives it back)
     host.querySelectorAll('[data-rb-tab]').forEach(b => b.addEventListener('click', e => { e.preventDefault();
-      const t = [...document.querySelectorAll('#page-ppapricer .pk-views .tab-btn')].find(x => x.textContent === b.dataset.rbTab); if (t) t.click(); }));
+      const t = [...document.querySelectorAll('#page-ppapricer .pk-views .tab-btn')].find(x => (window.pkEN ? pkEN(x.textContent.trim()) : x.textContent.trim()) === b.dataset.rbTab); if (t) t.click(); }));
   }
   // how many advanced settings differ from the automatic ones
   const ADV = ['degr', 'alpha', 'imb', 'go', 'disc', 'add', 'volRisk', 'priceRisk', 'mcVol', 'mcFwd', 'mcSd', 'rho', 'volStress', 'spotStress'];
@@ -1071,7 +1135,9 @@
     const atA = a => mc ? qtl(mc.Us, a) - o.refW * o.add / 100 - o.imb + o.goW - o.margin : null;
     const meth = [['Past discount', o.ppaPct, null, null, '#B8C9D9'], ['Capacity trend', o.ppaBuild, atA(0.10), atA(0.50), '#14D3A9'],
       ['Forward shape', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24'],
-      ['Weather simulation', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4']].filter(x => x[1] != null);
+      ['Weather simulation', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4'],
+      // the European model carries the capacity trend's risk: its range is that Monte Carlo's, moved to its own value
+      ['European price model', o.ppaEu, o.eu && mc ? atA(0.10) + o.euFair - o.fair : null, o.eu && mc ? atA(0.50) + o.euFair - o.fair : null, '#5B9BD5']].filter(x => x[1] != null);
     $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} at 10–50 % risk` : 'risks entered by hand')).join('') +
       _fuelKpi('Spread', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest method');
     _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => window.PKI18n ? PKI18n.tr(x[0]) : x[0]), datasets: [
@@ -1085,22 +1151,24 @@
       { label: 'Capacity trend', data: o.years.map(r => +r.cp.toFixed(2)), backgroundColor: '#14D3A9AA', borderRadius: 3 },
       ...(m3c ? [{ label: 'Forward shape', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
       ...(o.m4 ? [{ label: 'Weather simulation', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
+      ...(o.eu ? [{ label: 'European price model', data: o.years.map((r, i) => +(r.fwd * o.eu[i].capture).toFixed(2)), backgroundColor: '#5B9BD5AA', borderRadius: 3 }] : []),
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
     const W4 = m4 ? m4.years : null;
+    const E = o.eu, e0 = E ? E[0].capture : null, e1 = E ? E[E.length - 1].capture : null;
     const rows = [
-      ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', m4 ? f2(m4.ppa) : 'open its tab', true],
-      ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–', m4 ? f2(m4.refW) + ' (Cal, weighted)' : '–'],
-      ['Shape / profile', o.pdMode === 'past' ? pc(-o.sdCh) + ' (P' + S.pct + ' of history)' : pc(-o.sdPctY[0]) + ' → ' + pc(-o.sdPctY[o.sdPctY.length - 1]) + ' (trend + P' + S.pct + ' offset)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–', W4 ? pc(W4[0].rate - 1) + ' → ' + pc(W4[W4.length - 1].rate - 1) + ' (simulated, all effects)' : '–'],
-      ['Cannibalisation', o.pdMode === 'past' ? 'inside the percentile' : 'linear trend of the last years', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–'],
-      ['Capture value, €/MWh', f2(o.ref - o.pdEur), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–'],
-      ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–', m4 ? '−' + f2(m4.premium) + ' (simulated weather)' : '–'],
-      ['Margin', '−' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin)],
+      ['PPA price, €/MWh', f2(o.ppaPct), f2(o.ppaBuild), m3 ? f2(m3.ppa) : '–', m4 ? f2(m4.ppa) : 'open its tab', E ? f2(o.ppaEu) : 'no forecast past 2030', true],
+      ['Forward used', f2(o.ref) + ' (average)', f2(o.refW) + ' (weighted)', m3 ? f2(m3.refW) + ' (FPC, weighted)' : '–', m4 ? f2(m4.refW) + ' (Cal, weighted)' : '–', E ? f2(o.refW) + ' (Cal, weighted)' : '–'],
+      ['Shape / profile', o.pdMode === 'past' ? pc(-o.sdCh) + ' (P' + S.pct + ' of history)' : pc(-o.sdPctY[0]) + ' → ' + pc(-o.sdPctY[o.sdPctY.length - 1]) + ' (trend + P' + S.pct + ' offset)', pc(-a.fsd) + ' → ' + pc(-z.fsd) + ' (projected discount)', m3 ? pc(m3.fwd[0].fwdCost) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].fwdCost) + ' (FPC profile cost)' : '–', W4 ? pc(W4[0].rate - 1) + ' → ' + pc(W4[W4.length - 1].rate - 1) + ' (simulated, all effects)' : '–', E ? pc(e0 - 1) + ' → ' + pc(e1 - 1) + ' (hourly price model, all effects)' : '–'],
+      ['Cannibalisation', o.pdMode === 'past' ? 'inside the percentile' : 'linear trend of the last years', 'inside the projected discount', m3 ? pc(m3.fwd[0].cannib) + ' → ' + pc(m3.fwd[m3.fwd.length - 1].cannib) + ' ((1) − (3), projected)' : '–', W4 ? pc(W4[0].cannib) + ' → ' + pc(W4[W4.length - 1].cannib) + ' (weather link only)' : '–', E ? 'residual load of France and its neighbours, fleet of each year' : '–'],
+      ['Capture value, €/MWh', f2(o.ref - o.pdEur), f2(o.fair), m3 ? f2(m3.fair) : '–', m4 ? f2(m4.fair) : '–', E ? f2(o.euFair) : '–'],
+      ['Risk', (o.add + o.volRisk + o.priceRisk) + ' % (entered)', '−' + f2(o.premium) + ' (Monte Carlo)', m3 ? '−' + f2(m3.premium) + ' (spread of the years)' : '–', m4 ? '−' + f2(m4.premium) + ' (simulated weather)' : '–', E ? '−' + f2(o.premium) + ' (capacity trend’s Monte Carlo)' : '–'],
+      ['Margin', '−' + f2(o.margin), '−' + f2(o.margin), m3 ? '−' + f2(o.margin) : '–', '−' + f2(o.margin), E ? '−' + f2(o.margin) : '–'],
     ];
-    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('Past discount', S.method === 'pct')}${col('Capacity trend', S.method === 'build')}${col('Forward shape', S.method === 'fpc')}${col('Weather simulation', S.method === 'wx')}</tr></thead><tbody>` +
-      rows.map(r => `<tr${r[5] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the method of the last tab opened. Each method has its own tab with its price, its steps and its charts.</div>`;
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-cmp3"><thead><tr><th style="text-align:left"></th>${col('Past discount', S.method === 'pct')}${col('Capacity trend', S.method === 'build')}${col('Forward shape', S.method === 'fpc')}${col('Weather simulation', S.method === 'wx')}${col('European price model', false)}</tr></thead><tbody>` +
+      rows.map(r => `<tr${r[6] ? ' class="pp-main"' : ''}><td style="text-align:left">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">Same data, same costs and GO; ✓ = the method of the last tab opened. Each method has its own tab with its price, its steps and its charts; the European price model is detailed month by month in Short-term (monthly). The past discount is a reference, not a pricing method.</div>`;
   }
 
   // ── Asset-specific FPC method: the curve, the three pricings by year, the forward years ──
@@ -1146,6 +1214,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <h4>Hours at zero or negative prices</h4>
 <p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity to the PPE3 targets, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>Past-discount method</h4>
+<p>${FRDOC() ? '<b>Repère seulement</b> (revue du 27 oct. 2026) : affichée pour comparaison, elle n’entre jamais dans le prix du PPA.' : '<b>A reference only</b> (review of 27 Oct 2026): shown for comparison, it never enters the PPA price.'}</p>
 <p>Projected mode (default): <code>discount(y) = trend of the last N years used (y) + [P${S.pct} − P50] of the past discounts</code>, then <code>PPA = Σ w(y) × F(y) × (1 − discount(y)) − F × (add. discount + volume risk + price risk) − imbalance + GO − margin</code>. Past-only mode: <code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO − margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. As in the team's Streamlit tool, except the margin: it added it, here it is deducted like in every other method.</p>
 <h4>Forward shape method (the pricing deck’s “asset-specific approach”)</h4>
 <ol>
@@ -1161,6 +1230,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <li><b>Prices.</b> Month level of the FPC × the effect of the net residual load (consumption − solar − wind − nuclear available), measured on the last two complete years only — older years describe a market without today’s solar fleet — then each year rescaled exactly to its Cal.</li>
 <li><b>Risk.</b> Weather alone moves a year’s capture rate by a few points only; each simulated delivery also carries a model-risk deviation the size of this method’s past errors (historical replay).</li>
 </ol>
+${euDoc(o)}
 <h4>Aggregation contract indexed on the M0 (park under complément de rémunération)</h4>
 <p>The State pays the producer the complément (reference tariff − M0); Selfee sells the output on the day-ahead market and pays the producer <code>A % × M0</code>, <code>M0 − B</code> or <code>A % × M0 − B</code>, the M0 of the technology published by the CRE (PowerKlock estimate for the months not yet published). Selfee margin per MWh = park market value − payment − imbalance − fixed costs. The park market value is its output × the price of each hour, hours at negative prices not produced as the M0 leaves them out (hours at 0 € count, at 0). On the months used, the park earns <code>ratio × M0</code> on average; at the M0 level priced (from the forwards, weighted by the park's output month by month) the formulas balance the target margin: <code>A = (ratio × M0 − costs) ÷ M0</code>, <code>B = costs + (1 − ratio) × M0</code>; for the mixed formula A is the share of the M0 the park really follows (weighted regression of its monthly price on the M0) and B balances the margin, the narrowest spread for Selfee. Risk: 4,000 contract years drawn month by month from the months used (park price and M0 of the same month, rescaled to the M0 level priced). Imbalance: national cost of the technology over 12 months × 1.5 for a single park, unless entered. Not modelled: the complément itself, the compensation rules at negative prices of each contract generation, capacity and GOs (those of a supported park belong to the State, sold at the EEX auctions).</p>
 <h4>Single park, with or without history (Tools › Production forecast › Price this park)</h4>
@@ -1265,7 +1335,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       const A = o.mcAt;
       add('Summary', [
         { Item: 'Method', Value: S.method === 'pct' ? 'Past discount (percentile of history)' : 'Capacity trend (projection + Monte Carlo premium)' },
-        { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'Capacity-trend price (€/MWh)', Value: r2(o.ppaBuild) }, { Item: 'Past discount price (€/MWh)', Value: r2(o.ppaPct) },
+        { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'Capacity-trend price (€/MWh)', Value: r2(o.ppaBuild) }, { Item: 'Past discount price (€/MWh)', Value: r2(o.ppaPct) }, { Item: 'European price model price (€/MWh)', Value: r2(o.ppaEu) },
         { Item: 'Technology', Value: S.tech }, { Item: 'Tenor', Value: o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] }, { Item: 'Production (MWh/yr)', Value: r2(o.volume) }, { Item: 'Capacity (MW)', Value: o.mw },
         { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'curt' ? 'curtailment at prices ≤ 0' : S.conv === 'pos' ? 'hours with price > 0 (Past discount)' : 'all hours' },
         { Item: 'Years used', Value: o.sel.join(', ') }, { Item: 'Projection', Value: MODEL_T[o.model] }, { Item: 'Forward, weighted (€/MWh)', Value: r2(o.refW) }, { Item: 'Forward, simple average (€/MWh)', Value: r2(o.ref) },
