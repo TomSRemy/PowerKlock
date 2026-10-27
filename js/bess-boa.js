@@ -12,10 +12,10 @@
   const $ = id => document.getElementById(id);
   const BOA_START = 2028, BASE = 10;
   const S = { struct: 'floor', scen: 'mid', tab: 'pnl' };
-  const COL = { low: '#ED6965', mid: '#14D3A9', high: '#7FC8F8' };
+  const COL = { low: '#ED6965', mid: '#FBBF24', high: '#7FC8F8' };
   const SKEYS = ['afrr', 'fcr', 'mfrr', 'da', 'id', 'cap', 'turpe'];
   const SLABELS = ['aFRR', 'FCR', 'mFRR', 'DA arb.', 'Intraday', 'Cap. mech.', 'TURPE 7'];
-  const SCOLORS = ['#14D3A9', '#8D99AE', '#ED6965', '#FBBF24', '#7FC8F8', '#A87DC4', '#0FAC8A'];
+  const SCOLORS = ['#7FC8F8', '#8D99AE', '#ED6965', '#FBBF24', '#F2A65A', '#A87DC4', '#C4A57B'];
   const SCEN = {
     low: { name: 'Low · bear', note: 'aFRR falls as fast as in Belgium. Batteries compress day-ahead spreads sooner.', v: [50, 6, 56, 62, 10] },
     mid: { name: 'Mid · base', note: 'Central case: aFRR falls to 10 k€ by 2037.', v: [65, 10, 66, 74, 19] },

@@ -68,8 +68,9 @@ def day_prices(path):
     return np.array(z['hourly'], dtype=float)
 
 
-def optimise_day(p, hours, wear, prm=PARAMS):
-    """Best schedule of 1 MW / `hours` MWh on prices p (EUR/MWh, T steps). Returns (revenue EUR, MWh discharged)."""
+def optimise_day(p, hours, wear, prm=PARAMS, detail=False):
+    """Best schedule of 1 MW / `hours` MWh on prices p (EUR/MWh, T steps). Returns (revenue EUR, MWh discharged),
+    and with detail=True also the schedule: MW drawn from the grid, MW sent to it, state of charge (MWh) per step."""
     T = len(p)
     eta = prm['rte'] ** 0.5
     e = float(hours)
@@ -97,6 +98,8 @@ def optimise_day(p, hours, wear, prm=PARAMS):
         return None
     c, d = r.x[:T], r.x[T:2 * T]
     rev = float(np.sum((p - gi) * d * DT) - np.sum((p + gw) * c * DT))
+    if detail:
+        return rev, float(np.sum(d) * DT), c, d, r.x[2 * T:]
     return rev, float(np.sum(d) * DT)
 
 
@@ -148,6 +151,21 @@ def run(days, prices, prm=PARAMS):
             row[f'{h}h'] = res
         if row:
             out.append(row)
+    return out
+
+
+def example(d, p, prm=PARAMS):
+    """The last delivery day, quarter-hour by quarter-hour: price and the net-of-wear schedule of each duration
+    (for the page's typical-day chart)."""
+    out = {'d': d, 'price': [round(float(v), 2) for v in p]}
+    for h in DURATIONS:
+        r = optimise_day(p, h, prm['wear'], prm, detail=True)
+        if r is None:
+            continue
+        rev, mwh, c, dch, soc = r
+        out[f'{h}h'] = {'rev': round(rev, 2), 'wear': round(prm['wear'] * mwh, 2),   # EUR per MW: market revenue, wear cost
+                        'charge': [round(float(v), 3) for v in c], 'discharge': [round(float(v), 3) for v in dch],
+                        'soc': [round(float(v) / h, 3) for v in soc]}
     return out
 
 
@@ -220,6 +238,7 @@ def main():
         'summary_ltm': summary,
         'months': aggregate(rows),
         'days': rows[-120:],
+        'example': example(days_all[-1], prices[days_all[-1]]),
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     tmp = OUT + '.tmp'
