@@ -52,6 +52,8 @@
     'markets/fuels/ttf': { page: 'euafwd', tab: 1 },
     'markets/fuels/spreads': { page: 'spark' },
     'markets/go': { page: 'goprices', go: 'eu' },
+    'markets/bess': { page: 'bess' },
+    'tools/bess': { page: 'bess' },   // the first address of the page (27 Oct.), kept for shared links
     'markets/go/auctions': { page: 'goprices', go: 'auctions' },
     'renewables/capture': { page: 'renewables', tab: 0 },
     'renewables/m0': { page: 'renewables', tab: 2 },
@@ -69,7 +71,7 @@
     'system/carbon': { page: 'carbonintensity' },
     'system/replay': { page: 'replay' },
     'tools/ppa': { page: 'ppapricer' },
-    'tools/bess': { page: 'bess' },
+    'tools/boa': { page: 'boa' },
     'tools/forecast': { page: 'fcst' },
     'tools/carbon': { page: 'carbonfoot' },
     'tools/compare': { page: 'compare' },
@@ -92,6 +94,7 @@
       ['markets/forwards', 'Power forwards', 'forward'],
       ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/ttf', 'TTF forwards'], ['markets/fuels/spreads', 'Spark & dark spreads']]],
       ['markets/go', 'Guarantees of origin', 'goprices', [['markets/go', 'EU prices'], ['markets/go/auctions', 'France auctions']]],
+      ['markets/bess', 'Batteries (BESS)', 'bess'],
     ]],
     ['Renewables', [
       ['renewables/capture', 'Capture & cannibalisation', 'renewables'],
@@ -110,7 +113,7 @@
     ]],
     ['Tools', [
       ['tools/ppa', 'PPA pricer', 'ppa'],
-      ['tools/bess', 'BESS', 'bess'],
+      ['tools/boa', 'BOA pricer', 'bess'],
       ['tools/forecast', 'Production forecast', 'fcst'],
       ['tools/carbon', 'Carbon footprint', 'carbonfoot'],
       ['intel/analysis', 'Market analysis', 'analysis'],   // a tool more than news (note 19); its address stays
