@@ -58,6 +58,11 @@ def local(tag):
     return tag.split('}')[-1]
 
 
+def scrub(text):
+    """An error message without the API token (requests puts the whole URL in its errors; diag lands in public files)."""
+    return re.sub(r'securityToken=[^&\s\'"]+', 'securityToken=***', str(text))
+
+
 def fetch(params, tries=3):
     for k in range(tries):
         r = requests.get(BASE, params={'securityToken': os.environ['ENTSOE_TOKEN'], **params}, timeout=60)
@@ -79,7 +84,7 @@ def fetch(params, tries=3):
             DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: no matching data")
             return ''
         DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: HTTP {r.status_code} {r.text[:160]!r}")
-        r.raise_for_status()
+        raise RuntimeError(f"ENTSO-E HTTP {r.status_code} for {params.get('documentType')}: {r.text[:160]!r}")
     return ''
 
 
@@ -313,7 +318,7 @@ def main():
             res, info = month_cost(m)
         except Exception as e:
             print(f'  {m:%Y-%m} ERROR {e}')
-            prev.setdefault('diag', {})[m.strftime('%Y-%m')] = {'error': str(e)[:200]}
+            prev.setdefault('diag', {})[m.strftime('%Y-%m')] = {'error': scrub(e)[:200]}
             continue
         prev.setdefault('diag', {})[m.strftime('%Y-%m')] = info
         print(f'  {m:%Y-%m} ' + ', '.join(f'{k} {v["eurMWh"]:+.2f} €/MWh ({v["errPct"]} % error)' for k, v in res.items()) + f'  {info}')

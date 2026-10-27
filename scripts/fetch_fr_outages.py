@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fetch_fr_imbalance_cost import fetch, local, DIAG, FR, ROOT   # same ENTSO-E access (token, ZIP of XML, retries)
+from fetch_fr_imbalance_cost import fetch, local, scrub, DIAG, FR, ROOT   # same ENTSO-E access (token, ZIP of XML, retries)
 
 OUT = os.path.join(ROOT, 'data', 'history', 'fr_outages.json')
 FUEL = {'B14': 'nuclear', 'B04': 'gas', 'B05': 'coal', 'B06': 'oil', 'B10': 'pumped storage', 'B11': 'hydro',
@@ -95,7 +95,7 @@ def main():
                     xml = fetch({'documentType': doc, 'businessType': bt, 'biddingZone_Domain': FR,
                                  'periodStart': p0.strftime('%Y%m%d%H%M'), 'periodEnd': p1.strftime('%Y%m%d%H%M'), 'offset': off})
                 except Exception as e:   # one refused request must not lose the others; the reason is kept in diag
-                    DIAG.append(f'{doc} {bt} offset {off}: {str(e)[:160]}')
+                    DIAG.append(f'{doc} {bt} offset {off}: {scrub(e)[:160]}')
                     break
                 got = parse(xml)
                 rows += got
