@@ -83,7 +83,7 @@
     }
     if (negLbl) {
       negLbl.textContent = zonesWithNeg > 0
-        ? `Today · max ${topZone} · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`
+        ? (window.PKI18n && PKI18n.lang !== 'en' ? `Aujourd’hui · max ${topZone} · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} concernée${zonesWithNeg > 1 ? 's' : ''}` : `Today · max ${topZone} · ${zonesWithNeg} zone${zonesWithNeg > 1 ? 's' : ''} affected`)
         : `Today · no negative prices`;
     }
   }
