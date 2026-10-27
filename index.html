@@ -282,6 +282,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="sidebar-item" onclick="showPage('ppapricer')" id="nav-ppapricer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>PPA pricer
       </div>
+      <div class="sidebar-item" onclick="showPage('bess')" id="nav-bess">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>BESS
+      </div>
       <div class="sidebar-item" onclick="showPage('fcst')" id="nav-fcst">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Production forecast
       </div>
@@ -3001,6 +3004,151 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
       </div>
     </div>
+    <div class="page" id="page-bess">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">BESS</span></div>
+          <div class="pr-tabs-bar-filters"><span class="updated-badge" id="bess-upd">Day-ahead, France</span>
+            <span class="fuel-toolbar-lbl">Duration</span>
+            <div class="pk-gf-group" id="bess-dur"><button class="pk-gf-btn" data-h="1h" onclick="PKBess.setH('1h',this)">1 h</button><button class="pk-gf-btn active" data-h="2h" onclick="PKBess.setH('2h',this)">2 h</button><button class="pk-gf-btn" data-h="4h" onclick="PKBess.setH('4h',this)">4 h</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-da">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-da')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Day-ahead value of a battery<span class="pk-hs-meta">1 MW of power · France · what the day-ahead market alone pays</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-da">
+<div class="kpi-strip fuel-kpis" id="bess-da-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">A typical day, quarter-hour by quarter-hour</div><div class="fuel-card-sub" id="bess-day-sub"></div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+  <div style="position:relative;height:280px"><canvas id="bess-day-canvas" style="width:100%;height:280px"></canvas></div>
+</div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">Annualised by month</div><div class="fuel-card-sub">k€ per MW of power per year · daily average of the month × 365</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+  <div style="position:relative;height:300px"><canvas id="bess-m-canvas" style="width:100%;height:300px"></canvas></div>
+</div><div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">Day by day</div><div class="fuel-card-sub">€ per MW of power per day · last 120 delivery days</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+  <div style="position:relative;height:260px"><canvas id="bess-d-canvas" style="width:100%;height:260px"></canvas></div>
+</div><div class="fuel-note" id="bess-da-note"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-years">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-years')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Year by year<span class="pk-hs-meta">Same battery, same method, calendar years</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-years">
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">Value by calendar year</div><div class="fuel-card-sub">k€ per MW of power per year · selected duration</div></div><span class="source-badge">ENTSO-E · PowerKlock</span></div>
+  <div class="table-wrap" style="overflow-x:auto"><table class="data-table" id="bess-years"></table></div>
+</div><div class="fuel-note">2026 is the year so far. Day-ahead prices are in quarter-hours since 1 October 2025; before that the hourly price is repeated four times. Gross = no wear cost. Net = after the wear cost per MWh discharged (see Method). Without foresight = fixed schedule from the average profile of the previous 30 days.</div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-streams">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-streams')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Revenue streams<span class="pk-hs-meta">Which markets a French battery can sell into, and what stacks</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-streams">
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">The streams</div><div class="fuel-card-sub">A battery cannot sell the same MW twice: the energy markets and the reserves compete for the same power and the same state of charge</div></div><span class="source-badge">RTE · CRE · Modo Energy</span></div>
+  <div class="table-wrap" style="overflow-x:auto"><table class="data-table bess-streams">
+<thead><tr><th>Stream</th><th>Market</th><th>What the battery sells</th><th>Stacks with</th><th>In PowerKlock</th></tr></thead><tbody>
+<tr><td>Day-ahead</td><td>SDAC, auction at 12:00 the day before, 15-minute steps since 1 October 2025</td><td>Energy: charges low, discharges high</td><td>Intraday (same energy, adjusts the schedule). Excludes reserves on the same MW</td><td>Yes, this page</td></tr>
+<tr><td>Intraday</td><td>Continuous trading and auctions, up to 5 minutes before delivery</td><td>Energy and state-of-charge management</td><td>Day-ahead</td><td>Not yet: no open price feed</td></tr>
+<tr><td>Imbalance</td><td>RTE settlement</td><td>Not a revenue stream for a controllable asset: a cost to avoid</td><td>-</td><td>Imbalance page</td></tr>
+<tr><td>FCR</td><td>European daily auction, symmetric product</td><td>Power headroom up and down, paid per MW per hour</td><td>aFRR on another share of the power. Not with energy trading on the same MW</td><td>Not yet</td></tr>
+<tr><td>aFRR</td><td>RTE capacity auction and PICASSO energy; 15-minute nomination windows since 27 January 2026</td><td>Power headroom, then activation energy</td><td>FCR on another share of the power</td><td>Not yet</td></tr>
+<tr><td>mFRR and RR</td><td>RTE adjustment mechanism</td><td>Energy over a long duration (120 and 90 minutes required)</td><td>-</td><td>Weak case for batteries up to 2 hours</td></tr>
+<tr><td>Capacity mechanism</td><td>RTE, new centralised mechanism from 1 November 2026</td><td>Certified capacity during the winter peak days</td><td>Everything: the only stream that adds to the others</td><td>Calculator (Capacity mechanism view)</td></tr>
+<tr><td>AOFD</td><td>RTE tender for decarbonised flexibility, storage of 4 hours and more</td><td>Capacity paid in €/kW, energy kept for the markets</td><td>Day-ahead and intraday. No reserves during the contract window</td><td>Not yet</td></tr>
+</tbody></table></div>
+</div><div class="fuel-note">Reserve and intraday prices are not shown because PowerKlock only uses sources that refresh by themselves. They will appear when a machine-readable feed is added (ENTSO-E procured balancing capacity is the candidate for FCR and aFRR). Meanwhile the BOA pricer lets you set them as scenarios.</div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-cm">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-cm')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Capacity mechanism<span class="pk-hs-meta">Certified capacity of a battery · illustrative calculator</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-cm">
+<div class="fuel-grid-2 pk-stack">
+<div class="chart-container fuel-card">
+  <div class="fuel-card-head"><div><div class="table-title">Your battery</div><div class="fuel-card-sub">The coefficient lowers the certified power of a short battery</div></div><span class="source-badge">RTE rules</span></div>
+  <div class="bess-form">
+    <label>Power (MW)<input type="number" id="cm-mw" value="100" min="1" step="1"></label>
+    <label>Duration at full power<select id="cm-h"><option value="0.5">0.5 h</option><option value="1">1 h</option><option value="2" selected>2 h</option><option value="3">3 h</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="8">8 h</option></select></label>
+    <label>Capacity price (€/kW per year)<input type="range" id="cm-p" min="0" max="70" step="1" value="20"><span class="bess-val" id="cm-p-d">20</span></label>
+  </div>
+  <div class="kpi-strip fuel-kpis" id="cm-kpis"></div>
+  <div class="fuel-note">The price is yours to set: RTE publishes the single capacity price every year by 1 October. The coefficients below come from the rules of the mechanism that ends on 31 October 2026 (RTE, April 2022); check them against the rules of the new mechanism.</div>
+</div>
+<div class="chart-container fuel-card">
+  <div class="fuel-card-head"><div><div class="table-title">What changes on 1 November 2026</div><div class="fuel-card-sub">Old mechanism against new</div></div><span class="source-badge">CRE · RTE</span></div>
+  <div class="table-wrap"><table class="data-table"><thead><tr><th></th><th>Until 31 October 2026</th><th>From 1 November 2026</th></tr></thead><tbody>
+  <tr><td>Buyer</td><td>Each supplier, through certificates</td><td>RTE alone</td></tr>
+  <tr><td>Price</td><td>Several auctions a year</td><td>One price per year, published by 1 October</td></tr>
+  <tr><td>Peak days</td><td>15 to 25 days</td><td>22 days, 7-10h and 17-20h</td></tr>
+  <tr><td>Who pays</td><td>Suppliers, passed on to customers</td><td>Suppliers, in proportion to the peak consumption of their customers</td></tr>
+  </tbody></table></div>
+  <div class="fuel-note">Four-hour batteries also have the AOFD tender: capacity paid in €/kW, capped at 65 k€/MW, with energy kept for the markets, but no reserves during the contract window.</div>
+</div>
+</div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-boa-in">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-boa-in')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>BOA pricer: assumptions<span class="pk-hs-meta">Floor, tolling or merchant offtake of a battery · k€ per MW per year</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-boa-in">
+<div id="boa-in-root"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-boa-out">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-boa-out')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>BOA pricer: results<span class="pk-hs-meta">DSCR year by year, payments and structure comparison</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-boa-out">
+<div id="boa-out-root"></div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-method">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-method')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Method and limits<span class="pk-hs-meta">How the day-ahead value is computed, and where it stops</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-method">
+<div class="bess-method">
+<h4>How it is computed</h4>
+<ul>
+<li>One delivery day at a time. The battery sees the 96 quarter-hour prices of the day and picks the schedule that earns most (a linear programme). Day-ahead prices are known before the day starts, so this is the ceiling of what good day-ahead bids can reach, not a forecast.</li>
+<li>Without foresight: a fixed schedule from the average profile of the 30 previous days, paid at the real prices. It is the floor; a trading desk lands between the two.</li>
+<li>Losses on both charge and discharge (85% round trip), grid fee on energy drawn from the grid, a cap of 2 full cycles a day, and the same state of charge at the start and the end of every day.</li>
+<li>Wear: a cost per MWh discharged sits inside the optimisation, so the battery stops cycling when the spread no longer covers it. Gross figures use no wear cost.</li>
+</ul>
+<h4>Why not a monthly horizon</h4>
+<ul>
+<li>A run over a whole month lets the battery carry energy from one day to the next because it knows all the prices. A real bid for day D is placed before day D+1 prices exist. The monthly result is therefore higher than anything a trader can reach.</li>
+<li>The charge cost must use the same efficiency in the optimisation and in the accounts. If the optimiser multiplies the purchase price by the efficiency while the accounts divide by it, the schedule is optimised for a different battery from the one that is paid.</li>
+<li>The wear cost must be the same in the optimisation and in the reporting, otherwise the battery cycles for spreads that do not cover its wear.</li>
+<li>Round-trip efficiency applies to the energy that is metered. A 10% to 90% state-of-charge window on top of a usable rated energy counts the same loss twice.</li>
+</ul>
+<h4>Limits</h4>
+<ul>
+<li>Revenue of each market is computed alone. Reserves and energy compete for the same MW and the same state of charge, so adding them overstates the total. Only the capacity mechanism adds to the others.</li>
+<li>Prices are taken as given: the battery does not move them. Reserve prices show how wrong that is: French aFRR capacity prices fell by 55% between January 2025 and January 2026 (Modo Energy) as batteries arrived.</li>
+<li>No intraday, reserves, imbalance, capacity loss with age or ramp limits. Grid fee (7 €/MWh on withdrawal, nil on injection) and wear (15 €/MWh) are assumptions to check against the current TURPE and your battery warranty.</li>
+</ul>
+</div>
+<div class="fuel-note">Source: ENTSO-E day-ahead prices for France as stored by PowerKlock. Code: scripts/bess_optim.py, refreshed every day. Results in data/history/bess_da.json.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-converter">
       <div class="page-header">
         <div>
@@ -4499,6 +4647,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-genmix" class="meth-nav-link">Generation &amp; renewables</a>
           <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
           <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
+          <a href="#meth-bess" class="meth-nav-link">Batteries (BESS)</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
         <aside class="meth-nav pk-fr-only" translate="no">
@@ -4508,6 +4657,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-genmix-fr" class="meth-nav-link">Production et renouvelables</a>
           <a href="#meth-cb-fr" class="meth-nav-link">Échanges, écarts, indisponibilités</a>
           <a href="#meth-eua-fr" class="meth-nav-link">Carbone, combustibles et spreads</a>
+          <a href="#meth-bess-fr" class="meth-nav-link">Batteries (BESS)</a>
           <a href="#meth-general-fr" class="meth-nav-link">Termes généraux</a>
         </aside>
         <article class="meth-body pk-en-only">
@@ -4644,6 +4794,15 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             <p class="meth-p">Weekly AIB price indications (bid/ask per vintage year) from Commerg, and monthly French auction results published by EEX.</p>
           </section>
 
+          <section id="meth-bess" class="meth-section">
+            <h2 class="meth-h2">Batteries (BESS)</h2>
+            <h3 class="meth-h3">Day-ahead value of 1 MW</h3>
+            <p class="meth-p">Source: the French day-ahead prices already on the site (ENTSO-E), 96 quarter-hours per delivery day, recomputed every day (<code>scripts/bess_optim.py</code> → <code>data/history/bess_da.json</code>). For each delivery day alone, a linear programme picks the charge and discharge schedule of a 1 MW battery of 1, 2 or 4 hours that earns most: 85% round trip (split over both legs), grid fee of 7 €/MWh on energy drawn from the grid, at most 2 full cycles a day, same state of charge at the start and at the end of the day. The <strong>perfect schedule</strong> sees the day's prices (the ceiling of good day-ahead bids). The schedule <strong>without foresight</strong> charges in the cheapest and discharges in the dearest hours of the average profile of the previous 30 days and is paid at the real prices (the floor). <strong>Net of wear</strong> repeats the optimisation with a cost of 15 €/MWh discharged inside it. Values are € per MW of power per day; annualised = daily average × 365.</p>
+            <h3 class="meth-h3">Not included</h3>
+            <p class="meth-p">Intraday, reserves (FCR, aFRR), imbalance, the capacity mechanism, loss of capacity with age. The grid fee and wear cost are assumptions.</p>
+            <h3 class="meth-h3">BOA pricer</h3>
+            <p class="meth-p">Debt service = annuity, Debt × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) with Debt = CAPEX × LTV. DSCR = (developer payment − OPEX) ÷ debt service, tested every year against 1.20×. Floor adjusted = floor at COD × (1 − step-down)<sup>year</sup> × (1 − degradation)<sup>year</sup>. Revenue scenarios are inputs set by the user, not data.</p>
+          </section>
           <section id="meth-general" class="meth-section">
             <h2 class="meth-h2">General terms</h2>
 
@@ -4792,6 +4951,15 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
             <p class="meth-p">Indications de prix AIB hebdomadaires (offre et demande par année de production) de Commerg, et résultats mensuels des enchères françaises publiés par EEX.</p>
           </section>
 
+          <section id="meth-bess-fr" class="meth-section">
+            <h2 class="meth-h2">Batteries (BESS)</h2>
+            <h3 class="meth-h3">Valeur day-ahead d’1 MW</h3>
+            <p class="meth-p">Source : les prix day-ahead français déjà présents sur le site (ENTSO-E), 96 quarts d’heure par jour de livraison, recalculés chaque jour (<code>scripts/bess_optim.py</code> → <code>data/history/bess_da.json</code>). Pour chaque jour de livraison pris seul, un programme linéaire choisit le programme de charge et de décharge d’une batterie de 1 MW de 1, 2 ou 4 heures qui rapporte le plus : rendement aller-retour de 85 % (réparti sur les deux sens), frais de réseau de 7 €/MWh sur l’énergie soutirée, 2 cycles complets par jour au maximum, même état de charge au début et à la fin du jour. Le <strong>programme parfait</strong> voit les prix du jour (le plafond de bonnes offres day-ahead). Le programme <strong>sans anticipation</strong> charge aux heures les moins chères et décharge aux plus chères du profil moyen des 30 jours précédents, payé aux prix réels (le plancher). <strong>Net d’usure</strong> refait l’optimisation avec un coût de 15 €/MWh déchargé à l’intérieur. Les valeurs sont en € par MW de puissance et par jour ; annualisé = moyenne journalière × 365.</p>
+            <h3 class="meth-h3">Non inclus</h3>
+            <p class="meth-p">Intraday, réserves (FCR, aFRR), déséquilibres, mécanisme de capacité, perte de capacité avec l’âge. Les frais de réseau et le coût d’usure sont des hypothèses.</p>
+            <h3 class="meth-h3">Pricer BOA</h3>
+            <p class="meth-p">Service de la dette = annuité, Dette × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) avec Dette = CAPEX × LTV. DSCR = (paiement au développeur − OPEX) ÷ service de la dette, testé chaque année contre 1,20×. Floor ajusté = floor au COD × (1 − baisse annuelle)<sup>année</sup> × (1 − dégradation)<sup>année</sup>. Les scénarios de revenus sont des entrées fixées par l’utilisateur, pas des données.</p>
+          </section>
           <section id="meth-general-fr" class="meth-section">
             <h2 class="meth-h2">Termes généraux</h2>
             <div class="meth-block">
@@ -4983,6 +5151,8 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/remit-units.js"></script>
 <script src="js/eua.js"></script>
 <script src="js/overview-extra.js"></script>
+<script src="js/bess.js"></script>
+<script src="js/bess-boa.js"></script>
 <script src="js/go.js"></script>
 <!-- js/weather.js and js/globals.js (stale, never-loaded copies of prices.js) were deleted; weather lives in js/meteo.js. -->
 <script src="js/map.js"></script>
