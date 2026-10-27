@@ -133,11 +133,14 @@ async function drawEUA() {
   const P = _fuelPageP('fuel');
   ['fuel-eua-ttf', 'fuel-switch', 'fuel-hubs', 'fuel-storage', 'fuel-coal-oil', 'fuel-lng'].forEach(id => PKW.draw(id, id, P));
 
-  document.getElementById('fuel-note').innerHTML =
-    `Switch price = (gas cost − coal cost) ÷ (coal − gas CO₂ intensity), with CCGT ${(PKC.FUEL.gasEff * 100).toFixed(1)}% / ` +
-    `${PKC.FUEL.gasCO2.toFixed(3)} tCO₂/MWh and coal ${(PKC.FUEL.coalEff * 100).toFixed(0)}% / ${PKC.FUEL.coalCO2.toFixed(3)} tCO₂/MWh, ` +
-    `API2 converted at the EUR/USD close. EUA and coal are single benchmark contracts (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), ` +
-    `not rolled continuous series.`;
+  const F = PKC.FUEL, fr = typeof _mrnFr === 'function' && _mrnFr(), n = (v, d) => fr ? v.toFixed(d).replace('.', ',') : v.toFixed(d);
+  document.getElementById('fuel-note').innerHTML = fr
+    ? `Prix de bascule = (coût du gaz − coût du charbon) ÷ (intensité CO₂ charbon − gaz), avec CCGT ${n(F.gasEff * 100, 1)} % / ${n(F.gasCO2, 3)} tCO₂/MWh et charbon ${n(F.coalEff * 100, 0)} % / ${n(F.coalCO2, 3)} tCO₂/MWh, ` +
+      `API2 converti au cours EUR/USD de clôture. EUA et charbon sont des contrats de référence uniques (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), pas des séries continues roulées.`
+    : `Switch price = (gas cost − coal cost) ÷ (coal − gas CO₂ intensity), with CCGT ${n(F.gasEff * 100, 1)}% / ` +
+      `${n(F.gasCO2, 3)} tCO₂/MWh and coal ${n(F.coalEff * 100, 0)}% / ${n(F.coalCO2, 3)} tCO₂/MWh, ` +
+      `API2 converted at the EUR/USD close. EUA and coal are single benchmark contracts (${PKC.contractLabel('eua')}, ${PKC.contractLabel('coal')}), ` +
+      `not rolled continuous series.`;
 }
 
 // ── Carbon & Fuels charts (page + dashboard) ────────────────────────
