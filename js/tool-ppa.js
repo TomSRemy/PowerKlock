@@ -549,7 +549,7 @@
         `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div>`;
     host.querySelectorAll('[data-inc]').forEach(c => c.addEventListener('change', () => {
       INC[c.dataset.inc] = c.checked; try { localStorage.setItem('pk-pp-inc', JSON.stringify(INC)); } catch (_) {}
-      renderBand(S.last); renderSumWf(S.last);
+      renderBand(S.last); renderSumWf(S.last); renderSens(S.last);
     }));
   }
   function renderSumWf(o) {
@@ -567,6 +567,22 @@
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-sum-waterfall');
   }
 
+  // price up in red, down in green, as everywhere on the site
+  // ── Compare tab · what moves the price: each input moved alone, first-order (the capture value scales with the
+  //    forward; a capture point is 1 % of the forward; costs pass one for one) ──
+  function renderSens(o) {
+    if (!$('pp-sens') || !o) return;
+    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
+    if (!use.length) return;
+    const fair = mean(use.map(m => m.fair)), ref = mean(use.map(m => m.ref)), price = mean(use.map(m => m.v));
+    const tr = x => window.PKI18n ? PKI18n.tr(x) : x;
+    const L = [['Cal forward ± 10 %', fair * 0.10], ['Capture rate ± 5 points', ref * 0.05], ['Imbalance cost ± 1 €/MWh', 1], ['GO value ± 1 €/MWh', 1], ['Margin ± 0.5 €/MWh', 0.5]];
+    _fuelChart('pp-sens', { type: 'bar', data: { labels: L.map(x => tr(x[0])), datasets: [
+      { label: tr('Input lower'), data: L.map(([l, d]) => +(l.startsWith('Imbalance') || l.startsWith('Margin') ? d : -d).toFixed(2)), backgroundColor: L.map(([l]) => l.startsWith('Imbalance') || l.startsWith('Margin') ? '#ED6965AA' : '#14D3A9AA'), borderRadius: 3 },
+      { label: tr('Input higher'), data: L.map(([l, d]) => +(l.startsWith('Imbalance') || l.startsWith('Margin') ? -d : d).toFixed(2)), backgroundColor: L.map(([l]) => l.startsWith('Imbalance') || l.startsWith('Margin') ? '#14D3A9AA' : '#ED6965AA'), borderRadius: 3 },
+    ] }, options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + (c.raw >= 0 ? '+' : '−') + f2(Math.abs(c.raw)) + ' €/MWh → ' + f2(price + c.raw) + ' €/MWh' } }, pkHoverReadout: false },
+      scales: { x: Object.assign(_fuelAxis('€/MWh vs ' + f2(price)), { stacked: true }), y: Object.assign(_fuelXAxis(), { stacked: true, grid: { display: false } }) } }) }, 'ppa-sensitivity');
+  }
   // ── Tab 2 · the park: tiles, a schema, the map, production paid by delivery year ──
   let GEO = null;
   const n1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
@@ -610,7 +626,7 @@
     renderYears(o); renderAuto(o); addHelp();
     inSummary(o);
     renderRest(o);
-    renderResBar(o); renderBand(o); renderSumWf(o); renderPark(o); advCount(); clampNotes();
+    renderResBar(o); renderBand(o); renderSumWf(o); renderPark(o); renderSens(o); advCount(); clampNotes();
   }
   // inputs fingerprint: a price computed on other inputs is never shown as current
   function fp() { const c = Object.assign({}, S, { method: null, view: null, last: null, wxLast: null, asset: S.asset ? S.assetName + ':' + (S.asset.slots ? S.asset.slots.length : 0) : null }); return JSON.stringify(c); }
