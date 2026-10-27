@@ -115,8 +115,8 @@
     }
     walk(document.body);
     obs.observe(document.body, { childList: true, subtree: true, characterData: true });
-    window.PKI18n = { tr, lang, num: fmtText };
+    window.PKI18n = { tr, lang, num: fmtText, walk };   // walk(el): translate a block at once, before it is painted
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
-  window.PKI18n = { tr: s => s, lang, num: s => s };
+  window.PKI18n = { tr: s => s, lang, num: s => s, walk: () => {} };
 })();
