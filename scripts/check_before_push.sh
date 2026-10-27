@@ -16,7 +16,7 @@ if command -v node >/dev/null; then
 else
   echo "▸ JavaScript syntax (browser)"; python3 tests/js_syntax.py
 fi
-echo "▸ Calculations";       python3 tests/test_calculations.py >/dev/null && python3 tests/test_prices_dst.py >/dev/null
+echo "▸ Calculations";       python3 tests/test_calculations.py >/dev/null && python3 tests/test_prices_dst.py >/dev/null && python3 tests/test_bess_optim.py >/dev/null
 if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^data/'; then echo "data only: browser tests skipped"; exit 0; fi
 echo "▸ Site logic";         python3 tests/test_site_logic.py | tail -1 && python3 tests/test_ppa_frozen.py | tail -1
 echo "▸ Same figures everywhere, page weight"; python3 tests/test_consistency.py | tail -1
