@@ -450,11 +450,93 @@
     }));
   }
 
+  // ── Tab 1 · the price band: the methods with a box to tick, their average, and the step from the market price ──
+  // default = the site's benchmark (scripts/ppa_daily.py): average of the three model methods, the past discount left out
+  const INC0 = { pct: false, build: true, fpc: true, wx: true };
+  let INC = Object.assign({}, INC0);
+  try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
+  const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation' };
+  function methodVals(o) {
+    if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
+    const wxc = !o.m4 && S.wxLast && S.wxLast.fp === fp() ? S.wxLast : null;
+    return [
+      { k: 'pct', v: o.ppaPct, fair: o.ref - o.pdEur, ref: o.ref },
+      { k: 'build', v: o.ppaBuild, fair: o.fair, ref: o.refW },
+      { k: 'fpc', v: o.ppaFpc, fair: o.m3 ? o.m3.fair : null, ref: o.m3 ? o.m3.refW : null },
+      { k: 'wx', v: o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, fair: o.m4 ? o.m4.fair : wxc ? wxc.fair : null, ref: o.m4 ? o.m4.refW : wxc ? wxc.ref : null },
+    ];
+  }
+  function renderBand(o) {
+    const host = $('pp-band'); if (!host || !o) return;
+    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? mean(use.map(m => m.v)) : null;
+    host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
+      `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.v == null ? 'computed on its tab' : m.k === 'pct' ? 'risks entered by hand' : '€/MWh'}</span></label>`).join('')}</div>`;
+    host.querySelectorAll('[data-inc]').forEach(c => c.addEventListener('change', () => {
+      INC[c.dataset.inc] = c.checked; try { localStorage.setItem('pk-pp-inc', JSON.stringify(INC)); } catch (_) {}
+      renderBand(S.last); renderSumWf(S.last);
+    }));
+  }
+  function renderSumWf(o) {
+    if (!$('pp-sum-wf') || !o) return;
+    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
+    if (!use.length) return;
+    const ref = mean(use.map(m => m.ref)), fair = mean(use.map(m => m.fair)), price = mean(use.map(m => m.v));
+    const risk = price - (fair - o.imb + o.goW - o.margin);
+    const st = [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
+    let run0 = 0;
+    const bars = st.map(([l, v, t]) => { if (t) { run0 = v; return [0, v]; } const a = run0; run0 += v; return [a, run0]; });
+    const col = st.map(([, v, t], i) => t ? (i ? '#14D3A9' : '#8D99AE') : v < 0 ? '#ED6965' : '#14D3A9');
+    _fuelChart('pp-sum-wf', { type: 'bar', data: { labels: st.map(x => window.PKI18n ? PKI18n.tr(x[0]) : x[0]), datasets: [{ label: '€/MWh', data: bars.map(b => [+b[0].toFixed(2), +b[1].toFixed(2)]), backgroundColor: col, borderRadius: 3, barPercentage: 0.7 }] },
+      options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => { const v = st[c.dataIndex]; return ' ' + (v[2] ? '' : v[1] >= 0 ? '+' : '−') + f2(Math.abs(v[1])) + ' €/MWh'; } } }, pkHoverReadout: false },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-sum-waterfall');
+  }
+
+  // ── Tab 2 · the park: tiles, a schema, the map, production paid by delivery year ──
+  let GEO = null;
+  const n1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
+  function renderPark(o) {
+    if (!$('pp-park-tiles') || !o) return;
+    // capacity left blank: the one that gives the expected production at the national load factor
+    const mwE = o.mw || (o.lf ? o.volume / (o.lf * 8760) : null);
+    const tech = S.tech === 'wind' ? 'Wind' : 'Solar', flh = mwE ? o.volume / mwE : null, negLost = o.years.reduce((a, r) => a + (r.negShare || 0), 0) / o.years.length;
+    $('pp-park-tiles').innerHTML = _fuelKpi('Technology', tech, '', o.useAsset ? 'own production curve' : 'national profile (RTE)') +
+      _fuelKpi('Installed capacity', n1(mwE), 'MW', o.mw ? 'input' : 'from production ÷ national load factor') + _fuelKpi('Expected production', f0(o.volume), 'MWh/yr', 'P50') +
+      _fuelKpi('Load factor', flh ? n1(flh / 87.6) : '–', '%', 'production ÷ (capacity × 8 760 h)') + _fuelKpi('Full-load hours', flh ? f0(flh) : '–', 'h/yr', 'production ÷ capacity') +
+      _fuelKpi('Lost at prices ≤ 0', S.conv === 'all' ? '0' : n1(negLost * 100), '%', S.conv === 'all' ? 'all hours paid' : 'average over the delivery years');
+    $('pp-park-schema-sub').textContent = o.useAsset ? S.assetName : (S.tech === 'wind' ? 'National wind profile' : 'National solar profile');
+    const box = (x, a, b) => `<rect x="${x}" y="30" width="120" height="70" rx="10" fill="var(--bg3)" stroke="var(--border2)"/><text x="${x + 60}" y="60" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">${a}</text><text x="${x + 60}" y="82" text-anchor="middle" font-size="11" fill="var(--text3)">${b}</text>`;
+    const arr = x => `<line x1="${x}" x2="${x + 34}" y1="65" y2="65" stroke="#14D3A9" stroke-width="2"/><polygon points="${x + 34},60 ${x + 42},65 ${x + 34},70" fill="#14D3A9"/>`;
+    $('pp-park-schema').innerHTML = `<svg viewBox="0 0 570 130" style="width:100%;height:auto;font-family:'JetBrains Mono',monospace">${box(0, tech, n1(mwE) + ' MW')}${arr(124)}${box(150, f0(o.volume / 1000 * 10) / 10 + ' GWh', 'per year, P50')}${arr(274)}${box(300, 'Grid', S.conv === 'all' ? 'all hours paid' : 'stops at ≤ 0 €')}${arr(424)}${box(450, 'Buyer', 'PPA ' + o.tenor[0] + '–' + o.tenor[o.tenor.length - 1])}</svg>`;
+    // the asset's own daily profile only means something when a curve is loaded
+    const pa = $('pp-prof-asset'); if (pa) { const c = pa.closest('.chart-container'); if (c) c.style.display = o.useAsset ? '' : 'none'; }
+    // production paid by delivery year, and what the hours at prices ≤ 0 take away
+    const lost = o.years.map((r, i) => S.conv === 'all' || r.negShare == null ? 0 : o.volume * Math.pow(1 - o.degr, i) * r.negShare);
+    _fuelChart('pp-park-years', { type: 'bar', data: { labels: o.years.map(r => String(r.y)), datasets: [
+      { label: 'Production paid', data: o.years.map(r => Math.round(r.ev)), backgroundColor: S.tech === 'wind' ? '#7FC8F8CC' : '#FBBF24CC', borderRadius: 3, stack: 's' },
+      { label: 'Not paid, prices ≤ 0', data: lost.map(Math.round), backgroundColor: '#ED696566', borderRadius: 3, stack: 's' },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, grid: { display: false } }), y: _fuelAxis('MWh', { stacked: true, beginAtZero: true }) } }) }, 'ppa-park-years');
+    // the map: France, the park when its location is known (Tools › Production forecast › Price this park)
+    const loc = S.loc && S.useLoc !== false && o.useAsset ? S.loc : null;
+    $('pp-park-map-sub').textContent = loc ? f2(loc.lat) + ' N · ' + f2(loc.lon) + ' E' : 'No location: national profile';
+    const draw = () => {
+      const fr = GEO && GEO.features.find(f => f.properties.iso === 'FR'); if (!fr) return;
+      const W = 360, H = 340, x0 = -5.2, x1 = 9.6, y0 = 41.3, y1 = 51.2, k = Math.cos(46.5 * Math.PI / 180);
+      const sx = v => (v - x0) / (x1 - x0) * W, sy = v => H - (v - y0) / (y1 - y0) * H * (k * 1.45);
+      const polys = fr.geometry.coordinates.map(p => p[0]).filter(r => r.length > 30 && r.some(([a, b]) => a > -5.5 && a < 9.8 && b > 41 && b < 51.5));
+      const path = polys.map(r => 'M' + r.filter(([a, b]) => a > -5.5 && a < 9.8 && b > 41 && b < 51.5).map(([a, b]) => sx(a).toFixed(1) + ',' + sy(b).toFixed(1)).join('L') + 'Z').join('');
+      $('pp-park-map').innerHTML = `<svg viewBox="0 ${H - H * k * 1.45 - 6} ${W} ${H * k * 1.45 + 12}" style="width:100%;max-width:380px;height:auto;display:block;margin:auto"><path d="${path}" fill="var(--bg3)" stroke="var(--text3)" stroke-width="1"/>` +
+        (loc ? `<circle cx="${sx(loc.lon)}" cy="${sy(loc.lat)}" r="14" fill="#14D3A933"/><circle cx="${sx(loc.lon)}" cy="${sy(loc.lat)}" r="5" fill="#14D3A9"/>` : '') + `</svg>` +
+        (loc ? '' : `<div class="fuel-note">Price a precise park from Tools › Production forecast › Price this park: its location and production then show here.</div>`);
+    };
+    if (GEO) draw(); else get('geo/europe.json').then(j => { GEO = j; draw(); });
+  }
   function render(o) {
     renderYears(o); renderAuto(o); addHelp();
     inSummary(o);
     renderRest(o);
-    renderResBar(o); advCount(); clampNotes();
+    renderResBar(o); renderBand(o); renderSumWf(o); renderPark(o); advCount(); clampNotes();
   }
   // inputs fingerprint: a price computed on other inputs is never shown as current
   function fp() { const c = Object.assign({}, S, { method: null, view: null, last: null, wxLast: null, asset: S.asset ? S.assetName + ':' + (S.asset.slots ? S.asset.slots.length : 0) : null }); return JSON.stringify(c); }
@@ -992,7 +1074,7 @@
       ['Weather simulation', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4']].filter(x => x[1] != null);
     $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} at 10–50 % risk` : 'risks entered by hand')).join('') +
       _fuelKpi('Spread', f2(Math.max(...meth.map(x => x[1])) - Math.min(...meth.map(x => x[1]))), '€/MWh', 'highest − lowest method');
-    _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => x[0]), datasets: [
+    _fuelChart('pp-cmp-price', { type: 'bar', data: { labels: meth.map(x => window.PKI18n ? PKI18n.tr(x[0]) : x[0]), datasets: [
       { label: 'Range', data: meth.map(x => x[2] != null ? [x[2], x[3]] : null), backgroundColor: meth.map(x => x[4] + '33'), borderColor: meth.map(x => x[4]), borderWidth: 1, barPercentage: 0.25, grouped: false },
       { label: 'PPA price', data: meth.map(x => +x[1].toFixed(2)), backgroundColor: meth.map(x => x[4] + 'CC'), borderRadius: 3, barPercentage: 0.6, grouped: false },
     ] }, options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { enabled: true, callbacks: { label: c => Array.isArray(c.raw) ? ` range ${f2(c.raw[0])} – ${f2(c.raw[1])} €/MWh` : ` ${f2(c.raw)} €/MWh` } }, pkHoverReadout: false },
@@ -1267,7 +1349,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
       S.tech = a.dataset.tech; $('pp-tech').value = S.tech; S.mw = null; S.volume = null;
       await loadAsset(f, name);
     }));
-    $('pp-asset-clear').addEventListener('click', () => { S.years = null; S.asset = null; S.assetName = ''; $('pp-asset-clear').hidden = true; run(); });
+    $('pp-asset-clear').addEventListener('click', () => { S.years = null; S.asset = null; S.assetName = ''; S.loc = null; $('pp-asset-clear').hidden = true; run(); });
     run();
   }
   // one tab per method (js/views.js): the tab sets the method that prices
@@ -1276,10 +1358,10 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
     if (!e.detail || e.detail.key !== 'ppapricer') return;
     const m = VIEW_METHOD[e.detail.label];
     const was = S.view;
-    S.view = e.detail.label === 'Compare' ? 'compare' : 'method';
+    S.view = ['Inputs & price', 'The park', 'Compare & price'].includes(e.detail.label) ? 'compare' : 'method';
     if (S.view === 'compare' && was !== 'compare' && S.last && !S.last.m4 && $('page-ppapricer').dataset.wired) { run(); return; }
     if (m && m !== S.method) { S.method = m; if ($('page-ppapricer') && $('page-ppapricer').dataset.wired) run(); }
-    else if (S.last) { renderAuto(S.last); renderResBar(S.last); }
+    else if (S.last) { renderAuto(S.last); renderResBar(S.last); renderBand(S.last); renderSumWf(S.last); }
   });
   window.addEventListener('load', () => setTimeout(() => {
     ['cn-tech', 'cn-conv', 'cn-model'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => PKCannib.render()); });
