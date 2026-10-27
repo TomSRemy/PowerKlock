@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0B0F14;--panel:#121821;--line:#243042;--fg:#E6EDF3;--muted:#8DA2B8;--up:#ED6965;--down:#4ADE80;--blue:#7FC8F8;--violet:#A87DC4;--amber:#FBBF24;
+:root{--bg:#0B0F14;--panel:#121821;--line:#243042;--fg:#E6EDF3;--muted:#8DA2B8;--up:#ED6965;--down:#4ADE80;--blue:#7FC8F8;--accent:#7FC8F8;--amber:#FBBF24;
   --mono:"JetBrains Mono",ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#000;color:var(--fg);font-family:var(--sans)}
@@ -25,16 +25,32 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 #stage{position:relative;width:min(100vw,56.25vh);height:min(177.78vw,100vh);background:radial-gradient(120% 70% at 50% 0%,#16202D 0%,var(--bg) 60%);overflow:hidden;--u:calc(min(100vw,56.25vh)/100)}
 .scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateY(calc(4*var(--u)));transition:opacity .5s ease,transform .6s ease}
 .scene.on{opacity:1;transform:none}
-.kick{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--violet)}
-.h{font:800 calc(8.4*var(--u))/1.08 var(--sans);letter-spacing:-.01em}
+.scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
+.scene.on > *{animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards}
+.scene.on > *:nth-child(2){animation-delay:.15s}.scene.on > *:nth-child(3){animation-delay:.3s}.scene.on > *:nth-child(4){animation-delay:.6s}.scene.on > *:nth-child(5){animation-delay:.8s}.scene.on > *:nth-child(6){animation-delay:1s}
+@keyframes rise{to{opacity:1;transform:none}}
+.scene.on .delta{animation:rise .6s ease .6s forwards,pop .5s ease 1.2s}
+@keyframes pop{50%{transform:scale(1.08)}}
+.brief div{opacity:0;transform:translateX(calc(-6*var(--u)))}
+.scene.on .brief div{animation:slide .6s ease forwards}.scene.on .brief div:nth-child(2){animation-delay:.5s}.scene.on .brief div:nth-child(3){animation-delay:1s}
+@keyframes slide{to{opacity:1;transform:none}}
+.tile{opacity:0;transform:scale(.92)}.scene.on .tile{animation:tile .5s ease forwards}.scene.on .row .tile:nth-child(2){animation-delay:.25s}.scene.on .tile{animation-delay:1.6s}.scene.on .row .tile:nth-child(2){animation-delay:1.85s}
+@keyframes tile{to{opacity:1;transform:none}}
+.kick{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.h{font:800 calc(8.4*var(--u))/1.08 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
+.nw{white-space:nowrap}
 .big{font:800 calc(22*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .unit{font:500 calc(4.4*var(--u)) var(--mono);color:var(--muted)}
-.delta{font:800 calc(7.5*var(--u)) var(--mono);display:flex;align-items:center;gap:calc(2*var(--u))}
+.delta{font:800 calc(7.5*var(--u)) var(--mono);display:flex;flex-wrap:wrap;align-items:baseline;gap:calc(1*var(--u)) calc(2*var(--u))}
+.delta .unit{white-space:nowrap}
+.figline{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 calc(2*var(--u))}
+.figline .unit{white-space:nowrap}
+.big.long{font-size:calc(17*var(--u))}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
 .sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
 .row{display:flex;gap:calc(3*var(--u))}
 .tile{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(3.5*var(--u))}
-.tile .l{font:700 calc(3*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tile .l{white-space:nowrap;font:700 calc(3*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tile .v{font:800 calc(8.5*var(--u)) var(--mono);margin-top:calc(1*var(--u))}
 .tile .s{font:500 calc(3.3*var(--u)) var(--mono);color:var(--muted)}
 svg{width:100%;height:auto;overflow:visible}
@@ -45,8 +61,7 @@ svg{width:100%;height:auto;overflow:visible}
 .brief .up{border-left-color:var(--up)}.brief .down{border-left-color:var(--down)}
 .event{background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(5*var(--u))}
 .brand{position:absolute;left:0;right:0;bottom:calc(7*var(--u));display:flex;flex-direction:column;align-items:center;gap:calc(1*var(--u));z-index:2}
-.brand .w{font:800 calc(6*var(--u)) var(--mono);letter-spacing:-.02em}
-.brand .w span{color:var(--violet)}
+.brand .logo{width:calc(44*var(--u));height:auto;display:block}
 .brand .d{font:500 calc(3.2*var(--u)) var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .bar{position:absolute;top:calc(5*var(--u));left:calc(8*var(--u));right:calc(8*var(--u));display:flex;gap:calc(1.2*var(--u));z-index:2}
 .bar i{flex:1;height:calc(.7*var(--u));background:var(--line);border-radius:9px;overflow:hidden}
@@ -56,14 +71,14 @@ svg{width:100%;height:auto;overflow:visible}
 @keyframes fill{to{width:100%}}
 .draw{stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.4s ease forwards}
 @keyframes draw{to{stroke-dashoffset:0}}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div{opacity:1;transform:none;animation:none!important}}
 </style>
 </head>
 <body>
 <div id="stage">
   <div class="bar" id="bar"></div>
   <div id="scenes"></div>
-  <div class="brand"><div class="w" translate="no">Power<span>Klock</span></div><div class="d" id="brand-d"></div></div>
+  <div class="brand"><img class="logo" src="assets/logo-header.png" alt="PowerKlock" translate="no"><div class="d" id="brand-d"></div></div>
 </div>
 <script>
 (function () {
@@ -86,8 +101,8 @@ svg{width:100%;height:auto;overflow:visible}
     const a = D0.avg, b = D1 && D1.avg, dv = b == null ? null : a - b;
     return `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
       <div class="h">${T('Le prix de l’électricité', 'The power price')}</div>
-      <div><span class="big">${fmt(a, 1)}</span> <span class="unit">€/MWh</span></div>
-      ${dv == null ? '' : `<div class="delta ${dir(dv)}">${arrow(dv)} ${sgn(dv, 1)} € <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)} %)</span></div>`}
+      <div class="figline"><span class="big${fmt(a, 1).length > 5 ? ' long' : ''}" data-count="${a}" data-dec="1">${fmt(a, 1)}</span> <span class="unit">€/MWh</span></div>
+      ${dv == null ? '' : `<div class="delta ${dir(dv)}"><span class="nw">${arrow(dv)} ${sgn(dv, 1)}&nbsp;€</span> <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)}&nbsp;%)</span></div>`}
       <div class="sub">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>`;
   }
   function profileScene(D0) {
@@ -100,21 +115,21 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="h">${T('Creux à', 'Low at')}&nbsp;${iMin}&nbsp;h, ${T('pic à', 'peak at')}&nbsp;${iMax}&nbsp;h</div>
       <svg viewBox="-20 -60 1040 660" aria-hidden="true">
         ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#ED6965" stroke-dasharray="8 8"/>` : ''}
-        <polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(168,125,196,.18)"/>
-        <polyline class="draw" points="${pts}" fill="none" stroke="#A87DC4" stroke-width="9" stroke-linejoin="round"/>
+        <polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(127,200,248,.16)"/>
+        <polyline class="draw" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="9" stroke-linejoin="round"/>
         <circle cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
         <text x="${x(iMin)}" y="${y(mn) + 62}" text-anchor="middle" fill="#4ADE80" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mn, 0)} €</text>
         <text x="${x(iMax)}" y="${y(mx) - 30}" text-anchor="middle" fill="#ED6965" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mx, 0)} €</text>
         ${[0, 6, 12, 18, 23].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${i} h</text>`).join('')}
       </svg>
-      <div class="row"><div class="tile"><div class="l">${T('Écart pic − creux', 'Peak − low spread')}</div><div class="v">${fmt(mx - mn, 0)} €</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
+      <div class="row"><div class="tile"><div class="l">${T('Pic − creux', 'Peak − low')}</div><div class="v nw">${fmt(mx - mn, 0)}&nbsp;€</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
         <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`;
   }
   function calScene(cal) {
     return `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
-      <div class="h">${T('Électricité livrée en', 'Power delivered in')} ${cal.y}</div>
-      <div><span class="big">${fmt(cal.v, 2)}</span> <span class="unit">€/MWh</span></div>
-      <div class="delta ${dir(cal.dv)}">${arrow(cal.dv)} ${sgn(cal.dv, 2)} € <span class="unit">${T('en une séance', 'in one session')}</span></div>
+      <div class="h">${T('Électricité livrée en', 'Power delivered in')}&nbsp;${cal.y}</div>
+      <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-count="${cal.v}" data-dec="2">${fmt(cal.v, 2)}</span> <span class="unit">€/MWh</span></div>
+      <div class="delta ${dir(cal.dv)}"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
       <div class="sub">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>`;
   }
   function mondayScene(week, go) {
@@ -177,6 +192,12 @@ svg{width:100%;height:auto;overflow:visible}
       bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = SCENE_MS + 'ms'; });
       // replay the curve drawing each time its scene comes back
       sc[k].querySelectorAll('.draw').forEach(p => { p.classList.remove('draw'); void p.getBoundingClientRect(); p.classList.add('draw'); });
+      // the big figures count up from 0 (1.1 s, eased)
+      sc[k].querySelectorAll('[data-count]').forEach(el => {
+        const to = +el.dataset.count, dec = +el.dataset.dec, t0 = performance.now(), dur = 1100;
+        const step = now => { const x = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(to * e, dec); if (x < 1) requestAnimationFrame(step); };
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) el.textContent = fmt(to, dec); else requestAnimationFrame(step);
+      });
     };
     show();
     window.REEL_SCENES = S.length;
