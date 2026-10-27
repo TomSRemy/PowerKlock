@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-10-27T10:37:56.303041+00:00",
+ "lastUpdate": "2026-10-27T12:29:59.329284+00:00",
  "spot": {
-  "value": 161.53,
+  "value": 252.66,
   "unit": "EUR/MWh",
-  "date": "2026-10-26"
+  "date": "2026-10-27"
  },
  "forwardCurve": [
   {
@@ -142,9 +142,9 @@
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 161.53,
+    "value": 252.66,
     "unit": "EUR/MWh",
-    "date": "2026-10-26"
+    "date": "2026-10-27"
    },
    "forwardCurve": [
     {
@@ -277,9 +277,9 @@
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 109.96,
+    "value": 175,
     "unit": "GBP/MWh",
-    "date": "2026-10-26"
+    "date": "2026-10-27"
    },
    "forwardCurve": [
     {
@@ -330,7 +330,7 @@
      "value": 139.51,
      "date": "2026-10-26",
      "varD1Pct": 1.27,
-     "varW1Pct": 5.21
+     "varW1Pct": 5.2
     },
     {
      "tenor": "Q+3",
@@ -339,8 +339,8 @@
      "unit": "GBP/MWh",
      "value": 128.93,
      "date": "2026-10-26",
-     "varD1Pct": 0.87,
-     "varW1Pct": 4.5
+     "varD1Pct": 0.88,
+     "varW1Pct": 4.51
     },
     {
      "tenor": "S+1",
@@ -377,10 +377,10 @@
      "contract": "UK Cal 2028 base",
      "marketId": 189467,
      "unit": "GBP/MWh",
-     "value": 100.61,
+     "value": 100.62,
      "date": "2026-10-26",
      "varD1Pct": 1.83,
-     "varW1Pct": 5.88
+     "varW1Pct": 5.89
     },
     {
      "tenor": "Y+3",
@@ -411,9 +411,9 @@
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 155.12,
+    "value": 249.21,
     "unit": "EUR/MWh",
-    "date": "2026-10-26"
+    "date": "2026-10-27"
    },
    "forwardCurve": [
     {
@@ -627,7 +627,7 @@
      "unit": "EUR/MWh",
      "value": 156.6,
      "date": "2026-10-26",
-     "varD1Pct": 4.87,
+     "varD1Pct": 4.86,
      "varW1Pct": 8.07
     },
     {
