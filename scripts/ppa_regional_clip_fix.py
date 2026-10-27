@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Both fixes Tom asked to test for the regional price model's clipping bug (found in
-ppa_sensitivity_isolated.py: ppa_lab.PriceModel's trained bins stop at a residual-load share of
--0.1, but the central capacity path already needs -0.28 by 2027 and -0.61 by 2030).
+"""Both fixes Tom asked to test for what first looked like a clipping bug of the regional price
+model (ppa_lab.PriceModel's trained bins stop at a residual-load share of -0.1, the central capacity
+path already reaches -0.28 by 2027 and -0.61 by 2030). Follow-up: not a bug — see ppa_tail_test.py
+and ppa_tail_walkforward.py: the flat edge acts as curtailment and beats every tail tried in the
+pricer's own walk-forward; and B/D below lean on a France-alone model whose deep-oversupply hours are
+export hours (prices stayed positive: 96 % of hours at a France-alone share of -0.25), which won't
+hold once the whole region saturates together.
 
   A  baseline        today's setting: region=True (France+DE+BE+ES residual load summed), flat
                      nearest-bin fallback beyond the trained edge

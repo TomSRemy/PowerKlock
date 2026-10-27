@@ -13,18 +13,15 @@ a first, narrower cut, not a replacement for it.
   combined         both varied together, to see whether the two spreads simply add up or interact
 
 First result (2033 and 2035): weather spread (~5-9 capture points) dwarfs the capacity-scenario
-spread (under 1 point even at 2035's full 55-80 GW solar bracket) — checked directly and this gap is
-an artefact, not a real result, AND IT ALREADY MATTERS FOR THE LIVE PRICER, not just this far-out
-test. ppa_lab.PriceModel's trained bins (5 recent years, blended France+neighbours residual load)
-only go down to a residual share of -0.1. Checked the forecast ppa_lab.forecast() actually writes to
-data/history/ppa_forecast.json (what the live pricer reads): on the central capacity path alone,
-2027's blended regional residual share already reaches -0.28 — past the trained floor one year out —
-and -0.61 by 2030. Every capacity scenario at 2035 clips to around -1.1 to -1.2, so 'low', 'central'
-and 'high' all land on the same edge bin and the model can't tell them apart: that's why the
-capacity-scenario spread above is near zero. This isn't only a 2035 sensitivity artefact — the live
-regional/regionalMC methods are plausibly already clipping for part of their 2027-2030 forecast
-horizon today. Needs checking against the live ppa_forecast.json and, if confirmed, either wider
-training bins or an explicit extrapolated tail beyond PriceModel.near's nearest-bin fallback.
+spread (under 1 point even at 2035's full 55-80 GW solar bracket). Not a code bug (first read as one,
+corrected after ppa_tail_test.py and ppa_tail_walkforward.py): the region is already saturated at
+midday in the LOW scenario, because the neighbours are extended at their recent pace (Germany about
++16 GW of solar a year, in line with its EEG targets) while no growth of storage or flexible demand
+is modelled. Beyond the deepest real oversupply ever seen (residual share -0.1 blended), the price
+model repeats that state: the extra output behaves as curtailed, which is the right reading of a
+potential (pre-curtailment) residual share, and the pricer's walk-forward prefers it to any tail
+tried. So France's own capacity barely moves the European model from about 2028: a modelling limit
+(no future flexibility), to fix with a dated storage path, not with the tail.
 
 Writes data/history/ppa_sensitivity_isolated.json
     python scripts/ppa_sensitivity_isolated.py [--year 2030] [--sims 300]
