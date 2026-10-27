@@ -58,13 +58,15 @@ def fcr_day(d):
         except ValueError:
             DIAG.append(f'FCR {d}: no French price column')
             return None
-        v = [r[j] for r in rows[1:] if r[j] is not None]
+        pn = h.index('PRODUCTNAME') if 'PRODUCTNAME' in h else None
+        body = sorted(rows[1:], key=lambda r: str(r[pn])) if pn is not None else rows[1:]   # NEGPOS_00_04 … NEGPOS_20_24
+        v = [r[j] for r in body if r[j] is not None]
         if not v:
             return None
         dm = h.index('FRANCE_DEMAND_[MW]') if 'FRANCE_DEMAND_[MW]' in h else None
         mw = [r[dm] for r in rows[1:] if dm is not None and r[dm] is not None]
         # blocks of 4 hours: 6 a day; a day with fewer blocks published is scaled to 24 h
-        return round(sum(v) * 6 / len(v), 2), (round(sum(mw) / len(mw)) if mw else None)
+        return round(sum(v) * 6 / len(v), 2), (round(sum(mw) / len(mw)) if mw else None), ([round(float(x), 2) for x in v] if len(v) == 6 else None)
     return None
 
 
@@ -125,7 +127,7 @@ def rate10y(start):
 
 def main():
     old = json.load(open(OUT)) if os.path.exists(OUT) else {}
-    fcr, af, rt, dem = old.get('fcr', {}), old.get('afrr', {}), old.get('rate10y', {}), old.get('fcr_mw', {})
+    fcr, af, rt, dem, blk = old.get('fcr', {}), old.get('afrr', {}), old.get('rate10y', {}), old.get('fcr_mw', {}), old.get('fcr_blocks', {})
     today = datetime.now(timezone.utc).date()
     if '--since' in sys.argv:
         d0 = date.fromisoformat(sys.argv[sys.argv.index('--since') + 1])
@@ -138,6 +140,8 @@ def main():
             fcr[d.isoformat()] = v[0]
             if v[1] is not None:
                 dem[d.isoformat()] = v[1]
+            if v[2]:
+                blk[d.isoformat()] = v[2]
         d += timedelta(days=1)
     # aFRR: the last 7 days again, plus up to 60 older missing days per run (the history fills in over a few days)
     want = [today - timedelta(days=i) for i in range(-1, 300)]
@@ -148,8 +152,8 @@ def main():
     rt.update(rate10y((d0 - timedelta(days=7)).isoformat()))
     out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
            'source': 'regelleistung.net (FCR common auction, French settlement price) · ENTSO-E Transparency (aFRR A89, France) · ECB data API (euro area AAA 10-year spot rate)',
-           'unit': 'fcr: EUR per MW per delivery day · fcr_mw: French FCR need, MW · afrr: EUR per MW per hour · rate10y: percent',
-           'diag': DIAG[-30:], 'fcr': dict(sorted(fcr.items())), 'fcr_mw': dict(sorted(dem.items())), 'afrr': dict(sorted(af.items())), 'rate10y': dict(sorted(rt.items()))}
+           'unit': 'fcr: EUR per MW per delivery day · fcr_mw: French FCR need, MW · fcr_blocks: the 6 block prices of the day in order, EUR/MW per 4-hour block · afrr: EUR per MW per hour · rate10y: percent',
+           'diag': DIAG[-30:], 'fcr': dict(sorted(fcr.items())), 'fcr_mw': dict(sorted(dem.items())), 'fcr_blocks': dict(sorted(blk.items())), 'afrr': dict(sorted(af.items())), 'rate10y': dict(sorted(rt.items()))}
     out['diag'] = [re.sub(r'securityToken=[^&\s]+', 'securityToken=***', x) for x in out['diag']]
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))

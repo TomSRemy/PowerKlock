@@ -52,5 +52,20 @@ for _ in range(20):
     worse += nv <= pf + 1e-6
 check('naive <= perfect on 20 random days', worse == 20, worse)
 
+# Day-ahead + FCR in one schedule
+flat = np.full(96, 50.0)
+co = b.cooptimise_day(flat, [100.0] * 6, 2, b.PARAMS['wear'])
+check('flat prices: the whole MW goes to FCR (6 x 100)', co and abs(co[1] - 600) < 1e-6 and abs(co[3] - 1) < 1e-6, co)
+co0 = b.cooptimise_day(p, [0.0] * 6, 2, 0.0, prm)
+check('FCR at 0: same as the day-ahead alone', co0 and abs(co0[0] - rev) < 1e-6 and co0[3] < 1e-9, (co0, rev))
+ge = 0
+for _ in range(10):
+    day = base + rng.normal(0, 25, 96)
+    blocks = list(rng.uniform(0, 120, 6))
+    c = b.cooptimise_day(day, blocks, 2, b.PARAMS['wear'])
+    da = b.optimise_day(day, 2, b.PARAMS['wear'])
+    ge += c is not None and c[0] + c[1] - b.PARAMS['wear'] * c[2] >= max(da[0] - b.PARAMS['wear'] * da[1], sum(blocks)) - 1e-6
+check('co-optimised >= the better of day-ahead alone and FCR alone', ge == 10, ge)
+
 print('FAILED' if fails else 'all bess optimiser checks pass')
 sys.exit(1 if fails else 0)
