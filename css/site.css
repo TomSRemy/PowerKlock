@@ -2850,7 +2850,7 @@
   .ma-fc-title { font-size: 13px; font-weight: 600; color: var(--tx); }
   .ma-fc-sub { font-size: 11px; color: var(--tx3); min-width: 0; }
   .ma-panel-legend .ma-fc-key { color: var(--acc, #7FC8F8); }
-  .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+  .ma-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }   /* readout 340 px: its tiles had no room (note 53) */
   .ma-hover-tooltip.ma-side { position: sticky; top: 12px; margin-top: 12px; min-width: 0; max-width: none; box-shadow: none; display: block !important; }
   @media (max-width: 1100px) { .ma-layout { grid-template-columns: minmax(0, 1fr); } .ma-hover-tooltip.ma-side { position: static; } }
   .ma-hover-tooltip {

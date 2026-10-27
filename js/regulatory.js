@@ -143,7 +143,8 @@
         g.font = '10px "JetBrains Mono", monospace';
         let txt = fmt(h.it) + ' · ' + L(h.it.title); while (txt.length > 12 && g.measureText(txt).width + 14 > a.right - a.left - 8) txt = txt.slice(0, -2);
         if (txt !== fmt(h.it) + ' · ' + L(h.it.title)) txt = txt.replace(/\s*\S?$/, '') + '…';
-        const w = g.measureText(txt).width + 14, bx = Math.max(a.left + 4, Math.min(a.right - w - 4, h.x - w / 2));
+        // beside the line, never under the pointer (note 43): to the right of the date, or to its left near the right edge
+        const w = g.measureText(txt).width + 14, bx = h.x + 10 + w <= a.right - 4 ? h.x + 10 : Math.max(a.left + 4, h.x - 10 - w);
         g.fillStyle = 'rgba(10,15,20,.95)'; g.strokeStyle = 'rgba(251,191,36,.6)'; g.beginPath(); g.rect(bx, a.top + 10, w, 18); g.fill(); g.stroke();
         g.fillStyle = '#E6EDF3'; g.textAlign = 'left'; g.fillText(txt, bx + 7, a.top + 23);
       }
@@ -153,7 +154,8 @@
       const e = args.event, ms = ch.$pkRegMarks; if (!ms || !ms.length || e.y == null) return;
       const a = ch.chartArea, top0 = a.top - ROWS * (BLOCK_H + GAP) - 4;
       const box = (ch.$pkRegPlaced || []).find(p => e.x >= p.x0 && e.x <= p.x0 + p.w && e.y >= top0 + p.r * (BLOCK_H + GAP) && e.y <= top0 + p.r * (BLOCK_H + GAP) + BLOCK_H);
-      const near = box || (e.y >= a.top && e.y <= a.top + 40 ? ms.find(m => Math.abs(m.x - e.x) <= 6) : null);
+      // the whole dashed line answers the pointer, not only its small triangle (note 43)
+      const near = box || (e.y >= a.top && e.y <= a.bottom ? ms.reduce((b, m) => { const d = Math.abs(m.x - e.x); return d <= 7 && (!b || d < Math.abs(b.x - e.x)) ? m : b; }, null) : null);
       if (e.type === 'click' && near) { location.hash = '#intel/regulation?m=' + near.it.id; return; }
       const cur = ch.$pkRegHover && ch.$pkRegHover.it, nxt = near && near.it;
       if (cur !== nxt) { ch.$pkRegHover = near ? { it: near.it, x: near.x } : null; args.changed = true; ch.canvas.style.cursor = near ? 'pointer' : ''; }

@@ -113,7 +113,8 @@
   .why4-t .why4-h .wk-chip{margin-left:auto}
   .why4-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;align-items:stretch}
   .why4-t{border:1px solid var(--border2, rgba(255,255,255,.12));border-top:3px solid var(--text3);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;min-width:0;background:var(--bg2, rgba(255,255,255,.035));box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 4px 14px rgba(0,0,0,.25)}
-  .why4-t.up{border-top-color:#ED6965} .why4-t.down{border-top-color:#14D3A9} .why4-t.flat{border-top-color:#6F8499}   /* the direction at a glance: rising prices red, as on the rest of the site */
+  .why4-t.up{border-top-color:#ED6965} .why4-t.down{border-top-color:#14D3A9} .why4-t.flat{border-top-color:#6F8499}
+  .why4-t.up .why4-n{color:#ED6965} .why4-t.down .why4-n{color:#14D3A9} .why4-t.flat .why4-n{color:var(--text2)}   /* the title takes the direction's colour too (note 42) */   /* the direction at a glance: rising prices red, as on the rest of the site */
   .why4-v{font-size:19px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
   .why4-v small{font-size:11.5px;font-weight:500;color:var(--text3);margin-left:6px}
   .why4-x{flex:1;font-size:13.5px;line-height:1.55;color:var(--text)}
@@ -171,7 +172,7 @@
       const sp = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null), a7 = sp.slice(-7), b7 = sp.slice(-14, -7);
       if (a7.length && b7.length) { const m = a7.reduce((x, r) => x + r.avg, 0) / a7.length, mb = b7.reduce((x, r) => x + r.avg, 0) / b7.length;
         parts.push(m < mb * 0.9 ? T('Le spot recule sur la semaine.', 'Spot eases over the week.') : m > mb * 1.1 ? T('Le spot monte sur la semaine.', 'Spot rises over the week.') : T('Le spot reste stable sur la semaine.', 'Spot holds over the week.')); }
-      R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' '), `Cal ${String(ys[0]).slice(2)} ${n1(l[1])} €<small>${s1(wk(p1))} % ${T('sur 7 j', 'on 7 d')}</small>`]);
+      R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' '), `${n1(l[1])} €<small>Cal ${String(ys[0]).slice(2)} · ${s1(wk(p1))} % ${T('sur 7 j', 'on 7 d')}</small>`]);
     }
     // French nuclear: available now, against the operator's forecast, a week and a year ago (less nuclear = more gas called)
     const nu = P('fr_nuc_avail'), nl = last(nu), nf = last(P('fr_nuc_avail_fc'));
@@ -194,7 +195,7 @@
     if (ttf.length) { const ps = pos60(ttf), parts = [];
       if (ps) parts.push(T('TTF ', 'TTF ') + ps + '.');
       if (st && ly != null) parts.push(T(`Stocks UE <b>${s1(st[1] - ly)} pts</b> sur un an`, `EU storage <b>${s1(st[1] - ly)} pts</b> on a year`) + (st[1] < ly ? T(' : moins de marge pour l’hiver, un soutien aux prix.', ': less margin for winter, a support for prices.') : T(' : marge confortable pour l’hiver.', ': comfortable margin for winter.')));
-      R.push([T('Gaz', 'Gas'), look('gas', nt.ttf, wk(ttf)), parts.join(' '), `TTF ${n1(last(ttf)[1])} €<small>${s1(wk(ttf))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
+      R.push([T('Gaz', 'Gas'), look('gas', nt.ttf, wk(ttf)), parts.join(' '), `${n1(last(ttf)[1])} €<small>TTF · ${s1(wk(ttf))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
     const br = P('brent');
     if (br.length) { const ps = pos60(br); R.push([T('Pétrole', 'Oil'), look('oil', nt.brent, wk(br)), ps ? 'Brent ' + ps + '.' : '', `Brent ${n1(last(br)[1])} $<small>${s1(wk(br))} % ${T('sur 7 j', 'on 7 d')}</small>`]); }
     const eua = P('eua'), coal = P('coal');
@@ -218,7 +219,7 @@
       const nm = new Date(); nm.setUTCMonth(nm.getUTCMonth() + 1); const mo = nm.toLocaleDateString(isFr() ? 'fr-FR' : 'en-GB', { month: 'long', timeZone: 'UTC' });
       const goNext = { text: `${c4 == null ? '' : Math.abs(c4) < 2 ? 'prix courtier stable sur 4 semaines' : `prix courtier ${c4 > 0 ? 'en hausse' : 'en baisse'} de ${n1(Math.abs(c4))} % sur 4 semaines`}${a ? `${c4 == null ? '' : ' ; '}prochaine enchère d’État française en ${mo} (dernière : ${n1(val0(a), 3)} €/MWh), un repère pour le marché` : ''}.`,
         text_en: `${c4 == null ? '' : Math.abs(c4) < 2 ? 'broker price flat over 4 weeks' : `broker price ${c4 > 0 ? 'up' : 'down'} ${n1(Math.abs(c4))} % over 4 weeks`}${a ? `${c4 == null ? '' : '; '}next French state auction in ${mo} (last: ${n1(val0(a), 3)} €/MWh), a reference for the market` : ''}.` };
-      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, goNext], parts.map(x => `<span class="why3-line">${x}</span>`).join(''), g.length ? `Cal ${String(y + 1).slice(2)} ${n1(g[g.length - 1][1], 3)} €<small>${g.length > 1 ? s1(g[g.length - 1][1] - g[g.length - 2][1], 3) + ' ' + T('sur la sem.', 'on the week') : ''}</small>` : '']);   // one fact per line
+      if (parts.length) R.push(['GO', [byPrice(c4), PRICE, goNext], parts.map(x => `<span class="why3-line">${x}</span>`).join(''), g.length ? `${n1(g[g.length - 1][1], 3)} €<small>Cal ${String(y + 1).slice(2)} · ${g.length > 1 ? s1(g[g.length - 1][1] - g[g.length - 2][1], 3) + ' ' + T('sur la sem.', 'on the week') : ''}</small>` : '']);   // one fact per line
     }
     if (!R.length) { host.innerHTML = `<div class="fuel-note">${T('Données de marché indisponibles.', 'Market data not available.')}</div>`; return; }
     // the notes' record: each day's call against what the price did over the following 7 days (right: up and +1 % or more,
