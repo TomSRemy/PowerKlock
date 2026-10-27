@@ -84,7 +84,8 @@ def fetch(params, tries=3):
             DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: no matching data")
             return ''
         DIAG.append(f"{params.get('documentType')} {params.get('periodStart')}: HTTP {r.status_code} {r.text[:160]!r}")
-        raise RuntimeError(f"ENTSO-E HTTP {r.status_code} for {params.get('documentType')}: {r.text[:160]!r}")
+        why = re.search(r'<text>(.*?)</text>', r.text, re.S)                 # the reason of an acknowledgement document
+        raise RuntimeError(f"ENTSO-E HTTP {r.status_code} for {params.get('documentType')}: {(why.group(1) if why else r.text)[:240]}")
     return ''
 
 
