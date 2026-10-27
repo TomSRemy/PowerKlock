@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Method 2 (tendance de capacité), walk-forward test of the brief's section 2.1 items that don't
 need Selfee park data: regional/pénétration slope (1), recency-weighted and seasonal slope (5),
-other functional forms (6).
+other functional forms (6), and the denominator of the penetration term (7).
 
 Protocol: same as ppa_backtest.py — history before Y only, 2022 left out, capacity of Y extrapolated
 from the last two past years. Calibration years 2019-2021+2023 choose nothing here (each variant is
@@ -16,6 +16,10 @@ Variants
   seasonal    two slopes (summer Apr-Sep, winter Oct-Mar) instead of one on the yearly rate
   linPen      France-only, linear (not log) in penetration instead of ln(capacity)
   threshold   France-only, flat below a penetration knee, ln(capacity) above it (knee = median penetration)
+  totalCapPen France-only, ln(solar or wind GW ÷ total installed GW of all technologies) instead of
+              ln(solar or wind GW ÷ average demand GW) — denominator question of item 7
+  prodSharePen France-only, ln(solar or wind GW ÷ (solar + wind + nuclear GW)) — the technology's share
+              of the dispatchable-plus-renewable fleet, the other denominator item 7 asks to test
 
 Writes data/history/ppa_capacity_variant.json
     python scripts/ppa_capacity_variant.py
@@ -36,6 +40,15 @@ sys.argv = _argv
 OUT = os.path.join(ROOT, 'data', 'history', 'ppa_capacity_variant.json')
 CAL, VERDICT = [2019, 2020, 2021, 2023], [2024, 2025, 2026]
 SUMMER = set(range(4, 10))
+
+_cap_all = json.load(open(os.path.join(ROOT, 'data', 'history', 'capacity.json')))['countries']['FR']
+TOTAL_CAP = {y: sum(v[i] or 0 for v in _cap_all['types'].values()) for i, y in enumerate(_cap_all['years'])}
+
+
+def nuclear_gw(y):
+    """France's nuclear fleet, GW (needed for the production-share denominator)"""
+    i = _cap_all['years'].index(y) if y in _cap_all['years'] else None
+    return _cap_all['types']['Nuclear'][i] if i is not None else None
 
 
 def rate_season(y, V, summer):
@@ -100,8 +113,41 @@ def threshold(t, Y, train, V):
     return r[-1] + b * (x_y - x_last)
 
 
+def _series_guess(series, Y, last):
+    """last value extrapolated one step at a time, same linear rule as B.cap_guess"""
+    prev = series.get(last - 1, series[last])
+    return series[last] + (series[last] - prev) * (Y - last)
+
+
+def total_cap_pen(t, Y, train, V):
+    """ln(solar or wind GW ÷ total installed GW of all technologies) instead of ÷ average demand GW"""
+    r = [B.rate(B.yr == y, V, B.P) for y in train]
+    x = [math.log(B.CAP[t][y] / TOTAL_CAP[y]) for y in train]
+    last = train[-1]
+    b = np.polyfit(x, r, 1)[0] if len(train) >= 2 else 0
+    x_last = math.log(B.CAP[t][last] / TOTAL_CAP[last])
+    tot_y = _series_guess(TOTAL_CAP, Y, last)
+    x_y = math.log(B.cap_guess(t, Y, last) / tot_y)
+    return r[-1] + b * (x_y - x_last)
+
+
+def prod_share_pen(t, Y, train, V):
+    """ln(solar or wind GW ÷ (solar + wind + nuclear GW)) — share of the low-carbon fleet instead of ÷ demand"""
+    def denom(y):
+        return B.CAP['s'][y] + B.CAP['w'][y] + (nuclear_gw(y) or 0)
+    r = [B.rate(B.yr == y, V, B.P) for y in train]
+    x = [math.log(B.CAP[t][y] / denom(y)) for y in train]
+    last = train[-1]
+    b = np.polyfit(x, r, 1)[0] if len(train) >= 2 else 0
+    x_last = math.log(B.CAP[t][last] / denom(last))
+    nuc_y = _series_guess({y: nuclear_gw(y) for y in _cap_all['years']}, Y, last)
+    tot_y = B.cap_guess('s', Y, last) + B.cap_guess('w', Y, last) + nuc_y
+    x_y = math.log(B.cap_guess(t, Y, last) / tot_y)
+    return r[-1] + b * (x_y - x_last)
+
+
 VARIANTS = {'step': step, 'multiPen': multi_pen, 'recentW': recent_w, 'seasonal': seasonal,
-            'linPen': lin_pen, 'threshold': threshold}
+            'linPen': lin_pen, 'threshold': threshold, 'totalCapPen': total_cap_pen, 'prodSharePen': prod_share_pen}
 
 
 def main():
