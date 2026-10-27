@@ -104,22 +104,32 @@ def optimise_day(p, hours, wear, prm=PARAMS, detail=False):
     return rev, float(np.sum(d) * DT)
 
 
-def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0):
-    """Day-ahead and FCR in one schedule of 1 MW / `hours` MWh. p: 96 quarter-hour prices (EUR/MWh); fcr: the 6
-    French FCR block prices (EUR per MW per 4-hour block). In each block the battery holds f MW for FCR (symmetric)
-    and trades the rest: charge + f <= 1 and discharge + f <= 1 at every quarter-hour, and the state of charge keeps
-    res_h hours of f in reserve both ways (15 minutes of full activation). FCR activation energy is left out (small,
-    about energy-neutral). cap: the most MW FCR may take (1 = price taker). Wear is paid per MWh discharged.
-    Returns (day-ahead revenue EUR, FCR revenue EUR, MWh discharged, mean MW held in FCR) or None."""
-    T, B = len(p), len(fcr)
+def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0, afrr=None, res_a=1.0):
+    """Day-ahead, FCR and (optionally) aFRR capacity in one schedule of 1 MW / `hours` MWh.
+    p: 96 quarter-hour prices (EUR/MWh); fcr: the 6 FCR block prices (EUR per MW per 4-hour block), or None;
+    afrr: {'up': 6 block prices, 'down': 6 block prices} in EUR per MW per hour (4-hour blocks), or None.
+    In each block the battery holds f MW for FCR (symmetric), u MW of upward and w MW of downward aFRR, and trades
+    the rest: discharge + f + u <= 1 and charge + f + w <= 1 at every quarter-hour. The state of charge keeps res_h
+    hours of f both ways (15 minutes of full FCR activation) and res_a hours of u below / of w above (1 hour of aFRR
+    by default, a cautious reading of the prequalification of storage). Activation energy is left out (FCR about
+    energy-neutral; aFRR activation is paid on its own market, not modelled). cap: the most MW FCR may take
+    (1 = price taker). Wear is paid per MWh discharged.
+    Returns (day-ahead revenue EUR, FCR revenue EUR, MWh discharged, mean MW in FCR, aFRR revenue EUR,
+    mean MW in aFRR up, mean MW in aFRR down) or None."""
+    T = len(p)
+    B = 6
     per = T // B
+    fcr = np.zeros(B) if fcr is None else np.asarray(fcr, dtype=float)
+    au = np.zeros(B) if not afrr else np.asarray(afrr.get('up') or [0] * B, dtype=float) * 24 / B   # EUR/MW/h → per block
+    ad = np.zeros(B) if not afrr else np.asarray(afrr.get('down') or [0] * B, dtype=float) * 24 / B
     eta = prm['rte'] ** 0.5
     e = float(hours)
     s0 = prm['soc_start'] * e
     gw, gi = prm['grid_withdrawal'], prm['grid_injection']
-    n = 3 * T + B
-    # x = [c (T), d (T), s (T), f (B)]
-    cost = np.concatenate([(p + gw) * DT, -(p - gi - wear) * DT, np.zeros(T), -np.asarray(fcr, dtype=float)])
+    F, U, Wd = 3 * T, 3 * T + B, 3 * T + 2 * B
+    n = 3 * T + 3 * B
+    # x = [c (T), d (T), s (T), f (B), u (B), w (B)]
+    cost = np.concatenate([(p + gw) * DT, -(p - gi - wear) * DT, np.zeros(T), -fcr, -au, -ad])
     rows, cols, vals = [], [], []
     for t in range(T):
         rows += [t, t, t]
@@ -134,38 +144,33 @@ def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0):
     b_eq[0] = s0
     ur, uc, uv, ub = [], [], [], []
     k = 0
+
+    def row(pairs, rhs):
+        nonlocal k
+        for var, coef in pairs:
+            ur.append(k)
+            uc.append(var)
+            uv.append(coef)
+        ub.append(rhs)
+        k += 1
     for t in range(T):
-        fb = 3 * T + t // per
-        for var, coef, rhs in ((t, 1.0, 1.0), (T + t, 1.0, 1.0)):            # charge + f <= 1, discharge + f <= 1
-            ur += [k, k]
-            uc += [var, fb]
-            uv += [coef, 1.0]
-            ub.append(rhs)
-            k += 1
-        ur += [k, k]                                                          # s >= res_h * f
-        uc += [2 * T + t, fb]
-        uv += [-1.0, res_h]
-        ub.append(-prm['soc_min'] * e)
-        k += 1
-        ur += [k, k]                                                          # s + res_h * f <= max
-        uc += [2 * T + t, fb]
-        uv += [1.0, res_h]
-        ub.append(prm['soc_max'] * e)
-        k += 1
-    ur += [k] * T                                                             # cycles
-    uc += list(range(T, 2 * T))
-    uv += [DT] * T
-    ub.append(prm['max_cycles_day'] * e)
-    k += 1
+        bk = t // per
+        row([(T + t, 1.0), (F + bk, 1.0), (U + bk, 1.0)], 1.0)                       # discharge + FCR + aFRR up <= 1
+        row([(t, 1.0), (F + bk, 1.0), (Wd + bk, 1.0)], 1.0)                          # charge + FCR + aFRR down <= 1
+        row([(2 * T + t, -1.0), (F + bk, res_h), (U + bk, res_a)], -prm['soc_min'] * e)   # energy kept to go up
+        row([(2 * T + t, 1.0), (F + bk, res_h), (Wd + bk, res_a)], prm['soc_max'] * e)    # room kept to go down
+    row([(T + t, DT) for t in range(T)], prm['max_cycles_day'] * e)                   # cycles
     A_ub = coo_matrix((uv, (ur, uc)), shape=(k, n)).tocsr()
-    bounds = [(0, 1.0)] * (2 * T) + [(prm['soc_min'] * e, prm['soc_max'] * e)] * (T - 1) + [(s0, s0)] + [(0, cap)] * B
+    zero = (0, 0)
+    bounds = ([(0, 1.0)] * (2 * T) + [(prm['soc_min'] * e, prm['soc_max'] * e)] * (T - 1) + [(s0, s0)]
+              + [(0, cap) if fcr.any() else zero] * B + [(0, 1.0) if au.any() else zero] * B + [(0, 1.0) if ad.any() else zero] * B)
     r = linprog(cost, A_ub=A_ub, b_ub=ub, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
     if not r.success:
         return None
-    c, d, f = r.x[:T], r.x[T:2 * T], r.x[3 * T:]
+    c, d = r.x[:T], r.x[T:2 * T]
+    f, u, w = r.x[F:F + B], r.x[U:U + B], r.x[Wd:Wd + B]
     da = float(np.sum((p - gi) * d * DT) - np.sum((p + gw) * c * DT))
-    return da, float(np.dot(fcr, f)), float(np.sum(d) * DT), float(np.mean(f))
-
+    return da, float(np.dot(fcr, f)), float(np.sum(d) * DT), float(np.mean(f)), float(np.dot(au, u) + np.dot(ad, w)), float(np.mean(u)), float(np.mean(w))
 
 def naive_day(p, trailing, hours, prm=PARAMS):
     """Fixed schedule from the average profile of the previous days; paid at the real prices of the day."""
@@ -331,7 +336,7 @@ def build_index(rows, prices=None, k='2h'):
             h = int(k[:-1])
             co = cooptimise_day(prices[d], blocks, h, PARAMS['wear'])
             if co:
-                da_, fc_, mwh, fm = co
+                da_, fc_, mwh, fm = co[:4]
                 e['co'] = round(da_ + fc_ - PARAMS['wear'] * mwh, 1)        # net of wear
                 e['co_da'] = round(da_ - PARAMS['wear'] * mwh, 1)
                 e['co_fcr'] = round(fc_, 1)
@@ -374,6 +379,72 @@ def build_index(rows, prices=None, k='2h'):
            'forward': fwd, 'computed_on': today,
            'realised': {d: real[d] for d in dlist[-400:]}, 'months': mrows}
     with open(INDEX_OUT, 'w') as f:
+        json.dump(doc, f, separators=(',', ':'))
+    return doc
+
+
+# ── the same battery across Europe (data/history/bess_europe.json): day-ahead alone over 12 months, and the
+#    co-optimised value with the reserves published for each zone (FCR blocks of the common auction; aFRR capacity
+#    for Germany), last 30 days and by month. One MW, 2 h, net of wear, price taker. ──
+EU_OUT = os.path.join(ROOT, 'data', 'history', 'bess_europe.json')
+EU_ZONES = ('FR', 'DE_LU', 'BE', 'NL', 'AT', 'CH', 'CZ', 'DK_W', 'PL', 'ES', 'IT_NORD', 'SE')
+
+
+def build_europe(days=370, k=2):
+    try:
+        eu = json.load(open(os.path.join(ROOT, 'data', 'history', 'reserves_fr.json'))).get('eu', {})
+    except (OSError, ValueError):
+        eu = {}
+    files = sorted(glob.glob(os.path.join(DAILY, '*.json')))[-days:]
+    W = PARAMS['wear']
+    acc = {z: {} for z in EU_ZONES}
+    for f in files:
+        d = os.path.basename(f)[:-5]
+        try:
+            zs = json.load(open(f))['zones']
+        except (OSError, ValueError, KeyError):
+            continue
+        res = eu.get(d) or {}
+        for z in EU_ZONES:
+            h = (zs.get(z) or {}).get('hourly')
+            if not h or len(h) != 96 or any(v is None for v in h):
+                continue
+            p = np.array(h, dtype=float)
+            r = optimise_day(p, k, W)
+            if r is None:
+                continue
+            e = {'da': r[0] - W * r[1]}
+            fb = (res.get('fcr') or {}).get(z)
+            af = res.get('afrr_de') if z == 'DE_LU' else None
+            if fb or af:
+                co = cooptimise_day(p, fb, k, W, afrr=af)
+                if co:
+                    e.update(co=co[0] + co[1] + co[4] - W * co[2], co_da=co[0] - W * co[2], co_fcr=co[1], co_afrr=co[4], f=co[3])
+            acc[z][d] = e
+    ann = lambda v: round(v * 365 / 1000, 1)   # noqa: E731
+    out = {}
+    for z, by in acc.items():
+        if not by:
+            continue
+        ds = sorted(by)
+        last30 = ds[-30:]
+        co30 = [by[d] for d in last30 if 'co' in by[d]]
+        e = {'da30': ann(np.mean([by[d]['da'] for d in last30])), 'da365': ann(np.mean([by[d]['da'] for d in ds[-365:]])), 'last': ds[-1]}
+        if len(co30) >= 20:
+            for key in ('co', 'co_da', 'co_fcr', 'co_afrr'):
+                e[key + '30'] = ann(np.mean([x[key] for x in co30]))
+            e['f30'] = round(float(np.mean([x['f'] for x in co30])), 2)
+        months = {}
+        for d in ds:
+            months.setdefault(d[:7], []).append(by[d])
+        e['months'] = {m: {'da': ann(np.mean([x['da'] for x in v])), **({'co': ann(np.mean([x['co'] for x in v if 'co' in x]))} if sum('co' in x for x in v) >= 10 else {})}
+                       for m, v in sorted(months.items()) if len(v) >= 10}
+        out[z] = e
+    doc = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'battery': f'1 MW, {k} h',
+           'note': 'kEUR per MW per year. da: day-ahead alone, perfect schedule net of wear. co: day-ahead + FCR (+ aFRR capacity '
+                   'for DE_LU) in one schedule a day, price taker. 30 = last 30 delivery days.',
+           'zones': out}
+    with open(EU_OUT, 'w') as f:
         json.dump(doc, f, separators=(',', ':'))
     return doc
 
@@ -455,6 +526,8 @@ def main():
         if ix['forward']:
             fl = max(ix['forward'])
             print(f"BESS index: forward {ix['forward'][fl]['v']} kEUR/MW/yr on {fl}, {len(ix['forward'])} trading days")
+    eu = build_europe()
+    print('BESS Europe:', ', '.join(f"{z} {v.get('co30', v['da30'])}" for z, v in eu['zones'].items()))
     print(f'{len(rows)} days {rows[0]["d"]} to {rows[-1]["d"]}; last 365 days (kEUR/MW/yr):')
     for k, v in summary.items():
         print(' ', k, v)

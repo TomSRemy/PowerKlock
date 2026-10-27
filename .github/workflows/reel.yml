@@ -1,0 +1,61 @@
+name: Morning reel
+
+# The morning reel (reel.html) recorded to a vertical MP4 at 08:00 Paris (scripts/record_reel.py) and sent by e-mail
+# (scripts/send_reel.py, GO_GMAIL_* secrets) to be posted on Instagram. The video is also kept 30 days as a run
+# artifact. Nothing is committed: videos stay out of the repository.
+
+on:
+  schedule:
+    - cron: '0 7 * * *'      # 08:00 Paris in winter
+    - cron: '0 6 * * *'      # 08:00 Paris in summer (the step below keeps only the one that is 08:00 in Paris)
+  workflow_dispatch:
+
+concurrency:
+  group: reel
+  cancel-in-progress: false
+
+jobs:
+  reel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: The slot of the current Paris time? (winter UTC+1 → 07:00 UTC, summer UTC+2 → 06:00 UTC; a late start still runs once)
+        id: due
+        run: |
+          [ "$(TZ=Europe/Paris date +%z)" = "+0100" ] && WANT="0 7 * * *" || WANT="0 6 * * *"
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "$WANT" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.due.outputs.run == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.due.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+      - name: Install Chromium
+        if: steps.due.outputs.run == 'true'
+        run: |
+          pip install playwright==1.48.0
+          python -m playwright install --with-deps chromium
+      - name: Record
+        if: steps.due.outputs.run == 'true'
+        run: python scripts/record_reel.py --lang fr
+      - uses: actions/upload-artifact@v4
+        if: steps.due.outputs.run == 'true'
+        with:
+          name: reel
+          path: out/reel/*.mp4
+          retention-days: 30
+      - name: Send by e-mail
+        if: steps.due.outputs.run == 'true'
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          REEL_TO: ${{ secrets.REEL_TO }}
+        run: python scripts/send_reel.py out/reel/*.mp4
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

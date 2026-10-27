@@ -12,6 +12,8 @@ on:
     # the morning run hours late (11:54 UTC on 23 Oct, not at all before 10:37 on 27 Oct). Each run commits only a change.
     - cron: '7 7 * * *'
     - cron: '43 8 * * *'
+    - cron: '30 9 * * *'     # 10:30 Paris (winter): the cockpit usually refreshes around 10:56 Paris
+    - cron: '0 10 * * *'     # 11:00 Paris
     - cron: '19 10 * * *'
     - cron: '53 12 * * *'
     - cron: '37 15 * * *'
@@ -31,11 +33,11 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Fetched less than an hour ago? (a late run catching up with the next slot)
+      - name: Fetched less than 20 minutes ago? (a late run catching up with the next slot)
         id: due
         run: |
           AGE=$(python3 -c "import json,datetime as d;t=json.load(open('data/fr_market.json')).get('lastUpdate');print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(t)).total_seconds()//60) if t else 9999)" 2>/dev/null || echo 9999)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 60 ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched $AGE min ago"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 20 ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched $AGE min ago"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
       - name: Setup Python
         uses: actions/setup-python@v5
         with:

@@ -33,6 +33,65 @@ ECB_URL = 'https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C
 DIAG = []
 
 
+COUNTRIES = {'AUSTRIA': 'AT', 'BELGIUM': 'BE', 'DENMARK': 'DK_W', 'FRANCE': 'FR', 'GERMANY': 'DE_LU', 'NETHERLANDS': 'NL',
+             'SLOVENIA': 'SI', 'SWITZERLAND': 'CH', 'CZECH_REPUBLIC': 'CZ'}   # FCR settlement price columns → bidding zone
+
+
+def xlsx(d, product):
+    """Rows of the regelleistung.net results export of one delivery day (header first), or None."""
+    import openpyxl
+    for k in range(3):
+        try:
+            r = requests.get(FCR_URL, params={'date': d.isoformat(), 'exportFormat': 'xlsx', 'market': 'CAPACITY', 'productTypes': product}, timeout=40)
+        except requests.RequestException as e:
+            DIAG.append(f'{product} {d}: {str(e)[:80]}')
+            time.sleep(3 * (k + 1))
+            continue
+        if r.status_code == 200 and r.content[:2] == b'PK':
+            return list(openpyxl.load_workbook(io.BytesIO(r.content), read_only=True).active.iter_rows(values_only=True))
+        if r.status_code in (429, 500, 502, 503) and k < 2:
+            time.sleep(5 * (k + 1))
+            continue
+        DIAG.append(f'{product} {d}: HTTP {r.status_code}')
+        return None
+    return None
+
+
+def num(x):
+    """A price cell: a number, or None for an empty or '-' cell."""
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def eu_day(d):
+    """FCR block prices of every country of the cooperation (EUR/MW per 4-hour block, 6 blocks in order) and the
+    German aFRR capacity prices (average of the accepted bids, EUR/MW/h, 6 blocks per direction)."""
+    out = {}
+    rows = xlsx(d, 'FCR')
+    if rows and len(rows) > 1:
+        h = list(rows[0])
+        pn = h.index('PRODUCTNAME') if 'PRODUCTNAME' in h else None
+        body = sorted(rows[1:], key=lambda r: str(r[pn])) if pn is not None else rows[1:]
+        for c, z in COUNTRIES.items():
+            col = c + '_SETTLEMENTCAPACITY_PRICE_[EUR/MW]'
+            if col in h:
+                v = [num(r[h.index(col)]) for r in body]
+                if len(v) == 6 and all(x is not None for x in v):
+                    out.setdefault('fcr', {})[z] = [round(x, 2) for x in v]
+    rows = xlsx(d, 'aFRR')
+    if rows and len(rows) > 1:
+        h = list(rows[0])
+        if 'GERMANY_AVERAGE_CAPACITY_PRICE_[(EUR/MW)/h]' in h and 'PRODUCT' in h:
+            j, pi = h.index('GERMANY_AVERAGE_CAPACITY_PRICE_[(EUR/MW)/h]'), h.index('PRODUCT')
+            for side, tag in (('up', 'POS'), ('down', 'NEG')):
+                b = sorted((str(r[pi]), num(r[j])) for r in rows[1:] if str(r[pi]).startswith(tag))
+                if len(b) == 6 and all(v is not None for _, v in b):
+                    out.setdefault('afrr_de', {})[side] = [round(v, 2) for _, v in b]
+    return out
+
+
 def fcr_day(d):
     """EUR per MW for the whole delivery day in France (sum of the 4-hour blocks), or None."""
     import openpyxl
@@ -60,13 +119,13 @@ def fcr_day(d):
             return None
         pn = h.index('PRODUCTNAME') if 'PRODUCTNAME' in h else None
         body = sorted(rows[1:], key=lambda r: str(r[pn])) if pn is not None else rows[1:]   # NEGPOS_00_04 … NEGPOS_20_24
-        v = [r[j] for r in body if r[j] is not None]
+        v = [num(r[j]) for r in body if num(r[j]) is not None]
         if not v:
             return None
         dm = h.index('FRANCE_DEMAND_[MW]') if 'FRANCE_DEMAND_[MW]' in h else None
-        mw = [r[dm] for r in rows[1:] if dm is not None and r[dm] is not None]
+        mw = [num(r[dm]) for r in rows[1:] if dm is not None and num(r[dm]) is not None]
         # blocks of 4 hours: 6 a day; a day with fewer blocks published is scaled to 24 h
-        return round(sum(v) * 6 / len(v), 2), (round(sum(mw) / len(mw)) if mw else None), ([round(float(x), 2) for x in v] if len(v) == 6 else None)
+        return round(sum(v) * 6 / len(v), 2), (round(sum(mw) / len(mw)) if mw else None), ([round(x, 2) for x in v] if len(v) == 6 else None)
     return None
 
 
@@ -128,6 +187,7 @@ def rate10y(start):
 def main():
     old = json.load(open(OUT)) if os.path.exists(OUT) else {}
     fcr, af, rt, dem, blk = old.get('fcr', {}), old.get('afrr', {}), old.get('rate10y', {}), old.get('fcr_mw', {}), old.get('fcr_blocks', {})
+    eu = old.get('eu', {})
     today = datetime.now(timezone.utc).date()
     if '--since' in sys.argv:
         d0 = date.fromisoformat(sys.argv[sys.argv.index('--since') + 1])
@@ -142,6 +202,9 @@ def main():
                 dem[d.isoformat()] = v[1]
             if v[2]:
                 blk[d.isoformat()] = v[2]
+        e = eu_day(d)
+        if e:
+            eu[d.isoformat()] = e
         d += timedelta(days=1)
     # aFRR: the last 7 days again, plus up to 60 older missing days per run (the history fills in over a few days)
     want = [today - timedelta(days=i) for i in range(-1, 300)]
@@ -152,8 +215,8 @@ def main():
     rt.update(rate10y((d0 - timedelta(days=7)).isoformat()))
     out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
            'source': 'regelleistung.net (FCR common auction, French settlement price) · ENTSO-E Transparency (aFRR A89, France) · ECB data API (euro area AAA 10-year spot rate)',
-           'unit': 'fcr: EUR per MW per delivery day · fcr_mw: French FCR need, MW · fcr_blocks: the 6 block prices of the day in order, EUR/MW per 4-hour block · afrr: EUR per MW per hour · rate10y: percent',
-           'diag': DIAG[-30:], 'fcr': dict(sorted(fcr.items())), 'fcr_mw': dict(sorted(dem.items())), 'fcr_blocks': dict(sorted(blk.items())), 'afrr': dict(sorted(af.items())), 'rate10y': dict(sorted(rt.items()))}
+           'unit': 'fcr: EUR per MW per delivery day · fcr_mw: French FCR need, MW · fcr_blocks: the 6 block prices of the day in order, EUR/MW per 4-hour block · eu: per day, fcr {zone: 6 blocks EUR/MW} and afrr_de {up, down: 6 blocks EUR/MW/h} · afrr: EUR per MW per hour · rate10y: percent',
+           'diag': DIAG[-30:], 'fcr': dict(sorted(fcr.items())), 'fcr_mw': dict(sorted(dem.items())), 'fcr_blocks': dict(sorted(blk.items())), 'eu': dict(sorted(eu.items())), 'afrr': dict(sorted(af.items())), 'rate10y': dict(sorted(rt.items()))}
     out['diag'] = [re.sub(r'securityToken=[^&\s]+', 'securityToken=***', x) for x in out['diag']]
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))

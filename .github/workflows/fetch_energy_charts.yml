@@ -57,9 +57,12 @@ jobs:
           git add data/history/capacity.json data/history/flows data/history/country_capture.json data/history/hourly_cannib.json data/history/genmix_daily data/history/daily data/history/summary.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: Energy-Charts capacity and flows $(date -u '+%Y-%m-%d %H:%M UTC')"
-          for i in 1 2 3 4 5; do
-            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
-            sleep 8
+          # other bots push to main at the same time (late morning runs pile up): stash anything the scripts left
+          # unstaged, retry with a random wait
+          for i in 1 2 3 4 5 6 7 8; do
+            git pull -q --rebase --autostash -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true
+            echo "Push attempt $i failed, retrying..."
+            sleep $((5 + RANDOM % 20))
           done
           exit 1
       - name: E-mail on failure

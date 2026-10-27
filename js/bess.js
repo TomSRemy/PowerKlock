@@ -59,6 +59,45 @@
   // k€ per MW per year from an average € per MW per day
   const ann = v => v == null ? null : v * 365 / 1000;
 
+  // ── Europe: the same battery in each bidding zone (data/history/bess_europe.json, scripts/bess_optim.py) ──
+  let euP = null;
+  const loadEu = () => euP || (euP = fetch('data/history/bess_europe.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  const ZN = { FR: ['France', 'France'], DE_LU: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], NL: ['Pays-Bas', 'Netherlands'], AT: ['Autriche', 'Austria'],
+    CH: ['Suisse', 'Switzerland'], CZ: ['Tchéquie', 'Czechia'], DK_W: ['Danemark Ouest', 'Denmark West'], PL: ['Pologne', 'Poland'], ES: ['Espagne', 'Spain'],
+    IT_NORD: ['Italie Nord', 'Italy North'], SE: ['Suède', 'Sweden'] };
+  function europe(E) {
+    if (!$('bess-eu-kpis')) return;
+    const T = (f, e) => fr() ? f : e, nm = z => (ZN[z] || [z, z])[fr() ? 0 : 1];
+    if (!E || !E.zones) { $('bess-eu-kpis').innerHTML = '<div class="fuel-note">' + T('Pas encore calculé.', 'Not computed yet.') + '</div>'; return; }
+    const Z = Object.keys(E.zones).map(z => Object.assign({ z }, E.zones[z])).sort((a, b) => (b.co30 != null ? b.co30 : b.da30) - (a.co30 != null ? a.co30 : a.da30));
+    const withCo = Z.filter(x => x.co30 != null), fr0 = E.zones.FR || {};
+    const top = withCo[0], topDa = Z.slice().sort((a, b) => b.da30 - a.da30)[0];
+    const shares = withCo.map(x => x.co_fcr30 / x.co30 * 100), rank = withCo.findIndex(x => x.z === 'FR') + 1;
+    $('bess-eu-kpis').innerHTML =
+      _fuelKpi(T('Co-optimisé, le plus haut', 'Co-optimised, highest'), top ? num(top.co30, 0) : '–', T('k€/MW/an', 'k€/MW/yr'), top ? nm(top.z) + T(' · 30 jours', ' · 30 days') : '') +
+      _fuelKpi(T('France, co-optimisé', 'France, co-optimised'), num(fr0.co30, 0), T('k€/MW/an', 'k€/MW/yr'), rank ? T(`${rank}ᵉ sur ${withCo.length} zones avec réserves`, `#${rank} of ${withCo.length} zones with reserves`) : '') +
+      _fuelKpi(T('Part de la FCR', 'FCR share'), shares.length ? num(Math.min(...shares), 0) + '–' + num(Math.max(...shares), 0) : '–', '%', T('du revenu co-optimisé', 'of the co-optimised revenue')) +
+      _fuelKpi(T('Day-ahead seul, le plus haut', 'Day-ahead alone, highest'), num(topDa.da30, 0), T('k€/MW/an', 'k€/MW/yr'), nm(topDa.z) + T(' · 30 jours', ' · 30 days'));
+    const lab = Z.map(x => nm(x.z)), v = f => Z.map(x => x[f] != null ? x[f] : null);
+    _fuelChart('bess-eu-c', { type: 'bar', data: { labels: lab, datasets: [
+      { label: T('Co-optimisé : day-ahead', 'Co-optimised: day-ahead'), data: v('co_da30'), backgroundColor: 'rgba(127,200,248,.8)', borderWidth: 0, stack: 'co', order: 3 },
+      { label: T('Co-optimisé : FCR', 'Co-optimised: FCR'), data: v('co_fcr30'), backgroundColor: 'rgba(168,125,196,.8)', borderWidth: 0, stack: 'co', order: 3 },
+      { label: T('Co-optimisé : aFRR', 'Co-optimised: aFRR'), data: Z.map(x => x.co_afrr30 ? x.co_afrr30 : null), backgroundColor: 'rgba(237,105,101,.8)', borderWidth: 0, stack: 'co', order: 3 },
+      { label: T('Day-ahead seul (pas de réserve en open data)', 'Day-ahead alone (no open reserve data)'), data: Z.map(x => x.co30 == null ? x.da30 : null), backgroundColor: 'rgba(127,200,248,.35)', borderWidth: 0, stack: 'co', order: 3 },
+      { type: 'line', label: T('Day-ahead seul, pour comparer', 'Day-ahead alone, to compare'), data: v('da30'), showLine: false, pointStyle: 'line', pointRadius: 13, pointHoverRadius: 14, borderColor: '#E6EDF3', borderWidth: 2.5, stack: 'mk', order: 0 },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 45 } }), y: _fuelAxis(T('k€/MW/an', 'k€/MW/yr'), { stacked: true, beginAtZero: true }) } }) }, 'bess-europe-zones');
+    const SHOW = [['FR', C_BEST], ['DE_LU', C_FCR], ['NL', '#C4A57B'], ['ES', C_AF], ['PL', C_PF]].filter(([z]) => E.zones[z]);
+    const ms = Object.keys(E.zones.FR ? E.zones.FR.months : {}).slice(-13);
+    _fuelChart('bess-eu-m', { type: 'line', data: { labels: ms, datasets: SHOW.map(([z, c]) => _fuelLineDs(nm(z), ms.map(m => (E.zones[z].months[m] || {}).da), c, { borderWidth: z === 'FR' ? 3 : 1.6 })) },
+      options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(T('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) } }) }, 'bess-europe-months');
+    const f = x => x == null ? '–' : num(x, 0);
+    $('bess-eu-t').innerHTML = '<thead><tr><th>' + T('Zone', 'Zone') + '</th><th>' + T('Day-ahead seul, 30 j', 'Day-ahead alone, 30 d') + '</th><th>' + T('Day-ahead seul, 12 mois', 'Day-ahead alone, 12 months') + '</th><th>' + T('Co-optimisé, 30 j', 'Co-optimised, 30 d') + '</th><th>' + T('dont FCR', 'of which FCR') + '</th><th>' + T('dont aFRR', 'of which aFRR') + '</th><th>' + T('Gain sur le meilleur marché seul', 'Gain over the best single market') + '</th></tr></thead><tbody>' +
+      Z.map(x => '<tr><td>' + nm(x.z) + '</td><td>' + f(x.da30) + '</td><td>' + f(x.da365) + '</td><td><b>' + f(x.co30) + '</b></td><td>' + f(x.co_fcr30) + '</td><td>' + (x.co_afrr30 ? f(x.co_afrr30) : '–') + '</td><td>' +
+        (x.co30 == null ? '–' : '+' + num(x.co30 - Math.max(x.da30, (x.co_fcr30 || 0) + 0), 0)) + '</td></tr>').join('') + '</tbody>';
+    $('bess-eu-note').textContent = T(
+      'Même batterie partout : 1 MW, 2 h, programme parfait net d’usure, preneur de prix. Day-ahead seul : prix ENTSO-E de chaque zone. Co-optimisé : un programme par jour qui partage le MW entre day-ahead, FCR (prix de règlement de chaque pays dans l’enchère commune, par bloc de 4 heures) et, pour l’Allemagne, la capacité aFRR (prix moyen des offres retenues, hausse et baisse séparées, 1 heure d’énergie gardée). Les zones sans réserve publiée en open data n’ont que le day-ahead. Le gain compare au meilleur marché seul (day-ahead seul ou FCR seule pour tout le MW).',
+      'Same battery everywhere: 1 MW, 2 h, perfect schedule net of wear, price taker. Day-ahead alone: ENTSO-E prices of each zone. Co-optimised: one schedule a day sharing the MW between day-ahead, FCR (settlement price of each country in the common auction, per 4-hour block) and, for Germany, aFRR capacity (average price of the accepted bids, up and down apart, 1 hour of energy kept). Zones without reserve prices in open data have the day-ahead only. The gain compares with the best single market (day-ahead alone or FCR alone for the whole MW).');
+  }
   // ── PowerKlock BESS index (data/history/bess_index.json, scripts/bess_optim.py): forward and realised, 1 MW / 2 h ──
   let idxP = null;
   const loadIdx = () => idxP || (idxP = fetch('data/history/bess_index.json').then(r => r.ok ? r.json() : null).catch(() => null));
@@ -190,6 +229,7 @@
     kpis(doc); charts(doc); years(doc); day(doc);
     loadRes().then(reserves);
     loadIdx().then(index);
+    loadEu().then(europe);
     document.dispatchEvent(new CustomEvent('pk-bess-data', { detail: doc }));
   }
 
