@@ -8,7 +8,7 @@
 <!--
   The morning reel: a vertical 9:16 animation of the day's main figures, recorded to MP4 every morning at 08:00 Paris
   (scripts/record_reel.py, .github/workflows/reel.yml) and sent by e-mail to be posted on Instagram.
-  Scenes: today's French day-ahead price against yesterday, the day's profile, Cal+1, Monday only the GO and last
+  Reels (?r=): jour (default), batterie, europe, mix. Jour scenes: today's French day-ahead price against yesterday, the day's profile, Cal+1, Monday only the GO and last
   week's spot, an important event of the day (data/events.json), the market brief (data/market_digest.json).
   French by default, English with #en. No link to the rest of the site (like shared dashboards).
   window.REEL_DONE is set when the last scene ends (the recorder waits for it).
@@ -49,7 +49,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
 .sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
 .row{display:flex;gap:calc(3*var(--u))}
-.tile{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(3.5*var(--u))}
+.tile{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(3.5*var(--u))}
 .tile .l{white-space:nowrap;font:700 calc(3*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tile .v{font:800 calc(8.5*var(--u)) var(--mono);margin-top:calc(1*var(--u))}
 .tile .s{font:500 calc(3.3*var(--u)) var(--mono);color:var(--muted)}
@@ -71,6 +71,23 @@ svg{width:100%;height:auto;overflow:visible}
 @keyframes fill{to{width:100%}}
 .draw{stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.4s ease forwards}
 @keyframes draw{to{stroke-dashoffset:0}}
+.gauge{display:flex;align-items:center;gap:calc(3*var(--u))}
+.batt{position:relative;flex:1;height:calc(9*var(--u));border:calc(.6*var(--u)) solid var(--fg);border-radius:calc(1.6*var(--u));padding:calc(.8*var(--u))}
+.batt:after{content:"";position:absolute;right:calc(-2.2*var(--u));top:28%;width:calc(1.4*var(--u));height:44%;background:var(--fg);border-radius:0 4px 4px 0}
+.batt b{display:block;height:100%;width:50%;background:var(--accent);border-radius:calc(.8*var(--u));transition:width .08s linear,background .2s}
+.clock{font:800 calc(7*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.act{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.money{font:800 calc(12*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.race{display:flex;flex-direction:column;gap:calc(1.6*var(--u))}
+.race .r{display:grid;grid-template-columns:calc(24*var(--u)) 1fr;align-items:center;gap:calc(2*var(--u))}
+.race .n{font:600 calc(3.6*var(--u)) var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race .t{height:calc(5.2*var(--u));display:flex;align-items:center}
+.race .t i{display:block;height:100%;width:0;border-radius:calc(.8*var(--u));background:#3A4A5E;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.race .t span{font:700 calc(3.4*var(--u)) var(--mono);margin-left:calc(1.6*var(--u));white-space:nowrap;opacity:0;transition:opacity .4s ease .9s}
+.race .r.fr .n{color:var(--accent);font-weight:800}.race .r.fr .t i{background:var(--accent)}
+.race.go .t span{opacity:1}
+.lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
+.lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
 @media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div{opacity:1;transform:none;animation:none!important}}
 </style>
 </head>
@@ -181,15 +198,149 @@ svg{width:100%;height:auto;overflow:visible}
     if (e) S.push(eventScene(e));
     if (dg && dg.context && dg.context.length) S.push(briefScene(dg));
     if (!S.length) S.push(`<div class="h">${T('Données du jour pas encore publiées.', 'Today’s data not published yet.')}</div>`);
+    run(S);
+  }
 
-    document.getElementById('brand-d').textContent = longDate(today);
-    document.getElementById('scenes').innerHTML = S.map(h => '<section class="scene">' + h + '</section>').join('');
+  // ── reel 2: a battery through the day (data/history/bess_da.json, the optimal schedule of the day) ──
+  async function battery() {
+    const doc = await get('data/history/bess_da.json');
+    const E = doc && doc.example, X = E && E['2h'];
+    if (!X || E.d !== today) return run([`<div class="h">${T('Programme du jour pas encore calculé.', 'Today’s schedule not computed yet.')}</div>`]);
+    const p = E.price, gw = doc.params.grid_withdrawal, wear = X.wear, L = doc.summary_ltm['2h'];
+    const cum = []; let acc = 0;
+    p.forEach((v, t) => { acc += (v * X.discharge[t] - (v + gw) * X.charge[t]) * 0.25; cum.push(acc); });
+    const W = 1000, H = 420, lo = Math.min(0, ...p), hi = Math.max(...p), x = t => t / 95 * W, y = v => H - (v - lo) / (hi - lo || 1) * H;
+    const line = p.map((v, t) => x(t).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+    const bars = p.map((v, t) => X.charge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#7FC8F8" opacity="0"/>`
+      : X.discharge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#FBBF24" opacity="0"/>` : '').join('');
+    const intro = { ms: 3200, html: `<div class="kick">${T('Une batterie de 1 MW, 2 h', 'A 1 MW, 2 h battery')}</div>
+      <div class="h">${T('Acheter au creux, revendre au pic', 'Buy low, sell at the peak')}</div>
+      <div class="sub">${T('Aujourd’hui en France, sur les prix day-ahead : le meilleur programme possible, quart d’heure par quart d’heure.', 'Today in France, on day-ahead prices: the best possible schedule, quarter-hour by quarter-hour.')}</div>` };
+    const SWEEP = 9000;
+    const sweep = { ms: SWEEP + 1800, html: `<div class="kick">${T('La journée en accéléré', 'The day, fast-forward')}</div>
+      <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="b-clock">00:00</div><div class="act" id="b-act" style="color:var(--muted)">${T('attend', 'waits')}</div></div>
+      <svg viewBox="-10 -40 1020 520" aria-hidden="true"><defs><clipPath id="b-clip"><rect id="b-cr" x="-10" y="-40" width="0" height="560"/></clipPath></defs>
+        <polyline points="${line}" fill="none" stroke="#243042" stroke-width="5"/>
+        <g clip-path="url(#b-clip)"><polyline points="${line}" fill="none" stroke="#E6EDF3" stroke-width="6" stroke-linejoin="round"/></g>${bars}
+        <line id="b-cur" x1="0" x2="0" y1="-30" y2="${H}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="6 6"/></svg>
+      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('achète (charge)', 'buys (charges)')}</span><span><i style="background:#FBBF24"></i>${T('revend (décharge)', 'sells (discharges)')}</span></div>
+      <div class="gauge"><div class="batt"><b id="b-soc"></b></div><div class="money" id="b-eur">0 €</div></div>`,
+      play(root) {
+        const t0 = performance.now(), clock = root.querySelector('#b-clock'), act = root.querySelector('#b-act'), soc = root.querySelector('#b-soc'),
+          eur = root.querySelector('#b-eur'), cr = root.querySelector('#b-cr'), cur = root.querySelector('#b-cur'), qs = [...root.querySelectorAll('.q')];
+        const step = now => {
+          const f = Math.min(1, (now - t0) / SWEEP), t = Math.min(95, Math.floor(f * 96));
+          clock.textContent = String(Math.floor(t / 4)).padStart(2, '0') + ':' + String(t % 4 * 15).padStart(2, '0');
+          const c = X.charge[t] > 0.01, d = X.discharge[t] > 0.01;
+          act.textContent = c ? T('achète à ', 'buys at ') + fmt(p[t], 0) + ' €' : d ? T('revend à ', 'sells at ') + fmt(p[t], 0) + ' €' : T('attend', 'waits');
+          act.style.color = c ? '#7FC8F8' : d ? '#FBBF24' : 'var(--muted)';
+          soc.style.width = (X.soc[t] * 100).toFixed(1) + '%';
+          soc.style.background = d ? '#FBBF24' : '#7FC8F8';
+          const v = cum[t]; eur.textContent = (v < 0 ? '−' : '+') + fmt(Math.abs(v), 0) + ' €'; eur.style.color = v < 0 ? 'var(--up)' : 'var(--down)';
+          cr.setAttribute('width', x(t) + 10); cur.setAttribute('x1', x(t)); cur.setAttribute('x2', x(t));
+          qs.forEach(r => { if (+r.dataset.t <= t) r.setAttribute('opacity', '.9'); });
+          if (f < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      } };
+    const net = X.rev - wear;
+    const result = { ms: 4200, html: `<div class="kick">${T('Résultat de la journée', 'The day’s result')}</div>
+      <div class="figline"><span class="big" data-count="${net}" data-dec="0">${fmt(net, 0)}</span> <span class="unit">${T('€ gagnés par MW', '€ earned per MW')}</span></div>
+      <div class="sub">${T('Après ', 'After ')}${fmt(wear, 0)}&nbsp;€ ${T('d’usure de la batterie, sur le seul marché day-ahead.', 'of battery wear, on the day-ahead market alone.')}</div>
+      <div class="row"><div class="tile"><div class="l">${T('Sur 12 mois', 'Over 12 months')}</div><div class="v nw">${fmt(L.pw, 0)}&nbsp;k€</div><div class="s">${T('par MW et par an', 'per MW per year')}</div></div>
+        <div class="tile"><div class="l">${T('Cycles', 'Cycles')}</div><div class="v">${fmt(L.cycles_day, 1)}</div><div class="s">${T('par jour en moyenne', 'per day on average')}</div></div></div>` };
+    run([intro, sweep, result]);
+  }
+
+  // ── reel 3: today's price across Europe, a bar race (data/history/daily/<today>.json, all zones) ──
+  const ZONES = { FR: ['France', 'France'], DE_LU: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], NL: ['Pays-Bas', 'Netherlands'], ES: ['Espagne', 'Spain'],
+    PT: ['Portugal', 'Portugal'], IT_NORD: ['Italie Nord', 'Italy North'], AT: ['Autriche', 'Austria'], CH: ['Suisse', 'Switzerland'], PL: ['Pologne', 'Poland'],
+    CZ: ['Tchéquie', 'Czechia'], DK_W: ['Danemark O.', 'Denmark W.'], NO_1: ['Norvège Sud', 'Norway South'], SE: ['Suède', 'Sweden'], FI: ['Finlande', 'Finland'] };
+  async function europe() {
+    const f = await get('data/history/daily/' + today + '.json');
+    const z = f && f.zones;
+    if (!z || !z.FR) return run([`<div class="h">${T('Prix du jour pas encore publiés.', 'Today’s prices not published yet.')}</div>`]);
+    const L = Object.keys(ZONES).filter(k => z[k] && z[k].avg != null).map(k => ({ k, n: ZONES[k][EN ? 1 : 0], v: z[k].avg })).sort((a, b) => b.v - a.v);
+    const asc = L.slice().sort((a, b) => a.v - b.v), rank = asc.findIndex(r => r.k === 'FR') + 1, max = L[0].v, min = asc[0];
+    const ord = r => EN ? (r === 1 ? '1st' : r === 2 ? '2nd' : r === 3 ? '3rd' : r + 'th') : (r === 1 ? '1ʳᵉ' : r + 'ᵉ');
+    const intro = { ms: 3000, html: `<div class="kick">${T('Europe · aujourd’hui', 'Europe · today')}</div>
+      <div class="h">${T('Où l’électricité <span class="nw">est-elle</span> la moins chère&nbsp;?', 'Where is power cheapest?')}</div>
+      <div class="sub">${T('Prix moyen du jour, enchère day-ahead, ', 'Average price of the day, day-ahead auction, ')}${L.length} ${T('pays.', 'countries.')}</div>` };
+    const race = { ms: 8000, html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
+      <div class="h">${T('La France ', 'France ')}${ord(rank)} ${T('moins chère sur ', 'cheapest of ')}${L.length}</div>
+      <div class="race" id="race">${L.map(r => `<div class="r${r.k === 'FR' ? ' fr' : ''}"><div class="n">${r.n}</div><div class="t"><i data-w="${Math.max(2, r.v / max * 100).toFixed(1)}"></i><span>${fmt(r.v, 0)}</span></div></div>`).join('')}</div>`,
+      play(root) {
+        const rows = [...root.querySelectorAll('.race .t i')];
+        rows.forEach((el, i) => setTimeout(() => { el.style.width = 'calc(' + el.dataset.w + '% - 14*var(--u))'; }, 400 + (rows.length - 1 - i) * 180));
+        setTimeout(() => root.querySelector('#race').classList.add('go'), 400 + rows.length * 180);
+      } };
+    const gap = z.FR.avg - min.v;
+    const outro = { ms: 3800, html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
+      <div class="figline"><span class="big" data-count="${z.FR.avg}" data-dec="0">${fmt(z.FR.avg, 0)}</span> <span class="unit">€/MWh ${T('en France', 'in France')}</span></div>
+      <div class="sub">${T('Le moins cher : ', 'Cheapest: ')}${min.n}, ${fmt(min.v, 0)}&nbsp;€. ${T('Le plus cher : ', 'Dearest: ')}${L[0].n}, ${fmt(L[0].v, 0)}&nbsp;€. ${T('Écart avec la France : ', 'Gap with France: ')}${fmt(gap, 0)}&nbsp;€.</div>` };
+    run([intro, race, outro]);
+  }
+
+  // ── reel 4: yesterday's production hour by hour under the price (data/history/daily/<yesterday>.json) ──
+  async function mix() {
+    const dy = addDays(today, -1), f = await get('data/history/daily/' + dy + '.json'), F = f && f.zones && f.zones.FR;
+    const ok = k => F && Array.isArray(F[k]) && F[k].length === 96;
+    if (!ok('hourly') || !ok('nuclear') || !ok('solar')) return run([`<div class="h">${T('Production d’hier pas encore complète.', 'Yesterday’s output not complete yet.')}</div>`]);
+    const hr = a => Array.from({ length: 24 }, (_, i) => a.slice(i * 4, i * 4 + 4).reduce((s, v) => s + (v || 0), 0) / 4 / 1000);   // GW per hour
+    const SER = [['nuclear', T('Nucléaire', 'Nuclear'), '#E6C86E'], ['hydro', T('Hydraulique', 'Hydro'), '#5B8DEF'], ['wind', T('Éolien', 'Wind'), '#7FC8F8'],
+      ['solar', T('Solaire', 'Solar'), '#FBBF24'], ['fossil', T('Gaz et fossiles', 'Gas and fossil'), '#8D99AE']].filter(([k]) => ok(k)).map(([k, n, c]) => ({ k, n, c, v: hr(F[k]) }));
+    const price = hr(F.hourly).map(v => v * 1000);
+    const tot = Array.from({ length: 24 }, (_, i) => SER.reduce((s, x) => s + x.v[i], 0)), top = Math.max(...tot) * 1.08;
+    const W = 1000, H = 560, x = i => i / 23 * W, y = v => H - v / top * H;
+    const pl = Math.min(0, ...price), ph = Math.max(...price), yp = v => H - (v - pl) / (ph - pl || 1) * H * .9;
+    let base = Array(24).fill(0);
+    const areas = SER.map(sr => {
+      const up = base.map((b, i) => b + sr.v[i]);
+      const pts = up.map((v, i) => x(i) + ',' + y(v)).join(' ') + ' ' + base.map((v, i) => x(i) + ',' + y(v)).reverse().join(' ');
+      base = up; return `<polygon points="${pts}" fill="${sr.c}" opacity=".85"/>`;
+    }).join('');
+    const pline = price.map((v, i) => x(i) + ',' + yp(v)).join(' ');
+    const sol = SER.find(s => s.k === 'solar'), hSol = sol.v.indexOf(Math.max(...sol.v)), hMin = price.indexOf(Math.min(...price)), hMax = price.indexOf(Math.max(...price));
+    const SWEEP = 8000;
+    const sweep = { ms: SWEEP + 1500, html: `<div class="kick">${T('Hier en France · heure par heure', 'Yesterday in France · hour by hour')}</div>
+      <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="m-clock">0 h</div><div class="act" id="m-p">–</div></div>
+      <svg viewBox="-10 -30 1020 660" aria-hidden="true"><defs><clipPath id="m-clip"><rect id="m-cr" x="-10" y="-30" width="0" height="700"/></clipPath></defs>
+        <g clip-path="url(#m-clip)">${areas}<polyline points="${pline}" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/></g>
+        ${[0, 6, 12, 18, 23].map(i => `<text x="${x(i)}" y="${H + 50}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${i}&#160;h</text>`).join('')}</svg>
+      <div class="lg">${SER.map(s => `<span><i style="background:${s.c}"></i>${s.n}</span>`).join('')}<span><i style="background:#fff;height:3px;vertical-align:4px"></i>${T('prix', 'price')}</span></div>`,
+      play(root) {
+        const t0 = performance.now(), cr = root.querySelector('#m-cr'), ck = root.querySelector('#m-clock'), pe = root.querySelector('#m-p');
+        const step = now => {
+          const f = Math.min(1, (now - t0) / SWEEP), i = Math.min(23, Math.floor(f * 24));
+          cr.setAttribute('width', 10 + f * (W + 10)); ck.textContent = i + ' h';
+          pe.textContent = fmt(price[i], 0) + ' €/MWh · ' + T('solaire ', 'solar ') + fmt(sol.v[i], 1) + ' GW';
+          pe.style.color = price[i] <= price[hMin] + 5 ? 'var(--down)' : price[i] >= price[hMax] - 5 ? 'var(--up)' : 'var(--muted)';
+          if (f < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      } };
+    const solarDay = Math.abs(hSol - hMin) <= 2 && sol.v[hSol] > 3;
+    const head = solarDay ? T('Le solaire creuse le prix à midi', 'Solar digs the midday price') : T('Le prix suit la demande du soir', 'The price follows the evening demand');
+    const take = { ms: 4200, html: `<div class="kick">${T('Ce qu’on a vu', 'What we saw')}</div>
+      <div class="h">${head}</div>
+      <div class="row"><div class="tile"><div class="l">${T('Prix le plus bas', 'Lowest price')}</div><div class="v nw">${fmt(price[hMin], 0)}&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMin}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMin], 1)}&nbsp;GW</span></div></div>
+        <div class="tile"><div class="l">${T('Prix le plus haut', 'Highest price')}</div><div class="v nw">${fmt(price[hMax], 0)}&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMax}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMax], 1)}&nbsp;GW</span></div></div></div>
+      <div class="sub">${T('Production réelle par filière (ENTSO-E) et prix day-ahead, moyennes horaires.', 'Actual output by source (ENTSO-E) and day-ahead price, hourly means.')}</div>` };
+    document.getElementById('brand-d').textContent = longDate(dy);
+    run([sweep, take], true);
+  }
+
+  // plays the scenes: strings or {html, ms, play(root)}; window.REEL_DONE once the last one has run its time
+  function run(S, keepDate) {
+    S = S.map(x => typeof x === 'string' ? { html: x, ms: SCENE_MS } : Object.assign({ ms: SCENE_MS }, x));
+    if (!keepDate) document.getElementById('brand-d').textContent = longDate(today);
+    document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene">' + x.html + '</section>').join('');
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
     const sc = [...document.querySelectorAll('.scene')], bars = [...document.querySelectorAll('#bar i')];
     let k = 0;
     const show = () => {
       sc.forEach((s, i) => s.classList.toggle('on', i === k));
-      bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = SCENE_MS + 'ms'; });
+      bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = S[k].ms + 'ms'; });
       // replay the curve drawing each time its scene comes back
       sc[k].querySelectorAll('.draw').forEach(p => { p.classList.remove('draw'); void p.getBoundingClientRect(); p.classList.add('draw'); });
       // the big figures count up from 0 (1.1 s, eased)
@@ -198,17 +349,21 @@ svg{width:100%;height:auto;overflow:visible}
         const step = now => { const x = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(to * e, dec); if (x < 1) requestAnimationFrame(step); };
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) el.textContent = fmt(to, dec); else requestAnimationFrame(step);
       });
+      if (S[k].play) S[k].play(sc[k]);
+      setTimeout(next, S[k].ms);
     };
-    show();
-    window.REEL_SCENES = S.length;
-    window.REEL_MS = S.length * SCENE_MS;
-    setInterval(() => {
+    const next = () => {
       k += 1;
       if (k >= S.length) { window.REEL_DONE = true; if (q.has('once')) return; k = 0; }
       show();
-    }, SCENE_MS);
+    };
+    window.REEL_SCENES = S.length;
+    window.REEL_MS = S.reduce((a, x) => a + x.ms, 0);
+    show();
   }
-  main();
+
+  const R = { jour: main, batterie: battery, europe, mix };
+  (R[q.get('r')] || main)();
 })();
 </script>
 </body>
