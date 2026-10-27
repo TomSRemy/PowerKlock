@@ -3280,10 +3280,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
               <div>
                 <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Load Factor (%)</div>
                 <input class="conv-input" type="number" id="cap-lf" placeholder="25" style="font-size:32px" oninput="updateCapacity()" value="25">
+                <select class="country-select" id="cap-lf-auto" aria-label="Measured load factor" style="margin-top:8px;width:100%;max-width:100%"><option value="">Manual entry</option></select>
               </div>
             </div>
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:14px">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
             <span class="fuel-toolbar-lbl" style="align-self:center">Rules of thumb</span>
             <button class="day-tab" onclick="setLF(85, this)">Baseload (85%)</button>
             <button class="day-tab active" onclick="setLF(25, this)">Onshore wind (25%)</button>
