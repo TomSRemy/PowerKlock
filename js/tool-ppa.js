@@ -366,11 +366,20 @@
     // beyond history: amplified gaps, distribution tails and named stresses (the history has 2022 once and no
     // 2030 solar fleet): shocks applied on top of the same low / central / high shape discount
     const sdMax = Math.max(...histSd), sdMed = percentile(histSd, 50), amp = Math.max(0, sdMax - sdMed);
+    // 2022 as it really moved this technology's shape discount, against 2021 and 2023 (national profile, same
+    // convention): solar about −16 to −19 pts (the year's price peak fell in summer), wind about +9 (a winter technology)
+    const cpOf = y => { const r = nat.find(x => x.year === y && x.complete); return r ? r.cpPct : null; };
+    const c22 = cpOf(2022), cAround = [cpOf(2021), cpOf(2023)];
+    const g22 = c22 != null && cAround.every(v => v != null) ? { d: mean(cAround) - c22 } : { d: -0.05 };
+    const g22pts = (g22.d > 0 ? '+' : '−') + Math.abs(g22.d * 100).toFixed(0);
+    g22.how = c22 == null || cAround.some(v => v == null) ? (FRDOC() ? 'spot ×1,9, décote de forme −5 pts : le gaz fixe le prix à toutes les heures' : 'spot ×1.9, shape discount −5 pts: gas sets the price at all hours')
+      : FRDOC() ? `spot ×1,9, décote de forme ${g22pts} pts : l’écart de 2022 à 2021 et 2023 pour ${st.tech === 'wind' ? 'l’éolien (technologie d’hiver, le pic de prix était en été)' : 'le solaire (le pic de prix de l’année est tombé en été)'}`
+      : `spot ×1.9, shape discount ${g22pts} pts: 2022 against 2021 and 2023 for ${st.tech === 'wind' ? 'wind (a winter technology; the price peak was in summer)' : 'solar (the year’s price peak fell in summer)'}`;
     const tail = st.method === 'pct' ? percentile(histSd, 99) : sdW + 2.33 * sMid;
     o.scenX = [['Worst past year, gap doubled', 1, sdMax + amp - c50, 0, 'shape discount = worst past year + (worst − median) again'],
       ['Tail: P99 of the shape discount', 1, tail - c50, 0, st.method === 'pct' ? '99th percentile of the past discounts' : 'projection + 2.33 σ'],
       ['Solar fleet doubles (PPE3 high)', 0.85, 0.12, 0, 'spot −15 %, shape discount +12 pts: midday prices sink'],
-      ['Gas crisis like 2022', 1.9, -0.05, 0, 'spot ×1.9, shape discount −5 pts: gas sets the price at all hours'],
+      ['Gas crisis like 2022', 1.9, g22.d, 0, g22.how],
       ['Price collapse, many negative hours', 0.6, 0.10, 0, 'spot −40 %, shape discount +10 pts'],
       ['Poor weather year', 1, 0, -0.15, 'volume −15 %'],
       ['Everything at once (extreme)', 0.6, 0.15, -0.15, 'spot −40 %, shape discount +15 pts, volume −15 %']]
