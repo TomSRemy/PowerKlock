@@ -52,7 +52,7 @@
       '<div><b>' + T('Floor adjusted and payment', 'Floor ajusté et paiement') + '</b><code>Fl = floor<sub>COD</sub> × (1−step)<sup>yr</sup> × (1−deg)<sup>yr</sup></code>' + T('Dev. payment = max(Fl, Fl + share × max(market × capacity − Fl, 0)). Offtaker = (1 − share) × the same upside.', 'Paiement dév. = max(Fl, Fl + part × max(marché × capacité − Fl, 0)). Acheteur = (1 − part) × le même upside.') + '</div>' +
       '</div></details>';
     const scen = ['low', 'mid', 'high'].map(k => '<div class="boa-scen boa-scen-' + k + '"><div class="boa-sec">' + SCEN[k].name() + ' <span class="boa-src">(' + SCEN[k].src() + ')</span></div>' +
-      FIELDS.map(([f, l, mn, mx, st], i) => row('boa-' + PFX[k] + '-' + f, l(), mn, mx, st, SCEN[k].v[i], 'k')).join('') + '<p class="boa-note">' + SCEN[k].note() + '</p></div>').join('');
+      FIELDS.map(([f, l, mn, mx, st], i) => row('boa-' + PFX[k] + '-' + f, l(), mn, mx, st, SCEN[k].v[i], 'k')).join('') + '<p class="boa-note">' + SCEN[k].note() + '</p>' + (k === 'mid' ? '<p class="boa-note boa-live" id="boa-live"></p>' : '') + '</div>').join('');
     const left = '<div class="boa-card">' +
       '<div class="boa-sec">' + T('Contract structure', 'Structure du contrat') + '</div>' +
       '<div class="boa-pills" id="boa-struct">' + pill('s', 'floor', 'Floor + upside ★', 1) + pill('s', 'toll', T('Full tolling', 'Tolling complet')) + pill('s', 'partial', T('Partial tolling', 'Tolling partiel')) + pill('s', 'merchant', 'Merchant') + '</div>' +
@@ -237,7 +237,7 @@
   }
 
   function setup() {
-    const root = $('page-bess'); if (!root || root.dataset.boa) return; root.dataset.boa = '1';
+    const root = $('page-boa'); if (!root || root.dataset.boa) return; root.dataset.boa = '1';
     html();
     root.addEventListener('input', e => { if (e.target.closest('#boa-in-root')) update(); });
     const bind = (gid, attr, key) => $(gid).addEventListener('click', e => {
@@ -246,6 +246,8 @@
       S[key] = b.dataset[attr]; if (key === 'struct') defaults(); update();
     });
     bind('boa-struct', 's', 'struct'); bind('boa-scen', 'c', 'scen');
+    root.addEventListener('input', e => { if (/^boa-[lmh]-da-cod$/.test(e.target.id)) root.dataset.daTouched = '1'; }, true);
+    live();
     $('boa-tabs').addEventListener('click', e => {
       const b = e.target.closest('button[data-t]'); if (!b) return;
       $('boa-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
@@ -254,6 +256,23 @@
     });
     update();
   }
+  // the day-ahead part of the scenarios starts from what the market really paid: the 2 h battery, perfect schedule
+  // net of wear, last 12 months (data/history/bess_da.json, recomputed every day); low and high keep their gap
+  // to the central case (0.85× and 1.12×, the ratios of the reference assumptions). Intraday, reserves and the
+  // trajectories to 2037 stay assumptions.
+  function live() {
+    PKBess.load().then(doc => {
+      const L = doc && doc.summary_ltm && doc.summary_ltm['2h']; if (!L || L.pw == null) return;
+      const root = $('page-boa'), mid = Math.round(L.pw), when = doc.last ? new Date(doc.last + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+      if (!root.dataset.daTouched) {
+        [['m', mid], ['l', Math.round(mid * 0.85)], ['h', Math.round(mid * 1.12)]].forEach(([k, v]) => { const el = $('boa-' + k + '-da-cod'); if (el) el.value = Math.max(+el.min, Math.min(+el.max, v)); });
+        update();
+      }
+      $('boa-live').innerHTML = T(`<b>Live:</b> “DA + intraday at COD” starts from the day-ahead the market really paid a 2 h battery over 12 months, <b>${mid} k€/MW/yr</b> (net of wear, to ${when}); low and high keep their gap. Intraday, reserves and the 2037 values remain assumptions.`,
+        `<b>Données réelles :</b> « DA + intraday au COD » part du day-ahead réellement payé à une batterie 2 h sur 12 mois, <b>${mid} k€/MW/an</b> (net d’usure, au ${when}) ; bas et haut gardent leur écart. Intraday, réserves et valeurs 2037 restent des hypothèses.`);
+      const u = $('boa-upd'); if (u) u.textContent = T('Day-ahead updated ', 'Day-ahead à jour au ') + when;
+    });
+  }
   function defaults() {
     const s = S.struct;
     $('boa-sp').hidden = s === 'merchant';
@@ -261,5 +280,5 @@
     $('r-share').hidden = s !== 'floor'; $('r-toll').hidden = !(s === 'toll' || s === 'partial'); $('r-pfrac').hidden = s !== 'partial';
     $('boa-floor').value = 70; $('boa-step').value = 0; $('boa-share').value = 70; $('boa-toll').value = s === 'partial' ? 90 : 87; $('boa-pfrac').value = 60;
   }
-  if (window.PK && PK.onPage) PK.onPage('bess', () => setTimeout(setup, 0));
+  if (window.PK && PK.onPage) PK.onPage('boa', () => setTimeout(setup, 0));
 })();
