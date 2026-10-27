@@ -19,6 +19,43 @@
     return S.loading;
   }
 
+  // reserves: FCR French price per delivery day, French FCR need, ECB 10-year rate (scripts/fetch_reserves.py)
+  let resP = null;
+  const loadRes = () => resP || (resP = fetch('data/history/reserves_fr.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  // average of the last 365 delivery days held (or fewer when the history is shorter), € per MW per day
+  function fcrLtm(R) {
+    const k = Object.keys(R.fcr || {}).sort().slice(-365); if (!k.length) return null;
+    return { avg: k.reduce((a, d) => a + R.fcr[d], 0) / k.length, n: k.length, from: k[0], to: k[k.length - 1] };
+  }
+  function lastRate(R) { const k = Object.keys(R.rate10y || {}).sort(); return k.length ? { v: R.rate10y[k[k.length - 1]], d: k[k.length - 1] } : null; }
+
+  function reserves(R) {
+    if (!$('bess-res-kpis')) return;
+    const T = (f, e) => fr() ? f : e;
+    const L = R && fcrLtm(R);
+    if (!L) { $('bess-res-kpis').innerHTML = '<div class="fuel-note">' + T('Pas encore de données de réserve.', 'No reserve data yet.') + '</div>'; return; }
+    const by = {};
+    Object.keys(R.fcr).forEach(d => { const m = d.slice(0, 7); (by[m] = by[m] || []).push(R.fcr[d]); });
+    const M = Object.keys(by).sort().filter(m => by[m].length >= 5);
+    const mv = M.map(m => +(ann(by[m].reduce((a, b) => a + b, 0) / by[m].length)).toFixed(1));
+    const days = Object.keys(R.fcr).sort(), d1 = days[days.length - 1];
+    const need = R.fcr_mw && R.fcr_mw[d1], rt = lastRate(R);
+    const fd = d => new Date(d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    $('bess-res-kpis').innerHTML =
+      _fuelKpi(T('FCR, annualisé', 'FCR, annualised'), num(ann(L.avg), 0), T('k€/MW/an', 'k€/MW/yr'), T(`${L.n} jours depuis le ${fd(L.from)}`, `${L.n} days since ${fd(L.from)}`)) +
+      _fuelKpi(T('FCR, dernier mois', 'FCR, last month'), num(mv[mv.length - 1], 0), T('k€/MW/an', 'k€/MW/yr'), M[M.length - 1]) +
+      _fuelKpi(T('FCR, dernier jour', 'FCR, last day'), num(R.fcr[d1], 0), T('€/MW/jour', '€/MW/day'), fd(d1)) +
+      _fuelKpi(T('Besoin FCR de la France', 'French FCR need'), num(need, 0), 'MW', T('tout le marché, pour un parc qui grandit', 'the whole market, for a growing fleet')) +
+      _fuelKpi(T('Taux 10 ans zone euro', 'Euro area 10-year rate'), rt ? num(rt.v, 2) : '–', '%', T('AAA, BCE · base du taux de la dette', 'AAA, ECB · base of the debt rate'));
+    _fuelChart('bess-res-canvas', { type: 'bar', data: { labels: M, datasets: [
+      { label: T('FCR France, annualisé', 'FCR France, annualised'), data: mv, backgroundColor: 'rgba(141,153,174,.75)', borderWidth: 0 },
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(T('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) } }) }, 'bess-res');
+    const af = Object.keys(R.afrr || {}).length;
+    $('bess-res-note').textContent = T(
+      `Prix FCR = prix de règlement français de chaque bloc de 4 heures, somme des 6 blocs d’un jour, moyenne des jours × 365. C’est ce que paierait 1 MW engagé en FCR toute l’année ; le besoin français (${num(need, 0)} MW) est petit devant le parc de batteries attendu, donc une batterie n’en vend qu’une part et le prix baisse quand le parc grandit. Données publiques depuis janvier 2026. aFRR : ${af ? af + ' jours de prix de capacité (ENTSO-E)' : 'pas encore de prix de capacité français publié en open data'}.`,
+      `FCR price = French settlement price of each 4-hour block, sum of the 6 blocks of a day, mean of the days × 365. It is what 1 MW committed to FCR all year would earn; the French need (${num(need, 0)} MW) is small next to the expected battery fleet, so a battery sells only a share of its power there and the price falls as the fleet grows. Public data since January 2026. aFRR: ${af ? af + ' days of capacity prices (ENTSO-E)' : 'no French capacity price published as open data yet'}.`);
+  }
+
   // k€ per MW per year from an average € per MW per day
   const ann = v => v == null ? null : v * 365 / 1000;
 
@@ -99,6 +136,7 @@
     const doc = await load();
     if (!doc || !doc.months) { $('bess-da-kpis').innerHTML = '<div class="fuel-note">No battery data yet: the daily job writes data/history/bess_da.json.</div>'; return; }
     kpis(doc); charts(doc); years(doc); day(doc);
+    loadRes().then(reserves);
     document.dispatchEvent(new CustomEvent('pk-bess-data', { detail: doc }));
   }
 
@@ -123,7 +161,7 @@
   }
 
   window.PKBess = {
-    load, ann,
+    load, ann, loadRes, fcrLtm, lastRate,
     setH(h, btn) {
       S.h = h;
       if (btn) btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.toggle('active', b === btn));

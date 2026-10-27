@@ -229,6 +229,25 @@ def main():
         n = len(ltm)
         summary[k] = {f: round(sum(r[k][f] for r in ltm if f in r[k]) / max(n, 1) * 365 / 1000, 1) for f in ('pf', 'pw', 'nv')}
         summary[k]['cycles_day'] = round(sum(r[k]['pf_e'] for r in ltm) / max(n, 1) / h, 2)
+    # the year ahead: the 12-month value scaled by each calendar forward against the 12-month baseload. Spreads move
+    # with the price level (thermal plants set the evening peak), so a dearer year pays a battery more; first-order only
+    # the published daily average of each delivery day (a 25-hour day keeps 96 quarter-hours: never the series mean)
+    def day_avg(d):
+        try:
+            v = json.load(open(os.path.join(DAILY, d + '.json')))['zones']['FR'].get('avg')
+            return float(v) if v is not None else None
+        except (OSError, ValueError, KeyError):
+            return None
+    avgs = [v for v in (day_avg(r['d']) for r in ltm) if v is not None]
+    base = float(np.mean(avgs)) if avgs else float(np.mean([prices[r['d']].mean() for r in ltm]))
+    path = {}
+    try:
+        fc = json.load(open(os.path.join(ROOT, 'data', 'fr_market.json'))).get('forwardCurve') or []
+        cal = {int(x['contract'].split('Cal')[1][:4]): float(x['value']) for x in fc if 'Cal' in x.get('contract', '') and x.get('value')}
+        for y, v in sorted(cal.items()):
+            path[str(y)] = {k: round(summary[k]['pw'] * v / base, 1) for k in summary} | {'cal': v}
+    except (OSError, ValueError, KeyError, IndexError):
+        path = {}
     doc = {
         'generated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
         'source': 'PowerKlock day-ahead prices, France (ENTSO-E)',
@@ -236,6 +255,8 @@ def main():
         'unit': 'EUR per MW of power per day; summary in kEUR per MW per year (last 365 days)',
         'first': rows[0]['d'], 'last': rows[-1]['d'], 'n': len(rows),
         'summary_ltm': summary,
+        'base_ltm': round(base, 2),
+        'da_path': path,
         'months': aggregate(rows),
         'days': rows[-120:],
         'example': example(days_all[-1], prices[days_all[-1]]),

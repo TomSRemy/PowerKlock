@@ -26,7 +26,7 @@
     remit: [['Outages', ['hs-remit-u']], ['Platforms', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],
     ppapricer: [['Compare', ['hs-pp-cmp']], ['Short-term (monthly)', ['hs-pp-st']], ['M0-indexed (complément)', ['hs-pp-cr']], ['Past discount', ['hs-pp-price', 'hs-pp-pctrisk']], ['Capacity trend', ['hs-pp-price', 'hs-pp-mkt', 'hs-pp-mc', 'hs-pp-pctrisk']], ['Forward shape', ['hs-pp-price', 'hs-pp-fpc']], ['Weather simulation', ['hs-pp-price', 'hs-pp-wx']], ['Market context', ['hs-pp-roll']], ['Methodology', ['hs-pp-doc']]],
-    bess: [['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']]],
+    bess: [['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Reserves', ['hs-bess-res']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']]],
     carbonfoot: [['Your data', ['hs-cf-input']], ['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
   };
   const KEY = 'pk-view-';
