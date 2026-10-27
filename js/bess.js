@@ -59,6 +59,55 @@
   // k€ per MW per year from an average € per MW per day
   const ann = v => v == null ? null : v * 365 / 1000;
 
+  // ── PowerKlock BESS index (data/history/bess_index.json, scripts/bess_optim.py): forward and realised, 1 MW / 2 h ──
+  let idxP = null;
+  const loadIdx = () => idxP || (idxP = fetch('data/history/bess_index.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  const C_BEST = '#A87DC4', C_FCR = '#8D99AE', C_AF = '#ED6965';
+  // mean of the last n delivery days that have a value for field f, annualised; and the count
+  function lastN(J, f, n) {
+    const ks = Object.keys(J.realised).sort().filter(d => J.realised[d][f] != null).slice(-n);
+    return ks.length ? { v: ann(ks.reduce((a, d) => a + J.realised[d][f], 0) / ks.length), n: ks.length, from: ks[0] } : null;
+  }
+  function index(J) {
+    if (!$('bess-idx-kpis')) return;
+    const T = (f, e) => fr() ? f : e;
+    if (!J || !J.forward) { $('bess-idx-kpis').innerHTML = '<div class="fuel-note">' + T('Indice pas encore calculé.', 'Index not computed yet.') + '</div>'; return; }
+    const fd = d => new Date(d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const F = Object.keys(J.forward).sort(), fl = F[F.length - 1], cur = J.forward[fl];
+    const back = n => { const t = new Date(Date.parse(fl) - n * 864e5).toISOString().slice(0, 10); const k = F.filter(d => d <= t).pop(); return k ? J.forward[k].v : null; };
+    const sg = v => v == null ? '' : (v >= 0 ? '+' : '−') + num(Math.abs(v), 1);
+    const b30 = lastN(J, 'best', 30), b365 = lastN(J, 'best', 365), d30 = lastN(J, 'da', 30);
+    const R = Object.keys(J.realised).sort().filter(d => J.realised[d].mkt).slice(-30), share = {};
+    R.forEach(d => { share[J.realised[d].mkt] = (share[J.realised[d].mkt] || 0) + 1; });
+    const MK = { da: 'day-ahead', fcr: 'FCR', afrr: 'aFRR' };
+    const top = Object.keys(share).sort((a, b) => share[b] - share[a]).map(m => MK[m] + ' ' + Math.round(share[m] / R.length * 100) + (fr() ? ' %' : '%')).join(' · ');
+    const w7 = back(7), m30 = back(30);
+    $('bess-idx-kpis').innerHTML =
+      _fuelKpi(T('Indice forward', 'Forward index'), num(cur.v, 1), T('k€/MW/an', 'k€/MW/yr'), T(`day-ahead, Cal ${J.strip.split('-').filter((x, i, a) => i === 0 || i === a.length - 1).join('–')} · ${fd(fl)}`, `day-ahead, Cal ${J.strip.split('-').filter((x, i, a) => i === 0 || i === a.length - 1).join('–')} · ${fd(fl)}`)) +
+      _fuelKpi(T('Sur 7 jours', 'Over 7 days'), w7 == null ? '–' : sg(cur.v - w7), T('k€/MW/an', 'k€/MW/yr'), T('30 jours : ', '30 days: ') + (m30 == null ? '–' : sg(cur.v - m30))) +
+      _fuelKpi(T('Réalisé, 30 derniers jours', 'Realised, last 30 days'), b30 ? num(b30.v, 0) : '–', T('k€/MW/an', 'k€/MW/yr'), top || T('meilleur marché du jour', 'best market of the day')) +
+      _fuelKpi(T('Réalisé, sur l’historique', 'Realised, over the history'), b365 ? num(b365.v, 0) : '–', T('k€/MW/an', 'k€/MW/yr'), b365 ? T(`${b365.n} jours depuis le ${fd(b365.from)}`, `${b365.n} days since ${fd(b365.from)}`) : '') +
+      _fuelKpi(T('Day-ahead seul, 30 jours', 'Day-ahead alone, 30 days'), d30 ? num(d30.v, 0) : '–', T('k€/MW/an', 'k€/MW/yr'), T('net d’usure', 'net of wear'));
+    const xs = F.filter(d => d >= '2024-01-01');
+    _fuelChart('bess-idx-f', { type: 'line', data: { labels: xs, datasets: [
+      _fuelLineDs(T('Indice forward', 'Forward index'), xs.map(d => J.forward[d].v), C_BEST, { borderWidth: 2.2 }),
+      _fuelLineDs(T('Day-ahead des 12 mois précédents', 'Day-ahead of the previous 12 months'), xs.map(d => J.forward[d].ltm), C_PF, { borderWidth: 1.3, borderDash: [5, 3] }),
+      Object.assign(_fuelLineDs(T('Cal moyen de la période (€/MWh)', 'Mean Cal of the strip (€/MWh)'), xs.map(d => J.forward[d].strip), '#7A93AB', { borderWidth: 1, borderDash: [2, 3] }), { yAxisID: 'p' }),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(T('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }), p: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'bess-index-forward');
+    const M = J.months.filter(m => m.m >= '2025-01');
+    const ds = [
+      Object.assign(_fuelLineDs(T('Meilleur marché du jour', 'Best market of the day'), M.map(m => m.best), C_BEST), { type: 'bar', backgroundColor: 'rgba(168,125,196,.55)', borderWidth: 0, order: 3 }),
+      Object.assign(_fuelLineDs('Day-ahead', M.map(m => m.da), C_PF, { borderWidth: 2 }), { type: 'line', order: 1 }),
+      Object.assign(_fuelLineDs(T('FCR, tout le MW', 'FCR, the whole MW'), M.map(m => m.fcr), C_FCR, { borderWidth: 1.6, borderDash: [5, 3] }), { type: 'line', order: 2 }),
+    ];
+    if (M.some(m => m.afrr != null)) ds.push(Object.assign(_fuelLineDs(T('aFRR, tout le MW', 'aFRR, the whole MW'), M.map(m => m.afrr), C_AF, { borderWidth: 1.6, borderDash: [3, 3] }), { type: 'line', order: 0 }));
+    _fuelChart('bess-idx-m', { type: 'bar', data: { labels: M.map(m => m.m), datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(T('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) } }) }, 'bess-index-months');
+    const af = M.some(m => m.afrr != null);
+    $('bess-idx-note').textContent = T(
+      `Batterie de 1 MW, 2 h, France. Indice forward = valeur day-ahead des 12 mois précédents (programme parfait net d’usure) × Cal moyen ${J.strip.split('-').filter((x, i, a) => i === 0 || i === a.length - 1).join('–')} ÷ prix day-ahead moyen de ces 12 mois, recalculé pour chaque jour de cotation avec les forwards de ce jour : il bouge avec les forwards et avec les spreads réalisés. Réalisé = pour chaque jour de livraison, ce que tout le MW gagne sur chaque marché (day-ahead ; FCR, somme des 6 blocs ; ${af ? 'aFRR, prix de capacité haussier + baissier × 24 h ; ' : ''}) et le meilleur d’entre eux : une batterie assez petite pour ne pas bouger le prix, qui choisit chaque jour le marché qui paie le plus. Ce n’est pas un empilement. ${af ? '' : 'aFRR pas encore inclus : aucun prix de capacité français publié en open data pour l’instant. '}Le réalisé commence avec les prix FCR publics (janvier 2026).`,
+      `1 MW, 2 h battery, France. Forward index = day-ahead value of the previous 12 months (perfect schedule net of wear) × mean Cal ${J.strip.split('-').filter((x, i, a) => i === 0 || i === a.length - 1).join('–')} ÷ mean day-ahead price of those 12 months, computed for every trading day with that day’s forwards: it moves with the forwards and with the realised spreads. Realised = for each delivery day, what the whole MW earns in each market (day-ahead; FCR, sum of the 6 blocks; ${af ? 'aFRR, up + down capacity price × 24 h; ' : ''}) and the best of them: a battery small enough not to move the price, choosing every day the market that pays most. It is not a stack. ${af ? '' : 'aFRR not included yet: no French capacity price is published as open data so far. '}The realised series starts with the public FCR prices (January 2026).`);
+  }
+
   function kpis(doc) {
     const L = doc.summary_ltm[S.h];
     const cyc = L.cycles_day, perHour = L.pf * 1000 / 8760;
@@ -137,6 +186,7 @@
     if (!doc || !doc.months) { $('bess-da-kpis').innerHTML = '<div class="fuel-note">No battery data yet: the daily job writes data/history/bess_da.json.</div>'; return; }
     kpis(doc); charts(doc); years(doc); day(doc);
     loadRes().then(reserves);
+    loadIdx().then(index);
     document.dispatchEvent(new CustomEvent('pk-bess-data', { detail: doc }));
   }
 
@@ -161,7 +211,7 @@
   }
 
   window.PKBess = {
-    load, ann, loadRes, fcrLtm, lastRate,
+    load, ann, loadRes, fcrLtm, lastRate, loadIdx,
     setH(h, btn) {
       S.h = h;
       if (btn) btn.parentNode.querySelectorAll('.pk-gf-btn').forEach(b => b.classList.toggle('active', b === btn));

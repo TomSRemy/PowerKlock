@@ -28,6 +28,7 @@ Not modelled: ancillary services, intraday, imbalance, degradation of capacity, 
     python scripts/bess_optim.py --full     # everything again from 2022-01-01
 """
 import argparse
+import bisect
 import glob
 import json
 import os
@@ -194,6 +195,110 @@ def aggregate(rows):
     return months
 
 
+# ── PowerKlock BESS index, France, 1 MW / 2 h (data/history/bess_index.json) ──
+# Two figures, both in k€ per MW of power per year:
+#  · forward: the day-ahead value of the battery over the Cal strip of the PPA benchmark (2027-2029), as of each day:
+#    trailing 12 months of the perfect schedule net of wear × mean Cal of the strip ÷ mean published daily average
+#    of those 12 months. Rebuilt for past days from that day's forwards (fr_market_calchain.json).
+#  · realised: per delivery day, what the whole MW earned in each market (day-ahead net of wear; FCR, the sum of the
+#    6 French block prices; aFRR, up + down capacity price × 24 h when published), and the best of them: a battery
+#    small enough not to move the price, choosing each day the market that pays most. Not a stack: one MW sold once.
+INDEX_OUT = os.path.join(ROOT, 'data', 'history', 'bess_index.json')
+STRIP = (2027, 2028, 2029)
+
+
+def build_index(rows, k='2h'):
+    def load(p):
+        try:
+            return json.load(open(os.path.join(ROOT, 'data', 'history', p)))
+        except (OSError, ValueError):
+            return {}
+    res, chain = load('reserves_fr.json'), load('fr_market_calchain.json').get('FR', {}).get('years', {})
+    avg = {}
+    for r in rows:
+        try:
+            v = json.load(open(os.path.join(DAILY, r['d'] + '.json')))['zones']['FR'].get('avg')
+            if v is not None:
+                avg[r['d']] = float(v)
+        except (OSError, ValueError, KeyError):
+            pass
+    # Cal price of each strip year on each trading day (carried forward over days without a quote)
+    cal = {}
+    for y in STRIP:
+        c = chain.get(str(y)) or {}
+        cal[y] = dict(zip(c.get('dates', []), c.get('values', [])))
+    ds = sorted(rows, key=lambda r: r['d'])
+    dlist = [r['d'] for r in ds]
+    pw = [r[k]['pw'] for r in ds]
+    fwd, last = {}, {y: None for y in STRIP}
+    trade_days = sorted(set().union(*[set(cal[y]) for y in STRIP])) if all(cal[y] for y in STRIP) else []
+    for t in trade_days:
+        for y in STRIP:
+            if t in cal[y] and cal[y][t] is not None:
+                last[y] = float(cal[y][t])
+        if any(v is None for v in last.values()):
+            continue
+        j = bisect.bisect_left(dlist, t)            # delivery days strictly before the trading day
+        if j < 300:
+            continue
+        win = range(max(0, j - 365), j)
+        ltm = sum(pw[i] for i in win) / len(win) * 365 / 1000
+        av = [avg[dlist[i]] for i in win if dlist[i] in avg]
+        if len(av) < 300:
+            continue
+        base = sum(av) / len(av)
+        strip = sum(last.values()) / len(STRIP)
+        fwd[t] = {'v': round(ltm * strip / base, 1), 'ltm': round(ltm, 1), 'base': round(base, 2), 'strip': round(strip, 2),
+                  'y': {str(y): round(ltm * last[y] / base, 1) for y in STRIP}}
+    fcr, af = res.get('fcr', {}), res.get('afrr', {})
+    real = {}
+    for r in ds:
+        d = r['d']
+        e = {'da': round(r[k]['pw'], 1)}
+        if d in fcr:
+            e['fcr'] = round(fcr[d], 1)
+        a = af.get(d) or {}
+        if a:
+            e['afrr'] = round((a.get('up', 0) + a.get('down', 0) + a.get('sym', 0)) * 24, 1)
+        if len(e) > 1:                               # the best market needs at least one reserve price that day
+            m = max(e, key=e.get)
+            e['best'], e['mkt'] = e[m], m
+        real[d] = e
+    months = {}
+    for d, e in real.items():
+        mo = months.setdefault(d[:7], {'n': 0, 'nb': 0, 'da': 0, 'fcr': [], 'afrr': [], 'best': 0, 'share': {}})
+        mo['n'] += 1
+        mo['da'] += e['da']
+        if 'fcr' in e:
+            mo['fcr'].append(e['fcr'])
+        if 'afrr' in e:
+            mo['afrr'].append(e['afrr'])
+        if 'best' in e:
+            mo['nb'] += 1
+            mo['best'] += e['best']
+            mo['share'][e['mkt']] = mo['share'].get(e['mkt'], 0) + 1
+    def ann(v):
+        return round(v * 365 / 1000, 1)
+    mrows = []
+    for m in sorted(months):
+        mo = months[m]
+        mrows.append({'m': m, 'days': mo['n'], 'da': ann(mo['da'] / mo['n']),
+                      'fcr': ann(sum(mo['fcr']) / len(mo['fcr'])) if len(mo['fcr']) >= 5 else None,
+                      'afrr': ann(sum(mo['afrr']) / len(mo['afrr'])) if len(mo['afrr']) >= 5 else None,
+                      'best': ann(mo['best'] / mo['nb']) if mo['nb'] >= 5 else None,
+                      'share': {x: round(c / mo['nb'] * 100) for x, c in mo['share'].items()} if mo['nb'] else {}})
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    doc = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'battery': '1 MW, ' + k.replace('h', ' h'),
+           'strip': '-'.join(map(str, STRIP)),
+           'note': 'kEUR per MW per year. forward: day-ahead value over the Cal strip, rebuilt from each day\'s forwards. '
+                   'realised: per delivery day, EUR per MW per day in each market and the best one (not a stack).',
+           'forward': fwd, 'computed_on': today,
+           'realised': {d: real[d] for d in dlist[-400:]}, 'months': mrows}
+    with open(INDEX_OUT, 'w') as f:
+        json.dump(doc, f, separators=(',', ':'))
+    return doc
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--full', action='store_true', help='recompute everything from 2022-01-01')
@@ -266,6 +371,11 @@ def main():
     with open(tmp, 'w') as fh:
         json.dump(doc, fh, separators=(',', ':'))
     os.replace(tmp, OUT)
+    if len(rows) >= 400:                         # the index needs the whole history (the job always runs --full)
+        ix = build_index(rows)
+        if ix['forward']:
+            fl = max(ix['forward'])
+            print(f"BESS index: forward {ix['forward'][fl]['v']} kEUR/MW/yr on {fl}, {len(ix['forward'])} trading days")
     print(f'{len(rows)} days {rows[0]["d"]} to {rows[-1]["d"]}; last 365 days (kEUR/MW/yr):')
     for k, v in summary.items():
         print(' ', k, v)
