@@ -1,5 +1,5 @@
 {
- "open": 14,
+ "open": 6,
  "notes": [
   {
    "id": 29,
@@ -38,46 +38,6 @@
    "done_at": null
   },
   {
-   "id": 42,
-   "status": "open",
-   "created_at": "2026-10-26T21:16+00:00",
-   "author": "Tom",
-   "route": "dashboards",
-   "page": "Mes tableaux de bord",
-   "tab": "Le marché de l'énergie Aujourd'hui · Tout",
-   "target_id": "mrn-brief",
-   "target_label": "Ce qui a bougé et pourquoi (bloc)",
-   "settings": {
-    "_page": "mydash",
-    "_path": "#mrn2 > div:nth-of-type(3) > section:nth-of-type(1)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2025"
-   },
-   "body": "CAl 27 et le prix très procje. On mélange les deux un peu. \nAdapter la couleur du titre en fonction de l'évolution",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 43,
-   "status": "open",
-   "created_at": "2026-10-26T21:20+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · Tout",
-   "target_id": "mrn-go",
-   "target_label": "Garanties d'origine · renouvelables (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-3 > div:nth-of-type(4) > div:nth-of-type(1)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2025"
-   },
-   "body": "les événements s'affichent que aund on passe au dessus du petit triangle et du coup derrière la souris...pas top",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 44,
    "status": "open",
    "created_at": "2026-10-26T21:23+00:00",
@@ -95,45 +55,7 @@
     "carb-date-from": ""
    },
    "body": "il faut retravailler cette page elle apporte pas grand chose",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 45,
-   "status": "open",
-   "created_at": "2026-10-26T21:39+00:00",
-   "author": "Tom",
-   "route": "markets/go/auctions",
-   "page": "Marchés › Garanties d'origine › Enchères France",
-   "tab": "Enchères France",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "goprices",
-    "pk-zone": "France"
-   },
-   "body": "tableau de données ici aussi",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 46,
-   "status": "open",
-   "created_at": "2026-10-26T21:41+00:00",
-   "author": "Tom",
-   "route": "markets/fuels",
-   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
-   "tab": "Gaz",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "eua",
-    "fuel-to": "",
-    "pk-zone": "France",
-    "fuel-from": ""
-   },
-   "body": "quelle différence entre stock haz ue et ctock gaz ue par année ?",
-   "reply": null,
+   "reply": "D’accord. Je prépare une maquette de refonte de la page Intensité carbone (ce qu’elle doit apporter : heures vertes de demain, comparaison des pays, tendance) ; je la montre avant de coder.",
    "done_at": null
   },
   {
@@ -151,7 +73,7 @@
     "pk-zone": "France"
    },
    "body": "est-ce que cotations et forward TTF devraient pas être dans le même ?",
-   "reply": null,
+   "reply": "Oui, cotations et forwards TTF se recoupent. Proposition : une seule page « Forwards gaz » avec la courbe, l’historique par échéance et le tableau des cotations. Je la montre en maquette avant de toucher au menu.",
    "done_at": null
   },
   {
@@ -169,7 +91,7 @@
     "pk-zone": "France"
    },
    "body": "Un seule page TTf est pas suffisante ?",
-   "reply": null,
+   "reply": "Même réponse que la note précédente : une seule page TTF suffit. Fusion proposée en maquette, avec la note 47.",
    "done_at": null
   },
   {
@@ -188,105 +110,7 @@
     "ren-country": "France"
    },
    "body": "je colorends pas les sous section. En haut ? dans le menu ? pk pas tout ? pk en haut si dans le menus et inversement ? A rationaliser",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 50,
-   "status": "open",
-   "created_at": "2026-10-26T21:58+00:00",
-   "author": "Tom",
-   "route": "tools/carbon",
-   "page": "Outils › Empreinte carbone",
-   "tab": "Carbone",
-   "target_id": "cf-cal-sub",
-   "target_label": "Calendrier des jours verts (bloc)",
-   "settings": {
-    "_page": "carbonfoot",
-    "_path": "#hs-body-cf-carbon > div:nth-of-type(3)",
-    "pk-zone": "France",
-    "cf-ex-grid": "mois × heure",
-    "cf-ex-metric": "Intensité carbone du réseau"
-   },
-   "body": "je sais pas trop ce que je regarde. Mais c'est beau",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 51,
-   "status": "open",
-   "created_at": "2026-10-26T22:00+00:00",
-   "author": "Tom",
-   "route": "tools/carbon",
-   "page": "Outils › Empreinte carbone",
-   "tab": "Coût & flexibilité",
-   "target_id": "cf-bill-chart",
-   "target_label": "De quoi est faite votre facture (graphique)",
-   "settings": {
-    "_page": "carbonfoot",
-    "_path": "#cf-bill > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "cf-fix-gc": "",
-    "cf-fix-go": "0",
-    "cf-acc-key": "100",
-    "cf-acc-kwc": "2000",
-    "cf-acc-pmo": "7.5",
-    "cf-fix-cee": "10",
-    "cf-fix-net": "Distribution · CTA 15 %",
-    "cf-acc-risk": "",
-    "cf-accday-m": "Année entière",
-    "cf-fix-conn": "≤ 36 kVA · 30,62 €/MWh",
-    "cf-flex-pct": "10",
-    "cf-acc-price": "80",
-    "cf-acc-turpe": "",
-    "cf-acc-yield": "1150",
-    "cf-fix-turpe": "",
-    "cf-flex-goal": "Le moins cher",
-    "cf-fix-margin": "2",
-    "cf-fix-period": "Année calendaire suivante",
-    "cf-fix-country": "France",
-    "cf-fix-turpefix": ""
-   },
-   "body": "différenence complément et prix ACC pas clair",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 52,
-   "status": "open",
-   "created_at": "2026-10-26T22:04+00:00",
-   "author": "Tom",
-   "route": "intel/analysis",
-   "page": "Outils › Analyse de marché",
-   "tab": null,
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "analysis",
-    "ma-zone": "France",
-    "pk-zone": "France"
-   },
-   "body": "quand je passe ma souris, le tableau a droit passe bruèvement en anglais avant dpetre traduit. Bug d'affichage pas beau.",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 53,
-   "status": "open",
-   "created_at": "2026-10-26T22:05+00:00",
-   "author": "Tom",
-   "route": "intel/analysis",
-   "page": "Outils › Analyse de marché",
-   "tab": null,
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "analysis",
-    "ma-zone": "France",
-    "pk-zone": "France"
-   },
-   "body": "le tuiles sont un peu bloqué à droit. Et si on pouvait avoir le graph en grand en appuyant dessus comme dans aujourd'hui ce serait top.",
-   "reply": null,
+   "reply": "Juste. Proposition de règle unique : le menu de gauche donne les pages, les onglets en haut donnent les vues d’une même page, et rien n’apparaît aux deux endroits. Je prépare la liste des pages à réordonner et une maquette.",
    "done_at": null
   },
   {
@@ -1126,6 +950,182 @@
    "body": "certain grpah du dashboard d ela présnetation CATE pourraient être bien icic",
    "reply": "Fait : nouvelle section repliée « Fondamentaux » dans Expert avec les graphiques de la présentation CATE : Cal+1 et ses moteurs, stocks de gaz année contre année, nucléaire par mois, réservoirs hydrauliques, prévisions température, vent, soleil et précipitations vs normale.",
    "done_at": "2026-10-25T21:17+00:00"
+  },
+  {
+   "id": 42,
+   "status": "done",
+   "created_at": "2026-10-26T21:16+00:00",
+   "author": "Tom",
+   "route": "dashboards",
+   "page": "Mes tableaux de bord",
+   "tab": "Le marché de l'énergie Aujourd'hui · Tout",
+   "target_id": "mrn-brief",
+   "target_label": "Ce qui a bougé et pourquoi (bloc)",
+   "settings": {
+    "_page": "mydash",
+    "_path": "#mrn2 > div:nth-of-type(3) > section:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2025"
+   },
+   "body": "CAl 27 et le prix très procje. On mélange les deux un peu. \nAdapter la couleur du titre en fonction de l'évolution",
+   "reply": "Fait : le prix est affiché seul en gros (117,4 €), « Cal 27 · +7,1 % sur 7 j » en dessous, pour ne plus lire « 27 117 ». Même chose pour le gaz et les GO. Le titre de chaque tuile prend la couleur du sens : rouge en hausse, vert en baisse, gris stable.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 43,
+   "status": "done",
+   "created_at": "2026-10-26T21:20+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · Tout",
+   "target_id": "mrn-go",
+   "target_label": "Garanties d'origine · renouvelables (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(4) > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2025"
+   },
+   "body": "les événements s'affichent que aund on passe au dessus du petit triangle et du coup derrière la souris...pas top",
+   "reply": "Fait : toute la ligne pointillée de l’événement réagit à la souris (plus seulement le petit triangle), et l’étiquette s’affiche à côté de la ligne, plus sous le curseur.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 45,
+   "status": "done",
+   "created_at": "2026-10-26T21:39+00:00",
+   "author": "Tom",
+   "route": "markets/go/auctions",
+   "page": "Marchés › Garanties d'origine › Enchères France",
+   "tab": "Enchères France",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "goprices",
+    "pk-zone": "France"
+   },
+   "body": "tableau de données ici aussi",
+   "reply": "Fait : tableau des résultats mois par mois sous les graphiques (prix et volume par technologie, total, prix moyen, part allouée), le plus récent en haut.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 46,
+   "status": "done",
+   "created_at": "2026-10-26T21:41+00:00",
+   "author": "Tom",
+   "route": "markets/fuels",
+   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
+   "tab": "Gaz",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "eua",
+    "fuel-to": "",
+    "pk-zone": "France",
+    "fuel-from": ""
+   },
+   "body": "quelle différence entre stock haz ue et ctock gaz ue par année ?",
+   "reply": "Le premier compare cette année à la fourchette des 5 années précédentes ; le second montre cette année et la précédente face à toutes les années depuis 2019. Ils se recoupent : titres clarifiés, et je propose de n’en garder qu’un (à valider).",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 50,
+   "status": "done",
+   "created_at": "2026-10-26T21:58+00:00",
+   "author": "Tom",
+   "route": "tools/carbon",
+   "page": "Outils › Empreinte carbone",
+   "tab": "Carbone",
+   "target_id": "cf-cal-sub",
+   "target_label": "Calendrier des jours verts (bloc)",
+   "settings": {
+    "_page": "carbonfoot",
+    "_path": "#hs-body-cf-carbon > div:nth-of-type(3)",
+    "pk-zone": "France",
+    "cf-ex-grid": "mois × heure",
+    "cf-ex-metric": "Intensité carbone du réseau"
+   },
+   "body": "je sais pas trop ce que je regarde. Mais c'est beau",
+   "reply": "Fait : un « Comment le lire » sous le calendrier : chaque carré est un jour, sa couleur dit le CO₂ par kWh ce jour-là (vert = nucléaire, hydraulique, renouvelable ; rouge = gaz, charbon, imports), les couleurs comparent vos jours entre eux, clic pour le détail heure par heure.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 51,
+   "status": "done",
+   "created_at": "2026-10-26T22:00+00:00",
+   "author": "Tom",
+   "route": "tools/carbon",
+   "page": "Outils › Empreinte carbone",
+   "tab": "Coût & flexibilité",
+   "target_id": "cf-bill-chart",
+   "target_label": "De quoi est faite votre facture (graphique)",
+   "settings": {
+    "_page": "carbonfoot",
+    "_path": "#cf-bill > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "cf-fix-gc": "",
+    "cf-fix-go": "0",
+    "cf-acc-key": "100",
+    "cf-acc-kwc": "2000",
+    "cf-acc-pmo": "7.5",
+    "cf-fix-cee": "10",
+    "cf-fix-net": "Distribution · CTA 15 %",
+    "cf-acc-risk": "",
+    "cf-accday-m": "Année entière",
+    "cf-fix-conn": "≤ 36 kVA · 30,62 €/MWh",
+    "cf-flex-pct": "10",
+    "cf-acc-price": "80",
+    "cf-acc-turpe": "",
+    "cf-acc-yield": "1150",
+    "cf-fix-turpe": "",
+    "cf-flex-goal": "Le moins cher",
+    "cf-fix-margin": "2",
+    "cf-fix-period": "Année calendaire suivante",
+    "cf-fix-country": "France",
+    "cf-fix-turpefix": ""
+   },
+   "body": "différenence complément et prix ACC pas clair",
+   "reply": "Fait : une explication sous le graphique quand l’ACC est active : l’énergie ACC vient du parc solaire partagé, payée au producteur au prix ACC (plus frais PMO) ; le complément est tout le reste, acheté au fournisseur, plus cher au MWh car ce sont les heures sans soleil et le fournisseur porte l’incertitude de production.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 52,
+   "status": "done",
+   "created_at": "2026-10-26T22:04+00:00",
+   "author": "Tom",
+   "route": "intel/analysis",
+   "page": "Outils › Analyse de marché",
+   "tab": null,
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "analysis",
+    "ma-zone": "France",
+    "pk-zone": "France"
+   },
+   "body": "quand je passe ma souris, le tableau a droit passe bruèvement en anglais avant dpetre traduit. Bug d'affichage pas beau.",
+   "reply": "Corrigé : le panneau de droite est traduit au moment où il est dessiné, plus de passage par l’anglais au survol.",
+   "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 53,
+   "status": "done",
+   "created_at": "2026-10-26T22:05+00:00",
+   "author": "Tom",
+   "route": "intel/analysis",
+   "page": "Outils › Analyse de marché",
+   "tab": null,
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "analysis",
+    "ma-zone": "France",
+    "pk-zone": "France"
+   },
+   "body": "le tuiles sont un peu bloqué à droit. Et si on pouvait avoir le graph en grand en appuyant dessus comme dans aujourd'hui ce serait top.",
+   "reply": "Fait : panneau de droite élargi pour que les tuiles respirent, et chaque graphique a maintenant son bouton plein écran comme sur Aujourd’hui (le plein écran global reste pour garder le curseur partagé).",
+   "done_at": "2026-10-27T00:39+00:00"
   }
  ]
 }

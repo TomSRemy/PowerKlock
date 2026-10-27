@@ -671,6 +671,8 @@
     STATE.charts[canvasId] = new window.Chart(canvas, {
       type: type, data: data, options: options, plugins: [crosshairPlugin, endLabels],
     });
+    // each panel can also open alone, bigger (note 53); the group's own fullscreen keeps the shared cursor
+    if (canvasId.indexOf('ma-canvas-') === 0 && typeof addFullscreen === 'function') { const row = canvas.closest('.ma-panel-row'), lb = row && row.querySelector('.ma-lbl'); if (lb) canvas.dataset.fsTitle = lb.textContent.trim(); setTimeout(() => addFullscreen(canvasId), 60); }
   }
 
   function _hasFc() {
@@ -911,6 +913,7 @@
       + (isFc ? '' : fcBlock);
 
     // Docked in its own column beside the charts (never over them).
+    if (window.PKI18n && PKI18n.walk) PKI18n.walk(tip);   // French at once, no English flash on hover (note 52)
     tip.style.display = 'block';
   }
 

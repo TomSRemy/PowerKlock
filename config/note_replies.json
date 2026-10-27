@@ -162,5 +162,53 @@
  "41": {
   "status": "done",
   "reply": "Fait : nouvelle section repliée « Fondamentaux » dans Expert avec les graphiques de la présentation CATE : Cal+1 et ses moteurs, stocks de gaz année contre année, nucléaire par mois, réservoirs hydrauliques, prévisions température, vent, soleil et précipitations vs normale."
+ },
+ "42": {
+  "status": "done",
+  "reply": "Fait : le prix est affiché seul en gros (117,4 €), « Cal 27 · +7,1 % sur 7 j » en dessous, pour ne plus lire « 27 117 ». Même chose pour le gaz et les GO. Le titre de chaque tuile prend la couleur du sens : rouge en hausse, vert en baisse, gris stable."
+ },
+ "43": {
+  "status": "done",
+  "reply": "Fait : toute la ligne pointillée de l’événement réagit à la souris (plus seulement le petit triangle), et l’étiquette s’affiche à côté de la ligne, plus sous le curseur."
+ },
+ "44": {
+  "status": "open",
+  "reply": "D’accord. Je prépare une maquette de refonte de la page Intensité carbone (ce qu’elle doit apporter : heures vertes de demain, comparaison des pays, tendance) ; je la montre avant de coder."
+ },
+ "45": {
+  "status": "done",
+  "reply": "Fait : tableau des résultats mois par mois sous les graphiques (prix et volume par technologie, total, prix moyen, part allouée), le plus récent en haut."
+ },
+ "46": {
+  "status": "done",
+  "reply": "Le premier compare cette année à la fourchette des 5 années précédentes ; le second montre cette année et la précédente face à toutes les années depuis 2019. Ils se recoupent : titres clarifiés, et je propose de n’en garder qu’un (à valider)."
+ },
+ "47": {
+  "status": "open",
+  "reply": "Oui, cotations et forwards TTF se recoupent. Proposition : une seule page « Forwards gaz » avec la courbe, l’historique par échéance et le tableau des cotations. Je la montre en maquette avant de toucher au menu."
+ },
+ "48": {
+  "status": "open",
+  "reply": "Même réponse que la note précédente : une seule page TTF suffit. Fusion proposée en maquette, avec la note 47."
+ },
+ "49": {
+  "status": "open",
+  "reply": "Juste. Proposition de règle unique : le menu de gauche donne les pages, les onglets en haut donnent les vues d’une même page, et rien n’apparaît aux deux endroits. Je prépare la liste des pages à réordonner et une maquette."
+ },
+ "50": {
+  "status": "done",
+  "reply": "Fait : un « Comment le lire » sous le calendrier : chaque carré est un jour, sa couleur dit le CO₂ par kWh ce jour-là (vert = nucléaire, hydraulique, renouvelable ; rouge = gaz, charbon, imports), les couleurs comparent vos jours entre eux, clic pour le détail heure par heure."
+ },
+ "51": {
+  "status": "done",
+  "reply": "Fait : une explication sous le graphique quand l’ACC est active : l’énergie ACC vient du parc solaire partagé, payée au producteur au prix ACC (plus frais PMO) ; le complément est tout le reste, acheté au fournisseur, plus cher au MWh car ce sont les heures sans soleil et le fournisseur porte l’incertitude de production."
+ },
+ "52": {
+  "status": "done",
+  "reply": "Corrigé : le panneau de droite est traduit au moment où il est dessiné, plus de passage par l’anglais au survol."
+ },
+ "53": {
+  "status": "done",
+  "reply": "Fait : panneau de droite élargi pour que les tuiles respirent, et chaque graphique a maintenant son bouton plein écran comme sur Aujourd’hui (le plein écran global reste pour garder le curseur partagé)."
  }
 }

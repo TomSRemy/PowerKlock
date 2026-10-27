@@ -55,7 +55,10 @@
     if (tb) tb.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Delivery year</th><th>Forward €/MWh</th><th>P50 capture</th><th>P${pick} capture</th><th>P${pick} value €/MWh</th><th>Spread σ</th></tr></thead><tbody>` +
       P.map(p => `<tr><td style="text-align:left">${p.year}</td><td>${f2(p.forward)}</td><td>${pc(p.q['50'].rate)}</td><td><b>${pc(p.q[pick].rate)}</b></td><td><b>${f2(p.q[pick].value)}</b></td><td>${(p.sigma * 100).toFixed(1)} pts</td></tr>`).join('') + '</tbody></table></div>';
     const sub = $('pp-fan-sub');
-    if (sub) sub.textContent = `${tech === 'wind' ? 'Wind' : 'Solar'} · ${conv === 'curt' ? 'curtailed at ≤ 0 €' : 'all hours paid'} · national profile · P${pick} = ${pick} % chance the realised value is above the line · 2022 (gas crisis) left out`;
+    const FR = !window.PKI18n || PKI18n.lang !== 'en';
+    if (sub) sub.textContent = FR
+      ? `${tech === 'wind' ? 'Éolien' : 'Solaire'} · ${conv === 'curt' ? 'arrêt aux prix ≤ 0 €' : 'toutes heures payées'} · profil national · P${pick} = ${pick} % de chances que la valeur réalisée soit au-dessus de la ligne · 2022 (crise du gaz) écartée`
+      : `${tech === 'wind' ? 'Wind' : 'Solar'} · ${conv === 'curt' ? 'curtailed at ≤ 0 €' : 'all hours paid'} · national profile · P${pick} = ${pick} % chance the realised value is above the line · 2022 (gas crisis) left out`;
   }
 
   function wire() {
