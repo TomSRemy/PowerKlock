@@ -104,6 +104,69 @@ def optimise_day(p, hours, wear, prm=PARAMS, detail=False):
     return rev, float(np.sum(d) * DT)
 
 
+def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0):
+    """Day-ahead and FCR in one schedule of 1 MW / `hours` MWh. p: 96 quarter-hour prices (EUR/MWh); fcr: the 6
+    French FCR block prices (EUR per MW per 4-hour block). In each block the battery holds f MW for FCR (symmetric)
+    and trades the rest: charge + f <= 1 and discharge + f <= 1 at every quarter-hour, and the state of charge keeps
+    res_h hours of f in reserve both ways (15 minutes of full activation). FCR activation energy is left out (small,
+    about energy-neutral). cap: the most MW FCR may take (1 = price taker). Wear is paid per MWh discharged.
+    Returns (day-ahead revenue EUR, FCR revenue EUR, MWh discharged, mean MW held in FCR) or None."""
+    T, B = len(p), len(fcr)
+    per = T // B
+    eta = prm['rte'] ** 0.5
+    e = float(hours)
+    s0 = prm['soc_start'] * e
+    gw, gi = prm['grid_withdrawal'], prm['grid_injection']
+    n = 3 * T + B
+    # x = [c (T), d (T), s (T), f (B)]
+    cost = np.concatenate([(p + gw) * DT, -(p - gi - wear) * DT, np.zeros(T), -np.asarray(fcr, dtype=float)])
+    rows, cols, vals = [], [], []
+    for t in range(T):
+        rows += [t, t, t]
+        cols += [t, T + t, 2 * T + t]
+        vals += [-eta * DT, DT / eta, 1.0]
+        if t:
+            rows.append(t)
+            cols.append(2 * T + t - 1)
+            vals.append(-1.0)
+    A_eq = coo_matrix((vals, (rows, cols)), shape=(T, n)).tocsr()
+    b_eq = np.zeros(T)
+    b_eq[0] = s0
+    ur, uc, uv, ub = [], [], [], []
+    k = 0
+    for t in range(T):
+        fb = 3 * T + t // per
+        for var, coef, rhs in ((t, 1.0, 1.0), (T + t, 1.0, 1.0)):            # charge + f <= 1, discharge + f <= 1
+            ur += [k, k]
+            uc += [var, fb]
+            uv += [coef, 1.0]
+            ub.append(rhs)
+            k += 1
+        ur += [k, k]                                                          # s >= res_h * f
+        uc += [2 * T + t, fb]
+        uv += [-1.0, res_h]
+        ub.append(-prm['soc_min'] * e)
+        k += 1
+        ur += [k, k]                                                          # s + res_h * f <= max
+        uc += [2 * T + t, fb]
+        uv += [1.0, res_h]
+        ub.append(prm['soc_max'] * e)
+        k += 1
+    ur += [k] * T                                                             # cycles
+    uc += list(range(T, 2 * T))
+    uv += [DT] * T
+    ub.append(prm['max_cycles_day'] * e)
+    k += 1
+    A_ub = coo_matrix((uv, (ur, uc)), shape=(k, n)).tocsr()
+    bounds = [(0, 1.0)] * (2 * T) + [(prm['soc_min'] * e, prm['soc_max'] * e)] * (T - 1) + [(s0, s0)] + [(0, cap)] * B
+    r = linprog(cost, A_ub=A_ub, b_ub=ub, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method='highs')
+    if not r.success:
+        return None
+    c, d, f = r.x[:T], r.x[T:2 * T], r.x[3 * T:]
+    da = float(np.sum((p - gi) * d * DT) - np.sum((p + gw) * c * DT))
+    return da, float(np.dot(fcr, f)), float(np.sum(d) * DT), float(np.mean(f))
+
+
 def naive_day(p, trailing, hours, prm=PARAMS):
     """Fixed schedule from the average profile of the previous days; paid at the real prices of the day."""
     T = len(p)
@@ -207,7 +270,7 @@ INDEX_OUT = os.path.join(ROOT, 'data', 'history', 'bess_index.json')
 STRIP = (2027, 2028, 2029)
 
 
-def build_index(rows, k='2h'):
+def build_index(rows, prices=None, k='2h'):
     def load(p):
         try:
             return json.load(open(os.path.join(ROOT, 'data', 'history', p)))
@@ -263,10 +326,23 @@ def build_index(rows, k='2h'):
         if len(e) > 1:                               # the best market needs at least one reserve price that day
             m = max(e, key=e.get)
             e['best'], e['mkt'] = e[m], m
+        blocks = (res.get('fcr_blocks') or {}).get(d)
+        if prices is not None and d in prices and blocks and len(blocks) == 6:
+            h = int(k[:-1])
+            co = cooptimise_day(prices[d], blocks, h, PARAMS['wear'])
+            if co:
+                da_, fc_, mwh, fm = co
+                e['co'] = round(da_ + fc_ - PARAMS['wear'] * mwh, 1)        # net of wear
+                e['co_da'] = round(da_ - PARAMS['wear'] * mwh, 1)
+                e['co_fcr'] = round(fc_, 1)
+                e['co_f'] = round(fm, 3)
         real[d] = e
     months = {}
     for d, e in real.items():
-        mo = months.setdefault(d[:7], {'n': 0, 'nb': 0, 'da': 0, 'fcr': [], 'afrr': [], 'best': 0, 'share': {}})
+        mo = months.setdefault(d[:7], {'n': 0, 'nb': 0, 'da': 0, 'fcr': [], 'afrr': [], 'best': 0, 'share': {}, 'co': [], 'co_da': [], 'co_fcr': [], 'co_f': []})
+        if 'co' in e:
+            for x in ('co', 'co_da', 'co_fcr', 'co_f'):
+                mo[x].append(e[x])
         mo['n'] += 1
         mo['da'] += e['da']
         if 'fcr' in e:
@@ -286,7 +362,10 @@ def build_index(rows, k='2h'):
                       'fcr': ann(sum(mo['fcr']) / len(mo['fcr'])) if len(mo['fcr']) >= 5 else None,
                       'afrr': ann(sum(mo['afrr']) / len(mo['afrr'])) if len(mo['afrr']) >= 5 else None,
                       'best': ann(mo['best'] / mo['nb']) if mo['nb'] >= 5 else None,
-                      'share': {x: round(c / mo['nb'] * 100) for x, c in mo['share'].items()} if mo['nb'] else {}})
+                      'share': {x: round(c / mo['nb'] * 100) for x, c in mo['share'].items()} if mo['nb'] else {},
+                      **({'co': ann(sum(mo['co']) / len(mo['co'])), 'co_da': ann(sum(mo['co_da']) / len(mo['co_da'])),
+                          'co_fcr': ann(sum(mo['co_fcr']) / len(mo['co_fcr'])), 'co_f': round(sum(mo['co_f']) / len(mo['co_f']), 2)}
+                         if len(mo['co']) >= 5 else {})})
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     doc = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'battery': '1 MW, ' + k.replace('h', ' h'),
            'strip': '-'.join(map(str, STRIP)),
@@ -372,7 +451,7 @@ def main():
         json.dump(doc, fh, separators=(',', ':'))
     os.replace(tmp, OUT)
     if len(rows) >= 400:                         # the index needs the whole history (the job always runs --full)
-        ix = build_index(rows)
+        ix = build_index(rows, prices)
         if ix['forward']:
             fl = max(ix['forward'])
             print(f"BESS index: forward {ix['forward'][fl]['v']} kEUR/MW/yr on {fl}, {len(ix['forward'])} trading days")

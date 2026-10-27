@@ -71,7 +71,7 @@
 
   // ── PowerKlock BESS index: forward (day-ahead value over the Cal strip) and realised best market (scripts/bess_optim.py) ──
   R({ id: 'bess-index', title: 'BESS index · France', category: 'prices', page: 'bess', size: { w: 6, h: 5 },
-    desc: 'The PowerKlock BESS index of a 1 MW, 2 h battery, recalculated every day: the forward index (day-ahead value over the Cal strip of the PPA benchmark) and the realised value of the best market of each day (day-ahead, FCR, aFRR), in k€ per MW per year.',
+    desc: 'The PowerKlock BESS index of a 1 MW, 2 h battery, recalculated every day: the forward index (day-ahead value over the Cal strip of the PPA benchmark) and the realised value co-optimised between day-ahead and FCR, in k€ per MW per year.',
     params: [{ key: 'win', label: 'Period', options: [['6M', '6M'], ['1Y', '1Y'], ['2Y', '2Y'], ['all', 'All']] }], defaults: { win: '1Y' },
     async draw(cid, p) {
       const j = await get('bessidx', 'history/bess_index.json'); if (!j || !j.forward) { noDataMsg(cid, _mT('Indice pas encore calculé', 'Index not computed yet'), ''); return null; }
@@ -79,11 +79,11 @@
       const from = n ? new Date(Date.parse(last) - n * 864e5).toISOString().slice(0, 10) : '';
       const days = F.filter(d => d >= from);
       // realised best market: 30-day rolling mean, annualised
-      const RK = Object.keys(j.realised).sort().filter(d => j.realised[d].best != null);
-      const roll = days.map(d => { const w = RK.filter(x => x <= d).slice(-30); return w.length >= 20 && w[w.length - 1] >= new Date(Date.parse(d) - 5 * 864e5).toISOString().slice(0, 10) ? +(w.reduce((a, x) => a + j.realised[x].best, 0) / w.length * 0.365).toFixed(1) : null; });
+      const val = r => r.co != null ? r.co : r.best, RK = Object.keys(j.realised).sort().filter(d => val(j.realised[d]) != null);
+      const roll = days.map(d => { const w = RK.filter(x => x <= d).slice(-30); return w.length >= 20 && w[w.length - 1] >= new Date(Date.parse(d) - 5 * 864e5).toISOString().slice(0, 10) ? +(w.reduce((a, x) => a + val(j.realised[x]), 0) / w.length * 0.365).toFixed(1) : null; });
       _fuelChart(cid, { type: 'line', data: { labels: days, datasets: [
         _fuelLineDs(_mT('Indice forward', 'Forward index'), days.map(d => j.forward[d].v), '#A87DC4', { borderWidth: 2 }),
-        _fuelLineDs(_mT('Réalisé, meilleur marché (30 j glissants)', 'Realised, best market (rolling 30 d)'), roll, '#8D99AE', { borderWidth: 1.5, borderDash: [5, 3] }),
+        _fuelLineDs(_mT('Réalisé co-optimisé, day-ahead + FCR (30 j glissants)', 'Realised co-optimised, day-ahead + FCR (rolling 30 d)'), roll, '#8D99AE', { borderWidth: 1.5, borderDash: [5, 3] }),
       ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(_mT('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } } } }) }, 'bess-index');
       const L = j.forward[last], wk = F.filter(d => d <= new Date(Date.parse(last) - 7 * 864e5).toISOString().slice(0, 10)).pop();
       const st = j.strip.split('-');
