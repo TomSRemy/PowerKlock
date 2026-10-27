@@ -67,5 +67,11 @@ for _ in range(10):
     ge += c is not None and c[0] + c[1] - b.PARAMS['wear'] * c[2] >= max(da[0] - b.PARAMS['wear'] * da[1], sum(blocks)) - 1e-6
 check('co-optimised >= the better of day-ahead alone and FCR alone', ge == 10, ge)
 
+co_a = b.cooptimise_day(flat, None, 2, b.PARAMS['wear'], afrr={'up': [10.0] * 6, 'down': [5.0] * 6})
+check('aFRR on flat prices: 1 MW up and 1 MW down all day (24 x 10 + 24 x 5)', co_a and abs(co_a[4] - 360) < 1e-6, co_a)
+co_1h = b.cooptimise_day(flat, None, 1, b.PARAMS['wear'], afrr={'up': [10.0] * 6, 'down': [0.0] * 6})
+# a 1 h battery starts half full: it holds at least the 0.5 MW its energy covers, and buys energy to hold more when that pays
+check('a 1 h battery: upward aFRR limited by stored energy, charging to hold more when it pays', co_1h and 0.5 - 1e-6 <= co_1h[5] <= 1 + 1e-9 and co_1h[4] + co_1h[0] >= 120 - 1e-6, co_1h)
+
 print('FAILED' if fails else 'all bess optimiser checks pass')
 sys.exit(1 if fails else 0)

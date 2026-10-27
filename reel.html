@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PowerKlock · reel</title>
+<!--
+  The morning reel: a vertical 9:16 animation of the day's main figures, recorded to MP4 every morning at 08:00 Paris
+  (scripts/record_reel.py, .github/workflows/reel.yml) and sent by e-mail to be posted on Instagram.
+  Scenes: today's French day-ahead price against yesterday, the day's profile, Cal+1, Monday only the GO and last
+  week's spot, an important event of the day (data/events.json), the market brief (data/market_digest.json).
+  French by default, English with #en. No link to the rest of the site (like shared dashboards).
+  window.REEL_DONE is set when the last scene ends (the recorder waits for it).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0F14;--panel:#121821;--line:#243042;--fg:#E6EDF3;--muted:#8DA2B8;--up:#ED6965;--down:#4ADE80;--blue:#7FC8F8;--violet:#A87DC4;--amber:#FBBF24;
+  --mono:"JetBrains Mono",ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--fg);font-family:var(--sans)}
+body{display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* 9:16 stage, sized to the screen; everything inside is in --u (1/100 of the stage width) */
+#stage{position:relative;width:min(100vw,56.25vh);height:min(177.78vw,100vh);background:radial-gradient(120% 70% at 50% 0%,#16202D 0%,var(--bg) 60%);overflow:hidden;--u:calc(min(100vw,56.25vh)/100)}
+.scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateY(calc(4*var(--u)));transition:opacity .5s ease,transform .6s ease}
+.scene.on{opacity:1;transform:none}
+.kick{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--violet)}
+.h{font:800 calc(8.4*var(--u))/1.08 var(--sans);letter-spacing:-.01em}
+.big{font:800 calc(22*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.unit{font:500 calc(4.4*var(--u)) var(--mono);color:var(--muted)}
+.delta{font:800 calc(7.5*var(--u)) var(--mono);display:flex;align-items:center;gap:calc(2*var(--u))}
+.delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
+.sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
+.row{display:flex;gap:calc(3*var(--u))}
+.tile{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(3.5*var(--u))}
+.tile .l{font:700 calc(3*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font:800 calc(8.5*var(--u)) var(--mono);margin-top:calc(1*var(--u))}
+.tile .s{font:500 calc(3.3*var(--u)) var(--mono);color:var(--muted)}
+svg{width:100%;height:auto;overflow:visible}
+.brief{display:flex;flex-direction:column;gap:calc(3*var(--u))}
+.brief div{background:var(--panel);border-left:calc(1*var(--u)) solid var(--amber);border-radius:calc(1.5*var(--u));padding:calc(3*var(--u)) calc(3.5*var(--u));font:400 calc(4*var(--u))/1.4 var(--sans)}
+.brief b{display:block;font:700 calc(3.2*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:calc(1*var(--u))}
+.brief .up b{color:var(--up)}.brief .down b{color:var(--down)}
+.brief .up{border-left-color:var(--up)}.brief .down{border-left-color:var(--down)}
+.event{background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(5*var(--u))}
+.brand{position:absolute;left:0;right:0;bottom:calc(7*var(--u));display:flex;flex-direction:column;align-items:center;gap:calc(1*var(--u));z-index:2}
+.brand .w{font:800 calc(6*var(--u)) var(--mono);letter-spacing:-.02em}
+.brand .w span{color:var(--violet)}
+.brand .d{font:500 calc(3.2*var(--u)) var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.bar{position:absolute;top:calc(5*var(--u));left:calc(8*var(--u));right:calc(8*var(--u));display:flex;gap:calc(1.2*var(--u));z-index:2}
+.bar i{flex:1;height:calc(.7*var(--u));background:var(--line);border-radius:9px;overflow:hidden}
+.bar i b{display:block;height:100%;width:0;background:var(--fg)}
+.bar i.done b{width:100%}
+.bar i.run b{animation:fill linear forwards}
+@keyframes fill{to{width:100%}}
+.draw{stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.4s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bar" id="bar"></div>
+  <div id="scenes"></div>
+  <div class="brand"><div class="w" translate="no">Power<span>Klock</span></div><div class="d" id="brand-d"></div></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const EN = location.hash === '#en';
+  const T = (f, e) => EN ? e : f;
+  const SCENE_MS = 3600;
+  const fmt = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString(EN ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const sgn = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt(Math.abs(v), d);
+  const paris = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' });
+  const q = new URLSearchParams(location.search);
+  const today = q.get('d') || paris.format(new Date());                       // ?d=YYYY-MM-DD replays a day
+  const addDays = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const longDate = d => new Date(d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const get = p => fetch(p, { cache: 'no-store' }).then(r => r.ok ? (p.endsWith('.csv') ? r.text() : r.json()) : null).catch(() => null);
+  const dir = v => v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'flat';
+  const arrow = v => v > 0.05 ? '▲' : v < -0.05 ? '▼' : '■';
+
+  function priceScene(D0, D1) {
+    const a = D0.avg, b = D1 && D1.avg, dv = b == null ? null : a - b;
+    return `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
+      <div class="h">${T('Le prix de l’électricité', 'The power price')}</div>
+      <div><span class="big">${fmt(a, 1)}</span> <span class="unit">€/MWh</span></div>
+      ${dv == null ? '' : `<div class="delta ${dir(dv)}">${arrow(dv)} ${sgn(dv, 1)} € <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)} %)</span></div>`}
+      <div class="sub">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>`;
+  }
+  function profileScene(D0) {
+    const h = D0.hourly, H = Array.from({ length: 24 }, (_, i) => h.slice(i * 4, i * 4 + 4).reduce((s, v) => s + v, 0) / 4);
+    const mn = Math.min(...H), mx = Math.max(...H), lo = Math.min(0, mn), W = 1000, Ht = 520;
+    const x = i => i / 23 * W, y = v => Ht - (v - lo) / (mx - lo || 1) * Ht;
+    const pts = H.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+    const iMin = H.indexOf(mn), iMax = H.indexOf(mx), neg = D0.negH || 0;
+    return `<div class="kick">${T('La journée heure par heure', 'The day hour by hour')}</div>
+      <div class="h">${T('Creux à', 'Low at')}&nbsp;${iMin}&nbsp;h, ${T('pic à', 'peak at')}&nbsp;${iMax}&nbsp;h</div>
+      <svg viewBox="-20 -60 1040 660" aria-hidden="true">
+        ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#ED6965" stroke-dasharray="8 8"/>` : ''}
+        <polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(168,125,196,.18)"/>
+        <polyline class="draw" points="${pts}" fill="none" stroke="#A87DC4" stroke-width="9" stroke-linejoin="round"/>
+        <circle cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
+        <text x="${x(iMin)}" y="${y(mn) + 62}" text-anchor="middle" fill="#4ADE80" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mn, 0)} €</text>
+        <text x="${x(iMax)}" y="${y(mx) - 30}" text-anchor="middle" fill="#ED6965" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mx, 0)} €</text>
+        ${[0, 6, 12, 18, 23].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${i} h</text>`).join('')}
+      </svg>
+      <div class="row"><div class="tile"><div class="l">${T('Écart pic − creux', 'Peak − low spread')}</div><div class="v">${fmt(mx - mn, 0)} €</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
+        <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`;
+  }
+  function calScene(cal) {
+    return `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
+      <div class="h">${T('Électricité livrée en', 'Power delivered in')} ${cal.y}</div>
+      <div><span class="big">${fmt(cal.v, 2)}</span> <span class="unit">€/MWh</span></div>
+      <div class="delta ${dir(cal.dv)}">${arrow(cal.dv)} ${sgn(cal.dv, 2)} € <span class="unit">${T('en une séance', 'in one session')}</span></div>
+      <div class="sub">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>`;
+  }
+  function mondayScene(week, go) {
+    return `<div class="kick">${T('La semaine', 'The week')}</div>
+      <div class="h">${T('Ce qui a bougé', 'What moved')}</div>
+      <div class="row"><div class="tile"><div class="l">${T('Spot, semaine passée', 'Spot, last week')}</div><div class="v">${fmt(week.v, 1)}</div><div class="s">€/MWh · <span style="color:var(--${dir(week.dv) === 'up' ? 'up' : dir(week.dv) === 'down' ? 'down' : 'muted'})">${sgn(week.dv, 1)}</span></div></div></div>
+      ${go ? `<div class="row"><div class="tile"><div class="l">${T('Garanties d’origine', 'Guarantees of origin')} ${go.y}</div><div class="v">${fmt(go.v, 2)}</div><div class="s">€/MWh · <span style="color:var(--${dir(go.dv) === 'up' ? 'up' : dir(go.dv) === 'down' ? 'down' : 'muted'})">${sgn(go.dv, 2)} ${T('sur la semaine', 'on the week')}</span></div></div></div>` : ''}`;
+  }
+  function eventScene(e) {
+    const i = EN ? 1 : 0;
+    return `<div class="kick">${T('À retenir', 'Key event')}</div>
+      <div class="event"><div class="h">${e.title[i]}</div><p class="sub">${e.text[i]}</p><div class="sub">${T('Source', 'Source')} : ${e.source[0]}</div></div>`;
+  }
+  function briefScene(dg) {
+    const items = (dg.context || []).slice(0, 3);
+    return `<div class="kick">${T('Le brief du marché', 'Market brief')}</div>
+      <div class="brief">${items.map(c => `<div class="${c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : ''}"><b>${EN ? c.topic_en : c.topic} ${c.tone === 'up' ? '▲' : c.tone === 'down' ? '▼' : ''}</b>${EN ? c.text_en : c.text}</div>`).join('')}</div>`;
+  }
+
+  async function main() {
+    const [D0f, D1f, chain, dg, ev, goCsv] = await Promise.all([
+      get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
+      get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv')]);
+    const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
+    const S = [];
+    if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
+    // Cal+1: the last two settlements of next year's baseload contract
+    const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
+    if (c && c.values && c.values.length > 1) {
+      const n = c.values.length;
+      S.push(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 2], d: c.dates[n - 1] }));
+    }
+    // Monday: last week's spot against the week before, and the GO of next year (weekly broker prices)
+    if (new Date(today + 'T12:00:00Z').getUTCDay() === 1) {
+      const days = n => Promise.all(Array.from({ length: 7 }, (_, i) => get('data/history/daily/' + addDays(today, -n - i) + '.json')));
+      const [w1, w2] = await Promise.all([days(1), days(8)]);
+      const m = w => { const v = w.map(f => f && f.zones && f.zones.FR && f.zones.FR.avg).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+      const a = m(w1), b = m(w2);
+      let go = null;
+      if (goCsv) {
+        const rows = goCsv.trim().split('\n').slice(1).map(l => l.split(',')).filter(r => r[4] === 'GO AIB Renewable' && r[9] === 'Y + 1' && r[6]);
+        const r = rows[rows.length - 1];
+        if (r) go = { y: r[5], v: (+r[6] + (+r[7] || +r[6])) / 2, dv: +r[8] || 0 };
+      }
+      if (a != null) S.push(mondayScene({ v: a, dv: b == null ? 0 : a - b }, go));
+    }
+    // an important event dated today or yesterday (checked against its source in data/events.json)
+    const e = ev && (ev.items || []).find(x => (x.date === today || x.date === addDays(today, -1)) && (x.importance || 0) >= 2);
+    if (e) S.push(eventScene(e));
+    if (dg && dg.context && dg.context.length) S.push(briefScene(dg));
+    if (!S.length) S.push(`<div class="h">${T('Données du jour pas encore publiées.', 'Today’s data not published yet.')}</div>`);
+
+    document.getElementById('brand-d').textContent = longDate(today);
+    document.getElementById('scenes').innerHTML = S.map(h => '<section class="scene">' + h + '</section>').join('');
+    document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
+    const sc = [...document.querySelectorAll('.scene')], bars = [...document.querySelectorAll('#bar i')];
+    let k = 0;
+    const show = () => {
+      sc.forEach((s, i) => s.classList.toggle('on', i === k));
+      bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = SCENE_MS + 'ms'; });
+      // replay the curve drawing each time its scene comes back
+      sc[k].querySelectorAll('.draw').forEach(p => { p.classList.remove('draw'); void p.getBoundingClientRect(); p.classList.add('draw'); });
+    };
+    show();
+    window.REEL_SCENES = S.length;
+    window.REEL_MS = S.length * SCENE_MS;
+    setInterval(() => {
+      k += 1;
+      if (k >= S.length) { window.REEL_DONE = true; if (q.has('once')) return; k = 0; }
+      show();
+    }, SCENE_MS);
+  }
+  main();
+})();
+</script>
+</body>
+</html>
