@@ -82,17 +82,20 @@
       '<div class="boa-tiles">' + tile('boa-t-ds', T('Debt service', 'Service de la dette'), T('k€/MW/yr · annuity', 'k€/MW/an · annuité')) + tile('boa-t-min', T('Minimum DSCR', 'DSCR minimum'), T('worst year · binding', 'pire année · contraignante')) +
       tile('boa-t-avg', T('Average DSCR', 'DSCR moyen'), T('for reference', 'pour mémoire')) + tile('boa-t-br', T('First year < 1.20×', 'Première année < 1,20×'), T('low scenario', 'scénario bas')) + tile('boa-t-m', T('Offtaker margin', 'Marge de l’acheteur'), T('average k€/MW/yr', 'moyenne k€/MW/an')) + '</div>' +
       '<div style="position:relative;height:170px"><canvas id="boa-rev" style="width:100%;height:170px"></canvas></div></div>';
-    $('boa-in-root').innerHTML = formulas + '<div id="boa-best" class="boa-best"></div><div class="boa-scen-grid">' + scen + '</div><div class="boa-grid2">' + left + right + '</div>';
-    const tabs = '<div class="boa-card"><div class="boa-tabs" id="boa-tabs">' + pill('t', 'pnl', T('P&L table', 'Tableau de P&L'), 1) + pill('t', 'stack', T('Revenue stack', 'Empilement des revenus')) + pill('t', 'compare', T('Structure comparison', 'Comparaison des structures')) + '</div>' +
+    $('boa-in-root').innerHTML = '<div id="boa-best" class="boa-best"></div><div class="boa-grid2">' + left + right + '</div>' + formulas;
+    // the battery and its market: live figures, the three scenarios, the revenue stack
+    $('boa-batt-root').innerHTML = '<div class="kpi-strip fuel-kpis" id="boa-anchor"></div><div class="boa-scen-grid">' + scen + '</div>' +
+      '<div class="boa-card"><div class="boa-sec">' + T('Revenue stack, scenario shown', 'Empilement des revenus, scénario affiché') + '</div><div style="position:relative;height:260px"><canvas id="boa-stack" style="width:100%;height:260px"></canvas></div><div class="boa-legend">' +
+      SLABELS.map((l, i) => '<span><i class="sq" style="background:' + SCOLORS[i] + '"></i>' + l + '</span>').join('') + '</div></div>';
+    const tabs = '<div class="boa-card"><div class="boa-tabs" id="boa-tabs">' + pill('t', 'pnl', T('P&L table', 'Tableau de P&L'), 1) + pill('t', 'compare', T('Structure comparison', 'Comparaison des structures')) + '</div>' +
       '<div id="boa-tab-pnl"><p class="boa-note">' + T('Scenario and structure shown. DSCR green ≥ 1.20, amber 1.10 to 1.20, red under 1.10.', 'Scénario et structure affichés. DSCR vert ≥ 1,20, ambre 1,10 à 1,20, rouge sous 1,10.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-pnl"></table></div></div>' +
-      '<div id="boa-tab-stack" hidden><div style="position:relative;height:260px"><canvas id="boa-stack" style="width:100%;height:260px"></canvas></div><div class="boa-legend">' + SLABELS.map((l, i) => '<span><i class="sq" style="background:' + SCOLORS[i] + '"></i>' + l + '</span>').join('') + '</div></div>' +
       '<div id="boa-tab-compare" hidden><p class="boa-note">' + T('Each structure with its own default terms, mid scenario, current financing. Full tolling is tested on a 7-year debt. Bankable = minimum DSCR ≥ 1.20× every year in the mid scenario.', 'Chaque structure avec ses paramètres par défaut, scénario central, financement actuel. Le tolling complet est testé sur une dette de 7 ans. Finançable = DSCR minimum ≥ 1,20× chaque année dans le scénario central.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-cmp"></table></div></div></div>';
     const guide = '<div class="boa-guide"><b>' + T('How to use it', 'Comment s’en servir') + '</b><ol>' +
       '<li>' + T('Floor + upside by default: a flat floor of 70 k, check the DSCR stays ≥ 1.20× in the mid scenario.', 'Floor + upside par défaut : floor plat de 70 k, vérifier que le DSCR reste ≥ 1,20× en scénario central.') + '</li>' +
       '<li>' + T('Switch to the low scenario: the year the DSCR dips under 1.20× is where a reopener clause would bite.', 'Passer en scénario bas : l’année où le DSCR passe sous 1,20× est celle où une clause de révision jouerait.') + '</li>' +
       '<li>' + T('Full tolling at 87 k: the DSCR holds but the offtaker margin shrinks in the late years.', 'Tolling complet à 87 k : le DSCR tient mais la marge de l’acheteur fond en fin de contrat.') + '</li>' +
       '<li>' + T('Raise CAPEX to 800 k or the bank margin by one point: debt service rises and the minimum DSCR falls; financing assumptions matter as much as the market.', 'Monter le CAPEX à 800 k ou la marge bancaire d’un point : le service de la dette monte et le DSCR minimum baisse ; les hypothèses de financement pèsent autant que le marché.') + '</li></ol></div>';
-    $('boa-out-root').innerHTML = '<div class="kpi-strip fuel-kpis" id="boa-anchor"></div>' + tabs + guide +
+    $('boa-out-root').innerHTML = tabs + guide +
       '<div class="fuel-note">' + T('Measured and updated every day: day-ahead value (ENTSO-E prices, PowerKlock optimisation), Cal forward prices (EEX), FCR price (regelleistung.net), euro 10-year rate (ECB). Assumptions, not forecasts: aFRR, mFRR and capacity mechanism trajectories, the path to 2037, intraday (no open feed). Sources of those assumptions: Clean Horizon (aFRR trajectory, 2025), Capstone DC (CAPEX, November 2025).', 'Mesuré et mis à jour chaque jour : valeur day-ahead (prix ENTSO-E, optimisation PowerKlock), prix forward Cal (EEX), prix FCR (regelleistung.net), taux 10 ans zone euro (BCE). Hypothèses, pas des prévisions : trajectoires aFRR, mFRR et mécanisme de capacité, chemin jusqu’en 2037, intraday (pas de flux ouvert). Sources de ces hypothèses : Clean Horizon (trajectoire aFRR, 2025), Capstone DC (CAPEX, novembre 2025).') + '</div>';
   }
 
@@ -184,7 +187,7 @@
 
   function update() {
     if (!$('boa-in-root') || !$('boa-pnl')) return;
-    document.querySelectorAll('#boa-in-root .bess-val').forEach(sp => {
+    document.querySelectorAll('#boa-in-root .bess-val, #boa-batt-root .bess-val').forEach(sp => {
       const v = g(sp.id.slice(0, -2)), d = +sp.dataset.dec; const u = sp.dataset.u;
       const n = fr() ? v.toFixed(d).replace('.', ',') : v.toFixed(d);
       sp.textContent = n + (u === '%' ? (fr() ? ' %' : '%') : u === 'k' ? ' k' : u === 'yrs' ? T(' yrs', ' ans') : ' ' + u);
@@ -251,7 +254,7 @@
   function setup() {
     const root = $('page-boa'); if (!root || root.dataset.boa) return; root.dataset.boa = '1';
     html();
-    root.addEventListener('input', e => { if (e.target.closest('#boa-in-root')) update(); });
+    root.addEventListener('input', e => { if (e.target.closest('#boa-in-root, #boa-batt-root')) update(); });
     const bind = (gid, attr, key) => $(gid).addEventListener('click', e => {
       const b = e.target.closest('button[data-' + attr + ']'); if (!b) return;
       $(gid).querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
@@ -263,8 +266,7 @@
     $('boa-tabs').addEventListener('click', e => {
       const b = e.target.closest('button[data-t]'); if (!b) return;
       $('boa-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
-      ['pnl', 'stack', 'compare'].forEach(t => { $('boa-tab-' + t).hidden = t !== b.dataset.t; });
-      if (b.dataset.t === 'stack') update();
+      ['pnl', 'compare'].forEach(t => { $('boa-tab-' + t).hidden = t !== b.dataset.t; });
     });
     update();
   }

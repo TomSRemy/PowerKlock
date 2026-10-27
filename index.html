@@ -2757,6 +2757,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-fc-in">
 <div class="cf-form"><label class="cf-field" hidden><span>Technology</span><select id="fc-tech"><option value="solar">Solar</option><option value="wind">Wind</option></select></label><label class="cf-field "><span>Latitude</span><span class="cf-in"><input type="number" id="fc-lat" step="any" value="49.44" ><em>°N</em></span></label><label class="cf-field "><span>Longitude</span><span class="cf-in"><input type="number" id="fc-lon" step="any" value="1.10" ><em>°E</em></span></label><label class="cf-field "><span>Capacity</span><span class="cf-in"><input type="number" id="fc-mw" step="0.1" value="10" min="0"><em>MW</em></span></label><label class="cf-field "><span>Injection limit</span><span class="cf-in"><input type="number" id="fc-inj" step="any" min="0" value="" placeholder="= capacity"><em>MW</em></span></label><label class="cf-field fc-solar"><span>P50 yield</span><span class="cf-in"><input type="number" id="fc-p50" step="any" min="0" value="" placeholder="if known (sets the level)"><em>kWh/kWc/yr</em></span></label><label class="cf-field"><span>Paste coordinates</span><span class="cf-in"><input type="text" id="fc-paste" placeholder="49.44, 1.10 (from a map)"></span></label><label class="cf-field"><span>Price zone</span><select id="fc-zone"><option value="FR">France</option><option value="DE_LU">Germany</option><option value="BE">Belgium</option><option value="NL">Netherlands</option><option value="ES">Spain</option></select></label></div>
+<div class="fc-map-card"><div id="fc-map" role="img" aria-label="Map: click to place the park"></div><div class="fuel-note">Click the map to place the park, or type its coordinates.</div></div>
 <div class="cf-form"><label class="cf-field fc-solar"><span>Panel tilt</span><span class="cf-in"><input type="number" id="fc-tilt" step="1" value="30" min="0" max="90"><em>°</em></span></label><label class="cf-field fc-solar"><span>Azimuth (0 = south)</span><span class="cf-in"><input type="number" id="fc-az" step="1" value="0" min="-180" max="180"><em>°</em></span></label><label class="cf-field fc-solar"><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-s" step="0.5" value="14" min="0" max="50"><em>%</em></span></label><label class="cf-field fc-wind" hidden><span>Hub height</span><select id="fc-hub"><option value="80">80 m</option><option value="100">100 m</option><option value="120">120 m</option><option value="150">150 m</option><option value="180">180 m</option></select></label><label class="cf-field fc-wind" hidden><span>Turbine class</span><select id="fc-cls"><option value="low">Low wind (large rotor)</option><option value="medium">Medium wind</option><option value="high">High wind</option></select></label><label class="cf-field fc-wind" hidden><span>Losses</span><span class="cf-in"><input type="number" id="fc-loss-w" step="0.5" value="12" min="0" max="50"><em>%</em></span></label></div>
 <div class="fc-opts"><label class="fc-chk fc-solar"><input type="checkbox" id="fc-calfr" checked> Monthly correction learned on French solar output</label><label class="fc-chk"><input type="checkbox" id="fc-curt"> Curtail at day-ahead prices ≤ 0 €</label>
 <label class="pk-btn-ghost fc-calbtn">Calibrate on the site’s metered output (CSV or Excel)<input type="file" id="fc-calfile" accept=".csv,.txt,.xlsx,.xls" hidden></label><button type="button" class="pk-btn-ghost" id="fc-calreset">Remove calibration</button></div>
@@ -2778,7 +2779,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="pp-group-t" style="margin-top:16px">Today and tomorrow on the day-ahead market</div>
 <div id="fc-market"></div>
 <div class="fuel-note" id="fc-method" style="margin-top:12px"></div>
-<div class="fuel-note">Without calibration the model is generic: load the site’s metered output above to fit it to the site. Coordinates: right-click a point in Google Maps or Géoportail and copy them.</div>
+<div class="fuel-note">Without calibration the model is generic: load the site’s metered output above to fit it to the site. Coordinates: click the map above, or right-click a point in Google Maps or Géoportail and copy them.</div>
         </div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-fc-price">
@@ -3220,16 +3221,25 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="hist-section hist-section-strong" id="hs-bess-boa-in">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-boa-in')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>BOA pricer<span class="pk-hs-meta">Floor, tolling or merchant offtake of a battery · k€ per MW per year</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Inputs and result<span class="pk-hs-meta">Contract, financing, the verdict and the DSCR year by year · k€ per MW per year</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-bess-boa-in">
 <div id="boa-in-root"></div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-bess-boa-batt">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-boa-batt')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/><path d="M7 10v4M11 10v4"/></svg>The battery and its market<span class="pk-hs-meta">What the market pays today, the three scenarios and the revenue stack</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-bess-boa-batt">
+<div id="boa-batt-root"></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-bess-boa-out">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-bess-boa-out')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>BOA pricer: details<span class="pk-hs-meta">P&amp;L year by year, revenue stack, structure comparison, how to use it</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="18" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>Contract structures<span class="pk-hs-meta">P&amp;L year by year, the four structures compared, formulas, how to use it</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-bess-boa-out">
