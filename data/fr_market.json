@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-10-27T12:29:59.329284+00:00",
+ "lastUpdate": "2026-10-27T13:08:59.251697+00:00",
  "spot": {
   "value": 252.66,
   "unit": "EUR/MWh",
@@ -545,9 +545,9 @@
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 157.63,
+    "value": 250.75,
     "unit": "EUR/MWh",
-    "date": "2026-10-26"
+    "date": "2026-10-27"
    },
    "forwardCurve": [
     {
