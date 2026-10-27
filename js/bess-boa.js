@@ -31,6 +31,10 @@
   const FIELDS = [['afrr-cod', () => T('aFRR at COD (2028)', 'aFRR au COD (2028)'), 20, 120, 1], ['afrr-end', () => T('aFRR in 2037', 'aFRR en 2037'), 3, 40, 1],
     ['da-cod', () => T('DA + intraday at COD', 'DA + intraday au COD'), 30, 90, 1], ['da-end', () => T('DA + intraday in 2037', 'DA + intraday en 2037'), 40, 110, 1], ['cap-end', () => T('Capacity mechanism 2037', 'Mécanisme de capacité 2037'), 0, 30, 1]];
   const PFX = { low: 'l', mid: 'm', high: 'h' };
+  // what the market says today, read in live(): FCR price for 1 MW all year (k€/MW/yr), euro 10-year rate (%),
+  // day-ahead value of a 2 h battery at COD scaled by the forward curve (k€/MW/yr). null = no data, the fallbacks apply.
+  const LIVE = { fcr: null, fcrN: 0, need: null, r10: null, r10d: '', daCod: null, daSrc: '' };
+  const FCR_FALLBACK = 180, R10_FALLBACK = 3.25;
 
   const ss = t => t * t * (3 - 2 * t), lerp = (a, b, t) => a + (b - a) * t;
   const g = id => +$(id).value;
@@ -49,6 +53,7 @@
     const formulas = '<details class="boa-formulas"><summary>' + T('Formulas and method', 'Formules et méthode') + '</summary><div class="boa-f3">' +
       '<div><b>' + T('Debt service, a proper annuity', 'Service de la dette, une vraie annuité') + '</b><code>DS = Debt × r(1+r)ⁿ ÷ [(1+r)ⁿ − 1]</code>' + T('Debt = CAPEX × LTV, r = rate, n = tenor. Not the shortcut (rate + 1/n), which overstates it by about 15%.', 'Dette = CAPEX × LTV, r = taux, n = maturité. Pas le raccourci (taux + 1/n), qui le surestime d’environ 15 %.') + '</div>' +
       '<div><b>' + T('DSCR, year by year', 'DSCR, année par année') + '</b><code>DSCR = (' + T('Dev. payment', 'Paiement dév.') + ' − OPEX) ÷ DS</code>' + T('≥ 1.20× every year, not on average. 1.10 to 1.20×: cash sweep. Under 1.0×: event of default.', '≥ 1,20× chaque année, pas en moyenne. 1,10 à 1,20× : cash sweep. Sous 1,0× : défaut.') + '</div>' +
+      '<div><b>' + T('Live inputs', 'Données réelles') + '</b><code>' + T('rate = 10-yr € (ECB) + margin', 'taux = 10 ans € (BCE) + marge') + '</code>' + T('FCR = French FCR price over the last 12 months × share of the power sold in FCR. Day-ahead at COD = what a 2 h battery earned over 12 months × Cal COD ÷ average day-ahead price of those 12 months.', 'FCR = prix FCR français des 12 derniers mois × part de la puissance vendue en FCR. Day-ahead au COD = gain d’une batterie 2 h sur 12 mois × Cal du COD ÷ prix day-ahead moyen de ces 12 mois.') + '</div>' +
       '<div><b>' + T('Floor adjusted and payment', 'Floor ajusté et paiement') + '</b><code>Fl = floor<sub>COD</sub> × (1−step)<sup>yr</sup> × (1−deg)<sup>yr</sup></code>' + T('Dev. payment = max(Fl, Fl + share × max(market × capacity − Fl, 0)). Offtaker = (1 − share) × the same upside.', 'Paiement dév. = max(Fl, Fl + part × max(marché × capacité − Fl, 0)). Acheteur = (1 − part) × le même upside.') + '</div>' +
       '</div></details>';
     const scen = ['low', 'mid', 'high'].map(k => '<div class="boa-scen boa-scen-' + k + '"><div class="boa-sec">' + SCEN[k].name() + ' <span class="boa-src">(' + SCEN[k].src() + ')</span></div>' +
@@ -64,7 +69,9 @@
       '<div id="r-pfrac" hidden>' + row('boa-pfrac', T('Tolled fraction (%)', 'Part sous toll (%)'), 20, 80, 5, 60, '%') + '</div></div>' +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Financing · optimistic defaults', 'Financement · valeurs par défaut optimistes') + '</div>' +
       row('boa-capex', 'CAPEX (k€/MW)', 600, 1000, 10, 750, 'k') + row('boa-opex', T('OPEX (k€/MW/yr)', 'OPEX (k€/MW/an)'), 8, 25, 1, 12, 'k') + row('boa-ltv', T('Gearing, LTV (%)', 'Gearing, LTV (%)'), 40, 85, 5, 70, '%') +
-      row('boa-rate', T('Debt rate (%)', 'Taux de la dette (%)'), 3, 8, 0.25, 5, '%', 2) + row('boa-tenor', T('Debt tenor (years)', 'Maturité de la dette (années)'), 5, 15, 1, 10, 'yrs') + row('boa-deg', T('Degradation (%/yr)', 'Dégradation (%/an)'), 1, 4, 0.5, 2, '%', 1) +
+      row('boa-marg', T('Bank margin over the 10-year rate (%)', 'Marge bancaire sur le taux 10 ans (%)'), 0.5, 4, 0.05, 1.75, '%', 2) + '<p class="boa-note" id="boa-rate-note"></p>' + row('boa-tenor', T('Debt tenor (years)', 'Maturité de la dette (années)'), 5, 15, 1, 10, 'yrs') + row('boa-deg', T('Degradation (%/yr)', 'Dégradation (%/an)'), 1, 4, 0.5, 2, '%', 1) +
+      '<div class="boa-div"></div><div class="boa-sec">' + T('Reserves', 'Réserves') + '</div>' +
+      row('boa-fcrsh', T('Share of the power sold in FCR (%)', 'Part de la puissance vendue en FCR (%)'), 0, 20, 1, 5, '%') + '<p class="boa-note" id="boa-fcr-note"></p>' +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Scenario shown', 'Scénario affiché') + '</div>' +
       '<div class="boa-pills" id="boa-scen">' + pill('c', 'mid', T('Mid (base)', 'Central (base)'), 1, 'is-mid') + pill('c', 'low', T('Low (bear)', 'Bas (bear)'), 0, 'is-low') + pill('c', 'high', T('High (bull)', 'Haut (bull)'), 0, 'is-high') + pill('c', 'all', T('All three', 'Les trois')) + '</div>' +
       '<p class="boa-note">' + T('Charts and tables follow the scenario shown. CAPEX: lower bound of an HTB2 French project (Capstone DC, November 2025); check it against current quotes.', 'Graphiques et tableaux suivent le scénario affiché. CAPEX : borne basse d’un projet HTB2 en France (Capstone DC, novembre 2025) ; à comparer aux devis actuels.') + '</p></div>';
@@ -84,22 +91,24 @@
       '<li>' + T('Floor + upside by default: a flat floor of 70 k, check the DSCR stays ≥ 1.20× in the mid scenario.', 'Floor + upside par défaut : floor plat de 70 k, vérifier que le DSCR reste ≥ 1,20× en scénario central.') + '</li>' +
       '<li>' + T('Switch to the low scenario: the year the DSCR dips under 1.20× is where a reopener clause would bite.', 'Passer en scénario bas : l’année où le DSCR passe sous 1,20× est celle où une clause de révision jouerait.') + '</li>' +
       '<li>' + T('Full tolling at 87 k: the DSCR holds but the offtaker margin shrinks in the late years.', 'Tolling complet à 87 k : le DSCR tient mais la marge de l’acheteur fond en fin de contrat.') + '</li>' +
-      '<li>' + T('Raise CAPEX to 800 k or the rate to 6 %: debt service rises and the minimum DSCR falls; financing assumptions matter as much as the market.', 'Monter le CAPEX à 800 k ou le taux à 6 % : le service de la dette monte et le DSCR minimum baisse ; les hypothèses de financement pèsent autant que le marché.') + '</li></ol></div>';
+      '<li>' + T('Raise CAPEX to 800 k or the bank margin by one point: debt service rises and the minimum DSCR falls; financing assumptions matter as much as the market.', 'Monter le CAPEX à 800 k ou la marge bancaire d’un point : le service de la dette monte et le DSCR minimum baisse ; les hypothèses de financement pèsent autant que le marché.') + '</li></ol></div>';
     $('boa-out-root').innerHTML = '<div class="kpi-strip fuel-kpis" id="boa-anchor"></div>' + tabs + guide +
-      '<div class="fuel-note">' + T('Market scenarios are assumptions, not forecasts. Sources of the central case: Clean Horizon (aFRR trajectory, 2025), Capstone DC (CAPEX, November 2025).', 'Les scénarios de marché sont des hypothèses, pas des prévisions. Sources du cas central : Clean Horizon (trajectoire aFRR, 2025), Capstone DC (CAPEX, novembre 2025).') + '</div>';
+      '<div class="fuel-note">' + T('Measured and updated every day: day-ahead value (ENTSO-E prices, PowerKlock optimisation), Cal forward prices (EEX), FCR price (regelleistung.net), euro 10-year rate (ECB). Assumptions, not forecasts: aFRR, mFRR and capacity mechanism trajectories, the path to 2037, intraday (no open feed). Sources of those assumptions: Clean Horizon (aFRR trajectory, 2025), Capstone DC (CAPEX, November 2025).', 'Mesuré et mis à jour chaque jour : valeur day-ahead (prix ENTSO-E, optimisation PowerKlock), prix forward Cal (EEX), prix FCR (regelleistung.net), taux 10 ans zone euro (BCE). Hypothèses, pas des prévisions : trajectoires aFRR, mFRR et mécanisme de capacité, chemin jusqu’en 2037, intraday (pas de flux ouvert). Sources de ces hypothèses : Clean Horizon (trajectoire aFRR, 2025), Capstone DC (CAPEX, novembre 2025).') + '</div>';
   }
 
   function buildStack(ac, ae, dc, de, ce, n) {
     return Array.from({ length: n }, (_, i) => {
       const ic = Math.min(i, BASE - 1), t = ic / (BASE - 1), ts = ss(t);
       const afrr = lerp(ac, ae, ts), daid = lerp(dc, de, Math.pow(t, 0.7));
-      const da = daid * 0.6, id = daid * 0.4, fcr = lerp(9, 4, t), mfrr = lerp(14, 13, t);
+      // FCR: today's French price × the share sold, then down to 4/9 of it by 2037 (more batteries for a fixed need)
+      const f0 = (LIVE.fcr == null ? FCR_FALLBACK : LIVE.fcr) * g('boa-fcrsh') / 100;
+      const da = daid * 0.6, id = daid * 0.4, fcr = lerp(f0, f0 * 4 / 9, t), mfrr = lerp(14, 13, t);
       const cap = ic < 2 ? 0 : lerp(0, ce, ss((ic - 2) / Math.max(BASE - 3, 1)));
       const turpe = ic < 1 ? 0 : 4;
       // years 11 to 15: straight line from the slope of the last modelled years
       const ex = Math.max(i - 9, 0), t8 = ss(7 / (BASE - 1));
       const sa = ((lerp(ac, ae, 1) - lerp(ac, ae, t8)) / 2) * 0.7, sd = ((lerp(dc, de, 1) - lerp(dc, de, t8)) / 2) * 0.4;
-      const Af = ex ? Math.max(afrr + ex * sa, 1) : afrr, Fc = ex ? Math.max(fcr - ex * 0.25, 1.5) : fcr, Mf = ex ? Math.max(mfrr - ex * 0.2, 8) : mfrr;
+      const Af = ex ? Math.max(afrr + ex * sa, 1) : afrr, Fc = ex ? Math.max(fcr - ex * 0.25 * f0 / 9, 0) : fcr, Mf = ex ? Math.max(mfrr - ex * 0.2, 8) : mfrr;
       const Da = ex ? Math.max(da + ex * sd * 0.6, 18) : da, Id = ex ? Math.max(id + ex * sd * 0.4, 12) : id, Ca = ex ? Math.min(cap + ex, 30) : cap;
       const o = { afrr: Af, fcr: Fc, mfrr: Mf, da: Da, id: Id, cap: Ca, turpe };
       o.total = Af + Fc + Mf + Da + Id + Ca + turpe;
@@ -109,7 +118,7 @@
   const cfgOf = k => FIELDS.map(([f]) => g('boa-' + PFX[k] + '-' + f));
   function P() {
     return { floor: g('boa-floor'), step: g('boa-step') / 100, sh: g('boa-share') / 100, toll: g('boa-toll'), pf: g('boa-pfrac') / 100,
-      capex: g('boa-capex'), opex: g('boa-opex'), ltv: g('boa-ltv') / 100, rate: g('boa-rate') / 100, tenor: g('boa-tenor'), deg: g('boa-deg') / 100 };
+      capex: g('boa-capex'), opex: g('boa-opex'), ltv: g('boa-ltv') / 100, rate: ((LIVE.r10 == null ? R10_FALLBACK : LIVE.r10) + g('boa-marg')) / 100, tenor: g('boa-tenor'), deg: g('boa-deg') / 100 };
   }
   function annuity(p) {
     const d = p.capex * p.ltv, r = p.rate, n = p.tenor;
@@ -180,6 +189,7 @@
       const n = fr() ? v.toFixed(d).replace('.', ',') : v.toFixed(d);
       sp.textContent = n + (u === '%' ? (fr() ? ' %' : '%') : u === 'k' ? ' k' : u === 'yrs' ? T(' yrs', ' ans') : ' ' + u);
     });
+    rateNote();
     const p = P(), n = p.tenor, ds = annuity(p), s = S.struct;
     const stacks = {};
     ['low', 'mid', 'high'].forEach(k => { stacks[k] = buildStack(...cfgOf(k), n); });
@@ -232,7 +242,9 @@
       const L = doc.summary_ltm['2h'], daMid = g('boa-m-da-cod');
       el.innerHTML = _fuelKpi(T('Day-ahead alone, last 12 months', 'Day-ahead seul, 12 derniers mois'), f1(L.pw), T('k€/MW/yr', 'k€/MW/an'), T('2 h battery · perfect schedule · net of wear', 'batterie 2 h · programme parfait · net d’usure')) +
         _fuelKpi(T('Day-ahead alone, no foresight', 'Day-ahead seul, sans anticipation'), f1(L.nv), T('k€/MW/yr', 'k€/MW/an'), T('2 h battery · fixed schedule', 'batterie 2 h · programme fixe')) +
-        _fuelKpi(T('Mid scenario: DA + intraday at COD', 'Scénario central : DA + intraday au COD'), f1(daMid), T('k€/MW/yr', 'k€/MW/an'), T('from the assumptions above', 'd’après les hypothèses ci-dessus'));
+        _fuelKpi(T('Mid scenario: DA + intraday at COD', 'Scénario central : DA + intraday au COD'), f1(daMid), T('k€/MW/yr', 'k€/MW/an'), LIVE.daSrc || T('from the assumptions above', 'd’après les hypothèses ci-dessus')) +
+        _fuelKpi(T('FCR, 1 MW all year', 'FCR, 1 MW toute l’année'), LIVE.fcr == null ? '–' : f1(LIVE.fcr), T('k€/MW/yr', 'k€/MW/an'), T(`France · ${LIVE.fcrN} days`, `France · ${LIVE.fcrN} jours`)) +
+        _fuelKpi(T('Debt rate', 'Taux de la dette'), f2(P().rate * 100), '%', T('10-year € + margin', '10 ans € + marge'));
     });
   }
 
@@ -256,22 +268,57 @@
     });
     update();
   }
-  // the day-ahead part of the scenarios starts from what the market really paid: the 2 h battery, perfect schedule
-  // net of wear, last 12 months (data/history/bess_da.json, recomputed every day); low and high keep their gap
-  // to the central case (0.85× and 1.12×, the ratios of the reference assumptions). Intraday, reserves and the
-  // trajectories to 2037 stay assumptions.
+  // Market inputs from the data, refreshed every day (nothing is set by hand):
+  //  · day-ahead at COD: the 2 h battery, perfect schedule net of wear, last 12 months (data/history/bess_da.json),
+  //    scaled to the COD year by the Cal forward over the average day-ahead price of those 12 months (da_path);
+  //    the perfect-schedule day-ahead value stands for "DA + intraday": a real battery earns less than the perfect
+  //    schedule on the day-ahead and makes some of it up on intraday, which has no open feed. Low and high keep their
+  //    gap to the central case (0.85×, 1.12×) and every scenario keeps its 2037 / COD ratio.
+  //  · FCR: French price of the last 12 months (data/history/reserves_fr.json) × the share sold (input).
+  //  · debt rate: euro area 10-year AAA rate (ECB) + bank margin (input).
+  // aFRR, mFRR, capacity mechanism and the path to 2037 stay assumptions.
+  const END_RATIO = { m: 74 / 66, l: 62 / 56, h: 88 / 74 };
   function live() {
-    PKBess.load().then(doc => {
-      const L = doc && doc.summary_ltm && doc.summary_ltm['2h']; if (!L || L.pw == null) return;
-      const root = $('page-boa'), mid = Math.round(L.pw), when = doc.last ? new Date(doc.last + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
-      if (!root.dataset.daTouched) {
-        [['m', mid], ['l', Math.round(mid * 0.85)], ['h', Math.round(mid * 1.12)]].forEach(([k, v]) => { const el = $('boa-' + k + '-da-cod'); if (el) el.value = Math.max(+el.min, Math.min(+el.max, v)); });
-        update();
+    const fd = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+    Promise.all([PKBess.load(), PKBess.loadRes ? PKBess.loadRes() : null]).then(([doc, R]) => {
+      const root = $('page-boa'); if (!root) return;
+      if (R) {
+        const L = PKBess.fcrLtm(R), rt = PKBess.lastRate(R);
+        if (L) { LIVE.fcr = PKBess.ann(L.avg); LIVE.fcrN = L.n; LIVE.need = R.fcr_mw && R.fcr_mw[L.to]; }
+        if (rt) { LIVE.r10 = rt.v; LIVE.r10d = rt.d; }
       }
-      $('boa-live').innerHTML = T(`<b>Live:</b> “DA + intraday at COD” starts from the day-ahead the market really paid a 2 h battery over 12 months, <b>${mid} k€/MW/yr</b> (net of wear, to ${when}); low and high keep their gap. Intraday, reserves and the 2037 values remain assumptions.`,
-        `<b>Données réelles :</b> « DA + intraday au COD » part du day-ahead réellement payé à une batterie 2 h sur 12 mois, <b>${mid} k€/MW/an</b> (net d’usure, au ${when}) ; bas et haut gardent leur écart. Intraday, réserves et valeurs 2037 restent des hypothèses.`);
-      const u = $('boa-upd'); if (u) u.textContent = T('Day-ahead updated ', 'Day-ahead à jour au ') + when;
+      const L2 = doc && doc.summary_ltm && doc.summary_ltm['2h'], path = doc && doc.da_path && doc.da_path[String(BOA_START)];
+      let mid = null, msg = '';
+      if (path && path['2h'] != null) {
+        mid = Math.round(path['2h']);
+        LIVE.daSrc = T(`12 months × Cal ${BOA_START} ÷ day-ahead average`, `12 mois × Cal ${BOA_START} ÷ moyenne day-ahead`);
+        msg = T(`day-ahead of a 2 h battery over 12 months, ${Math.round(L2.pw)} k€/MW/yr (to ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh average = <b>${mid} k€/MW/yr at COD</b>`,
+          `day-ahead d’une batterie 2 h sur 12 mois, ${Math.round(L2.pw)} k€/MW/an (au ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh de moyenne = <b>${mid} k€/MW/an au COD</b>`);
+      } else if (L2 && L2.pw != null) {
+        mid = Math.round(L2.pw);
+        LIVE.daSrc = T('last 12 months, no forward', '12 derniers mois, sans forward');
+        msg = T(`day-ahead of a 2 h battery over 12 months, <b>${mid} k€/MW/yr</b> (to ${fd(doc.last)})`, `day-ahead d’une batterie 2 h sur 12 mois, <b>${mid} k€/MW/an</b> (au ${fd(doc.last)})`);
+      }
+      if (mid != null && !root.dataset.daTouched) {
+        [['m', mid], ['l', Math.round(mid * 0.85)], ['h', Math.round(mid * 1.12)]].forEach(([k, v]) => {
+          const set = (f, x) => { const el = $('boa-' + k + '-' + f); if (el) el.value = Math.max(+el.min, Math.min(+el.max, x)); };
+          set('da-cod', v); set('da-end', Math.round(v * END_RATIO[k]));
+        });
+      }
+      if (msg) $('boa-live').innerHTML = T('<b>From the data:</b> ', '<b>D’après les données :</b> ') + msg + T('; low and high keep their gap. aFRR, mFRR, capacity and the 2037 values remain assumptions.', ' ; bas et haut gardent leur écart. aFRR, mFRR, capacité et valeurs 2037 restent des hypothèses.');
+      const fn = $('boa-fcr-note');
+      if (fn) fn.innerHTML = LIVE.fcr == null ? T(`No FCR data loaded: ${FCR_FALLBACK} k€/MW/yr assumed for 1 MW all year.`, `Pas de donnée FCR chargée : ${FCR_FALLBACK} k€/MW/an supposés pour 1 MW toute l’année.`)
+        : T(`French FCR price, last ${LIVE.fcrN} days: <b>${f1(LIVE.fcr)} k€/MW/yr</b> for 1 MW all year; the French need is ${LIVE.need || '≈ 600'} MW for the whole market, so a battery sells only a share. Falls to 4/9 of it by 2037.`,
+          `Prix FCR français, ${LIVE.fcrN} derniers jours : <b>${f1(LIVE.fcr)} k€/MW/an</b> pour 1 MW toute l’année ; le besoin français est de ${LIVE.need || '≈ 600'} MW pour tout le marché, une batterie n’en vend donc qu’une part. Descend à 4/9 de cette valeur en 2037.`);
+      const u = $('boa-upd'); if (u && doc && doc.last) u.textContent = T('Market data updated ', 'Données de marché à jour au ') + fd(doc.last);
+      update();
     });
+  }
+  function rateNote() {
+    const el = $('boa-rate-note'); if (!el) return;
+    const r10 = LIVE.r10 == null ? R10_FALLBACK : LIVE.r10, d = LIVE.r10d ? new Date(LIVE.r10d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
+    el.innerHTML = LIVE.r10 == null ? T(`No ECB rate loaded: ${f2(r10)} % assumed. Debt rate <b>${f2(r10 + g('boa-marg'))} %</b>.`, `Pas de taux BCE chargé : ${f2(r10)} % supposés. Taux de la dette <b>${f2(r10 + g('boa-marg'))} %</b>.`)
+      : T(`Euro area 10-year rate ${f2(r10)}% (ECB, ${d}) + margin = debt rate <b>${f2(r10 + g('boa-marg'))}%</b>.`, `Taux 10 ans zone euro ${f2(r10)} % (BCE, ${d}) + marge = taux de la dette <b>${f2(r10 + g('boa-marg'))} %</b>.`);
   }
   function defaults() {
     const s = S.struct;

@@ -1,0 +1,64 @@
+name: Reserves (FCR, aFRR) and debt rate
+
+# What a battery is paid for holding reserve in France and the cost of money (scripts/fetch_reserves.py)
+# → data/history/reserves_fr.json, read by Markets › Batteries (Reserves view) and Tools › BOA pricer.
+#   · FCR: French settlement price of the common European auction (regelleistung.net daily results export)
+#   · aFRR: ENTSO-E Transparency, procured balancing capacity prices (A89), when France publishes them
+#   · ECB data API: euro area AAA 10-year spot rate
+# The last 21 days are fetched again each time (late corrections); the FCR auction for D is held on D-1 morning.
+
+on:
+  schedule:
+    - cron: '47 9 * * *'     # 09:47 UTC, after the D-1 FCR auction results
+  push:
+    branches: [main]
+    paths: ['scripts/fetch_reserves.py', '.github/workflows/fetch_reserves.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: fetch-reserves
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install requests openpyxl
+      - name: Fetch
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python scripts/fetch_reserves.py
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/reserves_fr.json
+          if git diff --staged --quiet; then
+            echo "No change — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: reserve prices and debt rate $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          exit 1
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
