@@ -1342,6 +1342,45 @@
       if (sub) sub.textContent = fr ? `${t === 'wind' ? 'Éolien' : 'Solaire'} · chaque année pricée ${VSH} an${VSH === '1' ? '' : 's'} à l’avance avec les seules années connues alors, aux prix réalisés · profil national` : `${t === 'wind' ? 'Wind' : 'Solar'} · each year priced ${VSH} year${VSH === '1' ? '' : 's'} ahead with only the years known then, at the realised prices · national profile`;
     });
   }
+  // Price by delivery year and by product quoted on the market (months, quarters, seasons, Cal) inside the tenor.
+  // A year: each method's own capture value of that year. A product: its months' values weighted by the output (× paid share):
+  //   European model  month by month (its own monthly forecast)
+  //   the others      their yearly value spread on the months with the seasonal factor g of a part-year delivery
+  //                   (months' forwards × the blend's monthly capture × output), so the year's average stays theirs
+  // Each method keeps its risk premium per MWh; imbalance, GO of the year and margin as in its price.
+  function renderProducts(o) {
+    const host = $('pp-prod'); if (!host || !o || !o.years) return;
+    const fr = FRDOC(), Y = o.years, st = o.st;
+    const M = [['build', fr ? 'Tendance de capacité' : 'Capacity trend'], ['fpc', fr ? 'Forme forward' : 'Forward shape'], ['wx', fr ? 'Simulation météo' : 'Weather simulation'], ['eu', fr ? 'Modèle européen' : 'European model']];
+    const yearVal = { build: Y.map(r => r.cp), fpc: o.m3 ? o.m3.fwd.map(r => r.capture) : null, wx: o.m4 ? o.m4.years.map(r => r.capture) : null, eu: o.eu ? o.eu.map((e, i) => e.capture * Y[i].fwd) : null };
+    const prem = { build: o.premium, fpc: o.m3 ? o.m3.premium : null, wx: o.m4 ? o.m4.premium : null, eu: o.premium };
+    const price = (k, v, F, go) => v == null || prem[k] == null ? null : v - prem[k] - F * o.add / 100 - o.imb + go - o.margin;
+    // month weights and seasonal factors, per delivery year (whole years only)
+    const conv = st.conv === 'all' ? 'all' : 'curt', fc = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv], nat = D.fcst && D.fcst.share && D.fcst.share[st.tech];
+    const mw = (y, m) => { const e = fc && fc[`${y}-${String(m).padStart(2, '0')}`]; return (nat ? nat[m] || 0 : 1 / 12) * (conv === 'curt' && e && e.paid != null ? e.paid : 1); };
+    const gm = {}; o.tenor.forEach(y => { gm[y] = {}; for (let m = 1; m <= 12; m++) gm[y][m] = partFactors([y], () => [m], st)[0].g; });
+    const euM = (y, m) => { const r = euYears(Object.assign({}, o, { tenor: [y], monthsOf: () => [m] }), st); return r ? r[0].capture * Y[o.tenor.indexOf(y)].fwd : null; };
+    const monthVal = (k, y, m) => { const i = o.tenor.indexOf(y); if (i < 0) return null; if (k === 'eu') return euM(y, m); const v = yearVal[k]; return v ? v[i] * gm[y][m] : null; };
+    const rowsOf = (label, months, F, isYear, i) => {
+      const go = mean(months.map(([y]) => Y[o.tenor.indexOf(y)].go)), W = months.reduce((a, [y, m]) => a + mw(y, m), 0);
+      const vals = M.map(([k]) => { if (isYear) return price(k, yearVal[k] ? yearVal[k][i] : null, F, go);
+        const ms = months.map(([y, m]) => [mw(y, m), monthVal(k, y, m)]); if (ms.some(([, v]) => v == null)) return null;
+        return price(k, ms.reduce((a, [w, v]) => a + w * v, 0) / W, F, go); });
+      const ok = vals.filter(v => v != null), avg = ok.length === 4 ? mean(ok) : null;
+      return { label, F, vals, avg };
+    };
+    const rows = Y.map((r, i) => rowsOf('Cal ' + r.y, Array.from({ length: 12 }, (_, m) => [r.y, m + 1]), r.fwd, true, i));
+    const prods = (D.fwdRows || []).map(q => ({ q, p: window.PKFpc ? PKFpc.periodOf(q.contract) : null })).filter(x => x.p && x.p.kind !== 'year')
+      .map(({ q, p }) => { const ms = []; const d = new Date(p.a + 'T00:00:00Z'), e = new Date(p.b + 'T00:00:00Z'); while (d <= e) { ms.push([d.getUTCFullYear(), d.getUTCMonth() + 1]); d.setUTCMonth(d.getUTCMonth() + 1, 1); } return { q, ms }; })
+      .filter(x => x.ms.length && x.ms.every(([y]) => o.tenor.includes(y)))
+      .map(x => rowsOf(x.q.contract.replace(/^FR\s+/i, '').replace(/\s+base$/i, ''), x.ms, x.q.value, false));
+    const n2 = v => v == null ? '–' : fr ? f2(v).replace('.', ',') : f2(v);
+    const tr = r => `<tr><td style="text-align:left">${r.label}</td><td>${n2(r.F)}</td>${r.vals.map(v => `<td>${n2(v)}</td>`).join('')}<td><b>${n2(r.avg)}</b></td><td>${r.avg != null && r.F ? (fr ? (r.avg / r.F * 100).toFixed(0) : (r.avg / r.F * 100).toFixed(0)) + ' %' : '–'}</td></tr>`;
+    const head = `<tr><th style="text-align:left">${fr ? 'Livraison' : 'Delivery'}</th><th>${fr ? 'Forward coté' : 'Forward quoted'}</th>${M.map(([, n]) => `<th>${n}</th>`).join('')}<th>${fr ? 'Moyenne des 4' : 'Average of 4'}</th><th>${fr ? '% du forward' : '% of forward'}</th></tr>`;
+    const sep = t => `<tr><td colspan="8" style="text-align:left;color:var(--text3);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding-top:10px">${t}</td></tr>`;
+    host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead>${head}</thead><tbody>${sep(fr ? 'Par année' : 'By year')}${rows.map(tr).join('')}${prods.length ? sep(fr ? 'Par produit coté' : 'By quoted product') + prods.map(tr).join('') : ''}</tbody></table></div>` +
+      (o.m4 ? '' : `<div class="fuel-note">${fr ? 'Simulation météo : ouvrez son onglet ou Comparaison et prix pour la calculer.' : 'Weather simulation: open its tab or Compare & price to compute it.'}</div>`);
+  }
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
     const m3c = o.m3, mc = o.mc;
@@ -1391,6 +1430,7 @@
           tooltip: { callbacks: { label: c => c.raw == null ? null : ` ${c.dataset.label}: ${FRDOC() ? c.raw.toFixed(1).replace('.', ',') : c.raw.toFixed(1)} %` } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(tr('capture rate, % of the Cal')) } }) }, 'ppa-cannibalisation-by-method');
     })();
+    renderProducts(o);
     renderFanM(o);
     renderVsActual();
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
