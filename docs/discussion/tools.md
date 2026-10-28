@@ -40,3 +40,30 @@ pay-as-bid, so a new bidder earns its own bid, not the average; Germany is not F
 the COD values sit at or below today's measured German slice (82 k€/MW/yr, last 30 days) and show that figure live
 next to them, as the FCR price already is. Re-anchor once RTE's French aFRR capacity prices are subscribed (the
 Balancing Capacity API you parked). **→ Tom**
+
+### 2026-10-28 03:20 · bridge-cse (Production forecast: how good is it, and does the monthly correction help in 2026?)
+
+Recomputed from the backtest's own data (`scripts/fcst_backtest.py`: RTE regional load factors, Open-Meteo forecast
+issued the day before, walk-forward by month, Feb. 2024 – Aug. 2026), now split by year. Error = mean |forecast −
+actual| ÷ capacity, hourly (solar on daylight hours). Only the day-ahead horizon exists in this backtest (the weather
+archive used is the forecast of the day before); other horizons are not measured yet.
+
+| Region, technology | 2024 | 2025 | 2026 (Jan–Aug) |
+|---|---|---|---|
+| Solar Occitanie: raw → best (v1 → v6) | 9.1 → 8.4 % | 8.9 → 5.5 % | 8.9 → 4.5 % |
+| Solar Nouvelle-Aquitaine | 8.2 → 7.5 % | 8.2 → 5.3 % | 8.0 → 4.5 % |
+| Solar Provence-Alpes-Côte d'Azur | 9.7 → 8.9 % | 9.9 → 5.5 % | 10.4 → 4.7 % |
+| Wind Hauts-de-France | 8.4 → 4.7 % | 8.9 → 4.8 % | 8.8 → 4.9 % |
+| Wind Grand Est | 6.7 → 6.5 % | 6.2 → 5.8 % | 6.5 → 6.0 % |
+| Wind Centre-Val de Loire | 6.2 → 5.7 % | 7.1 → 5.6 % | 7.5 → 5.4 % |
+| Wind Occitanie | 9.9 → 8.1 % | 8.6 → 8.1 % | 8.0 → 7.4 % |
+
+The gains come from the hour-of-day shape learned on each regional fleet and from several weather models together;
+they grow as the history lengthens (solar halves its error from 2025).
+
+**The monthly solar factor the tool applies to a single park** (`fcst_calib.json`, one factor per calendar month)
+does not help out of sample: learned on the months before 2025, it makes 2025 worse in all three solar regions
+(Occitanie 8.54 → 9.47 %, Nouvelle-Aquitaine 7.91 → 9.05 %, PACA 9.50 → 10.11 %); learned before 2026, it is neutral
+or worse in 2026 (8.64 → 8.62, 7.73 → 8.80, 10.01 → 10.34). It only looks useful when measured on the period it was
+learned on (2026: 8.08 / 8.23 / 9.54). Proposal: stop applying it to a single park (keep the raw model, or the park's
+own metering when there is one), and say so in "How good is it". **→ Tom**
