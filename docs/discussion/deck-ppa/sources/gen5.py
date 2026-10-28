@@ -63,19 +63,20 @@ def waterfall(items, vmax, w=1100, h=560, x0=110):
     out.append('</svg>')
     return ''.join(out)
 
-wf = waterfall([('Forward|Cal 27–29', 86.13, 'total'), ('Forme non|captée', 62.16 - 86.13, 'delta'), ('Valeur|captée', 62.16, 'total'),
-                ('Prime de|risque', -5.10, 'delta'), ('Écarts', -2.38, 'delta'), ('GO', 1.84, 'delta'), ('Marge', -1.00, 'delta'), ('Tendance de|capacité', 55.52, 'total')], 95)
-side = ('<div style="position:absolute;left:1290px;top:330px;width:500px;display:flex;flex-direction:column;gap:22px">'
-        + para('Le forward est lu <b>mois par mois</b> : facteur des mois cotés k = 0,988 (2027), 1,026 (2028), 1 (2029, rien de coté sous le Cal).', 26)
-        + para('Le solaire capte 72 % du forward : 23,97 € perdus à cause de sa forme.', 26)
-        + para(f'<b>Prix publié à partir de la bascule</b> : moyenne des 4 méthodes, <b>47,45 €</b> (tendance 55,52 · forme forward 45,59 · météo 45,89 · européen 42,81).', 26)
-        + para('Éolien : tendance 79,14 €, moyenne des 4 81,64 €.', 24, MU) + '</div>')
+wf = waterfall([('Forward|Cal 27–29', 86.13, 'total'), ('Forme non|captée', 62.11 - 86.13, 'delta'), ('Valeur|captée', 62.11, 'total'),
+                ('Prime de|risque', -5.10, 'delta'), ('Écarts', -2.38, 'delta'), ('GO', 1.84, 'delta'), ('Marge', -1.00, 'delta'), ('Tendance de|capacité', 55.47, 'total')], 95)
+side = ('<div style="position:absolute;left:1290px;top:330px;width:500px;display:flex;flex-direction:column;gap:20px">'
+        + para('Le solaire capte 72 % du forward : 24,02 € perdus à cause de sa forme.', 24)
+        + para('<b>Prix publié à partir de la bascule</b> = moyenne des 4 méthodes :', 24)
+        + para('<b>Aujourd’hui : 47,34 €</b><br>tendance 55,47 · forme forward 45,59 · météo 45,89 · européen 42,41', 22)
+        + para('<b>Avec les 2 changements proposés : 46,25 €</b><br>tendance 55,52 · forme forward 40,29 · météo 46,36 · européen 42,81<br><span style="color:' + MU + '">niveau au mois, diapos 13–14 ; forme forward, diapo 54</span>', 22)
+        + para('Éolien : 80,36 € aujourd’hui (76,14 · 75,39 · 84,48 · 85,42), 82,02 € avec les 2 changements (79,14 · 76,90 · 84,48 · 87,56).', 20, MU) + '</div>')
 S['decompo'] = f'''<section id="decompo" data-transition="fade" style="background:{L};color:#14212C;font-family:'IBM Plex Sans', Arial, sans-serif;padding:120px 128px 160px;display:flex;flex-direction:column;gap:28px">
 <p style="font-size:24px;letter-spacing:3px;text-transform:uppercase;color:{G};font-weight:600">Mis à jour · décomposer un prix</p>
 <h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:56px;font-weight:700;line-height:1.1;color:#14212C">Le prix du PPA = forward × capture, puis les ajustements</h2>
 {wf}{side}
-<p style="position:absolute;left:128px;bottom:64px;font-size:22px;color:{MU}">Solaire, PPA 2027–2029, forwards du 27/10/2026, pricer par défaut (arrêt aux prix ≤ 0), niveau au mois · €/MWh</p>
-<aside>La même décomposition que la dernière fois, avec les forwards du 27 et le niveau lu au mois. On part du forward Cal pondéré par la production, 86 euros. Le solaire n’en capte que 72 % : 24 euros partent à cause de sa forme. On retire ensuite la prime de risque du Monte Carlo, 5 euros, les écarts, on ajoute la GO, on retire la marge : 55,52 pour la tendance de capacité seule. Le prix publié après la bascule sera la moyenne des quatre méthodes, 47,45 euros.</aside>
+<p style="position:absolute;left:128px;bottom:64px;font-size:22px;color:{MU}">Solaire, PPA 2027–2029, forwards du 27/10/2026, pricer par défaut tel qu’en ligne (arrêt aux prix ≤ 0) · €/MWh</p>
+<aside>La même décomposition que la dernière fois, avec les forwards du 27 et les méthodes telles qu’elles sont en ligne. On part du forward Cal pondéré par la production, 86 euros. Le solaire n’en capte que 72 % : 24 euros partent à cause de sa forme. On retire la prime de risque du Monte Carlo, 5 euros, les écarts, on ajoute la GO, on retire la marge : 55,47 pour la tendance de capacité seule. Le prix publié après la bascule sera la moyenne des quatre méthodes : 47,34 euros aujourd’hui, 46,25 avec les deux changements que je propose, le niveau au mois et la forme forward améliorée. En éolien : 80,36 aujourd’hui, 82,02 avec les deux changements.</aside>
 </section>
 '''
 
@@ -89,7 +90,7 @@ S['niveau_mois'] = sec('niveau_mois', False, 'Nouveau · le cadre commun, appliq
                                  'Dans le pricer long terme, <b>forme forward</b> et <b>simulation météo</b> lisent les mois cotés ; <b>tendance de capacité</b> et <b>décote P74</b> prenaient le Cal plat ; le <b>modèle européen</b> le Cal × la forme historique.',
                                  'Le marché cote cet hiver une prime d’hiver 2027 très forte (janvier 210 €, mai 64 €) : l’éolien, qui produit l’hiver, vaut 12 % de plus que le Cal.'], top=AM)),
   'Mois cotés : SEFE, dernières clôtures (mois, sinon trimestre, saison, puis Cal découpé par l’historique) · data/history/fr_forward_monthly.json · scripts/ppa_forward_shape_test.py',
-  'Votre remarque d’hier soir était juste. Notre cadre commun dit que le niveau se lit au mois, et c’est ce que fait le reste de l’outil. Mais dans le pricer, deux méthodes sur quatre prenaient le Cal plat. Or le marché cote 2027 avec une énorme prime d’hiver : un MWh éolien, qui tombe surtout l’hiver, vaut 12 % de plus que le Cal ; un MWh solaire 6 % de moins.')
+  'Votre remarque d’hier soir était juste. Notre cadre commun dit que le niveau se lit au mois, et c’est ce que fait le reste de l’outil. Mais dans le pricer, la tendance de capacité prenait le Cal plat, le modèle européen le Cal avec la forme historique ; seules la forme forward et la météo lisaient les mois cotés. Or le marché cote 2027 avec une énorme prime d’hiver : un MWh éolien, qui tombe surtout l’hiver, vaut 12 % de plus que le Cal ; un MWh solaire 6 % de moins.')
 
 bt = json.load(open(H + 'ppa_forward_shape_test.json'))['backtest']
 btr = [[str(r['year']), fr(r['errHistorical'] * 100, 1), fr(r['errQuoted'] * 100, 1), fr(w['errHistorical'] * 100, 1), fr(w['errQuoted'] * 100, 1)]
@@ -103,7 +104,7 @@ S['niveau_test'] = sec('niveau_test', True, 'Nouveau · mois cotés ou forme his
                           'Correction : facteur k par année = valeur sur les mois cotés ÷ valeur sur le Cal avec la forme historique (portée par la capture annuelle).',
                           'Effet aujourd’hui sur la moyenne des 4 : <b>solaire 47,34 → 47,45 €</b>, <b>éolien 80,36 → 81,64 €</b>.',
                           '<b>Proposition</b> : mois cotés partout, appliqués le jour de la bascule (une seule rupture de la série publiée). À valider.'], True, '#14D3A9')),
-  'scripts/ppa_forward_shape_test.py (trimestres SEFE 2023–2026) · pricer, branche de bascule, forwards du 27/10',
+  'scripts/ppa_forward_shape_test.py (trimestres SEFE, années complètes 2023–2025) · pricer, branche de bascule, forwards du 27/10',
   'J’ai testé les deux lectures. Comme prévision, les trimestres cotés font moins bien que l’historique : la prime de risque du marché se trompe, surtout en 2023. Mais un PPA est un prix de marché : ce qu’on peut verrouiller aujourd’hui, ce sont les mois cotés. Je propose donc de lire les mois cotés partout, et de le faire le même jour que la bascule vers la moyenne des quatre, pour que la série publiée ne saute qu’une fois. Les écarts sont faibles en solaire, d’un peu plus d’un euro en éolien.')
 
 # ── 2022: correlation break ──────────────────────────────────────────────
@@ -167,7 +168,7 @@ S['horizon'] = sec('horizon', False, 'Nouveau · pricer 1, 2, 3 ans à l’avanc
       card('Éolien', [table(['Erreur, €/MWh', '1 an', '2 ans', '3 ans'], hw, [46, 18, 18, 18], hl=[5], size=23)], top=BL))
   + para('Chaque année 2024–2026 pricée 1, 2 et 3 ans à l’avance avec les seules années connues alors (arrêt aux prix ≤ 0) : les tendances perdent en précision avec l’horizon, le modèle européen tient. Trois années seulement.', 23),
   'scripts/ppa_horizon_test.py · erreur absolue moyenne de la valeur du MWh, pondérée par la production',
-  'C’est le test qui a fondé la décision du 27. Le benchmark couvre les trois années suivantes, donc il faut juger chaque méthode à un, deux et trois ans. En solaire, la moyenne des quatre est la meilleure à un et deux ans ; en éolien, elle reste à moins de 0,4 euro de la meilleure méthode seule. Ajouter le modèle européen améliore la moyenne partout en solaire.')
+  'C’est le test qui a fondé la décision du 27. Le benchmark couvre les trois années suivantes, donc il faut juger chaque méthode à un, deux et trois ans. En solaire, la moyenne des quatre est la meilleure à un et deux ans. En éolien, elle reste à 0,3 euro de la meilleure à un an, 0,55 à deux ans, et c’est la meilleure à trois ans ; à deux ans, le modèle européen dégrade la moyenne éolienne (2,02 à trois méthodes, 2,41 à quatre). En solaire, ajouter le modèle européen améliore la moyenne à chaque horizon.')
 
 # ── decisions and next steps ─────────────────────────────────────────────
 S['decisions'] = sec('decisions', False, 'Mis à jour · décisions', 'Ce qui est décidé, ce qui reste à trancher',
@@ -183,7 +184,7 @@ S['decisions'] = sec('decisions', False, 'Mis à jour · décisions', 'Ce qui es
   'docs/discussion/decisions.md',
   'Trois décisions sont prises et en place ou datées. Il en reste trois à trancher : le niveau au mois, que je viens de présenter, la source pour le stockage, et le prix à proposer en solaire, P75 ou moyenne, qui était déjà sur la table le 26.')
 
-FPCRES = globals().get('FPCRES', 'Gain mesuré le 27 (−8 à −24 % d’erreur) ; test de confirmation en cours')
+FPCRES = 'Confirmé au walk-forward (réglage 2019–2023, verdict 2024–2026, arrêt aux prix ≤ 0) : solaire 7,64 → 5,84 € (−24 %), éolien 6,23 → 4,94 € (−21 %) ; en toutes heures, éolien −6 %, solaire +2 %. Proposé avec la bascule'
 S['suite'] = sec('suite', True, 'Mis à jour · la suite', 'Les chantiers, par gain attendu',
   table(['#', 'Chantier', 'Où on en est'], [
     ['1', 'Forme forward : squelette récent et cannibalisation par saison', FPCRES],
@@ -210,6 +211,7 @@ d = json.load(open('project/deck.json')); o = d['order']
 def put(k, after):
     if k in o: o.remove(k)
     o.insert(o.index(after) + 1, k)
+edit('agenda', 'données au 25/10/2026', 'données au 25/10, diapos mises à jour au 27–28/10')
 put('maj', 'agenda'); put('crise2022', 'negatifs'); put('niveau_mois', 'decoupage'); put('niveau_test', 'niveau_mois')
 put('m4c', 'm4b'); put('horizon', 'moyenne')
 d['order'] = o; json.dump(d, open('project/deck.json', 'w'), ensure_ascii=False)
