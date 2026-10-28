@@ -34,13 +34,15 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Price the day
         run: python scripts/ppa_daily.py
+      - name: Capture implied by the peak / base forwards (in observation)
+        run: python scripts/build_mkt_implied.py || echo "::warning::market-implied capture not computed"
       - name: Correlation breaks (Comparator, alerts)
         run: python scripts/corr_watch.py || echo "::warning::correlation watch failed"
       - name: Commit and push
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/ppa_benchmark.json data/corr_watch.json
+          git add data/history/ppa_benchmark.json data/corr_watch.json data/history/mkt_implied.json
           if git diff --staged --quiet; then
             echo "No change — skipping commit."
             exit 0
