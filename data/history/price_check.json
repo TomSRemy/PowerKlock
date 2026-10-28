@@ -1,5 +1,5 @@
 {
-"updated": "2026-10-28T03:54:35+00:00",
+"updated": "2026-10-28T04:17:50+00:00",
 "source": "Energy-Charts (Fraunhofer ISE) day-ahead prices",
 "window": [
 "2020-01-01",
@@ -12,28 +12,28 @@
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "DE_LU": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "BE": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "NL": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "ES": {
 "agree": 2489,
@@ -56,28 +56,28 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "PT": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "IT_NORD": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "CH": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "AT": {
 "agree": 2491,
@@ -91,56 +91,56 @@
 "why": "partial decoupling of the European day-ahead market (SDAC): the two sources keep different auction results"
 }
 ],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "PL": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "CZ": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "DK_W": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "DK_E": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "HU": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "SI": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "FI": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "BG": {
 "agree": 2487,
@@ -173,21 +173,21 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "GR": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "HR": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "RO": {
 "agree": 2491,
@@ -200,28 +200,28 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "RS": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "SK": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "ME": {
 "agree": 1280,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "EE": {
 "agree": 2491,
@@ -234,10 +234,10 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "LT": {
-"agree": 2490,
+"agree": 2491,
 "differ": 1,
 "days": [
 {
@@ -247,7 +247,7 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "LV": {
 "agree": 2491,
@@ -260,28 +260,28 @@
 }
 ],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "NO_1": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "SE": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 },
 "IT_SICI": {
 "agree": 2492,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-10-28T03:54:35+00:00"
+"checked": "2026-10-28T04:17:50+00:00"
 }
 }
 }
