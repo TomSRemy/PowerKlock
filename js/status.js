@@ -33,6 +33,9 @@
         // The 12:00 UTC run is often delayed by GitHub's scheduler: late only after 17:00 Paris.
         return { at: null, late: !ok && hm >= 1700, pending: !ok && hm < 1700, detail: ok ? 'delivery ' + ds + ' published' : (hm < 1700 ? 'expected after ~14:00' : 'not published yet') };
       } },
+    { id: 'rte_pp', label: 'PP1 / PP2 peak days', provider: 'RTE Data Portal, Signal API', kind: 'repo', cadence: '06:10, 08:50 and 18:10 UTC',
+      async check() { const j = await getJSON('rte_pp.json'); const d = j && (j.checked || j.updated) ? new Date(j.checked || j.updated) : null;
+        return { at: j && j.updated ? new Date(j.updated) : null, late: !!(j && j.error) || (d && Date.now() - d > 30 * H), detail: j && j.error ? ((window.PKI18n && PKI18n.lang !== 'en') ? 'RTE refuse l’appel : ' : 'RTE refuses the call: ') + j.error : j ? Object.keys(j.days || {}).length + ' signalled days kept' : '' }; } },
     { id: 'genmix', label: 'Generation mix', provider: 'ENTSO-E A75', kind: 'repo', cadence: 'with day-ahead fetch',
       async check() { const j = await getJSON('genmix.json'); const d = j && j.updated ? new Date(j.updated) : null; return { at: d, late: d && Date.now() - d > 14 * H }; } },
     { id: 'renewables', label: 'Wind & solar (actual + forecast)', provider: 'ENTSO-E A75 / A69', kind: 'repo', cadence: 'with day-ahead fetch',
