@@ -147,6 +147,9 @@
     // model risk: one persistent deviation per trajectory, the size of the method's past errors (historical replay)
     const sm = sigModel || 0;
     if (sm > 0) for (let n = 0; n < N; n++) { const z = gauss() * sm; out.forEach(r => { r.rate[n] += z; }); }
+    // the method's past bias (scripts/ppa_bias.py), taken off where it helps
+    const bias = o.tenor.map(y => (o.biasOf ? o.biasOf('weather', y) : 0));
+    out.forEach((r, i) => { if (bias[i]) for (let n = 0; n < N; n++) r.rate[n] -= bias[i]; });
     // per delivery year: correlated and decorrelated capture rates, cannibalisation, spread
     const srt = a => Float64Array.from(a).sort();
     const years = o.tenor.map((y, i) => { const r = srt(out[i].rate), d = srt(out[i].rateD), cal = calOf(y, o.monthsOf ? o.monthsOf(y) : null);
@@ -158,7 +161,7 @@
     const Us = srt(U), fair = mean(Array.from(U)), qU = quant(Us, o.alpha / 100), premium = fair - qU;
     const refW = years.reduce((a, r, i) => a + o.years[i].w / W * r.cal, 0);
     const ppa = qU - refW * o.add / 100 - o.imb + o.goW - o.margin;
-    return { N, recent, asset: AF, sigModel: sm, years, U: Us, fair, qU, premium, refW, ppa, week, capS: o.tenor.map(y => capPathFor('solar')(y)), capW: o.tenor.map(y => capPathFor('wind')(y)) };
+    return { N, recent, asset: AF, sigModel: sm, bias, years, U: Us, fair, qU, premium, refW, ppa, week, capS: o.tenor.map(y => capPathFor('solar')(y)), capW: o.tenor.map(y => capPathFor('wind')(y)) };
   }
   window.PKWx = { compute };
 })();
