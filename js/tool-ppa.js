@@ -1275,7 +1275,7 @@
     $('pp-fpc-table').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Delivery</th><th>Cal (FPC)</th><th>(2) Profile cost</th><th>Cannibalisation</th><th>Capture rate</th><th>Capture €/MWh</th></tr></thead><tbody>` +
       m3.fwd.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.cal)}</td><td>${pc(r.fwdCost)}</td><td>${pc(r.cannib)}</td><td>${pc(r.rate)}</td><td>${f2(r.capture)}</td></tr>`).join('') +
       `</tbody></table></div>`;
-    { const fr = FRDOC(), yrs = m3.years.join(', '), gaps = Object.entries(m3.calGap || {}).filter(([, g]) => Math.abs(g) > 0.05), f2c = v => (v > 0 ? '+' : '') + v.toFixed(2);
+    { const fr = FRDOC(), yrs = m3.years.join(', '), gaps = Object.entries(m3.calGap || {}).filter(([, g]) => Math.abs(g) > 0.05), f2c = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', fr ? ',' : '.');
       const tech = fr ? (S.tech === 'solar' ? 'solaire' : 'éolien') : S.tech;
       const conv = S.conv === 'pos' ? (fr ? 'heures à prix ≤ 0 retirées de (1) et (3)' : 'hours with a price ≤ 0 left out of (1) and (3)') : S.conv === 'curt' ? (fr ? 'production arrêtée et non payée aux prix ≤ 0, baseload sur toutes les heures' : 'output stopped and not paid at prices ≤ 0, baseload on every hour') : (fr ? 'toutes les heures payées' : 'every hour paid');
       $('pp-fpc-note').innerHTML = fr
