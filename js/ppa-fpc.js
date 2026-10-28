@@ -168,7 +168,8 @@
       .concat([...userY].map(y => ({ contract: 'FR Cal' + y + ' base', value: st.fwd[y] })));
     const F = buildFPC(K, o.tenor, quotes);
     const fwd = o.tenor.map((y, i) => {
-      const pts = F.pts.filter(p => +p.d.slice(0, 4) === y);
+      const Mo = o.monthsOf ? o.monthsOf(y) : null;   // a year delivered in part: its months only
+      const pts = F.pts.filter(p => +p.d.slice(0, 4) === y && (!Mo || Mo.includes(+p.d.slice(5, 7))));
       const V = pts.map(p => pAt(p.d, p.h)), P = pts.map(p => p.v);
       const cal = mean(P), f = profileCost(V, P, null);
       // the year's cannibalisation: each season's term weighted by the value of the output in that season

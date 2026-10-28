@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
+  const S = { tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -135,6 +135,33 @@
       return b > 0 ? a / b : 1;
     });
   }
+  // A delivery that covers only some months of a year. The capacity trend and the past discount project one yearly
+  // capture rate; the months delivered are worth more or less than the year (solar: summer cheap, winter dear), so
+  //   g  = value of one MWh on the months delivered ÷ on the whole year
+  //      = (Σ_M w q c ÷ Σ_M w) ÷ (Σ_all w q c ÷ Σ_all w),  w = output share × paid share, q = month's forward ÷ Cal
+  //        (quoted, else the day-ahead's history), c = the month's capture rate forecast (the blend's)
+  //   sh = the months' share of the year's output (national profile)
+  // g = sh = 1 on a whole year; g = 1 when the monthly forecast is missing.
+  function partFactors(tenor, monthsOf, st) {
+    const conv = st.conv === 'all' ? 'all' : 'curt';
+    const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
+    const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech], ratio = D.fwRatio;
+    return tenor.map(y => {
+      const M = monthsOf(y);
+      if (M.length === 12) return { g: 1, sh: 1 };
+      const sh = nat ? M.reduce((a, m) => a + (nat[m] || 0), 0) / Math.max(1e-9, Object.values(nat).reduce((a, b) => a + (b || 0), 0)) : M.length / 12;
+      if (!f || !nat || !ratio) return { g: 1, sh };
+      const q = quotedShape(y);
+      let rn = 0, hn = 0; for (let m = 1; m <= 12; m++) { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); rn += ratio[m] * dm; hn += dm; } rn /= hn;
+      let aA = 0, wA = 0, aM = 0, wM = 0;
+      for (let m = 1; m <= 12; m++) {
+        const e = f[`${y}-${String(m).padStart(2, '0')}`]; if (!e || e.hybrid == null || ratio[m] == null) return { g: 1, sh };
+        const w = nat[m] * (conv === 'curt' ? e.paid : 1), v = (q ? q[m - 1] : ratio[m] / rn) * e.hybrid;
+        aA += w * v; wA += w; if (M.includes(m)) { aM += w * v; wM += w; }
+      }
+      return { g: wM > 0 && aA > 0 ? (aM / wM) / (aA / wA) : 1, sh };
+    });
+  }
   function euYears(o, st) {
     const conv = st.conv === 'all' ? 'all' : 'curt';
     const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
@@ -155,7 +182,9 @@
       let num = 0, den = 0;
       const q = quotedShape(y);   // the quoted months ÷ Cal, else the day-ahead's historical month ÷ year ratios
       let rn = 0, hn = 0; for (let m = 1; m <= 12; m++) { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); rn += ratio[m] * dm; hn += dm; } rn /= hn;
+      const Mo = o.monthsOf ? o.monthsOf(y) : null;
       for (let m = 1; m <= 12; m++) {
+        if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e.regional == null || ratio[m] == null) return null;
         const w = sh(m) * (conv === 'curt' ? e.paid : 1);
@@ -294,6 +323,9 @@
     const fwdAuto = y => D.fwd[y] != null ? D.fwd[y] : null;
     const fwdFor = y => st.fwd[y] != null ? st.fwd[y] : fwdAuto(y);
     const tenor = []; for (let y = t0; y <= t1; y++) tenor.push(y);
+    // the months delivered in each year: a delivery can start and end in any month (January to December by default)
+    const m0 = clamp(Math.round(st.m0 || 1), 1, 12), m1 = t0 === t1 ? Math.max(clamp(Math.round(st.m1 || 12), 1, 12), m0) : clamp(Math.round(st.m1 || 12), 1, 12);
+    const monthsOf = y => { const a = []; for (let m = y === t0 ? m0 : 1; m <= (y === t1 ? m1 : 12); m++) a.push(m); return a; };
     const missing = tenor.filter(y => fwdFor(y) == null);
     if (missing.length && !st.noMC) return { st, nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT, negHours, negShare, nhReg, nhFitYears, shLast, tenor, fwdAuto, auto, missing };
     const lastKnown = y => { const k = known.filter(x => x <= y).pop(); return k != null ? D.fwd[k] : known.length ? D.fwd[known[0]] : 60; };
@@ -328,13 +360,16 @@
     const now = nowFrac();
     // the level month by month, as the common framework says: the yearly capture × the quoted-shape factor
     const kq = shapeFactors({ tenor }, st);
-    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv !== 'all' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * kq[i] * (1 - fsd);
-      return { y, fwd: fwds[i], kq: kq[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
+    // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
+    const part = partFactors(tenor, monthsOf, st);
+    const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1),
+      df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), fsd = proj(y), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd);
+      return { y, months: M, fwd: fwds[i], kq: kq[i], g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
-    const o = { st, nat, ast, hist, useAsset, complete, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
+    const o = { st, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -349,7 +384,7 @@
     o.pdMode = st.pdMode === 'past' || !pdReg ? 'past' : 'projected';
     o.pdYears = pdRows.map(x => x.year); o.pdOff = pdOff;
     o.sdPctY = years.map(r => o.pdMode === 'past' ? sdPct : cl(pdReg.ic + pdReg.sl * r.y + pdOff));
-    const capPD = years.reduce((a, r, i) => a + r.wt * r.fwd * (1 - o.sdPctY[i]), 0);
+    const capPD = years.reduce((a, r, i) => a + r.wt * r.fwd * r.g * (1 - o.sdPctY[i]), 0);
     o.sdCh = o.pdMode === 'past' ? sdPct : years.reduce((a, r, i) => a + r.wt * o.sdPctY[i], 0);
     o.pdEur = o.pdMode === 'past' ? ref * sdPct : ref - capPD;
     o.pdTxt = o.pdMode === 'past' ? `P${st.pct} of the past discounts ${fitRows.map(x => x.year).join(', ')}, no projection` : `trend of ${o.pdYears.join(', ')} + offset P${st.pct} − P50 of the past discounts (${(pdOff * 100).toFixed(1)} pts)`;
@@ -447,7 +482,7 @@
         const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
-        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (r.kq || 1) * (1 - sd);
+        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (r.kq || 1) * (r.g || 1) * (1 - sd);
         const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = spot;
         num += r.df * v; den += r.df * pr;
@@ -1318,7 +1353,7 @@
 <li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of both the capture price and the baseload (Past discount)' : 'all hours (as the CRE M0)'}.
 Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going in a straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}), anchored on ${o.lastYr}.` : ''}
 Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>
-<li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique, data/history/fr_forward_monthly.json) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 quand rien n’est coté sous le Cal).` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (the month quoted, else its quarter, season, then the Cal shaped by history, data/history/fr_forward_monthly.json) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 when nothing below the Cal is quoted).`}</li>
+<li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique, data/history/fr_forward_monthly.json) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3).replace('.', ',')).join(' ; ')} (1 quand rien n’est coté sous le Cal).${o.years.some(r => r.g !== 1) ? ` Livraison sur une partie d’année : la capture annuelle est ramenée aux mois livrés par <b>g</b> = valeur d’un MWh sur ces mois ÷ sur l’année entière (forward des mois × capture mensuelle prévue × production de chaque mois), et le volume à leur part de la production annuelle : ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3).replace('.', ',') + ', ' + Math.round(r.sh * 100) + ' % du volume').join(' ; ')}.` : ''}` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (the month quoted, else its quarter, season, then the Cal shaped by history, data/history/fr_forward_monthly.json) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 when nothing below the Cal is quoted).${o.years.some(r => r.g !== 1) ? ` A year delivered in part: the yearly capture is brought to the months delivered by <b>g</b> = value of one MWh on those months ÷ on the whole year (months' forwards × forecast monthly capture × each month's output), and the volume to their share of the year's output: ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3) + ', ' + Math.round(r.sh * 100) + ' % of the volume').join('; ')}.` : ''}`}</li>
 <li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
 </ol>
@@ -1508,6 +1543,8 @@ ${euDoc(o)}
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
     const pdy = $('pp-pdyears'); if (pdy) pdy.addEventListener('change', e => { S.pdYears = +e.target.value; run(); });
+    // first and last month delivered (January → December by default: whole calendar years)
+    ['pp-m0', 'pp-m1'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', e => { S[id === 'pp-m0' ? 'm0' : 'm1'] = +e.target.value; run(); }); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
     $('pp-xlsx').addEventListener('click', exportXlsx);
     // the inputs stay folded once folded; the folded bar shows their summary
