@@ -26,10 +26,10 @@ CASES = {
     'wind · defaults': {'tech': 'wind'},
     'solar · past discount, P80': {'method': 'pct', 'pct': 80},
 }
-EXPECTED = {   # fixtures of 2026-10-25; since 28 Oct. 2026 (decided by Tom): capacity trend × quoted-month factor k, forward shape with recent skeleton (solar) and c per season, past-bias correction (ppa_bias.json); 30 Oct. 2026: wind's forward-shape cannibalisation driven by the solar fleet (wind fpc 75.12 → 74.84)
-    'solar · defaults': {'ppa': 54.31, 'build': 54.31, 'pct': 46.19, 'fpc': 33.24, 'ref': 84.05, 'go': 1.84, 'tenor': '2027-2028-2029'},
-    'wind · defaults': {'ppa': 74.46, 'build': 74.46, 'pct': 81.12, 'fpc': 74.84, 'ref': 83.24, 'go': 1.84, 'tenor': '2027-2028-2029'},
-    'solar · past discount, P80': {'ppa': 43.18, 'build': 54.31, 'pct': 43.18, 'fpc': 33.24, 'ref': 83.01, 'go': 1.84, 'tenor': '2027-2028-2029'},
+EXPECTED = {   # fixtures of 2026-10-25; since 28 Oct. 2026 (decided by Tom): capacity trend × quoted-month factor k, forward shape with recent skeleton (solar) and c per season, past-bias correction (ppa_bias.json); 30 Oct. 2026: wind's forward-shape cannibalisation driven by the solar fleet (wind fpc 75.12 → 74.84); the decorrelated pricing (3) stopped at prices ≤ 0 on its own curve, as the test bench (solar fpc 33.24 → 41.37, wind 74.84 → 76.80)
+    'solar · defaults': {'ppa': 54.31, 'build': 54.31, 'pct': 46.19, 'fpc': 41.37, 'ref': 84.05, 'go': 1.84, 'tenor': '2027-2028-2029'},
+    'wind · defaults': {'ppa': 74.46, 'build': 74.46, 'pct': 81.12, 'fpc': 76.8, 'ref': 83.24, 'go': 1.84, 'tenor': '2027-2028-2029'},
+    'solar · past discount, P80': {'ppa': 43.18, 'build': 54.31, 'pct': 43.18, 'fpc': 41.37, 'ref': 83.01, 'go': 1.84, 'tenor': '2027-2028-2029'},
 }
 fails = []
 
