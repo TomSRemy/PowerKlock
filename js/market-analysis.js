@@ -1166,7 +1166,14 @@
     if (!window.PKW || !window.PKF) return;
     const z = STATE.zone, cc = OUTLOOK_CC[z] || 'FR';
     const t = document.getElementById('ma-fc-tiles'); if (t) PKF.tiles(t, z);
-    const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
+    // the card says what it shows: the finding in one line above the subtitle, when the widget gives one
+    const sub = (id, r) => {
+      const e = document.getElementById(id); if (!e || !r) return;
+      if (r.sub) e.textContent = r.sub;
+      let f = e.previousElementSibling && e.previousElementSibling.classList.contains('ma-finding') ? e.previousElementSibling : null;
+      if (r.finding) { if (!f) { f = document.createElement('div'); f.className = 'ma-finding'; e.before(f); } f.textContent = r.finding; f.dataset.tone = /au-dessus|above/.test(r.finding) ? 'up' : /sous la|below/.test(r.finding) ? 'down' : ''; }
+      else if (f) f.remove();
+    };
     PKW.draw('fc-48h', 'ma-fc-48h', { zone: z }).then(r => sub('ma-fc-48h-sub', r));
     PKW.draw('wx-outlook', 'ma-fc-wind', { country: cc, series: 'wind', past: '7' }).then(r => sub('ma-fc-wind-sub', r));
     PKW.draw('wx-outlook', 'ma-fc-solar', { country: cc, series: 'solar', past: '7' }).then(r => sub('ma-fc-solar-sub', r));
