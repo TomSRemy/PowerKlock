@@ -45,7 +45,7 @@ jobs:
           git add data/go_prices.csv
           git diff --cached --quiet || git commit -m "auto: update go_prices.csv [$(date +%Y-%m-%d)]"
           # a data job may have pushed meanwhile: rebase on it, then push (5 tries)
-          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done; exit 1
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done; exit 1
       - name: E-mail on failure
         if: failure()
         env:

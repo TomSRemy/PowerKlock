@@ -73,7 +73,7 @@ jobs:
           git commit -q -m "backfill[genmix]: ${{ matrix.range }} FR,DE_LU,ES,BE,NL,PT"
           git checkout -- data/history
           for i in 1 2 3 4 5 6; do
-            git pull -q --rebase -X theirs origin main || { git rebase --abort; sleep 10; continue; }
+            git pull -q --rebase -X theirs origin main || { git rebase --abort 2>/dev/null || true; sleep 10; continue; }
             python scripts/enrich_summary.py > /dev/null
             git add data/history/summary.json data/history/summary_fr.json
             git diff --cached --quiet || git commit -q -m "recalc: summary.json after genmix backfill ${{ matrix.range }}"
