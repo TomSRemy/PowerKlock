@@ -64,6 +64,7 @@
     const left = '<div class="boa-card">' +
       '<div class="boa-sec">' + T('Battery', 'Batterie') + '</div>' +
       '<div class="boa-pills" id="boa-dur">' + pill('d', '1h', T('1 h of storage', '1 h de stockage')) + pill('d', '2h', T('2 h of storage', '2 h de stockage'), 1) + pill('d', '4h', T('4 h of storage', '4 h de stockage')) + '</div>' +
+      '<label class="boa-chk"><input type="checkbox" id="boa-real"> <span>' + T('Day-ahead without foresight', 'Day-ahead sans anticipation') + ' <span class="boa-note" id="boa-real-n"></span></span></label>' +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Contract structure', 'Structure du contrat') + '</div>' +
       '<div class="boa-pills" id="boa-struct">' + pill('s', 'floor', 'Floor + upside ★', 1) + pill('s', 'toll', T('Full tolling', 'Tolling complet')) + pill('s', 'partial', T('Partial tolling', 'Tolling partiel')) + pill('s', 'merchant', 'Merchant') + '</div>' +
       '<div id="boa-sp">' +
@@ -289,6 +290,7 @@
       live();
     });
     root.addEventListener('input', e => { if (e.target.id === 'boa-capex') root.dataset.capexTouched = '1'; }, true);
+    $('boa-real').addEventListener('change', e => { S.real = e.target.checked; delete root.dataset.daTouched; live(); });
     root.addEventListener('input', e => { if (/^boa-[lmh]-da-cod$/.test(e.target.id)) root.dataset.daTouched = '1'; }, true);
     live();
     // a break-even tile applies its value: floor + upside with that floor, or full tolling at that toll
@@ -327,7 +329,10 @@
   const END_RATIO = { m: 74 / 66, l: 62 / 56, h: 88 / 74 };
   function live() {
     const fd = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
-    Promise.all([PKBess.load(), PKBess.loadRes ? PKBess.loadRes() : null]).then(([doc, R]) => {
+    const eu = window.__pkBessEu || (window.__pkBessEu = fetch('data/history/bess_europe.json').then(r => r.ok ? r.json() : null).catch(() => null));
+    Promise.all([PKBess.load(), PKBess.loadRes ? PKBess.loadRes() : null, eu]).then(([doc, R, E]) => {
+      const fz = E && E.zones && E.zones.FR, ratio = fz && fz.rl_da365 && fz.da365 ? fz.rl_da365 / fz.da365 : null;
+      const rn = $('boa-real-n'); if (rn) rn.textContent = ratio ? T(`(${Math.round(ratio * 100)}% of the perfect schedule, France 2 h, 12 months)`, `(${Math.round(ratio * 100)} % du programme parfait, France 2 h, 12 mois)`) : T('(not computed yet)', '(pas encore calculé)');
       const root = $('page-boa'); if (!root) return;
       if (R) {
         const L = PKBess.fcrLtm(R), rt = PKBess.lastRate(R);
@@ -346,6 +351,7 @@
         LIVE.daSrc = T('last 12 months, no forward', '12 derniers mois, sans forward');
         msg = T(`day-ahead of a ${S.dur.replace('h', ' h')} battery over 12 months, <b>${mid} k€/MW/yr</b> (to ${fd(doc.last)})`, `day-ahead d’une batterie ${S.dur.replace('h', ' h')} sur 12 mois, <b>${mid} k€/MW/an</b> (au ${fd(doc.last)})`);
       }
+      if (mid != null && S.real && ratio) mid = Math.round(mid * ratio);
       if (mid != null && !root.dataset.daTouched) {
         [['m', mid], ['l', Math.round(mid * 0.85)], ['h', Math.round(mid * 1.12)]].forEach(([k, v]) => {
           const set = (f, x) => { const el = $('boa-' + k + '-' + f); if (el) el.value = Math.max(+el.min, Math.min(+el.max, x)); };
